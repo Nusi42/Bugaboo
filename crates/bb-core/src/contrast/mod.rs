@@ -18,8 +18,8 @@ pub use maths::{
 };
 pub use rating::{Evaluation, Mode, PairResult, Problem, Rating, Rule, ThemeColors, rate};
 pub use spec::{
-    ContrastSpec, Dimmed, DistinctGroup, DistinctSpec, Drawn, Exclusion, Hovered, MoreSpec,
-    PlainLines, Restricted, StrongerText,
+    ContrastSpec, Dimmed, DistinctGroup, DistinctSpec, Drawn, Exclusion, Hovered, List, MoreSpec,
+    PlainLines, Restricted, StrongerText, Text,
 };
 
 /// The rules of a theme file: the `contrast` rule and every `distinct` rule.
@@ -28,7 +28,7 @@ pub struct Rules {
     /// The `contrast` rule.
     pub contrast: ContrastSpec,
     /// The `distinct` rules.
-    pub distinct: Vec<DistinctSpec>,
+    pub distinct: List<DistinctSpec>,
 }
 
 #[cfg(test)]
@@ -37,7 +37,7 @@ mod tests {
 
     #[test]
     fn the_rules_of_the_base_file_are_written_into_the_crate() {
-        let rules = base_rules().expect("the generated text is JSON");
+        let rules = base_rules();
         assert!((rules.contrast.min - 4.5).abs() < f64::EPSILON);
         assert!(rules.contrast.text.iter().any(|name| name == "fg"));
         assert!(!rules.distinct.is_empty());

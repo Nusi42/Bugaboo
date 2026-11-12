@@ -211,13 +211,13 @@ fn text_pairs(spec: &ContrastSpec, theme: &str, colors: &dyn ThemeColors, found:
 /// Lines that people have to see, and fills that carry no text: as they are and with more contrast. A
 /// line that is faded is checked as it is seen: its color mixed with the surface behind it.
 fn line_pairs(spec: &ContrastSpec, colors: &dyn ThemeColors, found: &mut Evaluation) {
-    for lines in &spec.plain_lines {
+    for lines in spec.plain_lines.iter() {
         let opacity = match lines.faded_by.as_deref() {
             None => 1.0,
             Some(name) => {
                 let Some(opacity) = colors.opacity(name) else {
                     found.problems.push(Problem::NoOpacityForLines {
-                        colors: lines.colors.clone(),
+                        colors: lines.colors.iter().map(ToString::to_string).collect(),
                         name: name.to_owned(),
                     });
                     continue;
@@ -225,8 +225,8 @@ fn line_pairs(spec: &ContrastSpec, colors: &dyn ThemeColors, found: &mut Evaluat
                 opacity
             }
         };
-        for line in &lines.colors {
-            for surface in &lines.on {
+        for line in lines.colors.iter() {
+            for surface in lines.on.iter() {
                 for mode in [Mode::Usual, Mode::MoreContrast] {
                     let (Some(a), Some(b)) =
                         (pick(colors, mode, line), pick(colors, mode, surface))
@@ -237,9 +237,9 @@ fn line_pairs(spec: &ContrastSpec, colors: &dyn ThemeColors, found: &mut Evaluat
                     found.results.push(PairResult {
                         rule: Rule::Drawn(lines.drawn),
                         mode,
-                        first: line.clone(),
-                        second: surface.clone(),
-                        place: line.clone(),
+                        first: line.to_string(),
+                        second: surface.to_string(),
+                        place: line.to_string(),
                         value: ratio,
                         limit: lines.min,
                         rating: plain_rating(ratio >= lines.min),
@@ -285,8 +285,8 @@ fn more_pairs(spec: &ContrastSpec, theme: &str, colors: &dyn ThemeColors, found:
             check(text, background, more.min_text, Rule::MoreText);
         }
     }
-    for line in &more.lines {
-        for surface in &more.line_on {
+    for line in more.lines.iter() {
+        for surface in more.line_on.iter() {
             check(line, surface, more.min_line, Rule::MoreLine);
         }
     }
@@ -295,12 +295,12 @@ fn more_pairs(spec: &ContrastSpec, theme: &str, colors: &dyn ThemeColors, found:
 /// A fill that is brightened while it is pointed at brightens its text too: the pair is checked as it
 /// is seen then, as it is and with more contrast.
 fn hovered_pairs(spec: &ContrastSpec, colors: &dyn ThemeColors, found: &mut Evaluation) {
-    for rule in &spec.hovered {
+    for rule in spec.hovered.iter() {
         let Some(brightness) = colors.number(&rule.brightness) else {
             found.problems.push(Problem::NoNumber {
-                text: rule.text.clone(),
-                on: rule.on.clone(),
-                brightness: rule.brightness.clone(),
+                text: rule.text.to_string(),
+                on: rule.on.to_string(),
+                brightness: rule.brightness.to_string(),
             });
             continue;
         };
@@ -317,9 +317,9 @@ fn hovered_pairs(spec: &ContrastSpec, colors: &dyn ThemeColors, found: &mut Eval
             found.results.push(PairResult {
                 rule: Rule::Hovered { brightness },
                 mode,
-                first: rule.text.clone(),
-                second: rule.on.clone(),
-                place: rule.text.clone(),
+                first: rule.text.to_string(),
+                second: rule.on.to_string(),
+                place: rule.text.to_string(),
                 value: ratio,
                 limit: min,
                 rating: plain_rating(ratio >= min),
@@ -330,9 +330,9 @@ fn hovered_pairs(spec: &ContrastSpec, colors: &dyn ThemeColors, found: &mut Eval
 
 /// Words that need more than the usual ratio on some fills.
 fn stronger_pairs(spec: &ContrastSpec, colors: &dyn ThemeColors, found: &mut Evaluation) {
-    for rule in &spec.stronger {
-        for text in &rule.text {
-            for fill in &rule.on {
+    for rule in spec.stronger.iter() {
+        for text in rule.text.iter() {
+            for fill in rule.on.iter() {
                 let (Some(a), Some(b)) = (colors.color(text), colors.color(fill)) else {
                     continue;
                 };
@@ -340,9 +340,9 @@ fn stronger_pairs(spec: &ContrastSpec, colors: &dyn ThemeColors, found: &mut Eva
                 found.results.push(PairResult {
                     rule: Rule::Stronger,
                     mode: Mode::Usual,
-                    first: text.clone(),
-                    second: fill.clone(),
-                    place: text.clone(),
+                    first: text.to_string(),
+                    second: fill.to_string(),
+                    place: text.to_string(),
                     value: ratio,
                     limit: rule.min,
                     rating: plain_rating(ratio >= rule.min),
@@ -356,10 +356,10 @@ fn stronger_pairs(spec: &ContrastSpec, colors: &dyn ThemeColors, found: &mut Eva
 /// page and over its text. The sheet must stand out from the dimmed page, and the text of the page
 /// must be dim against it (M5 exit R4).
 fn dimmed_pairs(spec: &ContrastSpec, colors: &dyn ThemeColors, found: &mut Evaluation) {
-    for rule in &spec.dimmed {
+    for rule in spec.dimmed.iter() {
         let Some(opacity) = colors.opacity(&rule.opacity) else {
             found.problems.push(Problem::NoOpacityForDimmed {
-                name: rule.opacity.clone(),
+                name: rule.opacity.to_string(),
             });
             continue;
         };
@@ -382,9 +382,9 @@ fn dimmed_pairs(spec: &ContrastSpec, colors: &dyn ThemeColors, found: &mut Evalu
         found.results.push(PairResult {
             rule: Rule::DimmedSheet,
             mode: Mode::Usual,
-            first: rule.sheet.clone(),
-            second: rule.scrim.clone(),
-            place: rule.scrim.clone(),
+            first: rule.sheet.to_string(),
+            second: rule.scrim.to_string(),
+            place: rule.scrim.to_string(),
             value: sheet_ratio,
             limit: least,
             rating: plain_rating(sheet_ratio >= least),
@@ -393,9 +393,9 @@ fn dimmed_pairs(spec: &ContrastSpec, colors: &dyn ThemeColors, found: &mut Evalu
         found.results.push(PairResult {
             rule: Rule::DimmedText,
             mode: Mode::Usual,
-            first: rule.text.clone(),
-            second: rule.scrim.clone(),
-            place: rule.scrim.clone(),
+            first: rule.text.to_string(),
+            second: rule.scrim.to_string(),
+            place: rule.scrim.to_string(),
             value: text_ratio,
             limit: rule.max_text,
             rating: plain_rating(text_ratio <= rule.max_text),
@@ -424,9 +424,9 @@ fn distinct_pairs(rule: &DistinctSpec, colors: &dyn ThemeColors, found: &mut Eva
             push(Rule::DistinctRatio, first, second, value, min, value >= min);
         }
     };
-    for group in &rule.groups {
+    for group in rule.groups.iter() {
         for (index, state) in group.states.iter().enumerate() {
-            for surface in &group.surfaces {
+            for surface in group.surfaces.iter() {
                 ratio(state, surface, rule.min_against_surfaces);
             }
             for other in &group.states[index + 1..] {
@@ -447,10 +447,10 @@ fn distinct_pairs(rule: &DistinctSpec, colors: &dyn ThemeColors, found: &mut Eva
             );
         }
     };
-    for group in &rule.groups {
+    for group in rule.groups.iter() {
         for (index, state) in group.states.iter().enumerate() {
             if let Some(min) = rule.min_delta_e_against_surfaces {
-                for surface in &group.surfaces {
+                for surface in group.surfaces.iter() {
                     difference(state, surface, min);
                 }
             }
@@ -462,7 +462,7 @@ fn distinct_pairs(rule: &DistinctSpec, colors: &dyn ThemeColors, found: &mut Eva
         }
     }
     if let Some(max) = rule.max_chroma_of_states {
-        for state in rule.groups.iter().flat_map(|group| &group.states) {
+        for state in rule.groups.iter().flat_map(|group| group.states.iter()) {
             if let Some(value) = colors.color(state) {
                 let chroma = chroma_of(value);
                 push(

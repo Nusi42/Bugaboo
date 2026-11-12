@@ -134,8 +134,7 @@ pub struct RatedPair {
 /// has that ID.
 #[must_use]
 pub fn readability(extends: &str, values: &OwnValues) -> Option<Vec<RatedPair>> {
-    let rules = base_rules().ok()?;
-    let rated = rate_own(extends, values, &rules)?;
+    let rated = rate_own(extends, values, base_rules())?;
     Some(
         rated
             .results

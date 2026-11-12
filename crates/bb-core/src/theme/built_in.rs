@@ -423,6 +423,13 @@ pub(super) const BUILT_IN: &[BuiltIn] = &[
 /// The shadow token an own theme may set, as parts.
 pub(super) const SHADOW_TOKEN: &str = "shadow";
 
+/// The most layers a shadow of an own theme has (`own-layers`).
+pub const SHADOW_LAYERS_MOST: usize = 2;
+
+/// The largest offset, blur or spread of a layer of a shadow of an own theme, in pixels
+/// (`own-pixels`).
+pub const SHADOW_PIXELS_MOST: i32 = 64;
+
 /// The corner radii an own theme may set, in pixels.
 pub(super) const RADII: &[RadiusToken] = &[
     RadiusToken {

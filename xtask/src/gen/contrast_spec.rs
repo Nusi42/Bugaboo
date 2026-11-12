@@ -10,15 +10,16 @@ pub(crate) use bb_core::contrast::{
     ContrastSpec, Dimmed, DistinctGroup, DistinctSpec, Drawn, Exclusion, Hovered, MoreSpec,
     PlainLines, Restricted, StrongerText,
 };
+use bb_core::contrast::{List, Text};
 
 use super::kdl_reader::Node;
 
 fn read_hovered(node: Node<'_>) -> anyhow::Result<Hovered> {
     reason(node)?;
     Ok(Hovered {
-        text: node.child("text")?.only_arg()?,
-        on: node.child("on")?.only_arg()?,
-        brightness: node.required_prop("brightness")?,
+        text: node.child("text")?.only_arg()?.into(),
+        on: node.child("on")?.only_arg()?.into(),
+        brightness: node.required_prop("brightness")?.into(),
         min: node.number_prop("min")?,
         min_more: node.number_prop("min-more")?,
     })
@@ -27,11 +28,11 @@ fn read_hovered(node: Node<'_>) -> anyhow::Result<Hovered> {
 fn read_dimmed(node: Node<'_>) -> anyhow::Result<Dimmed> {
     reason(node)?;
     Ok(Dimmed {
-        scrim: node.required_prop("scrim")?,
-        opacity: node.required_prop("opacity")?,
-        page: node.required_prop("page")?,
-        text: node.required_prop("text")?,
-        sheet: node.required_prop("sheet")?,
+        scrim: node.required_prop("scrim")?.into(),
+        opacity: node.required_prop("opacity")?.into(),
+        page: node.required_prop("page")?.into(),
+        text: node.required_prop("text")?.into(),
+        sheet: node.required_prop("sheet")?.into(),
         min_sheet_light: node.number_prop("min-sheet-light")?,
         min_sheet_dark: node.number_prop("min-sheet-dark")?,
         max_text: node.number_prop("max-text")?,
@@ -42,15 +43,15 @@ fn read_stronger(node: Node<'_>) -> anyhow::Result<StrongerText> {
     reason(node)?;
     Ok(StrongerText {
         min: node.number_prop("min")?,
-        text: node.words("text")?,
-        on: node.words("on")?,
+        text: texts(node.words("text")?),
+        on: texts(node.words("on")?),
     })
 }
 
 fn group(node: Node<'_>) -> anyhow::Result<DistinctGroup> {
     Ok(DistinctGroup {
-        states: node.words("states")?,
-        surfaces: node.words("surfaces")?,
+        states: texts(node.words("states")?),
+        surfaces: texts(node.words("surfaces")?),
     })
 }
 
@@ -59,9 +60,9 @@ fn read_more(node: Node<'_>) -> anyhow::Result<MoreSpec> {
     Ok(MoreSpec {
         min_text: node.number_prop("min-text")?,
         min_line: node.number_prop("min-line")?,
-        text: node.words("text")?,
-        lines: node.words("lines")?,
-        line_on: node.words("line-on")?,
+        text: texts(node.words("text")?),
+        lines: texts(node.words("lines")?),
+        line_on: texts(node.words("line-on")?),
     })
 }
 
@@ -98,7 +99,7 @@ pub(crate) fn distinct(node: Node<'_>) -> anyhow::Result<DistinctSpec> {
         );
     }
     Ok(DistinctSpec {
-        groups,
+        groups: groups.into(),
         min_against_surfaces: optional_number(node, "min-against-surfaces")?.unwrap_or(0.0),
         min_between_states: optional_number(node, "min-between-states")?.unwrap_or(0.0),
         min_delta_e_against_surfaces: optional_number(node, "min-delta-e-against-surfaces")?,
@@ -122,23 +123,26 @@ pub(crate) fn contrast(node: Node<'_>) -> anyhow::Result<ContrastSpec> {
             "restricted" => {
                 reason(child)?;
                 restricted.push(Restricted {
-                    text: child.only_arg()?,
-                    on: child
-                        .required_prop("on")
-                        .map(|on| on.split_whitespace().map(str::to_owned).collect())?,
+                    text: child.only_arg()?.into(),
+                    on: child.required_prop("on").map(|on| {
+                        on.split_whitespace()
+                            .map(|word| Text::from(word.to_owned()))
+                            .collect()
+                    })?,
                 });
             }
             "exclude" => {
                 reason(child)?;
                 exclusions.push(Exclusion {
-                    text: child.words("text")?,
-                    on: child.words("on")?,
+                    text: texts(child.words("text")?),
+                    on: texts(child.words("on")?),
                     themes: child
                         .children()
                         .iter()
                         .find(|inner| inner.name() == "themes")
                         .map(Node::args)
                         .transpose()?
+                        .map(texts)
                         .unwrap_or_default(),
                 });
             }
@@ -155,9 +159,9 @@ pub(crate) fn contrast(node: Node<'_>) -> anyhow::Result<ContrastSpec> {
                         Drawn::Line
                     },
                     min: child.number_prop("min")?,
-                    colors: child.words("colors")?,
-                    on: child.words("on")?,
-                    faded_by: child.prop("faded-by")?,
+                    colors: texts(child.words("colors")?),
+                    on: texts(child.words("on")?),
+                    faded_by: child.prop("faded-by")?.map(Text::from),
                 });
             }
             "hovered" => hovered.push(read_hovered(child)?),
@@ -169,16 +173,16 @@ pub(crate) fn contrast(node: Node<'_>) -> anyhow::Result<ContrastSpec> {
     }
     Ok(ContrastSpec {
         min: node.number_prop("min")?,
-        plain_lines,
-        hovered,
-        stronger,
-        dimmed,
+        plain_lines: plain_lines.into(),
+        hovered: hovered.into(),
+        stronger: stronger.into(),
+        dimmed: dimmed.into(),
         more: more.ok_or_else(|| node.problem("needs a `more` rule"))?,
-        text: node.words("text")?,
-        backgrounds: node.words("backgrounds")?,
-        restricted,
-        exclusions,
-        non_text,
+        text: texts(node.words("text")?),
+        backgrounds: texts(node.words("backgrounds")?),
+        restricted: restricted.into(),
+        exclusions: exclusions.into(),
+        non_text: texts(non_text),
     })
 }
 
@@ -220,4 +224,9 @@ pub(crate) fn with_faded_lines(text: &str) -> String {
         FADED_LINES_EXAMPLE,
         1,
     )
+}
+
+/// The words of a line as a list of names of the rules.
+fn texts(words: Vec<String>) -> List<Text> {
+    words.into_iter().map(Text::from).collect()
 }

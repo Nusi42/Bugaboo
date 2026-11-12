@@ -203,7 +203,10 @@ impl Builder {
         let props = node.props()?;
         token.own = own_of(node, &token, &props)?;
         for (key, value) in props {
-            if matches!(key.as_str(), "own" | "own-min" | "own-max") {
+            if matches!(
+                key.as_str(),
+                "own" | "own-min" | "own-max" | "own-layers" | "own-pixels"
+            ) {
                 continue;
             }
             if key == "run-time" {
@@ -293,7 +296,8 @@ impl Builder {
     }
 }
 
-/// What an own theme may set of a token, from `own`, `own-min` and `own-max` on its line.
+/// What an own theme may set of a token, from `own`, `own-min`, `own-max`, `own-layers` and
+/// `own-pixels` on its line.
 fn own_of(node: Node<'_>, token: &Token, props: &[(String, String)]) -> anyhow::Result<Own> {
     let prop = |name: &str| {
         props
@@ -310,11 +314,18 @@ fn own_of(node: Node<'_>, token: &Token, props: &[(String, String)]) -> anyhow::
             })
             .transpose()
     };
+    let shadow = (pixels("own-layers")?, pixels("own-pixels")?);
     match (prop("own"), pixels("own-min")?, pixels("own-max")?) {
-        (None, None, None) => Ok(Own::No),
-        (Some("true"), None, None) if matches!(token.kind, TokenKind::Shadow | TokenKind::Font) => {
+        (None, None, None) if shadow == (None, None) => Ok(Own::No),
+        (Some("true"), None, None) if token.kind == TokenKind::Font && shadow == (None, None) => {
             Ok(Own::Yes)
         }
+        (Some("true"), None, None) if token.kind == TokenKind::Shadow => match shadow {
+            (Some(layers), Some(pixels)) if layers > 0 => Ok(Own::Shadow { layers, pixels }),
+            _ => Err(node.problem(
+                "a shadow open to an own theme says how many layers it may have (`own-layers`) and how far each part may reach (`own-pixels`)",
+            )),
+        },
         (None, Some(min), Some(max))
             if token.kind == TokenKind::Size
                 && min <= max
@@ -327,7 +338,7 @@ fn own_of(node: Node<'_>, token: &Token, props: &[(String, String)]) -> anyhow::
             Ok(Own::Pixels { min, max })
         }
         _ => Err(node.problem(
-            "`own=\"true\"` opens a shadow or a font stack to an own theme; `own-min` and `own-max` open a size in pixels, and its value lies between them",
+            "`own=\"true\"` opens a shadow (with `own-layers` and `own-pixels`) or a font stack to an own theme; `own-min` and `own-max` open a size in pixels, and its value lies between them",
         )),
     }
 }

@@ -3,7 +3,7 @@
 
 use std::fmt::Write as _;
 
-use super::theme_file::{Own, ThemeFile, ThemeKind, TokenKind};
+use super::theme_file::{LightOrDark, Own, ThemeFile, TokenKind};
 
 /// Where the data is written.
 pub(super) const OUTPUT: &str = "crates/bb-core/src/theme/built_in.rs";
@@ -24,7 +24,7 @@ pub(super) fn rust(file: &ThemeFile, generated_by: &str) -> String {
             out,
             "    BuiltIn {{\n        id: {:?},\n        light: {},\n        colors: &[",
             theme.name,
-            theme.kind == ThemeKind::Light
+            theme.kind == LightOrDark::Light
         );
         for token in file.colors() {
             if let Some(value) = token.in_theme(&theme.name) {
@@ -39,20 +39,20 @@ pub(super) fn rust(file: &ThemeFile, generated_by: &str) -> String {
         let shadow = file
             .tokens
             .iter()
-            .find(|token| token.kind == TokenKind::Shadow && token.own == Own::Yes)
+            .find(|token| matches!(token.own, Own::Shadow { .. }))
             .and_then(|token| token.in_theme(&theme.name))
             .unwrap_or_default();
         let _ = writeln!(out, "        ],\n        shadow: {shadow:?},\n    }},");
     }
     out.push_str("];\n");
-    let shadow = file
-        .tokens
-        .iter()
-        .find(|token| token.kind == TokenKind::Shadow && token.own == Own::Yes);
+    let shadow = file.tokens.iter().find_map(|token| match token.own {
+        Own::Shadow { layers, pixels } => Some((token.name.as_str(), layers, pixels)),
+        _ => None,
+    });
+    let (name, layers, pixels) = shadow.unwrap_or_default();
     let _ = write!(
         out,
-        "\n/// The shadow token an own theme may set, as parts.\npub(super) const SHADOW_TOKEN: &str = {:?};\n",
-        shadow.map_or("", |token| token.name.as_str())
+        "\n/// The shadow token an own theme may set, as parts.\npub(super) const SHADOW_TOKEN: &str = {name:?};\n\n/// The most layers a shadow of an own theme has (`own-layers`).\npub const SHADOW_LAYERS_MOST: usize = {layers};\n\n/// The largest offset, blur or spread of a layer of a shadow of an own theme, in pixels\n/// (`own-pixels`).\npub const SHADOW_PIXELS_MOST: i32 = {pixels};\n"
     );
     out.push_str("\n/// The corner radii an own theme may set, in pixels.\npub(super) const RADII: &[RadiusToken] = &[\n");
     for token in &file.tokens {

@@ -2,782 +2,666 @@
 //!
 //! The contrast rules of the base theme file (`contrast` and `distinct`).
 
-use super::Rules;
+use std::borrow::Cow;
 
-const RULES: &str = r#"{
-  "contrast": {
-    "min": 4.5,
-    "plain_lines": [
-      {
-        "drawn": "Line",
-        "min": 3.0,
-        "colors": [
-          "border-control"
-        ],
-        "on": [
-          "bg-canvas",
-          "bg-surface",
-          "bg-raised",
-          "bg-sunken"
-        ],
-        "faded_by": null
-      },
-      {
-        "drawn": "Line",
-        "min": 3.0,
-        "colors": [
-          "area-issues",
-          "area-time",
-          "area-agents",
-          "area-settings",
-          "area-issues-open",
-          "area-time-open",
-          "area-agents-open",
-          "area-settings-open"
-        ],
-        "on": [
-          "bg-canvas",
-          "bg-surface",
-          "bg-raised",
-          "bg-hover",
-          "area-issues-soft",
-          "area-time-soft",
-          "area-agents-soft",
-          "area-settings-soft"
-        ],
-        "faded_by": null
-      },
-      {
-        "drawn": "Line",
-        "min": 3.0,
-        "colors": [
-          "accent",
-          "border-control",
-          "hover-line",
-          "edge-high",
-          "danger"
-        ],
-        "on": [
-          "tint-ns",
-          "tint-ip",
-          "tint-done"
-        ],
-        "faded_by": null
-      },
-      {
-        "drawn": "Line",
-        "min": 1.5,
-        "colors": [
-          "divider"
-        ],
-        "on": [
-          "bg-canvas",
-          "bg-surface",
-          "bg-raised",
-          "tint-ns",
-          "tint-ip",
-          "tint-done"
-        ],
-        "faded_by": null
-      },
-      {
-        "drawn": "Line",
-        "min": 3.0,
-        "colors": [
-          "edge-high",
-          "hover-line"
-        ],
-        "on": [
-          "bg-canvas",
-          "bg-surface",
-          "bg-raised"
-        ],
-        "faded_by": null
-      },
-      {
-        "drawn": "Line",
-        "min": 3.0,
-        "colors": [
-          "fg-muted"
-        ],
-        "on": [
-          "bg-sunken"
-        ],
-        "faded_by": null
-      },
-      {
-        "drawn": "Line",
-        "min": 3.0,
-        "colors": [
-          "cat1-fg",
-          "cat2-fg",
-          "cat3-fg",
-          "cat4-fg",
-          "cat5-fg",
-          "cat6-fg",
-          "cat7-fg",
-          "cat8-fg",
-          "cat9-fg",
-          "cat10-fg",
-          "cat11-fg",
-          "cat12-fg"
-        ],
-        "on": [
-          "bg-canvas",
-          "bg-surface",
-          "bg-raised"
-        ],
-        "faded_by": null
-      },
-      {
-        "drawn": "Fill",
-        "min": 3.0,
-        "colors": [
-          "cat1-mark",
-          "cat2-mark",
-          "cat3-mark",
-          "cat4-mark",
-          "cat5-mark",
-          "cat6-mark",
-          "cat7-mark",
-          "cat8-mark",
-          "cat9-mark",
-          "cat10-mark",
-          "cat11-mark",
-          "cat12-mark"
-        ],
-        "on": [
-          "bg-canvas",
-          "bg-surface",
-          "bg-raised"
-        ],
-        "faded_by": null
-      }
-    ],
-    "hovered": [
-      {
-        "text": "on-accent",
-        "on": "accent",
-        "brightness": "hover-brightness",
-        "min": 4.5,
-        "min_more": 7.0
-      }
-    ],
-    "stronger": [
-      {
-        "min": 5.0,
-        "text": [
-          "fg-muted",
-          "fg-subtle"
-        ],
-        "on": [
-          "tint-ns",
-          "tint-ip",
-          "tint-done"
-        ]
-      }
-    ],
-    "dimmed": [
-      {
-        "scrim": "scrim",
-        "opacity": "opacity-scrim",
-        "page": "bg-canvas",
-        "text": "fg",
-        "sheet": "bg-raised",
-        "min_sheet_light": 4.0,
-        "min_sheet_dark": 1.1,
-        "max_text": 1.5
-      }
-    ],
-    "more": {
-      "min_text": 7.0,
-      "min_line": 3.0,
-      "text": [
-        "fg",
-        "fg-muted",
-        "fg-subtle",
-        "accent-fg",
-        "danger",
-        "warning",
-        "success",
-        "st-ns",
-        "st-ip",
-        "st-done",
-        "on-accent",
-        "on-disabled"
-      ],
-      "lines": [
-        "border",
-        "border-subtle"
-      ],
-      "line_on": [
-        "bg-canvas",
-        "bg-surface",
-        "bg-raised"
-      ]
-    },
-    "text": [
-      "area-ink",
-      "fg",
-      "fg-muted",
-      "fg-subtle",
-      "accent-fg",
-      "on-accent",
-      "on-disabled",
-      "danger",
-      "warning",
-      "success",
-      "st-ns",
-      "st-ip",
-      "st-done",
-      "cat1-fg",
-      "cat2-fg",
-      "cat3-fg",
-      "cat4-fg",
-      "cat5-fg",
-      "cat6-fg",
-      "cat7-fg",
-      "cat8-fg",
-      "cat9-fg",
-      "cat10-fg",
-      "cat11-fg",
-      "cat12-fg"
-    ],
-    "backgrounds": [
-      "bg-canvas",
-      "bg-surface",
-      "bg-raised",
-      "bg-sunken",
-      "bg-hover",
-      "bg-selected",
-      "accent",
-      "accent-soft",
-      "danger-soft",
-      "warning-soft",
-      "success-soft",
-      "st-ns-soft",
-      "st-ip-soft",
-      "st-done-soft",
-      "tint-ns",
-      "tint-ip",
-      "tint-done",
-      "disabled-fill",
-      "cat1-bg",
-      "cat2-bg",
-      "cat3-bg",
-      "cat4-bg",
-      "cat5-bg",
-      "cat6-bg",
-      "cat7-bg",
-      "cat8-bg",
-      "cat9-bg",
-      "cat10-bg",
-      "cat11-bg",
-      "cat12-bg",
-      "area-issues-soft",
-      "area-time-soft",
-      "area-agents-soft",
-      "area-settings-soft",
-      "area-issues-bar",
-      "area-time-bar",
-      "area-agents-bar",
-      "area-settings-bar"
-    ],
-    "restricted": [
-      {
-        "text": "on-disabled",
-        "on": [
-          "disabled-fill"
-        ]
-      },
-      {
-        "text": "area-ink",
-        "on": [
-          "area-issues-soft",
-          "area-time-soft",
-          "area-agents-soft",
-          "area-settings-soft"
-        ]
-      },
-      {
-        "text": "on-accent",
-        "on": [
-          "accent",
-          "danger"
-        ]
-      },
-      {
-        "text": "cat1-fg",
-        "on": [
-          "cat1-bg"
-        ]
-      },
-      {
-        "text": "cat2-fg",
-        "on": [
-          "cat2-bg"
-        ]
-      },
-      {
-        "text": "cat3-fg",
-        "on": [
-          "cat3-bg"
-        ]
-      },
-      {
-        "text": "cat4-fg",
-        "on": [
-          "cat4-bg"
-        ]
-      },
-      {
-        "text": "cat5-fg",
-        "on": [
-          "cat5-bg"
-        ]
-      },
-      {
-        "text": "cat6-fg",
-        "on": [
-          "cat6-bg"
-        ]
-      },
-      {
-        "text": "cat7-fg",
-        "on": [
-          "cat7-bg"
-        ]
-      },
-      {
-        "text": "cat8-fg",
-        "on": [
-          "cat8-bg"
-        ]
-      },
-      {
-        "text": "cat9-fg",
-        "on": [
-          "cat9-bg"
-        ]
-      },
-      {
-        "text": "cat10-fg",
-        "on": [
-          "cat10-bg"
-        ]
-      },
-      {
-        "text": "cat11-fg",
-        "on": [
-          "cat11-bg"
-        ]
-      },
-      {
-        "text": "cat12-fg",
-        "on": [
-          "cat12-bg"
-        ]
-      }
-    ],
-    "exclusions": [
-      {
-        "text": [
-          "fg",
-          "fg-*",
-          "accent-fg",
-          "danger",
-          "warning",
-          "success",
-          "st-ns",
-          "st-ip",
-          "st-done"
-        ],
-        "on": [
-          "accent"
-        ],
-        "themes": []
-      },
-      {
-        "text": [
-          "fg",
-          "fg-*",
-          "accent-fg",
-          "danger",
-          "warning",
-          "success",
-          "st-ns",
-          "st-ip",
-          "st-done"
-        ],
-        "on": [
-          "disabled-fill"
-        ],
-        "themes": []
-      },
-      {
-        "text": [
-          "fg-subtle",
-          "danger",
-          "warning",
-          "success",
-          "st-ns",
-          "st-ip",
-          "st-done"
-        ],
-        "on": [
-          "area-*-soft",
-          "area-*-bar"
-        ],
-        "themes": []
-      },
-      {
-        "text": [
-          "fg-subtle"
-        ],
-        "on": [
-          "accent-soft",
-          "danger-soft",
-          "warning-soft",
-          "success-soft",
-          "st-*-soft",
-          "cat*-bg"
-        ],
-        "themes": []
-      },
-      {
-        "text": [
-          "accent-fg"
-        ],
-        "on": [
-          "danger-soft",
-          "warning-soft",
-          "success-soft",
-          "st-*-soft",
-          "cat*-bg"
-        ],
-        "themes": []
-      },
-      {
-        "text": [
-          "danger"
-        ],
-        "on": [
-          "accent-soft",
-          "warning-soft",
-          "success-soft",
-          "st-*-soft",
-          "cat*-bg"
-        ],
-        "themes": []
-      },
-      {
-        "text": [
-          "warning"
-        ],
-        "on": [
-          "accent-soft",
-          "danger-soft",
-          "success-soft",
-          "st-*-soft",
-          "cat*-bg"
-        ],
-        "themes": []
-      },
-      {
-        "text": [
-          "success"
-        ],
-        "on": [
-          "accent-soft",
-          "danger-soft",
-          "warning-soft",
-          "st-*-soft",
-          "cat*-bg"
-        ],
-        "themes": []
-      },
-      {
-        "text": [
-          "st-ns"
-        ],
-        "on": [
-          "accent-soft",
-          "danger-soft",
-          "warning-soft",
-          "success-soft",
-          "st-ip-soft",
-          "st-done-soft",
-          "cat*-bg"
-        ],
-        "themes": []
-      },
-      {
-        "text": [
-          "st-ip"
-        ],
-        "on": [
-          "accent-soft",
-          "danger-soft",
-          "warning-soft",
-          "success-soft",
-          "st-ns-soft",
-          "st-done-soft",
-          "cat*-bg"
-        ],
-        "themes": []
-      },
-      {
-        "text": [
-          "st-done"
-        ],
-        "on": [
-          "accent-soft",
-          "danger-soft",
-          "warning-soft",
-          "success-soft",
-          "st-ns-soft",
-          "st-ip-soft",
-          "cat*-bg"
-        ],
-        "themes": []
-      }
-    ],
-    "non_text": [
-      "border",
-      "border-subtle",
-      "divider",
-      "border-control",
-      "area-issues",
-      "area-time",
-      "area-agents",
-      "area-settings",
-      "area-issues-line",
-      "area-time-line",
-      "area-agents-line",
-      "area-settings-line",
-      "area-issues-open",
-      "area-time-open",
-      "area-agents-open",
-      "area-settings-open",
-      "cue",
-      "cat1-mark",
-      "cat2-mark",
-      "cat3-mark",
-      "cat4-mark",
-      "cat5-mark",
-      "cat6-mark",
-      "cat7-mark",
-      "cat8-mark",
-      "cat9-mark",
-      "cat10-mark",
-      "cat11-mark",
-      "cat12-mark",
-      "edge-high",
-      "hover-line",
-      "scrim"
-    ]
-  },
-  "distinct": [
-    {
-      "groups": [
-        {
-          "states": [
-            "tint-ns",
-            "tint-ip",
-            "tint-done"
-          ],
-          "surfaces": [
-            "bg-canvas",
-            "bg-raised"
-          ]
-        }
-      ],
-      "min_against_surfaces": 0.0,
-      "min_between_states": 0.0,
-      "min_delta_e_against_surfaces": 7.5,
-      "min_delta_e_between_states": 11.0,
-      "max_chroma_of_states": null
-    },
-    {
-      "groups": [
-        {
-          "states": [
-            "tint-ns"
-          ],
-          "surfaces": [
-            "bg-raised"
-          ]
-        }
-      ],
-      "min_against_surfaces": 0.0,
-      "min_between_states": 0.0,
-      "min_delta_e_against_surfaces": null,
-      "min_delta_e_between_states": null,
-      "max_chroma_of_states": 3.0
-    },
-    {
-      "groups": [
-        {
-          "states": [
-            "disabled-fill"
-          ],
-          "surfaces": [
-            "bg-canvas",
-            "bg-surface",
-            "bg-raised",
-            "bg-selected",
-            "accent-soft",
-            "bg-sunken"
-          ]
-        }
-      ],
-      "min_against_surfaces": 0.0,
-      "min_between_states": 0.0,
-      "min_delta_e_against_surfaces": 7.5,
-      "min_delta_e_between_states": null,
-      "max_chroma_of_states": null
-    },
-    {
-      "groups": [
-        {
-          "states": [
-            "cat1-bg",
-            "cat2-bg",
-            "cat3-bg",
-            "cat4-bg",
-            "cat5-bg",
-            "cat6-bg",
-            "cat7-bg",
-            "cat8-bg",
-            "cat9-bg",
-            "cat10-bg",
-            "cat11-bg",
-            "cat12-bg"
-          ],
-          "surfaces": [
-            "bg-canvas",
-            "bg-surface",
-            "bg-raised"
-          ]
-        }
-      ],
-      "min_against_surfaces": 0.0,
-      "min_between_states": 0.0,
-      "min_delta_e_against_surfaces": 7.5,
-      "min_delta_e_between_states": 15.0,
-      "max_chroma_of_states": null
-    },
-    {
-      "groups": [
-        {
-          "states": [
-            "cat1-mark",
-            "cat2-mark",
-            "cat3-mark",
-            "cat4-mark",
-            "cat5-mark",
-            "cat6-mark",
-            "cat7-mark",
-            "cat8-mark",
-            "cat9-mark",
-            "cat10-mark",
-            "cat11-mark",
-            "cat12-mark"
-          ],
-          "surfaces": [
-            "bg-raised"
-          ]
-        }
-      ],
-      "min_against_surfaces": 0.0,
-      "min_between_states": 0.0,
-      "min_delta_e_against_surfaces": null,
-      "min_delta_e_between_states": 25.0,
-      "max_chroma_of_states": null
-    },
-    {
-      "groups": [
-        {
-          "states": [
-            "cat1-mark",
-            "cat7-mark"
-          ],
-          "surfaces": [
-            "bg-raised"
-          ]
-        }
-      ],
-      "min_against_surfaces": 0.0,
-      "min_between_states": 0.0,
-      "min_delta_e_against_surfaces": null,
-      "min_delta_e_between_states": 40.0,
-      "max_chroma_of_states": null
-    },
-    {
-      "groups": [
-        {
-          "states": [
-            "danger",
-            "edge-high"
-          ],
-          "surfaces": [
-            "bg-canvas"
-          ]
-        }
-      ],
-      "min_against_surfaces": 0.0,
-      "min_between_states": 0.0,
-      "min_delta_e_against_surfaces": 30.0,
-      "min_delta_e_between_states": 31.0,
-      "max_chroma_of_states": null
-    },
-    {
-      "groups": [
-        {
-          "states": [
-            "cue"
-          ],
-          "surfaces": [
-            "bg-canvas",
-            "bg-surface",
-            "bg-raised"
-          ]
-        }
-      ],
-      "min_against_surfaces": 0.0,
-      "min_between_states": 0.0,
-      "min_delta_e_against_surfaces": 25.0,
-      "min_delta_e_between_states": null,
-      "max_chroma_of_states": null
-    },
-    {
-      "groups": [
-        {
-          "states": [
-            "bg-hover",
-            "bg-selected"
-          ],
-          "surfaces": [
-            "bg-canvas",
-            "bg-surface",
-            "bg-raised"
-          ]
-        }
-      ],
-      "min_against_surfaces": 1.08,
-      "min_between_states": 1.04,
-      "min_delta_e_against_surfaces": null,
-      "min_delta_e_between_states": null,
-      "max_chroma_of_states": null
-    }
-  ]
-}"#;
+use super::{
+    ContrastSpec, Dimmed, DistinctGroup, DistinctSpec, Drawn, Exclusion, Hovered, MoreSpec,
+    PlainLines, Restricted, Rules, StrongerText,
+};
 
 /// The rules of the base theme file.
-///
-/// # Errors
-///
-/// Never in practice: the text is written by the generator and a test reads it.
-pub fn base_rules() -> Result<Rules, serde_json::Error> {
-    serde_json::from_str(RULES)
+static RULES: Rules = Rules {
+    contrast: ContrastSpec {
+        min: 4.5,
+        plain_lines: Cow::Borrowed(&[
+            PlainLines {
+                drawn: Drawn::Line,
+                min: 3.0,
+                colors: Cow::Borrowed(&[Cow::Borrowed("border-control")]),
+                on: Cow::Borrowed(&[
+                    Cow::Borrowed("bg-canvas"),
+                    Cow::Borrowed("bg-surface"),
+                    Cow::Borrowed("bg-raised"),
+                    Cow::Borrowed("bg-sunken"),
+                ]),
+                faded_by: None,
+            },
+            PlainLines {
+                drawn: Drawn::Line,
+                min: 3.0,
+                colors: Cow::Borrowed(&[
+                    Cow::Borrowed("area-issues"),
+                    Cow::Borrowed("area-time"),
+                    Cow::Borrowed("area-agents"),
+                    Cow::Borrowed("area-settings"),
+                    Cow::Borrowed("area-issues-open"),
+                    Cow::Borrowed("area-time-open"),
+                    Cow::Borrowed("area-agents-open"),
+                    Cow::Borrowed("area-settings-open"),
+                ]),
+                on: Cow::Borrowed(&[
+                    Cow::Borrowed("bg-canvas"),
+                    Cow::Borrowed("bg-surface"),
+                    Cow::Borrowed("bg-raised"),
+                    Cow::Borrowed("bg-hover"),
+                    Cow::Borrowed("area-issues-soft"),
+                    Cow::Borrowed("area-time-soft"),
+                    Cow::Borrowed("area-agents-soft"),
+                    Cow::Borrowed("area-settings-soft"),
+                ]),
+                faded_by: None,
+            },
+            PlainLines {
+                drawn: Drawn::Line,
+                min: 3.0,
+                colors: Cow::Borrowed(&[
+                    Cow::Borrowed("accent"),
+                    Cow::Borrowed("border-control"),
+                    Cow::Borrowed("hover-line"),
+                    Cow::Borrowed("edge-high"),
+                    Cow::Borrowed("danger"),
+                ]),
+                on: Cow::Borrowed(&[
+                    Cow::Borrowed("tint-ns"),
+                    Cow::Borrowed("tint-ip"),
+                    Cow::Borrowed("tint-done"),
+                ]),
+                faded_by: None,
+            },
+            PlainLines {
+                drawn: Drawn::Line,
+                min: 1.5,
+                colors: Cow::Borrowed(&[Cow::Borrowed("divider")]),
+                on: Cow::Borrowed(&[
+                    Cow::Borrowed("bg-canvas"),
+                    Cow::Borrowed("bg-surface"),
+                    Cow::Borrowed("bg-raised"),
+                    Cow::Borrowed("tint-ns"),
+                    Cow::Borrowed("tint-ip"),
+                    Cow::Borrowed("tint-done"),
+                ]),
+                faded_by: None,
+            },
+            PlainLines {
+                drawn: Drawn::Line,
+                min: 3.0,
+                colors: Cow::Borrowed(&[Cow::Borrowed("edge-high"), Cow::Borrowed("hover-line")]),
+                on: Cow::Borrowed(&[
+                    Cow::Borrowed("bg-canvas"),
+                    Cow::Borrowed("bg-surface"),
+                    Cow::Borrowed("bg-raised"),
+                ]),
+                faded_by: None,
+            },
+            PlainLines {
+                drawn: Drawn::Line,
+                min: 3.0,
+                colors: Cow::Borrowed(&[Cow::Borrowed("fg-muted")]),
+                on: Cow::Borrowed(&[Cow::Borrowed("bg-sunken")]),
+                faded_by: None,
+            },
+            PlainLines {
+                drawn: Drawn::Line,
+                min: 3.0,
+                colors: Cow::Borrowed(&[
+                    Cow::Borrowed("cat1-fg"),
+                    Cow::Borrowed("cat2-fg"),
+                    Cow::Borrowed("cat3-fg"),
+                    Cow::Borrowed("cat4-fg"),
+                    Cow::Borrowed("cat5-fg"),
+                    Cow::Borrowed("cat6-fg"),
+                    Cow::Borrowed("cat7-fg"),
+                    Cow::Borrowed("cat8-fg"),
+                    Cow::Borrowed("cat9-fg"),
+                    Cow::Borrowed("cat10-fg"),
+                    Cow::Borrowed("cat11-fg"),
+                    Cow::Borrowed("cat12-fg"),
+                ]),
+                on: Cow::Borrowed(&[
+                    Cow::Borrowed("bg-canvas"),
+                    Cow::Borrowed("bg-surface"),
+                    Cow::Borrowed("bg-raised"),
+                ]),
+                faded_by: None,
+            },
+            PlainLines {
+                drawn: Drawn::Fill,
+                min: 3.0,
+                colors: Cow::Borrowed(&[
+                    Cow::Borrowed("cat1-mark"),
+                    Cow::Borrowed("cat2-mark"),
+                    Cow::Borrowed("cat3-mark"),
+                    Cow::Borrowed("cat4-mark"),
+                    Cow::Borrowed("cat5-mark"),
+                    Cow::Borrowed("cat6-mark"),
+                    Cow::Borrowed("cat7-mark"),
+                    Cow::Borrowed("cat8-mark"),
+                    Cow::Borrowed("cat9-mark"),
+                    Cow::Borrowed("cat10-mark"),
+                    Cow::Borrowed("cat11-mark"),
+                    Cow::Borrowed("cat12-mark"),
+                ]),
+                on: Cow::Borrowed(&[
+                    Cow::Borrowed("bg-canvas"),
+                    Cow::Borrowed("bg-surface"),
+                    Cow::Borrowed("bg-raised"),
+                ]),
+                faded_by: None,
+            },
+        ]),
+        hovered: Cow::Borrowed(&[Hovered {
+            text: Cow::Borrowed("on-accent"),
+            on: Cow::Borrowed("accent"),
+            brightness: Cow::Borrowed("hover-brightness"),
+            min: 4.5,
+            min_more: 7.0,
+        }]),
+        stronger: Cow::Borrowed(&[StrongerText {
+            min: 5.0,
+            text: Cow::Borrowed(&[Cow::Borrowed("fg-muted"), Cow::Borrowed("fg-subtle")]),
+            on: Cow::Borrowed(&[
+                Cow::Borrowed("tint-ns"),
+                Cow::Borrowed("tint-ip"),
+                Cow::Borrowed("tint-done"),
+            ]),
+        }]),
+        dimmed: Cow::Borrowed(&[Dimmed {
+            scrim: Cow::Borrowed("scrim"),
+            opacity: Cow::Borrowed("opacity-scrim"),
+            page: Cow::Borrowed("bg-canvas"),
+            text: Cow::Borrowed("fg"),
+            sheet: Cow::Borrowed("bg-raised"),
+            min_sheet_light: 4.0,
+            min_sheet_dark: 1.1,
+            max_text: 1.5,
+        }]),
+        more: MoreSpec {
+            min_text: 7.0,
+            min_line: 3.0,
+            text: Cow::Borrowed(&[
+                Cow::Borrowed("fg"),
+                Cow::Borrowed("fg-muted"),
+                Cow::Borrowed("fg-subtle"),
+                Cow::Borrowed("accent-fg"),
+                Cow::Borrowed("danger"),
+                Cow::Borrowed("warning"),
+                Cow::Borrowed("success"),
+                Cow::Borrowed("st-ns"),
+                Cow::Borrowed("st-ip"),
+                Cow::Borrowed("st-done"),
+                Cow::Borrowed("on-accent"),
+                Cow::Borrowed("on-disabled"),
+            ]),
+            lines: Cow::Borrowed(&[Cow::Borrowed("border"), Cow::Borrowed("border-subtle")]),
+            line_on: Cow::Borrowed(&[
+                Cow::Borrowed("bg-canvas"),
+                Cow::Borrowed("bg-surface"),
+                Cow::Borrowed("bg-raised"),
+            ]),
+        },
+        text: Cow::Borrowed(&[
+            Cow::Borrowed("area-ink"),
+            Cow::Borrowed("fg"),
+            Cow::Borrowed("fg-muted"),
+            Cow::Borrowed("fg-subtle"),
+            Cow::Borrowed("accent-fg"),
+            Cow::Borrowed("on-accent"),
+            Cow::Borrowed("on-disabled"),
+            Cow::Borrowed("danger"),
+            Cow::Borrowed("warning"),
+            Cow::Borrowed("success"),
+            Cow::Borrowed("st-ns"),
+            Cow::Borrowed("st-ip"),
+            Cow::Borrowed("st-done"),
+            Cow::Borrowed("cat1-fg"),
+            Cow::Borrowed("cat2-fg"),
+            Cow::Borrowed("cat3-fg"),
+            Cow::Borrowed("cat4-fg"),
+            Cow::Borrowed("cat5-fg"),
+            Cow::Borrowed("cat6-fg"),
+            Cow::Borrowed("cat7-fg"),
+            Cow::Borrowed("cat8-fg"),
+            Cow::Borrowed("cat9-fg"),
+            Cow::Borrowed("cat10-fg"),
+            Cow::Borrowed("cat11-fg"),
+            Cow::Borrowed("cat12-fg"),
+        ]),
+        backgrounds: Cow::Borrowed(&[
+            Cow::Borrowed("bg-canvas"),
+            Cow::Borrowed("bg-surface"),
+            Cow::Borrowed("bg-raised"),
+            Cow::Borrowed("bg-sunken"),
+            Cow::Borrowed("bg-hover"),
+            Cow::Borrowed("bg-selected"),
+            Cow::Borrowed("accent"),
+            Cow::Borrowed("accent-soft"),
+            Cow::Borrowed("danger-soft"),
+            Cow::Borrowed("warning-soft"),
+            Cow::Borrowed("success-soft"),
+            Cow::Borrowed("st-ns-soft"),
+            Cow::Borrowed("st-ip-soft"),
+            Cow::Borrowed("st-done-soft"),
+            Cow::Borrowed("tint-ns"),
+            Cow::Borrowed("tint-ip"),
+            Cow::Borrowed("tint-done"),
+            Cow::Borrowed("disabled-fill"),
+            Cow::Borrowed("cat1-bg"),
+            Cow::Borrowed("cat2-bg"),
+            Cow::Borrowed("cat3-bg"),
+            Cow::Borrowed("cat4-bg"),
+            Cow::Borrowed("cat5-bg"),
+            Cow::Borrowed("cat6-bg"),
+            Cow::Borrowed("cat7-bg"),
+            Cow::Borrowed("cat8-bg"),
+            Cow::Borrowed("cat9-bg"),
+            Cow::Borrowed("cat10-bg"),
+            Cow::Borrowed("cat11-bg"),
+            Cow::Borrowed("cat12-bg"),
+            Cow::Borrowed("area-issues-soft"),
+            Cow::Borrowed("area-time-soft"),
+            Cow::Borrowed("area-agents-soft"),
+            Cow::Borrowed("area-settings-soft"),
+            Cow::Borrowed("area-issues-bar"),
+            Cow::Borrowed("area-time-bar"),
+            Cow::Borrowed("area-agents-bar"),
+            Cow::Borrowed("area-settings-bar"),
+        ]),
+        restricted: Cow::Borrowed(&[
+            Restricted {
+                text: Cow::Borrowed("on-disabled"),
+                on: Cow::Borrowed(&[Cow::Borrowed("disabled-fill")]),
+            },
+            Restricted {
+                text: Cow::Borrowed("area-ink"),
+                on: Cow::Borrowed(&[
+                    Cow::Borrowed("area-issues-soft"),
+                    Cow::Borrowed("area-time-soft"),
+                    Cow::Borrowed("area-agents-soft"),
+                    Cow::Borrowed("area-settings-soft"),
+                ]),
+            },
+            Restricted {
+                text: Cow::Borrowed("on-accent"),
+                on: Cow::Borrowed(&[Cow::Borrowed("accent"), Cow::Borrowed("danger")]),
+            },
+            Restricted {
+                text: Cow::Borrowed("cat1-fg"),
+                on: Cow::Borrowed(&[Cow::Borrowed("cat1-bg")]),
+            },
+            Restricted {
+                text: Cow::Borrowed("cat2-fg"),
+                on: Cow::Borrowed(&[Cow::Borrowed("cat2-bg")]),
+            },
+            Restricted {
+                text: Cow::Borrowed("cat3-fg"),
+                on: Cow::Borrowed(&[Cow::Borrowed("cat3-bg")]),
+            },
+            Restricted {
+                text: Cow::Borrowed("cat4-fg"),
+                on: Cow::Borrowed(&[Cow::Borrowed("cat4-bg")]),
+            },
+            Restricted {
+                text: Cow::Borrowed("cat5-fg"),
+                on: Cow::Borrowed(&[Cow::Borrowed("cat5-bg")]),
+            },
+            Restricted {
+                text: Cow::Borrowed("cat6-fg"),
+                on: Cow::Borrowed(&[Cow::Borrowed("cat6-bg")]),
+            },
+            Restricted {
+                text: Cow::Borrowed("cat7-fg"),
+                on: Cow::Borrowed(&[Cow::Borrowed("cat7-bg")]),
+            },
+            Restricted {
+                text: Cow::Borrowed("cat8-fg"),
+                on: Cow::Borrowed(&[Cow::Borrowed("cat8-bg")]),
+            },
+            Restricted {
+                text: Cow::Borrowed("cat9-fg"),
+                on: Cow::Borrowed(&[Cow::Borrowed("cat9-bg")]),
+            },
+            Restricted {
+                text: Cow::Borrowed("cat10-fg"),
+                on: Cow::Borrowed(&[Cow::Borrowed("cat10-bg")]),
+            },
+            Restricted {
+                text: Cow::Borrowed("cat11-fg"),
+                on: Cow::Borrowed(&[Cow::Borrowed("cat11-bg")]),
+            },
+            Restricted {
+                text: Cow::Borrowed("cat12-fg"),
+                on: Cow::Borrowed(&[Cow::Borrowed("cat12-bg")]),
+            },
+        ]),
+        exclusions: Cow::Borrowed(&[
+            Exclusion {
+                text: Cow::Borrowed(&[
+                    Cow::Borrowed("fg"),
+                    Cow::Borrowed("fg-*"),
+                    Cow::Borrowed("accent-fg"),
+                    Cow::Borrowed("danger"),
+                    Cow::Borrowed("warning"),
+                    Cow::Borrowed("success"),
+                    Cow::Borrowed("st-ns"),
+                    Cow::Borrowed("st-ip"),
+                    Cow::Borrowed("st-done"),
+                ]),
+                on: Cow::Borrowed(&[Cow::Borrowed("accent")]),
+                themes: Cow::Borrowed(&[]),
+            },
+            Exclusion {
+                text: Cow::Borrowed(&[
+                    Cow::Borrowed("fg"),
+                    Cow::Borrowed("fg-*"),
+                    Cow::Borrowed("accent-fg"),
+                    Cow::Borrowed("danger"),
+                    Cow::Borrowed("warning"),
+                    Cow::Borrowed("success"),
+                    Cow::Borrowed("st-ns"),
+                    Cow::Borrowed("st-ip"),
+                    Cow::Borrowed("st-done"),
+                ]),
+                on: Cow::Borrowed(&[Cow::Borrowed("disabled-fill")]),
+                themes: Cow::Borrowed(&[]),
+            },
+            Exclusion {
+                text: Cow::Borrowed(&[
+                    Cow::Borrowed("fg-subtle"),
+                    Cow::Borrowed("danger"),
+                    Cow::Borrowed("warning"),
+                    Cow::Borrowed("success"),
+                    Cow::Borrowed("st-ns"),
+                    Cow::Borrowed("st-ip"),
+                    Cow::Borrowed("st-done"),
+                ]),
+                on: Cow::Borrowed(&[Cow::Borrowed("area-*-soft"), Cow::Borrowed("area-*-bar")]),
+                themes: Cow::Borrowed(&[]),
+            },
+            Exclusion {
+                text: Cow::Borrowed(&[Cow::Borrowed("fg-subtle")]),
+                on: Cow::Borrowed(&[
+                    Cow::Borrowed("accent-soft"),
+                    Cow::Borrowed("danger-soft"),
+                    Cow::Borrowed("warning-soft"),
+                    Cow::Borrowed("success-soft"),
+                    Cow::Borrowed("st-*-soft"),
+                    Cow::Borrowed("cat*-bg"),
+                ]),
+                themes: Cow::Borrowed(&[]),
+            },
+            Exclusion {
+                text: Cow::Borrowed(&[Cow::Borrowed("accent-fg")]),
+                on: Cow::Borrowed(&[
+                    Cow::Borrowed("danger-soft"),
+                    Cow::Borrowed("warning-soft"),
+                    Cow::Borrowed("success-soft"),
+                    Cow::Borrowed("st-*-soft"),
+                    Cow::Borrowed("cat*-bg"),
+                ]),
+                themes: Cow::Borrowed(&[]),
+            },
+            Exclusion {
+                text: Cow::Borrowed(&[Cow::Borrowed("danger")]),
+                on: Cow::Borrowed(&[
+                    Cow::Borrowed("accent-soft"),
+                    Cow::Borrowed("warning-soft"),
+                    Cow::Borrowed("success-soft"),
+                    Cow::Borrowed("st-*-soft"),
+                    Cow::Borrowed("cat*-bg"),
+                ]),
+                themes: Cow::Borrowed(&[]),
+            },
+            Exclusion {
+                text: Cow::Borrowed(&[Cow::Borrowed("warning")]),
+                on: Cow::Borrowed(&[
+                    Cow::Borrowed("accent-soft"),
+                    Cow::Borrowed("danger-soft"),
+                    Cow::Borrowed("success-soft"),
+                    Cow::Borrowed("st-*-soft"),
+                    Cow::Borrowed("cat*-bg"),
+                ]),
+                themes: Cow::Borrowed(&[]),
+            },
+            Exclusion {
+                text: Cow::Borrowed(&[Cow::Borrowed("success")]),
+                on: Cow::Borrowed(&[
+                    Cow::Borrowed("accent-soft"),
+                    Cow::Borrowed("danger-soft"),
+                    Cow::Borrowed("warning-soft"),
+                    Cow::Borrowed("st-*-soft"),
+                    Cow::Borrowed("cat*-bg"),
+                ]),
+                themes: Cow::Borrowed(&[]),
+            },
+            Exclusion {
+                text: Cow::Borrowed(&[Cow::Borrowed("st-ns")]),
+                on: Cow::Borrowed(&[
+                    Cow::Borrowed("accent-soft"),
+                    Cow::Borrowed("danger-soft"),
+                    Cow::Borrowed("warning-soft"),
+                    Cow::Borrowed("success-soft"),
+                    Cow::Borrowed("st-ip-soft"),
+                    Cow::Borrowed("st-done-soft"),
+                    Cow::Borrowed("cat*-bg"),
+                ]),
+                themes: Cow::Borrowed(&[]),
+            },
+            Exclusion {
+                text: Cow::Borrowed(&[Cow::Borrowed("st-ip")]),
+                on: Cow::Borrowed(&[
+                    Cow::Borrowed("accent-soft"),
+                    Cow::Borrowed("danger-soft"),
+                    Cow::Borrowed("warning-soft"),
+                    Cow::Borrowed("success-soft"),
+                    Cow::Borrowed("st-ns-soft"),
+                    Cow::Borrowed("st-done-soft"),
+                    Cow::Borrowed("cat*-bg"),
+                ]),
+                themes: Cow::Borrowed(&[]),
+            },
+            Exclusion {
+                text: Cow::Borrowed(&[Cow::Borrowed("st-done")]),
+                on: Cow::Borrowed(&[
+                    Cow::Borrowed("accent-soft"),
+                    Cow::Borrowed("danger-soft"),
+                    Cow::Borrowed("warning-soft"),
+                    Cow::Borrowed("success-soft"),
+                    Cow::Borrowed("st-ns-soft"),
+                    Cow::Borrowed("st-ip-soft"),
+                    Cow::Borrowed("cat*-bg"),
+                ]),
+                themes: Cow::Borrowed(&[]),
+            },
+        ]),
+        non_text: Cow::Borrowed(&[
+            Cow::Borrowed("border"),
+            Cow::Borrowed("border-subtle"),
+            Cow::Borrowed("divider"),
+            Cow::Borrowed("border-control"),
+            Cow::Borrowed("area-issues"),
+            Cow::Borrowed("area-time"),
+            Cow::Borrowed("area-agents"),
+            Cow::Borrowed("area-settings"),
+            Cow::Borrowed("area-issues-line"),
+            Cow::Borrowed("area-time-line"),
+            Cow::Borrowed("area-agents-line"),
+            Cow::Borrowed("area-settings-line"),
+            Cow::Borrowed("area-issues-open"),
+            Cow::Borrowed("area-time-open"),
+            Cow::Borrowed("area-agents-open"),
+            Cow::Borrowed("area-settings-open"),
+            Cow::Borrowed("cue"),
+            Cow::Borrowed("cat1-mark"),
+            Cow::Borrowed("cat2-mark"),
+            Cow::Borrowed("cat3-mark"),
+            Cow::Borrowed("cat4-mark"),
+            Cow::Borrowed("cat5-mark"),
+            Cow::Borrowed("cat6-mark"),
+            Cow::Borrowed("cat7-mark"),
+            Cow::Borrowed("cat8-mark"),
+            Cow::Borrowed("cat9-mark"),
+            Cow::Borrowed("cat10-mark"),
+            Cow::Borrowed("cat11-mark"),
+            Cow::Borrowed("cat12-mark"),
+            Cow::Borrowed("edge-high"),
+            Cow::Borrowed("hover-line"),
+            Cow::Borrowed("scrim"),
+        ]),
+    },
+    distinct: Cow::Borrowed(&[
+        DistinctSpec {
+            groups: Cow::Borrowed(&[DistinctGroup {
+                states: Cow::Borrowed(&[
+                    Cow::Borrowed("tint-ns"),
+                    Cow::Borrowed("tint-ip"),
+                    Cow::Borrowed("tint-done"),
+                ]),
+                surfaces: Cow::Borrowed(&[Cow::Borrowed("bg-canvas"), Cow::Borrowed("bg-raised")]),
+            }]),
+            min_against_surfaces: 0.0,
+            min_between_states: 0.0,
+            min_delta_e_against_surfaces: Some(7.5),
+            min_delta_e_between_states: Some(11.0),
+            max_chroma_of_states: None,
+        },
+        DistinctSpec {
+            groups: Cow::Borrowed(&[DistinctGroup {
+                states: Cow::Borrowed(&[Cow::Borrowed("tint-ns")]),
+                surfaces: Cow::Borrowed(&[Cow::Borrowed("bg-raised")]),
+            }]),
+            min_against_surfaces: 0.0,
+            min_between_states: 0.0,
+            min_delta_e_against_surfaces: None,
+            min_delta_e_between_states: None,
+            max_chroma_of_states: Some(3.0),
+        },
+        DistinctSpec {
+            groups: Cow::Borrowed(&[DistinctGroup {
+                states: Cow::Borrowed(&[Cow::Borrowed("disabled-fill")]),
+                surfaces: Cow::Borrowed(&[
+                    Cow::Borrowed("bg-canvas"),
+                    Cow::Borrowed("bg-surface"),
+                    Cow::Borrowed("bg-raised"),
+                    Cow::Borrowed("bg-selected"),
+                    Cow::Borrowed("accent-soft"),
+                    Cow::Borrowed("bg-sunken"),
+                ]),
+            }]),
+            min_against_surfaces: 0.0,
+            min_between_states: 0.0,
+            min_delta_e_against_surfaces: Some(7.5),
+            min_delta_e_between_states: None,
+            max_chroma_of_states: None,
+        },
+        DistinctSpec {
+            groups: Cow::Borrowed(&[DistinctGroup {
+                states: Cow::Borrowed(&[
+                    Cow::Borrowed("cat1-bg"),
+                    Cow::Borrowed("cat2-bg"),
+                    Cow::Borrowed("cat3-bg"),
+                    Cow::Borrowed("cat4-bg"),
+                    Cow::Borrowed("cat5-bg"),
+                    Cow::Borrowed("cat6-bg"),
+                    Cow::Borrowed("cat7-bg"),
+                    Cow::Borrowed("cat8-bg"),
+                    Cow::Borrowed("cat9-bg"),
+                    Cow::Borrowed("cat10-bg"),
+                    Cow::Borrowed("cat11-bg"),
+                    Cow::Borrowed("cat12-bg"),
+                ]),
+                surfaces: Cow::Borrowed(&[
+                    Cow::Borrowed("bg-canvas"),
+                    Cow::Borrowed("bg-surface"),
+                    Cow::Borrowed("bg-raised"),
+                ]),
+            }]),
+            min_against_surfaces: 0.0,
+            min_between_states: 0.0,
+            min_delta_e_against_surfaces: Some(7.5),
+            min_delta_e_between_states: Some(15.0),
+            max_chroma_of_states: None,
+        },
+        DistinctSpec {
+            groups: Cow::Borrowed(&[DistinctGroup {
+                states: Cow::Borrowed(&[
+                    Cow::Borrowed("cat1-mark"),
+                    Cow::Borrowed("cat2-mark"),
+                    Cow::Borrowed("cat3-mark"),
+                    Cow::Borrowed("cat4-mark"),
+                    Cow::Borrowed("cat5-mark"),
+                    Cow::Borrowed("cat6-mark"),
+                    Cow::Borrowed("cat7-mark"),
+                    Cow::Borrowed("cat8-mark"),
+                    Cow::Borrowed("cat9-mark"),
+                    Cow::Borrowed("cat10-mark"),
+                    Cow::Borrowed("cat11-mark"),
+                    Cow::Borrowed("cat12-mark"),
+                ]),
+                surfaces: Cow::Borrowed(&[Cow::Borrowed("bg-raised")]),
+            }]),
+            min_against_surfaces: 0.0,
+            min_between_states: 0.0,
+            min_delta_e_against_surfaces: None,
+            min_delta_e_between_states: Some(25.0),
+            max_chroma_of_states: None,
+        },
+        DistinctSpec {
+            groups: Cow::Borrowed(&[DistinctGroup {
+                states: Cow::Borrowed(&[Cow::Borrowed("cat1-mark"), Cow::Borrowed("cat7-mark")]),
+                surfaces: Cow::Borrowed(&[Cow::Borrowed("bg-raised")]),
+            }]),
+            min_against_surfaces: 0.0,
+            min_between_states: 0.0,
+            min_delta_e_against_surfaces: None,
+            min_delta_e_between_states: Some(40.0),
+            max_chroma_of_states: None,
+        },
+        DistinctSpec {
+            groups: Cow::Borrowed(&[DistinctGroup {
+                states: Cow::Borrowed(&[Cow::Borrowed("danger"), Cow::Borrowed("edge-high")]),
+                surfaces: Cow::Borrowed(&[Cow::Borrowed("bg-canvas")]),
+            }]),
+            min_against_surfaces: 0.0,
+            min_between_states: 0.0,
+            min_delta_e_against_surfaces: Some(30.0),
+            min_delta_e_between_states: Some(31.0),
+            max_chroma_of_states: None,
+        },
+        DistinctSpec {
+            groups: Cow::Borrowed(&[DistinctGroup {
+                states: Cow::Borrowed(&[Cow::Borrowed("cue")]),
+                surfaces: Cow::Borrowed(&[
+                    Cow::Borrowed("bg-canvas"),
+                    Cow::Borrowed("bg-surface"),
+                    Cow::Borrowed("bg-raised"),
+                ]),
+            }]),
+            min_against_surfaces: 0.0,
+            min_between_states: 0.0,
+            min_delta_e_against_surfaces: Some(25.0),
+            min_delta_e_between_states: None,
+            max_chroma_of_states: None,
+        },
+        DistinctSpec {
+            groups: Cow::Borrowed(&[DistinctGroup {
+                states: Cow::Borrowed(&[Cow::Borrowed("bg-hover"), Cow::Borrowed("bg-selected")]),
+                surfaces: Cow::Borrowed(&[
+                    Cow::Borrowed("bg-canvas"),
+                    Cow::Borrowed("bg-surface"),
+                    Cow::Borrowed("bg-raised"),
+                ]),
+            }]),
+            min_against_surfaces: 1.08,
+            min_between_states: 1.04,
+            min_delta_e_against_surfaces: None,
+            min_delta_e_between_states: None,
+            max_chroma_of_states: None,
+        },
+    ]),
+};
+
+/// The rules of the base theme file.
+#[must_use]
+pub fn base_rules() -> &'static Rules {
+    &RULES
 }

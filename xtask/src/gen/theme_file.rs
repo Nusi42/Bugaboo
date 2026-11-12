@@ -21,7 +21,7 @@ mod kinds;
 mod links;
 mod themes;
 use builder::Builder;
-pub(crate) use kinds::{Own, ThemeKind};
+pub(crate) use kinds::{LightOrDark, Own};
 pub(crate) use themes::{THEMES_FOLDER, ThemeSource, is_theme_source, theme_sources};
 
 /// Where the base theme lives, relative to the repository root.
@@ -78,7 +78,7 @@ pub(crate) struct Theme {
     /// The theme's ID: the name of its file.
     pub(crate) name: String,
     /// `light` or `dark`; decides the browser's own controls and scrollbars.
-    pub(crate) kind: ThemeKind,
+    pub(crate) kind: LightOrDark,
     /// Its file, `design/themes/<name>.kdl`, which a finding about the theme names.
     pub(crate) path: String,
 }
@@ -449,7 +449,7 @@ impl ThemeFile {
         }
         for (name, kind) in [&self.default_light, &self.default_dark]
             .into_iter()
-            .zip(ThemeKind::ALL)
+            .zip(LightOrDark::ALL)
         {
             match self.theme(name) {
                 Some(theme) if theme.kind == kind => {}
@@ -471,7 +471,7 @@ impl ThemeFile {
             .chain(self.distinct.iter().flat_map(|spec| {
                 spec.groups
                     .iter()
-                    .flat_map(|group| group.states.iter().chain(&group.surfaces))
+                    .flat_map(|group| group.states.iter().chain(group.surfaces.iter()))
             }))
             .find(|name| {
                 self.token(name)

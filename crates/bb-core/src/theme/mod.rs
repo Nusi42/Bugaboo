@@ -14,6 +14,7 @@ mod record;
 mod sheet;
 mod values;
 
+pub use built_in::{SHADOW_LAYERS_MOST, SHADOW_PIXELS_MOST};
 pub use choice::OwnChoice;
 pub use colors::{OwnColors, RatedPair, rate_own, readability};
 pub use file::{FileProblem, ThemeFile};
@@ -32,12 +33,6 @@ pub const PERSONAL_THEMES_MOST: usize = 10;
 
 /// The most bytes of an uploaded theme (a JSON file).
 pub const THEME_UPLOAD_MOST: usize = 64 * 1024;
-
-/// The most layers a shadow has.
-pub const SHADOW_LAYERS_MOST: usize = 2;
-
-/// The largest offset, blur or spread of a shadow layer, in pixels.
-pub const SHADOW_PIXELS_MOST: i32 = 64;
 
 /// A built-in theme: its colors and its shadow, as the theme files give them.
 #[derive(Clone, Copy, Debug)]

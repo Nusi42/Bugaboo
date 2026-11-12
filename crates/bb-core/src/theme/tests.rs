@@ -1,8 +1,8 @@
 use super::*;
 use crate::contrast::{Rating, ThemeColors as _, base_rules};
 
-fn rules() -> crate::contrast::Rules {
-    base_rules().expect("the generated rules are JSON")
+fn rules() -> &'static crate::contrast::Rules {
+    base_rules()
 }
 
 fn colors(pairs: &[(&str, &str)]) -> OwnValues {
@@ -27,7 +27,7 @@ fn colors(pairs: &[(&str, &str)]) -> OwnValues {
 fn thm_03_the_contrast_of_bb_core_gives_the_built_in_files_the_results_of_the_check() {
     // The built-in themes are the files the check reads: no pair of any of them is hard to read.
     for theme in built_in_themes() {
-        let found = rate_own(theme.id, &OwnValues::default(), &rules()).expect("a built-in theme");
+        let found = rate_own(theme.id, &OwnValues::default(), rules()).expect("a built-in theme");
         assert!(
             found.problems.is_empty(),
             "{}: {:?}",
@@ -47,7 +47,7 @@ fn thm_03_the_contrast_of_bb_core_gives_the_built_in_files_the_results_of_the_ch
 #[test]
 fn thm_03_a_pair_that_is_hard_to_read_is_found_and_named() {
     let values = colors(&[("fg", "#fafafa")]);
-    let found = rate_own("daylight", &values, &rules()).expect("a built-in theme");
+    let found = rate_own("daylight", &values, rules()).expect("a built-in theme");
     assert!(
         found
             .hard()

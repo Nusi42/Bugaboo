@@ -120,10 +120,10 @@ impl Builder {
                 "needs `extends=\"{BASE_THEME}\"`: a theme sets colors over the base theme, {THEME_PATH}"
             )));
         }
-        let kind = ThemeKind::of(&node.required_prop("kind")?).ok_or_else(|| {
+        let kind = LightOrDark::of(&node.required_prop("kind")?).ok_or_else(|| {
             node.problem(format!(
                 "`kind` is {}",
-                ThemeKind::ALL.map(ThemeKind::word).join(" or ")
+                LightOrDark::ALL.map(LightOrDark::word).join(" or ")
             ))
         })?;
         if let Some((key, _)) = node
@@ -215,7 +215,7 @@ impl Builder {
     pub(super) fn merge_themes(&mut self) -> Vec<Token> {
         let order = |theme: &Theme| {
             (
-                ThemeKind::ALL.iter().position(|kind| *kind == theme.kind),
+                LightOrDark::ALL.iter().position(|kind| *kind == theme.kind),
                 theme.name.clone(),
             )
         };

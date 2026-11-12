@@ -10,7 +10,7 @@
 use bb_core::contrast::{Evaluation, Mode, PairResult, Problem, Rule, ThemeColors, rate};
 
 use super::{Check, Context, Finding};
-use crate::generate::theme_file::{THEME_PATH, Theme, ThemeFile, ThemeKind};
+use crate::generate::theme_file::{LightOrDark, THEME_PATH, Theme, ThemeFile};
 
 pub(crate) struct StyContrast;
 
@@ -39,7 +39,7 @@ struct InTheme<'a> {
 
 impl ThemeColors for InTheme<'_> {
     fn is_light(&self) -> bool {
-        self.theme.kind == ThemeKind::Light
+        self.theme.kind == LightOrDark::Light
     }
 
     fn color(&self, name: &str) -> Option<&str> {

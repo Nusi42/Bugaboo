@@ -4,35 +4,44 @@
 //! `cargo xtask gen theme` writes the rules of the base file as [`super::base_rules`]; the reader of
 //! the KDL text stays in `xtask`, because the server and the browser never parse KDL.
 
+use std::borrow::Cow;
+
 use serde::{Deserialize, Serialize};
+
+/// A name in the rules: written into the program by the generator, read from the theme file by the
+/// check.
+pub type Text = Cow<'static, str>;
+
+/// A list in the rules, the same way.
+pub type List<T> = Cow<'static, [T]>;
 
 /// A text color that is only drawn on some backgrounds.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Restricted {
     /// The text colors (or the one text color).
-    pub text: String,
+    pub text: Text,
     /// The backgrounds (or fills) it is drawn on.
-    pub on: Vec<String>,
+    pub on: List<Text>,
 }
 
 /// Text and background combinations that are never used.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Exclusion {
     /// Color names; `*` matches any characters.
-    pub text: Vec<String>,
+    pub text: List<Text>,
     /// The backgrounds (or fills) it is drawn on.
-    pub on: Vec<String>,
+    pub on: List<Text>,
     /// Themes the exclusion applies to; empty means all.
-    pub themes: Vec<String>,
+    pub themes: List<Text>,
 }
 
 /// Some states and the surfaces they sit on.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct DistinctGroup {
     /// The states.
-    pub states: Vec<String>,
+    pub states: List<Text>,
     /// The surfaces they are drawn on.
-    pub surfaces: Vec<String>,
+    pub surfaces: List<Text>,
 }
 
 /// State backgrounds (hover, selected) that must stay visible against the surfaces.
@@ -40,7 +49,7 @@ pub struct DistinctGroup {
 pub struct DistinctSpec {
     /// The states and the surfaces they must stay visible on: one group for the plain surfaces, one
     /// for each kind of tinted row.
-    pub groups: Vec<DistinctGroup>,
+    pub groups: List<DistinctGroup>,
     /// Smallest contrast ratio between a state and each surface (0 when the rule does not ask for one).
     pub min_against_surfaces: f64,
     /// Smallest contrast ratio between two states (0 when the rule does not ask for one).
@@ -59,11 +68,11 @@ pub struct DistinctSpec {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Hovered {
     /// The text colors (or the one text color).
-    pub text: String,
+    pub text: Text,
     /// The backgrounds (or fills) it is drawn on.
-    pub on: String,
+    pub on: Text,
     /// The number token with the brightness of the hover.
-    pub brightness: String,
+    pub brightness: Text,
     /// The smallest ratio as it is, and with the device setting for more contrast.
     pub min: f64,
     /// The least ratio with more contrast.
@@ -75,15 +84,15 @@ pub struct Hovered {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Dimmed {
     /// The scrim color.
-    pub scrim: String,
+    pub scrim: Text,
     /// The opacity token of the scrim.
-    pub opacity: String,
+    pub opacity: Text,
     /// The fill of the page.
-    pub page: String,
+    pub page: Text,
     /// The text colors (or the one text color).
-    pub text: String,
+    pub text: Text,
     /// The fill of the sheet.
-    pub sheet: String,
+    pub sheet: Text,
     /// The least ratio of the sheet to the dimmed page in a light theme and in a dark one.
     pub min_sheet_light: f64,
     /// The least ratio in a dark theme.
@@ -99,9 +108,9 @@ pub struct StrongerText {
     /// The least ratio.
     pub min: f64,
     /// The text colors (or the one text color).
-    pub text: Vec<String>,
+    pub text: List<Text>,
     /// The backgrounds (or fills) it is drawn on.
-    pub on: Vec<String>,
+    pub on: List<Text>,
 }
 
 /// The stronger rules for people whose device asks for more contrast (`prefers-contrast: more`).
@@ -112,11 +121,11 @@ pub struct MoreSpec {
     /// Smallest contrast ratio of the listed line colors on the plain surfaces.
     pub min_line: f64,
     /// The text colors (or the one text color).
-    pub text: Vec<String>,
+    pub text: List<Text>,
     /// The line colors.
-    pub lines: Vec<String>,
+    pub lines: List<Text>,
     /// The surfaces the lines stand on.
-    pub line_on: Vec<String>,
+    pub line_on: List<Text>,
 }
 
 /// What a group of [`PlainLines`] draws: a line, or a fill that carries no text (the square of a label).
@@ -150,11 +159,11 @@ pub struct PlainLines {
     /// The least ratio.
     pub min: f64,
     /// The colors.
-    pub colors: Vec<String>,
+    pub colors: List<Text>,
     /// The backgrounds (or fills) it is drawn on.
-    pub on: Vec<String>,
+    pub on: List<Text>,
     /// The opacity token that fades the line before it is seen (`faded-by`), when the line is.
-    pub faded_by: Option<String>,
+    pub faded_by: Option<Text>,
 }
 
 /// The `contrast` rule of the theme file.
@@ -163,25 +172,25 @@ pub struct ContrastSpec {
     /// The least ratio.
     pub min: f64,
     /// The lines and fills that people have to see.
-    pub plain_lines: Vec<PlainLines>,
+    pub plain_lines: List<PlainLines>,
     /// The pairs seen while hovered.
-    pub hovered: Vec<Hovered>,
+    pub hovered: List<Hovered>,
     /// The words that need a stronger ratio.
-    pub stronger: Vec<StrongerText>,
+    pub stronger: List<StrongerText>,
     /// The page behind a sheet.
-    pub dimmed: Vec<Dimmed>,
+    pub dimmed: List<Dimmed>,
     /// The rules for more contrast.
     pub more: MoreSpec,
     /// The text colors (or the one text color).
-    pub text: Vec<String>,
+    pub text: List<Text>,
     /// The backgrounds text may be drawn on.
-    pub backgrounds: Vec<String>,
+    pub backgrounds: List<Text>,
     /// The text colors drawn on some backgrounds only.
-    pub restricted: Vec<Restricted>,
+    pub restricted: List<Restricted>,
     /// The pairs that are never used.
-    pub exclusions: Vec<Exclusion>,
+    pub exclusions: List<Exclusion>,
     /// Colors that are neither text nor a background for text (borders), each with a reason.
-    pub non_text: Vec<String>,
+    pub non_text: List<Text>,
 }
 
 impl ContrastSpec {
@@ -189,19 +198,19 @@ impl ContrastSpec {
     #[must_use]
     pub fn pairs(&self, theme: &str) -> Vec<(&str, &str)> {
         let mut pairs = Vec::new();
-        for text in &self.text {
+        for text in self.text.iter() {
             if let Some(restricted) = self.restricted.iter().find(|r| &r.text == text) {
-                pairs.extend(restricted.on.iter().map(|on| (text.as_str(), on.as_str())));
+                pairs.extend(restricted.on.iter().map(|on| (text.as_ref(), on.as_ref())));
                 continue;
             }
-            for background in &self.backgrounds {
+            for background in self.backgrounds.iter() {
                 let excluded = self.exclusions.iter().any(|exclusion| {
                     (exclusion.themes.is_empty() || exclusion.themes.iter().any(|t| t == theme))
                         && exclusion.text.iter().any(|p| glob(p, text))
                         && exclusion.on.iter().any(|p| glob(p, background))
                 });
                 if !excluded {
-                    pairs.push((text.as_str(), background.as_str()));
+                    pairs.push((text.as_ref(), background.as_ref()));
                 }
             }
         }
@@ -209,22 +218,22 @@ impl ContrastSpec {
     }
 
     /// Every color name used anywhere in the rules (exact names, no patterns).
-    pub fn named_colors(&self) -> impl Iterator<Item = &String> {
+    pub fn named_colors(&self) -> impl Iterator<Item = &Text> {
         self.text
             .iter()
-            .chain(&self.backgrounds)
-            .chain(&self.more.text)
-            .chain(&self.more.lines)
-            .chain(&self.more.line_on)
+            .chain(self.backgrounds.iter())
+            .chain(self.more.text.iter())
+            .chain(self.more.lines.iter())
+            .chain(self.more.line_on.iter())
             .chain(
                 self.plain_lines
                     .iter()
-                    .flat_map(|lines| lines.colors.iter().chain(&lines.on)),
+                    .flat_map(|lines| lines.colors.iter().chain(lines.on.iter())),
             )
             .chain(
                 self.restricted
                     .iter()
-                    .flat_map(|r| std::iter::once(&r.text).chain(&r.on)),
+                    .flat_map(|r| std::iter::once(&r.text).chain(r.on.iter())),
             )
             .chain(self.hovered.iter().flat_map(|rule| [&rule.text, &rule.on]))
             .chain(
@@ -235,7 +244,7 @@ impl ContrastSpec {
             .chain(
                 self.stronger
                     .iter()
-                    .flat_map(|rule| rule.text.iter().chain(&rule.on)),
+                    .flat_map(|rule| rule.text.iter().chain(rule.on.iter())),
             )
     }
 
@@ -244,8 +253,8 @@ impl ContrastSpec {
     pub fn classifies(&self, color: &str) -> bool {
         self.text
             .iter()
-            .chain(&self.backgrounds)
-            .chain(&self.non_text)
+            .chain(self.backgrounds.iter())
+            .chain(self.non_text.iter())
             .any(|name| name == color)
     }
 
@@ -253,7 +262,7 @@ impl ContrastSpec {
     #[must_use]
     pub fn stale_exclusion(&self) -> Option<&Exclusion> {
         self.exclusions.iter().find(|exclusion| {
-            let all_match = |patterns: &[String], names: &[String]| {
+            let all_match = |patterns: &[Text], names: &[Text]| {
                 patterns
                     .iter()
                     .all(|pattern| names.iter().any(|name| glob(pattern, name)))

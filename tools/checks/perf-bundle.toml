@@ -23,9 +23,9 @@ budget_bytes = 250000
 # a panic stops at once, which takes serde's float formatting and the Debug panic text out of the
 # module, `cargo xtask wasm`), measured at 133.1 KB; and since M8 the readability of an own theme
 # for the theme editor (THM-03, ADR-0026 update M8: the contrast maths of `bb-core`, the rules of the
-# base theme file and the colors of the built-in themes), measured at 176.2 KB, of which the reading
-# of the rules, written as JSON, is 18 KB (M8-F44 tracks writing them as Rust data or moving the
-# readability into a module of its own).
-bb_wasm_bg = 178000
+# base theme file as Rust data and the colors of the built-in themes), measured at 164.0 KB, of
+# which about 9.7 KB is the reading of the values of a theme and about 21 KB the rating with its
+# rules and colors (M8-F44: the maintainer chooses this budget or a module of its own for the editor).
+bb_wasm_bg = 166000
 # The search language, measured at 88.9 KB (M5 WP-02, with the Issue ID rules of bb-core) and at 90.3 KB with `contains` on its own (M5 WP-04), and at 71.5 KB since the standard library is built for size (M6-F68); ADR-0005 allows at most 100 KB.
 bb_wasm_search_bg = 73000

@@ -162,10 +162,11 @@ fn a_line_faded_by_something_that_is_no_opacity_is_a_finding_not_a_skip() {
     let lines = file
         .contrast
         .plain_lines
+        .to_mut()
         .iter_mut()
         .find(|lines| lines.faded_by.is_some())
         .expect("a group of lines is faded");
-    lines.faded_by = Some("no-such-opacity".to_owned());
+    lines.faded_by = Some("no-such-opacity".to_owned().into());
     let findings = evaluate(&file);
     assert!(
         findings

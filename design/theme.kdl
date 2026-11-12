@@ -478,7 +478,9 @@ tokens {
     shadow "area-time-mark" "inset 3px 0 0 $area-time"
     shadow "area-agents-mark" "inset 3px 0 0 $area-agents"
     shadow "area-settings-mark" "inset 3px 0 0 $area-settings"
-    shadow "shadow" "0 1px 2px 0 #16181d0f, 0 6px 20px 0 #16181d14" own="true"
+    // An own theme may set this shadow as parts: at most `own-layers` layers, each offset, blur and
+    // spread within `own-pixels` pixels (ADR-0026 M8).
+    shadow "shadow" "0 1px 2px 0 #16181d0f, 0 6px 20px 0 #16181d14" own="true" own-layers="2" own-pixels="64"
 }
 
 // Contrast rules (WCAG, THM-03, UX-04, THM-06). Every text color is checked on every

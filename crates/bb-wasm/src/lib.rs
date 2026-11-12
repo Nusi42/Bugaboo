@@ -12,7 +12,7 @@ pub mod names;
 
 use bb_core::fields::Field;
 use bb_core::history::TimeEvent;
-use bb_core::theme::{OwnValues, readability};
+use bb_core::theme::{OwnValues, RatedPair, readability};
 use bb_core::time::Minutes;
 use bb_core::wording::{self, Change, File, Notice, Side, Time, TimeChange};
 use bb_markdown::Options;
@@ -188,12 +188,14 @@ struct ThemeAsked {
 /// The text is not a theme with `extends` and `values`.
 #[wasm_bindgen]
 pub fn theme_readability(asked: &str) -> Result<String, JsError> {
-    answer(asked, |asked: &ThemeAsked| {
-        OwnValues::from_json(&asked.values)
-            .ok()
-            .and_then(|values| readability(&asked.extends, &values))
-    })
-    .map_err(|e| JsError::new(&e))
+    answer(asked, rate_asked).map_err(|e| JsError::new(&e))
+}
+
+/// The readability of the theme the editor asks about, or `None` (see [`theme_readability`]).
+fn rate_asked(asked: &ThemeAsked) -> Option<Vec<RatedPair>> {
+    OwnValues::from_json(&asked.values)
+        .ok()
+        .and_then(|values| readability(&asked.extends, &values))
 }
 
 #[cfg(test)]
@@ -217,12 +219,7 @@ mod tests {
     }
 
     fn theme_readability_text(asked: &str) -> String {
-        answer(asked, |asked: &ThemeAsked| {
-            OwnValues::from_json(&asked.values)
-                .ok()
-                .and_then(|values| readability(&asked.extends, &values))
-        })
-        .unwrap_or_default()
+        answer(asked, rate_asked).unwrap_or_default()
     }
 
     #[test]
