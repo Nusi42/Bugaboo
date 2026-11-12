@@ -92,3 +92,8 @@ ARCH-VERSIONED, TEST-EDIT-LOCKS (see `tools/checks/catalog.toml`).
 ## Amendment (M4 exit, WP-14)
 
 - **Where a draft is kept depends on what is edited.** The draft of a text and of a layout is kept by the server: the editor holds an edit lock, its heartbeat writes the draft, and a refused save leaves it for the person to take back (`useKeptDraft`). The draft of a workflow is kept by the browser (`web/app/src/features/workflows/left-draft.ts`, with the other browser drafts of `browser-drafts.ts`, by person and by workflow, 30 days): a workflow is a structure that *Publish* may refuse or turn into a question about the issues it moves, and the server has no route that stores a draft of it. Both are there so that nothing typed is dropped; what differs is only the place. Making the workflow draft a server draft needs a draft route for structures and is M4-F152.
+
+## Amendment (M8 WP-05)
+
+- **An own theme is a record of the editing code.** `bb-app` knows it like a layout: `themes/records.rs` gives its place (the organization), its version and what changes it, and its one part is `theme` (`bb_core::edit::THEME_PART`). The editor's unsaved values are the person's draft of that part, kept by the heartbeat and `PUT /drafts` like any draft; the style sheet of the preview is made from the asking person's own draft only (ADR-0026, update M8).
+- **A record that no permission reaches.** A personal theme is changed by its maker and known to nobody else, so its facts carry no permission (`RecordFacts::edit` is `None`): the facts are given only to the maker, who may then take the lock and keep a draft (`Ctx::require_to_change`). A theme for everyone needs *Change organization settings*.
