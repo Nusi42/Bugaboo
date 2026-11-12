@@ -264,6 +264,7 @@ Rules:
 | **Spacing**              | How close together things are on screen: *Comfortable* or *Compact*. A setting of the person (*My settings › Appearance*) that every screen follows; a list or a saved search has none of its own | density (in UI) |
 | **Less motion**          | Fewer moving effects on screen                                     | reduced motion (in UI)             |
 | **Larger text**          | All text a step bigger                                             | zoom, font scale (in UI)           |
+| **Zoom** (of the timeline) | How many days one column of the timeline holds: *Days*, *Weeks*, *Months* or *Quarters*. It changes the span the screen shows, never the size of text (that is *Larger text*) | —                                  |
 | **Window**               | Where a form opens on a computer: it can be minimized, maximized, resized; on a phone it is a full screen | modal, popup (in UI) |
 | **Minimize**             | Park a window as a bar at the bottom of the page; its draft waits there | — |
 | **Maximize**             | Let a window fill the whole page, the menu included                | full screen (for a window)         |

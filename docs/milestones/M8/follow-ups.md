@@ -26,7 +26,7 @@ WP-02 brought a full run from five failing browser tests to one (2026-11-11): Ch
 | M8-F21 | The starting relation kinds have no mark of their own: migration 49 finds *blocks* by its place (the first kind, which never moves) | The place is stable; a real mark needs one more column | Only if a later package needs to find a starting kind again |
 | M8-F24 | Layouts saved before migration 49 do not place *Start date* and *Due date*; the two wait under "Fields that are not on this form" | M3-F101 already says so for fields added later; the starting layouts place them | An administrator places them; no migration |
 | M8-F25 | The sample has no small chain of dependencies with dates | Not needed by the server package | WP-12 (sample part 7) |
-| M8-F26 | The loop check reads all dependencies of the kinds with a date effect once per change (one graph, built once) | Fine for one change; not measured on 1 M issues | WP-06 measures it before the plan calls it per row; WP-12 under load |
+| M8-F26 | The loop check reads all dependencies of the kinds with a date effect once per change (one graph, built once) | WP-06: a page of the timeline reads only the dependencies that touch it (one statement, `dependencies_touching`); the preview of *Move it after* reads all of them once (one statement) and walks at most `MANY_CHANGES_JOB_ABOVE` issues. Counted, not timed: the time on 1 M issues waits for the benchmark on a quiet computer | WP-12 times both under load |
 | M8-F27 | When one event moves both dates and changes a length (*Estimated time*), the history shows the length as plain text, not with its own look | The combined sentence replaces the lines of the event | WP-09, with the timeline's history |
 
 ## From WP-04 (work times on the server)
@@ -35,7 +35,7 @@ WP-02 brought a full run from five failing browser tests to one (2026-11-11): Ch
 |----|------|-----------|------------|
 | M8-F30 | *Remove a person* must call `delete_work_times_in` inside the change that ends the membership; built and tested, not yet called | *Remove a person* comes in M9 | M9 |
 | M8-F32 | `members_page` still reads people a page at a time and judges each | Fine at the sample's size | WP-12, under load |
-| M8-F33 | The sum of shares counts only shares that were set; a person in a project with no share row has 100 % that the sum does not count | One rule now (`bb_core::work_times::over_100`) | WP-06 decides whether *Too much at once* counts unset shares |
+| M8-F33 | Decided (WP-06): *Too much at once* counts an unset share as 100 %, the share `work_minutes` gives a person with a role and no share row. The sum of shares (`over_100`) still counts only shares that were set | One rule for the minutes of a day; the sum is WP-04's | WP-07 shows the sum as it is |
 | M8-F34 | Two away times may overlap or repeat; nothing merges them or warns | Not needed by the server package | WP-07, on the screen that enters them |
 | M8-F35 | Done in WP-07: `plan_11_the_e_mail_of_changed_work_times_names_who_and_the_days` sends the e-mail and reads its text | — | — |
 | M8-F36 | Done in WP-07: the glossary has *Afternoon only* / *Morning only*, and `userDocs/time/work-times.md` uses them | — | — |
@@ -76,3 +76,18 @@ WP-02 brought a full run from five failing browser tests to one (2026-11-11): Ch
 | M8-F73 | A shadow of its own starts with one thin layer (0, 1, 2, 0 pixels) in the color of the dimmed page; the editor has no picker of the shadow of the built-in theme, whose parts are CSS text in the theme file | Reading the built-in shadow as parts needs the generator to write it as parts | When a theme file's shadow is written as parts |
 | M8-F74 | A person's choice of an own theme is a setting of that person; the count of people who chose a theme counts every person who has it | *Remove a person* decides what happens to a person's appearance choices | M9 (*Remove a person*) |
 | M8-F75 | On a phone the choices of the fonts in *Shadow, corners and fonts* are cut off ("Text (Segoe UI Variable Te…"): a select shows one line as wide as the screen | The role and the face are both needed to tell the choices apart; a shorter wording or a choice list that wraps is a design question | Next round of the theme editor |
+
+## From WP-06 (the plan on the server)
+
+| ID | What | Why later | Planned in |
+|----|------|-----------|------------|
+| M8-F50 | *Too much at once* counts only the issues of the page and the issues around it, not every issue of the person in the project (code review, finding 7); for the same reason *Keep and accept* of *Too much at once* is taken as it is said | A read of all of a person's dated issues for each person on a page needs its own statement and its measurement on 1 M issues | WP-10 (the list of warnings) or WP-12 (under load) |
+| M8-F51 | *Group by* offers project, goal, person, status and priority; an own choice field is refused with `request.invalid` (deviation 3) | Needs the values of the field for the page and a group key for its choices | WP-09 |
+| M8-F52 | *Move it after* and *Keep and accept* work only in views of *Start date* and *Due date*: move-dates moves only those, and an accepted warning comes back only when they change, not when an own date field of a view changes | Moving and keeping own date fields needs a run of own-field changes | WP-09, if the maintainer wants it |
+| M8-F53 | The *Delay* of a goal offers *Make it longer* and *Keep and accept*; UX §4.7 says *Move it after*, which would move the goal | A choice of the UX | WP-10 with the maintainer |
+| M8-F54 | *Plan by effort* reads work times in a window of a year and a day that starts up to 120 days before the screen; a bar that needs days outside it ends at its edge without saying so (code review, finding 6) | The answer should say that a bar was cut instead of cutting it silently | WP-09 (the card of a bar) |
+| M8-F55 | The first measurement of `POST /api/v1/timeline` on the large dataset (PERF-BENCH, the timeline scenario) | On a quiet computer when the lead says so | WP-12 |
+| M8-F56 | Done (WP-06, first fix round): a page of the timeline runs 90 statements in one project and 94 over three for a reader who sees people by their role. The rights of the reader in every project, the people the page names and their role labels are each read once for the page, so the reads no longer go with the projects or the people a page meets | — | — |
+| M8-F57 | Decided (lead, WP-06 review): "time factor" stays a reserved word of the search language that stands for nothing, like the words of the releases; no search filters, sorts or groups by it | — | — |
+| M8-F58 | The user docs of the timeline screens, the time factor and the ways out | They describe screens | WP-07, WP-09, WP-10 |
+| M8-F59 | ARCH-VERSIONED reads the routes that read by POST from `version-exemptions.toml`, not from the `reads_by_post` mark of the permission table (`route_reading`), which the matrix already uses | One source for "reads by POST" | The next package that touches the checks |
