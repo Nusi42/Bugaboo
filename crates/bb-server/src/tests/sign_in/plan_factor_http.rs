@@ -216,3 +216,37 @@ async fn plan_14_no_report_or_search_sorts_by_time_factor() -> TestResult {
     })
     .await
 }
+
+#[tokio::test]
+async fn plan_14_the_details_of_an_issue_say_who_may_change_the_time_factor() -> TestResult {
+    each_database("plan_14_changeable_time_factor", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut viewer, _) = site.person(StartingRole::Viewer, "vera").await?;
+        let key = super::issues_site::key_of(&site.create(&mut ada, "Plan the release").await?)?;
+        let changeable = async |browser: &mut Browser| -> Result<Value, Failure> {
+            let detail = browser
+                .send("GET", &format!("{ISSUES}/{key}"), None)
+                .await?;
+            Ok(ok(&detail)?["changeable"].clone())
+        };
+        // An administrator may change the field *Time factor*; the issue says so like any field.
+        let by_ada = changeable(&mut ada).await?;
+        assert!(
+            by_ada
+                .as_array()
+                .is_some_and(|all| all.contains(&json!("time-factor"))),
+            "{by_ada}"
+        );
+        // A Viewer may not.
+        let by_viewer = changeable(&mut viewer).await?;
+        assert!(
+            !by_viewer
+                .as_array()
+                .is_some_and(|all| all.contains(&json!("time-factor"))),
+            "{by_viewer}"
+        );
+        Ok(())
+    })
+    .await
+}
