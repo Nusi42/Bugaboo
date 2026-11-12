@@ -8,6 +8,8 @@ import { markSafeHtml, type SafeHtml, type Schema } from "@bugaboo/api-client";
 
 import init, {
   change_sentences,
+  factor_effort,
+  factor_of_length,
   file_sentence,
   initSync,
   length_on_clock,
@@ -89,6 +91,10 @@ export interface Wording {
   readonly lengthOnClock: (minutes: number) => string;
   /** A length of whole minutes in a sentence: *1 hour 30 minutes*. */
   readonly lengthSentence: (minutes: number) => Said;
+  /** The effort of an estimate with a time factor in percent, as the plan counts it (rounded up); none outside the range. */
+  readonly factorEffort: (estimate: number, percent: number) => number | undefined;
+  /** The time factor in percent of *Takes me …* against an estimate, as the server works it out; none without one. */
+  readonly factorOfLength: (estimate: number, takes: number) => number | undefined;
 }
 
 /** Whether a value read from the answer of the module is words: a text, a list or a message. */
@@ -187,6 +193,8 @@ const wording: Wording = {
   readTimeEntry: (typed) => lengthReadIn(ask(() => read_time_entry(JSON.stringify(typed)))),
   lengthOnClock: (minutes) => length_on_clock(minutes),
   lengthSentence: (minutes) => saidIn(length_sentence(minutes)) ?? "",
+  factorEffort: (estimate, percent) => factor_effort(estimate, percent),
+  factorOfLength: (estimate, takes) => factor_of_length(estimate, takes),
 };
 
 /**

@@ -12,6 +12,7 @@ pub mod names;
 
 use bb_core::fields::Field;
 use bb_core::history::TimeEvent;
+use bb_core::plan::TimeFactor;
 use bb_core::theme::{OwnValues, ThemeRead, theme_read};
 use bb_core::time::Minutes;
 use bb_core::wording::{self, Change, File, Notice, Side, Time, TimeChange};
@@ -167,6 +168,24 @@ pub fn length_on_clock(minutes: u32) -> String {
     Minutes::new(minutes).on_clock()
 }
 
+/// The effort of an issue with an estimate of `estimate` minutes and a time factor of `percent`
+/// percent, as the plan counts it (`TimeFactor::effort`: rounded up to the whole minute); `None`
+/// for a factor outside the range.
+#[must_use]
+#[wasm_bindgen]
+pub fn factor_effort(estimate: u32, percent: u16) -> Option<u32> {
+    TimeFactor::new(percent).map(|factor| factor.effort(Minutes::new(estimate)).get())
+}
+
+/// The time factor in percent of *Takes me …* (`takes` minutes) against an estimate of `estimate`
+/// minutes, as the server works it out (`TimeFactor::of_length`); `None` without an estimate or
+/// outside the range.
+#[must_use]
+#[wasm_bindgen]
+pub fn factor_of_length(estimate: u32, takes: u32) -> Option<u16> {
+    TimeFactor::of_length(Minutes::new(estimate), Minutes::new(takes)).map(TimeFactor::percent)
+}
+
 /// An own theme as the editor asks about it: the built-in theme it extends and its values, in the
 /// shape of a theme file.
 #[derive(Deserialize)]
@@ -221,6 +240,16 @@ mod tests {
 
     fn theme_readability_text(asked: &str) -> String {
         answer(asked, rate_asked).unwrap_or_default()
+    }
+
+    #[test]
+    fn plan_14_the_browser_counts_a_time_factor_as_the_plan_does() {
+        // 7h times 1.07 is 449.4 minutes: the plan rounds up, so a factor never loses work.
+        assert_eq!(factor_effort(420, 107), Some(450));
+        assert_eq!(factor_effort(480, 5), None);
+        // Takes 10h against 8h: ×1.25.
+        assert_eq!(factor_of_length(480, 600), Some(125));
+        assert_eq!(factor_of_length(0, 600), None);
     }
 
     #[test]
