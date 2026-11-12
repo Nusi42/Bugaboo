@@ -35,25 +35,11 @@ pub struct ApiError {
     /// The session of the request has ended: the answer also makes the browser forget the
     /// session cookie and what it kept (M2-F06).
     ends_session: bool,
-    /// What changed the record, for `edit.version-changed` (ADR-0019 amendment M3).
-    conflict: Option<Arc<ConflictBody>>,
     /// The field a `field.*` refusal is about.
     field: Option<String>,
-    /// Who took the editing over, for `edit.taken-over` (M3-F176).
-    taken_over_by: Option<Arc<PersonRef>>,
-    /// The mistakes of a search text, for `search.invalid`.
-    mistakes: Option<Arc<Vec<MistakeBody>>>,
-    /// The date of the work day that was left open, for `working-hours.day-left-open`.
-    open_day: Option<String>,
-    /// A loop of dependencies as issue IDs in order, `None` for an issue the person may not see,
-    /// for `relation.dependency-loop`.
-    dependency_loop: Option<Arc<Vec<Option<String>>>>,
-    /// The kinds of relation that have a date effect, for `relation-kind.date-effect-most`.
-    date_effect_kinds: Option<Arc<Vec<String>>>,
-    /// The values of an own theme that may not be set, for `theme.value-refused`.
-    refused_values: Option<Arc<Vec<RefusedValueBody>>>,
-    /// The pairs that are hard to read, for `theme.hard-to-read`.
-    hard_to_read: Option<Arc<Vec<HardPairBody>>>,
+    /// The members beyond the problem itself, boxed so that an error stays small; `None` while
+    /// it has none.
+    extras: Option<Box<Extras>>,
 }
 
 /// Tells [`add_request_id`] which answers to rewrite, and with what.
@@ -63,13 +49,22 @@ struct ProblemOf(ErrorCode, Extras, Option<String>);
 /// The members of an answer beyond the problem itself.
 #[derive(Clone, Debug, Default)]
 pub(crate) struct Extras {
+    /// What changed the record, for `edit.version-changed` (ADR-0019 amendment M3).
     pub(crate) conflict: Option<Arc<ConflictBody>>,
+    /// Who took the editing over, for `edit.taken-over` (M3-F176).
     pub(crate) taken_over_by: Option<Arc<PersonRef>>,
+    /// The mistakes of a search text, for `search.invalid`.
     pub(crate) mistakes: Option<Arc<Vec<MistakeBody>>>,
+    /// The date of the work day that was left open, for `working-hours.day-left-open`.
     pub(crate) open_day: Option<String>,
+    /// A loop of dependencies as issue IDs in order, `None` for an issue the person may not see,
+    /// for `relation.dependency-loop`.
     pub(crate) dependency_loop: Option<Arc<Vec<Option<String>>>>,
+    /// The kinds of relation that have a date effect, for `relation-kind.date-effect-most`.
     pub(crate) date_effect_kinds: Option<Arc<Vec<String>>>,
+    /// The values of an own theme that may not be set, for `theme.value-refused`.
     pub(crate) refused_values: Option<Arc<Vec<RefusedValueBody>>>,
+    /// The pairs that are hard to read, for `theme.hard-to-read`.
     pub(crate) hard_to_read: Option<Arc<Vec<HardPairBody>>>,
 }
 
@@ -81,77 +76,67 @@ impl ApiError {
             code,
             retry_after: None,
             ends_session: false,
-            conflict: None,
             field: None,
-            taken_over_by: None,
-            mistakes: None,
-            open_day: None,
-            dependency_loop: None,
-            date_effect_kinds: None,
-            refused_values: None,
-            hard_to_read: None,
+            extras: None,
         }
     }
 
     /// Names a loop of dependencies, on a `relation.dependency-loop` answer.
     #[must_use]
     pub(crate) fn with_dependency_loop(mut self, issues: Vec<Option<String>>) -> Self {
-        self.dependency_loop = Some(Arc::new(issues));
+        self.extras_mut().dependency_loop = Some(Arc::new(issues));
         self
     }
 
     /// Names the kinds that have a date effect, on a `relation-kind.date-effect-most` answer.
     #[must_use]
     pub(crate) fn with_date_effect_kinds(mut self, kinds: Vec<String>) -> Self {
-        self.date_effect_kinds = Some(Arc::new(kinds));
+        self.extras_mut().date_effect_kinds = Some(Arc::new(kinds));
         self
     }
 
     /// Names the values of an own theme that may not be set, on a `theme.value-refused` answer.
     #[must_use]
     pub(crate) fn with_refused_values(mut self, found: &[bb_core::theme::ValueProblem]) -> Self {
-        self.refused_values = Some(Arc::new(found.iter().map(RefusedValueBody::from).collect()));
+        self.extras_mut().refused_values =
+            Some(Arc::new(found.iter().map(RefusedValueBody::from).collect()));
         self
     }
 
     /// Names the pairs that are hard to read, on a `theme.hard-to-read` answer.
     #[must_use]
     pub(crate) fn with_hard_to_read(mut self, found: &[bb_app::themes::NamedPair]) -> Self {
-        self.hard_to_read = Some(Arc::new(found.iter().map(HardPairBody::from).collect()));
+        self.extras_mut().hard_to_read =
+            Some(Arc::new(found.iter().map(HardPairBody::from).collect()));
         self
     }
 
     /// Names the work day that was left open, on a `working-hours.day-left-open` answer.
     #[must_use]
     pub(crate) fn with_open_day(mut self, date: String) -> Self {
-        self.open_day = Some(date);
+        self.extras_mut().open_day = Some(date);
         self
     }
 
     /// Names who took the editing over, on an `edit.taken-over` answer.
     #[must_use]
     pub(crate) fn with_taken_over_by(mut self, by: PersonRef) -> Self {
-        self.taken_over_by = Some(Arc::new(by));
+        self.extras_mut().taken_over_by = Some(Arc::new(by));
         self
     }
 
     fn extras(&self) -> Extras {
-        Extras {
-            conflict: self.conflict.clone(),
-            taken_over_by: self.taken_over_by.clone(),
-            mistakes: self.mistakes.clone(),
-            open_day: self.open_day.clone(),
-            dependency_loop: self.dependency_loop.clone(),
-            date_effect_kinds: self.date_effect_kinds.clone(),
-            refused_values: self.refused_values.clone(),
-            hard_to_read: self.hard_to_read.clone(),
-        }
+        self.extras.as_deref().cloned().unwrap_or_default()
+    }
+
+    fn extras_mut(&mut self) -> &mut Extras {
+        self.extras.get_or_insert_with(Box::default)
     }
 
     /// Lists the mistakes of the text of a search, on a `search.invalid` answer.
     #[must_use]
     pub(crate) fn with_mistakes(mut self, found: &[bb_app::search::Mistake]) -> Self {
-        self.mistakes = Some(Arc::new(found.iter().map(MistakeBody::from).collect()));
+        self.extras_mut().mistakes = Some(Arc::new(found.iter().map(MistakeBody::from).collect()));
         self
     }
 
@@ -165,7 +150,7 @@ impl ApiError {
     /// Adds what changed the record to an `edit.version-changed` answer.
     #[must_use]
     pub(crate) fn with_conflict(mut self, conflict: ConflictBody) -> Self {
-        self.conflict = Some(Arc::new(conflict));
+        self.extras_mut().conflict = Some(Arc::new(conflict));
         self
     }
 
