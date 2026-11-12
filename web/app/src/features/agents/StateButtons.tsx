@@ -1,5 +1,6 @@
 import { t } from "@bugaboo/messages";
 import { Button, buttonLook, ConfirmDialog, partOf, part } from "@bugaboo/ui";
+import type { ReactNode } from "react";
 
 import { ActionError } from "./ActionError.tsx";
 import { mayAct, type ListedAgent } from "./agents.ts";
@@ -11,13 +12,15 @@ export interface StateButtonsProps {
   readonly change: AgentStateChange;
   /** Only *Stop*: the list of every agent of the organization, where an administrator stops any agent. */
   readonly stopOnly?: boolean;
+  /** The row's *More* on a phone, at the end of the buttons (*My agents*). */
+  readonly more?: ReactNode;
 }
 
 /**
  * *Pause* or *Resume* for the agent's own person, and *Stop* in the color of danger with its
  * question first: the one set of buttons of an agent, on *My agents*, its page and the list of agents.
  */
-export function StateButtons({ agent, change, stopOnly = false }: StateButtonsProps) {
+export function StateButtons({ agent, change, stopOnly = false, more }: StateButtonsProps) {
   if (!mayAct(agent)) {
     return null;
   }
@@ -48,6 +51,7 @@ export function StateButtons({ agent, change, stopOnly = false }: StateButtonsPr
           send("stop");
         }}
       />
+      {more}
       <ActionError error={change.error} />
     </div>
   );

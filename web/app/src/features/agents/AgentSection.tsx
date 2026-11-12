@@ -38,8 +38,7 @@ export function AgentSection({ agent, work }: AgentSectionProps) {
           </span>
           <AgentStateLine agent={agent} />
         </span>
-        <StateButtons agent={agent} change={change} />
-        {swipe.actions(actions, agent.name)}
+        <StateButtons agent={agent} change={change} more={swipe.actions(actions, agent.name)} />
       </div>
       {open.length > 0 ? <WorkLines work={open} /> : null}
       {/* A stopped agent says nothing more than its state: the card is quiet. */}

@@ -13,9 +13,23 @@ import { projectIssuesAddress } from "../../src/shared/paths.ts";
 /** The folder of the pictures of touch everywhere (UX-02), inside the screenshot folder. */
 export const TOUCH_PICTURES = "M8/touch";
 
-/** Shoots the window as it is, named for what it shows, the layout and the theme. */
-function shootAs(page: Page, name: string, theme: Theme): Promise<void> {
-  return shootWindowAs(page, `${name}-${layoutOf(page)}`, TOUCH_PICTURES, theme.id);
+/** Waits until what slides in has stopped: every animation that ends has ended (a pulse that never ends is left). */
+async function stopped(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    const ending: Promise<unknown>[] = [];
+    for (const animation of document.getAnimations()) {
+      if (animation.effect?.getComputedTiming().iterations !== Number.POSITIVE_INFINITY) {
+        ending.push(animation.finished);
+      }
+    }
+    await Promise.all(ending);
+  });
+}
+
+/** Shoots the window once it has stopped, named for what it shows, the layout and the theme. */
+async function shootAs(page: Page, name: string, theme: Theme): Promise<void> {
+  await stopped(page);
+  await shootWindowAs(page, `${name}-${layoutOf(page)}`, TOUCH_PICTURES, theme.id);
 }
 
 /** The open side of a swipe over the first row of each list, and its *More* open as a sheet. */
