@@ -39,7 +39,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(Some(RecordFacts {
             place,
             version: stored.layout.version,
-            edit: Permission::ManageIssueTypes,
+            edit: Some(Permission::ManageIssueTypes),
         }))
     }
 }

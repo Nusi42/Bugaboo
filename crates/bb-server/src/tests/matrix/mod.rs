@@ -27,6 +27,7 @@ mod examples_people;
 mod examples_relations;
 mod examples_searches;
 mod examples_tags;
+mod examples_themes;
 mod examples_time;
 mod examples_workflows;
 mod examples_working_hours;

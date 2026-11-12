@@ -16,8 +16,14 @@ use serde::Serialize;
 
 use crate::message::{Message, MessageKey, Value};
 use crate::relation::DATE_EFFECT_KINDS_MOST;
+use crate::theme::{PERSONAL_THEMES_MOST, THEMES_FOR_EVERYONE_MOST};
 use crate::time::{MINUTES_PER_HOUR, TIME_ENTRY_MINUTES_MAX, TIME_ENTRY_MINUTES_MIN};
 use crate::working_time::GERMANY_KEEP_YEARS_LEAST;
+
+/// A limit of the product as the number of a message.
+fn most(limit: usize) -> Value {
+    Value::Number(i64::try_from(limit).unwrap_or(i64::MAX))
+}
 
 /// Declares the codes. One line per code: variant, text, HTTP status. The word, its lists, its
 /// serde form and its message (`error.<area>.<name>`, with `-` for `_`) come from [`words!`]; the
@@ -281,6 +287,18 @@ error_codes! {
     /// The text of a search cannot be run: the answer lists the mistakes in it, each with the key of
     /// its message and where it is (ADR-0005).
     SearchInvalid => ("search.invalid", 400),
+    /// A value of an own theme is not one it may set, or a token is not one an own theme has: the
+    /// answer names each (`refused_values`, THM-04).
+    ThemeValueRefused => ("theme.value-refused", 400),
+    /// A theme for everyone has pairs that are *Hard to read*: the answer names them
+    /// (`hard_to_read`), and the theme is not saved (THM-03, ADR-0026 update M8).
+    ThemeHardToRead => ("theme.hard-to-read", 400),
+    /// The organization has the most themes for everyone it may have
+    /// (`bb_core::theme::THEMES_FOR_EVERYONE_MOST`).
+    ThemesForEveryoneMost => ("theme.too-many-for-everyone", 409),
+    /// The person has the most personal themes one may have
+    /// (`bb_core::theme::PERSONAL_THEMES_MOST`).
+    PersonalThemesMost => ("theme.too-many-personal", 409),
     /// The person's last work day was never ended: the answer names its date (`open_day`), and
     /// the person says when it ended before a new one starts (ADR-0035, decision 5).
     WorkDayLeftOpen => ("working-hours.day-left-open", 409),
@@ -335,10 +353,9 @@ impl ErrorCode {
             Self::KeepYearsTooShort => {
                 vec![("years", Value::Number(GERMANY_KEEP_YEARS_LEAST))]
             }
-            Self::RelationKindDateEffectMost => vec![(
-                "most",
-                Value::Number(i64::try_from(DATE_EFFECT_KINDS_MOST).unwrap_or(i64::MAX)),
-            )],
+            Self::RelationKindDateEffectMost => vec![("most", most(DATE_EFFECT_KINDS_MOST))],
+            Self::ThemesForEveryoneMost => vec![("most", most(THEMES_FOR_EVERYONE_MOST))],
+            Self::PersonalThemesMost => vec![("most", most(PERSONAL_THEMES_MOST))],
             _ => Vec::new(),
         }
     }

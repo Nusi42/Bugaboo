@@ -4596,6 +4596,104 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/themes": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The own themes the person may use: those for everyone and their own personal ones. */
+    get: operations["listThemes"];
+    put?: never;
+    /**
+     * Makes a new own theme that extends a built-in theme. It is listed nowhere until its first save.
+     *     A theme for everyone needs *Change organization settings*.
+     */
+    post: operations["createTheme"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/themes/upload": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Makes an own theme from a file in the shape of a download (at most 64 KiB), checked like a
+     *     save and saved at once: a part or a value that is not allowed is refused with its name.
+     */
+    post: operations["uploadTheme"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/themes/{theme}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** One own theme with its values and the pairs that are hard to read. */
+    get: operations["getTheme"];
+    /**
+     * Saves the name and the values of an own theme, under the edit lock the person holds. A theme
+     *     for everyone with a pair that is hard to read is refused (`theme.hard-to-read`, naming the
+     *     pairs); a personal one is saved, and the answer names them.
+     */
+    put: operations["saveTheme"];
+    post?: never;
+    /** Takes an own theme away. A choice of it counts as the built-in theme it extended. */
+    delete: operations["deleteTheme"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/themes/{theme}/copy": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Keeps an own theme the person may use as a new one (*Save a copy*), saved at once. */
+    post: operations["copyTheme"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/themes/{theme}/file": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** An own theme as a file, in the shape an upload takes. */
+    get: operations["downloadTheme"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/uploads/{upload}": {
     parameters: {
       query?: never;
@@ -4811,6 +4909,46 @@ export interface paths {
      *     counted. Needs the permission *Manage workflows* wherever the workflow is used.
      */
     post: operations["previewPublishWorkflow"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/themes/{theme}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The style sheet of a saved own theme: its variables under `data-own-theme`, for every person
+     *     who may use the theme.
+     */
+    get: operations["getThemeSheet"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/themes/{theme}/draft.css": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The style sheet of the person's own draft of a theme, for the preview of the editor: served to
+     *     nobody else.
+     */
+    get: operations["getThemeDraftSheet"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -5918,6 +6056,15 @@ export interface components {
       /** @description What it is called. */
       name?: string | null;
     };
+    /** @description The own theme a choice of a theme names. */
+    ChosenThemeBody: {
+      /** @description The ID of the built-in theme it extends, which the page shows under it. */
+      extends: string;
+      /** @description The ID of the theme: the value of the attribute `data-own-theme` of the page. */
+      id: string;
+      /** @description The address of its style sheet, which changes with every save. */
+      sheet: string;
+    };
     /** @description What the setup screen of the code app shows. */
     CodeAppBody: {
       /** @description The address the code app reads. */
@@ -6058,6 +6205,8 @@ export interface components {
        *     is `null`, so the loop never names it. Only for `relation.dependency-loop`.
        */
       dependency_loop?: (string | null)[] | null;
+      /** @description The pairs of colors that are *Hard to read*; only for `theme.hard-to-read`. */
+      hard_to_read?: components["schemas"]["HardPairBody"][] | null;
       /**
        * @description The mistakes of the text of a search, each with the key of its message and the bytes it
        *     stands on; only for `search.invalid`.
@@ -6068,6 +6217,11 @@ export interface components {
        *     `working-hours.day-left-open`, so the screen can ask when it ended.
        */
       open_day?: string | null;
+      /**
+       * @description The values of an own theme that may not be set, each by its token; only for
+       *     `theme.value-refused`.
+       */
+      refused_values?: components["schemas"]["RefusedValueBody"][] | null;
       taken_over_by?: components["schemas"]["PersonRef"] | null;
     };
     /** @description An app a person allowed, in a list: the fields that can be asked for. */
@@ -6096,6 +6250,13 @@ export interface components {
     CopyBody: {
       /** @description What the copy is called; the name of the original when left out. */
       name?: string | null;
+    };
+    /** @description A copy of an own theme to keep. */
+    CopyThemeBody: {
+      /** @description For everyone (needs *Change organization settings*) or personal. */
+      kind: components["schemas"]["ThemeKind"];
+      /** @description What the copy is called. */
+      name: string;
     };
     /** @description An agent key to make. */
     CreateAgentKeyBody: {
@@ -6493,6 +6654,10 @@ export interface components {
       | "edit.taken-over"
       | "edit.in-progress"
       | "search.invalid"
+      | "theme.value-refused"
+      | "theme.hard-to-read"
+      | "theme.too-many-for-everyone"
+      | "theme.too-many-personal"
       | "working-hours.day-left-open"
       | "working-hours.day-running"
       | "working-hours.day-not-running"
@@ -6986,6 +7151,20 @@ export interface components {
     HandleBody: {
       /** @description The handle, without the `@`. */
       handle: string;
+    };
+    /**
+     * @description A pair of colors of a theme that is *Hard to read*, by its tokens: the refusal of a theme for
+     *     everyone, and the warning of a personal one.
+     */
+    HardPairBody: {
+      /** @description The first color: the text, the line or the state. */
+      first: string;
+      /** @description Whether the pair is read with the colors for more contrast. */
+      more_contrast: boolean;
+      /** @description The color to change to mend it. */
+      place: string;
+      /** @description The second color: the background, the surface or the other state. */
+      second: string;
     };
     /** @description Somebody else is editing. */
     HeldLockBody: {
@@ -8374,6 +8553,15 @@ export interface components {
       /** @description The search text. */
       search_text: string;
     };
+    /** @description A new own theme. */
+    NewThemeBody: {
+      /** @description The ID of the built-in theme it extends. */
+      extends: string;
+      /** @description For everyone (needs *Change organization settings*) or personal. */
+      kind: components["schemas"]["ThemeKind"];
+      /** @description What it is called. */
+      name: string;
+    };
     /** @description Time booked by hand. */
     NewTimeEntryBody: {
       /** @description The date the time belongs to (YYYY-MM-DD). */
@@ -9685,6 +9873,7 @@ export interface components {
       | "setup-code"
       | "starting-roles"
       | "tag"
+      | "theme"
       | "time-entry"
       | "timer"
       | "starter-fields"
@@ -9712,6 +9901,19 @@ export interface components {
      * @enum {string}
      */
     RefusalReason: "no-such-change" | "not-for-you" | "not-named" | "only-if" | "cannot-fill";
+    /**
+     * @description A value of an own theme that is refused, by the token (or the part of the file) it is stored
+     *     under.
+     */
+    RefusedValueBody: {
+      /**
+       * @description The name of the value: of the token it sets, or of the part of the file that is not one an
+       *     own theme has.
+       */
+      name: string;
+      /** @description Why it is refused. */
+      reason: components["schemas"]["ValueProblemKind"];
+    };
     /** @description One relation as one end of it reads it. */
     RelatedIssueItem: {
       /** @description Which end the issue asked about is at. */
@@ -10092,6 +10294,20 @@ export interface components {
       /**
        * Format: int64
        * @description The version of the record the person started from.
+       */
+      version: number;
+    };
+    /** @description The values of an own theme to save. */
+    SaveThemeBody: {
+      /** @description The token the edit lock was taken with. */
+      lock_token: string;
+      /** @description What it is called now. */
+      name: string;
+      /** @description The values it changes, in the shape of `values` of a theme. */
+      values: Record<string, unknown>;
+      /**
+       * Format: int64
+       * @description The version the person started from.
        */
       version: number;
     };
@@ -10484,6 +10700,7 @@ export interface components {
       name_key: string;
       /** @description Whether this level has a value of its own, which *Reset to default* takes away. */
       own: boolean;
+      own_theme?: components["schemas"]["ChosenThemeBody"] | null;
       /** @description Where it comes from. */
       source: components["schemas"]["SourceBody"];
       unit?: components["schemas"]["SettingUnit"] | null;
@@ -10919,6 +11136,71 @@ export interface components {
        */
       version: number;
     };
+    /** @description An own theme as a person who may use it sees it. */
+    ThemeBody: {
+      /** @description The value the settings *Light theme* or *Dark theme* keep when the person chooses it. */
+      choice: string;
+      /** @description The ID of the built-in theme it extends. */
+      extends: string;
+      /** @description The ID. */
+      id: string;
+      /** @description For everyone or personal. */
+      kind: components["schemas"]["ThemeKind"];
+      /** @description Whether it is a light theme (it extends a light built-in theme). */
+      light: boolean;
+      /** @description Whether the person may change it and take it away. */
+      may_change: boolean;
+      /** @description What it is called. */
+      name: string;
+      /** @description Whether it was saved at least once; a theme that was not is listed nowhere. */
+      saved: boolean;
+      /**
+       * @description The address of its style sheet, which changes with every save. Absent while it was never
+       *     saved.
+       */
+      sheet?: string | null;
+      /**
+       * Format: int64
+       * @description Counts up with every save; a change and a deletion send it back.
+       */
+      version: number;
+    };
+    /** @description An own theme with its values and the pairs that are hard to read. */
+    ThemeDetailBody: {
+      /**
+       * @description The pairs of its colors that are *Hard to read*: the warning of a personal theme. A theme
+       *     for everyone with any is never saved.
+       */
+      hard_to_read: components["schemas"]["HardPairBody"][];
+      /** @description The theme. */
+      theme: components["schemas"]["ThemeBody"];
+      /**
+       * @description The values it changes of the built-in theme it extends: `colors` (each with `value` and,
+       *     optionally, `more`), `shadow` (at most two layers), `radii` and `fonts`.
+       */
+      values: Record<string, unknown>;
+    };
+    /** @description An own theme as a file: what a download gives and an upload takes. */
+    ThemeFileBody: {
+      /** @description The ID of the built-in theme it extends. */
+      extends: string;
+      /** @description What the theme is called. */
+      name: string;
+      /** @description The values it changes, as in a theme. */
+      values: Record<string, unknown>;
+    };
+    /**
+     * @description Whether an own theme is for everyone in the organization or personal to the person who made it.
+     * @enum {string}
+     */
+    ThemeKind: "for_everyone" | "personal";
+    /** @description The own themes a person may use. */
+    ThemeListBody: {
+      /** @description The themes for everyone and the person's own personal themes, by name. */
+      themes: components["schemas"]["ThemeBody"][];
+      /** @description Whether the list was cut at its cap; the limits of the number of themes keep it below. */
+      truncated: boolean;
+    };
     /** @description One of the person's own time entries. */
     TimeEntryItem: {
       /**
@@ -11207,6 +11489,18 @@ export interface components {
     };
     /** @description What a setting holds: yes or no, a whole number, or text. */
     ValueBody: boolean | number | string;
+    /**
+     * @description Why a value of an own theme is refused: a token it may not set, a color, shadow, corner or text face that is not allowed, or a value of the wrong shape.
+     * @enum {string}
+     */
+    ValueProblemKind:
+      | "unknown-name"
+      | "not-a-color"
+      | "more-is-the-same"
+      | "bad-shadow"
+      | "radius-out-of-bounds"
+      | "not-a-stack"
+      | "bad-shape";
     /** @description The versions of the records asked about, in the order asked. */
     VersionsBody: {
       /** @description One entry for each record asked about. */
@@ -21150,6 +21444,268 @@ export interface operations {
       503: components["responses"]["Unavailable"];
     };
   };
+  listThemes: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The themes, by name. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ThemeListBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  createTheme: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NewThemeBody"];
+      };
+    };
+    responses: {
+      /** @description The new theme. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ThemeBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      409: components["responses"]["Conflict"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  uploadTheme: {
+    parameters: {
+      query: {
+        /** @description For everyone (needs *Change organization settings*) or personal. */
+        kind: components["schemas"]["ThemeKind"];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ThemeFileBody"];
+      };
+    };
+    responses: {
+      /** @description The new theme. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ThemeDetailBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      409: components["responses"]["Conflict"];
+      /** @description The file is bigger than 64 KiB. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  getTheme: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the theme. */
+        theme: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The theme. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ThemeDetailBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  saveTheme: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the theme. */
+        theme: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SaveThemeBody"];
+      };
+    };
+    responses: {
+      /** @description The theme as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ThemeDetailBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  deleteTheme: {
+    parameters: {
+      query: {
+        /** @description The version the person looked at. */
+        version: number;
+      };
+      header?: never;
+      path: {
+        /** @description The ID of the theme. */
+        theme: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The theme is gone. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  copyTheme: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the theme that is copied. */
+        theme: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CopyThemeBody"];
+      };
+    };
+    responses: {
+      /** @description The copy. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ThemeDetailBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  downloadTheme: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the theme. */
+        theme: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The theme as a file. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ThemeFileBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
   getUpload: {
     parameters: {
       query?: never;
@@ -21646,6 +22202,72 @@ export interface operations {
       403: components["responses"]["Forbidden"];
       404: components["responses"]["NotFound"];
       413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  getThemeSheet: {
+    parameters: {
+      query?: {
+        /** @description The version of the theme, or of the draft, the address was made for. */
+        v?: number;
+      };
+      header?: never;
+      path: {
+        /** @description The ID of the theme followed by `.css`. */
+        theme: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The style sheet. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "text/css": string;
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  getThemeDraftSheet: {
+    parameters: {
+      query?: {
+        /** @description The version of the theme, or of the draft, the address was made for. */
+        v?: number;
+      };
+      header?: never;
+      path: {
+        /** @description The ID of the theme. */
+        theme: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The style sheet of the draft. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "text/css": string;
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];

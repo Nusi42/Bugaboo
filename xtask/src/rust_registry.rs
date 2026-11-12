@@ -167,7 +167,8 @@ fn literal(expr: &syn::Expr) -> Option<(String, String)> {
     }
 }
 
-/// `Format::Choices(NAME)` as `NAME`; nothing for any other format. A format that says `Choices`
+/// `Format::Choices(NAME)` (or `Format::Themes(NAME)`, whose list is the built-in themes) as `NAME`;
+/// nothing for any other format. A format that says `Choices`
 /// but not as `Choices(NAME)` is an error: its choices would be left out of the browser's list
 /// without a word.
 fn choices_of(expr: &syn::Expr) -> syn::Result<Option<String>> {
@@ -181,7 +182,7 @@ fn choices_of(expr: &syn::Expr) -> syn::Result<Option<String>> {
         .path
         .segments
         .last()
-        .is_none_or(|segment| segment.ident != "Choices")
+        .is_none_or(|segment| segment.ident != "Choices" && segment.ident != "Themes")
     {
         return Ok(None);
     }

@@ -509,6 +509,15 @@ fn is_route(template: &str, route: &str) -> bool {
 /// never stored and has no tag.
 fn assert_cache_rules(method: &str, path: &str, reply: &Reply) {
     let route = path.split('?').next().unwrap_or(path);
+    // The style sheet of an own theme is no API answer: its address names its version, and only the
+    // browser of the person keeps it (ADR-0026, update M8).
+    if route.starts_with(THEME_SHEETS) && reply.status == StatusCode::OK {
+        assert!(
+            reply.header("cache-control").starts_with("private, "),
+            "{method} {path}"
+        );
+        return;
+    }
     let kept = method == "GET"
         && reply.status == StatusCode::OK
         && !never_stored_reads()
@@ -525,6 +534,9 @@ fn assert_cache_rules(method: &str, path: &str, reply: &Reply) {
         assert_eq!(reply.header("etag"), "", "{method} {path}");
     }
 }
+
+/// Where the style sheets of own themes are.
+const THEME_SHEETS: &str = "/themes/";
 
 /// The address of the first administrator (Ada), whom the setup call makes.
 pub(crate) const ADA_EMAIL: &str = "ada@example.test";

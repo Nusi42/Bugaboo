@@ -23,6 +23,7 @@ use super::scenarios_notifications as sn;
 use super::scenarios_relations as sr;
 use super::scenarios_searches as ss;
 use super::scenarios_tags as st;
+use super::scenarios_themes as sth;
 use super::scenarios_time as sti;
 use super::scenarios_workflows as sw;
 use super::scenarios_working_hours as swh;
@@ -194,6 +195,11 @@ table! {
     "create_layout" => sl::create_layout_scenario,
     "save_layout" => sl::save_layout_scenario,
     "delete_layout" => sl::delete_layout_scenario,
+    "create_theme" => sth::create_theme_scenario,
+    "save_theme" => sth::save_theme_scenario,
+    "copy_theme" => sth::copy_theme_scenario,
+    "upload_theme" => sth::upload_theme_scenario,
+    "delete_theme" => sth::delete_theme_scenario,
     "create_starting_workflows" => sw::create_starting_workflows_scenario,
     "create_workflow" => sw::create_workflow_scenario,
     "use_workflow" => sw::use_workflow_scenario,

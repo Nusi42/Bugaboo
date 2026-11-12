@@ -48,7 +48,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 RecordFacts {
                     place,
                     version: comment.version,
-                    edit: Permission::Comment,
+                    edit: Some(Permission::Comment),
                 },
             ),
         )

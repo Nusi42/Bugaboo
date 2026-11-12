@@ -6,9 +6,8 @@
 use std::future::Future;
 
 use bb_core::id::{ThemeId, UserId};
-use bb_core::theme::{OwnTheme, OwnValues};
+use bb_core::theme::OwnTheme;
 use bb_core::version::Version;
-use jiff::Timestamp;
 
 use crate::ports::ChangeStore;
 use crate::store_macros::{queries, reads, writes};
@@ -16,11 +15,12 @@ use crate::store_macros::{queries, reads, writes};
 /// What the own-theme use cases need from storage.
 pub trait ThemeStore: ChangeStore + 'static {
     queries! {
-        /// The theme with this ID, also one that was never saved (a draft).
+        /// The theme with this ID, also one that was never saved.
         fn own_theme(id: ThemeId) -> Option<OwnTheme> = own_theme_in;
-        /// How many themes for everyone are saved.
+        /// How many themes for everyone there are, saved or not: a theme that is only made counts
+        /// against the limit too, so a flood of new themes is refused like a flood of saves.
         fn count_themes_for_everyone() -> u64 = count_themes_for_everyone_in;
-        /// How many personal themes a person has saved.
+        /// How many personal themes a person has, saved or not.
         fn count_personal_themes_of(maker: UserId) -> u64 = count_personal_themes_of_in;
     }
 
@@ -31,14 +31,11 @@ pub trait ThemeStore: ChangeStore + 'static {
     }
 
     writes! {
-        /// Adds a theme (a draft, until its first save).
+        /// Adds a theme; it is listed nowhere until its first save.
         fn insert_own_theme(theme: &OwnTheme) -> ();
-        /// Writes a save: name, built-in theme and values, clears the draft, counts the version up,
-        /// sets the first save moment, and says whether the theme was still at `version`.
+        /// Writes a save: name and values, counts the version up, sets the first save moment, and
+        /// says whether the theme was still at `version`.
         fn save_own_theme(theme: &OwnTheme, version: Version) -> bool;
-        /// Keeps the unsaved values of the editor, counts the version of the draft up, and says
-        /// whether the theme exists.
-        fn keep_draft(id: ThemeId, draft: &OwnValues, now: Timestamp) -> bool;
         /// Takes a theme away, and says whether it was still at `version`.
         fn delete_own_theme(id: ThemeId, version: Version) -> bool;
     }

@@ -161,6 +161,7 @@ pub(crate) struct State {
     pub(crate) agent_work: Vec<(bb_core::id::AgentId, super::fake_agents::AgentWork)>,
     pub(crate) work: super::fake_agent_work::FakeAgentWork,
     pub(crate) saved_searches: Vec<bb_core::saved_search::SavedSearch>,
+    pub(crate) own_themes: Vec<bb_core::theme::OwnTheme>,
     pub(crate) search_columns: Vec<bb_core::saved_search::SearchColumn>,
     pub(crate) search_shares: Vec<bb_core::saved_search::SearchShare>,
     pub(crate) default_lists: Vec<bb_core::saved_search::ProjectDefaultList>,

@@ -87,7 +87,7 @@ impl EditableRecords for TestNotes {
             .map(|version| RecordFacts {
                 place: Place::from(*locked(&self.project)),
                 version,
-                edit: Permission::ChangeIssues,
+                edit: Some(Permission::ChangeIssues),
             });
         Box::pin(async move { Ok(found) })
     }

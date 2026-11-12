@@ -85,7 +85,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(Some(RecordFacts {
             place,
             version: stored.workflow.version,
-            edit: Permission::ManageWorkflows,
+            edit: Some(Permission::ManageWorkflows),
         }))
     }
 }

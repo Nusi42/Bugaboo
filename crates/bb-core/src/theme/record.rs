@@ -1,5 +1,6 @@
 //! The stored own theme (THM-04, ADR-0026 update M8): its name, whether it is for everyone or
-//! personal, the built-in theme it extends, the values it changes, and the draft of the editor.
+//! personal, the built-in theme it extends and the values it changes. The unsaved values of the
+//! editor are the editor's draft of the theme (ADR-0019), kept like the draft of any other record.
 
 use jiff::Timestamp;
 
@@ -18,6 +19,11 @@ words! {
         Personal => "personal",
     }
 }
+
+words_in_api!(
+    ThemeKind,
+    "Whether an own theme is for everyone in the organization or personal to the person who made it."
+);
 
 /// The name of an own theme: trimmed, not empty, at most [`THEME_NAME_MOST`] characters and without
 /// control characters. It names a look, not a person.
@@ -77,12 +83,6 @@ pub struct OwnTheme {
     /// The values it changes.
     #[not_personal]
     pub values: OwnValues,
-    /// The unsaved values of the editor, for its editor only; `None` when there is no draft.
-    #[not_personal]
-    pub draft: Option<OwnValues>,
-    /// Counts up with every change of the draft: the `v` of the address of its style sheet.
-    #[not_personal]
-    pub draft_version: i64,
     /// When it was first saved; `None` while it is only a draft, which is listed nowhere.
     #[not_personal]
     pub saved_at: Option<Timestamp>,

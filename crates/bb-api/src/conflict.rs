@@ -10,7 +10,9 @@
 use std::collections::BTreeMap;
 
 use bb_app::editing::Conflict;
+use bb_app::themes::NamedPair;
 use bb_core::Problem;
+use bb_core::theme::{ValueProblem, ValueProblemKind};
 use bb_policy::PersonRef;
 use serde::Serialize;
 use utoipa::ToSchema;
@@ -72,6 +74,58 @@ pub(crate) struct ConflictProblem {
     /// `relation-kind.date-effect-most`.
     #[serde(skip_serializing_if = "Option::is_none")]
     date_effect_kinds: Option<Vec<String>>,
+    /// The values of an own theme that may not be set, each by its token; only for
+    /// `theme.value-refused`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    refused_values: Option<Vec<RefusedValueBody>>,
+    /// The pairs of colors that are *Hard to read*; only for `theme.hard-to-read`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    hard_to_read: Option<Vec<HardPairBody>>,
+}
+
+/// A value of an own theme that is refused, by the token (or the part of the file) it is stored
+/// under.
+#[derive(Clone, Debug, Serialize, ToSchema)]
+pub(crate) struct RefusedValueBody {
+    /// The name of the value: of the token it sets, or of the part of the file that is not one an
+    /// own theme has.
+    name: String,
+    /// Why it is refused.
+    reason: ValueProblemKind,
+}
+
+impl From<&ValueProblem> for RefusedValueBody {
+    fn from(problem: &ValueProblem) -> Self {
+        Self {
+            name: problem.token.clone(),
+            reason: problem.kind,
+        }
+    }
+}
+
+/// A pair of colors of a theme that is *Hard to read*, by its tokens: the refusal of a theme for
+/// everyone, and the warning of a personal one.
+#[derive(Clone, Debug, Serialize, ToSchema)]
+pub(crate) struct HardPairBody {
+    /// The first color: the text, the line or the state.
+    first: String,
+    /// The second color: the background, the surface or the other state.
+    second: String,
+    /// The color to change to mend it.
+    place: String,
+    /// Whether the pair is read with the colors for more contrast.
+    more_contrast: bool,
+}
+
+impl From<&NamedPair> for HardPairBody {
+    fn from(pair: &NamedPair) -> Self {
+        Self {
+            first: pair.first.clone(),
+            second: pair.second.clone(),
+            place: pair.place.clone(),
+            more_contrast: pair.more_contrast,
+        }
+    }
 }
 
 /// One mistake in the text of a search (ADR-0005): what the browser needs to write the message in
@@ -113,6 +167,8 @@ impl ConflictProblem {
             open_day: extras.open_day.clone(),
             dependency_loop: extras.dependency_loop.as_deref().cloned(),
             date_effect_kinds: extras.date_effect_kinds.as_deref().cloned(),
+            refused_values: extras.refused_values.as_deref().cloned(),
+            hard_to_read: extras.hard_to_read.as_deref().cloned(),
         }
     }
 }

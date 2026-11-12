@@ -7,6 +7,7 @@ use serde_json::Value;
 
 use crate::error_code::ErrorCode;
 use crate::message::MessageKey;
+use crate::theme::OwnChoice;
 use crate::time::zone;
 
 /// One value a setting with a fixed list can have, and the words that name it.
@@ -60,6 +61,10 @@ pub enum Format {
     Free,
     /// One of a fixed list.
     Choices(&'static [Choice]),
+    /// One of the built-in themes of the list, or an own theme that extends one of them
+    /// ([`OwnChoice`]): whether the person may use that own theme is the business of the use case
+    /// that stores it, which asks the store (ADR-0026, update M8).
+    Themes(&'static [Choice]),
     /// `device`, or a time zone of the list the server carries (`Europe/Berlin`, `UTC`).
     TimeZone,
     /// The address of a page of the app: starts with one slash and never names another website: no
@@ -85,6 +90,12 @@ impl Format {
         match self {
             Self::Free => true,
             Self::Choices(choices) => choices.iter().any(|choice| choice.value == text),
+            Self::Themes(choices) => {
+                choices.iter().any(|choice| choice.value == text)
+                    || OwnChoice::read(text).is_some_and(|own| {
+                        choices.iter().any(|choice| choice.value == own.extends.id)
+                    })
+            }
             Self::TimeZone => is_time_zone(text),
             Self::PageAddress => is_page_address(text),
             Self::ShortcutKeys => are_shortcut_keys(text),
@@ -102,6 +113,7 @@ impl Format {
             Self::Hosts => ErrorCode::SettingHostsNotBare,
             Self::Free
             | Self::Choices(_)
+            | Self::Themes(_)
             | Self::PageAddress
             | Self::ShortcutKeys
             | Self::WindowSizes => ErrorCode::InvalidRequest,
@@ -112,7 +124,7 @@ impl Format {
     #[must_use]
     pub const fn choices(self) -> &'static [Choice] {
         match self {
-            Self::Choices(choices) => choices,
+            Self::Choices(choices) | Self::Themes(choices) => choices,
             Self::Free
             | Self::TimeZone
             | Self::PageAddress

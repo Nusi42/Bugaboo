@@ -21,8 +21,8 @@ use bb_core::event::{Actor as EventActor, DomainEvent, EntityKind, EntityRef, Re
 use bb_core::fields::{Field, FieldKey};
 use bb_core::id::{
     AgentId, AgentWorkId, FieldId, GroupId, IssueId, IssueTypeId, LabelGroupId, LabelId, LayoutId,
-    ProjectId, RelationKindId, RoleId, SavedSearchId, StandingRuleId, TagId, TimeEntryId, UserId,
-    WorkDayId, WorkflowId,
+    ProjectId, RelationKindId, RoleId, SavedSearchId, StandingRuleId, TagId, ThemeId, TimeEntryId,
+    UserId, WorkDayId, WorkflowId,
 };
 use bb_core::own_fields::FieldType;
 use bb_core::people_kinds::PeopleKind;
@@ -153,6 +153,8 @@ fn shown_by_us(kind: &EntityKind, field: &str) -> Shown {
             member::label::COLOR,
             member::label::RETIRED,
         ]
+    } else if *kind == EntityKind::from(RecordKind::Theme) {
+        &[member::theme::NAME, member::theme::VALUES]
     } else if *kind == EntityKind::from(RecordKind::Setting) {
         &[
             member::sign_up_policy::ENABLED,
@@ -280,6 +282,13 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(failed)?
             .filter(|search| search.maker == stale.viewer && search.deleted_at.is_none())
             .map(|search| search.version),
+            // A personal theme, and one never saved, is its maker's own: nobody else is told its
+            // version.
+            RecordKind::Theme => found(ThemeId::from_bytes(bytes).ok(), |id| store.own_theme(id))
+                .await
+                .map_err(failed)?
+                .filter(|theme| crate::themes::usable_by(theme, stale.viewer))
+                .map(|theme| theme.version),
             // A timer and a time entry are their person's own: nobody else is told their version.
             RecordKind::Timer => found(UserId::from_bytes(bytes).ok(), |id| store.timer(id))
                 .await

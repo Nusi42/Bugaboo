@@ -20,7 +20,7 @@ use bb_policy::PersonRef;
 use serde::de::DeserializeOwned;
 
 use crate::api::is_api;
-use crate::conflict::{ConflictBody, ConflictProblem, MistakeBody};
+use crate::conflict::{ConflictBody, ConflictProblem, HardPairBody, MistakeBody, RefusedValueBody};
 use crate::cookies::Cookie;
 use crate::logging::RequestId;
 
@@ -50,6 +50,10 @@ pub struct ApiError {
     dependency_loop: Option<Arc<Vec<Option<String>>>>,
     /// The kinds of relation that have a date effect, for `relation-kind.date-effect-most`.
     date_effect_kinds: Option<Arc<Vec<String>>>,
+    /// The values of an own theme that may not be set, for `theme.value-refused`.
+    refused_values: Option<Arc<Vec<RefusedValueBody>>>,
+    /// The pairs that are hard to read, for `theme.hard-to-read`.
+    hard_to_read: Option<Arc<Vec<HardPairBody>>>,
 }
 
 /// Tells [`add_request_id`] which answers to rewrite, and with what.
@@ -65,6 +69,8 @@ pub(crate) struct Extras {
     pub(crate) open_day: Option<String>,
     pub(crate) dependency_loop: Option<Arc<Vec<Option<String>>>>,
     pub(crate) date_effect_kinds: Option<Arc<Vec<String>>>,
+    pub(crate) refused_values: Option<Arc<Vec<RefusedValueBody>>>,
+    pub(crate) hard_to_read: Option<Arc<Vec<HardPairBody>>>,
 }
 
 impl ApiError {
@@ -82,6 +88,8 @@ impl ApiError {
             open_day: None,
             dependency_loop: None,
             date_effect_kinds: None,
+            refused_values: None,
+            hard_to_read: None,
         }
     }
 
@@ -96,6 +104,20 @@ impl ApiError {
     #[must_use]
     pub(crate) fn with_date_effect_kinds(mut self, kinds: Vec<String>) -> Self {
         self.date_effect_kinds = Some(Arc::new(kinds));
+        self
+    }
+
+    /// Names the values of an own theme that may not be set, on a `theme.value-refused` answer.
+    #[must_use]
+    pub(crate) fn with_refused_values(mut self, found: &[bb_core::theme::ValueProblem]) -> Self {
+        self.refused_values = Some(Arc::new(found.iter().map(RefusedValueBody::from).collect()));
+        self
+    }
+
+    /// Names the pairs that are hard to read, on a `theme.hard-to-read` answer.
+    #[must_use]
+    pub(crate) fn with_hard_to_read(mut self, found: &[bb_app::themes::NamedPair]) -> Self {
+        self.hard_to_read = Some(Arc::new(found.iter().map(HardPairBody::from).collect()));
         self
     }
 
@@ -121,6 +143,8 @@ impl ApiError {
             open_day: self.open_day.clone(),
             dependency_loop: self.dependency_loop.clone(),
             date_effect_kinds: self.date_effect_kinds.clone(),
+            refused_values: self.refused_values.clone(),
+            hard_to_read: self.hard_to_read.clone(),
         }
     }
 

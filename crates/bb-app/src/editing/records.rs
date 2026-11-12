@@ -27,8 +27,10 @@ pub struct RecordFacts {
     /// The version the record has now.
     pub version: i64,
     /// What this person needs to change the record (for an issue: *Change issues*, or *Change own
-    /// issues* when they reported it).
-    pub edit: Permission,
+    /// issues* when they reported it). `None` for a record that is the person's own and that no
+    /// permission reaches (a personal theme): its facts are given to that person only, who may
+    /// change it.
+    pub edit: Option<Permission>,
 }
 
 /// How a change of a record is shown to somebody who was told that the record changed
@@ -143,6 +145,23 @@ impl EditableRecords for NoRecords {
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
+    /// What the actor holds where the record sits, when it lets them change the record: the
+    /// permission of the facts, or nothing more for a record that is their own.
+    ///
+    /// # Errors
+    /// `access.forbidden` (or `resource.not-found` for a project they may not know) without the
+    /// permission.
+    pub(crate) async fn require_to_change(
+        &self,
+        actor: &Actor,
+        facts: &RecordFacts,
+    ) -> Result<Arc<bb_policy::Evaluation>, AppError> {
+        match facts.edit {
+            Some(permission) => self.require(actor, permission, facts.place).await,
+            None => self.evaluation_of(actor, facts.place).await,
+        }
+    }
+
     /// What the actor may know about the record: its place, version and the permission that
     /// changes it. A record the actor may not know about is `resource.not-found`, exactly like
     /// one that does not exist.
@@ -170,7 +189,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             return Ok(RecordFacts {
                 place: Place::Project(id),
                 version: project.version,
-                edit: Permission::ChangeProjectSettings,
+                edit: Some(Permission::ChangeProjectSettings),
             });
         }
         let facts = if record.kind == EntityKind::from(RecordKind::Issue) {
@@ -179,6 +198,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             self.layout_facts(actor, record).await?
         } else if record.kind == EntityKind::from(RecordKind::Workflow) {
             self.workflow_facts(actor, record).await?
+        } else if record.kind == EntityKind::from(RecordKind::Theme) {
+            self.theme_facts(actor, record).await?
         } else if record.kind == EntityKind::from(RecordKind::Comment) {
             self.comment_facts(actor.person.id, record).await?
         } else {

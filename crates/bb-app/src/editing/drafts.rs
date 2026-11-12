@@ -39,7 +39,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         match target {
             DraftTarget::Editing(what) => {
                 let facts = self.facts_for_part(actor, what, Need::Change).await?;
-                self.require(actor, facts.edit, facts.place).await
+                self.require_to_change(actor, &facts).await
             }
             DraftTarget::NewRecord { project, kind } => {
                 let permission = crate::issues::editing::making(kind)

@@ -139,7 +139,9 @@ pub(super) fn expectation(actor: Actor, route: &Operation, example: &Example) ->
         Declared::Public | Declared::SignedIn | Declared::OwnAccount => return Expect::Allowed,
         Declared::Permission(permission) => Some(permission),
         // The use case judges the record the request names; the example names the target project.
-        Declared::ByRecord => example.record_permission(),
+        Declared::ByRecord => example
+            .record_permission()
+            .or_else(|| example.organization_permission()),
     };
     match permission {
         None => Expect::Allowed,

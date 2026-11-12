@@ -2243,6 +2243,12 @@ pub const ERROR_SETTING_UNKNOWN_TIME_ZONE: MessageKey =
 /// The message `error.tag.not-here`.
 pub const ERROR_TAG_NOT_HERE: MessageKey = MessageKey::new("error.tag.not-here");
 
+/// The message `error.theme.hard-to-read`.
+pub const ERROR_THEME_HARD_TO_READ: MessageKey = MessageKey::new("error.theme.hard-to-read");
+
+/// The message `error.theme.value-refused`.
+pub const ERROR_THEME_VALUE_REFUSED: MessageKey = MessageKey::new("error.theme.value-refused");
+
 /// The message `error.time.note-too-long`.
 pub const ERROR_TIME_NOTE_TOO_LONG: MessageKey = MessageKey::new("error.time.note-too-long");
 
@@ -10154,6 +10160,24 @@ pub fn editing_lost_taken_over(name: impl std::fmt::Display) -> Message {
 pub fn error_relation_kind_date_effect_most(most: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("error.relation-kind.date-effect-most"),
+        vec![("most", Value::Text(most.to_string()))],
+    )
+}
+
+/// The message `error.theme.too-many-for-everyone`.
+#[must_use]
+pub fn error_theme_too_many_for_everyone(most: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("error.theme.too-many-for-everyone"),
+        vec![("most", Value::Text(most.to_string()))],
+    )
+}
+
+/// The message `error.theme.too-many-personal`.
+#[must_use]
+pub fn error_theme_too_many_personal(most: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("error.theme.too-many-personal"),
         vec![("most", Value::Text(most.to_string()))],
     )
 }
@@ -18412,6 +18436,22 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "error.tag.not-here",
         "That tag is only for other projects. Choose another tag or ask who looks after tags.",
+    ),
+    (
+        "error.theme.hard-to-read",
+        "Some colors are hard to read. A theme for everyone can't be saved until they are easy enough to read.",
+    ),
+    (
+        "error.theme.too-many-for-everyone",
+        "Your organization has {most} themes for everyone already. Delete one to add another.",
+    ),
+    (
+        "error.theme.too-many-personal",
+        "You have {most} personal themes already. Delete one to add another.",
+    ),
+    (
+        "error.theme.value-refused",
+        "Some values can't be part of a theme. Change the ones that are named.",
     ),
     (
         "error.time.entry-too-long",

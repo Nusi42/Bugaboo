@@ -90,6 +90,7 @@ mod search;
 mod second_step_gap;
 mod settings;
 mod tags;
+mod themes;
 mod time;
 mod time_entries;
 mod time_totals;
@@ -203,6 +204,7 @@ where
         .merge(history::routes())
         .merge(follow::routes())
         .merge(saved_searches::routes())
+        .merge(themes::routes())
         .merge(working_hours::routes())
         .merge(notifications::routes())
         .merge(ai_setup::routes())

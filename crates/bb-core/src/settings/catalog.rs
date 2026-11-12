@@ -83,7 +83,7 @@ settings! {
         changed_by: EachPerson,
         help: message::SETTING_APPEARANCE_LIGHT_THEME_HELP,
         lockable: true,
-        format: Format::Choices(LIGHT_THEME_CHOICES),
+        format: Format::Themes(LIGHT_THEME_CHOICES),
     }
 
     /// The dark theme that is used on a dark device (*Dusk* or *Midnight*), or always when the
@@ -96,7 +96,7 @@ settings! {
         changed_by: EachPerson,
         help: message::SETTING_APPEARANCE_DARK_THEME_HELP,
         lockable: true,
-        format: Format::Choices(DARK_THEME_CHOICES),
+        format: Format::Themes(DARK_THEME_CHOICES),
     }
 
     /// How close together things are on screen: *Comfortable* or *Compact*.

@@ -16917,6 +16917,458 @@
         "x-permission": "manage-labels"
       }
     },
+    "/api/v1/themes": {
+      "get": {
+        "tags": ["themes"],
+        "summary": "The own themes the person may use: those for everyone and their own personal ones.",
+        "operationId": "listThemes",
+        "responses": {
+          "200": {
+            "description": "The themes, by name.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThemeListBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "signed-in"
+      },
+      "post": {
+        "tags": ["themes"],
+        "summary": "Makes a new own theme that extends a built-in theme. It is listed nowhere until its first save.\nA theme for everyone needs *Change organization settings*.",
+        "operationId": "createTheme",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewThemeBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The new theme.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThemeBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "by-record"
+      }
+    },
+    "/api/v1/themes/upload": {
+      "post": {
+        "tags": ["themes"],
+        "summary": "Makes an own theme from a file in the shape of a download (at most 64 KiB), checked like a\nsave and saved at once: a part or a value that is not allowed is refused with its name.",
+        "operationId": "uploadTheme",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "description": "For everyone (needs *Change organization settings*) or personal.",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ThemeKind"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ThemeFileBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The new theme.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThemeDetailBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "description": "The file is bigger than 64 KiB."
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "by-record"
+      }
+    },
+    "/api/v1/themes/{theme}": {
+      "get": {
+        "tags": ["themes"],
+        "summary": "One own theme with its values and the pairs that are hard to read.",
+        "operationId": "getTheme",
+        "parameters": [
+          {
+            "name": "theme",
+            "in": "path",
+            "description": "The ID of the theme.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The theme.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThemeDetailBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "signed-in"
+      },
+      "put": {
+        "tags": ["themes"],
+        "summary": "Saves the name and the values of an own theme, under the edit lock the person holds. A theme\nfor everyone with a pair that is hard to read is refused (`theme.hard-to-read`, naming the\npairs); a personal one is saved, and the answer names them.",
+        "operationId": "saveTheme",
+        "parameters": [
+          {
+            "name": "theme",
+            "in": "path",
+            "description": "The ID of the theme.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveThemeBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The theme as it is now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThemeDetailBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "by-record"
+      },
+      "delete": {
+        "tags": ["themes"],
+        "summary": "Takes an own theme away. A choice of it counts as the built-in theme it extended.",
+        "operationId": "deleteTheme",
+        "parameters": [
+          {
+            "name": "theme",
+            "in": "path",
+            "description": "The ID of the theme.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
+            "in": "query",
+            "description": "The version the person looked at.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The theme is gone."
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "by-record"
+      }
+    },
+    "/api/v1/themes/{theme}/copy": {
+      "post": {
+        "tags": ["themes"],
+        "summary": "Keeps an own theme the person may use as a new one (*Save a copy*), saved at once.",
+        "operationId": "copyTheme",
+        "parameters": [
+          {
+            "name": "theme",
+            "in": "path",
+            "description": "The ID of the theme that is copied.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CopyThemeBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The copy.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThemeDetailBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "by-record"
+      }
+    },
+    "/api/v1/themes/{theme}/file": {
+      "get": {
+        "tags": ["themes"],
+        "summary": "An own theme as a file, in the shape an upload takes.",
+        "operationId": "downloadTheme",
+        "parameters": [
+          {
+            "name": "theme",
+            "in": "path",
+            "description": "The ID of the theme.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The theme as a file.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThemeFileBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "signed-in"
+      }
+    },
     "/api/v1/uploads/{upload}": {
       "get": {
         "tags": ["files"],
@@ -17818,6 +18270,135 @@
           }
         },
         "x-permission": "manage-workflows"
+      }
+    },
+    "/themes/{theme}": {
+      "get": {
+        "tags": ["themes"],
+        "summary": "The style sheet of a saved own theme: its variables under `data-own-theme`, for every person\nwho may use the theme.",
+        "operationId": "getThemeSheet",
+        "parameters": [
+          {
+            "name": "theme",
+            "in": "path",
+            "description": "The ID of the theme followed by `.css`.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "v",
+            "in": "query",
+            "description": "The version of the theme, or of the draft, the address was made for.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The style sheet.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "text/css": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "signed-in"
+      }
+    },
+    "/themes/{theme}/draft.css": {
+      "get": {
+        "tags": ["themes"],
+        "summary": "The style sheet of the person's own draft of a theme, for the preview of the editor: served to\nnobody else.",
+        "operationId": "getThemeDraftSheet",
+        "parameters": [
+          {
+            "name": "theme",
+            "in": "path",
+            "description": "The ID of the theme.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "v",
+            "in": "query",
+            "description": "The version of the theme, or of the draft, the address was made for.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The style sheet of the draft.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "text/css": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "by-record"
       }
     }
   },
@@ -20038,6 +20619,25 @@
           }
         }
       },
+      "ChosenThemeBody": {
+        "type": "object",
+        "description": "The own theme a choice of a theme names.",
+        "required": ["id", "extends", "sheet"],
+        "properties": {
+          "extends": {
+            "type": "string",
+            "description": "The ID of the built-in theme it extends, which the page shows under it."
+          },
+          "id": {
+            "type": "string",
+            "description": "The ID of the theme: the value of the attribute `data-own-theme` of the page."
+          },
+          "sheet": {
+            "type": "string",
+            "description": "The address of its style sheet, which changes with every save."
+          }
+        }
+      },
       "CodeAppBody": {
         "type": "object",
         "description": "What the setup screen of the code app shows.",
@@ -20307,6 +20907,13 @@
                 },
                 "description": "One loop of dependencies, as the issue IDs on it in order; an issue the person may not see\nis `null`, so the loop never names it. Only for `relation.dependency-loop`."
               },
+              "hard_to_read": {
+                "type": ["array", "null"],
+                "items": {
+                  "$ref": "#/components/schemas/HardPairBody"
+                },
+                "description": "The pairs of colors that are *Hard to read*; only for `theme.hard-to-read`."
+              },
               "mistakes": {
                 "type": ["array", "null"],
                 "items": {
@@ -20317,6 +20924,13 @@
               "open_day": {
                 "type": ["string", "null"],
                 "description": "The date of the person's own work day that was never ended (`2026-10-05`); only for\n`working-hours.day-left-open`, so the screen can ask when it ended."
+              },
+              "refused_values": {
+                "type": ["array", "null"],
+                "items": {
+                  "$ref": "#/components/schemas/RefusedValueBody"
+                },
+                "description": "The values of an own theme that may not be set, each by its token; only for\n`theme.value-refused`."
               },
               "taken_over_by": {
                 "oneOf": [
@@ -20387,6 +21001,21 @@
           "name": {
             "type": ["string", "null"],
             "description": "What the copy is called; the name of the original when left out."
+          }
+        }
+      },
+      "CopyThemeBody": {
+        "type": "object",
+        "description": "A copy of an own theme to keep.",
+        "required": ["name", "kind"],
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/ThemeKind",
+            "description": "For everyone (needs *Change organization settings*) or personal."
+          },
+          "name": {
+            "type": "string",
+            "description": "What the copy is called."
           }
         }
       },
@@ -20992,6 +21621,10 @@
           "edit.taken-over",
           "edit.in-progress",
           "search.invalid",
+          "theme.value-refused",
+          "theme.hard-to-read",
+          "theme.too-many-for-everyone",
+          "theme.too-many-personal",
           "working-hours.day-left-open",
           "working-hours.day-running",
           "working-hours.day-not-running",
@@ -22013,6 +22646,29 @@
           "handle": {
             "type": "string",
             "description": "The handle, without the `@`."
+          }
+        }
+      },
+      "HardPairBody": {
+        "type": "object",
+        "description": "A pair of colors of a theme that is *Hard to read*, by its tokens: the refusal of a theme for\neveryone, and the warning of a personal one.",
+        "required": ["first", "second", "place", "more_contrast"],
+        "properties": {
+          "first": {
+            "type": "string",
+            "description": "The first color: the text, the line or the state."
+          },
+          "more_contrast": {
+            "type": "boolean",
+            "description": "Whether the pair is read with the colors for more contrast."
+          },
+          "place": {
+            "type": "string",
+            "description": "The color to change to mend it."
+          },
+          "second": {
+            "type": "string",
+            "description": "The second color: the background, the surface or the other state."
           }
         }
       },
@@ -24959,6 +25615,25 @@
           }
         }
       },
+      "NewThemeBody": {
+        "type": "object",
+        "description": "A new own theme.",
+        "required": ["name", "kind", "extends"],
+        "properties": {
+          "extends": {
+            "type": "string",
+            "description": "The ID of the built-in theme it extends."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ThemeKind",
+            "description": "For everyone (needs *Change organization settings*) or personal."
+          },
+          "name": {
+            "type": "string",
+            "description": "What it is called."
+          }
+        }
+      },
       "NewTimeEntryBody": {
         "type": "object",
         "description": "Time booked by hand.",
@@ -27659,6 +28334,7 @@
           "setup-code",
           "starting-roles",
           "tag",
+          "theme",
           "time-entry",
           "timer",
           "starter-fields",
@@ -27700,6 +28376,21 @@
         "type": "string",
         "description": "Why a status change is not allowed.",
         "enum": ["no-such-change", "not-for-you", "not-named", "only-if", "cannot-fill"]
+      },
+      "RefusedValueBody": {
+        "type": "object",
+        "description": "A value of an own theme that is refused, by the token (or the part of the file) it is stored\nunder.",
+        "required": ["name", "reason"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of the value: of the token it sets, or of the part of the file that is not one an\nown theme has."
+          },
+          "reason": {
+            "$ref": "#/components/schemas/ValueProblemKind",
+            "description": "Why it is refused."
+          }
+        }
       },
       "RelatedIssueItem": {
         "type": "object",
@@ -28384,6 +29075,30 @@
             "type": "integer",
             "format": "int64",
             "description": "The version of the record the person started from."
+          }
+        }
+      },
+      "SaveThemeBody": {
+        "type": "object",
+        "description": "The values of an own theme to save.",
+        "required": ["version", "lock_token", "name", "values"],
+        "properties": {
+          "lock_token": {
+            "type": "string",
+            "description": "The token the edit lock was taken with."
+          },
+          "name": {
+            "type": "string",
+            "description": "What it is called now."
+          },
+          "values": {
+            "type": "object",
+            "description": "The values it changes, in the shape of `values` of a theme."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version the person started from."
           }
         }
       },
@@ -29186,6 +29901,17 @@
           "own": {
             "type": "boolean",
             "description": "Whether this level has a value of its own, which *Reset to default* takes away."
+          },
+          "own_theme": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ChosenThemeBody",
+                "description": "For *Light theme* and *Dark theme* whose value names an own theme the person may use: what\nthe page needs to show it. A value that names a theme that is gone is already the built-in\ntheme it extended."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "source": {
             "$ref": "#/components/schemas/SourceBody",
@@ -30003,6 +30729,128 @@
           }
         }
       },
+      "ThemeBody": {
+        "type": "object",
+        "description": "An own theme as a person who may use it sees it.",
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "extends",
+          "light",
+          "choice",
+          "may_change",
+          "saved",
+          "version"
+        ],
+        "properties": {
+          "choice": {
+            "type": "string",
+            "description": "The value the settings *Light theme* or *Dark theme* keep when the person chooses it."
+          },
+          "extends": {
+            "type": "string",
+            "description": "The ID of the built-in theme it extends."
+          },
+          "id": {
+            "type": "string",
+            "description": "The ID."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ThemeKind",
+            "description": "For everyone or personal."
+          },
+          "light": {
+            "type": "boolean",
+            "description": "Whether it is a light theme (it extends a light built-in theme)."
+          },
+          "may_change": {
+            "type": "boolean",
+            "description": "Whether the person may change it and take it away."
+          },
+          "name": {
+            "type": "string",
+            "description": "What it is called."
+          },
+          "saved": {
+            "type": "boolean",
+            "description": "Whether it was saved at least once; a theme that was not is listed nowhere."
+          },
+          "sheet": {
+            "type": ["string", "null"],
+            "description": "The address of its style sheet, which changes with every save. Absent while it was never\nsaved."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Counts up with every save; a change and a deletion send it back."
+          }
+        }
+      },
+      "ThemeDetailBody": {
+        "type": "object",
+        "description": "An own theme with its values and the pairs that are hard to read.",
+        "required": ["theme", "values", "hard_to_read"],
+        "properties": {
+          "hard_to_read": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HardPairBody"
+            },
+            "description": "The pairs of its colors that are *Hard to read*: the warning of a personal theme. A theme\nfor everyone with any is never saved."
+          },
+          "theme": {
+            "$ref": "#/components/schemas/ThemeBody",
+            "description": "The theme."
+          },
+          "values": {
+            "type": "object",
+            "description": "The values it changes of the built-in theme it extends: `colors` (each with `value` and,\noptionally, `more`), `shadow` (at most two layers), `radii` and `fonts`."
+          }
+        }
+      },
+      "ThemeFileBody": {
+        "type": "object",
+        "description": "An own theme as a file: what a download gives and an upload takes.",
+        "required": ["name", "extends", "values"],
+        "properties": {
+          "extends": {
+            "type": "string",
+            "description": "The ID of the built-in theme it extends."
+          },
+          "name": {
+            "type": "string",
+            "description": "What the theme is called."
+          },
+          "values": {
+            "type": "object",
+            "description": "The values it changes, as in a theme."
+          }
+        }
+      },
+      "ThemeKind": {
+        "type": "string",
+        "description": "Whether an own theme is for everyone in the organization or personal to the person who made it.",
+        "enum": ["for_everyone", "personal"]
+      },
+      "ThemeListBody": {
+        "type": "object",
+        "description": "The own themes a person may use.",
+        "required": ["themes", "truncated"],
+        "properties": {
+          "themes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ThemeBody"
+            },
+            "description": "The themes for everyone and the person's own personal themes, by name."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "Whether the list was cut at its cap; the limits of the number of themes keep it below."
+          }
+        }
+      },
       "TimeEntryItem": {
         "type": "object",
         "description": "One of the person's own time entries.",
@@ -30554,6 +31402,19 @@
           }
         ],
         "description": "What a setting holds: yes or no, a whole number, or text."
+      },
+      "ValueProblemKind": {
+        "type": "string",
+        "description": "Why a value of an own theme is refused: a token it may not set, a color, shadow, corner or text face that is not allowed, or a value of the wrong shape.",
+        "enum": [
+          "unknown-name",
+          "not-a-color",
+          "more-is-the-same",
+          "bad-shadow",
+          "radius-out-of-bounds",
+          "not-a-stack",
+          "bad-shape"
+        ]
       },
       "VersionsBody": {
         "type": "object",

@@ -134,6 +134,13 @@ use super::{
     work_days, workflow_editor, workflows,
 };
 
+use super::{
+    CopyTheme, CreateTheme, DeleteTheme, SaveTheme, ThemeDetail, ThemeExport, ThemeList,
+    ThemeQuery, ThemeSheet, ThemeSheetQuery, ThemeView, ThemesQuery, UploadTheme, copy_theme,
+    create_theme, delete_theme, download_theme, save_theme, theme, theme_draft_sheet, theme_sheet,
+    themes, upload_theme,
+};
+
 use_cases! {
     /// Whether setup is open and whether people may sign up.
     status(StatusQuery) -> AuthStatus;
@@ -595,6 +602,26 @@ use_cases! {
     save_layout(SaveLayout) -> Authorized<LayoutEditor>;
     /// Takes the layout of a place away.
     delete_layout(DeleteLayout) -> Done;
+    /// Lists the own themes the person may use.
+    themes(ThemesQuery) -> Authorized<ThemeList>;
+    /// Shows one own theme with the pairs that are hard to read.
+    theme(ThemeQuery) -> Authorized<ThemeDetail>;
+    /// Gives an own theme as a file.
+    download_theme(ThemeQuery) -> Authorized<ThemeExport>;
+    /// Gives the style sheet of an own theme.
+    theme_sheet(ThemeSheetQuery) -> ThemeSheet;
+    /// Gives the style sheet of the person's own draft of a theme.
+    theme_draft_sheet(ThemeSheetQuery) -> ThemeSheet;
+    /// Makes a new own theme.
+    create_theme(CreateTheme) -> Authorized<ThemeView>;
+    /// Saves an own theme under its edit lock.
+    save_theme(SaveTheme) -> Authorized<ThemeDetail>;
+    /// Keeps an own theme as a new one.
+    copy_theme(CopyTheme) -> Authorized<ThemeDetail>;
+    /// Makes an own theme from a file.
+    upload_theme(UploadTheme) -> Authorized<ThemeDetail>;
+    /// Takes an own theme away.
+    delete_theme(DeleteTheme) -> Done;
     /// Lists the statuses the issues of a project can have.
     project_statuses(ProjectStatusesQuery) -> Authorized<ProjectStatuses>;
     /// Shows the workflow that counts at a place to somebody who may change it.

@@ -67,6 +67,12 @@ pub enum AppError {
         /// The forward names of the kinds that have the effect.
         kinds: Vec<String>,
     },
+    /// Values of an own theme that it may not set (`theme.value-refused`), each named by its
+    /// token: nothing of the theme is saved (THM-04).
+    ThemeValuesRefused(Vec<bb_core::theme::ValueProblem>),
+    /// A theme for everyone with pairs that are *Hard to read* (`theme.hard-to-read`), each named:
+    /// the theme is not saved (THM-03, ADR-0026 update M8).
+    HardToRead(Vec<crate::themes::NamedPair>),
     /// Something failed inside the server. The text is for the log only.
     Internal(String),
 }
@@ -85,6 +91,8 @@ impl AppError {
             Self::DayLeftOpen { .. } => Some(ErrorCode::WorkDayLeftOpen),
             Self::DependencyLoop { .. } => Some(ErrorCode::RelationDependencyLoop),
             Self::DateEffectKindsMost { .. } => Some(ErrorCode::RelationKindDateEffectMost),
+            Self::ThemeValuesRefused(_) => Some(ErrorCode::ThemeValueRefused),
+            Self::HardToRead(_) => Some(ErrorCode::ThemeHardToRead),
             Self::Limited { .. } | Self::Internal(_) => None,
         }
     }
@@ -160,6 +168,10 @@ impl fmt::Display for AppError {
                     ErrorCode::RelationKindDateEffectMost
                 )
             }
+            Self::ThemeValuesRefused(_) => {
+                write!(formatter, "refused: {}", ErrorCode::ThemeValueRefused)
+            }
+            Self::HardToRead(_) => write!(formatter, "refused: {}", ErrorCode::ThemeHardToRead),
             Self::Internal(cause) => write!(formatter, "failed inside the server: {cause}"),
         }
     }

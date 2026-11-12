@@ -17,6 +17,7 @@
 //! layer, and lower layers are refused while it is locked (`setting.locked`). Answers leave only as
 //! `Authorized<T>`.
 
+mod accepted;
 mod image_hosts;
 mod layers;
 mod store;
@@ -32,6 +33,9 @@ use bb_core::settings::{
     SettingValue, Source, changed_only_on_its_own_screen, find, list_items, registry,
 };
 use bb_core::sign_in::SecurityAction;
+
+use crate::themes::{ChoiceInForce, ChosenTheme};
+use accepted::refuse_unaccepted;
 use bb_core::version::{Version, counted_up};
 use bb_core::working_time::leaves_keep_period_short;
 use bb_policy::{Authorized, Evaluation, Permission, Place};
@@ -147,6 +151,8 @@ pub struct SettingView {
     /// For a person's own setting: the version of the value of their own (`0` while there is
     /// none), which a change sends back (ADR-0018). `None` on the other scopes.
     pub version: Option<i64>,
+    /// For *Light theme* and *Dark theme*: the own theme the value names, which the scope may use.
+    pub own_theme: Option<ChosenTheme>,
 }
 
 /// The settings of one scope, in the order of the registry.
@@ -339,7 +345,18 @@ impl<S: AuthStore> Ctx<'_, S> {
         } else {
             layers
         };
-        let resolved = looked_at.resolve(definition);
+        let mut resolved = looked_at.resolve(definition);
+        let own_theme = match self
+            .theme_in_force(scope, definition, &resolved.value)
+            .await?
+        {
+            Some(ChoiceInForce::Own(chosen)) => Some(chosen),
+            Some(ChoiceInForce::InsteadOf(built_in)) => {
+                resolved.value = SettingValue::Text(built_in.to_owned());
+                None
+            }
+            None => None,
+        };
         let own = own_value(layers, scope, definition).is_some();
         let source = match resolved.source {
             Source::Default => SettingSource::Default,
@@ -363,6 +380,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             own,
             locked,
             version: matches!(scope, Scope::Person(_)).then(|| layers.person_version(key)),
+            own_theme,
         })
     }
 
@@ -497,6 +515,12 @@ pub async fn change_setting<S: AuthStore>(
         return Err(ErrorCode::InvalidRequest.into());
     }
     refuse_unaccepted(definition, &input.value)?;
+    // An own theme is a choice only of the scope that may use it.
+    if let Some(ChoiceInForce::InsteadOf(_)) =
+        ctx.theme_in_force(scope, definition, &input.value).await?
+    {
+        return Err(ErrorCode::InvalidRequest.into());
+    }
     // A version is a number the server gave out: it never counts below zero.
     if input.version.is_some_and(|version| version < 0) {
         return Err(ErrorCode::InvalidRequest.into());
@@ -609,23 +633,6 @@ impl Follows {
         }
         Ok(())
     }
-}
-
-/// Refuses a value the setting does not accept. A text its format refuses has the format's answer
-/// (a list of hosts with an address in it, a zone the server does not know), in plain words;
-/// anything else is an invalid request.
-fn refuse_unaccepted(definition: &SettingDefinition, value: &SettingValue) -> Result<(), AppError> {
-    if definition.accepts(value) {
-        return Ok(());
-    }
-    let format_refused =
-        matches!(value, SettingValue::Text(text) if !definition.format().accepts(text));
-    Err(if format_refused {
-        definition.format().refusal()
-    } else {
-        ErrorCode::InvalidRequest
-    }
-    .into())
 }
 
 /// Whether setting `definition` to `new` on `scope` moves the organization to another mail server:

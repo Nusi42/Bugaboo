@@ -208,6 +208,8 @@ words! {
         StartingRoles => "starting_roles",
         /// A tag (TAG-01).
         Tag => "tag",
+        /// An own theme, for everyone or personal (THM-04).
+        Theme => "theme",
         /// A time entry (TIME-01, TIME-02).
         TimeEntry => "time_entry",
         /// The timer of a person (TIME-01); the record is the person.

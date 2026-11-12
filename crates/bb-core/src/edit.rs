@@ -54,6 +54,10 @@ pub const LAYOUT_PART: &str = "layout";
 /// The part of a workflow that its edit lock is about: a workflow is edited as a whole and made to
 /// count with *Publish* (ADR-0031).
 pub const WORKFLOW_PART: &str = "workflow";
+/// The part of an own theme that its edit lock and its draft are about: the values of a theme are
+/// edited as a whole, and the draft is what its style sheet for the preview is made from
+/// (ADR-0026, update M8).
+pub const THEME_PART: &str = "theme";
 
 /// How long a lock lasts after the last heartbeat.
 #[must_use]

@@ -331,6 +331,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             | RecordKind::SetupCode
             | RecordKind::StartingRoles
             | RecordKind::Tag
+            | RecordKind::Theme
             | RecordKind::TimeEntry
             | RecordKind::StarterFields => Ok(()),
             RecordKind::Timer => self.timer_event(round, event).await,

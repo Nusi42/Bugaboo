@@ -7,12 +7,16 @@
 //! Pure: no I/O.
 
 mod built_in;
+mod choice;
 mod colors;
+mod file;
 mod record;
 mod sheet;
 mod values;
 
-pub use colors::{OwnColors, rate_own};
+pub use choice::OwnChoice;
+pub use colors::{OwnColors, RatedPair, rate_own, readability};
+pub use file::{FileProblem, ThemeFile};
 pub use record::{OwnTheme, ThemeKind, ThemeName, ThemeNameError};
 pub use sheet::style_sheet;
 pub use values::{ColorChoice, OwnValues, ShadowLayer, ValueProblem, ValueProblemKind};

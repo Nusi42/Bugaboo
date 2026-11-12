@@ -41,7 +41,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(Some(RecordFacts {
             place: Place::Project(issue.project),
             version: issue.version,
-            edit: held.permission_to_change_issue(issue.reported_by),
+            edit: Some(held.permission_to_change_issue(issue.reported_by)),
         }))
     }
 }

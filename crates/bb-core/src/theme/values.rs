@@ -56,24 +56,30 @@ pub struct OwnValues {
     pub fonts: BTreeMap<String, String>,
 }
 
-/// Why a value is refused.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum ValueProblemKind {
-    /// The token is not one an own theme may set.
-    UnknownToken,
-    /// The value is not a color of the form `#rrggbb`.
-    NotAColor,
-    /// The color for more contrast is the color itself, which says nothing.
-    MoreIsTheSame,
-    /// The shadow has no layer, too many, a part out of range or a color that is none.
-    BadShadow,
-    /// The radius is outside the bounds of the base theme.
-    RadiusOutOfBounds,
-    /// The value does not name one of the text stacks.
-    NotAStack,
-    /// The value is of another shape than the token takes.
-    BadShape,
+words! {
+    /// Why a value of an own theme is refused.
+    pub enum ValueProblemKind {
+        /// The token is not one an own theme may set.
+        UnknownToken => "unknown-name",
+        /// The value is not a color of the form `#rrggbb`.
+        NotAColor => "not-a-color",
+        /// The color for more contrast is the color itself, which says nothing.
+        MoreIsTheSame => "more-is-the-same",
+        /// The shadow has no layer, too many, a part out of range or a color that is none.
+        BadShadow => "bad-shadow",
+        /// The radius is outside the bounds of the base theme.
+        RadiusOutOfBounds => "radius-out-of-bounds",
+        /// The value does not name one of the text stacks.
+        NotAStack => "not-a-stack",
+        /// The value is of another shape than the token takes.
+        BadShape => "bad-shape",
+    }
 }
+
+words_in_api!(
+    ValueProblemKind,
+    "Why a value of an own theme is refused: a token it may not set, a color, shadow, corner or text face that is not allowed, or a value of the wrong shape."
+);
 
 /// A value that is refused, with the name it is stored under.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -85,7 +91,7 @@ pub struct ValueProblem {
 }
 
 impl ValueProblem {
-    fn new(token: &str, kind: ValueProblemKind) -> Self {
+    pub(crate) fn new(token: &str, kind: ValueProblemKind) -> Self {
         Self {
             token: token.to_owned(),
             kind,

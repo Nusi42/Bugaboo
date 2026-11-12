@@ -815,6 +815,7 @@ mod saved_searches;
 mod search_routes;
 #[cfg(test)]
 mod tests;
+mod themes;
 mod time;
 mod working_hours;
 

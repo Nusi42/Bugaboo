@@ -287,3 +287,11 @@ routes = [
   "POST /api/v1/oauth/web-addresses/remove",
 ]
 reason = "An app is allowed once and taken back for good, and an allowed address is added or taken away as a whole: there is no value on a screen that two people could change at the same time and overwrite (M7 WP-05)."
+
+[[exempt]]
+routes = ["POST /api/v1/themes", "POST /api/v1/themes/{theme}/copy", "POST /api/v1/themes/upload"]
+reason = "Making a new own theme, a copy of one or one from a file has no earlier version that could be stale; the limits of the number of themes are checked on their own (THM-04)."
+
+[[exempt]]
+routes = ["DELETE /api/v1/themes/{theme}"]
+reason = "A DELETE has no body: taking an own theme away takes the version it read in the query (`?version=`), and a stale one is refused with the conflict, like a layout (ADR-0026, update M8)."

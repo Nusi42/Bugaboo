@@ -8,6 +8,7 @@ use super::{
 };
 
 use crate::api::projects::ProjectRef;
+use bb_app::themes::ChosenTheme;
 
 problem_answers! {
     /// A lower level cannot change what the organization locked.
@@ -239,9 +240,35 @@ pub(crate) struct SettingBody {
     /// while there is none. A change sends back the version that was looked at.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) version: Option<i64>,
+    /// For *Light theme* and *Dark theme* whose value names an own theme the person may use: what
+    /// the page needs to show it. A value that names a theme that is gone is already the built-in
+    /// theme it extended.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) own_theme: Option<ChosenThemeBody>,
 }
 
 impl Masked for SettingBody {}
+
+/// The own theme a choice of a theme names.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct ChosenThemeBody {
+    /// The ID of the theme: the value of the attribute `data-own-theme` of the page.
+    id: String,
+    /// The ID of the built-in theme it extends, which the page shows under it.
+    extends: String,
+    /// The address of its style sheet, which changes with every save.
+    sheet: String,
+}
+
+impl From<&ChosenTheme> for ChosenThemeBody {
+    fn from(chosen: &ChosenTheme) -> Self {
+        Self {
+            id: chosen.id.to_string(),
+            extends: chosen.extends.to_owned(),
+            sheet: crate::api::themes::sheet_address(chosen.id, chosen.version),
+        }
+    }
+}
 
 impl From<&SettingView> for SettingBody {
     fn from(view: &SettingView) -> Self {
@@ -258,7 +285,8 @@ impl From<&SettingView> for SettingBody {
             },
             format: match format {
                 Format::Free => SettingFormat::Free,
-                Format::Choices(_) => SettingFormat::Choice,
+                // The own themes a person may choose are listed by `listThemes`, each with its value.
+                Format::Choices(_) | Format::Themes(_) => SettingFormat::Choice,
                 Format::TimeZone => SettingFormat::TimeZone,
                 Format::PageAddress => SettingFormat::PageAddress,
                 Format::ShortcutKeys => SettingFormat::ShortcutKeys,
@@ -295,6 +323,7 @@ impl From<&SettingView> for SettingBody {
             own: view.own,
             locked: view.locked,
             version: view.version,
+            own_theme: view.own_theme.as_ref().map(ChosenThemeBody::from),
         }
     }
 }

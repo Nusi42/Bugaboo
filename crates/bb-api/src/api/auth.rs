@@ -131,6 +131,12 @@ impl From<AppError> for ApiError {
             AppError::DateEffectKindsMost { kinds } => {
                 Self::new(ErrorCode::RelationKindDateEffectMost).with_date_effect_kinds(kinds)
             }
+            AppError::ThemeValuesRefused(found) => {
+                Self::new(ErrorCode::ThemeValueRefused).with_refused_values(&found)
+            }
+            AppError::HardToRead(found) => {
+                Self::new(ErrorCode::ThemeHardToRead).with_hard_to_read(&found)
+            }
             AppError::Internal(cause) => Self::internal(&cause),
         }
     }

@@ -279,6 +279,8 @@ export interface MessageArguments {
   "editing.lost-changed": { name: string | number; thing: string | number };
   "editing.lost-taken-over": { name: string | number };
   "error.relation-kind.date-effect-most": { most: string | number };
+  "error.theme.too-many-for-everyone": { most: string | number };
+  "error.theme.too-many-personal": { most: string | number };
   "error.time.entry-too-long": { hours: number };
   "error.time.entry-too-short": { minutes: number };
   "error.with-support-code": { code: string | number; message: string | number };

@@ -27,12 +27,6 @@ pub(super) fn steps() -> Vec<Step> {
                 .col(ColumnDef::new(OwnThemeRow::Name).text().not_null())
                 .col(ColumnDef::new(OwnThemeRow::Extends).text().not_null())
                 .col(ColumnDef::new(OwnThemeRow::Values).text().not_null())
-                .col(ColumnDef::new(OwnThemeRow::Draft).text())
-                .col(
-                    ColumnDef::new(OwnThemeRow::DraftVersion)
-                        .big_integer()
-                        .not_null(),
-                )
                 .col(ColumnDef::new(OwnThemeRow::SavedAt).big_integer())
                 .col(
                     ColumnDef::new(OwnThemeRow::CreatedAt)

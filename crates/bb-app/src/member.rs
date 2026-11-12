@@ -37,6 +37,14 @@ pub(crate) mod layout {
     pub(crate) const OFF: &str = "off";
 }
 
+/// The members of an own theme.
+pub(crate) mod theme {
+    pub(crate) const KIND: &str = "kind";
+    pub(crate) const NAME: &str = "name";
+    pub(crate) const EXTENDS: &str = "extends";
+    pub(crate) const VALUES: &str = "values";
+}
+
 /// The members of a workflow.
 pub(crate) mod workflow {
     pub(crate) const NAME: &str = "name";

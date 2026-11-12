@@ -193,7 +193,7 @@ pub async fn read_lock<S: AuthStore>(
 ) -> Result<Authorized<LockHolder>, AppError> {
     let actor = ctx.session_actor(&input.session_token).await?;
     let facts = ctx.facts_for_part(&actor, &input.what, Need::See).await?;
-    let access = ctx.require(&actor, facts.edit, facts.place).await?;
+    let access = ctx.require_to_change(&actor, &facts).await?;
     let held = match ctx.live_lock(&input.what).await? {
         Some(lock) => Some(ctx.held_lock(&access, &actor, &lock).await?),
         None => None,
@@ -214,7 +214,7 @@ pub async fn take_lock<S: AuthStore>(
     let facts = ctx
         .facts_for_part(&actor, &input.what, Need::Change)
         .await?;
-    let access = ctx.require(&actor, facts.edit, facts.place).await?;
+    let access = ctx.require_to_change(&actor, &facts).await?;
     let wanted = ctx.lock_for(actor.person.id, &input.what, input.editor)?;
     let taking = ctx
         .store()
@@ -243,7 +243,7 @@ pub async fn heartbeat<S: AuthStore>(
     let facts = ctx
         .facts_for_part(&actor, &input.what, Need::Change)
         .await?;
-    let access = ctx.require(&actor, facts.edit, facts.place).await?;
+    let access = ctx.require_to_change(&actor, &facts).await?;
     let now = ctx.now();
     let draft_saved = match input.draft {
         Some(text) => {
@@ -352,7 +352,7 @@ pub async fn ask_to_finish<S: AuthStore>(
 ) -> Result<Authorized<Done>, AppError> {
     let actor = ctx.session_actor(&input.session_token).await?;
     let facts = ctx.facts_for_part(&actor, &input.what, Need::See).await?;
-    let access = ctx.require(&actor, facts.edit, facts.place).await?;
+    let access = ctx.require_to_change(&actor, &facts).await?;
     let holder = ctx
         .live_lock(&input.what)
         .await?
@@ -411,7 +411,7 @@ pub async fn edit_anyway<S: AuthStore>(
         .await?;
     // *Edit anyway* is the right to take over, and only for a person who may change the record: a
     // lock they could not keep would run out in a minute (M3-F35).
-    ctx.require(&actor, facts.edit, facts.place).await?;
+    ctx.require_to_change(&actor, &facts).await?;
     let access = ctx
         .require(&actor, Permission::EditAnyway, facts.place)
         .await?;
@@ -495,7 +495,7 @@ pub async fn release_stuck_lock<S: AuthStore>(
         .facts_for_part(&actor, &input.what, Need::Change)
         .await?;
     // Like *Edit anyway*: ending somebody's editing is for a person who may change the record.
-    ctx.require(&actor, facts.edit, facts.place).await?;
+    ctx.require_to_change(&actor, &facts).await?;
     let access = ctx
         .require(&actor, Permission::EditAnyway, facts.place)
         .await?;

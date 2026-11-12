@@ -741,6 +741,14 @@ export const messages = {
   "notifications.work-day-reason": "Why: {reason}",
   "error.working-hours.in-the-future":
     "A work day records what has happened. Times later than now cannot be saved yet.",
+  "error.theme.value-refused":
+    "Some values can't be part of a theme. Change the ones that are named.",
+  "error.theme.hard-to-read":
+    "Some colors are hard to read. A theme for everyone can't be saved until they are easy enough to read.",
+  "error.theme.too-many-for-everyone":
+    "Your organization has {most} themes for everyone already. Delete one to add another.",
+  "error.theme.too-many-personal":
+    "You have {most} personal themes already. Delete one to add another.",
   "error.working-hours.keep-years-too-short":
     "With the rules of Germany, work days are kept for at least {years, plural, one {# year} other {# years}}. Choose No rules first, or keep them longer.",
   "nav.assistant-settings": "Assistant",

@@ -185,6 +185,12 @@ use crate::tags::{
     create_label_group, issue_labels_and_tags, label_change_preview, label_groups, labels,
     remove_label, remove_tag, tag_change_preview, tag_suggestions, tags,
 };
+use crate::themes::{
+    CopyTheme, CreateTheme, DeleteTheme, SaveTheme, ThemeDetail, ThemeExport, ThemeList,
+    ThemeQuery, ThemeSheet, ThemeSheetQuery, ThemeView, ThemesQuery, UploadTheme, copy_theme,
+    create_theme, delete_theme, download_theme, save_theme, theme, theme_draft_sheet, theme_sheet,
+    themes, upload_theme,
+};
 use crate::time::totals::{
     IssueTime, IssueTimeQuery, ProjectTimeQuery, TimeTotals, issue_time, project_time,
 };

@@ -1,6 +1,6 @@
-//! Own themes on both databases (THM-04): a theme that was never saved is listed nowhere, a
-//! personal theme is listed for its maker only, a save counts the version up and clears the draft,
-//! the draft of the editor counts its own version up, and a stale version changes nothing.
+//! Own themes on both databases (THM-04): a theme that was never saved is listed nowhere but counts
+//! against the limits, a personal theme is listed for its maker only, a save counts the version up,
+//! and a stale version changes nothing.
 
 use bb_app::ports::{BoxFuture, ChangeStore};
 use bb_core::id::{IdSource, ThemeId, UserId};
@@ -42,8 +42,6 @@ fn theme(source: &mut impl IdSource, kind: ThemeKind, maker: UserId, name: &str)
         name: ThemeName::new(name).unwrap(),
         extends: TechnicalName::new("dusk").unwrap(),
         values: accent("#aabbcc"),
-        draft: None,
-        draft_version: 0,
         saved_at: None,
         created_at: at(1),
         updated_at: at(1),
@@ -79,7 +77,7 @@ async fn save(
 }
 
 #[tokio::test]
-async fn thm_04_a_theme_is_a_draft_until_its_first_save_and_listed_nowhere_before() -> TestResult {
+async fn thm_04_a_theme_is_listed_nowhere_before_its_first_save() -> TestResult {
     each_database("thm_04_store_draft_and_save", async |db| {
         let fixture = fixture(db).await?;
         let storage = &fixture.storage;
@@ -89,31 +87,19 @@ async fn thm_04_a_theme_is_a_draft_until_its_first_save_and_listed_nowhere_befor
         insert(storage, &mut source, &made).await?;
         assert_eq!(storage.own_theme(made.id).await?, Some(made.clone()));
         assert!(storage.themes_usable_by(maker).await?.is_empty());
-        assert_eq!(storage.count_personal_themes_of(maker).await?, 0);
-
-        // The editor keeps unsaved values; each change of the draft counts its version up.
-        let id = made.id;
-        let draft = accent("#112233");
-        let kept = draft.clone();
-        assert!(
-            changed(storage, &mut source, move |tx| {
-                Box::pin(async move { AuthStorage::keep_draft(tx, id, &kept, at(2)).await })
-            })
-            .await?
+        assert_eq!(
+            storage.count_personal_themes_of(maker).await?,
+            1,
+            "a theme that is only made counts against the limit"
         );
-        let found = storage.own_theme(id).await?.unwrap();
-        assert_eq!(found.draft, Some(draft));
-        assert_eq!(found.draft_version, 1);
-        assert_eq!(found.values, made.values, "the saved values do not move");
-        assert!(storage.themes_usable_by(maker).await?.is_empty());
+        let id = made.id;
 
-        // Save makes the draft the theme, clears it and counts the version up.
+        // The first save lists it and counts the version up.
         made.values = accent("#112233");
         made.saved_at = Some(at(3));
         made.updated_at = at(3);
         assert!(save(storage, &mut source, &made, FIRST_VERSION).await?);
         let saved = storage.own_theme(id).await?.unwrap();
-        assert_eq!(saved.draft, None);
         assert_eq!(saved.version, FIRST_VERSION + 1);
         assert_eq!(saved.values, made.values);
         assert_eq!(storage.themes_usable_by(maker).await?.len(), 1);

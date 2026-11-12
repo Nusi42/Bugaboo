@@ -48,14 +48,29 @@ pub(crate) fn lock_the_layout(world: &World, slot: LayoutSlot) -> LockToken {
 
 /// The lock somebody holds on a layout, to the end of the century.
 pub(crate) fn lock_the_layout_for(world: &World, slot: LayoutSlot, holder: UserId) -> LockToken {
-    let token = LockToken::from_random([7; 16]);
-    world.store.lock().state.locks.push(EditLock {
-        record: EntityRef {
+    lock_part_for(
+        world,
+        EntityRef {
             kind: RecordKind::Layout.into(),
             id: slot.id.into(),
         },
-        part: bb_core::technical::TechnicalName::new(bb_core::edit::LAYOUT_PART)
-            .unwrap_or_else(|_| unreachable!()),
+        bb_core::edit::LAYOUT_PART,
+        holder,
+    )
+}
+
+/// Puts a lock on `part` of `record` that `holder` holds and that does not run out, and gives its
+/// token: the lock an editor takes before a save.
+pub(crate) fn lock_part_for(
+    world: &World,
+    record: EntityRef,
+    part: &str,
+    holder: UserId,
+) -> LockToken {
+    let token = LockToken::from_random([7; 16]);
+    world.store.lock().state.locks.push(EditLock {
+        record,
+        part: bb_core::technical::TechnicalName::new(part).unwrap_or_else(|_| unreachable!()),
         holder,
         editor: EditorId::from_random([6; 16]),
         token,

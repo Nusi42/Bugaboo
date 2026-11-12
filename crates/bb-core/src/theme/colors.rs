@@ -5,7 +5,9 @@ use std::collections::HashMap;
 
 use super::values::OwnValues;
 use super::{BuiltIn, built_in, built_in_theme, color_tokens};
-use crate::contrast::{Evaluation, Rules, ThemeColors, rate};
+use serde::Serialize;
+
+use crate::contrast::{Evaluation, Mode as ReadIn, Rating, Rules, ThemeColors, base_rules, rate};
 
 /// Which colors a link is followed in.
 #[derive(Clone, Copy)]
@@ -105,4 +107,48 @@ pub fn rate_own(extends: &str, values: &OwnValues, rules: &Rules) -> Option<Eval
     let base = built_in_theme(extends)?;
     let colors = OwnColors::new(base, values);
     Some(rate(&rules.contrast, &rules.distinct, extends, &colors))
+}
+
+/// One pair of colors of an own theme and how readable it is: what the editor shows beside a color
+/// and what a save checks (THM-03).
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct RatedPair {
+    /// The first color: the text, the line or the state.
+    pub first: String,
+    /// The second color: the background, the surface or the other state.
+    pub second: String,
+    /// The color to change to mend it.
+    pub place: String,
+    /// Whether the pair is read with the colors for more contrast.
+    pub more_contrast: bool,
+    /// The ratio, the difference in color or the chroma, as its rule measures it.
+    pub value: f64,
+    /// The least (or the most) its rule allows.
+    pub limit: f64,
+    /// *Easy*, *OK* or *Hard to read*.
+    pub rating: Rating,
+}
+
+/// Every pair of the rules of the base theme file for the own theme that extends `extends` with
+/// `values`, rated: the one answer of the server and of the editor. `None` when no built-in theme
+/// has that ID.
+#[must_use]
+pub fn readability(extends: &str, values: &OwnValues) -> Option<Vec<RatedPair>> {
+    let rules = base_rules().ok()?;
+    let rated = rate_own(extends, values, &rules)?;
+    Some(
+        rated
+            .results
+            .into_iter()
+            .map(|pair| RatedPair {
+                first: pair.first,
+                second: pair.second,
+                place: pair.place,
+                more_contrast: pair.mode == ReadIn::MoreContrast,
+                value: pair.value,
+                limit: pair.limit,
+                rating: pair.rating,
+            })
+            .collect(),
+    )
 }
