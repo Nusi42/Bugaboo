@@ -8,7 +8,6 @@ export const messages = {
   "time.add.title": "Add time on {issue}",
   "time.add.save": "Add time",
   "time.entry.date": "Date",
-  "time.entry.not-a-date": "Type a date like {example}.",
   "time.entry.length": "Length",
   "time.entry.note": "What did you do? (optional)",
   "time.entry.billable": "Billable",

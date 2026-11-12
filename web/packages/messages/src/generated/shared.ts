@@ -538,6 +538,7 @@ export const messages = {
   "time.length.zero":
     "A time entry is at least {minutes, plural, one {# minute} other {# minutes}}.",
   "time.length.too-long": "One entry is at most {hours} hours.",
+  "time.entry.not-a-date": "Type a date like {example}.",
   "time.timer.start": "Start timer",
   "time.others.title": "Working hours of others",
   "field-example.text": "For example: Customer name",
