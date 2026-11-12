@@ -1,13 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  deepestAround,
-  isAtOrUnder,
-  partOfAddress,
-  partsOfAddress,
-  paths,
-  routeParam,
-} from "./paths.ts";
+import { partOfAddress, partsOfAddress, paths, routeParam } from "./paths.ts";
+import { deepestAround, isAtOrUnder } from "./paths-within.ts";
 
 /** Addresses of the tests, not text for people. */
 const at = {

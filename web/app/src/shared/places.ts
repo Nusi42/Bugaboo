@@ -3,7 +3,8 @@ import { iconName } from "@bugaboo/ui/icons";
 
 import { organizationPlaces } from "./organization-places.ts";
 import { ownPlaces } from "./own-places.ts";
-import { isAtOrUnder, partsOfAddress, paths, type Path } from "./paths.ts";
+import { partsOfAddress, paths, type Path } from "./paths.ts";
+import { isAtOrUnder } from "./paths-within.ts";
 import type { Permissions } from "./permissions.ts";
 import type { Area, Place } from "./place.ts";
 import { projectPlaces } from "./project-places.ts";

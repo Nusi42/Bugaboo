@@ -14,7 +14,8 @@ import { useLocation } from "@tanstack/react-router";
 import { Button as TreeButton, Link } from "react-aria-components";
 
 import { messageOf } from "../../shared/errors.ts";
-import { isAtOrUnder, projectAddress } from "../../shared/paths.ts";
+import { projectAddress } from "../../shared/paths.ts";
+import { isAtOrUnder } from "../../shared/paths-within.ts";
 import { NavLink } from "../shell/index.ts";
 import { toggleOpened, useOpened } from "./tree-state.ts";
 import { linesOf, useProjectList, type ProjectLine } from "./use-projects.ts";

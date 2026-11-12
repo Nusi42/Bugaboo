@@ -3,7 +3,7 @@ import { Card, useLayout, partOf, part, type IconName } from "@bugaboo/ui";
 import { Navigate, Outlet, useLocation } from "@tanstack/react-router";
 import { useId, type ReactNode } from "react";
 
-import { deepestAround } from "../../shared/paths.ts";
+import { deepestAround } from "../../shared/paths-within.ts";
 import { usePermissions } from "../../shared/use-me.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { NavLink } from "./NavItem.tsx";
