@@ -285,6 +285,7 @@ Rules:
 | **Own theme**            | A theme an organization or a person makes in the theme editor. It starts from one built-in theme and keeps only what it changes: colors, the shadow, the corners and a choice among the built-in fonts. *For everyone* (made by an administrator in *Look › Themes*, offered to everyone) or *Personal* (made in *My settings*, seen only by its maker) | custom theme, user theme (in UI) |
 | **Theme editor**         | The page that changes an own theme: color groups with plain names, a live preview of real screens, and the readability of each pair | theme builder, theme designer (in UI) |
 | **Readability** (of a color pair) | How easy a text or line is to see on its background, rated *Easy*, *OK* or *Hard to read*. A theme for everyone can't be saved while a pair is *Hard to read*; a personal one can, with a warning | contrast ratio, contrast score (in UI) |
+| **Shadow** (of a theme)  | The shade under a raised box, such as a card. An own theme may give it one or two layers, each moved *Sideways* and *Downwards*, with a *Softness*, a *Size* and a color | drop shadow (in UI) |
 | **Self-hosted**          | Bugaboo running on the customer's own server                       | on-prem, on-premises, enterprise edition |
 | **Hosted by Bugaboo**    | Bugaboo running for the customer on our servers in the EU          | SaaS, cloud edition                |
 | **Notifications**        | Messages about things you follow or that involve you               | inbox, alerts                      |

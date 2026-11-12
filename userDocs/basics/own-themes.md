@@ -11,22 +11,22 @@ Under the list, give the theme a name, choose the theme it starts from (*Dayligh
 
 ## The theme editor
 
-On top, the line **Readability** sums up how easy the colors of the theme are to read, for example "Readability: 69 pairs easy to read, 784 OK, 0 hard to read." Under it, the colors are in groups:
+On top, **Readability** says whether anything is hard to read: "Readability: nothing is hard to read." (with **Details** for how many combinations of colors were checked), or how many colors are hard to read, each with the number of backgrounds it is hard to read on; **Show** lists them and **Change** takes you to the color. Under it, the colors are in groups, each saying what your theme changes in it:
 
 - **Backgrounds**: the page, panels, cards and windows, the row under the pointer, the chosen row.
 - **Text**: main text, quiet text and hint text.
 - **Lines**: lines, the lines around fields, faint lines and dividers.
 - **Highlight color**: the color of buttons and links, the text on it, and the colors of the areas of the menu.
 - **Status and tag colors**: danger, warning, success, the colors of the statuses and the twelve colors of choices, labels and tags.
-- **Shadow, corners and fonts**: the corners of controls and of cards, the face of text, headings and long text, and a shadow of its own.
+- **Shadow, corners and fonts**: the corners of controls and of cards, the face of text, headings and long text, and a shadow of its own of one or two layers, each moved *Sideways* and *Downwards*, with a *Softness*, a *Size* and a color.
 
-A group shows only the colors your theme changes. To change another one, pick it under **Change a color**. Type a color as `#` and six digits or letters from a to f, for example `#3c375d`, or choose it with the color square next to it. Every color can also be given a color **for more contrast**, which shows when your device asks for more contrast; without one, the color itself shows there too. **Use Dusk's color** (or the name of your starting theme) takes your change back.
+A group shows only the colors your theme changes. To change another one, pick it under **Change a color**. Type a color as `#` and six digits or letters from a to f, for example `#3c375d`, or choose it with the color square next to it. Every color also has a color **If the device asks for more contrast**; when you change a color, it starts with the one of the theme you started from, and it is rated on its own. **Use Dusk's color** (or the name of your starting theme) takes your change back.
 
 Each color shows how readable it is: **Easy**, **OK** or **Hard to read**. On a computer the **preview** next to the groups shows real parts of Bugaboo in your colors as you type. On a phone, press **Preview** at the bottom. Nobody else sees your changes before you press **Save theme**. What you typed is kept while you work, so if you leave the editor, your changes are back when you open it again.
 
 ## Saving
 
-A theme for everyone can't be saved while a pair of colors is *Hard to read*. Bugaboo names the pairs, for example "Hint text on Panels"; **Show** takes you to the color to change. A personal theme can be saved anyway: Bugaboo asks "2 pairs are hard to read. Save anyway?" first.
+A theme for everyone can't be saved while a color is *Hard to read*: **Save theme** takes you to Readability, which names the colors to change. A personal theme can be saved anyway: Bugaboo asks "Save this theme?" first, names the colors that are hard to read and reminds you that only you see the theme.
 
 While somebody edits a theme, others see "Ana is editing this theme" with **Ask Ana to finish**, and an administrator can **Edit anyway**.
 
@@ -34,10 +34,10 @@ While somebody edits a theme, others see "Ana is editing this theme" with **Ask 
 
 - **Save a copy** keeps a theme as a new one of the same kind, which opens in the editor.
 - **Download** saves a theme as a file.
-- **Upload** creates a theme from such a file (at most 64 KB). Bugaboo checks every value; a value a theme may not have is named, and the file is not taken.
+- **Upload** creates a theme from such a file (at most 64 KB). Bugaboo checks the whole file; a part or a value a theme may not have is named, and the file is not taken.
 
 ## Choosing and deleting
 
 Own themes are offered with the four built-in themes in *My settings › Appearance*: first the built-in themes, then the themes for everyone, then your own. A light own theme is under "Theme when my device is light", a dark one under "Theme when my device is dark". An administrator can also choose a theme for everyone as the organization's theme in *Look › Themes*.
 
-**Delete** asks first. For a theme for everyone it says how many people chose it, for example "12 people use this theme. They will see Dusk instead." Whoever chose a deleted theme sees the theme it started from.
+**Delete** asks first. For a theme for everyone it says how many people chose it, for example "12 people use this theme. They will see Dusk instead.", or "Nobody uses this theme. Deleting it changes nothing for anyone." Whoever chose a deleted theme sees the theme it started from.
