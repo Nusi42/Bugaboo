@@ -162,6 +162,7 @@ function ownTopics(): string[] {
     t("nav.region"),
     t("nav.start-page"),
     t("shortcut.title"),
+    t("nav.work-times"),
     t("nav.notification-settings"),
     t("nav.handle"),
     t("nav.assistant-settings"),

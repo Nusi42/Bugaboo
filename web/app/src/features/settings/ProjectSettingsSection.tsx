@@ -27,7 +27,8 @@ export interface ProjectSettingsSectionProps {
 /**
  * The settings of one project (PRJ-02, CFG-06), drawn by the generic form: the section a project's
  * page shows for the people who may change them. It draws nothing while no setting can be set on a
- * project (M2 has none yet), so the project page can hold it already.
+ * project (M2 has none yet), so the project page can hold it already. While the settings load it
+ * says so, so its card is never an empty box (the review of M5, package O).
  */
 export function ProjectSettingsSection({
   projectId,
@@ -35,7 +36,7 @@ export function ProjectSettingsSection({
 }: ProjectSettingsSectionProps) {
   const { settings, failed, edits } = useProjectSettings(projectId);
   return (
-    <QueryGate error={failed} data={settings} loading={null}>
+    <QueryGate error={failed} data={settings}>
       {(shown) => {
         const drawn =
           show === projectShows.kindsOfAi
