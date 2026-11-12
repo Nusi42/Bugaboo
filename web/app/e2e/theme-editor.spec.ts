@@ -103,6 +103,7 @@ test("thm_04_an_administrator_creates_a_theme_for_everyone_and_another_person_ch
   await changeColor(page, t("theme-editor.group.highlight"), t("theme-color.accent"));
   await colorField(page, t("theme-color.accent")).fill(accent);
   await page.getByRole("button", { name: t("theme-editor.save"), exact: true }).click();
+  await expect.poll(async () => (await onlyThemeOf(server, ada)).theme.saved).toBe(true);
   await page.goto(paths.themes);
   await expect(themeRow(page, "Harbor")).toContainText(t("theme-editor.dark"));
   // Bob finds it among the dark themes, after the built-in ones, and chooses it.
