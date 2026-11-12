@@ -4,12 +4,13 @@
 //! name and for one who sees them by their role, on SQLite and PostgreSQL.
 
 use bb_app::access::StartingRole;
+use bb_store::Database;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
 use super::http::{Browser, rig_and_app};
 use super::issues_site::{PROJECTS, Site, key_of, ok};
-use super::perf_queries::{Counter, assert_as_many_statements, assert_same_statements};
+use super::perf_queries::{assert_as_many_statements, five_and_forty_of};
 use super::plan_site::{MONDAY, TIMELINE, blocks, issue, work_times};
 
 /// How many issues the timeline of the test holds: more than the longer page in ACME alone, where
@@ -30,38 +31,29 @@ const ONE_PROJECT_AT_MOST: usize = 100;
 const TIMELINE_AT_MOST: usize = 100;
 
 /// The statements of a page of five and a page of forty of the timeline `body`, as `browser` reads
-/// them, after a read that warms the caches (not counted).
+/// them; the page of forty holds the delays of its rows, planned by effort.
 async fn five_and_forty(
     browser: &mut Browser,
-    counter: &mut Counter<'_>,
+    database: &Database,
     body: &Value,
 ) -> Result<(usize, usize), Failure> {
-    let limited = |limit: u32| {
+    let (on_five, on_forty, forty) = five_and_forty_of(browser, database, "rows", |limit| {
         let mut asked = body.clone();
         if let Some(asked) = asked.as_object_mut() {
             asked.insert("limit".to_owned(), json!(limit));
         }
-        asked
-    };
-    ok(&browser.send("POST", TIMELINE, Some(limited(5))).await?)?;
-    counter.take();
-    let five = browser.send("POST", TIMELINE, Some(limited(5))).await?;
-    assert_eq!(ok(&five)?["rows"].as_array().map(Vec::len), Some(5));
-    let (on_five, five_log) = counter.take_logged();
-    let forty = browser.send("POST", TIMELINE, Some(limited(40))).await?;
-    assert_eq!(ok(&forty)?["rows"].as_array().map(Vec::len), Some(40));
+        ("POST", TIMELINE.to_owned(), Some(asked))
+    })
+    .await?;
     // Every row but the oldest waits for the issue before it: the page holds their delays, planned
     // by effort.
     assert!(
-        forty.body["warnings"]
+        forty["warnings"]
             .as_array()
             .is_some_and(|warnings| warnings.len() >= 39),
-        "{}",
-        forty.body
+        "{forty}"
     );
-    assert_eq!(forty.body["planned_by_effort"], true);
-    let (on_forty, forty_log) = counter.take_logged();
-    assert_same_statements(&five_log, &forty_log);
+    assert_eq!(forty["planned_by_effort"], true);
     Ok((on_five, on_forty))
 }
 
@@ -142,8 +134,7 @@ async fn perf_05_a_timeline_of_forty_rows_runs_as_many_statements_as_one_of_five
             "first": MONDAY,
             "last": "2027-05-31",
         });
-        let mut counter = Counter::on(&rig.database);
-        let (on_five, on_forty) = five_and_forty(&mut ada, &mut counter, &body).await?;
+        let (on_five, on_forty) = five_and_forty(&mut ada, &rig.database, &body).await?;
         assert_as_many_statements(on_five, on_forty, TIMELINE_AT_MOST, "a page by name");
         // A reader who sees the people on the bars by their role.
         site.show_people(
@@ -162,10 +153,10 @@ async fn perf_05_a_timeline_of_forty_rows_runs_as_many_statements_as_one_of_five
             asked.insert("project".to_owned(), json!(site.acme));
         }
         let (on_five, on_forty) =
-            five_and_forty(&mut contributor, &mut counter, &one_project).await?;
+            five_and_forty(&mut contributor, &rig.database, &one_project).await?;
         assert_as_many_statements(on_five, on_forty, TIMELINE_AT_MOST, "a page by role");
         // The page of one project by name stays within what it ran before pages met several.
-        let (on_five, on_forty) = five_and_forty(&mut ada, &mut counter, &one_project).await?;
+        let (on_five, on_forty) = five_and_forty(&mut ada, &rig.database, &one_project).await?;
         assert_as_many_statements(
             on_five,
             on_forty,

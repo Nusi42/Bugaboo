@@ -9,7 +9,7 @@
 use bb_app::access::StartingRole;
 use bb_store::Database;
 use bb_testing::{Failure, TestResult, each_database};
-use serde_json::json;
+use serde_json::{Value, json};
 
 use super::files_http::upload;
 use super::http::{Browser, rig_and_app};
@@ -75,24 +75,46 @@ pub(super) fn assert_as_many_statements(on_few: usize, on_many: usize, at_most: 
     assert!(on_many <= at_most, "{on_many} statements");
 }
 
-/// The statements that a page of five and a page of forty run, after a read that warms the caches
-/// (not counted); each page has as many items as were asked for.
+/// The statements that a page of five and a page of forty of a list run, after a read that warms
+/// the caches (not counted); each page has as many items as were asked for.
 pub(super) async fn five_and_forty(
     browser: &mut Browser,
     database: &Database,
     path: impl Fn(u32) -> String,
 ) -> Result<(usize, usize), Failure> {
+    let (on_five, on_forty, _) = five_and_forty_of(browser, database, "items", |limit| {
+        ("GET", path(limit), None)
+    })
+    .await?;
+    Ok((on_five, on_forty))
+}
+
+/// The same for any request: `request` makes the request of a page of so many, and `list` names
+/// the member of the answer that holds the page. Also the answer of the page of forty, for what
+/// the caller checks in it.
+pub(super) async fn five_and_forty_of(
+    browser: &mut Browser,
+    database: &Database,
+    list: &str,
+    request: impl Fn(u32) -> (&'static str, String, Option<Value>),
+) -> Result<(usize, usize, Value), Failure> {
+    let mut send = async |limit: u32| {
+        let (method, path, body) = request(limit);
+        let reply = browser.send(method, &path, body).await?;
+        let answer = ok(&reply)?.clone();
+        Ok::<_, Failure>(answer)
+    };
     let mut counter = Counter::on(database);
-    ok(&browser.send("GET", &path(5), None).await?)?;
+    send(5).await?;
     counter.take();
-    let five = browser.send("GET", &path(5), None).await?;
-    assert_eq!(ok(&five)?["items"].as_array().map(Vec::len), Some(5));
+    let five = send(5).await?;
+    assert_eq!(five[list].as_array().map(Vec::len), Some(5));
     let (on_five, five_log) = counter.take_logged();
-    let forty = browser.send("GET", &path(40), None).await?;
-    assert_eq!(ok(&forty)?["items"].as_array().map(Vec::len), Some(40));
+    let forty = send(40).await?;
+    assert_eq!(forty[list].as_array().map(Vec::len), Some(40));
     let (on_forty, forty_log) = counter.take_logged();
     assert_same_statements(&five_log, &forty_log);
-    Ok((on_five, on_forty))
+    Ok((on_five, on_forty, forty))
 }
 
 /// Fails with the statements of both windows when they are not as many, so a failure of the counts
