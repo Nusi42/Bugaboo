@@ -18,7 +18,7 @@ The lead updates this file after every step (builder started, report in, review 
 | WP-03 | Dates and dependencies on the server | merged (2026-11-12, two fix rounds) | `win3` / `WIN3` | Wave 1; migration 49; starts once WP-02 is merged |
 | WP-04 | Work times on the server | merged (2026-11-12, three fix rounds) | `win4` / `WIN4` | Wave 1; migration 50; privacy review |
 | WP-05 | Own themes on the server | merged (2026-11-12, two fix rounds) | `win5` / `WIN5` | Wave 1; migration 51; security review |
-| WP-06 | The plan on the server | building (2026-11-12) | `win3` / `WIN3` | Wave 2; migration 52; privacy review |
+| WP-06 | The plan on the server | merged (two fix rounds) | `win3` / `WIN3` | Wave 2; migration 52; privacy review |
 | WP-07 | Work times and the time factor on screen | merged without the time factor (two fix rounds; the time factor follows WP-06, M8-F60) | `win4` / `WIN4` | Wave 2; lands after WP-06 |
 | WP-08 | The theme editor | merged (two fix rounds and a small last commit) | `win5` / `WIN5` | Wave 2; security review |
 | WP-09 | The timeline on a computer | planned | `win3` / `WIN3` | Wave 3 |
