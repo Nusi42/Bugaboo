@@ -7,6 +7,8 @@ export const nameableMembers = [
   "priority",
   "estimated-time",
   "time-left",
+  "start-date",
+  "due-date",
   "issue-type",
   "labels",
   "tags",

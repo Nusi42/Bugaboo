@@ -4,15 +4,15 @@
 //! Both dates are calendar days kept as the days since 1970-01-01 (the way a *Date* field keeps a
 //! day) and empty until somebody gives them; every issue made before keeps what it had and has
 //! neither. A kind of relation holds the word of its date effect, `none` until a kind is given one.
-//! The starting kind *blocks* gets `must-finish-first`: it is the one at the first place whose
-//! name is the starting word. The names of kinds could be changed since the first start and kinds
-//! had no mark before this migration, so a kind that was renamed is no longer found, and an
-//! organization gives it the effect itself. The word and the place are written out here, not read
-//! from the program, so the migration stays what it was however the starting kinds change later.
+//! The starting kind *blocks* gets `must-finish-first`: it is the kind at the first place. The
+//! place is the stable mark of a starting kind: the first start gives the four kinds the places 0
+//! to 3, a kind that somebody makes later goes to the end, and a place never changes, while a name
+//! can. So the kind is found by its place, never by its name. The place is written out here, not
+//! read from the program, so the migration stays what it was however the starting kinds change.
 //! One `ALTER TABLE … ADD COLUMN` for each column, because SQLite adds one column at a time. No
 //! index yet: the benchmark of the plan decides whether sorting by the dates needs one.
 
-use sea_query::{ColumnDef, Expr, ExprTrait as _, Func, Query, Table};
+use sea_query::{ColumnDef, Expr, ExprTrait as _, Query, Table};
 
 use super::Step;
 use crate::schema::{IssueRow, RelationKindRow};
@@ -23,8 +23,7 @@ const MUST_FINISH_FIRST: &str = "must-finish-first";
 /// The word of no date effect, as it is stored: the starting value of every kind.
 const NO_EFFECT: &str = "none";
 
-/// The name of the starting kind *blocks*, in lower case, and its place among the starting kinds.
-const BLOCKS: &str = "blocks";
+/// The place of the starting kind *blocks* among the kinds.
 const BLOCKS_PLACE: i64 = 0;
 
 pub(super) fn steps() -> Vec<Step> {
@@ -52,7 +51,6 @@ pub(super) fn steps() -> Vec<Step> {
                 .table(RelationKindRow::Table)
                 .value(RelationKindRow::DateEffect, MUST_FINISH_FIRST)
                 .and_where(Expr::col(RelationKindRow::Position).eq(BLOCKS_PLACE))
-                .and_where(Func::lower(Expr::col(RelationKindRow::Forward)).eq(BLOCKS))
                 .to_owned(),
         ),
     ]
@@ -168,18 +166,19 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn plan_02_a_kind_that_is_not_the_first_called_blocks_gets_no_effect() -> TestResult {
+    async fn plan_02_the_kind_at_the_first_place_gets_the_effect_whatever_it_is_called()
+    -> TestResult {
         each_database("migration_49_other_blocks", async |db| {
             let database = Database::connect(db.url()).await?;
             database.migrate_until(48, at(0)).await?;
             let first = RelationKindId::from_parts(Timestamp::UNIX_EPOCH, [1; 10])?;
             let renamed = RelationKindId::from_parts(Timestamp::UNIX_EPOCH, [2; 10])?;
-            // The first kind was renamed, and another one at a later place got the old word: it
-            // is no starting kind, so it is not given the effect.
+            // The first kind was renamed, and another one at a later place got the old word: the
+            // place marks the starting kind, not the name.
             old_kind(&database, first, ("Waits for", "Is waited for by"), 0).await?;
             old_kind(&database, renamed, ("Blocks", "Is blocked by"), 5).await?;
             database.migrate_until(49, at(1)).await?;
-            assert_eq!(effect_of(&database, first).await?, "none");
+            assert_eq!(effect_of(&database, first).await?, "must-finish-first");
             assert_eq!(effect_of(&database, renamed).await?, "none");
             Ok(())
         })

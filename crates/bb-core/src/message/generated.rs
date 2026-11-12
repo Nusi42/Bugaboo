@@ -2175,6 +2175,10 @@ pub const ERROR_PROJECT_TOO_DEEP: MessageKey = MessageKey::new("error.project.to
 /// The message `error.rate-limit.exceeded`.
 pub const ERROR_RATE_LIMIT_EXCEEDED: MessageKey = MessageKey::new("error.rate-limit.exceeded");
 
+/// The message `error.relation-kind.no-direction`.
+pub const ERROR_RELATION_KIND_NO_DIRECTION: MessageKey =
+    MessageKey::new("error.relation-kind.no-direction");
+
 /// The message `error.relation.dependency-loop`.
 pub const ERROR_RELATION_DEPENDENCY_LOOP: MessageKey =
     MessageKey::new("error.relation.dependency-loop");
@@ -10846,6 +10850,35 @@ pub fn history_cleared(field: impl std::fmt::Display, who: impl std::fmt::Displa
     )
 }
 
+/// The message `history.date-range`.
+#[must_use]
+pub fn history_date_range(due: impl std::fmt::Display, start: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("history.date-range"),
+        vec![
+            ("due", Value::Text(due.to_string())),
+            ("start", Value::Text(start.to_string())),
+        ],
+    )
+}
+
+/// The message `history.dates-moved`.
+#[must_use]
+pub fn history_dates_moved(
+    after: impl std::fmt::Display,
+    before: impl std::fmt::Display,
+    who: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("history.dates-moved"),
+        vec![
+            ("after", Value::Text(after.to_string())),
+            ("before", Value::Text(before.to_string())),
+            ("who", Value::Text(who.to_string())),
+        ],
+    )
+}
+
 /// The message `history.file-added`.
 #[must_use]
 pub fn history_file_added(name: impl std::fmt::Display, who: impl std::fmt::Display) -> Message {
@@ -18303,6 +18336,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "At most {most} kinds of relation can have a date effect. Take it away from one of the kinds named here first.",
     ),
     (
+        "error.relation-kind.no-direction",
+        "A kind that reads the same from both ends has no direction, so it can't have a date effect. Give the two ends different words first.",
+    ),
+    (
         "error.relation.dependency-loop",
         "That would close a loop: each issue in it must finish before the next one, and the last before the first. Choose another issue or another kind.",
     ),
@@ -18984,6 +19021,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("history.changed-long-text", "{who} changed {field}"),
     ("history.cleared", "{who} cleared {field}"),
+    ("history.date-range", "{start}–{due}"),
+    (
+        "history.dates-moved",
+        "{who} moved the dates from {before} to {after}",
+    ),
     ("history.file-added", "{who} added the file {name}"),
     ("history.file-added-unnamed", "{who} added a file"),
     ("history.file-changed-unnamed", "{who} changed a file"),

@@ -95,12 +95,14 @@ fn effect_holders(
 /// loop, and this one only stops the change when something happened in between.
 async fn judge_effect_in<S: AuthStore>(
     transaction: &mut S::Transaction,
-    kinds: &[RelationKind],
     kind: RelationKindId,
     stopped: &Why,
 ) -> Result<(), S::Error> {
     S::lock_issue_relations(transaction).await?;
-    if effect_holders(kinds, kind).count() >= DATE_EFFECT_KINDS_MOST {
+    // Read after the lock, so a change that came first is counted: two at the same moment cannot
+    // both be the second kind.
+    let kinds = S::relation_kinds_in(transaction).await?;
+    if effect_holders(&kinds, kind).count() >= DATE_EFFECT_KINDS_MOST {
         return Err(stopped.stop::<S>(ErrorCode::RelationKindDateEffectMost));
     }
     if loop_of_kind_in::<S>(transaction, kind).await?.is_some() {
@@ -324,6 +326,10 @@ pub async fn change_relation_kind<S: AuthStore>(
     if differences.is_empty() {
         return Ok(held.authorize(RelationKindView::from(&current)));
     }
+    // A kind that reads the same from both ends has no direction, so nothing can finish first.
+    if after.date_effect.is_dependency() && after.is_symmetric() {
+        return Err(ErrorCode::RelationKindNoDirection.into());
+    }
     let gives_effect = after.date_effect.is_dependency() && !current.date_effect.is_dependency();
     if gives_effect {
         ctx.ensure_kind_may_take_effect(&actor, &kinds, &after)
@@ -347,7 +353,7 @@ pub async fn change_relation_kind<S: AuthStore>(
                     return Err(stopped.stop::<S>(ErrorCode::NameTaken));
                 }
                 if gives_effect {
-                    judge_effect_in::<S>(transaction, &kinds, written.id, &stopped).await?;
+                    judge_effect_in::<S>(transaction, written.id, &stopped).await?;
                 }
                 let updated =
                     S::update_relation_kind(transaction, &written, Version::new(version)).await?;

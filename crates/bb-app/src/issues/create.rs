@@ -114,9 +114,6 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok((status, Some(checked.group)))
     }
 
-    /// What the person asks for, when they may ask it: they may create issues in the project, the
-    /// fields they set are ones they may change (the title always), and the type is one that
-    /// takes new issues.
     /// The people a new issue is assigned to: those the request names, each once, or nobody.
     async fn assigned_to_new(
         &self,
@@ -141,6 +138,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
     }
 
+    /// What the person asks for, when they may ask it: they may create issues in the project, the
+    /// fields they set are ones they may change (the title always), and the type is one that
+    /// takes new issues.
     async fn plan_new_issue(
         &self,
         actor: &Actor,

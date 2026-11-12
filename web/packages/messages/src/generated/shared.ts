@@ -391,6 +391,8 @@ export const messages = {
   "related-issues.loop-is": "The loop: {issues}.",
   "related-issues.kind-field": "What the relation means",
   "history.title": "History",
+  "history.dates-moved": "{who} moved the dates from {before} to {after}",
+  "history.date-range": "{start}–{due}",
   "history.changed": "{who} changed {field} from {before} to {after}",
   "history.set": "{who} set {field}: {after}",
   "history.cleared": "{who} cleared {field}",
@@ -435,6 +437,8 @@ export const messages = {
   "error.relation.exists": "Those two issues are related in that way already.",
   "error.relation.dependency-loop":
     "That would close a loop: each issue in it must finish before the next one, and the last before the first. Choose another issue or another kind.",
+  "error.relation-kind.no-direction":
+    "A kind that reads the same from both ends has no direction, so it can't have a date effect. Give the two ends different words first.",
   "error.relation-kind.date-effect-most":
     "At most {most} kinds of relation can have a date effect. Take it away from one of the kinds named here first.",
   "error.issue.start-after-due": "The start date can't be after the due date.",

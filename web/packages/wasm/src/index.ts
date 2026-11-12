@@ -19,6 +19,7 @@ import init, {
   render,
   side_words,
   time_sentence,
+  dates_moved_sentence,
 } from "../generated/bb_wasm.js";
 import type {
   Change as WordedChange,
@@ -42,6 +43,13 @@ export type {
   Time as WordedTime,
 } from "./wording.generated.ts";
 
+/** Both dates of an issue before and after one change, as the region words each day. */
+export interface WordedDatesMoved {
+  readonly who: string;
+  readonly before: { readonly start: string; readonly due: string };
+  readonly after: { readonly start: string; readonly due: string };
+}
+
 /** Where the module is. Vite turns this into the address of the built file. */
 export const moduleLocation = new URL("../generated/bb_wasm_bg.wasm", import.meta.url);
 
@@ -61,6 +69,8 @@ export interface Wording {
   readonly changeSentence: (change: WordedChange) => Said;
   /** The sentence of a file that was added, deleted or brought back. */
   readonly fileSentence: (file: WordedFile) => Said;
+  /** The sentence of both dates of an issue moving in one event, with the days worded for the region. */
+  readonly datesMovedSentence: (moved: WordedDatesMoved) => Said;
   /** The sentence of time booked on an issue, changed or deleted: *Ana booked 1h 30m*. */
   readonly timeSentence: (time: WordedTime) => Said;
   /** The sentences of a notification: one, or one for each field a change touched. */
@@ -150,6 +160,10 @@ function ask(question: () => string): string {
 const wording: Wording = {
   changeSentence: (change) => saidIn(ask(() => change_sentence(JSON.stringify(change)))) ?? "",
   fileSentence: (file) => saidIn(ask(() => file_sentence(JSON.stringify(file)))) ?? "",
+  datesMovedSentence: ({ who, before, after }) =>
+    saidIn(
+      ask(() => dates_moved_sentence(who, before.start, before.due, after.start, after.due)),
+    ) ?? "",
   timeSentence: (time) =>
     saidIn(
       ask(() => time_sentence(time.who, time.what.event ?? "", time.what.minutes ?? undefined)),

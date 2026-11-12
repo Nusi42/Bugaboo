@@ -13,7 +13,7 @@ pub mod names;
 use bb_core::fields::Field;
 use bb_core::history::TimeEvent;
 use bb_core::time::Minutes;
-use bb_core::wording::{self, Change, File, Notice, Side, Time, TimeChange};
+use bb_core::wording::{self, Change, DayRange, File, Notice, Side, Time, TimeChange};
 use bb_markdown::Options;
 use serde::Deserialize;
 use serde::Serialize;
@@ -60,6 +60,33 @@ fn written<Output: Serialize>(output: &Output) -> Result<String, String> {
 #[wasm_bindgen]
 pub fn change_sentence(change: &str) -> Result<String, JsError> {
     answer(change, |change: &Change| wording::change_sentence(change)).map_err(|e| JsError::new(&e))
+}
+
+/// The sentence of both dates of an issue moving in one event (see [`change_sentence`]): who did it
+/// and the first and last day before and after, worded for the reader's region. The words come as
+/// they are, not as JSON, for the reason `time_sentence` gives.
+///
+/// # Errors
+/// The answer cannot be written, a defect.
+#[wasm_bindgen]
+pub fn dates_moved_sentence(
+    who: &str,
+    before_start: &str,
+    before_due: &str,
+    after_start: &str,
+    after_due: &str,
+) -> Result<String, JsError> {
+    let (before, after) = (
+        DayRange {
+            start: before_start,
+            due: before_due,
+        },
+        DayRange {
+            start: after_start,
+            due: after_due,
+        },
+    );
+    written(&wording::dates_moved_sentence(who, before, after)).map_err(|e| JsError::new(&e))
 }
 
 /// The sentence of a file that was added, deleted or brought back (see [`change_sentence`]).

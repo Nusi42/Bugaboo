@@ -31,7 +31,7 @@ use crate::issues::{ChangeIssue, CreateIssue, change_issue, create_issue, issue}
 use crate::roles::{AssignRole, Given, RemoveAssignment, Subject, assign_role, remove_assignment};
 
 /// The hand-over that lets the agent change these members.
-fn ticking(fields: &[&str]) -> impl FnOnce(&mut crate::agent_work::HandOver) {
+pub(super) fn ticking(fields: &[&str]) -> impl FnOnce(&mut crate::agent_work::HandOver) {
     let fields: Vec<String> = fields.iter().map(|each| (*each).to_owned()).collect();
     move |asked| {
         asked.powers = vec![HandOverPower::ChangeFields];

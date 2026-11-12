@@ -218,61 +218,87 @@ impl Relation {
 /// that waits for it. The relation of a kind with a date effect, read from its `from` and `to`.
 pub type Dependency = (IssueId, IssueId);
 
-/// The shortest way from `start` to `goal` along dependencies, both ends included; `None` when
-/// the issue that waits for `start`, over any number of steps, never is `goal`. The one walk of the
-/// loop check: making a dependency and giving a kind a date effect both ask it, and the plan of the
-/// timeline can ask it for any two issues. Written once and pure, so it is tested without a
-/// database.
+/// The dependencies as a map from the issue that must finish first to the issues that wait for it,
+/// built once so a walk, or many, never builds it again.
+pub struct DependencyGraph {
+    waiting_for: HashMap<IssueId, Vec<IssueId>>,
+}
+
+impl DependencyGraph {
+    /// The graph of these dependencies.
+    #[must_use]
+    pub fn new(dependencies: &[Dependency]) -> Self {
+        let mut waiting_for: HashMap<IssueId, Vec<IssueId>> = HashMap::new();
+        for (first, then) in dependencies {
+            waiting_for.entry(*first).or_default().push(*then);
+        }
+        Self { waiting_for }
+    }
+
+    /// The shortest way from `start` to `goal`, both ends included; `None` when the issues that wait
+    /// for `start`, over any number of steps, never include `goal`. The one walk of the loop check:
+    /// making a dependency and giving a kind a date effect both use it, and the plan of the timeline
+    /// can ask it for any two issues. Written once and pure, so it is tested without a database.
+    #[must_use]
+    pub fn path(&self, start: IssueId, goal: IssueId) -> Option<Vec<IssueId>> {
+        if start == goal {
+            return Some(vec![start]);
+        }
+        let mut came_from: HashMap<IssueId, IssueId> = HashMap::new();
+        let mut seen: HashSet<IssueId> = HashSet::from([start]);
+        let mut queue = VecDeque::from([start]);
+        while let Some(at) = queue.pop_front() {
+            for next in self.waiting_for.get(&at).into_iter().flatten() {
+                if !seen.insert(*next) {
+                    continue;
+                }
+                came_from.insert(*next, at);
+                if *next == goal {
+                    let mut path = vec![goal];
+                    let mut back = goal;
+                    while let Some(before) = came_from.get(&back) {
+                        path.push(*before);
+                        back = *before;
+                    }
+                    path.reverse();
+                    return Some(path);
+                }
+                queue.push_back(*next);
+            }
+        }
+        None
+    }
+
+    /// The loop that the new dependency `new` would close, as the issues on it in order: the one that
+    /// must finish first, the one that waits, and on from there until the one that waits for the
+    /// last of them is the first again. `None` when it closes none.
+    #[must_use]
+    pub fn loop_closed_by(&self, new: Dependency) -> Option<Vec<IssueId>> {
+        // The loop is the new step, then the way from the one that waits back to the one that must
+        // finish first.
+        self.path(new.1, new.0).map(|back| {
+            std::iter::once(new.0)
+                .chain(back.into_iter().take_while(|issue| *issue != new.0))
+                .collect()
+        })
+    }
+}
+
+/// The shortest way from `start` to `goal` along `dependencies` (see [`DependencyGraph::path`]).
 #[must_use]
 pub fn dependency_path(
     dependencies: &[Dependency],
     start: IssueId,
     goal: IssueId,
 ) -> Option<Vec<IssueId>> {
-    if start == goal {
-        return Some(vec![start]);
-    }
-    let mut waiting_for: HashMap<IssueId, Vec<IssueId>> = HashMap::new();
-    for (first, then) in dependencies {
-        waiting_for.entry(*first).or_default().push(*then);
-    }
-    let mut came_from: HashMap<IssueId, IssueId> = HashMap::new();
-    let mut seen: HashSet<IssueId> = HashSet::from([start]);
-    let mut queue = VecDeque::from([start]);
-    while let Some(at) = queue.pop_front() {
-        for next in waiting_for.get(&at).into_iter().flatten() {
-            if !seen.insert(*next) {
-                continue;
-            }
-            came_from.insert(*next, at);
-            if *next == goal {
-                let mut path = vec![goal];
-                let mut back = goal;
-                while let Some(before) = came_from.get(&back) {
-                    path.push(*before);
-                    back = *before;
-                }
-                path.reverse();
-                return Some(path);
-            }
-            queue.push_back(*next);
-        }
-    }
-    None
+    DependencyGraph::new(dependencies).path(start, goal)
 }
 
-/// The loop that a new dependency would close, as the issues on it in order: the one that must
-/// finish first, the one that waits, and on from there until the one that waits for the last of
-/// them is the first again. `None` when it closes none. `dependencies` are the ones there are now.
+/// The loop that a new dependency would close (see [`DependencyGraph::loop_closed_by`]);
+/// `dependencies` are the ones there are now.
 #[must_use]
 pub fn loop_closed_by(dependencies: &[Dependency], new: Dependency) -> Option<Vec<IssueId>> {
-    // The loop is the new step, then the way from the one that waits back to the one that must
-    // finish first.
-    dependency_path(dependencies, new.1, new.0).map(|back| {
-        std::iter::once(new.0)
-            .chain(back.into_iter().take_while(|issue| *issue != new.0))
-            .collect()
-    })
+    DependencyGraph::new(dependencies).loop_closed_by(new)
 }
 
 /// An issue that sits under another one (ISS-03).

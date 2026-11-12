@@ -23,6 +23,25 @@ fn change(field: &str, before: Option<Side>, after: Option<Side>) -> Change {
 }
 
 #[test]
+fn plan_03_both_dates_moving_in_one_event_are_one_sentence() {
+    let said = dates_moved_sentence(
+        "Lea",
+        DayRange {
+            start: "Nov 3, 2026",
+            due: "Nov 7, 2026",
+        },
+        DayRange {
+            start: "Nov 10, 2026",
+            due: "Nov 14, 2026",
+        },
+    );
+    assert_eq!(
+        said.render(),
+        "Lea moved the dates from Nov 3, 2026–Nov 7, 2026 to Nov 10, 2026–Nov 14, 2026"
+    );
+}
+
+#[test]
 fn a_change_is_changed_set_cleared_or_a_long_text() {
     let said = |before, after| change_sentence(&change("priority", before, after)).render();
     assert_eq!(

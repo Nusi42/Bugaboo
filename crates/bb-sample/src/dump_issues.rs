@@ -20,8 +20,8 @@ use bb_core::event::{DomainEvent, EntityKind, RecordKind};
 use bb_core::id::UserId;
 use bb_core::id::{EntityId, IssueId, ProjectId};
 use bb_core::issue::Issue;
-use bb_core::message::Message;
-use bb_core::relation::{RelationKind, STARTING_RELATION_KINDS};
+use bb_core::message::{self, Message};
+use bb_core::relation::RelationKind;
 use bb_core::tags::IssueSight;
 use bb_core::time::day::FirstDay;
 use jiff::Timestamp;
@@ -57,7 +57,7 @@ pub(crate) struct DumpIssues {
     /// Relations by the forward name of their kind.
     relations: BTreeMap<String, u64>,
     longest_blocks_chain: u64,
-    blocks_circles: u64,
+    causes_circles: u64,
     tags_on_issues: u64,
     labels_on_issues: u64,
     /// Values of own fields by the name of the field.
@@ -198,15 +198,18 @@ impl Sample {
     ) -> Result<(), SampleError> {
         let storage = &self.storage;
         let kinds: Vec<RelationKind> = storage.relation_kinds().await?;
-        // The kind *blocks* is the first of the starting kinds, found by its name.
-        let blocks_name = STARTING_RELATION_KINDS
-            .first()
-            .map(|starting| Message::from(starting.forward).render());
-        let blocks = kinds
-            .iter()
-            .find(|kind| Some(&kind.forward) == blocks_name.as_ref())
-            .map(|kind| kind.id);
+        // The kinds of the chains and of the circle, found by the name of the starting kind.
+        let named = |message| {
+            let name = Message::from(message).render();
+            kinds
+                .iter()
+                .find(|kind| kind.forward == name)
+                .map(|kind| kind.id)
+        };
+        let blocks = named(message::RELATION_KIND_BLOCKS);
+        let causes = named(message::RELATION_KIND_CAUSES);
         let mut edges: BTreeMap<IssueId, Vec<IssueId>> = BTreeMap::new();
+        let mut cause_edges: BTreeMap<IssueId, Vec<IssueId>> = BTreeMap::new();
         for issue in issues {
             let children = storage.sub_issues_of(issue.id).await?.len() as u64;
             dump.sub_issues += children;
@@ -225,11 +228,16 @@ impl Sample {
                 if Some(relation.kind) == blocks {
                     edges.entry(relation.from).or_default().push(relation.to);
                 }
+                if Some(relation.kind) == causes {
+                    cause_edges
+                        .entry(relation.from)
+                        .or_default()
+                        .push(relation.to);
+                }
             }
         }
-        let (longest, circles) = shape_of(&edges);
-        dump.longest_blocks_chain = longest;
-        dump.blocks_circles = circles;
+        dump.longest_blocks_chain = shape_of(&edges).0;
+        dump.causes_circles = shape_of(&cause_edges).1;
         Ok(())
     }
 }

@@ -118,22 +118,25 @@ pub async fn move_dates<S: AuthStore>(
 ) -> Result<Authorized<DatesMoved>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let names_a_date = |each: &DatesOf| each.start_date.is_some() || each.due_date.is_some();
-    let mut seen = std::collections::BTreeSet::new();
     if input.issues.is_empty()
         || input.issues.len() > MANY_CHANGES_JOB_ABOVE
         || !input.issues.iter().all(names_a_date)
-        || !input
-            .issues
-            .iter()
-            .all(|each| seen.insert(each.issue.as_str()))
     {
         return Err(ErrorCode::InvalidRequest.into());
     }
     let held = ctx.evaluation_of(&actor, Place::Organization).await?;
     // Judged first, so a refusal of any one issue stops the move before a date is written.
+    // An issue named twice, by its readable ID and by its internal ID, is the same issue: a second
+    // change would be made on a version the first one has counted up, after part of the move was
+    // written.
+    let mut seen = std::collections::BTreeSet::new();
     for each in &input.issues {
-        ctx.plan_issue_change(&actor, &change_of(&input.session_token, each))
+        let (_, plan) = ctx
+            .plan_issue_change(&actor, &change_of(&input.session_token, each))
             .await?;
+        if !seen.insert(plan.current.id) {
+            return Err(ErrorCode::InvalidRequest.into());
+        }
     }
     let run =
         RunId::generate(&mut ctx.ids()).map_err(|error| AppError::Internal(error.to_string()))?;
@@ -160,8 +163,10 @@ pub async fn move_dates<S: AuthStore>(
     } else {
         RunEnd::Failed
     };
-    runs.close_run(run, ended, ctx.now()).await?;
+    let closed = runs.close_run(run, ended, ctx.now()).await;
+    // The refusal of the change comes first: it is why the run failed.
     written?;
+    closed?;
     let issues = ctx.moved_issues(&actor, &input).await?;
     Ok(held.authorize(DatesMoved { run, issues }))
 }

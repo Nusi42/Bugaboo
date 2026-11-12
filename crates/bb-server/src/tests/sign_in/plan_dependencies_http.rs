@@ -8,7 +8,7 @@ use bb_app::access::StartingRole;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
-use super::http::{Browser, Reply, rig_and_app};
+use super::http::{ADA_EMAIL, Browser, Reply, rig_and_app};
 use super::issues_site::{ISSUES, Site, key_of, ok};
 
 /// The kinds of relation, as `browser` reads them.
@@ -263,6 +263,68 @@ async fn plan_02_a_loop_names_a_hidden_issue_only_as_an_issue_you_cannot_see() -
             "{}",
             to_ada.body
         );
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn plan_02_two_kinds_given_the_effect_at_the_same_moment_are_one_too_many() -> TestResult {
+    each_database("plan_02_two_at_once", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (_site, mut ada) = Site::start(&rig, &app).await?;
+        let mut also_ada = Browser::signed_in_as(&app, ADA_EMAIL).await?;
+        // *blocks* has the effect; one more kind may, and two administrators give it to two kinds.
+        let first = new_kind(&mut ada, "leads to", "comes from").await?;
+        let second = new_kind(&mut ada, "feeds", "is fed by").await?;
+        let (one, other) = tokio::join!(
+            set_effect(&mut ada, &first, "must-finish-first"),
+            set_effect(&mut also_ada, &second, "must-finish-first"),
+        );
+        let statuses = [one?.status, other?.status];
+        assert_eq!(
+            statuses
+                .iter()
+                .filter(|status| **status == StatusCode::OK)
+                .count(),
+            1,
+            "{statuses:?}"
+        );
+        let with_effect = kinds(&mut ada)
+            .await?
+            .iter()
+            .filter(|kind| kind["date_effect"] == "must-finish-first")
+            .count();
+        assert_eq!(with_effect, 2);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn plan_02_a_kind_that_reads_the_same_from_both_ends_has_no_direction() -> TestResult {
+    each_database("plan_02_no_direction", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (_site, mut ada) = Site::start(&rig, &app).await?;
+        // *related to* reads alike from both ends: nothing can finish first.
+        let related = kind_called(&mut ada, "related to").await?;
+        let refused = set_effect(&mut ada, &related, "must-finish-first").await?;
+        assert_eq!(refused.status, StatusCode::CONFLICT, "{}", refused.body);
+        assert_eq!(refused.code(), "relation-kind.no-direction");
+        // A kind that is given the effect cannot be renamed to read alike afterwards either.
+        let leads = new_kind(&mut ada, "leads to", "comes from").await?;
+        let leads = ok(&set_effect(&mut ada, &leads, "must-finish-first").await?)?.clone();
+        let same = ada
+            .send(
+                "PATCH",
+                &format!(
+                    "/api/v1/relation-kinds/{}",
+                    leads["id"].as_str().ok_or("no ID")?
+                ),
+                Some(json!({"version": leads["version"], "backward": "leads to"})),
+            )
+            .await?;
+        assert_eq!(same.code(), "relation-kind.no-direction", "{}", same.body);
         Ok(())
     })
     .await

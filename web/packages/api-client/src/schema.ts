@@ -6435,6 +6435,7 @@ export interface components {
       | "issue.parent-too-deep"
       | "relation.exists"
       | "relation.dependency-loop"
+      | "relation-kind.no-direction"
       | "relation-kind.date-effect-most"
       | "limit.reached"
       | "timer.running"

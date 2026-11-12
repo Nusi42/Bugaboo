@@ -107,8 +107,8 @@ impl IssuePlan {
             u64::from(number(&issues["longest_blocks_chain"]) > 4),
         );
         judge.exactly(
-            "circles of *blocks* (the one deliberate circle)",
-            number(&issues["blocks_circles"]),
+            "circles of *causes* (the one deliberate circle)",
+            number(&issues["causes_circles"]),
             1,
         );
         judge.present("sub-issues under goals", number(&issues["sub_issues"]));
@@ -221,7 +221,7 @@ pub(crate) mod tests {
                 "related to": relations - relations / 2 - 2 * (relations / 6),
             },
             "longest_blocks_chain": 5,
-            "blocks_circles": 1,
+            "causes_circles": 1,
             "tags_on_issues": 10,
             "labels_on_issues": 10,
             "own_field_values": { "Severity": 3, "Platforms": 3, "Customer": 3 },
@@ -397,8 +397,8 @@ pub(crate) mod tests {
         let ok = made(&plan, asked);
         for (member, bad, word) in [
             ("longest_blocks_chain", json!(3), "chain"),
-            ("blocks_circles", json!(0), "circles"),
-            ("blocks_circles", json!(2), "circles"),
+            ("causes_circles", json!(0), "circles"),
+            ("causes_circles", json!(2), "circles"),
             ("sub_issues", json!(0), "sub-issues"),
             ("edited_comments", json!(0), "edited"),
             ("edit_locks", json!(0), "lock"),

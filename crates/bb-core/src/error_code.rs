@@ -144,6 +144,9 @@ error_codes! {
     /// dependencies: the answer names one loop by issue IDs the person may see (PLAN-02, ADR-0043,
     /// decision 4).
     RelationDependencyLoop => ("relation.dependency-loop", 409),
+    /// A kind of relation that reads the same from both ends has no direction, so it cannot have a
+    /// date effect (PLAN-02, ADR-0043, decision 4).
+    RelationKindNoDirection => ("relation-kind.no-direction", 409),
     /// Two kinds of relation carry a date effect already: the answer names them (PLAN-02,
     /// ADR-0043, decision 4).
     RelationKindDateEffectMost => ("relation-kind.date-effect-most", 409),

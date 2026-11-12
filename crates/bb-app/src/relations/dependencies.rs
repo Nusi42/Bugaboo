@@ -11,7 +11,7 @@
 //! is given the effect, would close is refused.
 
 use bb_core::id::{IssueId, RelationKindId};
-use bb_core::relation::{Relation, RelationKind, loop_closed_by};
+use bb_core::relation::{DependencyGraph, Relation, RelationKind, loop_closed_by};
 
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx};
@@ -59,11 +59,9 @@ pub(crate) async fn loop_of_kind_in<S: AuthStore>(
     if !with_effect.contains(&kind) {
         with_effect.push(kind);
     }
-    let dependencies = S::dependencies_of_kinds_in(transaction, with_effect).await?;
+    let graph = DependencyGraph::new(&S::dependencies_of_kinds_in(transaction, with_effect).await?);
     let own = S::dependencies_of_kinds_in(transaction, vec![kind]).await?;
-    Ok(own
-        .into_iter()
-        .find_map(|each| loop_closed_by(&dependencies, each)))
+    Ok(own.into_iter().find_map(|each| graph.loop_closed_by(each)))
 }
 
 impl<S: AuthStore> Ctx<'_, S> {

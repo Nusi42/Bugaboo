@@ -1,5 +1,5 @@
 //! The relations of the sample: how many of each kind, between which issues, including long
-//! chains of *blocks* (deeper than four steps) and one deliberate circle, to see the warning.
+//! chains of *blocks* (deeper than four steps) and one deliberate circle of *causes*, to see the warning.
 
 use std::collections::BTreeSet;
 
@@ -21,6 +21,12 @@ fn place_of(forward: MessageKey) -> usize {
 /// The place of the kind *blocks* among the starting kinds of relation.
 fn blocks() -> usize {
     place_of(message::RELATION_KIND_BLOCKS)
+}
+
+/// The place of *causes*: the kind of the one deliberate circle, because a circle of *blocks* is a
+/// loop of dependencies, which cannot be made any more (ADR-0043, decision 4).
+fn causes() -> usize {
+    place_of(message::RELATION_KIND_CAUSES)
 }
 
 /// The place of *duplicate of*.
@@ -84,13 +90,13 @@ pub(crate) fn plan_relations(
                 made.add(members[step], members[step + 1], blocks());
             }
         }
-        // The circle: three issues that block each other round and round.
+        // The circle: three issues that cause each other round and round.
         let members = &families[random.below(families.len())];
         let first = random.below(members.len() - 2);
         let (x, y, z) = (members[first], members[first + 1], members[first + 2]);
-        made.add(x, y, blocks());
-        made.add(y, z, blocks());
-        made.add(z, x, blocks());
+        made.add(x, y, causes());
+        made.add(y, z, causes());
+        made.add(z, x, causes());
     }
 
     // The rest: a pair in the same top-level project, now and then one from another. An earlier
@@ -190,8 +196,18 @@ mod tests {
             depth
         };
         assert!(blocks.iter().any(|r| depth(r.from) > 4));
-        // The one circle of three: each relation of it is followed by two more that lead back.
-        let in_circle = blocks
+        // The one circle of three, of *causes*: each relation of it is followed by two more that
+        // lead back. *Blocks* has none, so the sample holds no loop of dependencies.
+        let causes: Vec<_> = relations.iter().filter(|r| r.kind == causes()).collect();
+        let in_circle = causes
+            .iter()
+            .filter(|a| {
+                causes.iter().any(|b| {
+                    b.from == a.to && causes.iter().any(|c| c.from == b.to && c.to == a.from)
+                })
+            })
+            .count();
+        let loops_of_blocks = blocks
             .iter()
             .filter(|a| {
                 blocks.iter().any(|b| {
@@ -199,6 +215,7 @@ mod tests {
                 })
             })
             .count();
+        assert_eq!(loops_of_blocks, 0);
         assert_eq!(in_circle, 3);
     }
 

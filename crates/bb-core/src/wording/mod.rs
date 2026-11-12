@@ -377,6 +377,35 @@ pub fn change_sentence(change: &Change) -> Said {
     }
 }
 
+/// A range of days as the region of the reader words them: the first day and the last.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct DayRange<'a> {
+    /// The *Start date*.
+    pub start: &'a str,
+    /// The *Due date*.
+    pub due: &'a str,
+}
+
+/// The sentence of both dates of an issue changing in one event (ADR-0043, decision 6): *Lea moved
+/// the dates from 3 Nov to 7 Nov to 10 Nov to 14 Nov*. The days are worded for the reader's region
+/// by the caller; the choice of words is here, once, for the history and anything that says it.
+#[must_use]
+pub fn dates_moved_sentence(who: &str, before: DayRange<'_>, after: DayRange<'_>) -> Said {
+    let range = |range: DayRange<'_>| {
+        said!(
+            message::history_date_range,
+            Said::text(range.due),
+            Said::text(range.start)
+        )
+    };
+    said!(
+        message::history_dates_moved,
+        range(after),
+        range(before),
+        Said::text(who)
+    )
+}
+
 /// What happened to a file of an issue.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FileChange {

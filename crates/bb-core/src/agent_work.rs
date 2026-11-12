@@ -300,10 +300,9 @@ pub mod issue_member {
     pub const ESTIMATED_TIME: &str = Field::EstimatedTime.code();
     /// *Time left*.
     pub const TIME_LEFT: &str = Field::TimeLeft.code();
-    /// *Start date*: a member of a change, never named in a hand-over (an agent changes no date
-    /// unless the maintainers decide so).
+    /// *Start date*.
     pub const START_DATE: &str = Field::StartDate.code();
-    /// *Due date*: as *Start date*.
+    /// *Due date*.
     pub const DUE_DATE: &str = Field::DueDate.code();
     /// The labels.
     pub const LABELS: &str = Field::Labels.code();
@@ -327,12 +326,14 @@ pub mod issue_member {
 
     /// The members a hand-over can name next to the own fields of the catalogue; the status is
     /// ticked as a power, never named.
-    pub const NAMEABLE: [&str; 11] = [
+    pub const NAMEABLE: [&str; 13] = [
         TITLE,
         DESCRIPTION,
         PRIORITY,
         ESTIMATED_TIME,
         TIME_LEFT,
+        START_DATE,
+        DUE_DATE,
         ISSUE_TYPE,
         LABELS,
         TAGS,

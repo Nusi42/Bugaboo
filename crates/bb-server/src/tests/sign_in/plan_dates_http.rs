@@ -580,3 +580,33 @@ async fn plan_03_a_date_change_with_an_old_version_is_refused_with_the_newer_val
     })
     .await
 }
+
+#[tokio::test]
+async fn plan_03_an_issue_named_by_its_key_and_by_its_id_is_named_twice() -> TestResult {
+    each_database("plan_03_named_twice", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let key = made_with(&site, &mut ada, "Plan", json!({})).await?;
+        let issue = issue_of(&mut ada, &key).await?;
+        let id = issue["id"].as_str().ok_or("no ID")?.to_owned();
+        let version = issue["version"].clone();
+        let refused = ada
+            .send(
+                "POST",
+                MOVE_DATES,
+                Some(json!({"issues": [
+                    {"issue": key, "version": version, "start_date": "2026-11-03"},
+                    {"issue": id, "version": version, "due_date": "2026-11-07"},
+                ]})),
+            )
+            .await?;
+        assert_eq!(refused.status, StatusCode::BAD_REQUEST, "{}", refused.body);
+        assert_eq!(refused.code(), "request.invalid");
+        // Nothing of the move was written.
+        let after = issue_of(&mut ada, &key).await?;
+        assert!(after.get("start_date").is_none(), "{after}");
+        assert_eq!(after["version"], version);
+        Ok(())
+    })
+    .await
+}

@@ -3,6 +3,7 @@
 
 use std::collections::BTreeMap;
 
+use bb_core::ErrorCode;
 use bb_core::agent_work::HandOverPower;
 use bb_core::ai::{Tool, ToolCaller, ToolEffect};
 use serde_json::json;
@@ -124,5 +125,50 @@ async fn m7_f225_a_person_previews_a_sub_issue_in_another_project_like_the_real_
     let preview = call_tool(&world.ctx(), preview).await;
     assert!(real.is_err(), "the real call is refused");
     assert_eq!(said(&preview), said(&real));
+    Ok(())
+}
+
+/// A call that saves what it asks for, as an app with the scope to change does.
+fn applying(who: &str, tool: &str, input: serde_json::Value) -> crate::ai::tools::ToolCallQuery {
+    let mut query = call(who, tool, input);
+    query.mode = ToolMode::Apply;
+    query
+}
+
+#[tokio::test]
+async fn plan_01_a_tool_refuses_a_start_after_the_due_date_like_every_other_way_in() -> Outcome {
+    let world = World::new().await?;
+    a_project(&world, "WEB").await?;
+    let key = issue_with(&world, "WEB", "Plan", "d", BTreeMap::new()).await?;
+    let kind = a_type(&world).await?.to_string();
+    let who = token(&world);
+    let backwards = json!({"start_date": "2026-11-10", "due_date": "2026-11-03"});
+    let mut update = json!({"issue": key, "version": 1});
+    let mut create = json!({"project": "WEB", "issue_type": kind, "title": "New plan"});
+    for input in [&mut update, &mut create] {
+        if let (Some(input), Some(dates)) = (input.as_object_mut(), backwards.as_object()) {
+            input.extend(dates.clone());
+        }
+    }
+    for (tool, input) in [("update_issue", update), ("create_issue", create)] {
+        let refused = call_tool(&world.ctx(), applying(&who, tool, input)).await;
+        assert!(
+            matches!(
+                refused,
+                Err(AppError::Refused(ErrorCode::IssueStartAfterDue))
+            ),
+            "{tool}: {refused:?}"
+        );
+    }
+    // A text that is no date is no request, and an order that is right is saved.
+    let nonsense = json!({"issue": key, "version": 1, "due_date": "soon"});
+    let refused = call_tool(&world.ctx(), applying(&who, "update_issue", nonsense)).await;
+    assert!(matches!(
+        refused,
+        Err(AppError::Refused(ErrorCode::InvalidRequest))
+    ));
+    let fine =
+        json!({"issue": key, "version": 1, "start_date": "2026-11-03", "due_date": "2026-11-10"});
+    call_tool(&world.ctx(), applying(&who, "update_issue", fine)).await?;
     Ok(())
 }
