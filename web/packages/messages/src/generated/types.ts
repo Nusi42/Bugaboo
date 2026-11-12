@@ -504,6 +504,7 @@ export interface MessageArguments {
   "notifications.mentioned": { who: string | number };
   "notifications.open-name": { what: string | number };
   "notifications.taken-over": { who: string | number };
+  "notifications.time-factor-changed": { who: string | number };
   "notifications.work-day-changed": { date: string | number; who: string | number };
   "notifications.work-day-reason": { reason: string | number };
   "notifications.work-times-away-changed": { days: string | number; who: string | number };

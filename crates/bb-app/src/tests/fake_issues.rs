@@ -49,7 +49,13 @@ fn assigned_people_of(state: &State, issues: &[IssueId]) -> Vec<AssignedPerson> 
         .filter(|assigned_person| issues.contains(&assigned_person.issue))
         .cloned()
         .collect();
-    found.sort_by_key(|assigned_person| (assigned_person.added_at, assigned_person.person));
+    found.sort_by_key(|assigned_person| {
+        (
+            assigned_person.position,
+            assigned_person.added_at,
+            assigned_person.person,
+        )
+    });
     found
 }
 

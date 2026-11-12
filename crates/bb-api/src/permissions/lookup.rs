@@ -7,7 +7,7 @@ use axum::http::Method;
 
 use super::{
     Declared, ROUTES, Route, access_keys, agent_work, agents, ai, comments, mail, oauth,
-    saved_searches, search_routes, themes, time, work_times, working_hours,
+    saved_searches, search_routes, themes, time, timeline, work_times, working_hours,
 };
 
 /// Every row of the table: the rows above and those of the areas that have a file of their own
@@ -28,6 +28,7 @@ pub fn rows() -> impl Iterator<Item = &'static Route> {
         .chain(time::ROUTES)
         .chain(working_hours::ROUTES)
         .chain(work_times::ROUTES)
+        .chain(timeline::ROUTES)
 }
 
 /// The row of the route with this operation ID, if it is declared.

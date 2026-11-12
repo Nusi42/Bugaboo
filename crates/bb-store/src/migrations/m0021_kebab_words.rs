@@ -79,6 +79,7 @@ mod tests {
             NotificationKind::LongTimer.code(),
             NotificationKind::WorkDayChanged.code(),
             NotificationKind::WorkTimesChanged.code(),
+            NotificationKind::TimeFactorChanged.code(),
             NotificationKind::AgentAsks.code(),
             NotificationKind::PlanWaits.code(),
             NotificationKind::ReadyForReview.code(),

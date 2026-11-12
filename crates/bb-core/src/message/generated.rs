@@ -3343,6 +3343,9 @@ pub const ISSUE_FIELD_SUB_ISSUE: MessageKey = MessageKey::new("issue-field.sub-i
 /// The message `issue-field.tags`.
 pub const ISSUE_FIELD_TAGS: MessageKey = MessageKey::new("issue-field.tags");
 
+/// The message `issue-field.time-factor`.
+pub const ISSUE_FIELD_TIME_FACTOR: MessageKey = MessageKey::new("issue-field.time-factor");
+
 /// The message `issue-field.time-left`.
 pub const ISSUE_FIELD_TIME_LEFT: MessageKey = MessageKey::new("issue-field.time-left");
 
@@ -4535,6 +4538,10 @@ pub const NOTIFICATION_KIND_RULE_RUNS_OUT_SOON: MessageKey =
 
 /// The message `notification.kind.run-ended`.
 pub const NOTIFICATION_KIND_RUN_ENDED: MessageKey = MessageKey::new("notification.kind.run-ended");
+
+/// The message `notification.kind.time-factor-changed`.
+pub const NOTIFICATION_KIND_TIME_FACTOR_CHANGED: MessageKey =
+    MessageKey::new("notification.kind.time-factor-changed");
 
 /// The message `notification.kind.work-day-changed`.
 pub const NOTIFICATION_KIND_WORK_DAY_CHANGED: MessageKey =
@@ -7075,6 +7082,22 @@ pub const SETTING_NOTIFICATIONS_RUN_ENDED_IN_APP_HELP: MessageKey =
 /// The message `setting.notifications.run-ended-in-app.name`.
 pub const SETTING_NOTIFICATIONS_RUN_ENDED_IN_APP_NAME: MessageKey =
     MessageKey::new("setting.notifications.run-ended-in-app.name");
+
+/// The message `setting.notifications.time-factor-changed-by-mail.help`.
+pub const SETTING_NOTIFICATIONS_TIME_FACTOR_CHANGED_BY_MAIL_HELP: MessageKey =
+    MessageKey::new("setting.notifications.time-factor-changed-by-mail.help");
+
+/// The message `setting.notifications.time-factor-changed-by-mail.name`.
+pub const SETTING_NOTIFICATIONS_TIME_FACTOR_CHANGED_BY_MAIL_NAME: MessageKey =
+    MessageKey::new("setting.notifications.time-factor-changed-by-mail.name");
+
+/// The message `setting.notifications.time-factor-changed-in-app.help`.
+pub const SETTING_NOTIFICATIONS_TIME_FACTOR_CHANGED_IN_APP_HELP: MessageKey =
+    MessageKey::new("setting.notifications.time-factor-changed-in-app.help");
+
+/// The message `setting.notifications.time-factor-changed-in-app.name`.
+pub const SETTING_NOTIFICATIONS_TIME_FACTOR_CHANGED_IN_APP_NAME: MessageKey =
+    MessageKey::new("setting.notifications.time-factor-changed-in-app.name");
 
 /// The message `setting.notifications.work-day-changed-by-mail.help`.
 pub const SETTING_NOTIFICATIONS_WORK_DAY_CHANGED_BY_MAIL_HELP: MessageKey =
@@ -13219,6 +13242,15 @@ pub fn notifications_open_name(what: impl std::fmt::Display) -> Message {
 pub fn notifications_taken_over(who: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("notifications.taken-over"),
+        vec![("who", Value::Text(who.to_string()))],
+    )
+}
+
+/// The message `notifications.time-factor-changed`.
+#[must_use]
+pub fn notifications_time_factor_changed(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("notifications.time-factor-changed"),
         vec![("who", Value::Text(who.to_string()))],
     )
 }
@@ -20809,6 +20841,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issue-field.status-group", "Status group"),
     ("issue-field.sub-issue", "Sub-issue"),
     ("issue-field.tags", "Tags"),
+    ("issue-field.time-factor", "Time factor"),
     ("issue-field.time-left", "Time left"),
     ("issue-field.time-spent", "Time spent"),
     ("issue-field.title", "Title"),
@@ -21785,6 +21818,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Your change to many issues has ended",
     ),
     (
+        "notification.kind.time-factor-changed",
+        "Your time factor was changed",
+    ),
+    (
         "notification.kind.work-day-changed",
         "Your work day was changed",
     ),
@@ -21897,6 +21934,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "notifications.taken-over",
         "{who} took over the editing. What you wrote is kept as your draft",
+    ),
+    (
+        "notifications.time-factor-changed",
+        "{who} changed your time factor on this issue",
     ),
     ("notifications.title", "Notifications"),
     (
@@ -24228,6 +24269,22 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "setting.notifications.run-ended-in-app.name",
         "Your change to many issues has ended: in the app",
+    ),
+    (
+        "setting.notifications.time-factor-changed-by-mail.help",
+        "Sends you an e-mail when somebody else changes the time factor of an issue you are the first assigned person of. E-mail goes only when your organization has switched it on.",
+    ),
+    (
+        "setting.notifications.time-factor-changed-by-mail.name",
+        "Your time factor was changed: by e-mail",
+    ),
+    (
+        "setting.notifications.time-factor-changed-in-app.help",
+        "Tells you under Notifications when somebody else changes the time factor of an issue you are the first assigned person of.",
+    ),
+    (
+        "setting.notifications.time-factor-changed-in-app.name",
+        "Your time factor was changed: in the app",
     ),
     (
         "setting.notifications.work-day-changed-by-mail.help",

@@ -365,6 +365,7 @@ pub trait AuthStore:
     + TimeStore
     + WorkingHoursStore
     + WorkTimesStore
+    + crate::plan::TimelineStore
     + AiStore
     + NeverSentStore
     + ToolCallStore

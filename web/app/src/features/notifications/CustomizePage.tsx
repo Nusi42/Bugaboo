@@ -32,6 +32,7 @@ const kindName = {
   "long-timer": "notification.kind.long-timer",
   "work-day-changed": "notification.kind.work-day-changed",
   "work-times-changed": "notification.kind.work-times-changed",
+  "time-factor-changed": "notification.kind.time-factor-changed",
   "agent-asks": "notification.kind.agent-asks",
   "plan-waits": "notification.kind.plan-waits",
   "ready-for-review": "notification.kind.ready-for-review",

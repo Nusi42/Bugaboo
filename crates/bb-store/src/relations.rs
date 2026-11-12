@@ -10,7 +10,7 @@ use bb_core::id::{IssueId, RelationId, RelationKindId, UserId};
 use bb_core::issue::Issue;
 use bb_core::relation::{DateEffect, Dependency, IssueParent, Relation, RelationKind};
 use bb_core::version::Version;
-use sea_query::{Expr, ExprTrait as _, OnConflict, Order, Query, SelectStatement};
+use sea_query::{Cond, Expr, ExprTrait as _, OnConflict, Order, Query, SelectStatement};
 
 use crate::auth::AuthStorage;
 use crate::db::{Row, StoredId, Transaction, to_micros};
@@ -215,6 +215,57 @@ impl RelationStore for AuthStorage {
             .order_by(IssueParentRow::SetAt, Order::Asc)
             .order_by(IssueParentRow::Child, Order::Asc);
         transaction
+            .fetch_all(&select)
+            .await?
+            .iter()
+            .map(read_parent)
+            .collect()
+    }
+
+    async fn dependencies_touching(
+        &self,
+        kinds: Vec<RelationKindId>,
+        issues: Vec<IssueId>,
+    ) -> Result<Vec<Dependency>, StoreError> {
+        if kinds.is_empty() || issues.is_empty() {
+            return Ok(Vec::new());
+        }
+        let stored: Vec<Vec<u8>> = issues.iter().map(|issue| issue.stored()).collect();
+        let mut select = Query::select();
+        select
+            .columns([RelationRow::FromIssue, RelationRow::ToIssue])
+            .from(RelationRow::Table)
+            .and_where(Expr::col(RelationRow::Kind).is_in(kinds.iter().map(|kind| kind.stored())))
+            .cond_where(
+                Cond::any()
+                    .add(Expr::col(RelationRow::FromIssue).is_in(stored.clone()))
+                    .add(Expr::col(RelationRow::ToIssue).is_in(stored)),
+            );
+        self.database()
+            .fetch_all(&select)
+            .await?
+            .iter()
+            .map(|row| {
+                Ok((
+                    row.id::<IssueId>(RelationRow::FromIssue)?,
+                    row.id::<IssueId>(RelationRow::ToIssue)?,
+                ))
+            })
+            .collect()
+    }
+
+    async fn parents_touching(&self, issues: Vec<IssueId>) -> Result<Vec<IssueParent>, StoreError> {
+        if issues.is_empty() {
+            return Ok(Vec::new());
+        }
+        let stored: Vec<Vec<u8>> = issues.iter().map(|issue| issue.stored()).collect();
+        let mut select = parent_select();
+        select.cond_where(
+            Cond::any()
+                .add(Expr::col(IssueParentRow::Child).is_in(stored.clone()))
+                .add(Expr::col(IssueParentRow::Parent).is_in(stored)),
+        );
+        self.database()
             .fetch_all(&select)
             .await?
             .iter()

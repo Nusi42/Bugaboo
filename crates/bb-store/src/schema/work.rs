@@ -163,6 +163,7 @@ pub(crate) enum AssignedPersonRow {
     Issue,
     Person,
     AddedAt,
+    Position,
 }
 
 /// The old codes of issues, which keep opening them (ISS-01a, ADR-0021).
@@ -485,6 +486,7 @@ stored_tables! {
         Issue => issue,
         Person => person,
         AddedAt => added_at,
+        Position => position,
     },
     IssueAliasRow => bb_core::issue::IssueAlias {
         Project => project,

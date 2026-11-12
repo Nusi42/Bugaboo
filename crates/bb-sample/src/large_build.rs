@@ -240,10 +240,12 @@ impl Maker<'_> {
         }
         let assigned = assigned_to
             .iter()
-            .map(|person| AssignedPerson {
+            .zip(0_i64..)
+            .map(|(person, position)| AssignedPerson {
                 issue: facts.id,
                 person: *person,
                 added_at: facts.created_at,
+                position,
             })
             .collect();
         Ok(Bundle {

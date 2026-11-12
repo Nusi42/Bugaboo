@@ -43,6 +43,7 @@ export const fieldWords = [
   "estimated-time",
   "time-left",
   "time-spent",
+  "time-factor",
 ] as const;
 
 /** Every word of `FieldType`, in the order the server lists them. */
@@ -103,6 +104,7 @@ export const notificationKindWords = [
   "long-timer",
   "work-day-changed",
   "work-times-changed",
+  "time-factor-changed",
   "agent-asks",
   "plan-waits",
   "ready-for-review",

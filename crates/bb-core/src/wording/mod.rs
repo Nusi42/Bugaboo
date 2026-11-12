@@ -643,6 +643,9 @@ pub fn notification_sentences(notice: &Notice) -> Vec<Said> {
     match notice.kind {
         NotificationKind::Mentioned => one(said!(message::notifications_mentioned, who())),
         NotificationKind::Assigned => one(said!(message::notifications_assigned, who())),
+        NotificationKind::TimeFactorChanged => {
+            one(said!(message::notifications_time_factor_changed, who()))
+        }
         NotificationKind::EditNotice => one(match notice.notice {
             Some(NoticeKind::TakenOver) => said!(message::notifications_taken_over, who()),
             Some(NoticeKind::LetGo) => said!(message::notifications_let_go, who()),

@@ -29,6 +29,10 @@ export const notificationSettings = {
     app: "notifications.work-times-changed-in-app",
     mail: "notifications.work-times-changed-by-mail",
   },
+  "time-factor-changed": {
+    app: "notifications.time-factor-changed-in-app",
+    mail: "notifications.time-factor-changed-by-mail",
+  },
   "agent-asks": {
     app: "notifications.agent-asks-in-app",
     mail: "notifications.agent-asks-by-mail",

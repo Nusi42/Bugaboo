@@ -31,7 +31,8 @@ use serde_json::json;
 
 use super::mail::MailJob;
 use super::plan::{
-    edit_note_of, followed_kind, newly_assigned, possible_followed_kinds, run_status_of, wants,
+    edit_note_of, followed_kind, newly_assigned, possible_followed_kinds, run_status_of,
+    time_factor_for, wants,
 };
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, Stops, change_failed, entity, internal};
@@ -434,6 +435,18 @@ impl<S: AuthStore> Ctx<'_, S> {
                 once: Once::Event(event.id),
             })
             .collect();
+        // The person on the bar hears when somebody else changed the time factor of their issue
+        // (ADR-0033, amendment M8); the member names them, as they were when it was changed.
+        if let Some(person) =
+            time_factor_for(&event.changes).filter(|person| event.actor.person() != Some(*person))
+        {
+            hears.push(Hears {
+                person,
+                kinds: vec![Some(NotificationKind::TimeFactorChanged)],
+                follows: false,
+                once: Once::Event(event.id),
+            });
+        }
         let followers = self
             .store()
             .followers_of(id)

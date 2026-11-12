@@ -17,6 +17,7 @@ pub mod ai;
 mod catalog;
 mod format;
 mod layers;
+pub mod plan;
 mod region;
 mod themes;
 pub mod work_times;
@@ -649,6 +650,7 @@ pub fn registry() -> impl Iterator<Item = &'static SettingDefinition> {
     ALL.iter()
         .chain(working_hours::ALL)
         .chain(work_times::ALL)
+        .chain(plan::ALL)
         .chain(ai::ALL)
         .chain(ai_apps::ALL)
         .chain(assistant::ALL)

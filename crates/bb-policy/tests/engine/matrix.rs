@@ -71,6 +71,7 @@ impl Masked for Answer {
         ("estimated-time", Field::EstimatedTime),
         ("time-left", Field::TimeLeft),
         ("time-spent", Field::TimeSpent),
+        ("time-factor", Field::TimeFactor),
     ];
 }
 

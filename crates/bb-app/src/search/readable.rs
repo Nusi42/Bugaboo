@@ -354,7 +354,9 @@ const fn catalogue_target(field: Field) -> Option<(FieldTarget, FieldKind)> {
         Field::EstimatedTime => Some((FieldTarget::EstimatedTime, FieldKind::Duration)),
         Field::TimeLeft => Some((FieldTarget::TimeLeft, FieldKind::Duration)),
         Field::TimeSpent => Some((FieldTarget::TimeSpent, FieldKind::Duration)),
-        Field::PlannedForRelease | Field::FoundInRelease => None,
+        // The time factor is never searched, sorted or grouped by (ADR-0030, amendment M8): its word
+        // is reserved and stands for nothing a search can ask.
+        Field::PlannedForRelease | Field::FoundInRelease | Field::TimeFactor => None,
     }
 }
 

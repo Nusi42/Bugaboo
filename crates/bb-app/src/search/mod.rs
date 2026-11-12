@@ -22,9 +22,9 @@ pub use request::{
     GroupCount, GroupKey, KeyedChoice, LengthTotals, Names, OwnReach, ProjectLink, SearchFailure,
     SearchHit, SearchRequest, SearchStore, UnknownName, WithheldText, WorkOf,
 };
+pub(crate) use run::{Prepared, search_page, search_page_within, stopped};
 pub use run::{
     SearchCount, SearchCountQuery, SearchGroups, SearchGroupsQuery, SearchPage, SearchQuery,
     SearcherQuery, ShownKey, search, search_count, search_groups, searcher,
 };
-pub(crate) use run::{search_page, search_page_within, stopped};
 pub use target::{FieldTarget, Searchable, TextPlace, target_of};

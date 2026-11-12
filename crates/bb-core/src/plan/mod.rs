@@ -17,6 +17,7 @@ pub mod bar;
 mod days;
 mod factor;
 pub mod order;
+pub mod record;
 pub mod warning;
 
 pub use days::Days;

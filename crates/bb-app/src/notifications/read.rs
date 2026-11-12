@@ -284,7 +284,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             | NotificationKind::AgentAsks
             | NotificationKind::PlanWaits
             | NotificationKind::ReadyForReview
-            | NotificationKind::AgentGaveUp => Ok(issue.map(|_| NotificationWhat::Plain)),
+            | NotificationKind::AgentGaveUp
+            | NotificationKind::TimeFactorChanged => Ok(issue.map(|_| NotificationWhat::Plain)),
             // About an agent or a rule, not about an issue: the kind says it all.
             NotificationKind::RuleRunsOutSoon | NotificationKind::AgentStopped => {
                 Ok(Some(NotificationWhat::Plain))

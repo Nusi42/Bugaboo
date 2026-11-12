@@ -211,6 +211,7 @@ C = *Can change*, S = *Can see*, H = *Hidden*.
 | Estimated time | C | C | C | S | S | H | H |
 | Time left | C | C | C | S | S | H | H |
 | Time spent | C | C | C | S | S | H | H |
+| Time factor | C | C | C | S | S | H | H |
 
 <!-- END GENERATED starting-field-levels -->
 
@@ -261,6 +262,7 @@ Declared once in `bb-core` (`fields`): key, name (message `issue-field.<key>`), 
 | `estimated-time` | Estimated time | issue | – | if an administrator marks it *Never sent to AI* |
 | `time-left` | Time left | issue | – | if an administrator marks it *Never sent to AI* |
 | `time-spent` | Time spent | issue (total of its time entries) | – | if an administrator marks it *Never sent to AI* |
+| `time-factor` | Time factor | issue | – | if an administrator marks it *Never sent to AI* |
 
 <!-- END GENERATED field-catalogue -->
 

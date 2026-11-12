@@ -466,6 +466,14 @@ export const messages = {
     "Off: people go to an outside provider only as their role, like a Team member, never by name or e-mail. A model on your own server always gets the names each person may see.",
   "agents.org-intro":
     "Every agent of the organization, and how much any agent may do. You can stop any agent. Agents, AI apps and the assistant can each be switched on or off by themselves.",
+  "setting.notifications.time-factor-changed-in-app.name":
+    "Your time factor was changed: in the app",
+  "setting.notifications.time-factor-changed-in-app.help":
+    "Tells you under Notifications when somebody else changes the time factor of an issue you are the first assigned person of.",
+  "setting.notifications.time-factor-changed-by-mail.name":
+    "Your time factor was changed: by e-mail",
+  "setting.notifications.time-factor-changed-by-mail.help":
+    "Sends you an e-mail when somebody else changes the time factor of an issue you are the first assigned person of. E-mail goes only when your organization has switched it on.",
 } as const;
 
 register(messages);

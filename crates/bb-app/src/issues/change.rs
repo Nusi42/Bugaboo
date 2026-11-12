@@ -8,11 +8,11 @@ use bb_core::event::{EntityKind, FieldChange, RecordKind};
 use bb_core::fields::Field;
 use bb_core::given::SetTo;
 use bb_core::id::{IssueId, IssueTypeId, ProjectId, UserId};
-use bb_core::issue::{AssignedPerson, Issue, StatusGroup};
+use bb_core::issue::{Issue, StatusGroup, assigned_rows};
+use bb_core::plan::record::IssueTimeFactor;
 use bb_core::version::next as next_version;
 use bb_core::workflow::StatusKey;
 use bb_policy::{Authorized, Evaluation, Place};
-use jiff::Timestamp;
 use serde_json::json;
 
 use super::fields::{Given, clean_title, ensure_dates_in_order, ensure_may_change, member};
@@ -22,6 +22,7 @@ use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
 use crate::fields::{Item, ItemValues, Making, PlannedValues};
 use crate::follow::started_following;
 use crate::offers::ensure_type_takes_issues_in;
+use crate::plan::reset_with_first;
 use crate::projects::Why;
 use crate::projects::lock_chain_in;
 use crate::workflows::{StatusCheck, ensure_written_status_in};
@@ -42,6 +43,8 @@ pub(crate) struct Plan {
     own: PlannedValues,
     /// The status group the issue enters, when its status changes: it decides the closed date.
     entering: Option<StatusGroup>,
+    /// The time factor the issue has, which goes back to ×1 when the first person changes.
+    factor: Option<IssueTimeFactor>,
 }
 
 impl Plan {
@@ -106,7 +109,22 @@ impl Plan {
             ),
         ));
         changes.extend(self.own.changes());
+        changes.extend(reset_with_first(
+            self.factor.as_ref(),
+            &self.assigned_now,
+            &self.assigned_next,
+        ));
         changes
+    }
+
+    /// Whether the change takes the time factor back to ×1: the first assigned person changes.
+    fn resets_factor(&self) -> bool {
+        reset_with_first(
+            self.factor.as_ref(),
+            &self.assigned_now,
+            &self.assigned_next,
+        )
+        .is_some()
     }
 }
 
@@ -225,6 +243,23 @@ impl<S: AuthStore> Ctx<'_, S> {
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
+    /// The time factor a change of the people may take back to ×1: it matters only when the first
+    /// assigned person changes, and only then is it read.
+    async fn factor_to_reset(
+        &self,
+        issue: IssueId,
+        people_now: &[UserId],
+        people_next: &[UserId],
+    ) -> Result<Option<IssueTimeFactor>, AppError> {
+        if crate::plan::person_on_bar(people_now) == crate::plan::person_on_bar(people_next) {
+            return Ok(None);
+        }
+        self.store()
+            .time_factor(issue)
+            .await
+            .map_err(|error| internal::<S>(&error))
+    }
+
     /// What the person asks for, when they may ask it: they see the issue (or it answers like a
     /// missing one), may change it, may change each field they touch, and looked at the version
     /// that is stored.
@@ -249,14 +284,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         for issue_type in input.issue_type.into_iter().chain([current.issue_type]) {
             ensure_may_change(&held.field_mask_for(Some(issue_type)), &named)?;
         }
-        let assigned_now: Vec<UserId> = self
-            .store()
-            .assigned_people(current.id)
-            .await
-            .map_err(|error| internal::<S>(&error))?
-            .into_iter()
-            .map(|assigned_person| assigned_person.person)
-            .collect();
+        let assigned_now = self.assigned_to(current.id).await?;
         let assigned_next = match &input.assigned_to {
             Some(people) => {
                 self.clean_assigned_people(
@@ -321,6 +349,9 @@ impl<S: AuthStore> Ctx<'_, S> {
                 },
             )
             .await?;
+        let factor = self
+            .factor_to_reset(current.id, &assigned_now, &assigned_next)
+            .await?;
         let plan = Plan {
             current,
             assigned_now,
@@ -328,6 +359,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             assigned_next,
             own,
             entering,
+            factor,
         };
         if plan.current.version != input.version {
             return Err(AppError::stale(
@@ -375,18 +407,6 @@ async fn ensure_type_and_status_in<S: AuthStore>(
     }
     // The workflow the status was judged on is still the one that counts.
     ensure_written_status_in::<S>(transaction, &chain, written, Some(stored), stopped).await
-}
-
-/// The rows that say who an issue is assigned to.
-fn assigned_rows(issue: IssueId, people: &[UserId], added_at: Timestamp) -> Vec<AssignedPerson> {
-    people
-        .iter()
-        .map(|person| AssignedPerson {
-            issue,
-            person: *person,
-            added_at,
-        })
-        .collect()
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -438,6 +458,7 @@ pub async fn change_issue<S: AuthStore>(
         return Ok(held.authorize(view));
     }
     let now = ctx.now();
+    let resets_factor = plan.resets_factor();
     let Plan {
         current,
         mut next,
@@ -445,6 +466,7 @@ pub async fn change_issue<S: AuthStore>(
         assigned_next,
         own,
         entering,
+        ..
     } = plan;
     let own_writes = own.writes();
     next.updated_at = now;
@@ -487,6 +509,11 @@ pub async fn change_issue<S: AuthStore>(
                     return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
                 }
                 S::replace_assigned_people(transaction, id, &new_people).await?;
+                // Another first person: the time factor of the one before goes (ADR-0030,
+                // amendment M8).
+                if resets_factor {
+                    S::delete_time_factor(transaction, id).await?;
+                }
                 for (field, cells) in &own_writes {
                     S::put_field_value(transaction, kind.clone(), id.into(), *field, cells).await?;
                 }

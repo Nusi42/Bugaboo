@@ -14,6 +14,7 @@ Standard choices, which you change under [Notification settings](customize.md):
 | Other changes to fields of an issue you follow | no | no |
 | Your change to many issues has ended | yes | no |
 | Somebody asks you to finish editing, or takes your editing over | yes | no |
+| Somebody else changes the time factor of an issue you are the first assigned person of | yes | no |
 
 You never hear of your own changes. You hear of an issue only while you may see it, and you see in a notification only the fields you may see. People are shown the way *Who sees people* says: by name, by their role, or as *Someone*.
 

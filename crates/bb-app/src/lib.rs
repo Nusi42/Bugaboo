@@ -29,6 +29,7 @@ pub mod notifications;
 pub mod offers;
 mod outbox_reader;
 pub mod people;
+pub mod plan;
 pub mod ports;
 pub mod preview;
 pub mod projects;

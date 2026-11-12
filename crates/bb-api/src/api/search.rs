@@ -187,7 +187,7 @@ fn word_of<T: Serialize>(thing: &T) -> String {
     }
 }
 
-fn group_key(key: ShownKey) -> SearchGroupKeyBody {
+pub(super) fn group_key(key: ShownKey) -> SearchGroupKeyBody {
     match key {
         ShownKey::Person(person) => SearchGroupKeyBody::Person(person),
         ShownKey::Tag { id, name } => SearchGroupKeyBody::Tag(SearchNamedBody {
@@ -222,7 +222,7 @@ fn group_key(key: ShownKey) -> SearchGroupKeyBody {
 
 /// Who asks, after the check of the limit of searches: judged first, so a person who is not signed
 /// in is refused as such (401) and the limit counts people.
-async fn counted(
+pub(super) async fn counted(
     auth: &AuthHandle,
     limits: &Limits,
     info: &RequestInfo,

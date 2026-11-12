@@ -817,6 +817,7 @@ mod search_routes;
 mod tests;
 mod themes;
 mod time;
+mod timeline;
 mod work_times;
 mod working_hours;
 

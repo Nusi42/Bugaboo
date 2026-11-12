@@ -287,6 +287,30 @@ pub struct AssignedPerson {
     /// When the person was assigned.
     #[not_personal]
     pub added_at: Timestamp,
+    /// The place of the person among the people of the issue, counted from 0 in the order they
+    /// were given: the first is the person on the bar (ADR-0030, amendment M8).
+    #[not_personal]
+    pub position: i64,
+}
+
+/// The rows that say who an issue is assigned to, in the order the people were given: the place of
+/// each is its place in `people`. The one way the rows of a new or changed list of people are made.
+#[must_use]
+pub fn assigned_rows(
+    issue: IssueId,
+    people: &[UserId],
+    added_at: Timestamp,
+) -> Vec<AssignedPerson> {
+    people
+        .iter()
+        .zip(0_i64..)
+        .map(|(person, position)| AssignedPerson {
+            issue,
+            person: *person,
+            added_at,
+            position,
+        })
+        .collect()
 }
 
 /// An old code of an issue (ADR-0021): the issue got a new readable ID (the mode of the project

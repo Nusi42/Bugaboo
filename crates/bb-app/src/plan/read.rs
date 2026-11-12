@@ -1,0 +1,563 @@
+//! A page of the timeline (PLAN-01, PLAN-04, PLAN-08, PLAN-10, PLAN-13, ADR-0030 amendment M8,
+//! ADR-0043): the issues of a search that have a date the reader may read, a page at a time, each
+//! with its bar, the dependencies between them and their warnings, and the count of *Not scheduled
+//! yet*, whose issues come from the same use case.
+//!
+//! The issues are read through the compiled search, so restricted issues are left out entirely: no
+//! bar, no arrow, no warning, no count. Issues around the page (the other end of a dependency, the
+//! goal of a sub-issue, the sub-issues of a goal) count for the warnings of the page only when the
+//! reader may see them.
+
+use std::collections::HashSet;
+use std::sync::atomic::{AtomicBool, Ordering};
+
+use bb_core::ErrorCode;
+use bb_core::access::PeopleLevel;
+use bb_core::fields::{ASSIGNED_TO_PEOPLE, Field, word_key};
+use bb_core::id::{IssueId, UserId};
+use bb_core::issue::Issue;
+use bb_core::people_kinds::PeopleKind;
+use bb_core::plan::warning::Warning;
+use bb_core::plan::{Days, TIMELINE_ROWS_MOST};
+use bb_core::saved_search::TimelineOptions;
+use bb_policy::{Authorized, Evaluation, PeopleContext, PersonRef, Place as Where};
+use bb_searchlang::{Expr, FieldRef, Span, Test};
+
+use super::build::{DateTargets, Plan, PlanAsk, window_of};
+use super::types::{
+    AcceptedView, BarView, FactorShown, Hatched, HatchedDay, TimelinePage, TimelinePart,
+    TimelineQuery, TimelineRow, TimelineSearch, WarningView,
+};
+use crate::access::{Actor, place_of_address};
+use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::issues::ReadOnRequest;
+use crate::search::{
+    FieldTarget, GroupKey, Looked, Prepared, SearchScope, SearchStore, ShownKey, stopped, target_of,
+};
+
+/// The two date fields of a view by their search words: its own, or *Start date* and *Due date*.
+pub(crate) fn date_words(options: &TimelineOptions) -> (String, String) {
+    options
+        .dates
+        .clone()
+        .unwrap_or_else(|| (Field::StartDate.search_word(), Field::DueDate.search_word()))
+}
+
+/// The date fields of a view as the search reads them for the reader.
+pub(crate) fn date_targets(looked: &Looked, words: &(String, String)) -> DateTargets {
+    let readable =
+        |word: &str| target_of(&looked.fields, word).filter(|target| DateTargets::is_date(*target));
+    DateTargets {
+        start: readable(&words.0),
+        end: readable(&words.1),
+    }
+}
+
+/// `<word> is not empty`, or `<word> is empty`.
+fn filled(word: &str, has_value: bool) -> Expr {
+    let span = Span::default();
+    Expr::Field {
+        field: FieldRef {
+            word: word.to_owned(),
+            span,
+        },
+        test: if has_value {
+            Test::IsNotEmpty { span }
+        } else {
+            Test::IsEmpty { span }
+        },
+        span,
+    }
+}
+
+/// The filter of a part of the timeline over the readable date fields: a row has one of them, an
+/// issue of *Not scheduled yet* has none. `None` for no filter; `nothing` is set when no row can
+/// have a date the reader may read.
+fn narrowing(
+    looked: &Looked,
+    words: &(String, String),
+    part: TimelinePart,
+    nothing: &AtomicBool,
+) -> Option<Expr> {
+    let targets = date_targets(looked, words);
+    let readable: Vec<&str> = [(targets.start, &words.0), (targets.end, &words.1)]
+        .into_iter()
+        .filter_map(|(target, word)| target.map(|_| word.as_str()))
+        .collect();
+    let has_value = part == TimelinePart::Rows;
+    let mut tests: Vec<Expr> = readable
+        .iter()
+        .map(|word| filled(word, has_value))
+        .collect();
+    match (tests.len(), has_value) {
+        (0, true) => {
+            nothing.store(true, Ordering::Relaxed);
+            None
+        }
+        (0, false) => None,
+        (1, _) => tests.pop(),
+        (_, true) => Some(Expr::Or {
+            items: tests,
+            span: Span::default(),
+        }),
+        (_, false) => Some(Expr::And {
+            items: tests,
+            span: Span::default(),
+        }),
+    }
+}
+
+/// The hatched days of a bar inside the span, as *Who sees people* (the kind *Work times*) allows:
+/// none at all for a reader who may not know the person's work times.
+fn hatched_days(plan: &Plan, issue: &Issue, days: Days, span: Days) -> Vec<HatchedDay> {
+    if !plan.work_times_known(issue) {
+        return Vec::new();
+    }
+    plan.days_of(issue)
+        .iter()
+        .filter(|day| days.contains(day.date) && span.contains(day.date))
+        .filter_map(|day| {
+            let what = if day.away.count() > 0 {
+                Hatched::away(day.away)
+            } else if let Some(holiday) = day.holiday {
+                Hatched::Holiday { holiday }
+            } else if day.minutes == 0 {
+                Hatched::DayOff
+            } else {
+                return None;
+            };
+            Some(HatchedDay {
+                date: day.date,
+                what,
+            })
+        })
+        .collect()
+}
+
+/// The days a warning is about.
+fn warning_days(plan: &Plan, issue: &Issue, warning: &Warning) -> Option<Days> {
+    use bb_core::plan::warning::Delay;
+    match warning {
+        Warning::Away { days, .. } | Warning::TooMuchAtOnce { days, .. } => Some(*days),
+        Warning::Delay(Delay::SubIssue { due_needed, .. }) => {
+            issue.due_date.and_then(|due| Days::new(due, *due_needed))
+        }
+        Warning::NotEnoughDays(_) | Warning::Delay(Delay::Dependency { .. }) => {
+            plan.bars.get(&issue.id).map(|bar| bar.days)
+        }
+    }
+}
+
+/// The field the rows are grouped by. *Assigned to* is no field of the search for a reader who sees
+/// people by their role or not at all: then there is no grouping by person (ADR-0030, decision 1).
+/// A word that is no field the reader may group by is no request.
+fn group_target(looked: &Looked, word: &str) -> Result<Option<FieldTarget>, AppError> {
+    match target_of(&looked.fields, word) {
+        Some(target) => Ok(Some(target)),
+        None if word_key(word) == word_key(&Field::AssignedTo.search_word()) => Ok(None),
+        None => Err(AppError::Refused(ErrorCode::InvalidRequest)),
+    }
+}
+
+impl<S: AuthStore + SearchStore> Ctx<'_, S> {
+    /// The plan of a page: its issues and, for the rows, the issues around them that the reader
+    /// may see (the other ends of their dependencies, their goals and sub-issues), which count for
+    /// the warnings of the page.
+    async fn plan_of_page(
+        &self,
+        mut ask: PlanAsk<'_>,
+        part: TimelinePart,
+    ) -> Result<Plan, AppError> {
+        if part == TimelinePart::NotScheduled {
+            return self.work_out_plan(ask, &[], &[]).await;
+        }
+        let page: HashSet<IssueId> = ask.issues.iter().map(|issue| issue.id).collect();
+        let ids: Vec<IssueId> = page.iter().copied().collect();
+        let (dependencies, parents) = self.around(&ids).await?;
+        let others: Vec<IssueId> = dependencies
+            .iter()
+            .flat_map(|(first, then)| [*first, *then])
+            .chain(parents.iter().flat_map(|(child, parent)| [*child, *parent]))
+            .filter(|id| !page.contains(id))
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .collect();
+        if !others.is_empty() {
+            ask.issues.extend(
+                self.seen_issues(ask.actor, &others)
+                    .await?
+                    .into_iter()
+                    .map(|(issue, _)| issue),
+            );
+        }
+        self.work_out_plan(ask, &dependencies, &parents).await
+    }
+
+    /// What the reader may see of a person on a bar: by name, as a role, or nobody (*Hidden*).
+    async fn shown_person(
+        &self,
+        held: &Evaluation,
+        person: UserId,
+    ) -> Result<Option<PersonRef>, AppError> {
+        let hidden = held.person() != Some(person)
+            && held.people_level(ASSIGNED_TO_PEOPLE, PeopleContext::Ordinary)
+                == PeopleLevel::Hidden;
+        if hidden {
+            return Ok(None);
+        }
+        Ok(Some(
+            self.person_ref(held, ASSIGNED_TO_PEOPLE, PeopleContext::Ordinary, person)
+                .await?,
+        ))
+    }
+
+    /// The text and the place of a timeline's search.
+    async fn timeline_search(
+        &self,
+        actor: &Actor,
+        query: &TimelineQuery,
+    ) -> Result<(String, SearchScope), AppError> {
+        let text = match &query.search {
+            TimelineSearch::Text(text) => text.clone(),
+            TimelineSearch::Saved(id) => self.open_search(actor, *id).await?.stored.search.text,
+        };
+        let scope = match &query.project {
+            None => SearchScope::Everywhere,
+            Some(address) => {
+                let found = self.find_project(address).await?;
+                match place_of_address(found.as_ref().map(|found| found.project.id))? {
+                    Where::Project(project) => SearchScope::Within(project),
+                    Where::Organization => return Err(AppError::Refused(ErrorCode::NotFound)),
+                }
+            }
+        };
+        Ok((text, scope))
+    }
+
+    /// The search of one part of the timeline, checked and narrowed; `None` when no issue can be
+    /// in it for the reader.
+    async fn part_search(
+        &self,
+        actor: &Actor,
+        (text, scope): (&str, SearchScope),
+        words: &(String, String),
+        part: TimelinePart,
+    ) -> Result<Option<Prepared>, AppError> {
+        let nothing = AtomicBool::new(false);
+        let prepared = self
+            .prepare_search_narrowed(actor, text, scope, None, |looked| {
+                narrowing(looked, words, part, &nothing)
+            })
+            .await?;
+        Ok((!nothing.load(Ordering::Relaxed)).then_some(prepared))
+    }
+
+    /// The groups of a row of `issue`, with whether each is a copy of the bar of the person on the
+    /// bar (*Group by person*). One row with no group when the rows are not grouped, or when the
+    /// reader may not see people by name (no grouping by person with *Role only*).
+    async fn groups_of(
+        &self,
+        plan: &Plan,
+        held: &Evaluation,
+        issue: &Issue,
+        by: Option<FieldTarget>,
+    ) -> Result<Vec<(Option<ShownKey>, bool)>, AppError> {
+        let one = |key: Option<GroupKey>| vec![(key.map(ShownKey::Other), false)];
+        Ok(match by {
+            None => one(None),
+            Some(FieldTarget::Project) => one(Some(GroupKey::Project(issue.project))),
+            Some(FieldTarget::Parent) => one(plan
+                .parents
+                .iter()
+                .find(|(child, _)| *child == issue.id)
+                .map(|(_, parent)| GroupKey::Issue(*parent))),
+            Some(FieldTarget::Priority) => one(Some(GroupKey::Priority(issue.priority))),
+            Some(FieldTarget::Status) => {
+                one(Some(GroupKey::Text(issue.status.as_str().to_owned())))
+            }
+            Some(FieldTarget::AssignedTo) => {
+                let people = plan.assigned.get(&issue.id).cloned().unwrap_or_default();
+                let by_name = held.people_level(ASSIGNED_TO_PEOPLE, PeopleContext::Ordinary)
+                    == PeopleLevel::Names;
+                if people.is_empty() || !by_name {
+                    return Ok(one(None));
+                }
+                let mut rows = Vec::with_capacity(people.len());
+                for (at, person) in people.iter().enumerate() {
+                    let shown = self
+                        .person_ref(held, ASSIGNED_TO_PEOPLE, PeopleContext::Ordinary, *person)
+                        .await?;
+                    rows.push((Some(ShownKey::Person(shown)), at > 0));
+                }
+                rows
+            }
+            Some(_) => return Err(AppError::Refused(ErrorCode::InvalidRequest)),
+        })
+    }
+
+    /// The rows of the issues of a page: each with its bar (none in *Not scheduled yet*), once for
+    /// each of its groups, every row showing the issue as the reader may see it.
+    async fn timeline_rows(
+        &self,
+        plan: &Plan,
+        issues: &[Issue],
+        items: Vec<(std::sync::Arc<Evaluation>, crate::issues::IssueView)>,
+        group_by: Option<FieldTarget>,
+        (part, span): (TimelinePart, Days),
+    ) -> Result<Vec<TimelineRow>, AppError> {
+        let mut rows = Vec::with_capacity(items.len());
+        for (issue, (held, view)) in issues.iter().zip(items) {
+            let bar = if part == TimelinePart::Rows {
+                self.bar_view(plan, &held, issue, &view, span).await?
+            } else {
+                None
+            };
+            for (group, copy) in self.groups_of(plan, &held, issue, group_by).await? {
+                rows.push(TimelineRow {
+                    group,
+                    issue: held.authorize(view.clone()),
+                    bar: bar.clone(),
+                    copy,
+                });
+            }
+        }
+        Ok(rows)
+    }
+
+    /// The bar of a row as the reader may see it.
+    async fn bar_view(
+        &self,
+        plan: &Plan,
+        held: &Evaluation,
+        issue: &Issue,
+        view: &crate::issues::IssueView,
+        span: Days,
+    ) -> Result<Option<BarView>, AppError> {
+        let Some(bar) = plan.bars.get(&issue.id) else {
+            return Ok(None);
+        };
+        let reads = |field| plan.reads(issue, field);
+        let done_group =
+            reads(Field::Status) && view.status.group == bb_core::issue::StatusGroup::Done;
+        let done = bb_core::plan::bar::done_part(
+            issue.estimated_time.filter(|_| reads(Field::EstimatedTime)),
+            view.time_left
+                .map(bb_core::time::TimeLeft::minutes)
+                .filter(|_| reads(Field::TimeLeft)),
+            done_group,
+        );
+        let person = match plan
+            .person_on_bar(issue.id)
+            .filter(|_| reads(Field::AssignedTo))
+        {
+            Some(person) => self.shown_person(held, person).await?,
+            None => None,
+        };
+        Ok(Some(BarView {
+            days: bar.days,
+            worked_out: bar.worked_out,
+            done,
+            person,
+            factor: plan.factor_of(issue).map(|kept| FactorShown {
+                percent: kept.factor.percent(),
+                own_estimate: kept.set_by == kept.person,
+            }),
+            hatched: hatched_days(plan, issue, bar.days, span),
+        }))
+    }
+
+    /// The warnings of the issues of the page, each with what it names as the reader may know it,
+    /// and faded when it was accepted for the dates its issue has.
+    async fn warning_views(
+        &self,
+        actor: &Actor,
+        plan: &Plan,
+        page: &HashSet<IssueId>,
+    ) -> Result<Vec<WarningView>, AppError> {
+        let accepted = self
+            .store()
+            .accepted_warnings_of(page.iter().copied().collect())
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        let mut views = Vec::new();
+        let mut lines = self.line_maker().await?;
+        for (id, warning) in plan.warnings.iter().filter(|(id, _)| page.contains(id)) {
+            let (Some(issue), Some(days)) = (
+                plan.issues.get(id),
+                plan.issues
+                    .get(id)
+                    .and_then(|issue| warning_days(plan, issue, warning)),
+            ) else {
+                continue;
+            };
+            let Some(held) = plan.held.get(&issue.project) else {
+                continue;
+            };
+            let names_person = matches!(
+                warning,
+                Warning::Away { .. } | Warning::TooMuchAtOnce { .. }
+            );
+            let person = match plan
+                .person_on_bar(*id)
+                .filter(|_| names_person && plan.reads(issue, Field::AssignedTo))
+            {
+                Some(person) => self.shown_person(held, person).await?,
+                None => None,
+            };
+            let named = matches!(person, Some(PersonRef::Name { .. }));
+            let accepted_by = match accepted.iter().find(|kept| {
+                kept.issue == *id
+                    && kept.kind == warning.kind()
+                    && kept.holds_for(issue.start_date, issue.due_date)
+            }) {
+                Some(kept) => Some(AcceptedView {
+                    by: self
+                        .person_ref(
+                            held,
+                            PeopleKind::Authors,
+                            PeopleContext::Ordinary,
+                            kept.accepted_by,
+                        )
+                        .await?,
+                    at: kept.accepted_at,
+                }),
+                None => None,
+            };
+            let other = match warning
+                .other_issue()
+                .and_then(|other| plan.issues.get(&other))
+            {
+                Some(found) => self
+                    .line_of(actor, &mut lines, found)
+                    .await?
+                    .map(|line| (found.id, line.key)),
+                None => None,
+            };
+            views.push(WarningView {
+                issue: *id,
+                kind: warning.kind(),
+                sentence: warning.sentence(named),
+                days,
+                what: *warning,
+                other,
+                person,
+                ways_out: warning.ways_out(),
+                move_after: warning.move_after(),
+                due_needed: warning.due_needed(),
+                accepted: accepted_by,
+            });
+        }
+        Ok(views)
+    }
+}
+
+/// A page of the timeline: the rows of a search that have a date the reader may read, or the
+/// issues of *Not scheduled yet*, with the count of those.
+///
+/// # Errors
+/// The mistakes of the text; `resource.not-found` for a saved search or a project the person may
+/// not open; `request.invalid` for a span that is backwards or longer than a year, a grouping the
+/// timeline does not offer, or a cursor that is not one; `search.too-slow` for a search that takes
+/// longer than the limit.
+pub async fn timeline<S: AuthStore + SearchStore>(
+    ctx: &Ctx<'_, S>,
+    query: TimelineQuery,
+) -> Result<Authorized<TimelinePage>, AppError> {
+    let actor = ctx.actor(&query.session_token).await?;
+    let span =
+        Days::new(query.first, query.last).ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
+    let window = window_of(span)?;
+    let (text, scope) = ctx.timeline_search(&actor, &query).await?;
+    let words = date_words(&query.options);
+    let tray = ctx
+        .part_search(&actor, (&text, scope), &words, TimelinePart::NotScheduled)
+        .await?;
+    let not_scheduled = match &tray {
+        Some(prepared) => ctx
+            .store()
+            .search_count(&prepared.request)
+            .await
+            .map_err(stopped)?,
+        None => 0,
+    };
+    let organization = ctx.evaluation_of(&actor, Where::Organization).await?;
+    let wanted = match query.part {
+        TimelinePart::Rows => {
+            ctx.part_search(&actor, (&text, scope), &words, TimelinePart::Rows)
+                .await?
+        }
+        TimelinePart::NotScheduled => tray,
+    };
+    let empty = TimelinePage {
+        rows: Vec::new(),
+        next_cursor: None,
+        dependencies: Vec::new(),
+        warnings: Vec::new(),
+        not_scheduled,
+    };
+    let Some(mut prepared) = wanted else {
+        return Ok(organization.authorize(empty));
+    };
+    let targets = date_targets(&prepared.looked, &words);
+    let group_by = match &query.group_by {
+        Some(word) => group_target(&prepared.looked, word)?,
+        None => None,
+    };
+    let limit = query
+        .limit
+        .min(u32::try_from(TIMELINE_ROWS_MOST).unwrap_or(u32::MAX));
+    let found = ctx
+        .issues_page(
+            &actor,
+            &mut prepared,
+            query.cursor.as_deref(),
+            limit,
+            ReadOnRequest {
+                people: true,
+                labels: false,
+                agent: crate::issues::WithAgent::No,
+                time: true,
+            },
+        )
+        .await?;
+    let page: HashSet<IssueId> = found.issues.iter().map(|issue| issue.id).collect();
+    let plan = ctx
+        .plan_of_page(
+            PlanAsk {
+                issues: found.issues.clone(),
+                dates: targets,
+                by_effort: query.options.plan_by_effort,
+                window,
+                actor: &actor,
+            },
+            query.part,
+        )
+        .await?;
+    let rows = ctx
+        .timeline_rows(
+            &plan,
+            &found.issues,
+            found.items,
+            group_by,
+            (query.part, span),
+        )
+        .await?;
+    let dependencies: Vec<(IssueId, IssueId)> = plan
+        .dependencies
+        .iter()
+        .copied()
+        .filter(|(first, then)| page.contains(first) && page.contains(then))
+        .collect();
+    let warnings = if query.part == TimelinePart::Rows {
+        ctx.warning_views(&actor, &plan, &page).await?
+    } else {
+        Vec::new()
+    };
+    Ok(organization.authorize(TimelinePage {
+        rows,
+        next_cursor: found.next_cursor,
+        dependencies,
+        warnings,
+        not_scheduled,
+    }))
+}

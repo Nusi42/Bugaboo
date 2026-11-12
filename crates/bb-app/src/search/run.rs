@@ -16,7 +16,7 @@ use bb_core::paging::{Cut, page_len, read_len};
 use bb_core::tags::IssueSight;
 use bb_core::wording::Region;
 use bb_policy::{Authorized, Masked, PeopleContext, PersonRef, Place as Where};
-use bb_searchlang::{Mistake, check, parse_with};
+use bb_searchlang::{Expr, Mistake, check, parse_with};
 use serde::Serialize;
 
 use super::names::status_groups;
@@ -179,14 +179,38 @@ impl<S: AuthStore> Ctx<'_, S> {
         scope: SearchScope,
         withheld: Option<&Withheld>,
     ) -> Result<Prepared, AppError> {
+        self.prepare_search_narrowed(actor, text, scope, withheld, |_| None)
+            .await
+    }
+
+    /// The same with a filter added to the text: what `narrow` makes from the fields the person may
+    /// read (the timeline keeps the issues with a date, or those with none), joined to the filter
+    /// of the text with `and`, then checked like the rest.
+    pub(crate) async fn prepare_search_narrowed(
+        &self,
+        actor: &Actor,
+        text: &str,
+        scope: SearchScope,
+        withheld: Option<&Withheld>,
+        narrow: impl FnOnce(&Looked) -> Option<Expr>,
+    ) -> Result<Prepared, AppError> {
         let looked = self.looked_at(actor, scope).await?;
         let looked = match withheld {
             Some(withheld) => looked.without(withheld),
             None => looked,
         };
         let readable = readable_of(&looked.fields);
-        let parsed =
+        let mut parsed =
             parse_with(text, &readable).map_err(|mistake| AppError::Mistakes(vec![mistake]))?;
+        if let Some(extra) = narrow(&looked) {
+            parsed.filter = Some(match parsed.filter.take() {
+                Some(filter) => Expr::And {
+                    items: vec![filter, extra],
+                    span: parsed.span,
+                },
+                None => extra,
+            });
+        }
         let checked = check(parsed, &readable).map_err(AppError::Mistakes)?;
         let names = self.search_names(actor, &looked, &checked).await?;
         // A name the person cannot know is refused, as unknown as one that does not exist.
@@ -284,43 +308,12 @@ pub(crate) async fn search_page_within<S: AuthStore + SearchStore>(
     let mut prepared = ctx
         .prepare_search_within(actor, &query.text, query.scope, withheld)
         .await?;
-    let len = page_len(Some(query.limit));
-    prepared.request.limit = read_len(len);
-    // A cursor is the ID of the last issue of the page before: the store reads its place in the
-    // order itself, so no value of any issue is ever written into a cursor.
-    prepared.request.after =
-        cursor_or_invalid(query.cursor.as_deref(), |text| text.parse::<IssueId>().ok())?;
     let found = ctx
-        .store()
-        .search_page(&prepared.request)
-        .await
-        .map_err(stopped)?;
-    let page = Cut::of(found, len);
-    let next_cursor = page.next_cursor(|hit| hit.issue.id.to_string());
-    // The rights and the chain of each project come from the tree the person's view already holds;
-    // everything else of the page is read once by the one way a page is made (PERF-N1).
-    let seen = &prepared.looked.seen;
-    let places: HashMap<ProjectId, PagePlace> = seen
-        .seen_places(None)
-        .into_iter()
-        .filter_map(|(chain, held)| {
-            let project = *chain.last()?;
-            Some((
-                project,
-                PagePlace {
-                    chain,
-                    held,
-                    project: seen.stored(project)?.clone(),
-                },
-            ))
-        })
-        .collect();
-    let issues: Vec<_> = page.items.iter().map(|hit| hit.issue.clone()).collect();
-    let items = ctx
-        .issue_items(
+        .issues_page(
             actor,
-            &issues,
-            &places,
+            &mut prepared,
+            query.cursor.as_deref(),
+            query.limit,
             ReadOnRequest {
                 people: with_people,
                 labels: query.labels,
@@ -328,12 +321,83 @@ pub(crate) async fn search_page_within<S: AuthStore + SearchStore>(
                 time: query.time,
             },
         )
-        .await?
+        .await?;
+    let items = found
+        .items
         .into_iter()
         .map(|(held, view)| held.authorize(view))
         .collect();
     let organization = ctx.evaluation_of(actor, Where::Organization).await?;
-    Ok(organization.authorize(SearchPage { items, next_cursor }))
+    Ok(organization.authorize(SearchPage {
+        items,
+        next_cursor: found.next_cursor,
+    }))
+}
+
+/// A page of issues a prepared search finds: the issues as stored, the view of each with what the
+/// person holds in its project, and the cursor of the next page.
+pub(crate) struct FoundPage {
+    /// The issues, in the order of the search.
+    pub(crate) issues: Vec<bb_core::issue::Issue>,
+    /// The view of each, with the rights of the person in its project.
+    pub(crate) items: Vec<(std::sync::Arc<bb_policy::Evaluation>, IssueView)>,
+    /// The cursor of the next page, if there is one.
+    pub(crate) next_cursor: Option<String>,
+}
+
+impl<S: AuthStore + SearchStore> Ctx<'_, S> {
+    /// The one way a page of a search is read: the statement of the store, then everything else of
+    /// the page once (PERF-N1). The search and the timeline both read their pages so.
+    ///
+    /// # Errors
+    /// As [`search`].
+    pub(crate) async fn issues_page(
+        &self,
+        actor: &Actor,
+        prepared: &mut Prepared,
+        cursor: Option<&str>,
+        limit: u32,
+        extras: ReadOnRequest,
+    ) -> Result<FoundPage, AppError> {
+        let ctx = self;
+        let len = page_len(Some(limit));
+        prepared.request.limit = read_len(len);
+        // A cursor is the ID of the last issue of the page before: the store reads its place in the
+        // order itself, so no value of any issue is ever written into a cursor.
+        prepared.request.after = cursor_or_invalid(cursor, |text| text.parse::<IssueId>().ok())?;
+        let found = ctx
+            .store()
+            .search_page(&prepared.request)
+            .await
+            .map_err(stopped)?;
+        let page = Cut::of(found, len);
+        let next_cursor = page.next_cursor(|hit| hit.issue.id.to_string());
+        // The rights and the chain of each project come from the tree the person's view already holds;
+        // everything else of the page is read once by the one way a page is made (PERF-N1).
+        let seen = &prepared.looked.seen;
+        let places: HashMap<ProjectId, PagePlace> = seen
+            .seen_places(None)
+            .into_iter()
+            .filter_map(|(chain, held)| {
+                let project = *chain.last()?;
+                Some((
+                    project,
+                    PagePlace {
+                        chain,
+                        held,
+                        project: seen.stored(project)?.clone(),
+                    },
+                ))
+            })
+            .collect();
+        let issues: Vec<_> = page.items.iter().map(|hit| hit.issue.clone()).collect();
+        let items = ctx.issue_items(actor, &issues, &places, extras).await?;
+        Ok(FoundPage {
+            issues,
+            items,
+            next_cursor,
+        })
+    }
 }
 
 /// The person who searches, by a session or an access key: the one the search is run for.

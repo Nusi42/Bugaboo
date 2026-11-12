@@ -445,3 +445,25 @@ fn plan_13_each_warning_offers_the_ways_out_that_fit_it() {
     assert_eq!(away.sentence(true), WarningKind::Away.sentence());
     assert_eq!(away.sentence(false).as_str(), "plan-warning.away-hidden");
 }
+
+#[test]
+fn plan_04_the_done_part_is_the_estimate_less_the_time_left() {
+    use super::bar::done_part;
+    // The estimate, the time left, whether it is done, and the done part.
+    type Case = (Option<u32>, Option<u32>, bool, Option<u8>);
+    let cases: [Case; 6] = [
+        (Some(480), Some(120), false, Some(75)),
+        (Some(480), None, false, Some(0)),
+        (Some(480), Some(600), false, Some(0)),
+        (None, Some(60), false, None),
+        (Some(0), None, false, None),
+        (None, None, true, Some(100)),
+    ];
+    for (estimate, left, done, expected) in cases {
+        assert_eq!(
+            done_part(estimate.map(Minutes::new), left.map(Minutes::new), done),
+            expected,
+            "{estimate:?} {left:?} {done}"
+        );
+    }
+}

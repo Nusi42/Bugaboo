@@ -307,3 +307,7 @@ reason = "An away time is made new: there is nothing yet that another change cou
 [[exempt]]
 routes = ["DELETE /api/v1/away-times/{id}"]
 reason = "A DELETE has no body: the removal of an away time takes the version it read in the query (`?version=`), and a stale one is refused with the conflict (ADR-0030)."
+
+[[exempt]]
+routes = ["POST /api/v1/timeline", "POST /api/v1/timeline/move-after"]
+reason = "A page of the timeline and the preview of Move it after read and save nothing: they are posted because the options of the view do not fit an address. The move the preview names is made by POST /api/v1/issues/move-dates, which takes the version of every issue (ADR-0043, decision 5)."

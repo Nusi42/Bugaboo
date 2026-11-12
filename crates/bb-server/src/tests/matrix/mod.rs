@@ -29,6 +29,7 @@ mod examples_searches;
 mod examples_tags;
 mod examples_themes;
 mod examples_time;
+mod examples_timeline;
 mod examples_work_times;
 mod examples_workflows;
 mod examples_working_hours;

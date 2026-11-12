@@ -14,7 +14,9 @@ use bb_app::saved_searches::{
     ShareChoice, ShareChoicesQuery, ShareSearch, ShareView, StopSharingSearch,
 };
 use bb_core::id::SavedSearchId;
-use bb_core::saved_search::{Column, Presentation, SearchSet, ShareKind, ShareTarget, ViewKind};
+use bb_core::saved_search::{
+    Column, Presentation, SearchSet, ShareKind, ShareTarget, TimelineOptions, ViewKind, Zoom,
+};
 use bb_policy::{Masked, PersonRef};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -58,6 +60,50 @@ pub(crate) struct ColumnBody {
     width: Option<u32>,
 }
 
+/// The options of a timeline view (ADR-0034; ADR-0043, decision 2). Left out, a saved search keeps
+/// *Start date* and *Due date*, *Plan by effort* off and a column for each week.
+#[derive(Clone, Serialize, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct TimelineOptionsBody {
+    /// The date field the bars start from, by its search word; `null` for *Start date*. Set both
+    /// or neither.
+    #[serde(default)]
+    #[schema(required = true)]
+    start_field: Option<String>,
+    /// The date field the bars end at, by its search word; `null` for *Due date*.
+    #[serde(default)]
+    #[schema(required = true)]
+    end_field: Option<String>,
+    /// Whether *Plan by effort* is on.
+    #[serde(default)]
+    plan_by_effort: bool,
+    /// The zoom.
+    zoom: Zoom,
+}
+
+impl From<&TimelineOptions> for TimelineOptionsBody {
+    fn from(options: &TimelineOptions) -> Self {
+        let (start_field, end_field) = options.dates.clone().unzip();
+        Self {
+            start_field,
+            end_field,
+            plan_by_effort: options.plan_by_effort,
+            zoom: options.zoom,
+        }
+    }
+}
+
+impl From<TimelineOptionsBody> for TimelineOptions {
+    fn from(body: TimelineOptionsBody) -> Self {
+        Self {
+            // Both fields or neither: one alone is no pair, so the built-in dates count.
+            dates: body.start_field.zip(body.end_field),
+            plan_by_effort: body.plan_by_effort,
+            zoom: body.zoom,
+        }
+    }
+}
+
 /// How the results of a saved search are shown. How close together the rows are is not part of
 /// it: every list follows the person's setting `appearance.spacing` (ADR-0034, amendment), and a
 /// `spacing` an older client still sends is not read.
@@ -70,6 +116,10 @@ pub(crate) struct PresentationRef {
     /// The field the rows are grouped by, by its search word.
     #[schema(required = true)]
     group_by: Option<String>,
+    /// The options of the timeline, kept for every view; left out of a change, the search keeps the
+    /// ones it has.
+    #[serde(default)]
+    timeline: Option<TimelineOptionsBody>,
 }
 
 impl From<&Presentation> for PresentationRef {
@@ -85,6 +135,10 @@ impl From<&Presentation> for PresentationRef {
                 })
                 .collect(),
             group_by: presentation.group_by.clone(),
+            timeline: presentation
+                .timeline
+                .as_ref()
+                .map(TimelineOptionsBody::from),
         }
     }
 }
@@ -102,6 +156,7 @@ impl From<PresentationRef> for Presentation {
                 })
                 .collect(),
             group_by: body.group_by,
+            timeline: body.timeline.map(TimelineOptions::from),
         }
     }
 }

@@ -5,7 +5,7 @@
 use bb_core::ErrorCode;
 use bb_core::event::RecordKind;
 use bb_core::id::{GroupId, ProjectId, SavedSearchId};
-use bb_core::saved_search::{Presentation, SearchSet, ShareKind, ShareTarget};
+use bb_core::saved_search::{Presentation, SearchSet, ShareKind, ShareTarget, TimelineOptions};
 use bb_policy::StartingRole;
 
 use super::scenarios::{a_project, text, token};
@@ -183,7 +183,13 @@ async fn qry_06_only_the_maker_changes_a_saved_search() -> Outcome {
     assert_eq!(renamed.id, made.id);
     assert_eq!(renamed.name, "Open bugs");
     assert_eq!(renamed.version, made.version + 1);
-    assert_eq!(renamed.presentation, Presentation::default());
+    assert_eq!(
+        renamed.presentation,
+        Presentation {
+            timeline: Some(TimelineOptions::default()),
+            ..Presentation::default()
+        }
+    );
     let seen = open(&crew.world, dan, made.id).await?;
     assert_eq!(seen.name, "Open bugs");
     Ok(())

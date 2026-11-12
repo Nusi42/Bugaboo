@@ -138,6 +138,12 @@ use super::{
     who_may_change, work_day_history, work_days, work_times, workflow_editor, workflows,
 };
 
+use crate::plan::{
+    AcceptWarning, AcceptedWarningView, MoveAfterQuery, MovePreviewPage, SetTimeFactor,
+    TimeFactorQuery, TimeFactorView, TimelinePage, TimelineQuery, accept_warning,
+    move_after_preview, set_time_factor, time_factor, timeline,
+};
+
 use super::{
     CopyTheme, CreateTheme, DeleteTheme, SaveTheme, ThemeDetail, ThemeExport, ThemeList,
     ThemeQuery, ThemeSheet, ThemeSheetQuery, ThemeView, ThemesQuery, UploadTheme, copy_theme,
@@ -376,6 +382,16 @@ use_cases! {
     change_issue(ChangeIssue) -> Authorized<IssueView>;
     /// Moves the dates of several issues in one run.
     move_dates(MoveDates) -> Authorized<DatesMoved>;
+    /// A page of the timeline: rows with their bars, dependencies and warnings.
+    timeline(TimelineQuery) -> Authorized<TimelinePage>;
+    /// The preview of *Move it after*.
+    move_after_preview(MoveAfterQuery) -> Authorized<MovePreviewPage>;
+    /// *Keep and accept* a plan warning.
+    accept_warning(AcceptWarning) -> Authorized<AcceptedWarningView>;
+    /// The time factor of an issue.
+    time_factor(TimeFactorQuery) -> Authorized<TimeFactorView>;
+    /// Sets the time factor of an issue.
+    set_time_factor(SetTimeFactor) -> Authorized<TimeFactorView>;
     /// The hosts images in text may come from, for a signed-in person.
     image_hosts(ImageHostsQuery) -> Authorized<ImageHosts>;
     /// The same for the document, before anybody signs in.

@@ -40,6 +40,11 @@ pub trait RelationStore: IssueStore + 'static {
     reads! {
         /// The issues with these IDs that exist, also those in the trash.
         fn issues_by_ids(ids: &[IssueId]) -> Vec<Issue>;
+        /// The dependencies of these kinds that have one of `issues` at either end: what the plan
+        /// of a page of the timeline reads, instead of every dependency there is (M8-F26).
+        fn dependencies_touching(kinds: Vec<RelationKindId>, issues: Vec<IssueId>) -> Vec<Dependency>;
+        /// Which issue sits under which, for every pair with one of `issues` at either end.
+        fn parents_touching(issues: Vec<IssueId>) -> Vec<IssueParent>;
     }
 
     writes! {

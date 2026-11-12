@@ -55,10 +55,12 @@ impl NewIssue {
     fn people(&self) -> Vec<AssignedPerson> {
         self.assigned_people
             .iter()
-            .map(|person| AssignedPerson {
+            .zip(0_i64..)
+            .map(|(person, position)| AssignedPerson {
                 issue: self.issue.id,
                 person: *person,
                 added_at: self.issue.created_at,
+                position,
             })
             .collect()
     }

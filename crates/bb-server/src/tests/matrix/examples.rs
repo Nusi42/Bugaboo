@@ -646,6 +646,12 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::route("deleteOldWorkDays"),
     Example::with("getTimeEntryDefaults", &[Quirk::AnIssueOfTheTarget]),
     Example::with("getIssueTime", &[Quirk::AnIssueOfTheTarget]),
+    // A page of the timeline lets in whoever is signed in and shows what they read, like a search.
+    Example::with("getTimeline", &[Quirk::KeysActAsThePerson]),
+    Example::with("previewMoveAfter", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("acceptWarning", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("getTimeFactor", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("setTimeFactor", &[Quirk::AnIssueOfTheTarget]),
     Example::with("getProjectTime", &[Quirk::ListsTheIssuesSeen]),
 ];
 
@@ -729,6 +735,9 @@ pub(super) async fn request(
     if let Some(found) =
         super::examples_work_times::work_times_request(fixture, operation, browser).await?
     {
+        return Ok(found);
+    }
+    if let Some(found) = super::examples_timeline::timeline_request(fixture, operation).await? {
         return Ok(found);
     }
     Err(format!("{operation} has a row in the table but no request").into())

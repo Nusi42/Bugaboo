@@ -304,9 +304,11 @@ fn tools_of_agents<S: AuthStore>() -> [ToolSpec<S>; 8] {
 
 /// The use cases no tool runs, besides every use case of `working_hours/`, `work_times/` and
 /// `roles/`: they read or change what is not for AI (working hours, work times, other people's time,
-/// roles and the answers of *Check access*). ARCH-AI-TOOLS reads this list and refuses a tool, or
-/// any file outside the registry, that calls one of them.
+/// roles, the answers of *Check access*, and the time factor, which AI never sets: ADR-0030,
+/// amendment M8). ARCH-AI-TOOLS reads this list and refuses a tool, or any file outside the
+/// registry, that calls one of them.
 pub const DESIGNED_OUT: &[&str] = &[
+    "set_time_factor",
     "check_access",
     "people_to_check",
     "who_may_change",

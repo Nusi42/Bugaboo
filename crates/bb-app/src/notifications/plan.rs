@@ -37,6 +37,14 @@ pub(crate) fn renewal_failed(changes: &[FieldChange]) -> bool {
         .any(|change| change.field == issue_member::ISSUE_IDS_FAILED)
 }
 
+/// The person on the bar a change of the time factor was for, when the event changed it on purpose
+/// (the route of the time factor, not a reset with the first person).
+pub(crate) fn time_factor_for(changes: &[FieldChange]) -> Option<UserId> {
+    crate::event_members::text_set(changes, issue_member::TIME_FACTOR_FOR)?
+        .parse()
+        .ok()
+}
+
 /// The people an event assigned the issue to: in the members after and not in those before.
 pub(crate) fn newly_assigned(changes: &[FieldChange]) -> Vec<UserId> {
     let people = |value: &Option<Value>| -> Vec<UserId> {

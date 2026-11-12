@@ -53,6 +53,9 @@ words! {
         TimeLeft => "time-left",
         /// *Time spent*.
         TimeSpent => "time-spent",
+        /// *Time factor*: the estimate of the person on the bar for this issue (PLAN-14). It has
+        /// no search word, no list column and no total (ADR-0030, amendment M8).
+        TimeFactor => "time-factor",
     }
     messages name = "issue-field.";
 }
@@ -306,6 +309,7 @@ mod tests {
                 "estimated-time",
                 "time-left",
                 "time-spent",
+                "time-factor",
             ]
         );
     }

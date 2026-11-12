@@ -6,6 +6,7 @@ use bb_app::ports::{BoxFuture, ChangeStore};
 use bb_core::id::{GroupId, IdSource, ProjectId, SavedSearchId, UserId};
 use bb_core::saved_search::{
     Column, Presentation, ProjectDefaultList, SavedSearch, SearchColumn, SearchShare, ShareTarget,
+    TimelineOptions, Zoom,
 };
 use bb_core::version::FIRST_VERSION;
 use bb_testing::{TestResult, each_database};
@@ -34,24 +35,36 @@ fn presentation() -> Presentation {
             },
         ],
         group_by: Some("statusGroup".to_owned()),
+        timeline: Some(TimelineOptions {
+            dates: Some(("Kick-off".to_owned(), "Launch".to_owned())),
+            plan_by_effort: true,
+            zoom: Zoom::Month,
+        }),
         ..Presentation::default()
     }
 }
 
 fn search(source: &mut impl IdSource, maker: UserId, name: &str, seconds: i64) -> SavedSearch {
     let presentation = presentation();
-    SavedSearch {
+    let mut made = SavedSearch {
         id: SavedSearchId::generate(source).unwrap(),
         name: name.to_owned(),
         text: "status is open".to_owned(),
         maker,
         view: presentation.view,
-        group_by: presentation.group_by,
+        group_by: None,
+        timeline_start: None,
+        timeline_end: None,
+        plan_by_effort: false,
+        zoom: Zoom::Week,
         created_at: at(seconds),
         updated_at: at(seconds),
         deleted_at: None,
         version: FIRST_VERSION,
-    }
+    };
+    // The options of a timeline are kept with every view.
+    made.take_presentation(&presentation);
+    made
 }
 
 async fn insert(

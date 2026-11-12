@@ -20,6 +20,7 @@ use super::scenarios_issues as si;
 use super::scenarios_layouts as sl;
 use super::scenarios_never_sent as snv;
 use super::scenarios_notifications as sn;
+use super::scenarios_plan as spl;
 use super::scenarios_relations as sr;
 use super::scenarios_searches as ss;
 use super::scenarios_tags as st;
@@ -140,6 +141,8 @@ table! {
     "create_issue" => si::create_issue_scenario,
     "move_issue" => si::move_issue_scenario,
     "move_dates" => si::move_dates_scenario,
+    "set_time_factor" => spl::set_time_factor_scenario,
+    "accept_warning" => spl::accept_warning_scenario,
     "apply_many_changes" => si::apply_many_changes_scenario,
     "undo_run" => sru::undo_run_scenario,
     "change_issue" => si::change_issue_scenario,

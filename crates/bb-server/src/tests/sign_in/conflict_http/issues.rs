@@ -27,6 +27,7 @@ pub(super) async fn prepare(id: &str, site: &Site<'_>, ada: &mut Browser) -> Res
             .under_lock(&record, "text"))
         }
         "deleteComment" | "deleteIssue" => prepare_delete(id, site, ada).await,
+        "acceptWarning" | "setTimeFactor" => prepare_plan(id, site, ada).await,
         "changeIssue"
         | "saveIssueDescription"
         | "moveIssue"
@@ -117,4 +118,36 @@ async fn prepare_delete(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<
         &issue["version"],
     )?
     .in_the_query())
+}
+
+/// An issue with its creator as the person on the bar, and a stale *Keep and accept* or change of
+/// its time factor.
+async fn prepare_plan(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<Save, Failure> {
+    let made = ok(&site.create(ada, "Planned").await?)?.clone();
+    let key = text_in(&made, "readable_id")?;
+    // Ada, who made it, is put on the bar.
+    let assigned = ok(&ada
+        .send(
+            "PATCH",
+            &format!("{ISSUES}/{key}"),
+            Some(json!({"version": made["version"], "assigned_to": [made["reported_by"]["id"]]})),
+        )
+        .await?)?
+    .clone();
+    let version = &assigned["version"];
+    if id == "acceptWarning" {
+        Save::new(
+            "POST",
+            "/api/v1/timeline/accepted-warnings".to_owned(),
+            json!({"issue": key, "kind": "delay"}),
+            version,
+        )
+    } else {
+        Save::new(
+            "PUT",
+            format!("{ISSUES}/{key}/time-factor"),
+            json!({"percent": 150}),
+            version,
+        )
+    }
 }

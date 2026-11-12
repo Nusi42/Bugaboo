@@ -129,7 +129,10 @@ pub(crate) fn read_minutes(row: &Row, column: IssueRow) -> Result<Option<Minutes
 
 /// A calendar day kept in a column of whole numbers, as the days since 1970-01-01 (the way a *Date*
 /// field keeps it); none when it is empty.
-pub(crate) fn read_day(row: &Row, column: IssueRow) -> Result<Option<Date>, StoreError> {
+pub(crate) fn read_day(
+    row: &Row,
+    column: impl sea_query::Iden + Copy,
+) -> Result<Option<Date>, StoreError> {
     row.get::<Option<i64>>(column)?
         .map(|days| date_of(days).ok_or(StoreError::Corrupt("a day")))
         .transpose()
@@ -150,6 +153,7 @@ fn read_assigned_person(row: &Row) -> Result<AssignedPerson, StoreError> {
         issue: row.id::<IssueId>(AssignedPersonRow::Issue)?,
         person: row.id::<UserId>(AssignedPersonRow::Person)?,
         added_at: row.time(AssignedPersonRow::AddedAt)?,
+        position: row.get(AssignedPersonRow::Position)?,
     })
 }
 
@@ -262,6 +266,7 @@ async fn assigned_people_of_in(
             AssignedPersonRow::Issue,
             AssignedPersonRow::Person,
             AssignedPersonRow::AddedAt,
+            AssignedPersonRow::Position,
         ])
         .from(AssignedPersonRow::Table)
         .and_where(
@@ -272,6 +277,7 @@ async fn assigned_people_of_in(
                     .collect::<Vec<_>>(),
             ),
         )
+        .order_by(AssignedPersonRow::Position, Order::Asc)
         .order_by(AssignedPersonRow::AddedAt, Order::Asc)
         .order_by(AssignedPersonRow::Person, Order::Asc);
     reader
@@ -294,11 +300,13 @@ async fn insert_assigned_people(
                 AssignedPersonRow::Issue,
                 AssignedPersonRow::Person,
                 AssignedPersonRow::AddedAt,
+                AssignedPersonRow::Position,
             ])
             .values([
                 Expr::val(assigned_person.issue.stored()),
                 Expr::val(assigned_person.person.stored()),
                 Expr::val(to_micros(assigned_person.added_at)),
+                Expr::val(assigned_person.position),
             ])
             .map_err(|_| StoreError::Corrupt("an assigned person"))?;
         transaction.execute(&insert).await?;

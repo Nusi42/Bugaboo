@@ -387,3 +387,18 @@ reason = "Counts only what the viewer may see: an aggregate of a low-risk prefer
 route = "POST /api/v1/themes/{theme}/copy"
 property = "used_by"
 reason = "Counts only what the viewer may see: an aggregate of a low-risk preference, how many people chose a theme for everyone themselves, only a count and never names, answered only to who may change it (Change organization settings); in a tiny organization it can point at one person, which a choice of look allows; a save, a copy and an upload leave it out (ADR-0026 update M8, UX §5.6)."
+
+[[exempt]]
+route = "POST /api/v1/timeline"
+property = "not_scheduled"
+reason = "Only issues the viewer may see: the issues of Not scheduled yet that the compiled search finds with the viewer's sight and readable fields, so a restricted issue is never in it, and a date field the viewer may not read counts as empty (PLAN-08, ADR-0043 decision 2, PRIV-13)."
+
+[[exempt]]
+route = "POST /api/v1/timeline"
+property = "time_spent"
+reason = "Minutes, not a count of things: the time booked on one issue of a row the viewer sees, shown only to a reader of Time spent (the field level). It names no person and no time entry (ADR-0035, decision 4)."
+
+[[exempt]]
+route = "POST /api/v1/timeline"
+property = "late_days"
+reason = "Days, not a count of things: how many days after an issue starts the one it waits for ends, or after a goal's due date its sub-issue ends; both issues are ones the viewer may see (PLAN-13, ADR-0043 decisions 5 and 7)."

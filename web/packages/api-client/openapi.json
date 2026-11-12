@@ -8426,6 +8426,127 @@
         "x-permission": "book-time"
       }
     },
+    "/api/v1/issues/{issue}/time-factor": {
+      "get": {
+        "tags": ["timeline"],
+        "summary": "The time factor of an issue the person may see.",
+        "operationId": "getTimeFactor",
+        "parameters": [
+          {
+            "name": "issue",
+            "in": "path",
+            "description": "The readable ID (WEB-142) or the internal ID of the issue.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The time factor.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimeFactorBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "see-issues"
+      },
+      "put": {
+        "tags": ["timeline"],
+        "summary": "Sets the time factor of an issue: the person on the bar always may, anybody else needs to be\nallowed to change the issue and the field *Time factor*. The change is a change of the issue\n(its version counts up, the history shows it), and the person on the bar is told when somebody\nelse made it. It goes back to ×1 by itself when the first assigned person changes.",
+        "operationId": "setTimeFactor",
+        "parameters": [
+          {
+            "name": "issue",
+            "in": "path",
+            "description": "The readable ID (WEB-142) or the internal ID of the issue.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetTimeFactorBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The time factor now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimeFactorBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "change-issues"
+      }
+    },
     "/api/v1/issues/{issue}/uploads": {
       "post": {
         "tags": ["files"],
@@ -18014,6 +18135,167 @@
         "x-permission": "signed-in"
       }
     },
+    "/api/v1/timeline": {
+      "post": {
+        "tags": ["timeline"],
+        "summary": "A page of the timeline of a search: the issues with a date the person may read, each with its\nbar (its days, the done part, the person on the bar, the hatched days), the dependencies between\nthem, their plan warnings and the count of *Not scheduled yet* (whose issues the same route\nanswers with `part: not-scheduled`). Restricted issues are left out entirely. It reads and\nchanges nothing.",
+        "operationId": "getTimeline",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TimelineBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "A page of the timeline.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimelinePageBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/timeline/accepted-warnings": {
+      "post": {
+        "tags": ["timeline"],
+        "summary": "*Keep and accept*: keeps the plan as it is and the warning of this kind on the issue, faded for\neverybody who sees the issue, until the dates of the issue change. The person on the bar and\nwhoever may change the issue may accept it.",
+        "operationId": "acceptWarning",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptWarningBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The accepted warning.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptedWarningBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "change-issues"
+      }
+    },
+    "/api/v1/timeline/move-after": {
+      "post": {
+        "tags": ["timeline"],
+        "summary": "The preview of *Move it after*: the issue starts on the day after `after`, and the issues that\nwait for it in turn each start on the day after the one before ends. It names every issue that\nmoves with its new dates and saves nothing; the move is one run of\n`POST /api/v1/issues/move-dates`, which *Undo the run* takes back in one step.",
+        "operationId": "previewMoveAfter",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveAfterBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The issues that move, with their new dates.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MoveAfterPreviewBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "see-issues"
+      }
+    },
     "/api/v1/uploads/{upload}": {
       "get": {
         "tags": ["files"],
@@ -19065,6 +19347,52 @@
           "secret": {
             "type": "string",
             "description": "The secret from the invitation link (the part after the `#`)."
+          }
+        }
+      },
+      "AcceptWarningBody": {
+        "type": "object",
+        "description": "*Keep and accept* a plan warning.",
+        "required": ["issue", "version", "kind"],
+        "properties": {
+          "issue": {
+            "type": "string",
+            "description": "The issue the warning is on, by its readable ID or internal ID."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/WarningKind",
+            "description": "The kind of the warning."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the issue the person looked at."
+          }
+        },
+        "additionalProperties": false
+      },
+      "AcceptedWarningBody": {
+        "type": "object",
+        "description": "A warning that was accepted.",
+        "required": ["issue", "kind", "start_date", "due_date"],
+        "properties": {
+          "due_date": {
+            "type": ["string", "null"],
+            "format": "date",
+            "description": "The *Due date* it was accepted for."
+          },
+          "issue": {
+            "type": "string",
+            "description": "The issue."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/WarningKind",
+            "description": "The kind."
+          },
+          "start_date": {
+            "type": ["string", "null"],
+            "format": "date",
+            "description": "The *Start date* it was accepted for: it comes back when the dates change."
           }
         }
       },
@@ -20257,6 +20585,73 @@
               "type": "string"
             },
             "description": "The codes. They are not stored in this form and cannot be shown again."
+          }
+        }
+      },
+      "BarBody": {
+        "type": "object",
+        "description": "The bar of a row.",
+        "required": ["days", "worked_out", "done", "person", "time_factor", "hatched"],
+        "properties": {
+          "days": {
+            "$ref": "#/components/schemas/DaysBody",
+            "description": "The days it covers."
+          },
+          "done": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "How much of it is done, in percent; `null` without an estimate the person may read.",
+            "minimum": 0
+          },
+          "hatched": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HatchedDayBody"
+            },
+            "description": "The days inside the span on which the person does not work."
+          },
+          "person": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PersonRef",
+                "description": "The person on the bar (the first assigned person) as the reader may see them; `null` for\nnobody or when the reader may not see who it is."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "time_factor": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BarTimeFactorBody",
+                "description": "The time factor, when it is not ×1 and the reader may read it."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "worked_out": {
+            "type": "string",
+            "description": "Which date *Plan by effort* worked out (shown, never stored): `neither`, `start` or `due`."
+          }
+        }
+      },
+      "BarTimeFactorBody": {
+        "type": "object",
+        "description": "The time factor a bar is planned with.",
+        "required": ["percent", "own_estimate"],
+        "properties": {
+          "own_estimate": {
+            "type": "boolean",
+            "description": "Whether the person on the bar set it themselves."
+          },
+          "percent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "In percent of the estimate (125 is ×1.25).",
+            "minimum": 0
           }
         }
       },
@@ -21948,6 +22343,23 @@
         },
         "additionalProperties": false
       },
+      "DaysBody": {
+        "type": "object",
+        "description": "A stretch of days, both ends included.",
+        "required": ["first", "last"],
+        "properties": {
+          "first": {
+            "type": "string",
+            "format": "date",
+            "description": "The first day."
+          },
+          "last": {
+            "type": "string",
+            "format": "date",
+            "description": "The last day."
+          }
+        }
+      },
       "DecisionAnswerBody": {
         "type": "object",
         "description": "Where the browser goes next.",
@@ -22407,6 +22819,7 @@
           "estimated-time",
           "time-left",
           "time-spent",
+          "time-factor",
           "activity",
           "cost-center"
         ],
@@ -23418,6 +23831,46 @@
             "description": "The second color: the background, the surface or the other state."
           }
         }
+      },
+      "HatchedDayBody": {
+        "type": "object",
+        "description": "One day of a bar on which its person does not work, as *Who sees people* allows.",
+        "required": ["date", "kind", "morning", "afternoon", "holiday"],
+        "properties": {
+          "afternoon": {
+            "type": "boolean",
+            "description": "For an away day: whether the afternoon is away."
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "The day."
+          },
+          "holiday": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Holiday",
+                "description": "For a public holiday: which one."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "kind": {
+            "$ref": "#/components/schemas/HatchedKindBody",
+            "description": "What it holds."
+          },
+          "morning": {
+            "type": "boolean",
+            "description": "For an away day: whether the morning is away."
+          }
+        }
+      },
+      "HatchedKindBody": {
+        "type": "string",
+        "description": "What a hatched day holds.",
+        "enum": ["away", "holiday", "day-off"]
       },
       "HeldLockBody": {
         "type": "object",
@@ -25635,6 +26088,79 @@
           }
         }
       },
+      "MoveAfterBody": {
+        "type": "object",
+        "description": "Ask for the preview of *Move it after*.",
+        "required": ["issue", "after", "timeline"],
+        "properties": {
+          "after": {
+            "type": "string",
+            "format": "date",
+            "description": "The day the issue is to start after: the `move_after` of its warning."
+          },
+          "issue": {
+            "type": "string",
+            "description": "The issue the warning is on, by its readable ID or internal ID."
+          },
+          "timeline": {
+            "$ref": "#/components/schemas/TimelineOptionsBody",
+            "description": "The options of the view the warning was shown in. Only a view of *Start date* and *Due\ndate* can move issues."
+          }
+        },
+        "additionalProperties": false
+      },
+      "MoveAfterIssueBody": {
+        "type": "object",
+        "description": "One issue of the preview, with its new dates.",
+        "required": ["id", "readable_id", "version", "from", "to", "start_date", "due_date"],
+        "properties": {
+          "due_date": {
+            "type": ["string", "null"],
+            "format": "date",
+            "description": "The *Due date* it gets; `null` when it has none."
+          },
+          "from": {
+            "$ref": "#/components/schemas/DaysBody",
+            "description": "The days of its bar now."
+          },
+          "id": {
+            "type": "string",
+            "description": "The internal ID."
+          },
+          "readable_id": {
+            "type": "string",
+            "description": "The readable ID."
+          },
+          "start_date": {
+            "type": ["string", "null"],
+            "format": "date",
+            "description": "The *Start date* it gets; `null` when it has none."
+          },
+          "to": {
+            "$ref": "#/components/schemas/DaysBody",
+            "description": "The days of its bar after the move."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version to move it from (`POST /api/v1/issues/move-dates` takes it)."
+          }
+        }
+      },
+      "MoveAfterPreviewBody": {
+        "type": "object",
+        "description": "The preview of *Move it after*.",
+        "required": ["issues"],
+        "properties": {
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MoveAfterIssueBody"
+            },
+            "description": "Every issue that moves, in the order along the dependencies, with its new dates."
+          }
+        }
+      },
       "MoveBody": {
         "type": "object",
         "description": "Where a project goes, and the version of the preview that was looked at.",
@@ -26719,6 +27245,7 @@
           "long-timer",
           "work-day-changed",
           "work-times-changed",
+          "time-factor-changed",
           "agent-asks",
           "plan-waits",
           "ready-for-review",
@@ -28285,6 +28812,162 @@
         ],
         "description": "Where a row of *Who has which role* is: the whole organization, a project, or a project the\nperson cannot see (which is not named)."
       },
+      "PlanAcceptedBody": {
+        "type": "object",
+        "description": "Who accepted a warning and when.",
+        "required": ["by", "at"],
+        "properties": {
+          "at": {
+            "type": "string",
+            "description": "When.",
+            "format": "date-time"
+          },
+          "by": {
+            "$ref": "#/components/schemas/PersonRef",
+            "description": "Who accepted it."
+          }
+        }
+      },
+      "PlanWarningBody": {
+        "type": "object",
+        "description": "A plan warning of an issue of the page.",
+        "required": [
+          "issue",
+          "kind",
+          "sentence",
+          "days",
+          "person",
+          "other",
+          "late_days",
+          "needs_days",
+          "has_days",
+          "worst_day",
+          "planned_minutes",
+          "can_minutes",
+          "ways_out",
+          "move_after",
+          "due_needed",
+          "accepted"
+        ],
+        "properties": {
+          "accepted": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PlanAcceptedBody",
+                "description": "Who accepted it and when (*Keep and accept*): it shows faded until the dates of its issue\nchange."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "can_minutes": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "*Too much at once*: the minutes the person can work on that day in the project.",
+            "minimum": 0
+          },
+          "days": {
+            "$ref": "#/components/schemas/DaysBody",
+            "description": "The days it is about."
+          },
+          "due_needed": {
+            "type": ["string", "null"],
+            "format": "date",
+            "description": "The due date *Make it longer* answers; it changes only when the person confirms it."
+          },
+          "has_days": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "*Not enough days*: the work days there are before the due date.",
+            "minimum": 0
+          },
+          "issue": {
+            "type": "string",
+            "description": "The issue the warning is on."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/WarningKind",
+            "description": "The kind."
+          },
+          "late_days": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "*Delay*: how many days after the issue starts the one it waits for ends, or how many days\nafter the due date the sub-issue ends.",
+            "minimum": 0
+          },
+          "move_after": {
+            "type": ["string", "null"],
+            "format": "date",
+            "description": "The day *Move it after* starts the issue after (the preview takes it)."
+          },
+          "needs_days": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "*Not enough days*: the work days the effort needs; `null` when the known days do not hold it.",
+            "minimum": 0
+          },
+          "other": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PlanWarningIssueBody",
+                "description": "The other issue it names: the one it waits for, or the sub-issue of a goal."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "person": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PersonRef",
+                "description": "The person on the bar it is about, for *Away* and *Too much at once*; `null` when the\nreader may not see who it is (*\"the assigned person is away\"*)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "planned_minutes": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "*Too much at once*: the minutes planned for the person on that day in the project.",
+            "minimum": 0
+          },
+          "sentence": {
+            "type": "string",
+            "description": "The key of its sentence in the messages; the screen fills it in with the members below."
+          },
+          "ways_out": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WayOut"
+            },
+            "description": "The ways out that fit it, in the order they are offered."
+          },
+          "worst_day": {
+            "type": ["string", "null"],
+            "format": "date",
+            "description": "*Too much at once*: the day with the most too much."
+          }
+        }
+      },
+      "PlanWarningIssueBody": {
+        "type": "object",
+        "description": "An issue a warning names besides its own.",
+        "required": ["id", "readable_id"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The internal ID."
+          },
+          "readable_id": {
+            "type": "string",
+            "description": "The readable ID."
+          }
+        }
+      },
       "PresentationRef": {
         "type": "object",
         "description": "How the results of a saved search are shown. How close together the rows are is not part of\nit: every list follows the person's setting `appearance.spacing` (ADR-0034, amendment), and a\n`spacing` an older client still sends is not read.",
@@ -28300,6 +28983,17 @@
           "group_by": {
             "type": ["string", "null"],
             "description": "The field the rows are grouped by, by its search word."
+          },
+          "timeline": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TimelineOptionsBody",
+                "description": "The options of the timeline, kept for every view; left out of a change, the search keeps the\nones it has."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "view": {
             "$ref": "#/components/schemas/ViewKind",
@@ -30743,6 +31437,31 @@
           }
         }
       },
+      "SetTimeFactorBody": {
+        "type": "object",
+        "description": "A new time factor: as a factor (`percent`) or as a length (`takes_minutes`, *Takes me …*,\nworked out against *Estimated time*). Exactly one of the two.",
+        "required": ["version"],
+        "properties": {
+          "percent": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "The factor in percent of the estimate, from 10 to 1000; 100 takes it back to ×1.",
+            "minimum": 0
+          },
+          "takes_minutes": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "*Takes me …*: how long the issue takes the person, in minutes.",
+            "minimum": 0
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the issue the person looked at."
+          }
+        },
+        "additionalProperties": false
+      },
       "SettingBody": {
         "type": "object",
         "description": "One setting: what the registry knows about it, and the value that counts.",
@@ -32020,6 +32739,54 @@
         "description": "What happened to a time entry: booked, changed or deleted.",
         "enum": ["booked", "changed", "deleted"]
       },
+      "TimeFactorBody": {
+        "type": "object",
+        "description": "The time factor of an issue. The factor and who set it are the field *Time factor*: a reader\nwhose field level hides it gets the issue, its version and the person on the bar only.",
+        "required": ["issue", "version", "percent", "set_by", "own_estimate", "person"],
+        "properties": {
+          "issue": {
+            "type": "string",
+            "description": "The internal ID of the issue."
+          },
+          "own_estimate": {
+            "type": "boolean",
+            "description": "Whether the person on the bar set it themselves (*Lea's own estimate*)."
+          },
+          "percent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The factor in percent of the estimate (125 is ×1.25); 100 when nobody set one.",
+            "minimum": 0
+          },
+          "person": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PersonRef",
+                "description": "The person on the bar (the first assigned person); `null` for an issue assigned to nobody."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "set_by": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PersonRef",
+                "description": "Who set it (*set by Ada Brandt*); `null` for ×1."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the issue now: a change is made on the version that was looked at."
+          }
+        }
+      },
       "TimeLeftBody": {
         "type": "object",
         "description": "*Time left* of an issue: the minutes, and whether nobody typed them and they are worked out from\nthe estimate and the time spent (shown in the quiet style of a value worked out).",
@@ -32058,6 +32825,177 @@
             "format": "int32",
             "description": "The sum of *Time spent*; left out when the reader may not read it.",
             "minimum": 0
+          }
+        }
+      },
+      "TimelineBody": {
+        "type": "object",
+        "description": "Ask for a page of the timeline: a saved search or a search text, the options of the view and the\nspan of days the screen shows.",
+        "required": ["timeline", "first", "last"],
+        "properties": {
+          "cursor": {
+            "type": ["string", "null"],
+            "description": "Where the page starts: the `next_cursor` of the page before."
+          },
+          "first": {
+            "type": "string",
+            "format": "date",
+            "description": "The first day the screen shows (`2026-11-02`)."
+          },
+          "group_by": {
+            "type": ["string", "null"],
+            "description": "The field the rows are grouped by, by its search word: `project`, `parent` (the goal),\n`assigned to` (*Group by person*), `status` or `priority`."
+          },
+          "last": {
+            "type": "string",
+            "format": "date",
+            "description": "The last day the screen shows; a span is a year at most."
+          },
+          "limit": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "How many issues a page holds at most (at most 200).",
+            "minimum": 0
+          },
+          "part": {
+            "$ref": "#/components/schemas/TimelinePartBody",
+            "description": "Which part: the rows, or the issues of *Not scheduled yet*."
+          },
+          "project": {
+            "type": ["string", "null"],
+            "description": "The project whose timeline it is (it and the projects inside it), by ID or short name;\nleft out, everywhere the person sees."
+          },
+          "saved_search": {
+            "type": ["string", "null"],
+            "description": "The saved search the timeline is a view of, by its ID; or else `search_text`."
+          },
+          "search_text": {
+            "type": ["string", "null"],
+            "description": "The search text, which need not be saved; used when `saved_search` is left out."
+          },
+          "timeline": {
+            "$ref": "#/components/schemas/TimelineOptionsBody",
+            "description": "The options of the view: the date fields, *Plan by effort* and the zoom."
+          }
+        },
+        "additionalProperties": false
+      },
+      "TimelineDependencyBody": {
+        "type": "object",
+        "description": "One dependency between two issues of the page.",
+        "required": ["first", "then"],
+        "properties": {
+          "first": {
+            "type": "string",
+            "description": "The issue that must finish first."
+          },
+          "then": {
+            "type": "string",
+            "description": "The issue that waits for it."
+          }
+        }
+      },
+      "TimelineOptionsBody": {
+        "type": "object",
+        "description": "The options of a timeline view (ADR-0034; ADR-0043, decision 2). Left out, a saved search keeps\n*Start date* and *Due date*, *Plan by effort* off and a column for each week.",
+        "required": ["start_field", "end_field", "zoom"],
+        "properties": {
+          "end_field": {
+            "type": ["string", "null"],
+            "description": "The date field the bars end at, by its search word; `null` for *Due date*."
+          },
+          "plan_by_effort": {
+            "type": "boolean",
+            "description": "Whether *Plan by effort* is on."
+          },
+          "start_field": {
+            "type": ["string", "null"],
+            "description": "The date field the bars start from, by its search word; `null` for *Start date*. Set both\nor neither."
+          },
+          "zoom": {
+            "$ref": "#/components/schemas/Zoom",
+            "description": "The zoom."
+          }
+        },
+        "additionalProperties": false
+      },
+      "TimelinePageBody": {
+        "type": "object",
+        "description": "A page of the timeline.",
+        "required": ["rows", "next_cursor", "dependencies", "warnings", "not_scheduled"],
+        "properties": {
+          "dependencies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimelineDependencyBody"
+            },
+            "description": "The dependencies between issues of the page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last."
+          },
+          "not_scheduled": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How many issues the search finds that wait in *Not scheduled yet*.",
+            "minimum": 0
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimelineRowBody"
+            },
+            "description": "The rows, in the order of the search; an issue has a row for each of its groups."
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlanWarningBody"
+            },
+            "description": "The warnings of the issues of the page."
+          }
+        }
+      },
+      "TimelinePartBody": {
+        "type": "string",
+        "description": "Which part of the timeline a page is of.",
+        "enum": ["rows", "not-scheduled"]
+      },
+      "TimelineRowBody": {
+        "type": "object",
+        "description": "One row of the timeline.",
+        "required": ["group", "issue", "bar", "copy"],
+        "properties": {
+          "bar": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BarBody",
+                "description": "Its bar; `null` in *Not scheduled yet*."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "copy": {
+            "type": "boolean",
+            "description": "Whether this is the row of an assigned person who is not the person on the bar: the bar is\nplanned with the first person's work times."
+          },
+          "group": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SearchGroupKeyBody",
+                "description": "The group of the row; `null` when not grouped or when the reader may not know the group."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "issue": {
+            "$ref": "#/components/schemas/IssueItem",
+            "description": "The issue, with what the reader may see of it in its project."
           }
         }
       },
@@ -32558,8 +33496,8 @@
       },
       "ViewKind": {
         "type": "string",
-        "description": "The kind of view a saved search is shown as. Other kinds come with their views.",
-        "enum": ["list"]
+        "description": "The kind of view a saved search is shown as: a list or the timeline. Other kinds come with their views.",
+        "enum": ["list", "timeline"]
       },
       "WaitsFor": {
         "type": "string",
@@ -32580,6 +33518,16 @@
             "description": "The sentence, as message keys with their words, which the screen writes from its catalog."
           }
         }
+      },
+      "WarningKind": {
+        "type": "string",
+        "description": "The kind of a plan warning: the person on the bar is away, not enough days before the due date, a delay along a dependency or after a sub-issue, or too much at once for the person.",
+        "enum": ["away", "not-enough-days", "delay", "too-much-at-once"]
+      },
+      "WayOut": {
+        "type": "string",
+        "description": "A way out of a plan warning: move the issue after what is in the way, make it longer, give it to someone else, or keep the plan and accept the warning.",
+        "enum": ["move-it-after", "make-it-longer", "give-to-someone-else", "keep-and-accept"]
       },
       "WebAddressItem": {
         "type": "object",
@@ -33293,6 +34241,11 @@
             "description": "*Written with the assistant*, *Written by an AI app* or *Written by an agent*."
           }
         }
+      },
+      "Zoom": {
+        "type": "string",
+        "description": "How many days the timeline shows across the screen: day, week, month or quarter.",
+        "enum": ["day", "week", "month", "quarter"]
       }
     },
     "securitySchemes": {

@@ -61,6 +61,16 @@ pub(super) async fn version_of(fixture: &Fixture<'_>, issue: &str) -> Result<i64
 
 /// A new issue in the target project, reported by the administrator of the matrix: its readable ID.
 pub(super) async fn an_issue(fixture: &Fixture<'_>) -> Result<String, Failure> {
+    a_planned_issue(fixture, None, None).await
+}
+
+/// The same with a *Start date* and the people it is assigned to: an issue the timeline gives a
+/// bar.
+pub(super) async fn a_planned_issue(
+    fixture: &Fixture<'_>,
+    start_date: Option<jiff::civil::Date>,
+    assigned_to: Option<Vec<bb_core::id::UserId>>,
+) -> Result<String, Failure> {
     let made = fixture
         .rig()
         .api()
@@ -74,8 +84,8 @@ pub(super) async fn an_issue(fixture: &Fixture<'_>) -> Result<String, Failure> {
                 description: None,
                 status: None,
                 priority: None,
-                assigned_to: None,
-                start_date: None,
+                assigned_to,
+                start_date,
                 due_date: None,
                 estimated_time: None,
                 fields: std::collections::BTreeMap::new(),

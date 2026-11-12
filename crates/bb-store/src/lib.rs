@@ -40,6 +40,7 @@ mod notifications;
 mod oauth;
 mod offers;
 mod paging;
+mod plan;
 mod policy;
 mod projects;
 mod relations;

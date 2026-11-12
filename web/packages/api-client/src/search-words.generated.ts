@@ -18,6 +18,7 @@ export const searchWords = [
   "estimated time",
   "time left",
   "time spent",
+  "time factor",
   "project",
   "type",
   "status group",

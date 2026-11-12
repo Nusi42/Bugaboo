@@ -25,8 +25,10 @@ use super::layouts_http::{AN_EDITOR, LAYOUTS, LOCKS, customize};
 const AHEAD: i64 = 50;
 
 /// The routes of the API description that take a `version`, by operation ID: the rows of the table.
-const VERSIONED: [&str; 58] = [
+const VERSIONED: [&str; 60] = [
     "deleteIssue",
+    "acceptWarning",
+    "setTimeFactor",
     "deleteComment",
     "answerAgentQuestion",
     "approveAgentPlan",
@@ -154,7 +156,9 @@ async fn prepare(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<Save, F
         | "moveIssue"
         | "setIssueParent"
         | "deleteIssue"
-        | "deleteComment" => issues::prepare(id, site, ada).await,
+        | "deleteComment"
+        | "acceptWarning"
+        | "setTimeFactor" => issues::prepare(id, site, ada).await,
         "changeLabelGroup"
         | "changeLabelGroupOffers"
         | "changeLabel"

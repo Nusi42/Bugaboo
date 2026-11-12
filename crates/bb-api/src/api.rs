@@ -95,6 +95,8 @@ mod themes;
 mod time;
 mod time_entries;
 mod time_totals;
+mod timeline;
+mod timeline_factor;
 mod work_times;
 mod workflows;
 mod working_hours;
@@ -197,6 +199,8 @@ where
         .merge(issues::routes())
         .merge(issue_dates::routes())
         .merge(search::routes(limits))
+        .merge(timeline::routes(limits))
+        .merge(timeline_factor::routes())
         .merge(relations::routes())
         .merge(tags::routes())
         .merge(many_changes::routes())

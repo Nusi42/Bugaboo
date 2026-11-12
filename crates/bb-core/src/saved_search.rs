@@ -32,18 +32,63 @@ pub const SAVED_SEARCHES_MAX: usize = 500;
 pub const SHARES_MAX: usize = 100;
 
 words! {
-    /// The kind of view a saved search is shown as. M5 shows the kind *list*; board, timeline and
+    /// The kind of view a saved search is shown as: a list, or the timeline (M8); board and
     /// calendar read the same record when their milestones come (ADR-0034, decision 1).
     pub enum ViewKind {
         /// A list of issues, one row each.
         List => "list",
+        /// The timeline: bars over days (PLAN-01, ADR-0043, decision 2).
+        Timeline => "timeline",
     }
 }
 
 words_in_api!(
     ViewKind,
-    "The kind of view a saved search is shown as. Other kinds come with their views."
+    "The kind of view a saved search is shown as: a list or the timeline. Other kinds come with their views."
 );
+
+words! {
+    /// How many days the timeline shows across the screen (PLAN-01): from a day to a quarter.
+    pub enum Zoom {
+        /// One column for each day.
+        Day => "day",
+        /// One column for each week.
+        Week => "week",
+        /// One column for each month.
+        Month => "month",
+        /// One column for each quarter.
+        Quarter => "quarter",
+    }
+}
+
+words_in_api!(
+    Zoom,
+    "How many days the timeline shows across the screen: day, week, month or quarter."
+);
+
+/// The options of a timeline view, kept with its saved search (ADR-0034; ADR-0043, decision 2).
+/// The grouping is the one of every view ([`Presentation::group_by`]).
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct TimelineOptions {
+    /// The two date fields the bars take their days from, by their search words (the start, then
+    /// the end); none for *Start date* and *Due date*.
+    pub dates: Option<(String, String)>,
+    /// Whether *Plan by effort* is on (ADR-0030, decision 3).
+    pub plan_by_effort: bool,
+    /// The zoom.
+    pub zoom: Zoom,
+}
+
+impl Default for TimelineOptions {
+    /// *Start date* and *Due date*, *Plan by effort* off, a column for each week.
+    fn default() -> Self {
+        Self {
+            dates: None,
+            plan_by_effort: false,
+            zoom: Zoom::Week,
+        }
+    }
+}
 
 /// One column of a list: the field by its search word and, when the person dragged it, its width.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -64,6 +109,10 @@ pub struct Presentation {
     pub columns: Vec<Column>,
     /// The field the rows are grouped by, by its search word.
     pub group_by: Option<String>,
+    /// The options of the timeline, kept for every view so that switching back keeps them; `None`
+    /// keeps the ones a search has (the starting ones for a new search), so a client that knows
+    /// only lists never takes them away.
+    pub timeline: Option<TimelineOptions>,
 }
 
 impl Default for Presentation {
@@ -73,6 +122,7 @@ impl Default for Presentation {
             view: ViewKind::List,
             columns: Vec::new(),
             group_by: None,
+            timeline: None,
         }
     }
 }
@@ -101,6 +151,11 @@ impl Presentation {
                         .any(|earlier| earlier.field == column.field)
             })
             && self.group_by.as_deref().is_none_or(is_word)
+            && self
+                .timeline
+                .as_ref()
+                .and_then(|timeline| timeline.dates.as_ref())
+                .is_none_or(|(start, end)| is_word(start) && is_word(end) && start != end)
     }
 
     /// The presentation of `search` with its `columns` (in any order).
@@ -118,6 +173,14 @@ impl Presentation {
                 })
                 .collect(),
             group_by: search.group_by.clone(),
+            timeline: Some(TimelineOptions {
+                dates: search
+                    .timeline_start
+                    .clone()
+                    .zip(search.timeline_end.clone()),
+                plan_by_effort: search.plan_by_effort,
+                zoom: search.zoom,
+            }),
         }
     }
 
@@ -136,14 +199,20 @@ impl Presentation {
             .collect()
     }
 
-    /// The search words of every field the presentation names: the columns (besides the ID column)
-    /// and the grouping.
+    /// The search words of every field the presentation names: the columns (besides the ID column),
+    /// the grouping and the date fields of the timeline.
     pub fn fields(&self) -> impl Iterator<Item = &str> {
         self.columns
             .iter()
             .map(|column| column.field.as_str())
             .filter(|word| *word != ID_WORD)
             .chain(self.group_by.as_deref())
+            .chain(
+                self.timeline
+                    .iter()
+                    .filter_map(|timeline| timeline.dates.as_ref())
+                    .flat_map(|(start, end)| [start.as_str(), end.as_str()]),
+            )
     }
 }
 
@@ -170,6 +239,19 @@ pub struct SavedSearch {
     /// The field the rows are grouped by, by its search word.
     #[personal(category = "content", basis = "legitimate_interests")]
     pub group_by: Option<String>,
+    /// The date field a timeline starts its bars from, by its search word; none for *Start date*.
+    /// It can be the name of an own field, which a person wrote.
+    #[personal(category = "content", basis = "legitimate_interests")]
+    pub timeline_start: Option<String>,
+    /// The date field a timeline ends its bars at, by its search word; none for *Due date*.
+    #[personal(category = "content", basis = "legitimate_interests")]
+    pub timeline_end: Option<String>,
+    /// Whether the timeline plans by effort.
+    #[not_personal]
+    pub plan_by_effort: bool,
+    /// The zoom of the timeline.
+    #[not_personal]
+    pub zoom: Zoom,
     /// When it was made.
     #[not_personal]
     pub created_at: Timestamp,
@@ -182,6 +264,23 @@ pub struct SavedSearch {
     /// Counts up with every change, for the check that nobody changed it meanwhile (ADR-0019).
     #[not_personal]
     pub version: i64,
+}
+
+impl SavedSearch {
+    /// Takes how `presentation` shows the search (the kind of view, the grouping and, when it
+    /// names them, the options of the timeline); the columns are rows of their own
+    /// ([`Presentation::rows`]).
+    pub fn take_presentation(&mut self, presentation: &Presentation) {
+        self.view = presentation.view;
+        self.group_by.clone_from(&presentation.group_by);
+        if let Some(timeline) = &presentation.timeline {
+            let (start, end) = timeline.dates.clone().unzip();
+            self.timeline_start = start;
+            self.timeline_end = end;
+            self.plan_by_effort = timeline.plan_by_effort;
+            self.zoom = timeline.zoom;
+        }
+    }
 }
 
 /// One column of a saved search, in order.
@@ -338,6 +437,8 @@ mod tests {
         let presentation = Presentation {
             columns: vec![column("title", Some(300)), column("status", None)],
             group_by: Some("statusGroup".to_owned()),
+            // Read back, a search always names the options of its timeline.
+            timeline: Some(TimelineOptions::default()),
             ..Presentation::default()
         };
         let mut ids = crate::id::SequentialIds::default();
@@ -355,6 +456,10 @@ mod tests {
             maker: UserId::generate(&mut ids),
             view: presentation.view,
             group_by: presentation.group_by.clone(),
+            timeline_start: None,
+            timeline_end: None,
+            plan_by_effort: false,
+            zoom: Zoom::Week,
             created_at: Timestamp::UNIX_EPOCH,
             updated_at: Timestamp::UNIX_EPOCH,
             deleted_at: None,
@@ -418,5 +523,26 @@ lines",
             None,
         );
         assert!(widest.is_valid());
+    }
+
+    #[test]
+    fn plan_01_a_timeline_keeps_two_different_date_fields_by_their_words() {
+        let timeline = |dates: Option<(&str, &str)>| Presentation {
+            view: ViewKind::Timeline,
+            timeline: Some(TimelineOptions {
+                dates: dates.map(|(start, end)| (start.to_owned(), end.to_owned())),
+                plan_by_effort: true,
+                zoom: Zoom::Month,
+            }),
+            ..Presentation::default()
+        };
+        assert!(timeline(None).is_valid());
+        let own = timeline(Some(("Kick-off", "Launch")));
+        assert!(own.is_valid());
+        assert_eq!(own.fields().collect::<Vec<_>>(), ["Kick-off", "Launch"]);
+        for bad in [Some(("Launch", "Launch")), Some(("", "Launch"))] {
+            assert!(!timeline(bad).is_valid(), "{bad:?}");
+        }
+        assert_eq!(Zoom::from_code("quarter"), Some(Zoom::Quarter));
     }
 }

@@ -188,3 +188,20 @@ pub fn load(bar: &Bar, effort: Minutes, days: &[DayMinutes]) -> Vec<(Date, u32)>
     }
     planned
 }
+
+/// How much of a bar is done, in percent (PLAN-04): *Estimated time* minus *Time left* over
+/// *Estimated time*; none without an estimate. A bar of the status group *Done* is done.
+#[must_use]
+pub fn done_part(estimate: Option<Minutes>, left: Option<Minutes>, done: bool) -> Option<u8> {
+    if done {
+        return Some(100);
+    }
+    let estimate = u64::from(estimate?.get());
+    if estimate == 0 {
+        return None;
+    }
+    let left = left
+        .map_or(estimate, |left| u64::from(left.get()))
+        .min(estimate);
+    u8::try_from((estimate - left) * 100 / estimate).ok()
+}

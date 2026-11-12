@@ -68,6 +68,8 @@ crate::entities! {
     crate::issue::IssueCounter,
     crate::issue::IssueType,
     crate::offer::Offer,
+    crate::plan::record::AcceptedWarning,
+    crate::plan::record::IssueTimeFactor,
     crate::saved_search::ProjectDefaultList,
     crate::saved_search::SavedSearch,
     crate::saved_search::SearchColumn,

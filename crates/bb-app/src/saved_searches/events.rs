@@ -21,6 +21,16 @@ fn columns_json(columns: &[SearchColumn]) -> Value {
     )
 }
 
+/// The options of the timeline as one value of an event.
+fn timeline_json(search: &SavedSearch) -> Value {
+    json!({
+        "start": search.timeline_start,
+        "end": search.timeline_end,
+        "plan_by_effort": search.plan_by_effort,
+        "zoom": search.zoom.code(),
+    })
+}
+
 /// The target of a share as one value of an event.
 pub(super) fn target_json(target: ShareTarget) -> Value {
     json!({ "kind": target.kind().code(), "id": target.id_text() })
@@ -47,6 +57,7 @@ pub(super) fn made(search: &SavedSearch, columns: &[SearchColumn]) -> Vec<FieldC
         set_to(member::TEXT, json!(search.text)),
         set_to(member::VIEW, json!(search.view.code())),
         set_to(member::COLUMNS, columns_json(columns)),
+        set_to(member::TIMELINE, timeline_json(search)),
     ];
     if let Some(field) = &search.group_by {
         changes.push(set_to(member::GROUP_BY, json!(field)));
@@ -70,6 +81,7 @@ pub(super) fn changed(
             columns_json(now_columns),
         ),
         difference(member::GROUP_BY, json!(was.group_by), json!(now.group_by)),
+        difference(member::TIMELINE, timeline_json(was), timeline_json(now)),
     ]
     .into_iter()
     .flatten()

@@ -100,6 +100,35 @@ impl RelationStore for FakeStore {
         Ok(found)
     }
 
+    async fn dependencies_touching(
+        &self,
+        kinds: Vec<RelationKindId>,
+        issues: Vec<IssueId>,
+    ) -> Result<Vec<Dependency>, FakeError> {
+        Ok(self.read(|state| {
+            state
+                .relations
+                .iter()
+                .filter(|relation| {
+                    kinds.contains(&relation.kind)
+                        && (issues.contains(&relation.from) || issues.contains(&relation.to))
+                })
+                .map(|relation| (relation.from, relation.to))
+                .collect()
+        }))
+    }
+
+    async fn parents_touching(&self, issues: Vec<IssueId>) -> Result<Vec<IssueParent>, FakeError> {
+        Ok(self.read(|state| {
+            state
+                .parents
+                .iter()
+                .filter(|row| issues.contains(&row.child) || issues.contains(&row.parent))
+                .cloned()
+                .collect()
+        }))
+    }
+
     async fn issues_by_ids(&self, ids: &[IssueId]) -> Result<Vec<Issue>, FakeError> {
         Ok(self.read(|state| {
             state

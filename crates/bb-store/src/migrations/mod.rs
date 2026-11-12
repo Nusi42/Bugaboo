@@ -80,6 +80,7 @@ mod m0048_rules_hand_over;
 mod m0049_dates_and_date_effect;
 mod m0050_work_times;
 mod m0051_own_themes;
+mod m0052_time_factor_and_accepted_warnings;
 #[cfg(test)]
 mod old_rows;
 
@@ -432,6 +433,11 @@ const ALL: &[Definition] = &[
         version: 51,
         name: "own_themes",
         steps: || Ok(m0051_own_themes::steps()),
+    },
+    Definition {
+        version: 52,
+        name: "time_factor_and_accepted_warnings",
+        steps: || Ok(m0052_time_factor_and_accepted_warnings::steps()),
     },
 ];
 

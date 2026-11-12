@@ -110,11 +110,15 @@ const fn field_levels(field: Field) -> [FieldLevel; 7] {
         | Field::Labels
         | Field::PlannedForRelease => [C, C, C, S, S, S, H],
         Field::ReportedBy => [C, C, S, S, S, S, H],
+        // *Time factor*: *Can change* for Project lead and Team member, *Hidden* for Guest
+        // (ADR-0030, decision 4); the person on the bar may change it on their issue whatever this
+        // says.
         Field::StartDate
         | Field::DueDate
         | Field::EstimatedTime
         | Field::TimeLeft
-        | Field::TimeSpent => [C, C, C, S, S, H, H],
+        | Field::TimeSpent
+        | Field::TimeFactor => [C, C, C, S, S, H, H],
         Field::Tags => [C, C, C, C, S, S, H],
     }
 }

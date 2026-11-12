@@ -172,7 +172,6 @@ pub(crate) fn made_keys() -> Vec<Made> {
     for kind in NotificationKind::ALL {
         keys.push(made("the kind of notification", kind.code(), kind.label()));
     }
-    keys.extend(holiday_keys());
-    keys.extend(plan_keys());
+    keys.extend(holiday_keys().into_iter().chain(plan_keys()));
     keys
 }

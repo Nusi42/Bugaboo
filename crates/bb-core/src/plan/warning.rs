@@ -94,7 +94,8 @@ pub enum Delay {
 }
 
 /// A plan warning of one issue.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum Warning {
     /// The person on the bar is away on these days of a bar whose dates people set.
     Away {

@@ -27,4 +27,5 @@ pub use relate::{add_relation, remove_relation};
 pub use store::RelationStore;
 pub use types::*;
 
+pub(crate) use dependencies::effect_kinds;
 pub(crate) use lines::LineMaker;

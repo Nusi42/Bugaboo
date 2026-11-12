@@ -4,7 +4,7 @@
 
 use bb_core::access::AppliesTo;
 use bb_core::id::{GroupId, ProjectId, SavedSearchId};
-use bb_core::saved_search::{Column, Presentation, SearchSet, ShareTarget};
+use bb_core::saved_search::{Column, Presentation, SearchSet, ShareTarget, TimelineOptions};
 use bb_policy::StartingRole;
 
 use super::scenarios::{Added, a_project, measured, text, token};
@@ -34,6 +34,8 @@ pub(crate) fn a_presentation() -> Presentation {
             },
         ],
         group_by: Some("statusGroup".to_owned()),
+        // A search read back always names the options of its timeline.
+        timeline: Some(TimelineOptions::default()),
         ..Presentation::default()
     }
 }
@@ -302,7 +304,12 @@ pub(crate) async fn stop_sharing_search_scenario(world: &World) -> Added {
         .map_err(text)?;
     measured(
         &world.store,
-        unshare(world, &token(world), made.id, ShareTarget::Project(project)),
+        Box::pin(unshare(
+            world,
+            &token(world),
+            made.id,
+            ShareTarget::Project(project),
+        )),
     )
     .await
 }

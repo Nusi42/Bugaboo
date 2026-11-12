@@ -857,6 +857,9 @@ export const messages = {
   "editing.this-theme": "this theme",
   "theme-editor.preview": "Preview",
   "editing.is-editing-now": "{name} is editing {thing} right now",
+  "issue-field.time-factor": "Time factor",
+  "notification.kind.time-factor-changed": "Your time factor was changed",
+  "notifications.time-factor-changed": "{who} changed your time factor on this issue",
 } as const;
 
 register(messages);

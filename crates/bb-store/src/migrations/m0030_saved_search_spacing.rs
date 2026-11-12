@@ -27,7 +27,7 @@ mod tests {
     use bb_testing::{TestResult, each_database};
     use sea_query::{Expr, ExprTrait as _, Query};
 
-    use super::super::Database;
+    use super::super::{Database, latest_version};
     use crate::auth::AuthStorage;
     use crate::db::StoredId as _;
     use crate::schema::{Retired, SavedSearchRow};
@@ -54,7 +54,9 @@ mod tests {
                 .value(Retired::Spacing, "compact")
                 .and_where(Expr::val(1_i64).eq(0_i64));
             assert!(database.execute(&with_spacing).await.is_err());
-            // The search opens as it was, its maker and its text kept.
+            // The search opens as it was, its maker and its text kept, read as the program reads it
+            // now (with what the later migrations add).
+            database.migrate_until(latest_version(), at(2)).await?;
             let mut read = database.begin_read().await?;
             let kept = AuthStorage::saved_search_in(&mut read, id).await?;
             let kept = kept.ok_or("the saved search is gone")?;

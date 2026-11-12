@@ -173,6 +173,8 @@ pub(crate) struct State {
     pub(crate) usual_days: Vec<(UserId, bb_core::work_times::StoredUsualDays)>,
     pub(crate) shares: Vec<(UserId, ProjectId, bb_core::work_times::Share)>,
     pub(crate) away_times: Vec<bb_core::work_times::record::AwayTime>,
+    pub(crate) time_factors: Vec<bb_core::plan::record::IssueTimeFactor>,
+    pub(crate) accepted_warnings: Vec<bb_core::plan::record::AcceptedWarning>,
 }
 
 /// The state, what was recorded, and the failures a test asked for.

@@ -5,7 +5,7 @@
 use bb_core::ErrorCode;
 use bb_core::event::{DomainEvent, FieldChange, RecordKind};
 use bb_core::id::SavedSearchId;
-use bb_core::saved_search::{Presentation, SAVED_SEARCHES_MAX, SavedSearch, SearchColumn};
+use bb_core::saved_search::{Presentation, SAVED_SEARCHES_MAX, SavedSearch, SearchColumn, Zoom};
 use bb_core::version::{FIRST_VERSION, counted_up, next};
 use bb_policy::{Authorized, Permission, Place};
 use bb_searchlang::MAX_TEXT_BYTES;
@@ -138,18 +138,23 @@ impl<S: AuthStore> Ctx<'_, S> {
         let id = SavedSearchId::generate(&mut self.ids())
             .map_err(|error| AppError::Internal(error.to_string()))?;
         let now = self.now();
-        let search = SavedSearch {
+        let mut search = SavedSearch {
             id,
             name,
             text,
             maker: actor.person.id,
             view: presentation.view,
-            group_by: presentation.group_by.clone(),
+            group_by: None,
+            timeline_start: None,
+            timeline_end: None,
+            plan_by_effort: false,
+            zoom: Zoom::Week,
             created_at: now,
             updated_at: now,
             deleted_at: None,
             version: FIRST_VERSION,
         };
+        search.take_presentation(&presentation);
         let columns = presentation.rows(id);
         let event = self.event(
             by(actor.person.id),
@@ -320,8 +325,7 @@ pub async fn change_search<S: AuthStore>(
             .canonical_for(&actor, &reaching, text, &presentation)
             .await?;
     }
-    search.view = presentation.view;
-    search.group_by = presentation.group_by.clone();
+    search.take_presentation(&presentation);
     let columns = presentation.rows(search.id);
     let changes = events::changed((&before, &stored.columns), (&search, &columns));
     if changes.is_empty() {

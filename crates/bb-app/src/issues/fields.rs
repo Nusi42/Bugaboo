@@ -217,6 +217,12 @@ pub(crate) mod member {
     pub(crate) const TIME_LEFT: &str = Field::TimeLeft.code();
     pub(crate) const START_DATE: &str = Field::StartDate.code();
     pub(crate) const DUE_DATE: &str = Field::DueDate.code();
+    /// The time factor, in percent of the estimate; `null` for ×1.
+    pub(crate) const TIME_FACTOR: &str = Field::TimeFactor.code();
+    /// The person on the bar a change of the time factor is for: the one who hears of it.
+    pub(crate) const TIME_FACTOR_FOR: &str = "time-factor-for";
+    /// The kind of a plan warning somebody accepted (*Keep and accept*).
+    pub(crate) const ACCEPTED_WARNING: &str = "accepted-warning";
     pub(crate) const TAGS: &str = Field::Tags.code();
     pub(crate) const LABELS: &str = Field::Labels.code();
     pub(crate) const DELETED_AT: &str = "deleted-at";

@@ -19,7 +19,6 @@ use std::cell::Cell;
 use std::collections::BTreeMap;
 
 use axum::Router;
-use axum::http::Method;
 use axum::http::StatusCode;
 use bb_api::LimitsConfig;
 use bb_api::openapi::{Operation, operations};
@@ -71,7 +70,7 @@ fn expectation_when_held_in_some_project(actor: Actor, permission: Permission) -
 /// person (*My settings*), which a key reads and, if it may change, changes.
 fn keys_and_the_persons_own_data(actor: Actor, route: &Operation, example: &Example) -> Expect {
     if example.has(Quirk::KeysActAsThePerson) {
-        return if route.method == Method::GET || actor.key_may_change() {
+        return if route.reads() || actor.key_may_change() {
             Expect::Allowed
         } else {
             Expect::Forbidden
