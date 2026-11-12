@@ -11,14 +11,13 @@ use axum::extract::State;
 use axum::http::{HeaderValue, StatusCode, header};
 use axum::response::{IntoResponse as _, Response};
 use bb_app::themes::{ThemeSheet, ThemeSheetQuery};
-use bb_core::ErrorCode;
 use bb_core::id::ThemeId;
 use serde::Deserialize;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
+use super::theme_named;
 use crate::api::auth::{AuthHandle, Info, NotFoundAnswer, NotSignedInAnswer, Session};
-use crate::api::path_id;
 use crate::errors::{ApiError, ApiPath, ApiQuery};
 
 /// Where the style sheets of own themes are.
@@ -80,16 +79,20 @@ async fn get_theme_sheet(
     ApiPath(file): ApiPath<String>,
     ApiQuery(params): ApiQuery<SheetParams>,
 ) -> Result<Response, ApiError> {
-    let theme = file
-        .strip_suffix(SHEET_ENDING)
-        .ok_or_else(|| ApiError::new(ErrorCode::NotFound))?;
+    let theme = theme_named(
+        &auth,
+        &info,
+        &session_token,
+        file.strip_suffix(SHEET_ENDING).unwrap_or_default(),
+    )
+    .await?;
     let sheet = auth
         .api()?
         .theme_sheet(
             info,
             ThemeSheetQuery {
                 session_token,
-                theme: path_id::<ThemeId>(theme)?,
+                theme,
             },
         )
         .await?;
@@ -113,13 +116,14 @@ async fn get_theme_draft_sheet(
     ApiPath(theme): ApiPath<String>,
     ApiQuery(params): ApiQuery<SheetParams>,
 ) -> Result<Response, ApiError> {
+    let theme = theme_named(&auth, &info, &session_token, &theme).await?;
     let sheet = auth
         .api()?
         .theme_draft_sheet(
             info,
             ThemeSheetQuery {
                 session_token,
-                theme: path_id::<ThemeId>(&theme)?,
+                theme,
             },
         )
         .await?;

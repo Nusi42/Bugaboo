@@ -27,11 +27,17 @@ use super::status::app_with_probe;
 /// the records, and what it may be kept as is proven with the downloads (`files_http`).
 const SIGNED_DOWNLOAD: &str = "/api/v1/files/{file}";
 
-/// The addresses of every `GET` route in the API description, except the signed download.
+/// The addresses of every `GET` route in the API description, except the signed download and the
+/// style sheets of own themes: those are no API answers, their address names their version, and
+/// what they may be kept as is proven with the sheets (`themes_http`).
 fn get_routes() -> Vec<String> {
     operations()
         .iter()
-        .filter(|operation| operation.method == Method::GET && operation.path != SIGNED_DOWNLOAD)
+        .filter(|operation| {
+            operation.method == Method::GET
+                && operation.path != SIGNED_DOWNLOAD
+                && operation.path.starts_with(bb_api::VERSION_PATH)
+        })
         .map(|operation| operation.path.clone())
         .collect()
 }
@@ -225,6 +231,21 @@ async fn a_saved_search(ada: &mut Browser) -> Result<String, Failure> {
     )
 }
 
+/// A personal theme of the person, saved (an upload is saved at once).
+async fn a_theme(ada: &mut Browser) -> Result<String, Failure> {
+    let uploaded = ada
+        .send(
+            "POST",
+            "/api/v1/themes/upload?kind=personal",
+            Some(json!({"name": "Evening", "extends": "dusk", "values": {}})),
+        )
+        .await?;
+    Ok(uploaded.body["theme"]["id"]
+        .as_str()
+        .ok_or("no theme")?
+        .to_owned())
+}
+
 async fn an_agent(ada: &mut Browser) -> Result<String, Failure> {
     id_of(
         &ada.send("POST", "/api/v1/agents", Some(json!({"name": "Fixer"})))
@@ -296,6 +317,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
         let upload_id = an_upload_on(&mut ada, &readable_id).await?;
         let search_id = a_saved_search(&mut ada).await?;
         let agent_id = an_agent(&mut ada).await?;
+        let theme_id = a_theme(&mut ada).await?;
         // A work day of the person, for the routes that name a date, and an app.
         let app_query = a_work_day_and_an_app(&rig, &mut ada).await?;
         let routes = get_routes();
@@ -323,6 +345,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
                 .replace("{upload}", &upload_id)
                 .replace("{search}", &search_id)
                 .replace("{agent}", &agent_id)
+                .replace("{theme}", &theme_id)
                 .replace("{date}", "2027-01-14")
                 .replace("{project}", project);
             let filled = with_query(template, &filled, (project, &project_id), &app_query);

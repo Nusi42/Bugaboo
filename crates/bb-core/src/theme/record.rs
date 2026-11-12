@@ -14,7 +14,7 @@ words! {
     /// Whether an own theme is for everyone or personal.
     pub enum ThemeKind {
         /// *For everyone*: every signed-in person of the organization can use it.
-        ForEveryone => "for_everyone",
+        ForEveryone => "for-everyone",
         /// *Personal*: only the person who made it can use it.
         Personal => "personal",
     }

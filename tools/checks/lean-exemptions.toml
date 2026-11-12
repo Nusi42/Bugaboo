@@ -416,3 +416,14 @@ reason = "The agents handed to one person who have not accepted them yet are few
 route = "GET /api/v1/me/agents/work"
 property = "rules"
 reason = "The standing rules of a person's own agents are read whole for one screen, at most 200 (M7-F223)."
+
+[[exempt]]
+route = "GET /api/v1/themes"
+property = "themes"
+reason = "The own themes a person may choose: at most the themes for everyone and the personal themes of one person, both named limits (THEMES_FOR_EVERYONE_MOST, PERSONAL_THEMES_MOST); the list has that hard cap and says when it was cut, and a picker needs all of them at once (THM-04)."
+
+[[exempt]]
+route = "GET /api/v1/themes/{theme}"
+property = "hard_to_read"
+whole_value = true
+reason = "The pairs of one theme that are hard to read: at most the pairs of the contrast rules of the base theme file, a list bounded by the code and not by data, which the warning names all at once (THM-03)."

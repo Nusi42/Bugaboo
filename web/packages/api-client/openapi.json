@@ -30831,7 +30831,7 @@
       "ThemeKind": {
         "type": "string",
         "description": "Whether an own theme is for everyone in the organization or personal to the person who made it.",
-        "enum": ["for_everyone", "personal"]
+        "enum": ["for-everyone", "personal"]
       },
       "ThemeListBody": {
         "type": "object",

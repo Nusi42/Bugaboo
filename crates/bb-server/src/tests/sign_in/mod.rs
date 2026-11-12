@@ -69,6 +69,7 @@ mod my_agents_statements;
 mod notifications_http;
 mod offers_http;
 mod rules_hand_over_http;
+mod themes_http;
 // The permission matrix (SEC-MATRIX, WP-10) lives in `tests/matrix` and uses the server and the
 // browser of these tests.
 mod list_labels_http;

@@ -10,6 +10,7 @@
 use axum::body::Bytes;
 use axum::extract::State;
 use axum::response::Response;
+use bb_app::auth::RequestInfo;
 use bb_app::themes::{
     CopyTheme, CreateTheme, DeleteTheme, SaveTheme, ThemeDetail, ThemeExport, ThemeList,
     ThemeQuery, ThemeView, ThemesQuery, UploadTheme,
@@ -33,6 +34,18 @@ use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 mod sheets;
 
 pub(crate) use sheets::{sheet_address, sheet_routes};
+
+/// The theme an address names. A text that names none is answered after who asks is known, so an
+/// access key is turned away as a key before it learns anything about the address.
+pub(crate) async fn theme_named(
+    auth: &AuthHandle,
+    info: &RequestInfo,
+    session_token: &str,
+    text: &str,
+) -> Result<ThemeId, ApiError> {
+    auth.after_who_asks(info, session_token, path_id::<ThemeId>(text))
+        .await
+}
 
 /// The most themes a person can be offered: every theme for everyone and all of their own.
 const THEMES_LISTED_MOST: usize = THEMES_FOR_EVERYONE_MOST + PERSONAL_THEMES_MOST;
@@ -265,13 +278,14 @@ async fn get_theme(
     Session(session_token): Session,
     ApiPath(theme): ApiPath<String>,
 ) -> Result<Response, ApiError> {
+    let theme = theme_named(&auth, &info, &session_token, &theme).await?;
     let detail = auth
         .api()?
         .theme(
             info,
             ThemeQuery {
                 session_token,
-                theme: path_id::<ThemeId>(&theme)?,
+                theme,
             },
         )
         .await?;
@@ -297,13 +311,14 @@ async fn save_theme(
     ApiPath(theme): ApiPath<String>,
     ApiJson(body): ApiJson<SaveThemeBody>,
 ) -> Result<Response, ApiError> {
+    let theme = theme_named(&auth, &info, &session_token, &theme).await?;
     let detail = auth
         .api()?
         .save_theme(
             info,
             SaveTheme {
                 session_token,
-                theme: path_id::<ThemeId>(&theme)?,
+                theme,
                 name: body.name,
                 values: body.values,
                 version: body.version,
@@ -330,12 +345,13 @@ async fn delete_theme(
     ApiPath(theme): ApiPath<String>,
     ApiQuery(params): ApiQuery<DeleteThemeParams>,
 ) -> Result<Response, ApiError> {
+    let theme = theme_named(&auth, &info, &session_token, &theme).await?;
     auth.api()?
         .delete_theme(
             info,
             DeleteTheme {
                 session_token,
-                theme: path_id::<ThemeId>(&theme)?,
+                theme,
                 version: params.version,
             },
         )
@@ -360,13 +376,14 @@ async fn copy_theme(
     ApiPath(theme): ApiPath<String>,
     ApiJson(body): ApiJson<CopyThemeBody>,
 ) -> Result<Response, ApiError> {
+    let theme = theme_named(&auth, &info, &session_token, &theme).await?;
     let detail = auth
         .api()?
         .copy_theme(
             info,
             CopyTheme {
                 session_token,
-                theme: path_id::<ThemeId>(&theme)?,
+                theme,
                 name: body.name,
                 kind: body.kind,
             },
@@ -390,13 +407,14 @@ async fn download_theme(
     Session(session_token): Session,
     ApiPath(theme): ApiPath<String>,
 ) -> Result<Response, ApiError> {
+    let theme = theme_named(&auth, &info, &session_token, &theme).await?;
     let file: bb_policy::Authorized<ThemeExport> = auth
         .api()?
         .download_theme(
             info,
             ThemeQuery {
                 session_token,
-                theme: path_id::<ThemeId>(&theme)?,
+                theme,
             },
         )
         .await?;

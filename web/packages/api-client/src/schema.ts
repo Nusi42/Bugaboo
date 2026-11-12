@@ -11193,7 +11193,7 @@ export interface components {
      * @description Whether an own theme is for everyone in the organization or personal to the person who made it.
      * @enum {string}
      */
-    ThemeKind: "for_everyone" | "personal";
+    ThemeKind: "for-everyone" | "personal";
     /** @description The own themes a person may use. */
     ThemeListBody: {
       /** @description The themes for everyone and the person's own personal themes, by name. */

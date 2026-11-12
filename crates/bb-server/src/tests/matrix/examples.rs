@@ -63,12 +63,14 @@ impl Example {
         })
     }
 
-    /// The permission a person needs in the whole organization for a route that judges the
-    /// record it names, if the row says so.
-    pub(super) fn organization_permission(&self) -> Option<Permission> {
-        self.quirks.iter().find_map(|quirk| match quirk {
-            Quirk::AtTheOrganization(permission) => Some(*permission),
-            _ => None,
+    /// The permission a person needs for a route that judges the record it names: on the target
+    /// project, or in the whole organization, if the row says so.
+    pub(super) fn permission_on_the_record(&self) -> Option<Permission> {
+        self.record_permission().or_else(|| {
+            self.quirks.iter().find_map(|quirk| match quirk {
+                Quirk::AtTheOrganization(permission) => Some(*permission),
+                _ => None,
+            })
         })
     }
 

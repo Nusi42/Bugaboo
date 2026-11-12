@@ -13,6 +13,7 @@ mod agent_work;
 mod agents;
 mod issues;
 mod labels;
+mod themes;
 mod time;
 
 use super::fields_http::FIELDS;
@@ -24,7 +25,7 @@ use super::layouts_http::{AN_EDITOR, LAYOUTS, LOCKS, customize};
 const AHEAD: i64 = 50;
 
 /// The routes of the API description that take a `version`, by operation ID: the rows of the table.
-const VERSIONED: [&str; 52] = [
+const VERSIONED: [&str; 54] = [
     "deleteIssue",
     "deleteComment",
     "answerAgentQuestion",
@@ -61,6 +62,8 @@ const VERSIONED: [&str; 52] = [
     "combineLabels",
     "saveLayout",
     "deleteLayout",
+    "saveTheme",
+    "deleteTheme",
     "publishWorkflow",
     "deleteWorkflow",
     "setFieldNeverSentToAi",
@@ -153,6 +156,7 @@ async fn prepare(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<Save, F
         | "changeTag"
         | "combineTags" => labels::prepare(id, site, ada).await,
         "saveLayout" | "deleteLayout" => prepare_layout(id, ada).await,
+        "saveTheme" | "deleteTheme" => themes::prepare(id, ada).await,
         "publishWorkflow" | "deleteWorkflow" => prepare_workflow(id, ada).await,
         "changeProject" | "changeRelationKind" | "changeRole" | "resetRole" => {
             prepare_records(id, ada).await
