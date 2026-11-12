@@ -19,7 +19,7 @@ Status: **Accepted** · 2026-10-13
 
 - The first page carries the texts of the shell, sign-in, setup and errors shown anywhere, plus the texts of the features that the first page itself loads. A feature that is loaded lazily brings its texts in its own chunk; the texts of the rest of M3 and beyond land there too.
 - `cargo xtask gen messages` now reads the code of `web/` as well as the catalog. DOC-GENERATED fails when a change of code moves a key, and `gen messages` fixes it.
-- A feature that the first page loads statically (today `account`, `shell`, `sign-in`, `home`) keeps its texts on the first page. Making such a feature lazy moves its texts with it.
+- A feature that the first page loads statically (today `shell`, `sign-in`, `home`; `account` became lazy in M8, when the page that sets up the second step started to load it on first use) keeps its texts on the first page. Making such a feature lazy moves its texts with it.
 - A text that two lazy features show is on the first page. That is cheap for common words and a reason to name such a text once in shared code.
 
 ## Alternatives considered
