@@ -5155,7 +5155,6 @@ part "theme-shadow.legend" {
     color "$fg"
 }
 
-// The line that sums the readability up; it stays on top on a phone while the groups scroll under it.
 // The verdict of the readability; it stays on top while the groups scroll under it. After a refused save it is the
 // refusal, in the look of an alert of danger.
 part "theme-readability" {
@@ -5179,13 +5178,13 @@ part "theme-readability[state=refused]" {
     background "$danger-soft"
 }
 
-// The colors that are hard to read, under the verdict; they scroll with the page.
 // Words that name one place (*My settings › Appearance*) and never break apart inside a sentence: kept together by the
 // screen, not by a no-break space in the text (UX-07).
 part "kept-together" {
     white-space nowrap
 }
 
+// The colors that are hard to read, under the verdict; they scroll with the page.
 part "theme-readability-list" {
     use "list-reset"
     display flex

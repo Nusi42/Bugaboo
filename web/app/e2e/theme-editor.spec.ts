@@ -67,6 +67,7 @@ test("thm_03_a_theme_for_everyone_that_is_hard_to_read_cannot_be_saved_until_fix
   await page.getByRole("button", { name: t("theme-editor.save"), exact: true }).click();
   // Nothing went to the server: the cursor goes to the readability, which names what to change.
   await expect(readabilityLine(page)).toBeFocused();
+  await expect(readabilityLine(page)).toHaveAttribute("data-state", "refused");
   await expect(hardColors(page)).toContainText(t("theme-color.fg-subtle"));
   expect((await onlyThemeOf(server, ada)).theme.saved).toBe(false);
   // Change puts the cursor in the color to mend; once it reads well, the theme is saved.
@@ -80,6 +81,11 @@ test("thm_03_a_theme_for_everyone_that_is_hard_to_read_cannot_be_saved_until_fix
   await expect(readabilityLine(page)).not.toContainText(
     t("theme-editor.readability-fix", { count: 1 }),
   );
+  // The refusal ends with the colors it named: a color hard to read again is not refused before a save.
+  await typeHint(page, UNREADABLE);
+  await expect(readabilityLine(page)).toHaveAttribute("data-state", "hard");
+  await typeHint(page, READABLE);
+  await expect(readabilityLine(page)).not.toHaveAttribute("data-state");
   await page.getByRole("button", { name: t("theme-editor.save"), exact: true }).click();
   await expect.poll(async () => (await onlyThemeOf(server, ada)).theme.saved).toBe(true);
 });

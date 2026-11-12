@@ -51,6 +51,11 @@ export function useThemeEditing(detail: Schema<"ThemeDetailBody">, lock: EditLoc
     () => reader?.(theme.extends, values) ?? null,
     [reader, theme.extends, values],
   );
+  // A refusal holds until the colors it named read well; a later color that is hard to read is
+  // not refused again until the next save.
+  if (refused && read !== null && read.hard_colors.length === 0) {
+    setRefused(false);
+  }
   const shown = useShownColors();
   const kept = useKeptDraft(theme.id, detail.values, setValues);
   return {
@@ -64,7 +69,7 @@ export function useThemeEditing(detail: Schema<"ThemeDetailBody">, lock: EditLoc
     read,
     accepts: (next) => reader !== undefined && reader(theme.extends, next) !== null,
     hardCount: read?.hard_colors.length ?? 0,
-    refused: refused && (read?.hard_colors.length ?? 0) > 0,
+    refused,
     refuse: () => {
       setRefused(true);
     },

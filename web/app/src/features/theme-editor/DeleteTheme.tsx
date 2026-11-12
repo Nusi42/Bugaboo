@@ -1,9 +1,8 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, AskDialog, Button, buttonLook } from "@bugaboo/ui";
+import { AskDialog, Button, buttonLook } from "@bugaboo/ui";
 import { useState } from "react";
 
-import { messageOf } from "../../shared/errors.ts";
 import { startsFromName } from "./theme-facts.ts";
 import { useDeleteTheme, useThemeDetail } from "./themes.ts";
 
@@ -28,8 +27,17 @@ function useQuestionText(theme: Schema<"ThemeBody">, asking: boolean): string {
     : t("theme-editor.delete-used", { count: people, theme: instead });
 }
 
-/** *Delete* of an own theme, after a question; a choice of it counts as the built-in theme it extended. */
-export function DeleteTheme({ theme }: { readonly theme: Schema<"ThemeBody"> }) {
+/**
+ * *Delete* of an own theme, after a question; a choice of it counts as the built-in theme it
+ * extended. A delete that does not work is told under the row, like a copy or a download.
+ */
+export function DeleteTheme({
+  theme,
+  onFailed,
+}: {
+  readonly theme: Schema<"ThemeBody">;
+  readonly onFailed: (failure: unknown) => void;
+}) {
   const [asking, setAsking] = useState(false);
   const remove = useDeleteTheme();
   const text = useQuestionText(theme, asking);
@@ -53,12 +61,13 @@ export function DeleteTheme({ theme }: { readonly theme: Schema<"ThemeBody"> }) 
         cancelLabel={t("common.cancel")}
         confirmLook={buttonLook.danger}
         onConfirm={() => {
-          remove.mutate({
-            params: { path: { theme: theme.id }, query: { version: theme.version } },
-          });
+          onFailed(null);
+          remove.mutate(
+            { params: { path: { theme: theme.id }, query: { version: theme.version } } },
+            { onError: onFailed },
+          );
         }}
       />
-      {remove.isError ? <Alert tone={alertTone.danger}>{messageOf(remove.error)}</Alert> : null}
     </>
   );
 }

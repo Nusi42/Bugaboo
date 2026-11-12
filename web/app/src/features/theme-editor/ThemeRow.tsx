@@ -39,7 +39,7 @@ export function ThemeRow({ theme }: { readonly theme: Schema<"ThemeBody"> }) {
           </Link>
         ) : null}
         <ThemeActions theme={theme} look={buttonLook.plain} onFailed={setFailure} />
-        {theme.may_change ? <DeleteTheme theme={theme} /> : null}
+        {theme.may_change ? <DeleteTheme theme={theme} onFailed={setFailure} /> : null}
       </div>
       <ActionFailure failure={failure} />
     </li>

@@ -10,7 +10,7 @@ import { useOwnThemes } from "./themes.ts";
 import { UploadTheme } from "./UploadTheme.tsx";
 
 /** Stands for the place in the introduction while its words are cut around it; never shown. */
-const PLACE_MARK = "";
+const PLACE_MARK = "\u0001";
 
 /** The introduction of *Themes for everyone*, with the place to choose them kept on one line. */
 function everyoneIntro(): ReactNode {
