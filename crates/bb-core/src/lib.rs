@@ -16,6 +16,7 @@ pub mod agent_work;
 pub mod ai;
 pub mod app_paths;
 pub mod comment;
+pub mod contrast;
 pub mod edit;
 pub mod entities;
 pub mod error_code;

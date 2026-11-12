@@ -487,7 +487,13 @@ impl ThemeFile {
                 color.name
             );
         }
-        spec.check_exclusions()
+        if let Some(exclusion) = spec.stale_exclusion() {
+            bail!(
+                "a contrast exclusion matches no color: {:?}",
+                exclusion.text
+            );
+        }
+        Ok(())
     }
 
     /// Every `$token` and every `use` names something that is defined.

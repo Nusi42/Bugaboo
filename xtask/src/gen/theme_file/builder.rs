@@ -2,6 +2,7 @@
 
 use super::themes::{BASE_THEME, MORE, same_more, theme_value};
 use super::*;
+use crate::generate::contrast_spec;
 
 #[derive(Default)]
 pub(super) struct Builder {
@@ -50,8 +51,8 @@ impl Builder {
                     self.tokens.push(token);
                 }
             }
-            "contrast" => self.contrast = Some(ContrastSpec::parse(node)?),
-            "distinct" => self.distinct.push(DistinctSpec::parse(node)?),
+            "contrast" => self.contrast = Some(contrast_spec::contrast(node)?),
+            "distinct" => self.distinct.push(contrast_spec::distinct(node)?),
             "bold" => self.bold = Some(BoldSpec::parse(node)?),
             "mixin" => {
                 let name = node.only_arg()?;
