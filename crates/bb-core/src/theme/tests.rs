@@ -77,7 +77,7 @@ fn thm_04_a_value_outside_its_kind_or_an_unknown_token_is_refused() {
             r##"{"colors":{"no-such-token":{"value":"#112233"}}}"##.to_owned(),
             "no-such-token",
         ),
-        (r##"{"colors":{"fg":{"value":"red"}}}"##.to_owned(), "fg"),
+        (r#"{"colors":{"fg":{"value":"red"}}}"#.to_owned(), "fg"),
         (r##"{"colors":{"fg":{"value":"#fff"}}}"##.to_owned(), "fg"),
         (
             r##"{"colors":{"fg":{"value":"#112233","more":"#112233"}}}"##.to_owned(),
@@ -98,7 +98,7 @@ fn thm_04_a_value_outside_its_kind_or_an_unknown_token_is_refused() {
             "font-mono",
         ),
         (
-            r##"{"shadow":[{"x":0,"y":1,"blur":2,"spread":0,"color":"red"}]}"##.to_owned(),
+            r#"{"shadow":[{"x":0,"y":1,"blur":2,"spread":0,"color":"red"}]}"#.to_owned(),
             "shadow",
         ),
         (three, "shadow"),

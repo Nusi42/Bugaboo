@@ -49,23 +49,22 @@ impl OwnColors {
 fn value_of(extends: &BuiltIn, values: &OwnValues, name: &str, mode: Mode) -> Option<String> {
     let mut current = name;
     for _ in 0..=color_tokens().count() {
-        let value = match values.colors.get(current) {
-            Some(own) => match mode {
+        let value = if let Some(own) = values.colors.get(current) {
+            match mode {
                 Mode::Usual => own.value.as_str(),
                 Mode::MoreContrast => own.more.as_deref().unwrap_or(&own.value),
-            },
-            None => {
-                let base = extends.color(current)?;
-                match mode {
-                    Mode::Usual => base.value,
-                    Mode::MoreContrast => base.more.unwrap_or(base.value),
-                }
+            }
+        } else {
+            let base = extends.color(current)?;
+            match mode {
+                Mode::Usual => base.value,
+                Mode::MoreContrast => base.more.unwrap_or(base.value),
             }
         };
-        match value.strip_prefix('$') {
-            None => return Some(value.to_ascii_lowercase()),
-            Some(next) => current = next,
-        }
+        let Some(next) = value.strip_prefix('$') else {
+            return Some(value.to_ascii_lowercase());
+        };
+        current = next;
     }
     None
 }

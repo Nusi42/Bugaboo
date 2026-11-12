@@ -109,8 +109,9 @@ mod tests {
 
     #[test]
     fn a_color_fades_toward_the_color_behind_it() {
-        assert_eq!(fade("#000000", "#ffffff", 0.5), [127.5; 3]);
-        assert_eq!(fade("#336699", "#ffffff", 1.0), channels("#336699"));
+        let close = |a: [f64; 3], b: [f64; 3]| a.iter().zip(b).all(|(x, y)| (x - y).abs() < 1e-9);
+        assert!(close(fade("#000000", "#ffffff", 0.5), [127.5; 3]));
+        assert!(close(fade("#336699", "#ffffff", 1.0), channels("#336699")));
     }
 
     #[test]
