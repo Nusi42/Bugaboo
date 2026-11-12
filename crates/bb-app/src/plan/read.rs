@@ -17,8 +17,8 @@ use bb_core::fields::{ASSIGNED_TO_PEOPLE, Field, word_key};
 use bb_core::id::{IssueId, UserId};
 use bb_core::issue::Issue;
 use bb_core::people_kinds::PeopleKind;
+use bb_core::plan::Days;
 use bb_core::plan::warning::Warning;
-use bb_core::plan::{Days, TIMELINE_ROWS_MOST};
 use bb_core::saved_search::TimelineOptions;
 use bb_policy::{Authorized, Evaluation, PeopleContext, PersonRef, Place as Where};
 use bb_searchlang::{Expr, FieldRef, Span, Test};
@@ -503,15 +503,12 @@ pub async fn timeline<S: AuthStore + SearchStore>(
         Some(word) => group_target(&prepared.looked, word)?,
         None => None,
     };
-    let limit = query
-        .limit
-        .min(u32::try_from(TIMELINE_ROWS_MOST).unwrap_or(u32::MAX));
     let found = ctx
         .issues_page(
             &actor,
             &mut prepared,
             query.cursor.as_deref(),
-            limit,
+            query.limit,
             ReadOnRequest {
                 people: true,
                 labels: false,

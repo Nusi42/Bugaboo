@@ -59,17 +59,31 @@ pub(crate) struct ListParams {
     limit: Option<u32>,
 }
 
+/// The page size as the API description says it, from `bb_core::paging`: the one schema of every
+/// `limit`, whether a list takes it in its query or in its body.
+pub(crate) fn page_limit_schema() -> Object {
+    ObjectBuilder::new()
+        .schema_type(Type::Integer)
+        .minimum(Some(1))
+        .maximum(Some(PAGE_SIZE_MAX))
+        .description(Some(page_limit_text()))
+        .build()
+}
+
+/// What the page size says.
+fn page_limit_text() -> String {
+    format!(
+        "How many items a page holds at most (default {PAGE_SIZE_DEFAULT}, at most {PAGE_SIZE_MAX})."
+    )
+}
+
 /// The parameters as the API description says them. The numbers come from `bb_core::paging`, so
 /// the text can never say something else than the server does.
 impl IntoParams for ListParams {
     fn into_params(parameter_in_provider: impl Fn() -> Option<ParameterIn>) -> Vec<Parameter> {
         let place = parameter_in_provider().unwrap_or(ParameterIn::Query);
         let text = ObjectBuilder::new().schema_type(Type::String).build();
-        let count = ObjectBuilder::new()
-            .schema_type(Type::Integer)
-            .minimum(Some(1))
-            .maximum(Some(PAGE_SIZE_MAX))
-            .build();
+        let count = page_limit_schema();
         let parameter = |name: &str, description: String, schema: Object| {
             ParameterBuilder::new()
                 .name(name)
@@ -89,13 +103,7 @@ impl IntoParams for ListParams {
                 format!("Where the page starts: the `{NEXT_CURSOR}` of the page before."),
                 text,
             ),
-            parameter(
-                LIMIT,
-                format!(
-                    "How many items a page holds at most (default {PAGE_SIZE_DEFAULT}, at most {PAGE_SIZE_MAX})."
-                ),
-                count,
-            ),
+            parameter(LIMIT, page_limit_text(), count),
         ]
     }
 }

@@ -23,11 +23,12 @@ fn columns_json(columns: &[SearchColumn]) -> Value {
 
 /// The options of the timeline as one value of an event.
 fn timeline_json(search: &SavedSearch) -> Value {
+    let (start, end) = search.timeline.dates.clone().unzip();
     json!({
-        "start": search.timeline_start,
-        "end": search.timeline_end,
-        "plan_by_effort": search.plan_by_effort,
-        "zoom": search.zoom.code(),
+        "start": start,
+        "end": end,
+        "plan_by_effort": search.timeline.plan_by_effort,
+        "zoom": search.timeline.zoom.code(),
     })
 }
 

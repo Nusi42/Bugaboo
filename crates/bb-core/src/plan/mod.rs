@@ -23,9 +23,5 @@ pub mod warning;
 pub use days::Days;
 pub use factor::{TIME_FACTOR_PERCENT_RANGE, TimeFactor};
 
-/// The most rows one page of the timeline holds: a screen shows far fewer, and the plan of a page
-/// is worked out within the budget of timeline data (PERF-01).
-pub const TIMELINE_ROWS_MOST: usize = 200;
-
 #[cfg(test)]
 mod tests;

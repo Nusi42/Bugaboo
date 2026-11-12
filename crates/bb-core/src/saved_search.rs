@@ -173,14 +173,7 @@ impl Presentation {
                 })
                 .collect(),
             group_by: search.group_by.clone(),
-            timeline: Some(TimelineOptions {
-                dates: search
-                    .timeline_start
-                    .clone()
-                    .zip(search.timeline_end.clone()),
-                plan_by_effort: search.plan_by_effort,
-                zoom: search.zoom,
-            }),
+            timeline: Some(search.timeline.clone()),
         }
     }
 
@@ -239,19 +232,10 @@ pub struct SavedSearch {
     /// The field the rows are grouped by, by its search word.
     #[personal(category = "content", basis = "legitimate_interests")]
     pub group_by: Option<String>,
-    /// The date field a timeline starts its bars from, by its search word; none for *Start date*.
-    /// It can be the name of an own field, which a person wrote.
+    /// The options of the timeline. Its date fields are named by their search words, which can be
+    /// the names of own fields, which a person wrote.
     #[personal(category = "content", basis = "legitimate_interests")]
-    pub timeline_start: Option<String>,
-    /// The date field a timeline ends its bars at, by its search word; none for *Due date*.
-    #[personal(category = "content", basis = "legitimate_interests")]
-    pub timeline_end: Option<String>,
-    /// Whether the timeline plans by effort.
-    #[not_personal]
-    pub plan_by_effort: bool,
-    /// The zoom of the timeline.
-    #[not_personal]
-    pub zoom: Zoom,
+    pub timeline: TimelineOptions,
     /// When it was made.
     #[not_personal]
     pub created_at: Timestamp,
@@ -274,11 +258,7 @@ impl SavedSearch {
         self.view = presentation.view;
         self.group_by.clone_from(&presentation.group_by);
         if let Some(timeline) = &presentation.timeline {
-            let (start, end) = timeline.dates.clone().unzip();
-            self.timeline_start = start;
-            self.timeline_end = end;
-            self.plan_by_effort = timeline.plan_by_effort;
-            self.zoom = timeline.zoom;
+            self.timeline.clone_from(timeline);
         }
     }
 }
@@ -456,10 +436,7 @@ mod tests {
             maker: UserId::generate(&mut ids),
             view: presentation.view,
             group_by: presentation.group_by.clone(),
-            timeline_start: None,
-            timeline_end: None,
-            plan_by_effort: false,
-            zoom: Zoom::Week,
+            timeline: TimelineOptions::default(),
             created_at: Timestamp::UNIX_EPOCH,
             updated_at: Timestamp::UNIX_EPOCH,
             deleted_at: None,

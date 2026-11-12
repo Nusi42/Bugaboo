@@ -243,6 +243,29 @@ impl DependencyGraph {
         self.waiting_for.get(&issue).map_or(&[], Vec::as_slice)
     }
 
+    /// The issues that wait for `start` over any number of steps, `start` first, in the order of a
+    /// walk by steps: each once, and only through issues `through` lets the walk pass (an issue it
+    /// refuses is neither answered nor walked past). Lazy, so a caller that needs only so many
+    /// stops the walk there. The one walk forward along dependencies: *Move it after* and its
+    /// preview both take it.
+    pub fn waiting_from<'a>(
+        &'a self,
+        start: IssueId,
+        through: impl Fn(IssueId) -> bool + 'a,
+    ) -> impl Iterator<Item = IssueId> + 'a {
+        let mut seen: HashSet<IssueId> = HashSet::new();
+        let mut queue = VecDeque::from([start]);
+        std::iter::from_fn(move || {
+            while let Some(at) = queue.pop_front() {
+                if through(at) && seen.insert(at) {
+                    queue.extend(self.waiting(at).iter().copied());
+                    return Some(at);
+                }
+            }
+            None
+        })
+    }
+
     /// The shortest way from `start` to `goal`, both ends included; `None` when the issues that wait
     /// for `start`, over any number of steps, never include `goal`. The one walk of the loop check:
     /// making a dependency and giving a kind a date effect both use it, and the plan of the timeline

@@ -53,16 +53,7 @@ impl NewIssue {
 
     /// The rows of the people the issue is assigned to.
     fn people(&self) -> Vec<AssignedPerson> {
-        self.assigned_people
-            .iter()
-            .zip(0_i64..)
-            .map(|(person, position)| AssignedPerson {
-                issue: self.issue.id,
-                person: *person,
-                added_at: self.issue.created_at,
-                position,
-            })
-            .collect()
+        bb_core::issue::assigned_rows(self.issue.id, &self.assigned_people, self.issue.created_at)
     }
 }
 

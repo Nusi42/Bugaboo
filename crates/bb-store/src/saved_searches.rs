@@ -5,8 +5,8 @@ use bb_app::saved_searches::{Reach, SavedSearchStore};
 use bb_core::id::{GroupId, ProjectId, SavedSearchId, UserId};
 use bb_core::person::Person;
 use bb_core::saved_search::{
-    ProjectDefaultList, SavedSearch, SearchColumn, SearchShare, ShareKind, ShareTarget, ViewKind,
-    Zoom,
+    ProjectDefaultList, SavedSearch, SearchColumn, SearchShare, ShareKind, ShareTarget,
+    TimelineOptions, ViewKind, Zoom,
 };
 use jiff::Timestamp;
 use sea_query::{Cond, Expr, ExprTrait as _, Order, Query, SelectStatement};
@@ -52,16 +52,34 @@ fn read_search(row: &Row) -> Result<SavedSearch, StoreError> {
         view: ViewKind::from_code(&row.get::<String>(SavedSearchRow::View)?)
             .ok_or(StoreError::Corrupt("a kind of view"))?,
         group_by: row.get(SavedSearchRow::GroupBy)?,
-        timeline_start: row.get(SavedSearchRow::TimelineStart)?,
-        timeline_end: row.get(SavedSearchRow::TimelineEnd)?,
-        plan_by_effort: row.get(SavedSearchRow::PlanByEffort)?,
-        zoom: Zoom::from_code(&row.get::<String>(SavedSearchRow::Zoom)?)
-            .ok_or(StoreError::Corrupt("a zoom"))?,
+        timeline: TimelineOptions {
+            dates: row
+                .get::<Option<String>>(SavedSearchRow::TimelineStart)?
+                .zip(row.get::<Option<String>>(SavedSearchRow::TimelineEnd)?),
+            plan_by_effort: row.get(SavedSearchRow::PlanByEffort)?,
+            zoom: Zoom::from_code(&row.get::<String>(SavedSearchRow::Zoom)?)
+                .ok_or(StoreError::Corrupt("a zoom"))?,
+        },
         created_at: row.time(SavedSearchRow::CreatedAt)?,
         updated_at: row.time(SavedSearchRow::UpdatedAt)?,
         deleted_at: row.optional_time(SavedSearchRow::DeletedAt)?,
         version: row.get(SavedSearchRow::Version)?,
     })
+}
+
+/// The date field the timeline of a search starts its bars from, as it is kept: none for *Start
+/// date*.
+fn timeline_start(search: &SavedSearch) -> Option<String> {
+    search
+        .timeline
+        .dates
+        .as_ref()
+        .map(|(start, _)| start.clone())
+}
+
+/// The date field the timeline of a search ends its bars at, as it is kept: none for *Due date*.
+fn timeline_end(search: &SavedSearch) -> Option<String> {
+    search.timeline.dates.as_ref().map(|(_, end)| end.clone())
 }
 
 fn column_select() -> SelectStatement {
@@ -429,10 +447,10 @@ impl SavedSearchStore for AuthStorage {
                 Expr::val(search.maker.stored()),
                 Expr::val(search.view.code()),
                 Expr::val(search.group_by.clone()),
-                Expr::val(search.timeline_start.clone()),
-                Expr::val(search.timeline_end.clone()),
-                Expr::val(search.plan_by_effort),
-                Expr::val(search.zoom.code()),
+                Expr::val(timeline_start(search)),
+                Expr::val(timeline_end(search)),
+                Expr::val(search.timeline.plan_by_effort),
+                Expr::val(search.timeline.zoom.code()),
                 Expr::val(to_micros(search.created_at)),
                 Expr::val(to_micros(search.updated_at)),
                 Expr::val(search.deleted_at.map(to_micros)),
@@ -456,10 +474,10 @@ impl SavedSearchStore for AuthStorage {
             .value(SavedSearchRow::Text, search.text.as_str())
             .value(SavedSearchRow::View, search.view.code())
             .value(SavedSearchRow::GroupBy, search.group_by.clone())
-            .value(SavedSearchRow::TimelineStart, search.timeline_start.clone())
-            .value(SavedSearchRow::TimelineEnd, search.timeline_end.clone())
-            .value(SavedSearchRow::PlanByEffort, search.plan_by_effort)
-            .value(SavedSearchRow::Zoom, search.zoom.code())
+            .value(SavedSearchRow::TimelineStart, timeline_start(search))
+            .value(SavedSearchRow::TimelineEnd, timeline_end(search))
+            .value(SavedSearchRow::PlanByEffort, search.timeline.plan_by_effort)
+            .value(SavedSearchRow::Zoom, search.timeline.zoom.code())
             .value(SavedSearchRow::UpdatedAt, to_micros(search.updated_at))
             .value(SavedSearchRow::Version, search.version)
             .and_where(Expr::col(SavedSearchRow::Id).eq(search.id.stored()))

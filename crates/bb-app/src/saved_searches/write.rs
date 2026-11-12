@@ -5,7 +5,9 @@
 use bb_core::ErrorCode;
 use bb_core::event::{DomainEvent, FieldChange, RecordKind};
 use bb_core::id::SavedSearchId;
-use bb_core::saved_search::{Presentation, SAVED_SEARCHES_MAX, SavedSearch, SearchColumn, Zoom};
+use bb_core::saved_search::{
+    Presentation, SAVED_SEARCHES_MAX, SavedSearch, SearchColumn, TimelineOptions,
+};
 use bb_core::version::{FIRST_VERSION, counted_up, next};
 use bb_policy::{Authorized, Permission, Place};
 use bb_searchlang::MAX_TEXT_BYTES;
@@ -145,10 +147,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             maker: actor.person.id,
             view: presentation.view,
             group_by: None,
-            timeline_start: None,
-            timeline_end: None,
-            plan_by_effort: false,
-            zoom: Zoom::Week,
+            timeline: TimelineOptions::default(),
             created_at: now,
             updated_at: now,
             deleted_at: None,

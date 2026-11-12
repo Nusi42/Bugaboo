@@ -238,16 +238,7 @@ impl Maker<'_> {
         if recent.len() > RECENT {
             recent.pop_front();
         }
-        let assigned = assigned_to
-            .iter()
-            .zip(0_i64..)
-            .map(|(person, position)| AssignedPerson {
-                issue: facts.id,
-                person: *person,
-                added_at: facts.created_at,
-                position,
-            })
-            .collect();
+        let assigned = bb_core::issue::assigned_rows(facts.id, &assigned_to, facts.created_at);
         Ok(Bundle {
             issue,
             assigned,

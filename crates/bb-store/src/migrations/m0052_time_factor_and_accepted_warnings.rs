@@ -111,7 +111,7 @@ pub(super) fn steps() -> Vec<Step> {
 mod tests {
     use bb_app::saved_searches::SavedSearchStore as _;
     use bb_core::id::{IssueId, IssueTypeId, ProjectId, SavedSearchId, UserId};
-    use bb_core::saved_search::Zoom;
+    use bb_core::saved_search::{TimelineOptions, Zoom};
     use bb_testing::{TestResult, each_database};
     use jiff::Timestamp;
     use sea_query::{Expr, ExprTrait as _, IntoIden as _, Order, Query};
@@ -212,13 +212,12 @@ mod tests {
                 .await?
                 .ok_or("the saved search is gone")?;
             assert_eq!(
-                (
-                    kept.timeline_start,
-                    kept.timeline_end,
-                    kept.plan_by_effort,
-                    kept.zoom
-                ),
-                (None, None, false, Zoom::Week)
+                kept.timeline,
+                TimelineOptions {
+                    dates: None,
+                    plan_by_effort: false,
+                    zoom: Zoom::Week,
+                }
             );
             Ok(())
         })

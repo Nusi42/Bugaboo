@@ -51,14 +51,9 @@ pub fn move_after<H: BuildHasher>(
 ) -> Vec<Moved> {
     let waiting = issue;
     // The issues reached from the one that waits.
-    let mut reached: HashSet<IssueId> = HashSet::new();
-    let mut queue = VecDeque::from([waiting]);
-    while let Some(at) = queue.pop_front() {
-        if !bars.contains_key(&at) || !reached.insert(at) {
-            continue;
-        }
-        queue.extend(graph.waiting(at).iter().copied());
-    }
+    let reached: HashSet<IssueId> = graph
+        .waiting_from(waiting, |at| bars.contains_key(&at))
+        .collect();
     // The issues each reached issue waits for, among the reached ones and the ones that stay.
     let mut before: BTreeMap<IssueId, Vec<IssueId>> =
         reached.iter().map(|at| (*at, Vec::new())).collect();

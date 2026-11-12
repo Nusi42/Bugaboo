@@ -170,8 +170,9 @@ fn work_days(days: &[DayMinutes], within: Option<Days>) -> u32 {
 }
 
 /// The minutes of the effort planned on each day of the bar, for *Too much at once*: the work fills
-/// each day as far as the day holds, from the first day on, and the last day holds the rest. A day
-/// on which nothing is planned is left out.
+/// each day as far as the day holds, from the first day on, until the effort is used up. What the
+/// days of the bar do not hold is planned on no day (*Not enough days* says so). A day on which
+/// nothing is planned is left out.
 #[must_use]
 pub fn load(bar: &Bar, effort: Minutes, days: &[DayMinutes]) -> Vec<(Date, u32)> {
     let mut left = effort.get();

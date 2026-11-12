@@ -83,8 +83,9 @@ pub(crate) struct TimelineBody {
     /// Where the page starts: the `next_cursor` of the page before.
     #[serde(default)]
     cursor: Option<String>,
-    /// How many issues a page holds at most (at most 200).
+    /// How many issues a page holds at most.
     #[serde(default)]
+    #[schema(schema_with = crate::lean::page_limit_schema)]
     limit: Option<u32>,
 }
 
