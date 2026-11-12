@@ -20,6 +20,16 @@ export const searchKeys = {
     text,
     fields,
   ],
+  /**
+   * A page of a search shown as a timeline, or of its tray *Not scheduled yet*. It starts with the
+   * keys of the lists, so a change of an issue reads it again.
+   */
+  timeline: (...about: readonly (string | boolean | null)[]) => [
+    "issues",
+    "list",
+    "timeline",
+    ...about,
+  ],
   /** How many issues a search finds. */
   foundCount: (text: string, within?: string) => ["issues", "list", "count", within ?? null, text],
   /** How many issues a search finds in each group of a field. */

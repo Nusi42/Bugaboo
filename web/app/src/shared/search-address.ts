@@ -40,8 +40,14 @@ export interface SearchState {
   readonly columns?: readonly string[];
   readonly widths?: Readonly<Record<string, number>>;
   readonly groupBy?: string;
-  /** How it is shown (`list`, `board` …). */
+  /** How it is shown (`list`, `timeline` …). */
   readonly view?: string;
+  /** The zoom of a timeline (`day`, `week` …). */
+  readonly zoom?: string;
+  /** *Plan by effort* of a timeline. */
+  readonly effort?: boolean;
+  /** The two date fields of a timeline, by their search words. */
+  readonly dates?: readonly [string, string];
   /** The issue open in the side panel of a project's list, by its issue ID. */
   readonly open?: string | undefined;
 }
@@ -54,6 +60,9 @@ export interface SearchParts {
   readonly widths?: string;
   readonly group?: string;
   readonly open?: string;
+  readonly zoom?: string;
+  readonly effort?: string;
+  readonly dates?: string;
 }
 
 /** Where a search state is written: the path and the parts after the question mark. */
@@ -85,6 +94,12 @@ function widthsOf(written: string | undefined): Record<string, number> | undefin
   return widths;
 }
 
+/** The two date fields of a timeline as the address writes them: `start date,due date`. */
+function datesOf(written: string | undefined): readonly [string, string] | undefined {
+  const [start = "", end = "", ...more] = written?.split(",") ?? [];
+  return start === "" || end === "" || more.length > 0 ? undefined : [start, end];
+}
+
 /**
  * Reads a search from an address (the one place that does): the path says the project or the
  * saved search, `s` the text, and the other parts how the results are shown. `search` is what the
@@ -106,6 +121,9 @@ export function readSearch(location: {
   const groupBy = textOf(raw, "group");
   const view = textOf(raw, "show");
   const open = textOf(raw, "open");
+  const zoom = textOf(raw, "zoom");
+  const effort = textOf(raw, "effort");
+  const dates = datesOf(textOf(raw, "dates"));
   return {
     text: written === undefined || written.trim() === "" ? "" : written,
     ...(written === "" ? { everything: true } : {}),
@@ -116,6 +134,9 @@ export function readSearch(location: {
     ...(groupBy === undefined || groupBy === "" ? {} : { groupBy }),
     ...(view === undefined ? {} : { view }),
     ...(open === undefined || open === "" ? {} : { open }),
+    ...(zoom === undefined || zoom === "" ? {} : { zoom }),
+    ...(effort === undefined ? {} : { effort: effort === "1" }),
+    ...(dates === undefined ? {} : { dates }),
   };
 }
 
@@ -145,6 +166,15 @@ export function searchLocation(state: SearchState): SearchLocation {
   }
   if (state.open !== undefined) {
     search.open = state.open;
+  }
+  if (state.zoom !== undefined) {
+    search.zoom = state.zoom;
+  }
+  if (state.effort !== undefined) {
+    search.effort = state.effort ? "1" : "0";
+  }
+  if (state.dates !== undefined) {
+    search.dates = state.dates.join(",");
   }
   let pathname: string = paths.search;
   if (state.saved !== undefined) {

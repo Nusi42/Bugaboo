@@ -22,6 +22,37 @@ export const noGrouping = "-";
 /** The word of the field that the built-in lists group by: the status group (UX section 4.2). */
 const builtInGroup = listWord.statusGroup;
 
+/** How the results are shown (*Show as*): a list or a timeline. */
+export type ShownAs = Schema<"ViewKind">;
+
+/** The options of a timeline: the date fields, *Plan by effort* and the zoom. */
+export type TimelineOptions = Schema<"TimelineOptionsBody">;
+
+/** The zoom of a timeline (*Days · Weeks · Months · Quarters*). */
+export type ZoomWord = Schema<"Zoom">;
+
+/** Every kind of view: the compiler stops here when the server gets a new one. */
+const viewKinds: Readonly<Record<ShownAs, true>> = { list: true, timeline: true };
+
+/** Every zoom, the same way, in the order they are offered. */
+const zooms: Readonly<Record<ZoomWord, true>> = {
+  day: true,
+  week: true,
+  month: true,
+  quarter: true,
+};
+
+function isViewKind(word: string | undefined): word is ShownAs {
+  return word !== undefined && Object.hasOwn(viewKinds, word);
+}
+
+function isZoom(word: string | undefined): word is ZoomWord {
+  return word !== undefined && Object.hasOwn(zooms, word);
+}
+
+/** The zooms in the order they are offered. */
+export const zoomWords: readonly ZoomWord[] = Object.keys(zooms).filter((word) => isZoom(word));
+
 /** How a list shows its results. */
 export interface ListView {
   /** The search words of the columns, in order. */
@@ -30,7 +61,22 @@ export interface ListView {
   readonly widths: Readonly<Record<string, number>>;
   /** The search word of the field the rows are grouped by; none for no grouping. */
   readonly groupBy: string | null;
+  /** *Show as*: the list, or the timeline. */
+  readonly kind: ShownAs;
+  /** The options of the timeline, kept while the list is shown. */
+  readonly timeline: TimelineOptions;
 }
+
+/** What a timeline is grouped by when a list is first shown as one: the goal (UX §4.7, M8-Q12). */
+export const timelineStartGroup = "parent";
+
+/** The timeline a saved search has when it says nothing of one: *Start date* and *Due date*, by the week. */
+export const builtInTimeline: TimelineOptions = {
+  start_field: null,
+  end_field: null,
+  plan_by_effort: false,
+  zoom: "week",
+};
 
 /** What the built-in list depends on. */
 export interface BuiltInInput {
@@ -44,6 +90,19 @@ export function builtInView({ everywhere }: BuiltInInput): ListView {
     columns: everywhere ? searchColumns : projectColumns,
     widths: {},
     groupBy: builtInGroup,
+    kind: "list",
+    timeline: builtInTimeline,
+  };
+}
+
+/** The timeline an address asks for: what it says, and the defaults for what it leaves out. */
+function timelineOf(state: SearchState, defaults: TimelineOptions): TimelineOptions {
+  const [start, end] = state.dates ?? [defaults.start_field, defaults.end_field];
+  return {
+    start_field: start,
+    end_field: end,
+    plan_by_effort: state.effort ?? defaults.plan_by_effort ?? false,
+    zoom: isZoom(state.zoom) ? state.zoom : defaults.zoom,
   };
 }
 
@@ -54,6 +113,8 @@ export function viewOf(state: SearchState, defaults: ListView): ListView {
     columns: state.columns ?? defaults.columns,
     widths: state.widths ?? defaults.widths,
     groupBy: groupBy === undefined ? defaults.groupBy : groupBy === noGrouping ? null : groupBy,
+    kind: isViewKind(state.view) ? state.view : defaults.kind,
+    timeline: timelineOf(state, defaults.timeline),
   };
 }
 
@@ -66,11 +127,17 @@ export function viewInWords(view: ListView, now: (word: string) => string): List
   for (const word of Object.keys(view.widths)) {
     widths[now(word)] = view.widths[word] ?? 0;
   }
+  const { start_field: start, end_field: end } = view.timeline;
   return {
     ...view,
     columns: view.columns.map(now),
     widths,
     groupBy: view.groupBy === null ? null : now(view.groupBy),
+    timeline: {
+      ...view.timeline,
+      start_field: start === null ? null : now(start),
+      end_field: end === null ? null : now(end),
+    },
   };
 }
 
@@ -90,26 +157,43 @@ function sameWidths(
  * an address stays short and goes back to the defaults when a person does.
  */
 export function withView(state: SearchState, view: ListView, defaults: ListView): SearchState {
-  const { text, everything, project, saved, view: kind, open } = state;
+  const { text, everything, project, saved, open } = state;
   return {
     text,
     ...(everything === undefined ? {} : { everything }),
     ...(open === undefined ? {} : { open }),
     ...(project === undefined ? {} : { project }),
     ...(saved === undefined ? {} : { saved }),
-    ...(kind === undefined ? {} : { view: kind }),
+    ...(view.kind === defaults.kind ? {} : { view: view.kind }),
     ...(view.columns.join(",") === defaults.columns.join(",") ? {} : { columns: view.columns }),
     ...(sameWidths(view.widths, defaults.widths) ? {} : { widths: view.widths }),
     ...(view.groupBy === defaults.groupBy ? {} : { groupBy: view.groupBy ?? noGrouping }),
+    ...timelineParts(view.timeline, defaults.timeline),
+  };
+}
+
+/** The parts of the address that say how a timeline differs from its defaults. */
+function timelineParts(
+  timeline: TimelineOptions,
+  usual: TimelineOptions,
+): Pick<SearchState, "zoom" | "effort" | "dates"> {
+  const { start_field: start, end_field: end } = timeline;
+  const sameDates = start === usual.start_field && end === usual.end_field;
+  const effort = timeline.plan_by_effort ?? false;
+  return {
+    ...(timeline.zoom === usual.zoom ? {} : { zoom: timeline.zoom }),
+    ...(effort === (usual.plan_by_effort ?? false) ? {} : { effort }),
+    ...(sameDates || start === null || end === null ? {} : { dates: [start, end] as const }),
   };
 }
 
 /** How a saved search keeps a view (QRY-06): the widths belong to their columns. */
 export function presentationOf(view: ListView): Schema<"PresentationRef"> {
   return {
-    view: "list",
+    view: view.kind,
     columns: view.columns.map((field) => ({ field, width: view.widths[field] ?? null })),
     group_by: view.groupBy,
+    timeline: view.timeline,
   };
 }
 
@@ -135,5 +219,7 @@ export function viewFromPresentation(
         : presentation.columns.map((column) => column.field),
     widths,
     groupBy: presentation.group_by,
+    kind: presentation.view,
+    timeline: presentation.timeline ?? defaults.timeline,
   };
 }

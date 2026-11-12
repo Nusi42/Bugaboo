@@ -56,11 +56,30 @@ export function useListView(
 
 /** Whether the address changes any part of how the results are shown, so that it differs from the defaults. */
 export function viewIsChanged(state: SearchState): boolean {
-  return state.columns !== undefined || state.widths !== undefined || state.groupBy !== undefined;
+  return [
+    state.columns,
+    state.widths,
+    state.groupBy,
+    state.view,
+    state.zoom,
+    state.effort,
+    state.dates,
+  ].some((part) => part !== undefined);
 }
 
 /** The state with nothing unsaved: no text of its own and no change of the view (what a saved search has once it was saved). */
 export function withoutChanges(state: SearchState): SearchState {
-  const { text: _t, everything: _e, columns: _c, widths: _w, groupBy: _g, ...rest } = state;
+  const {
+    text: _t,
+    everything: _e,
+    columns: _c,
+    widths: _w,
+    groupBy: _g,
+    view: _v,
+    zoom: _z,
+    effort: _f,
+    dates: _d,
+    ...rest
+  } = state;
   return { ...rest, text: "" };
 }

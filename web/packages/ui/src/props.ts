@@ -91,6 +91,9 @@ export const legendLook = {
   done: "done",
   critical: "critical",
   high: "high",
+  goal: "goal",
+  due: "due",
+  today: "today",
 } as const satisfies Readonly<
   Record<string, (typeof partWords)["legend.swatch"]["variant"][number]>
 >;

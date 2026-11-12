@@ -24,6 +24,7 @@ export {
 } from "./appearance.ts";
 export { Button, type ButtonProps } from "./Button.tsx";
 export { Card, type CardProps } from "./Card.tsx";
+export { DayScale, type DayScaleProps, type ScaleUnit } from "./DayScale.tsx";
 export { CellInput, type CellInputProps } from "./CellInput.tsx";
 export { gridColumnSelector } from "./grid-column.ts";
 export { Checkbox, type CheckboxProps } from "./Checkbox.tsx";
@@ -209,6 +210,7 @@ export {
   type ThemeChoice,
 } from "./theme.ts";
 export { partOf, type PartAttributes, type PartChoices } from "./parts.ts";
+export { usePlace, type Place } from "./place.ts";
 export { Window, type WindowProps } from "./Window.tsx";
 export type { WindowLabels } from "./WindowFrame.tsx";
 export { WindowLayout, type WindowLayoutProps } from "./WindowLayout.tsx";
@@ -230,6 +232,7 @@ export {
   type OwnFont,
   type OwnRadius,
   type PartName,
+  type TokenName,
   type ThemeId,
 } from "./tokens.ts";
 export { useAppearance, type AppearanceState } from "./useAppearance.ts";

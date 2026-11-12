@@ -36,5 +36,6 @@ export { messages as signIn } from "./sign-in.ts";
 export { messages as signUp } from "./sign-up.ts";
 export { messages as themeEditor } from "./theme-editor.ts";
 export { messages as time } from "./time.ts";
+export { messages as timeline } from "./timeline.ts";
 export { messages as workTimes } from "./work-times.ts";
 export { messages as workflows } from "./workflows.ts";

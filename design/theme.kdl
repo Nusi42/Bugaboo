@@ -208,8 +208,29 @@ tokens {
     // because a container query cannot read tokens; a test of the theme file (theme_file/tests.rs) holds them together.
     size "bp-list-beside" "876px"
     size "bp-window-wide" "1200px"
-    // The width of one day on the timeline at the week zoom.
+    // The width of one day on the timeline at each zoom (UX §4.7): Days, Weeks, Months and Quarters. The screen gives
+    // the chart the one of its zoom as `timeline-day`, and works out where a drag ends from the same width.
+    size "size-day-day" "40px"
     size "size-day-week" "16px"
+    size "size-day-month" "5px"
+    size "size-day-quarter" "2px"
+    // The column of the rows' names on the timeline, the height of one row and of the scale, and the side column with
+    // the card of a bar and the tray *Not scheduled yet*.
+    size "size-timeline-names" "240px"
+    size "size-timeline-row" "$size-row-compact"
+    size "size-timeline-head" "$size-control"
+    size "size-timeline-side" "240px"
+    // Where the screen puts things on the timeline, set by the code (UX §4.7, M3-F163): the width of a day at the
+    // zoom, how many days and rows the chart has, and for one thing on it its row, its first day counted from the
+    // first day of the chart, its length in days and how much of a bar is done. Only numbers come from code; the
+    // rules turn them into places.
+    size "timeline-day" "$size-day-week" run-time="true"
+    size "timeline-days" "0" run-time="true"
+    size "timeline-rows" "0" run-time="true"
+    size "timeline-row" "0" run-time="true"
+    size "timeline-start" "0" run-time="true"
+    size "timeline-length" "1" run-time="true"
+    size "timeline-done" "0%" run-time="true"
 
     // Focus ring
     size "ring-width" "2px"
@@ -3190,20 +3211,447 @@ part "list-options" {
     gap "$space-2" "$space-5"
 }
 
-// A bar of the timeline (UX §4.7): the same tint and edge as the row of the list.
-part "timeline-bar" {
+// ───────────── The timeline (UX §4.7) ─────────────
+//
+// The tools over the chart, then the chart and the side column with the card of the selected bar and the tray *Not
+// scheduled yet*. The chart is one box that scrolls both ways: the scale stays at its top and the names of the rows at
+// its start, and everything on it stands on the days that `timeline-start` and `timeline-length` give, one
+// `timeline-day` wide each.
+
+part "timeline" {
+    display flex
+    flex-direction column
+    gap "$space-3"
+    min-width 0
+    container-type inline-size
+}
+
+// Show as, Group by, Dates from, the zoom and the steps through time: quiet controls on one line, like the options of the list.
+part "timeline-tools" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2" "$space-4"
+}
+
+// A narrow window puts the side column under the chart, where the list puts Customize.
+part "timeline-body" {
+    display grid
+    grid-template-columns "minmax(0, 1fr) $size-timeline-side"
+    align-items start
+    gap "$space-4"
+    container "(max-width: $bp-list-beside)" {
+        grid-template-columns "minmax(0, 1fr)"
+    }
+}
+
+part "timeline-scroll" {
+    position relative
+    overflow auto
+    max-height "$size-list-scroll"
+    border "$border-width solid $border"
+    border-radius "$r-card"
+    background "$bg-raised"
+    overscroll-behavior contain
+}
+
+// What the scroll box holds: the names and every day of the chart across, the scale and every row down.
+part "timeline-canvas" {
+    position relative
+    width "calc($size-timeline-names + $timeline-days * $timeline-day)"
+    height "calc($size-timeline-head + $timeline-rows * $size-timeline-row)"
+}
+
+// The scale stays at the top of the box while the rows scroll under it.
+part "timeline-head" {
+    position sticky
+    top 0
+    z-index "$z-sticky"
+    display flex
+    height "$size-timeline-head"
+    border-bottom "$border-width solid $divider"
+    background "$bg-surface"
+}
+
+part "timeline-head.corner" {
+    position sticky
+    inset-inline-start 0
+    z-index "$z-raised"
+    display flex
+    flex none
+    align-items center
     box-sizing border-box
+    width "$size-timeline-names"
+    padding-inline "$pad-box"
+    border-inline-end "$border-width solid $divider"
+    background "$bg-surface"
+    color "$fg-muted"
+    font-size "$fs-sm"
+}
+
+part "day-scale" {
+    position relative
+    flex none
+    width "calc($timeline-days * $timeline-day)"
+}
+
+// One unit of the scale (a day, a week, a month or a quarter), its name at its start.
+part "day-scale.cell" {
+    position absolute
+    top 0
+    bottom 0
+    inset-inline-start "calc($timeline-start * $timeline-day)"
     display flex
     align-items center
+    box-sizing border-box
+    width "calc($timeline-length * $timeline-day)"
+    padding-inline "$space-1"
+    overflow hidden
+    border-inline-start "$border-width solid $border-subtle"
+    color "$fg-muted"
+    font-size "$fs-xs"
+    white-space nowrap
+}
+
+// A weekend: the column is shaded from the scale down, behind the bars.
+part "timeline-shade" {
+    position absolute
+    top "$size-timeline-head"
+    bottom 0
+    inset-inline-start "calc($size-timeline-names + $timeline-start * $timeline-day)"
+    width "calc($timeline-length * $timeline-day)"
+    background "$bg-sunken"
+    pointer-events none
+}
+
+// Today: a line in the accent color through the middle of the day, with its word at the top (Today is not red: red is
+// Critical).
+part "timeline-today" {
+    position absolute
+    top "$size-timeline-head"
+    bottom 0
+    inset-inline-start "calc($size-timeline-names + ($timeline-start + 0.5) * $timeline-day)"
+    z-index "$z-raised"
+    width "calc($border-width * 2)"
+    background "$accent"
+    pointer-events none
+}
+
+part "timeline-today.label" {
+    position absolute
+    top 0
+    inset-inline-start "$border-width"
+    padding "0 $space-1"
+    border-radius "$r-ctl"
+    background "$accent"
+    color "$on-accent"
+    font-size "$fs-xs"
+    white-space nowrap
+}
+
+// The arrows of the dependencies are drawn over the rows, from the end of the bar that must finish first to the start
+// of the one that waits; they never catch the pointer.
+part "timeline-arrows" {
+    position absolute
+    top "$size-timeline-head"
+    inset-inline-start "$size-timeline-names"
+    z-index "$z-raised"
+    width "calc($timeline-days * $timeline-day)"
+    height "calc($timeline-rows * $size-timeline-row)"
+    overflow visible
+    pointer-events none
+}
+
+part "timeline-arrows.line" {
+    fill none
+    stroke "$fg-muted"
+    stroke-width "calc($border-width * 1.5)"
+}
+
+part "timeline-arrows.head" {
+    fill "$fg-muted"
+}
+
+// The rows are a list as big as the chart; each row stands on its place in it.
+part "timeline-rows" {
+    position absolute
+    inset 0
+    margin 0
+    padding 0
+    list-style none
+}
+
+// A row: a goal or a group over its issues, or an issue with its bar. Its name stays at the start of the box.
+part "timeline-row" {
+    position absolute
+    top "calc($size-timeline-head + $timeline-row * $size-timeline-row)"
+    inset-inline 0
+    display flex
+    box-sizing border-box
+    height "$size-timeline-row"
+    border-bottom "$border-width solid $border-subtle"
+}
+
+part "timeline-row.name" {
+    position sticky
+    inset-inline-start 0
+    z-index "$z-sticky"
+    display flex
+    flex none
+    align-items center
     gap "$space-2"
-    min-height "$size-control-small"
-    padding 0 "$pad-control"
+    box-sizing border-box
+    width "$size-timeline-names"
+    padding-inline "$pad-box"
+    border-inline-end "$border-width solid $divider"
+    background "$bg-raised"
+    color "$fg"
+    font-size "$fs-sm"
+}
+
+part "timeline-row[variant=group] timeline-row.name" {
+    background "$bg-surface"
+    color "$fg-muted"
+}
+
+// The head of a group folds it: the whole name is the button, quiet like the name of a row.
+part "timeline-row.toggle" {
+    display flex
+    flex 1
+    align-items center
+    gap "$space-2"
+    min-width 0
+    padding 0
+    border none
+    background none
+    color inherit
+    font-family inherit
+    font-size inherit
+    text-align start
+    cursor pointer
+}
+
+part "timeline-row.toggle:focus-visible" {
+    use "ring"
+}
+
+part "timeline-row.title" {
+    min-width 0
+    overflow hidden
+    text-overflow ellipsis
+    white-space nowrap
+}
+
+part "timeline-row.count" {
+    margin-inline-start auto
+    color "$fg-muted"
+    font-size "$fs-xs"
+}
+
+part "timeline-row.lane" {
+    position relative
+    flex none
+    width "calc($timeline-days * $timeline-day)"
+    height "100%"
+}
+
+// A bar of the timeline (UX §4.7): the same tint and edge as the row of the list, on its days. Its Issue ID stands
+// after its end; a bar that may be moved shows it by the pointer.
+part "timeline-bar" {
+    position absolute
+    top "$space-1"
+    bottom "$space-1"
+    inset-inline-start "calc($timeline-start * $timeline-day)"
+    box-sizing border-box
+    width "calc($timeline-length * $timeline-day)"
+    min-width "$size-edge"
     border "$border-width solid $border"
     border-inline-start "$size-edge solid transparent"
     border-radius "$r-ctl"
     background "$bg-raised"
     color "$fg"
     font-size "$fs-sm"
+}
+
+// The bar is pressed, dragged and moved by keys through the button that fills it.
+part "timeline-bar.press" {
+    position absolute
+    inset 0
+    padding 0
+    border none
+    border-radius "inherit"
+    background none
+    cursor grab
+    touch-action none
+    outline none
+}
+
+part "timeline-bar.press:focus-visible" {
+    use "ring-keyboard"
+}
+
+part "timeline-bar[state=locked] timeline-bar.press" {
+    cursor not-allowed
+}
+
+part "timeline-bar[state=dragging]" {
+    opacity "$opacity-busy"
+}
+
+part "timeline-bar[state=dragging] timeline-bar.press" {
+    cursor grabbing
+}
+
+
+// The part that is done, darker, from the start of the bar.
+part "timeline-bar.done" {
+    position absolute
+    inset-block 0
+    inset-inline-start 0
+    width "$timeline-done"
+    border-radius "inherit"
+    background "$st-ns"
+    opacity "$opacity-faint"
+    pointer-events none
+}
+
+part "timeline-bar[state=group-in-progress] timeline-bar.done" {
+    background "$st-ip"
+}
+
+part "timeline-bar[state=group-done] timeline-bar.done" {
+    background "$st-done"
+}
+
+part "timeline-bar.label" {
+    position absolute
+    top "50%"
+    inset-inline-start "calc(100% + $space-2)"
+    translate "0 -50%"
+    color "$fg-muted"
+    font-size "$fs-xs"
+    pointer-events none
+    use "issue-id"
+}
+
+// The handles of a selected bar change one of its dates; the dot after its end makes a dependency.
+part "timeline-bar.handle" {
+    position absolute
+    inset-block 0
+    width "$size-window-handle"
+    cursor ew-resize
+}
+
+part "timeline-bar.handle[variant=start]" {
+    inset-inline-start "calc($size-window-handle / -2)"
+}
+
+part "timeline-bar.handle[variant=end]" {
+    inset-inline-end "calc($size-window-handle / -2)"
+}
+
+part "timeline-bar.dot" {
+    position absolute
+    top "50%"
+    inset-inline-end "calc($size-window-handle * -2)"
+    translate "0 -50%"
+    width "$size-window-handle"
+    height "$size-window-handle"
+    border "$border-width solid $bg-raised"
+    border-radius "50%"
+    background "$accent"
+    cursor crosshair
+}
+
+// The bar a dependency is dragged onto.
+part "timeline-bar[state=target]" {
+    use "ring-row"
+}
+
+// A goal: a bracket over the days of its sub-issues, and a diamond on its due date (ADR-0043, decision 7).
+part "timeline-bracket" {
+    position absolute
+    top "calc(50% - $space-1)"
+    inset-inline-start "calc($timeline-start * $timeline-day)"
+    box-sizing border-box
+    width "calc($timeline-length * $timeline-day)"
+    height "$space-2"
+    border "calc($border-width * 2) solid $fg-muted"
+    border-bottom none
+    pointer-events none
+}
+
+part "timeline-diamond" {
+    position absolute
+    top "50%"
+    inset-inline-start "calc(($timeline-start + 0.5) * $timeline-day)"
+    width "$space-3"
+    height "$space-3"
+    translate "-50% -50%"
+    rotate "45deg"
+    border "$border-width solid $bg-raised"
+    background "$fg"
+    pointer-events none
+}
+
+// The side column: the card of the selected bar over the tray.
+part "timeline-side" {
+    display flex
+    flex-direction column
+    gap "$space-3"
+    min-width 0
+}
+
+part "timeline-card" "timeline-tray" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+    padding "$space-3"
+    border "$border-width solid $border"
+    border-radius "$r-card"
+    background "$bg-raised"
+    font-size "$fs-sm"
+}
+
+part "timeline-side.heading" {
+    margin 0
+    color "$fg"
+    font-size "$fs-md"
+    font-weight "$weight-regular"
+}
+
+part "timeline-side.list" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+    margin 0
+    padding 0
+    list-style none
+}
+
+part "timeline-card.actions" {
+    display flex
+    flex-wrap wrap
+    gap "$space-2"
+}
+
+part "timeline-tray" {
+    max-height "$size-list-scroll"
+    overflow auto
+}
+
+// An issue of the tray: its ID and as much of its title as fits, beside its handle and before *Set dates…*.
+part "timeline-tray.item" {
+    display flex
+    flex "1 1 0"
+    align-items center
+    gap "$space-2"
+    min-width 0
+}
+
+// While an issue of the tray is dragged over the chart, the chart shows that it takes it.
+part "timeline-canvas[state=over]" {
+    background "$accent-soft"
 }
 
 // ───────────── Name and value (Details, UX §4.4) ─────────────
@@ -3397,6 +3845,31 @@ part "legend.swatch[variant=critical]" {
         border-inline-start "$size-edge double CanvasText"
         background Canvas
     }
+}
+
+// The marks of the timeline (UX §4.7): the bracket of a goal, the diamond of its due date and the Today line, drawn as
+// on the chart.
+part "legend.swatch[variant=goal]" {
+    height "$space-2"
+    border "calc($border-width * 2) solid $fg-muted"
+    border-bottom none
+    border-radius 0
+    background none
+}
+
+part "legend.swatch[variant=due]" {
+    width "$space-3"
+    height "$space-3"
+    rotate "45deg"
+    border-radius 0
+    background "$fg"
+}
+
+part "legend.swatch[variant=today]" {
+    width "calc($border-width * 2)"
+    border 0
+    border-radius 0
+    background "$accent"
 }
 
 // The row above a list: its main button, what is ticked, and the Legend at the end.
@@ -14205,6 +14678,11 @@ part "draggable" {
     align-items center
     gap "$space-2"
     min-height "$size-control"
+}
+
+// An issue of the tray of the timeline keeps its handle, its ID and title and *Set dates…* on one line (UX §4.7).
+part "timeline-tray draggable" {
+    flex-wrap nowrap
 }
 
 // The name of a field in the layout editor is as wide as a word of it needs, or it takes the line above the buttons

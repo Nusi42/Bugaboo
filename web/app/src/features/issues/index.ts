@@ -34,4 +34,7 @@ export {
   type IssueView,
 } from "./slots.ts";
 export { sendChange } from "./issue-requests.ts";
+export { useFoundGroups } from "./found-issues.ts";
+export { groupName, groupOfKey, type GroupOfKey } from "./group-keys.ts";
+export { useOwnColumns, type OwnColumns } from "./own-columns.ts";
 export type { IssueRequestValues, IssueValues } from "./issue-values.ts";

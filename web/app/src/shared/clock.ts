@@ -3,6 +3,7 @@
  * into a cell of the work day, the moment a time of day on a day in a zone is, and the seven days
  * of a person's week. Dates and clocks are written here and in `format.ts` only (TXT-DATES).
  */
+import { msPerDay } from "@bugaboo/api-client";
 import { locale, t } from "@bugaboo/messages";
 
 import {
@@ -167,6 +168,30 @@ export function weekdayAndDate(day: string, region: Region): string {
     weekday: weekdayName(day, "long"),
     date: formatCalendarDay(day, region),
   });
+}
+
+/** How many days `day` is after `first` (`2027-03-01` and `2027-03-03` give 2; before it, fewer than 0). */
+export function daysBetween(first: string, day: string): number {
+  const [fromYear, fromMonth, fromDate] = dayNumbersOf(first);
+  const [year, month, date] = dayNumbersOf(day);
+  return Math.round(
+    (Date.UTC(year, month - 1, date) - Date.UTC(fromYear, fromMonth - 1, fromDate)) / msPerDay,
+  );
+}
+
+/** The short name of the month of a day on the calendar (`Mar`), in the language of the app. */
+export function monthName(day: string): string {
+  return new Intl.DateTimeFormat(locale, { month: "short", timeZone: "UTC" }).format(
+    new Date(`${day}T00:00:00Z`),
+  );
+}
+
+/** The weekdays of a weekend (Saturday and Sunday), by their numbers (0 for Sunday). */
+const weekendDays: ReadonlySet<number> = new Set([0, 6]);
+
+/** Whether a day on the calendar is a Saturday or a Sunday, which the timeline shades. */
+export function isWeekend(day: string): boolean {
+  return weekendDays.has(weekdayOf(day));
 }
 
 /** The number of a day in its month (`2026-10-05` is 5). */

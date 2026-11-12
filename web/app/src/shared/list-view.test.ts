@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  builtInTimeline,
   builtInView,
   noGrouping,
   presentationOf,
@@ -26,6 +27,8 @@ describe("a list saved with the words of the old language (D3)", () => {
     columns: ["id", "storyPoints", "assignedTo"],
     widths: { storyPoints: 120 },
     groupBy: "statusGroup",
+    kind: "list",
+    timeline: builtInTimeline,
   } as const;
 
   it("keeps the column, the width and the grouping of every field, an own one included", () => {
@@ -33,6 +36,8 @@ describe("a list saved with the words of the old language (D3)", () => {
       columns: ["id", "story points", "assigned to"],
       widths: { "story points": 120 },
       groupBy: "status group",
+      kind: "list",
+      timeline: builtInTimeline,
     });
   });
 
@@ -90,11 +95,8 @@ describe("the view of a list that the address and the defaults give (UX 2.1, 4.2
       pathname: "/p/WEB/issues",
       search: { cols: "id,title", widths: "title:300", group: "priority" },
     });
-    expect(viewOf(state, project)).toEqual({
-      columns: ["id", "title"],
-      widths: { title: 300 },
-      groupBy: "priority",
-    });
+    const view = { columns: ["id", "title"], widths: { title: 300 }, groupBy: "priority" };
+    expect(viewOf(state, project)).toEqual({ ...project, ...view });
     expect(viewOf(readSearch({ search: {} }), project)).toEqual(project);
   });
 
@@ -148,6 +150,8 @@ describe("the view as a saved search keeps it", () => {
     columns: ["id", "title"],
     widths: { title: 300 },
     groupBy: "priority",
+    kind: "list",
+    timeline: builtInTimeline,
   } as const;
 
   it("is written with the widths on the columns and a null for no grouping", () => {
@@ -158,6 +162,7 @@ describe("the view as a saved search keeps it", () => {
         { field: "title", width: 300 },
       ],
       group_by: null,
+      timeline: builtInTimeline,
     });
   });
 
@@ -172,5 +177,48 @@ describe("the view as a saved search keeps it", () => {
   it("opens a saved search kept with a spacing before the spacing was the person's alone, and ignores it", () => {
     const old = { ...presentationOf(view), spacing: "compact" };
     expect(viewFromPresentation(old, project)).toEqual(view);
+  });
+});
+
+describe("a timeline in the address and in a saved search (PLAN-01, PLAN-04)", () => {
+  it("plan_01_shows_as_a_timeline_with_its_zoom_dates_and_effort_and_back", () => {
+    const state = readSearch({
+      pathname: "/search",
+      search: { show: "timeline", zoom: "month", effort: "1", dates: "begins,ends" },
+    });
+    const view = viewOf(state, everywhere);
+    expect(view.kind).toBe("timeline");
+    expect(view.timeline).toEqual({
+      start_field: "begins",
+      end_field: "ends",
+      plan_by_effort: true,
+      zoom: "month",
+    });
+    expect(searchLocation(withView(readSearch({ search: {} }), view, everywhere)).search).toEqual({
+      show: "timeline",
+      zoom: "month",
+      effort: "1",
+      dates: "begins,ends",
+    });
+  });
+
+  it("plan_01_reads_a_zoom_or_a_kind_it_does_not_know_as_the_defaults", () => {
+    const state = readSearch({ search: { show: "gantt", zoom: "year", dates: "only-one" } });
+    expect(viewOf(state, everywhere)).toEqual(everywhere);
+  });
+
+  it("plan_01_keeps_the_timeline_with_the_saved_search", () => {
+    const view = {
+      ...everywhere,
+      kind: "timeline",
+      groupBy: "parent",
+      timeline: { ...builtInTimeline, zoom: "quarter" },
+    } as const;
+    const saved = presentationOf(view);
+    expect(saved.view).toBe("timeline");
+    expect(viewFromPresentation(saved, everywhere)).toEqual(view);
+    // A saved search of the list says nothing of a timeline: it has the one of the defaults.
+    const { timeline: _timeline, ...listOnly } = presentationOf(everywhere);
+    expect(viewFromPresentation(listOnly, everywhere).timeline).toEqual(builtInTimeline);
   });
 });

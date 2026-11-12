@@ -8577,6 +8577,108 @@ pub const TIME_WORK_DAY_TOO_TITLE: MessageKey = MessageKey::new("time.work-day.t
 /// The message `time.work-day.too-yes`.
 pub const TIME_WORK_DAY_TOO_YES: MessageKey = MessageKey::new("time.work-day.too-yes");
 
+/// The message `timeline.add-dependency`.
+pub const TIMELINE_ADD_DEPENDENCY: MessageKey = MessageKey::new("timeline.add-dependency");
+
+/// The message `timeline.add-it`.
+pub const TIMELINE_ADD_IT: MessageKey = MessageKey::new("timeline.add-it");
+
+/// The message `timeline.chart`.
+pub const TIMELINE_CHART: MessageKey = MessageKey::new("timeline.chart");
+
+/// The message `timeline.earlier`.
+pub const TIMELINE_EARLIER: MessageKey = MessageKey::new("timeline.earlier");
+
+/// The message `timeline.empty`.
+pub const TIMELINE_EMPTY: MessageKey = MessageKey::new("timeline.empty");
+
+/// The message `timeline.end-field`.
+pub const TIMELINE_END_FIELD: MessageKey = MessageKey::new("timeline.end-field");
+
+/// The message `timeline.keys`.
+pub const TIMELINE_KEYS: MessageKey = MessageKey::new("timeline.keys");
+
+/// The message `timeline.later`.
+pub const TIMELINE_LATER: MessageKey = MessageKey::new("timeline.later");
+
+/// The message `timeline.legend`.
+pub const TIMELINE_LEGEND: MessageKey = MessageKey::new("timeline.legend");
+
+/// The message `timeline.legend-due`.
+pub const TIMELINE_LEGEND_DUE: MessageKey = MessageKey::new("timeline.legend-due");
+
+/// The message `timeline.legend-goal`.
+pub const TIMELINE_LEGEND_GOAL: MessageKey = MessageKey::new("timeline.legend-goal");
+
+/// The message `timeline.locked-here`.
+pub const TIMELINE_LOCKED_HERE: MessageKey = MessageKey::new("timeline.locked-here");
+
+/// The message `timeline.more-issues`.
+pub const TIMELINE_MORE_ISSUES: MessageKey = MessageKey::new("timeline.more-issues");
+
+/// The message `timeline.more-rows`.
+pub const TIMELINE_MORE_ROWS: MessageKey = MessageKey::new("timeline.more-rows");
+
+/// The message `timeline.names`.
+pub const TIMELINE_NAMES: MessageKey = MessageKey::new("timeline.names");
+
+/// The message `timeline.no-dates`.
+pub const TIMELINE_NO_DATES: MessageKey = MessageKey::new("timeline.no-dates");
+
+/// The message `timeline.no-dependency-kind`.
+pub const TIMELINE_NO_DEPENDENCY_KIND: MessageKey = MessageKey::new("timeline.no-dependency-kind");
+
+/// The message `timeline.not-scheduled`.
+pub const TIMELINE_NOT_SCHEDULED: MessageKey = MessageKey::new("timeline.not-scheduled");
+
+/// The message `timeline.not-scheduled-none`.
+pub const TIMELINE_NOT_SCHEDULED_NONE: MessageKey = MessageKey::new("timeline.not-scheduled-none");
+
+/// The message `timeline.open`.
+pub const TIMELINE_OPEN: MessageKey = MessageKey::new("timeline.open");
+
+/// The message `timeline.plan-by-effort`.
+pub const TIMELINE_PLAN_BY_EFFORT: MessageKey = MessageKey::new("timeline.plan-by-effort");
+
+/// The message `timeline.save-dates`.
+pub const TIMELINE_SAVE_DATES: MessageKey = MessageKey::new("timeline.save-dates");
+
+/// The message `timeline.set-dates`.
+pub const TIMELINE_SET_DATES: MessageKey = MessageKey::new("timeline.set-dates");
+
+/// The message `timeline.show-as`.
+pub const TIMELINE_SHOW_AS: MessageKey = MessageKey::new("timeline.show-as");
+
+/// The message `timeline.show-as-list`.
+pub const TIMELINE_SHOW_AS_LIST: MessageKey = MessageKey::new("timeline.show-as-list");
+
+/// The message `timeline.show-as-timeline`.
+pub const TIMELINE_SHOW_AS_TIMELINE: MessageKey = MessageKey::new("timeline.show-as-timeline");
+
+/// The message `timeline.start-field`.
+pub const TIMELINE_START_FIELD: MessageKey = MessageKey::new("timeline.start-field");
+
+/// The message `timeline.today`.
+pub const TIMELINE_TODAY: MessageKey = MessageKey::new("timeline.today");
+
+/// The message `timeline.which-way`.
+pub const TIMELINE_WHICH_WAY: MessageKey = MessageKey::new("timeline.which-way");
+
+/// The message `timeline.zoom`.
+pub const TIMELINE_ZOOM: MessageKey = MessageKey::new("timeline.zoom");
+
+/// The message `timeline.zoom-day`.
+pub const TIMELINE_ZOOM_DAY: MessageKey = MessageKey::new("timeline.zoom-day");
+
+/// The message `timeline.zoom-month`.
+pub const TIMELINE_ZOOM_MONTH: MessageKey = MessageKey::new("timeline.zoom-month");
+
+/// The message `timeline.zoom-quarter`.
+pub const TIMELINE_ZOOM_QUARTER: MessageKey = MessageKey::new("timeline.zoom-quarter");
+
+/// The message `timeline.zoom-week`.
+pub const TIMELINE_ZOOM_WEEK: MessageKey = MessageKey::new("timeline.zoom-week");
+
 /// The message `validation.email`.
 pub const VALIDATION_EMAIL: MessageKey = MessageKey::new("validation.email");
 
@@ -17408,6 +17510,269 @@ pub fn time_work_day_too_text(issue: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `timeline.add-dependency-title`.
+#[must_use]
+pub fn timeline_add_dependency_title(key: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.add-dependency-title"),
+        vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
+/// The message `timeline.amount-days`.
+#[must_use]
+pub fn timeline_amount_days(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.amount-days"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `timeline.amount-weeks`.
+#[must_use]
+pub fn timeline_amount_weeks(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.amount-weeks"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `timeline.bar`.
+#[must_use]
+pub fn timeline_bar(
+    days: impl std::fmt::Display,
+    key: impl std::fmt::Display,
+    title: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.bar"),
+        vec![
+            ("days", Value::Text(days.to_string())),
+            ("key", Value::Text(key.to_string())),
+            ("title", Value::Text(title.to_string())),
+        ],
+    )
+}
+
+/// The message `timeline.card`.
+#[must_use]
+pub fn timeline_card(key: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.card"),
+        vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
+/// The message `timeline.dates-changed`.
+#[must_use]
+pub fn timeline_dates_changed(
+    days: impl std::fmt::Display,
+    key: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.dates-changed"),
+        vec![
+            ("days", Value::Text(days.to_string())),
+            ("key", Value::Text(key.to_string())),
+        ],
+    )
+}
+
+/// The message `timeline.days`.
+#[must_use]
+pub fn timeline_days(first: impl std::fmt::Display, last: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.days"),
+        vec![
+            ("first", Value::Text(first.to_string())),
+            ("last", Value::Text(last.to_string())),
+        ],
+    )
+}
+
+/// The message `timeline.dependency-made`.
+#[must_use]
+pub fn timeline_dependency_made(
+    first: impl std::fmt::Display,
+    waiting: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.dependency-made"),
+        vec![
+            ("first", Value::Text(first.to_string())),
+            ("waiting", Value::Text(waiting.to_string())),
+        ],
+    )
+}
+
+/// The message `timeline.drag-issue`.
+#[must_use]
+pub fn timeline_drag_issue(key: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.drag-issue"),
+        vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
+/// The message `timeline.goal`.
+#[must_use]
+pub fn timeline_goal(days: impl std::fmt::Display, key: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.goal"),
+        vec![
+            ("days", Value::Text(days.to_string())),
+            ("key", Value::Text(key.to_string())),
+        ],
+    )
+}
+
+/// The message `timeline.goal-due`.
+#[must_use]
+pub fn timeline_goal_due(day: impl std::fmt::Display, key: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.goal-due"),
+        vec![
+            ("day", Value::Text(day.to_string())),
+            ("key", Value::Text(key.to_string())),
+        ],
+    )
+}
+
+/// The message `timeline.locked`.
+#[must_use]
+pub fn timeline_locked(key: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.locked"),
+        vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
+/// The message `timeline.moved-earlier`.
+#[must_use]
+pub fn timeline_moved_earlier(
+    amount: impl std::fmt::Display,
+    key: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.moved-earlier"),
+        vec![
+            ("amount", Value::Text(amount.to_string())),
+            ("key", Value::Text(key.to_string())),
+        ],
+    )
+}
+
+/// The message `timeline.moved-later`.
+#[must_use]
+pub fn timeline_moved_later(
+    amount: impl std::fmt::Display,
+    key: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.moved-later"),
+        vec![
+            ("amount", Value::Text(amount.to_string())),
+            ("key", Value::Text(key.to_string())),
+        ],
+    )
+}
+
+/// The message `timeline.must-finish-first`.
+#[must_use]
+pub fn timeline_must_finish_first(key: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.must-finish-first"),
+        vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
+/// The message `timeline.not-saved`.
+#[must_use]
+pub fn timeline_not_saved(key: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.not-saved"),
+        vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
+/// The message `timeline.not-scheduled-count`.
+#[must_use]
+pub fn timeline_not_scheduled_count(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.not-scheduled-count"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `timeline.other-chosen`.
+#[must_use]
+pub fn timeline_other_chosen(key: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.other-chosen"),
+        vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
+/// The message `timeline.scale-day`.
+#[must_use]
+pub fn timeline_scale_day(day: impl std::fmt::Display, weekday: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.scale-day"),
+        vec![
+            ("day", Value::Text(day.to_string())),
+            ("weekday", Value::Text(weekday.to_string())),
+        ],
+    )
+}
+
+/// The message `timeline.scale-month`.
+#[must_use]
+pub fn timeline_scale_month(
+    month: impl std::fmt::Display,
+    year: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.scale-month"),
+        vec![
+            ("month", Value::Text(month.to_string())),
+            ("year", Value::Text(year.to_string())),
+        ],
+    )
+}
+
+/// The message `timeline.scale-quarter`.
+#[must_use]
+pub fn timeline_scale_quarter(
+    quarter: impl std::fmt::Display,
+    year: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.scale-quarter"),
+        vec![
+            ("quarter", Value::Text(quarter.to_string())),
+            ("year", Value::Text(year.to_string())),
+        ],
+    )
+}
+
+/// The message `timeline.set-dates-title`.
+#[must_use]
+pub fn timeline_set_dates_title(key: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.set-dates-title"),
+        vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
+/// The message `timeline.waits`.
+#[must_use]
+pub fn timeline_waits(key: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.waits"),
+        vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
 /// The message `tls.generate-failed`.
 #[must_use]
 pub fn tls_generate_failed(reason: impl std::fmt::Display) -> Message {
@@ -25584,6 +25949,93 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("time.work-day.too-title", "Start your work day too?"),
     ("time.work-day.too-yes", "Start work day"),
+    ("timeline.add-dependency", "Add dependency…"),
+    ("timeline.add-dependency-title", "Add dependency to {key}"),
+    ("timeline.add-it", "Add dependency"),
+    (
+        "timeline.amount-days",
+        "{count, plural, one {# day} other {# days}}",
+    ),
+    (
+        "timeline.amount-weeks",
+        "{count, plural, one {# week} other {# weeks}}",
+    ),
+    ("timeline.bar", "{key} {title}, {days}"),
+    ("timeline.card", "Selected: {key}"),
+    ("timeline.chart", "Timeline"),
+    ("timeline.dates-changed", "{key} now runs {days}"),
+    ("timeline.days", "{first} to {last}"),
+    (
+        "timeline.dependency-made",
+        "{waiting} now waits for {first}",
+    ),
+    ("timeline.drag-issue", "Drag {key} onto the timeline"),
+    ("timeline.earlier", "Earlier"),
+    (
+        "timeline.empty",
+        "No issue of this search has a date yet. Give one dates from Not scheduled yet.",
+    ),
+    ("timeline.end-field", "Bars end at"),
+    ("timeline.goal", "Goal {key}, {days}"),
+    ("timeline.goal-due", "Due date of {key}: {day}"),
+    (
+        "timeline.keys",
+        "Arrow keys move a selected bar by a day, with Shift by a week. Alt with an arrow key moves its due date, Alt and Shift with an arrow key its start date.",
+    ),
+    ("timeline.later", "Later"),
+    ("timeline.legend", "What the marks of the timeline mean"),
+    ("timeline.legend-due", "Due date of a goal"),
+    ("timeline.legend-goal", "Goal over its sub-issues"),
+    ("timeline.locked", "You may not change the dates of {key}."),
+    (
+        "timeline.locked-here",
+        "You may not change the dates of this issue.",
+    ),
+    ("timeline.more-issues", "Show more issues"),
+    ("timeline.more-rows", "Show more rows"),
+    ("timeline.moved-earlier", "{key} moved {amount} earlier"),
+    ("timeline.moved-later", "{key} moved {amount} later"),
+    ("timeline.must-finish-first", "{key} must finish first"),
+    ("timeline.names", "Issue"),
+    ("timeline.no-dates", "No dates yet"),
+    (
+        "timeline.no-dependency-kind",
+        "No kind of relation has the date effect Must finish first, so two issues cannot be connected here.",
+    ),
+    (
+        "timeline.not-saved",
+        "The dates of {key} were not saved. The timeline shows them as they are now.",
+    ),
+    ("timeline.not-scheduled", "Not scheduled yet"),
+    (
+        "timeline.not-scheduled-count",
+        "{count, plural, one {# issue has no dates} other {# issues have no dates}}",
+    ),
+    (
+        "timeline.not-scheduled-none",
+        "Every issue of this search has dates.",
+    ),
+    ("timeline.open", "Open"),
+    ("timeline.other-chosen", "Chosen: {key}"),
+    ("timeline.plan-by-effort", "Plan by effort"),
+    ("timeline.save-dates", "Save dates"),
+    ("timeline.scale-day", "{weekday} {day}"),
+    ("timeline.scale-month", "{month} {year}"),
+    ("timeline.scale-quarter", "Q{quarter} {year}"),
+    ("timeline.set-dates", "Set dates…"),
+    ("timeline.set-dates-title", "Set dates of {key}"),
+    ("timeline.show-as", "Show as"),
+    ("timeline.show-as-list", "List"),
+    ("timeline.show-as-timeline", "Timeline"),
+    ("timeline.start-field", "Bars start at"),
+    ("timeline.today", "Today"),
+    ("timeline.waits", "{key} waits for the other one"),
+    ("timeline.which-way", "Which one waits"),
+    ("timeline.zoom", "Zoom"),
+    ("timeline.zoom-day", "Days"),
+    ("timeline.zoom-month", "Months"),
+    ("timeline.zoom-quarter", "Quarters"),
+    ("timeline.zoom-week", "Weeks"),
     (
         "tls.generate-failed",
         "Bugaboo could not create a certificate: {reason}",

@@ -36,6 +36,7 @@ import type { messages as signIn } from "./sign-in.ts";
 import type { messages as signUp } from "./sign-up.ts";
 import type { messages as themeEditor } from "./theme-editor.ts";
 import type { messages as time } from "./time.ts";
+import type { messages as timeline } from "./timeline.ts";
 import type { messages as workTimes } from "./work-times.ts";
 import type { messages as workflows } from "./workflows.ts";
 
@@ -76,6 +77,7 @@ export type MessageKey =
   | keyof typeof signUp
   | keyof typeof themeEditor
   | keyof typeof time
+  | keyof typeof timeline
   | keyof typeof workTimes
   | keyof typeof workflows;
 
@@ -893,6 +895,29 @@ export interface MessageArguments {
   "time.work-day.timer-text": { issue: string | number };
   "time.work-day.timer-title": { issue: string | number };
   "time.work-day.too-text": { issue: string | number };
+  "timeline.add-dependency-title": { key: string | number };
+  "timeline.amount-days": { count: number };
+  "timeline.amount-weeks": { count: number };
+  "timeline.bar": { days: string | number; key: string | number; title: string | number };
+  "timeline.card": { key: string | number };
+  "timeline.dates-changed": { days: string | number; key: string | number };
+  "timeline.days": { first: string | number; last: string | number };
+  "timeline.dependency-made": { first: string | number; waiting: string | number };
+  "timeline.drag-issue": { key: string | number };
+  "timeline.goal": { days: string | number; key: string | number };
+  "timeline.goal-due": { day: string | number; key: string | number };
+  "timeline.locked": { key: string | number };
+  "timeline.moved-earlier": { amount: string | number; key: string | number };
+  "timeline.moved-later": { amount: string | number; key: string | number };
+  "timeline.must-finish-first": { key: string | number };
+  "timeline.not-saved": { key: string | number };
+  "timeline.not-scheduled-count": { count: number };
+  "timeline.other-chosen": { key: string | number };
+  "timeline.scale-day": { day: string | number; weekday: string | number };
+  "timeline.scale-month": { month: string | number; year: string | number };
+  "timeline.scale-quarter": { quarter: string | number; year: string | number };
+  "timeline.set-dates-title": { key: string | number };
+  "timeline.waits": { key: string | number };
   "work-times.away-added": { days: string | number };
   "work-times.away-change-name": { days: string | number };
   "work-times.away-changed": { days: string | number };

@@ -8,6 +8,8 @@ export const windowForms = {
   timeEntry: "time-entry",
   awayTime: "away-time",
   timeFactor: "time-factor",
+  setDates: "set-dates",
+  addDependency: "add-dependency",
 } as const;
 
 /** The name of a form that opens as a window. */

@@ -1,4 +1,5 @@
 import { decimalParts, type Schema } from "@bugaboo/api-client";
+import { t } from "@bugaboo/messages";
 
 import { addDays } from "../../shared/format.ts";
 import { ownValueText } from "../../shared/own-value-text.ts";
@@ -97,6 +98,20 @@ function placed(
     return { id: `${key.type}:${key.value}`, name: undefined };
   }
   return { id: `${key.type}:${key.value}`, name: group.name ?? undefined };
+}
+
+/** What a group is called in its header: in the list and on the timeline. */
+export function groupName(group: GroupOfKey): string {
+  if (group.statusGroup !== undefined) {
+    return t(`status-group.${group.statusGroup}`);
+  }
+  if (group.priority !== undefined) {
+    return t(`priority.${group.priority}`);
+  }
+  if (group.name !== undefined) {
+    return group.name;
+  }
+  return group.filter === undefined ? t("issues.group-unnamed") : t("issues.group-empty");
 }
 
 /** The group the server sends: its header, and the filter that selects its issues. */

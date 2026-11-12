@@ -3,22 +3,8 @@ import { Icon, iconName, iconSize, part, partOf, Priority, StatusIcon } from "@b
 import { GridListItem } from "react-aria-components";
 
 import { formatNumber } from "../../shared/format.ts";
-import type { GroupOfKey } from "./group-keys.ts";
+import { groupName, type GroupOfKey } from "./group-keys.ts";
 import { useListContext } from "./list-context.ts";
-
-/** What a group is called in its header. */
-function nameOf(group: GroupOfKey): string {
-  if (group.statusGroup !== undefined) {
-    return t(`status-group.${group.statusGroup}`);
-  }
-  if (group.priority !== undefined) {
-    return t(`priority.${group.priority}`);
-  }
-  if (group.name !== undefined) {
-    return group.name;
-  }
-  return group.filter === undefined ? t("issues.group-unnamed") : t("issues.group-empty");
-}
 
 export interface GroupHeaderProps {
   readonly group: GroupOfKey;
@@ -35,7 +21,7 @@ export interface GroupHeaderProps {
  * (Enter, Space or a click) folds the group. It cannot be ticked.
  */
 export function GroupHeader({ group, count, open, onToggle, note }: GroupHeaderProps) {
-  const name = nameOf(group);
+  const name = groupName(group);
   const { ticks } = useListContext();
   const itemId = `${group.id}/header`;
   const words = t(open ? "issues.group-open" : "issues.group-folded", { group: name, count });

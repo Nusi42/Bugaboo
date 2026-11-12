@@ -239,6 +239,9 @@ export const messages = {
   "issues.group-by": "Group by",
   "issues.group-by-none": "No grouping",
   "search.choose-saved": "Choose a saved search",
+  "timeline.show-as": "Show as",
+  "timeline.show-as-list": "List",
+  "timeline.show-as-timeline": "Timeline",
 } as const;
 
 register(messages);

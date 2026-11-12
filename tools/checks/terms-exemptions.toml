@@ -206,7 +206,7 @@ reason = "Time factor is the glossary's own term for the estimate of the person 
 
 [[allow]]
 term = "zoom"
-at = ["api:property TimelineOptionsBody.zoom", "api:schema Zoom"]
+at = ["api:property TimelineOptionsBody.zoom", "api:schema Zoom", "messages/en.json#timeline.zoom"]
 reason = "The glossary's own term Zoom (of the timeline): how many days a column of the timeline holds, from a day to a quarter (UX §4.7). Not the size of text, which is Larger text."
 
 # The messages of the row and the window of the time factor: only the phrase of the glossary term.
