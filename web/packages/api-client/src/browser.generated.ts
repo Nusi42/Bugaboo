@@ -2,3 +2,6 @@
 
 /** The one Trusted Types policy that may make HTML (the content security policy names it). */
 export const trustedTypesPolicyName = "bugaboo-markdown";
+
+/** Where the server serves the style sheets of own themes: every address of one starts with this. */
+export const ownThemeSheets = "/themes/";

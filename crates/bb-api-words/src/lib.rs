@@ -276,6 +276,11 @@ macro_rules! trusted_types_policy {
     };
 }
 
+/// Where the server serves the style sheets of own themes (ADR-0026, update M8): every address of
+/// one starts with this. `cargo xtask gen api` writes it to the browser client
+/// (`browser.generated.ts`), which keeps only such an address in the copy for the first frame.
+pub const OWN_THEME_SHEETS: &str = "/themes/";
+
 /// The Trusted Types policy of the browser app.
 pub mod trusted_types {
     /// The name of the policy: the only one the content security policy lets make HTML.

@@ -83,7 +83,8 @@ pub struct OwnTheme {
     /// The values it changes.
     #[not_personal]
     pub values: OwnValues,
-    /// When it was first saved; `None` while it is only a draft, which is listed nowhere.
+    /// When it was first saved; `None` while it was never saved: then it cannot be chosen, and it is
+    /// listed to its maker (and, for everyone, to who looks after themes) only.
     #[not_personal]
     pub saved_at: Option<Timestamp>,
     /// When it was made.

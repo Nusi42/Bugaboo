@@ -56,6 +56,22 @@ pub(crate) fn usable_by(theme: &OwnTheme, person: UserId) -> bool {
     theme.maker == person || (theme.kind == ThemeKind::ForEveryone && theme.saved_at.is_some())
 }
 
+/// Whether `person`, who holds `held` in the organization, may know `theme`: one they may use, or
+/// a theme for everyone that was never saved when they look after themes (*Change organization
+/// settings*), so a theme somebody left unsaved can be finished or taken away.
+pub(crate) fn known_to(theme: &OwnTheme, person: UserId, held: &Evaluation) -> bool {
+    usable_by(theme, person) || looks_after_unsaved(theme, held)
+}
+
+/// Whether `held` lets its holder see the themes for everyone that were never saved.
+pub(crate) fn sees_unsaved_for_everyone(held: &Evaluation) -> bool {
+    held.allows(Permission::ChangeOrganizationSettings)
+}
+
+fn looks_after_unsaved(theme: &OwnTheme, held: &Evaluation) -> bool {
+    theme.kind == ThemeKind::ForEveryone && sees_unsaved_for_everyone(held)
+}
+
 /// The thing a theme's edit lock and draft are about.
 pub(crate) fn editing_what(theme: ThemeId) -> Result<EditWhat, AppError> {
     Ok(EditWhat {
@@ -83,6 +99,7 @@ pub(crate) fn values_of(json: &serde_json::Value) -> Result<OwnValues, AppError>
 
 /// The pairs of the theme that extends `extends` with `values` that are *Hard to read*, each once.
 pub(crate) fn hard_pairs(extends: &str, values: &OwnValues) -> Result<Vec<NamedPair>, AppError> {
+    // `None` only for a built-in theme that does not exist, which the theme was checked against.
     let rated = readability(extends, values).ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
     let mut pairs: Vec<NamedPair> = Vec::new();
     for found in rated
@@ -164,15 +181,16 @@ impl<S: AuthStore> Ctx<'_, S> {
         theme: ThemeId,
         need: Need,
     ) -> Result<(OwnTheme, Arc<Evaluation>), AppError> {
+        let in_organization = self.evaluation_of(actor, Place::Organization).await?;
         let found = self
             .store()
             .own_theme(theme)
             .await
             .map_err(|error| internal::<S>(&error))?
-            .filter(|found| usable_by(found, actor.person.id))
+            .filter(|found| known_to(found, actor.person.id, &in_organization))
             .ok_or(AppError::Refused(ErrorCode::NotFound))?;
         let held = match need {
-            Need::Use => self.evaluation_of(actor, Place::Organization).await?,
+            Need::Use => in_organization,
             Need::Change => self.may_create_theme(actor, found.kind).await?,
         };
         Ok((found, held))

@@ -30,7 +30,7 @@ pub struct ThemeSheetQuery {
     pub theme: ThemeId,
 }
 
-/// Make a new own theme. It is listed nowhere until its first save.
+/// Make a new own theme. It cannot be chosen until its first save.
 pub struct CreateTheme {
     /// The secret of the session of the request.
     pub session_token: String,
@@ -120,7 +120,8 @@ pub struct ChosenTheme {
 /// The own themes a person may use, by name.
 #[derive(Clone, Debug)]
 pub struct ThemeList {
-    /// The themes for everyone and the person's own personal themes, saved ones only.
+    /// The saved themes for everyone, the person's own themes (also never saved) and, for who
+    /// looks after themes, the themes for everyone never saved.
     pub themes: Vec<ThemeView>,
 }
 

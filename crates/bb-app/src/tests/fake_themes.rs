@@ -36,20 +36,33 @@ impl ThemeStore for FakeStore {
         Ok(count(tx, ThemeKind::Personal, Some(maker)))
     }
 
-    async fn themes_usable_by(&self, person: UserId) -> Result<Vec<OwnTheme>, FakeError> {
+    async fn themes_listed_for(
+        &self,
+        person: UserId,
+        unsaved_for_everyone: bool,
+    ) -> Result<Vec<OwnTheme>, FakeError> {
         Ok(self.read(|state| {
             let mut found: Vec<OwnTheme> = state
                 .own_themes
                 .iter()
                 .filter(|theme| {
-                    theme.saved_at.is_some()
-                        && (theme.kind == ThemeKind::ForEveryone || theme.maker == person)
+                    theme.maker == person
+                        || (theme.kind == ThemeKind::ForEveryone
+                            && (theme.saved_at.is_some() || unsaved_for_everyone))
                 })
                 .cloned()
                 .collect();
             found.sort_by(|a, b| a.name.as_str().cmp(b.name.as_str()).then(a.id.cmp(&b.id)));
             found
         }))
+    }
+
+    async fn lock_themes_of(
+        _tx: &mut Tx,
+        _kind: ThemeKind,
+        _maker: UserId,
+    ) -> Result<(), FakeError> {
+        Ok(())
     }
 
     async fn insert_own_theme(tx: &mut Tx, theme: &OwnTheme) -> Result<(), FakeError> {

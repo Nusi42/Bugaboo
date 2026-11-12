@@ -11,6 +11,7 @@ use sea_query::{Cond, Expr, ExprTrait as _, Order, Query, SelectStatement};
 use crate::auth::AuthStorage;
 use crate::db::{Row, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
+use crate::locks::{LockClass, lock_key};
 use crate::schema::OwnThemeRow;
 
 fn select() -> SelectStatement {
@@ -109,18 +110,22 @@ impl ThemeStore for AuthStorage {
         count(transaction, &count_where(ThemeKind::Personal, Some(maker))).await
     }
 
-    async fn themes_usable_by(&self, person: UserId) -> Result<Vec<OwnTheme>, StoreError> {
+    async fn themes_listed_for(
+        &self,
+        person: UserId,
+        unsaved_for_everyone: bool,
+    ) -> Result<Vec<OwnTheme>, StoreError> {
+        let mut for_everyone =
+            Cond::all().add(Expr::col(OwnThemeRow::Kind).eq(ThemeKind::ForEveryone.code()));
+        if !unsaved_for_everyone {
+            for_everyone = for_everyone.add(Expr::col(OwnThemeRow::SavedAt).is_not_null());
+        }
         let mut statement = select();
         statement
-            .and_where(Expr::col(OwnThemeRow::SavedAt).is_not_null())
             .cond_where(
                 Cond::any()
-                    .add(Expr::col(OwnThemeRow::Kind).eq(ThemeKind::ForEveryone.code()))
-                    .add(
-                        Cond::all()
-                            .add(Expr::col(OwnThemeRow::Kind).eq(ThemeKind::Personal.code()))
-                            .add(Expr::col(OwnThemeRow::Maker).eq(person.stored())),
-                    ),
+                    .add(Expr::col(OwnThemeRow::Maker).eq(person.stored()))
+                    .add(for_everyone),
             )
             .order_by(OwnThemeRow::Name, Order::Asc)
             .order_by(OwnThemeRow::Id, Order::Asc);
@@ -130,6 +135,19 @@ impl ThemeStore for AuthStorage {
             .iter()
             .map(read_theme)
             .collect()
+    }
+
+    async fn lock_themes_of(
+        transaction: &mut Transaction,
+        kind: ThemeKind,
+        maker: UserId,
+    ) -> Result<(), StoreError> {
+        // The themes for everyone are one set; the personal ones are a set for each person.
+        let key = match kind {
+            ThemeKind::ForEveryone => 0,
+            ThemeKind::Personal => lock_key(maker.to_bytes()),
+        };
+        transaction.advisory_lock(LockClass::Themes, key).await
     }
 
     async fn insert_own_theme(

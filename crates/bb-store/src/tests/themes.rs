@@ -1,4 +1,5 @@
-//! Own themes on both databases (THM-04): a theme that was never saved is listed nowhere but counts
+//! Own themes on both databases (THM-04): a theme that was never saved is listed to its maker (and,
+//! for everyone, to who looks after themes) only, and counts
 //! against the limits, a personal theme is listed for its maker only, a save counts the version up,
 //! and a stale version changes nothing.
 
@@ -77,7 +78,8 @@ async fn save(
 }
 
 #[tokio::test]
-async fn thm_04_a_theme_is_listed_nowhere_before_its_first_save() -> TestResult {
+async fn thm_04_a_theme_never_saved_is_listed_to_its_maker_and_to_who_looks_after_themes()
+-> TestResult {
     each_database("thm_04_store_draft_and_save", async |db| {
         let fixture = fixture(db).await?;
         let storage = &fixture.storage;
@@ -86,7 +88,13 @@ async fn thm_04_a_theme_is_listed_nowhere_before_its_first_save() -> TestResult 
         let mut made = theme(&mut source, ThemeKind::Personal, maker, "Evening");
         insert(storage, &mut source, &made).await?;
         assert_eq!(storage.own_theme(made.id).await?, Some(made.clone()));
-        assert!(storage.themes_usable_by(maker).await?.is_empty());
+        let other = UserId::generate(&mut source);
+        assert_eq!(storage.themes_listed_for(maker, false).await?.len(), 1);
+        assert!(storage.themes_listed_for(other, true).await?.is_empty());
+        let everyone = theme(&mut source, ThemeKind::ForEveryone, maker, "Company look");
+        insert(storage, &mut source, &everyone).await?;
+        assert!(storage.themes_listed_for(other, false).await?.is_empty());
+        assert_eq!(storage.themes_listed_for(other, true).await?, [everyone]);
         assert_eq!(
             storage.count_personal_themes_of(maker).await?,
             1,
@@ -102,7 +110,12 @@ async fn thm_04_a_theme_is_listed_nowhere_before_its_first_save() -> TestResult 
         let saved = storage.own_theme(id).await?.unwrap();
         assert_eq!(saved.version, FIRST_VERSION + 1);
         assert_eq!(saved.values, made.values);
-        assert_eq!(storage.themes_usable_by(maker).await?.len(), 1);
+        let listed = storage.themes_listed_for(maker, false).await?;
+        assert!(
+            listed
+                .iter()
+                .any(|found| found.id == id && found.saved_at.is_some())
+        );
         assert_eq!(storage.count_personal_themes_of(maker).await?, 1);
         // A save from a version that is gone changes nothing.
         assert!(!save(storage, &mut source, &made, FIRST_VERSION).await?);
@@ -135,11 +148,11 @@ async fn thm_04_a_personal_theme_is_listed_for_its_maker_only() -> TestResult {
                 .collect()
         };
         assert_eq!(
-            names(storage.themes_usable_by(maker).await?),
+            names(storage.themes_listed_for(maker, false).await?),
             ["Company look", "Mine"]
         );
         assert_eq!(
-            names(storage.themes_usable_by(other).await?),
+            names(storage.themes_listed_for(other, false).await?),
             ["Company look", "Theirs"]
         );
         assert_eq!(storage.count_themes_for_everyone().await?, 1);

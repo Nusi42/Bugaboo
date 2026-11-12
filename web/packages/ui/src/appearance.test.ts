@@ -100,6 +100,9 @@ describe("thm_04 an own theme as the light or dark choice", () => {
     // The first frame keeps it, and drops one that does not belong to its side.
     expect(parseAppearance(JSON.stringify(appearance)).darkOwn).toEqual(own);
     expect(parseAppearance(JSON.stringify({ ...appearance, dark: "x" })).darkOwn).toBeNull();
+    // A stored address that is not one of the server's sheets is never linked.
+    const elsewhere = { ...appearance, darkOwn: { ...own, sheet: "https://elsewhere.test/x.css" } };
+    expect(parseAppearance(JSON.stringify(elsewhere)).darkOwn).toBeNull();
   });
 });
 

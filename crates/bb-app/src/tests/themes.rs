@@ -207,7 +207,8 @@ async fn thm_04_a_draft_is_served_to_its_editor_only_and_listed_nowhere() -> Out
     let admin = token(&world);
     let view = a_theme(&world, &admin, ThemeKind::ForEveryone, "dusk").await?;
     let what = editing_what(view.theme.id)?;
-    // A new theme is listed nowhere, also not for its maker, and has no sheet of its own.
+    // A new theme is offered as a choice to nobody and has no sheet of its own; its maker finds it
+    // in the list, marked as never saved, to go on with it.
     let listed = themes(
         &world.ctx(),
         ThemesQuery {
@@ -216,7 +217,8 @@ async fn thm_04_a_draft_is_served_to_its_editor_only_and_listed_nowhere() -> Out
     )
     .await?
     .into_value();
-    assert!(listed.themes.is_empty());
+    assert_eq!(listed.themes.len(), 1);
+    assert!(listed.themes[0].theme.saved_at.is_none());
     let query = |session: &str| ThemeSheetQuery {
         session_token: session.to_owned(),
         theme: view.theme.id,
@@ -260,15 +262,77 @@ async fn thm_04_a_draft_is_served_to_its_editor_only_and_listed_nowhere() -> Out
             Some(ErrorCode::NotFound)
         );
     }
+    // They see the theme, which they may change, but its values as the draft holds them nowhere.
     let listed = themes(
         &world.ctx(),
         ThemesQuery {
-            session_token: other.session_token,
+            session_token: other.session_token.clone(),
         },
     )
     .await?
     .into_value();
-    assert!(listed.themes.is_empty(), "a draft is listed nowhere");
+    assert_eq!(listed.themes.len(), 1, "a theme for everyone never saved");
+    assert!(
+        listed.themes[0].theme.values.is_empty(),
+        "a draft is listed nowhere"
+    );
+    // While its maker edits it, nobody else takes it away.
+    let refused = delete_theme(
+        &world.ctx(),
+        DeleteTheme {
+            session_token: other.session_token,
+            theme: view.theme.id,
+            version: view.theme.version,
+        },
+    )
+    .await
+    .err()
+    .ok_or("a theme that is being edited was taken away")?;
+    assert_eq!(code(&refused), Some(ErrorCode::EditInProgress));
+    Ok(())
+}
+
+#[tokio::test]
+async fn thm_04_a_theme_never_saved_is_listed_to_its_maker_only_or_to_who_looks_after_themes()
+-> Outcome {
+    let world = World::new().await?;
+    let lea = world.person("lea@example.com").await?;
+    let ben = world.person("ben@example.com").await?;
+    let admin = token(&world);
+    let personal = a_theme(&world, &lea.session_token, ThemeKind::Personal, "dusk").await?;
+    let everyone = a_theme(&world, &admin, ThemeKind::ForEveryone, "dusk").await?;
+    let ids = |session: String| async {
+        themes(
+            &world.ctx(),
+            ThemesQuery {
+                session_token: session,
+            },
+        )
+        .await
+        .map(|list| {
+            list.into_value()
+                .themes
+                .iter()
+                .map(|view| view.theme.id)
+                .collect::<Vec<_>>()
+        })
+    };
+    assert_eq!(ids(lea.session_token.clone()).await?, [personal.theme.id]);
+    assert!(ids(ben.session_token.clone()).await?.is_empty());
+    assert_eq!(ids(admin.clone()).await?, [everyone.theme.id]);
+    // Another holder of *Change organization settings* may take it away.
+    with_role(&world, &ben, StartingRole::Administrator, None).await?;
+    assert_eq!(ids(ben.session_token.clone()).await?, [everyone.theme.id]);
+    delete_theme(
+        &world.ctx(),
+        DeleteTheme {
+            session_token: ben.session_token,
+            theme: everyone.theme.id,
+            version: everyone.theme.version,
+        },
+    )
+    .await?;
+    assert!(ids(admin).await?.is_empty());
     Ok(())
 }
 

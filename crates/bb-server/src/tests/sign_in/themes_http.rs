@@ -7,9 +7,13 @@ use axum::http::StatusCode;
 use bb_testing::{TestResult, each_database};
 use serde_json::json;
 
-use super::http::{ADA_EMAIL, Browser, rig_and_app};
+use bb_core::theme::PERSONAL_THEMES_MOST;
+use bb_testing::Failure;
+
+use super::http::{ADA_EMAIL, Browser, Reply, rig_and_app};
 use super::issues_site::{ok, text_in};
-use super::policy_rig::Org;
+use super::policy_rig::{Member, Org};
+use bb_app::access::StartingRole;
 
 const THEMES: &str = "/api/v1/themes";
 const DRAFTS: &str = "/api/v1/drafts";
@@ -45,6 +49,7 @@ async fn thm_04_a_sheet_is_kept_by_its_version_and_served_to_who_may_use_it_only
         // A personal theme is its maker's: anybody else is told it does not exist.
         let refused = ben.send("GET", &sheet, None).await?;
         assert_eq!(refused.code(), "resource.not-found");
+        assert_eq!(refused.header("cache-control"), "no-store");
 
         // The draft of the editor is served to the editor only.
         let draft = json!({
@@ -56,10 +61,94 @@ async fn thm_04_a_sheet_is_kept_by_its_version_and_served_to_who_may_use_it_only
             .send("GET", &format!("/themes/{id}/draft.css"), None)
             .await?;
         assert_eq!(drafted.status, StatusCode::OK);
+        // A draft changes while it is edited: it is never kept, whatever its address says.
+        assert_eq!(drafted.header("cache-control"), "private, no-store");
         let hidden = ben
             .send("GET", &format!("/themes/{id}/draft.css"), None)
             .await?;
         assert_eq!(hidden.code(), "resource.not-found");
+        assert_eq!(hidden.header("cache-control"), "no-store");
+        Ok(())
+    })
+    .await
+}
+
+/// Makes a new theme of `kind` as `browser`; the answer.
+async fn create(browser: &mut Browser, kind: &str) -> Result<Reply, Failure> {
+    browser
+        .send(
+            "POST",
+            THEMES,
+            Some(json!({"name": "Evening", "kind": kind, "extends": "dusk"})),
+        )
+        .await
+}
+
+/// The IDs and whether each was saved, of the themes `browser` is offered.
+async fn listed(browser: &mut Browser) -> Result<Vec<(String, bool)>, Failure> {
+    let list = browser.send("GET", THEMES, None).await?;
+    Ok(ok(&list)?["themes"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .map(|theme| {
+            (
+                theme["id"].as_str().unwrap_or_default().to_owned(),
+                theme["saved"] == true,
+            )
+        })
+        .collect())
+}
+
+#[tokio::test]
+async fn thm_04_two_new_themes_at_the_same_moment_cannot_both_take_the_last_place() -> TestResult {
+    each_database("thm_04_theme_limit_race", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        Org::start(&rig).await?;
+        let mut ada = Browser::signed_in_as(&app, ADA_EMAIL).await?;
+        let mut again = Browser::signed_in_as(&app, ADA_EMAIL).await?;
+        // One place is left.
+        for _ in 1..PERSONAL_THEMES_MOST {
+            ok(&create(&mut ada, "personal").await?)?;
+        }
+        let (first, second) =
+            tokio::join!(create(&mut ada, "personal"), create(&mut again, "personal"));
+        let mut codes = [first?.code().to_owned(), second?.code().to_owned()];
+        codes.sort();
+        assert_eq!(codes, ["", "theme.too-many-personal"]);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn thm_04_a_theme_never_saved_is_listed_to_its_maker_and_to_who_looks_after_themes()
+-> TestResult {
+    each_database("thm_04_unsaved_listed", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let org = Org::start(&rig).await?;
+        let mut ada = Browser::signed_in_as(&app, ADA_EMAIL).await?;
+        let mut ben = ada.invite("ben@example.test", "Ben Baker").await?;
+        let mut cleo = ada.invite("cleo@example.test", "Cleo Clark").await?;
+        let cleo_id = text_in(ok(&cleo.send("GET", "/api/v1/auth/me", None).await?)?, "id")?;
+        let administrator = org.starting_roles().await?[StartingRole::Administrator.code()];
+        let as_member = Member {
+            id: cleo_id.parse().map_err(|_| "no person")?,
+            session: String::new(),
+        };
+        org.give_everywhere(&as_member, administrator).await?;
+        let mine = text_in(ok(&create(&mut ben, "personal").await?)?, "id")?;
+        let everyone = text_in(ok(&create(&mut ada, "for-everyone").await?)?, "id")?;
+        // The maker sees their own, marked as not saved; nobody else sees a personal one.
+        assert_eq!(listed(&mut ben).await?, [(mine.clone(), false)]);
+        // A theme for everyone that was never saved is for those who look after themes only.
+        assert_eq!(listed(&mut cleo).await?, [(everyone.clone(), false)]);
+        // They may take it away.
+        let gone = cleo
+            .send("DELETE", &format!("{THEMES}/{everyone}?version=1"), None)
+            .await?;
+        assert_eq!(gone.status, StatusCode::NO_CONTENT, "{}", gone.body);
+        assert!(listed(&mut ada).await?.is_empty());
         Ok(())
     })
     .await

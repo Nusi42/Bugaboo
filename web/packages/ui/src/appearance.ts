@@ -1,4 +1,9 @@
-import { settingChoices, settingDefaults, type SettingChoice } from "@bugaboo/api-client";
+import {
+  ownThemeSheets,
+  settingChoices,
+  settingDefaults,
+  type SettingChoice,
+} from "@bugaboo/api-client";
 
 import { Listeners } from "./listeners.ts";
 import {
@@ -74,9 +79,11 @@ function isDark(value: unknown): value is DarkThemeId {
 function isChosenOwn(value: unknown): value is ChosenOwn {
   const text = (key: string): unknown =>
     typeof value === "object" && value !== null ? Reflect.get(value, key) : undefined;
+  const sheet = text("sheet");
   return (
     typeof text("id") === "string" &&
-    typeof text("sheet") === "string" &&
+    typeof sheet === "string" &&
+    sheet.startsWith(ownThemeSheets) &&
     typeof text("choice") === "string"
   );
 }

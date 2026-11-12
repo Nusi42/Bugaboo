@@ -7,7 +7,7 @@ use bb_core::id::ThemeId;
 use bb_core::theme::ThemeKind;
 use bb_policy::{Permission, Place};
 
-use super::rules::usable_by;
+use super::rules::known_to;
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::editing::RecordFacts;
@@ -24,12 +24,13 @@ impl<S: AuthStore> Ctx<'_, S> {
         let Ok(id) = ThemeId::from_bytes(record.id.to_bytes()) else {
             return Ok(None);
         };
+        let held = self.evaluation_of(actor, Place::Organization).await?;
         let Some(theme) = self
             .store()
             .own_theme(id)
             .await
             .map_err(|error| internal::<S>(&error))?
-            .filter(|theme| usable_by(theme, actor.person.id))
+            .filter(|theme| known_to(theme, actor.person.id, &held))
         else {
             return Ok(None);
         };

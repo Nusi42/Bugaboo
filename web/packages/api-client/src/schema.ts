@@ -4607,7 +4607,7 @@ export interface paths {
     get: operations["listThemes"];
     put?: never;
     /**
-     * Makes a new own theme that extends a built-in theme. It is listed nowhere until its first save.
+     * Makes a new own theme that extends a built-in theme. It cannot be chosen until its first save.
      *     A theme for everyone needs *Change organization settings*.
      */
     post: operations["createTheme"];
@@ -11152,7 +11152,10 @@ export interface components {
       may_change: boolean;
       /** @description What it is called. */
       name: string;
-      /** @description Whether it was saved at least once; a theme that was not is listed nowhere. */
+      /**
+       * @description Whether it was saved at least once. A theme never saved is listed to its maker (and, for
+       *     everyone, to who holds *Change organization settings*) and cannot be chosen.
+       */
       saved: boolean;
       /**
        * @description The address of its style sheet, which changes with every save. Absent while it was never

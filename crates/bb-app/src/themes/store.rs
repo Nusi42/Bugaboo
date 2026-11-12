@@ -6,7 +6,7 @@
 use std::future::Future;
 
 use bb_core::id::{ThemeId, UserId};
-use bb_core::theme::OwnTheme;
+use bb_core::theme::{OwnTheme, ThemeKind};
 use bb_core::version::Version;
 
 use crate::ports::ChangeStore;
@@ -25,13 +25,17 @@ pub trait ThemeStore: ChangeStore + 'static {
     }
 
     reads! {
-        /// The saved themes a person may use: those for everyone and their own personal ones, by
-        /// name. A theme that was never saved is in no list.
-        fn themes_usable_by(person: UserId) -> Vec<OwnTheme>;
+        /// The themes listed to a person, by name: the saved themes for everyone, every theme the
+        /// person made (also one never saved), and, with `unsaved_for_everyone`, the themes for
+        /// everyone that were never saved (for who looks after them).
+        fn themes_listed_for(person: UserId, unsaved_for_everyone: bool) -> Vec<OwnTheme>;
     }
 
     writes! {
-        /// Adds a theme; it is listed nowhere until its first save.
+        /// Holds the themes of a kind (those for everyone, or the personal ones of `maker`) until
+        /// the change ends, so two changes at the same moment cannot both pass a limit.
+        fn lock_themes_of(kind: ThemeKind, maker: UserId) -> ();
+        /// Adds a theme; it is offered as a choice nowhere until its first save.
         fn insert_own_theme(theme: &OwnTheme) -> ();
         /// Writes a save: name and values, counts the version up, sets the first save moment, and
         /// says whether the theme was still at `version`.

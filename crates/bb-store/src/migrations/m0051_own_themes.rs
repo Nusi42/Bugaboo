@@ -1,9 +1,9 @@
 //! Migration 51: own themes (THM-04, ADR-0026 update M8).
 //!
 //! One row for each theme of an organization or of a person: its name, whether it is for everyone
-//! or personal, the person who made it, the built-in theme it extends, the values it changes (as
-//! JSON text) and the draft of the editor. A theme that has never been saved has no `saved_at`
-//! and is listed nowhere. Nothing is written into the table. The maker has no reference to the
+//! or personal, the person who made it, the built-in theme it extends and the values it changes (as
+//! JSON text); the unsaved values of the editor are its editing draft (ADR-0019). A theme that has
+//! never been saved has no `saved_at` and cannot be chosen. Nothing is written into the table. The maker has no reference to the
 //! person (a removed person leaves a tombstone, PRIV-04).
 
 use sea_query::{ColumnDef, Index, Table};

@@ -48,7 +48,7 @@ struct NewTheme {
     name: ThemeName,
     extends: TechnicalName,
     values: OwnValues,
-    /// Saved at once (a copy, an upload), or listed nowhere until its first save (a new theme).
+    /// Saved at once (a copy, an upload), or not offered as a choice until its first save (a new theme).
     saved: bool,
 }
 
@@ -128,6 +128,22 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 }
 
+impl Adding {
+    /// Adds the theme with its event, in one change that holds the themes of its kind and refuses
+    /// it when the limit of the kind is reached. The one write of a new theme: making one, a copy
+    /// and an upload (ARCH-EVENTS reads the call by its name).
+    async fn record_change<S: AuthStore>(&self, ctx: &Ctx<'_, S>) -> Result<(), AppError> {
+        let why = Why::default();
+        let (stopped, theme) = (why.clone(), self.theme.clone());
+        ctx.store()
+            .record_change(&self.event, move |transaction| {
+                Box::pin(insert_within_limit::<S>(transaction, theme, stopped))
+            })
+            .await
+            .map_err(|error| why.said_or_failed::<S>(&error))
+    }
+}
+
 /// Inside the change that adds `theme`: refuses it when the limit of its kind is reached (a theme
 /// that was never saved counts too), and adds it otherwise.
 async fn insert_within_limit<S: AuthStore>(
@@ -136,6 +152,7 @@ async fn insert_within_limit<S: AuthStore>(
     stopped: Why,
 ) -> Result<(), S::Error> {
     let (most, refusal) = limit_of(theme.kind);
+    S::lock_themes_of(transaction, theme.kind, theme.maker).await?;
     let count = match theme.kind {
         ThemeKind::ForEveryone => S::count_themes_for_everyone_in(transaction).await?,
         ThemeKind::Personal => S::count_personal_themes_of_in(transaction, theme.maker).await?,
@@ -183,14 +200,7 @@ pub async fn create_theme<S: AuthStore>(
             saved: false,
         },
     )?;
-    let why = Why::default();
-    let (stopped, theme) = (why.clone(), adding.theme.clone());
-    ctx.store()
-        .record_change(&adding.event, move |transaction| {
-            Box::pin(insert_within_limit::<S>(transaction, theme, stopped))
-        })
-        .await
-        .map_err(|error| why.said_or_failed::<S>(&error))?;
+    adding.record_change(ctx).await?;
     Ok(held.authorize(view_of(adding.theme, &held, actor.person.id)))
 }
 
@@ -297,14 +307,7 @@ pub async fn copy_theme<S: AuthStore>(
             source.values,
         )
         .await?;
-    let why = Why::default();
-    let (stopped, theme) = (why.clone(), saved.adding.theme.clone());
-    ctx.store()
-        .record_change(&saved.adding.event, move |transaction| {
-            Box::pin(insert_within_limit::<S>(transaction, theme, stopped))
-        })
-        .await
-        .map_err(|error| why.said_or_failed::<S>(&error))?;
+    saved.adding.record_change(ctx).await?;
     Ok(added(saved, actor.person.id))
 }
 
@@ -339,14 +342,7 @@ pub async fn upload_theme<S: AuthStore>(
             upload.values,
         )
         .await?;
-    let why = Why::default();
-    let (stopped, theme) = (why.clone(), saved.adding.theme.clone());
-    ctx.store()
-        .record_change(&saved.adding.event, move |transaction| {
-            Box::pin(insert_within_limit::<S>(transaction, theme, stopped))
-        })
-        .await
-        .map_err(|error| why.said_or_failed::<S>(&error))?;
+    saved.adding.record_change(ctx).await?;
     Ok(added(saved, actor.person.id))
 }
 

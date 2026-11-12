@@ -7,7 +7,7 @@ use bb_core::edit::{DraftTarget, draft_cutoff};
 use bb_core::theme::{OwnValues, ThemeFile, style_sheet};
 use bb_policy::{Authorized, Place};
 
-use super::rules::{Need, editing_what, hard_pairs, view_of};
+use super::rules::{Need, editing_what, hard_pairs, sees_unsaved_for_everyone, view_of};
 use super::types::{
     ThemeDetail, ThemeExport, ThemeList, ThemeQuery, ThemeSheet, ThemeSheetQuery, ThemesQuery,
 };
@@ -21,8 +21,10 @@ fn sheet_of(theme: &str, values: &OwnValues, version: i64) -> Result<ThemeSheet,
     Ok(ThemeSheet { css, version })
 }
 
-/// The own themes the person may use: those for everyone and their own personal ones, saved ones
-/// only, by name.
+/// The own themes listed to the person, by name: the saved themes for everyone and every theme
+/// they made, saved or not (`ThemeView::theme.saved_at` tells), and for who holds *Change
+/// organization settings* also the themes for everyone that were never saved. Only a saved theme
+/// can be chosen.
 ///
 /// # Errors
 /// `auth.not-signed-in` without a session.
@@ -34,7 +36,7 @@ pub async fn themes<S: AuthStore>(
     let held = ctx.evaluation_of(&actor, Place::Organization).await?;
     let found = ctx
         .store()
-        .themes_usable_by(actor.person.id)
+        .themes_listed_for(actor.person.id, sees_unsaved_for_everyone(&held))
         .await
         .map_err(|error| internal::<S>(&error))?;
     let themes = found

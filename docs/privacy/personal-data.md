@@ -935,18 +935,18 @@ An own theme (THM-04).
 
 Defined in `crates/bb-core/src/theme/record.rs`.
 
-| Field        | Personal data | Category   | Legal basis | What it holds                                                                                                                |
-| ------------ | ------------- | ---------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `id`         | No            | –          | –           | The ID of the theme, in the address of its style sheet.                                                                      |
-| `kind`       | No            | –          | –           | Whether it is for everyone or personal.                                                                                      |
-| `maker`      | Yes           | `identity` | `contract`  | The person of a personal theme, or who made a theme for everyone.                                                            |
-| `name`       | No            | –          | –           | What the theme is called.                                                                                                    |
-| `extends`    | No            | –          | –           | The built-in theme it extends.                                                                                               |
-| `values`     | No            | –          | –           | The values it changes.                                                                                                       |
-| `saved_at`   | No            | –          | –           | When it was first saved; `None` while it is only a draft, which is listed nowhere.                                           |
-| `created_at` | No            | –          | –           | When it was made.                                                                                                            |
-| `updated_at` | No            | –          | –           | When it was last changed.                                                                                                    |
-| `version`    | No            | –          | –           | Counts up with every save, for the check that nobody changed it meanwhile (ADR-0019) and for the address of its style sheet. |
+| Field        | Personal data | Category   | Legal basis | What it holds                                                                                                                                                          |
+| ------------ | ------------- | ---------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`         | No            | –          | –           | The ID of the theme, in the address of its style sheet.                                                                                                                |
+| `kind`       | No            | –          | –           | Whether it is for everyone or personal.                                                                                                                                |
+| `maker`      | Yes           | `identity` | `contract`  | The person of a personal theme, or who made a theme for everyone.                                                                                                      |
+| `name`       | No            | –          | –           | What the theme is called.                                                                                                                                              |
+| `extends`    | No            | –          | –           | The built-in theme it extends.                                                                                                                                         |
+| `values`     | No            | –          | –           | The values it changes.                                                                                                                                                 |
+| `saved_at`   | No            | –          | –           | When it was first saved; `None` while it was never saved: then it cannot be chosen, and it is listed to its maker (and, for everyone, to who looks after themes) only. |
+| `created_at` | No            | –          | –           | When it was made.                                                                                                                                                      |
+| `updated_at` | No            | –          | –           | When it was last changed.                                                                                                                                              |
+| `version`    | No            | –          | –           | Counts up with every save, for the check that nobody changed it meanwhile (ADR-0019) and for the address of its style sheet.                                           |
 
 ### PasswordLogin
 

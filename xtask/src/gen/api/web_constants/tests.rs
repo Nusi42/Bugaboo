@@ -3,7 +3,7 @@
 use super::*;
 
 #[test]
-fn the_policy_name_comes_from_the_macro_of_the_api_words() {
+fn the_policy_name_and_the_place_of_the_sheets_come_from_the_api_words() {
     let source = (
         WORDS_SOURCE.to_owned(),
         "macro_rules! trusted_types_policy {
@@ -11,14 +11,13 @@ fn the_policy_name_comes_from_the_macro_of_the_api_words() {
         \"a-policy\"
     };
 }
+pub const OWN_THEME_SHEETS: &str = \"/sheets/\";
 "
         .to_owned(),
     );
-    assert!(
-        browser_names(&[source])
-            .unwrap()
-            .contains("= \"a-policy\";")
-    );
+    let names = browser_names(&[source]).unwrap();
+    assert!(names.contains("trustedTypesPolicyName = \"a-policy\";"));
+    assert!(names.contains("ownThemeSheets = \"/sheets/\";"));
     assert!(browser_names(&[]).is_err());
 }
 

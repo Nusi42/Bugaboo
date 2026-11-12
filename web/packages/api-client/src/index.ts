@@ -67,7 +67,7 @@ export {
   signUpResendMinutes,
   testEmailEverySeconds,
 } from "./notifications.generated.ts";
-export { trustedTypesPolicyName } from "./browser.generated.ts";
+export { ownThemeSheets, trustedTypesPolicyName } from "./browser.generated.ts";
 export { isSafeHtml, markSafeHtml, type SafeHtml } from "./safe-html.ts";
 export {
   choiceNumberDigits,

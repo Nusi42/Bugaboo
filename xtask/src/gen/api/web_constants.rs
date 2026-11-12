@@ -21,6 +21,7 @@ use crate::source::Source;
 const APP_PATHS_SOURCE: &str = "crates/bb-core/src/app_paths.rs";
 const WORDS_SOURCE: &str = "crates/bb-api-words/src/lib.rs";
 const POLICY_MACRO: &str = "macro_rules! trusted_types_policy";
+const OWN_THEME_SHEETS: &str = "pub const OWN_THEME_SHEETS: &str = ";
 const PAGING_SOURCE: &str = "crates/bb-core/src/paging.rs";
 const EDIT_SOURCE: &str = "crates/bb-core/src/edit.rs";
 const COMMENT_SOURCE: &str = "crates/bb-core/src/comment.rs";
@@ -762,9 +763,16 @@ pub(super) fn browser_names(sources: &[Source]) -> anyhow::Result<String> {
         .split_once(POLICY_MACRO)
         .and_then(|(_, rest)| rest.split('"').nth(1))
         .with_context(|| format!("{WORDS_SOURCE} has no `{POLICY_MACRO}` with a name"))?;
+    let sheets = text
+        .split_once(OWN_THEME_SHEETS)
+        .and_then(|(_, rest)| rest.split('"').nth(1))
+        .with_context(|| format!("{WORDS_SOURCE} has no `{OWN_THEME_SHEETS}`"))?;
     Ok(format!(
         "{TS_HEADER}/** The one Trusted Types policy that may make HTML (the content security policy names it). */
 export const trustedTypesPolicyName = \"{name}\";
+
+/** Where the server serves the style sheets of own themes: every address of one starts with this. */
+export const ownThemeSheets = \"{sheets}\";
 "
     ))
 }

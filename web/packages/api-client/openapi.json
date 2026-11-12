@@ -16958,7 +16958,7 @@
       },
       "post": {
         "tags": ["themes"],
-        "summary": "Makes a new own theme that extends a built-in theme. It is listed nowhere until its first save.\nA theme for everyone needs *Change organization settings*.",
+        "summary": "Makes a new own theme that extends a built-in theme. It cannot be chosen until its first save.\nA theme for everyone needs *Change organization settings*.",
         "operationId": "createTheme",
         "requestBody": {
           "content": {
@@ -30774,7 +30774,7 @@
           },
           "saved": {
             "type": "boolean",
-            "description": "Whether it was saved at least once; a theme that was not is listed nowhere."
+            "description": "Whether it was saved at least once. A theme never saved is listed to its maker (and, for\neveryone, to who holds *Change organization settings*) and cannot be chosen."
           },
           "sheet": {
             "type": ["string", "null"],

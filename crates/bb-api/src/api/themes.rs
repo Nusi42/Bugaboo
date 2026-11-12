@@ -71,7 +71,8 @@ pub(crate) struct ThemeBody {
     sheet: Option<String>,
     /// Whether the person may change it and take it away.
     may_change: bool,
-    /// Whether it was saved at least once; a theme that was not is listed nowhere.
+    /// Whether it was saved at least once. A theme never saved is listed to its maker (and, for
+    /// everyone, to who holds *Change organization settings*) and cannot be chosen.
     saved: bool,
     /// Counts up with every save; a change and a deletion send it back.
     version: i64,
@@ -232,7 +233,7 @@ async fn list_themes(
     answer_authorized(&list.map(|list| ThemeListBody::from(&list)))
 }
 
-/// Makes a new own theme that extends a built-in theme. It is listed nowhere until its first save.
+/// Makes a new own theme that extends a built-in theme. It cannot be chosen until its first save.
 /// A theme for everyone needs *Change organization settings*.
 #[utoipa::path(
     post,

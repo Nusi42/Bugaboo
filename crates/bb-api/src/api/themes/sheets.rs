@@ -5,11 +5,13 @@
 //!
 //! An address with the version the sheet has now is kept like a hashed asset, but only by the
 //! browser of the person (`private`): a sheet is for the people who may use the theme. A changed
-//! theme has a new address; an address with another version is asked again every time.
+//! theme has a new address; an address with another version is asked again every time. The sheet
+//! of a draft is never kept: its `v` only gives the preview a new address when the draft changes.
 
 use axum::extract::State;
 use axum::http::{HeaderValue, StatusCode, header};
 use axum::response::{IntoResponse as _, Response};
+use bb_api_words::OWN_THEME_SHEETS;
 use bb_app::themes::{ThemeSheet, ThemeSheetQuery};
 use bb_core::id::ThemeId;
 use serde::Deserialize;
@@ -20,8 +22,6 @@ use super::theme_named;
 use crate::api::auth::{AuthHandle, Info, NotFoundAnswer, NotSignedInAnswer, Session};
 use crate::errors::{ApiError, ApiPath, ApiQuery};
 
-/// Where the style sheets of own themes are.
-const SHEETS_PATH: &str = "/themes";
 /// The ending of the address of a saved theme's sheet.
 const SHEET_ENDING: &str = ".css";
 /// The content type of a style sheet.
@@ -31,10 +31,12 @@ const CSS: &str = "text/css; charset=utf-8";
 const CACHE_THIS_VERSION: &str = "private, max-age=31536000, immutable";
 /// A sheet asked for with another version, or none: asked again every time.
 const CACHE_ASK_AGAIN: &str = "private, no-cache";
+/// The sheet of a draft: never kept.
+const CACHE_NEVER: &str = "private, no-store";
 
 /// The address of the style sheet of a saved own theme at `version`: what a page links.
 pub(crate) fn sheet_address(theme: ThemeId, version: i64) -> String {
-    format!("{SHEETS_PATH}/{theme}{SHEET_ENDING}?v={version}")
+    format!("{OWN_THEME_SHEETS}{theme}{SHEET_ENDING}?v={version}")
 }
 
 /// The version an address asks for.
@@ -45,12 +47,7 @@ pub(crate) struct SheetParams {
     v: Option<i64>,
 }
 
-fn css_answer(sheet: ThemeSheet, asked: Option<i64>) -> Response {
-    let cache = if asked == Some(sheet.version) {
-        CACHE_THIS_VERSION
-    } else {
-        CACHE_ASK_AGAIN
-    };
+fn css_answer(sheet: ThemeSheet, cache: &'static str) -> Response {
     (
         StatusCode::OK,
         [
@@ -60,6 +57,16 @@ fn css_answer(sheet: ThemeSheet, asked: Option<i64>) -> Response {
         sheet.css,
     )
         .into_response()
+}
+
+/// How the sheet of a saved theme may be kept: like a hashed asset while the address names the
+/// version it has, else asked for again.
+fn saved_rule(sheet: &ThemeSheet, asked: Option<i64>) -> &'static str {
+    if asked == Some(sheet.version) {
+        CACHE_THIS_VERSION
+    } else {
+        CACHE_ASK_AGAIN
+    }
 }
 
 /// The style sheet of a saved own theme: its variables under `data-own-theme`, for every person
@@ -96,7 +103,8 @@ async fn get_theme_sheet(
             },
         )
         .await?;
-    Ok(css_answer(sheet, params.v))
+    let rule = saved_rule(&sheet, params.v);
+    Ok(css_answer(sheet, rule))
 }
 
 /// The style sheet of the person's own draft of a theme, for the preview of the editor: served to
@@ -114,7 +122,6 @@ async fn get_theme_draft_sheet(
     Info(info): Info,
     Session(session_token): Session,
     ApiPath(theme): ApiPath<String>,
-    ApiQuery(params): ApiQuery<SheetParams>,
 ) -> Result<Response, ApiError> {
     let theme = theme_named(&auth, &info, &session_token, &theme).await?;
     let sheet = auth
@@ -127,7 +134,8 @@ async fn get_theme_draft_sheet(
             },
         )
         .await?;
-    Ok(css_answer(sheet, params.v))
+    // A draft changes while it is edited: it is never kept, whatever its address says.
+    Ok(css_answer(sheet, CACHE_NEVER))
 }
 
 /// The routes of the style sheets.
