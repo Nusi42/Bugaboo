@@ -10,8 +10,8 @@ use serde_json::{Value, json};
 use super::http::rig_and_app;
 use super::issues_site::{ISSUES, PROJECTS, Site, key_of, ok};
 use super::plan_site::{
-    MONDAY, TIMELINE, ask, bar_of, blocks, by_effort, change, id_of_key, issue, page, planned,
-    rows_of, warnings_on, work_times,
+    MONDAY, TIMELINE, ask, bar_of, blocks, by_effort, change, id_of_key, issue, overlapping, page,
+    planned, rows_of, warnings_on, work_times,
 };
 
 #[tokio::test]
@@ -351,20 +351,7 @@ async fn plan_13_a_delay_is_shown_along_dependencies_and_moves_nothing() -> Test
     each_database("plan_13_delay", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let first = planned(
-            &site,
-            &mut ada,
-            "API",
-            json!({"start_date": MONDAY, "due_date": "2027-03-04"}),
-        )
-        .await?;
-        let then = planned(
-            &site,
-            &mut ada,
-            "Login screen",
-            json!({"start_date": "2027-03-03", "due_date": "2027-03-05"}),
-        )
-        .await?;
+        let (first, then) = overlapping(&site, &mut ada).await?;
         blocks(&mut ada, &first, &then).await?;
         let found = page(&mut ada, ask(&site, MONDAY, "2027-03-31", json!({}))).await?;
         let (first_id, then_id) = (
@@ -465,20 +452,7 @@ async fn plan_13_move_it_after_previews_then_moves_as_one_run() -> TestResult {
     each_database("plan_13_move_after", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let first = planned(
-            &site,
-            &mut ada,
-            "API",
-            json!({"start_date": MONDAY, "due_date": "2027-03-04"}),
-        )
-        .await?;
-        let then = planned(
-            &site,
-            &mut ada,
-            "Login screen",
-            json!({"start_date": "2027-03-03", "due_date": "2027-03-05"}),
-        )
-        .await?;
+        let (first, then) = overlapping(&site, &mut ada).await?;
         let after = planned(
             &site,
             &mut ada,
@@ -558,20 +532,7 @@ async fn plan_13_an_accepted_warning_comes_back_when_its_dates_change() -> TestR
     each_database("plan_13_accepted", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let first = planned(
-            &site,
-            &mut ada,
-            "API",
-            json!({"start_date": MONDAY, "due_date": "2027-03-04"}),
-        )
-        .await?;
-        let then = planned(
-            &site,
-            &mut ada,
-            "Login screen",
-            json!({"start_date": "2027-03-03", "due_date": "2027-03-05"}),
-        )
-        .await?;
+        let (first, then) = overlapping(&site, &mut ada).await?;
         blocks(&mut ada, &first, &then).await?;
         let body = ask(&site, MONDAY, "2027-03-31", json!({}));
         let then_id = id_of_key(&mut ada, &then).await?;
@@ -580,7 +541,7 @@ async fn plan_13_an_accepted_warning_comes_back_when_its_dates_change() -> TestR
             .send(
                 "POST",
                 &format!("{TIMELINE}/accepted-warnings"),
-                Some(json!({"issue": then, "version": version, "kind": "delay"})),
+                Some(json!({"issue": then, "version": version, "kind": "delay", "timeline": {"zoom": "week"}})),
             )
             .await?;
         ok(&accepted)?;
@@ -598,7 +559,7 @@ async fn plan_13_an_accepted_warning_comes_back_when_its_dates_change() -> TestR
             .send(
                 "POST",
                 &format!("{TIMELINE}/accepted-warnings"),
-                Some(json!({"issue": then, "version": version, "kind": "delay"})),
+                Some(json!({"issue": then, "version": version, "kind": "delay", "timeline": {"zoom": "week"}})),
             )
             .await?;
         assert_eq!(stale.code(), "edit.version-changed", "{}", stale.body);

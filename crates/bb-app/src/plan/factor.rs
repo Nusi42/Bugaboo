@@ -10,8 +10,9 @@
 //! - The person on the bar hears of a change somebody else made (*Your time factor was changed*).
 
 use bb_core::ErrorCode;
+use bb_core::access::PeopleLevel;
 use bb_core::event::{FieldChange, RecordKind};
-use bb_core::fields::Field;
+use bb_core::fields::{ASSIGNED_TO_PEOPLE, Field};
 use bb_core::id::{IssueId, UserId};
 use bb_core::issue::Issue;
 use bb_core::people_kinds::PeopleKind;
@@ -71,8 +72,12 @@ pub struct TimeFactorView {
     pub percent: u16,
     /// Who set it; none for ×1.
     pub set_by: Option<PersonRef>,
-    /// Whether the person on the bar set it themselves (*Lea's own estimate*).
+    /// Whether the person on the bar set it themselves (*Lea's own estimate*); only for a reader
+    /// who is shown that person by name.
     pub own_estimate: bool,
+    /// The factor again, for the person on the bar alone: they always see their own estimate, also
+    /// where the field is hidden from their role (ADR-0030, decision 4).
+    pub own_percent: Option<u16>,
     /// The person on the bar; none for an issue assigned to nobody.
     pub person: Option<PersonRef>,
 }
@@ -139,7 +144,28 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(person_on_bar(&self.assigned_to(issue).await?))
     }
 
-    /// The view of the time factor of `issue` for a reader who holds `held` in its project.
+    /// What the reader may see of a person on a bar: by name, as a role, or nobody (*Hidden*).
+    /// The person themselves always sees themselves.
+    pub(crate) async fn shown_person(
+        &self,
+        held: &Evaluation,
+        person: UserId,
+    ) -> Result<Option<PersonRef>, AppError> {
+        let hidden = held.person() != Some(person)
+            && held.people_level(ASSIGNED_TO_PEOPLE, PeopleContext::Ordinary)
+                == PeopleLevel::Hidden;
+        if hidden {
+            return Ok(None);
+        }
+        Ok(Some(
+            self.person_ref(held, ASSIGNED_TO_PEOPLE, PeopleContext::Ordinary, person)
+                .await?,
+        ))
+    }
+
+    /// The view of the time factor of `issue` for a reader who holds `held` in its project. Who set
+    /// it is told only as openly as the person on the bar: that it is the person's own estimate,
+    /// and who that is, only to a reader who is shown the person by name.
     async fn factor_view(
         &self,
         held: &Evaluation,
@@ -148,37 +174,48 @@ impl<S: AuthStore> Ctx<'_, S> {
         factor: Option<&IssueTimeFactor>,
         first: Option<UserId>,
     ) -> Result<TimeFactorView, AppError> {
-        let person = |person| {
-            self.person_ref(
-                held,
-                PeopleKind::AssignedTo,
-                PeopleContext::Ordinary,
-                person,
-            )
+        let person = match first {
+            Some(first) => self.shown_person(held, first).await?,
+            None => None,
+        };
+        let named = names_person(held, first, person.as_ref());
+        let percent = factor.map_or(TimeFactor::ONE, |kept| kept.factor).percent();
+        let set_by = match factor {
+            Some(kept) if kept.set_by != kept.person || named => Some(
+                self.person_ref(
+                    held,
+                    PeopleKind::Authors,
+                    PeopleContext::Ordinary,
+                    kept.set_by,
+                )
+                .await?,
+            ),
+            _ => None,
         };
         Ok(TimeFactorView {
             issue: issue.id,
             version,
-            percent: factor.map_or(TimeFactor::ONE, |kept| kept.factor).percent(),
-            set_by: match factor {
-                Some(kept) => Some(
-                    self.person_ref(
-                        held,
-                        PeopleKind::Authors,
-                        PeopleContext::Ordinary,
-                        kept.set_by,
-                    )
-                    .await?,
-                ),
-                None => None,
-            },
-            own_estimate: factor.is_some_and(|kept| kept.set_by == kept.person),
-            person: match first {
-                Some(first) => Some(person(first).await?),
-                None => None,
-            },
+            percent,
+            set_by,
+            own_estimate: named && factor.is_some_and(|kept| kept.set_by == kept.person),
+            // The person on the bar always sees their own estimate (ADR-0030, decision 4).
+            own_percent: first
+                .filter(|first| held.person() == Some(*first))
+                .map(|_| percent),
+            person,
         })
     }
+}
+
+/// Whether the reader is shown the person on the bar by name: they are the person, or *Who sees
+/// people* names them.
+pub(crate) fn names_person(
+    held: &Evaluation,
+    first: Option<UserId>,
+    shown: Option<&PersonRef>,
+) -> bool {
+    first.is_some_and(|first| held.person() == Some(first))
+        || matches!(shown, Some(PersonRef::Name { .. }))
 }
 
 /// The time factor of an issue the reader may see.
@@ -216,7 +253,8 @@ fn ensure_may_set(
     if actor.agent().is_some() {
         return Err(ErrorCode::Forbidden.into());
     }
-    let allowed = actor.person.id == first
+    // The person on the bar always may, with a credential that may change things at all.
+    let allowed = (actor.person.id == first && actor.key_may_change())
         || (held.may_change_issue(issue.reported_by)
             && held
                 .field_mask_for(Some(issue.issue_type))
@@ -251,11 +289,17 @@ pub async fn set_time_factor<S: AuthStore>(
     if issue.version != input.version {
         return Err(AppError::stale(record, place, actor.person.id));
     }
+    // A length is worked out against the estimate only for a reader who may see it: the refusal
+    // is the same with or without one, so it tells nothing of a hidden estimate.
+    let estimate = issue.estimated_time.filter(|_| {
+        held.field_mask_for(Some(issue.issue_type))
+            .can_see(Field::EstimatedTime)
+    });
     let factor = match input.given {
         FactorGiven::Percent(percent) => TimeFactor::new(percent),
-        FactorGiven::Takes(takes) => issue
-            .estimated_time
-            .and_then(|estimate| TimeFactor::of_length(estimate, takes)),
+        FactorGiven::Takes(takes) => {
+            estimate.and_then(|estimate| TimeFactor::of_length(estimate, takes))
+        }
     }
     .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
     let before = ctx

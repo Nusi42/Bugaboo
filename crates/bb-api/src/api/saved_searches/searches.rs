@@ -92,9 +92,9 @@ async fn create_saved_search(
     Session(session_token): Session,
     body: Result<ApiJson<NewSavedSearchBody>, ApiError>,
 ) -> Result<Response, ApiError> {
-    let read = body.map(|ApiJson(body)| {
-        let presentation = body.presentation.map(Presentation::from);
-        (body.name, body.search_text, presentation)
+    let read = body.and_then(|ApiJson(body)| {
+        let presentation = body.presentation.map(Presentation::try_from).transpose()?;
+        Ok((body.name, body.search_text, presentation))
     });
     let (name, text, presentation) = auth.after_who_asks(&info, &session_token, read).await?;
     let made = auth
@@ -174,7 +174,7 @@ async fn change_saved_search(
 ) -> Result<Response, ApiError> {
     let read = search_id(&search).and_then(|search| {
         let ApiJson(body) = body?;
-        let presentation = body.presentation.map(Presentation::from);
+        let presentation = body.presentation.map(Presentation::try_from).transpose()?;
         Ok((
             search,
             body.version,

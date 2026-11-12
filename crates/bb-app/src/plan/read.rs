@@ -14,7 +14,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use bb_core::ErrorCode;
 use bb_core::access::PeopleLevel;
 use bb_core::fields::{ASSIGNED_TO_PEOPLE, Field, word_key};
-use bb_core::id::{IssueId, UserId};
+use bb_core::id::IssueId;
 use bb_core::issue::Issue;
 use bb_core::people_kinds::PeopleKind;
 use bb_core::plan::Days;
@@ -24,6 +24,7 @@ use bb_policy::{Authorized, Evaluation, PeopleContext, PersonRef, Place as Where
 use bb_searchlang::{Expr, FieldRef, Span, Test};
 
 use super::build::{DateTargets, Plan, PlanAsk, window_of};
+use super::factor::names_person;
 use super::types::{
     AcceptedView, BarView, FactorShown, Hatched, HatchedDay, TimelinePage, TimelinePart,
     TimelineQuery, TimelineRow, TimelineSearch, WarningView,
@@ -160,57 +161,6 @@ fn group_target(looked: &Looked, word: &str) -> Result<Option<FieldTarget>, AppE
 }
 
 impl<S: AuthStore + SearchStore> Ctx<'_, S> {
-    /// The plan of a page: its issues and, for the rows, the issues around them that the reader
-    /// may see (the other ends of their dependencies, their goals and sub-issues), which count for
-    /// the warnings of the page.
-    async fn plan_of_page(
-        &self,
-        mut ask: PlanAsk<'_>,
-        part: TimelinePart,
-    ) -> Result<Plan, AppError> {
-        if part == TimelinePart::NotScheduled {
-            return self.work_out_plan(ask, &[], &[]).await;
-        }
-        let page: HashSet<IssueId> = ask.issues.iter().map(|issue| issue.id).collect();
-        let ids: Vec<IssueId> = page.iter().copied().collect();
-        let (dependencies, parents) = self.around(&ids).await?;
-        let others: Vec<IssueId> = dependencies
-            .iter()
-            .flat_map(|(first, then)| [*first, *then])
-            .chain(parents.iter().flat_map(|(child, parent)| [*child, *parent]))
-            .filter(|id| !page.contains(id))
-            .collect::<HashSet<_>>()
-            .into_iter()
-            .collect();
-        if !others.is_empty() {
-            ask.issues.extend(
-                self.seen_issues(ask.actor, &others)
-                    .await?
-                    .into_iter()
-                    .map(|(issue, _)| issue),
-            );
-        }
-        self.work_out_plan(ask, &dependencies, &parents).await
-    }
-
-    /// What the reader may see of a person on a bar: by name, as a role, or nobody (*Hidden*).
-    async fn shown_person(
-        &self,
-        held: &Evaluation,
-        person: UserId,
-    ) -> Result<Option<PersonRef>, AppError> {
-        let hidden = held.person() != Some(person)
-            && held.people_level(ASSIGNED_TO_PEOPLE, PeopleContext::Ordinary)
-                == PeopleLevel::Hidden;
-        if hidden {
-            return Ok(None);
-        }
-        Ok(Some(
-            self.person_ref(held, ASSIGNED_TO_PEOPLE, PeopleContext::Ordinary, person)
-                .await?,
-        ))
-    }
-
     /// The text and the place of a timeline's search.
     async fn timeline_search(
         &self,
@@ -249,6 +199,10 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
                 narrowing(looked, words, part, &nothing)
             })
             .await?;
+        // What the search read of the person's rights decides every project of the plan too.
+        if actor.key.is_none() {
+            self.remember_projects(&prepared.looked.seen);
+        }
         Ok((!nothing.load(Ordering::Relaxed)).then_some(prepared))
     }
 
@@ -353,15 +307,18 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
             Some(person) => self.shown_person(held, person).await?,
             None => None,
         };
+        let factor = plan.factor_of(issue).map(|kept| FactorShown {
+            percent: kept.factor.percent(),
+            // Whose estimate it is is told only as openly as the person on the bar.
+            own_estimate: kept.set_by == kept.person
+                && names_person(held, Some(kept.person), person.as_ref()),
+        });
         Ok(Some(BarView {
             days: bar.days,
             worked_out: bar.worked_out,
             done,
             person,
-            factor: plan.factor_of(issue).map(|kept| FactorShown {
-                percent: kept.factor.percent(),
-                own_estimate: kept.set_by == kept.person,
-            }),
+            factor,
             hatched: hatched_days(plan, issue, bar.days, span),
         }))
     }
@@ -370,17 +327,19 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
     /// and faded when it was accepted for the dates its issue has.
     async fn warning_views(
         &self,
-        actor: &Actor,
         plan: &Plan,
         page: &HashSet<IssueId>,
+        seen: &crate::projects::Leveled,
     ) -> Result<Vec<WarningView>, AppError> {
         let accepted = self
             .store()
             .accepted_warnings_of(page.iter().copied().collect())
             .await
             .map_err(|error| internal::<S>(&error))?;
+        // Who accepted the warnings, read at once for the page.
+        let accepters: Vec<_> = accepted.iter().map(|kept| kept.accepted_by).collect();
+        self.preload_people(&accepters).await?;
         let mut views = Vec::new();
-        let mut lines = self.line_maker().await?;
         for (id, warning) in plan.warnings.iter().filter(|(id, _)| page.contains(id)) {
             let (Some(issue), Some(days)) = (
                 plan.issues.get(id),
@@ -393,23 +352,32 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
             let Some(held) = plan.held.get(&issue.project) else {
                 continue;
             };
-            let names_person = matches!(
+            let names_person_on_bar = matches!(
                 warning,
                 Warning::Away { .. } | Warning::TooMuchAtOnce { .. }
             );
             let person = match plan
                 .person_on_bar(*id)
-                .filter(|_| names_person && plan.reads(issue, Field::AssignedTo))
+                .filter(|_| names_person_on_bar && plan.reads(issue, Field::AssignedTo))
             {
                 Some(person) => self.shown_person(held, person).await?,
                 None => None,
             };
-            let named = matches!(person, Some(PersonRef::Name { .. }));
+            let first = plan.person_on_bar(*id);
+            let named = names_person(held, first, person.as_ref());
             let accepted_by = match accepted.iter().find(|kept| {
                 kept.issue == *id
                     && kept.kind == warning.kind()
                     && kept.holds_for(issue.start_date, issue.due_date)
             }) {
+                // The person on the bar who accepted a warning that does not name them is shown no
+                // more openly than the warning shows them.
+                Some(kept) if names_person_on_bar && !named && Some(kept.accepted_by) == first => {
+                    Some(AcceptedView {
+                        by: person.clone().unwrap_or(PersonRef::Someone),
+                        at: kept.accepted_at,
+                    })
+                }
                 Some(kept) => Some(AcceptedView {
                     by: self
                         .person_ref(
@@ -423,16 +391,20 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
                 }),
                 None => None,
             };
-            let other = match warning
+            // The other issue is one the reader sees (only those are in the plan), named by its
+            // readable ID from the tree the search read.
+            let other = warning
                 .other_issue()
                 .and_then(|other| plan.issues.get(&other))
-            {
-                Some(found) => self
-                    .line_of(actor, &mut lines, found)
-                    .await?
-                    .map(|line| (found.id, line.key)),
-                None => None,
-            };
+                .and_then(|found| {
+                    seen.stored(found.project).map(|project| {
+                        let key = bb_core::readable_id::ReadableId::new(
+                            project.short_name.clone(),
+                            found.code.clone(),
+                        );
+                        (found.id, key.to_string())
+                    })
+                });
             views.push(WarningView {
                 issue: *id,
                 kind: warning.kind(),
@@ -494,6 +466,7 @@ pub async fn timeline<S: AuthStore + SearchStore>(
         dependencies: Vec::new(),
         warnings: Vec::new(),
         not_scheduled,
+        planned_by_effort: query.options.plan_by_effort && actor.key.is_none(),
     };
     let Some(mut prepared) = wanted else {
         return Ok(organization.authorize(empty));
@@ -518,18 +491,17 @@ pub async fn timeline<S: AuthStore + SearchStore>(
         )
         .await?;
     let page: HashSet<IssueId> = found.issues.iter().map(|issue| issue.id).collect();
-    let plan = ctx
-        .plan_of_page(
-            PlanAsk {
-                issues: found.issues.clone(),
-                dates: targets,
-                by_effort: query.options.plan_by_effort,
-                window,
-                actor: &actor,
-            },
-            query.part,
-        )
-        .await?;
+    let ask = PlanAsk {
+        issues: found.issues.clone(),
+        dates: targets,
+        by_effort: query.options.plan_by_effort,
+        window,
+        actor: &actor,
+    };
+    let plan = match query.part {
+        TimelinePart::Rows => ctx.plan_with_surroundings(ask).await?,
+        TimelinePart::NotScheduled => ctx.work_out_plan(ask, &[], &[]).await?,
+    };
     let rows = ctx
         .timeline_rows(
             &plan,
@@ -546,7 +518,8 @@ pub async fn timeline<S: AuthStore + SearchStore>(
         .filter(|(first, then)| page.contains(first) && page.contains(then))
         .collect();
     let warnings = if query.part == TimelinePart::Rows {
-        ctx.warning_views(&actor, &plan, &page).await?
+        ctx.warning_views(&plan, &page, &prepared.looked.seen)
+            .await?
     } else {
         Vec::new()
     };
@@ -556,5 +529,6 @@ pub async fn timeline<S: AuthStore + SearchStore>(
         dependencies,
         warnings,
         not_scheduled,
+        planned_by_effort: plan.by_effort,
     }))
 }

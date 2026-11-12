@@ -36,9 +36,15 @@ pub(crate) struct TimeFactorBody {
     #[masked(field = "time-factor")]
     #[schema(required = true)]
     set_by: Option<PersonRef>,
-    /// Whether the person on the bar set it themselves (*Lea's own estimate*).
+    /// Whether the person on the bar set it themselves (*Lea's own estimate*); `false` for a reader
+    /// who is not shown the person on the bar by name.
     #[masked(field = "time-factor")]
     own_estimate: bool,
+    /// The factor again, for the person on the bar alone, who always sees their own estimate, also
+    /// where the field is hidden from their role; `null` for everybody else.
+    #[masked(open)]
+    #[schema(required = true)]
+    own_percent: Option<u16>,
     /// The person on the bar (the first assigned person); `null` for an issue assigned to nobody.
     #[masked(field = "assigned-to")]
     #[schema(required = true)]
@@ -53,6 +59,7 @@ impl From<TimeFactorView> for TimeFactorBody {
             percent: view.percent,
             set_by: view.set_by,
             own_estimate: view.own_estimate,
+            own_percent: view.own_percent,
             person: view.person,
         }
     }

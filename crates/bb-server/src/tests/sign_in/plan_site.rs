@@ -35,6 +35,29 @@ pub(super) async fn planned(
     key_of(&reply)
 }
 
+/// Two issues in ACME made by `browser` whose days overlap: *API* from Monday to Thursday and
+/// *Login screen* from Wednesday to Friday, as their readable IDs.
+pub(super) async fn overlapping(
+    site: &Site<'_>,
+    browser: &mut Browser,
+) -> Result<(String, String), Failure> {
+    let first = planned(
+        site,
+        browser,
+        "API",
+        json!({"start_date": MONDAY, "due_date": "2027-03-04"}),
+    )
+    .await?;
+    let then = planned(
+        site,
+        browser,
+        "Login screen",
+        json!({"start_date": "2027-03-03", "due_date": "2027-03-05"}),
+    )
+    .await?;
+    Ok((first, then))
+}
+
 /// Gives `person` these work hours on Monday to Friday and this share in ACME, as Ada.
 pub(super) async fn work_times(
     site: &Site<'_>,

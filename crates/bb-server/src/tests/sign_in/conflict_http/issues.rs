@@ -139,7 +139,7 @@ async fn prepare_plan(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<Sa
         Save::new(
             "POST",
             "/api/v1/timeline/accepted-warnings".to_owned(),
-            json!({"issue": key, "kind": "delay"}),
+            json!({"issue": key, "kind": "delay", "timeline": {"zoom": "week"}}),
             version,
         )
     } else {

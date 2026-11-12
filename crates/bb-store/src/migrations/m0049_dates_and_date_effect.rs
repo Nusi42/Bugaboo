@@ -66,7 +66,7 @@ pub(super) fn steps() -> Vec<Step> {
 
 #[cfg(test)]
 mod tests {
-    use bb_core::id::{IssueId, IssueTypeId, ProjectId, RelationKindId};
+    use bb_core::id::RelationKindId;
     use bb_testing::{TestResult, each_database};
     use jiff::Timestamp;
     use sea_query::{Expr, ExprTrait as _, IntoIden as _};
@@ -76,7 +76,7 @@ mod tests {
     use crate::db::StoredId as _;
     use crate::issues::{issue_select, read_issue};
     use crate::schema::{IssueRow, RelationKindRow};
-    use crate::test_support::{at, insert_old_issue, insert_old_issue_type, insert_old_project};
+    use crate::test_support::{at, insert_old_task};
 
     /// A kind of relation as migration 10 made it: two names and a place.
     async fn old_kind(
@@ -125,18 +125,7 @@ mod tests {
         each_database("migration_49_dates_and_date_effect", async |db| {
             let database = Database::connect(db.url()).await?;
             database.migrate_until(48, at(0)).await?;
-            let issue_type = IssueTypeId::from_parts(Timestamp::UNIX_EPOCH, [2; 10])?;
-            insert_old_issue_type(&database, issue_type, "Task").await?;
-            let project = ProjectId::from_parts(Timestamp::UNIX_EPOCH, [3; 10])?;
-            insert_old_project(&database, project.stored()).await?;
-            let issue = IssueId::from_parts(Timestamp::UNIX_EPOCH, [4; 10])?;
-            insert_old_issue(
-                &database,
-                (project.stored(), issue.stored()),
-                issue_type,
-                "1",
-            )
-            .await?;
+            let issue = insert_old_task(&database).await?;
             let kinds: Vec<RelationKindId> = (1..=4_u8)
                 .map(|byte| RelationKindId::from_parts(Timestamp::UNIX_EPOCH, [byte; 10]))
                 .collect::<Result<_, _>>()?;

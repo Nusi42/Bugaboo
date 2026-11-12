@@ -9,7 +9,7 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use bb_core::ErrorCode;
-use bb_core::fields::Field;
+use bb_core::fields::{Field, FieldKey};
 use bb_core::id::{IssueId, ProjectId, UserId};
 use bb_core::issue::Issue;
 use bb_core::own_fields::FieldType;
@@ -129,11 +129,16 @@ pub(crate) struct Plan {
     pub(crate) parents: Vec<(IssueId, IssueId)>,
     /// The warnings, each on its issue.
     pub(crate) warnings: Vec<(IssueId, Warning)>,
+    /// Whether the bars were planned by effort: never for an access key, which reads nobody's work
+    /// times (architecture §12).
+    pub(crate) by_effort: bool,
+    /// Who reads the plan.
+    pub(crate) reader: UserId,
 }
 
 impl Plan {
-    /// Whether the reader may read `field` of `issue`.
-    pub(crate) fn reads(&self, issue: &Issue, field: Field) -> bool {
+    /// Whether the reader may read `field` of `issue`, in its project and for its type.
+    pub(crate) fn reads(&self, issue: &Issue, field: impl Into<FieldKey>) -> bool {
         self.held
             .get(&issue.project)
             .is_some_and(|held| held.field_mask_for(Some(issue.issue_type)).can_see(field))
@@ -161,9 +166,10 @@ impl Plan {
 
     /// The time factor of an issue as the reader may read it: ×1 when it is hidden from them.
     pub(crate) fn factor_of(&self, issue: &Issue) -> Option<&IssueTimeFactor> {
+        // The person on the bar always sees their own estimate (ADR-0030, decision 4).
         self.factors
             .get(&issue.id)
-            .filter(|_| self.reads(issue, Field::TimeFactor))
+            .filter(|kept| self.reads(issue, Field::TimeFactor) || kept.person == self.reader)
     }
 
     /// The effort of an issue under *Plan by effort*: its estimate times its time factor, when it
@@ -177,6 +183,16 @@ impl Plan {
             .factor_of(issue)
             .map_or(TimeFactor::ONE, |kept| kept.factor);
         Some(factor.effort(estimate))
+    }
+}
+
+/// The key of the field a date field of the timeline reads, for its field level.
+fn target_key(target: FieldTarget) -> Option<FieldKey> {
+    match target {
+        FieldTarget::StartDate => Some(Field::StartDate.into()),
+        FieldTarget::DueDate => Some(Field::DueDate.into()),
+        FieldTarget::Own { field, .. } => Some(FieldKey::Own(field)),
+        _ => None,
     }
 }
 
@@ -204,12 +220,23 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         actor: &Actor,
         ids: &[IssueId],
+        also: &[ProjectId],
     ) -> Result<Vec<(Issue, Arc<Evaluation>)>, AppError> {
         let found = self
             .store()
             .issues_by_ids(ids)
             .await
             .map_err(|error| internal::<S>(&error))?;
+        // What the person holds in the projects of all of them, read at once when it is a person
+        // (a key is narrowed place by place).
+        if actor.key.is_none() {
+            let projects: Vec<ProjectId> = found
+                .iter()
+                .map(|issue| issue.project)
+                .chain(also.iter().copied())
+                .collect();
+            self.evaluate_projects(actor.person.id, &projects).await?;
+        }
         let mut seen = Vec::with_capacity(found.len());
         for issue in found {
             if let Some(held) = self.seen_in(actor, &issue, Where::Live).await? {
@@ -241,6 +268,37 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map(|row| (row.child, row.parent))
             .collect();
         Ok((dependencies, parents))
+    }
+
+    /// The plan of the issues of `ask` and of the issues around them that the reader may see (the
+    /// other ends of their dependencies, their goals and sub-issues), which count for their
+    /// warnings: the plan of a page of the timeline, and of the issue a way out is chosen for.
+    pub(crate) async fn plan_with_surroundings(
+        &self,
+        mut ask: PlanAsk<'_>,
+    ) -> Result<Plan, AppError> {
+        let asked: HashSet<IssueId> = ask.issues.iter().map(|issue| issue.id).collect();
+        let ids: Vec<IssueId> = asked.iter().copied().collect();
+        let (dependencies, parents) = self.around(&ids).await?;
+        let others: Vec<IssueId> = dependencies
+            .iter()
+            .flat_map(|(first, then)| [*first, *then])
+            .chain(parents.iter().flat_map(|(child, parent)| [*child, *parent]))
+            .filter(|id| !asked.contains(id))
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .collect();
+        // The projects of the asked issues are judged together with those of the others.
+        let asked_projects: Vec<ProjectId> = ask.issues.iter().map(|issue| issue.project).collect();
+        if !others.is_empty() {
+            ask.issues.extend(
+                self.seen_issues(ask.actor, &others, &asked_projects)
+                    .await?
+                    .into_iter()
+                    .map(|(issue, _)| issue),
+            );
+        }
+        self.work_out_plan(ask, &dependencies, &parents).await
     }
 
     /// The plan of the issues of `ask`: the people on their bars and their work times, read once
@@ -315,18 +373,23 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .filter(|(child, parent)| in_set.contains(child) && in_set.contains(parent))
                 .collect(),
             warnings: Vec::new(),
+            by_effort: ask.by_effort && ask.actor.key.is_none(),
+            reader: ask.actor.person.id,
         };
-        self.read_days(&mut plan, ask.window).await?;
-        // The bars.
+        self.read_days(&mut plan, ask.window, ask.actor).await?;
+        // The bars, from the dates the reader may read in the project and for the type of each
+        // issue: an issue around the page is judged where it is, not where the search looked.
         let mut bars = HashMap::new();
         for issue in plan.issues.values() {
-            let reads = |field| plan.reads(issue, field);
-            let start = date_from(issue, ask.dates.start, &values).filter(|_| {
-                ask.dates.start != Some(FieldTarget::StartDate) || reads(Field::StartDate)
-            });
-            let end = date_from(issue, ask.dates.end, &values)
-                .filter(|_| ask.dates.end != Some(FieldTarget::DueDate) || reads(Field::DueDate));
-            let effort = plan.effort_of(issue).filter(|_| ask.by_effort);
+            let readable = |target: Option<FieldTarget>| {
+                target
+                    .and_then(target_key)
+                    .is_some_and(|key| plan.reads(issue, key))
+            };
+            let start =
+                date_from(issue, ask.dates.start, &values).filter(|_| readable(ask.dates.start));
+            let end = date_from(issue, ask.dates.end, &values).filter(|_| readable(ask.dates.end));
+            let effort = plan.effort_of(issue).filter(|_| plan.by_effort);
             if let Some(found) = bar(&BarInput {
                 start,
                 due: end,
@@ -337,13 +400,18 @@ impl<S: AuthStore> Ctx<'_, S> {
             }
         }
         plan.bars = bars;
-        plan.warnings = warnings_of(&plan, ask.by_effort);
+        plan.warnings = warnings_of(&plan, plan.by_effort);
         Ok(plan)
     }
 
     /// The days of every person on a bar of the plan, in each project, through the one port of
     /// work times: a fixed number of reads for each project, whatever the number of people.
-    async fn read_days(&self, plan: &mut Plan, window: Days) -> Result<(), AppError> {
+    async fn read_days(
+        &self,
+        plan: &mut Plan,
+        window: Days,
+        actor: &Actor,
+    ) -> Result<(), AppError> {
         let mut wanted: HashMap<ProjectId, Vec<UserId>> = HashMap::new();
         for issue in plan.issues.values() {
             if let Some(person) = plan.person_on_bar(issue.id) {
@@ -353,28 +421,32 @@ impl<S: AuthStore> Ctx<'_, S> {
                 }
             }
         }
-        for (project, people) in wanted {
-            let Some(reader) = plan.held.get(&project).cloned() else {
-                continue;
-            };
-            for chunk in people.chunks(PLAN_PEOPLE_MAX) {
-                let minutes = self
-                    .work_minutes(
-                        &reader,
-                        WorkMinutesQuery {
-                            people: chunk.to_vec(),
-                            project,
-                            first: window.first,
-                            last: window.last,
-                        },
-                    )
-                    .await?;
-                for person in minutes.people {
-                    if person.away_visible {
-                        plan.work_times_known.insert((project, person.person));
-                    }
-                    plan.days.insert((project, person.person), person.days);
+        // Whose work times the reader may know, once for every person on a bar.
+        let mut everybody: Vec<UserId> = wanted.values().flatten().copied().collect();
+        everybody.sort_unstable();
+        everybody.dedup();
+        let known = self.work_times_known(actor, &everybody).await?;
+        // Every person on a bar in every project of the plan, read at once, so the reads do not
+        // grow with the projects a page meets.
+        let projects: Vec<ProjectId> = wanted.keys().copied().collect();
+        for chunk in everybody.chunks(PLAN_PEOPLE_MAX) {
+            let minutes = self
+                .work_minutes(
+                    &known,
+                    WorkMinutesQuery {
+                        people: chunk.to_vec(),
+                        projects: projects.clone(),
+                        first: window.first,
+                        last: window.last,
+                    },
+                )
+                .await?;
+            for person in minutes.people {
+                let at = (person.project, person.person);
+                if person.away_visible {
+                    plan.work_times_known.insert(at);
                 }
+                plan.days.insert(at, person.days);
             }
         }
         Ok(())

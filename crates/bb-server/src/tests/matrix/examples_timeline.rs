@@ -20,7 +20,9 @@ async fn a_bar(fixture: &Fixture<'_>) -> Result<String, Failure> {
     a_planned_issue(fixture, Some(start), Some(vec![fixture.admin_id()])).await
 }
 
-/// The request of a route of the timeline, if the operation is one.
+/// The request of a route of the timeline, if the operation is one. An access key reads the
+/// timeline like a search, but no work times: its bars keep the dates people set, and it gets no
+/// hatched day and no warning about what a person can work (architecture §12).
 pub(super) async fn timeline_request(
     fixture: &Fixture<'_>,
     operation: &str,
@@ -48,7 +50,13 @@ pub(super) async fn timeline_request(
         "acceptWarning" => (
             "POST",
             "/api/v1/timeline/accepted-warnings".into(),
-            Some(json!({"issue": a_bar(fixture).await?, "version": 1, "kind": "away"})),
+            // Taken as it is said: *Too much at once* depends on the other work on the screen.
+            Some(json!({
+                "issue": a_bar(fixture).await?,
+                "version": 1,
+                "kind": "too-much-at-once",
+                "timeline": {"zoom": "week"},
+            })),
         ),
         "getTimeFactor" => (
             "GET",

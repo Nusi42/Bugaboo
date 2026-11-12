@@ -10,19 +10,17 @@
 //! `away_visible`; a reader who may not still gets the minutes (they shape the bar), and no away
 //! half and no holiday.
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
-use bb_core::access::PeopleLevel;
 use bb_core::holidays::Holiday;
 use bb_core::id::{ProjectId, UserId};
 use bb_core::work_times::record::AwayTime;
 use bb_core::work_times::{DayMinutes, Halves, Share, UsualDays, minutes_on};
-use bb_policy::{Evaluation, Place};
+use bb_policy::Place;
 use jiff::civil::Date;
 
 use super::PLAN_PEOPLE_MAX;
 use super::read::checked_range;
-use super::whose::work_times_level;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use bb_core::ErrorCode;
 
@@ -30,8 +28,9 @@ use bb_core::ErrorCode;
 pub struct WorkMinutesQuery {
     /// The people, at most [`PLAN_PEOPLE_MAX`].
     pub people: Vec<UserId>,
-    /// The project the work is in: the share is the share there.
-    pub project: ProjectId,
+    /// The projects the work is in: each person is answered for each of them, with the share
+    /// there.
+    pub projects: Vec<ProjectId>,
     /// The first day.
     pub first: Date,
     /// The last day: a stretch of at most `RANGE_DAYS_MAX` days.
@@ -43,6 +42,8 @@ pub struct WorkMinutesQuery {
 pub struct PersonMinutes {
     /// The person.
     pub person: UserId,
+    /// The project.
+    pub project: ProjectId,
     /// The share that counts in the project: nothing while the person has no role there.
     pub share: Share,
     /// Whether the reader may name the person's away days (the kind *Work times* is not *Hidden*
@@ -52,10 +53,11 @@ pub struct PersonMinutes {
     pub days: Vec<DayMinutes>,
 }
 
-/// The minutes of the people asked for, in the order they were asked for.
+/// The minutes of the people asked for, in each project asked for, project by project and in the
+/// order the people were asked for.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct WorkMinutes {
-    /// One entry for each person asked for.
+    /// One entry for each person and project asked for.
     pub people: Vec<PersonMinutes>,
 }
 
@@ -75,15 +77,17 @@ fn dates(first: Date, last: Date) -> Vec<Date> {
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// The minutes each of these people can work on each day from `first` to `last` in a project,
-    /// for a reader whose rights in the project are `reader`. Reads the work times of everybody in
-    /// a fixed number of statements, whatever the number of people.
+    /// for a reader who may know the work times of the people in `known` (the one rule of
+    /// `whose.rs`, [`Ctx::work_times_known`]). Reads the work times of everybody in a fixed number
+    /// of statements, whatever the number of people. The minutes shape the bar for every reader;
+    /// the away days and holidays are named only for the people in `known`.
     ///
     /// # Errors
     /// `request.invalid` for a stretch that is backwards or longer than `RANGE_DAYS_MAX` days, or
     /// for more than [`PLAN_PEOPLE_MAX`] people.
-    pub async fn work_minutes(
+    pub(crate) async fn work_minutes(
         &self,
-        reader: &Evaluation,
+        known: &HashSet<UserId>,
         query: WorkMinutesQuery,
     ) -> Result<WorkMinutes, AppError> {
         checked_range(query.first, query.last)?;
@@ -98,12 +102,13 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(|error| internal::<S>(&error))?
             .into_iter()
             .collect();
-        let shares: HashMap<UserId, Share> = self
+        let shares: HashMap<(UserId, ProjectId), Share> = self
             .store()
-            .shares_in(query.project, people.clone())
+            .shares_of(people.clone())
             .await
             .map_err(|error| internal::<S>(&error))?
             .into_iter()
+            .map(|(person, project, share)| ((person, project), share))
             .collect();
         let mut away: HashMap<UserId, Vec<AwayTime>> = HashMap::new();
         for time in self
@@ -115,16 +120,17 @@ impl<S: AuthStore> Ctx<'_, S> {
             away.entry(time.person).or_default().push(time);
         }
         let (_, layers) = self.setting_layers_of_people(&people, None).await?;
-        let pairs: Vec<(UserId, ProjectId)> = people
+        let pairs: Vec<(UserId, ProjectId)> = query
+            .projects
             .iter()
-            .map(|person| (*person, query.project))
+            .flat_map(|project| people.iter().map(|person| (*person, *project)))
             .collect();
         self.evaluate_people_in(&pairs).await?;
-        let away_visible = work_times_level(reader) != PeopleLevel::Hidden;
         let days = dates(query.first, query.last);
         let mut holidays_by_region: HashMap<_, BTreeMap<Date, Holiday>> = HashMap::new();
-        let mut found = Vec::with_capacity(people.len());
-        for person in people {
+        let mut found = Vec::with_capacity(pairs.len());
+        for (person, project) in pairs {
+            let away_visible = known.contains(&person);
             let region = layers
                 .get(&person)
                 .map_or(bb_core::holidays::Region::Germany, |layers| {
@@ -137,11 +143,12 @@ impl<S: AuthStore> Ctx<'_, S> {
                     .map(|day| (day.date, day.holiday))
                     .collect()
             });
-            let has_role = self
-                .has_a_role_at(person, Place::Project(query.project))
-                .await?;
+            let has_role = self.has_a_role_at(person, Place::Project(project)).await?;
             let share = if has_role {
-                shares.get(&person).copied().unwrap_or(Share::START)
+                shares
+                    .get(&(person, project))
+                    .copied()
+                    .unwrap_or(Share::START)
             } else {
                 // Kept, and counting again when a role comes back (ADR-0030, amendment M8).
                 Share::NOTHING
@@ -150,6 +157,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             let times = away.get(&person).map_or(&[][..], Vec::as_slice);
             found.push(PersonMinutes {
                 person,
+                project,
                 share,
                 away_visible,
                 days: days

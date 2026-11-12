@@ -1,7 +1,7 @@
 //! What the timeline is asked and what it answers (PLAN-01, PLAN-08, PLAN-10, PLAN-13).
 
 use bb_core::holidays::Holiday;
-use bb_core::id::{IssueId, SavedSearchId, UserId};
+use bb_core::id::{IssueId, SavedSearchId};
 use bb_core::plan::Days;
 use bb_core::plan::bar::WorkedOut;
 use bb_core::plan::warning::{Warning, WarningKind, WayOut};
@@ -192,6 +192,9 @@ pub struct TimelinePage {
     pub warnings: Vec<WarningView>,
     /// How many issues the search finds that wait in *Not scheduled yet*.
     pub not_scheduled: u64,
+    /// Whether the bars were planned by effort: the view asked for it, and the reader is no access
+    /// key (no key reads work times).
+    pub planned_by_effort: bool,
 }
 
 impl Masked for TimelinePage {}
@@ -247,6 +250,9 @@ pub struct AcceptWarning {
     pub version: i64,
     /// The kind of the warning.
     pub kind: WarningKind,
+    /// The options of the view the warning was shown in: only a view of *Start date* and *Due
+    /// date* keeps an accepted warning.
+    pub options: TimelineOptions,
 }
 
 /// A warning that was accepted.
@@ -254,14 +260,8 @@ pub struct AcceptWarning {
 pub struct AcceptedWarningView {
     /// The issue.
     pub issue: IssueId,
-    /// The kind.
+    /// The kind: it shows faded until the dates of its issue change.
     pub kind: WarningKind,
-    /// The dates it was accepted for: it comes back when they change.
-    pub start_date: Option<Date>,
-    /// The due date it was accepted for.
-    pub due_date: Option<Date>,
-    /// Who accepted it.
-    pub by: UserId,
 }
 
 impl Masked for AcceptedWarningView {}

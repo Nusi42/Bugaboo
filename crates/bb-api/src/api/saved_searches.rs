@@ -23,6 +23,7 @@ use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 
 use super::auth::AuthHandle;
+use crate::errors::ApiError;
 use crate::lean::FieldSpec;
 
 mod project_list;
@@ -93,14 +94,33 @@ impl From<&TimelineOptions> for TimelineOptionsBody {
     }
 }
 
-impl From<TimelineOptionsBody> for TimelineOptions {
-    fn from(body: TimelineOptionsBody) -> Self {
-        Self {
-            // Both fields or neither: one alone is no pair, so the built-in dates count.
-            dates: body.start_field.zip(body.end_field),
+impl TimelineOptionsBody {
+    /// The date field the bars start from, when the view names one.
+    pub(crate) fn start_field(&self) -> Option<&str> {
+        self.start_field.as_deref()
+    }
+
+    /// The date field the bars end at, when the view names one.
+    pub(crate) fn end_field(&self) -> Option<&str> {
+        self.end_field.as_deref()
+    }
+}
+
+impl TryFrom<TimelineOptionsBody> for TimelineOptions {
+    type Error = ApiError;
+
+    /// The options; `request.invalid` for one date field without the other.
+    fn try_from(body: TimelineOptionsBody) -> Result<Self, ApiError> {
+        let dates = match (body.start_field, body.end_field) {
+            (Some(start), Some(end)) => Some((start, end)),
+            (None, None) => None,
+            _ => return Err(ApiError::new(bb_core::ErrorCode::InvalidRequest)),
+        };
+        Ok(Self {
+            dates,
             plan_by_effort: body.plan_by_effort,
             zoom: body.zoom,
-        }
+        })
     }
 }
 
@@ -143,9 +163,11 @@ impl From<&Presentation> for PresentationRef {
     }
 }
 
-impl From<PresentationRef> for Presentation {
-    fn from(body: PresentationRef) -> Self {
-        Self {
+impl TryFrom<PresentationRef> for Presentation {
+    type Error = ApiError;
+
+    fn try_from(body: PresentationRef) -> Result<Self, ApiError> {
+        Ok(Self {
             view: body.view,
             columns: body
                 .columns
@@ -156,8 +178,8 @@ impl From<PresentationRef> for Presentation {
                 })
                 .collect(),
             group_by: body.group_by,
-            timeline: body.timeline.map(TimelineOptions::from),
-        }
+            timeline: body.timeline.map(TimelineOptions::try_from).transpose()?,
+        })
     }
 }
 

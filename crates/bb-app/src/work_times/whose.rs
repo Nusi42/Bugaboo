@@ -11,6 +11,7 @@
 //!   Nobody but the person reads or writes the note of an away time.
 //! - A share is set by a person who decides who has which role in the project (`shares.rs`).
 
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use bb_core::ErrorCode;
@@ -153,28 +154,84 @@ impl<S: AuthStore> Ctx<'_, S> {
         person: UserId,
         organization: &Arc<Evaluation>,
     ) -> Result<(PeopleLevel, Arc<Evaluation>), AppError> {
-        // First the projects the person works in, from one tree and one read of their rights; the
-        // reader is evaluated only there.
+        Ok(self
+            .shared_levels(actor, &[person], organization)
+            .await?
+            .remove(&person)
+            .unwrap_or_else(|| (PeopleLevel::Hidden, Arc::clone(organization))))
+    }
+
+    /// The same for many people at once: the projects of all of them from one tree and one read of
+    /// their rights, and the reader evaluated only there, whatever the number of people.
+    async fn shared_levels(
+        &self,
+        actor: &Actor,
+        people: &[UserId],
+        organization: &Arc<Evaluation>,
+    ) -> Result<HashMap<UserId, (PeopleLevel, Arc<Evaluation>)>, AppError> {
         let projects: Vec<ProjectId> = self.project_tree_now().await?.projects().collect();
-        let pairs: Vec<(UserId, ProjectId)> =
-            projects.iter().map(|project| (person, *project)).collect();
+        let pairs: Vec<(UserId, ProjectId)> = people
+            .iter()
+            .flat_map(|person| projects.iter().map(|project| (*person, *project)))
+            .collect();
         self.evaluate_people_in(&pairs).await?;
-        let mut theirs = Vec::new();
-        for project in projects {
+        let mut theirs: HashMap<UserId, Vec<ProjectId>> = HashMap::new();
+        for (person, project) in pairs {
             if self.has_a_role_at(person, Place::Project(project)).await? {
-                theirs.push(project);
+                theirs.entry(person).or_default().push(project);
             }
         }
-        self.evaluate_projects(actor.person.id, &theirs).await?;
-        let mut best = (PeopleLevel::Hidden, Arc::clone(organization));
-        for project in theirs {
-            let held = self.evaluation_of(actor, Place::Project(project)).await?;
-            let level = work_times_level(&held);
-            if level > best.0 {
-                best = (level, held);
+        let mut all: Vec<ProjectId> = theirs.values().flatten().copied().collect();
+        all.sort_unstable();
+        all.dedup();
+        self.evaluate_projects(actor.person.id, &all).await?;
+        let mut found = HashMap::new();
+        for person in people {
+            let mut best = (PeopleLevel::Hidden, Arc::clone(organization));
+            for project in theirs.get(person).into_iter().flatten() {
+                let held = self.evaluation_of(actor, Place::Project(*project)).await?;
+                let level = work_times_level(&held);
+                if level > best.0 {
+                    best = (level, held);
+                }
             }
+            found.insert(*person, best);
         }
-        Ok(best)
+        Ok(found)
+    }
+
+    /// Which of these people's work times the actor may know, by the one rule of this module: their
+    /// own; everybody's with *Enter work times for others*; else the most open shared level, which
+    /// is *Hidden* with no project in common. An access key knows nobody's: no key reaches work
+    /// times (architecture §12).
+    pub(crate) async fn work_times_known(
+        &self,
+        actor: &Actor,
+        people: &[UserId],
+    ) -> Result<HashSet<UserId>, AppError> {
+        if actor.key.is_some() {
+            return Ok(HashSet::new());
+        }
+        let organization = self.evaluation_of(actor, Place::Organization).await?;
+        if organization.allows(Permission::EnterWorkTimesForOthers) {
+            return Ok(people.iter().copied().collect());
+        }
+        let others: Vec<UserId> = people
+            .iter()
+            .copied()
+            .filter(|person| *person != actor.person.id)
+            .collect();
+        let levels = self.shared_levels(actor, &others, &organization).await?;
+        Ok(people
+            .iter()
+            .copied()
+            .filter(|person| {
+                *person == actor.person.id
+                    || levels
+                        .get(person)
+                        .is_some_and(|(level, _)| *level != PeopleLevel::Hidden)
+            })
+            .collect())
     }
 
     /// Fails like a missing person when the person does not exist.

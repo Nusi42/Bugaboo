@@ -12,11 +12,12 @@ use super::{Answer, Declared, Route, route, route_reading};
 
 /// The routes of the timeline, by operation ID.
 pub(super) const ROUTES: &[Route] = &[
-    route_reading("getTimeline", Declared::SignedIn, Answer::NeverStored),
+    // Posted reads: the answer to a POST is never kept anyway.
+    route_reading("getTimeline", Declared::SignedIn, Answer::Ordinary),
     route_reading(
         "previewMoveAfter",
         Declared::Permission(Permission::SeeIssues),
-        Answer::NeverStored,
+        Answer::Ordinary,
     ),
     route(
         "acceptWarning",

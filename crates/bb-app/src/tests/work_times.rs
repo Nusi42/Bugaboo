@@ -7,7 +7,7 @@ use bb_core::holidays::Holiday;
 use bb_core::id::{ProjectId, UserId};
 use bb_core::settings::SettingValue;
 use bb_core::work_times::{Halves, Share};
-use bb_policy::{Place, StartingRole};
+use bb_policy::StartingRole;
 use jiff::civil::Date;
 
 use super::scenarios::{a_project, text, token};
@@ -52,16 +52,21 @@ async fn minutes(
 ) -> Result<Vec<DayMinutes>, String> {
     let reader = world
         .ctx()
-        .evaluate(world.admin.person.id, Place::Project(project))
+        .actor(&world.admin.session_token)
+        .await
+        .map_err(text)?;
+    let known = world
+        .ctx()
+        .work_times_known(&reader, &[bob.person.id])
         .await
         .map_err(text)?;
     let found = world
         .ctx()
         .work_minutes(
-            &reader,
+            &known,
             WorkMinutesQuery {
                 people: vec![bob.person.id],
-                project,
+                projects: vec![project],
                 first,
                 last,
             },
@@ -368,21 +373,22 @@ async fn plan_15_a_reader_who_may_not_know_the_work_times_gets_the_minutes_and_n
     .map_err(text)?;
     let guest = world.person("guest@example.test").await.map_err(text)?;
     with_role(&world, &guest, StartingRole::Guest, Some(project)).await?;
-    let read_as = |person: UserId| {
+    let read_as = |session: String| {
         let (world, bob) = (&world, &bob);
         async move {
-            let reader = world
+            let reader = world.ctx().actor(&session).await.map_err(text)?;
+            let known = world
                 .ctx()
-                .evaluate(person, Place::Project(project))
+                .work_times_known(&reader, &[bob.person.id])
                 .await
                 .map_err(text)?;
             let found = world
                 .ctx()
                 .work_minutes(
-                    &reader,
+                    &known,
                     WorkMinutesQuery {
                         people: vec![bob.person.id],
-                        project,
+                        projects: vec![project],
                         first: date(2026, 5, 11),
                         last: date(2026, 5, 14),
                     },
@@ -392,8 +398,8 @@ async fn plan_15_a_reader_who_may_not_know_the_work_times_gets_the_minutes_and_n
             Ok::<_, String>(found.people[0].clone())
         }
     };
-    let seen = read_as(world.admin.person.id).await?;
-    let unseen = read_as(guest.person.id).await?;
+    let seen = read_as(world.admin.session_token.clone()).await?;
+    let unseen = read_as(guest.session_token.clone()).await?;
     assert!(seen.away_visible && !unseen.away_visible);
     assert_eq!(seen.days[2].away, Halves::BOTH);
     assert_eq!(seen.days[3].holiday, Some(Holiday::AscensionDay));

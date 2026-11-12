@@ -100,6 +100,9 @@ pub(crate) struct DaysBody {
     last: CalendarDay,
 }
 
+// The days of a bar are worked out only from the date fields the reader may read.
+impl Masked for DaysBody {}
+
 impl From<Days> for DaysBody {
     fn from(days: Days) -> Self {
         Self {
@@ -360,6 +363,9 @@ pub(crate) struct TimelinePageBody {
     warnings: Vec<PlanWarningBody>,
     /// How many issues the search finds that wait in *Not scheduled yet*.
     not_scheduled: u64,
+    /// Whether the bars were planned by effort: the view asked for it and the reader is no access
+    /// key. A key reads nobody's work times, so its bars keep the dates people set.
+    planned_by_effort: bool,
 }
 
 impl Masked for TimelinePageBody {}
@@ -372,7 +378,8 @@ fn list_of(person: bb_core::id::UserId, body: &TimelineBody) -> String {
         body.saved_search.as_deref(),
         body.search_text.as_deref(),
         body.project.as_deref(),
-        body.group_by.as_deref(),
+        body.timeline.start_field(),
+        body.timeline.end_field(),
     ] {
         hash.update(part.unwrap_or_default().as_bytes());
         hash.update([0]);
@@ -422,6 +429,7 @@ fn page_body(page: TimelinePage, list: &str) -> Result<TimelinePageBody, ApiErro
             .collect(),
         warnings: page.warnings.iter().map(PlanWarningBody::from).collect(),
         not_scheduled: page.not_scheduled,
+        planned_by_effort: page.planned_by_effort,
     })
 }
 
@@ -472,7 +480,7 @@ async fn get_timeline(
                 session_token,
                 search,
                 project: body.project.clone(),
-                options: TimelineOptions::from(body.timeline.clone()),
+                options: TimelineOptions::try_from(body.timeline.clone())?,
                 group_by: body.group_by.clone(),
                 first: body.first,
                 last: body.last,
@@ -514,24 +522,33 @@ pub(crate) struct MoveAfterBody {
     timeline: TimelineOptionsBody,
 }
 
-/// One issue of the preview, with its new dates.
-#[derive(Serialize, ToSchema)]
+/// One issue of the preview, with its new dates: a date field the reader may not read is left out,
+/// for each issue in its own project and again by the field levels of the project of the issue the
+/// preview is for.
+#[derive(Serialize, ToSchema, Masked)]
 pub(crate) struct MoveAfterIssueBody {
     /// The internal ID.
+    #[masked(open)]
     id: String,
     /// The readable ID.
+    #[masked(open)]
     readable_id: String,
     /// The version to move it from (`POST /api/v1/issues/move-dates` takes it).
+    #[masked(open)]
     version: i64,
-    /// The days of its bar now.
+    /// The days of its bar now, worked out from the dates the reader may read.
+    #[masked(nested)]
     from: DaysBody,
     /// The days of its bar after the move.
+    #[masked(nested)]
     to: DaysBody,
-    /// The *Start date* it gets; `null` when it has none.
-    #[schema(required = true, value_type = Option<String>, format = Date)]
+    /// The *Start date* it gets; `null` when it has none or the reader may not read it.
+    #[masked(field = "start-date")]
+    #[schema(value_type = Option<String>, format = Date)]
     start_date: Option<CalendarDay>,
-    /// The *Due date* it gets; `null` when it has none.
-    #[schema(required = true, value_type = Option<String>, format = Date)]
+    /// The *Due date* it gets; `null` when it has none or the reader may not read it.
+    #[masked(field = "due-date")]
+    #[schema(value_type = Option<String>, format = Date)]
     due_date: Option<CalendarDay>,
 }
 
@@ -550,13 +567,12 @@ impl From<&MovePreview> for MoveAfterIssueBody {
 }
 
 /// The preview of *Move it after*.
-#[derive(Serialize, ToSchema)]
+#[derive(Serialize, ToSchema, Masked)]
 pub(crate) struct MoveAfterPreviewBody {
     /// Every issue that moves, in the order along the dependencies, with its new dates.
+    #[masked(nested)]
     issues: Vec<MoveAfterIssueBody>,
 }
-
-impl Masked for MoveAfterPreviewBody {}
 
 impl From<MovePreviewPage> for MoveAfterPreviewBody {
     fn from(page: MovePreviewPage) -> Self {
@@ -585,10 +601,13 @@ impl From<MovePreviewPage> for MoveAfterPreviewBody {
 )]
 async fn preview_move_after(
     State(auth): State<AuthHandle>,
+    Extension(limits): Extension<Arc<Limits>>,
     Info(info): Info,
     Session(session_token): Session,
     ApiJson(body): ApiJson<MoveAfterBody>,
 ) -> Result<Response, ApiError> {
+    // The walk reads every dependency: it counts against the searches of the person.
+    counted(&auth, &limits, &info, &session_token).await?;
     let preview = auth
         .api()?
         .move_after_preview(
@@ -597,7 +616,7 @@ async fn preview_move_after(
                 session_token,
                 issue: body.issue,
                 after: body.after,
-                options: TimelineOptions::from(body.timeline),
+                options: TimelineOptions::try_from(body.timeline)?,
             },
         )
         .await?;
@@ -614,21 +633,18 @@ pub(crate) struct AcceptWarningBody {
     version: i64,
     /// The kind of the warning.
     kind: WarningKind,
+    /// The options of the view the warning was shown in. Only a view of *Start date* and *Due
+    /// date* keeps an accepted warning, and only one the issue has in it now.
+    timeline: TimelineOptionsBody,
 }
 
-/// A warning that was accepted.
+/// A warning that was accepted: it shows faded until the dates of its issue change.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct AcceptedWarningBody {
     /// The issue.
     issue: String,
     /// The kind.
     kind: WarningKind,
-    /// The *Start date* it was accepted for: it comes back when the dates change.
-    #[schema(required = true, value_type = Option<String>, format = Date)]
-    start_date: Option<CalendarDay>,
-    /// The *Due date* it was accepted for.
-    #[schema(required = true, value_type = Option<String>, format = Date)]
-    due_date: Option<CalendarDay>,
 }
 
 impl Masked for AcceptedWarningBody {}
@@ -638,8 +654,6 @@ impl From<AcceptedWarningView> for AcceptedWarningBody {
         Self {
             issue: view.issue.to_string(),
             kind: view.kind,
-            start_date: view.start_date,
-            due_date: view.due_date,
         }
     }
 }
@@ -677,6 +691,7 @@ async fn accept_warning(
                 issue: body.issue,
                 version: body.version,
                 kind: body.kind,
+                options: TimelineOptions::try_from(body.timeline)?,
             },
         )
         .await?;

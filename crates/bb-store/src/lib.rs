@@ -226,6 +226,31 @@ mod test_support {
         database.execute(&made).await.map(|_| ())
     }
 
+    /// One issue of the type *Task* in the project ACME, written with the rows of
+    /// [`insert_old_issue_type`], [`insert_old_project`] and [`insert_old_issue`]: what a test of a
+    /// migration that needs only one issue starts from.
+    #[cfg(test)]
+    pub(crate) async fn insert_old_task(
+        database: &Database,
+    ) -> Result<IssueId, bb_testing::Failure> {
+        use crate::db::StoredId as _;
+        use jiff::Timestamp;
+
+        let issue_type = IssueTypeId::from_parts(Timestamp::UNIX_EPOCH, [2; 10])?;
+        insert_old_issue_type(database, issue_type, "Task").await?;
+        let project = ProjectId::from_parts(Timestamp::UNIX_EPOCH, [3; 10])?;
+        insert_old_project(database, project.stored()).await?;
+        let issue = IssueId::from_parts(Timestamp::UNIX_EPOCH, [4; 10])?;
+        insert_old_issue(
+            database,
+            (project.stored(), issue.stored()),
+            issue_type,
+            "1",
+        )
+        .await?;
+        Ok(issue)
+    }
+
     /// A saved search written the way migration 24 made the row, with the `spacing` that migration
     /// 30 takes away: what a test of either migration starts from. The IDs are as stored.
     #[cfg(test)]

@@ -25,6 +25,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -144,6 +145,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -593,6 +595,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -1176,6 +1179,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -1535,6 +1539,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -1621,6 +1626,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -2061,6 +2067,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -3573,6 +3580,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -3916,6 +3924,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -4798,6 +4807,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -5437,6 +5447,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -5731,6 +5742,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -5818,6 +5830,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -6084,6 +6097,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -6287,6 +6301,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -6983,6 +6998,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -7187,6 +7203,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -7262,6 +7279,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -7527,6 +7545,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -7750,6 +7769,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -8065,6 +8085,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -8321,6 +8342,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -8637,6 +8659,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -8840,6 +8863,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -8971,6 +8995,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -10396,6 +10421,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -11684,6 +11710,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -11838,6 +11865,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -12123,6 +12151,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -12315,6 +12344,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -12429,6 +12459,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -13172,6 +13203,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -13577,6 +13609,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -13691,6 +13724,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -13789,6 +13823,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -13933,6 +13968,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -14538,6 +14574,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -15065,6 +15102,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -15289,6 +15327,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -15853,6 +15892,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -16040,6 +16080,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -16158,6 +16199,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -16716,6 +16758,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -17432,6 +17475,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -18183,7 +18227,6 @@
             "$ref": "#/components/responses/Unavailable"
           }
         },
-        "x-never-stored": true,
         "x-permission": "signed-in"
       }
     },
@@ -18292,7 +18335,6 @@
             "$ref": "#/components/responses/Unavailable"
           }
         },
-        "x-never-stored": true,
         "x-permission": "see-issues"
       }
     },
@@ -18700,6 +18742,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -18784,6 +18827,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "description": "How many items a page holds at most (default 50, at most 100).",
               "maximum": 100,
               "minimum": 1
             }
@@ -19353,7 +19397,7 @@
       "AcceptWarningBody": {
         "type": "object",
         "description": "*Keep and accept* a plan warning.",
-        "required": ["issue", "version", "kind"],
+        "required": ["issue", "version", "kind", "timeline"],
         "properties": {
           "issue": {
             "type": "string",
@@ -19362,6 +19406,10 @@
           "kind": {
             "$ref": "#/components/schemas/WarningKind",
             "description": "The kind of the warning."
+          },
+          "timeline": {
+            "$ref": "#/components/schemas/TimelineOptionsBody",
+            "description": "The options of the view the warning was shown in. Only a view of *Start date* and *Due\ndate* keeps an accepted warning, and only one the issue has in it now."
           },
           "version": {
             "type": "integer",
@@ -19373,14 +19421,9 @@
       },
       "AcceptedWarningBody": {
         "type": "object",
-        "description": "A warning that was accepted.",
-        "required": ["issue", "kind", "start_date", "due_date"],
+        "description": "A warning that was accepted: it shows faded until the dates of its issue change.",
+        "required": ["issue", "kind"],
         "properties": {
-          "due_date": {
-            "type": ["string", "null"],
-            "format": "date",
-            "description": "The *Due date* it was accepted for."
-          },
           "issue": {
             "type": "string",
             "description": "The issue."
@@ -19388,11 +19431,6 @@
           "kind": {
             "$ref": "#/components/schemas/WarningKind",
             "description": "The kind."
-          },
-          "start_date": {
-            "type": ["string", "null"],
-            "format": "date",
-            "description": "The *Start date* it was accepted for: it comes back when the dates change."
           }
         }
       },
@@ -26111,17 +26149,17 @@
       },
       "MoveAfterIssueBody": {
         "type": "object",
-        "description": "One issue of the preview, with its new dates.",
-        "required": ["id", "readable_id", "version", "from", "to", "start_date", "due_date"],
+        "description": "One issue of the preview, with its new dates: a date field the reader may not read is left out,\nfor each issue in its own project and again by the field levels of the project of the issue the\npreview is for.",
+        "required": ["id", "readable_id", "version", "from", "to"],
         "properties": {
           "due_date": {
             "type": ["string", "null"],
             "format": "date",
-            "description": "The *Due date* it gets; `null` when it has none."
+            "description": "The *Due date* it gets; `null` when it has none or the reader may not read it."
           },
           "from": {
             "$ref": "#/components/schemas/DaysBody",
-            "description": "The days of its bar now."
+            "description": "The days of its bar now, worked out from the dates the reader may read."
           },
           "id": {
             "type": "string",
@@ -26134,7 +26172,7 @@
           "start_date": {
             "type": ["string", "null"],
             "format": "date",
-            "description": "The *Start date* it gets; `null` when it has none."
+            "description": "The *Start date* it gets; `null` when it has none or the reader may not read it."
           },
           "to": {
             "$ref": "#/components/schemas/DaysBody",
@@ -32742,7 +32780,15 @@
       "TimeFactorBody": {
         "type": "object",
         "description": "The time factor of an issue. The factor and who set it are the field *Time factor*: a reader\nwhose field level hides it gets the issue, its version and the person on the bar only.",
-        "required": ["issue", "version", "percent", "set_by", "own_estimate", "person"],
+        "required": [
+          "issue",
+          "version",
+          "percent",
+          "set_by",
+          "own_estimate",
+          "own_percent",
+          "person"
+        ],
         "properties": {
           "issue": {
             "type": "string",
@@ -32750,7 +32796,13 @@
           },
           "own_estimate": {
             "type": "boolean",
-            "description": "Whether the person on the bar set it themselves (*Lea's own estimate*)."
+            "description": "Whether the person on the bar set it themselves (*Lea's own estimate*); `false` for a reader\nwho is not shown the person on the bar by name."
+          },
+          "own_percent": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "The factor again, for the person on the bar alone, who always sees their own estimate, also\nwhere the field is hidden from their role; `null` for everybody else.",
+            "minimum": 0
           },
           "percent": {
             "type": "integer",
@@ -32852,10 +32904,10 @@
             "description": "The last day the screen shows; a span is a year at most."
           },
           "limit": {
-            "type": ["integer", "null"],
-            "format": "int32",
-            "description": "How many issues a page holds at most (at most 200).",
-            "minimum": 0
+            "type": "integer",
+            "description": "How many items a page holds at most (default 50, at most 100).",
+            "maximum": 100,
+            "minimum": 1
           },
           "part": {
             "$ref": "#/components/schemas/TimelinePartBody",
@@ -32922,7 +32974,14 @@
       "TimelinePageBody": {
         "type": "object",
         "description": "A page of the timeline.",
-        "required": ["rows", "next_cursor", "dependencies", "warnings", "not_scheduled"],
+        "required": [
+          "rows",
+          "next_cursor",
+          "dependencies",
+          "warnings",
+          "not_scheduled",
+          "planned_by_effort"
+        ],
         "properties": {
           "dependencies": {
             "type": "array",
@@ -32940,6 +32999,10 @@
             "format": "int64",
             "description": "How many issues the search finds that wait in *Not scheduled yet*.",
             "minimum": 0
+          },
+          "planned_by_effort": {
+            "type": "boolean",
+            "description": "Whether the bars were planned by effort: the view asked for it and the reader is no access\nkey. A key reads nobody's work times, so its bars keep the dates people set."
           },
           "rows": {
             "type": "array",

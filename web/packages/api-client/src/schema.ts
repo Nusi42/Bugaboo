@@ -5242,27 +5242,22 @@ export interface components {
       /** @description The kind of the warning. */
       kind: components["schemas"]["WarningKind"];
       /**
+       * @description The options of the view the warning was shown in. Only a view of *Start date* and *Due
+       *     date* keeps an accepted warning, and only one the issue has in it now.
+       */
+      timeline: components["schemas"]["TimelineOptionsBody"];
+      /**
        * Format: int64
        * @description The version of the issue the person looked at.
        */
       version: number;
     };
-    /** @description A warning that was accepted. */
+    /** @description A warning that was accepted: it shows faded until the dates of its issue change. */
     AcceptedWarningBody: {
-      /**
-       * Format: date
-       * @description The *Due date* it was accepted for.
-       */
-      due_date: string | null;
       /** @description The issue. */
       issue: string;
       /** @description The kind. */
       kind: components["schemas"]["WarningKind"];
-      /**
-       * Format: date
-       * @description The *Start date* it was accepted for: it comes back when the dates change.
-       */
-      start_date: string | null;
     };
     /** @description An access key as its owner sees it after making it. */
     AccessKeyBody: {
@@ -8671,14 +8666,18 @@ export interface components {
        */
       timeline: components["schemas"]["TimelineOptionsBody"];
     };
-    /** @description One issue of the preview, with its new dates. */
+    /**
+     * @description One issue of the preview, with its new dates: a date field the reader may not read is left out,
+     *     for each issue in its own project and again by the field levels of the project of the issue the
+     *     preview is for.
+     */
     MoveAfterIssueBody: {
       /**
        * Format: date
-       * @description The *Due date* it gets; `null` when it has none.
+       * @description The *Due date* it gets; `null` when it has none or the reader may not read it.
        */
-      due_date: string | null;
-      /** @description The days of its bar now. */
+      due_date?: string | null;
+      /** @description The days of its bar now, worked out from the dates the reader may read. */
       from: components["schemas"]["DaysBody"];
       /** @description The internal ID. */
       id: string;
@@ -8686,9 +8685,9 @@ export interface components {
       readable_id: string;
       /**
        * Format: date
-       * @description The *Start date* it gets; `null` when it has none.
+       * @description The *Start date* it gets; `null` when it has none or the reader may not read it.
        */
-      start_date: string | null;
+      start_date?: string | null;
       /** @description The days of its bar after the move. */
       to: components["schemas"]["DaysBody"];
       /**
@@ -12034,8 +12033,17 @@ export interface components {
     TimeFactorBody: {
       /** @description The internal ID of the issue. */
       issue: string;
-      /** @description Whether the person on the bar set it themselves (*Lea's own estimate*). */
+      /**
+       * @description Whether the person on the bar set it themselves (*Lea's own estimate*); `false` for a reader
+       *     who is not shown the person on the bar by name.
+       */
       own_estimate: boolean;
+      /**
+       * Format: int32
+       * @description The factor again, for the person on the bar alone, who always sees their own estimate, also
+       *     where the field is hidden from their role; `null` for everybody else.
+       */
+      own_percent: number | null;
       /**
        * Format: int32
        * @description The factor in percent of the estimate (125 is ×1.25); 100 when nobody set one.
@@ -12102,11 +12110,8 @@ export interface components {
        * @description The last day the screen shows; a span is a year at most.
        */
       last: string;
-      /**
-       * Format: int32
-       * @description How many issues a page holds at most (at most 200).
-       */
-      limit?: number | null;
+      /** @description How many items a page holds at most (default 50, at most 100). */
+      limit?: number;
       /** @description Which part: the rows, or the issues of *Not scheduled yet*. */
       part?: components["schemas"]["TimelinePartBody"];
       /**
@@ -12156,6 +12161,11 @@ export interface components {
        * @description How many issues the search finds that wait in *Not scheduled yet*.
        */
       not_scheduled: number;
+      /**
+       * @description Whether the bars were planned by effort: the view asked for it and the reader is no access
+       *     key. A key reads nobody's work times, so its bars keep the dates people set.
+       */
+      planned_by_effort: boolean;
       /** @description The rows, in the order of the search; an issue has a row for each of its groups. */
       rows: components["schemas"]["TimelineRowBody"][];
       /** @description The warnings of the issues of the page. */

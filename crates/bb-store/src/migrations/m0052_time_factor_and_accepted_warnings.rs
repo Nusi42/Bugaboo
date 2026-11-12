@@ -110,7 +110,7 @@ pub(super) fn steps() -> Vec<Step> {
 #[cfg(test)]
 mod tests {
     use bb_app::saved_searches::SavedSearchStore as _;
-    use bb_core::id::{IssueId, IssueTypeId, ProjectId, SavedSearchId, UserId};
+    use bb_core::id::{SavedSearchId, UserId};
     use bb_core::saved_search::{TimelineOptions, Zoom};
     use bb_testing::{TestResult, each_database};
     use jiff::Timestamp;
@@ -121,7 +121,7 @@ mod tests {
     use crate::auth::AuthStorage;
     use crate::db::StoredId as _;
     use crate::schema::{AssignedPersonRow, SavedSearchRow};
-    use crate::test_support::{at, insert_old_issue, insert_old_issue_type, insert_old_project};
+    use crate::test_support::{at, insert_old_task};
 
     #[tokio::test]
     async fn plan_10_migration_52_keeps_the_order_of_assigned_people_and_starts_every_timeline()
@@ -129,18 +129,7 @@ mod tests {
         each_database("migration_52_the_plan", async |db| {
             let database = Database::connect(db.url()).await?;
             database.migrate_until(51, at(0)).await?;
-            let issue_type = IssueTypeId::from_parts(Timestamp::UNIX_EPOCH, [2; 10])?;
-            insert_old_issue_type(&database, issue_type, "Task").await?;
-            let project = ProjectId::from_parts(Timestamp::UNIX_EPOCH, [3; 10])?;
-            insert_old_project(&database, project.stored()).await?;
-            let issue = IssueId::from_parts(Timestamp::UNIX_EPOCH, [4; 10])?;
-            insert_old_issue(
-                &database,
-                (project.stored(), issue.stored()),
-                issue_type,
-                "1",
-            )
-            .await?;
+            let issue = insert_old_task(&database).await?;
             let (lea, ben) = (UserId::from_random([9; 16]), UserId::from_random([8; 16]));
             // Lea was assigned first, Ben later.
             for (person, added) in [(lea, 1_i64), (ben, 2)] {
