@@ -381,7 +381,7 @@ pub fn change_sentence(change: &Change) -> Said {
 /// region of the reader words them: none unless the change is one of the two dates and holds a day
 /// on both sides.
 fn worded_days(change: &Change, field: Field) -> Option<(&str, &str)> {
-    fn day(side: &Option<Side>) -> Option<&str> {
+    fn day(side: Option<&Side>) -> Option<&str> {
         match side {
             Some(Side::Typed {
                 kind: FieldType::Date,
@@ -392,7 +392,7 @@ fn worded_days(change: &Change, field: Field) -> Option<(&str, &str)> {
         }
     }
     (Field::from_code(&change.field) == Some(field))
-        .then(|| day(&change.before).zip(day(&change.after)))
+        .then(|| day(change.before.as_ref()).zip(day(change.after.as_ref())))
         .flatten()
 }
 
