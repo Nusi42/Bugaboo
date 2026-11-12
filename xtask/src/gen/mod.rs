@@ -112,7 +112,7 @@ pub(crate) const GENERATORS: [Generator; 15] = [
     Generator {
         name: "word-types",
         help: "The TypeScript types of the input and the output of the wording in bb-wasm, from the Rust types of bb-core.",
-        paths: || vec![word_types::OUTPUT],
+        paths: || vec![word_types::OUTPUT, word_types::READABILITY_OUTPUT],
         generate: |repo, _| word_types::generate(repo),
     },
     Generator {

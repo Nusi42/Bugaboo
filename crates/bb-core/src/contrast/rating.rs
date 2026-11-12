@@ -5,9 +5,10 @@ use super::maths::{
     brighten, chroma_of, color_difference, contrast_ratio, fade, luminance, luminance_of, ratio_of,
 };
 use super::spec::{ContrastSpec, DistinctSpec, Drawn};
+use serde::Serialize;
 
 /// How readable a pair is.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, serde::Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Rating {
     /// Passes the rule for more contrast too (text only).
