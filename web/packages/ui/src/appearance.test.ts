@@ -5,6 +5,7 @@ import {
   defaultAppearance,
   parseAppearance,
   storageSource,
+  ownThemeOf,
   themeOf,
   type Appearance,
 } from "./appearance.ts";
@@ -87,6 +88,18 @@ describe("thm_02 match my device with one light and one dark choice", () => {
     expect(themeOf(appearance, false)).toBe("paper");
     expect(themeOf(appearance, true)).toBe("midnight");
     expect(themeOf({ ...appearance, theme: "dusk" }, false)).toBe("dusk");
+  });
+});
+
+describe("thm_04 an own theme as the light or dark choice", () => {
+  it("shows the own theme of the side that shows, and none on the other", () => {
+    const own = { id: "theme-1", sheet: "/themes/theme-1.css?v=1", choice: "midnight/theme-1" };
+    const appearance: Appearance = { ...defaultAppearance, dark: "midnight", darkOwn: own };
+    expect(ownThemeOf(appearance, true)).toEqual(own);
+    expect(ownThemeOf(appearance, false)).toBeNull();
+    // The first frame keeps it, and drops one that does not belong to its side.
+    expect(parseAppearance(JSON.stringify(appearance)).darkOwn).toEqual(own);
+    expect(parseAppearance(JSON.stringify({ ...appearance, dark: "x" })).darkOwn).toBeNull();
   });
 });
 

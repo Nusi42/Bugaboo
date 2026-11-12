@@ -13,7 +13,9 @@ export {
   spacingChoices,
   storageSource,
   themeOf,
+  ownThemeOf,
   type Appearance,
+  type ChosenOwn,
   type AppearanceSource,
   type DarkThemeId,
   type LightThemeId,
@@ -202,6 +204,7 @@ export {
   resolveTheme,
   themeChoices,
   type DeviceThemes,
+  type OwnLook,
   type ThemeChoice,
 } from "./theme.ts";
 export { partOf, type PartAttributes, type PartChoices } from "./parts.ts";

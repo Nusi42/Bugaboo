@@ -4,6 +4,7 @@ import { Listeners } from "./listeners.ts";
 import {
   applyTheme,
   defaultThemeChoice,
+  type OwnLook,
   deviceDarkQuery,
   isThemeChoice,
   resolveTheme,
@@ -27,6 +28,11 @@ export type SpacingChoice = SettingChoice<"appearanceSpacing">;
 export type LightThemeId = (typeof lightThemeIds)[number];
 export type DarkThemeId = (typeof darkThemeIds)[number];
 
+/** An own theme a person chose, with the value the setting keeps for it. */
+export interface ChosenOwn extends OwnLook {
+  readonly choice: string;
+}
+
 /** Everything a person chooses about how Bugaboo looks (CFG-04, THM-01, THM-02, THM-06). */
 export interface Appearance {
   /** The theme, or "Match my device". */
@@ -35,6 +41,10 @@ export interface Appearance {
   readonly light: LightThemeId;
   /** The dark theme that "Match my device" uses on a dark device. */
   readonly dark: DarkThemeId;
+  /** The own theme chosen as the light theme, shown on top of `light` (the theme it extends). */
+  readonly lightOwn: ChosenOwn | null;
+  /** The own theme chosen as the dark theme, shown on top of `dark`. */
+  readonly darkOwn: ChosenOwn | null;
   readonly spacing: SpacingChoice;
   /** *Less motion*, also when the device does not ask for it. */
   readonly lessMotion: boolean;
@@ -46,6 +56,8 @@ export const defaultAppearance: Appearance = {
   theme: defaultThemeChoice,
   light: settingDefaults.appearanceLightTheme,
   dark: settingDefaults.appearanceDarkTheme,
+  lightOwn: null,
+  darkOwn: null,
   spacing: settingDefaults.appearanceSpacing,
   lessMotion: settingDefaults.appearanceLessMotion,
   largerText: settingDefaults.appearanceLargerText,
@@ -57,6 +69,16 @@ function isLight(value: unknown): value is LightThemeId {
 
 function isDark(value: unknown): value is DarkThemeId {
   return settingChoices.appearanceDarkTheme.some((id) => id === value);
+}
+
+function isChosenOwn(value: unknown): value is ChosenOwn {
+  const text = (key: string): unknown =>
+    typeof value === "object" && value !== null ? Reflect.get(value, key) : undefined;
+  return (
+    typeof text("id") === "string" &&
+    typeof text("sheet") === "string" &&
+    typeof text("choice") === "string"
+  );
 }
 
 function isSpacing(value: unknown): value is SpacingChoice {
@@ -74,6 +96,8 @@ export function parseAppearance(text: string | null): Appearance {
   const theme = read("theme");
   const light = read("light");
   const dark = read("dark");
+  const lightOwn = read("lightOwn");
+  const darkOwn = read("darkOwn");
   const spacing = read("spacing");
   const lessMotion = read("lessMotion");
   const largerText = read("largerText");
@@ -81,6 +105,8 @@ export function parseAppearance(text: string | null): Appearance {
     theme: isThemeChoice(theme) ? theme : defaultAppearance.theme,
     light: isLight(light) ? light : defaultAppearance.light,
     dark: isDark(dark) ? dark : defaultAppearance.dark,
+    lightOwn: isLight(light) && isChosenOwn(lightOwn) ? lightOwn : null,
+    darkOwn: isDark(dark) && isChosenOwn(darkOwn) ? darkOwn : null,
     spacing: isSpacing(spacing) ? spacing : defaultAppearance.spacing,
     lessMotion: typeof lessMotion === "boolean" ? lessMotion : defaultAppearance.lessMotion,
     largerText: typeof largerText === "boolean" ? largerText : defaultAppearance.largerText,
@@ -93,6 +119,15 @@ export function themeOf(appearance: Appearance, deviceIsDark: boolean): ThemeId 
     light: appearance.light,
     dark: appearance.dark,
   });
+}
+
+/** The own theme that shows for this appearance on a device that is light or dark, if any. */
+export function ownThemeOf(appearance: Appearance, deviceIsDark: boolean): ChosenOwn | null {
+  const shown = themeOf(appearance, deviceIsDark);
+  if (shown === appearance.light) {
+    return appearance.lightOwn;
+  }
+  return shown === appearance.dark ? appearance.darkOwn : null;
 }
 
 /** The page the choices are put on: the attributes the generated CSS reacts to. */
@@ -123,7 +158,7 @@ export function applyChoices(appearance: Appearance, page: PageAttributes): void
 
 /** Everything of the appearance, on the page. */
 export function applyAppearance(appearance: Appearance, deviceIsDark: boolean): void {
-  applyTheme(themeOf(appearance, deviceIsDark));
+  applyTheme(themeOf(appearance, deviceIsDark), ownThemeOf(appearance, deviceIsDark));
   applyChoices(appearance, document.documentElement);
 }
 

@@ -42,7 +42,47 @@ export function resolveTheme(
   return choice;
 }
 
-/** Puts the theme on the page; the generated token CSS reacts to the `look` attribute of the page frame. */
-export function applyTheme(theme: ThemeId): void {
-  document.documentElement.setAttribute(pageAttributes.look, theme);
+/**
+ * An own theme on the page (THM-04): its ID and the address of the style sheet the server makes
+ * from its values, which holds custom properties only. The page never builds a sheet itself, so the
+ * content security policy stays `style-src 'self'`.
+ */
+export interface OwnLook {
+  readonly id: string;
+  readonly sheet: string;
+}
+
+/** The link element of the sheet of an own theme, while one is on the page. */
+let ownSheet: HTMLLinkElement | null = null;
+
+/** Links the sheet of an own theme, or takes the link away when there is none. */
+function linkOwnSheet(own: OwnLook | null): void {
+  if (own === null) {
+    ownSheet?.remove();
+    ownSheet = null;
+    return;
+  }
+  if (ownSheet === null) {
+    ownSheet = document.createElement("link");
+    ownSheet.rel = "stylesheet";
+    document.head.append(ownSheet);
+  }
+  if (ownSheet.getAttribute("href") !== own.sheet) {
+    ownSheet.href = own.sheet;
+  }
+}
+
+/**
+ * Puts the theme on the page: the generated token CSS reacts to the `look` attribute of the page
+ * frame, and an own theme's sheet sets its values on top of it under `data-own-theme`.
+ */
+export function applyTheme(theme: ThemeId, own: OwnLook | null = null): void {
+  const page = document.documentElement;
+  page.setAttribute(pageAttributes.look, theme);
+  linkOwnSheet(own);
+  if (own === null) {
+    page.removeAttribute(pageAttributes.ownTheme);
+  } else {
+    page.setAttribute(pageAttributes.ownTheme, own.id);
+  }
 }

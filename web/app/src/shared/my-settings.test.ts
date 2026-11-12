@@ -77,6 +77,8 @@ describe("cfg_04 the look a person chose, as the server holds it", () => {
       mode: "device",
       light: "daylight",
       dark: "dusk",
+      lightOwn: null,
+      darkOwn: null,
       spacing: "comfortable",
       lessMotionOn: false,
       largerTextOn: false,
@@ -117,6 +119,34 @@ describe("cfg_04 a change of the look is sent as the settings that differ", () =
     expect(changesForAppearance(before, { ...before, theme: "device" })).toEqual([]);
     expect(changesForAppearance(before, { ...before, light: "paper", dark: "midnight" })).toEqual([
       { key: settingKeys.appearanceLightTheme, value: "paper" },
+      { key: settingKeys.appearanceDarkTheme, value: "midnight" },
+    ]);
+  });
+});
+
+describe("thm_04 an own theme the person chose", () => {
+  const choice = "dusk/0193a1b2-0000-7000-8000-000000000001";
+  const own = { id: "0193a1b2-0000-7000-8000-000000000001", extends: "dusk", sheet: "/sheet.css" };
+  const chosen: MySettings = {
+    settings: [
+      setting(settingKeys.appearanceMode, "dark"),
+      { ...setting(settingKeys.appearanceDarkTheme, choice), own_theme: own },
+    ],
+  };
+
+  it("is shown on top of the built-in theme it extends", () => {
+    const look = appearanceForShell(appearanceOf(chosen));
+    expect(look.theme).toBe("dusk");
+    expect(look.darkOwn).toEqual({ id: own.id, sheet: own.sheet, choice });
+    expect(look.lightOwn).toBeNull();
+  });
+
+  it("is kept as its own value when another choice changes, and a built-in theme replaces it", () => {
+    const before = appearanceForShell(appearanceOf(chosen));
+    expect(changesForAppearance(before, { ...before, largerText: true })).toEqual([
+      { key: settingKeys.appearanceLargerText, value: true },
+    ]);
+    expect(changesForAppearance(before, { ...before, darkOwn: null, dark: "midnight" })).toEqual([
       { key: settingKeys.appearanceDarkTheme, value: "midnight" },
     ]);
   });
