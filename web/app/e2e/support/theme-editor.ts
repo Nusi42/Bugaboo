@@ -2,6 +2,7 @@ import { dataOf, type Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { expect, type Locator, type Page } from "@playwright/test";
 
+import { valuesBody } from "../../src/features/theme-editor/index.ts";
 import { filled, paths, routeParam } from "../../src/shared/paths.ts";
 import { part } from "../../../packages/ui/src/tokens.ts";
 import {
@@ -14,7 +15,6 @@ import {
   signInThroughApi,
 } from "./accounts.ts";
 import { giveRole, roleName } from "./access.ts";
-import { layoutOf } from "./layout.ts";
 import { type Instance } from "./server.ts";
 import { inOrder } from "./sequence.ts";
 
@@ -54,7 +54,7 @@ export async function uploadedTheme(
     const detail = dataOf(
       await session.client.POST("/api/v1/themes/upload", {
         params: { query: { kind } },
-        body: { name: file.name, extends: file.extends, values: { ...file.values } },
+        body: { name: file.name, extends: file.extends, values: valuesBody(file.values) },
       }),
     );
     return detail.theme;
@@ -154,8 +154,10 @@ export function colorField(page: Page, color: string): Locator {
 
 /** The preview of the editor: beside the groups on a computer, behind *Preview* on a phone. */
 export async function preview(page: Page): Promise<Locator> {
-  if (layoutOf(page) === "phone") {
-    await page.getByRole("button", { name: t("theme-editor.preview"), exact: true }).click();
+  // A phone shows the button, a computer the preview itself.
+  const opens = page.getByRole("button", { name: t("theme-editor.preview"), exact: true });
+  if (await opens.isVisible()) {
+    await opens.click();
   }
   const shown = page.locator(`[data-part='${part.themeEditorPreview}']`);
   await expect(shown).toBeVisible();
