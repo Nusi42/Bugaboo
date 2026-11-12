@@ -23,9 +23,9 @@ defaults light="daylight" dark="dusk"
 
 // The attributes of the page frame (<html>): `look` carries the theme on the page, `mode` is the
 // light or dark mode that the design pages force, `preview` marks a sample of a theme inside the
-// page. Written once: the style sheets, the TypeScript (`pageAttributes`) and the browser tests
+// page, `own` carries the ID of an own theme (the style sheet the server makes for it, ADR-0026 M8). Written once: the style sheets, the TypeScript (`pageAttributes`) and the browser tests
 // read the names from here.
-frame look="data-look" mode="data-theme" preview="data-preview-look"
+frame look="data-look" mode="data-theme" preview="data-preview-look" own="data-own-theme"
 
 // Choices of a person that change token values without changing the theme. Each is an
 // attribute on <html>; a token names the variant as a property (`density` below has
@@ -45,17 +45,18 @@ variants {
 // contrast, `forced=` replaces it while forced colors are on, and `<variant>=` is the value while
 // that choice is on.
 tokens {
+    // An own theme may choose the stack of a token marked `own="true"` (its name), nothing else (ADR-0026 M8).
     // Fonts: the system font stacks of the sister project, word for word; no font file is shipped (ADR-0026).
     // `font-ui` is the text of the app, `font-display` its titles and headings, `font-reader` what a person reads at
     // length (a description, a comment, the help), `font-mono` code and issue IDs.
-    font "font-ui" "Segoe UI Variable Text" "Segoe UI" "system-ui" "sans-serif"
-    font "font-display" "Segoe UI Variable Display" "Segoe UI" "system-ui" "sans-serif"
-    font "font-reader" "Segoe UI Variable Text" "Segoe UI" "system-ui" "sans-serif"
+    font "font-ui" "Segoe UI Variable Text" "Segoe UI" "system-ui" "sans-serif" own="true"
+    font "font-display" "Segoe UI Variable Display" "Segoe UI" "system-ui" "sans-serif" own="true"
+    font "font-reader" "Segoe UI Variable Text" "Segoe UI" "system-ui" "sans-serif" own="true"
     font "font-mono" "Cascadia Mono" "Consolas" "ui-monospace" "monospace"
 
-    // Corners
-    size "r-ctl" "6px"
-    size "r-card" "10px"
+    // Corners. `own-min` and `own-max` (pixels) are the bounds an own theme may set the radius within.
+    size "r-ctl" "6px" own-min="0" own-max="16"
+    size "r-card" "10px" own-min="0" own-max="24"
     size "r-pill" "999px"
 
     // Text sizes (times the text size choice)
@@ -477,7 +478,7 @@ tokens {
     shadow "area-time-mark" "inset 3px 0 0 $area-time"
     shadow "area-agents-mark" "inset 3px 0 0 $area-agents"
     shadow "area-settings-mark" "inset 3px 0 0 $area-settings"
-    shadow "shadow" "0 1px 2px 0 #16181d0f, 0 6px 20px 0 #16181d14"
+    shadow "shadow" "0 1px 2px 0 #16181d0f, 0 6px 20px 0 #16181d14" own="true"
 }
 
 // Contrast rules (WCAG, THM-03, UX-04, THM-06). Every text color is checked on every

@@ -4,4 +4,5 @@ globalThis.bugabooFrame = {
   look: "data-look",
   mode: "data-theme",
   previewLook: "data-preview-look",
+  ownTheme: "data-own-theme",
 };

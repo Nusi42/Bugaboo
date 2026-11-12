@@ -122,6 +122,8 @@ pub(crate) struct Token {
     /// Marked `run-time="true"`: the code may set this variable while the person drags something
     /// (the size of a window). Only a size can be one.
     pub(crate) run_time: bool,
+    /// What an own theme may set of this token (ADR-0026, update M8).
+    pub(crate) own: Own,
     pub(crate) line: usize,
 }
 
@@ -144,6 +146,19 @@ impl Token {
     pub(crate) fn in_theme_with_more_contrast(&self, theme: &str) -> Option<&str> {
         self.more_in(theme).or_else(|| self.in_theme(theme))
     }
+}
+
+/// What an own theme may do with a token. Colors are always open to it; the other kinds only where
+/// the line says so: `own="true"` on a shadow (stored as parts) and on a font (the choice of a stack),
+/// `own-min` and `own-max` on a size in pixels (a radius, within those bounds).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Own {
+    /// Not open to an own theme.
+    No,
+    /// Open: a shadow or a font stack.
+    Yes,
+    /// Open within the bounds, in pixels.
+    Pixels { min: u32, max: u32 },
 }
 
 /// A line of a rule: `property value`.
@@ -232,6 +247,8 @@ pub(crate) struct Frame {
     pub(crate) mode: String,
     /// A sample of a theme next to the page's own (`data-preview-look`).
     pub(crate) preview: String,
+    /// The own theme on the page (`data-own-theme`): its style sheet comes from the server.
+    pub(crate) own: String,
 }
 
 /// The style sheet of the design pages that one `docs` block makes: its own tokens, the rules (CSS

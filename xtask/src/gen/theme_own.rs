@@ -1,0 +1,101 @@
+//! What an own theme may set, and the built-in themes it starts from, written as Rust data into
+//! `bb-core` (ADR-0026, update M8), so the server, the upload and the theme editor read one list.
+
+use std::fmt::Write as _;
+
+use super::theme_file::{Own, ThemeFile, TokenKind};
+
+/// Where the data is written.
+pub(super) const OUTPUT: &str = "crates/bb-core/src/theme/built_in.rs";
+
+fn more(value: Option<&str>) -> String {
+    value.map_or_else(|| "None".to_owned(), |value| format!("Some({value:?})"))
+}
+
+/// The source of `built_in.rs`, before `rustfmt`.
+pub(super) fn rust(file: &ThemeFile, generated_by: &str) -> String {
+    let mut out = format!(
+        "//! {generated_by}\n//!\n//! The built-in themes with their colors and shadow, the tokens an own theme may set and the\n//! numbers the contrast rules read (ADR-0026, update M8).\n\nuse super::{{BuiltIn, ColorValue, FontToken, Number, RadiusToken}};\n\n/// The attribute of the page that carries the ID of an own theme (the `own` of the `frame` line).\npub(super) const OWN_ATTRIBUTE: &str = {:?};\n\n",
+        file.frame.own
+    );
+    out.push_str("/// The built-in themes, light ones first, in the order of the theme files.\npub(super) const BUILT_IN: &[BuiltIn] = &[\n");
+    for theme in &file.themes {
+        let _ = writeln!(
+            out,
+            "    BuiltIn {{\n        id: {:?},\n        light: {},\n        colors: &[",
+            theme.name,
+            theme.kind == "light"
+        );
+        for token in file.colors() {
+            if let Some(value) = token.in_theme(&theme.name) {
+                let _ = writeln!(
+                    out,
+                    "            ColorValue::new({:?}, {value:?}, {}),",
+                    token.name,
+                    more(token.more_in(&theme.name))
+                );
+            }
+        }
+        let shadow = file
+            .tokens
+            .iter()
+            .find(|token| token.kind == TokenKind::Shadow && token.own == Own::Yes)
+            .and_then(|token| token.in_theme(&theme.name))
+            .unwrap_or_default();
+        let _ = writeln!(out, "        ],\n        shadow: {shadow:?},\n    }},");
+    }
+    out.push_str("];\n");
+    let shadow = file
+        .tokens
+        .iter()
+        .find(|token| token.kind == TokenKind::Shadow && token.own == Own::Yes);
+    let _ = write!(
+        out,
+        "\n/// The shadow token an own theme may set, as parts.\npub(super) const SHADOW_TOKEN: &str = {:?};\n",
+        shadow.map_or("", |token| token.name.as_str())
+    );
+    out.push_str("\n/// The corner radii an own theme may set, in pixels.\npub(super) const RADII: &[RadiusToken] = &[\n");
+    for token in &file.tokens {
+        if let Own::Pixels { min, max } = token.own {
+            let start = token
+                .same
+                .as_deref()
+                .and_then(|same| same.strip_suffix("px"))
+                .unwrap_or("0");
+            let _ = writeln!(
+                out,
+                "    RadiusToken {{ name: {:?}, start_px: {start}, min_px: {min}, max_px: {max} }},",
+                token.name
+            );
+        }
+    }
+    out.push_str("];\n\n/// The text faces an own theme may choose a stack for. It names one of these stacks by its token.\npub(super) const FONTS: &[FontToken] = &[\n");
+    for token in &file.tokens {
+        if token.kind == TokenKind::Font && token.own == Own::Yes {
+            let _ = writeln!(
+                out,
+                "    FontToken {{ name: {:?}, stack: {:?} }},",
+                token.name,
+                token.same.as_deref().unwrap_or_default()
+            );
+        }
+    }
+    out.push_str("];\n\n/// The opacity tokens, 0 to 1, for the contrast rules that fade a color.\npub(super) const OPACITIES: &[Number] = &[\n");
+    numbers(&mut out, file, TokenKind::Opacity);
+    out.push_str("];\n\n/// The number tokens, for the contrast rules that brighten a color.\npub(super) const NUMBERS: &[Number] = &[\n");
+    numbers(&mut out, file, TokenKind::Number);
+    out.push_str("];\n");
+    out
+}
+
+fn numbers(out: &mut String, file: &ThemeFile, kind: TokenKind) {
+    for token in file.tokens.iter().filter(|token| token.kind == kind) {
+        if let Some(value) = token.same.as_deref().and_then(|v| v.parse::<f64>().ok()) {
+            let _ = writeln!(
+                out,
+                "    Number {{ name: {:?}, value: {value:?} }},",
+                token.name
+            );
+        }
+    }
+}

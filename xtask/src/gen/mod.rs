@@ -21,6 +21,7 @@ pub(crate) mod search_types;
 pub(crate) mod search_vectors;
 pub(crate) mod theme;
 pub(crate) mod theme_file;
+pub(crate) mod theme_own;
 pub(crate) mod theme_rules;
 pub(crate) mod theme_selector;
 pub(crate) mod time_vectors;

@@ -33,6 +33,7 @@ impl Builder {
                     look: node.required_prop("look")?,
                     mode: node.required_prop("mode")?,
                     preview: node.required_prop("preview")?,
+                    own: node.required_prop("own")?,
                 });
             }
             "themes" | "theme" => {
@@ -193,12 +194,18 @@ impl Builder {
             forced: None,
             variants: Vec::new(),
             run_time: false,
+            own: Own::No,
             line: node.line(),
         };
         if self.tokens.iter().any(|other| other.name == token.name) {
             return Err(node.problem(format!("`{}` is defined twice", token.name)));
         }
-        for (key, value) in node.props()? {
+        let props = node.props()?;
+        token.own = own_of(node, &token, &props)?;
+        for (key, value) in props {
+            if matches!(key.as_str(), "own" | "own-min" | "own-max") {
+                continue;
+            }
             if key == "run-time" {
                 if value != "true" || token.kind != TokenKind::Size {
                     return Err(
@@ -283,5 +290,44 @@ impl Builder {
         };
         file.validate()?;
         Ok(file)
+    }
+}
+
+/// What an own theme may set of a token, from `own`, `own-min` and `own-max` on its line.
+fn own_of(node: Node<'_>, token: &Token, props: &[(String, String)]) -> anyhow::Result<Own> {
+    let prop = |name: &str| {
+        props
+            .iter()
+            .find(|(key, _)| key == name)
+            .map(|(_, value)| value.as_str())
+    };
+    let pixels = |name: &str| -> anyhow::Result<Option<u32>> {
+        prop(name)
+            .map(|value| {
+                value
+                    .parse()
+                    .map_err(|_| node.problem(format!("`{name}` is a whole number of pixels")))
+            })
+            .transpose()
+    };
+    match (prop("own"), pixels("own-min")?, pixels("own-max")?) {
+        (None, None, None) => Ok(Own::No),
+        (Some("true"), None, None) if matches!(token.kind, TokenKind::Shadow | TokenKind::Font) => {
+            Ok(Own::Yes)
+        }
+        (None, Some(min), Some(max))
+            if token.kind == TokenKind::Size
+                && min <= max
+                && token.same.as_deref().is_some_and(|same| {
+                    same.strip_suffix("px")
+                        .and_then(|px| px.parse::<u32>().ok())
+                        .is_some_and(|px| (min..=max).contains(&px))
+                }) =>
+        {
+            Ok(Own::Pixels { min, max })
+        }
+        _ => Err(node.problem(
+            "`own=\"true\"` opens a shadow or a font stack to an own theme; `own-min` and `own-max` open a size in pixels, and its value lies between them",
+        )),
     }
 }

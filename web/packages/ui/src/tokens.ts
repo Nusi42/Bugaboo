@@ -9,11 +9,12 @@ export const defaultDarkTheme: ThemeId = "dusk";
 export const lightThemeIds = ["daylight", "paper"] as const;
 export const darkThemeIds = ["dusk", "midnight"] as const;
 
-/** The attributes of the page frame (<html>): the theme on the page, the mode the design pages force, and a sample of a theme. */
+/** The attributes of the page frame (<html>): the theme on the page, the mode the design pages force, a sample of a theme and the own theme. */
 export const pageAttributes = {
   look: "data-look",
   mode: "data-theme",
   previewLook: "data-preview-look",
+  ownTheme: "data-own-theme",
 } as const;
 
 /** Where the layout changes, in pixels (the `bp-*` tokens). */
