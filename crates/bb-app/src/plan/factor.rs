@@ -183,8 +183,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         let percent = factor.map_or(TimeFactor::ONE, |kept| kept.factor).percent();
         let set_by = match factor {
             // Not more openly than the person on the bar, whoever set it: a factor the person set
-            // and one somebody else set look alike.
-            Some(_) if !named => Some(person.clone().unwrap_or(PersonRef::Someone)),
+            // and one somebody else set look alike. *Someone*, not the role of the person on the
+            // bar, so a reader who sees people by role is not told a role that did not set it.
+            Some(_) if !named => Some(PersonRef::Someone),
             Some(kept) => Some(
                 self.person_ref(
                     held,
