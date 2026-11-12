@@ -103,3 +103,38 @@ test("iss_04 a person who may not manage kinds of relation does not find the pag
     page.getByRole("heading", { level: 1, name: t("page.not-found.title") }),
   ).toBeVisible();
 });
+
+/** Creates a kind of relation with the form of the page and waits for the word that it was created. */
+async function createKind(page: Page, forward: string, backward: string): Promise<void> {
+  await page.getByLabel(t("relation-kinds.field-forward"), { exact: true }).fill(forward);
+  await page.getByLabel(t("relation-kinds.field-backward"), { exact: true }).fill(backward);
+  await page.getByRole("button", { name: t("relation-kinds.create"), exact: true }).click();
+  await expect(page.getByText(t("relation-kinds.created", { name: forward }))).toBeVisible();
+}
+
+test("plan_02 blocks must finish first, and a third kind with the effect is refused", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await page.goto(paths.relationKinds);
+  const effect = t("relation-kinds.field-date-effect");
+  // Two kinds to give the effect to, made first: on a phone an open kind covers the form.
+  await createKind(page, "leads to", "comes from");
+  await createKind(page, "feeds", "is fed by");
+  const open = async (forward: string, backward: string) => {
+    // On a phone an open kind covers the list: each kind is opened from the page again.
+    await page.goto(paths.relationKinds);
+    await kindList(page)
+      .getByRole("button", { name: reads(forward, backward), exact: true })
+      .click();
+    return itemArea(page, reads(forward, backward)).getByLabel(effect, { exact: true });
+  };
+  await expect(await open("blocks", "is blocked by")).toHaveValue("must-finish-first");
+  // A second kind may have it; the third is refused with a sentence that names the two.
+  await (await open("leads to", "comes from")).selectOption("must-finish-first");
+  await expect(page.getByText(t("save.saved")).first()).toBeVisible();
+  await (await open("feeds", "is fed by")).selectOption("must-finish-first");
+  await expect(
+    page.getByText(t("error.relation-kind.date-effect-most", { most: 2 })),
+  ).toBeVisible();
+});
