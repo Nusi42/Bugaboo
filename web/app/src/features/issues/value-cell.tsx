@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { LabelChip, SentenceWithNames } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
-import { formatDateTime } from "../../shared/format.ts";
+import { formatCalendarDay, formatDateTime } from "../../shared/format.ts";
 import { listWord } from "../../shared/list-columns.ts";
 import { listText } from "../../shared/list-text.ts";
 import { personName } from "../../shared/person.ts";
@@ -30,6 +30,10 @@ export function valueOf(word: string, line: FoundLine, own: OwnColumns): ReactNo
       return line.reportedBy === undefined ? undefined : personName(line.reportedBy);
     case listWord.statusGroup:
       return t(`status-group.${line.group}`);
+    case listWord.startDate:
+      return line.startDate === undefined ? undefined : formatCalendarDay(line.startDate);
+    case listWord.dueDate:
+      return line.dueDate === undefined ? undefined : formatCalendarDay(line.dueDate);
     case listWord.estimatedTime:
       return line.estimated === undefined ? undefined : <MinutesLength minutes={line.estimated} />;
     case listWord.timeLeft:

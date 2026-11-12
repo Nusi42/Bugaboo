@@ -1,6 +1,8 @@
 import type { Schema } from "@bugaboo/api-client";
 import { fieldWords } from "@bugaboo/api-client";
 
+export { dateField } from "../../shared/date-fields.ts";
+
 /** The word of a built-in field, as the layout names it. */
 export type FieldWord = Schema<"Field">;
 

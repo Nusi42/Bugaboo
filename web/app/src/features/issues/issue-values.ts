@@ -1,6 +1,7 @@
 import { priorityWords, statusGroupWords, type Schema } from "@bugaboo/api-client";
 import { t, type MessageKey } from "@bugaboo/messages";
 
+import { dateField } from "../../shared/date-fields.ts";
 import { formatCalendarDay } from "../../shared/format.ts";
 import { listText } from "../../shared/list-text.ts";
 import { minutesText, timeLeftOf } from "./time-words.ts";
@@ -57,10 +58,10 @@ export function rowFieldOf(values: IssueValues): RowField | undefined {
     return "estimated-time";
   }
   if (values.startDate !== undefined) {
-    return "start-date";
+    return dateField.start;
   }
   if (values.dueDate !== undefined) {
-    return "due-date";
+    return dateField.due;
   }
   if (values.timeLeft !== undefined) {
     return "time-left";

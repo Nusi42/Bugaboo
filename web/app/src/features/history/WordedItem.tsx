@@ -1,6 +1,7 @@
 import type { Schema } from "@bugaboo/api-client";
 import { factJoinerHeld, Length, SentenceWithName, SentenceWithValues } from "@bugaboo/ui";
 
+import { datesSentence, type DatesMove } from "../../shared/dates-sentence.ts";
 import { fileSentence } from "../../shared/file-sentence.ts";
 import { durationText, minutesText } from "../../shared/own-value-text.ts";
 import { timeSentence } from "../../shared/time-sentence.ts";
@@ -22,6 +23,19 @@ function lengthOf(side: Schema<"ChangeValueBody"> | null | undefined): readonly 
 /** The lengths of a change (*Estimated time*, a length of an own field), before and after. */
 function changeLengths(item: Schema<"HistoryEntryItem">): readonly string[] {
   return [...lengthOf(item.change?.before), ...lengthOf(item.change?.after)];
+}
+
+/** The sentence of both dates moving in one event, said by the shared wording. */
+export function DatesMovedItem({
+  item,
+  move,
+}: {
+  readonly item: Schema<"HistoryEntryItem">;
+  readonly move: DatesMove;
+}) {
+  return (
+    <WithWording>{(wording) => <span>{datesSentence(wording, item, move)}</span>}</WithWording>
+  );
 }
 
 /** No own fields beside a sentence. */

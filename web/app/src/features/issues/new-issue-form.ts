@@ -1,8 +1,11 @@
 import type { Schema } from "@bugaboo/api-client";
 import { newIssuePriority, priorityWords } from "@bugaboo/api-client";
 
+import { dateField } from "../../shared/date-fields.ts";
 import type { NamedPerson } from "../../shared/person.ts";
 import { forApi } from "../../shared/reference.ts";
+
+export { dateField };
 
 /** What a person has filled in on the form of a new issue. */
 export interface NewIssueValues {
@@ -170,8 +173,8 @@ export function forForm(values: NewIssueValues, shows: (field: string) => boolea
     description: shows("description") ? values.description : emptyForm.description,
     priority: shows("priority") ? values.priority : emptyForm.priority,
     assignedTo: shows("assigned-to") ? values.assignedTo : emptyForm.assignedTo,
-    startDate: shows("start-date") ? values.startDate : emptyForm.startDate,
-    dueDate: shows("due-date") ? values.dueDate : emptyForm.dueDate,
+    startDate: shows(dateField.start) ? values.startDate : emptyForm.startDate,
+    dueDate: shows(dateField.due) ? values.dueDate : emptyForm.dueDate,
     estimatedTime: shows("estimated-time") ? values.estimatedTime : emptyForm.estimatedTime,
     estimateWrong: shows("estimated-time") ? values.estimateWrong : emptyForm.estimateWrong,
     fields: fieldsWhere(values.fields, (key) => shows(key)),

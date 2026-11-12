@@ -39,6 +39,8 @@ const fieldOfWord: Readonly<Record<string, keyof FoundItem>> = {
   [listWord.reportedBy]: "reported_by",
   [listWord.labels]: "labels",
   [listWord.project]: "project",
+  [listWord.startDate]: "start_date",
+  [listWord.dueDate]: "due_date",
   [listWord.estimatedTime]: "estimated_time",
   [listWord.timeLeft]: "time_left",
   [listWord.timeSpent]: "time_spent",
@@ -110,6 +112,9 @@ export interface FoundLine {
   readonly createdAt: string | undefined;
   readonly changedAt: string | undefined;
   readonly closedAt: string | undefined;
+  /** *Start date* and *Due date* as the calendar writes them, when the columns asked for them. */
+  readonly startDate: string | undefined;
+  readonly dueDate: string | undefined;
   /** *Estimated time*, *Time left* and *Time spent*, when the columns asked for them. */
   readonly estimated: number | undefined;
   readonly left: TimeLeft | undefined;
@@ -147,6 +152,8 @@ export function foundLineOf(item: FoundItem): FoundLine | undefined {
     createdAt: known(item.created_at),
     changedAt: known(item.updated_at),
     closedAt: known(item.closed_at),
+    startDate: known(item.start_date),
+    dueDate: known(item.due_date),
     estimated: known(item.estimated_time),
     left: timeLeftOf(item),
     spent: known(item.time_spent),

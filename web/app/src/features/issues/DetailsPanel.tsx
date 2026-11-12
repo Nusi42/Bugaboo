@@ -14,7 +14,7 @@ import {
   TotalRows,
 } from "./ChangeableRows.tsx";
 import { useAfterDelay } from "../../shared/use-optimistic.ts";
-import { inLayoutOrder, type FieldWord, type RowGroup } from "./details-order.ts";
+import { dateField, inLayoutOrder, type FieldWord, type RowGroup } from "./details-order.ts";
 import { FixedRows } from "./FixedRows.tsx";
 import { SlotBlocks } from "./SlotBlocks.tsx";
 import { issueBlocks, issueSlots, type IssueBlockProps } from "./slots.ts";
@@ -32,8 +32,8 @@ const fields = {
   assignedTo: "assigned-to",
   priority: "priority",
   reportedBy: "reported-by",
-  startDate: "start-date",
-  dueDate: "due-date",
+  startDate: dateField.start,
+  dueDate: dateField.due,
   estimatedTime: "estimated-time",
   timeLeft: "time-left",
   timeSpent: "time-spent",

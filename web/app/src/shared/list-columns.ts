@@ -23,6 +23,8 @@ export const listWord = {
   type: "type",
   status: "status",
   priority: "priority",
+  startDate: "start date",
+  dueDate: "due date",
   estimatedTime: "estimated time",
   timeLeft: "time left",
   timeSpent: "time spent",

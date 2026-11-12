@@ -8,7 +8,7 @@ import { DateBox, LengthBox, OwnFieldInput } from "../fields/index.ts";
 import { AssignedPicker } from "./AssignedPicker.tsx";
 import { ChangeAssigned } from "./AssignedRow.tsx";
 import { priorityChoices } from "./issue-choices.ts";
-import type { NewIssueValues } from "./new-issue-form.ts";
+import { dateField, type NewIssueValues } from "./new-issue-form.ts";
 
 export interface NewIssueFieldProps {
   /** The key of the field: the word of a built-in field, or the ID of an own field. */
@@ -84,7 +84,7 @@ function EstimateField({
 
 /** *Start date* or *Due date* on the form: a day the person types; the server judges the two together. */
 function DayField({ field, values, problem, onChange }: Omit<NewIssueFieldProps, "project">) {
-  const start = field === "start-date";
+  const start = field === dateField.start;
   return (
     <DateBox
       name={t(start ? "issue-field.start-date" : "issue-field.due-date")}
@@ -133,8 +133,8 @@ export function NewIssueField(props: NewIssueFieldProps) {
       );
     case "assigned-to":
       return <AssignedField values={values} project={project} onChange={onChange} />;
-    case "start-date":
-    case "due-date":
+    case dateField.start:
+    case dateField.due:
       return <DayField {...props} />;
     case "estimated-time":
       return <EstimateField values={values} problem={problem} onChange={onChange} />;
