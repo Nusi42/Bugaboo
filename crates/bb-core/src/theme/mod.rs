@@ -10,16 +10,19 @@ mod built_in;
 mod choice;
 mod colors;
 mod file;
+mod readable;
 mod record;
 mod sheet;
 mod values;
 
 pub use built_in::{SHADOW_LAYERS_MOST, SHADOW_PIXELS_MOST};
 pub use choice::OwnChoice;
-pub use colors::{
-    OwnColors, RatedPair, ReadabilitySummary, ShownColor, rate_own, readability, shown_colors,
-};
+pub use colors::{OwnColors, RatedPair, ShownColor, rate_own, readability, shown_colors};
 pub use file::{FileProblem, ThemeFile};
+pub use readable::{
+    ColorRating, HardColor, NamedPair, ReadabilitySummary, ThemeRead, color_ratings, hard_colors,
+    hard_pairs, theme_read,
+};
 pub use record::{OwnTheme, ThemeKind, ThemeName, ThemeNameError};
 pub use sheet::{draft_style_sheet, style_sheet};
 pub use values::{ColorChoice, OwnValues, ShadowLayer, ValueProblem, ValueProblemKind};

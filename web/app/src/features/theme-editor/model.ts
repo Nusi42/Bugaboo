@@ -1,5 +1,5 @@
 import { colorTokens, type ColorToken, type OwnFont, type OwnRadius } from "@bugaboo/ui";
-import type { RatedPair, Rating } from "@bugaboo/wasm";
+import type { ColorRating, Rating } from "@bugaboo/wasm";
 
 import { colorWords, type ColorGroup } from "./color-words.ts";
 import type { ShadowLayer, ThemeValues } from "./themes.ts";
@@ -15,9 +15,23 @@ export function wholeNumber(text: string): number | null {
   return /^-?\d+$/u.test(trimmed) ? Number(trimmed) : null;
 }
 
-/** Whether two sets of values are the same. */
+/** A value as JSON text with the keys of every object in order, so the order they came in is no difference. */
+function canonical(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => canonical(item)).join(",")}]`;
+  }
+  if (typeof value === "object" && value !== null) {
+    const entries = Object.keys(value)
+      .toSorted()
+      .map((key) => `${JSON.stringify(key)}:${canonical(Reflect.get(value, key))}`);
+    return `{${entries.join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+/** Whether two sets of values are the same, whatever the order of their keys. */
 export function sameValues(one: ThemeValues, other: ThemeValues): boolean {
-  return JSON.stringify(one) === JSON.stringify(other);
+  return canonical(one) === canonical(other);
 }
 
 /** A map of values without `key`; none when nothing is left. */
@@ -51,10 +65,21 @@ function withMap(
   return rest === undefined ? withoutPart(values, part) : { ...values, [part]: rest };
 }
 
-/** The values with the color `token` set to `value`; its color for more contrast stays. */
-export function withColor(values: ThemeValues, token: ColorToken, value: string): ThemeValues {
-  const more = values.colors?.[token]?.more;
-  const color = more === undefined || more === null ? { value } : { value, more };
+/**
+ * The values with the color `token` set to `value`. Its color for more contrast stays; a color the
+ * theme did not change yet starts with the built-in theme's color for more contrast (`startMore`,
+ * the maintainer's decision on M8-F70), unless that is the color itself.
+ */
+export function withColor(
+  values: ThemeValues,
+  token: ColorToken,
+  value: string,
+  startMore?: string,
+): ThemeValues {
+  const own = values.colors?.[token];
+  const more = own === undefined ? startMore : (own.more ?? undefined);
+  const color =
+    more === undefined || more.toLowerCase() === value.toLowerCase() ? { value } : { value, more };
   return { ...values, colors: { ...values.colors, [token]: color } };
 }
 
@@ -112,74 +137,17 @@ export function colorsIn(group: ColorGroup): readonly ColorToken[] {
   return colorTokens.filter((token) => colorWords[token].group === group);
 }
 
-/** How bad a rating is, so the worst of several can be told. */
-const badness: Readonly<Record<Rating, number>> = { easy: 0, ok: 1, "hard-to-read": 2 };
-
-/**
- * The worst rating of the pairs a color is in, as it is or with more contrast; none when the color
- * is in no pair. The ratings are `bb-core`'s: this only picks the pairs of one color.
- */
+/** The worst rating of a color as `bb-core` worked it out, as it is or with more contrast. */
 export function ratingOf(
-  pairs: readonly RatedPair[],
+  ratings: readonly ColorRating[],
   token: ColorToken,
   moreContrast: boolean,
 ): Rating | undefined {
-  let worst: Rating | undefined;
-  for (const pair of pairs) {
-    const inPair = pair.first === token || pair.second === token || pair.place === token;
-    const worse = worst === undefined || badness[pair.rating] > badness[worst];
-    if (inPair && pair.more_contrast === moreContrast && worse) {
-      worst = pair.rating;
-    }
-  }
-  return worst;
-}
-
-/** A pair that is hard to read, by its colors: what the message names and *Show* goes to. */
-export interface NamedPair {
-  readonly first: string;
-  readonly second: string;
-  /** The color to change to mend it. */
-  readonly place: string;
-  readonly more_contrast: boolean;
-}
-
-/** What tells a pair apart: its two colors and whether it is read with more contrast. */
-export function pairKey(pair: NamedPair): string {
-  return [pair.first, pair.second, String(pair.more_contrast)].join(" ");
-}
-
-/** The pairs that are hard to read, each once, in the order `bb-core` rated them. */
-export function hardPairsOf(pairs: readonly RatedPair[]): readonly NamedPair[] {
-  const hard = new Map<string, NamedPair>();
-  for (const pair of pairs) {
-    if (pair.rating === "hard-to-read" && !hard.has(pairKey(pair))) {
-      hard.set(pairKey(pair), pair);
-    }
-  }
-  return [...hard.values()];
+  const found = ratings.find((rating) => rating.name === token);
+  return (moreContrast ? found?.more : found?.usual) ?? undefined;
 }
 
 /** The plain name of a color of a pair, or the token itself for one the editor has no name for. */
 export function colorName(token: string): string {
   return isColorToken(token) ? colorWords[token].label : token;
-}
-
-/** A color that is hard to read with others: the color to change, and with how many it is hard to read. */
-export interface HardColor {
-  readonly place: string;
-  readonly count: number;
-}
-
-/** The pairs that are hard to read, by the color to change to mend them, in the order `bb-core` rated them. */
-export function hardColorsOf(pairs: readonly NamedPair[]): readonly HardColor[] {
-  const counts = new Map<string, number>();
-  for (const pair of pairs) {
-    counts.set(pair.place, (counts.get(pair.place) ?? 0) + 1);
-  }
-  const colors: HardColor[] = [];
-  for (const place of counts.keys()) {
-    colors.push({ place, count: counts.get(place) ?? 0 });
-  }
-  return colors;
 }

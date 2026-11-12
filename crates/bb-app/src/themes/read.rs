@@ -8,7 +8,7 @@ use bb_core::settings::{self, SettingDefinition, SettingValue};
 use bb_core::theme::{OwnValues, ThemeFile, ThemeKind, draft_style_sheet, style_sheet};
 use bb_policy::{Authorized, Place};
 
-use super::rules::{Need, editing_what, hard_pairs, sees_unsaved_for_everyone, view_of};
+use super::rules::{Need, editing_what, hard_pairs_of, sees_unsaved_for_everyone, view_of};
 use super::types::{
     ThemeDetail, ThemeExport, ThemeList, ThemeQuery, ThemeSheet, ThemeSheetQuery, ThemesQuery,
 };
@@ -70,7 +70,7 @@ pub async fn theme<S: AuthStore>(
 ) -> Result<Authorized<ThemeDetail>, AppError> {
     let actor = ctx.session_actor(&input.session_token).await?;
     let (found, held) = ctx.theme_for(&actor, input.theme, Need::Use).await?;
-    let hard_to_read = hard_pairs(found.extends.as_str(), &found.values)?;
+    let hard_to_read = hard_pairs_of(found.extends.as_str(), &found.values)?;
     let view = view_of(found, &held, actor.person.id);
     let used_by = if view.may_change && view.theme.kind == ThemeKind::ForEveryone {
         let chosen = SettingValue::Text(view.choice.clone());

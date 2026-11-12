@@ -2,18 +2,14 @@ import type { Schema } from "@bugaboo/api-client";
 import { useState } from "react";
 
 import type { EditLock } from "../../shared/editing/index.ts";
-import type { NamedPair } from "./model.ts";
-import { refusedPairsOf } from "./refusals.ts";
+import { focusReadability } from "./focus-color.ts";
 import { useSaveTheme, valuesBody } from "./themes.ts";
 import type { Editing } from "./use-theme-editing.ts";
 
 /** What the person is asked or told before a save goes to the server. */
 export type SaveQuestion =
-  /** A personal theme with pairs that are hard to read: *Save anyway?* */
-  | "ask"
-  /** A theme for everyone with pairs that are hard to read: it cannot be saved until they are fixed. */
-  | "refused"
-  | null;
+  /** A personal theme with colors that are hard to read: *Save this theme?* */
+  "ask" | null;
 
 /** The save of the editor and what it asks first. */
 export interface Saving {
@@ -25,10 +21,8 @@ export interface Saving {
   readonly send: () => void;
   readonly pending: boolean;
   readonly saved: boolean;
-  /** Why the save did not work, unless it is the refusal of the pairs (shown with them). */
+  /** Why the save did not work. */
   readonly error: unknown;
-  /** The pairs to fix before a theme for everyone can be saved, from the editor or the server. */
-  readonly refused: readonly NamedPair[];
 }
 
 /**
@@ -44,7 +38,6 @@ export function useSaving(
   const { theme } = detail;
   const [question, setQuestion] = useState<SaveQuestion>(null);
   const put = useSaveTheme();
-  const fromServer = refusedPairsOf(put.error);
   const send = () => {
     setQuestion(null);
     if (lock.state.phase === "mine") {
@@ -70,17 +63,18 @@ export function useSaving(
       setQuestion(null);
     },
     save: () => {
-      const kind = theme.kind === "for-everyone" ? "refused" : "ask";
-      if (editing.hard.length === 0) {
+      if (editing.hardCount === 0) {
         send();
+      } else if (theme.kind === "for-everyone") {
+        // It is said once, on top, where the colors to change are named: the cursor goes there.
+        focusReadability();
       } else {
-        setQuestion(kind);
+        setQuestion("ask");
       }
     },
     send,
     pending: put.isPending,
     saved: put.isSuccess,
-    error: fromServer.length > 0 ? null : put.error,
-    refused: fromServer.length > 0 ? fromServer : question === "refused" ? editing.hard : [],
+    error: put.error,
   };
 }

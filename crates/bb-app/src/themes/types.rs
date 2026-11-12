@@ -6,7 +6,7 @@ use bb_core::id::{LockToken, ThemeId};
 use bb_core::theme::{OwnTheme, ReadabilitySummary, ThemeFile, ThemeKind};
 use bb_policy::Masked;
 
-use super::rules::NamedPair;
+use bb_core::theme::NamedPair;
 
 /// Ask for the own themes the person may use.
 pub struct ThemesQuery {

@@ -3,7 +3,7 @@ import type { ThemeRead } from "@bugaboo/wasm";
 import { useMemo, useState } from "react";
 
 import type { EditLock } from "../../shared/editing/index.ts";
-import { hardPairsOf, isColorToken, type NamedPair } from "./model.ts";
+import { isColorToken, sameValues } from "./model.ts";
 import type { ThemeValues } from "./themes.ts";
 import { useDraftPreview } from "./use-draft-preview.ts";
 import { useKeptDraft, type KeptDraft } from "./use-kept-draft.ts";
@@ -18,14 +18,17 @@ export interface Editing {
   readonly setValues: (values: ThemeValues) => void;
   readonly name: string;
   readonly setName: (name: string) => void;
+  /** Whether the name or the values differ from what was saved. */
+  readonly dirty: boolean;
   /** Whether the person holds the lock, so the theme can be changed. */
   readonly mine: boolean;
   /** The rating of `bb-core`; none until the module is there. */
   readonly read: ThemeRead | null;
   /** Whether `bb-core` takes these values (a save would). */
   readonly accepts: (values: ThemeValues) => boolean;
-  readonly hard: readonly NamedPair[];
-  /** *Show* of a pair that is hard to read: the color to change to mend it. */
+  /** How many colors are hard to read: a save asks or refuses while there are any. */
+  readonly hardCount: number;
+  /** Opens a color that is hard to read and puts the cursor in it. */
   readonly show: (place: string) => void;
   readonly shown: ShownColors;
   readonly kept: KeptDraft;
@@ -44,23 +47,30 @@ export function useThemeEditing(detail: Schema<"ThemeDetailBody">, lock: EditLoc
     [reader, theme.extends, values],
   );
   const shown = useShownColors();
+  const kept = useKeptDraft(theme.id, detail.values, setValues);
   return {
     saved: detail.values,
     values,
     setValues,
     name,
     setName,
+    dirty: name !== theme.name || !sameValues(values, detail.values),
     mine,
     read,
     accepts: (next) => reader !== undefined && reader(theme.extends, next) !== null,
-    hard: hardPairsOf(read?.pairs ?? []),
+    hardCount: read?.hard_colors.length ?? 0,
     show: (place) => {
       if (isColorToken(place)) {
         shown.reveal(place);
       }
     },
     shown,
-    kept: useKeptDraft(theme.id, detail.values, setValues),
-    draftShown: useDraftPreview(theme.id, values, theme.version, mine),
+    kept,
+    draftShown: useDraftPreview(
+      theme.id,
+      values,
+      theme.version,
+      mine && kept.read && !sameValues(values, detail.values),
+    ),
   };
 }

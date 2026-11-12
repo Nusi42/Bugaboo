@@ -856,6 +856,7 @@ export const messages = {
   "agents.org-list": "Every agent",
   "editing.this-theme": "this theme",
   "theme-editor.preview": "Preview",
+  "editing.is-editing-now": "{name} is editing {thing} right now",
 } as const;
 
 register(messages);

@@ -28,7 +28,9 @@ budget_bytes = 250000
 # rules and colors (M8-F44: the maintainer chooses this budget or a module of its own for the editor);
 # and with the dates and the work times at 166.3 KB, and since the module writes no `Debug` text
 # (`-Zfmt-debug=none`, ADR-0005 amendment M8) measured at 163.7 KB; and with the sums of the pairs
-# and the colors a theme shows, which the theme editor reads beside the rating, at 165.2 KB.
+# and the colors a theme shows, which the theme editor reads beside the rating, at 165.2 KB; and
+# with the pairs and the colors that are hard to read and the worst rating of each color worked
+# out in `bb-core` instead of the browser (the pairs themselves no longer sent), at 165.8 KB.
 bb_wasm_bg = 166000
 # The search language, measured at 88.9 KB (M5 WP-02, with the Issue ID rules of bb-core) and at 90.3 KB with `contains` on its own (M5 WP-04), and at 71.5 KB since the standard library is built for size (M6-F68); ADR-0005 allows at most 100 KB.
 bb_wasm_search_bg = 73000

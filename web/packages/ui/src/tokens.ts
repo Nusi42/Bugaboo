@@ -157,8 +157,18 @@ export type OwnRadius = (typeof ownRadii)[number]["name"];
 export const ownFonts = ["font-ui", "font-display", "font-reader"] as const;
 export type OwnFont = (typeof ownFonts)[number];
 
+/** The name of the first face of the stack of each text face, which a person chooses it by. */
+export const ownFontFaces = {
+  "font-ui": "Segoe UI Variable Text",
+  "font-display": "Segoe UI Variable Display",
+  "font-reader": "Segoe UI Variable Text",
+} as const;
+
 /** The shadow an own theme may set: at most `layers` layers, each offset, blur and spread within `pixels`. */
 export const ownShadow = { name: "shadow", layers: 2, pixels: 64 } as const;
+
+/** The most bytes of a theme file that *Upload* takes (`bb_core::theme::THEME_UPLOAD_MOST`). */
+export const ownThemeUploadMost = 65536;
 
 /** Every token of the theme file: the CSS variable is `--` and the name. */
 export const tokenNames = [
@@ -667,11 +677,16 @@ export const part = {
   themeEditorPreview: "theme-editor.preview",
   themeEditorSampleRow: "theme-editor.sample-row",
   themeEditorSampleHint: "theme-editor.sample-hint",
+  themeEditorBar: "theme-editor.bar",
+  themeEditorPreviewScroll: "theme-editor.preview-scroll",
+  themeHardWith: "theme-hard-with",
+  themeShadowLegend: "theme-shadow.legend",
   themeReadability: "theme-readability",
   themeHardPairs: "theme-hard-pairs",
   themeHardPair: "theme-hard-pair",
   themeGroup: "theme-group",
   themeGroupSummary: "theme-group.summary",
+  themeGroupNote: "theme-group.note",
   themeGroupBody: "theme-group.body",
   themeColor: "theme-color",
   themeColorHead: "theme-color.head",
@@ -682,6 +697,8 @@ export const part = {
   themeList: "theme-list",
   themeListItem: "theme-list.item",
   themeListText: "theme-list.text",
+  themeListActions: "theme-list.actions",
+  themeListTag: "theme-list.tag",
   themeListFacts: "theme-list.facts",
   appsTable: "apps.table",
   appsHead: "apps.head",
@@ -795,6 +812,8 @@ export const part = {
   issueSectionTitle: "issue-section.title",
   issueSectionReading: "issue-section.reading",
   issueSectionActions: "issue-section.actions",
+  editHeld: "edit-held",
+  editHeldActions: "edit-held.actions",
   issueNote: "issue-note",
   issueCompare: "issue-compare",
   issueCompareRow: "issue-compare.row",
@@ -1358,11 +1377,16 @@ export const partWords = {
   "theme-editor.preview": { variant: [], state: [] },
   "theme-editor.sample-row": { variant: [], state: [] },
   "theme-editor.sample-hint": { variant: [], state: [] },
+  "theme-editor.bar": { variant: [], state: [] },
+  "theme-editor.preview-scroll": { variant: [], state: [] },
+  "theme-hard-with": { variant: [], state: [] },
+  "theme-shadow.legend": { variant: [], state: [] },
   "theme-readability": { variant: [], state: ["hard"] },
   "theme-hard-pairs": { variant: [], state: [] },
   "theme-hard-pair": { variant: [], state: [] },
   "theme-group": { variant: [], state: [] },
   "theme-group.summary": { variant: [], state: [] },
+  "theme-group.note": { variant: [], state: [] },
   "theme-group.body": { variant: [], state: [] },
   "theme-color": { variant: [], state: [] },
   "theme-color.head": { variant: [], state: [] },
@@ -1373,6 +1397,8 @@ export const partWords = {
   "theme-list": { variant: [], state: [] },
   "theme-list.item": { variant: [], state: [] },
   "theme-list.text": { variant: [], state: [] },
+  "theme-list.actions": { variant: [], state: [] },
+  "theme-list.tag": { variant: [], state: [] },
   "theme-list.facts": { variant: [], state: [] },
   "apps.table": { variant: [], state: [] },
   "apps.head": { variant: [], state: [] },
@@ -1486,6 +1512,8 @@ export const partWords = {
   "issue-section.title": { variant: [], state: [] },
   "issue-section.reading": { variant: [], state: [] },
   "issue-section.actions": { variant: [], state: [] },
+  "edit-held": { variant: [], state: [] },
+  "edit-held.actions": { variant: [], state: [] },
   "issue-note": { variant: [], state: [] },
   "issue-compare": { variant: [], state: [] },
   "issue-compare.row": { variant: ["stacked"], state: [] },

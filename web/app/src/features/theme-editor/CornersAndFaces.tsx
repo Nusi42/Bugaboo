@@ -1,5 +1,12 @@
 import { t } from "@bugaboo/messages";
-import { ownFonts, ownRadii, SelectField, type OwnFont, type OwnRadius } from "@bugaboo/ui";
+import {
+  ownFontFaces,
+  ownFonts,
+  ownRadii,
+  SelectField,
+  type OwnFont,
+  type OwnRadius,
+} from "@bugaboo/ui";
 
 import { CheckedField } from "./CheckedField.tsx";
 import { wholeNumber, withFont, withRadius } from "./model.ts";
@@ -19,17 +26,12 @@ function radiusLabels(): Readonly<Record<OwnRadius, string>> {
   };
 }
 
-/** The names of the text faces, as the choice of one and as the stack it names. */
-function fontWords(): Readonly<
-  Record<OwnFont, { readonly label: string; readonly stack: string }>
-> {
+/** The names of the choices of text faces. */
+function fontLabels(): Readonly<Record<OwnFont, string>> {
   return {
-    "font-ui": { label: t("theme-editor.font-text"), stack: t("theme-editor.face-text") },
-    "font-display": {
-      label: t("theme-editor.font-headings"),
-      stack: t("theme-editor.face-headings"),
-    },
-    "font-reader": { label: t("theme-editor.font-long"), stack: t("theme-editor.face-long") },
+    "font-ui": t("theme-editor.font-text"),
+    "font-display": t("theme-editor.font-headings"),
+    "font-reader": t("theme-editor.font-long"),
   };
 }
 
@@ -39,7 +41,7 @@ function fontWords(): Readonly<
  */
 export function CornersAndFaces({ values, accepts, onChange }: CornersAndFacesProps) {
   const labels = radiusLabels();
-  const faces = fontWords();
+  const faces = fontLabels();
   return (
     <>
       {ownRadii.map((radius) => (
@@ -60,9 +62,9 @@ export function CornersAndFaces({ values, accepts, onChange }: CornersAndFacesPr
       {ownFonts.map((font) => (
         <SelectField
           key={font}
-          label={faces[font].label}
+          label={faces[font]}
           value={ownFonts.find((stack) => stack === values.fonts?.[font]) ?? font}
-          choices={ownFonts.map((stack) => ({ value: stack, label: faces[stack].stack }))}
+          choices={ownFonts.map((stack) => ({ value: stack, label: ownFontFaces[stack] }))}
           onChange={(stack) => {
             onChange(withFont(values, font, stack));
           }}

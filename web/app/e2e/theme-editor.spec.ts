@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 
 import { dataOf } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
@@ -15,6 +15,7 @@ import {
   groupNamed,
   onlyThemeOf,
   prepareThemes,
+  readability,
   readabilityLine,
   themeRow,
   uploadedTheme,
@@ -60,17 +61,25 @@ test("thm_03_a_theme_for_everyone_that_is_hard_to_read_cannot_be_saved_until_fix
   await page.goto(paths.themes);
   await createFromDusk(page, "Harbor");
   await typeHint(page, UNREADABLE);
-  await expect(readabilityLine(page)).toContainText(t("theme-editor.readability-fix"));
+  await expect(readabilityLine(page)).toContainText(
+    t("theme-editor.readability-fix", { count: 1 }),
+  );
   await page.getByRole("button", { name: t("theme-editor.save"), exact: true }).click();
-  // The pairs are named, each with Show, and nothing went to the server.
-  const refusal = page.locator("[data-part='alert'][data-variant='danger']");
-  await expect(refusal).toContainText(t("theme-color.fg-subtle"));
+  // Nothing went to the server: the cursor goes to the readability, which names what to change.
+  await expect(readability(page)).toBeFocused();
+  await expect(readability(page)).toContainText(t("theme-color.fg-subtle"));
   expect((await onlyThemeOf(server, ada)).theme.saved).toBe(false);
-  // Show puts the cursor in the color to mend; once it reads well, the theme is saved.
-  await refusal.getByRole("button").first().click();
+  // Change puts the cursor in the color to mend; once it reads well, the theme is saved.
+  await readability(page)
+    .getByRole("button", {
+      name: t("theme-editor.change-named", { name: t("theme-color.fg-subtle") }),
+    })
+    .click();
   await expect(colorField(page, t("theme-color.fg-subtle"))).toBeFocused();
   await typeHint(page, READABLE);
-  await expect(readabilityLine(page)).not.toContainText(t("theme-editor.readability-fix"));
+  await expect(readabilityLine(page)).not.toContainText(
+    t("theme-editor.readability-fix", { count: 1 }),
+  );
   await page.getByRole("button", { name: t("theme-editor.save"), exact: true }).click();
   await expect.poll(async () => (await onlyThemeOf(server, ada)).theme.saved).toBe(true);
 });
@@ -83,7 +92,9 @@ test("thm_03_a_personal_theme_that_is_hard_to_read_is_saved_after_a_warning", as
   await page.goto(paths.appearance);
   await createFromDusk(page, "Night owl");
   await typeHint(page, UNREADABLE);
-  await expect(readabilityLine(page)).not.toContainText(t("theme-editor.readability-fix"));
+  await expect(readabilityLine(page)).not.toContainText(
+    t("theme-editor.readability-fix", { count: 1 }),
+  );
   await page.getByRole("button", { name: t("theme-editor.save"), exact: true }).click();
   const question = page.getByRole("alertdialog");
   await expect(question).toContainText(t("theme-editor.ask-title"));
@@ -171,7 +182,7 @@ test("a11y every color of the editor is typed with the keyboard alone, nothing n
   await signIn(page, bob);
   await page.goto(paths.appearance);
   await themeRow(page, "Keys")
-    .getByRole("link", { name: t("theme-editor.change-named", { name: theme.name }) })
+    .getByRole("button", { name: t("theme-editor.change-named", { name: theme.name }) })
     .press("Enter");
   await expect(readabilityLine(page)).not.toHaveText(t("theme-editor.readability-loading"));
   const choose = groupNamed(page, t("theme-editor.group.text")).getByLabel(
@@ -187,4 +198,18 @@ test("a11y every color of the editor is typed with the keyboard alone, nothing n
   await expect(
     page.locator("[id='theme-color-fg'] [data-part='theme-rating']").first(),
   ).toBeVisible();
+});
+
+test("thm_04_an_uploaded_file_with_a_part_a_theme_has_not_is_refused_naming_the_part", async ({
+  page,
+}, testInfo) => {
+  const file = testInfo.outputPath("extra-part.json");
+  await writeFile(
+    file,
+    JSON.stringify({ name: "Evening", extends: "dusk", values: {}, spacing: { compact: true } }),
+  );
+  await signIn(page, bob);
+  await page.goto(paths.appearance);
+  await page.locator("input[type='file']").setInputFiles(file);
+  await expect(page.locator("[data-part='alert'][data-variant='danger']")).toContainText("spacing");
 });

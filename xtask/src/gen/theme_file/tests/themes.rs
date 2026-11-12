@@ -327,8 +327,8 @@ fn bad_example_a_value_for_more_contrast_that_is_the_value_itself_is_refused() {
     assert!(error.contains("design/themes/harbor.kdl"), "{error}");
     assert!(error.contains("leave it out"), "{error}");
     let base = base().replacen(
-        "color \"fg-muted\" \"#565d6b\" more=\"#464c57\"",
-        "color \"fg-muted\" \"#565d6b\" more=\"#565d6b\"",
+        "color \"fg-muted\" \"#464b5a\" more=\"#464c57\"",
+        "color \"fg-muted\" \"#464b5a\" more=\"#464b5a\"",
         1,
     );
     let error = ThemeFile::parse_base(&base)

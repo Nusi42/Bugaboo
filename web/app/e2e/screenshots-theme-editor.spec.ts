@@ -15,8 +15,10 @@ import {
   openEditor,
   prepareThemes,
   preview,
+  readability,
   themeRow,
   uploadedTheme,
+  wearTheme,
 } from "./support/theme-editor.ts";
 import { inFourThemes, inFourThemesAsWindow, inFourThemesPutOn } from "./support/theme-shots.ts";
 
@@ -52,7 +54,8 @@ test("screens: the list Themes for everyone and its question before a theme is d
   page,
   server,
 }) => {
-  await uploadedTheme(server, ada, "for-everyone", harbor);
+  const chosen = await uploadedTheme(server, ada, "for-everyone", harbor);
+  await wearTheme(server, bob, chosen.choice);
   await uploadedTheme(server, ada, "for-everyone", {
     name: "Paper boat",
     extends: "paper",
@@ -65,8 +68,18 @@ test("screens: the list Themes for everyone and its question before a theme is d
   await themeRow(page, "Harbor")
     .getByRole("button", { name: t("theme-editor.delete-named", { name: "Harbor" }) })
     .click();
-  await expect(page.getByRole("alertdialog")).toBeVisible();
-  await inFourThemesPutOn(page, "delete-question", FOLDER);
+  await expect(page.getByRole("alertdialog")).toContainText(
+    t("theme-editor.delete-used", { count: 1, theme: t("theme.dusk") }),
+  );
+  await inFourThemesPutOn(page, "delete-question-used", FOLDER);
+  await page.getByRole("button", { name: t("common.cancel") }).click();
+  await themeRow(page, "Paper boat")
+    .getByRole("button", { name: t("theme-editor.delete-named", { name: "Paper boat" }) })
+    .click();
+  await expect(page.getByRole("alertdialog")).toContainText(
+    t("theme-editor.delete-used", { count: 0, theme: t("theme.paper") }),
+  );
+  await inFourThemesPutOn(page, "delete-question-nobody", FOLDER);
 });
 
 test("screens: My settings › Appearance with own themes in the pickers and My themes", async ({
@@ -95,7 +108,7 @@ test("screens: the editor of a theme for everyone, its pairs that are hard to re
   await colorField(page, t("theme-color.fg-subtle")).fill(UNREADABLE);
   await inFourThemes(page, "editor-hard-to-read", FOLDER);
   await page.getByRole("button", { name: t("theme-editor.save"), exact: true }).click();
-  await expect(page.locator("[data-part='alert'][data-variant='danger']")).toBeVisible();
+  await expect(readability(page)).toBeFocused();
   await inFourThemes(page, "editor-refused", FOLDER);
 });
 
@@ -128,10 +141,7 @@ test("screens: somebody else is editing the theme", async ({
   viewport,
   hasTouch,
 }) => {
-  const theme = await uploadedTheme(server, ada, "for-everyone", {
-    ...harbor,
-    name: "Harbor held",
-  });
+  const theme = await uploadedTheme(server, ada, "for-everyone", harbor);
   const holder = await signedInPage(browser, server, cleo, { viewport, hasTouch });
   await openEditor(holder, theme);
   await signIn(page, ada);

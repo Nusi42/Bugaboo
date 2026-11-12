@@ -1,10 +1,8 @@
-import { settingKeys } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
-import { ada, cleo, signInThroughApi, type Person } from "../support/accounts.ts";
+import { ada, cleo } from "../support/accounts.ts";
 import { signedInPage } from "../support/crowd-pages.ts";
 import { expect, test } from "../support/fixtures.ts";
-import { type Instance } from "../support/server.ts";
 import {
   changeColor,
   colorField,
@@ -15,6 +13,7 @@ import {
   readabilityLine,
   uploadedTheme,
   variableOf,
+  wearTheme,
 } from "../support/theme-editor.ts";
 
 // Two administrators at one theme for everyone (THM-03, THM-04, ADR-0019): the preview shows what
@@ -30,20 +29,6 @@ const TYPED = "#c7bdff";
 test.beforeEach(async ({ server }) => {
   await deleteThemesOf(server, ada);
 });
-
-/** Makes `person` always dark with the theme of `choice` as their dark theme, through the API. */
-async function wearTheme(server: Instance, person: Person, choice: string): Promise<void> {
-  const session = await signInThroughApi(server, person);
-  await session.client.PUT("/api/v1/me/settings/{key}", {
-    params: { path: { key: settingKeys.appearanceMode } },
-    body: { value: "dark" },
-  });
-  await session.client.PUT("/api/v1/me/settings/{key}", {
-    params: { path: { key: settingKeys.appearanceDarkTheme } },
-    body: { value: choice },
-  });
-  await session.dispose();
-}
 
 /** The accent the page of a person shows. */
 function pageAccent(page: import("@playwright/test").Page): Promise<string> {

@@ -18,3 +18,13 @@ export function focusColor(token: ColorToken): void {
   row?.scrollIntoView({ block: "center" });
   row?.querySelector<HTMLInputElement>(TYPED_FIELD)?.focus();
 }
+
+/** The ID of the readability on top of the editor: a refused save brings the cursor there. */
+export const READABILITY_ID = "theme-readability";
+
+/** Brings the readability into sight and the cursor to it, where the colors to change are named. */
+export function focusReadability(): void {
+  const found = document.querySelector<HTMLElement>(`#${READABILITY_ID}`);
+  found?.scrollIntoView({ block: "start" });
+  found?.focus();
+}

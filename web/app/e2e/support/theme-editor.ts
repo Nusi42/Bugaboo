@@ -1,4 +1,4 @@
-import { dataOf, type Schema } from "@bugaboo/api-client";
+import { dataOf, settingKeys, type Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { expect, type Locator, type Page } from "@playwright/test";
 
@@ -101,6 +101,20 @@ export async function deleteThemesOf(server: Instance, person: Person): Promise<
   await session.dispose();
 }
 
+/** Makes `person` always dark with the theme of `choice` as their dark theme, through the API. */
+export async function wearTheme(server: Instance, person: Person, choice: string): Promise<void> {
+  const session = await signInThroughApi(server, person);
+  await session.client.PUT("/api/v1/me/settings/{key}", {
+    params: { path: { key: settingKeys.appearanceMode } },
+    body: { value: "dark" },
+  });
+  await session.client.PUT("/api/v1/me/settings/{key}", {
+    params: { path: { key: settingKeys.appearanceDarkTheme } },
+    body: { value: choice },
+  });
+  await session.dispose();
+}
+
 /** The address of the editor of a theme. */
 export function editorAddress(theme: Pick<Schema<"ThemeBody">, "id" | "kind">): string {
   return filled(
@@ -112,7 +126,12 @@ export function editorAddress(theme: Pick<Schema<"ThemeBody">, "id" | "kind">): 
 
 /** The line on top of the editor that sums the readability up. */
 export function readabilityLine(page: Page): Locator {
-  return page.locator(`output[data-part='${part.themeReadability}']`);
+  return page.locator(`[data-part='${part.themeReadability}'] output`);
+}
+
+/** The readability on top of the editor as a whole: its verdict and the colors to change. */
+export function readability(page: Page): Locator {
+  return page.locator(`[data-part='${part.themeReadability}']`);
 }
 
 /** Opens the editor of a theme and waits until the rating is there and the person may change it. */

@@ -42,7 +42,9 @@ test("a11y the editor of a theme for everyone at paths.theme with a pair that is
   await expect(readabilityLine(page)).not.toHaveText(t("theme-editor.readability-loading"));
   await changeColor(page, t("theme-editor.group.text"), t("theme-color.fg-subtle"));
   await colorField(page, t("theme-color.fg-subtle")).fill(UNREADABLE);
-  await expect(readabilityLine(page)).toContainText(t("theme-editor.readability-fix"));
+  await expect(readabilityLine(page)).toContainText(
+    t("theme-editor.readability-fix", { count: 1 }),
+  );
   await expectGoodInEveryLook(page);
 });
 

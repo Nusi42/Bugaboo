@@ -10,10 +10,10 @@
       --bg-raised: #ffffff;
       --border: #dfe3e9;
       --fg: #16181d;
-      --fg-muted: #565d6b;
+      --fg-muted: #464b5a;
       --accent: #5b3fd9;
       --accent-soft: #eeeafd;
-      --st-ns: #565d6b;
+      --st-ns: #464b5a;
       --st-ip: #1d5fd1;
       --st-done: #1f784c;
     }

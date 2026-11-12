@@ -142,13 +142,21 @@ fn thm_04_the_style_sheet_holds_custom_properties_only() {
         color: "#00000040".to_owned(),
     }]);
     let sheet = style_sheet("0190-abc", &values).expect("a sheet");
-    // The page that wears the theme, and a sample of it in a theme picker.
+    // The page that wears the theme, and a sample of it in a theme picker, which shows its own
+    // corners and faces and none of the page around it.
     assert!(
-        sheet.contains(
-            ":root[data-own-theme=\"0190-abc\"], [data-preview-look][data-own-theme=\"0190-abc\"] {"
-        ),
+        sheet.contains(":root[data-own-theme=\"0190-abc\"] {"),
         "{sheet}"
     );
+    assert!(
+        sheet.contains("[data-preview-look][data-own-theme=\"0190-abc\"] {"),
+        "{sheet}"
+    );
+    let sample = sheet
+        .split("[data-preview-look][data-own-theme")
+        .nth(1)
+        .unwrap_or_default();
+    assert!(sample.contains("--r-card: 10px;"), "{sheet}");
     assert!(sheet.contains("--fg: #abcdef;"));
     assert!(sheet.contains("@media (prefers-contrast: more)"));
     assert!(sheet.contains("--r-ctl: 8px;"));
@@ -232,7 +240,8 @@ fn thm_03_each_pair_counts_once_at_its_worst_rating() {
         ReadabilitySummary {
             easy: 1,
             ok: 1,
-            hard_to_read: 1
+            hard_to_read: 1,
+            colors_hard_to_read: 1
         }
     );
     // A built-in theme as it is has nothing that is hard to read.
@@ -254,4 +263,29 @@ fn thm_03_the_editor_is_shown_each_color_with_its_links_followed() {
     assert_eq!(of("st-ns").value, "#112233");
     assert_eq!(of("bg-canvas").value, "#ffffff");
     assert!(shown_colors("nowhere", &OwnValues::default()).is_none());
+}
+
+#[test]
+fn thm_03_the_pairs_hard_to_read_are_as_many_as_the_sum_says_and_name_their_colors() {
+    let rated = readability("dusk", &colors(&[("fg-subtle", "#3a3d45")])).expect("Dusk");
+    let hard = hard_pairs(&rated);
+    let summary = ReadabilitySummary::of(&rated);
+    assert_eq!(u32::try_from(hard.len()).ok(), Some(summary.hard_to_read));
+    let by_color = hard_colors(&hard);
+    let hint = by_color
+        .iter()
+        .find(|color| color.place == "fg-subtle")
+        .expect("the hint text");
+    // Each other color once, in either mode.
+    let mut seen = hint.with.clone();
+    seen.dedup();
+    assert_eq!(seen.len(), hint.with.len());
+    assert!(hint.with.contains(&"bg-canvas".to_owned()));
+    let rating = color_ratings(&rated)
+        .into_iter()
+        .find(|color| color.name == "fg-subtle")
+        .expect("rated");
+    assert_eq!(rating.usual, Some(Rating::HardToRead));
+    let read = theme_read("dusk", &colors(&[("fg-subtle", "#3a3d45")])).expect("Dusk");
+    assert_eq!(read.hard, hard);
 }

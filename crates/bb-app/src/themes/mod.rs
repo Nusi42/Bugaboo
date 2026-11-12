@@ -17,8 +17,8 @@ mod store;
 mod types;
 mod write;
 
+pub use bb_core::theme::NamedPair;
 pub use read::{download_theme, theme, theme_draft_sheet, theme_sheet, themes};
-pub use rules::NamedPair;
 #[cfg(test)]
 pub(crate) use rules::editing_what;
 pub(crate) use rules::{ChoiceInForce, known_to};

@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 import { partOf, part } from "@bugaboo/ui";
 
 import { CornersAndFaces } from "./CornersAndFaces.tsx";
+import { GroupSummary } from "./GroupSummary.tsx";
 import { ShadowLayers, type ShadowLayersProps } from "./ShadowLayers.tsx";
 
 /**
@@ -12,7 +13,16 @@ import { ShadowLayers, type ShadowLayersProps } from "./ShadowLayers.tsx";
 export function ShapeGroup(props: ShadowLayersProps) {
   return (
     <details {...partOf(part.themeGroup)}>
-      <summary {...partOf(part.themeGroupSummary)}>{t("theme-editor.group.shape")}</summary>
+      <GroupSummary
+        title={t("theme-editor.group.shape")}
+        note={t("theme-editor.shape-changed", {
+          count:
+            Object.keys(props.values.radii ?? {}).length +
+            Object.keys(props.values.fonts ?? {}).length +
+            (props.values.shadow === undefined || props.values.shadow === null ? 0 : 1),
+          theme: props.startsFrom,
+        })}
+      />
       <div {...partOf(part.themeGroupBody)}>
         <CornersAndFaces values={props.values} accepts={props.accepts} onChange={props.onChange} />
         <ShadowLayers {...props} />

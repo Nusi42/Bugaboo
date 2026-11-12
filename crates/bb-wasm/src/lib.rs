@@ -12,9 +12,7 @@ pub mod names;
 
 use bb_core::fields::Field;
 use bb_core::history::TimeEvent;
-use bb_core::theme::{
-    OwnValues, RatedPair, ReadabilitySummary, ShownColor, readability, shown_colors,
-};
+use bb_core::theme::{OwnValues, ThemeRead, theme_read};
 use bb_core::time::Minutes;
 use bb_core::wording::{self, Change, File, Notice, Side, Time, TimeChange};
 use bb_markdown::Options;
@@ -177,21 +175,10 @@ struct ThemeAsked {
     values: serde_json::Value,
 }
 
-/// What the theme editor is told about the theme it edits.
-#[derive(Serialize)]
-struct ThemeRead {
-    /// Every pair of colors, rated.
-    pairs: Vec<RatedPair>,
-    /// How many pairs are *Easy*, *OK* and *Hard to read*.
-    summary: ReadabilitySummary,
-    /// Every color the theme may set, as the page shows it.
-    colors: Vec<ShownColor>,
-}
-
-/// How readable each pair of colors of an own theme is, as the server rates it when the theme is
-/// saved (`bb_core::theme::readability`), with the sums of the line on top of the editor and the
-/// colors the theme shows: JSON, or `null` for values a save would refuse or a built-in theme that
-/// does not exist.
+/// What the theme editor is told about an own theme (`bb_core::theme::theme_read`): its sums, the
+/// pairs and colors that are hard to read, the worst rating of each color and the colors it shows,
+/// rated as the server rates a save. JSON, or `null` for values a save would refuse or a built-in
+/// theme that does not exist.
 ///
 /// # Errors
 /// The text is not a theme with `extends` and `values`.
@@ -202,13 +189,7 @@ pub fn theme_readability(asked: &str) -> Result<String, JsError> {
 
 /// The readability of the theme the editor asks about, or `None` (see [`theme_readability`]).
 fn rate_asked(asked: &ThemeAsked) -> Option<ThemeRead> {
-    let values = OwnValues::from_json(&asked.values).ok()?;
-    let pairs = readability(&asked.extends, &values)?;
-    Some(ThemeRead {
-        summary: ReadabilitySummary::of(&pairs),
-        colors: shown_colors(&asked.extends, &values)?,
-        pairs,
-    })
+    theme_read(&asked.extends, &OwnValues::from_json(&asked.values).ok()?)
 }
 
 #[cfg(test)]
@@ -220,11 +201,11 @@ mod tests {
         let asked = r##"{"extends":"daylight","values":{"colors":{"fg":{"value":"#ffffff"}}}}"##;
         let json = theme_readability_text(asked);
         let said: serde_json::Value = serde_json::from_str(&json).unwrap_or_default();
-        let pairs = said["pairs"].as_array().cloned().unwrap_or_default();
-        assert!(
-            pairs
-                .iter()
-                .any(|pair| pair["first"] == "fg" && pair["rating"] == "hard-to-read")
+        let hard = said["hard"].as_array().cloned().unwrap_or_default();
+        assert!(hard.iter().any(|pair| pair["first"] == "fg"));
+        assert_eq!(
+            Some(hard.len() as u64),
+            said["summary"]["hard_to_read"].as_u64()
         );
         assert!(said["summary"]["hard_to_read"].as_u64() > Some(0));
         let colors = said["colors"].as_array().cloned().unwrap_or_default();

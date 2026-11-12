@@ -52,13 +52,38 @@ fn sheet(id: &str, values: &OwnValues, reach: Reach) -> Option<String> {
         return None;
     }
     let preview = built_in::PREVIEW_ATTRIBUTE;
-    let selector = match reach {
-        Reach::Saved => format!(
-            ":root[{own}=\"{id}\"], [{preview}][{own}=\"{id}\"]",
-            own = built_in::OWN_ATTRIBUTE
-        ),
-        Reach::Draft => format!("[{preview}][{}=\"{id}\"]", built_in::OWN_DRAFT_ATTRIBUTE),
-    };
+    let mut sheet = String::from(
+        "/* An own theme: variables only, written by the server from stored values (ADR-0026). */\n",
+    );
+    match reach {
+        Reach::Saved => {
+            let own = built_in::OWN_ATTRIBUTE;
+            block(&mut sheet, &format!(":root[{own}=\"{id}\"]"), values, false);
+            sheet.push('\n');
+            block(
+                &mut sheet,
+                &format!("[{preview}][{own}=\"{id}\"]"),
+                values,
+                true,
+            );
+        }
+        Reach::Draft => {
+            let draft = built_in::OWN_DRAFT_ATTRIBUTE;
+            block(
+                &mut sheet,
+                &format!("[{preview}][{draft}=\"{id}\"]"),
+                values,
+                true,
+            );
+        }
+    }
+    Some(sheet)
+}
+
+/// Writes the variables of `values` under `selector`, the colors for more contrast in a block of
+/// their own. With `every_shape` the corners and the faces are written whether the theme changes
+/// them or not: a sample or a preview then shows its own and none of the page around it.
+fn block(sheet: &mut String, selector: &str, values: &OwnValues, every_shape: bool) {
     let mut usual = String::new();
     let mut more = String::new();
     for (name, choice) in &values.colors {
@@ -89,26 +114,23 @@ fn sheet(id: &str, values: &OwnValues, reach: Reach) -> Option<String> {
         );
     }
     for radius in radius_tokens() {
-        let pixels = match (values.radii.get(radius.name), reach) {
-            (Some(pixels), _) => *pixels,
-            (None, Reach::Draft) => radius.start_px,
-            (None, Reach::Saved) => continue,
+        let pixels = match values.radii.get(radius.name) {
+            Some(pixels) => *pixels,
+            None if every_shape => radius.start_px,
+            None => continue,
         };
         let _ = writeln!(usual, "  --{}: {pixels}px;", radius.name);
     }
     for font in font_tokens() {
-        let chosen = match (values.fonts.get(font.name), reach) {
-            (Some(stack), _) => stack.as_str(),
-            (None, Reach::Draft) => font.name,
-            (None, Reach::Saved) => continue,
+        let chosen = match values.fonts.get(font.name) {
+            Some(stack) => stack.as_str(),
+            None if every_shape => font.name,
+            None => continue,
         };
         if let Some(stack) = font_tokens().iter().find(|each| each.name == chosen) {
             let _ = writeln!(usual, "  --{}: {};", font.name, stack.stack);
         }
     }
-    let mut sheet = String::from(
-        "/* An own theme: variables only, written by the server from stored values (ADR-0026). */\n",
-    );
     let _ = write!(sheet, "{selector} {{\n{usual}}}\n");
     if !more.is_empty() {
         let _ = write!(
@@ -116,5 +138,4 @@ fn sheet(id: &str, values: &OwnValues, reach: Reach) -> Option<String> {
             "\n@media (prefers-contrast: more) {{\n  {selector} {{\n{more}  }}\n}}\n"
         );
     }
-    Some(sheet)
 }

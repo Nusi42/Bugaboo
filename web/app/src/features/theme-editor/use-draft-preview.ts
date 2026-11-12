@@ -10,15 +10,18 @@ const DRAFT_PAUSE_MS = 250;
  * Keeps the values on screen as the person's draft of the theme and links the sheet the server
  * makes from it, so the preview shows them without a style made in the page (ADR-0026, update M8).
  * Nothing reaches other people: the draft is the person's own until *Save*. Gives whether the
- * preview can show the draft yet; `on` is false while the person does not hold the lock.
+ * preview can show the draft yet. `wanted` is false while the person does not hold the lock, while
+ * the draft they left is not read yet, and while the values are the saved ones; once a draft was
+ * kept, it follows the values back to the saved ones too, so it is never left behind them.
  */
 export function useDraftPreview(
   theme: string,
   values: ThemeValues,
   version: number,
-  on: boolean,
+  wanted: boolean,
 ): boolean {
   const [round, setRound] = useState(0);
+  const on = wanted || round > 0;
   useEffect(() => {
     let live = on;
     const timer = window.setTimeout(() => {

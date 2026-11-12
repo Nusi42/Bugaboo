@@ -7,8 +7,8 @@ use super::maths::{
 use super::spec::{ContrastSpec, DistinctSpec, Drawn};
 use serde::Serialize;
 
-/// How readable a pair is.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
+/// How readable a pair is, from the easiest to the hardest (the order compares them).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Rating {
     /// Passes the rule for more contrast too (text only).

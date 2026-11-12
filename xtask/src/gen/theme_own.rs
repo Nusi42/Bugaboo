@@ -55,30 +55,16 @@ pub(super) fn rust(file: &ThemeFile, generated_by: &str) -> String {
         "\n/// The shadow token an own theme may set, as parts.\npub(super) const SHADOW_TOKEN: &str = {name:?};\n\n/// The most layers a shadow of an own theme has (`own-layers`).\npub const SHADOW_LAYERS_MOST: usize = {layers};\n\n/// The largest offset, blur or spread of a layer of a shadow of an own theme, in pixels\n/// (`own-pixels`).\npub const SHADOW_PIXELS_MOST: i32 = {pixels};\n"
     );
     out.push_str("\n/// The corner radii an own theme may set, in pixels.\npub(super) const RADII: &[RadiusToken] = &[\n");
-    for token in &file.tokens {
-        if let Own::Pixels { min, max } = token.own {
-            let start = token
-                .same
-                .as_deref()
-                .and_then(|same| same.strip_suffix("px"))
-                .unwrap_or("0");
-            let _ = writeln!(
-                out,
-                "    RadiusToken {{ name: {:?}, start_px: {start}, min_px: {min}, max_px: {max} }},",
-                token.name
-            );
-        }
+    for radius in own_radii(file) {
+        let _ = writeln!(
+            out,
+            "    RadiusToken {{ name: {:?}, start_px: {}, min_px: {}, max_px: {} }},",
+            radius.name, radius.start, radius.min, radius.max
+        );
     }
     out.push_str("];\n\n/// The text faces an own theme may choose a stack for. It names one of these stacks by its token.\npub(super) const FONTS: &[FontToken] = &[\n");
-    for token in &file.tokens {
-        if token.kind == TokenKind::Font && token.own == Own::Yes {
-            let _ = writeln!(
-                out,
-                "    FontToken {{ name: {:?}, stack: {:?} }},",
-                token.name,
-                token.same.as_deref().unwrap_or_default()
-            );
-        }
+    for (name, stack) in own_fonts(file) {
+        let _ = writeln!(out, "    FontToken {{ name: {name:?}, stack: {stack:?} }},");
     }
     out.push_str("];\n\n/// The opacity tokens, 0 to 1, for the contrast rules that fade a color.\npub(super) const OPACITIES: &[Number] = &[\n");
     numbers(&mut out, file, TokenKind::Opacity);
@@ -106,27 +92,29 @@ pub(super) fn typescript(file: &ThemeFile) -> String {
     let mut out = String::from(
         "\n/** The corners an own theme may set, in pixels: the base theme's value and the bounds (ADR-0026 M8). */\nexport const ownRadii = [\n",
     );
-    for token in &file.tokens {
-        if let Own::Pixels { min, max } = token.own {
-            let start = token
-                .same
-                .as_deref()
-                .and_then(|same| same.strip_suffix("px"))
-                .unwrap_or("0");
-            let _ = writeln!(
-                out,
-                "  {{ name: {:?}, start: {start}, min: {min}, max: {max} }},",
-                token.name
-            );
-        }
+    for radius in own_radii(file) {
+        let _ = writeln!(
+            out,
+            "  {{ name: {:?}, start: {}, min: {}, max: {} }},",
+            radius.name, radius.start, radius.min, radius.max
+        );
     }
     out.push_str("] as const;\nexport type OwnRadius = (typeof ownRadii)[number][\"name\"];\n\n/** The text faces an own theme may choose a stack for; a stack is named by one of these. */\nexport const ownFonts = [\n");
-    for token in &file.tokens {
-        if token.kind == TokenKind::Font && token.own == Own::Yes {
-            let _ = writeln!(out, "  {:?},", token.name);
-        }
+    for (name, _) in own_fonts(file) {
+        let _ = writeln!(out, "  {name:?},");
     }
     out.push_str("] as const;\nexport type OwnFont = (typeof ownFonts)[number];\n");
+    out.push_str("\n/** The name of the first face of the stack of each text face, which a person chooses it by. */\nexport const ownFontFaces = {\n");
+    for (name, stack) in own_fonts(file) {
+        let face = stack
+            .split(',')
+            .next()
+            .unwrap_or(stack)
+            .trim()
+            .trim_matches('"');
+        let _ = writeln!(out, "  {name:?}: {face:?},");
+    }
+    out.push_str("} as const;\n");
     if let Some((name, layers, pixels)) = file.tokens.iter().find_map(|token| match token.own {
         Own::Shadow { layers, pixels } => Some((token.name.as_str(), layers, pixels)),
         _ => None,
@@ -136,5 +124,51 @@ pub(super) fn typescript(file: &ThemeFile) -> String {
             "\n/** The shadow an own theme may set: at most `layers` layers, each offset, blur and spread within `pixels`. */\nexport const ownShadow = {{ name: {name:?}, layers: {layers}, pixels: {pixels} }} as const;\n"
         );
     }
+    let _ = write!(
+        out,
+        "
+/** The most bytes of a theme file that *Upload* takes (`bb_core::theme::THEME_UPLOAD_MOST`). */
+export const ownThemeUploadMost = {};
+",
+        bb_core::theme::THEME_UPLOAD_MOST
+    );
     out
+}
+
+/// A corner an own theme may set: the base theme's value and the bounds, in pixels.
+struct OwnRadius<'a> {
+    name: &'a str,
+    start: &'a str,
+    min: u32,
+    max: u32,
+}
+
+/// The corners an own theme may set (`own-min` and `own-max`), in the order of the theme file.
+fn own_radii(file: &ThemeFile) -> impl Iterator<Item = OwnRadius<'_>> {
+    file.tokens.iter().filter_map(|token| match token.own {
+        Own::Pixels { min, max } => Some(OwnRadius {
+            name: &token.name,
+            start: token
+                .same
+                .as_deref()
+                .and_then(|same| same.strip_suffix("px"))
+                .unwrap_or("0"),
+            min,
+            max,
+        }),
+        _ => None,
+    })
+}
+
+/// The text faces an own theme may choose a stack for, with their stacks, in the order of the file.
+fn own_fonts(file: &ThemeFile) -> impl Iterator<Item = (&str, &str)> {
+    file.tokens
+        .iter()
+        .filter(|token| token.kind == TokenKind::Font && token.own == Own::Yes)
+        .map(|token| {
+            (
+                token.name.as_str(),
+                token.same.as_deref().unwrap_or_default(),
+            )
+        })
 }

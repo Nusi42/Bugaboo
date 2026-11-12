@@ -56,7 +56,9 @@ for (const proposal of proposals) {
     await chooseTheme(page, { id: proposal.theme, label: proposal.label });
     await shotWholeAs(page, "quiet-and-hint-now", FOLDER, proposal.theme);
     await colorField(page, t("theme-color.fg-muted")).fill(proposal.quiet);
-    await expect(readabilityLine(page)).not.toContainText(t("theme-editor.readability-fix"));
+    await expect(readabilityLine(page)).not.toContainText(
+      t("theme-editor.readability-fix", { count: 1 }),
+    );
     await shotWholeAs(page, "quiet-and-hint-proposed", FOLDER, proposal.theme);
   });
 }

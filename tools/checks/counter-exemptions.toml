@@ -371,19 +371,19 @@ reason = "The same member of the same answer, which the reader sees only when it
 [[exempt]]
 route = "POST /api/v1/themes/upload"
 property = "used_by"
-reason = "The people who chose a theme for everyone themselves, answered only to who may change it (Change organization settings), who sees every person of the organization in Organization settings › People; a save, a copy and an upload leave it out (ADR-0026 update M8, UX §5.6)."
+reason = "Counts only what the viewer may see: an aggregate of a low-risk preference, how many people still in the organization chose a theme for everyone themselves, only a count and never names, answered only to who may change it (Change organization settings); in a tiny organization it can point at one person, which a choice of look allows; a save, a copy and an upload leave it out (ADR-0026 update M8, UX §5.6)."
 
 [[exempt]]
 route = "GET /api/v1/themes/{theme}"
 property = "used_by"
-reason = "The people who chose a theme for everyone themselves, answered only to who may change it (Change organization settings), who sees every person of the organization in Organization settings › People; a save, a copy and an upload leave it out (ADR-0026 update M8, UX §5.6)."
+reason = "Counts only what the viewer may see: an aggregate of a low-risk preference, how many people still in the organization chose a theme for everyone themselves, only a count and never names, answered only to who may change it (Change organization settings); in a tiny organization it can point at one person, which a choice of look allows; a save, a copy and an upload leave it out (ADR-0026 update M8, UX §5.6)."
 
 [[exempt]]
 route = "PUT /api/v1/themes/{theme}"
 property = "used_by"
-reason = "The people who chose a theme for everyone themselves, answered only to who may change it (Change organization settings), who sees every person of the organization in Organization settings › People; a save, a copy and an upload leave it out (ADR-0026 update M8, UX §5.6)."
+reason = "Counts only what the viewer may see: an aggregate of a low-risk preference, how many people still in the organization chose a theme for everyone themselves, only a count and never names, answered only to who may change it (Change organization settings); in a tiny organization it can point at one person, which a choice of look allows; a save, a copy and an upload leave it out (ADR-0026 update M8, UX §5.6)."
 
 [[exempt]]
 route = "POST /api/v1/themes/{theme}/copy"
 property = "used_by"
-reason = "The people who chose a theme for everyone themselves, answered only to who may change it (Change organization settings), who sees every person of the organization in Organization settings › People; a save, a copy and an upload leave it out (ADR-0026 update M8, UX §5.6)."
+reason = "Counts only what the viewer may see: an aggregate of a low-risk preference, how many people still in the organization chose a theme for everyone themselves, only a count and never names, answered only to who may change it (Change organization settings); in a tiny organization it can point at one person, which a choice of look allows; a save, a copy and an upload leave it out (ADR-0026 update M8, UX §5.6)."

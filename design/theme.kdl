@@ -369,7 +369,7 @@ tokens {
     color "border-subtle" "#eaedf1" more="#8c8e91"
     color "divider" "#a9b0bc" more="#6d6f72" forced="ButtonText"
     color "fg" "#16181d"
-    color "fg-muted" "#565d6b" more="#464c57"
+    color "fg-muted" "#464b5a" more="#464c57"
     color "fg-subtle" "#5c6172" more="#484c58"
     color "accent" "#5b3fd9" more="#4a30b8" forced="Highlight"
     color "accent-soft" "#eeeafd"
@@ -5084,11 +5084,54 @@ part "theme-editor.sample-hint" {
     font-size "$fs-sm"
 }
 
+// The one bar at the foot of the editor: *Save a copy* and *Download* at the start, *Throw my changes away*, *Preview*
+// (on a phone) and *Save theme* at the end. On a phone it stays at the foot of the screen while the groups scroll.
+part "theme-editor.bar" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    justify-content space-between
+    gap "$space-3"
+    padding-block "$space-3"
+    border-top "$border-width solid $border-subtle"
+    background "$bg-raised"
+    media "(max-width: calc($bp-tablet - 1px))" {
+        position sticky
+        bottom 0
+        z-index "$z-raised"
+    }
+}
+
+// In the sheet of the preview on a phone only the preview scrolls; the title and *Close* stay.
+part "theme-editor.preview-scroll" {
+    flex "1 1 auto"
+    min-height 0
+    overflow-y auto
+}
+
+// The colors a color is hard to read on, under it when *Show* lists them.
+part "theme-hard-with" {
+    flex-basis "100%"
+    margin 0
+    padding-inline-start "$space-5"
+    color "$fg-muted"
+}
+
+part "theme-shadow.legend" {
+    margin-bottom "$space-2"
+    padding 0
+    color "$fg"
+}
+
 // The line that sums the readability up; it stays on top on a phone while the groups scroll under it.
 part "theme-readability" {
     position sticky
     top 0
     z-index "$z-raised"
+    display flex
+    flex-direction column
+    align-items flex-start
+    gap "$space-2"
     margin 0
     padding "$space-3" "$space-4"
     use "surface-box"
@@ -5120,14 +5163,24 @@ part "theme-group" {
     padding "$space-3" "$space-4"
 }
 
+// The heading of a group keeps the browser's own sign that turns as the group opens and closes, and says under its
+// name what the theme changes in it, so a closed group never looks empty.
 part "theme-group.summary" {
-    display flex
-    align-items center
+    display list-item
     min-height "$size-control"
+    padding-block "$space-1"
     color "$fg"
     font-family "$font-display"
     font-size "$fs-md"
     cursor pointer
+}
+
+part "theme-group.note" {
+    display block
+    padding-inline-start "$space-4"
+    color "$fg-muted"
+    font-family "$font-ui"
+    font-size "$fs-sm"
 }
 
 part "theme-group.body" {
@@ -5227,6 +5280,23 @@ part "theme-list.text" {
     gap "$space-1"
     min-width 0
     overflow-wrap anywhere
+}
+
+// The four buttons of a row of the list, of one width: in a row on a computer, two by two on a phone.
+part "theme-list.actions" {
+    display grid
+    grid-template-columns "repeat(4, minmax(0, 1fr))"
+    gap "$space-2"
+    media "(max-width: calc($bp-tablet - 1px))" {
+        grid-template-columns "1fr 1fr"
+        width "100%"
+    }
+}
+
+// *For everyone* or *Personal* beside the name of a theme.
+part "theme-list.tag" {
+    color "$fg-muted"
+    font-size "$fs-sm"
 }
 
 part "theme-list.facts" {
@@ -6562,6 +6632,23 @@ part "issue-section.actions" {
     flex-wrap wrap
     align-items center
     gap "$space-2"
+}
+
+// Somebody else is editing: the sentence on top, the buttons in one row under it, one under the other on a phone.
+part "edit-held" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+}
+
+part "edit-held.actions" {
+    display flex
+    flex-wrap wrap
+    gap "$space-2"
+    media "(max-width: calc($bp-tablet - 1px))" {
+        flex-direction column
+        align-items stretch
+    }
 }
 
 part "issue-note" {

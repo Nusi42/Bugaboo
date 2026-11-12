@@ -1,3 +1,4 @@
+import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import {
   Alert,
@@ -13,6 +14,7 @@ import {
   part,
   StatusPill,
   TextField,
+  usePreviewSheet,
 } from "@bugaboo/ui";
 import { useState, type ReactNode } from "react";
 
@@ -20,28 +22,39 @@ import { useState, type ReactNode } from "react";
 const SAMPLE = { status: "in-progress", firstTag: "cat2", secondTag: "cat7" } as const;
 
 export interface EditorPreviewProps {
-  readonly theme: string;
-  /** The built-in theme the own theme starts from: the sample the draft's sheet is laid over. */
-  readonly startsFrom: string;
-  /** Whether the sheet of the person's draft is there yet; until then the preview shows the built-in theme. */
+  readonly theme: Schema<"ThemeBody">;
+  /** Whether the sheet of the person's draft is there yet; until then the preview shows the saved theme. */
   readonly draftShown: boolean;
+}
+
+/**
+ * The attributes of the preview: the sample of the built-in theme the own theme starts from, with
+ * the person's draft over it, or before there is one the saved theme (its sheet reaches a sample
+ * that names it). Never both, so a color the draft takes back to the built-in one does not show
+ * the saved one.
+ */
+function lookOf(theme: Schema<"ThemeBody">, draftShown: boolean) {
+  if (draftShown) {
+    return { [pageAttributes.previewLook]: theme.extends, [pageAttributes.ownDraft]: theme.id };
+  }
+  return theme.saved
+    ? { [pageAttributes.previewLook]: theme.extends, [pageAttributes.ownTheme]: theme.id }
+    : { [pageAttributes.previewLook]: theme.extends };
 }
 
 /**
  * The live preview of the theme editor (UX §5.6): real parts of the app (a row of an issue with its
  * status and tags, a field, buttons, notes) drawn under the theme being edited. It is a sample of
- * the built-in theme (`data-preview-look`) that names the person's draft (`data-own-draft`), whose
- * sheet the server makes, so no style is made in the page and nobody else sees it before *Save*.
+ * the built-in theme (`data-preview-look`) that names the person's draft (`data-own-draft`) or, until
+ * there is one, the saved theme (`data-own-theme`), whose sheets the server makes, so no style is
+ * made in the page and nobody else sees the draft before *Save*.
  * It is a picture of the theme: its parts take no keys and say nothing to a screen reader, and it
  * shows a pair that is hard to read as it is; the line of the readability on top says it in words.
  */
-export function EditorPreview({ theme, startsFrom, draftShown }: EditorPreviewProps) {
-  const attributes = {
-    [pageAttributes.previewLook]: startsFrom,
-    ...(draftShown ? { [pageAttributes.ownDraft]: theme } : {}),
-  };
+export function EditorPreview({ theme, draftShown }: EditorPreviewProps) {
+  usePreviewSheet(draftShown ? undefined : (theme.sheet ?? undefined));
   return (
-    <div {...partOf(part.themeEditorPreview)} {...attributes} inert aria-hidden>
+    <div {...partOf(part.themeEditorPreview)} {...lookOf(theme, draftShown)} inert aria-hidden>
       <div {...partOf(part.themeEditorSampleRow)}>
         <IssueId id={t("theme-editor.sample.id")} />
         <span>{t("theme-editor.sample.title")}</span>
@@ -68,14 +81,15 @@ export function EditorPreview({ theme, startsFrom, draftShown }: EditorPreviewPr
   );
 }
 
-/** On a phone the preview opens from a *Preview* button at the bottom (UX §5.6). */
+/**
+ * On a phone the preview opens from *Preview* in the bar at the foot (UX §5.6); in the sheet only
+ * the preview scrolls, so its foot with *Close* stays in sight.
+ */
 export function PhonePreview({ children }: { readonly children: ReactNode }) {
   const [open, setOpen] = useState(false);
   return (
     <>
       <Button
-        look={buttonLook.quiet}
-        wide
         onPress={() => {
           setOpen(true);
         }}
@@ -90,7 +104,7 @@ export function PhonePreview({ children }: { readonly children: ReactNode }) {
         closeLabel={t("common.close")}
         tall
       >
-        {children}
+        <div {...partOf(part.themeEditorPreviewScroll)}>{children}</div>
       </BottomSheet>
     </>
   );

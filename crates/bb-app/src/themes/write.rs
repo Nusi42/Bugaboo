@@ -9,7 +9,7 @@ use bb_core::event::{DomainEvent, FieldChange, RecordKind};
 use bb_core::id::{ThemeId, UserId};
 use bb_core::technical::TechnicalName;
 use bb_core::theme::{
-    FileProblem, OwnTheme, OwnValues, PERSONAL_THEMES_MOST, THEME_UPLOAD_MOST,
+    FileProblem, NamedPair, OwnTheme, OwnValues, PERSONAL_THEMES_MOST, THEME_UPLOAD_MOST,
     THEMES_FOR_EVERYONE_MOST, ThemeFile, ThemeKind, ThemeName,
 };
 use bb_core::version::{FIRST_VERSION, Version, counted_up};
@@ -17,8 +17,8 @@ use bb_policy::{Authorized, Evaluation, Place};
 use serde_json::{Value, json};
 
 use super::rules::{
-    NamedPair, Need, built_in_of, editing_what, hard_pairs, name_of, refuse_hard_for_everyone,
-    values_of, view_of,
+    Need, built_in_of, editing_what, hard_pairs_of, name_of, refuse_hard_for_everyone, values_of,
+    view_of,
 };
 use super::types::{
     CopyTheme, CreateTheme, DeleteTheme, SaveTheme, ThemeDetail, ThemeView, UploadTheme,
@@ -109,7 +109,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     ) -> Result<AddingSaved, AppError> {
         let held = self.may_create_theme(actor, kind).await?;
         let base = built_in_of(extends)?;
-        let hard_to_read = refuse_hard_for_everyone(kind, hard_pairs(base.id, &values)?)?;
+        let hard_to_read = refuse_hard_for_everyone(kind, hard_pairs_of(base.id, &values)?)?;
         let adding = self.adding(
             actor,
             NewTheme {
@@ -223,8 +223,10 @@ pub async fn save_theme<S: AuthStore>(
     let (stored, held) = ctx.theme_for(&actor, input.theme, Need::Change).await?;
     let name = name_of(&input.name)?;
     let values = values_of(&input.values)?;
-    let hard_to_read =
-        refuse_hard_for_everyone(stored.kind, hard_pairs(stored.extends.as_str(), &values)?)?;
+    let hard_to_read = refuse_hard_for_everyone(
+        stored.kind,
+        hard_pairs_of(stored.extends.as_str(), &values)?,
+    )?;
     let what = editing_what(stored.id)?;
     let event = ctx.event(
         by(actor.person.id),

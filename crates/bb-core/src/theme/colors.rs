@@ -152,56 +152,6 @@ pub fn readability(extends: &str, values: &OwnValues) -> Option<Vec<RatedPair>> 
     )
 }
 
-/// How many pairs of an own theme are *Easy*, *OK* and *Hard to read*: the line on top of the theme
-/// editor and the rating in a list of themes (THM-03). A pair is its two colors in one mode (as it
-/// is, or with more contrast) and counts once, at the worst rating any rule gives it.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize)]
-pub struct ReadabilitySummary {
-    /// The pairs that are *Easy*.
-    pub easy: u32,
-    /// The pairs that are *OK*.
-    pub ok: u32,
-    /// The pairs that are *Hard to read*.
-    pub hard_to_read: u32,
-}
-
-/// How bad a rating is: the higher, the harder to read.
-const fn badness(rating: Rating) -> u8 {
-    match rating {
-        Rating::Easy => 0,
-        Rating::Ok => 1,
-        Rating::HardToRead => 2,
-    }
-}
-
-impl ReadabilitySummary {
-    /// The summary of the rated pairs of one theme.
-    #[must_use]
-    pub fn of(pairs: &[RatedPair]) -> Self {
-        let mut worst: HashMap<(&str, &str, bool), Rating> = HashMap::new();
-        for pair in pairs {
-            let key = (
-                pair.first.as_str(),
-                pair.second.as_str(),
-                pair.more_contrast,
-            );
-            let known = worst.entry(key).or_insert(pair.rating);
-            if badness(pair.rating) > badness(*known) {
-                *known = pair.rating;
-            }
-        }
-        let mut summary = Self::default();
-        for rating in worst.values() {
-            match rating {
-                Rating::Easy => summary.easy += 1,
-                Rating::Ok => summary.ok += 1,
-                Rating::HardToRead => summary.hard_to_read += 1,
-            }
-        }
-        summary
-    }
-}
-
 /// A color of an own theme as the page shows it: the value of its token with every link followed,
 /// as it is and with more contrast.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]

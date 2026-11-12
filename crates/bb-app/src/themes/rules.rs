@@ -5,34 +5,19 @@
 use std::sync::Arc;
 
 use bb_core::ErrorCode;
-use bb_core::contrast::Rating;
 use bb_core::edit::{EditWhat, THEME_PART};
 use bb_core::event::RecordKind;
 use bb_core::id::{ThemeId, UserId};
 use bb_core::technical::TechnicalName;
 use bb_core::theme::{
-    BuiltIn, OwnChoice, OwnTheme, OwnValues, ReadabilitySummary, ThemeKind, ThemeName,
-    built_in_theme, readability,
+    BuiltIn, NamedPair, OwnChoice, OwnTheme, OwnValues, ReadabilitySummary, ThemeKind, ThemeName,
+    built_in_theme, hard_pairs, readability,
 };
 use bb_policy::{Evaluation, Permission, Place};
-use serde::Serialize;
 
 use super::types::{ChosenTheme, ThemeView};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, entity, internal};
-
-/// A pair of colors that is *Hard to read*, by the tokens it is made of.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-pub struct NamedPair {
-    /// The first color: the text, the line or the state.
-    pub first: String,
-    /// The second color: the background, the surface or the other state.
-    pub second: String,
-    /// The color to change to mend it.
-    pub place: String,
-    /// Whether the pair is read with the colors for more contrast.
-    pub more_contrast: bool,
-}
 
 /// What a choice of an own theme counts as.
 pub(crate) enum ChoiceInForce {
@@ -98,26 +83,12 @@ pub(crate) fn values_of(json: &serde_json::Value) -> Result<OwnValues, AppError>
     OwnValues::from_json(json).map_err(AppError::ThemeValuesRefused)
 }
 
-/// The pairs of the theme that extends `extends` with `values` that are *Hard to read*, each once.
-pub(crate) fn hard_pairs(extends: &str, values: &OwnValues) -> Result<Vec<NamedPair>, AppError> {
+/// The pairs of the theme that extends `extends` with `values` that are *Hard to read*, each once
+/// (`bb_core::theme::hard_pairs`, the editor's own answer).
+pub(crate) fn hard_pairs_of(extends: &str, values: &OwnValues) -> Result<Vec<NamedPair>, AppError> {
     // `None` only for a built-in theme that does not exist, which the theme was checked against.
     let rated = readability(extends, values).ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
-    let mut pairs: Vec<NamedPair> = Vec::new();
-    for found in rated
-        .into_iter()
-        .filter(|pair| pair.rating == Rating::HardToRead)
-    {
-        let pair = NamedPair {
-            first: found.first,
-            second: found.second,
-            place: found.place,
-            more_contrast: found.more_contrast,
-        };
-        if !pairs.contains(&pair) {
-            pairs.push(pair);
-        }
-    }
-    Ok(pairs)
+    Ok(hard_pairs(&rated))
 }
 
 /// Refuses a theme for everyone with pairs that are *Hard to read*; a personal theme is saved with

@@ -281,6 +281,7 @@ export interface MessageArguments {
   "editing.draft-found": { thing: string | number; when: string | number };
   "editing.elsewhere": { thing: string | number };
   "editing.is-editing": { name: string | number; since: string | number; thing: string | number };
+  "editing.is-editing-now": { name: string | number; thing: string | number };
   "editing.lost-changed": { name: string | number; thing: string | number };
   "editing.lost-taken-over": { name: string | number };
   "error.relation-kind.date-effect-most": { most: string | number };
@@ -764,7 +765,7 @@ export interface MessageArguments {
   "theme-color.choice-bg": { color: string | number };
   "theme-color.choice-fg": { color: string | number };
   "theme-color.choice-mark": { color: string | number };
-  "theme-editor.ask": { count: number };
+  "theme-editor.ask": { colors: string | number; count: number };
   "theme-editor.change-named": { name: string | number };
   "theme-editor.color": { color: string | number };
   "theme-editor.copy-name": { name: string | number };
@@ -776,22 +777,25 @@ export interface MessageArguments {
   "theme-editor.delete-title": { name: string | number };
   "theme-editor.delete-used": { count: number; theme: string | number };
   "theme-editor.download-named": { name: string | number };
-  "theme-editor.facts": {
-    easy: string | number;
-    hard: string | number;
-    look: string | number;
-    ok: string | number;
-    theme: string | number;
-  };
+  "theme-editor.facts": { hard: number; look: string | number; theme: string | number };
   "theme-editor.facts-unsaved": { look: string | number; theme: string | number };
-  "theme-editor.group-unchanged": { theme: string | number };
+  "theme-editor.group-changed": { count: number; theme: string | number };
   "theme-editor.hard-color": { color: string | number; count: number };
+  "theme-editor.hide-named": { color: string | number };
   "theme-editor.pick": { color: string | number };
-  "theme-editor.readability": { easy: number; hard: string | number; ok: string | number };
+  "theme-editor.readability-details": {
+    easy: string | number;
+    ok: string | number;
+    total: string | number;
+  };
+  "theme-editor.readability-fix": { count: number };
+  "theme-editor.readability-hard": { count: number };
   "theme-editor.refused-value": { name: string | number; reason: string | number };
   "theme-editor.shadow-layer": { number: string | number };
   "theme-editor.shadow-own": { theme: string | number };
+  "theme-editor.shape-changed": { count: number; theme: string | number };
   "theme-editor.show-named": { color: string | number };
+  "theme-editor.upload-too-large": { most: string | number };
   "theme-editor.use-built-in": { theme: string | number };
   "theme.device-resolved": { device: string | number; theme: string | number };
   "time.add.title": { issue: string | number };

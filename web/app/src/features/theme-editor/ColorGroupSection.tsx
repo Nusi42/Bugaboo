@@ -1,10 +1,11 @@
 import { t } from "@bugaboo/messages";
 import { partOf, part, SelectField, type ColorToken } from "@bugaboo/ui";
-import type { RatedPair, ShownColor } from "@bugaboo/wasm";
+import type { ColorRating, ShownColor } from "@bugaboo/wasm";
 
 import { colorWords, groupLabels, type ColorGroup } from "./color-words.ts";
 import { ColorRow } from "./ColorRow.tsx";
-import { colorsIn, isColorToken } from "./model.ts";
+import { changedIn, colorsIn, isColorToken } from "./model.ts";
+import { GroupSummary } from "./GroupSummary.tsx";
 import type { ThemeValues } from "./themes.ts";
 
 /** The value of the choice that changes no color yet: the list starts on it. */
@@ -20,7 +21,7 @@ export interface ColorGroupSectionProps {
   readonly onAdd: (token: ColorToken) => void;
   readonly values: ThemeValues;
   readonly colors: readonly ShownColor[];
-  readonly pairs: readonly RatedPair[];
+  readonly ratings: readonly ColorRating[];
   readonly startsFrom: string;
   readonly accepts: (values: ThemeValues) => boolean;
   readonly onChange: (values: ThemeValues) => void;
@@ -57,13 +58,14 @@ export function ColorGroupSection(props: ColorGroupSectionProps) {
   const { group, startsOpen, shownTokens, onAdd, colors, ...row } = props;
   return (
     <details {...partOf(part.themeGroup)} open={startsOpen}>
-      <summary {...partOf(part.themeGroupSummary)}>{groupLabels[group]}</summary>
+      <GroupSummary
+        title={groupLabels[group]}
+        note={t("theme-editor.group-changed", {
+          count: changedIn(row.values, group).length,
+          theme: row.startsFrom,
+        })}
+      />
       <div {...partOf(part.themeGroupBody)}>
-        {shownTokens.length === 0 ? (
-          <p {...partOf(part.muted)}>
-            {t("theme-editor.group-unchanged", { theme: row.startsFrom })}
-          </p>
-        ) : null}
         {shownTokens.map((token) => (
           <ColorRow
             key={token}

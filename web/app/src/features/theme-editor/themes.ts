@@ -29,6 +29,9 @@ function refreshThemes(): void {
   refreshRoutes(["/api/v1/themes", "/api/v1/me/settings"]);
 }
 
+/** The type of a theme file: JSON. */
+const JSON_TYPE = "application/json";
+
 /** What the edit lock of a theme and the draft of its editor are about: the theme as a whole. */
 export function themeTarget(theme: string): EditTarget {
   return { record: { kind: "theme", id: theme }, part: themeEditPart };
@@ -83,29 +86,17 @@ export function useUploadTheme() {
 }
 
 /**
- * The theme file in a text a person chose to upload, read as JSON; `null` for a text that is not a
- * theme file at all. Only its shape is looked at: the server judges every value and names the
- * ones it refuses.
+ * What an upload sends: the text of the file exactly as it is (`bodySerializer`), so the server
+ * sees the whole file, its size and every part of it, and judges it. The client's type asks for a
+ * body; `standIn` is that body, and it never leaves the browser.
  */
-export function themeFileIn(text: string): components["schemas"]["ThemeFileBody"] | null {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    return null;
-  }
-  if (typeof parsed !== "object" || parsed === null) {
-    return null;
-  }
-  const name: unknown = Reflect.get(parsed, "name");
-  const extendsTheme: unknown = Reflect.get(parsed, "extends");
-  const values: unknown = Reflect.get(parsed, "values");
-  return typeof name === "string" &&
-    typeof extendsTheme === "string" &&
-    typeof values === "object" &&
-    values !== null
-    ? { name, extends: extendsTheme, values }
-    : null;
+export function asFileText(text: string) {
+  const standIn: components["schemas"]["ThemeFileBody"] = { name: "", extends: "", values: {} };
+  return {
+    body: standIn,
+    bodySerializer: () => text,
+    headers: { "Content-Type": JSON_TYPE },
+  };
 }
 
 /** The values as the body of a request takes them: a fresh copy the client may hand on. */

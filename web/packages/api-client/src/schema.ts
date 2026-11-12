@@ -10103,6 +10103,11 @@ export interface components {
     ReadabilityBody: {
       /**
        * Format: int32
+       * @description The colors to change to mend them.
+       */
+      colors_hard_to_read: number;
+      /**
+       * Format: int32
        * @description The pairs that are *Easy*.
        */
       easy: number;

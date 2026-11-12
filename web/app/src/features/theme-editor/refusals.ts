@@ -1,7 +1,7 @@
 import { ApiError, type ErrorCode, type Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
-import { colorName, type NamedPair } from "./model.ts";
+import { colorName } from "./model.ts";
 
 /** A member of the answer of a refusal with `code` that is a list; nothing for any other error. */
 function listIn(error: unknown, code: ErrorCode, member: string): readonly unknown[] {
@@ -10,27 +10,6 @@ function listIn(error: unknown, code: ErrorCode, member: string): readonly unkno
   }
   const found: unknown = Reflect.get(error.problem, member);
   return Array.isArray(found) ? found : [];
-}
-
-/** Whether a value is a pair of colors as the server names it. */
-function isPair(value: unknown): value is NamedPair {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "first" in value &&
-    typeof value.first === "string" &&
-    "second" in value &&
-    typeof value.second === "string" &&
-    "place" in value &&
-    typeof value.place === "string" &&
-    "more_contrast" in value &&
-    typeof value.more_contrast === "boolean"
-  );
-}
-
-/** The pairs the server named when it refused a theme for everyone as hard to read (`theme.hard-to-read`). */
-export function refusedPairsOf(error: unknown): readonly NamedPair[] {
-  return listIn(error, "theme.hard-to-read", "hard_to_read").filter((each) => isPair(each));
 }
 
 /** The words of why the server refused a value of a theme. */

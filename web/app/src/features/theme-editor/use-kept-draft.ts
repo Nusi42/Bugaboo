@@ -18,6 +18,8 @@ function valuesIn(text: string | null): ThemeValues | null {
 
 /** Whether the editor started from a draft the person left, and how to go back to the saved theme. */
 export interface KeptDraft {
+  /** Whether the person's draft was read: no new draft is kept before, so it is never lost. */
+  readonly read: boolean;
   readonly kept: boolean;
   readonly drop: () => void;
 }
@@ -29,6 +31,7 @@ export function useKeptDraft(
   put: (values: ThemeValues) => void,
 ): KeptDraft {
   const [kept, setKept] = useState(false);
+  const [read, setRead] = useState(false);
   useEffect(() => {
     let live = true;
     void keptValues(theme).then(
@@ -38,9 +41,15 @@ export function useKeptDraft(
           setKept(true);
           put(found);
         }
+        if (live) {
+          setRead(true);
+        }
       },
       () => {
         // No draft could be read: the editor starts from the saved theme.
+        if (live) {
+          setRead(true);
+        }
       },
     );
     return () => {
@@ -48,6 +57,7 @@ export function useKeptDraft(
     };
   }, [theme, saved, put]);
   return {
+    read,
     kept,
     drop: () => {
       setKept(false);

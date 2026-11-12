@@ -29011,8 +29011,14 @@
       "ReadabilityBody": {
         "type": "object",
         "description": "How many pairs of colors of a theme are *Easy*, *OK* and *Hard to read*; a pair counts once, at\nits worst rating.",
-        "required": ["easy", "ok", "hard_to_read"],
+        "required": ["easy", "ok", "hard_to_read", "colors_hard_to_read"],
         "properties": {
+          "colors_hard_to_read": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The colors to change to mend them.",
+            "minimum": 0
+          },
           "easy": {
             "type": "integer",
             "format": "int32",

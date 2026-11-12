@@ -12,7 +12,7 @@ export function startsFromName(extendsTheme: string): string {
 
 /**
  * The facts of an own theme in a list (UX §5.6): the built-in theme it started from, light or dark,
- * and its readability as saved (*42 easy, 3 OK*), or that it was never saved.
+ * and whether all its text is readable as saved, or that it was never saved.
  */
 export function themeFacts(theme: Schema<"ThemeBody">): string {
   const startsFrom = startsFromName(theme.extends);
@@ -23,8 +23,6 @@ export function themeFacts(theme: Schema<"ThemeBody">): string {
   return t("theme-editor.facts", {
     theme: startsFrom,
     look,
-    easy: theme.readability.easy,
-    ok: theme.readability.ok,
-    hard: theme.readability.hard_to_read,
+    hard: theme.readability.colors_hard_to_read,
   });
 }

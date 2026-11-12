@@ -92,6 +92,8 @@ pub(crate) struct ReadabilityBody {
     ok: u32,
     /// The pairs that are *Hard to read*.
     hard_to_read: u32,
+    /// The colors to change to mend them.
+    colors_hard_to_read: u32,
 }
 
 impl From<ReadabilitySummary> for ReadabilityBody {
@@ -100,6 +102,7 @@ impl From<ReadabilitySummary> for ReadabilityBody {
             easy: summary.easy,
             ok: summary.ok,
             hard_to_read: summary.hard_to_read,
+            colors_hard_to_read: summary.colors_hard_to_read,
         }
     }
 }

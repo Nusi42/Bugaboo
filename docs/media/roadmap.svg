@@ -10,7 +10,7 @@
       --bg-raised: #ffffff;
       --border: #dfe3e9;
       --fg: #16181d;
-      --fg-muted: #565d6b;
+      --fg-muted: #464b5a;
       --accent: #5b3fd9;
       --accent-soft: #eeeafd;
       --st-done: #1f784c;

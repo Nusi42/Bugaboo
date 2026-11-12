@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 import { Button, buttonLook, ownShadow, partOf, part, Switch } from "@bugaboo/ui";
 
 import { CheckedField } from "./CheckedField.tsx";
+import { ColorPick } from "./ColorPick.tsx";
 import { wholeNumber, withShadow } from "./model.ts";
 import type { ShadowLayer, ThemeValues } from "./themes.ts";
 
@@ -18,8 +19,14 @@ function layerNumbers(): readonly { readonly key: LayerNumber; readonly label: s
   ];
 }
 
-/** What tells the layers apart on screen: their place, as a shadow has at most `ownShadow.layers`. */
-const LAYER_NAMES = ["first", "second"] as const;
+/** What tells the layers apart on screen: their place, up to the most a shadow has (`ownShadow`). */
+const LAYER_NAMES: readonly string[] = Array.from(
+  { length: ownShadow.layers },
+  (_, place) => `layer-${String(place + 1)}`,
+);
+
+/** The six digits of a color, which the picker of the device takes (it has no transparency). */
+const RGB_LENGTH = 7;
 
 /**
  * The layer a shadow of its own starts with: a thin, soft shade under the box, in `color`. The
@@ -39,6 +46,36 @@ export interface ShadowLayersProps {
   readonly onChange: (values: ThemeValues) => void;
 }
 
+/** The color of a layer: its sample, which is also the picker of the device, and the color typed. */
+function LayerColor(props: {
+  readonly layer: ShadowLayer;
+  readonly make: (color: string) => ThemeValues;
+  readonly accepts: (values: ThemeValues) => boolean;
+  readonly onChange: (values: ThemeValues) => void;
+}) {
+  const { layer, make, accepts, onChange } = props;
+  return (
+    <span {...partOf(part.themeColorFields)}>
+      <ColorPick
+        label={t("theme-editor.shadow-color")}
+        value={layer.color.slice(0, RGB_LENGTH)}
+        onPick={(text) => {
+          if (accepts(make(text))) {
+            onChange(make(text));
+          }
+        }}
+      />
+      <CheckedField
+        label={t("theme-editor.shadow-color")}
+        value={layer.color}
+        make={make}
+        accepts={accepts}
+        onChange={onChange}
+      />
+    </span>
+  );
+}
+
 /** One layer: its offsets, blur and spread in pixels and its color, each typed. */
 function Layer(
   props: ShadowLayersProps & { readonly at: number; readonly layers: readonly ShadowLayer[] },
@@ -51,7 +88,7 @@ function Layer(
   const changed = (next: ShadowLayer) => withShadow(values, layers.with(at, next));
   return (
     <fieldset {...partOf(part.themeShadowLayer)}>
-      <legend {...partOf(part.choiceGroupLegend)}>
+      <legend {...partOf(part.themeShadowLegend)}>
         {t("theme-editor.shadow-layer", { number: at + 1 })}
       </legend>
       {layerNumbers().map((number) => (
@@ -68,10 +105,9 @@ function Layer(
           onChange={onChange}
         />
       ))}
-      <CheckedField
-        label={t("theme-editor.shadow-color")}
-        value={layer.color}
-        make={(text) => changed({ ...layer, color: text })}
+      <LayerColor
+        layer={layer}
+        make={(color) => changed({ ...layer, color })}
         accepts={accepts}
         onChange={onChange}
       />

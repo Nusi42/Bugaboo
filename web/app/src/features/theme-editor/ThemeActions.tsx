@@ -1,6 +1,6 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, buttonLook, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, Button, buttonLook } from "@bugaboo/ui";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
@@ -60,12 +60,15 @@ export function DownloadThemeButton({ theme }: { readonly theme: Schema<"ThemeBo
   );
 }
 
-/** *Save a copy* and *Download* of a theme that was saved; a theme never saved has nothing to copy yet. */
+/**
+ * *Save a copy* and *Download* of a theme that was saved, side by side in the row they stand in (the
+ * foot of the editor, a row of a list); a theme never saved has nothing to copy yet.
+ */
 export function ThemeActions({ theme }: { readonly theme: Schema<"ThemeBody"> }) {
   return theme.saved ? (
-    <div {...partOf(part.row)}>
+    <>
       <CopyThemeButton theme={theme} />
       <DownloadThemeButton theme={theme} />
-    </div>
+    </>
   ) : null;
 }

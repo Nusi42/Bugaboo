@@ -7903,11 +7903,8 @@ pub const THEME_COLOR_WARNING_SOFT: MessageKey = MessageKey::new("theme-color.wa
 /// The message `theme-editor.ask-title`.
 pub const THEME_EDITOR_ASK_TITLE: MessageKey = MessageKey::new("theme-editor.ask-title");
 
-/// The message `theme-editor.back-everyone`.
-pub const THEME_EDITOR_BACK_EVERYONE: MessageKey = MessageKey::new("theme-editor.back-everyone");
-
-/// The message `theme-editor.back-personal`.
-pub const THEME_EDITOR_BACK_PERSONAL: MessageKey = MessageKey::new("theme-editor.back-personal");
+/// The message `theme-editor.change`.
+pub const THEME_EDITOR_CHANGE: MessageKey = MessageKey::new("theme-editor.change");
 
 /// The message `theme-editor.change-color`.
 pub const THEME_EDITOR_CHANGE_COLOR: MessageKey = MessageKey::new("theme-editor.change-color");
@@ -7944,20 +7941,17 @@ pub const THEME_EDITOR_DARK: MessageKey = MessageKey::new("theme-editor.dark");
 /// The message `theme-editor.delete`.
 pub const THEME_EDITOR_DELETE: MessageKey = MessageKey::new("theme-editor.delete");
 
+/// The message `theme-editor.details`.
+pub const THEME_EDITOR_DETAILS: MessageKey = MessageKey::new("theme-editor.details");
+
+/// The message `theme-editor.details-hide`.
+pub const THEME_EDITOR_DETAILS_HIDE: MessageKey = MessageKey::new("theme-editor.details-hide");
+
 /// The message `theme-editor.download`.
 pub const THEME_EDITOR_DOWNLOAD: MessageKey = MessageKey::new("theme-editor.download");
 
 /// The message `theme-editor.draft-kept`.
 pub const THEME_EDITOR_DRAFT_KEPT: MessageKey = MessageKey::new("theme-editor.draft-kept");
-
-/// The message `theme-editor.face-headings`.
-pub const THEME_EDITOR_FACE_HEADINGS: MessageKey = MessageKey::new("theme-editor.face-headings");
-
-/// The message `theme-editor.face-long`.
-pub const THEME_EDITOR_FACE_LONG: MessageKey = MessageKey::new("theme-editor.face-long");
-
-/// The message `theme-editor.face-text`.
-pub const THEME_EDITOR_FACE_TEXT: MessageKey = MessageKey::new("theme-editor.face-text");
 
 /// The message `theme-editor.font-headings`.
 pub const THEME_EDITOR_FONT_HEADINGS: MessageKey = MessageKey::new("theme-editor.font-headings");
@@ -7967,6 +7961,9 @@ pub const THEME_EDITOR_FONT_LONG: MessageKey = MessageKey::new("theme-editor.fon
 
 /// The message `theme-editor.font-text`.
 pub const THEME_EDITOR_FONT_TEXT: MessageKey = MessageKey::new("theme-editor.font-text");
+
+/// The message `theme-editor.for-everyone`.
+pub const THEME_EDITOR_FOR_EVERYONE: MessageKey = MessageKey::new("theme-editor.for-everyone");
 
 /// The message `theme-editor.group.backgrounds`.
 pub const THEME_EDITOR_GROUP_BACKGROUNDS: MessageKey =
@@ -7987,6 +7984,9 @@ pub const THEME_EDITOR_GROUP_STATUS: MessageKey = MessageKey::new("theme-editor.
 
 /// The message `theme-editor.group.text`.
 pub const THEME_EDITOR_GROUP_TEXT: MessageKey = MessageKey::new("theme-editor.group.text");
+
+/// The message `theme-editor.hide`.
+pub const THEME_EDITOR_HIDE: MessageKey = MessageKey::new("theme-editor.hide");
 
 /// The message `theme-editor.light`.
 pub const THEME_EDITOR_LIGHT: MessageKey = MessageKey::new("theme-editor.light");
@@ -8019,9 +8019,6 @@ pub const THEME_EDITOR_LOST: MessageKey = MessageKey::new("theme-editor.lost");
 /// The message `theme-editor.more`.
 pub const THEME_EDITOR_MORE: MessageKey = MessageKey::new("theme-editor.more");
 
-/// The message `theme-editor.more-same`.
-pub const THEME_EDITOR_MORE_SAME: MessageKey = MessageKey::new("theme-editor.more-same");
-
 /// The message `theme-editor.name`.
 pub const THEME_EDITOR_NAME: MessageKey = MessageKey::new("theme-editor.name");
 
@@ -8033,6 +8030,9 @@ pub const THEME_EDITOR_NOT_ALLOWED: MessageKey = MessageKey::new("theme-editor.n
 
 /// The message `theme-editor.not-found`.
 pub const THEME_EDITOR_NOT_FOUND: MessageKey = MessageKey::new("theme-editor.not-found");
+
+/// The message `theme-editor.personal`.
+pub const THEME_EDITOR_PERSONAL: MessageKey = MessageKey::new("theme-editor.personal");
 
 /// The message `theme-editor.pixels`.
 pub const THEME_EDITOR_PIXELS: MessageKey = MessageKey::new("theme-editor.pixels");
@@ -8049,16 +8049,17 @@ pub const THEME_EDITOR_RATING_HARD: MessageKey = MessageKey::new("theme-editor.r
 /// The message `theme-editor.rating.ok`.
 pub const THEME_EDITOR_RATING_OK: MessageKey = MessageKey::new("theme-editor.rating.ok");
 
-/// The message `theme-editor.readability-fix`.
-pub const THEME_EDITOR_READABILITY_FIX: MessageKey =
-    MessageKey::new("theme-editor.readability-fix");
+/// The message `theme-editor.readability-fine`.
+pub const THEME_EDITOR_READABILITY_FINE: MessageKey =
+    MessageKey::new("theme-editor.readability-fine");
 
 /// The message `theme-editor.readability-loading`.
 pub const THEME_EDITOR_READABILITY_LOADING: MessageKey =
     MessageKey::new("theme-editor.readability-loading");
 
-/// The message `theme-editor.refused`.
-pub const THEME_EDITOR_REFUSED: MessageKey = MessageKey::new("theme-editor.refused");
+/// The message `theme-editor.readability-title`.
+pub const THEME_EDITOR_READABILITY_TITLE: MessageKey =
+    MessageKey::new("theme-editor.readability-title");
 
 /// The message `theme-editor.refused-value.bad-shadow`.
 pub const THEME_EDITOR_REFUSED_VALUE_BAD_SHADOW: MessageKey =
@@ -10819,6 +10820,21 @@ pub fn editing_is_editing(
         vec![
             ("name", Value::Text(name.to_string())),
             ("since", Value::Text(since.to_string())),
+            ("thing", Value::Text(thing.to_string())),
+        ],
+    )
+}
+
+/// The message `editing.is-editing-now`.
+#[must_use]
+pub fn editing_is_editing_now(
+    name: impl std::fmt::Display,
+    thing: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("editing.is-editing-now"),
+        vec![
+            ("name", Value::Text(name.to_string())),
             ("thing", Value::Text(thing.to_string())),
         ],
     )
@@ -15960,10 +15976,13 @@ pub fn theme_color_choice_mark(color: impl std::fmt::Display) -> Message {
 
 /// The message `theme-editor.ask`.
 #[must_use]
-pub fn theme_editor_ask(count: i64) -> Message {
+pub fn theme_editor_ask(colors: impl std::fmt::Display, count: i64) -> Message {
     Message::with_arguments(
         MessageKey::new("theme-editor.ask"),
-        vec![("count", Value::Number(count))],
+        vec![
+            ("colors", Value::Text(colors.to_string())),
+            ("count", Value::Number(count)),
+        ],
     )
 }
 
@@ -16078,19 +16097,15 @@ pub fn theme_editor_download_named(name: impl std::fmt::Display) -> Message {
 /// The message `theme-editor.facts`.
 #[must_use]
 pub fn theme_editor_facts(
-    easy: impl std::fmt::Display,
-    hard: impl std::fmt::Display,
+    hard: i64,
     look: impl std::fmt::Display,
-    ok: impl std::fmt::Display,
     theme: impl std::fmt::Display,
 ) -> Message {
     Message::with_arguments(
         MessageKey::new("theme-editor.facts"),
         vec![
-            ("easy", Value::Text(easy.to_string())),
-            ("hard", Value::Text(hard.to_string())),
+            ("hard", Value::Number(hard)),
             ("look", Value::Text(look.to_string())),
-            ("ok", Value::Text(ok.to_string())),
             ("theme", Value::Text(theme.to_string())),
         ],
     )
@@ -16111,12 +16126,15 @@ pub fn theme_editor_facts_unsaved(
     )
 }
 
-/// The message `theme-editor.group-unchanged`.
+/// The message `theme-editor.group-changed`.
 #[must_use]
-pub fn theme_editor_group_unchanged(theme: impl std::fmt::Display) -> Message {
+pub fn theme_editor_group_changed(count: i64, theme: impl std::fmt::Display) -> Message {
     Message::with_arguments(
-        MessageKey::new("theme-editor.group-unchanged"),
-        vec![("theme", Value::Text(theme.to_string()))],
+        MessageKey::new("theme-editor.group-changed"),
+        vec![
+            ("count", Value::Number(count)),
+            ("theme", Value::Text(theme.to_string())),
+        ],
     )
 }
 
@@ -16132,6 +16150,15 @@ pub fn theme_editor_hard_color(color: impl std::fmt::Display, count: i64) -> Mes
     )
 }
 
+/// The message `theme-editor.hide-named`.
+#[must_use]
+pub fn theme_editor_hide_named(color: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-editor.hide-named"),
+        vec![("color", Value::Text(color.to_string()))],
+    )
+}
+
 /// The message `theme-editor.pick`.
 #[must_use]
 pub fn theme_editor_pick(color: impl std::fmt::Display) -> Message {
@@ -16141,20 +16168,38 @@ pub fn theme_editor_pick(color: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `theme-editor.readability`.
+/// The message `theme-editor.readability-details`.
 #[must_use]
-pub fn theme_editor_readability(
-    easy: i64,
-    hard: impl std::fmt::Display,
+pub fn theme_editor_readability_details(
+    easy: impl std::fmt::Display,
     ok: impl std::fmt::Display,
+    total: impl std::fmt::Display,
 ) -> Message {
     Message::with_arguments(
-        MessageKey::new("theme-editor.readability"),
+        MessageKey::new("theme-editor.readability-details"),
         vec![
-            ("easy", Value::Number(easy)),
-            ("hard", Value::Text(hard.to_string())),
+            ("easy", Value::Text(easy.to_string())),
             ("ok", Value::Text(ok.to_string())),
+            ("total", Value::Text(total.to_string())),
         ],
+    )
+}
+
+/// The message `theme-editor.readability-fix`.
+#[must_use]
+pub fn theme_editor_readability_fix(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-editor.readability-fix"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `theme-editor.readability-hard`.
+#[must_use]
+pub fn theme_editor_readability_hard(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-editor.readability-hard"),
+        vec![("count", Value::Number(count))],
     )
 }
 
@@ -16191,12 +16236,33 @@ pub fn theme_editor_shadow_own(theme: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `theme-editor.shape-changed`.
+#[must_use]
+pub fn theme_editor_shape_changed(count: i64, theme: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-editor.shape-changed"),
+        vec![
+            ("count", Value::Number(count)),
+            ("theme", Value::Text(theme.to_string())),
+        ],
+    )
+}
+
 /// The message `theme-editor.show-named`.
 #[must_use]
 pub fn theme_editor_show_named(color: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("theme-editor.show-named"),
         vec![("color", Value::Text(color.to_string()))],
+    )
+}
+
+/// The message `theme-editor.upload-too-large`.
+#[must_use]
+pub fn theme_editor_upload_too_large(most: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-editor.upload-too-large"),
+        vec![("most", Value::Text(most.to_string()))],
     )
 }
 
@@ -19437,6 +19503,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "editing.is-editing",
         "{name} is editing {thing} · since {since}",
+    ),
+    (
+        "editing.is-editing-now",
+        "{name} is editing {thing} right now",
     ),
     (
         "editing.lost-changed",
@@ -24579,11 +24649,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("theme-color.warning-soft", "Warning background"),
     (
         "theme-editor.ask",
-        "{count, plural, one {# pair is} other {# pairs are}} hard to read. Save anyway?",
+        "{count, plural, one {This color is} other {These colors are}} hard to read: {colors}. Only you see this theme.",
     ),
-    ("theme-editor.ask-title", "Save anyway?"),
-    ("theme-editor.back-everyone", "Themes"),
-    ("theme-editor.back-personal", "Appearance"),
+    ("theme-editor.ask-title", "Save this theme?"),
+    ("theme-editor.change", "Change"),
     ("theme-editor.change-color", "Change a color"),
     ("theme-editor.change-color-choose", "Choose a color…"),
     ("theme-editor.change-named", "Change {name}"),
@@ -24612,20 +24681,19 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("theme-editor.delete-title", "Delete {name}?"),
     (
         "theme-editor.delete-used",
-        "{count, plural, =0 {Nobody chose this theme for themselves. They will see {theme} where it is the organization's choice.} one {# person uses this theme. They will see {theme} instead.} other {# people use this theme. They will see {theme} instead.}}",
+        "{count, plural, =0 {Nobody uses this theme. Deleting it changes nothing for anyone.} one {# person uses this theme. They will see {theme} instead.} other {# people use this theme. They will see {theme} instead.}}",
     ),
+    ("theme-editor.details", "Details"),
+    ("theme-editor.details-hide", "Hide details"),
     ("theme-editor.download", "Download"),
     ("theme-editor.download-named", "Download {name}"),
     (
         "theme-editor.draft-kept",
         "You left changes here that were not saved. They are back.",
     ),
-    ("theme-editor.face-headings", "The face of headings"),
-    ("theme-editor.face-long", "The face of long text"),
-    ("theme-editor.face-text", "The face of text"),
     (
         "theme-editor.facts",
-        "Starts from {theme}, {look} · {easy} easy, {ok} OK, {hard} hard to read",
+        "Starts from {theme}, {look} · {hard, plural, =0 {All text is readable} one {# color is hard to read} other {# colors are hard to read}}",
     ),
     (
         "theme-editor.facts-unsaved",
@@ -24634,9 +24702,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("theme-editor.font-headings", "Headings"),
     ("theme-editor.font-long", "Long text"),
     ("theme-editor.font-text", "Text"),
+    ("theme-editor.for-everyone", "For everyone"),
     (
-        "theme-editor.group-unchanged",
-        "These colors are the same as in {theme}.",
+        "theme-editor.group-changed",
+        "{count, plural, =0 {Nothing changed from {theme}} one {# color changed} other {# colors changed}}",
     ),
     ("theme-editor.group.backgrounds", "Backgrounds"),
     ("theme-editor.group.highlight", "Highlight color"),
@@ -24646,8 +24715,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("theme-editor.group.text", "Text"),
     (
         "theme-editor.hard-color",
-        "{color} is hard to read with {count, plural, one {# other color} other {# other colors}}",
+        "{color} is hard to read on {count, plural, one {# background} other {# backgrounds}}.",
     ),
+    ("theme-editor.hide", "Hide"),
+    ("theme-editor.hide-named", "Hide the backgrounds of {color}"),
     ("theme-editor.light", "light"),
     ("theme-editor.list-everyone", "Themes for everyone"),
     (
@@ -24671,8 +24742,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "theme-editor.lost",
         "Not saved yet: your editing time ran out. Your changes are kept as a draft.",
     ),
-    ("theme-editor.more", "For more contrast"),
-    ("theme-editor.more-same", "The same color"),
+    ("theme-editor.more", "If the device asks for more contrast"),
     ("theme-editor.name", "Name"),
     (
         "theme-editor.not-a-color",
@@ -24686,6 +24756,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "theme-editor.not-found",
         "This theme isn't there, or you can't change it.",
     ),
+    ("theme-editor.personal", "Personal"),
     (
         "theme-editor.pick",
         "Pick {color} from the colors of your device",
@@ -24696,21 +24767,26 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("theme-editor.rating.hard", "Hard to read"),
     ("theme-editor.rating.ok", "OK"),
     (
-        "theme-editor.readability",
-        "Readability: {easy, plural, one {# pair} other {# pairs}} easy to read, {ok} OK, {hard} hard to read.",
+        "theme-editor.readability-details",
+        "{total} combinations of colors checked: {easy} easy, {ok} OK.",
+    ),
+    (
+        "theme-editor.readability-fine",
+        "Readability: nothing is hard to read.",
     ),
     (
         "theme-editor.readability-fix",
-        "Fix the pairs that are hard to read to share this theme with everyone.",
+        "{count, plural, one {Fix it} other {Fix them}} to share this theme with everyone.",
+    ),
+    (
+        "theme-editor.readability-hard",
+        "Readability: {count, plural, one {# color is} other {# colors are}} hard to read.",
     ),
     (
         "theme-editor.readability-loading",
         "Working out the readability…",
     ),
-    (
-        "theme-editor.refused",
-        "A theme for everyone can't be saved while colors are hard to read. Change these first:",
-    ),
+    ("theme-editor.readability-title", "Readability"),
     ("theme-editor.refused-value", "{name}: {reason}."),
     (
         "theme-editor.refused-value.bad-shadow",
@@ -24758,7 +24834,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("theme-editor.save", "Save theme"),
     ("theme-editor.save-anyway", "Save anyway"),
     ("theme-editor.shadow-add", "Add a layer"),
-    ("theme-editor.shadow-blur", "Blur"),
+    ("theme-editor.shadow-blur", "Softness"),
     ("theme-editor.shadow-color", "Color"),
     ("theme-editor.shadow-layer", "Layer {number}"),
     (
@@ -24766,13 +24842,21 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "A shadow of its own instead of {theme}'s",
     ),
     ("theme-editor.shadow-remove", "Remove this layer"),
-    ("theme-editor.shadow-spread", "Spread"),
-    ("theme-editor.shadow-x", "Right"),
-    ("theme-editor.shadow-y", "Down"),
+    ("theme-editor.shadow-spread", "Size"),
+    ("theme-editor.shadow-x", "Sideways"),
+    ("theme-editor.shadow-y", "Downwards"),
+    (
+        "theme-editor.shape-changed",
+        "{count, plural, =0 {Nothing changed from {theme}} one {# change} other {# changes}}",
+    ),
     ("theme-editor.show", "Show"),
-    ("theme-editor.show-named", "Show {color}"),
+    ("theme-editor.show-named", "Show the backgrounds of {color}"),
     ("theme-editor.title", "Theme editor"),
     ("theme-editor.upload", "Upload"),
+    (
+        "theme-editor.upload-too-large",
+        "This file is larger than {most} KB. Choose a theme file that Bugaboo gave you with Download.",
+    ),
     ("theme-editor.upload-unread", "This file can't be read."),
     ("theme-editor.use-built-in", "Use {theme}'s color"),
     ("theme.daylight", "Daylight"),

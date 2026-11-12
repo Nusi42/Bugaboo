@@ -96,12 +96,10 @@ async fn thm_04_an_own_theme_stores_only_the_values_it_changes_and_follows_its_b
     .await?;
     assert_eq!(sheet.version, saved.view.theme.version);
     assert!(sheet.css.contains("--accent: #b4a8ff;"));
-    assert_eq!(
-        sheet.css.matches("  --").count(),
-        1,
-        "the sheet sets only what the theme changes; the rest is its built-in theme's: {}",
-        sheet.css
-    );
+    // On the page the sheet sets only what the theme changes; the rest is its built-in theme's.
+    // (A sample of it in a picker is a block of its own, which writes its corners and faces too.)
+    let page = sheet.css.split("\n\n").next().unwrap_or_default();
+    assert_eq!(page.matches("  --").count(), 1, "{}", sheet.css);
     Ok(())
 }
 

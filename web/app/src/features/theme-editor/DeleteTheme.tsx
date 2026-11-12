@@ -32,7 +32,7 @@ export function DeleteTheme({ theme }: { readonly theme: Schema<"ThemeBody"> }) 
   return (
     <>
       <Button
-        look={buttonLook.quiet}
+        look={buttonLook.quietDanger}
         aria-label={t("theme-editor.delete-named", { name: theme.name })}
         onPress={() => {
           setAsking(true);

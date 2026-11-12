@@ -1,4 +1,5 @@
-import type { ColorToken } from "@bugaboo/ui";
+import { t } from "@bugaboo/messages";
+import { TextField, type ColorToken } from "@bugaboo/ui";
 
 import { colorGroups } from "./color-words.ts";
 import { ColorGroupSection } from "./ColorGroupSection.tsx";
@@ -17,7 +18,7 @@ export interface ColorGroupsProps {
 }
 
 /**
- * The groups of the editor (UX §5.6): *Backgrounds*, *Text*, *Lines*, *Highlight color*, *Status
+ * The name of the theme and the groups of the editor (UX §5.6): *Backgrounds*, *Text*, *Lines*, *Highlight color*, *Status
  * and tag colors*, each with the colors the theme changes and those the person chose to change,
  * then *Shadow, corners and fonts*.
  */
@@ -26,6 +27,12 @@ export function ColorGroups({ editing, startsFrom }: ColorGroupsProps) {
   const named = startsFromName(startsFrom);
   return (
     <>
+      <TextField
+        label={t("theme-editor.name")}
+        requiredMessage={t("error.field.required")}
+        value={editing.name}
+        onChange={editing.setName}
+      />
       {colorGroups.map((group) => (
         <ColorGroupSection
           key={group}
@@ -35,7 +42,7 @@ export function ColorGroups({ editing, startsFrom }: ColorGroupsProps) {
           onAdd={shown.reveal}
           values={values}
           colors={editing.read?.colors ?? []}
-          pairs={editing.read?.pairs ?? []}
+          ratings={editing.read?.ratings ?? []}
           startsFrom={named}
           accepts={editing.accepts}
           onChange={editing.setValues}

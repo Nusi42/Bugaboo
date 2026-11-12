@@ -19,7 +19,7 @@ theme "paper" extends="default" kind="light" {
         color "border-subtle" "#eae3d7" more="#8c8881"
         color "divider" "#b2a795" more="#6e6a63"
         color "fg" "#2b2620"
-        color "fg-muted" "#5a5148" more="#433e38"
+        color "fg-muted" "#463f37" more="#433e38"
         color "fg-subtle" "#5e554b" more="#433e38"
         color "accent" "#1d58a8" more="#174a8e"
         color "accent-soft" "#dbe7f8"

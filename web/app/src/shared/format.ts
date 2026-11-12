@@ -277,7 +277,7 @@ function spanIn(seconds: number): {
 }
 
 /** Whole seconds from `moment` (ISO 8601 text) to `nowMs`; never negative (a clock that is a little behind). */
-function secondsSince(moment: string, nowMs: number): number {
+export function secondsSince(moment: string, nowMs: number): number {
   return Math.max(0, Math.floor((nowMs - new Date(moment).getTime()) / msPerSecond));
 }
 

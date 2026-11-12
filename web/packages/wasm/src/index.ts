@@ -21,7 +21,7 @@ import init, {
   theme_readability,
   time_sentence,
 } from "../generated/bb_wasm.js";
-import type { RatedPair, ReadabilitySummary, ShownColor } from "./readability.generated.ts";
+import type { ThemeRead } from "./readability.generated.ts";
 import type {
   Change as WordedChange,
   File as WordedFile,
@@ -44,7 +44,15 @@ export type {
   Time as WordedTime,
 } from "./wording.generated.ts";
 
-export type { RatedPair, Rating, ReadabilitySummary, ShownColor } from "./readability.generated.ts";
+export type {
+  ColorRating,
+  HardColor,
+  NamedPair,
+  Rating,
+  ReadabilitySummary,
+  ShownColor,
+  ThemeRead,
+} from "./readability.generated.ts";
 
 /** Where the module is. Vite turns this into the address of the built file. */
 export const moduleLocation = new URL("../generated/bb_wasm_bg.wasm", import.meta.url);
@@ -181,16 +189,6 @@ const wording: Wording = {
   lengthSentence: (minutes) => saidIn(length_sentence(minutes)) ?? "",
 };
 
-/** What the theme editor is told about the theme it edits, by `bb-core` (the server's own rating). */
-export interface ThemeRead {
-  /** Every pair of colors, rated *Easy*, *OK* or *Hard to read*. */
-  readonly pairs: readonly RatedPair[];
-  /** How many pairs are *Easy*, *OK* and *Hard to read*: the line on top of the editor. */
-  readonly summary: ReadabilitySummary;
-  /** Every color the theme may set, as the page shows it, in the order of the theme file. */
-  readonly colors: readonly ShownColor[];
-}
-
 /**
  * Rates an own theme that extends the built-in theme `extends` with `values`, as the server rates
  * it when it is saved; `null` for values a save would refuse.
@@ -205,8 +203,12 @@ function isThemeRead(value: unknown): value is ThemeRead {
   return (
     typeof value === "object" &&
     value !== null &&
-    "pairs" in value &&
-    Array.isArray(value.pairs) &&
+    "hard" in value &&
+    Array.isArray(value.hard) &&
+    "hard_colors" in value &&
+    Array.isArray(value.hard_colors) &&
+    "ratings" in value &&
+    Array.isArray(value.ratings) &&
     "summary" in value &&
     typeof value.summary === "object" &&
     "colors" in value &&

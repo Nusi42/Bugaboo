@@ -5,29 +5,24 @@ import { register } from "../registry.ts";
 export const messages = {
   "theme-editor.title": "Theme editor",
   "theme-editor.not-found": "This theme isn't there, or you can't change it.",
-  "theme-editor.back-everyone": "Themes",
-  "theme-editor.back-personal": "Appearance",
   "theme-editor.lost":
     "Not saved yet: your editing time ran out. Your changes are kept as a draft.",
   "theme-editor.name": "Name",
   "theme-editor.draft-kept": "You left changes here that were not saved. They are back.",
-  "theme-editor.readability":
-    "Readability: {easy, plural, one {# pair} other {# pairs}} easy to read, {ok} OK, {hard} hard to read.",
   "theme-editor.readability-fix":
-    "Fix the pairs that are hard to read to share this theme with everyone.",
+    "{count, plural, one {Fix it} other {Fix them}} to share this theme with everyone.",
   "theme-editor.readability-loading": "Working out the readability…",
   "theme-editor.rating.easy": "Easy",
   "theme-editor.rating.ok": "OK",
   "theme-editor.rating.hard": "Hard to read",
   "theme-editor.show": "Show",
-  "theme-editor.show-named": "Show {color}",
+  "theme-editor.show-named": "Show the backgrounds of {color}",
   "theme-editor.group.backgrounds": "Backgrounds",
   "theme-editor.group.text": "Text",
   "theme-editor.group.lines": "Lines",
   "theme-editor.group.highlight": "Highlight color",
   "theme-editor.group.status": "Status and tag colors",
   "theme-editor.group.shape": "Shadow, corners and fonts",
-  "theme-editor.group-unchanged": "These colors are the same as in {theme}.",
   "theme-editor.change-color": "Change a color",
   "theme-editor.change-color-choose": "Choose a color…",
   "theme-editor.color": "{color}",
@@ -35,8 +30,7 @@ export const messages = {
   "theme-editor.not-a-color":
     "Type a color as # and six digits or letters from a to f, like #3c375d.",
   "theme-editor.not-allowed": "This value can't be part of a theme.",
-  "theme-editor.more": "For more contrast",
-  "theme-editor.more-same": "The same color",
+  "theme-editor.more": "If the device asks for more contrast",
   "theme-editor.use-built-in": "Use {theme}'s color",
   "theme-editor.corners-controls": "Corners of controls",
   "theme-editor.corners-cards": "Corners of cards",
@@ -45,15 +39,12 @@ export const messages = {
   "theme-editor.font-text": "Text",
   "theme-editor.font-headings": "Headings",
   "theme-editor.font-long": "Long text",
-  "theme-editor.face-text": "The face of text",
-  "theme-editor.face-headings": "The face of headings",
-  "theme-editor.face-long": "The face of long text",
   "theme-editor.shadow-own": "A shadow of its own instead of {theme}'s",
   "theme-editor.shadow-layer": "Layer {number}",
-  "theme-editor.shadow-x": "Right",
-  "theme-editor.shadow-y": "Down",
-  "theme-editor.shadow-blur": "Blur",
-  "theme-editor.shadow-spread": "Spread",
+  "theme-editor.shadow-x": "Sideways",
+  "theme-editor.shadow-y": "Downwards",
+  "theme-editor.shadow-blur": "Softness",
+  "theme-editor.shadow-spread": "Size",
   "theme-editor.shadow-color": "Color",
   "theme-editor.shadow-add": "Add a layer",
   "theme-editor.shadow-remove": "Remove this layer",
@@ -70,11 +61,9 @@ export const messages = {
   "theme-editor.sample.warning": "The due date is close.",
   "theme-editor.sample.success": "The issue is saved.",
   "theme-editor.save": "Save theme",
-  "theme-editor.refused":
-    "A theme for everyone can't be saved while colors are hard to read. Change these first:",
-  "theme-editor.ask-title": "Save anyway?",
+  "theme-editor.ask-title": "Save this theme?",
   "theme-editor.ask":
-    "{count, plural, one {# pair is} other {# pairs are}} hard to read. Save anyway?",
+    "{count, plural, one {This color is} other {These colors are}} hard to read: {colors}. Only you see this theme.",
   "theme-editor.save-anyway": "Save anyway",
   "theme-editor.copy": "Save a copy",
   "theme-editor.copy-named": "Save a copy of {name}",
@@ -95,13 +84,14 @@ export const messages = {
   "theme-editor.delete-named": "Delete {name}",
   "theme-editor.delete-title": "Delete {name}?",
   "theme-editor.delete-used":
-    "{count, plural, =0 {Nobody chose this theme for themselves. They will see {theme} where it is the organization's choice.} one {# person uses this theme. They will see {theme} instead.} other {# people use this theme. They will see {theme} instead.}}",
+    "{count, plural, =0 {Nobody uses this theme. Deleting it changes nothing for anyone.} one {# person uses this theme. They will see {theme} instead.} other {# people use this theme. They will see {theme} instead.}}",
   "theme-editor.delete-everyone": "People who use this theme will see {theme} instead.",
   "theme-editor.delete-personal": "Where you chose this theme, you will see {theme} instead.",
   "theme-editor.change-named": "Change {name}",
   "theme-editor.light": "light",
   "theme-editor.dark": "dark",
-  "theme-editor.facts": "Starts from {theme}, {look} · {easy} easy, {ok} OK, {hard} hard to read",
+  "theme-editor.facts":
+    "Starts from {theme}, {look} · {hard, plural, =0 {All text is readable} one {# color is hard to read} other {# colors are hard to read}}",
   "theme-editor.facts-unsaved": "Starts from {theme}, {look} · not saved yet",
   "theme-editor.list-everyone": "Themes for everyone",
   "theme-editor.list-everyone-intro":
@@ -166,7 +156,26 @@ export const messages = {
   "theme-color.area-line": "{area} area, line",
   "theme-color.area-soft": "{area} area, background",
   "theme-editor.hard-color":
-    "{color} is hard to read with {count, plural, one {# other color} other {# other colors}}",
+    "{color} is hard to read on {count, plural, one {# background} other {# backgrounds}}.",
+  "theme-editor.readability-title": "Readability",
+  "theme-editor.readability-fine": "Readability: nothing is hard to read.",
+  "theme-editor.readability-hard":
+    "Readability: {count, plural, one {# color is} other {# colors are}} hard to read.",
+  "theme-editor.readability-details":
+    "{total} combinations of colors checked: {easy} easy, {ok} OK.",
+  "theme-editor.details": "Details",
+  "theme-editor.details-hide": "Hide details",
+  "theme-editor.hide": "Hide",
+  "theme-editor.hide-named": "Hide the backgrounds of {color}",
+  "theme-editor.change": "Change",
+  "theme-editor.group-changed":
+    "{count, plural, =0 {Nothing changed from {theme}} one {# color changed} other {# colors changed}}",
+  "theme-editor.shape-changed":
+    "{count, plural, =0 {Nothing changed from {theme}} one {# change} other {# changes}}",
+  "theme-editor.for-everyone": "For everyone",
+  "theme-editor.personal": "Personal",
+  "theme-editor.upload-too-large":
+    "This file is larger than {most} KB. Choose a theme file that Bugaboo gave you with Download.",
 } as const;
 
 register(messages);

@@ -5,9 +5,8 @@ import { moduleLocation, startThemeReader, type ThemeRead } from "@bugaboo/wasm"
 import { describe, expect, it } from "vitest";
 
 import {
-  hardPairsOf,
-  pairKey,
   ratingOf,
+  sameValues,
   withColor,
   withMore,
   withoutColor,
@@ -39,16 +38,19 @@ describe("thm_03_the_editor_rates_each_pair_like_the_server", () => {
   it.each(themeIds)("finds nothing hard to read in %s as it is", (theme) => {
     const found = rated(theme, {});
     expect(found.summary.hard_to_read).toBe(0);
+    expect(found.hard_colors).toEqual([]);
     expect(found.summary.easy).toBeGreaterThan(0);
   });
 
-  it("finds and names the pair that is hard to read, each pair once", () => {
+  it("names the pairs hard to read, as many as the sums say, and the colors to change", () => {
     const found = rated("daylight", withColor({}, "fg", "#fafafa"));
-    const hard = hardPairsOf(found.pairs);
-    expect(hard).toContainEqual(expect.objectContaining({ first: "fg", second: "bg-canvas" }));
-    expect(found.summary.hard_to_read).toBeGreaterThan(0);
-    expect(new Set(hard.map((pair) => pairKey(pair))).size).toBe(hard.length);
-    expect(ratingOf(found.pairs, "fg", false)).toBe("hard-to-read");
+    expect(found.hard).toContainEqual(
+      expect.objectContaining({ first: "fg", second: "bg-canvas" }),
+    );
+    expect(found.hard).toHaveLength(found.summary.hard_to_read);
+    expect(found.hard_colors).toHaveLength(found.summary.colors_hard_to_read);
+    expect(found.hard_colors.map((color) => color.place)).toContain("fg");
+    expect(ratingOf(found.ratings, "fg", false)).toBe("hard-to-read");
   });
 
   it("follows the links of the built-in theme for what the theme does not change", () => {
@@ -75,12 +77,32 @@ describe("thm_03_the_editor_rates_each_pair_like_the_server", () => {
   it("knows no built-in theme that is not there", () => {
     expect(reader("nowhere", {})).toBeNull();
   });
+});
 
+describe("thm_03_the_editor_rates_the_color_for_more_contrast_like_the_server", () => {
   it("rates the color for more contrast apart from the color itself", () => {
     const usual = withColor({}, "fg-muted", "#6b7280");
     const mended = withMore(usual, "fg-muted", "#3f4652", "#6b7280");
-    expect(ratingOf(rated("daylight", usual).pairs, "fg-muted", true)).toBe("hard-to-read");
-    expect(ratingOf(rated("daylight", mended).pairs, "fg-muted", true)).not.toBe("hard-to-read");
+    expect(ratingOf(rated("daylight", usual).ratings, "fg-muted", true)).toBe("hard-to-read");
+    expect(ratingOf(rated("daylight", mended).ratings, "fg-muted", true)).not.toBe("hard-to-read");
     expect(rated("daylight", withoutColor(usual, "fg-muted")).summary.hard_to_read).toBe(0);
+  });
+});
+
+describe("thm_03_the_editor_keeps_values_as_a_save_takes_them", () => {
+  it("starts the color for more contrast from the built-in theme's (M8-F70)", () => {
+    const changed = withColor({}, "fg-muted", "#4f5563", "#464c57");
+    expect(changed.colors?.["fg-muted"]).toEqual({ value: "#4f5563", more: "#464c57" });
+    // The color itself is never its own color for more contrast.
+    expect(withColor({}, "fg-muted", "#464c57", "#464c57").colors?.["fg-muted"]).toEqual({
+      value: "#464c57",
+    });
+  });
+
+  it("finds two values the same whatever the order of their keys", () => {
+    const one = { colors: { fg: { value: "#111111" } }, radii: { "r-ctl": 4 } };
+    const other = { radii: { "r-ctl": 4 }, colors: { fg: { value: "#111111" } } };
+    expect(sameValues(one, other)).toBe(true);
+    expect(sameValues(one, { radii: { "r-ctl": 5 } })).toBe(false);
   });
 });
