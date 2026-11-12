@@ -70,8 +70,8 @@
   --size-col-step: 16px;
   --size-col-value: 96px;
   --size-col-changed: 80px;
-  --size-sheet-text-top: calc(var(--space-1) + (var(--size-control) - 1lh) / 2);
   --pad-line-in-control: calc((var(--size-control) - 1lh) / 2);
+  --size-sheet-text-top: calc(var(--space-1) + var(--pad-line-in-control));
   --size-choice-number-box: calc(14ch + 2 * var(--space-3));
   --size-hours-box: calc(8ch + 2 * var(--space-3));
   --size-sheet-day: 72px;
