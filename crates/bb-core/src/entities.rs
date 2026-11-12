@@ -72,6 +72,7 @@ crate::entities! {
     crate::saved_search::SavedSearch,
     crate::saved_search::SearchColumn,
     crate::saved_search::SearchShare,
+    crate::theme::OwnTheme,
     crate::working_time::record::WorkBreak,
     crate::working_time::record::WorkDay,
     crate::working_time::record::WorkPeriod,

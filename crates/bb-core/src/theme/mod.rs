@@ -8,10 +8,12 @@
 
 mod built_in;
 mod colors;
+mod record;
 mod sheet;
 mod values;
 
 pub use colors::{OwnColors, rate_own};
+pub use record::{OwnTheme, ThemeKind, ThemeName, ThemeNameError};
 pub use sheet::style_sheet;
 pub use values::{ColorChoice, OwnValues, ShadowLayer, ValueProblem, ValueProblemKind};
 
@@ -93,15 +95,6 @@ pub struct Number {
     pub name: &'static str,
     /// Its value.
     pub value: f64,
-}
-
-/// Whether a theme is for everyone or personal (the glossary's words).
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Kind {
-    /// *For everyone*: every signed-in person of the organization can use it.
-    ForEveryone,
-    /// *Personal*: only its maker can use it.
-    Personal,
 }
 
 /// Every built-in theme, light ones first.

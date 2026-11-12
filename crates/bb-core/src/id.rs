@@ -310,6 +310,11 @@ define_ordered_id! {
 }
 
 define_ordered_id! {
+    /// The ID of an own theme; the address of its style sheet `/themes/<id>.css` carries it (THM-04).
+    ThemeId
+}
+
+define_ordered_id! {
     /// The ID of a comment (ISS-05).
     CommentId
 }
@@ -508,6 +513,7 @@ into_entity_id!(
     LayoutId,
     WorkflowId,
     SavedSearchId,
+    ThemeId,
     CommentId,
     TimeEntryId,
     WorkDayId,

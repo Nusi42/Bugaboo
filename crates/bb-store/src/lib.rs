@@ -57,6 +57,7 @@ mod tags;
 mod testing;
 pub mod text_index;
 mod text_marks;
+mod themes;
 mod time;
 mod workflows;
 mod working_hours;
