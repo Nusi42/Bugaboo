@@ -9942,6 +9942,14 @@ export interface components {
       /** @description The letters of its issue IDs and address. */
       short_name: string;
     };
+    /** @description A share. */
+    ProjectShareBody: {
+      /**
+       * Format: int32
+       * @description The share in percent, 0 to 100.
+       */
+      percent: number;
+    };
     /**
      * @description Whether the owner may know the project.
      * @enum {string}
@@ -20516,7 +20524,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["ShareBody"];
+        "application/json": components["schemas"]["ProjectShareBody"];
       };
     };
     responses: {
@@ -20526,7 +20534,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["ShareBody"];
+          "application/json": components["schemas"]["ProjectShareBody"];
         };
       };
       400: components["responses"]["BadRequest"];

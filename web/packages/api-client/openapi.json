@@ -14493,7 +14493,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ShareBody"
+                "$ref": "#/components/schemas/ProjectShareBody"
               }
             }
           },
@@ -14505,7 +14505,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ShareBody"
+                  "$ref": "#/components/schemas/ProjectShareBody"
                 }
               }
             }
@@ -28710,6 +28710,20 @@
           "short_name": {
             "type": "string",
             "description": "The letters of its issue IDs and address."
+          }
+        }
+      },
+      "ProjectShareBody": {
+        "type": "object",
+        "description": "A share.",
+        "required": ["percent"],
+        "properties": {
+          "percent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The share in percent, 0 to 100.",
+            "maximum": 100,
+            "minimum": 0
           }
         }
       },

@@ -72,15 +72,15 @@ impl From<&MemberShare> for MemberShareBody {
 
 /// A share.
 #[derive(Serialize, Deserialize, ToSchema)]
-pub(crate) struct ShareBody {
+pub(crate) struct ProjectShareBody {
     /// The share in percent, 0 to 100.
     #[schema(minimum = 0, maximum = 100)]
     percent: u8,
 }
 
-impl Masked for ShareBody {}
+impl Masked for ProjectShareBody {}
 
-impl From<&bb_app::work_times::ChangedShare> for ShareBody {
+impl From<&bb_app::work_times::ChangedShare> for ProjectShareBody {
     fn from(changed: &bb_app::work_times::ChangedShare) -> Self {
         Self {
             percent: changed.percent,
@@ -146,9 +146,9 @@ async fn list_project_shares(
         ("project" = String, Path, description = "The ID of the project."),
         ("person" = String, Path, description = "The ID of the person.")
     ),
-    request_body = ShareBody,
+    request_body = ProjectShareBody,
     responses(
-        (status = 200, description = "The share as it is now.", body = ShareBody),
+        (status = 200, description = "The share as it is now.", body = ProjectShareBody),
         InvalidAnswer,
         NotSignedInAnswer,
         ForbiddenAnswer,
@@ -160,7 +160,7 @@ async fn set_share(
     Info(info): Info,
     Session(session_token): Session,
     ApiPath((project, person)): ApiPath<(String, String)>,
-    body: Result<ApiJson<ShareBody>, ApiError>,
+    body: Result<ApiJson<ProjectShareBody>, ApiError>,
 ) -> Result<Response, ApiError> {
     let read = path_id::<UserId>(&person).and_then(|person| {
         let ApiJson(body) = body?;
@@ -179,7 +179,7 @@ async fn set_share(
             },
         )
         .await?;
-    answer_authorized(&changed.map(|changed| ShareBody::from(&changed)))
+    answer_authorized(&changed.map(|changed| ProjectShareBody::from(&changed)))
 }
 
 /// The routes of the shares.
