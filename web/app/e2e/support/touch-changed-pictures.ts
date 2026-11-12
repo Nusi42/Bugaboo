@@ -13,12 +13,16 @@ import { projectIssuesAddress } from "../../src/shared/paths.ts";
 /** The folder of the pictures of touch everywhere (UX-02), inside the screenshot folder. */
 export const TOUCH_PICTURES = "M8/touch";
 
-/** Waits until what slides in has stopped: every animation that ends has ended (a pulse that never ends is left). */
+/** Waits until what slides in has stopped: every animation in time that ends has ended (a pulse never ends). */
 async function stopped(page: Page): Promise<void> {
   await page.evaluate(async () => {
     const ending: Promise<unknown>[] = [];
     for (const animation of document.getAnimations()) {
-      if (animation.effect?.getComputedTiming().iterations !== Number.POSITIVE_INFINITY) {
+      // An animation of the scroll position (the shadows at the ends of a box) never ends; only those of time do.
+      const ends =
+        animation.timeline === document.timeline &&
+        animation.effect?.getComputedTiming().iterations !== Number.POSITIVE_INFINITY;
+      if (ends) {
         ending.push(animation.finished);
       }
     }

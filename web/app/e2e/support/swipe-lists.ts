@@ -11,8 +11,8 @@ import { paths, projectIssuesAddress } from "../../src/shared/paths.ts";
 /** The agent the sample's administrator makes for the rows of *My agents*. */
 const AGENT = "Swiper";
 
-/** How many agents were made on this run: each has a name of its own. */
-let agentsMade = 0;
+/** How many agents were made, from a start of this run's own: each has a name of its own. */
+let agentsMade = Date.now() % 100_000;
 
 /** The first row of a part on a page, once it is drawn. */
 export async function firstRow(page: Page, address: string, row: string): Promise<Locator> {

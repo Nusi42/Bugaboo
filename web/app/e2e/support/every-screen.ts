@@ -26,8 +26,11 @@ const BASE_THEME = "daylight";
 /** What the things that only the sample's administrator makes are called: their names say what they are for. */
 const madeName = "Every screen";
 
-/** How many times the values were made on this run: a second time names its things apart (a theme's name is its own). */
-let madeTimes = 0;
+/**
+ * How many times the values were made, from a start of this run's own: a second time, or a second run on a server that
+ * kept its data, names its things apart (the name of a theme and the short name of a project are their own).
+ */
+let madeTimes = Date.now() % 100_000;
 
 /** The value of every changing part of an address, and the personal theme that `/me/appearance/themes/…` opens. */
 export type ScreenValues = Readonly<Record<RouteParam, string>> & {
