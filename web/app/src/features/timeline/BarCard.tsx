@@ -38,7 +38,9 @@ export function BarCard({ row, days, mayMove, onSetDates, onAddDependency }: Bar
             <Button onPress={onAddDependency}>{t("timeline.add-dependency")}</Button>
           </>
         ) : null}
-        <Link href={issueAddress(key)}>{t("timeline.open")}</Link>
+        <Link href={issueAddress(key)} button>
+          {t("timeline.open")}
+        </Link>
       </div>
     </section>
   );

@@ -210,7 +210,7 @@ tokens {
     size "bp-window-wide" "1200px"
     // The width of one day on the timeline at each zoom (UX §4.7): Days, Weeks, Months and Quarters. The screen gives
     // the chart the one of its zoom as `timeline-day`, and works out where a drag ends from the same width.
-    size "size-day-day" "40px"
+    size "size-day-day" "48px"
     size "size-day-week" "16px"
     size "size-day-month" "5px"
     size "size-day-quarter" "2px"
@@ -3230,7 +3230,7 @@ part "timeline" {
 part "timeline-tools" {
     display flex
     flex-wrap wrap
-    align-items center
+    align-items flex-end
     gap "$space-2" "$space-4"
 }
 
@@ -3537,6 +3537,11 @@ part "timeline-bar.label" {
     use "issue-id"
 }
 
+// A selected bar has its dot after its end: the ID moves on past it.
+part "timeline-bar[state=selected] timeline-bar.label" {
+    inset-inline-start "calc(100% + $size-window-handle * 2 + $space-2)"
+}
+
 // The handles of a selected bar change one of its dates; the dot after its end makes a dependency.
 part "timeline-bar.handle" {
     position absolute
@@ -3643,10 +3648,11 @@ part "timeline-tray" {
     overflow auto
 }
 
-// An issue of the tray: its ID and as much of its title as fits, beside its handle and before *Set dates…*.
+// An issue of the tray: its ID and as much of its title as fits beside its handle; *Set dates…* goes under it when
+// the two do not fit on one line.
 part "timeline-tray.item" {
     display flex
-    flex "1 1 0"
+    flex "1 1 $size-col-title-least"
     align-items center
     gap "$space-2"
     min-width 0
@@ -14683,10 +14689,6 @@ part "draggable" {
     min-height "$size-control"
 }
 
-// An issue of the tray of the timeline keeps its handle, its ID and title and *Set dates…* on one line (UX §4.7).
-part "timeline-tray draggable" {
-    flex-wrap nowrap
-}
 
 // The name of a field in the layout editor is as wide as a word of it needs, or it takes the line above the buttons
 // (a phone has no room for the handle, the name and three buttons in one line: the name was cut inside its words, M6-F164).

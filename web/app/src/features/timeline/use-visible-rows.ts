@@ -64,9 +64,19 @@ export function useDayInView(
 ) {
   useLayoutEffect(() => {
     const element = box.current;
-    if (element !== null) {
-      const lanes = element.clientWidth - pixelsOf("size-timeline-names");
-      element.scrollTo({ left: pixels === undefined ? 0 : Math.max(0, pixels - lanes / todayAt) });
+    if (element === null) {
+      return doNothing;
     }
+    const lanes = element.clientWidth - pixelsOf("size-timeline-names");
+    const left = pixels === undefined ? 0 : Math.max(0, pixels - lanes / todayAt);
+    // The router puts back where a box was scrolled after a change of the address (a new zoom is
+    // one): the chart is scrolled once more after that.
+    element.scrollTo({ left });
+    const after = requestAnimationFrame(() => {
+      element.scrollTo({ left });
+    });
+    return () => {
+      cancelAnimationFrame(after);
+    };
   }, [box, pixels]);
 }
