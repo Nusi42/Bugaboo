@@ -19,39 +19,82 @@ const EVERY_STATE: [Holiday; 9] = [
     Holiday::SecondChristmasDay,
 ];
 
-/// What a state has besides [`EVERY_STATE`], by the holiday laws of the states. Only holidays of
-/// the whole state: a holiday of some towns or of part of a state is not listed.
-const fn extras(region: Region) -> &'static [Holiday] {
+/// The year before any year: a day that was always a holiday.
+const ALWAYS: i16 = i16::MIN;
+
+/// What a state has besides [`EVERY_STATE`], by the holiday laws of the states, with the first year
+/// the day is a holiday. Only holidays of the whole state: a holiday of some towns or of part of a
+/// state is not listed.
+const fn extras(region: Region) -> &'static [(Holiday, i16)] {
     use Holiday::{
         AllSaints, AssumptionDay, CorpusChristi, EasterSunday, Epiphany, ReformationDay,
         RepentanceDay, WhitSunday, WomenDay, WorldChildrensDay,
     };
     match region {
         Region::None | Region::Germany => &[],
-        Region::BadenWuerttemberg | Region::Bavaria => &[Epiphany, CorpusChristi, AllSaints],
-        Region::Berlin => &[WomenDay],
-        Region::Brandenburg => &[EasterSunday, WhitSunday, ReformationDay],
+        Region::BadenWuerttemberg | Region::Bavaria => &[
+            (Epiphany, ALWAYS),
+            (CorpusChristi, ALWAYS),
+            (AllSaints, ALWAYS),
+        ],
+        Region::Berlin => &[(WomenDay, 2019)],
+        Region::Brandenburg => &[
+            (EasterSunday, ALWAYS),
+            (WhitSunday, ALWAYS),
+            (ReformationDay, ALWAYS),
+        ],
         Region::Bremen | Region::Hamburg | Region::LowerSaxony | Region::SchleswigHolstein => {
-            &[ReformationDay]
+            &[(ReformationDay, 2018)]
         }
-        Region::Hesse => &[CorpusChristi],
-        Region::MecklenburgVorpommern => &[WomenDay, ReformationDay],
-        Region::NorthRhineWestphalia | Region::RhinelandPalatinate => &[CorpusChristi, AllSaints],
-        Region::Saarland => &[CorpusChristi, AssumptionDay, AllSaints],
-        Region::Saxony => &[ReformationDay, RepentanceDay],
-        Region::SaxonyAnhalt => &[Epiphany, ReformationDay],
-        Region::Thuringia => &[WorldChildrensDay, ReformationDay],
+        Region::Hesse => &[
+            (CorpusChristi, ALWAYS),
+            (EasterSunday, ALWAYS),
+            (WhitSunday, ALWAYS),
+        ],
+        Region::MecklenburgVorpommern => &[(WomenDay, 2023), (ReformationDay, ALWAYS)],
+        Region::NorthRhineWestphalia | Region::RhinelandPalatinate => {
+            &[(CorpusChristi, ALWAYS), (AllSaints, ALWAYS)]
+        }
+        Region::Saarland => &[
+            (CorpusChristi, ALWAYS),
+            (AssumptionDay, ALWAYS),
+            (AllSaints, ALWAYS),
+        ],
+        Region::Saxony => &[(ReformationDay, ALWAYS), (RepentanceDay, ALWAYS)],
+        Region::SaxonyAnhalt => &[(Epiphany, ALWAYS), (ReformationDay, ALWAYS)],
+        Region::Thuringia => &[(WorldChildrensDay, 2019), (ReformationDay, ALWAYS)],
     }
 }
 
-/// The holidays a region has, in no order. *None* has none.
-pub(super) fn holidays_of(region: Region) -> impl Iterator<Item = Holiday> {
+/// The days that were a holiday in one year only: the 500th anniversary of the Reformation,
+/// 31 October 2017, everywhere, and the 75th and 80th anniversary of the end of the war,
+/// 8 May 2020 and 2025, in Berlin.
+fn one_offs(region: Region, year: i16) -> &'static [Holiday] {
+    match (region, year) {
+        (Region::None, _) => &[],
+        (_, 2017) => &[Holiday::ReformationDay],
+        (Region::Berlin, 2020 | 2025) => &[Holiday::LiberationDay],
+        _ => &[],
+    }
+}
+
+/// The holidays a region has in a year, in no order and perhaps one twice (a state that has the
+/// Reformation Day anyway has it in 2017 too). *None* has none.
+pub(super) fn holidays_of(region: Region, year: i16) -> impl Iterator<Item = Holiday> {
     let common: &[Holiday] = if region == Region::None {
         &[]
     } else {
         &EVERY_STATE
     };
-    common.iter().chain(extras(region)).copied()
+    let extra = extras(region)
+        .iter()
+        .filter(move |(_, from)| *from <= year)
+        .map(|(holiday, _)| *holiday);
+    common
+        .iter()
+        .copied()
+        .chain(extra)
+        .chain(one_offs(region, year).iter().copied())
 }
 
 /// How a holiday finds its date in a year.
@@ -73,6 +116,7 @@ const fn rule_of(holiday: Holiday) -> Rule {
         Holiday::EasterSunday => Rule::AfterEaster(0),
         Holiday::EasterMonday => Rule::AfterEaster(1),
         Holiday::LabourDay => Rule::Fixed(5, 1),
+        Holiday::LiberationDay => Rule::Fixed(5, 8),
         Holiday::AscensionDay => Rule::AfterEaster(39),
         Holiday::WhitSunday => Rule::AfterEaster(49),
         Holiday::WhitMonday => Rule::AfterEaster(50),

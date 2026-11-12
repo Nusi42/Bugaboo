@@ -77,6 +77,8 @@ words! {
         EasterMonday => "easter-monday",
         /// 1 May.
         LabourDay => "labour-day",
+        /// 8 May, in Berlin in 2020 and 2025 only.
+        LiberationDay => "liberation-day",
         /// 39 days after Easter.
         AscensionDay => "ascension-day",
         /// Pentecost Sunday, 49 days after Easter.
@@ -132,19 +134,21 @@ impl Region {
     /// The public holidays of a year in this region, by date. *None* has none.
     #[must_use]
     pub fn holidays_in(self, year: i16) -> Vec<PublicHoliday> {
-        let mut days: Vec<PublicHoliday> = rules::holidays_of(self)
+        let mut days: Vec<PublicHoliday> = rules::holidays_of(self, year)
             .filter_map(|holiday| {
                 rules::date_of(holiday, year).map(|date| PublicHoliday { date, holiday })
             })
             .collect();
         days.sort_by_key(|day| day.date);
+        days.dedup_by_key(|day| day.date);
         days
     }
 
     /// The public holiday on a date in this region, if there is one.
     #[must_use]
     pub fn holiday_on(self, date: Date) -> Option<Holiday> {
-        rules::holidays_of(self).find(|holiday| rules::date_of(*holiday, date.year()) == Some(date))
+        rules::holidays_of(self, date.year())
+            .find(|holiday| rules::date_of(*holiday, date.year()) == Some(date))
     }
 
     /// The public holidays from `first` to `last` (both included), by date. Empty when `last` is

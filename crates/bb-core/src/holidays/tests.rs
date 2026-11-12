@@ -98,3 +98,70 @@ fn every_region_and_holiday_has_its_own_name_in_the_catalog() {
         assert!(!Message::from(holiday.name()).render().is_empty());
     }
 }
+
+#[test]
+fn a_day_counts_only_from_the_year_its_law_came_and_one_offs_only_in_their_year() {
+    let on = |region: Region, year: i16, month: i8, day: i8| {
+        region.holiday_on(Date::new(year, month, day).unwrap())
+    };
+    // Women's Day: Berlin since 2019, Mecklenburg-Vorpommern since 2023.
+    assert_eq!(on(Region::Berlin, 2018, 3, 8), None);
+    assert_eq!(on(Region::Berlin, 2019, 3, 8), Some(Holiday::WomenDay));
+    assert_eq!(on(Region::MecklenburgVorpommern, 2022, 3, 8), None);
+    assert_eq!(
+        on(Region::MecklenburgVorpommern, 2023, 3, 8),
+        Some(Holiday::WomenDay)
+    );
+    // World Children's Day in Thuringia since 2019.
+    assert_eq!(on(Region::Thuringia, 2018, 9, 20), None);
+    assert_eq!(
+        on(Region::Thuringia, 2019, 9, 20),
+        Some(Holiday::WorldChildrensDay)
+    );
+    // Reformation Day in the four northern states since 2018.
+    for region in [
+        Region::Bremen,
+        Region::Hamburg,
+        Region::LowerSaxony,
+        Region::SchleswigHolstein,
+    ] {
+        assert_eq!(on(region, 2016, 10, 31), None, "{}", region.code());
+        assert_eq!(
+            on(region, 2018, 10, 31),
+            Some(Holiday::ReformationDay),
+            "{}",
+            region.code()
+        );
+    }
+    // 31 October 2017 everywhere, once even where it is a holiday anyway.
+    for region in [Region::Germany, Region::Bavaria, Region::Saxony] {
+        assert_eq!(
+            on(region, 2017, 10, 31),
+            Some(Holiday::ReformationDay),
+            "{}",
+            region.code()
+        );
+        assert_eq!(
+            region
+                .holidays_in(2017)
+                .iter()
+                .filter(|day| day.holiday == Holiday::ReformationDay)
+                .count(),
+            1
+        );
+    }
+    assert_eq!(on(Region::Germany, 2018, 10, 31), None);
+    assert_eq!(on(Region::None, 2017, 10, 31), None);
+    // 8 May in Berlin in 2020 and 2025 only.
+    for (year, found) in [
+        (2019, None),
+        (2020, Some(Holiday::LiberationDay)),
+        (2021, None),
+        (2025, Some(Holiday::LiberationDay)),
+    ] {
+        assert_eq!(on(Region::Berlin, year, 5, 8), found, "{year}");
+    }
+    assert_eq!(on(Region::Bavaria, 2020, 5, 8), None);
+    // Hesse lists Easter Sunday and Whit Sunday.
+    assert_eq!(on(Region::Hesse, 2026, 4, 5), Some(Holiday::EasterSunday));
+}

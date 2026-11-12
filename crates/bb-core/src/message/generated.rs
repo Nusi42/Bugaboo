@@ -3112,6 +3112,9 @@ pub const HOLIDAY_GOOD_FRIDAY: MessageKey = MessageKey::new("holiday.good-friday
 /// The message `holiday.labour-day`.
 pub const HOLIDAY_LABOUR_DAY: MessageKey = MessageKey::new("holiday.labour-day");
 
+/// The message `holiday.liberation-day`.
+pub const HOLIDAY_LIBERATION_DAY: MessageKey = MessageKey::new("holiday.liberation-day");
+
 /// The message `holiday.new-year`.
 pub const HOLIDAY_NEW_YEAR: MessageKey = MessageKey::new("holiday.new-year");
 
@@ -19351,6 +19354,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("holiday.epiphany", "Epiphany"),
     ("holiday.good-friday", "Good Friday"),
     ("holiday.labour-day", "Labour Day"),
+    ("holiday.liberation-day", "Day of Liberation"),
     ("holiday.new-year", "New Year's Day"),
     ("holiday.reformation-day", "Reformation Day"),
     ("holiday.repentance-day", "Day of Repentance and Prayer"),
