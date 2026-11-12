@@ -420,10 +420,10 @@ reason = "The standing rules of a person's own agents are read whole for one scr
 [[exempt]]
 route = "GET /api/v1/themes"
 property = "themes"
-reason = "The own themes a person may choose: at most the themes for everyone and the personal themes of one person, both named limits (THEMES_FOR_EVERYONE_MOST, PERSONAL_THEMES_MOST); the list has that hard cap and says when it was cut, and a picker needs all of them at once (THM-04)."
+reason = "The own themes a person may choose: at most the themes for everyone and the personal themes of one person, both named limits (THEMES_FOR_EVERYONE_MOST, PERSONAL_THEMES_MOST); the list has that hard cap and says when it was cut, and a picker needs all of them at once (THM-04, M8-F45)."
 
 [[exempt]]
 route = "GET /api/v1/themes/{theme}"
 property = "hard_to_read"
 whole_value = true
-reason = "The pairs of one theme that are hard to read: at most the pairs of the contrast rules of the base theme file, a list bounded by the code and not by data, which the warning names all at once (THM-03)."
+reason = "The pairs of one theme that are hard to read: at most the pairs of the contrast rules of the base theme file, a list bounded by the code and not by data, which the warning names all at once (THM-03, M8-F45)."

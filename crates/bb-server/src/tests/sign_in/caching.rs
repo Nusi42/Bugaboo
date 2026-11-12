@@ -246,6 +246,15 @@ async fn a_theme(ada: &mut Browser) -> Result<String, Failure> {
         .to_owned())
 }
 
+/// A saved search, an agent and a theme of the person, for the routes that name one.
+async fn own_records(ada: &mut Browser) -> Result<(String, String, String), Failure> {
+    Ok((
+        a_saved_search(ada).await?,
+        an_agent(ada).await?,
+        a_theme(ada).await?,
+    ))
+}
+
 async fn an_agent(ada: &mut Browser) -> Result<String, Failure> {
     id_of(
         &ada.send("POST", "/api/v1/agents", Some(json!({"name": "Fixer"})))
@@ -315,9 +324,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
         let (issue_type_id, label_group_id) = a_type_and_a_label_group(&mut ada).await?;
         let run_id = a_run_of(&rig, &person_id).await?;
         let upload_id = an_upload_on(&mut ada, &readable_id).await?;
-        let search_id = a_saved_search(&mut ada).await?;
-        let agent_id = an_agent(&mut ada).await?;
-        let theme_id = a_theme(&mut ada).await?;
+        let (search_id, agent_id, theme_id) = own_records(&mut ada).await?;
         // A work day of the person, for the routes that name a date, and an app.
         let app_query = a_work_day_and_an_app(&rig, &mut ada).await?;
         let routes = get_routes();
