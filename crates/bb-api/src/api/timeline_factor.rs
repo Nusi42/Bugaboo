@@ -49,6 +49,10 @@ pub(crate) struct TimeFactorBody {
     #[masked(field = "assigned-to")]
     #[schema(required = true)]
     person: Option<PersonRef>,
+    /// Whether the reader may set the time factor: the person on the bar with a key that may change
+    /// things, or somebody who may change the issue and the field; never an agent.
+    #[masked(open)]
+    may_change: bool,
 }
 
 impl From<TimeFactorView> for TimeFactorBody {
@@ -61,6 +65,7 @@ impl From<TimeFactorView> for TimeFactorBody {
             own_estimate: view.own_estimate,
             own_percent: view.own_percent,
             person: view.person,
+            may_change: view.may_change,
         }
     }
 }

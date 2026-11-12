@@ -219,6 +219,11 @@ pub(crate) enum ChangeValueBody {
         /// The project.
         project: ProjectRef,
     },
+    /// A time factor in percent of the estimate (125 is ×1.25), which the screen writes as a factor.
+    TimeFactor {
+        /// The percent.
+        percent: u16,
+    },
 }
 
 impl From<&ChangeValue> for ChangeValueBody {
@@ -241,6 +246,7 @@ impl From<&ChangeValue> for ChangeValueBody {
             ChangeValue::Project { project } => Self::Project {
                 project: ProjectRef::from(project),
             },
+            ChangeValue::TimeFactor { percent } => Self::TimeFactor { percent: *percent },
         }
     }
 }

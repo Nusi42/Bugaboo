@@ -65,6 +65,11 @@ async fn plan_14_the_time_factor_resets_when_the_person_changes() -> TestResult 
             .await?;
         let text = ok(&history)?.to_string();
         assert!(text.contains("time-factor"), "{text}");
+        // The history gives the factor as a factor in percent, for the screen to write ×1.5.
+        assert!(
+            text.contains(&json!({"shown": "time-factor", "percent": 150}).to_string()),
+            "{text}"
+        );
         // The first taken off: back to ×1 as well.
         ok(&set_factor(&mut ada, &key, json!({"percent": 80})).await?)?;
         ok(&change(&mut ada, &key, json!({"assigned_to": [lea_text]})).await?)?;
@@ -218,34 +223,41 @@ async fn plan_14_no_report_or_search_sorts_by_time_factor() -> TestResult {
 }
 
 #[tokio::test]
-async fn plan_14_the_details_of_an_issue_say_who_may_change_the_time_factor() -> TestResult {
-    each_database("plan_14_changeable_time_factor", async |db| {
+async fn plan_14_the_time_factor_says_who_may_change_it() -> TestResult {
+    each_database("plan_14_may_change", async |db| {
         let (rig, app) = rig_and_app(db).await?;
+        super::ai_mcp_rig::ai_on(&rig).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let (mut viewer, _) = site.person(StartingRole::Viewer, "vera").await?;
-        let key = super::issues_site::key_of(&site.create(&mut ada, "Plan the release").await?)?;
-        let changeable = async |browser: &mut Browser| -> Result<Value, Failure> {
-            let detail = browser
-                .send("GET", &format!("{ISSUES}/{key}"), None)
-                .await?;
-            Ok(ok(&detail)?["changeable"].clone())
-        };
-        // An administrator may change the field *Time factor*; the issue says so like any field.
-        let by_ada = changeable(&mut ada).await?;
-        assert!(
-            by_ada
-                .as_array()
-                .is_some_and(|all| all.contains(&json!("time-factor"))),
-            "{by_ada}"
-        );
+        // Lea is a Contributor, whose role may not change the field, and the person on the bar.
+        let (mut lea, lea_id) = site
+            .person_called(StartingRole::Contributor, "lea", "Lea Lang")
+            .await?;
+        let (mut vera, _) = site.person(StartingRole::Viewer, "vera").await?;
+        let key = planned(
+            &site,
+            &mut ada,
+            "Login screen",
+            json!({"estimated_time": 480, "assigned_to": [lea_id.to_string()]}),
+        )
+        .await?;
+        let route = factor_of(&key);
+        // The person on the bar may, and so may somebody who may change the issue and the field.
+        let own = lea.send("GET", &route, None).await?;
+        assert_eq!(ok(&own)?["may_change"], true, "{}", own.body);
+        let by_ada = ada.send("GET", &route, None).await?;
+        assert_eq!(ok(&by_ada)?["may_change"], true, "{}", by_ada.body);
         // A Viewer may not.
-        let by_viewer = changeable(&mut viewer).await?;
-        assert!(
-            !by_viewer
-                .as_array()
-                .is_some_and(|all| all.contains(&json!("time-factor"))),
-            "{by_viewer}"
-        );
+        let by_vera = vera.send("GET", &route, None).await?;
+        assert_eq!(ok(&by_vera)?["may_change"], false, "{}", by_vera.body);
+        // The person on the bar with a key that may only look may not.
+        let secret = super::plan_privacy_http::see_only_key(&mut lea).await?;
+        let looking = lea.script("GET", &route, None, &secret).await?;
+        assert_eq!(ok(&looking)?["may_change"], false, "{}", looking.body);
+        // An agent never may, whatever its person may.
+        let (_, agent) =
+            super::ai_mcp_rig::an_agent_with_a_key(&mut ada, "Fixer", Some(&key)).await?;
+        let by_agent = ada.script("GET", &route, None, &agent).await?;
+        assert_eq!(ok(&by_agent)?["may_change"], false, "{}", by_agent.body);
         Ok(())
     })
     .await

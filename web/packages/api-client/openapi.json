@@ -21574,6 +21574,23 @@
                 "enum": ["project"]
               }
             }
+          },
+          {
+            "type": "object",
+            "description": "A time factor in percent of the estimate (125 is ×1.25), which the screen writes as a factor.",
+            "required": ["percent", "shown"],
+            "properties": {
+              "percent": {
+                "type": "integer",
+                "format": "int32",
+                "description": "The percent.",
+                "minimum": 0
+              },
+              "shown": {
+                "type": "string",
+                "enum": ["time-factor"]
+              }
+            }
           }
         ],
         "description": "A value in a change, as the person may see it."
@@ -32787,12 +32804,17 @@
           "set_by",
           "own_estimate",
           "own_percent",
-          "person"
+          "person",
+          "may_change"
         ],
         "properties": {
           "issue": {
             "type": "string",
             "description": "The internal ID of the issue."
+          },
+          "may_change": {
+            "type": "boolean",
+            "description": "Whether the reader may set the time factor: the person on the bar with a key that may change\nthings, or somebody who may change the issue and the field; never an agent."
           },
           "own_estimate": {
             "type": "boolean",

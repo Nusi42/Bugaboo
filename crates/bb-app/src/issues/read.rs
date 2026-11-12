@@ -132,11 +132,6 @@ pub async fn issue<S: AuthStore>(
             reported_by: Some(issue.reported_by),
         };
         keys.extend(ctx.changeable_own_fields(&mask, &item, Held::Every).await?);
-        // The time factor is no member of a change of the issue (it has a route of its own), but
-        // the screen asks the same question of it: the field level, on an issue the reader may change.
-        if mask.can_change(bb_core::fields::Field::TimeFactor) {
-            keys.push(FieldKey::from(bb_core::fields::Field::TimeFactor));
-        }
         keys
     } else {
         Vec::new()

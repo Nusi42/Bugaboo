@@ -71,6 +71,11 @@ pub enum ChangeValue {
         /// The project.
         project: ProjectRef,
     },
+    /// A time factor, in percent of the estimate (125 is ×1.25); a screen writes it as a factor.
+    TimeFactor {
+        /// The percent.
+        percent: u16,
+    },
 }
 
 /// One field that changed, with the values the reader may see. A long text (the description) holds

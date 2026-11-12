@@ -361,6 +361,11 @@ impl<S: AuthStore> Ctx<'_, S> {
                     kind: FieldType::Duration,
                     value: Value::from(minutes.as_seconds()),
                 }),
+            // A time factor is kept in percent and written as a factor (×1.25), never as a number.
+            Member::Catalogue(Field::TimeFactor) => value
+                .as_u64()
+                .and_then(|percent| u16::try_from(percent).ok())
+                .map(|percent| ChangeValue::TimeFactor { percent }),
             // A date is a calendar day, kept as its text, and worded like a day of an own field.
             Member::Catalogue(Field::StartDate | Field::DueDate) => {
                 value.as_str().map(|day| ChangeValue::Typed {

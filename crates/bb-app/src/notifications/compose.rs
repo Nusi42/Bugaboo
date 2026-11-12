@@ -117,6 +117,18 @@ fn side_of(value: Option<&ChangeValue>, region: &Region) -> Option<Side> {
         ChangeValue::Project { project } => Side::Plain {
             text: project.name.clone(),
         },
+        // ×1.25 in the reader's numbers: the one message the screens write a factor with.
+        ChangeValue::TimeFactor { percent } => Side::Plain {
+            text: message::issues_time_factor_value(
+                region
+                    .worded_for_mail(
+                        bb_core::own_fields::FieldType::Decimal,
+                        &serde_json::Value::from(f64::from(*percent) / 100.0),
+                    )
+                    .unwrap_or_default(),
+            )
+            .render(),
+        },
     })
 }
 

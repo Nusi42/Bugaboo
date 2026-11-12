@@ -80,6 +80,8 @@ pub struct TimeFactorView {
     pub own_percent: Option<u16>,
     /// The person on the bar; none for an issue assigned to nobody.
     pub person: Option<PersonRef>,
+    /// Whether the reader may set the time factor ([`may_set_time_factor`]).
+    pub may_change: bool,
 }
 
 impl Masked for TimeFactorView {}
@@ -169,6 +171,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// the person on the bar as they see them, whoever set it.
     async fn factor_view(
         &self,
+        actor: &Actor,
         held: &Evaluation,
         issue: &Issue,
         version: i64,
@@ -208,6 +211,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .filter(|first| held.person() == Some(*first))
                 .map(|_| percent),
             person,
+            may_change: may_set_time_factor(actor, held, issue, first),
         })
     }
 }
@@ -241,30 +245,41 @@ pub async fn time_factor<S: AuthStore>(
         .map_err(|error| internal::<S>(&error))?;
     let first = ctx.first_assigned(issue.id).await?;
     let view = ctx
-        .factor_view(&held, &issue, issue.version, factor.as_ref(), first)
+        .factor_view(&actor, &held, &issue, issue.version, factor.as_ref(), first)
         .await?;
     Ok(held.authorize(view))
 }
 
 /// Whether `actor` may set the time factor of `issue`, whose person on the bar is `first`: that
-/// person always may; anybody else needs to be allowed to change the issue and the field. No agent
-/// ever may (ADR-0030, amendment M8).
+/// person always may, with a credential that may change things at all; anybody else needs to be
+/// allowed to change the issue and the field. No agent ever may, and nobody may on an issue that
+/// is assigned to nobody (ADR-0030, amendment M8). The one rule: setting checks it, and the view
+/// tells the screen with it whether to offer *Change*.
+pub(crate) fn may_set_time_factor(
+    actor: &Actor,
+    held: &Evaluation,
+    issue: &Issue,
+    first: Option<UserId>,
+) -> bool {
+    let Some(first) = first else {
+        return false;
+    };
+    actor.agent().is_none()
+        && ((actor.person.id == first && actor.key_may_change())
+            || (held.may_change_issue(issue.reported_by)
+                && held
+                    .field_mask_for(Some(issue.issue_type))
+                    .can_change(Field::TimeFactor)))
+}
+
+/// Refuses a person who may not set the time factor of `issue` ([`may_set_time_factor`]).
 fn ensure_may_set(
     actor: &Actor,
     held: &Evaluation,
     issue: &Issue,
     first: UserId,
 ) -> Result<(), AppError> {
-    if actor.agent().is_some() {
-        return Err(ErrorCode::Forbidden.into());
-    }
-    // The person on the bar always may, with a credential that may change things at all.
-    let allowed = (actor.person.id == first && actor.key_may_change())
-        || (held.may_change_issue(issue.reported_by)
-            && held
-                .field_mask_for(Some(issue.issue_type))
-                .can_change(Field::TimeFactor));
-    if allowed {
+    if may_set_time_factor(actor, held, issue, Some(first)) {
         Ok(())
     } else {
         Err(ErrorCode::Forbidden.into())
@@ -320,7 +335,14 @@ pub async fn set_time_factor<S: AuthStore>(
     });
     if before == after {
         let view = ctx
-            .factor_view(&held, &issue, issue.version, before.as_ref(), Some(first))
+            .factor_view(
+                &actor,
+                &held,
+                &issue,
+                issue.version,
+                before.as_ref(),
+                Some(first),
+            )
             .await?;
         return Ok(held.authorize(view));
     }
@@ -357,6 +379,7 @@ pub async fn set_time_factor<S: AuthStore>(
         })?;
     let view = ctx
         .factor_view(
+            &actor,
             &held,
             &issue,
             next_version(issue.version),

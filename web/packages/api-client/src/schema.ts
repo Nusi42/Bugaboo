@@ -6308,6 +6308,15 @@ export interface components {
           project: components["schemas"]["ProjectRef"];
           /** @enum {string} */
           shown: "project";
+        }
+      | {
+          /**
+           * Format: int32
+           * @description The percent.
+           */
+          percent: number;
+          /** @enum {string} */
+          shown: "time-factor";
         };
     /** @description New times of a work day. */
     ChangeWorkDayBody: {
@@ -12033,6 +12042,11 @@ export interface components {
     TimeFactorBody: {
       /** @description The internal ID of the issue. */
       issue: string;
+      /**
+       * @description Whether the reader may set the time factor: the person on the bar with a key that may change
+       *     things, or somebody who may change the issue and the field; never an agent.
+       */
+      may_change: boolean;
       /**
        * @description Whether the person on the bar set it themselves (*Lea's own estimate*); `false` for a reader
        *     who is not shown the person on the bar by name.

@@ -16,7 +16,7 @@ use super::plan_site::{
 use super::rig::PASSWORD;
 
 /// A new access key of the browser's person that may only look: its secret.
-async fn see_only_key(browser: &mut Browser) -> Result<String, Failure> {
+pub(super) async fn see_only_key(browser: &mut Browser) -> Result<String, Failure> {
     let made = browser
         .send(
             "POST",
