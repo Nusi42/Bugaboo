@@ -4005,12 +4005,11 @@ part "item[variant=day] length-box" {
     flex "0 0 $size-hours-box"
 }
 
-// The hours of a day that is not ticked are muted words where the box would be: they start where the words in the
-// boxes above start (R1).
-part "item[variant=day] hint" {
-    box-sizing border-box
-    flex "0 0 $size-hours-box"
-    padding-inline "$pad-control"
+// The hours of a day that is not ticked are muted words in the place of the box, as wide as it: they start where the
+// words inside the boxes above start, after the border and the padding of a box (R1).
+part "item[variant=day] length-box > hint" {
+    display block
+    padding-inline "calc($border-width + $pad-control)"
 }
 
 // Facts side by side (*10h estimated · 6h 40m left · 3h 20m spent*): a fact never breaks inside, and a line breaks only

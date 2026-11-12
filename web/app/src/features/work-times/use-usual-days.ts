@@ -1,5 +1,6 @@
 import { type Schema, dataOf } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRef } from "react";
 
 import { api } from "../../shared/api.ts";
@@ -8,6 +9,7 @@ import { undoStore } from "../../shared/optimistic-undo.ts";
 import { useOptimisticMutation, type OptimisticMutation } from "../../shared/use-optimistic.ts";
 import {
   isWorkTimes,
+  withDay,
   type UsualDay,
   type WorkTimes,
   type WorkTimesRead,
@@ -21,8 +23,8 @@ import {
 export interface UsualChange {
   readonly days: readonly UsualDay[];
   readonly version: number;
-  /** The days before the change; none for the change that *Undo* makes. */
-  readonly before?: readonly UsualDay[];
+  /** The day that changed, as it was before: what *Undo* puts back. None for the change that *Undo* makes. */
+  readonly before?: { readonly at: number; readonly day: UsualDay };
 }
 
 /** Sends the seven days on a version of the usual work days. */
@@ -64,6 +66,7 @@ function sentOn(movedTo: (version: number) => number | undefined, version: numbe
 export function useUsualDays(whose: Whose, read: WorkTimesRead): OptimisticMutation<UsualChange> {
   // The versions this page's own changes moved the usual work days from and to.
   const made = useRef(new Map<number, number>());
+  const client = useQueryClient();
   const line = useRef<Promise<unknown>>(Promise.resolve());
   const edits = useOptimisticMutation<UsualChange, WorkTimes, Schema<"UsualDaysBody">>({
     queryKey: read.comingKey,
@@ -79,8 +82,12 @@ export function useUsualDays(whose: Whose, read: WorkTimesRead): OptimisticMutat
         if (before !== undefined) {
           undoStore.offer({
             message: t("work-times.usual-changed"),
+            // Only the day this change touched goes back, on the days as they are now: a later
+            // change of another day stays.
             undo: () => {
-              edits.change({ days: before, version: answer.version });
+              const cached: unknown = client.getQueryData(read.comingKey);
+              const now = isWorkTimes(cached) ? cached.usual : change.days;
+              edits.change({ days: withDay(now, before.at, before.day), version: answer.version });
             },
           });
         }

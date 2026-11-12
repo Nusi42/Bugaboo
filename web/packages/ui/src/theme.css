@@ -4118,10 +4118,9 @@ textarea,
   flex: 0 0 var(--size-hours-box);
 }
 
-[data-part="item"][data-variant~="day"] [data-part="hint"] {
-  box-sizing: border-box;
-  flex: 0 0 var(--size-hours-box);
-  padding-inline: var(--pad-control);
+[data-part="item"][data-variant~="day"] [data-part="length-box"] > [data-part="hint"] {
+  display: block;
+  padding-inline: calc(var(--border-width) + var(--pad-control));
 }
 
 [data-part="fact-line"] {

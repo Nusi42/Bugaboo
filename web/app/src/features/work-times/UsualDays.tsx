@@ -7,18 +7,19 @@ import { useRegion } from "../../shared/region.ts";
 import { saveLabels } from "../../shared/save-labels.ts";
 import { LengthBox } from "../fields/index.ts";
 import { useUsualDays } from "./use-usual-days.ts";
-import type { UsualDay, WorkTimes, WorkTimesRead, Whose } from "./work-times.ts";
+import {
+  withDay,
+  type UsualDay,
+  type WorkTimes,
+  type WorkTimesRead,
+  type Whose,
+} from "./work-times.ts";
 import { usualSummary, weekOf } from "./work-times-words.ts";
 
 export interface UsualDaysProps {
   readonly whose: Whose;
   readonly read: WorkTimesRead;
   readonly workTimes: Pick<WorkTimes, "usual" | "usual_version" | "may_change">;
-}
-
-/** The seven days with one of them changed. */
-function withDay(usual: readonly UsualDay[], at: number, day: UsualDay): readonly UsualDay[] {
-  return usual.map((each, index) => (index === at ? day : each));
 }
 
 /**
@@ -49,7 +50,13 @@ function DayHours({
     );
   }
   const length = <Length text={minutesText(day.minutes)} />;
-  return day.works ? length : <span {...partOf(part.hint)}>{length}</span>;
+  return day.works ? (
+    length
+  ) : (
+    <span {...partOf(part.lengthBox)}>
+      <span {...partOf(part.hint)}>{length}</span>
+    </span>
+  );
 }
 
 /**
@@ -80,7 +87,7 @@ export function UsualDays({ whose, read, workTimes }: UsualDaysProps) {
             edits.change({
               days: withDay(usual, at, next),
               version: workTimes.usual_version,
-              before: usual,
+              before: { at, day },
             });
           };
           return (

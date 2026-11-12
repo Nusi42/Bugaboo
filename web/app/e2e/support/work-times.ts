@@ -2,6 +2,7 @@ import { dataOf, type Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { expect, type Locator, type Page } from "@playwright/test";
 
+import { doNothing } from "../../src/shared/do-nothing.ts";
 import { personWorkTimesAddress, paths } from "../../src/shared/paths.ts";
 import { ada, cleo, ownId, signInThroughApi, type Person } from "./accounts.ts";
 import { createPeopleWithRoles, projectIdOf, roleName } from "./access.ts";
@@ -126,4 +127,25 @@ export async function notificationKindsOf(server: Instance, person: Person): Pro
   );
   await session.dispose();
   return list.items.map((item) => item.kind);
+}
+
+/**
+ * Holds the first request to `route` on its way until the returned function is called; the requests
+ * after it go at once.
+ */
+export async function holdFirst(page: Page, route: string): Promise<() => void> {
+  let release: () => void = doNothing;
+  const held = new Promise<void>((done) => {
+    release = done;
+  });
+  let first = true;
+  await page.route(route, async (request) => {
+    const wait = first ? held : Promise.resolve();
+    first = false;
+    await wait;
+    await request.continue();
+  });
+  return () => {
+    release();
+  };
 }

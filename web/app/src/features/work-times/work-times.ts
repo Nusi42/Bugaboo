@@ -99,3 +99,12 @@ export function awayInOrder(
     past: past.filter((away) => !ahead.has(away.id)).toReversed(),
   };
 }
+
+/** The seven usual days with the one at `at` (Monday first) changed. */
+export function withDay(
+  usual: readonly UsualDay[],
+  at: number,
+  day: UsualDay,
+): readonly UsualDay[] {
+  return usual.map((each, index) => (index === at ? day : each));
+}
