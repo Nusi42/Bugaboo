@@ -8,7 +8,7 @@ import { usePageTrail } from "../shell/index.ts";
 import { type ListedAgent } from "./agents.ts";
 import { agentAddress } from "./agent-address.ts";
 import { AgentStateLine } from "./AgentState.tsx";
-import { StateButtons } from "./StateButtons.tsx";
+import { OwnStateButtons } from "./StateButtons.tsx";
 
 /**
  * The heading of the page of an agent: its name, its state pill, whose it is and the limit that
@@ -26,7 +26,7 @@ export function AgentHead({ agent }: { readonly agent: ListedAgent }) {
     [agent.name, agent.id],
   );
   usePageTrail(trail);
-  const buttons = <StateButtons agent={agent} />;
+  const buttons = <OwnStateButtons agent={agent} />;
   return (
     <Card heading={agent.name} level={1} actions={phone ? undefined : buttons}>
       <AgentStateLine agent={agent} withPerson />

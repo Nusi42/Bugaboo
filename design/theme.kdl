@@ -1111,6 +1111,13 @@ mixin "touch-row" {
     cursor pointer
 }
 
+// A row that a finger swipes for its actions (UX §3.3): the page still scrolls up and down, and the sideways move is
+// kept for the swipe; the actions lie over the row.
+mixin "swipe-row" {
+    position relative
+    touch-action "pan-y"
+}
+
 // A link that is a target a finger can hit, and still reads as a link in a line of text.
 mixin "touch-link" {
     display inline-flex
@@ -1118,10 +1125,21 @@ mixin "touch-link" {
     min-height "$size-control"
 }
 
+// A link that stands on its own beside other words (an ID in a heading, *Show all notifications* under a block):
+// at least a small target with a pointer and a finger's 44 on touch (UX-02), its words in its middle.
+mixin "small-target" {
+    display inline-flex
+    align-items center
+    min-width "$size-target-compact"
+    min-height "$size-target-compact"
+}
+
 // The name of a tab of a row of tabs: the editor of text, the sections of a form.
 mixin "tab-label" {
     padding "$space-2 $space-3"
     min-height "$size-control"
+    // A tab of a short word (*All*) is still as wide as a finger needs (UX-02).
+    min-width "$size-control"
     box-sizing border-box
     color "$fg-muted"
     font-size "$fs-md"
@@ -1363,7 +1381,9 @@ part "button[variant=wide]" {
 }
 
 // A button with only an icon: as wide as it is high.
+// A square button keeps its width in a row that is short of room: it is a finger's target (UX-02).
 part "button[variant=square]" {
+    flex-shrink 0
     width "$size-control"
     padding 0
 }
@@ -1721,6 +1741,12 @@ part "link[variant=button]" {
     font-family "$font-ui"
     line-height "$lh-tight"
     text-align center
+}
+
+// A link that stands on its own, not inside a sentence: in a column, in a row of links, in a heading, in a title or a
+// cell. It is a target of its own, so a finger has its 44 on touch (UX-02, WCAG 2.5.8).
+part "stack > link" "row > link" "item.title > link" "run-table.cell > link" "notification-group.head > link" {
+    use "small-target"
 }
 
 // ───────────── Switch ─────────────
@@ -2748,9 +2774,16 @@ part "list-row.cell[variant=title] link[focus-visible]::after" {
     use "ring-keyboard"
 }
 
-// The checkbox and the buttons of a row stay above the link that reaches over it; every other cell is
-// part of the row's target.
-part "list-row.cell[variant=select]" "list-row.cell[variant=action]" {
+// *More* of a row: a square button at the end of the row, a finger's size on touch.
+part "row-more" {
+    display flex
+    align-items center
+    justify-content center
+}
+
+// The checkbox and the buttons of a row (its *More* too) stay above the link that reaches over it; every other cell
+// is part of the row's target.
+part "list-row.cell[variant=select]" "list-row.cell[variant=action]" "list-row row-more" {
     position relative
     z-index "$z-raised"
 }
@@ -2820,10 +2853,22 @@ part "list-row[variant=phone] list-row.cell[variant=changed]" {
     align-self "last baseline"
 }
 
+// A card of a phone is swiped for its actions, and its *More* (which holds them) ends its first line (UX §3.3); the
+// title and the person take the room under it, so the ID keeps its room on the first line.
+part "list-row[variant=phone]" {
+    use "swipe-row"
+    grid-template-columns "$size-control $size-col-icon minmax(0, 1fr) auto $size-control"
+    grid-template-areas "\"select status key priority more\" \"select title title title title\" \"select person person changed changed\""
+}
+
+part "list-row[variant=phone] row-more" {
+    grid-area more
+}
+
 // A card without the box to tick (the Search page): the same lines without its column.
 part "list-row[variant=phone][variant=plain]" {
-    grid-template-columns "$size-col-icon minmax(0, 1fr) auto"
-    grid-template-areas "\"status key priority\" \"title title title\" \"person person changed\""
+    grid-template-columns "$size-col-icon minmax(0, 1fr) auto $size-control"
+    grid-template-areas "\"status key priority more\" \"title title title title\" \"person person changed changed\""
 }
 
 // The status icon starts at the start edge of the card, above the title (R1).
@@ -2959,8 +3004,9 @@ part "list-frame[variant=compact] list-row[variant=head]" {
     min-height "$size-row-compact"
 }
 
-// Compact: the tick box draws at its least size and keeps its target (24 for a pointer, WCAG 2.5.8; 44 on touch), and the group headers are as low as the rows.
-part "list-frame[variant=compact] checkbox" {
+// The tick box of a row keeps its target in every *Spacing*: 24 for a pointer (WCAG 2.5.8), 44 on touch (UX-02,
+// M5-F158); Compact only draws the box at its least size, and the group headers are as low as the rows.
+part "list-frame checkbox" {
     min-width "$size-target-compact"
     min-height "$size-target-compact"
 }
@@ -4148,6 +4194,14 @@ part "window.more-actions" {
     min-width 0
 }
 
+// *Cancel* under *Create the issue and start another* on a phone is a quiet button as wide as the one above it (both
+// end on one edge, M4 exit): its word starts at its start edge, and it hangs back by its padding, so the word starts
+// where the note under it starts (R1, M6-F121).
+part "window.more-actions > button[variant=quiet]" {
+    justify-content flex-start
+    margin-inline-start "$size-phone-hang"
+}
+
 part "window.footer-note" {
     display flex
     flex-wrap wrap
@@ -4779,8 +4833,10 @@ part "search-field.box:focus-within" {
     use "ring"
 }
 
+// The field fills the height of its box, so a finger anywhere on the box types in it (UX-02).
 part "search-field.input" {
     flex 1
+    align-self stretch
     min-width 0
     padding "$space-2 0"
     border 0
@@ -6239,11 +6295,16 @@ part "app-layout.main:has(item-screen) app-layout.inner" {
 }
 
 // The link that jumps to the content, in the app and before sign-in: out of sight until it has the focus.
+// As high as a control, so a finger that reaches it on a touch screen with a keyboard has its 44 (UX-02).
 part "skip" {
     position absolute
     left "$space-2"
     top "$space-2"
     z-index "$z-top"
+    box-sizing border-box
+    display inline-flex
+    align-items center
+    min-height "$size-control"
     padding "$space-2 $space-3"
     border-radius "$r-ctl"
     background "$bg-raised"
@@ -6714,7 +6775,9 @@ part "top-bar.crumb" {
     color "$fg-muted"
 }
 
+// A step of the way back in the bar is a link of its own: a finger has its 44 on touch (UX-02).
 part "top-bar.up" {
+    use "small-target"
     color "$accent-fg"
     font-weight "$weight-regular"
     text-decoration underline
@@ -7365,6 +7428,37 @@ part "action-sheet" {
 
 part "action-sheet action-menu" "action-sheet action-menu.title" {
     margin-inline "calc(-1 * ($pad-control + $border-width))"
+}
+
+// ───────────── Swipe actions of a row (UX §3.3, UX-02) ─────────────
+//
+// A row of a list on a phone that a finger swipes (the mixin `swipe-row`): at most two actions come in at each side, and
+// each is in the row's *More* too (principle 9).
+
+// The actions lie over the row at the edge they came in from, as high as the row, and slide in from that edge; with
+// *Less motion* the motion tokens are 0, so they are there at once without the slide.
+part "swipe-actions" {
+    position absolute
+    inset-block 0
+    z-index "$z-raised"
+    display flex
+    align-items center
+    gap "$space-2"
+    padding "0 $pad-box"
+    background "$bg-surface"
+    box-shadow "$shadow"
+}
+
+part "swipe-actions[variant=start]" {
+    inset-inline-start 0
+    border-inline-end "$border-width solid $divider"
+    animation "from-start $motion-base $ease-out"
+}
+
+part "swipe-actions[variant=end]" {
+    inset-inline-end 0
+    border-inline-start "$border-width solid $divider"
+    animation "from-end $motion-base $ease-out"
 }
 
 // The page of an issue scrolls under the bar of actions: a shadow at the end of the page while there is more below it
@@ -14910,6 +15004,7 @@ part "app-layout[variant=phone] notification-group" {
 }
 
 part "notification" {
+    use "swipe-row"
     display flex
     flex-direction column
     gap "$space-2"
@@ -16329,11 +16424,13 @@ part "sheet.phone" {
 // The seven days are one row that fits the phone: each tab has the weekday over the number of the day.
 part "sheet.phone tabs" {
     flex-wrap nowrap
+    gap 0
 }
 
+// Seven tabs of a finger's width fit the narrowest phone side by side, with no gap between them (UX-02).
 part "sheet.phone tab" {
     flex "1 1 0"
-    min-width 0
+    min-width "$size-control"
     padding-inline "$space-1"
     text-align center
     white-space pre-line
@@ -16912,6 +17009,7 @@ part "agents.heading" {
 // One agent: its head (name, state, buttons), then what it works on.
 part "agents.agent" {
     use "surface-box"
+    use "swipe-row"
     display flex
     flex-direction column
     gap "$space-3"

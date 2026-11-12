@@ -13,7 +13,7 @@ import {
 } from "./agents.ts";
 import { AgentRow } from "./AgentRow.tsx";
 import { AgentStateLine } from "./AgentState.tsx";
-import { StateButtons } from "./StateButtons.tsx";
+import { OwnStateButtons } from "./StateButtons.tsx";
 
 /** One agent of the organization: its name, its state and person, its last use, and *Stop*. */
 function Row({
@@ -30,7 +30,7 @@ function Row({
         <AgentStateLine agent={agent} withPerson />
         <LastUsed at={lastUsed} />
       </span>
-      <StateButtons agent={agent} stopOnly />
+      <OwnStateButtons agent={agent} stopOnly />
     </AgentRow>
   );
 }

@@ -253,6 +253,7 @@ export interface MessageArguments {
   "check-access.result-heading": { person: string | number; place: string | number };
   "comments.version-saved": { version: string | number; when: string | number };
   "common.percent": { percent: string | number; sign: string | number };
+  "common.row-more": { what: string | number };
   "common.show-all": { count: number };
   "common.time-24": { hour: string | number; minute: string | number };
   "common.time-am": { hour: string | number; minute: string | number };

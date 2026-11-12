@@ -129,6 +129,7 @@ export const messages = {
     "The folder {path} has other files in it and does not look like a Bugaboo data folder. Installing the service would change who owns them. Choose an empty folder or a Bugaboo data folder as the data folder in your settings.",
   "common.close": "Close",
   "common.undo": "Undo",
+  "common.row-more": "More: {what}",
   "window.minimize": "Minimize",
   "window.maximize": "Maximize",
   "window.restore-down": "Restore down",
@@ -413,6 +414,8 @@ export const messages = {
   "history.file-restored": "{who} brought back the file {name}",
   "history.people-none": "nobody",
   "history.type-unknown": "another issue type",
+  "followers.follow": "Follow",
+  "followers.stop": "Stop following",
   "error.issue.parent-circle":
     "That would put an issue under itself or under one of its own sub-issues. Choose another issue.",
   "error.issue.parent-too-deep":

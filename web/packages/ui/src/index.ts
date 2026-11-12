@@ -197,6 +197,16 @@ export {
 } from "./UnbrokenWords.tsx";
 export { containsEveryWord, isGap, wordsAndGaps, wordsOnly } from "./words.ts";
 export { SubmitButton, type SubmitButtonProps } from "./SubmitButton.tsx";
+export { SwipeActions, type SwipeActionsProps } from "./SwipeActions.tsx";
+export { swipeSide, type SwipeSide } from "./swipe.ts";
+export {
+  sideActions,
+  sidesOf,
+  useSwipe,
+  type RowActions,
+  type SideActions,
+  type Swipe,
+} from "./use-swipe.ts";
 export { Switch, type SwitchProps } from "./Switch.tsx";
 export { TextField, type TextFieldProps } from "./TextField.tsx";
 export {

@@ -3,6 +3,8 @@ import { lazyRouteComponent } from "@tanstack/react-router";
 
 import { addIssueBlock, issueSlots } from "../issues/index.ts";
 
+export { useFollowing, type Following } from "./use-following.ts";
+
 const FollowersBlock = lazyRouteComponent(() => import("./FollowersBlock.tsx"), "FollowersBlock");
 
 /** Puts *Followers · Follow* into the Details of the issue page, after the other fields (WP-07). */

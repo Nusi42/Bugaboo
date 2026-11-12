@@ -162,6 +162,7 @@ textarea,
 }
 
 [data-part="button"][data-variant~="square"] {
+  flex-shrink: 0;
   width: var(--size-control);
   padding: 0;
 }
@@ -560,6 +561,17 @@ textarea,
   font-family: var(--font-ui);
   line-height: var(--lh-tight);
   text-align: center;
+}
+
+[data-part="stack"] > [data-part="link"],
+[data-part="row"] > [data-part="link"],
+[data-part="item.title"] > [data-part="link"],
+[data-part="run-table.cell"] > [data-part="link"],
+[data-part="notification-group.head"] > [data-part="link"] {
+  display: inline-flex;
+  align-items: center;
+  min-width: var(--size-target-compact);
+  min-height: var(--size-target-compact);
 }
 
 [data-part="switch"] {
@@ -1708,8 +1720,15 @@ textarea,
   }
 }
 
+[data-part="row-more"] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 [data-part="list-row.cell"][data-variant~="select"],
-[data-part="list-row.cell"][data-variant~="action"] {
+[data-part="list-row.cell"][data-variant~="action"],
+[data-part="list-row"] [data-part="row-more"] {
   position: relative;
   z-index: var(--z-raised);
 }
@@ -1784,9 +1803,22 @@ textarea,
   align-self: last baseline;
 }
 
+[data-part="list-row"][data-variant~="phone"] {
+  position: relative;
+  touch-action: pan-y;
+  grid-template-columns: var(--size-control) var(--size-col-icon) minmax(0, 1fr) auto var(
+      --size-control
+    );
+  grid-template-areas: "select status key priority more" "select title title title title" "select person person changed changed";
+}
+
+[data-part="list-row"][data-variant~="phone"] [data-part="row-more"] {
+  grid-area: more;
+}
+
 [data-part="list-row"][data-variant~="phone"][data-variant~="plain"] {
-  grid-template-columns: var(--size-col-icon) minmax(0, 1fr) auto;
-  grid-template-areas: "status key priority" "title title title" "person person changed";
+  grid-template-columns: var(--size-col-icon) minmax(0, 1fr) auto var(--size-control);
+  grid-template-areas: "status key priority more" "title title title title" "person person changed changed";
 }
 
 [data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="status"] {
@@ -1907,7 +1939,7 @@ textarea,
   min-height: var(--size-row-compact);
 }
 
-[data-part="list-frame"][data-variant~="compact"] [data-part="checkbox"] {
+[data-part="list-frame"] [data-part="checkbox"] {
   min-width: var(--size-target-compact);
   min-height: var(--size-target-compact);
 }
@@ -3073,6 +3105,11 @@ textarea,
   min-width: 0;
 }
 
+[data-part="window.more-actions"] > [data-part="button"][data-variant~="quiet"] {
+  justify-content: flex-start;
+  margin-inline-start: var(--size-phone-hang);
+}
+
 [data-part="window.footer-note"] {
   display: flex;
   flex-wrap: wrap;
@@ -3720,6 +3757,7 @@ textarea,
 
 [data-part="search-field.input"] {
   flex: 1;
+  align-self: stretch;
   min-width: 0;
   padding: var(--space-2) 0;
   border: 0;
@@ -5267,6 +5305,10 @@ textarea,
   left: var(--space-2);
   top: var(--space-2);
   z-index: var(--z-top);
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--size-control);
   padding: var(--space-2) var(--space-3);
   border-radius: var(--r-ctl);
   background: var(--bg-raised);
@@ -5782,6 +5824,10 @@ textarea,
 }
 
 [data-part="top-bar.up"] {
+  display: inline-flex;
+  align-items: center;
+  min-width: var(--size-target-compact);
+  min-height: var(--size-target-compact);
   color: var(--accent-fg);
   font-weight: var(--weight-regular);
   text-decoration: underline;
@@ -6452,6 +6498,30 @@ textarea,
 [data-part="action-sheet"] [data-part="action-menu"],
 [data-part="action-sheet"] [data-part="action-menu.title"] {
   margin-inline: calc(-1 * (var(--pad-control) + var(--border-width)));
+}
+
+[data-part="swipe-actions"] {
+  position: absolute;
+  inset-block: 0;
+  z-index: var(--z-raised);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--pad-box);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow);
+}
+
+[data-part="swipe-actions"][data-variant~="start"] {
+  inset-inline-start: 0;
+  border-inline-end: var(--border-width) solid var(--divider);
+  animation: from-start var(--motion-base) var(--ease-out);
+}
+
+[data-part="swipe-actions"][data-variant~="end"] {
+  inset-inline-end: 0;
+  border-inline-start: var(--border-width) solid var(--divider);
+  animation: from-end var(--motion-base) var(--ease-out);
 }
 
 @supports (animation-timeline: scroll()) {
@@ -7545,6 +7615,7 @@ textarea,
 [data-part="tab"] {
   padding: var(--space-2) var(--space-3);
   min-height: var(--size-control);
+  min-width: var(--size-control);
   box-sizing: border-box;
   color: var(--fg-muted);
   font-size: var(--fs-md);
@@ -7624,6 +7695,8 @@ textarea,
 }
 
 [data-part="notification"] {
+  position: relative;
+  touch-action: pan-y;
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -9038,11 +9111,12 @@ textarea,
 
 [data-part="sheet.phone"] [data-part="tabs"] {
   flex-wrap: nowrap;
+  gap: 0;
 }
 
 [data-part="sheet.phone"] [data-part="tab"] {
   flex: 1 1 0;
-  min-width: 0;
+  min-width: var(--size-control);
   padding-inline: var(--space-1);
   text-align: center;
   white-space: pre-line;
@@ -9628,6 +9702,8 @@ textarea,
   border: var(--border-width) solid var(--border-subtle);
   border-radius: var(--r-ctl);
   background: var(--bg-surface);
+  position: relative;
+  touch-action: pan-y;
   display: flex;
   flex-direction: column;
   gap: var(--space-3);

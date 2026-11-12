@@ -3672,6 +3672,9 @@ pub const ISSUES_READY_TO_CREATE: MessageKey = MessageKey::new("issues.ready-to-
 /// The message `issues.remove-filters`.
 pub const ISSUES_REMOVE_FILTERS: MessageKey = MessageKey::new("issues.remove-filters");
 
+/// The message `issues.row-change-status`.
+pub const ISSUES_ROW_CHANGE_STATUS: MessageKey = MessageKey::new("issues.row-change-status");
+
 /// The message `issues.select-shown`.
 pub const ISSUES_SELECT_SHOWN: MessageKey = MessageKey::new("issues.select-shown");
 
@@ -10542,6 +10545,15 @@ pub fn common_percent(percent: impl std::fmt::Display, sign: impl std::fmt::Disp
             ("percent", Value::Text(percent.to_string())),
             ("sign", Value::Text(sign.to_string())),
         ],
+    )
+}
+
+/// The message `common.row-more`.
+#[must_use]
+pub fn common_row_more(what: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("common.row-more"),
+        vec![("what", Value::Text(what.to_string()))],
     )
 }
 
@@ -19984,6 +19996,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("common.on", "On"),
     ("common.percent", "{percent} {sign}"),
     ("common.percent-sign", "%"),
+    ("common.row-more", "More: {what}"),
     ("common.save", "Save"),
     ("common.show-all", "Show all {count, number}"),
     ("common.show-fewer", "Show fewer"),
@@ -21646,6 +21659,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("issues.refused-at-field", "{field}: {reason}"),
     ("issues.remove-filters", "Remove all filters"),
+    ("issues.row-change-status", "Change status or priority…"),
     ("issues.select-issue", "Select {key}"),
     ("issues.select-shown", "Tick the issues shown"),
     (

@@ -3,6 +3,7 @@
 import { register } from "../registry.ts";
 
 export const messages = {
+  "issues.row-change-status": "Change status or priority…",
   "many-changes.bar": "Change the issues you ticked",
   "many-changes.action-change": "Change status or priority",
   "many-changes.action-move": "Move to a project",

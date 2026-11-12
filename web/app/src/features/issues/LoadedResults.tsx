@@ -1,6 +1,7 @@
 import { useLayout, part, partOf } from "@bugaboo/ui";
 import { useState } from "react";
 
+import { RowDialogs } from "./IssueRowActions.tsx";
 import { ListContext } from "./list-context.ts";
 import { ListMain } from "./ListMain.tsx";
 import { ListPanel } from "./ListPanel.tsx";
@@ -28,33 +29,35 @@ export function LoadedResults(props: LoadedProps) {
   });
   return (
     <ListContext value={context}>
-      <div {...partOf(part.listEditor)}>
-        <ListMain
-          props={props}
-          customizing={customizing}
-          dragged={dragged}
-          shown={shown.ids}
-          keyChars={shown.keyChars}
-          onCustomize={() => {
-            setCustomizing(!customizing);
-          }}
-          onDragged={setDragged}
-          onRoom={setRoom}
-          aside={
-            customizing && !phone ? (
-              <ListPanel
-                view={view}
-                fields={fields}
-                defaults={defaults}
-                onView={onView}
-                onClose={() => {
-                  setCustomizing(false);
-                }}
-              />
-            ) : null
-          }
-        />
-      </div>
+      <RowDialogs>
+        <div {...partOf(part.listEditor)}>
+          <ListMain
+            props={props}
+            customizing={customizing}
+            dragged={dragged}
+            shown={shown.ids}
+            keyChars={shown.keyChars}
+            onCustomize={() => {
+              setCustomizing(!customizing);
+            }}
+            onDragged={setDragged}
+            onRoom={setRoom}
+            aside={
+              customizing && !phone ? (
+                <ListPanel
+                  view={view}
+                  fields={fields}
+                  defaults={defaults}
+                  onView={onView}
+                  onClose={() => {
+                    setCustomizing(false);
+                  }}
+                />
+              ) : null
+            }
+          />
+        </div>
+      </RowDialogs>
     </ListContext>
   );
 }

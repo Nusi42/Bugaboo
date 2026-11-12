@@ -12,18 +12,11 @@ import {
 import { useId, useState } from "react";
 
 import { api } from "../../shared/api.ts";
-import { messageOf } from "../../shared/errors.ts";
 import { followerCount } from "./follower-count.ts";
 import { FollowerNames } from "./FollowerNames.tsx";
 import { itemsOf, pageSize, usePaged } from "../../shared/paged.ts";
-import { queryKeys, refreshHistory } from "../../shared/query-keys.ts";
-
-const reasonMessage = {
-  reported: "followers.reason-reported",
-  assigned: "followers.reason-assigned",
-  commented: "followers.reason-commented",
-  chose: "followers.reason-chose",
-} as const;
+import { useFollowing, type Following } from "./use-following.ts";
+import { queryKeys } from "../../shared/query-keys.ts";
 
 /** The followers of an issue, as the person may see them, a page at a time. */
 function useFollowers(issue: string) {
@@ -34,47 +27,6 @@ function useFollowers(issue: string) {
         params: { path: { issue }, query: { limit: pageSize.short, ...after } },
       }),
   });
-}
-
-/** What the person's own choice to follow an issue is, and the way to turn it round. */
-interface Following {
-  readonly following: boolean;
-  /** Why the person follows, in words, when they do. */
-  readonly why: string | undefined;
-  readonly pending: boolean;
-  /** What went wrong turning it on, in words, if anything. */
-  readonly problem: string | null;
-  readonly turn: () => void;
-}
-
-/** The person's own choice to follow the issue: whether they do, why, and the way to turn it round. */
-function useFollowing(issue: string): Following {
-  const state = api.query.useQuery("get", "/api/v1/issues/{issue}/follow", {
-    params: { path: { issue } },
-  });
-  const follow = api.query.useMutation("put", "/api/v1/issues/{issue}/follow", {
-    onSuccess: refreshHistory,
-  });
-  const leave = api.query.useMutation("delete", "/api/v1/issues/{issue}/follow", {
-    onSuccess: refreshHistory,
-  });
-  const params = { params: { path: { issue } } } as const;
-  const following = state.data?.following === true;
-  const reason = state.data?.reason;
-  return {
-    following,
-    // Why the person follows: read with the button that turns it round, for those who cannot point at it.
-    why: reason === undefined || reason === null ? undefined : t(reasonMessage[reason]),
-    pending: follow.isPending || leave.isPending,
-    problem: follow.error === null ? null : messageOf(follow.error),
-    turn: () => {
-      if (following) {
-        leave.mutate(params);
-      } else {
-        follow.mutate(params);
-      }
-    },
-  };
 }
 
 /** The line of the row: the count (or the words *You follow it*), and the button that turns it round. */
