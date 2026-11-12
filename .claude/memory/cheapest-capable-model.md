@@ -10,3 +10,5 @@ Before an agent takes a task or hands one on, it asks whether the task can be wr
 **Why:** the maintainer (2026-11-09) wants simpler packages on cheaper models; this session showed Sonnet builders do well on exact briefs but slip on open tasks (partial hand-backs, mangled escapes, tests after code), and each slip costs a review round.
 
 **How to apply:** set `model` on every Agent call by the level; reviewers no longer default to the lead's model. Count fix rounds per package and model through M8 (a trial: "watch this for a while … if quality isn't decreasing, stick to that; if not, reconsider"). At the M8 exit, report the counts and propose keeping or changing the levels. Related: [[lead-checks-agents-itself]].
+
+**Trial log (M8):** WP-02 Opus, 1 fix round (5 small). WP-05 Sonnet stopped halfway (2026-11-12: core, store and contrast done; use cases, routes, events, lock, settings, browser left as "too many shared parts"), finished by an Opus builder. WP-03 Sonnet: 2 fix rounds (13, then 6 points). WP-04 Sonnet: 1 fix round (13 points, 2 privacy leaks). WP-05 Opus finish: 1 fix round (10 points).
