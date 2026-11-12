@@ -20,7 +20,7 @@ use std::collections::BTreeMap;
 use bb_core::fields::FieldKey;
 use bb_core::given::SetTo;
 use bb_core::id::{IssueTypeId, UserId};
-use bb_core::issue::Priority;
+use bb_core::issue::{CalendarDay, Priority};
 use bb_core::time::Minutes;
 use bb_policy::{Masked, PersonRef};
 use serde::{Deserialize, Serialize};
@@ -129,6 +129,12 @@ pub(crate) struct NewIssueBody {
     priority: Option<Priority>,
     /// The IDs of the people it is assigned to. Nobody when left out.
     assigned_to: Option<Vec<String>>,
+    /// Its *Start date* (`2026-11-14`). None when left out.
+    #[schema(value_type = Option<String>, format = Date)]
+    start_date: Option<CalendarDay>,
+    /// Its *Due date* (`2026-11-14`), never before the start date. None when left out.
+    #[schema(value_type = Option<String>, format = Date)]
+    due_date: Option<CalendarDay>,
     /// Its *Estimated time*, in whole minutes. None when left out; *Time left* starts equal to it.
     #[schema(value_type = Option<u32>)]
     estimated_time: Option<Minutes>,
@@ -156,6 +162,16 @@ pub(crate) struct ChangeIssueBody {
     status: Option<String>,
     /// A new priority.
     priority: Option<Priority>,
+    /// A new *Start date* (`2026-11-14`); `null` takes it away. Refused when it is after the due
+    /// date the issue has then.
+    #[serde(default, deserialize_with = "bb_core::given::deserialize")]
+    #[schema(value_type = Option<String>, format = Date, nullable)]
+    start_date: Option<SetTo<CalendarDay>>,
+    /// A new *Due date* (`2026-11-14`); `null` takes it away. Refused when it is before the start
+    /// date the issue has then.
+    #[serde(default, deserialize_with = "bb_core::given::deserialize")]
+    #[schema(value_type = Option<String>, format = Date, nullable)]
+    due_date: Option<SetTo<CalendarDay>>,
     /// A new *Estimated time*, in whole minutes; `null` takes it away.
     #[serde(default, deserialize_with = "bb_core::given::deserialize")]
     #[schema(value_type = Option<u32>, nullable)]
@@ -334,6 +350,8 @@ async fn create_issue(
                 status: status_in(body.status.as_deref())?,
                 priority: body.priority,
                 assigned_to,
+                start_date: body.start_date,
+                due_date: body.due_date,
                 estimated_time: body.estimated_time,
                 fields: body.fields,
                 parent: body.parent,
@@ -413,6 +431,8 @@ async fn change_issue(
                 title: body.title,
                 status: status_in(body.status.as_deref())?,
                 priority: body.priority,
+                start_date: body.start_date,
+                due_date: body.due_date,
                 estimated_time: body.estimated_time,
                 time_left: body.time_left,
                 assigned_to,

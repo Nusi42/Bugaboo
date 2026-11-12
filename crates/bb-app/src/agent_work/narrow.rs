@@ -52,6 +52,8 @@ struct Sets {
     priority: Is,
     estimated_time: Is,
     time_left: Is,
+    start_date: Is,
+    due_date: Is,
     assigned_to: Is,
 }
 
@@ -65,6 +67,8 @@ impl Sets {
             (self.priority, key::PRIORITY),
             (self.estimated_time, key::ESTIMATED_TIME),
             (self.time_left, key::TIME_LEFT),
+            (self.start_date, key::START_DATE),
+            (self.due_date, key::DUE_DATE),
             (self.assigned_to, key::ASSIGNED_TO),
         ]
         .into_iter()
@@ -84,6 +88,8 @@ fn members_of(input: &ChangeIssue) -> Vec<String> {
         priority: Is::of(input.priority.is_some()),
         estimated_time: Is::of(input.estimated_time.is_some()),
         time_left: Is::of(input.time_left.is_some()),
+        start_date: Is::of(input.start_date.is_some()),
+        due_date: Is::of(input.due_date.is_some()),
         assigned_to: Is::of(input.assigned_to.is_some()),
     }
     .members(input.fields.keys())
@@ -349,6 +355,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             status: Is::of(input.status.is_some()),
             priority: Is::of(input.priority.is_some()),
             estimated_time: Is::of(input.estimated_time.is_some()),
+            start_date: Is::of(input.start_date.is_some()),
+            due_date: Is::of(input.due_date.is_some()),
             assigned_to: Is::of(input.assigned_to.is_some()),
             ..Sets::default()
         }

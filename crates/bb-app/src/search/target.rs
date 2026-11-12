@@ -39,6 +39,10 @@ pub enum FieldTarget {
     Changed,
     /// When the issue was closed.
     Closed,
+    /// *Start date*: a day.
+    StartDate,
+    /// *Due date*: a day.
+    DueDate,
     /// *Estimated time*, in whole minutes.
     EstimatedTime,
     /// *Time left*: the typed value, or the one worked out (ADR-0035, decision 4).
@@ -101,6 +105,8 @@ impl FieldTarget {
             Self::ReportedBy => Field::ReportedBy,
             Self::Labels => Field::Labels,
             Self::Tags => Field::Tags,
+            Self::StartDate => Field::StartDate,
+            Self::DueDate => Field::DueDate,
             Self::EstimatedTime => Field::EstimatedTime,
             Self::TimeLeft => Field::TimeLeft,
             Self::TimeSpent => Field::TimeSpent,
@@ -162,6 +168,8 @@ impl FieldTarget {
             Self::Created => message::ISSUE_FIELD_CREATED,
             Self::Changed => message::ISSUE_FIELD_CHANGED,
             Self::Closed => message::ISSUE_FIELD_CLOSED,
+            Self::StartDate => message::ISSUE_FIELD_START_DATE,
+            Self::DueDate => message::ISSUE_FIELD_DUE_DATE,
             Self::EstimatedTime => message::ISSUE_FIELD_ESTIMATED_TIME,
             Self::TimeLeft => message::ISSUE_FIELD_TIME_LEFT,
             Self::TimeSpent => message::ISSUE_FIELD_TIME_SPENT,

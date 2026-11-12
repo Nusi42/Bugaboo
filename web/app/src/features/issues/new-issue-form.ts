@@ -13,6 +13,10 @@ export interface NewIssueValues {
   readonly priority: Schema<"Priority">;
   /** The people it is assigned to. */
   readonly assignedTo: readonly NamedPerson[];
+  /** *Start date* as the calendar writes it (`2026-11-14`); empty until one is typed. */
+  readonly startDate: string;
+  /** *Due date* as the calendar writes it; empty until one is typed. */
+  readonly dueDate: string;
   /** *Estimated time* in whole minutes; none until one is typed. */
   readonly estimatedTime: number | null;
   /** The text in the box of the estimate is no length: the form is not sent until it is mended. */
@@ -28,6 +32,8 @@ export const emptyForm: NewIssueValues = {
   description: "",
   priority: newIssuePriority,
   assignedTo: [],
+  startDate: "",
+  dueDate: "",
   estimatedTime: null,
   estimateWrong: false,
   fields: {},
@@ -39,6 +45,8 @@ export function hasWriting(values: NewIssueValues): boolean {
     values.title.trim() !== "" ||
     values.description.trim() !== "" ||
     values.assignedTo.length > 0 ||
+    values.startDate !== "" ||
+    values.dueDate !== "" ||
     values.estimatedTime !== null ||
     Object.keys(values.fields).length > 0
   );
@@ -69,6 +77,11 @@ function estimateOf(found: unknown): number | null {
   return typeof found === "number" && Number.isSafeInteger(found) && found >= 0 ? found : null;
 }
 
+/** The day of a draft: text, or nothing. */
+function dayOf(found: unknown): string {
+  return typeof found === "string" ? found : "";
+}
+
 /** The values of own fields of a draft: an object, or nothing. */
 function fieldsOf(found: unknown): Readonly<Record<string, unknown>> {
   return typeof found === "object" && found !== null && !Array.isArray(found)
@@ -97,6 +110,8 @@ export function decodeDraft(text: string): NewIssueValues | undefined {
           description,
           priority,
           assignedTo: peopleOf(read("assignedTo")),
+          startDate: dayOf(read("startDate")),
+          dueDate: dayOf(read("dueDate")),
           estimatedTime: estimateOf(read("estimatedTime")),
           estimateWrong: false,
           fields: fieldsOf(read("fields")),
@@ -155,6 +170,8 @@ export function forForm(values: NewIssueValues, shows: (field: string) => boolea
     description: shows("description") ? values.description : emptyForm.description,
     priority: shows("priority") ? values.priority : emptyForm.priority,
     assignedTo: shows("assigned-to") ? values.assignedTo : emptyForm.assignedTo,
+    startDate: shows("start-date") ? values.startDate : emptyForm.startDate,
+    dueDate: shows("due-date") ? values.dueDate : emptyForm.dueDate,
     estimatedTime: shows("estimated-time") ? values.estimatedTime : emptyForm.estimatedTime,
     estimateWrong: shows("estimated-time") ? values.estimateWrong : emptyForm.estimateWrong,
     fields: fieldsWhere(values.fields, (key) => shows(key)),
@@ -178,6 +195,8 @@ export function bodyOf(values: NewIssueValues) {
     ...(values.assignedTo.length === 0
       ? {}
       : { assigned_to: values.assignedTo.map((person) => person.id) }),
+    ...(values.startDate === "" ? {} : { start_date: values.startDate }),
+    ...(values.dueDate === "" ? {} : { due_date: values.dueDate }),
     ...(values.estimatedTime === null ? {} : { estimated_time: values.estimatedTime }),
     ...(Object.keys(fields).length === 0 ? {} : { fields }),
   };

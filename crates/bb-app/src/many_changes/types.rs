@@ -17,6 +17,7 @@ use bb_core::time::Minutes;
 use bb_core::workflow::StatusKey;
 use bb_policy::Masked;
 use jiff::Timestamp;
+use jiff::civil::Date;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -36,6 +37,20 @@ pub struct ManyChange {
     pub status_button: Option<String>,
     /// A new priority.
     pub priority: Option<Priority>,
+    /// A new *Start date*; `SetTo::Nothing` takes it away.
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "bb_core::given::deserialize"
+    )]
+    pub start_date: Option<SetTo<Date>>,
+    /// A new *Due date*; `SetTo::Nothing` takes it away.
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "bb_core::given::deserialize"
+    )]
+    pub due_date: Option<SetTo<Date>>,
     /// A new *Estimated time*; `SetTo::Nothing` takes it away.
     #[serde(
         default,

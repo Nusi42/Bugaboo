@@ -299,6 +299,11 @@ pub const ROUTES: &[Route] = &[
         Answer::Ordinary,
     ),
     route(
+        "moveDates",
+        Declared::Permission(Permission::ChangeIssues),
+        Answer::Ordinary,
+    ),
+    route(
         "saveIssueDescription",
         Declared::Permission(Permission::ChangeIssues),
         Answer::Ordinary,

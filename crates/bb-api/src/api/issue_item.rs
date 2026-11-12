@@ -17,7 +17,7 @@ use crate::lean::{FieldSpec, ListParams};
 
 /// The fields of an issue in a list that can be asked for, and which of them a list holds when the
 /// request names none: what a row of a list needs.
-pub(crate) const ISSUE_FIELDS: [FieldSpec; 22] = [
+pub(crate) const ISSUE_FIELDS: [FieldSpec; 24] = [
     FieldSpec::by_default("id"),
     FieldSpec::by_default("readable_id"),
     FieldSpec::on_request("project"),
@@ -27,6 +27,8 @@ pub(crate) const ISSUE_FIELDS: [FieldSpec; 22] = [
     FieldSpec::by_default("status"),
     FieldSpec::on_request("status_changes"),
     FieldSpec::by_default("priority"),
+    FieldSpec::on_request("start_date"),
+    FieldSpec::on_request("due_date"),
     FieldSpec::on_request("estimated_time"),
     FieldSpec::on_request("time_left"),
     FieldSpec::on_request("time_left_worked_out"),
@@ -131,6 +133,14 @@ pub(crate) struct IssueItem {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(field = "priority")]
     priority: Option<Priority>,
+    /// *Start date* as a date (`2026-11-14`); left out while it has none.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[masked(field = "start-date")]
+    start_date: Option<String>,
+    /// *Due date* as a date (`2026-11-14`); left out while it has none.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[masked(field = "due-date")]
+    due_date: Option<String>,
     /// *Estimated time*, in whole minutes; left out while it has none.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(field = "estimated-time")]
@@ -213,6 +223,8 @@ impl From<&IssueView> for IssueItem {
                     .collect(),
             ),
             priority: Some(issue.priority),
+            start_date: issue.start_date.map(|day| day.to_string()),
+            due_date: issue.due_date.map(|day| day.to_string()),
             estimated_time: issue.estimated_time,
             time_left: issue.time_left.map(TimeLeft::minutes),
             time_left_worked_out: issue
@@ -282,6 +294,8 @@ mod tests {
             status: Some(StatusRef::blank()),
             status_changes: Some(Vec::new()),
             priority: Some(Priority::Normal),
+            start_date: Some(String::new()),
+            due_date: Some(String::new()),
             estimated_time: Some(Minutes::new(0)),
             time_left: Some(Minutes::new(0)),
             time_left_worked_out: Some(false),

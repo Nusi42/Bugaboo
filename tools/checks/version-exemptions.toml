@@ -153,6 +153,10 @@ routes = [
 reason = "Changes nothing: it only says what a rename, a combine or a change to many issues would do, and the change that follows takes the versions the preview read (M3 WP-08). The preview of a publish says which statuses would be dropped and which issues are in them; the publish that follows takes the version of the workflow (ADR-0031 amendment 12)."
 
 [[exempt]]
+routes = ["POST /api/v1/issues/move-dates"]
+reason = "Every issue of the move has its own version in the body (`issues[].version`), which a move of several issues needs and a single `version` cannot say; each is judged as a single change on its version, and one stale version stops the whole move (ADR-0019, ADR-0043 decision 6)."
+
+[[exempt]]
 routes = ["POST /api/v1/many-changes"]
 reason = "Every issue of the change has its own version in the body (`issues[].version`), which a list of many changes needs and a single `version` cannot say (ADR-0019, M3 WP-08)."
 

@@ -155,7 +155,7 @@ async fn cfg_01_a_guest_gets_the_short_form_and_a_team_member_the_full_one() -> 
         assert_eq!(before_guest, ["description"]);
         assert_eq!(
             form_of(&mut tim, "ACME", "new-issue").await?,
-            ["description", "priority"]
+            ["description", "priority", "start-date", "due-date"]
         );
 
         // The lead customizes the form: the description for everybody; the priority, who is

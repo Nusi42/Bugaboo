@@ -11,6 +11,8 @@ export interface RelationKindLine {
   readonly forward: string;
   /** What the other issue reads (*is blocked by*). */
   readonly backward: string;
+  /** What the kind does to dates (*Must finish first*), or nothing. */
+  readonly dateEffect: Schema<"DateEffect">;
   readonly retired: boolean;
   /** The version the editor looked at; a change is made on it. */
   readonly version: number;
@@ -18,19 +20,21 @@ export interface RelationKindLine {
 
 /** The line of a kind of relation, or nothing for an item that came without what it needs. */
 export function relationKindLineOf(item: Schema<"RelationKindItem">): RelationKindLine | undefined {
-  const { id, forward, backward, retired, version } = item;
+  const { id, forward, backward, date_effect: dateEffect, retired, version } = item;
   return id === undefined ||
     id === null ||
     forward === undefined ||
     forward === null ||
     backward === undefined ||
     backward === null ||
+    dateEffect === undefined ||
+    dateEffect === null ||
     retired === undefined ||
     retired === null ||
     version === undefined ||
     version === null
     ? undefined
-    : { id, forward, backward, retired, version };
+    : { id, forward, backward, dateEffect, retired, version };
 }
 
 /** The kinds of relation in the pages read so far, in the order they are offered in. */
@@ -52,6 +56,7 @@ export function useRelationKinds() {
               "id",
               "forward",
               "backward",
+              "date_effect",
               "retired",
               "version",
             ]),

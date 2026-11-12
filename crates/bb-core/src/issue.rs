@@ -5,6 +5,11 @@
 //! status group. Entering the group *Done* sets the closed date; leaving it clears it.
 
 use jiff::Timestamp;
+use jiff::civil::Date;
+
+/// A calendar day with no time of day: what *Start date* and *Due date* hold, and what an API body
+/// that sets one is read into. The one name for it outside this crate (`bb-api` has no `jiff`).
+pub type CalendarDay = Date;
 
 use crate::id::{IssueId, IssueTypeId, ProjectId, UserId};
 use crate::message::{self, MessageKey};
@@ -196,6 +201,17 @@ pub struct IssueType {
     pub version: i64,
 }
 
+/// Whether the two dates of an issue are in order: a *Start date* after the *Due date* of the same
+/// issue is refused (ADR-0043, decision 1). The one rule, for a form, the API, a change of many
+/// issues and the tools of the registry; an issue with only one of the two is in order.
+#[must_use]
+pub fn dates_in_order(start: Option<Date>, due: Option<Date>) -> bool {
+    match (start, due) {
+        (Some(start), Some(due)) => start <= due,
+        _ => true,
+    }
+}
+
 /// An issue (ISS-01): a bug, a task, an idea, anything that is tracked.
 #[derive(Clone, Debug, PartialEq, Eq, Entity)]
 pub struct Issue {
@@ -223,6 +239,14 @@ pub struct Issue {
     /// How important it is.
     #[not_personal]
     pub priority: Priority,
+    /// *Start date*: the first day of work, a calendar date with no time of day (ADR-0043); none
+    /// until somebody gives one.
+    #[not_personal]
+    pub start_date: Option<Date>,
+    /// *Due date*: the day it should be done, a calendar date with no time of day (ADR-0043);
+    /// none until somebody gives one.
+    #[not_personal]
+    pub due_date: Option<Date>,
     /// *Estimated time*: how long it was expected to take, in whole minutes; none until somebody
     /// gives one.
     #[not_personal]
@@ -338,6 +362,17 @@ mod tests {
 
     fn at(second: i64) -> Timestamp {
         Timestamp::from_second(second).unwrap()
+    }
+
+    #[test]
+    fn plan_01_a_start_after_the_due_date_is_out_of_order() {
+        let day = |text: &str| Some(text.parse::<Date>().unwrap());
+        assert!(dates_in_order(day("2026-11-03"), day("2026-11-07")));
+        assert!(dates_in_order(day("2026-11-07"), day("2026-11-07")));
+        assert!(!dates_in_order(day("2026-11-08"), day("2026-11-07")));
+        assert!(dates_in_order(None, day("2026-11-07")));
+        assert!(dates_in_order(day("2026-11-08"), None));
+        assert!(dates_in_order(None, None));
     }
 
     #[test]

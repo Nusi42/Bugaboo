@@ -5,7 +5,11 @@ import { CALENDAR } from "../../shared/format.ts";
 import { boxWords } from "./box-words.ts";
 import { SaveForm } from "./SaveForm.tsx";
 import { useSynced } from "./use-synced.ts";
+import type { BoxField } from "./fields.ts";
 import type { Sent, ValueEditorProps } from "./ValueEditor.tsx";
+
+/** What the editor of a day needs: an own field, or a date of the issue itself (*Due date*). */
+type MomentEditorProps = Omit<ValueEditorProps, "field"> & { readonly field: BoxField };
 
 /** What the boxes of a day (and a time of day) send: nothing for no day. */
 function momentOf(withTime: boolean, day: string, time: string): Sent {
@@ -46,7 +50,7 @@ function TimeBox({
  * The day and the time of day a moment holds, each as typed so far and as saved, and what a live
  * form does as each changes: it sends the moment at once.
  */
-function useMomentParts({ value, field, live, onCommit }: ValueEditorProps) {
+function useMomentParts({ value, field, live, onCommit }: MomentEditorProps) {
   const withTime = field.kind === "date-time";
   const [savedDay, savedTime] = partsOf(value, withTime);
   const [day, setDay] = useSynced(savedDay);
@@ -60,7 +64,7 @@ function useMomentParts({ value, field, live, onCommit }: ValueEditorProps) {
 }
 
 /** A day, and for a day and time also the time of day. */
-export function MomentEditor(props: ValueEditorProps) {
+export function MomentEditor(props: MomentEditorProps) {
   const { field, onCommit, problem, isPending = false, live = false, inRow = false } = props;
   const { withTime, savedDay, savedTime, day, setDay, time, setTime, sendLive } =
     useMomentParts(props);

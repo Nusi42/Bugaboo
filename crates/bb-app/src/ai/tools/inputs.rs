@@ -58,6 +58,10 @@ pub struct CreateIssueInput {
     pub description: Option<String>,
     /// `low`, `normal`, `high` or `critical`.
     pub priority: Option<String>,
+    /// The first day of work, as a date like `2026-11-14`.
+    pub start_date: Option<String>,
+    /// The day it should be done, as a date like `2026-11-14`. Never before the start date.
+    pub due_date: Option<String>,
     /// The issue it is created under as a sub-issue, in the project of that issue. An agent can do
     /// this only under an issue that was handed over to it with *create sub-issues*.
     pub parent: Option<String>,
@@ -75,6 +79,11 @@ pub struct UpdateIssueInput {
     pub title: Option<String>,
     /// `low`, `normal`, `high` or `critical`.
     pub priority: Option<String>,
+    /// The first day of work, as a date like `2026-11-14`; an empty text takes the date away.
+    pub start_date: Option<String>,
+    /// The day it should be done, as a date like `2026-11-14`, never before the start date; an
+    /// empty text takes the date away.
+    pub due_date: Option<String>,
     /// The IDs of the people it is assigned to. Set it only when the person asked for exactly these
     /// people; never choose a person.
     pub assigned_to: Option<Vec<String>>,

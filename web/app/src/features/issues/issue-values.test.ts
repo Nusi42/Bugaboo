@@ -70,3 +70,27 @@ describe("ux_06 the sentence that goes with Undo", () => {
     expect(undoSentence({ assignedTo: [] })).toBe("Assigned to cleared.");
   });
 });
+
+describe("plan_01 a date changes in place like any other field", () => {
+  const dated: IssueDetail = {
+    ...detail,
+    issue: { ...detail.issue, start_date: "2026-11-03", due_date: "2026-11-07" },
+  };
+
+  it("shows the new day at once and takes a date away with none", () => {
+    const next = after(dated, { values: { dueDate: "2026-11-14", startDate: null }, version: 4 });
+    expect(next?.issue.due_date).toBe("2026-11-14");
+    expect(next?.issue.start_date).toBeNull();
+    expect(next?.issue.version).toBe(5);
+  });
+
+  it("knows the day to put back for Undo, only for the dates the change touched", () => {
+    expect(valuesBefore(dated, { dueDate: "2026-11-14" })).toEqual({ dueDate: "2026-11-07" });
+    expect(valuesBefore(detail, { startDate: "2026-11-14" })).toEqual({ startDate: null });
+  });
+
+  it("says the field and the day, or that the field is cleared", () => {
+    expect(undoSentence({ dueDate: "2026-11-14" })).toMatch(/^Due date changed to .*2026.*\.$/u);
+    expect(undoSentence({ startDate: null })).toBe("Start date cleared.");
+  });
+});

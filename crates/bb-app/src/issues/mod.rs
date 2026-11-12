@@ -17,6 +17,7 @@
 mod assigned_people;
 mod change;
 mod create;
+mod dates;
 mod delete;
 mod description;
 pub(crate) mod editing;
@@ -37,6 +38,7 @@ pub(crate) use visible::{Where, seen_by};
 pub use assigned_people::{AssignablePeoplePage, AssignablePeopleQuery, assignable_people};
 pub use change::change_issue;
 pub use create::create_issue;
+pub use dates::{DatesMoved, DatesOf, MoveDates, MovedIssue, move_dates};
 pub use delete::{delete_issue, restore_issue};
 pub use description::save_description;
 pub use issue_types::{

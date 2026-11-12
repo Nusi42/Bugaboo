@@ -21,6 +21,17 @@ pub(crate) fn clean_title(title: &str) -> Result<String, AppError> {
     clean_text(title, TITLE_MAX)
 }
 
+/// Refuses (`issue.start-after-due`) an issue whose start date is after its due date. The one place
+/// that applies the rule of [`bb_core::issue::dates_in_order`] to what is about to be stored, for
+/// making and changing an issue, so every way in (form, API, many issues, tools) refuses alike.
+pub(crate) fn ensure_dates_in_order(issue: &bb_core::issue::Issue) -> Result<(), AppError> {
+    if bb_core::issue::dates_in_order(issue.start_date, issue.due_date) {
+        Ok(())
+    } else {
+        Err(ErrorCode::IssueStartAfterDue.into())
+    }
+}
+
 /// Refuses (`access.forbidden`) unless the mask lets the person change every one of the fields.
 pub(crate) fn ensure_may_change(mask: &FieldMask, fields: &[Field]) -> Result<(), AppError> {
     if fields.iter().all(|field| mask.can_change(*field)) {
@@ -75,11 +86,11 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 }
 
-/// The fields of the catalogue that a request to make or change an issue names: the others (dates,
-/// releases) come with the packages that store them, *Time spent* is the total of the time
+/// The fields of the catalogue that a request to make or change an issue names: the others
+/// (releases) come with the packages that store them, *Time spent* is the total of the time
 /// entries and never typed, and tags and labels are put on and taken off on their own routes
 /// (`tags`).
-pub(crate) const CHANGEABLE: [Field; 7] = [
+pub(crate) const CHANGEABLE: [Field; 9] = [
     Field::Title,
     Field::Description,
     Field::Status,
@@ -87,6 +98,8 @@ pub(crate) const CHANGEABLE: [Field; 7] = [
     Field::AssignedTo,
     Field::EstimatedTime,
     Field::TimeLeft,
+    Field::StartDate,
+    Field::DueDate,
 ];
 
 /// Which fields of the catalogue a request names: given, whether the value differs from the one
@@ -122,7 +135,7 @@ impl Given {
 impl From<&ChangeIssue> for Given {
     fn from(input: &ChangeIssue) -> Self {
         // Title, description (saved under its lock, never here), status, priority, assigned to,
-        // estimated time, time left.
+        // estimated time, time left, start date, due date.
         Self([
             input.title.is_some(),
             false,
@@ -131,6 +144,8 @@ impl From<&ChangeIssue> for Given {
             input.assigned_to.is_some(),
             input.estimated_time.is_some(),
             input.time_left.is_some(),
+            input.start_date.is_some(),
+            input.due_date.is_some(),
         ])
     }
 }
@@ -146,6 +161,8 @@ impl From<&crate::many_changes::ManyChange> for Given {
             change.assigned_to.is_some(),
             change.estimated_time.is_some(),
             change.time_left.is_some(),
+            change.start_date.is_some(),
+            change.due_date.is_some(),
         ])
     }
 }
@@ -162,6 +179,8 @@ impl From<&CreateIssue> for Given {
             input.estimated_time.is_some(),
             // *Time left* starts equal to the estimate: nobody types it on a new issue.
             false,
+            input.start_date.is_some(),
+            input.due_date.is_some(),
         ])
     }
 }
@@ -196,6 +215,8 @@ pub(crate) mod member {
     pub(crate) const ASSIGNED_TO: &str = Field::AssignedTo.code();
     pub(crate) const ESTIMATED_TIME: &str = Field::EstimatedTime.code();
     pub(crate) const TIME_LEFT: &str = Field::TimeLeft.code();
+    pub(crate) const START_DATE: &str = Field::StartDate.code();
+    pub(crate) const DUE_DATE: &str = Field::DueDate.code();
     pub(crate) const TAGS: &str = Field::Tags.code();
     pub(crate) const LABELS: &str = Field::Labels.code();
     pub(crate) const DELETED_AT: &str = "deleted-at";

@@ -17,10 +17,15 @@ export const messages = {
   "relation-kinds.field-backward": "Words for the second issue",
   "relation-kinds.create": "Create the kind of relation",
   "relation-kinds.created": "Created the kind of relation {name}.",
+  "relation-kinds.field-date-effect": "Date effect",
+  "relation-kinds.date-effect-help":
+    "What the kind means for the dates on the timeline. With Must finish first the issue a relation starts from must finish before the other one starts, and the relation is a dependency. At most two kinds can have it, and it is refused when it would close a loop.",
   "relation-kinds.retire-help":
     "A retired kind is not offered for new relations. The relations that have it keep it. You can offer it again later.",
   "relation-kinds.retire": "Retire the kind of relation",
   "relation-kinds.offer-again": "Offer the kind of relation again",
+  "relation-kinds.date-effect.none": "None",
+  "relation-kinds.date-effect.must-finish-first": "Must finish first",
 } as const;
 
 register(messages);

@@ -99,6 +99,8 @@ async fn change_in_run(
                 title: None,
                 status: None,
                 priority: Some(priority),
+                start_date: None,
+                due_date: None,
                 estimated_time: None,
                 time_left: None,
                 assigned_to: None,

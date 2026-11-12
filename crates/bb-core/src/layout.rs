@@ -66,6 +66,8 @@ pub const fn built_in_fields(kind: LayoutKind) -> &'static [Field] {
             Field::ReportedBy,
             Field::Tags,
             Field::Labels,
+            Field::StartDate,
+            Field::DueDate,
             Field::EstimatedTime,
             Field::TimeLeft,
             Field::TimeSpent,
@@ -76,6 +78,8 @@ pub const fn built_in_fields(kind: LayoutKind) -> &'static [Field] {
             Field::Description,
             Field::Priority,
             Field::AssignedTo,
+            Field::StartDate,
+            Field::DueDate,
             Field::EstimatedTime,
         ],
     }
@@ -198,8 +202,14 @@ impl LayoutContent {
                 ),
                 section(
                     message::LAYOUT_SECTION_DETAILS.into(),
-                    built_in(&[Field::ReportedBy, Field::Tags, Field::Labels])
-                        .into_iter()
+                    built_in(&[
+                        Field::ReportedBy,
+                        Field::Tags,
+                        Field::Labels,
+                        Field::StartDate,
+                        Field::DueDate,
+                    ])
+                    .into_iter()
                         .chain(own.iter().copied())
                         // The lengths of time stand last, where the Details showed them before
                         // layouts could place them.
@@ -213,7 +223,12 @@ impl LayoutContent {
             ],
             LayoutKind::NewIssue => vec![section(
                 message::LAYOUT_SECTION_DETAILS.into(),
-                built_in(&[Field::Description, Field::Priority]),
+                built_in(&[
+                    Field::Description,
+                    Field::Priority,
+                    Field::StartDate,
+                    Field::DueDate,
+                ]),
             )],
         };
         Self::of_sections(sections)
@@ -584,13 +599,37 @@ mod tests {
             fields,
             vec![
                 FieldKey::from(Field::Description),
-                FieldKey::from(Field::Priority)
+                FieldKey::from(Field::Priority),
+                FieldKey::from(Field::StartDate),
+                FieldKey::from(Field::DueDate),
             ]
         );
         assert!(form.placed().all(|placed| placed.roles == [team, guest]));
         let page = LayoutContent::starting(LayoutKind::IssuePage, &[], &[team]);
         assert_eq!(page.check(LayoutKind::IssuePage), Ok(()));
         assert!(page.placed().count() > form.placed().count());
+    }
+
+    #[test]
+    fn plan_01_the_two_dates_are_fields_both_forms_place() {
+        // *Due date* is no longer blocked on forms (M3-F101): the page and the form both place it
+        // and *Start date*, and the starting form and page ask for them.
+        for kind in [LayoutKind::IssuePage, LayoutKind::NewIssue] {
+            for field in [Field::StartDate, Field::DueDate] {
+                assert!(
+                    built_in_fields(kind).contains(&field),
+                    "{field:?} on {kind:?}"
+                );
+            }
+            let (_, team, _) = ids();
+            let starting = LayoutContent::starting(kind, &[], &[team]);
+            let placed: Vec<FieldKey> = starting.placed().map(|placed| placed.field).collect();
+            assert!(
+                placed.contains(&FieldKey::from(Field::DueDate)),
+                "{placed:?}"
+            );
+            assert_eq!(starting.check(kind), Ok(()));
+        }
     }
 
     #[test]

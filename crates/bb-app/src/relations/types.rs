@@ -8,7 +8,7 @@
 
 use bb_core::id::{IssueId, RelationId, RelationKindId};
 use bb_core::issue::Priority;
-use bb_core::relation::{Direction, RelationKind};
+use bb_core::relation::{DateEffect, Direction, RelationKind};
 use bb_policy::Masked;
 use serde::Serialize;
 
@@ -210,6 +210,9 @@ pub struct ChangeRelationKind {
     pub backward: Option<String>,
     /// `true` to retire it (no new relations of this kind), `false` to offer it again.
     pub retired: Option<bool>,
+    /// A new date effect. Giving one is refused when two kinds have an effect already, or when
+    /// the relations of the kind close a loop of dependencies.
+    pub date_effect: Option<DateEffect>,
 }
 
 /// A kind of relation as the screen of kinds shows it.
@@ -221,6 +224,8 @@ pub struct RelationKindView {
     pub forward: String,
     /// What the other issue reads.
     pub backward: String,
+    /// What it does to dates.
+    pub date_effect: DateEffect,
     /// Whether it is retired.
     pub retired: bool,
     /// Counts up with every change.
@@ -235,6 +240,7 @@ impl From<&RelationKind> for RelationKindView {
             id: kind.id,
             forward: kind.forward.clone(),
             backward: kind.backward.clone(),
+            date_effect: kind.date_effect,
             retired: kind.retired_at.is_some(),
             version: kind.version,
         }

@@ -6275,6 +6275,63 @@
         "x-permission": "manage-issue-types"
       }
     },
+    "/api/v1/issues/move-dates": {
+      "post": {
+        "tags": ["issues"],
+        "summary": "Moves the dates of several issues in one run. Every issue is judged as a single change first (a\ndate field the person may not change, a start date after the due date, a version that is not the\none stored): when any is refused nothing is written. The run it makes is undone in one step.",
+        "operationId": "moveDates",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveDatesBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The run and the issues in it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DatesMovedBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "change-issues"
+      }
+    },
     "/api/v1/issues/{issue}": {
       "get": {
         "tags": ["issues"],
@@ -19254,6 +19311,11 @@
             },
             "description": "The IDs of the people it is assigned to from now on: all of them, not the ones to add."
           },
+          "due_date": {
+            "type": ["string", "null"],
+            "format": "date",
+            "description": "A new *Due date* (`2026-11-14`); `null` takes it away. Refused when it is before the start\ndate the issue has then."
+          },
           "estimated_time": {
             "type": ["integer", "null"],
             "format": "int32",
@@ -19282,6 +19344,11 @@
                 "type": "null"
               }
             ]
+          },
+          "start_date": {
+            "type": ["string", "null"],
+            "format": "date",
+            "description": "A new *Start date* (`2026-11-14`); `null` takes it away. Refused when it is after the due\ndate the issue has then."
           },
           "status": {
             "type": ["string", "null"],
@@ -19472,6 +19539,17 @@
           "backward": {
             "type": ["string", "null"],
             "description": "A new backward name."
+          },
+          "date_effect": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DateEffect",
+                "description": "A new date effect. Refused when two other kinds have one, or when the relations of the kind\nclose a loop of dependencies."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "forward": {
             "type": ["string", "null"],
@@ -20215,6 +20293,20 @@
                   }
                 ]
               },
+              "date_effect_kinds": {
+                "type": ["array", "null"],
+                "items": {
+                  "type": "string"
+                },
+                "description": "The forward names of the kinds of relation that have a date effect; only for\n`relation-kind.date-effect-most`."
+              },
+              "dependency_loop": {
+                "type": ["array", "null"],
+                "items": {
+                  "type": ["string", "null"]
+                },
+                "description": "One loop of dependencies, as the issue IDs on it in order; an issue the person may not see\nis `null`, so the loop never names it. Only for `relation.dependency-loop`."
+              },
               "mistakes": {
                 "type": ["array", "null"],
                 "items": {
@@ -20432,6 +20524,56 @@
         "type": "string",
         "description": "Which database the server uses.",
         "enum": ["built-in", "sqlite", "postgres"]
+      },
+      "DateEffect": {
+        "type": "string",
+        "description": "What a kind of relation does to dates: nothing, or *Must finish first*.",
+        "enum": ["none", "must-finish-first"]
+      },
+      "DatesMovedBody": {
+        "type": "object",
+        "description": "The run of a move, and the issues in it.",
+        "required": ["run", "issues"],
+        "properties": {
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MovedIssueBody"
+            },
+            "description": "The issues, in the order they were named."
+          },
+          "run": {
+            "type": "string",
+            "description": "The run: *Undo the run* takes every date of the move back in one step."
+          }
+        }
+      },
+      "DatesOfBody": {
+        "type": "object",
+        "description": "The new dates of one issue: what is left out stays as it is, `null` takes a date away.",
+        "required": ["issue", "version"],
+        "properties": {
+          "due_date": {
+            "type": ["string", "null"],
+            "format": "date",
+            "description": "A new *Due date* (`2026-11-14`); `null` takes it away."
+          },
+          "issue": {
+            "type": "string",
+            "description": "The issue, by its readable ID or its internal ID."
+          },
+          "start_date": {
+            "type": ["string", "null"],
+            "format": "date",
+            "description": "A new *Start date* (`2026-11-14`); `null` takes it away."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the issue the person looked at."
+          }
+        },
+        "additionalProperties": false
       },
       "DecisionAnswerBody": {
         "type": "object",
@@ -20779,6 +20921,7 @@
           "project.preview-changed",
           "issue.type-retired",
           "issue.type-not-offered",
+          "issue.start-after-due",
           "label.not-offered",
           "workflow.no-such-change",
           "workflow.not-for-you",
@@ -20790,6 +20933,8 @@
           "issue.parent-circle",
           "issue.parent-too-deep",
           "relation.exists",
+          "relation.dependency-loop",
+          "relation-kind.date-effect-most",
           "limit.reached",
           "timer.running",
           "timer.not-running",
@@ -20872,6 +21017,7 @@
           "priority",
           "assigned-to",
           "reported-by",
+          "start-date",
           "due-date",
           "labels",
           "tags",
@@ -22366,6 +22512,10 @@
             "type": ["string", "null"],
             "description": "The long text, in Markdown."
           },
+          "due_date": {
+            "type": ["string", "null"],
+            "description": "*Due date* as a date (`2026-11-14`); left out while it has none."
+          },
           "estimated_time": {
             "type": ["integer", "null"],
             "format": "int32",
@@ -22441,6 +22591,10 @@
                 "type": "null"
               }
             ]
+          },
+          "start_date": {
+            "type": ["string", "null"],
+            "description": "*Start date* as a date (`2026-11-14`); left out while it has none."
           },
           "status": {
             "oneOf": [
@@ -23490,6 +23644,11 @@
             },
             "description": "The IDs of the people the issues are assigned to from now on: all of them, not the ones to\nadd."
           },
+          "due_date": {
+            "type": ["string", "null"],
+            "format": "date",
+            "description": "A new *Due date* (`2026-11-14`); `null` takes it away. An issue that would then start after\nits due date is left alone."
+          },
           "estimated_time": {
             "type": ["integer", "null"],
             "format": "int32",
@@ -23514,6 +23673,11 @@
                 "type": "null"
               }
             ]
+          },
+          "start_date": {
+            "type": ["string", "null"],
+            "format": "date",
+            "description": "A new *Start date* (`2026-11-14`); `null` takes it away. An issue that would then start\nafter its due date is left alone."
           },
           "status": {
             "type": ["string", "null"],
@@ -23985,6 +24149,21 @@
           }
         }
       },
+      "MoveDatesBody": {
+        "type": "object",
+        "description": "The issues whose dates move, each with its new dates.",
+        "required": ["issues"],
+        "properties": {
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DatesOfBody"
+            },
+            "description": "The issues, each named once and with at least one date."
+          }
+        },
+        "additionalProperties": false
+      },
       "MoveIssueBody": {
         "type": "object",
         "description": "The project an issue goes into.",
@@ -24070,6 +24249,26 @@
         "type": "string",
         "description": "Where a person may move a project to.",
         "enum": ["nowhere", "into-projects", "into-projects-or-top"]
+      },
+      "MovedIssueBody": {
+        "type": "object",
+        "description": "One issue after its dates moved.",
+        "required": ["id", "readable_id", "version"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The internal ID of the issue."
+          },
+          "readable_id": {
+            "type": "string",
+            "description": "The readable ID now."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version the issue has now."
+          }
+        }
       },
       "MyAgentWorkBody": {
         "type": "object",
@@ -24433,6 +24632,11 @@
             "type": ["string", "null"],
             "description": "The long text, in Markdown. Empty when left out."
           },
+          "due_date": {
+            "type": ["string", "null"],
+            "format": "date",
+            "description": "Its *Due date* (`2026-11-14`), never before the start date. None when left out."
+          },
           "estimated_time": {
             "type": ["integer", "null"],
             "format": "int32",
@@ -24465,6 +24669,11 @@
                 "type": "null"
               }
             ]
+          },
+          "start_date": {
+            "type": ["string", "null"],
+            "format": "date",
+            "description": "Its *Start date* (`2026-11-14`). None when left out."
           },
           "status": {
             "type": ["string", "null"],
@@ -27530,6 +27739,17 @@
           "backward": {
             "type": ["string", "null"],
             "description": "What the other issue reads."
+          },
+          "date_effect": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DateEffect",
+                "description": "What the kind does to dates: nothing, or *Must finish first* (a relation of such a kind is a\ndependency)."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "forward": {
             "type": ["string", "null"],

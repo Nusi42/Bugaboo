@@ -6,7 +6,7 @@ use bb_core::follow::Follower;
 use bb_core::history::{HistoryEntry, HistoryKind};
 use bb_core::id::{CommentId, EventId, IssueId, RelationId, RelationKindId, UserId};
 use bb_core::issue::Issue;
-use bb_core::relation::{IssueParent, Relation, RelationKind};
+use bb_core::relation::{Dependency, IssueParent, Relation, RelationKind};
 use bb_core::version::Version;
 use jiff::Timestamp;
 
@@ -66,6 +66,19 @@ impl RelationStore for FakeStore {
             .cloned())
     }
 
+    async fn dependencies_of_kinds_in(
+        tx: &mut Tx,
+        kinds: Vec<RelationKindId>,
+    ) -> Result<Vec<Dependency>, FakeError> {
+        Ok(tx
+            .state
+            .relations
+            .iter()
+            .filter(|relation| kinds.contains(&relation.kind))
+            .map(|relation| (relation.from, relation.to))
+            .collect())
+    }
+
     async fn parent_of_in(tx: &mut Tx, child: IssueId) -> Result<Option<IssueParent>, FakeError> {
         Ok(tx
             .state
@@ -105,23 +118,21 @@ impl RelationStore for FakeStore {
 
     async fn update_relation_kind(
         tx: &mut Tx,
-        id: RelationKindId,
-        forward: &str,
-        backward: &str,
-        retired_at: Option<Timestamp>,
+        kind: &RelationKind,
         version: Version,
     ) -> Result<bool, FakeError> {
         let Some(found) = tx
             .state
             .relation_kinds
             .iter_mut()
-            .find(|found| found.id == id && found.version == version.get())
+            .find(|found| found.id == kind.id && found.version == version.get())
         else {
             return Ok(false);
         };
-        forward.clone_into(&mut found.forward);
-        backward.clone_into(&mut found.backward);
-        found.retired_at = retired_at;
+        kind.forward.clone_into(&mut found.forward);
+        kind.backward.clone_into(&mut found.backward);
+        found.date_effect = kind.date_effect;
+        found.retired_at = kind.retired_at;
         found.version += 1;
         Ok(true)
     }

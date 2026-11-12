@@ -101,11 +101,18 @@ async fn cfg_01_a_field_put_back_keeps_its_roles() -> TestResult {
             .flat_map(|event| event.changes.iter())
             .filter(|change| change.field == "off")
             .filter_map(|change| change.after.as_ref())
-            .filter(|after| after.as_array().is_some_and(|fields| !fields.is_empty()))
+            .filter(|after| {
+                after
+                    .as_array()
+                    .is_some_and(|fields| fields.iter().any(|each| each["field"] == "priority"))
+            })
             .collect();
         assert_eq!(kept.len(), 1, "{events:?}");
-        assert_eq!(kept[0][0]["field"], "priority");
-        assert_eq!(kept[0][0]["roles"], json!([&team]));
+        let priority = kept[0]
+            .as_array()
+            .and_then(|fields| fields.iter().find(|each| each["field"] == "priority"))
+            .ok_or("the priority is not among the fields kept off the form")?;
+        assert_eq!(priority["roles"], json!([&team]));
         let off = editor_of(&mut ada, "ACME").await?;
         assert!(
             roles_of(&off, "priority").is_err(),

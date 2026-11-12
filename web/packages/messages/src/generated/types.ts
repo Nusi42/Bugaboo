@@ -278,6 +278,7 @@ export interface MessageArguments {
   "editing.is-editing": { name: string | number; since: string | number; thing: string | number };
   "editing.lost-changed": { name: string | number; thing: string | number };
   "editing.lost-taken-over": { name: string | number };
+  "error.relation-kind.date-effect-most": { most: string | number };
   "error.time.entry-too-long": { hours: number };
   "error.time.entry-too-short": { minutes: number };
   "error.with-support-code": { code: string | number; message: string | number };
@@ -565,8 +566,10 @@ export interface MessageArguments {
   "projects.settings-title": { name: string | number };
   "projects.toggle-name": { name: string | number };
   "related-issues.added": { key: string | number; name: string | number; other: string | number };
+  "related-issues.loop-is": { issues: string | number };
   "related-issues.take-away": { name: string | number; other: string | number };
   "relation-kinds.created": { name: string | number };
+  "relation-kinds.date-effect-kinds": { kinds: string | number };
   "relation-kinds.reads": { backward: string | number; forward: string | number };
   "roles.badge-used": { badge: string | number; used: string | number };
   "roles.copy-of": { name: string | number };

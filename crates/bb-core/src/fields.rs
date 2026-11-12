@@ -35,6 +35,8 @@ words! {
         AssignedTo => "assigned-to",
         /// *Reported by*.
         ReportedBy => "reported-by",
+        /// *Start date*.
+        StartDate => "start-date",
         /// *Due date*.
         DueDate => "due-date",
         /// *Labels*.
@@ -284,7 +286,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn m2_q7_the_catalogue_has_the_sixteen_fields_in_order() {
+    fn m2_q7_the_catalogue_has_its_fields_in_order() {
         let keys: Vec<&str> = Field::ALL.iter().map(|field| field.code()).collect();
         assert_eq!(
             keys,
@@ -295,6 +297,7 @@ mod tests {
                 "priority",
                 "assigned-to",
                 "reported-by",
+                "start-date",
                 "due-date",
                 "labels",
                 "tags",

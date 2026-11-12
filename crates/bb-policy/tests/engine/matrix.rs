@@ -62,6 +62,7 @@ impl Masked for Answer {
         ("priority", Field::Priority),
         ("assigned-to", Field::AssignedTo),
         ("reported-by", Field::ReportedBy),
+        ("start-date", Field::StartDate),
         ("due-date", Field::DueDate),
         ("labels", Field::Labels),
         ("tags", Field::Tags),

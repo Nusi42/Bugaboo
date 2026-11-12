@@ -18,6 +18,7 @@ use bb_core::time::{Minutes, TimeLeft};
 use bb_core::workflow::StatusKey;
 use bb_policy::{Masked, PersonRef};
 use jiff::Timestamp;
+use jiff::civil::Date;
 use serde::Serialize;
 use serde_json::Value;
 
@@ -46,6 +47,10 @@ pub struct CreateIssue {
     pub priority: Option<Priority>,
     /// The people it is assigned to; nobody when left out.
     pub assigned_to: Option<Vec<UserId>>,
+    /// Its *Start date*; none when left out.
+    pub start_date: Option<Date>,
+    /// Its *Due date*; none when left out.
+    pub due_date: Option<Date>,
     /// Its *Estimated time*; none when left out. *Time left* starts equal to it: nobody typed
     /// one, so it is worked out from the estimate and the time spent.
     pub estimated_time: Option<Minutes>,
@@ -55,6 +60,29 @@ pub struct CreateIssue {
     /// issue of its own. An agent given *create sub-issues* creates only under the issue it was
     /// handed.
     pub parent: Option<String>,
+}
+
+impl CreateIssue {
+    /// An issue with a title and a type that asks for nothing else yet: the fields a test or a
+    /// caller sets are set over it (`CreateIssue { priority, ..CreateIssue::of(…) }`).
+    #[must_use]
+    pub fn of(session_token: &str, project: &str, issue_type: IssueTypeId, title: &str) -> Self {
+        Self {
+            session_token: session_token.to_owned(),
+            project: project.to_owned(),
+            issue_type,
+            title: title.to_owned(),
+            description: None,
+            status: None,
+            priority: None,
+            assigned_to: None,
+            start_date: None,
+            due_date: None,
+            estimated_time: None,
+            fields: BTreeMap::new(),
+            parent: None,
+        }
+    }
 }
 
 /// Change the fields of an issue: what is `Some` is changed.
@@ -74,6 +102,10 @@ pub struct ChangeIssue {
     pub status: Option<StatusKey>,
     /// A new priority.
     pub priority: Option<Priority>,
+    /// A new *Start date*; `SetTo::Nothing` takes it away.
+    pub start_date: Option<SetTo<Date>>,
+    /// A new *Due date*; `SetTo::Nothing` takes it away.
+    pub due_date: Option<SetTo<Date>>,
     /// A new *Estimated time*; `SetTo::Nothing` takes it away.
     pub estimated_time: Option<SetTo<Minutes>>,
     /// A new *Time left* as typed; `SetTo::Nothing` takes it away, so it is worked out again.
@@ -97,6 +129,8 @@ impl ChangeIssue {
             title: None,
             status: None,
             priority: None,
+            start_date: None,
+            due_date: None,
             estimated_time: None,
             time_left: None,
             assigned_to: None,
@@ -290,6 +324,12 @@ pub struct IssueView {
     /// How important it is.
     #[masked(field = "priority")]
     pub priority: Priority,
+    /// *Start date*; none until somebody gives one.
+    #[masked(field = "start-date")]
+    pub start_date: Option<Date>,
+    /// *Due date*; none until somebody gives one.
+    #[masked(field = "due-date")]
+    pub due_date: Option<Date>,
     /// *Estimated time*, in whole minutes; none until somebody gives one.
     #[masked(field = "estimated-time")]
     pub estimated_time: Option<Minutes>,

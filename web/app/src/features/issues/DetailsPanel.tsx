@@ -4,11 +4,13 @@ import type { ReactNode } from "react";
 
 import {
   AssignedToRow,
+  DueDateRow,
   EstimateRow,
   LeftRow,
   PriorityRow,
   RunningTimerRow,
   SpentRows,
+  StartDateRow,
   TotalRows,
 } from "./ChangeableRows.tsx";
 import { useAfterDelay } from "../../shared/use-optimistic.ts";
@@ -30,6 +32,8 @@ const fields = {
   assignedTo: "assigned-to",
   priority: "priority",
   reportedBy: "reported-by",
+  startDate: "start-date",
+  dueDate: "due-date",
   estimatedTime: "estimated-time",
   timeLeft: "time-left",
   timeSpent: "time-spent",
@@ -52,6 +56,14 @@ function groupsOf({ blocks, changes }: Pick<DetailsPanelProps, "blocks" | "chang
     {
       places: [fields.reportedBy],
       node: <FixedRows key={fields.reportedBy} blocks={blocks} />,
+    },
+    {
+      places: [fields.startDate],
+      node: <StartDateRow key={fields.startDate} blocks={blocks} changes={changes} />,
+    },
+    {
+      places: [fields.dueDate],
+      node: <DueDateRow key={fields.dueDate} blocks={blocks} changes={changes} />,
     },
     {
       places: [fields.estimatedTime],

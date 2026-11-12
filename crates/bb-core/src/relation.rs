@@ -7,6 +7,8 @@
 //! backward name (*is blocked by A*). A kind whose two names are the same (*related to*) reads
 //! the same from both sides.
 
+use std::collections::{HashMap, HashSet, VecDeque};
+
 use jiff::Timestamp;
 
 use crate::id::{IssueId, RelationId, RelationKindId, UserId};
@@ -49,6 +51,37 @@ impl Direction {
     }
 }
 
+/// The most kinds of relation that carry a date effect at one time (ADR-0043, decision 4): the
+/// starting kind *blocks* and one other. A third is refused.
+pub const DATE_EFFECT_KINDS_MOST: usize = 2;
+
+words! {
+    /// What a kind of relation does to dates on the timeline (ADR-0043, decision 4). In M8
+    /// *Must finish first* is the only effect besides none; the others (*start together*, *finish
+    /// together*, *finish when it starts*) are V1 and join as variants here.
+    pub enum DateEffect {
+        /// The relation says nothing about dates.
+        Nothing => "none",
+        /// The issue it starts from must finish first; the other one waits. A relation of such a
+        /// kind is a dependency.
+        MustFinishFirst => "must-finish-first",
+    }
+    messages name = "relation-kinds.date-effect."
+}
+
+words_in_api!(
+    DateEffect,
+    "What a kind of relation does to dates: nothing, or *Must finish first*."
+);
+
+impl DateEffect {
+    /// Whether a relation of a kind with this effect is a dependency.
+    #[must_use]
+    pub const fn is_dependency(self) -> bool {
+        !matches!(self, Self::Nothing)
+    }
+}
+
 /// A kind of relation that is made at the first start: the message of each name.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct StartingRelationKind {
@@ -56,6 +89,8 @@ pub struct StartingRelationKind {
     pub forward: MessageKey,
     /// What the other issue reads (*is blocked by*).
     pub backward: MessageKey,
+    /// What the kind does to dates.
+    pub date_effect: DateEffect,
 }
 
 /// The kinds of relation of the first start, in order. The one definition; after the first start
@@ -64,18 +99,22 @@ pub const STARTING_RELATION_KINDS: [StartingRelationKind; 4] = [
     StartingRelationKind {
         forward: message::RELATION_KIND_BLOCKS,
         backward: message::RELATION_KIND_IS_BLOCKED_BY,
+        date_effect: DateEffect::MustFinishFirst,
     },
     StartingRelationKind {
         forward: message::RELATION_KIND_DUPLICATE_OF,
         backward: message::RELATION_KIND_HAS_DUPLICATE,
+        date_effect: DateEffect::Nothing,
     },
     StartingRelationKind {
         forward: message::RELATION_KIND_CAUSES,
         backward: message::RELATION_KIND_IS_CAUSED_BY,
+        date_effect: DateEffect::Nothing,
     },
     StartingRelationKind {
         forward: message::RELATION_KIND_RELATED_TO,
         backward: message::RELATION_KIND_RELATED_TO,
+        date_effect: DateEffect::Nothing,
     },
 ];
 
@@ -92,6 +131,9 @@ pub struct RelationKind {
     /// What the other issue reads. Free text that could name a person.
     #[personal(category = "content", basis = "legitimate_interests")]
     pub backward: String,
+    /// What it does to dates (ADR-0043).
+    #[not_personal]
+    pub date_effect: DateEffect,
     /// The place in the order the kinds are offered in.
     #[not_personal]
     pub position: i64,
@@ -172,6 +214,67 @@ impl Relation {
     }
 }
 
+/// One dependency, as the issues at its two ends: the issue that must finish first, and the one
+/// that waits for it. The relation of a kind with a date effect, read from its `from` and `to`.
+pub type Dependency = (IssueId, IssueId);
+
+/// The shortest way from `start` to `goal` along dependencies, both ends included; `None` when
+/// the issue that waits for `start`, over any number of steps, never is `goal`. The one walk of the
+/// loop check: making a dependency and giving a kind a date effect both ask it, and the plan of the
+/// timeline can ask it for any two issues. Written once and pure, so it is tested without a
+/// database.
+#[must_use]
+pub fn dependency_path(
+    dependencies: &[Dependency],
+    start: IssueId,
+    goal: IssueId,
+) -> Option<Vec<IssueId>> {
+    if start == goal {
+        return Some(vec![start]);
+    }
+    let mut waiting_for: HashMap<IssueId, Vec<IssueId>> = HashMap::new();
+    for (first, then) in dependencies {
+        waiting_for.entry(*first).or_default().push(*then);
+    }
+    let mut came_from: HashMap<IssueId, IssueId> = HashMap::new();
+    let mut seen: HashSet<IssueId> = HashSet::from([start]);
+    let mut queue = VecDeque::from([start]);
+    while let Some(at) = queue.pop_front() {
+        for next in waiting_for.get(&at).into_iter().flatten() {
+            if !seen.insert(*next) {
+                continue;
+            }
+            came_from.insert(*next, at);
+            if *next == goal {
+                let mut path = vec![goal];
+                let mut back = goal;
+                while let Some(before) = came_from.get(&back) {
+                    path.push(*before);
+                    back = *before;
+                }
+                path.reverse();
+                return Some(path);
+            }
+            queue.push_back(*next);
+        }
+    }
+    None
+}
+
+/// The loop that a new dependency would close, as the issues on it in order: the one that must
+/// finish first, the one that waits, and on from there until the one that waits for the last of
+/// them is the first again. `None` when it closes none. `dependencies` are the ones there are now.
+#[must_use]
+pub fn loop_closed_by(dependencies: &[Dependency], new: Dependency) -> Option<Vec<IssueId>> {
+    // The loop is the new step, then the way from the one that waits back to the one that must
+    // finish first.
+    dependency_path(dependencies, new.1, new.0).map(|back| {
+        std::iter::once(new.0)
+            .chain(back.into_iter().take_while(|issue| *issue != new.0))
+            .collect()
+    })
+}
+
 /// An issue that sits under another one (ISS-03).
 #[derive(Clone, Debug, PartialEq, Eq, Entity)]
 pub struct IssueParent {
@@ -245,6 +348,7 @@ mod tests {
             id: RelationKindId::generate(&mut SequentialIds::default()).unwrap(),
             forward: forward.to_owned(),
             backward: backward.to_owned(),
+            date_effect: DateEffect::Nothing,
             position: 0,
             retired_at: None,
             version: 1,
@@ -288,6 +392,37 @@ mod tests {
             check_parent(new_child, all[0], |issue| looped.get(&issue).copied()),
             Err(ParentRefusal::TooDeep)
         );
+    }
+
+    #[test]
+    fn plan_02_a_dependency_that_closes_a_loop_names_the_loop_in_order() {
+        let all = issues(5);
+        let (a, b, c, d, other) = (all[0], all[1], all[2], all[3], all[4]);
+        // a is first for b, b for c, c for d.
+        let there = [(a, b), (b, c), (c, d)];
+        assert_eq!(loop_closed_by(&there, (d, a)), Some(vec![d, a, b, c]));
+        assert_eq!(loop_closed_by(&there, (c, a)), Some(vec![c, a, b]));
+        assert_eq!(loop_closed_by(&there, (b, a)), Some(vec![b, a]));
+        assert_eq!(loop_closed_by(&there, (a, d)), None);
+        assert_eq!(loop_closed_by(&there, (other, a)), None);
+        assert_eq!(dependency_path(&there, a, d), Some(vec![a, b, c, d]));
+        assert_eq!(dependency_path(&there, d, a), None);
+        // A loop that is stored already does not hang the walk.
+        let stored = [(a, b), (b, a)];
+        assert_eq!(dependency_path(&stored, a, other), None);
+    }
+
+    #[test]
+    fn plan_02_only_must_finish_first_is_a_dependency_and_blocks_starts_with_it() {
+        assert!(DateEffect::MustFinishFirst.is_dependency());
+        assert!(!DateEffect::Nothing.is_dependency());
+        let with_effect: Vec<&str> = STARTING_RELATION_KINDS
+            .iter()
+            .filter(|kind| kind.date_effect.is_dependency())
+            .map(|kind| kind.forward.template())
+            .collect();
+        assert_eq!(with_effect, ["blocks"]);
+        assert!(with_effect.len() <= DATE_EFFECT_KINDS_MOST);
     }
 
     #[test]

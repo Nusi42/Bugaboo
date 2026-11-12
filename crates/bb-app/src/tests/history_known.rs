@@ -52,6 +52,8 @@ async fn changed(
             title,
             status: None,
             priority: None,
+            start_date: None,
+            due_date: None,
             estimated_time: None,
             time_left: None,
             assigned_to: None,

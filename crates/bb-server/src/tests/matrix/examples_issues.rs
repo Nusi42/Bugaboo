@@ -75,6 +75,8 @@ pub(super) async fn an_issue(fixture: &Fixture<'_>) -> Result<String, Failure> {
                 status: None,
                 priority: None,
                 assigned_to: None,
+                start_date: None,
+                due_date: None,
                 estimated_time: None,
                 fields: std::collections::BTreeMap::new(),
                 parent: None,
@@ -194,6 +196,16 @@ pub(super) async fn issue_request(
             "PATCH",
             format!("/api/v1/issues/{}", an_issue(fixture).await?),
             Some(json!({"version": 1, "priority": "high"})),
+        ),
+        "moveDates" => (
+            "POST",
+            "/api/v1/issues/move-dates".into(),
+            Some(json!({"issues": [{
+                "issue": an_issue(fixture).await?,
+                "version": 1,
+                "start_date": "2026-11-03",
+                "due_date": "2026-11-07"
+            }]})),
         ),
         "saveIssueDescription" => (
             "PUT",

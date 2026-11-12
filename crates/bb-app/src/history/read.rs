@@ -361,6 +361,13 @@ impl<S: AuthStore> Ctx<'_, S> {
                     kind: FieldType::Duration,
                     value: Value::from(minutes.as_seconds()),
                 }),
+            // A date is a calendar day, kept as its text, and worded like a day of an own field.
+            Member::Catalogue(Field::StartDate | Field::DueDate) => {
+                value.as_str().map(|day| ChangeValue::Typed {
+                    kind: FieldType::Date,
+                    value: Value::from(day),
+                })
+            }
             Member::Catalogue(field) => match field.person_kind() {
                 Some(kind) => Some(self.people_in(reading.held, kind, value).await?),
                 None => Some(ChangeValue::Text {

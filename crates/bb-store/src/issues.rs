@@ -10,11 +10,13 @@ use bb_app::issues::{InTrash, IssueFound, IssueStore, MovedStatus};
 use bb_core::event::DomainEvent;
 use bb_core::id::{IssueId, IssueTypeId, ProjectId, UserId};
 use bb_core::issue::{AssignedPerson, Issue, IssueAlias, IssueIcon, IssueType, Priority};
+use bb_core::own_fields_value::{date_of, day_of};
 use bb_core::readable_id::IssueCode;
 use bb_core::time::Minutes;
 use bb_core::version::Version;
 use bb_core::workflow::StatusKey;
 use jiff::Timestamp;
+use jiff::civil::Date;
 use sea_query::{Expr, ExprTrait as _, OnConflict, Order, Query, SelectStatement, UpdateStatement};
 
 use crate::auth::AuthStorage;
@@ -64,6 +66,8 @@ pub(crate) fn issue_select() -> SelectStatement {
             IssueRow::Description,
             IssueRow::Status,
             IssueRow::Priority,
+            IssueRow::StartDate,
+            IssueRow::DueDate,
             IssueRow::EstimatedTime,
             IssueRow::TimeLeft,
             IssueRow::ReportedBy,
@@ -103,6 +107,8 @@ pub(crate) fn read_issue(row: &Row) -> Result<Issue, StoreError> {
             .map_err(|_| StoreError::Corrupt("a status"))?,
         priority: Priority::from_code(&row.get::<String>(IssueRow::Priority)?)
             .ok_or(StoreError::Corrupt("a priority"))?,
+        start_date: read_day(row, IssueRow::StartDate)?,
+        due_date: read_day(row, IssueRow::DueDate)?,
         estimated_time: read_minutes(row, IssueRow::EstimatedTime)?,
         time_left: read_minutes(row, IssueRow::TimeLeft)?,
         reported_by: row.id::<UserId>(IssueRow::ReportedBy)?,
@@ -119,6 +125,19 @@ pub(crate) fn read_minutes(row: &Row, column: IssueRow) -> Result<Option<Minutes
     row.get::<Option<i64>>(column)?
         .map(|minutes| Minutes::try_from(minutes).map_err(|_| StoreError::Corrupt("a length")))
         .transpose()
+}
+
+/// A calendar day kept in a column of whole numbers, as the days since 1970-01-01 (the way a *Date*
+/// field keeps it); none when it is empty.
+pub(crate) fn read_day(row: &Row, column: IssueRow) -> Result<Option<Date>, StoreError> {
+    row.get::<Option<i64>>(column)?
+        .map(|days| date_of(days).ok_or(StoreError::Corrupt("a day")))
+        .transpose()
+}
+
+/// A calendar day as it is kept: the days since 1970-01-01, `NULL` for none.
+pub(crate) fn stored_day(day: Option<Date>) -> Option<i64> {
+    day.and_then(day_of)
 }
 
 /// A length of time as it is kept: whole minutes, `NULL` for none.
@@ -453,6 +472,8 @@ impl IssueStore for AuthStorage {
                 IssueRow::Description,
                 IssueRow::Status,
                 IssueRow::Priority,
+                IssueRow::StartDate,
+                IssueRow::DueDate,
                 IssueRow::EstimatedTime,
                 IssueRow::TimeLeft,
                 IssueRow::ReportedBy,
@@ -471,6 +492,8 @@ impl IssueStore for AuthStorage {
                 Expr::val(issue.description.as_str()),
                 Expr::val(issue.status.as_str()),
                 Expr::val(issue.priority.code()),
+                Expr::val(stored_day(issue.start_date)),
+                Expr::val(stored_day(issue.due_date)),
                 Expr::val(stored_minutes(issue.estimated_time)),
                 Expr::val(stored_minutes(issue.time_left)),
                 Expr::val(issue.reported_by.stored()),
@@ -498,6 +521,8 @@ impl IssueStore for AuthStorage {
             .value(IssueRow::Description, issue.description.as_str())
             .value(IssueRow::Status, issue.status.as_str())
             .value(IssueRow::Priority, issue.priority.code())
+            .value(IssueRow::StartDate, stored_day(issue.start_date))
+            .value(IssueRow::DueDate, stored_day(issue.due_date))
             .value(
                 IssueRow::EstimatedTime,
                 stored_minutes(issue.estimated_time),

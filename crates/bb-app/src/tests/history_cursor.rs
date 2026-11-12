@@ -104,6 +104,8 @@ async fn changes(
                 title: last.then(|| title.to_owned()),
                 status: None,
                 priority: (!last).then_some(priority),
+                start_date: None,
+                due_date: None,
                 estimated_time: None,
                 time_left: None,
                 assigned_to: None,

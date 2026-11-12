@@ -94,6 +94,7 @@ pub(crate) fn skip_of(error: AppError) -> Result<SkipReason, AppError> {
         AppError::Stale(_) => Some(SkipReason::ChangedSince),
         // A refusal about one field is the same reason as without the field.
         AppError::Refused(code) | AppError::RefusedAtField { code, .. } => reason_of(*code),
+        AppError::DependencyLoop { .. } => reason_of(ErrorCode::RelationDependencyLoop),
         _ => None,
     };
     reason.ok_or(error)
@@ -101,7 +102,7 @@ pub(crate) fn skip_of(error: AppError) -> Result<SkipReason, AppError> {
 
 /// The refusals of the single change that have a reason of their own. The `field.*` refusals are one
 /// reason too ([`ErrorCode::is_field_rule`]).
-const WORDED: [(ErrorCode, SkipReason); 13] = [
+const WORDED: [(ErrorCode, SkipReason); 14] = [
     (ErrorCode::VersionChanged, SkipReason::ChangedSince),
     (ErrorCode::NotFound, SkipReason::NotFound),
     (ErrorCode::Forbidden, SkipReason::NotAllowed),
@@ -115,12 +116,13 @@ const WORDED: [(ErrorCode, SkipReason); 13] = [
     (ErrorCode::LabelNotOffered, SkipReason::LabelNotHere),
     (ErrorCode::RelationExists, SkipReason::RelationExists),
     (ErrorCode::LimitReached, SkipReason::LimitReached),
+    (ErrorCode::IssueStartAfterDue, SkipReason::FieldRule),
 ];
 
 /// Every other refusal says the single change would not take this issue as it is and has no word of
 /// its own. The codes are listed, so a new one is a decision made here: a test fails until it is in
 /// [`WORDED`] or in this list.
-const UNWORDED: [ErrorCode; 87] = [
+const UNWORDED: [ErrorCode; 89] = [
     ErrorCode::AgentWorkOpen,
     ErrorCode::AgentWorkNotReady,
     ErrorCode::AgentWorkBudget,
@@ -208,6 +210,8 @@ const UNWORDED: [ErrorCode; 87] = [
     ErrorCode::TotalsOnly,
     ErrorCode::Internal,
     ErrorCode::KeepYearsTooShort,
+    ErrorCode::RelationDependencyLoop,
+    ErrorCode::RelationKindDateEffectMost,
 ];
 
 /// The code of a busy database ([`AppError::is_busy`]): a fact of the moment and not of the issue.
@@ -329,6 +333,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             title: None,
             status: change.status.clone(),
             priority: change.priority,
+            start_date: change.start_date,
+            due_date: change.due_date,
             estimated_time: change.estimated_time,
             time_left: change.time_left,
             assigned_to: change.assigned_to.clone(),

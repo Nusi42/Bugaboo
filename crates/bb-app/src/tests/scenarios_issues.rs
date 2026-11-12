@@ -3,6 +3,7 @@
 
 use bb_core::edit::EditWhat;
 use bb_core::event::{EntityRef, RecordKind};
+use bb_core::given::SetTo;
 use bb_core::id::{EditorId, EntityId, IssueId, IssueTypeId, ProjectId};
 use bb_core::issue::IssueIcon;
 use bb_core::message::{self, Message};
@@ -15,10 +16,10 @@ use super::scenarios::{Added, a_project, measured, text, token};
 use super::world::World;
 use crate::editing::{LockOutcome, TakeLockQuery, take_lock};
 use crate::issues::{
-    ChangeIssue, ChangeIssueType, CreateIssue, CreateIssueType, CreateStartingIssueTypes,
-    DeleteIssue, IssueTypesQuery, MoveIssue, RestoreIssue, SaveDescription, change_issue,
-    change_issue_type, create_issue, create_issue_type, create_starting_issue_types, delete_issue,
-    issue_types, move_issue, restore_issue, save_description,
+    ChangeIssue, ChangeIssueType, CreateIssue, CreateIssueType, CreateStartingIssueTypes, DatesOf,
+    DeleteIssue, IssueTypesQuery, MoveDates, MoveIssue, RestoreIssue, SaveDescription,
+    change_issue, change_issue_type, create_issue, create_issue_type, create_starting_issue_types,
+    delete_issue, issue_types, move_dates, move_issue, restore_issue, save_description,
 };
 use crate::many_changes::{
     ApplyManyChanges, ManyChange, ManyChangeAction, ManyChangeTarget, apply_many_changes,
@@ -36,6 +37,8 @@ pub(crate) fn change_of(who: &str, issue: IssueId, version: i64) -> ChangeIssue 
         title: None,
         status: None,
         priority: None,
+        start_date: None,
+        due_date: None,
         estimated_time: None,
         time_left: None,
         assigned_to: None,
@@ -78,6 +81,8 @@ pub(crate) async fn an_issue(world: &World, project: ProjectId) -> Result<IssueI
             status: None,
             priority: None,
             assigned_to: None,
+            start_date: None,
+            due_date: None,
             estimated_time: None,
             fields: std::collections::BTreeMap::new(),
             parent: None,
@@ -104,6 +109,8 @@ pub(crate) async fn create_issue_scenario(world: &World) -> Added {
                 status: Some(starter::in_progress()),
                 priority: None,
                 assigned_to: Some(vec![world.admin.person.id]),
+                start_date: None,
+                due_date: None,
                 estimated_time: None,
                 fields: std::collections::BTreeMap::new(),
                 parent: None,
@@ -128,6 +135,8 @@ pub(crate) async fn change_issue_scenario(world: &World) -> Added {
                 title: Some("The login button does nothing at all".to_owned()),
                 status: Some(starter::done()),
                 priority: None,
+                start_date: None,
+                due_date: None,
                 estimated_time: None,
                 time_left: None,
                 assigned_to: None,
@@ -304,6 +313,27 @@ pub(crate) async fn move_issue_scenario(world: &World) -> Added {
                 project: other.to_string(),
             },
         ),
+    )
+    .await
+}
+
+pub(crate) async fn move_dates_scenario(world: &World) -> Added {
+    let project = a_project(world, "ACME").await?;
+    let issue = an_issue(world, project).await?;
+    measured(
+        &world.store,
+        Box::pin(move_dates(
+            &world.ctx(),
+            MoveDates {
+                session_token: token(world),
+                issues: vec![DatesOf {
+                    issue: issue.to_string(),
+                    version: 1,
+                    start_date: Some(SetTo::Value("2026-11-03".parse().map_err(|_| "no day")?)),
+                    due_date: Some(SetTo::Value("2026-11-07".parse().map_err(|_| "no day")?)),
+                }],
+            },
+        )),
     )
     .await
 }

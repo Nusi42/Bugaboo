@@ -82,6 +82,8 @@ mod perf_many_changes;
 mod perf_notifications;
 mod perf_queries;
 mod permissions_http;
+mod plan_dates_http;
+mod plan_dependencies_http;
 mod policy;
 mod policy_probes;
 mod policy_reads;

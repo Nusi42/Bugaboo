@@ -200,6 +200,7 @@ C = *Can change*, S = *Can see*, H = *Hidden*.
 | Priority | C | C | C | S | S | S | H |
 | Assigned to | C | C | C | S | S | S | H |
 | Reported by | C | C | S | S | S | S | H |
+| Start date | C | C | C | S | S | H | H |
 | Due date | C | C | C | S | S | H | H |
 | Labels | C | C | C | S | S | S | H |
 | Tags | C | C | C | C | S | S | H |
@@ -248,6 +249,7 @@ Declared once in `bb-core` (`fields`): key, name (message `issue-field.<key>`), 
 | `priority` | Priority | issue | – | if an administrator marks it *Never sent to AI* |
 | `assigned-to` | Assigned to | issue | yes, kind *Assigned to* | if an administrator marks it *Never sent to AI* |
 | `reported-by` | Reported by | issue | yes, kind *Reported by* | if an administrator marks it *Never sent to AI* |
+| `start-date` | Start date | issue | – | if an administrator marks it *Never sent to AI* |
 | `due-date` | Due date | issue | – | if an administrator marks it *Never sent to AI* |
 | `labels` | Labels | issue | – | if an administrator marks it *Never sent to AI* |
 | `tags` | Tags | issue | – | if an administrator marks it *Never sent to AI* |

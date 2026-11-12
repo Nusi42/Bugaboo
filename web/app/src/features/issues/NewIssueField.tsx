@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { useImageHosts } from "../../shared/image-hosts.ts";
 import { markdownLabels } from "../../shared/markdown-labels.ts";
-import { LengthBox, OwnFieldInput } from "../fields/index.ts";
+import { DateBox, LengthBox, OwnFieldInput } from "../fields/index.ts";
 import { AssignedPicker } from "./AssignedPicker.tsx";
 import { ChangeAssigned } from "./AssignedRow.tsx";
 import { priorityChoices } from "./issue-choices.ts";
@@ -82,23 +82,44 @@ function EstimateField({
   );
 }
 
+/** *Start date* or *Due date* on the form: a day the person types; the server judges the two together. */
+function DayField({ field, values, problem, onChange }: Omit<NewIssueFieldProps, "project">) {
+  const start = field === "start-date";
+  return (
+    <DateBox
+      name={t(start ? "issue-field.start-date" : "issue-field.due-date")}
+      day={(start ? values.startDate : values.dueDate) || undefined}
+      inRow={false}
+      problem={problem}
+      onCommit={(day) => {
+        onChange(start ? { ...values, startDate: day ?? "" } : { ...values, dueDate: day ?? "" });
+      }}
+    />
+  );
+}
+
+/** *Description* on the form: the editor of text, with the hosts its images may come from. */
+function DescriptionField({ values, onChange }: Pick<NewIssueFieldProps, "values" | "onChange">) {
+  const hosts = useImageHosts();
+  return (
+    <MarkdownEditor
+      label={t("issue-field.description")}
+      labels={markdownLabels()}
+      value={values.description}
+      onChange={(description) => {
+        onChange({ ...values, description });
+      }}
+      imageHosts={hosts}
+    />
+  );
+}
+
 /** One field of the form: a built-in field by its word, an own field by its ID. */
 export function NewIssueField(props: NewIssueFieldProps) {
   const { field, values, project, problem, onChange } = props;
-  const hosts = useImageHosts();
   switch (field) {
     case "description":
-      return (
-        <MarkdownEditor
-          label={t("issue-field.description")}
-          labels={markdownLabels()}
-          value={values.description}
-          onChange={(description) => {
-            onChange({ ...values, description });
-          }}
-          imageHosts={hosts}
-        />
-      );
+      return <DescriptionField values={values} onChange={onChange} />;
     case "priority":
       return (
         <SelectField
@@ -112,6 +133,9 @@ export function NewIssueField(props: NewIssueFieldProps) {
       );
     case "assigned-to":
       return <AssignedField values={values} project={project} onChange={onChange} />;
+    case "start-date":
+    case "due-date":
+      return <DayField {...props} />;
     case "estimated-time":
       return <EstimateField values={values} problem={problem} onChange={onChange} />;
     default:

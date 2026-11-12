@@ -63,6 +63,8 @@ async fn bob_changes(
             title: Some(title.to_owned()),
             status: None,
             priority,
+            start_date: None,
+            due_date: None,
             estimated_time: None,
             time_left: None,
             assigned_to: None,

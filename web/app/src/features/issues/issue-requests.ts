@@ -25,6 +25,8 @@ export async function sendChange(
       : { assigned_to: values.assignedTo.map((person) => person.id) }),
     ...(values.own === undefined ? {} : { fields: values.own }),
     ...(values.estimatedTime === undefined ? {} : { estimated_time: values.estimatedTime }),
+    ...(values.startDate === undefined ? {} : { start_date: values.startDate }),
+    ...(values.dueDate === undefined ? {} : { due_date: values.dueDate }),
     ...(values.timeLeft === undefined ? {} : { time_left: values.timeLeft }),
   };
   // One after the other: each change is made on the version the one before it has just made.

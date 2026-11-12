@@ -15,7 +15,7 @@ use bb_policy::{Authorized, Evaluation, Place};
 use jiff::Timestamp;
 use serde_json::json;
 
-use super::fields::{Given, clean_title, ensure_may_change, member};
+use super::fields::{Given, clean_title, ensure_dates_in_order, ensure_may_change, member};
 use super::types::{ChangeIssue, IssueView};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
@@ -69,6 +69,16 @@ impl Plan {
             member::PRIORITY,
             json!(before.priority.code()),
             json!(after.priority.code()),
+        ));
+        add(difference(
+            member::START_DATE,
+            json!(before.start_date),
+            json!(after.start_date),
+        ));
+        add(difference(
+            member::DUE_DATE,
+            json!(before.due_date),
+            json!(after.due_date),
         ));
         add(difference(
             member::ESTIMATED_TIME,
@@ -258,6 +268,11 @@ impl<S: AuthStore> Ctx<'_, S> {
             next.title = clean_title(title)?;
         }
         next.priority = input.priority.unwrap_or(current.priority);
+        next.start_date = input
+            .start_date
+            .map_or(current.start_date, SetTo::into_option);
+        next.due_date = input.due_date.map_or(current.due_date, SetTo::into_option);
+        ensure_dates_in_order(&next)?;
         next.estimated_time = input
             .estimated_time
             .map_or(current.estimated_time, SetTo::into_option);

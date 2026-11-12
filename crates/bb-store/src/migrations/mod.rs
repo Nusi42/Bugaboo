@@ -77,6 +77,7 @@ mod m0045_agent_pause;
 mod m0046_answer_time;
 mod m0047_work_project;
 mod m0048_rules_hand_over;
+mod m0049_dates_and_date_effect;
 #[cfg(test)]
 mod old_rows;
 
@@ -414,6 +415,11 @@ const ALL: &[Definition] = &[
         version: 48,
         name: "rules_hand_over",
         steps: || Ok(m0048_rules_hand_over::steps()),
+    },
+    Definition {
+        version: 49,
+        name: "dates_and_date_effect",
+        steps: || Ok(m0049_dates_and_date_effect::steps()),
     },
 ];
 

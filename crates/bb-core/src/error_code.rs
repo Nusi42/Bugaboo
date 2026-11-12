@@ -15,6 +15,7 @@ use std::collections::BTreeMap;
 use serde::Serialize;
 
 use crate::message::{Message, MessageKey, Value};
+use crate::relation::DATE_EFFECT_KINDS_MOST;
 use crate::time::{MINUTES_PER_HOUR, TIME_ENTRY_MINUTES_MAX, TIME_ENTRY_MINUTES_MIN};
 use crate::working_time::GERMANY_KEEP_YEARS_LEAST;
 
@@ -110,6 +111,8 @@ error_codes! {
     IssueTypeRetired => ("issue.type-retired", 409),
     /// The project does not offer that issue type (ISS-02).
     IssueTypeNotOffered => ("issue.type-not-offered", 409),
+    /// The start date of an issue is after its due date (PLAN-01, ADR-0043, decision 1).
+    IssueStartAfterDue => ("issue.start-after-due", 400),
     /// The project does not offer the group that label is in (TAG-02).
     LabelNotOffered => ("label.not-offered", 409),
     /// The workflow of the issue has no status change from the status the issue is in to that one
@@ -137,6 +140,13 @@ error_codes! {
     ParentTooDeep => ("issue.parent-too-deep", 409),
     /// Those two issues are related in that way already (ISS-04).
     RelationExists => ("relation.exists", 409),
+    /// A relation of a kind with a date effect, or giving a kind that effect, would close a loop of
+    /// dependencies: the answer names one loop by issue IDs the person may see (PLAN-02, ADR-0043,
+    /// decision 4).
+    RelationDependencyLoop => ("relation.dependency-loop", 409),
+    /// Two kinds of relation carry a date effect already: the answer names them (PLAN-02,
+    /// ADR-0043, decision 4).
+    RelationKindDateEffectMost => ("relation-kind.date-effect-most", 409),
     /// Something holds as many as it may: an issue its relations or sub-issues, the organization
     /// its tags, labels or own fields, a field its choices. A full store always answers this code,
     /// never `request.invalid`. The count includes what the person may not see, as it is a limit of
@@ -322,6 +332,10 @@ impl ErrorCode {
             Self::KeepYearsTooShort => {
                 vec![("years", Value::Number(GERMANY_KEEP_YEARS_LEAST))]
             }
+            Self::RelationKindDateEffectMost => vec![(
+                "most",
+                Value::Number(i64::try_from(DATE_EFFECT_KINDS_MOST).unwrap_or(i64::MAX)),
+            )],
             _ => Vec::new(),
         }
     }

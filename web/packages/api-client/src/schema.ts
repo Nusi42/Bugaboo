@@ -1781,6 +1781,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/issues/move-dates": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Moves the dates of several issues in one run. Every issue is judged as a single change first (a
+     *     date field the person may not change, a start date after the due date, a version that is not the
+     *     one stored): when any is refused nothing is written. The run it makes is undone in one step.
+     */
+    post: operations["moveDates"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/issues/{issue}": {
     parameters: {
       query?: never;
@@ -5533,6 +5554,12 @@ export interface components {
       /** @description The IDs of the people it is assigned to from now on: all of them, not the ones to add. */
       assigned_to?: string[] | null;
       /**
+       * Format: date
+       * @description A new *Due date* (`2026-11-14`); `null` takes it away. Refused when it is before the start
+       *     date the issue has then.
+       */
+      due_date?: string | null;
+      /**
        * Format: int32
        * @description A new *Estimated time*, in whole minutes; `null` takes it away.
        */
@@ -5547,6 +5574,12 @@ export interface components {
       /** @description A new issue type; a retired type is refused. */
       issue_type?: string | null;
       priority?: components["schemas"]["Priority"] | null;
+      /**
+       * Format: date
+       * @description A new *Start date* (`2026-11-14`); `null` takes it away. Refused when it is after the due
+       *     date the issue has then.
+       */
+      start_date?: string | null;
       /**
        * @description The key of a new status: judged by the workflow of the issue. Entering the group *Done* sets
        *     the closed date; leaving it clears it.
@@ -5647,6 +5680,7 @@ export interface components {
     ChangeRelationKindBody: {
       /** @description A new backward name. */
       backward?: string | null;
+      date_effect?: components["schemas"]["DateEffect"] | null;
       /** @description A new forward name. */
       forward?: string | null;
       /** @description `true` retires the kind (no new relations of it), `false` offers it again. */
@@ -6015,6 +6049,16 @@ export interface components {
     ConflictProblem: components["schemas"]["Problem"] & {
       conflict?: components["schemas"]["ConflictBody"] | null;
       /**
+       * @description The forward names of the kinds of relation that have a date effect; only for
+       *     `relation-kind.date-effect-most`.
+       */
+      date_effect_kinds?: string[] | null;
+      /**
+       * @description One loop of dependencies, as the issue IDs on it in order; an issue the person may not see
+       *     is `null`, so the loop never names it. Only for `relation.dependency-loop`.
+       */
+      dependency_loop?: (string | null)[] | null;
+      /**
        * @description The mistakes of the text of a search, each with the key of its message and the bytes it
        *     stands on; only for `search.invalid`.
        */
@@ -6136,6 +6180,38 @@ export interface components {
      * @enum {string}
      */
     DatabaseKind: "built-in" | "sqlite" | "postgres";
+    /**
+     * @description What a kind of relation does to dates: nothing, or *Must finish first*.
+     * @enum {string}
+     */
+    DateEffect: "none" | "must-finish-first";
+    /** @description The run of a move, and the issues in it. */
+    DatesMovedBody: {
+      /** @description The issues, in the order they were named. */
+      issues: components["schemas"]["MovedIssueBody"][];
+      /** @description The run: *Undo the run* takes every date of the move back in one step. */
+      run: string;
+    };
+    /** @description The new dates of one issue: what is left out stays as it is, `null` takes a date away. */
+    DatesOfBody: {
+      /**
+       * Format: date
+       * @description A new *Due date* (`2026-11-14`); `null` takes it away.
+       */
+      due_date?: string | null;
+      /** @description The issue, by its readable ID or its internal ID. */
+      issue: string;
+      /**
+       * Format: date
+       * @description A new *Start date* (`2026-11-14`); `null` takes it away.
+       */
+      start_date?: string | null;
+      /**
+       * Format: int64
+       * @description The version of the issue the person looked at.
+       */
+      version: number;
+    };
     /** @description Where the browser goes next. */
     DecisionAnswerBody: {
       /** @description The address of the app with the code or the refusal in it. */
@@ -6346,6 +6422,7 @@ export interface components {
       | "project.preview-changed"
       | "issue.type-retired"
       | "issue.type-not-offered"
+      | "issue.start-after-due"
       | "label.not-offered"
       | "workflow.no-such-change"
       | "workflow.not-for-you"
@@ -6357,6 +6434,8 @@ export interface components {
       | "issue.parent-circle"
       | "issue.parent-too-deep"
       | "relation.exists"
+      | "relation.dependency-loop"
+      | "relation-kind.date-effect-most"
       | "limit.reached"
       | "timer.running"
       | "timer.not-running"
@@ -6438,6 +6517,7 @@ export interface components {
       | "priority"
       | "assigned-to"
       | "reported-by"
+      | "start-date"
       | "due-date"
       | "labels"
       | "tags"
@@ -7135,6 +7215,8 @@ export interface components {
       created_at?: string | null;
       /** @description The long text, in Markdown. */
       description?: string | null;
+      /** @description *Due date* as a date (`2026-11-14`); left out while it has none. */
+      due_date?: string | null;
       /**
        * Format: int32
        * @description *Estimated time*, in whole minutes; left out while it has none.
@@ -7154,6 +7236,8 @@ export interface components {
       /** @description The readable ID now (`WEB-142`, `WEB-K7Q2X`). */
       readable_id?: string | null;
       reported_by?: components["schemas"]["PersonRef"] | null;
+      /** @description *Start date* as a date (`2026-11-14`); left out while it has none. */
+      start_date?: string | null;
       status?: components["schemas"]["StatusRef"] | null;
       /**
        * @description The status changes the person may make now, with the text of each button and the fields it
@@ -7675,6 +7759,12 @@ export interface components {
        */
       assigned_to?: string[] | null;
       /**
+       * Format: date
+       * @description A new *Due date* (`2026-11-14`); `null` takes it away. An issue that would then start after
+       *     its due date is left alone.
+       */
+      due_date?: string | null;
+      /**
        * Format: int32
        * @description A new *Estimated time*, in whole minutes; `null` takes it away.
        */
@@ -7684,6 +7774,12 @@ export interface components {
         [key: string]: unknown;
       };
       priority?: components["schemas"]["Priority"] | null;
+      /**
+       * Format: date
+       * @description A new *Start date* (`2026-11-14`); `null` takes it away. An issue that would then start
+       *     after its due date is left alone.
+       */
+      start_date?: string | null;
       /**
        * @description The key of a new status. Each issue is judged by its own workflow, and an issue whose
        *     workflow does not allow the change is skipped.
@@ -7900,6 +7996,11 @@ export interface components {
       /** @description The ID of the project it goes into; `null` for the top level. */
       to?: string | null;
     };
+    /** @description The issues whose dates move, each with its new dates. */
+    MoveDatesBody: {
+      /** @description The issues, each named once and with at least one date. */
+      issues: components["schemas"]["DatesOfBody"][];
+    };
     /** @description The project an issue goes into. */
     MoveIssueBody: {
       /** @description The project it goes into, by its ID or its short name. */
@@ -7938,6 +8039,18 @@ export interface components {
      * @enum {string}
      */
     MoveRightKind: "nowhere" | "into-projects" | "into-projects-or-top";
+    /** @description One issue after its dates moved. */
+    MovedIssueBody: {
+      /** @description The internal ID of the issue. */
+      id: string;
+      /** @description The readable ID now. */
+      readable_id: string;
+      /**
+       * Format: int64
+       * @description The version the issue has now.
+       */
+      version: number;
+    };
     /** @description The current work of the person's agents. */
     MyAgentWorkBody: {
       /** @description The agents handed to the person that wait for them to accept. */
@@ -8089,6 +8202,11 @@ export interface components {
       /** @description The long text, in Markdown. Empty when left out. */
       description?: string | null;
       /**
+       * Format: date
+       * @description Its *Due date* (`2026-11-14`), never before the start date. None when left out.
+       */
+      due_date?: string | null;
+      /**
        * Format: int32
        * @description Its *Estimated time*, in whole minutes. None when left out; *Time left* starts equal to it.
        */
@@ -8105,6 +8223,11 @@ export interface components {
        */
       parent?: string | null;
       priority?: components["schemas"]["Priority"] | null;
+      /**
+       * Format: date
+       * @description Its *Start date* (`2026-11-14`). None when left out.
+       */
+      start_date?: string | null;
       /**
        * @description The key of the status it starts in. The first status of its workflow when left out; another
        *     one is judged as a status change from the first.
@@ -9610,6 +9733,7 @@ export interface components {
     RelationKindItem: {
       /** @description What the other issue reads. */
       backward?: string | null;
+      date_effect?: components["schemas"]["DateEffect"] | null;
       /** @description What the issue it starts from reads. */
       forward?: string | null;
       /** @description The ID of the kind. */
@@ -15183,6 +15307,39 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["OffersBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  moveDates: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["MoveDatesBody"];
+      };
+    };
+    responses: {
+      /** @description The run and the issues in it. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DatesMovedBody"];
         };
       };
       400: components["responses"]["BadRequest"];

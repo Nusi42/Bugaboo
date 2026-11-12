@@ -45,6 +45,11 @@ pub struct ApiError {
     mistakes: Option<Arc<Vec<MistakeBody>>>,
     /// The date of the work day that was left open, for `working-hours.day-left-open`.
     open_day: Option<String>,
+    /// A loop of dependencies as issue IDs in order, `None` for an issue the person may not see,
+    /// for `relation.dependency-loop`.
+    dependency_loop: Option<Arc<Vec<Option<String>>>>,
+    /// The kinds of relation that have a date effect, for `relation-kind.date-effect-most`.
+    date_effect_kinds: Option<Arc<Vec<String>>>,
 }
 
 /// Tells [`add_request_id`] which answers to rewrite, and with what.
@@ -58,6 +63,8 @@ pub(crate) struct Extras {
     pub(crate) taken_over_by: Option<Arc<PersonRef>>,
     pub(crate) mistakes: Option<Arc<Vec<MistakeBody>>>,
     pub(crate) open_day: Option<String>,
+    pub(crate) dependency_loop: Option<Arc<Vec<Option<String>>>>,
+    pub(crate) date_effect_kinds: Option<Arc<Vec<String>>>,
 }
 
 impl ApiError {
@@ -73,7 +80,23 @@ impl ApiError {
             taken_over_by: None,
             mistakes: None,
             open_day: None,
+            dependency_loop: None,
+            date_effect_kinds: None,
         }
+    }
+
+    /// Names a loop of dependencies, on a `relation.dependency-loop` answer.
+    #[must_use]
+    pub(crate) fn with_dependency_loop(mut self, issues: Vec<Option<String>>) -> Self {
+        self.dependency_loop = Some(Arc::new(issues));
+        self
+    }
+
+    /// Names the kinds that have a date effect, on a `relation-kind.date-effect-most` answer.
+    #[must_use]
+    pub(crate) fn with_date_effect_kinds(mut self, kinds: Vec<String>) -> Self {
+        self.date_effect_kinds = Some(Arc::new(kinds));
+        self
     }
 
     /// Names the work day that was left open, on a `working-hours.day-left-open` answer.
@@ -96,6 +119,8 @@ impl ApiError {
             taken_over_by: self.taken_over_by.clone(),
             mistakes: self.mistakes.clone(),
             open_day: self.open_day.clone(),
+            dependency_loop: self.dependency_loop.clone(),
+            date_effect_kinds: self.date_effect_kinds.clone(),
         }
     }
 

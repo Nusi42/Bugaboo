@@ -16,7 +16,7 @@ use bb_core::version::FIRST_VERSION;
 use bb_core::workflow::StatusKey;
 use bb_policy::{Authorized, Evaluation, Permission, Place};
 
-use super::fields::{Given, clean_title, ensure_may_change};
+use super::fields::{Given, clean_title, ensure_dates_in_order, ensure_may_change};
 use super::ids::{code_plan_in, new_code_in};
 use super::types::{CreateIssue, IssueView};
 use crate::access::Actor;
@@ -202,6 +202,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             description: description.unwrap_or_default(),
             status,
             priority: input.priority.unwrap_or(Priority::NEW),
+            start_date: input.start_date,
+            due_date: input.due_date,
             estimated_time: input.estimated_time,
             time_left: None,
             reported_by: actor.person.id,
@@ -211,6 +213,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             deleted_at: None,
             version: FIRST_VERSION,
         };
+        ensure_dates_in_order(&issue)?;
         // The parent and what an agent may do under it are judged here, so the preview and the
         // real call refuse alike.
         let parent = self.parent_for_create(actor, input, project.id).await?;

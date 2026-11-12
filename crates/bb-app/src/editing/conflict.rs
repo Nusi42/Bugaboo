@@ -121,6 +121,8 @@ fn shown_by_us(kind: &EntityKind, field: &str) -> Shown {
             issue_member::DESCRIPTION,
             issue_member::STATUS,
             issue_member::PRIORITY,
+            issue_member::START_DATE,
+            issue_member::DUE_DATE,
         ]
     } else if *kind == EntityKind::from(RecordKind::IssueType) {
         &[
@@ -136,6 +138,7 @@ fn shown_by_us(kind: &EntityKind, field: &str) -> Shown {
         &[
             member::relation_kind::FORWARD,
             member::relation_kind::BACKWARD,
+            member::relation_kind::DATE_EFFECT,
             member::relation_kind::RETIRED,
         ]
     } else if *kind == EntityKind::from(RecordKind::LabelGroup) {

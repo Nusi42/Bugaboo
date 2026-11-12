@@ -14,6 +14,7 @@ use bb_app::relations::{
 };
 use bb_core::id::{RelationId, RelationKindId};
 use bb_core::issue::Priority;
+use bb_core::relation::DateEffect;
 use bb_core::relation::Direction;
 use bb_policy::Masked;
 use serde::{Deserialize, Serialize};
@@ -57,10 +58,11 @@ const RELATED_FIELDS: [FieldSpec; 5] = [
 const RELATED_LIST: &str = "related-issues";
 
 /// The fields of a kind of relation in a list: all of them are by default, a kind is small.
-const KIND_FIELDS: [FieldSpec; 5] = [
+const KIND_FIELDS: [FieldSpec; 6] = [
     FieldSpec::by_default("id"),
     FieldSpec::by_default("forward"),
     FieldSpec::by_default("backward"),
+    FieldSpec::by_default("date_effect"),
     FieldSpec::by_default("retired"),
     FieldSpec::by_default("version"),
 ];
@@ -192,6 +194,10 @@ pub(crate) struct RelationKindItem {
     /// What the other issue reads.
     #[serde(skip_serializing_if = "Option::is_none")]
     backward: Option<String>,
+    /// What the kind does to dates: nothing, or *Must finish first* (a relation of such a kind is a
+    /// dependency).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    date_effect: Option<DateEffect>,
     /// Whether it is retired: old relations keep it, new ones cannot have it.
     #[serde(skip_serializing_if = "Option::is_none")]
     retired: Option<bool>,
@@ -208,6 +214,7 @@ impl From<&RelationKindView> for RelationKindItem {
             id: Some(kind.id.to_string()),
             forward: Some(kind.forward.clone()),
             backward: Some(kind.backward.clone()),
+            date_effect: Some(kind.date_effect),
             retired: Some(kind.retired),
             version: Some(kind.version),
         }
@@ -235,6 +242,9 @@ pub(crate) struct ChangeRelationKindBody {
     backward: Option<String>,
     /// `true` retires the kind (no new relations of it), `false` offers it again.
     retired: Option<bool>,
+    /// A new date effect. Refused when two other kinds have one, or when the relations of the kind
+    /// close a loop of dependencies.
+    date_effect: Option<DateEffect>,
 }
 
 /// A relation to add.
@@ -369,6 +379,7 @@ async fn change_relation_kind(
                 forward: body.forward,
                 backward: body.backward,
                 retired: body.retired,
+                date_effect: body.date_effect,
             },
         )
         .await?;
@@ -649,6 +660,7 @@ mod tests {
             id: Some(String::new()),
             forward: Some(String::new()),
             backward: Some(String::new()),
+            date_effect: Some(DateEffect::Nothing),
             retired: Some(false),
             version: Some(1),
         };

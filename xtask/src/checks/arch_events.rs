@@ -8,7 +8,10 @@
 //! every other use case is a command, and its body must call `record_change`, its sibling
 //! `record_changes` (a change whose events are made inside the transaction, because they hold what
 //! the transaction found, such as the version a count-up gave) or `save_text` (the save of a long
-//! text under its lock, which calls `record_change` itself), or the method `record_change` of the
+//! text under its lock, which calls `record_change` itself), `open_run` (a run that a command opens
+//! so the changes it makes next belong to one run: the run is a row with its own event, and a
+//! command like *move the dates of several issues* writes its changes through the use case of a
+//! single change), or the method `record_change` of the
 //! context of the fields (`fields/definitions.rs`), which calls the port and then drops what the
 //! request kept of the field definitions, or *Apply* of the registry of AI tools: a command whose
 //! body calls `call_tool(` in the mode `ToolMode::Apply` saves through the use case of the tool,
@@ -38,6 +41,8 @@ const RECORD_MANY: &str = "record_changes";
 /// The other call that writes a change with its event: it checks the edit lock and calls
 /// `record_change` inside (`editing/save.rs`).
 const SAVE_TEXT: &str = "save_text";
+/// The call of the runs that opens a run with its event (`runs/service.rs`), through `record_change`.
+const OPEN_RUN: &str = "open_run";
 /// The call of the registry and the mode that runs the use case of a tool that changes something.
 const APPLY_CALL: &str = "call_tool(";
 const APPLY_MODE: &str = "ToolMode::Apply";
@@ -164,7 +169,7 @@ fn evaluate(sources: &[Source], table: Option<&str>) -> Vec<Finding> {
             };
             let applies_a_tool = applies_a_tool(body);
             if applies_a_tool
-                || [RECORD, RECORD_MANY, SAVE_TEXT]
+                || [RECORD, RECORD_MANY, SAVE_TEXT, OPEN_RUN]
                     .iter()
                     .any(|call| body.contains(&format!("{call}(")))
             {
@@ -243,6 +248,17 @@ mod tests {
         let text =
             "pub async fn change_status(ctx: &Ctx, cmd: ChangeStatus) -> Result<(), AppError> {
     ctx.save_text(person, place, &save, &event, write).await?;
+    Ok(())
+}
+";
+        assert!(found(text).is_empty());
+    }
+
+    #[test]
+    fn good_example_a_command_that_opens_a_run_for_the_changes_it_makes() {
+        let text =
+            "pub async fn change_status(ctx: &Ctx, cmd: ChangeStatus) -> Result<(), AppError> {
+    runs.open_run(run, kind, &by, now).await?;
     Ok(())
 }
 ";

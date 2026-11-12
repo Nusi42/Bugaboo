@@ -52,7 +52,7 @@ words! {
 
 /// A type that cannot hold personal data, so a field of this type may be marked `#[not_personal]`.
 ///
-/// It is implemented for numbers, truth values, moments, the IDs of records (not the ID of a
+/// It is implemented for numbers, truth values, moments, calendar days, the IDs of records (not the ID of a
 /// person), the words of the marks, and for types that say so explicitly. Text is not on the
 /// list: free text can hold anything, so it is marked `#[personal(…)]`.
 #[diagnostic::on_unimplemented(
@@ -70,6 +70,11 @@ not_personal!(
     bool, u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, char,
     Timestamp,
 );
+
+// A calendar day, like a moment. The days of the plan (*Start date*, *Due date*, ADR-0043) are not
+// personal data; a field that holds a day of a person (a birthday, a day of work) says so with
+// `#[personal(…)]`, as the time entries do, and `#[not_personal]` is still written by hand.
+not_personal!(jiff::civil::Date);
 
 impl<T: NotPersonal> NotPersonal for Option<T> {}
 impl<T: NotPersonal> NotPersonal for Vec<T> {}

@@ -125,6 +125,12 @@ impl From<AppError> for ApiError {
             AppError::DayLeftOpen { date } => {
                 Self::new(ErrorCode::WorkDayLeftOpen).with_open_day(date.to_string())
             }
+            AppError::DependencyLoop { issues } => {
+                Self::new(ErrorCode::RelationDependencyLoop).with_dependency_loop(issues)
+            }
+            AppError::DateEffectKindsMost { kinds } => {
+                Self::new(ErrorCode::RelationKindDateEffectMost).with_date_effect_kinds(kinds)
+            }
             AppError::Internal(cause) => Self::internal(&cause),
         }
     }

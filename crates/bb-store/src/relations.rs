@@ -8,9 +8,8 @@
 use bb_app::relations::RelationStore;
 use bb_core::id::{IssueId, RelationId, RelationKindId, UserId};
 use bb_core::issue::Issue;
-use bb_core::relation::{IssueParent, Relation, RelationKind};
+use bb_core::relation::{DateEffect, Dependency, IssueParent, Relation, RelationKind};
 use bb_core::version::Version;
-use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, OnConflict, Order, Query, SelectStatement};
 
 use crate::auth::AuthStorage;
@@ -27,6 +26,7 @@ fn kind_select() -> SelectStatement {
             RelationKindRow::Id,
             RelationKindRow::Forward,
             RelationKindRow::Backward,
+            RelationKindRow::DateEffect,
             RelationKindRow::Position,
             RelationKindRow::RetiredAt,
             RelationKindRow::Version,
@@ -40,6 +40,8 @@ fn read_kind(row: &Row) -> Result<RelationKind, StoreError> {
         id: row.id::<RelationKindId>(RelationKindRow::Id)?,
         forward: row.get(RelationKindRow::Forward)?,
         backward: row.get(RelationKindRow::Backward)?,
+        date_effect: DateEffect::from_code(&row.get::<String>(RelationKindRow::DateEffect)?)
+            .ok_or(StoreError::Corrupt("a date effect"))?,
         position: row.get(RelationKindRow::Position)?,
         retired_at: row.optional_time(RelationKindRow::RetiredAt)?,
         version: row.get(RelationKindRow::Version)?,
@@ -145,6 +147,31 @@ impl RelationStore for AuthStorage {
             .collect()
     }
 
+    async fn dependencies_of_kinds_in(
+        transaction: &mut Transaction,
+        kinds: Vec<RelationKindId>,
+    ) -> Result<Vec<Dependency>, StoreError> {
+        if kinds.is_empty() {
+            return Ok(Vec::new());
+        }
+        let mut select = Query::select();
+        select
+            .columns([RelationRow::FromIssue, RelationRow::ToIssue])
+            .from(RelationRow::Table)
+            .and_where(Expr::col(RelationRow::Kind).is_in(kinds.iter().map(|kind| kind.stored())));
+        transaction
+            .fetch_all(&select)
+            .await?
+            .iter()
+            .map(|row| {
+                Ok((
+                    row.id::<IssueId>(RelationRow::FromIssue)?,
+                    row.id::<IssueId>(RelationRow::ToIssue)?,
+                ))
+            })
+            .collect()
+    }
+
     async fn relation_between_in(
         transaction: &mut Transaction,
         kind: RelationKindId,
@@ -222,6 +249,7 @@ impl RelationStore for AuthStorage {
                 RelationKindRow::Id,
                 RelationKindRow::Forward,
                 RelationKindRow::Backward,
+                RelationKindRow::DateEffect,
                 RelationKindRow::Position,
                 RelationKindRow::RetiredAt,
                 RelationKindRow::Version,
@@ -230,6 +258,7 @@ impl RelationStore for AuthStorage {
                 Expr::val(kind.id.stored()),
                 Expr::val(kind.forward.as_str()),
                 Expr::val(kind.backward.as_str()),
+                Expr::val(kind.date_effect.code()),
                 Expr::val(kind.position),
                 Expr::val(kind.retired_at.map(to_micros)),
                 Expr::val(kind.version),
@@ -240,23 +269,21 @@ impl RelationStore for AuthStorage {
 
     async fn update_relation_kind(
         transaction: &mut Transaction,
-        id: RelationKindId,
-        forward: &str,
-        backward: &str,
-        retired_at: Option<Timestamp>,
+        kind: &RelationKind,
         version: Version,
     ) -> Result<bool, StoreError> {
         let mut update = Query::update();
         update
             .table(RelationKindRow::Table)
-            .value(RelationKindRow::Forward, forward)
-            .value(RelationKindRow::Backward, backward)
-            .value(RelationKindRow::RetiredAt, retired_at.map(to_micros))
+            .value(RelationKindRow::Forward, kind.forward.as_str())
+            .value(RelationKindRow::Backward, kind.backward.as_str())
+            .value(RelationKindRow::DateEffect, kind.date_effect.code())
+            .value(RelationKindRow::RetiredAt, kind.retired_at.map(to_micros))
             .value(
                 RelationKindRow::Version,
                 Expr::col(RelationKindRow::Version).add(1),
             )
-            .and_where(Expr::col(RelationKindRow::Id).eq(id.stored()))
+            .and_where(Expr::col(RelationKindRow::Id).eq(kind.id.stored()))
             .and_where(Expr::col(RelationKindRow::Version).eq(version.get()));
         Ok(transaction.execute(&update).await? > 0)
     }

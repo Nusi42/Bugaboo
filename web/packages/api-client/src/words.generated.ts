@@ -34,6 +34,7 @@ export const fieldWords = [
   "priority",
   "assigned-to",
   "reported-by",
+  "start-date",
   "due-date",
   "labels",
   "tags",
@@ -126,6 +127,9 @@ export const ruleFieldWords = [
   "duplicate-of",
   "found-in-release",
 ] as const;
+
+/** Every word of `DateEffect`, in the order the server lists them. */
+export const dateEffectWords = ["none", "must-finish-first"] as const;
 
 /** The members of `FieldBody` that are always there, as the server lists them. */
 export const fieldMembers = [

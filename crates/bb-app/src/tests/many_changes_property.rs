@@ -150,6 +150,8 @@ async fn set_up(world: &World, seeds: &[Seed]) -> Result<Setup, TestCaseError> {
                     title: None,
                     status: Some(status_of(seed.status)),
                     priority: None,
+                    start_date: None,
+                    due_date: None,
                     estimated_time: None,
                     time_left: None,
                     assigned_to: None,

@@ -114,6 +114,17 @@ pub fn issue_created(
             json!(assigned.iter().map(ToString::to_string).collect::<Vec<_>>()),
         ),
     ];
+    // The dates are members only when the issue was made with them.
+    changes.extend(
+        issue
+            .start_date
+            .map(|day| set_to(issue_member::START_DATE, json!(day))),
+    );
+    changes.extend(
+        issue
+            .due_date
+            .map(|day| set_to(issue_member::DUE_DATE, json!(day))),
+    );
     // The estimate is a member only when the issue was made with one.
     changes.extend(
         issue

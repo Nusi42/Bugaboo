@@ -7,6 +7,7 @@
 //! - **A relation is stored once and read from both ends**, each in its own words; adding and taking
 //!   away go into both histories (the event names both issues).
 
+mod dependencies;
 mod kinds;
 mod lines;
 mod parents;

@@ -288,6 +288,8 @@ async fn retitle(world: &World, given: &RuleWorld, title: &str) -> Result<(), Ap
             title: Some(title.to_owned()),
             status: None,
             priority: None,
+            start_date: None,
+            due_date: None,
             estimated_time: None,
             time_left: None,
             assigned_to: None,

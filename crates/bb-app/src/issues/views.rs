@@ -439,6 +439,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             status,
             status_changes,
             priority: issue.priority,
+            start_date: issue.start_date,
+            due_date: issue.due_date,
             estimated_time: issue.estimated_time,
             // Without the minutes spent only a typed value is known; the worked-out one needs them.
             time_left: time_spent.map_or(issue.time_left.map(TimeLeft::Typed), |spent| {

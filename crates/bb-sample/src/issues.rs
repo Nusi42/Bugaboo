@@ -15,20 +15,21 @@
 
 use std::collections::BTreeMap;
 
+use bb_app::auth::AppError;
 use bb_app::comments::{AddComment, SaveComment, add_comment, save_comment};
 use bb_app::context::Clock as _;
 use bb_app::context::SystemIds;
 use bb_app::editing::{TakeLockQuery, take_lock};
 use bb_app::issues::{ChangeIssue, CreateIssue, change_issue, create_issue};
-use bb_app::relations::{AddRelation, SetParent, add_relation, set_parent};
+use bb_app::relations::{AddRelation, RelationStore as _, SetParent, add_relation, set_parent};
 use bb_app::tags::{AddLabel, AddTag, add_label, add_tag};
 use bb_core::comment::{TEXT_PART, handle_of};
 use bb_core::edit::EditWhat;
 use bb_core::event::{EntityRef, RecordKind};
 use bb_core::fields::Field;
-use bb_core::id::{CommentId, EditorId, IssueId, LockToken, UserId};
+use bb_core::id::{CommentId, EditorId, IssueId, LockToken, RelationId, RelationKindId, UserId};
 use bb_core::issue::StatusGroup;
-use bb_core::relation::Direction;
+use bb_core::relation::{Direction, Relation};
 use bb_core::technical::TechnicalName;
 use bb_core::time::SECONDS_PER_DAY;
 use bb_core::workflow::StatusKey;
@@ -42,7 +43,10 @@ use crate::issues_plan::{Action, FieldPick, Plan, Reached};
 use crate::issues_setup::{Setup, id_in, json};
 use crate::issues_time::Calendar;
 use crate::issues_words::{IssueWords, MENTION};
+use crate::large_ids::ordered;
 use crate::organization::Organization;
+use crate::random::SeededRandom;
+use bb_store::AuthStorage;
 
 /// The number of days in a month the history is counted in.
 const MONTH_DAYS: i64 = 30;
@@ -404,6 +408,8 @@ impl Maker<'_, '_> {
                     status: None,
                     priority: Some(planned.priority),
                     assigned_to: (!assigned.is_empty()).then_some(assigned),
+                    start_date: None,
+                    due_date: None,
                     estimated_time: None,
                     fields,
                     parent: None,
@@ -511,6 +517,8 @@ impl Maker<'_, '_> {
                                 .map_err(|error| SampleError::NotMade(error.to_string()))?,
                         ),
                         priority: None,
+                        start_date: None,
+                        due_date: None,
                         estimated_time: None,
                         time_left: None,
                         // A change that asks for the person who does the work: the person who
@@ -619,20 +627,62 @@ impl Maker<'_, '_> {
             .get(planned.kind)
             .ok_or_else(|| SampleError::NotMade(format!("kind {}", planned.kind)))?;
         let token = self.hands.token(person).await?;
-        json(
-            add_relation(
-                &self.world.services.ctx(self.world.request()),
-                AddRelation {
-                    session_token: token,
-                    issue: from.to_string(),
-                    other: to.to_string(),
-                    kind,
-                    direction: Direction::Forward,
-                },
-            )
-            .await,
-            Step::Relation,
-        )?;
+        let made = add_relation(
+            &self.world.services.ctx(self.world.request()),
+            AddRelation {
+                session_token: token,
+                issue: from.to_string(),
+                other: to.to_string(),
+                kind,
+                direction: Direction::Forward,
+            },
+        )
+        .await;
+        // The deliberate circle of *blocks* closes a loop of dependencies, which a use case no
+        // longer makes. A loop was there before *blocks* had its date effect (migration 49) and
+        // stays, so the sample writes it the way an upgraded server holds it.
+        if matches!(made, Err(AppError::DependencyLoop { .. })) {
+            return self.relate_stored(from, to, kind, person).await;
+        }
+        json(made, Step::Relation)?;
         Ok(())
+    }
+
+    /// Writes a relation straight through the port, without the check of loops: the one that a
+    /// loop stored before migration 49 had.
+    async fn relate_stored(
+        &mut self,
+        from: IssueId,
+        to: IssueId,
+        kind: RelationKindId,
+        person: usize,
+    ) -> Result<(), SampleError> {
+        let at = self.world.clock.now();
+        let mut random =
+            SeededRandom::new(self.world.seed ^ u64::from(at.as_second().unsigned_abs()));
+        let relation = Relation {
+            id: ordered(RelationId::from_parts, at, &mut random)?,
+            kind,
+            from,
+            to,
+            added_by: self.world.people[person].id,
+            added_at: at,
+        };
+        let event = crate::large_build::event(
+            &mut random,
+            at,
+            relation.added_by,
+            RecordKind::Relation,
+            relation.id,
+            bb_app::event_members::relation_added(&relation),
+        )?;
+        self.world
+            .storage
+            .database()
+            .record_changes(&[event], async |transaction| {
+                AuthStorage::insert_relation(transaction, &relation).await
+            })
+            .await
+            .map_err(|error| SampleError::step(Step::Relation, &error))
     }
 }

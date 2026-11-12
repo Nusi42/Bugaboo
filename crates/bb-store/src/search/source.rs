@@ -304,6 +304,14 @@ pub(super) fn subject_of(
             Subject::Column(issue_column(IssueRow::ClosedAt)),
             Domain::Time(Clock::Micros),
         ),
+        T::StartDate => (
+            Subject::Column(issue_column(IssueRow::StartDate)),
+            Domain::Time(Clock::Days),
+        ),
+        T::DueDate => (
+            Subject::Column(issue_column(IssueRow::DueDate)),
+            Domain::Time(Clock::Days),
+        ),
         T::EstimatedTime => (
             Subject::Column(issue_column(IssueRow::EstimatedTime)),
             Domain::Minutes,

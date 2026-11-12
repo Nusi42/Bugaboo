@@ -19,6 +19,8 @@ const filled: NewIssueValues = {
   description: "Steps",
   priority: "high",
   assignedTo: [{ id: "u1", name: "Ada" }],
+  startDate: "2026-11-03",
+  dueDate: "2026-11-14",
   estimatedTime: 90,
   estimateWrong: false,
   fields: { f1: "Acme" },
@@ -65,6 +67,7 @@ describe("iss_11 the form of a new issue", () => {
     expect(hasWriting({ ...emptyForm, description: "Notes" })).toBe(true);
     expect(hasWriting({ ...emptyForm, fields: { f1: "x" } })).toBe(true);
     expect(hasWriting({ ...emptyForm, estimatedTime: 0 })).toBe(true);
+    expect(hasWriting({ ...emptyForm, dueDate: "2026-11-14" })).toBe(true);
   });
 
   it("turns into the text of a draft and back", () => {
@@ -97,6 +100,8 @@ describe("iss_11 what the form of a new issue sends", () => {
         priority: "normal",
         description: " ",
         assignedTo: [],
+        startDate: "",
+        dueDate: "",
         estimatedTime: null,
         fields: {},
       }),
@@ -107,6 +112,8 @@ describe("iss_11 what the form of a new issue sends", () => {
       description: "Steps",
       priority: "high",
       assigned_to: ["u1"],
+      start_date: "2026-11-03",
+      due_date: "2026-11-14",
       estimated_time: 90,
       fields: { f1: "Acme" },
     });
@@ -175,5 +182,24 @@ describe("cfg_01 the form asks only for what the layout shows", () => {
       },
     });
     expect(body.fields).toEqual({ tester: "u1", team: ["g1", "g2"], customer: "Acme" });
+  });
+});
+
+const draftDue = (dueDate: unknown) => decodeDraft(JSON.stringify({ ...filled, dueDate }))?.dueDate;
+
+describe("plan_01 the dates on the form of a new issue", () => {
+  it("send a day only when one is typed, and never a start date the form does not show", () => {
+    expect(bodyOf({ ...filled, startDate: "" })).not.toHaveProperty("start_date");
+    expect(bodyOf({ ...filled, dueDate: "" })).not.toHaveProperty("due_date");
+    expect(bodyOf({ ...filled, dueDate: "2026-12-01" }).due_date).toBe("2026-12-01");
+    const short = forForm(filled, (field) => field !== "start-date");
+    expect(short.startDate).toBe("");
+    expect(short.dueDate).toBe("2026-11-14");
+  });
+
+  it("are a day in a draft, and nothing for anything else", () => {
+    expect(draftDue("2026-11-14")).toBe("2026-11-14");
+    expect(draftDue(5)).toBe("");
+    expect(draftDue(null)).toBe("");
   });
 });

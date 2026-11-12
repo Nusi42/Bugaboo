@@ -159,16 +159,23 @@ async fn sec_06_issue_answers_refuse_every_field_the_role_may_not_see() -> TestR
             .as_str()
             .ok_or("no key")?
             .to_owned();
-        // The lengths are in an answer only while the issue has them.
+        // The lengths and the dates are in an answer only while the issue has them.
         let version = ok(&made)?["version"].clone();
         let timed = ada
             .send(
                 "PATCH",
                 &format!("{ISSUES}/{key}"),
-                Some(json!({"version": version, "estimated_time": 240, "time_left": 90})),
+                Some(json!({
+                    "version": version,
+                    "estimated_time": 240,
+                    "time_left": 90,
+                    "start_date": "2026-11-03",
+                    "due_date": "2026-11-07",
+                })),
             )
             .await?;
         assert_eq!(ok(&timed)?["estimated_time"], 240);
+        assert_eq!(timed.body["due_date"], "2026-11-07");
         let mut readers = vec![(
             "title reader".to_owned(),
             title_only_reader(&site, &rig).await?,
@@ -294,7 +301,13 @@ async fn sec_04_an_unchanged_value_of_a_field_i_may_not_change_is_refused_like_a
             .send(
                 "PATCH",
                 &path,
-                Some(json!({"version": version, "estimated_time": 240, "time_left": null})),
+                Some(json!({
+                    "version": version,
+                    "estimated_time": 240,
+                    "time_left": null,
+                    "start_date": "2026-11-03",
+                    "due_date": "2026-11-07",
+                })),
             )
             .await?;
         ok(&timed)?;
@@ -306,6 +319,8 @@ async fn sec_04_an_unchanged_value_of_a_field_i_may_not_change_is_refused_like_a
             ("assigned_to", json!([tim.to_string()])),
             ("estimated_time", json!(240)),
             ("time_left", json!(null)),
+            ("start_date", json!("2026-11-03")),
+            ("due_date", json!("2026-11-07")),
         ];
         for (name, level) in [("see", FieldLevel::CanSee), ("hidden", FieldLevel::Hidden)] {
             let mut who = changer(&site, &rig, &format!("{name}@example.test"), level).await?;

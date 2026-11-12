@@ -91,6 +91,7 @@ async fn iss_04_two_stored_kinds_of_relation_that_differ_only_in_spaces_can_be_r
         forward: forward.map(str::to_owned),
         backward: None,
         retired,
+        date_effect: None,
     };
     let renamed = change_relation_kind(&world.ctx(), change(two, Some("POINTS   AT"), None)).await;
     assert!(refused(&renamed), "{renamed:?}");

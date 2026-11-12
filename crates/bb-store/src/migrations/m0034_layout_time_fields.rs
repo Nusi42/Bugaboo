@@ -359,8 +359,18 @@ mod tests {
                 .sections
                 .iter()
                 .map(|section| {
-                    let fields: Vec<FieldKey> =
-                        section.fields.iter().map(|placed| placed.field).collect();
+                    // The two dates came with M8: a layout that was saved before does not hold
+                    // them, and they wait under the fields that are not on the form.
+                    let fields: Vec<FieldKey> = section
+                        .fields
+                        .iter()
+                        .map(|placed| placed.field)
+                        .filter(|field| {
+                            ![Field::StartDate, Field::DueDate]
+                                .map(FieldKey::from)
+                                .contains(field)
+                        })
+                        .collect();
                     shown(&fields, &roles)
                 })
                 .collect();

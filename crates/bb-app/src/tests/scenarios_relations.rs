@@ -82,6 +82,7 @@ pub(crate) async fn change_relation_kind_scenario(world: &World) -> Added {
                 forward: Some("stops".to_owned()),
                 backward: None,
                 retired: None,
+                date_effect: None,
             },
         ),
     )

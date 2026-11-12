@@ -1,11 +1,61 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Form, SubmitButton, Switch, TextField, partOf, part } from "@bugaboo/ui";
+import {
+  Alert,
+  alertTone,
+  Form,
+  SelectField,
+  SubmitButton,
+  Switch,
+  TextField,
+  partOf,
+  part,
+} from "@bugaboo/ui";
 import { useState } from "react";
 
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
 import { refreshRelationKinds } from "../../shared/query-keys.ts";
+import { dateEffectChoices } from "./date-effects.ts";
 import type { RelationKindLine } from "./relation-kinds.ts";
+
+/** *Retire* with its help: a switch, because retiring can be taken back at once. */
+function RetireSwitch({
+  retired,
+  onChange,
+}: {
+  readonly retired: boolean;
+  readonly onChange: (retired: boolean) => void;
+}) {
+  return (
+    <>
+      <p {...partOf(part.muted)}>{t("relation-kinds.retire-help")}</p>
+      <Switch
+        label={retired ? t("relation-kinds.offer-again") : t("relation-kinds.retire")}
+        isSelected={retired}
+        onChange={onChange}
+      />
+    </>
+  );
+}
+
+/** *Date effect*: what the kind means for the dates on the timeline, saved as soon as it is chosen. */
+function DateEffectField({
+  value,
+  onChange,
+}: {
+  readonly value: RelationKindLine["dateEffect"];
+  readonly onChange: (effect: RelationKindLine["dateEffect"]) => void;
+}) {
+  return (
+    <SelectField
+      label={t("relation-kinds.field-date-effect")}
+      description={t("relation-kinds.date-effect-help")}
+      choices={dateEffectChoices}
+      value={value}
+      onChange={onChange}
+    />
+  );
+}
 
 /**
  * The words of the kind, saved with the button on the version that was looked at, and *Retire*: no
@@ -45,10 +95,14 @@ export function EditRelationKind({ kind }: { readonly kind: RelationKindLine }) 
           <SubmitButton isPending={change.isPending}>{t("common.save")}</SubmitButton>
         </div>
       </Form>
-      <p {...partOf(part.muted)}>{t("relation-kinds.retire-help")}</p>
-      <Switch
-        label={kind.retired ? t("relation-kinds.offer-again") : t("relation-kinds.retire")}
-        isSelected={kind.retired}
+      <DateEffectField
+        value={kind.dateEffect}
+        onChange={(dateEffect) => {
+          change.mutate({ ...path, body: { version: kind.version, date_effect: dateEffect } });
+        }}
+      />
+      <RetireSwitch
+        retired={kind.retired}
         onChange={(retired) => {
           change.mutate({ ...path, body: { version: kind.version, retired } });
         }}

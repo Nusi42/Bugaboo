@@ -344,6 +344,8 @@ mod test_support {
             description: String::new(),
             status: starter::open(),
             priority: Priority::Normal,
+            start_date: None,
+            due_date: None,
             estimated_time: None,
             time_left: None,
             reported_by: UserId::generate(source),

@@ -7,6 +7,7 @@ const blocks = {
   id: "k1",
   forward: "blocks",
   backward: "is blocked by",
+  dateEffect: "must-finish-first" as const,
   retired: false,
   version: 1,
 };
@@ -14,6 +15,7 @@ const related = {
   id: "k2",
   forward: "related to",
   backward: "related to",
+  dateEffect: "none" as const,
   retired: false,
   version: 1,
 };

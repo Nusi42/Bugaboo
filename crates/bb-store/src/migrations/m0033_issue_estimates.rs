@@ -60,6 +60,9 @@ mod tests {
             let applied = database.migrate_until(33, at(1)).await?;
             assert_eq!(applied.last(), Some(&33));
             assert!(latest_version() >= 33);
+            // The issue is read with the columns of the program as it is now, so the migrations
+            // after this one are applied before it is read.
+            database.migrate(at(2)).await?;
 
             // The issue reads as it was, with no estimate and no typed time left.
             let mut read = issue_select();

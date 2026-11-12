@@ -169,6 +169,7 @@ pub(super) async fn seed(storage: &AuthStorage) -> Data {
         id: RelationKindId::generate(&mut source).unwrap(),
         forward: "blocks".to_owned(),
         backward: "is blocked by".to_owned(),
+        date_effect: bb_core::relation::DateEffect::Nothing,
         position: 0,
         retired_at: None,
         version: FIRST_VERSION,

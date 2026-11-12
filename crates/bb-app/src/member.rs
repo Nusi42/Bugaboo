@@ -53,6 +53,8 @@ pub(crate) mod relation_kind {
     pub(crate) const FORWARD: &str = "forward";
     pub(crate) const BACKWARD: &str = "backward";
     pub(crate) const RETIRED: &str = "retired";
+    /// What the kind does to dates.
+    pub(crate) const DATE_EFFECT: &str = "date-effect";
     /// The list of the kinds the first start made.
     pub(crate) const STARTING: &str = "relation-kinds";
 }

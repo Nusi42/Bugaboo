@@ -349,10 +349,12 @@ const fn catalogue_target(field: Field) -> Option<(FieldTarget, FieldKind)> {
         Field::Tags => Some((FieldTarget::Tags, FieldKind::Choice)),
         Field::AssignedTo => Some((FieldTarget::AssignedTo, FieldKind::Person)),
         Field::ReportedBy => Some((FieldTarget::ReportedBy, FieldKind::Person)),
+        Field::StartDate => Some((FieldTarget::StartDate, FieldKind::Date)),
+        Field::DueDate => Some((FieldTarget::DueDate, FieldKind::Date)),
         Field::EstimatedTime => Some((FieldTarget::EstimatedTime, FieldKind::Duration)),
         Field::TimeLeft => Some((FieldTarget::TimeLeft, FieldKind::Duration)),
         Field::TimeSpent => Some((FieldTarget::TimeSpent, FieldKind::Duration)),
-        Field::DueDate | Field::PlannedForRelease | Field::FoundInRelease => None,
+        Field::PlannedForRelease | Field::FoundInRelease => None,
     }
 }
 

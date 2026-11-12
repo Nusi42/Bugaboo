@@ -53,6 +53,20 @@ pub enum AppError {
         /// The date of the day that was left open.
         date: jiff::civil::Date,
     },
+    /// A relation of a kind with a date effect, or giving a kind that effect, would close a loop of
+    /// dependencies (`relation.dependency-loop`): one loop, as the issues on it in order, each as
+    /// the issue ID the person may see, or none for an issue they may not see (ADR-0043,
+    /// decision 4).
+    DependencyLoop {
+        /// The issues of the loop, in order; `None` for one that is hidden from the person.
+        issues: Vec<Option<String>>,
+    },
+    /// Two kinds of relation have a date effect already (`relation-kind.date-effect-most`): the
+    /// answer names them by their forward names, which are no secret (ADR-0043, decision 4).
+    DateEffectKindsMost {
+        /// The forward names of the kinds that have the effect.
+        kinds: Vec<String>,
+    },
     /// Something failed inside the server. The text is for the log only.
     Internal(String),
 }
@@ -69,6 +83,8 @@ impl AppError {
             Self::TakenOver { .. } => Some(ErrorCode::EditTakenOver),
             Self::Mistakes(_) => Some(ErrorCode::SearchInvalid),
             Self::DayLeftOpen { .. } => Some(ErrorCode::WorkDayLeftOpen),
+            Self::DependencyLoop { .. } => Some(ErrorCode::RelationDependencyLoop),
+            Self::DateEffectKindsMost { .. } => Some(ErrorCode::RelationKindDateEffectMost),
             Self::Limited { .. } | Self::Internal(_) => None,
         }
     }
@@ -133,6 +149,16 @@ impl fmt::Display for AppError {
             }
             Self::DayLeftOpen { .. } => {
                 write!(formatter, "refused: {}", ErrorCode::WorkDayLeftOpen)
+            }
+            Self::DependencyLoop { .. } => {
+                write!(formatter, "refused: {}", ErrorCode::RelationDependencyLoop)
+            }
+            Self::DateEffectKindsMost { .. } => {
+                write!(
+                    formatter,
+                    "refused: {}",
+                    ErrorCode::RelationKindDateEffectMost
+                )
             }
             Self::Internal(cause) => write!(formatter, "failed inside the server: {cause}"),
         }

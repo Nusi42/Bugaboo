@@ -8,6 +8,7 @@ use bb_core::id::{IssueId, IssueTypeId, UserId};
 use bb_core::issue::Priority;
 use bb_core::time::length::Minutes;
 use bb_core::workflow::StatusKey;
+use jiff::civil::Date;
 use serde_json::Value;
 
 use super::weigh::Net;
@@ -25,8 +26,10 @@ pub(super) fn restorable(net: &Net) -> bool {
         member::ISSUE_TYPE,
     ];
     let own = net.field.parse::<bb_core::id::FieldId>().is_ok();
-    // A built-in field that had no value before cannot be put back to none; an own field can.
-    (known.contains(&net.field.as_str()) && net.before.is_some()) || own
+    let date = [member::START_DATE, member::DUE_DATE].contains(&net.field.as_str());
+    // A built-in field that had no value before cannot be put back to none; an own field and a
+    // date can (a date a person set on an issue that had none is taken away again).
+    (known.contains(&net.field.as_str()) && net.before.is_some()) || own || date
 }
 
 /// The change of the issue `issue` that puts `nets` back, on `version`: the version the plan looked
@@ -46,6 +49,8 @@ pub(super) fn issue_change(
         title: None,
         status: None,
         priority: None,
+        start_date: None,
+        due_date: None,
         estimated_time: None,
         time_left: None,
         assigned_to: None,
@@ -61,6 +66,8 @@ pub(super) fn issue_change(
             }
             member::ESTIMATED_TIME => input.estimated_time = Some(length(before)?),
             member::TIME_LEFT => input.time_left = Some(length(before)?),
+            member::START_DATE => input.start_date = Some(day(before)?),
+            member::DUE_DATE => input.due_date = Some(day(before)?),
             member::ASSIGNED_TO => {
                 let people = before?
                     .as_array()?
@@ -80,6 +87,14 @@ pub(super) fn issue_change(
         }
     }
     Some(input)
+}
+
+/// A day as an event holds it: its text (`2026-11-14`), or none.
+fn day(value: Option<Value>) -> Option<SetTo<Date>> {
+    match value {
+        None | Some(Value::Null) => Some(SetTo::Nothing),
+        Some(text) => Some(SetTo::Value(text.as_str()?.parse().ok()?)),
+    }
 }
 
 /// A length of time as an event holds it: minutes, or none.

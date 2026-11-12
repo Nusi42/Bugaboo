@@ -20,7 +20,7 @@ use bb_app::many_changes::{
 };
 use bb_core::given::SetTo;
 use bb_core::id::{LabelId, RelationKindId, RunId, UserId};
-use bb_core::issue::Priority;
+use bb_core::issue::{CalendarDay, Priority};
 use bb_core::many_changes::{ManyChangeStatus, SkipReason};
 use bb_core::own_fields::FieldType;
 use bb_core::relation::Direction;
@@ -55,6 +55,16 @@ pub(crate) struct ManyChangeBody {
     status_button: Option<String>,
     /// A new priority.
     priority: Option<Priority>,
+    /// A new *Start date* (`2026-11-14`); `null` takes it away. An issue that would then start
+    /// after its due date is left alone.
+    #[serde(default, deserialize_with = "bb_core::given::deserialize")]
+    #[schema(value_type = Option<String>, format = Date, nullable)]
+    start_date: Option<SetTo<CalendarDay>>,
+    /// A new *Due date* (`2026-11-14`); `null` takes it away. An issue that would then start after
+    /// its due date is left alone.
+    #[serde(default, deserialize_with = "bb_core::given::deserialize")]
+    #[schema(value_type = Option<String>, format = Date, nullable)]
+    due_date: Option<SetTo<CalendarDay>>,
     /// A new *Estimated time*, in whole minutes; `null` takes it away.
     #[serde(default, deserialize_with = "bb_core::given::deserialize")]
     #[schema(value_type = Option<u32>, nullable)]
@@ -112,6 +122,8 @@ impl ManyChangeActionBody {
                     status: status_in(change.status.as_deref())?,
                     status_button: change.status_button,
                     priority: change.priority,
+                    start_date: change.start_date,
+                    due_date: change.due_date,
                     estimated_time: change.estimated_time,
                     time_left: change.time_left,
                     assigned_to: change

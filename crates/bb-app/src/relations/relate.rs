@@ -8,12 +8,13 @@ use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
 use std::sync::Arc;
 
-use bb_core::id::RelationId;
+use bb_core::id::{IssueId, RelationId};
 use bb_core::issue::Issue;
 use bb_core::relation::{Direction, RELATIONS_MAX, Relation, RelationKind};
 use bb_policy::{Authorized, Evaluation};
 use serde_json::json;
 
+use super::dependencies::loop_closed_by_in;
 use super::types::{AddRelation, RelationView, RemoveRelation};
 use crate::access::Actor;
 use crate::agent_work::issue_member;
@@ -75,15 +76,23 @@ impl RelationPlan {
     }
 }
 
+/// Why adding a relation would break a rule that is judged on what is stored.
+enum Conflict {
+    /// A limit of storage or the same relation again: the refusal names no issue.
+    Code(ErrorCode),
+    /// The relation is a dependency that would close this loop, as the issues on it in order.
+    Loop(Vec<IssueId>),
+}
+
 /// Whether adding the relation would break a rule that is judged on what is stored: it is there
 /// already (a kind that reads the same from both ends is one relation whichever issue it starts
-/// from), or an issue at an end has as many relations as it may. A limit of storage: the refusal
-/// names no issue. Read once for the preview and again inside the change, after the lock.
+/// from), an issue at an end has as many relations as it may, or the relation is a dependency that
+/// closes a loop. Read once for the preview and again inside the change, after the lock.
 async fn conflict_in<S: AuthStore>(
     transaction: &mut S::Transaction,
     relation: &Relation,
     symmetric: bool,
-) -> Result<Option<ErrorCode>, S::Error> {
+) -> Result<Option<Conflict>, S::Error> {
     let there = S::relation_between_in(transaction, relation.kind, relation.from, relation.to)
         .await?
         .is_some()
@@ -92,14 +101,16 @@ async fn conflict_in<S: AuthStore>(
                 .await?
                 .is_some());
     if there {
-        return Ok(Some(ErrorCode::RelationExists));
+        return Ok(Some(Conflict::Code(ErrorCode::RelationExists)));
     }
     for issue in [relation.from, relation.to] {
         if S::relations_of_in(transaction, issue).await?.len() >= RELATIONS_MAX {
-            return Ok(Some(ErrorCode::LimitReached));
+            return Ok(Some(Conflict::Code(ErrorCode::LimitReached)));
         }
     }
-    Ok(None)
+    Ok(loop_closed_by_in::<S>(transaction, relation)
+        .await?
+        .map(Conflict::Loop))
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -157,8 +168,10 @@ impl<S: AuthStore> Ctx<'_, S> {
             })
             .await
             .map_err(|error| internal::<S>(&error))?;
-        if let Some(code) = conflict {
-            return Err(code.into());
+        match conflict {
+            Some(Conflict::Code(code)) => return Err(code.into()),
+            Some(Conflict::Loop(path)) => return Err(self.dependency_loop(actor, &path).await?),
+            None => {}
         }
         Ok(RelationPlan {
             held,
@@ -177,7 +190,8 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// `resource.not-found` for an issue that does not exist or that the person may not see, or a kind
 /// that is not there, `access.forbidden` without the right to change `issue`, `request.invalid`
 /// for the same issue twice, a retired kind or an issue that has too many relations,
-/// `relation.exists` for a relation that is there already.
+/// `relation.exists` for a relation that is there already, `relation.dependency-loop` for a
+/// relation of a kind with a date effect that would close a loop of dependencies.
 pub async fn add_relation<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: AddRelation,
@@ -203,8 +217,12 @@ pub async fn add_relation<S: AuthStore>(
                 S::lock_issue_relations(transaction).await?;
                 // Judged again on what is stored now: the same relation may have been added
                 // meanwhile (the unique key stops two at the same moment).
-                if let Some(code) = conflict_in::<S>(transaction, &stored, symmetric).await? {
-                    return Err(stopped.stop::<S>(code));
+                match conflict_in::<S>(transaction, &stored, symmetric).await? {
+                    Some(Conflict::Code(code)) => return Err(stopped.stop::<S>(code)),
+                    Some(Conflict::Loop(_)) => {
+                        return Err(stopped.stop::<S>(ErrorCode::RelationDependencyLoop));
+                    }
+                    None => {}
                 }
                 S::insert_relation(transaction, &stored).await
             })

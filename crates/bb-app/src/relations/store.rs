@@ -7,9 +7,8 @@ use std::future::Future;
 
 use bb_core::id::{IssueId, RelationId, RelationKindId};
 use bb_core::issue::Issue;
-use bb_core::relation::{IssueParent, Relation, RelationKind};
+use bb_core::relation::{Dependency, IssueParent, Relation, RelationKind};
 use bb_core::version::Version;
-use jiff::Timestamp;
 
 use crate::issues::IssueStore;
 use crate::store_macros::{queries, reads, writes};
@@ -33,6 +32,9 @@ pub trait RelationStore: IssueStore + 'static {
         fn parent_of(child: IssueId) -> Option<IssueParent> = parent_of_in;
         /// The issues that sit under an issue, oldest first.
         fn sub_issues_of(parent: IssueId) -> Vec<IssueParent> = sub_issues_of_in;
+        /// The dependencies the relations of these kinds make (the kinds that have a date effect):
+        /// the issue that must finish first, and the one that waits.
+        fn dependencies_of_kinds(kinds: Vec<RelationKindId>) -> Vec<Dependency> = dependencies_of_kinds_in;
     }
 
     reads! {
@@ -43,15 +45,9 @@ pub trait RelationStore: IssueStore + 'static {
     writes! {
         /// Adds a kind of relation.
         fn insert_relation_kind(kind: &RelationKind) -> ();
-        /// Changes the names and the retired date of a kind, counts its version up, and says
-        /// whether the kind was still at `version`.
-        fn update_relation_kind(
-            id: RelationKindId,
-            forward: &str,
-            backward: &str,
-            retired_at: Option<Timestamp>,
-            version: Version
-        ) -> bool;
+        /// Changes the names, the date effect and the retired date of a kind to the ones `kind`
+        /// holds, counts its version up, and says whether the kind was still at `version`.
+        fn update_relation_kind(kind: &RelationKind, version: Version) -> bool;
         /// Adds a relation. The same relation twice is a duplicate key.
         fn insert_relation(relation: &Relation) -> ();
         /// Takes a relation away; `false` when it was not there.

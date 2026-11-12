@@ -65,6 +65,7 @@ mod follow;
 mod groups;
 mod handles;
 mod history;
+mod issue_dates;
 mod issue_item;
 mod issue_types;
 mod issues;
@@ -191,6 +192,7 @@ where
         .merge(layouts::routes())
         .merge(workflows::routes())
         .merge(issues::routes())
+        .merge(issue_dates::routes())
         .merge(search::routes(limits))
         .merge(relations::routes())
         .merge(tags::routes())

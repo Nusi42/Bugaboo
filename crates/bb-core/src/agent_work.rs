@@ -300,6 +300,11 @@ pub mod issue_member {
     pub const ESTIMATED_TIME: &str = Field::EstimatedTime.code();
     /// *Time left*.
     pub const TIME_LEFT: &str = Field::TimeLeft.code();
+    /// *Start date*: a member of a change, never named in a hand-over (an agent changes no date
+    /// unless the maintainers decide so).
+    pub const START_DATE: &str = Field::StartDate.code();
+    /// *Due date*: as *Start date*.
+    pub const DUE_DATE: &str = Field::DueDate.code();
     /// The labels.
     pub const LABELS: &str = Field::Labels.code();
     /// The tags.

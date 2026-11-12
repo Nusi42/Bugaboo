@@ -81,6 +81,8 @@ impl Maker<'_, '_> {
                             .map_err(|error| SampleError::NotMade(error.to_string()))?,
                     ),
                     priority: None,
+                    start_date: None,
+                    due_date: None,
                     estimated_time: None,
                     time_left: None,
                     assigned_to: read.assigned_for(option, self.world.people[person].id),

@@ -231,6 +231,8 @@ async fn ai_23_a_change_through_mcp_says_person_via_app_in_the_history() -> Outc
             title: Some("By the person".to_owned()),
             status: None,
             priority: None,
+            start_date: None,
+            due_date: None,
             estimated_time: None,
             time_left: None,
             assigned_to: None,

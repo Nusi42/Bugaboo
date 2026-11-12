@@ -135,6 +135,7 @@ table! {
     "release_stuck_lock" => s::release_stuck_lock_scenario,
     "create_issue" => si::create_issue_scenario,
     "move_issue" => si::move_issue_scenario,
+    "move_dates" => si::move_dates_scenario,
     "apply_many_changes" => si::apply_many_changes_scenario,
     "undo_run" => sru::undo_run_scenario,
     "change_issue" => si::change_issue_scenario,
@@ -275,7 +276,11 @@ async fn adr_0007_every_command_use_case_appends_its_event() -> Outcome {
             }
             // The end of an attempt closes the run and writes the one comment that says the result
             // is ready.
-            "end_attempt" => assert_eq!(added, 3, "{name} appended {added} events"),
+            // *Move the dates* of several issues opens its run, changes each issue (one event
+            // for the one issue of this scenario) and closes the run.
+            "end_attempt" | "move_dates" => {
+                assert_eq!(added, 3, "{name} appended {added} events");
+            }
             _ => assert_eq!(added, 1, "{name} appended {added} events"),
         }
     }

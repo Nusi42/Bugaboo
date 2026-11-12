@@ -2122,6 +2122,9 @@ pub const ERROR_ISSUE_PARENT_CIRCLE: MessageKey = MessageKey::new("error.issue.p
 /// The message `error.issue.parent-too-deep`.
 pub const ERROR_ISSUE_PARENT_TOO_DEEP: MessageKey = MessageKey::new("error.issue.parent-too-deep");
 
+/// The message `error.issue.start-after-due`.
+pub const ERROR_ISSUE_START_AFTER_DUE: MessageKey = MessageKey::new("error.issue.start-after-due");
+
 /// The message `error.issue.type-not-offered`.
 pub const ERROR_ISSUE_TYPE_NOT_OFFERED: MessageKey =
     MessageKey::new("error.issue.type-not-offered");
@@ -2171,6 +2174,10 @@ pub const ERROR_PROJECT_TOO_DEEP: MessageKey = MessageKey::new("error.project.to
 
 /// The message `error.rate-limit.exceeded`.
 pub const ERROR_RATE_LIMIT_EXCEEDED: MessageKey = MessageKey::new("error.rate-limit.exceeded");
+
+/// The message `error.relation.dependency-loop`.
+pub const ERROR_RELATION_DEPENDENCY_LOOP: MessageKey =
+    MessageKey::new("error.relation.dependency-loop");
 
 /// The message `error.relation.exists`.
 pub const ERROR_RELATION_EXISTS: MessageKey = MessageKey::new("error.relation.exists");
@@ -3177,6 +3184,9 @@ pub const ISSUE_FIELD_RELATIONS: MessageKey = MessageKey::new("issue-field.relat
 
 /// The message `issue-field.reported-by`.
 pub const ISSUE_FIELD_REPORTED_BY: MessageKey = MessageKey::new("issue-field.reported-by");
+
+/// The message `issue-field.start-date`.
+pub const ISSUE_FIELD_START_DATE: MessageKey = MessageKey::new("issue-field.start-date");
 
 /// The message `issue-field.status`.
 pub const ISSUE_FIELD_STATUS: MessageKey = MessageKey::new("issue-field.status");
@@ -5076,6 +5086,10 @@ pub const RELATED_ISSUES_BACK: MessageKey = MessageKey::new("related-issues.back
 /// The message `related-issues.kind-field`.
 pub const RELATED_ISSUES_KIND_FIELD: MessageKey = MessageKey::new("related-issues.kind-field");
 
+/// The message `related-issues.loop-hidden-issue`.
+pub const RELATED_ISSUES_LOOP_HIDDEN_ISSUE: MessageKey =
+    MessageKey::new("related-issues.loop-hidden-issue");
+
 /// The message `related-issues.more`.
 pub const RELATED_ISSUES_MORE: MessageKey = MessageKey::new("related-issues.more");
 
@@ -5123,9 +5137,25 @@ pub const RELATION_KINDS_CREATE_INTRO: MessageKey = MessageKey::new("relation-ki
 /// The message `relation-kinds.create-title`.
 pub const RELATION_KINDS_CREATE_TITLE: MessageKey = MessageKey::new("relation-kinds.create-title");
 
+/// The message `relation-kinds.date-effect-help`.
+pub const RELATION_KINDS_DATE_EFFECT_HELP: MessageKey =
+    MessageKey::new("relation-kinds.date-effect-help");
+
+/// The message `relation-kinds.date-effect.must-finish-first`.
+pub const RELATION_KINDS_DATE_EFFECT_MUST_FINISH_FIRST: MessageKey =
+    MessageKey::new("relation-kinds.date-effect.must-finish-first");
+
+/// The message `relation-kinds.date-effect.none`.
+pub const RELATION_KINDS_DATE_EFFECT_NONE: MessageKey =
+    MessageKey::new("relation-kinds.date-effect.none");
+
 /// The message `relation-kinds.field-backward`.
 pub const RELATION_KINDS_FIELD_BACKWARD: MessageKey =
     MessageKey::new("relation-kinds.field-backward");
+
+/// The message `relation-kinds.field-date-effect`.
+pub const RELATION_KINDS_FIELD_DATE_EFFECT: MessageKey =
+    MessageKey::new("relation-kinds.field-date-effect");
 
 /// The message `relation-kinds.field-forward`.
 pub const RELATION_KINDS_FIELD_FORWARD: MessageKey =
@@ -10115,6 +10145,15 @@ pub fn editing_lost_taken_over(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `error.relation-kind.date-effect-most`.
+#[must_use]
+pub fn error_relation_kind_date_effect_most(most: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("error.relation-kind.date-effect-most"),
+        vec![("most", Value::Text(most.to_string()))],
+    )
+}
+
 /// The message `error.time.entry-too-long`.
 #[must_use]
 pub fn error_time_entry_too_long(hours: i64) -> Message {
@@ -13016,6 +13055,15 @@ pub fn related_issues_added(
     )
 }
 
+/// The message `related-issues.loop-is`.
+#[must_use]
+pub fn related_issues_loop_is(issues: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("related-issues.loop-is"),
+        vec![("issues", Value::Text(issues.to_string()))],
+    )
+}
+
 /// The message `related-issues.take-away`.
 #[must_use]
 pub fn related_issues_take_away(
@@ -13037,6 +13085,15 @@ pub fn relation_kinds_created(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("relation-kinds.created"),
         vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `relation-kinds.date-effect-kinds`.
+#[must_use]
+pub fn relation_kinds_date_effect_kinds(kinds: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("relation-kinds.date-effect-kinds"),
+        vec![("kinds", Value::Text(kinds.to_string()))],
     )
 }
 
@@ -18178,6 +18235,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "That chain of sub-issues would be too long. Choose another issue.",
     ),
     (
+        "error.issue.start-after-due",
+        "The start date can't be after the due date.",
+    ),
+    (
         "error.issue.type-not-offered",
         "This project does not offer that issue type. Choose another type, or ask the project lead.",
     ),
@@ -18236,6 +18297,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "error.rate-limit.exceeded",
         "Too many tries. Please wait a little and try again.",
+    ),
+    (
+        "error.relation-kind.date-effect-most",
+        "At most {most} kinds of relation can have a date effect. Take it away from one of the kinds named here first.",
+    ),
+    (
+        "error.relation.dependency-loop",
+        "That would close a loop: each issue in it must finish before the next one, and the last before the first. Choose another issue or another kind.",
     ),
     (
         "error.relation.exists",
@@ -19034,6 +19103,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issue-field.readable-id", "Issue ID"),
     ("issue-field.relations", "Relations"),
     ("issue-field.reported-by", "Reported by"),
+    ("issue-field.start-date", "Start date"),
     ("issue-field.status", "Status"),
     ("issue-field.status-group", "Status group"),
     ("issue-field.sub-issue", "Sub-issue"),
@@ -20646,6 +20716,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("related-issues.back", "Back"),
     ("related-issues.kind-field", "What the relation means"),
+    ("related-issues.loop-hidden-issue", "an issue you can't see"),
+    ("related-issues.loop-is", "The loop: {issues}."),
     ("related-issues.more", "Show more related issues"),
     ("related-issues.none", "No related issues yet."),
     (
@@ -20676,9 +20748,23 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Created the kind of relation {name}.",
     ),
     (
+        "relation-kinds.date-effect-help",
+        "What the kind means for the dates on the timeline. With Must finish first the issue a relation starts from must finish before the other one starts, and the relation is a dependency. At most two kinds can have it, and it is refused when it would close a loop.",
+    ),
+    (
+        "relation-kinds.date-effect-kinds",
+        "Kinds that have it now: {kinds}.",
+    ),
+    (
+        "relation-kinds.date-effect.must-finish-first",
+        "Must finish first",
+    ),
+    ("relation-kinds.date-effect.none", "None"),
+    (
         "relation-kinds.field-backward",
         "Words for the second issue",
     ),
+    ("relation-kinds.field-date-effect", "Date effect"),
     ("relation-kinds.field-forward", "Words for the first issue"),
     (
         "relation-kinds.intro",

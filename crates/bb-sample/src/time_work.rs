@@ -286,6 +286,8 @@ impl Maker<'_, '_> {
                         title: None,
                         status: None,
                         priority: None,
+                        start_date: None,
+                        due_date: None,
                         estimated_time: Some(SetTo::Value(Minutes::new(minutes))),
                         time_left: None,
                         assigned_to: None,

@@ -445,6 +445,7 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("createIssue", &[Quirk::NeedsToSeeTheProject]),
     Example::with("getIssue", &[Quirk::AnIssueOfTheTarget]),
     Example::with("changeIssue", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("moveDates", &[Quirk::AnIssueOfTheTarget]),
     Example::with("saveIssueDescription", &[Quirk::AnIssueOfTheTarget]),
     Example::with("deleteIssue", &[Quirk::AnIssueOfTheTarget]),
     Example::with(

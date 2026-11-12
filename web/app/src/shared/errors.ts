@@ -1,6 +1,8 @@
 import { ApiError, messageKeyOf, type ErrorCode, type Problem } from "@bugaboo/api-client";
-import { tFrom } from "@bugaboo/messages";
+import { t, tFrom } from "@bugaboo/messages";
 import { CancelledError } from "@tanstack/react-query";
+
+import { listText } from "./list-text.ts";
 
 /** The code of an error answer of the server, if the error is one. */
 export function codeOf(error: unknown): ErrorCode | undefined {
@@ -30,7 +32,36 @@ export function messageOf(error: unknown): string {
   if (!(error instanceof ApiError)) {
     return tFrom(messageKeyOf(), {});
   }
-  return tFrom(error.messageKey, paramsOf(error.problem));
+  const message = tFrom(error.messageKey, paramsOf(error.problem));
+  const named = namedBy(error.problem);
+  return named === undefined ? message : `${message} ${named}`;
+}
+
+/** The members of an answer that are lists (the loop of dependencies, the kinds that have an effect). */
+function listOf(problem: Readonly<Problem> | undefined, member: string): readonly unknown[] {
+  const found: unknown = problem === undefined ? undefined : Reflect.get(problem, member);
+  return Array.isArray(found) ? found : [];
+}
+
+/**
+ * What a refusal names besides its message: a loop of dependencies by the issue IDs the person may
+ * see (an issue they may not see is *an issue you can't see*), and the kinds of relation that have a
+ * date effect already. Nothing for any other answer.
+ */
+function namedBy(problem: Readonly<Problem> | undefined): string | undefined {
+  const loop = listOf(problem, "dependency_loop");
+  if (loop.length > 0) {
+    const issues = loop.map((each) =>
+      typeof each === "string" ? each : t("related-issues.loop-hidden-issue"),
+    );
+    return t("related-issues.loop-is", { issues: listText(issues) });
+  }
+  const kinds = listOf(problem, "date_effect_kinds").filter(
+    (each): each is string => typeof each === "string",
+  );
+  return kinds.length === 0
+    ? undefined
+    : t("relation-kinds.date-effect-kinds", { kinds: listText(kinds) });
 }
 
 /** The values the server sent for the placeholders of a message: the limits it names, numbers and words only. */

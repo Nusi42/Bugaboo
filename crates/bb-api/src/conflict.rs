@@ -64,6 +64,14 @@ pub(crate) struct ConflictProblem {
     /// `working-hours.day-left-open`, so the screen can ask when it ended.
     #[serde(skip_serializing_if = "Option::is_none")]
     open_day: Option<String>,
+    /// One loop of dependencies, as the issue IDs on it in order; an issue the person may not see
+    /// is `null`, so the loop never names it. Only for `relation.dependency-loop`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    dependency_loop: Option<Vec<Option<String>>>,
+    /// The forward names of the kinds of relation that have a date effect; only for
+    /// `relation-kind.date-effect-most`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    date_effect_kinds: Option<Vec<String>>,
 }
 
 /// One mistake in the text of a search (ADR-0005): what the browser needs to write the message in
@@ -103,6 +111,8 @@ impl ConflictProblem {
             taken_over_by: extras.taken_over_by.as_deref().cloned(),
             mistakes: extras.mistakes.as_deref().cloned(),
             open_day: extras.open_day.clone(),
+            dependency_loop: extras.dependency_loop.as_deref().cloned(),
+            date_effect_kinds: extras.date_effect_kinds.as_deref().cloned(),
         }
     }
 }

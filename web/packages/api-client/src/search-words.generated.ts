@@ -9,6 +9,7 @@ export const searchWords = [
   "priority",
   "assigned to",
   "reported by",
+  "start date",
   "due date",
   "labels",
   "tags",

@@ -1,6 +1,7 @@
 import { priorityWords, statusGroupWords, type Schema } from "@bugaboo/api-client";
 import { t, type MessageKey } from "@bugaboo/messages";
 
+import { formatCalendarDay } from "../../shared/format.ts";
 import { listText } from "../../shared/list-text.ts";
 import { minutesText, timeLeftOf } from "./time-words.ts";
 import { namedPerson, type NamedPerson } from "../../shared/person.ts";
@@ -20,6 +21,10 @@ export interface IssueValues {
   readonly own?: Readonly<Record<string, unknown>>;
   /** *Estimated time* in whole minutes; `null` takes it away. */
   readonly estimatedTime?: number | null;
+  /** *Start date* as the calendar writes it (`2026-11-14`); `null` takes it away. */
+  readonly startDate?: string | null;
+  /** *Due date* as the calendar writes it; `null` takes it away. */
+  readonly dueDate?: string | null;
   /** *Time left* as typed, in whole minutes; `null` takes it away, so it is worked out again. */
   readonly timeLeft?: number | null;
 }
@@ -50,6 +55,12 @@ export function rowFieldOf(values: IssueValues): RowField | undefined {
   }
   if (values.estimatedTime !== undefined) {
     return "estimated-time";
+  }
+  if (values.startDate !== undefined) {
+    return "start-date";
+  }
+  if (values.dueDate !== undefined) {
+    return "due-date";
   }
   if (values.timeLeft !== undefined) {
     return "time-left";
@@ -94,6 +105,8 @@ export function after(before: IssueDetail | undefined, edit: IssueEdit): IssueDe
     ...(values.priority === undefined ? {} : { priority: values.priority }),
     ...(values.assignedTo === undefined ? {} : { assigned_to: values.assignedTo.map(shownByName) }),
     ...(values.estimatedTime === undefined ? {} : { estimated_time: values.estimatedTime }),
+    ...(values.startDate === undefined ? {} : { start_date: values.startDate }),
+    ...(values.dueDate === undefined ? {} : { due_date: values.dueDate }),
     ...(values.timeLeft === undefined
       ? {}
       : {
@@ -161,6 +174,8 @@ export function valuesBefore(detail: IssueDetail, values: IssueValues): IssueVal
     ...(values.estimatedTime === undefined
       ? {}
       : { estimatedTime: known(issue.estimated_time) ?? null }),
+    ...(values.startDate === undefined ? {} : { startDate: known(issue.start_date) ?? null }),
+    ...(values.dueDate === undefined ? {} : { dueDate: known(issue.due_date) ?? null }),
     ...(values.timeLeft === undefined ? {} : { timeLeft: typedLeft(issue) }),
   };
 }
@@ -178,6 +193,16 @@ function lengthSaid(field: MessageKey, minutes: number | null | undefined): stri
   return minutes === null
     ? t("issues.cleared", { field: t(field) })
     : said(field, minutesText(minutes));
+}
+
+/** A change of a date in a sentence ("Due date changed to 14 Nov 2026."); none when it did not change. */
+function daySaid(field: MessageKey, day: string | null | undefined): string | undefined {
+  if (day === undefined) {
+    return undefined;
+  }
+  return day === null
+    ? t("issues.cleared", { field: t(field) })
+    : said(field, formatCalendarDay(day));
 }
 
 /** What a change says in a sentence, for *Undo*: "Priority changed to High." */
@@ -200,6 +225,8 @@ export function undoSentence(values: IssueValues): string {
       : t("issues.changed-own", { count: Object.keys(values.own).length }),
     lengthSaid("issue-field.estimated-time", values.estimatedTime),
     lengthSaid("issue-field.time-left", values.timeLeft),
+    daySaid("issue-field.start-date", values.startDate),
+    daySaid("issue-field.due-date", values.dueDate),
   ];
   return parts.filter((part): part is string => part !== undefined).join(" ");
 }

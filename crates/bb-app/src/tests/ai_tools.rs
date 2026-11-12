@@ -109,17 +109,9 @@ pub(super) async fn issue_with(
     let made = create_issue(
         &world.ctx(),
         CreateIssue {
-            session_token: token(world),
-            project: project.to_owned(),
-            issue_type: a_type(world).await?,
-            title: title.to_owned(),
             description: Some(description.to_owned()),
-            status: None,
-            priority: None,
-            assigned_to: None,
-            estimated_time: None,
             fields,
-            parent: None,
+            ..CreateIssue::of(&token(world), project, a_type(world).await?, title)
         },
     )
     .await
