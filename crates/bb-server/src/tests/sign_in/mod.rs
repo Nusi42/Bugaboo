@@ -126,6 +126,7 @@ mod tls;
 mod upgrade;
 mod upkeep_writes;
 mod work_times_http;
+mod work_times_mail_http;
 mod work_times_perf;
 mod work_times_shares_http;
 mod workflows_http;
