@@ -310,6 +310,22 @@ async fn plan_13_a_hidden_person_on_the_bar_is_not_named_through_the_factor_or_a
                 Some(json!({"version": version, "percent": 150})),
             )
             .await?)?;
+        // A second issue of hers whose factor Ada set.
+        let by_ada = planned(
+            &site,
+            &mut ada,
+            "Logout screen",
+            json!({"start_date": MONDAY, "due_date": "2027-03-05", "estimated_time": 480, "assigned_to": [lea_id.to_string()]}),
+        )
+        .await?;
+        let version = issue(&mut ada, &by_ada).await?["version"].clone();
+        ok(&ada
+            .send(
+                "PUT",
+                &format!("{ISSUES}/{by_ada}/time-factor"),
+                Some(json!({"version": version, "percent": 150})),
+            )
+            .await?)?;
         let version = issue(&mut lea, &key).await?["version"].clone();
         ok(&lea
             .send(
@@ -323,12 +339,19 @@ async fn plan_13_a_hidden_person_on_the_bar_is_not_named_through_the_factor_or_a
         let (mut contributor, _) = site
             .person(StartingRole::Contributor, "contributor")
             .await?;
-        let factor = contributor
-            .send("GET", &format!("{ISSUES}/{key}/time-factor"), None)
-            .await?;
-        let factor = ok(&factor)?.clone();
-        assert_eq!(factor["own_estimate"], false, "{factor}");
-        assert_eq!(factor["set_by"], Value::Null, "{factor}");
+        // Who set a factor is told no more openly than the person on the bar: the factor she set
+        // and the one Ada set look alike.
+        let mut factors = Vec::new();
+        for each in [&key, &by_ada] {
+            let factor = contributor
+                .send("GET", &format!("{ISSUES}/{each}/time-factor"), None)
+                .await?;
+            let factor = ok(&factor)?.clone();
+            assert_eq!(factor["own_estimate"], false, "{factor}");
+            assert_eq!(factor["set_by"], json!({"shown": "someone"}), "{factor}");
+            factors.push((factor["own_estimate"].clone(), factor["set_by"].clone()));
+        }
+        assert_eq!(factors[0], factors[1]);
         let found = page(&mut contributor, ask(&site, MONDAY, "2027-03-31", json!({}))).await?;
         let id = id_of_key(&mut ada, &key).await?;
         let away = warnings_on(&found, &id)[0].clone();

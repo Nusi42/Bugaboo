@@ -165,7 +165,8 @@ impl<S: AuthStore> Ctx<'_, S> {
 
     /// The view of the time factor of `issue` for a reader who holds `held` in its project. Who set
     /// it is told only as openly as the person on the bar: that it is the person's own estimate,
-    /// and who that is, only to a reader who is shown the person by name.
+    /// and who set it, only to a reader who is shown the person by name; any other reader is shown
+    /// the person on the bar as they see them, whoever set it.
     async fn factor_view(
         &self,
         held: &Evaluation,
@@ -181,7 +182,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         let named = names_person(held, first, person.as_ref());
         let percent = factor.map_or(TimeFactor::ONE, |kept| kept.factor).percent();
         let set_by = match factor {
-            Some(kept) if kept.set_by != kept.person || named => Some(
+            // Not more openly than the person on the bar, whoever set it: a factor the person set
+            // and one somebody else set look alike.
+            Some(_) if !named => Some(person.clone().unwrap_or(PersonRef::Someone)),
+            Some(kept) => Some(
                 self.person_ref(
                     held,
                     PeopleKind::Authors,
@@ -190,7 +194,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 )
                 .await?,
             ),
-            _ => None,
+            None => None,
         };
         Ok(TimeFactorView {
             issue: issue.id,
