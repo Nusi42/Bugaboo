@@ -282,13 +282,17 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(failed)?
             .filter(|search| search.maker == stale.viewer && search.deleted_at.is_none())
             .map(|search| search.version),
-            // A personal theme, and one never saved, is its maker's own: nobody else is told its
-            // version.
-            RecordKind::Theme => found(ThemeId::from_bytes(bytes).ok(), |id| store.own_theme(id))
-                .await
-                .map_err(failed)?
-                .filter(|theme| crate::themes::usable_by(theme, stale.viewer))
-                .map(|theme| theme.version),
+            // A theme is told to whoever may know it (`known_to`): a personal theme to its maker,
+            // a saved theme for everyone to everybody, and one for everyone never saved to its
+            // maker and to who holds *Change organization settings*, who may save or delete it.
+            RecordKind::Theme => {
+                let held = self.evaluate(stale.viewer, Place::Organization).await?;
+                found(ThemeId::from_bytes(bytes).ok(), |id| store.own_theme(id))
+                    .await
+                    .map_err(failed)?
+                    .filter(|theme| crate::themes::known_to(theme, stale.viewer, &held))
+                    .map(|theme| theme.version)
+            }
             // A timer and a time entry are their person's own: nobody else is told their version.
             RecordKind::Timer => found(UserId::from_bytes(bytes).ok(), |id| store.timer(id))
                 .await

@@ -21,7 +21,7 @@ pub use read::{download_theme, theme, theme_draft_sheet, theme_sheet, themes};
 pub use rules::NamedPair;
 #[cfg(test)]
 pub(crate) use rules::editing_what;
-pub(crate) use rules::{ChoiceInForce, usable_by};
+pub(crate) use rules::{ChoiceInForce, known_to};
 pub use store::ThemeStore;
 pub use types::*;
 pub use write::{copy_theme, create_theme, delete_theme, save_theme, upload_theme};

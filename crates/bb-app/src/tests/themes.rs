@@ -538,3 +538,33 @@ async fn thm_04_a_downloaded_theme_uploads_as_the_same_theme() -> Outcome {
     assert!(again.view.theme.saved_at.is_some());
     Ok(())
 }
+
+#[tokio::test]
+async fn iss_17_a_stale_save_of_a_theme_for_everyone_never_saved_names_its_version_to_who_looks_after_it()
+-> Outcome {
+    let world = World::new().await?;
+    let admin = token(&world);
+    let view = a_theme(&world, &admin, ThemeKind::ForEveryone, "dusk").await?;
+    let ben = world.person("ben@example.com").await?;
+    with_role(&world, &ben, StartingRole::Administrator, None).await?;
+    let mut stale_view = view.clone();
+    stale_view.theme.version += 1;
+    let refused = save_values(
+        &world,
+        &ben.session_token,
+        ben.person.id,
+        &stale_view,
+        an_accent(),
+    )
+    .await
+    .err()
+    .ok_or("a save from a version that is not there went through")?;
+    let AppError::Stale(stale) = refused else {
+        return Err(format!("not a stale save: {refused}").into());
+    };
+    let AppError::Conflict(conflict) = world.ctx().conflict_of(&stale).await else {
+        return Err("no conflict answer".into());
+    };
+    assert_eq!(conflict.version, Some(view.theme.version));
+    Ok(())
+}
