@@ -5102,6 +5102,22 @@ part "theme-editor.bar" {
     }
 }
 
+// The end of the bar: *Preview* (on a phone), *Throw my changes away* and *Save theme* in one row; where they do not fit
+// in the width of a phone, *Save theme* takes a row of its own under the others.
+part "theme-editor.bar-end" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    justify-content flex-end
+    gap "$space-2"
+}
+
+part "theme-editor.bar-end button[variant=primary]" {
+    media "(max-width: calc($bp-tablet - 1px))" {
+        flex-basis "100%"
+    }
+}
+
 // In the sheet of the preview on a phone only the preview scrolls; the title and *Close* stay.
 part "theme-editor.preview-scroll" {
     flex "1 1 auto"

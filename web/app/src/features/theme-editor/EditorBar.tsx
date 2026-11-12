@@ -1,6 +1,6 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, buttonLook, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, Button, buttonLook, partOf, part, useLayout } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
 import type { EditLock } from "../../shared/editing/index.ts";
@@ -20,24 +20,34 @@ export interface EditorBarProps {
 
 /**
  * The one bar at the foot of the editor (UX §5.6): *Save a copy* and *Download* of the saved theme
- * on the start side, *Throw my changes away* and *Save theme* on the end side (and *Preview* on a
- * phone, where the bar stays at the foot of the screen). A personal theme with colors that are hard
+ * on the start side, *Throw my changes away* and *Save theme* on the end side. On a phone the bar
+ * stays at the foot of the screen with *Preview*, *Throw my changes away* and *Save theme* only;
+ * *Save a copy* and *Download* stand in the page above it. A personal theme with colors that are hard
  * to read asks *Save this theme?* first; a theme for everyone sends the cursor to the readability.
  */
 export function EditorBar({ detail, editing, lock, extra }: EditorBarProps) {
   const { dirty } = editing;
   const { theme } = detail;
   const saving = useSaving(detail, editing, lock);
+  // On a phone *Save a copy* and *Download* stand in the page; the pinned bar keeps the rest.
+  const phone = useLayout() === "phone";
   return (
     <>
       {saving.error === null || saving.error === undefined ? null : (
         <Alert tone={alertTone.danger}>{messageOf(saving.error)}</Alert>
       )}
-      <div {...partOf(part.themeEditorBar)}>
+      {phone ? (
         <div {...partOf(part.row)}>
-          <ThemeActions theme={theme} />
+          <ThemeActions theme={theme} look={buttonLook.plain} />
         </div>
-        <div {...partOf(part.row)}>
+      ) : null}
+      <div {...partOf(part.themeEditorBar)}>
+        {phone ? null : (
+          <div {...partOf(part.row)}>
+            <ThemeActions theme={theme} />
+          </div>
+        )}
+        <div {...partOf(part.themeEditorBarEnd)}>
           {extra}
           <Button
             look={buttonLook.quiet}

@@ -5305,6 +5305,20 @@ textarea,
   }
 }
 
+[data-part="theme-editor.bar-end"] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+@media (max-width: calc(768px - 1px)) {
+  [data-part="theme-editor.bar-end"] [data-part="button"][data-variant~="primary"] {
+    flex-basis: 100%;
+  }
+}
+
 [data-part="theme-editor.preview-scroll"] {
   flex: 1 1 auto;
   min-height: 0;
