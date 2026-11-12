@@ -3,7 +3,7 @@
 //! wrapped in `Authorized<T>` by the use case.
 
 use bb_core::id::{LockToken, ThemeId};
-use bb_core::theme::{OwnTheme, ThemeFile, ThemeKind};
+use bb_core::theme::{OwnTheme, ReadabilitySummary, ThemeFile, ThemeKind};
 use bb_policy::Masked;
 
 use super::rules::NamedPair;
@@ -102,6 +102,8 @@ pub struct ThemeView {
     pub choice: String,
     /// Whether it is a light theme (it extends a light built-in theme).
     pub light: bool,
+    /// How many of its pairs are *Easy*, *OK* and *Hard to read*, as saved.
+    pub readability: ReadabilitySummary,
 }
 
 impl Masked for ThemeView {}
@@ -135,6 +137,9 @@ pub struct ThemeDetail {
     /// The pairs of its saved values that are *Hard to read*: the warning of a personal theme (a
     /// theme for everyone with any is never saved).
     pub hard_to_read: Vec<NamedPair>,
+    /// How many people chose it themselves: for a theme for everyone, and only for who may change
+    /// it (the question before it is deleted names them); `None` for anyone else.
+    pub used_by: Option<u64>,
 }
 
 impl Masked for ThemeDetail {}

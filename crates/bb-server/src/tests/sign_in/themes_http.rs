@@ -151,3 +151,44 @@ async fn thm_04_a_theme_never_saved_is_listed_to_its_maker_and_to_who_looks_afte
     })
     .await
 }
+
+#[tokio::test]
+async fn thm_04_who_looks_after_a_theme_for_everyone_learns_how_many_people_chose_it() -> TestResult
+{
+    each_database("thm_04_theme_used_by", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        Org::start(&rig).await?;
+        let mut ada = Browser::signed_in_as(&app, ADA_EMAIL).await?;
+        let mut ben = ada.invite("ben@example.test", "Ben Baker").await?;
+        let file = json!({"name": "Harbor", "extends": "dusk",
+            "values": {"colors": {"accent": {"value": "#b4a8ff"}}}});
+        let uploaded = ada
+            .send(
+                "POST",
+                &format!("{THEMES}/upload?kind=for-everyone"),
+                Some(file),
+            )
+            .await?;
+        let theme = ok(&uploaded)?["theme"].clone();
+        let id = text_in(&theme, "id")?;
+        // The list rates each theme as it is saved: nothing in it is hard to read.
+        assert_eq!(theme["readability"]["hard_to_read"], 0);
+        assert!(theme["readability"]["easy"].as_u64() > Some(0));
+
+        let chosen = ben
+            .send(
+                "PUT",
+                "/api/v1/me/settings/appearance.dark-theme",
+                Some(json!({"value": text_in(&theme, "choice")?})),
+            )
+            .await?;
+        assert!(chosen.status.is_success(), "{}", chosen.body);
+        let detail = ada.send("GET", &format!("{THEMES}/{id}"), None).await?;
+        assert_eq!(ok(&detail)?["used_by"], 1);
+        // Who may only use it is not told.
+        let seen = ben.send("GET", &format!("{THEMES}/{id}"), None).await?;
+        assert!(ok(&seen)?.get("used_by").is_none());
+        Ok(())
+    })
+    .await
+}

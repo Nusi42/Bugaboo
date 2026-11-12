@@ -14,6 +14,7 @@ use super::{
 /// A color of an own theme and, optionally, its color for a device that asks for more contrast.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema), schema(as = ThemeColorBody))]
 pub struct ColorChoice {
     /// `#rrggbb`.
     pub value: String,
@@ -25,6 +26,7 @@ pub struct ColorChoice {
 /// One layer of a shadow: offsets, blur, spread and a color.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema), schema(as = ShadowLayerBody))]
 pub struct ShadowLayer {
     /// How far right, in pixels (left when negative).
     pub x: i32,
@@ -41,11 +43,12 @@ pub struct ShadowLayer {
 /// What an own theme changes of the built-in theme it extends.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema), schema(as = ThemeValuesBody))]
 pub struct OwnValues {
     /// The colors, by the name of the token.
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub colors: BTreeMap<String, ColorChoice>,
-    /// The shadow, as at most two layers; `None` keeps the shadow of the built-in theme.
+    /// The shadow, as at most two layers; left out, the shadow of the built-in theme stays.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub shadow: Option<Vec<ShadowLayer>>,
     /// The corner radii in pixels, by the name of the token.

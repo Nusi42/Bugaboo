@@ -40,6 +40,9 @@ export const descriptionEditPart = "description";
 /** The name of the part of a comment that holds its text. */
 export const commentEditPart = "text";
 
+/** The name of the part of an own theme that its edit lock and the draft of the theme editor are about: a theme is edited as a whole. */
+export const themeEditPart = "theme";
+
 /** The version a new record starts with. */
 export const firstVersion = 1;
 

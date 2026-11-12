@@ -367,3 +367,23 @@ reason = "What the shares of the person themselves add up to, in percent: only t
 route = "GET /api/v1/people/{person}/work-times"
 property = "sum"
 reason = "The same member of the same answer, which the reader sees only when it is their own: another person's work times answer it as nothing, so it holds only what the viewer may see (ADR-0030, amendment M8)."
+
+[[exempt]]
+route = "POST /api/v1/themes/upload"
+property = "used_by"
+reason = "The people who chose a theme for everyone themselves, answered only to who may change it (Change organization settings), who sees every person of the organization in Organization settings › People; a save, a copy and an upload leave it out (ADR-0026 update M8, UX §5.6)."
+
+[[exempt]]
+route = "GET /api/v1/themes/{theme}"
+property = "used_by"
+reason = "The people who chose a theme for everyone themselves, answered only to who may change it (Change organization settings), who sees every person of the organization in Organization settings › People; a save, a copy and an upload leave it out (ADR-0026 update M8, UX §5.6)."
+
+[[exempt]]
+route = "PUT /api/v1/themes/{theme}"
+property = "used_by"
+reason = "The people who chose a theme for everyone themselves, answered only to who may change it (Change organization settings), who sees every person of the organization in Organization settings › People; a save, a copy and an upload leave it out (ADR-0026 update M8, UX §5.6)."
+
+[[exempt]]
+route = "POST /api/v1/themes/{theme}/copy"
+property = "used_by"
+reason = "The people who chose a theme for everyone themselves, answered only to who may change it (Change organization settings), who sees every person of the organization in Organization settings › People; a save, a copy and an upload leave it out (ADR-0026 update M8, UX §5.6)."

@@ -33,6 +33,9 @@ pub trait SettingsStore: PolicyStore + 'static {
         /// level of their layers, for each person who has any. What the reader of notifications
         /// needs for all the followers of an event at once.
         fn person_settings(people: Vec<UserId>) -> Vec<(UserId, BTreeMap<String, SettingValue>)>;
+        /// How many people chose `value` themselves for any of `settings`: the people who see an
+        /// own theme they chose, which the question before it is deleted counts.
+        fn people_choosing(settings: Vec<&'static SettingDefinition>, value: SettingValue) -> u64;
     }
 
     writes! {

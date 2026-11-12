@@ -220,6 +220,7 @@ pub const DRAFT_KEPT_BY: [ErrorCode; 2] = [ErrorCode::EditLockLost, ErrorCode::V
 pub const LAYOUT_PART: &str = \"layout\";
 pub const WORKFLOW_PART: &str = \"workflow\";
 pub const DESCRIPTION_PART: &str = \"description\";
+pub const THEME_PART: &str = \"theme\";
 "
         .to_owned(),
     );
@@ -256,6 +257,7 @@ pub const SECONDS_PER_DAY: i64 = 86_400;"
         "{text}"
     );
     assert!(text.contains("commentEditPart = \"text\";"), "{text}");
+    assert!(text.contains("themeEditPart = \"theme\";"), "{text}");
     assert!(text.contains("firstVersion = 1;"), "{text}");
     assert!(text.contains("secondsPerDay = 86400;"), "{text}");
     assert!(editing(&[]).is_err());

@@ -14,6 +14,7 @@ use bb_core::version::Version;
 use bb_testing::{TestResult, each_database};
 
 use super::*;
+use crate::error::SettingProblem;
 use crate::test_support::{at, fixture, ids, person};
 
 #[path = "settings/layers.rs"]

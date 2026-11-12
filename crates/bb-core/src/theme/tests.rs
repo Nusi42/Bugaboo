@@ -208,3 +208,50 @@ fn thm_04_an_own_theme_stores_only_the_values_it_changes() {
     assert_eq!(json, r##"{"colors":{"accent":{"value":"#abcdef"}}}"##);
     assert!(OwnValues::default().is_empty());
 }
+
+#[test]
+fn thm_03_each_pair_counts_once_at_its_worst_rating() {
+    let pair = |first: &str, more_contrast: bool, rating: Rating| RatedPair {
+        first: first.to_owned(),
+        second: "bg-canvas".to_owned(),
+        place: first.to_owned(),
+        more_contrast,
+        value: 1.0,
+        limit: 1.0,
+        rating,
+    };
+    let pairs = [
+        pair("fg", false, Rating::Easy),
+        // The same pair under a second rule: it counts once, at the worse of the two.
+        pair("fg", false, Rating::Ok),
+        pair("fg", true, Rating::Easy),
+        pair("fg-subtle", false, Rating::HardToRead),
+    ];
+    assert_eq!(
+        ReadabilitySummary::of(&pairs),
+        ReadabilitySummary {
+            easy: 1,
+            ok: 1,
+            hard_to_read: 1
+        }
+    );
+    // A built-in theme as it is has nothing that is hard to read.
+    let rated = readability("dusk", &OwnValues::default()).expect("Dusk");
+    let summary = ReadabilitySummary::of(&rated);
+    assert_eq!(summary.hard_to_read, 0);
+    assert!(summary.easy > 0 && summary.ok > 0, "{summary:?}");
+}
+
+#[test]
+fn thm_03_the_editor_is_shown_each_color_with_its_links_followed() {
+    let shown = shown_colors("daylight", &colors(&[("fg-muted", "#112233")])).expect("Daylight");
+    assert_eq!(shown.len(), color_tokens().count());
+    let of = |name: &str| shown.iter().find(|color| color.name == name).expect(name);
+    assert_eq!(of("fg-muted").value, "#112233");
+    // An own color without one of its own for more contrast shows there too.
+    assert_eq!(of("fg-muted").more, "#112233");
+    // `st-ns` follows `fg-muted` in the theme file, so it follows the own color.
+    assert_eq!(of("st-ns").value, "#112233");
+    assert_eq!(of("bg-canvas").value, "#ffffff");
+    assert!(shown_colors("nowhere", &OwnValues::default()).is_none());
+}

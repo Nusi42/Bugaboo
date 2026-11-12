@@ -114,6 +114,28 @@ impl SettingsStore for FakeStore {
         }))
     }
 
+    async fn people_choosing(
+        &self,
+        settings: Vec<&'static SettingDefinition>,
+        value: SettingValue,
+    ) -> Result<u64, FakeError> {
+        Ok(self.read(|state| {
+            let mut people: Vec<UserId> = state
+                .settings
+                .iter()
+                .filter(|row| row.value == value)
+                .filter(|row| settings.iter().any(|setting| setting.key() == row.key))
+                .filter_map(|row| match row.scope {
+                    Scope::Person(person) => Some(person),
+                    Scope::Organization | Scope::Project(_) => None,
+                })
+                .collect();
+            people.sort_unstable();
+            people.dedup();
+            u64::try_from(people.len()).unwrap_or_default()
+        }))
+    }
+
     async fn person_settings(
         &self,
         people: Vec<UserId>,

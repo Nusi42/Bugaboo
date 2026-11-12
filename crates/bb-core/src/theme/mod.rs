@@ -16,7 +16,9 @@ mod values;
 
 pub use built_in::{SHADOW_LAYERS_MOST, SHADOW_PIXELS_MOST};
 pub use choice::OwnChoice;
-pub use colors::{OwnColors, RatedPair, rate_own, readability};
+pub use colors::{
+    OwnColors, RatedPair, ReadabilitySummary, ShownColor, rate_own, readability, shown_colors,
+};
 pub use file::{FileProblem, ThemeFile};
 pub use record::{OwnTheme, ThemeKind, ThemeName, ThemeNameError};
 pub use sheet::{draft_style_sheet, style_sheet};

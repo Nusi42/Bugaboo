@@ -16,7 +16,9 @@ use bb_app::themes::{
     ThemeQuery, ThemeView, ThemesQuery, UploadTheme,
 };
 use bb_core::id::{LockToken, ThemeId};
-use bb_core::theme::{PERSONAL_THEMES_MOST, THEMES_FOR_EVERYONE_MOST, ThemeKind};
+use bb_core::theme::{
+    PERSONAL_THEMES_MOST, ReadabilitySummary, THEMES_FOR_EVERYONE_MOST, ThemeKind,
+};
 use bb_policy::Masked;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -76,6 +78,30 @@ pub(crate) struct ThemeBody {
     saved: bool,
     /// Counts up with every save; a change and a deletion send it back.
     version: i64,
+    /// How many of its pairs of colors are *Easy*, *OK* and *Hard to read*, as saved.
+    readability: ReadabilityBody,
+}
+
+/// How many pairs of colors of a theme are *Easy*, *OK* and *Hard to read*; a pair counts once, at
+/// its worst rating.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct ReadabilityBody {
+    /// The pairs that are *Easy*.
+    easy: u32,
+    /// The pairs that are *OK*.
+    ok: u32,
+    /// The pairs that are *Hard to read*.
+    hard_to_read: u32,
+}
+
+impl From<ReadabilitySummary> for ReadabilityBody {
+    fn from(summary: ReadabilitySummary) -> Self {
+        Self {
+            easy: summary.easy,
+            ok: summary.ok,
+            hard_to_read: summary.hard_to_read,
+        }
+    }
 }
 
 impl From<&ThemeView> for ThemeBody {
@@ -93,6 +119,7 @@ impl From<&ThemeView> for ThemeBody {
             may_change: view.may_change,
             saved,
             version: theme.version,
+            readability: view.readability.into(),
         }
     }
 }
@@ -131,11 +158,15 @@ pub(crate) struct ThemeDetailBody {
     theme: ThemeBody,
     /// The values it changes of the built-in theme it extends: `colors` (each with `value` and,
     /// optionally, `more`), `shadow` (at most two layers), `radii` and `fonts`.
-    #[schema(value_type = Object)]
+    #[schema(value_type = bb_core::theme::OwnValues)]
     values: serde_json::Value,
     /// The pairs of its colors that are *Hard to read*: the warning of a personal theme. A theme
     /// for everyone with any is never saved.
     hard_to_read: Vec<HardPairBody>,
+    /// How many people chose it themselves: only for a theme for everyone, and only for who may
+    /// change it, so the question before it is deleted can say how many people it reaches.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    used_by: Option<u64>,
 }
 
 impl Masked for ThemeDetailBody {}
@@ -147,6 +178,7 @@ impl From<&ThemeDetail> for ThemeDetailBody {
             values: serde_json::to_value(&detail.view.theme.values)
                 .unwrap_or(serde_json::Value::Null),
             hard_to_read: detail.hard_to_read.iter().map(HardPairBody::from).collect(),
+            used_by: detail.used_by,
         }
     }
 }
@@ -159,7 +191,7 @@ pub(crate) struct ThemeFileBody {
     /// The ID of the built-in theme it extends.
     extends: String,
     /// The values it changes, as in a theme.
-    #[schema(value_type = Object)]
+    #[schema(value_type = bb_core::theme::OwnValues)]
     values: serde_json::Value,
 }
 
@@ -184,7 +216,7 @@ pub(crate) struct SaveThemeBody {
     /// What it is called now.
     name: String,
     /// The values it changes, in the shape of `values` of a theme.
-    #[schema(value_type = Object)]
+    #[schema(value_type = bb_core::theme::OwnValues)]
     values: serde_json::Value,
 }
 

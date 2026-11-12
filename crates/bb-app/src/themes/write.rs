@@ -169,6 +169,7 @@ fn added(saved: AddingSaved, person: UserId) -> Authorized<ThemeDetail> {
     saved.held.authorize(ThemeDetail {
         view,
         hard_to_read: saved.hard_to_read,
+        used_by: None,
     })
 }
 
@@ -281,7 +282,11 @@ pub async fn save_theme<S: AuthStore>(
         &held,
         actor.person.id,
     );
-    Ok(held.authorize(ThemeDetail { view, hard_to_read }))
+    Ok(held.authorize(ThemeDetail {
+        view,
+        hard_to_read,
+        used_by: None,
+    }))
 }
 
 /// Keeps an own theme the person may use as a new one of theirs (*Save a copy*), saved at once.

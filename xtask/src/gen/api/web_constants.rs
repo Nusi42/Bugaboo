@@ -369,10 +369,11 @@ pub(super) fn editing(sources: &[Source]) -> anyhow::Result<String> {
         text_const(text, name)
             .with_context(|| format!("{EDIT_SOURCE} has no `const {name}` that is text"))
     };
-    let (layout_part, workflow_part, description_part) = (
+    let (layout_part, workflow_part, description_part, theme_part) = (
         part("LAYOUT_PART")?,
         part("WORKFLOW_PART")?,
         part("DESCRIPTION_PART")?,
+        part("THEME_PART")?,
     );
     let Some((_, versions)) = sources.iter().find(|(path, _)| path == VERSION_SOURCE) else {
         bail!("{VERSION_SOURCE} is missing");
@@ -429,6 +430,9 @@ export const descriptionEditPart = {description_part:?};
 
 /** The name of the part of a comment that holds its text. */
 export const commentEditPart = {comment_part:?};
+
+/** The name of the part of an own theme that its edit lock and the draft of the theme editor are about: a theme is edited as a whole. */
+export const themeEditPart = {theme_part:?};
 
 /** The version a new record starts with. */
 export const firstVersion = {first_version};

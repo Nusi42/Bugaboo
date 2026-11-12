@@ -4,7 +4,8 @@
 
 use bb_core::ErrorCode;
 use bb_core::edit::{DraftTarget, draft_cutoff};
-use bb_core::theme::{OwnValues, ThemeFile, draft_style_sheet, style_sheet};
+use bb_core::settings::{self, SettingDefinition, SettingValue};
+use bb_core::theme::{OwnValues, ThemeFile, ThemeKind, draft_style_sheet, style_sheet};
 use bb_policy::{Authorized, Place};
 
 use super::rules::{Need, editing_what, hard_pairs, sees_unsaved_for_everyone, view_of};
@@ -24,6 +25,14 @@ fn sheet_of(
     let css = write(theme, values)
         .ok_or_else(|| AppError::Internal("a stored theme has values a sheet refuses".into()))?;
     Ok(ThemeSheet { css, version })
+}
+
+/// The settings that keep a choice of a theme.
+fn theme_settings() -> Vec<&'static SettingDefinition> {
+    vec![
+        settings::APPEARANCE_LIGHT_THEME.definition(),
+        settings::APPEARANCE_DARK_THEME.definition(),
+    ]
 }
 
 /// The own themes listed to the person, by name: the saved themes for everyone and every theme
@@ -63,7 +72,22 @@ pub async fn theme<S: AuthStore>(
     let (found, held) = ctx.theme_for(&actor, input.theme, Need::Use).await?;
     let hard_to_read = hard_pairs(found.extends.as_str(), &found.values)?;
     let view = view_of(found, &held, actor.person.id);
-    Ok(held.authorize(ThemeDetail { view, hard_to_read }))
+    let used_by = if view.may_change && view.theme.kind == ThemeKind::ForEveryone {
+        let chosen = SettingValue::Text(view.choice.clone());
+        Some(
+            ctx.store()
+                .people_choosing(theme_settings(), chosen)
+                .await
+                .map_err(|error| internal::<S>(&error))?,
+        )
+    } else {
+        None
+    };
+    Ok(held.authorize(ThemeDetail {
+        view,
+        hard_to_read,
+        used_by,
+    }))
 }
 
 /// An own theme as a file: its name, the built-in theme it extends and its values, the shape an

@@ -10096,6 +10096,27 @@ export interface components {
        */
       up_to?: string | null;
     };
+    /**
+     * @description How many pairs of colors of a theme are *Easy*, *OK* and *Hard to read*; a pair counts once, at
+     *     its worst rating.
+     */
+    ReadabilityBody: {
+      /**
+       * Format: int32
+       * @description The pairs that are *Easy*.
+       */
+      easy: number;
+      /**
+       * Format: int32
+       * @description The pairs that are *Hard to read*.
+       */
+      hard_to_read: number;
+      /**
+       * Format: int32
+       * @description The pairs that are *OK*.
+       */
+      ok: number;
+    };
     /** @description Why a permission is given or not. */
     ReasonBody:
       | {
@@ -10642,7 +10663,7 @@ export interface components {
       /** @description What it is called now. */
       name: string;
       /** @description The values it changes, in the shape of `values` of a theme. */
-      values: Record<string, unknown>;
+      values: components["schemas"]["ThemeValuesBody"];
       /**
        * Format: int64
        * @description The version the person started from.
@@ -11099,6 +11120,31 @@ export interface components {
       /** @description The password of the administrator. */
       password: string;
     };
+    /** @description One layer of a shadow: offsets, blur, spread and a color. */
+    ShadowLayerBody: {
+      /**
+       * Format: int32
+       * @description How blurred, in pixels.
+       */
+      blur: number;
+      /** @description `#rrggbb` or `#rrggbbaa`. */
+      color: string;
+      /**
+       * Format: int32
+       * @description How far it spreads, in pixels (shrinks when negative).
+       */
+      spread: number;
+      /**
+       * Format: int32
+       * @description How far right, in pixels (left when negative).
+       */
+      x: number;
+      /**
+       * Format: int32
+       * @description How far down, in pixels (up when negative).
+       */
+      y: number;
+    };
     /** @description The group or the project to share with. */
     ShareBody: {
       /** @description The ID of the group or the project. */
@@ -11514,6 +11560,8 @@ export interface components {
       may_change: boolean;
       /** @description What it is called. */
       name: string;
+      /** @description How many of its pairs of colors are *Easy*, *OK* and *Hard to read*, as saved. */
+      readability: components["schemas"]["ReadabilityBody"];
       /**
        * @description Whether it was saved at least once. A theme never saved is listed to its maker (and, for
        *     everyone, to who holds *Change organization settings*) and cannot be chosen.
@@ -11530,6 +11578,13 @@ export interface components {
        */
       version: number;
     };
+    /** @description A color of an own theme and, optionally, its color for a device that asks for more contrast. */
+    ThemeColorBody: {
+      /** @description `#rrggbb` for more contrast; it is the color itself where it is not set. */
+      more?: string | null;
+      /** @description `#rrggbb`. */
+      value: string;
+    };
     /** @description An own theme with its values and the pairs that are hard to read. */
     ThemeDetailBody: {
       /**
@@ -11540,10 +11595,16 @@ export interface components {
       /** @description The theme. */
       theme: components["schemas"]["ThemeBody"];
       /**
+       * Format: int64
+       * @description How many people chose it themselves: only for a theme for everyone, and only for who may
+       *     change it, so the question before it is deleted can say how many people it reaches.
+       */
+      used_by?: number | null;
+      /**
        * @description The values it changes of the built-in theme it extends: `colors` (each with `value` and,
        *     optionally, `more`), `shadow` (at most two layers), `radii` and `fonts`.
        */
-      values: Record<string, unknown>;
+      values: components["schemas"]["ThemeValuesBody"];
     };
     /** @description An own theme as a file: what a download gives and an upload takes. */
     ThemeFileBody: {
@@ -11552,7 +11613,7 @@ export interface components {
       /** @description What the theme is called. */
       name: string;
       /** @description The values it changes, as in a theme. */
-      values: Record<string, unknown>;
+      values: components["schemas"]["ThemeValuesBody"];
     };
     /**
      * @description Whether an own theme is for everyone in the organization or personal to the person who made it.
@@ -11565,6 +11626,23 @@ export interface components {
       themes: components["schemas"]["ThemeBody"][];
       /** @description Whether the list was cut at its cap; the limits of the number of themes keep it below. */
       truncated: boolean;
+    };
+    /** @description What an own theme changes of the built-in theme it extends. */
+    ThemeValuesBody: {
+      /** @description The colors, by the name of the token. */
+      colors?: {
+        [key: string]: components["schemas"]["ThemeColorBody"];
+      };
+      /** @description The text faces: the name of the token that has the stack to use, by the name of the token. */
+      fonts?: {
+        [key: string]: string;
+      };
+      /** @description The corner radii in pixels, by the name of the token. */
+      radii?: {
+        [key: string]: number;
+      };
+      /** @description The shadow, as at most two layers; left out, the shadow of the built-in theme stays. */
+      shadow?: components["schemas"]["ShadowLayerBody"][] | null;
     };
     /** @description One of the person's own time entries. */
     TimeEntryItem: {

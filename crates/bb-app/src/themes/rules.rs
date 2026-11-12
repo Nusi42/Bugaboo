@@ -11,7 +11,8 @@ use bb_core::event::RecordKind;
 use bb_core::id::{ThemeId, UserId};
 use bb_core::technical::TechnicalName;
 use bb_core::theme::{
-    BuiltIn, OwnChoice, OwnTheme, OwnValues, ThemeKind, ThemeName, built_in_theme, readability,
+    BuiltIn, OwnChoice, OwnTheme, OwnValues, ReadabilitySummary, ThemeKind, ThemeName,
+    built_in_theme, readability,
 };
 use bb_policy::{Evaluation, Permission, Place};
 use serde::Serialize;
@@ -138,10 +139,14 @@ pub(crate) fn view_of(theme: OwnTheme, held: &Evaluation, person: UserId) -> The
         ThemeKind::ForEveryone => held.allows(Permission::ChangeOrganizationSettings),
     };
     let light = built_in_theme(theme.extends.as_str()).is_some_and(|base| base.light);
+    let readability = readability(theme.extends.as_str(), &theme.values)
+        .map(|pairs| ReadabilitySummary::of(&pairs))
+        .unwrap_or_default();
     ThemeView {
         choice: OwnChoice::value(theme.extends.as_str(), theme.id),
         may_change,
         light,
+        readability,
         theme,
     }
 }

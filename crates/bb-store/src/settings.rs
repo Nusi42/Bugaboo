@@ -25,68 +25,16 @@ use sea_query::{Expr, ExprTrait as _, OnConflict, Order, Query};
 
 use crate::auth::AuthStorage;
 use crate::db::{Database, Reader, Row, STATEMENT_ITEMS, Transaction, to_micros};
-use crate::error::{SettingProblem, StoreError};
+use crate::error::StoreError;
 use crate::projects::chain_of;
+mod change;
+
+pub use change::{Scopes, SettingChange, StoredValue};
+use change::{known, validate};
+
 use crate::schema::{
     PersonSettingCounterRow, PersonSettingRow, PolicyVersionRow, SettingRow as Columns,
 };
-
-/// A value to store.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct SettingChange {
-    /// The key, as declared in the registry.
-    pub key: String,
-    /// Where the value is set: the organization, a project or a person.
-    pub scope: Scope,
-    /// The value.
-    pub value: SettingValue,
-    /// Whether lower levels may not override it (only organization values of lockable settings).
-    pub locked: bool,
-}
-
-/// A stored value as it was read.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct StoredValue {
-    /// The value.
-    pub value: SettingValue,
-    /// Whether it is locked (only organization values are).
-    pub locked: bool,
-    /// When it was last changed.
-    pub updated_at: Timestamp,
-}
-
-/// Whose settings are being read: lower levels are only looked at when given.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub struct Scopes {
-    /// The project, if the value is read in the context of one; the projects above it count too.
-    pub project: Option<ProjectId>,
-    /// The person, if the value is read for one.
-    pub person: Option<UserId>,
-}
-
-/// Checks a change against the registry.
-fn validate(change: &SettingChange) -> Result<TechnicalName, SettingProblem> {
-    let definition = bb_core::settings::find(&change.key).ok_or(SettingProblem::UnknownKey)?;
-    if !definition.levels().contains(&change.scope.level()) {
-        return Err(SettingProblem::LevelNotAllowed);
-    }
-    if !definition.has_type_of(&change.value) {
-        return Err(SettingProblem::WrongType);
-    }
-    if !definition.accepts(&change.value) {
-        return Err(SettingProblem::OutOfBounds);
-    }
-    if change.locked && !(definition.lockable() && change.scope == Scope::Organization) {
-        return Err(SettingProblem::NotLockable);
-    }
-    TechnicalName::new(definition.key()).map_err(|_| SettingProblem::UnknownKey)
-}
-
-/// The key of a setting looked up for reading: it must be in the registry.
-fn known(key: &str) -> Result<TechnicalName, SettingProblem> {
-    let definition = bb_core::settings::find(key).ok_or(SettingProblem::UnknownKey)?;
-    TechnicalName::new(definition.key()).map_err(|_| SettingProblem::UnknownKey)
-}
 
 fn id_bytes(id: impl Into<EntityId>) -> Vec<u8> {
     id.into().to_bytes().to_vec()
@@ -679,6 +627,30 @@ impl SettingsStore for AuthStorage {
             values.push((row.id::<ProjectId>(Columns::Scope)?, value));
         }
         Ok(values)
+    }
+
+    async fn people_choosing(
+        &self,
+        settings: Vec<&'static SettingDefinition>,
+        value: SettingValue,
+    ) -> Result<u64, StoreError> {
+        let mut select = Query::select();
+        select
+            .expr_as(
+                Expr::col(PersonSettingRow::Person).count_distinct(),
+                crate::schema::Computed::Total,
+            )
+            .from(PersonSettingRow::Table)
+            .and_where(
+                Expr::col(PersonSettingRow::Key)
+                    .is_in(settings.iter().map(|setting| setting.key())),
+            )
+            .and_where(Expr::col(PersonSettingRow::Value).eq(serde_json::to_string(&value)?));
+        let total: i64 = match self.database().fetch_optional(&select).await? {
+            Some(row) => row.get(crate::schema::Computed::Total)?,
+            None => 0,
+        };
+        Ok(u64::try_from(total).unwrap_or_default())
     }
 
     async fn person_settings(

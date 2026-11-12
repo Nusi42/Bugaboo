@@ -29008,6 +29008,31 @@
           }
         }
       },
+      "ReadabilityBody": {
+        "type": "object",
+        "description": "How many pairs of colors of a theme are *Easy*, *OK* and *Hard to read*; a pair counts once, at\nits worst rating.",
+        "required": ["easy", "ok", "hard_to_read"],
+        "properties": {
+          "easy": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The pairs that are *Easy*.",
+            "minimum": 0
+          },
+          "hard_to_read": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The pairs that are *Hard to read*.",
+            "minimum": 0
+          },
+          "ok": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The pairs that are *OK*.",
+            "minimum": 0
+          }
+        }
+      },
       "ReasonBody": {
         "oneOf": [
           {
@@ -29993,7 +30018,7 @@
             "description": "What it is called now."
           },
           "values": {
-            "type": "object",
+            "$ref": "#/components/schemas/ThemeValuesBody",
             "description": "The values it changes, in the shape of `values` of a theme."
           },
           "version": {
@@ -30910,6 +30935,39 @@
           }
         }
       },
+      "ShadowLayerBody": {
+        "type": "object",
+        "description": "One layer of a shadow: offsets, blur, spread and a color.",
+        "required": ["x", "y", "blur", "spread", "color"],
+        "properties": {
+          "blur": {
+            "type": "integer",
+            "format": "int32",
+            "description": "How blurred, in pixels.",
+            "minimum": 0
+          },
+          "color": {
+            "type": "string",
+            "description": "`#rrggbb` or `#rrggbbaa`."
+          },
+          "spread": {
+            "type": "integer",
+            "format": "int32",
+            "description": "How far it spreads, in pixels (shrinks when negative)."
+          },
+          "x": {
+            "type": "integer",
+            "format": "int32",
+            "description": "How far right, in pixels (left when negative)."
+          },
+          "y": {
+            "type": "integer",
+            "format": "int32",
+            "description": "How far down, in pixels (up when negative)."
+          }
+        },
+        "additionalProperties": false
+      },
       "ShareBody": {
         "type": "object",
         "description": "The group or the project to share with.",
@@ -31687,7 +31745,8 @@
           "choice",
           "may_change",
           "saved",
-          "version"
+          "version",
+          "readability"
         ],
         "properties": {
           "choice": {
@@ -31718,6 +31777,10 @@
             "type": "string",
             "description": "What it is called."
           },
+          "readability": {
+            "$ref": "#/components/schemas/ReadabilityBody",
+            "description": "How many of its pairs of colors are *Easy*, *OK* and *Hard to read*, as saved."
+          },
           "saved": {
             "type": "boolean",
             "description": "Whether it was saved at least once. A theme never saved is listed to its maker (and, for\neveryone, to who holds *Change organization settings*) and cannot be chosen."
@@ -31732,6 +31795,22 @@
             "description": "Counts up with every save; a change and a deletion send it back."
           }
         }
+      },
+      "ThemeColorBody": {
+        "type": "object",
+        "description": "A color of an own theme and, optionally, its color for a device that asks for more contrast.",
+        "required": ["value"],
+        "properties": {
+          "more": {
+            "type": ["string", "null"],
+            "description": "`#rrggbb` for more contrast; it is the color itself where it is not set."
+          },
+          "value": {
+            "type": "string",
+            "description": "`#rrggbb`."
+          }
+        },
+        "additionalProperties": false
       },
       "ThemeDetailBody": {
         "type": "object",
@@ -31749,8 +31828,14 @@
             "$ref": "#/components/schemas/ThemeBody",
             "description": "The theme."
           },
+          "used_by": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "How many people chose it themselves: only for a theme for everyone, and only for who may\nchange it, so the question before it is deleted can say how many people it reaches.",
+            "minimum": 0
+          },
           "values": {
-            "type": "object",
+            "$ref": "#/components/schemas/ThemeValuesBody",
             "description": "The values it changes of the built-in theme it extends: `colors` (each with `value` and,\noptionally, `more`), `shadow` (at most two layers), `radii` and `fonts`."
           }
         }
@@ -31769,7 +31854,7 @@
             "description": "What the theme is called."
           },
           "values": {
-            "type": "object",
+            "$ref": "#/components/schemas/ThemeValuesBody",
             "description": "The values it changes, as in a theme."
           }
         }
@@ -31796,6 +31881,52 @@
             "description": "Whether the list was cut at its cap; the limits of the number of themes keep it below."
           }
         }
+      },
+      "ThemeValuesBody": {
+        "type": "object",
+        "description": "What an own theme changes of the built-in theme it extends.",
+        "properties": {
+          "colors": {
+            "type": "object",
+            "description": "The colors, by the name of the token.",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ThemeColorBody"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "fonts": {
+            "type": "object",
+            "description": "The text faces: the name of the token that has the stack to use, by the name of the token.",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "radii": {
+            "type": "object",
+            "description": "The corner radii in pixels, by the name of the token.",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "shadow": {
+            "type": ["array", "null"],
+            "items": {
+              "$ref": "#/components/schemas/ShadowLayerBody"
+            },
+            "description": "The shadow, as at most two layers; left out, the shadow of the built-in theme stays."
+          }
+        },
+        "additionalProperties": false
       },
       "TimeEntryItem": {
         "type": "object",
