@@ -12,7 +12,7 @@ import {
 } from "@bugaboo/ui";
 import { useId } from "react";
 
-import { DayBox } from "./DayBox.tsx";
+import { DayBox } from "../../shared/DayBox.tsx";
 import { EntryWindow } from "./EntryWindow.tsx";
 import { closeTimeAsk } from "./time-asks.ts";
 import { useChangeStart } from "./use-change-start.ts";

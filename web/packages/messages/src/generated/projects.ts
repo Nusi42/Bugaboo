@@ -118,7 +118,6 @@ export const messages = {
   "project-members.share-of": "Share of {name} in the project",
   "project-members.share-set": "The share of {name} is now {percent}.",
   "project-members.over": "Over 100 % in all",
-  "project-members.unit": "%",
   "project-members.also-in": "Also in {projects}",
   "project-members.others-hidden": "projects you can't see",
   "project-members.none": "Nobody has a role in this project yet.",

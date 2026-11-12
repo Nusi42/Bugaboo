@@ -4098,12 +4098,30 @@ textarea,
   text-wrap: wrap;
 }
 
+[data-part="app-layout"][data-variant~="phone"]
+  [data-part="work-times.holiday-choice"]
+  [data-part="box"] {
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+[data-part="muted"][data-variant~="warning"] {
+  color: var(--warning);
+}
+
 [data-part="item"][data-variant~="day"] {
   flex-wrap: nowrap;
 }
 
 [data-part="item"][data-variant~="day"] [data-part="length-box"] {
   flex: 0 0 var(--size-hours-box);
+}
+
+[data-part="item"][data-variant~="day"] [data-part="hint"] {
+  box-sizing: border-box;
+  flex: 0 0 var(--size-hours-box);
+  padding-inline: var(--pad-control);
 }
 
 [data-part="fact-line"] {

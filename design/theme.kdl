@@ -3982,6 +3982,19 @@ part "length-box[variant=number] field.description" {
     text-wrap wrap
 }
 
+// *Holidays* stands inside the first card of the page of work times: on a phone its setting has no box of its own, so no
+// border sits inside the border of the card (UX §4.13).
+part "app-layout[variant=phone] work-times.holiday-choice box" {
+    padding 0
+    border none
+    background none
+}
+
+// Words that warn without being an alert: the sum of shares over 100 % (UX §4.13). Colour only, no weight (STY-BOLD).
+part "muted[variant=warning]" {
+    color "$warning"
+}
+
 // A day of the usual work days (UX §4.13): its tick and its hours stay on one row, also on a phone, and the box of the
 // hours is as wide as a short length, so the name of the day is never broken.
 part "item[variant=day]" {
@@ -3990,6 +4003,14 @@ part "item[variant=day]" {
 
 part "item[variant=day] length-box" {
     flex "0 0 $size-hours-box"
+}
+
+// The hours of a day that is not ticked are muted words where the box would be: they start where the words in the
+// boxes above start (R1).
+part "item[variant=day] hint" {
+    box-sizing border-box
+    flex "0 0 $size-hours-box"
+    padding-inline "$pad-control"
 }
 
 // Facts side by side (*10h estimated · 6h 40m left · 3h 20m spent*): a fact never breaks inside, and a line breaks only

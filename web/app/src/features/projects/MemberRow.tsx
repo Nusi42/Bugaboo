@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { partOf, part } from "@bugaboo/ui";
 
-import { detailsText, listText } from "../../shared/list-text.ts";
+import { listText } from "../../shared/list-text.ts";
 import { percentText } from "../../shared/number.ts";
 import { namedPerson, personName } from "../../shared/person.ts";
 import { NumberBox } from "../fields/index.ts";
@@ -17,11 +17,16 @@ function OverMark({ member }: { readonly member: MemberShare }) {
   }
   const named = (member.others ?? []).flatMap((project) => project.name ?? []);
   const where = member.others_hidden ? [...named, t("project-members.others-hidden")] : named;
-  const said = [t("project-members.over")];
-  if (where.length > 0) {
-    said.push(t("project-members.also-in", { projects: listText(where) }));
-  }
-  return <span {...partOf(part.muted)}>{detailsText(said)}</span>;
+  return (
+    <>
+      <span {...partOf(part.muted, { variants: ["warning"] })}>{t("project-members.over")}</span>
+      {where.length === 0 ? null : (
+        <span {...partOf(part.muted)}>
+          {t("project-members.also-in", { projects: listText(where) })}
+        </span>
+      )}
+    </>
+  );
 }
 
 /**
@@ -61,7 +66,7 @@ export function MemberRow({
               }
             }}
           />
-          <span>{t("project-members.unit")}</span>
+          <span>{t("common.percent-sign")}</span>
         </span>
       )}
     </li>

@@ -30,7 +30,7 @@ export function SharesLine({ shares }: { readonly shares: Shares }) {
           : detailsText(counted.map((item) => shareText(item)))}
       </p>
       {shares.over_100 ? (
-        <p {...partOf(part.muted)}>
+        <p {...partOf(part.muted, { variants: ["warning"] })}>
           {t("work-times.shares-over", { sum: percentText(shares.sum) })}
         </p>
       ) : null}

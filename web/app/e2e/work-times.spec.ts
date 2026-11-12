@@ -51,7 +51,7 @@ test("plan_11_the_window_says_once_that_no_reason_is_stored", async ({ page }) =
   await expect(window.getByRole("textbox")).toHaveCount(3);
   await expect(window.getByRole("radio", { name: t("work-times.afternoon-only") })).toBeVisible();
   await expect(window.getByRole("radio", { name: t("work-times.morning-only") })).toBeVisible();
-  await expect(window.getByText(t("work-times.note-help"))).toBeVisible();
+  await expect(window.getByLabel(t("work-times.note"), { exact: true })).toBeVisible();
 });
 
 test("plan_11_someone_with_enter_work_times_for_others_changes_lea_and_lea_is_told", async ({

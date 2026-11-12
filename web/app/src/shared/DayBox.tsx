@@ -2,9 +2,9 @@ import { t } from "@bugaboo/messages";
 import { TextField } from "@bugaboo/ui";
 import { useState } from "react";
 
-import { dayText } from "../../shared/format.ts";
-import { readDay } from "../../shared/read-day.ts";
-import { useRegion } from "../../shared/region.ts";
+import { dayText } from "./format.ts";
+import { readDay } from "./read-day.ts";
+import { useRegion } from "./region.ts";
 
 export interface DayBoxProps {
   readonly label: string;

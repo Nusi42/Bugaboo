@@ -26,11 +26,13 @@ function OwnHolidays({ workTimes }: { readonly workTimes: WorkTimes }) {
     }
   }, [saved, chosen, workTimes.holidays]);
   return (
-    <SettingsForm
-      {...form}
-      searchable={false}
-      helps={{ [settingKeys.workTimesHolidays]: () => nextHolidaysText(workTimes) }}
-    />
+    <div {...partOf(part.workTimesHolidayChoice)}>
+      <SettingsForm
+        {...form}
+        searchable={false}
+        helps={{ [settingKeys.workTimesHolidays]: () => nextHolidaysText(workTimes) }}
+      />
+    </div>
   );
 }
 

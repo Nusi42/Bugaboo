@@ -17,12 +17,7 @@ export function Sections({
 }) {
   return (
     <>
-      <UsualDays
-        whose={whose}
-        read={read}
-        usual={workTimes.usual}
-        mayChange={workTimes.may_change}
-      />
+      <UsualDays key={whose ?? "own"} whose={whose} read={read} workTimes={workTimes} />
       <AwayTimes whose={whose} coming={workTimes} past={read.past} otherName={otherName} />
       {workTimes.shares === null ? null : <SharesLine shares={workTimes.shares} />}
     </>

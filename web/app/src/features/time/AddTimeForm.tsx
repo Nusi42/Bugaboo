@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { Alert, alertTone, Form } from "@bugaboo/ui";
 
 import { LengthBox } from "../fields/index.ts";
-import { DayBox } from "./DayBox.tsx";
+import { DayBox } from "../../shared/DayBox.tsx";
 import type { EntryIssue } from "./entry-issue.ts";
 import { EntryForm } from "./EntryForm.tsx";
 import type { AddTimeState } from "./use-add-time-state.ts";

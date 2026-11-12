@@ -1,6 +1,5 @@
 import { type Schema, dataOf } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { useQueryClient } from "@tanstack/react-query";
 import { useRef } from "react";
 
 import { api } from "../../shared/api.ts";
@@ -15,9 +14,13 @@ import {
   type Whose,
 } from "./work-times.ts";
 
-/** A change of the usual work days: the seven days after it, and the days to go back to with *Undo*. */
+/**
+ * A change of the usual work days: the seven days after it, the version of the usual work days the
+ * person looked at when they made it, and the days to go back to with *Undo*.
+ */
 export interface UsualChange {
   readonly days: readonly UsualDay[];
+  readonly version: number;
   /** The days before the change; none for the change that *Undo* makes. */
   readonly before?: readonly UsualDay[];
 }
@@ -40,13 +43,27 @@ async function sendDays(
 }
 
 /**
- * The changes of the usual work days and work hours: each shows at once and saves in place with
- * *Undo* (R7). A change is made on the version that was looked at, so the changes go to the server
- * one after the other, each on the version the one before it made.
+ * The version a change is sent on: the one it was made on, moved on along this page's own changes
+ * that were answered since (a change made before the page read the answer of the one before it). A
+ * change by anybody else in between is not on that path, so the server refuses the change as made
+ * on an old version instead of it overwriting the other.
+ */
+function sentOn(movedTo: (version: number) => number | undefined, version: number): number {
+  let current = version;
+  for (let next = movedTo(current); next !== undefined; next = movedTo(current)) {
+    current = next;
+  }
+  return current;
+}
+
+/**
+ * The changes of the usual work days and work hours of one person: each shows at once and saves in
+ * place with *Undo* (R7). The changes go to the server one after the other. A page of another person
+ * starts with nothing remembered: the component is keyed by whose days it shows.
  */
 export function useUsualDays(whose: Whose, read: WorkTimesRead): OptimisticMutation<UsualChange> {
-  const client = useQueryClient();
-  const known = useRef<number>(0);
+  // The versions this page's own changes moved the usual work days from and to.
+  const made = useRef(new Map<number, number>());
   const line = useRef<Promise<unknown>>(Promise.resolve());
   const edits = useOptimisticMutation<UsualChange, WorkTimes, Schema<"UsualDaysBody">>({
     queryKey: read.comingKey,
@@ -55,16 +72,15 @@ export function useUsualDays(whose: Whose, read: WorkTimesRead): OptimisticMutat
       before === undefined ? undefined : { ...before, usual: [...change.days] },
     send: (change) => {
       const sent = line.current.then(async () => {
-        const cached: unknown = client.getQueryData(read.comingKey);
-        const version = Math.max(known.current, isWorkTimes(cached) ? cached.usual_version : 0);
+        const version = sentOn((from) => made.current.get(from), change.version);
         const answer = await sendDays(whose, version, change.days);
-        known.current = answer.version;
+        made.current.set(version, answer.version);
         const before = change.before;
         if (before !== undefined) {
           undoStore.offer({
             message: t("work-times.usual-changed"),
             undo: () => {
-              edits.change({ days: before });
+              edits.change({ days: before, version: answer.version });
             },
           });
         }

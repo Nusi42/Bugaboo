@@ -1752,6 +1752,9 @@ pub const COMMON_OFF: MessageKey = MessageKey::new("common.off");
 /// The message `common.on`.
 pub const COMMON_ON: MessageKey = MessageKey::new("common.on");
 
+/// The message `common.percent-sign`.
+pub const COMMON_PERCENT_SIGN: MessageKey = MessageKey::new("common.percent-sign");
+
 /// The message `common.save`.
 pub const COMMON_SAVE: MessageKey = MessageKey::new("common.save");
 
@@ -4996,9 +4999,6 @@ pub const PROJECT_MEMBERS_OTHERS_HIDDEN: MessageKey =
 /// The message `project-members.over`.
 pub const PROJECT_MEMBERS_OVER: MessageKey = MessageKey::new("project-members.over");
 
-/// The message `project-members.unit`.
-pub const PROJECT_MEMBERS_UNIT: MessageKey = MessageKey::new("project-members.unit");
-
 /// The message `projects.at-the-top`.
 pub const PROJECTS_AT_THE_TOP: MessageKey = MessageKey::new("projects.at-the-top");
 
@@ -8193,9 +8193,6 @@ pub const WORK_TIMES_NO_REASON: MessageKey = MessageKey::new("work-times.no-reas
 /// The message `work-times.note`.
 pub const WORK_TIMES_NOTE: MessageKey = MessageKey::new("work-times.note");
 
-/// The message `work-times.note-help`.
-pub const WORK_TIMES_NOTE_HELP: MessageKey = MessageKey::new("work-times.note-help");
-
 /// The message `work-times.save-add`.
 pub const WORK_TIMES_SAVE_ADD: MessageKey = MessageKey::new("work-times.save-add");
 
@@ -9965,10 +9962,13 @@ pub fn comments_version_saved(
 
 /// The message `common.percent`.
 #[must_use]
-pub fn common_percent(percent: impl std::fmt::Display) -> Message {
+pub fn common_percent(percent: impl std::fmt::Display, sign: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("common.percent"),
-        vec![("percent", Value::Text(percent.to_string()))],
+        vec![
+            ("percent", Value::Text(percent.to_string())),
+            ("sign", Value::Text(sign.to_string())),
+        ],
     )
 }
 
@@ -18459,7 +18459,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("common.nothing", "nothing"),
     ("common.off", "Off"),
     ("common.on", "On"),
-    ("common.percent", "{percent} %"),
+    ("common.percent", "{percent} {sign}"),
+    ("common.percent-sign", "%"),
     ("common.save", "Save"),
     ("common.show-all", "Show all {count, number}"),
     ("common.show-fewer", "Show fewer"),
@@ -19774,10 +19775,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("holiday.whit-sunday", "Whit Sunday"),
     ("holiday.women-day", "International Women's Day"),
     ("holiday.world-childrens-day", "World Children's Day"),
-    (
-        "holidays.region.de",
-        "Germany (the days that count everywhere)",
-    ),
+    ("holidays.region.de", "Germany (everywhere)"),
     ("holidays.region.de-bb", "Brandenburg"),
     ("holidays.region.de-be", "Berlin"),
     ("holidays.region.de-bw", "Baden-Württemberg"),
@@ -21327,7 +21325,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The share of {name} is now {percent}.",
     ),
     ("project-members.title", "Project members of {project}"),
-    ("project-members.unit", "%"),
     ("projects.at-the-top", "At the top level"),
     ("projects.create", "Create the project"),
     (
@@ -24210,8 +24207,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "work-times.no-reason",
         "Bugaboo stores no reason. Others see only Away.",
     ),
-    ("work-times.note", "Note"),
-    ("work-times.note-help", "Only you see the note."),
+    ("work-times.note", "Note (only you see it)"),
     ("work-times.save-add", "Add the away time"),
     ("work-times.save-change", "Save the away time"),
     ("work-times.share", "{project} {percent}"),

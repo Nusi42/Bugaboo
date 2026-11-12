@@ -61,5 +61,8 @@ export function centsIn(text: string, region: Region = currentRegion()): number 
 
 /** A share in percent as people write it: "60 %", the number in the person's *Number format*. */
 export function percentText(percent: number, region: Region = currentRegion()): string {
-  return t("common.percent", { percent: formatNumber(percent, region) });
+  return t("common.percent", {
+    percent: formatNumber(percent, region),
+    sign: t("common.percent-sign"),
+  });
 }

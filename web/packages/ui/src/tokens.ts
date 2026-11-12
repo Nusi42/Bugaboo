@@ -564,6 +564,7 @@ export const part = {
   hint: "hint",
   length: "length",
   lengthBox: "length-box",
+  workTimesHolidayChoice: "work-times.holiday-choice",
   factLine: "fact-line",
   factLineItem: "fact-line.item",
   column: "column",
@@ -1014,7 +1015,7 @@ export type PartName = (typeof part)[keyof typeof part];
 
 /** The words of `data-variant` and `data-state` that the theme file styles, by part. */
 export const partWords = {
-  muted: { variant: [], state: [] },
+  muted: { variant: ["warning"], state: [] },
   "card.intro": { variant: [], state: [] },
   "access.preview-line": { variant: [], state: [] },
   "access.subheading": { variant: [], state: [] },
@@ -1231,6 +1232,7 @@ export const partWords = {
   hint: { variant: [], state: [] },
   length: { variant: [], state: [] },
   "length-box": { variant: ["number"], state: [] },
+  "work-times.holiday-choice": { variant: [], state: [] },
   "fact-line": { variant: [], state: [] },
   "fact-line.item": { variant: [], state: [] },
   column: { variant: ["snug"], state: [] },

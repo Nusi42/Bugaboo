@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { ChoiceGroup, TextField } from "@bugaboo/ui";
 
-import { DateBox } from "../fields/index.ts";
+import { DayBox } from "../../shared/DayBox.tsx";
 import type { AwayDraft, HalfChoice } from "./away-draft.ts";
 
 /** A day of the form: its box, and whether it is whole or half. */
@@ -24,14 +24,7 @@ function DayWithHalf({
 }) {
   return (
     <>
-      <DateBox
-        name={label}
-        day={day === "" ? undefined : day}
-        inRow={false}
-        onCommit={(typed) => {
-          onDay(typed ?? "");
-        }}
-      />
+      <DayBox label={label} value={day} onChange={onDay} />
       <ChoiceGroup
         legend={legend}
         choices={[
@@ -77,12 +70,7 @@ export function AwayFields({
         onHalf={draft.setLastHalf}
       />
       {withNote ? (
-        <TextField
-          label={t("work-times.note")}
-          description={t("work-times.note-help")}
-          value={draft.note}
-          onChange={draft.setNote}
-        />
+        <TextField label={t("work-times.note")} value={draft.note} onChange={draft.setNote} />
       ) : null}
     </>
   );

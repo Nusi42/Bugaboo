@@ -752,7 +752,7 @@ export const messages = {
   "error.working-hours.keep-years-too-short":
     "With the rules of Germany, work days are kept for at least {years, plural, one {# year} other {# years}}. Choose No rules first, or keep them longer.",
   "holidays.region.none": "No public holidays",
-  "holidays.region.de": "Germany (the days that count everywhere)",
+  "holidays.region.de": "Germany (everywhere)",
   "holidays.region.de-bw": "Baden-Württemberg",
   "holidays.region.de-by": "Bavaria",
   "holidays.region.de-be": "Berlin",
@@ -803,7 +803,8 @@ export const messages = {
   "error.work-times.share-invalid": "A share is between 0 and 100 percent.",
   "nav.work-times": "Work times",
   "nav.project-members": "Project members",
-  "common.percent": "{percent} %",
+  "common.percent": "{percent} {sign}",
+  "common.percent-sign": "%",
   "work-times.title-other": "Work times of {name}",
   "project-members.title": "Project members of {project}",
   "nav.assistant-settings": "Assistant",
