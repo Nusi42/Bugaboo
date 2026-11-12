@@ -50,6 +50,9 @@ WP-02 brought a full run from five failing browser tests to one (2026-11-11): Ch
 | M8-F63 | The words of the 20 holidays and the 18 choices of *Holidays* are made by `words!` enums, so they go to the first page's part of the messages (PERF-BUNDLE stays green) | The rule of parts puts every made key in `shared` | Only if the first page runs out of room |
 | M8-F64 | The help of the setting *Holidays* says "for you" also on *Work › Working hours*, where the organization's choice is set | One help text serves both levels in the registry | The words review of M8 |
 | M8-F65 | `next_holidays` of the answer of work times is a list of three, named in `tools/checks/lean-exemptions.toml` beside `usual` (M8-F31) | Three holidays shown together need no pages | Only if the number grows |
+| M8-F66 | *Undo* of a deletion that somebody with *Enter work times for others* made enters the away time again without the person's note: that reader never has the note, so it cannot be put back | Keeping the note needs the server to restore the away time it deleted (an *Undo* by its ID), not a new entry | The server's next round of work times |
+| M8-F67 | *Holidays* on one's own page is the generic row of a setting, with *Reset to default* back to the organization's choice; UX §4.13 draws an option *As the organization (Germany)* inside the picker | One control for every setting (DRY); the picker would need the organization's value, which the answer of one's own settings does not hold | The maintainer, from the pictures: keep the generic row or ask for the option |
+| M8-F68 | The mark of a sum over 100 % on *Project members* says "projects you can't see" without how many; UX §4.13 writes "…and 1 other project" | The server answers only whether there are such projects (`others_hidden`), never how many, so nothing about them leaks | The privacy review decides whether a count may be shown |
 
 ## From WP-05 (own themes on the server)
 
