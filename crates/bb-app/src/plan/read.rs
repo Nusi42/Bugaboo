@@ -321,6 +321,39 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
         }))
     }
 
+    /// The accepted warnings of the issues of the page, with who accepted them and the role labels
+    /// of those the reader sees by their role, each read at once for the page.
+    async fn accepted_on_page(
+        &self,
+        plan: &Plan,
+        page: &HashSet<IssueId>,
+        seen: &crate::projects::Leveled,
+    ) -> Result<Vec<bb_core::plan::record::AcceptedWarning>, AppError> {
+        let accepted = self
+            .store()
+            .accepted_warnings_of(page.iter().copied().collect())
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        let accepters: Vec<_> = accepted.iter().map(|kept| kept.accepted_by).collect();
+        self.preload_people(&accepters).await?;
+        let by_role: Vec<(bb_core::id::UserId, Where)> = accepted
+            .iter()
+            .filter_map(|kept| {
+                let project = plan.issues.get(&kept.issue)?.project;
+                plan.held
+                    .get(&project)?
+                    .shows_role_label(
+                        PeopleKind::Authors,
+                        PeopleContext::Ordinary,
+                        kept.accepted_by,
+                    )
+                    .then_some((kept.accepted_by, Where::Project(project)))
+            })
+            .collect();
+        self.preload_role_labels(seen, &by_role).await?;
+        Ok(accepted)
+    }
+
     /// The warnings of the issues of the page, each with what it names as the reader may know it,
     /// and faded when it was accepted for the dates its issue has.
     async fn warning_views(
@@ -329,14 +362,7 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
         page: &HashSet<IssueId>,
         seen: &crate::projects::Leveled,
     ) -> Result<Vec<WarningView>, AppError> {
-        let accepted = self
-            .store()
-            .accepted_warnings_of(page.iter().copied().collect())
-            .await
-            .map_err(|error| internal::<S>(&error))?;
-        // Who accepted the warnings, read at once for the page.
-        let accepters: Vec<_> = accepted.iter().map(|kept| kept.accepted_by).collect();
-        self.preload_people(&accepters).await?;
+        let accepted = self.accepted_on_page(plan, page, seen).await?;
         let mut views = Vec::new();
         for (id, warning) in plan.warnings.iter().filter(|(id, _)| page.contains(id)) {
             let (Some(issue), Some(days)) = (

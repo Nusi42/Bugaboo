@@ -3,6 +3,8 @@
 //! who accepted them, runs as many statements as a page of five, for a reader who sees people by
 //! name and for one who sees them by their role, on SQLite and PostgreSQL.
 
+use std::collections::HashSet;
+
 use bb_app::access::StartingRole;
 use bb_store::Database;
 use bb_testing::{Failure, TestResult, each_database};
@@ -19,24 +21,25 @@ use super::plan_site::{MONDAY, TIMELINE, blocks, issue, work_times};
 /// work times there, whose work times the reader may know) is read as often for both.
 const ISSUES: usize = 56;
 
-/// The most statements a page of the timeline of one project may run (90 measured; 94 before
-/// pages met several projects).
+/// The most statements a page of the timeline of one project may run for a reader who sees people
+/// by name (91 measured; 94 before pages met several projects).
 const ONE_PROJECT_AT_MOST: usize = 100;
 
 /// The most statements a page of the timeline may run: the search of the rows and the count of
 /// *Not scheduled yet* (each with the fields and names of the reader), the page of issues, the
 /// dependencies and sub-issues around it, the time factors, the work times of the people on the bars
-/// in each project, the accepted warnings and who accepted them, each read once for the page (94
-/// measured over three projects for the reader who sees people by their role).
+/// in each project, the accepted warnings, who accepted them and the role labels of those the
+/// reader sees by their role, each read once for the page (for the reader who sees people by their
+/// role: 98 measured over three projects, 99 in one; 90 over three projects by name).
 const TIMELINE_AT_MOST: usize = 100;
 
 /// The statements of a page of five and a page of forty of the timeline `body`, as `browser` reads
-/// them; the page of forty holds the delays of its rows, planned by effort.
+/// them, and the page of forty, which holds the delays of its rows, planned by effort.
 async fn five_and_forty(
     browser: &mut Browser,
     database: &Database,
     body: &Value,
-) -> Result<(usize, usize), Failure> {
+) -> Result<(usize, usize, Value), Failure> {
     let (on_five, on_forty, forty) = five_and_forty_of(browser, database, "rows", |limit| {
         let mut asked = body.clone();
         if let Some(asked) = asked.as_object_mut() {
@@ -54,7 +57,7 @@ async fn five_and_forty(
         "{forty}"
     );
     assert_eq!(forty["planned_by_effort"], true);
-    Ok((on_five, on_forty))
+    Ok((on_five, on_forty, forty))
 }
 
 /// Accepts the delay of an issue, as `browser`.
@@ -82,6 +85,11 @@ async fn perf_05_a_timeline_of_forty_rows_runs_as_many_statements_as_one_of_five
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let (_lea, lea) = site.person(StartingRole::TeamMember, "lea").await?;
         let (_ben, ben) = site.person(StartingRole::TeamMember, "ben").await?;
+        // Two people on no bar accept the delays, in turn: whatever rows a page holds, it names
+        // people who accepted its warnings and are named nowhere else on it.
+        let (max, _) = site.person(StartingRole::TeamMember, "max").await?;
+        let (mia, _) = site.person(StartingRole::TeamMember, "mia").await?;
+        let mut accepters = [max, mia];
         work_times(&site, &mut ada, lea, 360, 50).await?;
         work_times(&site, &mut ada, ben, 480, 100).await?;
         let mut projects = vec![site.acme.clone()];
@@ -119,12 +127,10 @@ async fn perf_05_a_timeline_of_forty_rows_runs_as_many_statements_as_one_of_five
                 )
                 .await?,
             )?;
-            // A chain of dependencies through the rows, each one a delay; every third is accepted.
+            // A chain of dependencies through the rows, each one a delay that Max or Mia accepted.
             if let Some(earlier) = &before {
                 blocks(&mut ada, earlier, &key).await?;
-                if number % 3 == 0 {
-                    accept_delay(&mut ada, &key).await?;
-                }
+                accept_delay(&mut accepters[number % 2], &key).await?;
             }
             before = Some(key);
         }
@@ -134,29 +140,38 @@ async fn perf_05_a_timeline_of_forty_rows_runs_as_many_statements_as_one_of_five
             "first": MONDAY,
             "last": "2027-05-31",
         });
-        let (on_five, on_forty) = five_and_forty(&mut ada, &rig.database, &body).await?;
+        let (on_five, on_forty, forty) = five_and_forty(&mut ada, &rig.database, &body).await?;
         assert_as_many_statements(on_five, on_forty, TIMELINE_AT_MOST, "a page by name");
-        // A reader who sees the people on the bars by their role.
-        site.show_people(
-            &mut ada,
-            StartingRole::Contributor,
-            "assigned-to",
-            "role-only",
-        )
-        .await?;
+        // The page of forty shows warnings that two people accepted.
+        let accepted: HashSet<String> = forty["warnings"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|warning| warning["accepted"]["by"]["id"].as_str())
+            .map(str::to_owned)
+            .collect();
+        assert_eq!(accepted.len(), 2, "{forty}");
+        // A reader who sees the people on the bars and the people who accepted warnings by their
+        // role, over all three projects.
+        for kind in ["assigned-to", "authors"] {
+            site.show_people(&mut ada, StartingRole::Contributor, kind, "role-only")
+                .await?;
+        }
         let (mut contributor, _) = site
             .person(StartingRole::Contributor, "contributor")
             .await?;
+        let (on_five, on_forty, _) = five_and_forty(&mut contributor, &rig.database, &body).await?;
+        assert_as_many_statements(on_five, on_forty, TIMELINE_AT_MOST, "a page by role");
         // Of one project: the role labels of the people on the page are read once for the page.
         let mut one_project = body.clone();
         if let Some(asked) = one_project.as_object_mut() {
             asked.insert("project".to_owned(), json!(site.acme));
         }
-        let (on_five, on_forty) =
+        let (on_five, on_forty, _) =
             five_and_forty(&mut contributor, &rig.database, &one_project).await?;
-        assert_as_many_statements(on_five, on_forty, TIMELINE_AT_MOST, "a page by role");
+        assert_as_many_statements(on_five, on_forty, TIMELINE_AT_MOST, "one project by role");
         // The page of one project by name stays within what it ran before pages met several.
-        let (on_five, on_forty) = five_and_forty(&mut ada, &rig.database, &one_project).await?;
+        let (on_five, on_forty, _) = five_and_forty(&mut ada, &rig.database, &one_project).await?;
         assert_as_many_statements(
             on_five,
             on_forty,
