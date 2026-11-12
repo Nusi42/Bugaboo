@@ -3729,7 +3729,6 @@
   "timeline.goal": "Goal {key}, {days}",
   "timeline.goal-due": "Due date of {key}: {day}",
   "timeline.locked-here": "You may not change the dates of this issue.",
-  "timeline.more-rows": "Show more rows",
   "timeline.more-issues": "Show more issues",
   "timeline.other-chosen": "Chosen: {key}",
   "timeline.legend": "What the marks of the timeline mean"

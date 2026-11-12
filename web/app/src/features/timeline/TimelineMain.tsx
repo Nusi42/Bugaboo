@@ -45,7 +45,7 @@ export function TimelineMain(props: TimelineMainProps) {
         groupName={groupName}
         onToggle={props.onToggle}
       />
-      <ShowMoreOf label={t("timeline.more-rows")} list={pages} />
+      <ShowMoreOf label={t("timeline.more-issues")} list={pages} />
     </div>
   );
 }

@@ -8616,9 +8616,6 @@ pub const TIMELINE_LOCKED_HERE: MessageKey = MessageKey::new("timeline.locked-he
 /// The message `timeline.more-issues`.
 pub const TIMELINE_MORE_ISSUES: MessageKey = MessageKey::new("timeline.more-issues");
 
-/// The message `timeline.more-rows`.
-pub const TIMELINE_MORE_ROWS: MessageKey = MessageKey::new("timeline.more-rows");
-
 /// The message `timeline.names`.
 pub const TIMELINE_NAMES: MessageKey = MessageKey::new("timeline.names");
 
@@ -25992,7 +25989,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "You may not change the dates of this issue.",
     ),
     ("timeline.more-issues", "Show more issues"),
-    ("timeline.more-rows", "Show more rows"),
     ("timeline.moved-earlier", "{key} moved {amount} earlier"),
     ("timeline.moved-later", "{key} moved {amount} later"),
     ("timeline.must-finish-first", "{key} must finish first"),
