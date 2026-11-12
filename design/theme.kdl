@@ -23,9 +23,11 @@ defaults light="daylight" dark="dusk"
 
 // The attributes of the page frame (<html>): `look` carries the theme on the page, `mode` is the
 // light or dark mode that the design pages force, `preview` marks a sample of a theme inside the
-// page, `own` carries the ID of an own theme (the style sheet the server makes for it, ADR-0026 M8). Written once: the style sheets, the TypeScript (`pageAttributes`) and the browser tests
-// read the names from here.
-frame look="data-look" mode="data-theme" preview="data-preview-look" own="data-own-theme"
+// page, `own` carries the ID of an own theme (the style sheet the server makes for it, ADR-0026 M8),
+// on the frame and on a sample of a theme, and `draft` names the draft of the theme editor on its
+// preview (the sheet of the draft sets nothing else). Written once: the style sheets, the
+// TypeScript (`pageAttributes`) and the browser tests read the names from here.
+frame look="data-look" mode="data-theme" preview="data-preview-look" own="data-own-theme" draft="data-own-draft"
 
 // Choices of a person that change token values without changing the theme. Each is an
 // attribute on <html>; a token names the variant as a property (`density` below has

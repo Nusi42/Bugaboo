@@ -552,8 +552,8 @@ fn camel(name: &str) -> String {
 /// `bugabooFrame` for the scripts of the design pages: the attributes of `<html>`.
 fn frame_script(file: &ThemeFile) -> String {
     format!(
-        "// {GENERATED_BY}\n// The attributes of the page frame (<html>) that the scripts of the design pages use.\nglobalThis.bugabooFrame = {{\n  look: \"{}\",\n  mode: \"{}\",\n  previewLook: \"{}\",\n  ownTheme: \"{}\",\n}};\n",
-        file.frame.look, file.frame.mode, file.frame.preview, file.frame.own
+        "// {GENERATED_BY}\n// The attributes of the page frame (<html>) that the scripts of the design pages use.\nglobalThis.bugabooFrame = {{\n  look: \"{}\",\n  mode: \"{}\",\n  previewLook: \"{}\",\n  ownTheme: \"{}\",\n  ownDraft: \"{}\",\n}};\n",
+        file.frame.look, file.frame.mode, file.frame.preview, file.frame.own, file.frame.draft
     )
 }
 
@@ -585,8 +585,8 @@ fn typescript(file: &ThemeFile) -> anyhow::Result<String> {
     );
     let _ = write!(
         out,
-        "\n/** The attributes of the page frame (<html>): the theme on the page, the mode the design pages force, a sample of a theme and the own theme. */\nexport const pageAttributes = {{\n  look: \"{}\",\n  mode: \"{}\",\n  previewLook: \"{}\",\n  ownTheme: \"{}\",\n}} as const;\n",
-        file.frame.look, file.frame.mode, file.frame.preview, file.frame.own
+        "\n/** The attributes of the page frame (<html>): the theme on the page, the mode the design pages force, a sample of a theme, the own theme and the draft of the theme editor. */\nexport const pageAttributes = {{\n  look: \"{}\",\n  mode: \"{}\",\n  previewLook: \"{}\",\n  ownTheme: \"{}\",\n  ownDraft: \"{}\",\n}} as const;\n",
+        file.frame.look, file.frame.mode, file.frame.preview, file.frame.own, file.frame.draft
     );
     out.push_str("\n/** Where the layout changes, in pixels (the `bp-*` tokens). */\nexport const breakpoints = {\n");
     for token in &file.tokens {

@@ -8,6 +8,13 @@ use super::{BuiltIn, ColorValue, FontToken, Number, RadiusToken};
 /// The attribute of the page that carries the ID of an own theme (the `own` of the `frame` line).
 pub(super) const OWN_ATTRIBUTE: &str = "data-own-theme";
 
+/// The attribute of a sample of a theme inside the page (the `preview` of the `frame` line).
+pub(super) const PREVIEW_ATTRIBUTE: &str = "data-preview-look";
+
+/// The attribute of the preview of the theme editor that names the draft (the `draft` of the
+/// `frame` line).
+pub(super) const OWN_DRAFT_ATTRIBUTE: &str = "data-own-draft";
+
 /// The built-in themes, light ones first, in the order of the theme files.
 pub(super) const BUILT_IN: &[BuiltIn] = &[
     BuiltIn {

@@ -142,8 +142,11 @@ fn thm_04_the_style_sheet_holds_custom_properties_only() {
         color: "#00000040".to_owned(),
     }]);
     let sheet = style_sheet("0190-abc", &values).expect("a sheet");
+    // The page that wears the theme, and a sample of it in a theme picker.
     assert!(
-        sheet.contains(":root[data-own-theme=\"0190-abc\"] {"),
+        sheet.contains(
+            ":root[data-own-theme=\"0190-abc\"], [data-preview-look][data-own-theme=\"0190-abc\"] {"
+        ),
         "{sheet}"
     );
     assert!(sheet.contains("--fg: #abcdef;"));
@@ -163,6 +166,39 @@ fn thm_04_the_style_sheet_holds_custom_properties_only() {
     assert!(!sheet.contains("url(") && !sheet.contains("@import"));
     // An ID that could close the selector is no ID.
     assert_eq!(style_sheet("a\"] { x", &OwnValues::default()), None);
+    assert_eq!(draft_style_sheet("a\"] { x", &OwnValues::default()), None);
+}
+
+#[test]
+fn thm_03_the_sheet_of_a_draft_reaches_the_preview_of_the_editor_only() {
+    let values = colors(&[("fg", "#abcdef")]);
+    let sheet = draft_style_sheet("0190-abc", &values).expect("a sheet");
+    assert!(
+        sheet.contains("[data-preview-look][data-own-draft=\"0190-abc\"] {"),
+        "{sheet}"
+    );
+    // Never the page, and never the samples of the saved theme.
+    assert!(!sheet.contains(":root"), "{sheet}");
+    assert!(!sheet.contains("data-own-theme"), "{sheet}");
+    assert!(sheet.contains("--fg: #abcdef;"));
+    // The corners and the faces of the base, so a saved theme the page wears does not show
+    // through the preview.
+    for radius in radius_tokens() {
+        assert!(
+            sheet.contains(&format!("--{}: {}px;", radius.name, radius.start_px)),
+            "{sheet}"
+        );
+    }
+    for font in font_tokens() {
+        assert!(
+            sheet.contains(&format!("--{}: {};", font.name, font.stack)),
+            "{sheet}"
+        );
+    }
+    assert_eq!(
+        draft_style_sheet("0190-abc", &colors(&[("fg", "red")])),
+        None
+    );
 }
 
 #[test]

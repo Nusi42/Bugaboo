@@ -1,11 +1,15 @@
-//! The style sheet of an own theme (M8-Q8): custom properties and nothing else, written from the
-//! stored values alone. No text of a person reaches it: colors are six or eight hexadecimal digits,
-//! numbers are numbers, and a text stack is the stack of the base theme file that the value names.
+//! The style sheets of an own theme (M8-Q8): custom properties and nothing else, written from the
+//! stored values alone. No text of a person reaches them: colors are six or eight hexadecimal
+//! digits, numbers are numbers, and a text stack is the stack of the base theme file that the value
+//! names.
+//!
+//! A saved theme has one sheet for the page and for its samples; the draft of the theme editor has
+//! one for the preview of the editor only, so unsaved values never reach the page around it.
 
 use std::fmt::Write as _;
 
 use super::values::OwnValues;
-use super::{built_in, font_tokens};
+use super::{built_in, font_tokens, radius_tokens};
 
 /// Whether `id` can stand in a selector as it is: letters, digits and hyphens.
 fn is_safe_id(id: &str) -> bool {
@@ -15,16 +19,46 @@ fn is_safe_id(id: &str) -> bool {
             .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-')
 }
 
-/// The style sheet of the theme `id` with these values: the variables under the attribute of the
-/// page that carries the theme, and the colors for more contrast in their own block. `None` when
-/// the ID is not of a shape a selector can take or a value is not one an own theme may set, so no
-/// sheet is ever made from values that were not checked.
+/// Which elements a sheet sets its variables on.
+#[derive(Clone, Copy)]
+enum Reach {
+    /// The page whose frame carries the theme, and every sample of a theme that names it.
+    Saved,
+    /// The preview of the theme editor that names the draft, and nothing else.
+    Draft,
+}
+
+/// The style sheet of the saved theme `id` with these values: the variables under the attribute of
+/// the page that carries the theme and under a sample of a theme that names it (a sample in the
+/// theme pickers), and the colors for more contrast in their own block. `None` when the ID is not
+/// of a shape a selector can take or a value is not one an own theme may set, so no sheet is ever
+/// made from values that were not checked.
 #[must_use]
 pub fn style_sheet(id: &str, values: &OwnValues) -> Option<String> {
+    sheet(id, values, Reach::Saved)
+}
+
+/// The style sheet of the theme editor's draft of the theme `id`: the variables only under the
+/// preview that names the draft, never on the page. The corners and the text faces are written
+/// whether the draft changes them or not, so the preview does not show those of a saved theme the
+/// page may wear. `None` as for [`style_sheet`].
+#[must_use]
+pub fn draft_style_sheet(id: &str, values: &OwnValues) -> Option<String> {
+    sheet(id, values, Reach::Draft)
+}
+
+fn sheet(id: &str, values: &OwnValues, reach: Reach) -> Option<String> {
     if !is_safe_id(id) || !values.problems().is_empty() {
         return None;
     }
-    let selector = format!(":root[{}=\"{id}\"]", built_in::OWN_ATTRIBUTE);
+    let preview = built_in::PREVIEW_ATTRIBUTE;
+    let selector = match reach {
+        Reach::Saved => format!(
+            ":root[{own}=\"{id}\"], [{preview}][{own}=\"{id}\"]",
+            own = built_in::OWN_ATTRIBUTE
+        ),
+        Reach::Draft => format!("[{preview}][{}=\"{id}\"]", built_in::OWN_DRAFT_ATTRIBUTE),
+    };
     let mut usual = String::new();
     let mut more = String::new();
     for (name, choice) in &values.colors {
@@ -54,12 +88,22 @@ pub fn style_sheet(id: &str, values: &OwnValues) -> Option<String> {
             parts.join(", ")
         );
     }
-    for (name, pixels) in &values.radii {
-        let _ = writeln!(usual, "  --{name}: {pixels}px;");
+    for radius in radius_tokens() {
+        let pixels = match (values.radii.get(radius.name), reach) {
+            (Some(pixels), _) => *pixels,
+            (None, Reach::Draft) => radius.start_px,
+            (None, Reach::Saved) => continue,
+        };
+        let _ = writeln!(usual, "  --{}: {pixels}px;", radius.name);
     }
-    for (name, stack) in &values.fonts {
-        if let Some(font) = font_tokens().iter().find(|font| font.name == stack) {
-            let _ = writeln!(usual, "  --{name}: {};", font.stack);
+    for font in font_tokens() {
+        let chosen = match (values.fonts.get(font.name), reach) {
+            (Some(stack), _) => stack.as_str(),
+            (None, Reach::Draft) => font.name,
+            (None, Reach::Saved) => continue,
+        };
+        if let Some(stack) = font_tokens().iter().find(|each| each.name == chosen) {
+            let _ = writeln!(usual, "  --{}: {};", font.name, stack.stack);
         }
     }
     let mut sheet = String::from(

@@ -19,7 +19,7 @@ pub use choice::OwnChoice;
 pub use colors::{OwnColors, RatedPair, rate_own, readability};
 pub use file::{FileProblem, ThemeFile};
 pub use record::{OwnTheme, ThemeKind, ThemeName, ThemeNameError};
-pub use sheet::style_sheet;
+pub use sheet::{draft_style_sheet, style_sheet};
 pub use values::{ColorChoice, OwnValues, ShadowLayer, ValueProblem, ValueProblemKind};
 
 /// The most characters of the name of a theme.

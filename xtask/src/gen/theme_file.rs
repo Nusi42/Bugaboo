@@ -237,6 +237,8 @@ pub(crate) struct Frame {
     pub(crate) preview: String,
     /// The own theme on the page (`data-own-theme`): its style sheet comes from the server.
     pub(crate) own: String,
+    /// The draft of the theme editor on its preview (`data-own-draft`).
+    pub(crate) draft: String,
 }
 
 /// The style sheet of the design pages that one `docs` block makes: its own tokens, the rules (CSS

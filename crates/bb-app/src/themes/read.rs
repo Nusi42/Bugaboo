@@ -4,7 +4,7 @@
 
 use bb_core::ErrorCode;
 use bb_core::edit::{DraftTarget, draft_cutoff};
-use bb_core::theme::{OwnValues, ThemeFile, style_sheet};
+use bb_core::theme::{OwnValues, ThemeFile, draft_style_sheet, style_sheet};
 use bb_policy::{Authorized, Place};
 
 use super::rules::{Need, editing_what, hard_pairs, sees_unsaved_for_everyone, view_of};
@@ -13,10 +13,15 @@ use super::types::{
 };
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 
-/// The sheet of a theme with these values, or a failure: the values were checked when they were
-/// stored, so a sheet that cannot be made is a fault of the server.
-fn sheet_of(theme: &str, values: &OwnValues, version: i64) -> Result<ThemeSheet, AppError> {
-    let css = style_sheet(theme, values)
+/// The sheet `write` makes of a theme with these values, or a failure: the values were checked when
+/// they were stored, so a sheet that cannot be made is a fault of the server.
+fn sheet_of(
+    write: fn(&str, &OwnValues) -> Option<String>,
+    theme: &str,
+    values: &OwnValues,
+    version: i64,
+) -> Result<ThemeSheet, AppError> {
+    let css = write(theme, values)
         .ok_or_else(|| AppError::Internal("a stored theme has values a sheet refuses".into()))?;
     Ok(ThemeSheet { css, version })
 }
@@ -93,7 +98,12 @@ pub async fn theme_sheet<S: AuthStore>(
     if found.saved_at.is_none() {
         return Err(ErrorCode::NotFound.into());
     }
-    sheet_of(&found.id.to_string(), &found.values, found.version)
+    sheet_of(
+        style_sheet,
+        &found.id.to_string(),
+        &found.values,
+        found.version,
+    )
 }
 
 /// The style sheet of the person's own draft of a theme, for the preview of the editor: nobody
@@ -125,6 +135,7 @@ pub async fn theme_draft_sheet<S: AuthStore>(
         .and_then(|json| OwnValues::from_json(&json).ok())
         .ok_or(AppError::Refused(ErrorCode::NotFound))?;
     sheet_of(
+        draft_style_sheet,
         &found.id.to_string(),
         &values,
         draft.saved_at.as_microsecond(),

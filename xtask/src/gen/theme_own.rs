@@ -15,8 +15,8 @@ fn more(value: Option<&str>) -> String {
 /// The source of `built_in.rs`, before `rustfmt`.
 pub(super) fn rust(file: &ThemeFile, generated_by: &str) -> String {
     let mut out = format!(
-        "//! {generated_by}\n//!\n//! The built-in themes with their colors and shadow, the tokens an own theme may set and the\n//! numbers the contrast rules read (ADR-0026, update M8).\n\nuse super::{{BuiltIn, ColorValue, FontToken, Number, RadiusToken}};\n\n/// The attribute of the page that carries the ID of an own theme (the `own` of the `frame` line).\npub(super) const OWN_ATTRIBUTE: &str = {:?};\n\n",
-        file.frame.own
+        "//! {generated_by}\n//!\n//! The built-in themes with their colors and shadow, the tokens an own theme may set and the\n//! numbers the contrast rules read (ADR-0026, update M8).\n\nuse super::{{BuiltIn, ColorValue, FontToken, Number, RadiusToken}};\n\n/// The attribute of the page that carries the ID of an own theme (the `own` of the `frame` line).\npub(super) const OWN_ATTRIBUTE: &str = {:?};\n\n/// The attribute of a sample of a theme inside the page (the `preview` of the `frame` line).\npub(super) const PREVIEW_ATTRIBUTE: &str = {:?};\n\n/// The attribute of the preview of the theme editor that names the draft (the `draft` of the\n/// `frame` line).\npub(super) const OWN_DRAFT_ATTRIBUTE: &str = {:?};\n\n",
+        file.frame.own, file.frame.preview, file.frame.draft
     );
     out.push_str("/// The built-in themes, light ones first, in the order of the theme files.\npub(super) const BUILT_IN: &[BuiltIn] = &[\n");
     for theme in &file.themes {

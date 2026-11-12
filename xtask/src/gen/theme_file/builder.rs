@@ -34,6 +34,7 @@ impl Builder {
                     mode: node.required_prop("mode")?,
                     preview: node.required_prop("preview")?,
                     own: node.required_prop("own")?,
+                    draft: node.required_prop("draft")?,
                 });
             }
             "themes" | "theme" => {
