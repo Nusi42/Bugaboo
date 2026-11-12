@@ -355,7 +355,10 @@ pub(crate) fn page_statement(
 /// each project of a branch).
 fn found_by(compiler: &Compiler<'_>) -> Result<Cond, CompileError> {
     match &compiler.request.search.search().filter {
-        Some(filter) => compiler.filter(filter),
+        // Inside an `all` of its own, so what is added to it (the place a page continues after)
+        // holds together with the filter: a filter that is an `or` would otherwise take it as one
+        // more choice, and every page would be the first.
+        Some(filter) => Ok(Cond::all().add(compiler.filter(filter)?)),
         None => Ok(Cond::all()),
     }
 }

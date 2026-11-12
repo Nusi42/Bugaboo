@@ -1,7 +1,7 @@
 //! The routes of searching over HTTP (QRY-04, QRY-05, SEC-17, PERF-05): a mistake is answered with
 //! the checker's key and range, the sixty-first search of a minute waits, a cursor opens only for
-//! the person and the search it was made for, and a page of many issues over many projects runs as
-//! many statements as a small one.
+//! the person and the search it was made for, a search whose filter is an `or` carries on after its
+//! cursor, and a page of many issues over many projects runs as many statements as a small one.
 
 use axum::http::StatusCode;
 use bb_app::access::StartingRole;
@@ -96,6 +96,43 @@ async fn sec_17_a_cursor_opens_only_for_the_person_and_the_search_it_was_made_fo
         let stolen = gus.send("GET", &path(""), None).await?;
         assert_eq!(stolen.status, StatusCode::BAD_REQUEST);
         assert_eq!(stolen.code(), changed.code());
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn qry_04_a_search_whose_filter_is_an_or_carries_on_after_its_cursor() -> TestResult {
+    each_database("search_http_or_pages", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        for number in 0..3 {
+            ok(&site.create(&mut ada, &format!("Issue {number}")).await?)?;
+        }
+        let path = |cursor: &str| {
+            format!(
+                "/api/v1/search/issues?limit=2&q=priority%20is%20empty%20or%20priority%20is%20not%20empty{cursor}"
+            )
+        };
+        let first = ada.send("GET", &path(""), None).await?;
+        let first = ok(&first)?;
+        assert_eq!(first["items"].as_array().map(Vec::len), Some(2));
+        let cursor = text_in(first, "next_cursor")?;
+        // The second page holds the one issue the first did not, and ends the list.
+        let next = ada
+            .send("GET", &path(&format!("&cursor={cursor}")), None)
+            .await?;
+        let next = ok(&next)?;
+        let items = next["items"].as_array().ok_or("no items")?;
+        assert_eq!(items.len(), 1, "{next}");
+        let shown: Vec<&Value> = first["items"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .map(|item| &item["readable_id"])
+            .collect();
+        assert!(!shown.contains(&&items[0]["readable_id"]), "{next}");
+        assert!(next["next_cursor"].is_null(), "{next}");
         Ok(())
     })
     .await
