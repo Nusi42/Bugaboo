@@ -3,7 +3,7 @@
 
 use std::fmt::Write as _;
 
-use super::theme_file::{Own, ThemeFile, TokenKind};
+use super::theme_file::{Own, ThemeFile, ThemeKind, TokenKind};
 
 /// Where the data is written.
 pub(super) const OUTPUT: &str = "crates/bb-core/src/theme/built_in.rs";
@@ -24,7 +24,7 @@ pub(super) fn rust(file: &ThemeFile, generated_by: &str) -> String {
             out,
             "    BuiltIn {{\n        id: {:?},\n        light: {},\n        colors: &[",
             theme.name,
-            theme.kind == "light"
+            theme.kind == ThemeKind::Light
         );
         for token in file.colors() {
             if let Some(value) = token.in_theme(&theme.name) {

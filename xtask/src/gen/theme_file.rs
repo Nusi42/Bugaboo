@@ -17,10 +17,11 @@ use super::theme_selector::is_name_char;
 use crate::repo::Repo;
 
 mod builder;
+mod kinds;
 mod links;
 mod themes;
 use builder::Builder;
-use themes::KINDS;
+pub(crate) use kinds::{Own, ThemeKind};
 pub(crate) use themes::{THEMES_FOLDER, ThemeSource, is_theme_source, theme_sources};
 
 /// Where the base theme lives, relative to the repository root.
@@ -77,7 +78,7 @@ pub(crate) struct Theme {
     /// The theme's ID: the name of its file.
     pub(crate) name: String,
     /// `light` or `dark`; decides the browser's own controls and scrollbars.
-    pub(crate) kind: String,
+    pub(crate) kind: ThemeKind,
     /// Its file, `design/themes/<name>.kdl`, which a finding about the theme names.
     pub(crate) path: String,
 }
@@ -146,19 +147,6 @@ impl Token {
     pub(crate) fn in_theme_with_more_contrast(&self, theme: &str) -> Option<&str> {
         self.more_in(theme).or_else(|| self.in_theme(theme))
     }
-}
-
-/// What an own theme may do with a token. Colors are always open to it; the other kinds only where
-/// the line says so: `own="true"` on a shadow (stored as parts) and on a font (the choice of a stack),
-/// `own-min` and `own-max` on a size in pixels (a radius, within those bounds).
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum Own {
-    /// Not open to an own theme.
-    No,
-    /// Open: a shadow or a font stack.
-    Yes,
-    /// Open within the bounds, in pixels.
-    Pixels { min: u32, max: u32 },
 }
 
 /// A line of a rule: `property value`.
@@ -461,11 +449,14 @@ impl ThemeFile {
         }
         for (name, kind) in [&self.default_light, &self.default_dark]
             .into_iter()
-            .zip(KINDS)
+            .zip(ThemeKind::ALL)
         {
             match self.theme(name) {
                 Some(theme) if theme.kind == kind => {}
-                _ => bail!("the default {kind} theme `{name}` is not a {kind} theme"),
+                _ => {
+                    let word = kind.word();
+                    bail!("the default {word} theme `{name}` is not a {word} theme")
+                }
             }
         }
         self.validate_colors()?;

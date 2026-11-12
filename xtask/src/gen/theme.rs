@@ -13,8 +13,8 @@ use anyhow::{Context as _, bail};
 
 use super::Generated;
 use super::theme_file::{
-    AtRule, DOC_SHEETS, Declaration, DocSheet, Item, Keyframes, Rule, RuleKind, ThemeFile, Token,
-    Variant, references, substitute,
+    AtRule, DOC_SHEETS, Declaration, DocSheet, Item, Keyframes, Rule, RuleKind, ThemeFile,
+    ThemeKind, Token, Variant, references, substitute,
 };
 use super::theme_selector;
 use crate::repo::Repo;
@@ -202,9 +202,7 @@ fn theme_declarations(
         }
     }
     if !only_more {
-        let kind = file
-            .theme(theme)
-            .map_or("light", |theme| theme.kind.as_str());
+        let kind = file.theme(theme).map_or("light", |theme| theme.kind.word());
         let _ = writeln!(out, "{indent}color-scheme: {kind};");
     }
 }
@@ -572,7 +570,7 @@ fn typescript(file: &ThemeFile) -> anyhow::Result<String> {
         "\nexport const defaultLightTheme: ThemeId = \"{}\";\nexport const defaultDarkTheme: ThemeId = \"{}\";\n",
         file.default_light, file.default_dark
     );
-    let ids_of_kind = |kind: &str| {
+    let ids_of_kind = |kind: ThemeKind| {
         quoted(
             file.themes
                 .iter()
@@ -583,8 +581,8 @@ fn typescript(file: &ThemeFile) -> anyhow::Result<String> {
     let _ = write!(
         out,
         "\nexport const lightThemeIds = [{}] as const;\nexport const darkThemeIds = [{}] as const;\n",
-        ids_of_kind("light"),
-        ids_of_kind("dark")
+        ids_of_kind(ThemeKind::Light),
+        ids_of_kind(ThemeKind::Dark)
     );
     let _ = write!(
         out,
@@ -706,10 +704,11 @@ fn rust(file: &ThemeFile) -> String {
     out.push_str(
         "//!\n//! The themes of the settings *Light theme* and *Dark theme*, and the two that start. The\n//! theme file is the one place that lists the themes (ADR-0026).\n\nuse super::Choice;\nuse crate::message;\n",
     );
-    for (kind, constant) in [("light", "LIGHT"), ("dark", "DARK")] {
+    for kind in ThemeKind::ALL {
+        let (word, constant) = (kind.word(), kind.word().to_ascii_uppercase());
         let _ = write!(
             out,
-            "\n/// The {kind} themes, in the order of the theme file.\npub(super) const {constant}_THEME_CHOICES: &[Choice] = &[\n"
+            "\n/// The {word} themes, in the order of the theme file.\npub(super) const {constant}_THEME_CHOICES: &[Choice] = &[\n"
         );
         for theme in file.themes.iter().filter(|theme| theme.kind == kind) {
             let _ = writeln!(

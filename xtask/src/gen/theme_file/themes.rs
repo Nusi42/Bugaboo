@@ -54,9 +54,6 @@ impl ThemeFile {
 pub(super) const BASE_THEME: &str = "default";
 /// The key of a color's value for a device that asks for more contrast.
 pub(super) const MORE: &str = "more";
-/// The kinds of theme, in the order the themes are listed in (light ones first), which is also the
-/// order of the two themes that start (`defaults light= dark=`).
-pub(super) const KINDS: [&str; 2] = ["light", "dark"];
 
 /// The theme's ID: the name of its file without `.kdl`, in small letters, digits and `-`.
 fn theme_id(path: &str) -> anyhow::Result<&str> {
@@ -123,10 +120,12 @@ impl Builder {
                 "needs `extends=\"{BASE_THEME}\"`: a theme sets colors over the base theme, {THEME_PATH}"
             )));
         }
-        let kind = node.required_prop("kind")?;
-        if !KINDS.contains(&kind.as_str()) {
-            return Err(node.problem(format!("`kind` is {}", KINDS.join(" or "))));
-        }
+        let kind = ThemeKind::of(&node.required_prop("kind")?).ok_or_else(|| {
+            node.problem(format!(
+                "`kind` is {}",
+                ThemeKind::ALL.map(ThemeKind::word).join(" or ")
+            ))
+        })?;
         if let Some((key, _)) = node
             .props()?
             .into_iter()
@@ -216,7 +215,7 @@ impl Builder {
     pub(super) fn merge_themes(&mut self) -> Vec<Token> {
         let order = |theme: &Theme| {
             (
-                KINDS.iter().position(|kind| *kind == theme.kind),
+                ThemeKind::ALL.iter().position(|kind| *kind == theme.kind),
                 theme.name.clone(),
             )
         };
