@@ -211,6 +211,11 @@ impl Shown {
         self.person
     }
 
+    /// Whether the view is narrowed to an access key.
+    pub(crate) const fn is_narrowed(&self) -> bool {
+        self.key.is_some()
+    }
+
     /// What the person themselves may do in each of `projects` (not narrowed to a key), decided in
     /// memory from the rows and the tree read once; a project that is not stored is left out.
     pub(crate) fn evaluations_in(&self, projects: &[ProjectId]) -> Vec<(ProjectId, Evaluation)> {

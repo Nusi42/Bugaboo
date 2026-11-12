@@ -8,6 +8,7 @@
 use bb_core::ErrorCode;
 use bb_core::access_key::KeyChoice;
 use bb_core::id::ProjectId;
+use bb_policy::Place;
 
 use super::world::{Outcome, PASSWORD, World};
 use crate::access::ProjectLabel;
@@ -354,5 +355,47 @@ async fn auth_07_a_key_that_may_only_see_is_offered_no_place_to_move_a_project_i
     assert_eq!(names(&places.items), ["SUB"]);
     let places = projects(&ctx, movable(&see_only)).await?.into_value();
     assert!(places.items.is_empty(), "{places:?}");
+    Ok(())
+}
+
+#[tokio::test]
+async fn auth_07_the_rights_kept_for_a_request_are_the_persons_own_where_they_see() -> Outcome {
+    let world = World::new().await?;
+    let tree = tree(&world).await?;
+    let (_, key) = owner_and_key(&world, tree.web).await?;
+    let bob = world.person("bob@example.com").await?;
+    let ctx = world.ctx();
+    // A view narrowed to a key keeps nothing: what is kept is the person's own rights.
+    let narrowed = ctx.shown_with_levels_to(&ctx.actor(&key).await?).await?;
+    ctx.remember_projects(&narrowed);
+    let admin = narrowed.person();
+    for project in [tree.acme, tree.web, tree.api] {
+        assert!(
+            ctx.cached_evaluation(admin, Place::Project(project))
+                .is_none()
+        );
+    }
+    // A person keeps only the projects they see: without a role, none.
+    let unseen = ctx
+        .shown_with_levels_to(&ctx.actor(&bob.session_token).await?)
+        .await?;
+    ctx.remember_projects(&unseen);
+    for project in [tree.acme, tree.web, tree.other] {
+        assert!(
+            ctx.cached_evaluation(unseen.person(), Place::Project(project))
+                .is_none()
+        );
+    }
+    // The administrator's own view keeps every project they see.
+    let own = ctx
+        .shown_with_levels_to(&ctx.actor(&world.admin.session_token).await?)
+        .await?;
+    ctx.remember_projects(&own);
+    for project in [tree.acme, tree.web, tree.api, tree.sub, tree.other] {
+        assert!(
+            ctx.cached_evaluation(admin, Place::Project(project))
+                .is_some()
+        );
+    }
     Ok(())
 }

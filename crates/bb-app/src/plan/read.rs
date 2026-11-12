@@ -198,9 +198,7 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
             })
             .await?;
         // What the search read of the person's rights decides every project of the plan too.
-        if actor.key.is_none() {
-            self.remember_projects(&prepared.looked.seen);
-        }
+        self.remember_projects(&prepared.looked.seen);
         Ok((!nothing.load(Ordering::Relaxed)).then_some(prepared))
     }
 

@@ -366,8 +366,8 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// is what lets it decide a project without a read of its own, where `evaluate` reads the
     /// chain of each project; the decision is the same ([`Policy::evaluate_with`] is what a
     /// preview of a move asks too). Nothing is read when fewer than two of the places are not
-    /// kept yet; once read, every project of the tree is kept, not only the ones asked for. What was read is given back, so that the caller does not read the projects once
-    /// more.
+    /// kept yet; once read, every project the person sees is kept too, not only the ones asked
+    /// for. What was read is given back, so that the caller does not read the projects once more.
     ///
     /// # Errors
     /// An internal error when the store fails.
@@ -390,25 +390,38 @@ impl<S: AuthStore> Ctx<'_, S> {
             return Ok(None);
         }
         let shown = self.shown_with_levels(person, None).await?;
-        self.remember_projects(&shown);
+        self.remember_projects_and(&shown, &wanted);
         Ok(Some(shown))
     }
 
-    /// Keeps the evaluation of the person of `shown` at every project of its tree that is not kept
-    /// yet, decided in memory from what `shown` read: a later question about any project costs no
-    /// read of its chain, so the reads of a request do not depend on which projects it met first.
-    /// Only for a view that is not narrowed to a key: the evaluations are the person's own.
+    /// Keeps the evaluation of the person of `shown` at every project they see that is not kept
+    /// yet, decided in memory from what `shown` read: a later question about such a project costs
+    /// no read of its chain, so the reads of a request do not depend on which projects it met
+    /// first. A project the person does not see is decided when it is asked about. A view narrowed
+    /// to a key keeps nothing: what is kept is the person's own rights.
     pub(crate) fn remember_projects(&self, shown: &Leveled) {
+        self.remember_projects_and(shown, &[]);
+    }
+
+    /// The same, and also the projects of `asked`, seen or not.
+    fn remember_projects_and(&self, shown: &Leveled, asked: &[ProjectId]) {
+        if shown.is_narrowed() {
+            return;
+        }
         let person = shown.person();
-        let everywhere: Vec<ProjectId> = shown
+        let mut kept: Vec<ProjectId> = shown
             .tree()
             .projects()
+            .filter(|project| shown.sees(*project))
+            .chain(asked.iter().copied())
             .filter(|project| {
                 self.cached_evaluation(person, Place::Project(*project))
                     .is_none()
             })
             .collect();
-        for (project, found) in shown.evaluations_in(&everywhere) {
+        kept.sort_unstable();
+        kept.dedup();
+        for (project, found) in shown.evaluations_in(&kept) {
             self.remember_evaluation(person, Place::Project(project), &Arc::new(found));
         }
     }
@@ -454,7 +467,11 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(policy)
     }
 
-    fn cached_evaluation(&self, person: UserId, place: Place) -> Option<Arc<Evaluation>> {
+    pub(crate) fn cached_evaluation(
+        &self,
+        person: UserId,
+        place: Place,
+    ) -> Option<Arc<Evaluation>> {
         // A lock that a panic poisoned still holds a map that is whole: it only ever gets whole
         // insertions.
         let cache = locked(&self.evaluations);
