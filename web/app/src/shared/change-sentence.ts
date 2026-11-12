@@ -6,6 +6,7 @@ import { fieldNameOf } from "./field-names.ts";
 import { regionWords } from "./own-value-text.ts";
 import { personName, personNameInside } from "./person.ts";
 import { renderSaid } from "./said.ts";
+import { factorText } from "./time-factor-text.ts";
 
 /**
  * What the sentence of a change needs of an item that says one: the history of an issue and a
@@ -64,6 +65,9 @@ export function wordedSideOf(
       value: value.value,
       worded: regionWords(value.kind, value.value) ?? null,
     };
+  }
+  if (value.shown === "time-factor") {
+    return { shown: "plain", text: factorText(value.percent) };
   }
   return {
     shown: "plain",

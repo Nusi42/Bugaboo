@@ -12439,21 +12439,6 @@ pub fn issues_time_factor_sum(
     )
 }
 
-/// The message `issues.time-factor-sum-length`.
-#[must_use]
-pub fn issues_time_factor_sum_length(
-    estimate: impl std::fmt::Display,
-    length: impl std::fmt::Display,
-) -> Message {
-    Message::with_arguments(
-        MessageKey::new("issues.time-factor-sum-length"),
-        vec![
-            ("estimate", Value::Text(estimate.to_string())),
-            ("length", Value::Text(length.to_string())),
-        ],
-    )
-}
-
 /// The message `issues.time-factor-takes`.
 #[must_use]
 pub fn issues_time_factor_takes(name: impl std::fmt::Display) -> Message {
@@ -21274,7 +21259,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Narrow the search to {limit, number} issues or fewer to change them together.",
     ),
     ("issues.time-factor-as-estimated", "×1 (as estimated)"),
-    ("issues.time-factor-as-factor", "A factor"),
+    ("issues.time-factor-as-factor", "A time factor"),
     (
         "issues.time-factor-ask-other",
         "How long will it take {name}?",
@@ -21283,15 +21268,18 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.time-factor-change", "Change"),
     ("issues.time-factor-change-name", "Change the time factor"),
     ("issues.time-factor-estimate", "Estimate {estimate}"),
-    ("issues.time-factor-factor", "Factor (1 is as estimated)"),
+    (
+        "issues.time-factor-factor",
+        "Time factor (1 is as estimated)",
+    ),
     ("issues.time-factor-length", "How long it takes"),
     (
         "issues.time-factor-not-a-factor",
-        "Type a factor like {example}.",
+        "Type a time factor like {example}.",
     ),
     (
         "issues.time-factor-nothing",
-        "Type how long it takes, or a factor.",
+        "Type how long it takes, or a time factor.",
     ),
     ("issues.time-factor-own", "{factor} · {name}'s own estimate"),
     ("issues.time-factor-save", "Save the time factor"),
@@ -21299,10 +21287,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "issues.time-factor-sum",
         "Estimate {estimate} · {factor} = {total}",
-    ),
-    (
-        "issues.time-factor-sum-length",
-        "Estimate {estimate} · takes {length}",
     ),
     ("issues.time-factor-takes", "Takes {name} …"),
     ("issues.time-factor-takes-me", "Takes me …"),

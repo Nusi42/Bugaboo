@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { whoOf } from "./change-sentence.ts";
+import { t } from "@bugaboo/messages";
+
+import { whoOf, wordedSideOf } from "./change-sentence.ts";
+import { deviceRegion, setRegion } from "./region.ts";
+import { factorText } from "./time-factor-text.ts";
 
 const ada = { shown: "name", id: "p1", name: "Ada Brandt" } as const;
 const role = { shown: "role", role: "Team member" } as const;
@@ -21,5 +25,16 @@ describe("who did it", () => {
 
   it("ai_23 says Bugaboo when nobody is named", () => {
     expect(whoOf({})).toBe("Bugaboo");
+  });
+});
+
+describe("plan_14 a time factor in the history", () => {
+  it("is written as a factor with the one writer of the row, never as its percent", () => {
+    setRegion({ ...deviceRegion, numberFormat: "point" });
+    expect(wordedSideOf({ shown: "time-factor", percent: 125 })).toEqual({
+      shown: "plain",
+      text: factorText(125),
+    });
+    expect(factorText(125)).toBe(t("issues.time-factor-value", { factor: "1.25" }));
   });
 });

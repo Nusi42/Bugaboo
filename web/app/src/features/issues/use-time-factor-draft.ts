@@ -4,7 +4,8 @@ import { useState } from "react";
 import { messageOf } from "../../shared/errors.ts";
 import { formatNumber } from "../../shared/format.ts";
 import { hundredthsIn } from "../../shared/number.ts";
-import { AS_ESTIMATED, setTimeFactor, type NewTimeFactor, type TimeFactor } from "./time-factor.ts";
+import { AS_ESTIMATED } from "../../shared/time-factor-text.ts";
+import { setTimeFactor, type NewTimeFactor, type TimeFactor } from "./time-factor.ts";
 
 /** How the factor is given: a length (*Takes me …*) or a factor. */
 export type FactorWay = "length" | "factor";

@@ -198,7 +198,6 @@ term = "factor"
 at = [
   "messages/en.json#issue-field.time-factor",
   "messages/en.json#*time-factor-changed*",
-  "messages/en.json#issues.time-factor-*",
   "api:*time-factor*",
   "api:*TimeFactor*",
   "api:*time_factor*",
@@ -210,6 +209,13 @@ term = "zoom"
 at = ["api:property TimelineOptionsBody.zoom", "api:schema Zoom"]
 reason = "The glossary's own term Zoom (of the timeline): how many days a column of the timeline holds, from a day to a quarter (UX §4.7). Not the size of text, which is Larger text."
 
+# The messages of the row and the window of the time factor: only the phrase of the glossary term.
+[[allow]]
+term = "factor"
+at = ["messages/en.json#issues.time-factor-*"]
+phrases = ["time factor"]
+reason = "Time factor is the glossary's own term for the estimate of the person on the bar (glossary, Time factor; ADR-0030, decision 4). It is not a second step of signing in."
+
 # The user docs: only the phrase of the glossary term.
 [[allow]]
 term = "factor"
@@ -218,5 +224,5 @@ at = [
   "userDocs/time/time-factor.md",
   "userDocs/time/README.md",
 ]
-phrases = ["the time factor", "The time factor", "time factor", "A factor"]
+phrases = ["time factor"]
 reason = "Time factor is the glossary's own term for the estimate of the person on the bar (glossary, Time factor). It is not a second step of signing in."

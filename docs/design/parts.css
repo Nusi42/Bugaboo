@@ -2238,6 +2238,10 @@ textarea,
   padding: calc((var(--size-control) - var(--fs-base) * var(--lh-body)) / 2) 0;
 }
 
+[data-part="name-value.words"] {
+  padding: var(--pad-line-in-control) 0;
+}
+
 [data-part="followers-line"] {
   display: flex;
   flex-wrap: wrap;

@@ -167,6 +167,9 @@ tokens {
     // Where the text of a cell of the grid of the timesheet starts: level with the first line of the boxes of lengths (the room
     // the box has above its text, and the room around the box).
     size "size-sheet-text-top" "calc($space-1 + ($size-control - 1lh) / 2)"
+    // What puts the first line of words in the middle of the height of a control, in the line height of the words
+    // that use it.
+    size "pad-line-in-control" "calc(($size-control - 1lh) / 2)"
     // The box of the number of a choice (up to nine digits in the code font, with the box around them).
     size "size-choice-number-box" "calc(14ch + 2 * $space-3)"
     // The box of the work hours of a day (`7h 30m`), narrow enough to stay beside the longest weekday on a phone.
@@ -3249,6 +3252,12 @@ part "name-value.value" {
 // one line, and the lines after it follow (the review of M4, B Details).
 part "name-value.value > muted" {
     padding "calc(($size-control - $fs-base * $lh-body) / 2) 0"
+}
+
+// Words of a value that may take two lines (*×1.25 · Lea's own estimate*): their first line stands in the
+// middle of the height of a control, level with the name, however many lines follow (R1).
+part "name-value.words" {
+    padding "$pad-line-in-control 0"
 }
 
 // The *Followers* row is one line on a computer and on a phone: the count (or the words *You follow it*

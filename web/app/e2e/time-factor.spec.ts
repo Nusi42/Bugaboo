@@ -10,6 +10,7 @@ import {
   factorAs,
   factorIssues,
   factorRow,
+  historyLine,
   lea,
   openIssue,
   prepareTimeFactor,
@@ -38,12 +39,35 @@ test("plan_14_the_person_on_the_bar_sets_the_time_factor_with_takes_me", async (
   const length = window.getByLabel(t("issues.time-factor-length"), { exact: true });
   await length.fill("10h");
   await length.press("Tab");
-  await expect(window.getByText(/8h .* 10h/u)).toBeVisible();
+  // The sum says the time factor the server will work out, and what the plan counts with it.
+  await expect(window.getByText(/8h · ×1[.,]25 = 10h/u)).toBeVisible();
   await window.getByRole("button", { name: t("issues.time-factor-save") }).click();
   await expect(window).toBeHidden();
   await expect.poll(async () => (await factorAs(server, bob, factorIssues.ada)).percent).toBe(125);
   await expect(factorRow(page)).toContainText(/×1[.,]25/u);
   await expect(factorRow(page)).toContainText(bob.name);
+  // The history writes the time factor as the row does, never as its percent.
+  await expect(historyLine(page, String.raw`×1[.,]25`).first()).toBeVisible();
+  await expect(historyLine(page, "125")).toHaveCount(0);
+});
+
+test("plan_14_someone_else_sets_the_time_factor_and_the_issue_says_who", async ({ page }) => {
+  await signIn(page, ada);
+  await openIssue(page, factorIssues.ada);
+  await factorRow(page)
+    .getByRole("button", { name: t("issues.time-factor-change-name") })
+    .click();
+  const window = page.getByRole("dialog", {
+    name: t("issues.time-factor-ask-other", { name: bob.name }),
+  });
+  await expect(window.getByText(t("issues.time-factor-told", { name: bob.name }))).toBeVisible();
+  await window.getByRole("radio", { name: t("issues.time-factor-as-factor") }).click();
+  const factor = window.getByLabel(t("issues.time-factor-factor"), { exact: true });
+  await factor.fill("1.5");
+  await expect(window.getByText(/8h · ×1[.,]5 = 12h/u)).toBeVisible();
+  await window.getByRole("button", { name: t("issues.time-factor-save") }).click();
+  await expect(window).toBeHidden();
+  await expect(factorRow(page)).toContainText(/×1[.,]5 · set by Ada Admin/u);
 });
 
 test("plan_14_the_time_factor_goes_back_to_x1_on_screen_when_the_person_changes", async ({
@@ -70,7 +94,9 @@ test("plan_14_a_field_level_that_hides_the_time_factor_hides_its_row", async ({ 
   await setFactorAs(server, ada, factorIssues.lea, 150);
   // Lea is a Guest, whose role does not see the time factor at the start.
   await signIn(page, lea);
+  const answered = page.waitForResponse((answer) => answer.url().endsWith("/time-factor"));
   await openIssue(page, factorIssues.lea);
+  await answered;
   await expect(page.getByText(t("issue-field.estimated-time"), { exact: true })).toHaveCount(0);
   await expect(factorRow(page)).toHaveCount(0);
   // Hidden from Team members too: Bob is the person on the bar and still sees his own factor.

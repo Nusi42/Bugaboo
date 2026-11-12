@@ -3,19 +3,16 @@ import { t } from "@bugaboo/messages";
 import { useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
-import { formatNumber } from "../../shared/format.ts";
 import { personName } from "../../shared/person.ts";
 import { queryClient } from "../../shared/query-client.ts";
-import { queryKeys } from "../../shared/query-keys.ts";
+import { queryKeys, refreshHistory } from "../../shared/query-keys.ts";
+import { AS_ESTIMATED, factorText } from "../../shared/time-factor-text.ts";
 
 /** The time factor of an issue as the server answers it for the reader (PLAN-14, ADR-0030). */
 export type TimeFactor = Schema<"TimeFactorBody">;
 
 /** How a new time factor is given: as a factor in percent, or as a length (*Takes me …*). */
 export type NewTimeFactor = { readonly percent: number } | { readonly takes_minutes: number };
-
-/** The percent of the estimate that is ×1. */
-export const AS_ESTIMATED = 100;
 
 /**
  * The key of the time factor of an issue: among the times of the issue, so the page reads it again
@@ -50,6 +47,8 @@ export async function setTimeFactor(
       body: { version, ...factor },
     }),
   );
+  // The issue counted up its version, and its history has the change.
+  refreshHistory();
   await queryClient.invalidateQueries({ queryKey: queryKeys.issues.all });
 }
 
@@ -68,11 +67,6 @@ export function shownPercent(factor: TimeFactor): number | undefined {
 /** Whether the reader is the person on the bar: only they are sent their own percent. */
 export function isOwnFactor(factor: TimeFactor): boolean {
   return factor.own_percent !== null;
-}
-
-/** A factor as it is written: `×1.25`, in the reader's *Number format*. */
-export function factorText(percent: number): string {
-  return t("issues.time-factor-value", { factor: formatNumber(percent / AS_ESTIMATED) });
 }
 
 /** The row's words: "×1.25 · Lea's own estimate", "×1.5 · set by Ada Brandt" or "×1 (as estimated)". */

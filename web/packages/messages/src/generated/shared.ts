@@ -858,6 +858,7 @@ export const messages = {
   "theme-editor.preview": "Preview",
   "editing.is-editing-now": "{name} is editing {thing} right now",
   "issue-field.time-factor": "Time factor",
+  "issues.time-factor-value": "×{factor}",
   "notification.kind.time-factor-changed": "Your time factor was changed",
   "notifications.time-factor-changed": "{who} changed your time factor on this issue",
 } as const;

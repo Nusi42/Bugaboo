@@ -12,14 +12,14 @@ On the issue page the row **Time factor** stands under *Estimated time*. It says
 - "×1.5 · set by Ada Brandt" when somebody else set it;
 - "×1 (as estimated)" when nobody set one.
 
-If you are the person on the bar, you always see the row, also where your role does not see the time factor of other people's issues. Everybody else sees it as the field permissions of *Time factor* allow (at the start Administrators, Project leads and Team members may change it, Contributors and Viewers see it, and Guests do not). Where your role is shown somebody only as their role, the row says *set by Someone*.
+If you are the person on the bar, you always see the row, also where your role does not see the time factor of other people's issues. Everybody else sees it as the field permissions of *Time factor* allow (at the start Administrators, Project leads and Team members may change it, Contributors and Viewers see it, and Guests do not). Where *Who sees people* shows your role the person on the bar only by their role, the row says *set by Someone*.
 
 ## Changing it
 
 Press **Change** in the row. The window asks **How long will it take you?** when you are the person on the bar, and **How long will it take Lea?** when you change it for somebody else.
 
 - **Takes me …**: type how long the issue takes you, like `10h`. Bugaboo works out the time factor against *Estimated time*. This choice is there only when you can read the estimate.
-- **A factor**: type the time factor itself, like `1.25`; `1` is as estimated.
+- **A time factor**: type the time factor itself, like `1.25`; `1` is as estimated.
 
 Under the box the window shows what you typed beside the estimate, for example "Estimate 8h · ×1.25 = 10h". **Save the time factor** saves it; the history of the issue shows the change.
 

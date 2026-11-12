@@ -89,6 +89,15 @@ export async function openIssue(page: Page, key: string): Promise<void> {
   await expect(page.getByText(t("issue-field.assigned-to"), { exact: true })).toBeVisible();
 }
 
+/**
+ * A sentence of the history of the open issue about the time factor, with the value `value` (a
+ * pattern of its words): the name of the field and the value stand in one sentence there, never in
+ * the row of the Details, where they are apart.
+ */
+export function historyLine(page: Page, value: string): Locator {
+  return page.getByText(new RegExp(`${t("issue-field.time-factor")}.*${value}`, "u"));
+}
+
 /** The row *Time factor* of the Details. */
 export function factorRow(page: Page): Locator {
   return detailRow(page, t("issue-field.time-factor"));

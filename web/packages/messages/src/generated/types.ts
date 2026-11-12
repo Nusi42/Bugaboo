@@ -445,7 +445,6 @@ export interface MessageArguments {
     factor: string | number;
     total: string | number;
   };
-  "issues.time-factor-sum-length": { estimate: string | number; length: string | number };
   "issues.time-factor-takes": { name: string | number };
   "issues.time-factor-told": { name: string | number };
   "issues.time-factor-value": { factor: string | number };

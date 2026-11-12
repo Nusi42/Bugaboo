@@ -46,4 +46,30 @@ test("the row and the windows of the time factor", async ({ page, server }) => {
     await change().click();
     await expect(page.getByText(t("issues.time-factor-told", { name: bob.name }))).toBeVisible();
   });
+  // A time factor chosen and typed, with its sum; then one that is no time factor, with its line.
+  const typed = async (text: string) => {
+    await openIssue(page, factorIssues.ada);
+    await change().click();
+    const window = page.getByRole("dialog");
+    await window.getByRole("radio", { name: t("issues.time-factor-as-factor") }).click();
+    await window.getByLabel(t("issues.time-factor-factor"), { exact: true }).fill(text);
+  };
+  await inFourChosenThemes(page, "window-factor-sum", MILESTONE, paths.appearance, async () => {
+    await typed("1.5");
+    await expect(page.getByText(/= 12h/u)).toBeVisible();
+  });
+  await inFourChosenThemes(page, "window-factor-mistake", MILESTONE, paths.appearance, async () => {
+    await typed("soon");
+    await expect(page.getByText(/1[.,]25/u).last()).toBeVisible();
+  });
+  // Ada sets it: the row says who; then nobody's, on the issue Lea reported: as estimated.
+  await setFactorAs(server, ada, factorIssues.ada, 150);
+  await inFourChosenThemes(page, "row-set-by", MILESTONE, paths.appearance, async () => {
+    await openIssue(page, factorIssues.ada);
+    await expect(factorRow(page)).toContainText(ada.name);
+  });
+  await inFourChosenThemes(page, "row-as-estimated", MILESTONE, paths.appearance, async () => {
+    await openIssue(page, factorIssues.lea);
+    await expect(factorRow(page)).toContainText(t("issues.time-factor-as-estimated"));
+  });
 });
