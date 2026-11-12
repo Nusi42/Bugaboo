@@ -15,6 +15,7 @@ mod store;
 mod types;
 mod ways;
 
+pub(crate) use build::DateTargets;
 pub use factor::{
     FactorGiven, SetTimeFactor, TimeFactorQuery, TimeFactorView, person_on_bar, reset_with_first,
     set_time_factor, time_factor,

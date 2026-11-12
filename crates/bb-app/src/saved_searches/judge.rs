@@ -7,12 +7,12 @@
 //! has judged stood for, so a list reads each group, tag, label and name once for the request.
 
 use bb_core::saved_search::Presentation;
-use bb_searchlang::FieldKind;
 use bb_searchlang::{ReadableFields, canonical_text, check, parse_with};
 
 use super::reach::Reaching;
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx};
+use crate::plan::DateTargets;
 use crate::search::{Looked, NameCache, SearchScope, readable_of};
 
 /// Judges saved searches for one person, reading what it needs once for the request: what the
@@ -77,18 +77,16 @@ impl<S: AuthStore> Ctx<'_, S> {
         {
             return Ok(None);
         }
-        // The two fields a timeline takes its days from are date fields (ADR-0043, decision 2).
+        // The two fields a timeline takes its days from are fields a bar can take its day from,
+        // by the one rule of the plan (ADR-0043, decision 2).
         let dates = presentation
             .timeline
             .as_ref()
             .and_then(|timeline| timeline.dates.as_ref());
         if dates.is_some_and(|(start, end)| {
-            [start, end].into_iter().any(|word| {
-                judge
-                    .fields
-                    .field(word)
-                    .is_none_or(|field| field.kind != FieldKind::Date)
-            })
+            [start, end]
+                .into_iter()
+                .any(|word| DateTargets::of_word(&judge.looked.fields, word).is_none())
         }) {
             return Ok(None);
         }

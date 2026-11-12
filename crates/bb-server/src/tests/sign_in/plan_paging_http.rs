@@ -10,6 +10,7 @@ use bb_core::paging::PAGE_SIZE_MAX;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
+use super::fields_http::create_field;
 use super::http::{Browser, rig_and_app};
 use super::issues_site::{Site, ok};
 use super::plan_site::{MONDAY, TIMELINE, ask, issue, page, planned};
@@ -159,10 +160,19 @@ async fn plan_13_a_view_or_a_way_out_that_names_what_cannot_be_is_no_request() -
             )
             .await?;
         assert_eq!(refused.code(), "request.invalid", "{}", refused.body);
-        // Neither is a saved search that takes its days from fields that hold no day.
+        // Neither is a saved search that takes its days from fields a bar cannot take its days
+        // from: fields that hold no day, a date field the timeline does not plan with (*Created*),
+        // and an own field with a day and a time.
+        create_field(
+            &mut ada,
+            json!({"name": "Kickoff call", "kind": "date-time", "applies_to": "issues"}),
+        )
+        .await?;
         for timeline in [
             half,
             json!({"zoom": "week", "start_field": "title", "end_field": "status"}),
+            json!({"zoom": "week", "start_field": "created", "end_field": "due date"}),
+            json!({"zoom": "week", "start_field": "Kickoff call", "end_field": "due date"}),
         ] {
             let saved = ada
                 .send(

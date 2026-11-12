@@ -29,7 +29,7 @@ use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::issues::Where;
 use crate::relations::effect_kinds;
-use crate::search::FieldTarget;
+use crate::search::{FieldTarget, Searchable, target_of};
 use crate::work_times::{PLAN_PEOPLE_MAX, RANGE_DAYS_MAX, WorkMinutesQuery};
 
 /// The date fields the bars take their days from, as the reader may read them: a field the reader
@@ -44,7 +44,7 @@ pub(crate) struct DateTargets {
 
 impl DateTargets {
     /// Whether a field the search reads can give a bar its day.
-    pub(crate) const fn is_date(target: FieldTarget) -> bool {
+    const fn is_date(target: FieldTarget) -> bool {
         matches!(
             target,
             FieldTarget::StartDate
@@ -54,6 +54,13 @@ impl DateTargets {
                     ..
                 }
         )
+    }
+
+    /// The field of `word` among the fields the reader may search, when a bar can take its day
+    /// from it: the one rule of which fields a timeline takes its days from, for a page and for a
+    /// saved search.
+    pub(crate) fn of_word(fields: &[Searchable], word: &str) -> Option<FieldTarget> {
+        target_of(fields, word).filter(|target| Self::is_date(*target))
     }
 
     /// The own fields among them, whose values are read for the set.

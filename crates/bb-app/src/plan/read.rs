@@ -46,11 +46,9 @@ pub(crate) fn date_words(options: &TimelineOptions) -> (String, String) {
 
 /// The date fields of a view as the search reads them for the reader.
 pub(crate) fn date_targets(looked: &Looked, words: &(String, String)) -> DateTargets {
-    let readable =
-        |word: &str| target_of(&looked.fields, word).filter(|target| DateTargets::is_date(*target));
     DateTargets {
-        start: readable(&words.0),
-        end: readable(&words.1),
+        start: DateTargets::of_word(&looked.fields, &words.0),
+        end: DateTargets::of_word(&looked.fields, &words.1),
     }
 }
 
