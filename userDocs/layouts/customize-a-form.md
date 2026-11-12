@@ -16,6 +16,8 @@ Each field has a handle. Drag it into a section or onto the list *Fields that ar
 
 ## The lengths of time
 
+*Start date* and *Due date* are fields like the others, on the issue page and on the new-issue form. Each is a calendar date with no time of day. A start date after the due date of the same issue is refused. The usual layout shows both; a layout saved before M8 keeps them under *Fields that are not on this form* until somebody places them.
+
 *Estimated time*, *Time left* and *Time spent* are fields like the others. The issue page can place all three, and the usual layout puts them last. The new-issue form can place *Estimated time*: a new issue created with one starts with *Time left* equal to it. *Time spent* is the total of the time entries, so it is shown and never typed, and the new-issue form does not offer it. The totals with the sub-issues are shown only when *Time spent* is placed.
 
 ## Roles
