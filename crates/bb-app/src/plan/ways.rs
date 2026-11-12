@@ -259,10 +259,16 @@ pub async fn accept_warning<S: AuthStore + SearchStore>(
         return Err(AppError::stale(record, place, actor.person.id));
     }
     if input.kind != WarningKind::TooMuchAtOnce {
-        let around = issue
-            .start_date
-            .or(issue.due_date)
-            .unwrap_or_else(|| ctx.now().to_zoned(jiff::tz::TimeZone::UTC).date());
+        // The work times are read around a date the reader may read, else around today: a date
+        // they may not read never decides what they are answered.
+        let mask = held.field_mask_for(Some(issue.issue_type));
+        let around = [
+            (Field::StartDate, issue.start_date),
+            (Field::DueDate, issue.due_date),
+        ]
+        .into_iter()
+        .find_map(|(field, date)| date.filter(|_| mask.can_see(field)))
+        .unwrap_or_else(|| ctx.now().to_zoned(jiff::tz::TimeZone::UTC).date());
         let ask = ctx
             .ask_for(&actor, &issue, vec![issue.clone()], &input.options, around)
             .await?;

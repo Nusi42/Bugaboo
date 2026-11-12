@@ -364,6 +364,45 @@ async fn plan_13_a_hidden_person_on_the_bar_is_not_named_through_the_factor_or_a
     .await
 }
 
+#[tokio::test]
+async fn plan_13_accepting_a_warning_reads_work_times_around_dates_the_reader_may_read()
+-> TestResult {
+    each_database("plan_13_accept_window", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut lea, lea_id) = site.person(StartingRole::TeamMember, "lea").await?;
+        // Away on the due date, which is more than a year after the start date.
+        ok(&lea
+            .send(
+                "POST",
+                "/api/v1/me/away-times",
+                Some(json!({"first": "2028-06-01", "last": "2028-06-01"})),
+            )
+            .await?)?;
+        let key = planned(
+            &site,
+            &mut ada,
+            "Long work",
+            json!({"start_date": MONDAY, "due_date": "2028-06-01", "assigned_to": [lea_id.to_string()]}),
+        )
+        .await?;
+        // Her role may not read the start date: her bar is the due date, and the work times are
+        // read around it, not around the start date she may not read.
+        field_level(&site, &mut ada, StartingRole::TeamMember, "start-date", "hidden").await?;
+        let version = issue(&mut lea, &key).await?["version"].clone();
+        let accepted = lea
+            .send(
+                "POST",
+                &format!("{TIMELINE}/accepted-warnings"),
+                Some(json!({"issue": key, "version": version, "kind": "away", "timeline": {"zoom": "week"}})),
+            )
+            .await?;
+        assert_eq!(accepted.status, StatusCode::OK, "{}", accepted.body);
+        Ok(())
+    })
+    .await
+}
+
 /// A new own date field for issues, as Ada: its ID.
 async fn date_field(ada: &mut Browser, name: &str) -> Result<String, Failure> {
     let made = ada
