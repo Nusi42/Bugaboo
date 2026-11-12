@@ -306,19 +306,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(failed)?
             .filter(|entry| entry.person == stale.viewer)
             .map(|entry| entry.version),
-            // Only a person who may change the away time was told it is stale (`work_times`).
-            RecordKind::AwayTime => {
-                found(AwayTimeId::from_bytes(bytes).ok(), |id| store.away_time(id))
-                    .await
-                    .map_err(failed)?
-                    .map(|time| time.version)
-            }
-            // The usual work days of a person: told only to who may change them (`work_times`).
-            RecordKind::WorkTimes => {
-                found(UserId::from_bytes(bytes).ok(), |id| store.usual_days(id))
-                    .await
-                    .map_err(failed)?
-                    .map(|stored| stored.version)
+            RecordKind::AwayTime | RecordKind::WorkTimes => {
+                self.work_times_version(kind, bytes).await?
             }
             // An agent is its person's own: nobody else is told its version.
             RecordKind::Agent => found(AgentId::from_bytes(bytes).ok(), |id| store.agent(id))
@@ -339,6 +328,28 @@ impl<S: AuthStore> Ctx<'_, S> {
             _ => return self.version_by_kind(stale).await,
         };
         Ok(version)
+    }
+
+    /// The version of an away time, or of the usual work days of a person: only a person who may
+    /// change them was told they are stale (`work_times`).
+    async fn work_times_version(
+        &self,
+        kind: RecordKind,
+        bytes: [u8; 16],
+    ) -> Result<Option<i64>, AppError> {
+        let store = self.store();
+        let failed = |error| internal::<S>(&error);
+        Ok(if kind == RecordKind::AwayTime {
+            found(AwayTimeId::from_bytes(bytes).ok(), |id| store.away_time(id))
+                .await
+                .map_err(failed)?
+                .map(|time| time.version)
+        } else {
+            found(UserId::from_bytes(bytes).ok(), |id| store.usual_days(id))
+                .await
+                .map_err(failed)?
+                .map(|stored| stored.version)
+        })
     }
 
     /// The version of work on an issue, told to the people who answer for it, or of a standing
