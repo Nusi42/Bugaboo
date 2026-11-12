@@ -138,6 +138,23 @@ pub struct TimelineRow {
     /// Whether the row is that of an assigned person who is not the person on the bar: the bar is
     /// planned with the first person's work times (*Group by person*).
     pub copy: bool,
+    /// Whether the reader may change both date fields of the view on this issue: only then can its
+    /// bar be dragged (PLAN-03). The change itself is judged again when it is saved.
+    pub may_move: bool,
+}
+
+/// A goal of the page: an issue with sub-issues that the reader sees, with its due date as the
+/// diamond of the timeline and the span of its sub-issues' bars as its bracket (ADR-0043,
+/// decision 7).
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct GoalView {
+    /// The goal.
+    pub issue: IssueId,
+    /// Its *Due date*, when it has one the reader may read.
+    pub due: Option<Date>,
+    /// The days from the first day to the last day of the bars of its sub-issues that the plan
+    /// knows; none when none of them has a bar.
+    pub span: Option<Days>,
 }
 
 /// A plan warning someone accepted, as the reader may see who.
@@ -190,6 +207,8 @@ pub struct TimelinePage {
     pub dependencies: Vec<(IssueId, IssueId)>,
     /// The warnings of the issues of the page.
     pub warnings: Vec<WarningView>,
+    /// The goals of the issues of the page and the goals among them.
+    pub goals: Vec<GoalView>,
     /// How many issues the search finds that wait in *Not scheduled yet*.
     pub not_scheduled: u64,
     /// Whether the bars were planned by effort: the view asked for it, and the reader is no access
@@ -198,6 +217,23 @@ pub struct TimelinePage {
 }
 
 impl Masked for TimelinePage {}
+
+impl TimelinePage {
+    /// A page with no rows: the search finds none the reader may see with a date, or no field of
+    /// the view can give one. The count of *Not scheduled yet* still counts.
+    #[must_use]
+    pub const fn empty(not_scheduled: u64, planned_by_effort: bool) -> Self {
+        Self {
+            rows: Vec::new(),
+            next_cursor: None,
+            dependencies: Vec::new(),
+            warnings: Vec::new(),
+            goals: Vec::new(),
+            not_scheduled,
+            planned_by_effort,
+        }
+    }
+}
 
 /// Ask for the preview of *Move it after*.
 pub struct MoveAfterQuery {

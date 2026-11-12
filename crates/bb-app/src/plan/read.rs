@@ -16,6 +16,7 @@ use bb_core::access::PeopleLevel;
 use bb_core::fields::{ASSIGNED_TO_PEOPLE, Field, word_key};
 use bb_core::id::IssueId;
 use bb_core::issue::Issue;
+use bb_core::own_fields::FieldType;
 use bb_core::people_kinds::PeopleKind;
 use bb_core::plan::Days;
 use bb_core::plan::warning::Warning;
@@ -26,7 +27,7 @@ use bb_searchlang::{Expr, FieldRef, Span, Test};
 use super::build::{DateTargets, Plan, PlanAsk, window_of};
 use super::factor::names_person;
 use super::types::{
-    AcceptedView, BarView, FactorShown, Hatched, HatchedDay, TimelinePage, TimelinePart,
+    AcceptedView, BarView, FactorShown, GoalView, Hatched, HatchedDay, TimelinePage, TimelinePart,
     TimelineQuery, TimelineRow, TimelineSearch, WarningView,
 };
 use crate::access::{Actor, place_of_address};
@@ -158,6 +159,64 @@ fn group_target(looked: &Looked, word: &str) -> Result<Option<FieldTarget>, AppE
     }
 }
 
+/// The groups of an issue by an own field of choices: one for each choice it has, or the group
+/// without a value.
+fn choice_groups(
+    view: &crate::issues::IssueView,
+    field: bb_core::id::FieldId,
+) -> Vec<(Option<ShownKey>, bool)> {
+    let chosen: Vec<GroupKey> = match view.own_fields.0.get(&field.to_string()) {
+        Some(serde_json::Value::String(id)) => vec![id.as_str()],
+        Some(serde_json::Value::Array(ids)) => ids.iter().filter_map(|id| id.as_str()).collect(),
+        _ => Vec::new(),
+    }
+    .into_iter()
+    .filter_map(|id| id.parse().ok().map(GroupKey::Choice))
+    .collect();
+    if chosen.is_empty() {
+        return vec![(Some(ShownKey::Other(GroupKey::Empty)), false)];
+    }
+    chosen
+        .into_iter()
+        .map(|key| (Some(ShownKey::Other(key)), false))
+        .collect()
+}
+
+/// The goals of the page: the goals of its issues and the issues of it that are goals, each with
+/// its due date as the reader may read it (only *Due date* is a goal's due date, whatever date
+/// fields the view uses) and the span of the bars of its sub-issues that the plan knows. The plan
+/// holds only issues the reader sees, so a hidden goal or sub-issue counts for nothing.
+fn goals_of(plan: &Plan, page: &HashSet<IssueId>) -> Vec<GoalView> {
+    let mut goals: Vec<IssueId> = plan
+        .parents
+        .iter()
+        .filter(|(child, parent)| page.contains(child) || page.contains(parent))
+        .map(|(_, parent)| *parent)
+        .collect();
+    goals.sort_unstable();
+    goals.dedup();
+    goals
+        .into_iter()
+        .filter_map(|id| {
+            let goal = plan.issues.get(&id)?;
+            let span = plan
+                .parents
+                .iter()
+                .filter(|(_, parent)| *parent == id)
+                .filter_map(|(child, _)| plan.bars.get(child).map(|bar| bar.days))
+                .reduce(|all, days| Days {
+                    first: all.first.min(days.first),
+                    last: all.last.max(days.last),
+                });
+            Some(GoalView {
+                issue: id,
+                due: goal.due_date.filter(|_| plan.reads(goal, Field::DueDate)),
+                span,
+            })
+        })
+        .collect()
+}
+
 impl<S: AuthStore + SearchStore> Ctx<'_, S> {
     /// The text and the place of a timeline's search.
     async fn timeline_search(
@@ -204,16 +263,21 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
 
     /// The groups of a row of `issue`, with whether each is a copy of the bar of the person on the
     /// bar (*Group by person*). One row with no group when the rows are not grouped, or when the
-    /// reader may not see people by name (no grouping by person with *Role only*).
+    /// reader may not see people by name (no grouping by person with *Role only*). An own field of
+    /// choices gives a row for each choice the issue has, as the reader sees its values.
     async fn groups_of(
         &self,
         plan: &Plan,
-        held: &Evaluation,
+        (held, view): (&Evaluation, &crate::issues::IssueView),
         issue: &Issue,
         by: Option<FieldTarget>,
     ) -> Result<Vec<(Option<ShownKey>, bool)>, AppError> {
         let one = |key: Option<GroupKey>| vec![(key.map(ShownKey::Other), false)];
         Ok(match by {
+            Some(FieldTarget::Own {
+                field,
+                kind: FieldType::PickOne | FieldType::PickSeveral,
+            }) => choice_groups(view, field),
             None => one(None),
             Some(FieldTarget::Project) => one(Some(GroupKey::Project(issue.project))),
             Some(FieldTarget::Parent) => one(plan
@@ -252,7 +316,7 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
         plan: &Plan,
         issues: &[Issue],
         items: Vec<(std::sync::Arc<Evaluation>, crate::issues::IssueView)>,
-        group_by: Option<FieldTarget>,
+        (group_by, dates): (Option<FieldTarget>, DateTargets),
         (part, span): (TimelinePart, Days),
     ) -> Result<Vec<TimelineRow>, AppError> {
         let mut rows = Vec::with_capacity(items.len());
@@ -262,12 +326,17 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
             } else {
                 None
             };
-            for (group, copy) in self.groups_of(plan, &held, issue, group_by).await? {
+            let may_move = dates.changeable(&held, issue);
+            for (group, copy) in self
+                .groups_of(plan, (&held, &view), issue, group_by)
+                .await?
+            {
                 rows.push(TimelineRow {
                     group,
                     issue: held.authorize(view.clone()),
                     bar: bar.clone(),
                     copy,
+                    may_move,
                 });
             }
         }
@@ -482,16 +551,9 @@ pub async fn timeline<S: AuthStore + SearchStore>(
         }
         TimelinePart::NotScheduled => tray,
     };
-    let empty = TimelinePage {
-        rows: Vec::new(),
-        next_cursor: None,
-        dependencies: Vec::new(),
-        warnings: Vec::new(),
-        not_scheduled,
-        planned_by_effort: query.options.plan_by_effort && actor.key.is_none(),
-    };
     let Some(mut prepared) = wanted else {
-        return Ok(organization.authorize(empty));
+        let by_effort = query.options.plan_by_effort && actor.key.is_none();
+        return Ok(organization.authorize(TimelinePage::empty(not_scheduled, by_effort)));
     };
     let targets = date_targets(&prepared.looked, &words);
     let group_by = match &query.group_by {
@@ -529,7 +591,7 @@ pub async fn timeline<S: AuthStore + SearchStore>(
             &plan,
             &found.issues,
             found.items,
-            group_by,
+            (group_by, targets),
             (query.part, span),
         )
         .await?;
@@ -539,17 +601,21 @@ pub async fn timeline<S: AuthStore + SearchStore>(
         .copied()
         .filter(|(first, then)| page.contains(first) && page.contains(then))
         .collect();
-    let warnings = if query.part == TimelinePart::Rows {
-        ctx.warning_views(&plan, &page, &prepared.looked.seen)
-            .await?
+    let (warnings, goals) = if query.part == TimelinePart::Rows {
+        (
+            ctx.warning_views(&plan, &page, &prepared.looked.seen)
+                .await?,
+            goals_of(&plan, &page),
+        )
     } else {
-        Vec::new()
+        (Vec::new(), Vec::new())
     };
     Ok(organization.authorize(TimelinePage {
         rows,
         next_cursor: found.next_cursor,
         dependencies,
         warnings,
+        goals,
         not_scheduled,
         planned_by_effort: plan.by_effort,
     }))

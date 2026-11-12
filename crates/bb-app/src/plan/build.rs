@@ -63,6 +63,18 @@ impl DateTargets {
         target_of(fields, word).filter(|target| Self::is_date(*target))
     }
 
+    /// Whether the reader may change both date fields on `issue`, as `held` in its project: a
+    /// field the reader may not read is none here, so its bar cannot be moved either.
+    pub(crate) fn changeable(self, held: &Evaluation, issue: &Issue) -> bool {
+        let mask = held.field_mask_for(Some(issue.issue_type));
+        held.may_change_issue(issue.reported_by)
+            && [self.start, self.end].into_iter().all(|target| {
+                target
+                    .and_then(target_key)
+                    .is_some_and(|key| mask.can_change(key))
+            })
+    }
+
     /// The own fields among them, whose values are read for the set.
     fn own(self) -> Vec<bb_core::id::FieldId> {
         [self.start, self.end]

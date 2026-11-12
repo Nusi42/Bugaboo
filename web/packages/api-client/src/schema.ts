@@ -12116,7 +12116,8 @@ export interface components {
       first: string;
       /**
        * @description The field the rows are grouped by, by its search word: `project`, `parent` (the goal),
-       *     `assigned to` (*Group by person*), `status` or `priority`.
+       *     `assigned to` (*Group by person*), `status`, `priority` or an own field of choices (a row
+       *     for each choice an issue has).
        */
       group_by?: string | null;
       /**
@@ -12148,6 +12149,20 @@ export interface components {
       then: string;
     };
     /**
+     * @description A goal of the page: its due date is the diamond of the timeline, and the span of its
+     *     sub-issues' bars its bracket.
+     */
+    TimelineGoalBody: {
+      /**
+       * Format: date
+       * @description Its *Due date*; `null` when it has none the person may read.
+       */
+      due: string | null;
+      /** @description The goal, by its internal ID. */
+      id: string;
+      span: components["schemas"]["DaysBody"] | null;
+    };
+    /**
      * @description The options of a timeline view (ADR-0034; ADR-0043, decision 2). Left out, a saved search keeps
      *     *Start date* and *Due date*, *Plan by effort* off and a column for each week.
      */
@@ -12168,6 +12183,8 @@ export interface components {
     TimelinePageBody: {
       /** @description The dependencies between issues of the page. */
       dependencies: components["schemas"]["TimelineDependencyBody"][];
+      /** @description The goals of the issues of the page, and the issues of the page that are goals. */
+      goals: components["schemas"]["TimelineGoalBody"][];
       /** @description The cursor of the next page; `null` on the last. */
       next_cursor: string | null;
       /**
@@ -12201,6 +12218,11 @@ export interface components {
       group: components["schemas"]["SearchGroupKeyBody"] | null;
       /** @description The issue, with what the reader may see of it in its project. */
       issue: components["schemas"]["IssueItem"];
+      /**
+       * @description Whether the person may change both date fields of the view on this issue: only then can its
+       *     bar be dragged. The change is judged again when it is saved.
+       */
+      may_move: boolean;
     };
     /** @description The person's timer. */
     TimerItem: {

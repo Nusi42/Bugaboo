@@ -32918,7 +32918,7 @@
           },
           "group_by": {
             "type": ["string", "null"],
-            "description": "The field the rows are grouped by, by its search word: `project`, `parent` (the goal),\n`assigned to` (*Group by person*), `status` or `priority`."
+            "description": "The field the rows are grouped by, by its search word: `project`, `parent` (the goal),\n`assigned to` (*Group by person*), `status`, `priority` or an own field of choices (a row\nfor each choice an issue has)."
           },
           "last": {
             "type": "string",
@@ -32969,6 +32969,33 @@
           }
         }
       },
+      "TimelineGoalBody": {
+        "type": "object",
+        "description": "A goal of the page: its due date is the diamond of the timeline, and the span of its\nsub-issues' bars its bracket.",
+        "required": ["id", "due", "span"],
+        "properties": {
+          "due": {
+            "type": ["string", "null"],
+            "format": "date",
+            "description": "Its *Due date*; `null` when it has none the person may read."
+          },
+          "id": {
+            "type": "string",
+            "description": "The goal, by its internal ID."
+          },
+          "span": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DaysBody",
+                "description": "The first and the last day of the bars of its sub-issues; `null` when none has a bar."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
       "TimelineOptionsBody": {
         "type": "object",
         "description": "The options of a timeline view (ADR-0034; ADR-0043, decision 2). Left out, a saved search keeps\n*Start date* and *Due date*, *Plan by effort* off and a column for each week.",
@@ -33001,6 +33028,7 @@
           "next_cursor",
           "dependencies",
           "warnings",
+          "goals",
           "not_scheduled",
           "planned_by_effort"
         ],
@@ -33011,6 +33039,13 @@
               "$ref": "#/components/schemas/TimelineDependencyBody"
             },
             "description": "The dependencies between issues of the page."
+          },
+          "goals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimelineGoalBody"
+            },
+            "description": "The goals of the issues of the page, and the issues of the page that are goals."
           },
           "next_cursor": {
             "type": ["string", "null"],
@@ -33050,7 +33085,7 @@
       "TimelineRowBody": {
         "type": "object",
         "description": "One row of the timeline.",
-        "required": ["group", "issue", "bar", "copy"],
+        "required": ["group", "issue", "bar", "copy", "may_move"],
         "properties": {
           "bar": {
             "oneOf": [
@@ -33081,6 +33116,10 @@
           "issue": {
             "$ref": "#/components/schemas/IssueItem",
             "description": "The issue, with what the reader may see of it in its project."
+          },
+          "may_move": {
+            "type": "boolean",
+            "description": "Whether the person may change both date fields of the view on this issue: only then can its\nbar be dragged. The change is judged again when it is saved."
           }
         }
       },

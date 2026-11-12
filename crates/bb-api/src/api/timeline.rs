@@ -68,7 +68,8 @@ pub(crate) struct TimelineBody {
     /// The options of the view: the date fields, *Plan by effort* and the zoom.
     timeline: TimelineOptionsBody,
     /// The field the rows are grouped by, by its search word: `project`, `parent` (the goal),
-    /// `assigned to` (*Group by person*), `status` or `priority`.
+    /// `assigned to` (*Group by person*), `status`, `priority` or an own field of choices (a row
+    /// for each choice an issue has).
     #[serde(default)]
     group_by: Option<String>,
     /// The first day the screen shows (`2026-11-02`).
@@ -224,6 +225,23 @@ pub(crate) struct TimelineRowBody {
     /// Whether this is the row of an assigned person who is not the person on the bar: the bar is
     /// planned with the first person's work times.
     copy: bool,
+    /// Whether the person may change both date fields of the view on this issue: only then can its
+    /// bar be dragged. The change is judged again when it is saved.
+    may_move: bool,
+}
+
+/// A goal of the page: its due date is the diamond of the timeline, and the span of its
+/// sub-issues' bars its bracket.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct TimelineGoalBody {
+    /// The goal, by its internal ID.
+    id: String,
+    /// Its *Due date*; `null` when it has none the person may read.
+    #[schema(required = true, value_type = Option<String>, format = Date)]
+    due: Option<CalendarDay>,
+    /// The first and the last day of the bars of its sub-issues; `null` when none has a bar.
+    #[schema(required = true)]
+    span: Option<DaysBody>,
 }
 
 /// One dependency between two issues of the page.
@@ -361,6 +379,8 @@ pub(crate) struct TimelinePageBody {
     dependencies: Vec<TimelineDependencyBody>,
     /// The warnings of the issues of the page.
     warnings: Vec<PlanWarningBody>,
+    /// The goals of the issues of the page, and the issues of the page that are goals.
+    goals: Vec<TimelineGoalBody>,
     /// How many issues the search finds that wait in *Not scheduled yet*.
     not_scheduled: u64,
     /// Whether the bars were planned by effort: the view asked for it and the reader is no access
@@ -410,6 +430,7 @@ fn page_body(page: TimelinePage, list: &str) -> Result<TimelinePageBody, ApiErro
                 issue,
                 bar: row.bar.as_ref().map(BarBody::from),
                 copy: row.copy,
+                may_move: row.may_move,
             })
         })
         .collect::<Result<_, ApiError>>()?;
@@ -428,6 +449,15 @@ fn page_body(page: TimelinePage, list: &str) -> Result<TimelinePageBody, ApiErro
             })
             .collect(),
         warnings: page.warnings.iter().map(PlanWarningBody::from).collect(),
+        goals: page
+            .goals
+            .iter()
+            .map(|goal| TimelineGoalBody {
+                id: goal.issue.to_string(),
+                due: goal.due,
+                span: goal.span.map(DaysBody::from),
+            })
+            .collect(),
         not_scheduled: page.not_scheduled,
         planned_by_effort: page.planned_by_effort,
     })
