@@ -33,7 +33,7 @@ pub use change::{Scopes, SettingChange, StoredValue};
 use change::{known, validate};
 
 use crate::schema::{
-    PersonRow, PersonSettingCounterRow, PersonSettingRow, PolicyVersionRow, SettingRow as Columns,
+    PersonSettingCounterRow, PersonSettingRow, PolicyVersionRow, SettingRow as Columns,
 };
 
 fn id_bytes(id: impl Into<EntityId>) -> Vec<u8> {
@@ -637,16 +637,10 @@ impl SettingsStore for AuthStorage {
         let mut select = Query::select();
         select
             .expr_as(
-                Expr::col((PersonSettingRow::Table, PersonSettingRow::Person)).count_distinct(),
+                Expr::col(PersonSettingRow::Person).count_distinct(),
                 crate::schema::Computed::Total,
             )
             .from(PersonSettingRow::Table)
-            // Only people who are still there count.
-            .inner_join(
-                PersonRow::Table,
-                Expr::col((PersonRow::Table, PersonRow::Id))
-                    .equals((PersonSettingRow::Table, PersonSettingRow::Person)),
-            )
             .and_where(
                 Expr::col(PersonSettingRow::Key)
                     .is_in(settings.iter().map(|setting| setting.key())),

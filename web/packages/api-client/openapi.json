@@ -31830,6 +31830,10 @@
             },
             "description": "The pairs of its colors that are *Hard to read*: the warning of a personal theme. A theme\nfor everyone with any is never saved."
           },
+          "organization_choice": {
+            "type": ["boolean", "null"],
+            "description": "Whether it is the organization's choice of a light or a dark theme, which everyone who keeps\nthat choice follows: for who may change it, beside `used_by`."
+          },
           "theme": {
             "$ref": "#/components/schemas/ThemeBody",
             "description": "The theme."

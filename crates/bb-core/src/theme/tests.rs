@@ -289,3 +289,11 @@ fn thm_03_the_pairs_hard_to_read_are_as_many_as_the_sum_says_and_name_their_colo
     let read = theme_read("dusk", &colors(&[("fg-subtle", "#3a3d45")])).expect("Dusk");
     assert_eq!(read.hard, hard);
 }
+
+#[test]
+fn thm_03_the_editor_is_told_the_built_in_color_for_more_contrast_only_where_the_file_gives_one() {
+    let shown = shown_colors("daylight", &OwnValues::default()).expect("Daylight");
+    let of = |name: &str| shown.iter().find(|color| color.name == name).expect(name);
+    assert_eq!(of("fg").built_in_more, None);
+    assert!(of("fg-muted").built_in_more.is_some());
+}

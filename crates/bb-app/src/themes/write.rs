@@ -170,6 +170,7 @@ fn added(saved: AddingSaved, person: UserId) -> Authorized<ThemeDetail> {
         view,
         hard_to_read: saved.hard_to_read,
         used_by: None,
+        organization_choice: None,
     })
 }
 
@@ -288,6 +289,7 @@ pub async fn save_theme<S: AuthStore>(
         view,
         hard_to_read,
         used_by: None,
+        organization_choice: None,
     }))
 }
 

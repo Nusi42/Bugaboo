@@ -170,6 +170,10 @@ pub(crate) struct ThemeDetailBody {
     /// change it, so the question before it is deleted can say how many people it reaches.
     #[serde(skip_serializing_if = "Option::is_none")]
     used_by: Option<u64>,
+    /// Whether it is the organization's choice of a light or a dark theme, which everyone who keeps
+    /// that choice follows: for who may change it, beside `used_by`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    organization_choice: Option<bool>,
 }
 
 impl Masked for ThemeDetailBody {}
@@ -182,6 +186,7 @@ impl From<&ThemeDetail> for ThemeDetailBody {
                 .unwrap_or(serde_json::Value::Null),
             hard_to_read: detail.hard_to_read.iter().map(HardPairBody::from).collect(),
             used_by: detail.used_by,
+            organization_choice: detail.organization_choice,
         }
     }
 }

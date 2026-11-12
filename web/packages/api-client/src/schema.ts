@@ -11597,6 +11597,11 @@ export interface components {
        *     for everyone with any is never saved.
        */
       hard_to_read: components["schemas"]["HardPairBody"][];
+      /**
+       * @description Whether it is the organization's choice of a light or a dark theme, which everyone who keeps
+       *     that choice follows: for who may change it, beside `used_by`.
+       */
+      organization_choice?: boolean | null;
       /** @description The theme. */
       theme: components["schemas"]["ThemeBody"];
       /**

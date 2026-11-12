@@ -162,6 +162,9 @@ pub struct ShownColor {
     pub value: String,
     /// `#rrggbb`, with more contrast.
     pub more: String,
+    /// The built-in theme's own color for more contrast of this token, where its file gives one: what
+    /// a color for more contrast starts with when the own theme changes the color (M8-F70).
+    pub built_in_more: Option<String>,
 }
 
 /// Every color an own theme may set, as the own theme that extends `extends` with `values` shows
@@ -169,7 +172,8 @@ pub struct ShownColor {
 /// change. `None` when no built-in theme has that ID.
 #[must_use]
 pub fn shown_colors(extends: &str, values: &OwnValues) -> Option<Vec<ShownColor>> {
-    let colors = OwnColors::new(built_in_theme(extends)?, values);
+    let base = built_in_theme(extends)?;
+    let colors = OwnColors::new(base, values);
     Some(
         color_tokens()
             .filter_map(|name| {
@@ -177,6 +181,10 @@ pub fn shown_colors(extends: &str, values: &OwnValues) -> Option<Vec<ShownColor>
                     name,
                     value: colors.usual.get(name)?.clone(),
                     more: colors.more.get(name)?.clone(),
+                    built_in_more: base
+                        .color(name)
+                        .and_then(|color| color.more)
+                        .map(str::to_ascii_lowercase),
                 })
             })
             .collect(),

@@ -140,6 +140,9 @@ pub struct ThemeDetail {
     /// How many people chose it themselves: for a theme for everyone, and only for who may change
     /// it (the question before it is deleted names them); `None` for anyone else.
     pub used_by: Option<u64>,
+    /// Whether it is the organization's choice of a light or a dark theme: for the same people as
+    /// `used_by`; `None` for anyone else.
+    pub organization_choice: Option<bool>,
 }
 
 impl Masked for ThemeDetail {}

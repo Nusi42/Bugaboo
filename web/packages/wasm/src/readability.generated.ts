@@ -29,6 +29,8 @@ export interface ShownColor {
   readonly value: string;
   /** `#rrggbb`, with more contrast. */
   readonly more: string;
+  /** The built-in theme's own color for more contrast of this token, where its file gives one: what a color for more contrast starts with when the own theme changes the color (M8-F70). */
+  readonly built_in_more: string | null;
 }
 
 /** A pair of colors by its tokens: the first color, the second and the mode it is read in. The rules may rate one pair several times; it counts once, at its worst rating. */

@@ -185,9 +185,22 @@ async fn thm_04_who_looks_after_a_theme_for_everyone_learns_how_many_people_chos
         assert!(chosen.status.is_success(), "{}", chosen.body);
         let detail = ada.send("GET", &format!("{THEMES}/{id}"), None).await?;
         assert_eq!(ok(&detail)?["used_by"], 1);
+        assert_eq!(ok(&detail)?["organization_choice"], false);
+        // Made the organization's dark theme, it reaches everyone who keeps that choice.
+        let organization = ada
+            .send(
+                "PUT",
+                "/api/v1/settings/appearance.dark-theme",
+                Some(json!({"value": text_in(&theme, "choice")?})),
+            )
+            .await?;
+        assert!(organization.status.is_success(), "{}", organization.body);
+        let detail = ada.send("GET", &format!("{THEMES}/{id}"), None).await?;
+        assert_eq!(ok(&detail)?["organization_choice"], true);
         // Who may only use it is not told.
         let seen = ben.send("GET", &format!("{THEMES}/{id}"), None).await?;
         assert!(ok(&seen)?.get("used_by").is_none());
+        assert!(ok(&seen)?.get("organization_choice").is_none());
         Ok(())
     })
     .await

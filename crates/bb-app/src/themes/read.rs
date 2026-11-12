@@ -72,22 +72,38 @@ pub async fn theme<S: AuthStore>(
     let (found, held) = ctx.theme_for(&actor, input.theme, Need::Use).await?;
     let hard_to_read = hard_pairs_of(found.extends.as_str(), &found.values)?;
     let view = view_of(found, &held, actor.person.id);
-    let used_by = if view.may_change && view.theme.kind == ThemeKind::ForEveryone {
-        let chosen = SettingValue::Text(view.choice.clone());
-        Some(
-            ctx.store()
-                .people_choosing(theme_settings(), chosen)
-                .await
-                .map_err(|error| internal::<S>(&error))?,
-        )
+    let reach = if view.may_change && view.theme.kind == ThemeKind::ForEveryone {
+        Some(reach_of(ctx.store(), &view.choice).await?)
     } else {
         None
     };
     Ok(held.authorize(ThemeDetail {
         view,
         hard_to_read,
-        used_by,
+        used_by: reach.map(|(people, _)| people),
+        organization_choice: reach.map(|(_, organization)| organization),
     }))
+}
+
+/// Whom a theme for everyone reaches: how many people chose it themselves, and whether it is the
+/// organization's choice of a light or a dark theme, which everyone who keeps that choice follows.
+async fn reach_of<S: AuthStore>(store: &S, choice: &str) -> Result<(u64, bool), AppError> {
+    let chosen = SettingValue::Text(choice.to_owned());
+    let people = store
+        .people_choosing(theme_settings(), chosen.clone())
+        .await
+        .map_err(|error| internal::<S>(&error))?;
+    let layers = store
+        .setting_layers(None, None)
+        .await
+        .map_err(|error| internal::<S>(&error))?;
+    let organization = theme_settings().iter().any(|setting| {
+        layers
+            .organization
+            .get(setting.key())
+            .is_some_and(|value| value.value == chosen)
+    });
+    Ok((people, organization))
 }
 
 /// An own theme as a file: its name, the built-in theme it extends and its values, the shape an
