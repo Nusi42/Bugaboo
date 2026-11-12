@@ -57,7 +57,7 @@ export function ColorRow(props: ColorRowProps) {
   const value = own?.value ?? shown?.value ?? "";
   const usual = ratingOf(ratings, token, false);
   const offer = (text: string) => {
-    color.offer(text, withColor(values, token, text, shown?.more));
+    color.offer(text, withColor(values, token, text, shown?.built_in_more ?? undefined));
   };
   return (
     <div {...partOf(part.themeColor)} id={colorRowId(token)}>
@@ -66,14 +66,16 @@ export function ColorRow(props: ColorRowProps) {
         {usual === undefined ? null : <RatingWord rating={usual} />}
       </div>
       <div {...partOf(part.themeColorFields)}>
-        <ColorPick label={label} value={value} onPick={offer} />
-        <TextField
-          label={t("theme-editor.color", { color: label })}
-          hideLabel
-          value={color.typed ?? value}
-          errorMessage={color.typed === null ? undefined : t("theme-editor.not-a-color")}
-          onChange={offer}
-        />
+        <span {...partOf(part.themeColorPair)}>
+          <ColorPick label={label} value={value} onPick={offer} />
+          <TextField
+            label={t("theme-editor.color", { color: label })}
+            hideLabel
+            value={color.typed ?? value}
+            errorMessage={color.typed === null ? undefined : t("theme-editor.not-a-color")}
+            onChange={offer}
+          />
+        </span>
         {own === undefined ? null : (
           <Button
             look={buttonLook.quiet}

@@ -332,6 +332,13 @@ textarea,
   line-height: var(--lh-body);
 }
 
+@media (max-width: calc(768px - 1px)) {
+  [data-part="field.description"],
+  [data-part="settings.help"] {
+    text-wrap: pretty;
+  }
+}
+
 [data-part="settings.help"] {
   margin: 0;
 }
@@ -533,6 +540,26 @@ textarea,
 [data-part="link"][data-variant~="row"][data-focus-visible]::after {
   outline: var(--ring-width) solid var(--accent);
   outline-offset: calc(var(--ring-width) * -1);
+}
+
+[data-part="link"][data-variant~="button"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  box-sizing: border-box;
+  min-height: var(--size-control);
+  border: var(--border-width) solid var(--border-control);
+  border-radius: var(--r-ctl);
+  background: var(--bg-raised);
+  padding: var(--space-1) var(--pad-control);
+  color: var(--fg);
+  font-size: var(--fs-ui);
+  font-weight: var(--weight-regular);
+  text-decoration: none;
+  font-family: var(--font-ui);
+  line-height: var(--lh-tight);
+  text-align: center;
 }
 
 [data-part="switch"] {
@@ -4180,23 +4207,30 @@ textarea,
   position: sticky;
   top: 0;
   z-index: var(--z-raised);
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-2);
+  display: block;
   margin: 0;
   padding: var(--space-3) var(--space-4);
   border: var(--border-width) solid var(--border-subtle);
   border-radius: var(--r-ctl);
   background: var(--bg-surface);
   color: var(--fg);
+  text-wrap: pretty;
 }
 
 [data-part="theme-readability"][data-state~="hard"] {
   border-color: var(--danger);
 }
 
-[data-part="theme-hard-pairs"] {
+[data-part="theme-readability"][data-state~="refused"] {
+  border-color: var(--danger);
+  background: var(--danger-soft);
+}
+
+[data-part="kept-together"] {
+  white-space: nowrap;
+}
+
+[data-part="theme-readability-list"] {
   margin: 0;
   padding: 0;
   list-style: none;
@@ -4279,6 +4313,13 @@ textarea,
   cursor: pointer;
 }
 
+[data-part="theme-color.pair"] {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
 [data-part="theme-rating"] {
   display: inline-flex;
   align-items: center;
@@ -4349,6 +4390,12 @@ textarea,
     grid-template-columns: 1fr 1fr;
     width: 100%;
   }
+}
+
+[data-part="theme-list.actions"] [data-part="button"][data-variant~="danger"] {
+  margin-inline-start: 0;
+  margin-inline-end: 0;
+  border-color: var(--danger);
 }
 
 [data-part="theme-list.tag"] {

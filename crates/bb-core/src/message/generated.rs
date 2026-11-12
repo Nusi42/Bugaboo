@@ -7900,6 +7900,10 @@ pub const THEME_COLOR_WARNING: MessageKey = MessageKey::new("theme-color.warning
 /// The message `theme-color.warning-soft`.
 pub const THEME_COLOR_WARNING_SOFT: MessageKey = MessageKey::new("theme-color.warning-soft");
 
+/// The message `theme-editor.appearance-place`.
+pub const THEME_EDITOR_APPEARANCE_PLACE: MessageKey =
+    MessageKey::new("theme-editor.appearance-place");
+
 /// The message `theme-editor.ask-title`.
 pub const THEME_EDITOR_ASK_TITLE: MessageKey = MessageKey::new("theme-editor.ask-title");
 
@@ -7994,10 +7998,6 @@ pub const THEME_EDITOR_LIGHT: MessageKey = MessageKey::new("theme-editor.light")
 /// The message `theme-editor.list-everyone`.
 pub const THEME_EDITOR_LIST_EVERYONE: MessageKey = MessageKey::new("theme-editor.list-everyone");
 
-/// The message `theme-editor.list-everyone-intro`.
-pub const THEME_EDITOR_LIST_EVERYONE_INTRO: MessageKey =
-    MessageKey::new("theme-editor.list-everyone-intro");
-
 /// The message `theme-editor.list-everyone-nothing`.
 pub const THEME_EDITOR_LIST_EVERYONE_NOTHING: MessageKey =
     MessageKey::new("theme-editor.list-everyone-nothing");
@@ -8056,10 +8056,6 @@ pub const THEME_EDITOR_READABILITY_FINE: MessageKey =
 /// The message `theme-editor.readability-loading`.
 pub const THEME_EDITOR_READABILITY_LOADING: MessageKey =
     MessageKey::new("theme-editor.readability-loading");
-
-/// The message `theme-editor.readability-title`.
-pub const THEME_EDITOR_READABILITY_TITLE: MessageKey =
-    MessageKey::new("theme-editor.readability-title");
 
 /// The message `theme-editor.refused-value.bad-shadow`.
 pub const THEME_EDITOR_REFUSED_VALUE_BAD_SHADOW: MessageKey =
@@ -16055,6 +16051,18 @@ pub fn theme_editor_delete_named(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `theme-editor.delete-organization`.
+#[must_use]
+pub fn theme_editor_delete_organization(count: i64, theme: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-editor.delete-organization"),
+        vec![
+            ("count", Value::Number(count)),
+            ("theme", Value::Text(theme.to_string())),
+        ],
+    )
+}
+
 /// The message `theme-editor.delete-personal`.
 #[must_use]
 pub fn theme_editor_delete_personal(theme: impl std::fmt::Display) -> Message {
@@ -16091,6 +16099,18 @@ pub fn theme_editor_download_named(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("theme-editor.download-named"),
         vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `theme-editor.face`.
+#[must_use]
+pub fn theme_editor_face(face: impl std::fmt::Display, role: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-editor.face"),
+        vec![
+            ("face", Value::Text(face.to_string())),
+            ("role", Value::Text(role.to_string())),
+        ],
     )
 }
 
@@ -16156,6 +16176,15 @@ pub fn theme_editor_hide_named(color: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("theme-editor.hide-named"),
         vec![("color", Value::Text(color.to_string()))],
+    )
+}
+
+/// The message `theme-editor.list-everyone-intro`.
+#[must_use]
+pub fn theme_editor_list_everyone_intro(place: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-editor.list-everyone-intro"),
+        vec![("place", Value::Text(place.to_string()))],
     )
 }
 
@@ -24647,6 +24676,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("theme-color.tint-ns", "Rows that are not started"),
     ("theme-color.warning", "Warning"),
     ("theme-color.warning-soft", "Warning background"),
+    ("theme-editor.appearance-place", "My settings › Appearance"),
     (
         "theme-editor.ask",
         "{count, plural, one {This color is} other {These colors are}} hard to read: {colors}. Only you see this theme.",
@@ -24675,6 +24705,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("theme-editor.delete-named", "Delete {name}"),
     (
+        "theme-editor.delete-organization",
+        "{count, plural, =0 {This theme is your organization's choice. Everyone who follows it will see {theme} instead.} one {This theme is your organization's choice, and # person chose it. They will all see {theme} instead.} other {This theme is your organization's choice, and # people chose it. They will all see {theme} instead.}}",
+    ),
+    (
         "theme-editor.delete-personal",
         "Where you chose this theme, you will see {theme} instead.",
     ),
@@ -24691,6 +24725,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "theme-editor.draft-kept",
         "You left changes here that were not saved. They are back.",
     ),
+    ("theme-editor.face", "{role} ({face})"),
     (
         "theme-editor.facts",
         "Starts from {theme}, {look} · {hard, plural, =0 {All text is readable} one {# color is hard to read} other {# colors are hard to read}}",
@@ -24723,7 +24758,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("theme-editor.list-everyone", "Themes for everyone"),
     (
         "theme-editor.list-everyone-intro",
-        "Themes your organization created. Everyone can choose them in My settings › Appearance.",
+        "Themes your organization created. Everyone can choose them in {place}.",
     ),
     (
         "theme-editor.list-everyone-nothing",
@@ -24786,7 +24821,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "theme-editor.readability-loading",
         "Working out the readability…",
     ),
-    ("theme-editor.readability-title", "Readability"),
     ("theme-editor.refused-value", "{name}: {reason}."),
     (
         "theme-editor.refused-value.bad-shadow",

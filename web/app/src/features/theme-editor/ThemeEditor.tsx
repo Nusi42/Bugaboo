@@ -31,10 +31,19 @@ export function ThemeEditor({ detail, lock, notices }: ThemeEditorProps) {
   const { dirty } = editing;
   const preview = <EditorPreview theme={theme} draftShown={editing.draftShown} />;
   return (
-    <Card heading={theme.name} level={1} actions={<UnsavedNote shown={editing.mine && dirty} />}>
+    <Card
+      heading={theme.name}
+      level={1}
+      {...(editing.mine && dirty ? { actions: <UnsavedNote /> } : {})}
+    >
       {notices}
       <div {...partOf(part.themeEditor)}>
-        <ReadabilityLine read={editing.read} kind={theme.kind} onChange={editing.show} />
+        <ReadabilityLine
+          read={editing.read}
+          kind={theme.kind}
+          refused={editing.refused}
+          onChange={editing.show}
+        />
         <KeptDraftNote kept={editing.kept} />
         <div {...partOf(part.themeEditorBody)}>
           {editing.mine ? (

@@ -1,12 +1,12 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { Alert, alertTone, Button, buttonLook, partOf, part, useLayout } from "@bugaboo/ui";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 import type { EditLock } from "../../shared/editing/index.ts";
 import { messageOf } from "../../shared/errors.ts";
 import { AskToSave } from "./AskToSave.tsx";
-import { ThemeActions } from "./ThemeActions.tsx";
+import { ActionFailure, ThemeActions } from "./ThemeActions.tsx";
 import { useSaving } from "./use-save-theme.ts";
 import type { Editing } from "./use-theme-editing.ts";
 
@@ -31,6 +31,7 @@ export function EditorBar({ detail, editing, lock, extra }: EditorBarProps) {
   const saving = useSaving(detail, editing, lock);
   // On a phone *Save a copy* and *Download* stand in the page; the pinned bar keeps the rest.
   const phone = useLayout() === "phone";
+  const [failure, setFailure] = useState<unknown>(null);
   return (
     <>
       {saving.error === null || saving.error === undefined ? null : (
@@ -38,13 +39,13 @@ export function EditorBar({ detail, editing, lock, extra }: EditorBarProps) {
       )}
       {phone ? (
         <div {...partOf(part.row)}>
-          <ThemeActions theme={theme} look={buttonLook.plain} />
+          <ThemeActions theme={theme} look={buttonLook.plain} onFailed={setFailure} />
         </div>
       ) : null}
       <div {...partOf(part.themeEditorBar)}>
         {phone ? null : (
           <div {...partOf(part.row)}>
-            <ThemeActions theme={theme} />
+            <ThemeActions theme={theme} onFailed={setFailure} />
           </div>
         )}
         <div {...partOf(part.themeEditorBarEnd)}>
@@ -69,6 +70,7 @@ export function EditorBar({ detail, editing, lock, extra }: EditorBarProps) {
           </Button>
         </div>
       </div>
+      <ActionFailure failure={failure} />
       <AskToSave saving={saving} hard={editing.read?.hard_colors ?? []} />
     </>
   );

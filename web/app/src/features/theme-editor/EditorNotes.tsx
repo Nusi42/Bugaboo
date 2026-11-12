@@ -9,8 +9,8 @@ import type { KeptDraft } from "./use-kept-draft.ts";
 const NOT_SAVED: SaveState = "not-saved";
 
 /** *Not saved yet*, a quiet note next to the title while the editor has changes that are not saved. */
-export function UnsavedNote({ shown }: { readonly shown: boolean }) {
-  return shown ? <SaveStatus state={NOT_SAVED} labels={saveLabels()} /> : null;
+export function UnsavedNote() {
+  return <SaveStatus state={NOT_SAVED} labels={saveLabels()} />;
 }
 
 /** The note that the editor started from changes the person left, with the way back to the saved theme. */

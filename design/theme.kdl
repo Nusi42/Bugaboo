@@ -369,7 +369,7 @@ tokens {
     color "border-subtle" "#eaedf1" more="#8c8e91"
     color "divider" "#a9b0bc" more="#6d6f72" forced="ButtonText"
     color "fg" "#16181d"
-    color "fg-muted" "#464b5a" more="#464c57"
+    color "fg-muted" "#464b5a" more="#383d48"
     color "fg-subtle" "#5c6172" more="#484c58"
     color "accent" "#5b3fd9" more="#4a30b8" forced="Highlight"
     color "accent-soft" "#eeeafd"
@@ -1474,6 +1474,10 @@ part "field.label" {
 part "field.description" "settings.help" {
     use "control-hint"
     line-height "$lh-body"
+    // On a phone the line is short already: balancing it would leave a narrow column with room beside it.
+    media "(max-width: calc($bp-tablet - 1px))" {
+        text-wrap pretty
+    }
 }
 
 
@@ -1672,6 +1676,18 @@ part "link[variant=row][focus-visible]" {
 
 part "link[variant=row][focus-visible]::after" {
     use "ring-inside"
+}
+
+// A link that opens a page and looks like the outlined buttons beside it (*Change* in a row of own themes): a link, so
+// it is one for keyboards and screen readers, in the box of a button.
+part "link[variant=button]" {
+    use "button-content"
+    use "control-box"
+    padding "$space-1" "$pad-control"
+    use "menu-text"
+    font-family "$font-ui"
+    line-height "$lh-tight"
+    text-align center
 }
 
 // ───────────── Switch ─────────────
@@ -5140,25 +5156,37 @@ part "theme-shadow.legend" {
 }
 
 // The line that sums the readability up; it stays on top on a phone while the groups scroll under it.
+// The verdict of the readability; it stays on top while the groups scroll under it. After a refused save it is the
+// refusal, in the look of an alert of danger.
 part "theme-readability" {
     position sticky
     top 0
     z-index "$z-raised"
-    display flex
-    flex-direction column
-    align-items flex-start
-    gap "$space-2"
+    display block
     margin 0
     padding "$space-3" "$space-4"
     use "surface-box"
     color "$fg"
+    text-wrap pretty
 }
 
 part "theme-readability[state=hard]" {
     border-color "$danger"
 }
 
-part "theme-hard-pairs" {
+part "theme-readability[state=refused]" {
+    border-color "$danger"
+    background "$danger-soft"
+}
+
+// The colors that are hard to read, under the verdict; they scroll with the page.
+// Words that name one place (*My settings › Appearance*) and never break apart inside a sentence: kept together by the
+// screen, not by a no-break space in the text (UX-07).
+part "kept-together" {
+    white-space nowrap
+}
+
+part "theme-readability-list" {
     use "list-reset"
     display flex
     flex-direction column
@@ -5243,6 +5271,14 @@ part "theme-color.pick" {
     cursor pointer
 }
 
+// The sample of a color and its field side by side, on a phone too.
+part "theme-color.pair" {
+    display flex
+    flex-wrap nowrap
+    align-items flex-end
+    gap "$space-2"
+}
+
 // How readable a color is: a sign and the word, in the color of the state.
 part "theme-rating" {
     display inline-flex
@@ -5307,6 +5343,13 @@ part "theme-list.actions" {
         grid-template-columns "1fr 1fr"
         width "100%"
     }
+}
+
+// Delete in a row of the list: a quiet button outlined in the color of danger, beside the outlined others.
+part "theme-list.actions button[variant=danger]" {
+    margin-inline-start 0
+    margin-inline-end 0
+    border-color "$danger"
 }
 
 // *For everyone* or *Personal* beside the name of a theme.

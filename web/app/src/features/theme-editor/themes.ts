@@ -18,8 +18,6 @@ export type OwnTheme = Schema<"ThemeBody">;
 export type ThemeValues = Schema<"ThemeValuesBody">;
 /** One layer of a shadow. */
 export type ShadowLayer = Schema<"ShadowLayerBody">;
-/** A pair of colors that is hard to read, as the server names it. */
-export type HardPair = Schema<"HardPairBody">;
 
 /**
  * An own theme was made, saved, copied or taken away: the lists of themes, the theme itself and the

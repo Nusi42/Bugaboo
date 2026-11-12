@@ -15,7 +15,7 @@ import {
   groupNamed,
   onlyThemeOf,
   prepareThemes,
-  readability,
+  hardColors,
   readabilityLine,
   themeRow,
   uploadedTheme,
@@ -66,11 +66,11 @@ test("thm_03_a_theme_for_everyone_that_is_hard_to_read_cannot_be_saved_until_fix
   );
   await page.getByRole("button", { name: t("theme-editor.save"), exact: true }).click();
   // Nothing went to the server: the cursor goes to the readability, which names what to change.
-  await expect(readability(page)).toBeFocused();
-  await expect(readability(page)).toContainText(t("theme-color.fg-subtle"));
+  await expect(readabilityLine(page)).toBeFocused();
+  await expect(hardColors(page)).toContainText(t("theme-color.fg-subtle"));
   expect((await onlyThemeOf(server, ada)).theme.saved).toBe(false);
   // Change puts the cursor in the color to mend; once it reads well, the theme is saved.
-  await readability(page)
+  await hardColors(page)
     .getByRole("button", {
       name: t("theme-editor.change-named", { name: t("theme-color.fg-subtle") }),
     })
@@ -182,7 +182,7 @@ test("a11y every color of the editor is typed with the keyboard alone, nothing n
   await signIn(page, bob);
   await page.goto(paths.appearance);
   await themeRow(page, "Keys")
-    .getByRole("button", { name: t("theme-editor.change-named", { name: theme.name }) })
+    .getByRole("link", { name: t("theme-editor.change-named", { name: theme.name }) })
     .press("Enter");
   await expect(readabilityLine(page)).not.toHaveText(t("theme-editor.readability-loading"));
   const choose = groupNamed(page, t("theme-editor.group.text")).getByLabel(

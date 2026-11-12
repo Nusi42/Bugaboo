@@ -15,7 +15,8 @@ import {
   openEditor,
   prepareThemes,
   preview,
-  readability,
+  readabilityLine,
+  setOrganizationsDarkTheme,
   themeRow,
   uploadedTheme,
   wearTheme,
@@ -80,6 +81,21 @@ test("screens: the list Themes for everyone and its question before a theme is d
     t("theme-editor.delete-used", { count: 0, theme: t("theme.paper") }),
   );
   await inFourThemesPutOn(page, "delete-question-nobody", FOLDER);
+  await page.getByRole("button", { name: t("common.cancel") }).click();
+  // The organization's dark theme: everyone who follows that choice is told about, not only who chose it.
+  await setOrganizationsDarkTheme(server, ada, chosen.choice);
+  try {
+    await page.reload();
+    await themeRow(page, "Harbor")
+      .getByRole("button", { name: t("theme-editor.delete-named", { name: "Harbor" }) })
+      .click();
+    await expect(page.getByRole("alertdialog")).toContainText(
+      t("theme-editor.delete-organization", { count: 1, theme: t("theme.dusk") }),
+    );
+    await inFourThemesPutOn(page, "delete-question-organization", FOLDER);
+  } finally {
+    await setOrganizationsDarkTheme(server, ada, null);
+  }
 });
 
 test("screens: My settings › Appearance with own themes in the pickers and My themes", async ({
@@ -108,7 +124,7 @@ test("screens: the editor of a theme for everyone, its pairs that are hard to re
   await colorField(page, t("theme-color.fg-subtle")).fill(UNREADABLE);
   await inFourThemes(page, "editor-hard-to-read", FOLDER);
   await page.getByRole("button", { name: t("theme-editor.save"), exact: true }).click();
-  await expect(readability(page)).toBeFocused();
+  await expect(readabilityLine(page)).toBeFocused();
   await inFourThemes(page, "editor-refused", FOLDER);
 });
 

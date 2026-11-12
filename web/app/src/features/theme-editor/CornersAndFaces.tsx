@@ -64,7 +64,10 @@ export function CornersAndFaces({ values, accepts, onChange }: CornersAndFacesPr
           key={font}
           label={faces[font]}
           value={ownFonts.find((stack) => stack === values.fonts?.[font]) ?? font}
-          choices={ownFonts.map((stack) => ({ value: stack, label: ownFontFaces[stack] }))}
+          choices={ownFonts.map((stack) => ({
+            value: stack,
+            label: t("theme-editor.face", { role: faces[stack], face: ownFontFaces[stack] }),
+          }))}
           onChange={(stack) => {
             onChange(withFont(values, font, stack));
           }}

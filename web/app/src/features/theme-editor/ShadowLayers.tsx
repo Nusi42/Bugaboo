@@ -55,7 +55,7 @@ function LayerColor(props: {
 }) {
   const { layer, make, accepts, onChange } = props;
   return (
-    <span {...partOf(part.themeColorFields)}>
+    <span {...partOf(part.themeColorPair)}>
       <ColorPick
         label={t("theme-editor.shadow-color")}
         value={layer.color.slice(0, RGB_LENGTH)}

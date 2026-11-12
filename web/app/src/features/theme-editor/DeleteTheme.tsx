@@ -9,7 +9,8 @@ import { useDeleteTheme, useThemeDetail } from "./themes.ts";
 
 /**
  * What the question says before a theme goes: for a theme for everyone how many people chose it
- * and what they will see instead (*12 people use this theme. They will see Dusk instead.*), for a
+ * and what they will see instead (*12 people use this theme. They will see Dusk instead.*), and
+ * when it is the organization's choice, that everyone who follows that choice sees Dusk too; for a
  * personal one what its maker sees where they chose it.
  */
 function useQuestionText(theme: Schema<"ThemeBody">, asking: boolean): string {
@@ -19,8 +20,11 @@ function useQuestionText(theme: Schema<"ThemeBody">, asking: boolean): string {
     return t("theme-editor.delete-personal", { theme: instead });
   }
   const people = detail.data?.used_by;
-  return people === undefined || people === null
-    ? t("theme-editor.delete-everyone", { theme: instead })
+  if (people === undefined || people === null) {
+    return t("theme-editor.delete-everyone", { theme: instead });
+  }
+  return detail.data?.organization_choice === true
+    ? t("theme-editor.delete-organization", { count: people, theme: instead })
     : t("theme-editor.delete-used", { count: people, theme: instead });
 }
 

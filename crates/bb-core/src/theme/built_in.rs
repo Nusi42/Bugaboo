@@ -33,7 +33,7 @@ pub(super) const BUILT_IN: &[BuiltIn] = &[
             ColorValue::new("border-subtle", "#eaedf1", Some("#8c8e91")),
             ColorValue::new("divider", "#a9b0bc", Some("#6d6f72")),
             ColorValue::new("fg", "#16181d", None),
-            ColorValue::new("fg-muted", "#464b5a", Some("#464c57")),
+            ColorValue::new("fg-muted", "#464b5a", Some("#383d48")),
             ColorValue::new("fg-subtle", "#5c6172", Some("#484c58")),
             ColorValue::new("accent", "#5b3fd9", Some("#4a30b8")),
             ColorValue::new("accent-soft", "#eeeafd", None),

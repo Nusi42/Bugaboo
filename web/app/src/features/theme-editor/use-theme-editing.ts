@@ -26,6 +26,10 @@ export interface Editing {
   readonly read: ThemeRead | null;
   /** Whether `bb-core` takes these values (a save would). */
   readonly accepts: (values: ThemeValues) => boolean;
+  /** Whether a save of a theme for everyone was refused for colors that are still hard to read. */
+  readonly refused: boolean;
+  /** A save of a theme for everyone was refused for its colors that are hard to read. */
+  readonly refuse: () => void;
   /** How many colors are hard to read: a save asks or refuses while there are any. */
   readonly hardCount: number;
   /** Opens a color that is hard to read and puts the cursor in it. */
@@ -40,6 +44,7 @@ export function useThemeEditing(detail: Schema<"ThemeDetailBody">, lock: EditLoc
   const { theme } = detail;
   const [values, setValues] = useState<ThemeValues>(detail.values);
   const [name, setName] = useState(theme.name);
+  const [refused, setRefused] = useState(false);
   const mine = lock.state.phase === "mine";
   const reader = useThemeReader();
   const read = useMemo(
@@ -59,6 +64,10 @@ export function useThemeEditing(detail: Schema<"ThemeDetailBody">, lock: EditLoc
     read,
     accepts: (next) => reader !== undefined && reader(theme.extends, next) !== null,
     hardCount: read?.hard_colors.length ?? 0,
+    refused: refused && (read?.hard_colors.length ?? 0) > 0,
+    refuse: () => {
+      setRefused(true);
+    },
     show: (place) => {
       if (isColorToken(place)) {
         shown.reveal(place);

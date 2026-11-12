@@ -115,6 +115,23 @@ export async function wearTheme(server: Instance, person: Person, choice: string
   await session.dispose();
 }
 
+/**
+ * Makes the theme of `choice` the organization's dark theme through the API, as `person` (who may
+ * change organization settings), or gives the organization its default again (`null`).
+ */
+export async function setOrganizationsDarkTheme(
+  server: Instance,
+  person: Person,
+  choice: string | null,
+): Promise<void> {
+  const session = await signInThroughApi(server, person);
+  const params = { path: { key: settingKeys.appearanceDarkTheme } };
+  await (choice === null
+    ? session.client.DELETE("/api/v1/settings/{key}", { params })
+    : session.client.PUT("/api/v1/settings/{key}", { params, body: { value: choice } }));
+  await session.dispose();
+}
+
 /** The address of the editor of a theme. */
 export function editorAddress(theme: Pick<Schema<"ThemeBody">, "id" | "kind">): string {
   return filled(
@@ -124,14 +141,14 @@ export function editorAddress(theme: Pick<Schema<"ThemeBody">, "id" | "kind">): 
   );
 }
 
-/** The line on top of the editor that sums the readability up. */
+/** The verdict on top of the editor that sums the readability up; a refused save puts the cursor there. */
 export function readabilityLine(page: Page): Locator {
-  return page.locator(`[data-part='${part.themeReadability}'] output`);
+  return page.locator(`output[data-part='${part.themeReadability}']`);
 }
 
-/** The readability on top of the editor as a whole: its verdict and the colors to change. */
-export function readability(page: Page): Locator {
-  return page.locator(`[data-part='${part.themeReadability}']`);
+/** The colors that are hard to read under the verdict, each with a way to change it. */
+export function hardColors(page: Page): Locator {
+  return page.locator(`[data-part='${part.themeReadabilityList}']`);
 }
 
 /** Opens the editor of a theme and waits until the rating is there and the person may change it. */

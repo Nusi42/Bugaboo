@@ -34,6 +34,11 @@ function shownIn(found: ThemeRead, token: string): string | undefined {
   return found.colors.find((color) => color.name === token)?.value;
 }
 
+/** The built-in theme's color for more contrast of a token, as the reader tells the editor. */
+function builtInMoreIn(found: ThemeRead, token: string): string | undefined {
+  return found.colors.find((color) => color.name === token)?.built_in_more ?? undefined;
+}
+
 describe("thm_03_the_editor_rates_each_pair_like_the_server", () => {
   it.each(themeIds)("finds nothing hard to read in %s as it is", (theme) => {
     const found = rated(theme, {});
@@ -97,6 +102,19 @@ describe("thm_03_the_editor_keeps_values_as_a_save_takes_them", () => {
     expect(withColor({}, "fg-muted", "#464c57", "#464c57").colors?.["fg-muted"]).toEqual({
       value: "#464c57",
     });
+  });
+
+  it("starts it only where the built-in theme has a color for more contrast of its own", () => {
+    const daylight = rated("daylight", {});
+    const builtInMore = (token: string) => builtInMoreIn(daylight, token);
+    // Daylight's text has none: a change of it stores the color alone, and more contrast follows it.
+    expect(withColor({}, "fg", "#202020", builtInMore("fg")).colors?.fg).toEqual({
+      value: "#202020",
+    });
+    // Its quiet text has one: a change of it keeps the built-in color for more contrast.
+    expect(
+      withColor({}, "fg-muted", "#4f5563", builtInMore("fg-muted")).colors?.["fg-muted"],
+    ).toEqual({ value: "#4f5563", more: "#383d48" });
   });
 
   it("finds two values the same whatever the order of their keys", () => {

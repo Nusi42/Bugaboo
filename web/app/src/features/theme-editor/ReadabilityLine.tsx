@@ -56,7 +56,7 @@ function Details({ read }: { readonly read: ThemeRead }) {
   const [open, setOpen] = useState(false);
   const { easy, ok, hard_to_read: hard } = read.summary;
   return (
-    <>
+    <div>
       <Button
         look={buttonLook.quiet}
         onPress={() => {
@@ -70,7 +70,7 @@ function Details({ read }: { readonly read: ThemeRead }) {
           {t("theme-editor.readability-details", { total: easy + ok + hard, easy, ok })}
         </p>
       ) : null}
-    </>
+    </div>
   );
 }
 
@@ -93,34 +93,40 @@ export interface ReadabilityLineProps {
   /** What `bb-core` says about the theme; none while the rating is being loaded. */
   readonly read: ThemeRead | null;
   readonly kind: Schema<"ThemeKind">;
+  /** A save of a theme for everyone was refused for it: the verdict is then the refusal. */
+  readonly refused: boolean;
   /** Opens the color to change and puts the cursor in it. */
   readonly onChange: (place: string) => void;
 }
 
 /**
- * The readability on top of the editor (UX §5.6), led by its verdict: nothing is hard to read (the
- * counts on request), or how many colors are, each with the colors it is hard to read on and a way
- * to change it, and for a theme for everyone that they must be fixed to share it. It stays at the
- * top on a phone too, and a refused save brings the cursor here.
+ * The readability on top of the editor (UX §5.6), led by its verdict, which stays on top on a phone
+ * too: nothing is hard to read (the counts on request), or how many colors are, each with the
+ * colors it is hard to read on and a way to change it (they scroll with the page), and for a theme
+ * for everyone that they must be fixed to share it. A refused save brings the cursor to the verdict,
+ * which then has the look of a refusal.
  */
-export function ReadabilityLine({ read, kind, onChange }: ReadabilityLineProps) {
+export function ReadabilityLine({ read, kind, refused, onChange }: ReadabilityLineProps) {
   const hard = read?.hard_colors ?? [];
   return (
-    <section
-      id={READABILITY_ID}
-      tabIndex={-1}
-      aria-label={t("theme-editor.readability-title")}
-      {...partOf(part.themeReadability, { states: [hard.length > 0 && "hard"] })}
-    >
-      <output>{verdictOf(read, kind)}</output>
+    <>
+      <output
+        id={READABILITY_ID}
+        tabIndex={-1}
+        {...partOf(part.themeReadability, {
+          states: [refused && "refused", !refused && hard.length > 0 && "hard"],
+        })}
+      >
+        {verdictOf(read, kind)}
+      </output>
       {read !== null && hard.length === 0 ? <Details read={read} /> : null}
       {hard.length === 0 ? null : (
-        <ul {...partOf(part.themeHardPairs)}>
+        <ul {...partOf(part.themeReadabilityList)}>
           {hard.map((color) => (
             <HardColorRow key={color.place} hard={color} onChange={onChange} />
           ))}
         </ul>
       )}
-    </section>
+    </>
   );
 }

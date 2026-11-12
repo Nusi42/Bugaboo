@@ -62,7 +62,7 @@ export function AppearancePage() {
             [settingKeys.appearanceDarkTheme]: themePicker,
           }}
         />
-        <p {...partOf(part.text)}>{t("appearance.device-settings")}</p>
+        <p {...partOf(part.settingsHelp)}>{t("appearance.device-settings")}</p>
       </Card>
       <OwnThemes kind={themeKinds.personal} />
     </div>

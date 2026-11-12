@@ -67,7 +67,8 @@ export function useSaving(
         send();
       } else if (theme.kind === "for-everyone") {
         // It is said once, on top, where the colors to change are named: the cursor goes there.
-        focusReadability();
+        editing.refuse();
+        window.requestAnimationFrame(focusReadability);
       } else {
         setQuestion("ask");
       }

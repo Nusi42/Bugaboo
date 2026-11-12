@@ -773,15 +773,18 @@ export interface MessageArguments {
   "theme-editor.corners-bounds": { max: string | number; min: string | number };
   "theme-editor.delete-everyone": { theme: string | number };
   "theme-editor.delete-named": { name: string | number };
+  "theme-editor.delete-organization": { count: number; theme: string | number };
   "theme-editor.delete-personal": { theme: string | number };
   "theme-editor.delete-title": { name: string | number };
   "theme-editor.delete-used": { count: number; theme: string | number };
   "theme-editor.download-named": { name: string | number };
+  "theme-editor.face": { face: string | number; role: string | number };
   "theme-editor.facts": { hard: number; look: string | number; theme: string | number };
   "theme-editor.facts-unsaved": { look: string | number; theme: string | number };
   "theme-editor.group-changed": { count: number; theme: string | number };
   "theme-editor.hard-color": { color: string | number; count: number };
   "theme-editor.hide-named": { color: string | number };
+  "theme-editor.list-everyone-intro": { place: string | number };
   "theme-editor.pick": { color: string | number };
   "theme-editor.readability-details": {
     easy: string | number;
