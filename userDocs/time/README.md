@@ -53,3 +53,4 @@ A window lower than 720 pixels folds **My settings**, **Organization settings**,
 - [Time on issues](time-on-issues.md): time entries, *Activity* and *Cost center*, estimates and totals
 - [The timesheet](timesheet.md): your week in one grid, typing lengths and times, warnings and reasons
 - [Working hours of others](working-hours-of-others.md): looking at one other person's week
+- [Work times](work-times.md): usual work days, *Holidays*, away times with no reason stored, and shares in projects

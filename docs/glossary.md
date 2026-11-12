@@ -231,6 +231,7 @@ Rules:
 | **Kind of people information** | One of the places a person can be shown: *Assigned to, Reported by, Last changed by*, comment and history authors, *"… is editing"*, followers, time entries, mentions, pictures of people, *Project members*, *Work times* | identity field, people field (in UI) |
 | **Away**                 | A stretch of whole or half days on which a person does not work. Bugaboo stores no reason; others see only *Away* | absent, absence, out of office, sick, on leave (in UI) |
 | **Away times**           | A person's away stretches                                | absences, leave calendar (in UI) |
+| **Afternoon only** / **Morning only** | How the first day of an away time (away from the afternoon on) and its last day (away until noon) are half days; every other day of it is whole | half-day leave, AM/PM (in UI) |
 | **Work times**           | A person's usual work days, work hours, shares in projects, away times and choice of *Holidays*; also the page *My settings › Work times* and the kind of people information that says who may see them | availability, capacity (in UI) |
 | **Enter work times for others** | The permission to enter usual work days, work hours and away times for other people | — |
 | **Working hours of others** | The page that shows one other person's working hours at a time: a person picker, then their week, read only or with *Change*. Only for people with *See working hours of others* | attendance report, team hours, staff hours, timesheets of others (in UI) |

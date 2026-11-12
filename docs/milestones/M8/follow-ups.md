@@ -35,10 +35,20 @@ WP-02 brought a full run from five failing browser tests to one (2026-11-11): Ch
 | M8-F32 | `members_page` still reads people a page at a time and judges each | Fine at the sample's size | WP-12, under load |
 | M8-F33 | The sum of shares counts only shares that were set; a person in a project with no share row has 100 % that the sum does not count | One rule now (`bb_core::work_times::over_100`) | WP-06 decides whether *Too much at once* counts unset shares |
 | M8-F34 | Two away times may overlap or repeat; nothing merges them or warns | Not needed by the server package | WP-07, on the screen that enters them |
-| M8-F35 | No test sends the e-mail text of `work-times-changed`; only the sentences are tested | Small | WP-07 |
-| M8-F36 | The glossary and the user docs have no words yet for *Morning only*, *Afternoon only* | They come with the screens | WP-07 |
+| M8-F35 | Done in WP-07: `plan_11_the_e_mail_of_changed_work_times_names_who_and_the_days` sends the e-mail and reads its text | — | — |
+| M8-F36 | Done in WP-07: the glossary has *Afternoon only* / *Morning only*, and `userDocs/time/work-times.md` uses them | — | — |
 | M8-F37 | `usual_work_day` repeats its version in all seven rows | A header table would be cleaner but is a second table | Only if it gets in the way |
 | M8-F38 | A read of one person's work times reads the project tree twice (the statements stay the same for 2 and 20 projects) | Reusing the tree of `evaluate_projects` changes an interface | WP-06, if the plan reads it per person |
+
+## From WP-07 (work times and the time factor on screen)
+
+| ID | What | Why later | Planned in |
+|----|------|-----------|------------|
+| M8-F60 | The time factor on the issue (the row *Time factor*, the window *How long will it take you?*, `plan_14_the_person_on_the_bar_says_takes_me_10_days_and_sees_their_own_estimate`, `plan_14_someone_else_sets_the_time_factor_and_the_issue_says_who`, `plan_14_no_list_offers_the_time_factor_as_a_column_or_filter`) is not built: the route of WP-06 did not exist yet | Built against the API of WP-06 when it is merged | WP-07, a second round after WP-06 |
+| M8-F61 | Two schemas of the API description had the same name (`ShareBody` of saved searches and of shares): utoipa kept one, so the generated client sent the wrong body for `setShare`. Fixed by naming the second `ProjectShareBody`; nothing checks that every schema name is unique | A new check is a change of the checks (architecture §10, *Adding a rule*) | The lead: a test or check over the API description |
+| M8-F62 | M8-F34 stays open: the window of an away time does not say when the days overlap another away time | Whether two away times overlap is a rule of work times; the server should answer it (coding-standards §4), with the refusal or a warning in the answer | WP-06 or the server's next round of work times |
+| M8-F63 | The words of the 20 holidays and the 18 choices of *Holidays* are made by `words!` enums, so they go to the first page's part of the messages (PERF-BUNDLE stays green) | The rule of parts puts every made key in `shared` | Only if the first page runs out of room |
+| M8-F64 | The help of the setting *Holidays* says "for you" also on *Work › Working hours*, where the organization's choice is set | One help text serves both levels in the registry | The words review of M8 |
 
 ## From WP-05 (own themes on the server)
 
