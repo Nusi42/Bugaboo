@@ -49,6 +49,7 @@ WP-02 brought a full run from five failing browser tests to one (2026-11-11): Ch
 | M8-F62 | M8-F34 stays open: the window of an away time does not say when the days overlap another away time | Whether two away times overlap is a rule of work times; the server should answer it (coding-standards §4), with the refusal or a warning in the answer | WP-06 or the server's next round of work times |
 | M8-F63 | The words of the 20 holidays and the 18 choices of *Holidays* are made by `words!` enums, so they go to the first page's part of the messages (PERF-BUNDLE stays green) | The rule of parts puts every made key in `shared` | Only if the first page runs out of room |
 | M8-F64 | The help of the setting *Holidays* says "for you" also on *Work › Working hours*, where the organization's choice is set | One help text serves both levels in the registry | The words review of M8 |
+| M8-F65 | `next_holidays` of the answer of work times is a list of three, named in `tools/checks/lean-exemptions.toml` beside `usual` (M8-F31) | Three holidays shown together need no pages | Only if the number grows |
 
 ## From WP-05 (own themes on the server)
 

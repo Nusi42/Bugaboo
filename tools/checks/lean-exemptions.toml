@@ -449,3 +449,15 @@ route = "GET /api/v1/people/{person}/work-times"
 property = "usual"
 whole_value = true
 reason = "The seven weekdays of one person, Monday first: a list bounded by the week, not one that grows with data, and the form of the usual work days needs all of them at once (PLAN-11, ADR-0030; M8-F31)."
+
+[[exempt]]
+route = "GET /api/v1/me/work-times"
+property = "next_holidays"
+whole_value = true
+reason = "The next `NEXT_HOLIDAYS` (three) public holidays of the choice of *Holidays*: a fixed number, not a list that grows with data, shown together under the choice (PLAN-11, ADR-0030, amendment M8; UX §4.13; M8-F65)."
+
+[[exempt]]
+route = "GET /api/v1/people/{person}/work-times"
+property = "next_holidays"
+whole_value = true
+reason = "The next `NEXT_HOLIDAYS` (three) public holidays of the choice of *Holidays*: a fixed number, not a list that grows with data, shown together under the choice (PLAN-11, ADR-0030, amendment M8; UX §4.13; M8-F65)."
