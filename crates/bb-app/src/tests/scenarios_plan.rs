@@ -118,13 +118,39 @@ async fn preview(
     .await
 }
 
+/// Makes each of `chain` wait for the one before it, the first for `first`, with the kind `blocks`.
+fn wait_in_a_chain(
+    world: &World,
+    blocks: bb_core::id::RelationKindId,
+    first: bb_core::id::IssueId,
+    chain: &[bb_core::id::IssueId],
+) -> Result<(), String> {
+    use bb_core::id::{RelationId, UserId};
+    use bb_core::relation::Relation;
+
+    let ctx = world.ctx();
+    let mut ids = ctx.ids();
+    let mut shared = world.store.lock();
+    let mut before = first;
+    for then in chain {
+        shared.state.relations.push(Relation {
+            id: RelationId::generate(&mut ids).map_err(|error| error.to_string())?,
+            kind: blocks,
+            from: before,
+            to: *then,
+            added_by: UserId::generate(&mut ids),
+            added_at: jiff::Timestamp::UNIX_EPOCH,
+        });
+        before = *then;
+    }
+    Ok(())
+}
+
 #[tokio::test]
 async fn plan_13_a_preview_of_move_it_after_stops_at_the_size_of_one_run() -> super::world::Outcome
 {
-    use bb_core::id::{IssueId, RelationId, UserId};
+    use bb_core::id::IssueId;
     use bb_core::many_changes::MANY_CHANGES_JOB_ABOVE;
-    use bb_core::relation::Relation;
-    use jiff::Timestamp;
 
     use crate::relations::{RelationKindsQuery, relation_kinds};
 
@@ -152,25 +178,52 @@ async fn plan_13_a_preview_of_move_it_after_stops_at_the_size_of_one_run() -> su
             .len(),
         1
     );
-    {
-        // A chain of one more issue than a run takes waits for the issue.
+    // A chain of more issues than a run takes, which the administrator does not see (they are not
+    // there), waits for the issue: they are neither moved nor counted.
+    let hidden = {
+        let ctx = world.ctx();
+        let mut ids = ctx.ids();
+        let mut made = Vec::new();
+        for _ in 0..=MANY_CHANGES_JOB_ABOVE {
+            made.push(IssueId::generate(&mut ids)?);
+        }
+        made
+    };
+    wait_in_a_chain(&world, blocks, first, &hidden)?;
+    assert_eq!(
+        preview(&world, issue.clone())
+            .await?
+            .into_value()
+            .issues
+            .len(),
+        1
+    );
+    // A chain of one more issue than a run takes, each one the administrator sees, waits for the
+    // issue too.
+    let seen = {
         let ctx = world.ctx();
         let mut ids = ctx.ids();
         let mut shared = world.store.lock();
-        let mut before = first;
-        for _ in 0..=MANY_CHANGES_JOB_ABOVE {
-            let then = IssueId::generate(&mut ids)?;
-            shared.state.relations.push(Relation {
-                id: RelationId::generate(&mut ids)?,
-                kind: blocks,
-                from: before,
-                to: then,
-                added_by: UserId::generate(&mut ids),
-                added_at: Timestamp::UNIX_EPOCH,
+        let template = shared
+            .state
+            .issues
+            .iter()
+            .find(|each| each.id == first)
+            .cloned()
+            .ok_or("no issue")?;
+        let mut made = Vec::new();
+        for number in (1000..).take(MANY_CHANGES_JOB_ABOVE + 1) {
+            let id = IssueId::generate(&mut ids)?;
+            shared.state.issues.push(bb_core::issue::Issue {
+                id,
+                code: bb_core::readable_id::IssueCode::counting(number),
+                ..template.clone()
             });
-            before = then;
+            made.push(id);
         }
-    }
+        made
+    };
+    wait_in_a_chain(&world, blocks, first, &seen)?;
     let refused = preview(&world, issue).await;
     assert!(
         matches!(

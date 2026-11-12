@@ -40,7 +40,8 @@ use crate::relations::effect_kinds;
 use crate::search::{SearchScope, SearchStore};
 
 /// The most issues one *Move it after* moves: as many as one run of changes takes before it goes
-/// to the background. A walk that reaches more is refused before anything is worked out.
+/// to the background. A walk that reaches more issues the reader sees is refused before anything
+/// is worked out; issues the reader does not see are neither walked past nor counted.
 const MOVED_MOST: usize = MANY_CHANGES_JOB_ABOVE;
 
 /// A date moved by `by` days, when the reader may read it; `None` past the ends of the calendar.
@@ -59,6 +60,53 @@ fn ensure_built_in_dates(options: &TimelineOptions) -> Result<(), AppError> {
 }
 
 impl<S: AuthStore + SearchStore> Ctx<'_, S> {
+    /// The issues the reader sees that wait for `start` over any number of steps, `start` first,
+    /// walking only through issues the reader sees, as *Move it after* moves them. The issues the
+    /// walk meets are judged a run at a time, so a walk reads as many issues as it meets and stops
+    /// as soon as it reaches more than [`MOVED_MOST`] that the reader sees.
+    ///
+    /// # Errors
+    /// `request.invalid` for a walk that reaches more than [`MOVED_MOST`] issues the reader sees.
+    async fn seen_waiting(
+        &self,
+        actor: &Actor,
+        graph: &DependencyGraph,
+        start: IssueId,
+    ) -> Result<Vec<IssueId>, AppError> {
+        // Whether the reader sees each issue the walk met; `start` is one they see.
+        let mut judged: HashMap<IssueId, bool> = HashMap::from([(start, true)]);
+        loop {
+            let open = |at: IssueId| judged.get(&at).copied().unwrap_or(true);
+            let seen = graph
+                .waiting_from(start, |at| judged.get(&at) == Some(&true))
+                .take(MOVED_MOST + 1)
+                .count();
+            if seen > MOVED_MOST {
+                return Err(ErrorCode::InvalidRequest.into());
+            }
+            let unknown: Vec<IssueId> = graph
+                .waiting_from(start, open)
+                .filter(|at| !judged.contains_key(at))
+                .take(MOVED_MOST + 1)
+                .collect();
+            if unknown.is_empty() {
+                break;
+            }
+            let visible: HashSet<IssueId> = self
+                .seen_issues(actor, &unknown, &[])
+                .await?
+                .into_iter()
+                .map(|(found, _)| found.id)
+                .collect();
+            for at in unknown {
+                judged.insert(at, visible.contains(&at));
+            }
+        }
+        Ok(graph
+            .waiting_from(start, |at| judged.get(&at) == Some(&true))
+            .collect())
+    }
+
     /// What a way out is worked out from: the date fields of a view of *Start date* and *Due date*
     /// as the actor may read them where `issue` is, and the days to read work times for.
     async fn ask_for<'a>(
@@ -129,13 +177,7 @@ pub async fn move_after_preview<S: AuthStore + SearchStore>(
         .await
         .map_err(failed)?;
     let graph = DependencyGraph::new(&all);
-    let reached: Vec<IssueId> = graph
-        .waiting_from(issue.id, |_| true)
-        .take(MOVED_MOST + 1)
-        .collect();
-    if reached.len() > MOVED_MOST {
-        return Err(ErrorCode::InvalidRequest.into());
-    }
+    let reached = ctx.seen_waiting(&actor, &graph, issue.id).await?;
     let seen: HashSet<IssueId> = reached.iter().copied().collect();
     // The issues each reached issue waits for: they keep their days, and the walk starts after them.
     let mut asked: Vec<IssueId> = all
