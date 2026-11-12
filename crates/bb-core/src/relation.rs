@@ -235,6 +235,14 @@ impl DependencyGraph {
         Self { waiting_for }
     }
 
+    /// The issues that wait for `issue` directly, in the order their dependencies were given. The
+    /// step of every walk along dependencies: the loop check and the order of *Move it after*
+    /// (`crate::plan`).
+    #[must_use]
+    pub fn waiting(&self, issue: IssueId) -> &[IssueId] {
+        self.waiting_for.get(&issue).map_or(&[], Vec::as_slice)
+    }
+
     /// The shortest way from `start` to `goal`, both ends included; `None` when the issues that wait
     /// for `start`, over any number of steps, never include `goal`. The one walk of the loop check:
     /// making a dependency and giving a kind a date effect both use it, and the plan of the timeline
@@ -248,7 +256,7 @@ impl DependencyGraph {
         let mut seen: HashSet<IssueId> = HashSet::from([start]);
         let mut queue = VecDeque::from([start]);
         while let Some(at) = queue.pop_front() {
-            for next in self.waiting_for.get(&at).into_iter().flatten() {
+            for next in self.waiting(at) {
                 if !seen.insert(*next) {
                     continue;
                 }

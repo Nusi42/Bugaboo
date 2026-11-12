@@ -15,6 +15,7 @@ use bb_core::message::MessageKey;
 use bb_core::notification::NotificationKind;
 use bb_core::own_fields::{ChoiceColor, FieldFor, FieldType, Look};
 use bb_core::people_kinds::PeopleKind;
+use bb_core::plan::warning::{AWAY_NAMELESS, DELAY_OF_GOAL, WarningKind, WayOut};
 use bb_core::readable_id::IdMode;
 use bb_core::time::entry::StarterField;
 use bb_core::working_time::Preset;
@@ -44,6 +45,24 @@ fn holiday_keys() -> Vec<Made> {
         word: format!("the public holiday `{}`", holiday.code()),
     });
     regions.chain(days).collect()
+}
+
+/// The messages of the plan of the timeline: the sentence of each kind of warning, the two other
+/// sentences, and the ways out.
+fn plan_keys() -> Vec<Made> {
+    let kinds = WarningKind::ALL.iter().map(|kind| Made {
+        key: kind.sentence(),
+        word: format!("the plan warning `{}`", kind.code()),
+    });
+    let others = [AWAY_NAMELESS, DELAY_OF_GOAL].into_iter().map(|key| Made {
+        key,
+        word: format!("the sentence of a plan warning `{key}`"),
+    });
+    let ways = WayOut::ALL.iter().map(|way| Made {
+        key: way.label(),
+        word: format!("the way out of a plan warning `{}`", way.code()),
+    });
+    kinds.chain(others).chain(ways).collect()
 }
 
 /// A message that the word of an enum makes, and the word.
@@ -154,5 +173,6 @@ pub(crate) fn made_keys() -> Vec<Made> {
         keys.push(made("the kind of notification", kind.code(), kind.label()));
     }
     keys.extend(holiday_keys());
+    keys.extend(plan_keys());
     keys
 }

@@ -32,8 +32,9 @@ mod usual;
 mod whose;
 
 pub use away::{change_away_time, enter_away_time, remove_away_time};
+pub use bb_core::work_times::DayMinutes;
 pub use leave::{DeleteWorkTimesOfPerson, delete_work_times_in, delete_work_times_of_person};
-pub use minutes::{DayMinutes, PersonMinutes, WorkMinutes, WorkMinutesQuery};
+pub use minutes::{PersonMinutes, WorkMinutes, WorkMinutesQuery};
 pub use old::delete_old_away_times;
 pub use read::work_times;
 pub use shares::{project_shares, set_share};

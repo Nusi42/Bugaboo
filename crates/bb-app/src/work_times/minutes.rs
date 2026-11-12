@@ -16,7 +16,7 @@ use bb_core::access::PeopleLevel;
 use bb_core::holidays::Holiday;
 use bb_core::id::{ProjectId, UserId};
 use bb_core::work_times::record::AwayTime;
-use bb_core::work_times::{Halves, Share, UsualDays, minutes_on};
+use bb_core::work_times::{DayMinutes, Halves, Share, UsualDays, minutes_on};
 use bb_policy::{Evaluation, Place};
 use jiff::civil::Date;
 
@@ -36,20 +36,6 @@ pub struct WorkMinutesQuery {
     pub first: Date,
     /// The last day: a stretch of at most `RANGE_DAYS_MAX` days.
     pub last: Date,
-}
-
-/// What one day holds for a person.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct DayMinutes {
-    /// The day.
-    pub date: Date,
-    /// The minutes the person can work on it in the project.
-    pub minutes: u32,
-    /// Which halves of the day the person is away; none for a reader who may not know the person's
-    /// work times (`PersonMinutes::away_visible`).
-    pub away: Halves,
-    /// The public holiday that counts for the person on this day; none for such a reader.
-    pub holiday: Option<Holiday>,
 }
 
 /// The days of one person.

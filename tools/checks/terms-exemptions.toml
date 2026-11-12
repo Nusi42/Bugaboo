@@ -183,3 +183,11 @@ at = [
   "userDocs/agents/README.md",
 ]
 reason = "The glossary names Apply and Discard as the two answers to a proposed change (the entry Apply / Discard). Not the throwing away of a timer, which is Throw away."
+
+[[allow]]
+term = "make"
+at = [
+  "messages/en.json#plan-way-out.make-it-longer",
+  "crates/bb-core/src/plan/warning.rs#variant MakeItLonger",
+]
+reason = "Make it longer is the glossary's own name of a way out of a plan warning (glossary, Move it after / Make it longer / Give it to someone else…): it gives a bar more days. It brings nothing new into Bugaboo, which is what Create names."

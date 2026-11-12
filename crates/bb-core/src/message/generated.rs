@@ -4971,6 +4971,20 @@ pub const PERSON_SOMEONE: MessageKey = MessageKey::new("person.someone");
 /// The message `person.someone-inside`.
 pub const PERSON_SOMEONE_INSIDE: MessageKey = MessageKey::new("person.someone-inside");
 
+/// The message `plan-way-out.give-to-someone-else`.
+pub const PLAN_WAY_OUT_GIVE_TO_SOMEONE_ELSE: MessageKey =
+    MessageKey::new("plan-way-out.give-to-someone-else");
+
+/// The message `plan-way-out.keep-and-accept`.
+pub const PLAN_WAY_OUT_KEEP_AND_ACCEPT: MessageKey =
+    MessageKey::new("plan-way-out.keep-and-accept");
+
+/// The message `plan-way-out.make-it-longer`.
+pub const PLAN_WAY_OUT_MAKE_IT_LONGER: MessageKey = MessageKey::new("plan-way-out.make-it-longer");
+
+/// The message `plan-way-out.move-it-after`.
+pub const PLAN_WAY_OUT_MOVE_IT_AFTER: MessageKey = MessageKey::new("plan-way-out.move-it-after");
+
 /// The message `preview.label`.
 pub const PREVIEW_LABEL: MessageKey = MessageKey::new("preview.label");
 
@@ -13591,6 +13605,110 @@ pub fn person_work_times_intro(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `plan-warning.away`.
+#[must_use]
+pub fn plan_warning_away(
+    days: impl std::fmt::Display,
+    issue: impl std::fmt::Display,
+    person: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("plan-warning.away"),
+        vec![
+            ("days", Value::Text(days.to_string())),
+            ("issue", Value::Text(issue.to_string())),
+            ("person", Value::Text(person.to_string())),
+        ],
+    )
+}
+
+/// The message `plan-warning.away-hidden`.
+#[must_use]
+pub fn plan_warning_away_hidden(
+    days: impl std::fmt::Display,
+    issue: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("plan-warning.away-hidden"),
+        vec![
+            ("days", Value::Text(days.to_string())),
+            ("issue", Value::Text(issue.to_string())),
+        ],
+    )
+}
+
+/// The message `plan-warning.delay`.
+#[must_use]
+pub fn plan_warning_delay(
+    days: i64,
+    first: impl std::fmt::Display,
+    issue: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("plan-warning.delay"),
+        vec![
+            ("days", Value::Number(days)),
+            ("first", Value::Text(first.to_string())),
+            ("issue", Value::Text(issue.to_string())),
+        ],
+    )
+}
+
+/// The message `plan-warning.delay-goal`.
+#[must_use]
+pub fn plan_warning_delay_goal(
+    days: i64,
+    issue: impl std::fmt::Display,
+    sub_issue: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("plan-warning.delay-goal"),
+        vec![
+            ("days", Value::Number(days)),
+            ("issue", Value::Text(issue.to_string())),
+            ("sub_issue", Value::Text(sub_issue.to_string())),
+        ],
+    )
+}
+
+/// The message `plan-warning.not-enough-days`.
+#[must_use]
+pub fn plan_warning_not_enough_days(
+    has: i64,
+    issue: impl std::fmt::Display,
+    needs: i64,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("plan-warning.not-enough-days"),
+        vec![
+            ("has", Value::Number(has)),
+            ("issue", Value::Text(issue.to_string())),
+            ("needs", Value::Number(needs)),
+        ],
+    )
+}
+
+/// The message `plan-warning.too-much-at-once`.
+#[must_use]
+pub fn plan_warning_too_much_at_once(
+    can: impl std::fmt::Display,
+    day: impl std::fmt::Display,
+    person: impl std::fmt::Display,
+    planned: impl std::fmt::Display,
+    project: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("plan-warning.too-much-at-once"),
+        vec![
+            ("can", Value::Text(can.to_string())),
+            ("day", Value::Text(day.to_string())),
+            ("person", Value::Text(person.to_string())),
+            ("planned", Value::Text(planned.to_string())),
+            ("project", Value::Text(project.to_string())),
+        ],
+    )
+}
+
 /// The message `preview.line-changes`.
 #[must_use]
 pub fn preview_line_changes(
@@ -22121,6 +22239,37 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "person.work-times-intro",
         "The usual work days, work hours and away times of {name}. When you change them, {name} is told.",
     ),
+    (
+        "plan-warning.away",
+        "{person} is away {days}, while {issue} is planned with their work times.",
+    ),
+    (
+        "plan-warning.away-hidden",
+        "The assigned person is away {days}, while {issue} is planned.",
+    ),
+    (
+        "plan-warning.delay",
+        "{first} now ends {days, plural, =0 {on the day} one {# day after} other {# days after}} {issue} starts, and {issue} waits for it.",
+    ),
+    (
+        "plan-warning.delay-goal",
+        "{sub_issue} now ends {days, plural, one {# day} other {# days}} after the due date of {issue}.",
+    ),
+    (
+        "plan-warning.not-enough-days",
+        "{issue} needs {needs, plural, one {# work day} other {# work days}}; there {has, plural, one {is # work day} other {are # work days}} before its due date.",
+    ),
+    (
+        "plan-warning.too-much-at-once",
+        "{person} has {planned} planned on {day} in {project}; the share there is {can}.",
+    ),
+    (
+        "plan-way-out.give-to-someone-else",
+        "Give it to someone else…",
+    ),
+    ("plan-way-out.keep-and-accept", "Keep and accept"),
+    ("plan-way-out.make-it-longer", "Make it longer"),
+    ("plan-way-out.move-it-after", "Move it after"),
     ("preview.label", "Issues in this change"),
     ("preview.line-changes", "{field}: {after}"),
     (

@@ -53,6 +53,7 @@ pub mod people_kinds;
 pub mod person;
 pub mod personal;
 pub mod plain;
+pub mod plan;
 pub mod project;
 pub mod readable_id;
 pub mod relation;

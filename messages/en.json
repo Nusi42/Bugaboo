@@ -3638,5 +3638,15 @@
   "theme-editor.shape-changed": "{count, plural, =0 {Nothing changed from {theme}} one {# change} other {# changes}}",
   "theme-editor.for-everyone": "For everyone",
   "theme-editor.personal": "Personal",
-  "theme-editor.upload-too-large": "This file is larger than {most} KB. Choose a theme file that Bugaboo gave you with Download."
+  "theme-editor.upload-too-large": "This file is larger than {most} KB. Choose a theme file that Bugaboo gave you with Download.",
+  "plan-warning.away": "{person} is away {days}, while {issue} is planned with their work times.",
+  "plan-warning.away-hidden": "The assigned person is away {days}, while {issue} is planned.",
+  "plan-warning.not-enough-days": "{issue} needs {needs, plural, one {# work day} other {# work days}}; there {has, plural, one {is # work day} other {are # work days}} before its due date.",
+  "plan-warning.delay": "{first} now ends {days, plural, =0 {on the day} one {# day after} other {# days after}} {issue} starts, and {issue} waits for it.",
+  "plan-warning.delay-goal": "{sub_issue} now ends {days, plural, one {# day} other {# days}} after the due date of {issue}.",
+  "plan-warning.too-much-at-once": "{person} has {planned} planned on {day} in {project}; the share there is {can}.",
+  "plan-way-out.move-it-after": "Move it after",
+  "plan-way-out.make-it-longer": "Make it longer",
+  "plan-way-out.give-to-someone-else": "Give it to someone else…",
+  "plan-way-out.keep-and-accept": "Keep and accept"
 }

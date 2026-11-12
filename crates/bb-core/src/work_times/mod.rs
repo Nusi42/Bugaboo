@@ -20,9 +20,25 @@ pub use usual::{StoredUsualDays, UsualDay, UsualDays, WORK_MINUTES_MAX};
 use jiff::civil::Date;
 
 use self::record::AwayTime;
+use crate::holidays::Holiday;
 
 /// The most characters of the note of an away time.
 pub const NOTE_CHARS_MAX: usize = 500;
+
+/// What one day holds for a person in a project: what the plan of the timeline is worked out from
+/// (`crate::plan`), as the reader may know it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct DayMinutes {
+    /// The day.
+    pub date: Date,
+    /// The minutes the person can work on it in the project ([`minutes_on`]).
+    pub minutes: u32,
+    /// Which halves of the day the person is away; none for a reader who may not know the person's
+    /// work times.
+    pub away: Halves,
+    /// The public holiday that counts for the person on this day; none for such a reader.
+    pub holiday: Option<Holiday>,
+}
 
 /// How many minutes a person can work on `date` in a project: the work hours of the weekday, times
 /// the share, and half of that when an away time covers one half of the day. Nothing on a day the
