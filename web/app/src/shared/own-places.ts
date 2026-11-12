@@ -79,6 +79,14 @@ export const ownPlaces: readonly Place[] = [
     listed: true,
   },
   {
+    // The theme editor of a personal theme is reached from *My themes* in *Appearance*.
+    path: paths.myTheme,
+    name: "nav.appearance",
+    icon: iconName.palette,
+    parent: paths.appearance,
+    listed: false,
+  },
+  {
     path: paths.region,
     name: "nav.region",
     icon: iconName.region,

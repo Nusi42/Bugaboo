@@ -286,6 +286,8 @@ tokens {
     size "size-line-medium" "80%"
     size "size-line-short" "55%"
     size "size-sample-short" "60%"
+    // The least width of each of the two columns of the theme editor (its groups, its preview), side by side where both fit.
+    size "size-theme-column" "280px"
     // Turns: the tick of a checkbox, and the arrow of a tree branch that is open.
     size "angle-tick" "45deg"
     size "angle-open" "90deg"
@@ -5015,6 +5017,221 @@ part "theme-preview.line" {
 
 part "theme-preview.line[variant=short]" {
     width "$size-sample-short"
+}
+
+// The theme editor (UX §5.6): the line of the readability on top, the groups of colors and the preview side by side
+// where both columns fit, one under the other where they do not (on a phone the preview opens from a button).
+part "theme-editor" {
+    display flex
+    flex-direction column
+    gap "$space-4"
+}
+
+part "theme-editor.body" {
+    display flex
+    flex-wrap wrap
+    align-items flex-start
+    gap "$space-5"
+}
+
+part "theme-editor.groups" {
+    display flex
+    flex 1 1 "$size-theme-column"
+    flex-direction column
+    gap "$space-3"
+    min-width 0
+}
+
+// The preview stays in sight while the groups scroll.
+part "theme-editor.aside" {
+    position sticky
+    top "$space-4"
+    display flex
+    flex 1 1 "$size-theme-column"
+    flex-direction column
+    gap "$space-2"
+    min-width 0
+}
+
+// The preview draws real parts of the app under the theme being edited: the sample of a built-in theme
+// (`data-preview-look`) with the sheet of the draft over it.
+part "theme-editor.preview" {
+    display flex
+    flex-direction column
+    gap "$space-3"
+    padding "$space-4"
+    border "$border-width solid $border"
+    border-radius "$r-card"
+    background "$bg-canvas"
+    color "$fg"
+    font-family "$font-ui"
+    box-shadow "$shadow"
+}
+
+// A row of an issue in the preview, as a list shows it.
+part "theme-editor.sample-row" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2"
+    min-height "$size-control"
+    padding "$space-2" "$space-3"
+    use "surface-box"
+}
+
+part "theme-editor.sample-hint" {
+    color "$fg-subtle"
+    font-size "$fs-sm"
+}
+
+// The line that sums the readability up; it stays on top on a phone while the groups scroll under it.
+part "theme-readability" {
+    position sticky
+    top 0
+    z-index "$z-raised"
+    margin 0
+    padding "$space-3" "$space-4"
+    use "surface-box"
+    color "$fg"
+}
+
+part "theme-readability[state=hard]" {
+    border-color "$danger"
+}
+
+part "theme-hard-pairs" {
+    use "list-reset"
+    display flex
+    flex-direction column
+    gap "$space-1"
+}
+
+part "theme-hard-pair" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    justify-content space-between
+    gap "$space-2"
+}
+
+// A group of colors: a heading that opens and closes it, and its colors under it.
+part "theme-group" {
+    use "surface-box"
+    padding "$space-3" "$space-4"
+}
+
+part "theme-group.summary" {
+    display flex
+    align-items center
+    min-height "$size-control"
+    color "$fg"
+    font-family "$font-display"
+    font-size "$fs-md"
+    cursor pointer
+}
+
+part "theme-group.body" {
+    display flex
+    flex-direction column
+    gap "$space-4"
+    padding-top "$space-3"
+}
+
+// One color of a group: its name and how readable it is, then the color as text, its sample and the color for more
+// contrast, and the way back to the color of the built-in theme.
+part "theme-color" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+    padding-top "$space-3"
+    border-top "$border-width solid $border-subtle"
+}
+
+part "theme-color.head" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    justify-content space-between
+    gap "$space-2"
+}
+
+part "theme-color.fields" {
+    display flex
+    flex-wrap wrap
+    align-items flex-end
+    gap "$space-3"
+}
+
+// The sample of a color, which also opens the browser's own color picker; the color is typed in the field beside it.
+part "theme-color.pick" {
+    box-sizing border-box
+    width "$size-control"
+    height "$size-control"
+    padding "$space-1"
+    border "$border-width solid $border-control"
+    border-radius "$r-ctl"
+    background "$bg-raised"
+    cursor pointer
+}
+
+// How readable a color is: a sign and the word, in the color of the state.
+part "theme-rating" {
+    display inline-flex
+    align-items center
+    gap "$space-1"
+    font-size "$fs-sm"
+}
+
+part "theme-rating[variant=easy]" {
+    color "$success"
+}
+
+part "theme-rating[variant=ok]" {
+    color "$fg-muted"
+}
+
+part "theme-rating[variant=hard]" {
+    color "$danger"
+}
+
+// The layers of an own shadow, each a group of numbers and a color.
+part "theme-shadow.layer" {
+    use "fieldset-reset"
+    display flex
+    flex-wrap wrap
+    align-items flex-end
+    gap "$space-3"
+}
+
+// The lists of own themes (Look › Themes, My settings › Appearance): one row for each theme with its facts and buttons.
+part "theme-list" {
+    use "list-reset"
+    display flex
+    flex-direction column
+    gap "$space-2"
+}
+
+part "theme-list.item" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    justify-content space-between
+    gap "$space-2" "$space-3"
+    padding "$space-3" "$space-4"
+    use "surface-box"
+}
+
+part "theme-list.text" {
+    display flex
+    flex-direction column
+    gap "$space-1"
+    min-width 0
+    overflow-wrap anywhere
+}
+
+part "theme-list.facts" {
+    color "$fg-muted"
+    font-size "$fs-sm"
 }
 
 // The table of the apps a person allowed (Connected apps): one row for each app, the columns side by side from a

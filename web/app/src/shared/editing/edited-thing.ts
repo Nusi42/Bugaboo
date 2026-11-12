@@ -4,6 +4,7 @@ export const editedThing = {
   comment: "editing.this-comment",
   layout: "editing.this-layout",
   workflow: "editing.this-workflow",
+  theme: "editing.this-theme",
 } as const;
 
 export type EditedThing = (typeof editedThing)[keyof typeof editedThing];

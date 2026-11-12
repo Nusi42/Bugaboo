@@ -9,6 +9,7 @@ export { editedThing } from "./edited-thing.ts";
 export { CustomizeEditable, type CustomizeEditableProps } from "./CustomizeEditable.tsx";
 export { DraftNote } from "./DraftNote.tsx";
 export { LockedEditor, type Saving } from "./LockedEditor.tsx";
+export { EditLockNotices } from "./EditLockNotices.tsx";
 export { usedNowText, type UsedNowWords } from "./used-now.ts";
 export { RemoveEditable, type RemoveWords } from "./RemoveEditable.tsx";
 export { useEditingNow } from "./use-editing-now.ts";

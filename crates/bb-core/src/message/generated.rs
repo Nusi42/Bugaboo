@@ -1961,6 +1961,9 @@ pub const EDITING_THIS_COMMENT: MessageKey = MessageKey::new("editing.this-comme
 /// The message `editing.this-layout`.
 pub const EDITING_THIS_LAYOUT: MessageKey = MessageKey::new("editing.this-layout");
 
+/// The message `editing.this-theme`.
+pub const EDITING_THIS_THEME: MessageKey = MessageKey::new("editing.this-theme");
+
 /// The message `editing.this-workflow`.
 pub const EDITING_THIS_WORKFLOW: MessageKey = MessageKey::new("editing.this-workflow");
 
@@ -7764,6 +7767,404 @@ pub const SUB_ISSUES_PROGRESS_LABEL: MessageKey = MessageKey::new("sub-issues.pr
 
 /// The message `sub-issues.title`.
 pub const SUB_ISSUES_TITLE: MessageKey = MessageKey::new("sub-issues.title");
+
+/// The message `theme-color.accent`.
+pub const THEME_COLOR_ACCENT: MessageKey = MessageKey::new("theme-color.accent");
+
+/// The message `theme-color.accent-fg`.
+pub const THEME_COLOR_ACCENT_FG: MessageKey = MessageKey::new("theme-color.accent-fg");
+
+/// The message `theme-color.accent-soft`.
+pub const THEME_COLOR_ACCENT_SOFT: MessageKey = MessageKey::new("theme-color.accent-soft");
+
+/// The message `theme-color.area-ink`.
+pub const THEME_COLOR_AREA_INK: MessageKey = MessageKey::new("theme-color.area-ink");
+
+/// The message `theme-color.area-name.agents`.
+pub const THEME_COLOR_AREA_NAME_AGENTS: MessageKey =
+    MessageKey::new("theme-color.area-name.agents");
+
+/// The message `theme-color.area-name.issues`.
+pub const THEME_COLOR_AREA_NAME_ISSUES: MessageKey =
+    MessageKey::new("theme-color.area-name.issues");
+
+/// The message `theme-color.area-name.settings`.
+pub const THEME_COLOR_AREA_NAME_SETTINGS: MessageKey =
+    MessageKey::new("theme-color.area-name.settings");
+
+/// The message `theme-color.area-name.time`.
+pub const THEME_COLOR_AREA_NAME_TIME: MessageKey = MessageKey::new("theme-color.area-name.time");
+
+/// The message `theme-color.bg-canvas`.
+pub const THEME_COLOR_BG_CANVAS: MessageKey = MessageKey::new("theme-color.bg-canvas");
+
+/// The message `theme-color.bg-hover`.
+pub const THEME_COLOR_BG_HOVER: MessageKey = MessageKey::new("theme-color.bg-hover");
+
+/// The message `theme-color.bg-raised`.
+pub const THEME_COLOR_BG_RAISED: MessageKey = MessageKey::new("theme-color.bg-raised");
+
+/// The message `theme-color.bg-selected`.
+pub const THEME_COLOR_BG_SELECTED: MessageKey = MessageKey::new("theme-color.bg-selected");
+
+/// The message `theme-color.bg-sunken`.
+pub const THEME_COLOR_BG_SUNKEN: MessageKey = MessageKey::new("theme-color.bg-sunken");
+
+/// The message `theme-color.bg-surface`.
+pub const THEME_COLOR_BG_SURFACE: MessageKey = MessageKey::new("theme-color.bg-surface");
+
+/// The message `theme-color.border`.
+pub const THEME_COLOR_BORDER: MessageKey = MessageKey::new("theme-color.border");
+
+/// The message `theme-color.border-control`.
+pub const THEME_COLOR_BORDER_CONTROL: MessageKey = MessageKey::new("theme-color.border-control");
+
+/// The message `theme-color.border-subtle`.
+pub const THEME_COLOR_BORDER_SUBTLE: MessageKey = MessageKey::new("theme-color.border-subtle");
+
+/// The message `theme-color.cue`.
+pub const THEME_COLOR_CUE: MessageKey = MessageKey::new("theme-color.cue");
+
+/// The message `theme-color.danger`.
+pub const THEME_COLOR_DANGER: MessageKey = MessageKey::new("theme-color.danger");
+
+/// The message `theme-color.danger-soft`.
+pub const THEME_COLOR_DANGER_SOFT: MessageKey = MessageKey::new("theme-color.danger-soft");
+
+/// The message `theme-color.disabled-fill`.
+pub const THEME_COLOR_DISABLED_FILL: MessageKey = MessageKey::new("theme-color.disabled-fill");
+
+/// The message `theme-color.divider`.
+pub const THEME_COLOR_DIVIDER: MessageKey = MessageKey::new("theme-color.divider");
+
+/// The message `theme-color.edge-high`.
+pub const THEME_COLOR_EDGE_HIGH: MessageKey = MessageKey::new("theme-color.edge-high");
+
+/// The message `theme-color.fg`.
+pub const THEME_COLOR_FG: MessageKey = MessageKey::new("theme-color.fg");
+
+/// The message `theme-color.fg-muted`.
+pub const THEME_COLOR_FG_MUTED: MessageKey = MessageKey::new("theme-color.fg-muted");
+
+/// The message `theme-color.fg-subtle`.
+pub const THEME_COLOR_FG_SUBTLE: MessageKey = MessageKey::new("theme-color.fg-subtle");
+
+/// The message `theme-color.hover-line`.
+pub const THEME_COLOR_HOVER_LINE: MessageKey = MessageKey::new("theme-color.hover-line");
+
+/// The message `theme-color.on-accent`.
+pub const THEME_COLOR_ON_ACCENT: MessageKey = MessageKey::new("theme-color.on-accent");
+
+/// The message `theme-color.on-disabled`.
+pub const THEME_COLOR_ON_DISABLED: MessageKey = MessageKey::new("theme-color.on-disabled");
+
+/// The message `theme-color.scrim`.
+pub const THEME_COLOR_SCRIM: MessageKey = MessageKey::new("theme-color.scrim");
+
+/// The message `theme-color.st-done`.
+pub const THEME_COLOR_ST_DONE: MessageKey = MessageKey::new("theme-color.st-done");
+
+/// The message `theme-color.st-done-soft`.
+pub const THEME_COLOR_ST_DONE_SOFT: MessageKey = MessageKey::new("theme-color.st-done-soft");
+
+/// The message `theme-color.st-ip`.
+pub const THEME_COLOR_ST_IP: MessageKey = MessageKey::new("theme-color.st-ip");
+
+/// The message `theme-color.st-ip-soft`.
+pub const THEME_COLOR_ST_IP_SOFT: MessageKey = MessageKey::new("theme-color.st-ip-soft");
+
+/// The message `theme-color.st-ns`.
+pub const THEME_COLOR_ST_NS: MessageKey = MessageKey::new("theme-color.st-ns");
+
+/// The message `theme-color.st-ns-soft`.
+pub const THEME_COLOR_ST_NS_SOFT: MessageKey = MessageKey::new("theme-color.st-ns-soft");
+
+/// The message `theme-color.success`.
+pub const THEME_COLOR_SUCCESS: MessageKey = MessageKey::new("theme-color.success");
+
+/// The message `theme-color.success-soft`.
+pub const THEME_COLOR_SUCCESS_SOFT: MessageKey = MessageKey::new("theme-color.success-soft");
+
+/// The message `theme-color.tint-done`.
+pub const THEME_COLOR_TINT_DONE: MessageKey = MessageKey::new("theme-color.tint-done");
+
+/// The message `theme-color.tint-ip`.
+pub const THEME_COLOR_TINT_IP: MessageKey = MessageKey::new("theme-color.tint-ip");
+
+/// The message `theme-color.tint-ns`.
+pub const THEME_COLOR_TINT_NS: MessageKey = MessageKey::new("theme-color.tint-ns");
+
+/// The message `theme-color.warning`.
+pub const THEME_COLOR_WARNING: MessageKey = MessageKey::new("theme-color.warning");
+
+/// The message `theme-color.warning-soft`.
+pub const THEME_COLOR_WARNING_SOFT: MessageKey = MessageKey::new("theme-color.warning-soft");
+
+/// The message `theme-editor.ask-title`.
+pub const THEME_EDITOR_ASK_TITLE: MessageKey = MessageKey::new("theme-editor.ask-title");
+
+/// The message `theme-editor.back-everyone`.
+pub const THEME_EDITOR_BACK_EVERYONE: MessageKey = MessageKey::new("theme-editor.back-everyone");
+
+/// The message `theme-editor.back-personal`.
+pub const THEME_EDITOR_BACK_PERSONAL: MessageKey = MessageKey::new("theme-editor.back-personal");
+
+/// The message `theme-editor.change-color`.
+pub const THEME_EDITOR_CHANGE_COLOR: MessageKey = MessageKey::new("theme-editor.change-color");
+
+/// The message `theme-editor.change-color-choose`.
+pub const THEME_EDITOR_CHANGE_COLOR_CHOOSE: MessageKey =
+    MessageKey::new("theme-editor.change-color-choose");
+
+/// The message `theme-editor.copy`.
+pub const THEME_EDITOR_COPY: MessageKey = MessageKey::new("theme-editor.copy");
+
+/// The message `theme-editor.corners-cards`.
+pub const THEME_EDITOR_CORNERS_CARDS: MessageKey = MessageKey::new("theme-editor.corners-cards");
+
+/// The message `theme-editor.corners-controls`.
+pub const THEME_EDITOR_CORNERS_CONTROLS: MessageKey =
+    MessageKey::new("theme-editor.corners-controls");
+
+/// The message `theme-editor.create`.
+pub const THEME_EDITOR_CREATE: MessageKey = MessageKey::new("theme-editor.create");
+
+/// The message `theme-editor.create-from`.
+pub const THEME_EDITOR_CREATE_FROM: MessageKey = MessageKey::new("theme-editor.create-from");
+
+/// The message `theme-editor.create-name`.
+pub const THEME_EDITOR_CREATE_NAME: MessageKey = MessageKey::new("theme-editor.create-name");
+
+/// The message `theme-editor.create-title`.
+pub const THEME_EDITOR_CREATE_TITLE: MessageKey = MessageKey::new("theme-editor.create-title");
+
+/// The message `theme-editor.dark`.
+pub const THEME_EDITOR_DARK: MessageKey = MessageKey::new("theme-editor.dark");
+
+/// The message `theme-editor.delete`.
+pub const THEME_EDITOR_DELETE: MessageKey = MessageKey::new("theme-editor.delete");
+
+/// The message `theme-editor.download`.
+pub const THEME_EDITOR_DOWNLOAD: MessageKey = MessageKey::new("theme-editor.download");
+
+/// The message `theme-editor.draft-kept`.
+pub const THEME_EDITOR_DRAFT_KEPT: MessageKey = MessageKey::new("theme-editor.draft-kept");
+
+/// The message `theme-editor.face-headings`.
+pub const THEME_EDITOR_FACE_HEADINGS: MessageKey = MessageKey::new("theme-editor.face-headings");
+
+/// The message `theme-editor.face-long`.
+pub const THEME_EDITOR_FACE_LONG: MessageKey = MessageKey::new("theme-editor.face-long");
+
+/// The message `theme-editor.face-text`.
+pub const THEME_EDITOR_FACE_TEXT: MessageKey = MessageKey::new("theme-editor.face-text");
+
+/// The message `theme-editor.font-headings`.
+pub const THEME_EDITOR_FONT_HEADINGS: MessageKey = MessageKey::new("theme-editor.font-headings");
+
+/// The message `theme-editor.font-long`.
+pub const THEME_EDITOR_FONT_LONG: MessageKey = MessageKey::new("theme-editor.font-long");
+
+/// The message `theme-editor.font-text`.
+pub const THEME_EDITOR_FONT_TEXT: MessageKey = MessageKey::new("theme-editor.font-text");
+
+/// The message `theme-editor.group.backgrounds`.
+pub const THEME_EDITOR_GROUP_BACKGROUNDS: MessageKey =
+    MessageKey::new("theme-editor.group.backgrounds");
+
+/// The message `theme-editor.group.highlight`.
+pub const THEME_EDITOR_GROUP_HIGHLIGHT: MessageKey =
+    MessageKey::new("theme-editor.group.highlight");
+
+/// The message `theme-editor.group.lines`.
+pub const THEME_EDITOR_GROUP_LINES: MessageKey = MessageKey::new("theme-editor.group.lines");
+
+/// The message `theme-editor.group.shape`.
+pub const THEME_EDITOR_GROUP_SHAPE: MessageKey = MessageKey::new("theme-editor.group.shape");
+
+/// The message `theme-editor.group.status`.
+pub const THEME_EDITOR_GROUP_STATUS: MessageKey = MessageKey::new("theme-editor.group.status");
+
+/// The message `theme-editor.group.text`.
+pub const THEME_EDITOR_GROUP_TEXT: MessageKey = MessageKey::new("theme-editor.group.text");
+
+/// The message `theme-editor.light`.
+pub const THEME_EDITOR_LIGHT: MessageKey = MessageKey::new("theme-editor.light");
+
+/// The message `theme-editor.list-everyone`.
+pub const THEME_EDITOR_LIST_EVERYONE: MessageKey = MessageKey::new("theme-editor.list-everyone");
+
+/// The message `theme-editor.list-everyone-intro`.
+pub const THEME_EDITOR_LIST_EVERYONE_INTRO: MessageKey =
+    MessageKey::new("theme-editor.list-everyone-intro");
+
+/// The message `theme-editor.list-everyone-nothing`.
+pub const THEME_EDITOR_LIST_EVERYONE_NOTHING: MessageKey =
+    MessageKey::new("theme-editor.list-everyone-nothing");
+
+/// The message `theme-editor.list-personal`.
+pub const THEME_EDITOR_LIST_PERSONAL: MessageKey = MessageKey::new("theme-editor.list-personal");
+
+/// The message `theme-editor.list-personal-intro`.
+pub const THEME_EDITOR_LIST_PERSONAL_INTRO: MessageKey =
+    MessageKey::new("theme-editor.list-personal-intro");
+
+/// The message `theme-editor.list-personal-nothing`.
+pub const THEME_EDITOR_LIST_PERSONAL_NOTHING: MessageKey =
+    MessageKey::new("theme-editor.list-personal-nothing");
+
+/// The message `theme-editor.lost`.
+pub const THEME_EDITOR_LOST: MessageKey = MessageKey::new("theme-editor.lost");
+
+/// The message `theme-editor.more`.
+pub const THEME_EDITOR_MORE: MessageKey = MessageKey::new("theme-editor.more");
+
+/// The message `theme-editor.more-same`.
+pub const THEME_EDITOR_MORE_SAME: MessageKey = MessageKey::new("theme-editor.more-same");
+
+/// The message `theme-editor.name`.
+pub const THEME_EDITOR_NAME: MessageKey = MessageKey::new("theme-editor.name");
+
+/// The message `theme-editor.not-a-color`.
+pub const THEME_EDITOR_NOT_A_COLOR: MessageKey = MessageKey::new("theme-editor.not-a-color");
+
+/// The message `theme-editor.not-allowed`.
+pub const THEME_EDITOR_NOT_ALLOWED: MessageKey = MessageKey::new("theme-editor.not-allowed");
+
+/// The message `theme-editor.not-found`.
+pub const THEME_EDITOR_NOT_FOUND: MessageKey = MessageKey::new("theme-editor.not-found");
+
+/// The message `theme-editor.pixels`.
+pub const THEME_EDITOR_PIXELS: MessageKey = MessageKey::new("theme-editor.pixels");
+
+/// The message `theme-editor.preview`.
+pub const THEME_EDITOR_PREVIEW: MessageKey = MessageKey::new("theme-editor.preview");
+
+/// The message `theme-editor.rating.easy`.
+pub const THEME_EDITOR_RATING_EASY: MessageKey = MessageKey::new("theme-editor.rating.easy");
+
+/// The message `theme-editor.rating.hard`.
+pub const THEME_EDITOR_RATING_HARD: MessageKey = MessageKey::new("theme-editor.rating.hard");
+
+/// The message `theme-editor.rating.ok`.
+pub const THEME_EDITOR_RATING_OK: MessageKey = MessageKey::new("theme-editor.rating.ok");
+
+/// The message `theme-editor.readability-fix`.
+pub const THEME_EDITOR_READABILITY_FIX: MessageKey =
+    MessageKey::new("theme-editor.readability-fix");
+
+/// The message `theme-editor.readability-loading`.
+pub const THEME_EDITOR_READABILITY_LOADING: MessageKey =
+    MessageKey::new("theme-editor.readability-loading");
+
+/// The message `theme-editor.refused`.
+pub const THEME_EDITOR_REFUSED: MessageKey = MessageKey::new("theme-editor.refused");
+
+/// The message `theme-editor.refused-value.bad-shadow`.
+pub const THEME_EDITOR_REFUSED_VALUE_BAD_SHADOW: MessageKey =
+    MessageKey::new("theme-editor.refused-value.bad-shadow");
+
+/// The message `theme-editor.refused-value.bad-shape`.
+pub const THEME_EDITOR_REFUSED_VALUE_BAD_SHAPE: MessageKey =
+    MessageKey::new("theme-editor.refused-value.bad-shape");
+
+/// The message `theme-editor.refused-value.more-is-the-same`.
+pub const THEME_EDITOR_REFUSED_VALUE_MORE_IS_THE_SAME: MessageKey =
+    MessageKey::new("theme-editor.refused-value.more-is-the-same");
+
+/// The message `theme-editor.refused-value.not-a-color`.
+pub const THEME_EDITOR_REFUSED_VALUE_NOT_A_COLOR: MessageKey =
+    MessageKey::new("theme-editor.refused-value.not-a-color");
+
+/// The message `theme-editor.refused-value.not-a-stack`.
+pub const THEME_EDITOR_REFUSED_VALUE_NOT_A_STACK: MessageKey =
+    MessageKey::new("theme-editor.refused-value.not-a-stack");
+
+/// The message `theme-editor.refused-value.radius-out-of-bounds`.
+pub const THEME_EDITOR_REFUSED_VALUE_RADIUS_OUT_OF_BOUNDS: MessageKey =
+    MessageKey::new("theme-editor.refused-value.radius-out-of-bounds");
+
+/// The message `theme-editor.refused-value.unknown-name`.
+pub const THEME_EDITOR_REFUSED_VALUE_UNKNOWN_NAME: MessageKey =
+    MessageKey::new("theme-editor.refused-value.unknown-name");
+
+/// The message `theme-editor.sample.button`.
+pub const THEME_EDITOR_SAMPLE_BUTTON: MessageKey = MessageKey::new("theme-editor.sample.button");
+
+/// The message `theme-editor.sample.field`.
+pub const THEME_EDITOR_SAMPLE_FIELD: MessageKey = MessageKey::new("theme-editor.sample.field");
+
+/// The message `theme-editor.sample.hint`.
+pub const THEME_EDITOR_SAMPLE_HINT: MessageKey = MessageKey::new("theme-editor.sample.hint");
+
+/// The message `theme-editor.sample.id`.
+pub const THEME_EDITOR_SAMPLE_ID: MessageKey = MessageKey::new("theme-editor.sample.id");
+
+/// The message `theme-editor.sample.other-button`.
+pub const THEME_EDITOR_SAMPLE_OTHER_BUTTON: MessageKey =
+    MessageKey::new("theme-editor.sample.other-button");
+
+/// The message `theme-editor.sample.quiet`.
+pub const THEME_EDITOR_SAMPLE_QUIET: MessageKey = MessageKey::new("theme-editor.sample.quiet");
+
+/// The message `theme-editor.sample.status`.
+pub const THEME_EDITOR_SAMPLE_STATUS: MessageKey = MessageKey::new("theme-editor.sample.status");
+
+/// The message `theme-editor.sample.success`.
+pub const THEME_EDITOR_SAMPLE_SUCCESS: MessageKey = MessageKey::new("theme-editor.sample.success");
+
+/// The message `theme-editor.sample.tag-crash`.
+pub const THEME_EDITOR_SAMPLE_TAG_CRASH: MessageKey =
+    MessageKey::new("theme-editor.sample.tag-crash");
+
+/// The message `theme-editor.sample.tag-sign-in`.
+pub const THEME_EDITOR_SAMPLE_TAG_SIGN_IN: MessageKey =
+    MessageKey::new("theme-editor.sample.tag-sign-in");
+
+/// The message `theme-editor.sample.title`.
+pub const THEME_EDITOR_SAMPLE_TITLE: MessageKey = MessageKey::new("theme-editor.sample.title");
+
+/// The message `theme-editor.sample.warning`.
+pub const THEME_EDITOR_SAMPLE_WARNING: MessageKey = MessageKey::new("theme-editor.sample.warning");
+
+/// The message `theme-editor.save`.
+pub const THEME_EDITOR_SAVE: MessageKey = MessageKey::new("theme-editor.save");
+
+/// The message `theme-editor.save-anyway`.
+pub const THEME_EDITOR_SAVE_ANYWAY: MessageKey = MessageKey::new("theme-editor.save-anyway");
+
+/// The message `theme-editor.shadow-add`.
+pub const THEME_EDITOR_SHADOW_ADD: MessageKey = MessageKey::new("theme-editor.shadow-add");
+
+/// The message `theme-editor.shadow-blur`.
+pub const THEME_EDITOR_SHADOW_BLUR: MessageKey = MessageKey::new("theme-editor.shadow-blur");
+
+/// The message `theme-editor.shadow-color`.
+pub const THEME_EDITOR_SHADOW_COLOR: MessageKey = MessageKey::new("theme-editor.shadow-color");
+
+/// The message `theme-editor.shadow-remove`.
+pub const THEME_EDITOR_SHADOW_REMOVE: MessageKey = MessageKey::new("theme-editor.shadow-remove");
+
+/// The message `theme-editor.shadow-spread`.
+pub const THEME_EDITOR_SHADOW_SPREAD: MessageKey = MessageKey::new("theme-editor.shadow-spread");
+
+/// The message `theme-editor.shadow-x`.
+pub const THEME_EDITOR_SHADOW_X: MessageKey = MessageKey::new("theme-editor.shadow-x");
+
+/// The message `theme-editor.shadow-y`.
+pub const THEME_EDITOR_SHADOW_Y: MessageKey = MessageKey::new("theme-editor.shadow-y");
+
+/// The message `theme-editor.show`.
+pub const THEME_EDITOR_SHOW: MessageKey = MessageKey::new("theme-editor.show");
+
+/// The message `theme-editor.title`.
+pub const THEME_EDITOR_TITLE: MessageKey = MessageKey::new("theme-editor.title");
+
+/// The message `theme-editor.upload`.
+pub const THEME_EDITOR_UPLOAD: MessageKey = MessageKey::new("theme-editor.upload");
+
+/// The message `theme-editor.upload-unread`.
+pub const THEME_EDITOR_UPLOAD_UNREAD: MessageKey = MessageKey::new("theme-editor.upload-unread");
 
 /// The message `theme.daylight`.
 pub const THEME_DAYLIGHT: MessageKey = MessageKey::new("theme.daylight");
@@ -15485,6 +15886,329 @@ pub fn system_folder_unknown(program: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `theme-color.area-bar`.
+#[must_use]
+pub fn theme_color_area_bar(area: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-color.area-bar"),
+        vec![("area", Value::Text(area.to_string()))],
+    )
+}
+
+/// The message `theme-color.area-line`.
+#[must_use]
+pub fn theme_color_area_line(area: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-color.area-line"),
+        vec![("area", Value::Text(area.to_string()))],
+    )
+}
+
+/// The message `theme-color.area-main`.
+#[must_use]
+pub fn theme_color_area_main(area: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-color.area-main"),
+        vec![("area", Value::Text(area.to_string()))],
+    )
+}
+
+/// The message `theme-color.area-open`.
+#[must_use]
+pub fn theme_color_area_open(area: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-color.area-open"),
+        vec![("area", Value::Text(area.to_string()))],
+    )
+}
+
+/// The message `theme-color.area-soft`.
+#[must_use]
+pub fn theme_color_area_soft(area: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-color.area-soft"),
+        vec![("area", Value::Text(area.to_string()))],
+    )
+}
+
+/// The message `theme-color.choice-bg`.
+#[must_use]
+pub fn theme_color_choice_bg(color: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-color.choice-bg"),
+        vec![("color", Value::Text(color.to_string()))],
+    )
+}
+
+/// The message `theme-color.choice-fg`.
+#[must_use]
+pub fn theme_color_choice_fg(color: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-color.choice-fg"),
+        vec![("color", Value::Text(color.to_string()))],
+    )
+}
+
+/// The message `theme-color.choice-mark`.
+#[must_use]
+pub fn theme_color_choice_mark(color: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-color.choice-mark"),
+        vec![("color", Value::Text(color.to_string()))],
+    )
+}
+
+/// The message `theme-editor.ask`.
+#[must_use]
+pub fn theme_editor_ask(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-editor.ask"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `theme-editor.change-named`.
+#[must_use]
+pub fn theme_editor_change_named(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-editor.change-named"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `theme-editor.color`.
+#[must_use]
+pub fn theme_editor_color(color: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-editor.color"),
+        vec![("color", Value::Text(color.to_string()))],
+    )
+}
+
+/// The message `theme-editor.copy-name`.
+#[must_use]
+pub fn theme_editor_copy_name(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-editor.copy-name"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `theme-editor.copy-named`.
+#[must_use]
+pub fn theme_editor_copy_named(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-editor.copy-named"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `theme-editor.corners-bounds`.
+#[must_use]
+pub fn theme_editor_corners_bounds(
+    max: impl std::fmt::Display,
+    min: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-editor.corners-bounds"),
+        vec![
+            ("max", Value::Text(max.to_string())),
+            ("min", Value::Text(min.to_string())),
+        ],
+    )
+}
+
+/// The message `theme-editor.delete-everyone`.
+#[must_use]
+pub fn theme_editor_delete_everyone(theme: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-editor.delete-everyone"),
+        vec![("theme", Value::Text(theme.to_string()))],
+    )
+}
+
+/// The message `theme-editor.delete-named`.
+#[must_use]
+pub fn theme_editor_delete_named(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-editor.delete-named"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `theme-editor.delete-personal`.
+#[must_use]
+pub fn theme_editor_delete_personal(theme: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-editor.delete-personal"),
+        vec![("theme", Value::Text(theme.to_string()))],
+    )
+}
+
+/// The message `theme-editor.delete-title`.
+#[must_use]
+pub fn theme_editor_delete_title(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-editor.delete-title"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `theme-editor.delete-used`.
+#[must_use]
+pub fn theme_editor_delete_used(count: i64, theme: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-editor.delete-used"),
+        vec![
+            ("count", Value::Number(count)),
+            ("theme", Value::Text(theme.to_string())),
+        ],
+    )
+}
+
+/// The message `theme-editor.download-named`.
+#[must_use]
+pub fn theme_editor_download_named(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-editor.download-named"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `theme-editor.facts`.
+#[must_use]
+pub fn theme_editor_facts(
+    easy: impl std::fmt::Display,
+    hard: impl std::fmt::Display,
+    look: impl std::fmt::Display,
+    ok: impl std::fmt::Display,
+    theme: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-editor.facts"),
+        vec![
+            ("easy", Value::Text(easy.to_string())),
+            ("hard", Value::Text(hard.to_string())),
+            ("look", Value::Text(look.to_string())),
+            ("ok", Value::Text(ok.to_string())),
+            ("theme", Value::Text(theme.to_string())),
+        ],
+    )
+}
+
+/// The message `theme-editor.facts-unsaved`.
+#[must_use]
+pub fn theme_editor_facts_unsaved(
+    look: impl std::fmt::Display,
+    theme: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-editor.facts-unsaved"),
+        vec![
+            ("look", Value::Text(look.to_string())),
+            ("theme", Value::Text(theme.to_string())),
+        ],
+    )
+}
+
+/// The message `theme-editor.group-unchanged`.
+#[must_use]
+pub fn theme_editor_group_unchanged(theme: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-editor.group-unchanged"),
+        vec![("theme", Value::Text(theme.to_string()))],
+    )
+}
+
+/// The message `theme-editor.hard-color`.
+#[must_use]
+pub fn theme_editor_hard_color(color: impl std::fmt::Display, count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-editor.hard-color"),
+        vec![
+            ("color", Value::Text(color.to_string())),
+            ("count", Value::Number(count)),
+        ],
+    )
+}
+
+/// The message `theme-editor.pick`.
+#[must_use]
+pub fn theme_editor_pick(color: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-editor.pick"),
+        vec![("color", Value::Text(color.to_string()))],
+    )
+}
+
+/// The message `theme-editor.readability`.
+#[must_use]
+pub fn theme_editor_readability(
+    easy: i64,
+    hard: impl std::fmt::Display,
+    ok: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-editor.readability"),
+        vec![
+            ("easy", Value::Number(easy)),
+            ("hard", Value::Text(hard.to_string())),
+            ("ok", Value::Text(ok.to_string())),
+        ],
+    )
+}
+
+/// The message `theme-editor.refused-value`.
+#[must_use]
+pub fn theme_editor_refused_value(
+    name: impl std::fmt::Display,
+    reason: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-editor.refused-value"),
+        vec![
+            ("name", Value::Text(name.to_string())),
+            ("reason", Value::Text(reason.to_string())),
+        ],
+    )
+}
+
+/// The message `theme-editor.shadow-layer`.
+#[must_use]
+pub fn theme_editor_shadow_layer(number: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-editor.shadow-layer"),
+        vec![("number", Value::Text(number.to_string()))],
+    )
+}
+
+/// The message `theme-editor.shadow-own`.
+#[must_use]
+pub fn theme_editor_shadow_own(theme: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-editor.shadow-own"),
+        vec![("theme", Value::Text(theme.to_string()))],
+    )
+}
+
+/// The message `theme-editor.show-named`.
+#[must_use]
+pub fn theme_editor_show_named(color: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-editor.show-named"),
+        vec![("color", Value::Text(color.to_string()))],
+    )
+}
+
+/// The message `theme-editor.use-built-in`.
+#[must_use]
+pub fn theme_editor_use_built_in(theme: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-editor.use-built-in"),
+        vec![("theme", Value::Text(theme.to_string()))],
+    )
+}
+
 /// The message `theme.device-resolved`.
 #[must_use]
 pub fn theme_device_resolved(
@@ -18735,6 +19459,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("editing.the-description", "the description"),
     ("editing.this-comment", "this comment"),
     ("editing.this-layout", "this layout"),
+    ("editing.this-theme", "this theme"),
     ("editing.this-workflow", "this workflow"),
     (
         "error.access.cannot-lift",
@@ -23798,6 +24523,258 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "system.folder-unknown",
         "Windows did not say where its system folder is, and Bugaboo does not guess it, so it cannot start {program}.",
     ),
+    ("theme-color.accent", "Highlight"),
+    ("theme-color.accent-fg", "Highlighted text and links"),
+    ("theme-color.accent-soft", "Soft highlight"),
+    ("theme-color.area-bar", "{area} area, bar"),
+    ("theme-color.area-ink", "Text on the colors of the areas"),
+    ("theme-color.area-line", "{area} area, line"),
+    ("theme-color.area-main", "{area} area"),
+    ("theme-color.area-name.agents", "Agents"),
+    ("theme-color.area-name.issues", "Issues"),
+    ("theme-color.area-name.settings", "Settings"),
+    ("theme-color.area-name.time", "Time"),
+    ("theme-color.area-open", "{area} area, open"),
+    ("theme-color.area-soft", "{area} area, background"),
+    ("theme-color.bg-canvas", "Page"),
+    ("theme-color.bg-hover", "Row under the pointer"),
+    ("theme-color.bg-raised", "Cards and windows"),
+    ("theme-color.bg-selected", "Chosen row"),
+    ("theme-color.bg-sunken", "Sunken areas"),
+    ("theme-color.bg-surface", "Panels"),
+    ("theme-color.border", "Lines"),
+    ("theme-color.border-control", "Lines around fields"),
+    ("theme-color.border-subtle", "Faint lines"),
+    ("theme-color.choice-bg", "{color}: background"),
+    ("theme-color.choice-fg", "{color}: text"),
+    ("theme-color.choice-mark", "{color}: square"),
+    ("theme-color.cue", "Marks inside controls"),
+    ("theme-color.danger", "Danger"),
+    ("theme-color.danger-soft", "Danger background"),
+    ("theme-color.disabled-fill", "Button that can't be pressed"),
+    ("theme-color.divider", "Dividers"),
+    ("theme-color.edge-high", "Mark of a high priority"),
+    ("theme-color.fg", "Main text"),
+    ("theme-color.fg-muted", "Quiet text"),
+    ("theme-color.fg-subtle", "Hint text"),
+    ("theme-color.hover-line", "Line under the pointer"),
+    ("theme-color.on-accent", "Text on the highlight color"),
+    (
+        "theme-color.on-disabled",
+        "Text on a button that can't be pressed",
+    ),
+    ("theme-color.scrim", "Dimmed page behind a window"),
+    ("theme-color.st-done", "Done"),
+    ("theme-color.st-done-soft", "Done background"),
+    ("theme-color.st-ip", "In progress"),
+    ("theme-color.st-ip-soft", "In progress background"),
+    ("theme-color.st-ns", "Not started"),
+    ("theme-color.st-ns-soft", "Not started background"),
+    ("theme-color.success", "Success"),
+    ("theme-color.success-soft", "Success background"),
+    ("theme-color.tint-done", "Rows that are done"),
+    ("theme-color.tint-ip", "Rows in progress"),
+    ("theme-color.tint-ns", "Rows that are not started"),
+    ("theme-color.warning", "Warning"),
+    ("theme-color.warning-soft", "Warning background"),
+    (
+        "theme-editor.ask",
+        "{count, plural, one {# pair is} other {# pairs are}} hard to read. Save anyway?",
+    ),
+    ("theme-editor.ask-title", "Save anyway?"),
+    ("theme-editor.back-everyone", "Themes"),
+    ("theme-editor.back-personal", "Appearance"),
+    ("theme-editor.change-color", "Change a color"),
+    ("theme-editor.change-color-choose", "Choose a color…"),
+    ("theme-editor.change-named", "Change {name}"),
+    ("theme-editor.color", "{color}"),
+    ("theme-editor.copy", "Save a copy"),
+    ("theme-editor.copy-name", "{name} (copy)"),
+    ("theme-editor.copy-named", "Save a copy of {name}"),
+    ("theme-editor.corners-bounds", "From {min} to {max}"),
+    ("theme-editor.corners-cards", "Corners of cards"),
+    ("theme-editor.corners-controls", "Corners of controls"),
+    ("theme-editor.create", "Create a theme"),
+    ("theme-editor.create-from", "Start from"),
+    ("theme-editor.create-name", "Name of the theme"),
+    ("theme-editor.create-title", "Create a theme"),
+    ("theme-editor.dark", "dark"),
+    ("theme-editor.delete", "Delete"),
+    (
+        "theme-editor.delete-everyone",
+        "People who use this theme will see {theme} instead.",
+    ),
+    ("theme-editor.delete-named", "Delete {name}"),
+    (
+        "theme-editor.delete-personal",
+        "Where you chose this theme, you will see {theme} instead.",
+    ),
+    ("theme-editor.delete-title", "Delete {name}?"),
+    (
+        "theme-editor.delete-used",
+        "{count, plural, =0 {Nobody chose this theme for themselves. They will see {theme} where it is the organization's choice.} one {# person uses this theme. They will see {theme} instead.} other {# people use this theme. They will see {theme} instead.}}",
+    ),
+    ("theme-editor.download", "Download"),
+    ("theme-editor.download-named", "Download {name}"),
+    (
+        "theme-editor.draft-kept",
+        "You left changes here that were not saved. They are back.",
+    ),
+    ("theme-editor.face-headings", "The face of headings"),
+    ("theme-editor.face-long", "The face of long text"),
+    ("theme-editor.face-text", "The face of text"),
+    (
+        "theme-editor.facts",
+        "Starts from {theme}, {look} · {easy} easy, {ok} OK, {hard} hard to read",
+    ),
+    (
+        "theme-editor.facts-unsaved",
+        "Starts from {theme}, {look} · not saved yet",
+    ),
+    ("theme-editor.font-headings", "Headings"),
+    ("theme-editor.font-long", "Long text"),
+    ("theme-editor.font-text", "Text"),
+    (
+        "theme-editor.group-unchanged",
+        "These colors are the same as in {theme}.",
+    ),
+    ("theme-editor.group.backgrounds", "Backgrounds"),
+    ("theme-editor.group.highlight", "Highlight color"),
+    ("theme-editor.group.lines", "Lines"),
+    ("theme-editor.group.shape", "Shadow, corners and fonts"),
+    ("theme-editor.group.status", "Status and tag colors"),
+    ("theme-editor.group.text", "Text"),
+    (
+        "theme-editor.hard-color",
+        "{color} is hard to read with {count, plural, one {# other color} other {# other colors}}",
+    ),
+    ("theme-editor.light", "light"),
+    ("theme-editor.list-everyone", "Themes for everyone"),
+    (
+        "theme-editor.list-everyone-intro",
+        "Themes your organization created. Everyone can choose them in My settings › Appearance.",
+    ),
+    (
+        "theme-editor.list-everyone-nothing",
+        "Your organization has no themes of its own yet.",
+    ),
+    ("theme-editor.list-personal", "My themes"),
+    (
+        "theme-editor.list-personal-intro",
+        "Themes you created. Only you see them.",
+    ),
+    (
+        "theme-editor.list-personal-nothing",
+        "You have no themes of your own yet.",
+    ),
+    (
+        "theme-editor.lost",
+        "Not saved yet: your editing time ran out. Your changes are kept as a draft.",
+    ),
+    ("theme-editor.more", "For more contrast"),
+    ("theme-editor.more-same", "The same color"),
+    ("theme-editor.name", "Name"),
+    (
+        "theme-editor.not-a-color",
+        "Type a color as # and six digits or letters from a to f, like #3c375d.",
+    ),
+    (
+        "theme-editor.not-allowed",
+        "This value can't be part of a theme.",
+    ),
+    (
+        "theme-editor.not-found",
+        "This theme isn't there, or you can't change it.",
+    ),
+    (
+        "theme-editor.pick",
+        "Pick {color} from the colors of your device",
+    ),
+    ("theme-editor.pixels", "px"),
+    ("theme-editor.preview", "Preview"),
+    ("theme-editor.rating.easy", "Easy"),
+    ("theme-editor.rating.hard", "Hard to read"),
+    ("theme-editor.rating.ok", "OK"),
+    (
+        "theme-editor.readability",
+        "Readability: {easy, plural, one {# pair} other {# pairs}} easy to read, {ok} OK, {hard} hard to read.",
+    ),
+    (
+        "theme-editor.readability-fix",
+        "Fix the pairs that are hard to read to share this theme with everyone.",
+    ),
+    (
+        "theme-editor.readability-loading",
+        "Working out the readability…",
+    ),
+    (
+        "theme-editor.refused",
+        "A theme for everyone can't be saved while colors are hard to read. Change these first:",
+    ),
+    ("theme-editor.refused-value", "{name}: {reason}."),
+    (
+        "theme-editor.refused-value.bad-shadow",
+        "not a shadow a theme can have",
+    ),
+    (
+        "theme-editor.refused-value.bad-shape",
+        "not written the way a theme file writes it",
+    ),
+    (
+        "theme-editor.refused-value.more-is-the-same",
+        "the color for more contrast is the color itself",
+    ),
+    ("theme-editor.refused-value.not-a-color", "not a color"),
+    (
+        "theme-editor.refused-value.not-a-stack",
+        "not one of the built-in faces",
+    ),
+    (
+        "theme-editor.refused-value.radius-out-of-bounds",
+        "a corner that is too small or too large",
+    ),
+    (
+        "theme-editor.refused-value.unknown-name",
+        "a theme can't set this",
+    ),
+    ("theme-editor.sample.button", "Save issue"),
+    ("theme-editor.sample.field", "Title"),
+    ("theme-editor.sample.hint", "Press Enter to save."),
+    ("theme-editor.sample.id", "WEB-142"),
+    ("theme-editor.sample.other-button", "Cancel"),
+    (
+        "theme-editor.sample.quiet",
+        "Reported by Ana · changed 2 hours ago",
+    ),
+    ("theme-editor.sample.status", "In progress"),
+    ("theme-editor.sample.success", "The issue is saved."),
+    ("theme-editor.sample.tag-crash", "crash"),
+    ("theme-editor.sample.tag-sign-in", "sign-in"),
+    (
+        "theme-editor.sample.title",
+        "Sign-in fails after a new password",
+    ),
+    ("theme-editor.sample.warning", "The due date is close."),
+    ("theme-editor.save", "Save theme"),
+    ("theme-editor.save-anyway", "Save anyway"),
+    ("theme-editor.shadow-add", "Add a layer"),
+    ("theme-editor.shadow-blur", "Blur"),
+    ("theme-editor.shadow-color", "Color"),
+    ("theme-editor.shadow-layer", "Layer {number}"),
+    (
+        "theme-editor.shadow-own",
+        "A shadow of its own instead of {theme}'s",
+    ),
+    ("theme-editor.shadow-remove", "Remove this layer"),
+    ("theme-editor.shadow-spread", "Spread"),
+    ("theme-editor.shadow-x", "Right"),
+    ("theme-editor.shadow-y", "Down"),
+    ("theme-editor.show", "Show"),
+    ("theme-editor.show-named", "Show {color}"),
+    ("theme-editor.title", "Theme editor"),
+    ("theme-editor.upload", "Upload"),
+    ("theme-editor.upload-unread", "This file can't be read."),
+    ("theme-editor.use-built-in", "Use {theme}'s color"),
     ("theme.daylight", "Daylight"),
     ("theme.device", "Match my device"),
     ("theme.device-resolved", "{device} ({theme})"),

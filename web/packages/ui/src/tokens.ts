@@ -146,6 +146,20 @@ export const colorTokens = [
 ] as const;
 export type ColorToken = (typeof colorTokens)[number];
 
+/** The corners an own theme may set, in pixels: the base theme's value and the bounds (ADR-0026 M8). */
+export const ownRadii = [
+  { name: "r-ctl", start: 6, min: 0, max: 16 },
+  { name: "r-card", start: 10, min: 0, max: 24 },
+] as const;
+export type OwnRadius = (typeof ownRadii)[number]["name"];
+
+/** The text faces an own theme may choose a stack for; a stack is named by one of these. */
+export const ownFonts = ["font-ui", "font-display", "font-reader"] as const;
+export type OwnFont = (typeof ownFonts)[number];
+
+/** The shadow an own theme may set: at most `layers` layers, each offset, blur and spread within `pixels`. */
+export const ownShadow = { name: "shadow", layers: 2, pixels: 64 } as const;
+
 /** Every token of the theme file: the CSS variable is `--` and the name. */
 export const tokenNames = [
   "font-ui",
@@ -284,6 +298,7 @@ export const tokenNames = [
   "size-line-medium",
   "size-line-short",
   "size-sample-short",
+  "size-theme-column",
   "angle-tick",
   "angle-open",
   "skip-offset",
@@ -645,6 +660,29 @@ export const part = {
   themePreviewBar: "theme-preview.bar",
   themePreviewCard: "theme-preview.card",
   themePreviewLine: "theme-preview.line",
+  themeEditor: "theme-editor",
+  themeEditorBody: "theme-editor.body",
+  themeEditorGroups: "theme-editor.groups",
+  themeEditorAside: "theme-editor.aside",
+  themeEditorPreview: "theme-editor.preview",
+  themeEditorSampleRow: "theme-editor.sample-row",
+  themeEditorSampleHint: "theme-editor.sample-hint",
+  themeReadability: "theme-readability",
+  themeHardPairs: "theme-hard-pairs",
+  themeHardPair: "theme-hard-pair",
+  themeGroup: "theme-group",
+  themeGroupSummary: "theme-group.summary",
+  themeGroupBody: "theme-group.body",
+  themeColor: "theme-color",
+  themeColorHead: "theme-color.head",
+  themeColorFields: "theme-color.fields",
+  themeColorPick: "theme-color.pick",
+  themeRating: "theme-rating",
+  themeShadowLayer: "theme-shadow.layer",
+  themeList: "theme-list",
+  themeListItem: "theme-list.item",
+  themeListText: "theme-list.text",
+  themeListFacts: "theme-list.facts",
   appsTable: "apps.table",
   appsHead: "apps.head",
   appsRow: "apps.row",
@@ -1313,6 +1351,29 @@ export const partWords = {
   "theme-preview.bar": { variant: [], state: [] },
   "theme-preview.card": { variant: [], state: [] },
   "theme-preview.line": { variant: ["short"], state: [] },
+  "theme-editor": { variant: [], state: [] },
+  "theme-editor.body": { variant: [], state: [] },
+  "theme-editor.groups": { variant: [], state: [] },
+  "theme-editor.aside": { variant: [], state: [] },
+  "theme-editor.preview": { variant: [], state: [] },
+  "theme-editor.sample-row": { variant: [], state: [] },
+  "theme-editor.sample-hint": { variant: [], state: [] },
+  "theme-readability": { variant: [], state: ["hard"] },
+  "theme-hard-pairs": { variant: [], state: [] },
+  "theme-hard-pair": { variant: [], state: [] },
+  "theme-group": { variant: [], state: [] },
+  "theme-group.summary": { variant: [], state: [] },
+  "theme-group.body": { variant: [], state: [] },
+  "theme-color": { variant: [], state: [] },
+  "theme-color.head": { variant: [], state: [] },
+  "theme-color.fields": { variant: [], state: [] },
+  "theme-color.pick": { variant: [], state: [] },
+  "theme-rating": { variant: ["easy", "ok", "hard"], state: [] },
+  "theme-shadow.layer": { variant: [], state: [] },
+  "theme-list": { variant: [], state: [] },
+  "theme-list.item": { variant: [], state: [] },
+  "theme-list.text": { variant: [], state: [] },
+  "theme-list.facts": { variant: [], state: [] },
   "apps.table": { variant: [], state: [] },
   "apps.head": { variant: [], state: [] },
   "apps.row": { variant: [], state: [] },

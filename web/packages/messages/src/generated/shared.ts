@@ -854,6 +854,8 @@ export const messages = {
   "agents.page": "Agent",
   "agents.work": "What it works on",
   "agents.org-list": "Every agent",
+  "editing.this-theme": "this theme",
+  "theme-editor.preview": "Preview",
 } as const;
 
 register(messages);

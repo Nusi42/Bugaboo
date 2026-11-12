@@ -623,6 +623,7 @@ fn typescript(file: &ThemeFile) -> anyhow::Result<String> {
         let _ = writeln!(out, "  \"{}\",", color.name);
     }
     out.push_str("] as const;\nexport type ColorToken = (typeof colorTokens)[number];\n");
+    out.push_str(&theme_own::typescript(file));
     out.push_str("\n/** Every token of the theme file: the CSS variable is `--` and the name. */\nexport const tokenNames = [\n");
     for token in &file.tokens {
         let _ = writeln!(out, "  \"{}\",", token.name);

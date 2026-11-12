@@ -1,16 +1,20 @@
 import { useId } from "react";
 import { partOf, part } from "@bugaboo/ui";
 
-import { ThemePreview } from "./ThemePreview.tsx";
+import { ThemePreview, type PreviewedOwn } from "./ThemePreview.tsx";
 
 /** Words of the HTML standard, not text for people. */
 const radio = "radio";
 
 export interface ThemeChoice {
-  /** The ID of the theme. */
+  /** The value the setting keeps: the ID of a built-in theme, or the choice of an own theme. */
   readonly value: string;
   /** The name of the theme, already in the person's language. */
   readonly label: string;
+  /** The built-in theme the sample shows: the theme itself, or the one an own theme extends. */
+  readonly look: string;
+  /** The own theme the sample lays over it; none for a built-in theme. */
+  readonly own?: PreviewedOwn | undefined;
 }
 
 export interface ThemePickerProps {
@@ -21,7 +25,10 @@ export interface ThemePickerProps {
   readonly onChange: (value: string) => void;
 }
 
-/** One theme out of a few, each shown by a sample of how it looks (THM-02). */
+/**
+ * One theme out of a few, each shown by a sample of how it looks (THM-02): the built-in themes,
+ * then the organization's themes for everyone and the person's own (THM-04).
+ */
 export function ThemePicker({ legend, choices, value, onChange }: ThemePickerProps) {
   const group = useId();
   return (
@@ -41,7 +48,7 @@ export function ThemePicker({ legend, choices, value, onChange }: ThemePickerPro
               }}
             />
             <span {...partOf(part.themePickerTile)}>
-              <ThemePreview theme={choice.value} />
+              <ThemePreview theme={choice.look} own={choice.own} />
               <span {...partOf(part.themePickerName)}>{choice.label}</span>
             </span>
           </label>

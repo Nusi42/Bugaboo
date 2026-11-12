@@ -9,10 +9,12 @@ export interface OrganizationTopicProps {
   readonly searchable?: boolean;
   /** The explanations a page words itself for some settings (see the settings form). */
   readonly helps?: SettingsFormProps["helps"];
+  /** The controls a page draws itself for some settings (a theme with its samples). */
+  readonly controls?: SettingsFormProps["controls"];
 }
 
 /** The organization's settings of one page, drawn by the generic form, with the lock for administrators. */
-export function OrganizationTopic({ topics, searchable, helps }: OrganizationTopicProps) {
+export function OrganizationTopic({ topics, searchable, helps, controls }: OrganizationTopicProps) {
   const { settings, failed, edits } = useOrganizationSettings(topics);
   return (
     <QueryGate error={failed} data={settings} loading={null}>
@@ -21,6 +23,7 @@ export function OrganizationTopic({ topics, searchable, helps }: OrganizationTop
           settings={shown.settings}
           {...(searchable === undefined ? {} : { searchable })}
           {...(helps === undefined ? {} : { helps })}
+          {...(controls === undefined ? {} : { controls })}
           saveState={edits.saveState}
           problem={edits.problem}
           actions={{

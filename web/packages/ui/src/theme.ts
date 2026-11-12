@@ -86,3 +86,23 @@ export function applyTheme(theme: ThemeId, own: OwnLook | null = null): void {
     page.setAttribute(pageAttributes.ownTheme, own.id);
   }
 }
+
+/**
+ * Links a style sheet the server made for a part of the page, not for the page as a whole: the
+ * sheet of a saved own theme for its samples in the theme pickers, or the sheet of the theme
+ * editor's draft for its preview (`data-preview-look` with `data-own-theme` or `data-own-draft`).
+ * `loaded` is called once the browser has the sheet. Gives the function that takes the link away
+ * again. The sheet holds custom properties under those attributes only, so it changes nothing else.
+ */
+export function linkPreviewSheet(href: string, loaded?: () => void): () => void {
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  if (loaded !== undefined) {
+    link.addEventListener("load", loaded, { once: true });
+  }
+  link.href = href;
+  document.head.append(link);
+  return () => {
+    link.remove();
+  };
+}

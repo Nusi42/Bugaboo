@@ -23,6 +23,7 @@ export {
   draftTextMax,
   heartbeatSeconds,
   layoutEditPart,
+  themeEditPart,
   workflowEditPart,
   leaseSeconds,
   versionsMax,

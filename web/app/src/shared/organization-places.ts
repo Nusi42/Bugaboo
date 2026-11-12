@@ -118,6 +118,15 @@ const organizationTopics: readonly Place[] = [
     listed: true,
   },
   {
+    // The theme editor of a theme for everyone is reached from the list of themes.
+    path: paths.theme,
+    name: "nav.themes",
+    icon: iconName.palette,
+    parent: paths.themes,
+    anyOf: ["change-organization-settings"],
+    listed: false,
+  },
+  {
     path: paths.projects,
     name: "nav.projects",
     icon: iconName.projects,

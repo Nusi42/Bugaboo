@@ -15,6 +15,7 @@ export const paths = {
   invitation: appPaths.invitation,
   mySettings: "/me",
   appearance: "/me/appearance",
+  myTheme: "/me/appearance/themes/$theme",
   region: "/me/region",
   workTimes: "/me/work-times",
   assistantSettings: "/me/assistant",
@@ -48,6 +49,7 @@ export const paths = {
   signInRules: "/settings/sign-in-rules",
   organizationSecurity: "/settings/security",
   themes: "/settings/themes",
+  theme: "/settings/themes/$theme",
   workingHours: "/settings/working-hours",
   status: "/settings/status",
   mailServer: "/settings/email",
@@ -89,13 +91,14 @@ export const routeParam = {
   run: "run",
   search: "search",
   agent: "agent",
+  theme: "theme",
 } as const;
 
 /** The name of a part of an address that changes. */
 export type RouteParam = (typeof routeParam)[keyof typeof routeParam];
 
 /** The address of a route with one changing part filled in: `/p/$project` and `WEB` is `/p/WEB`. */
-function filled(path: Path, param: RouteParam, value: string): string {
+export function filled(path: Path, param: RouteParam, value: string): string {
   return path.replace(`$${param}`, encodeURIComponent(value));
 }
 
@@ -175,9 +178,8 @@ export function issueTypeAddress(id: string): string {
 }
 
 /**
- * The address of an editor of a place (layouts, workflows): of a project, or of the whole
- * organization without one, with what is open in it as the search part (`?form=…&type=<ID>`);
- * what is left out is not in the address.
+ * The address of an editor of a place (layouts, workflows): of a project, or of the whole organization without one,
+ * with what is open in it as the search part (`?form=…&type=<ID>`); what is left out is not in the address.
  */
 function editorAddress(
   organization: Path,
@@ -196,10 +198,7 @@ function editorAddress(
   return text === "" ? base : `${base}?${text}`;
 }
 
-/**
- * The address of the editor of a layout, with the form and the issue type that are open
- * (`?form=new-issue&type=<ID>`).
- */
+/** The address of the editor of a layout, with the form and the issue type that are open (`?form=new-issue&type=<ID>`). */
 export function layoutsAddress(shortName: string | undefined, open: LayoutsOpen = {}): string {
   return editorAddress(paths.layouts, paths.projectLayouts, shortName, {
     form: open.form,

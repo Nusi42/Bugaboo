@@ -34,6 +34,7 @@ import type { messages as shared } from "./shared.ts";
 import type { messages as shell } from "./shell.ts";
 import type { messages as signIn } from "./sign-in.ts";
 import type { messages as signUp } from "./sign-up.ts";
+import type { messages as themeEditor } from "./theme-editor.ts";
 import type { messages as time } from "./time.ts";
 import type { messages as workTimes } from "./work-times.ts";
 import type { messages as workflows } from "./workflows.ts";
@@ -73,6 +74,7 @@ export type MessageKey =
   | keyof typeof shell
   | keyof typeof signIn
   | keyof typeof signUp
+  | keyof typeof themeEditor
   | keyof typeof time
   | keyof typeof workTimes
   | keyof typeof workflows;
@@ -754,6 +756,43 @@ export interface MessageArguments {
   "sub-issues.progress": { done: string | number; total: string | number };
   "sub-issues.take-out": { key: string | number };
   "sub-issues.take-out-short": { key: string | number };
+  "theme-color.area-bar": { area: string | number };
+  "theme-color.area-line": { area: string | number };
+  "theme-color.area-main": { area: string | number };
+  "theme-color.area-open": { area: string | number };
+  "theme-color.area-soft": { area: string | number };
+  "theme-color.choice-bg": { color: string | number };
+  "theme-color.choice-fg": { color: string | number };
+  "theme-color.choice-mark": { color: string | number };
+  "theme-editor.ask": { count: number };
+  "theme-editor.change-named": { name: string | number };
+  "theme-editor.color": { color: string | number };
+  "theme-editor.copy-name": { name: string | number };
+  "theme-editor.copy-named": { name: string | number };
+  "theme-editor.corners-bounds": { max: string | number; min: string | number };
+  "theme-editor.delete-everyone": { theme: string | number };
+  "theme-editor.delete-named": { name: string | number };
+  "theme-editor.delete-personal": { theme: string | number };
+  "theme-editor.delete-title": { name: string | number };
+  "theme-editor.delete-used": { count: number; theme: string | number };
+  "theme-editor.download-named": { name: string | number };
+  "theme-editor.facts": {
+    easy: string | number;
+    hard: string | number;
+    look: string | number;
+    ok: string | number;
+    theme: string | number;
+  };
+  "theme-editor.facts-unsaved": { look: string | number; theme: string | number };
+  "theme-editor.group-unchanged": { theme: string | number };
+  "theme-editor.hard-color": { color: string | number; count: number };
+  "theme-editor.pick": { color: string | number };
+  "theme-editor.readability": { easy: number; hard: string | number; ok: string | number };
+  "theme-editor.refused-value": { name: string | number; reason: string | number };
+  "theme-editor.shadow-layer": { number: string | number };
+  "theme-editor.shadow-own": { theme: string | number };
+  "theme-editor.show-named": { color: string | number };
+  "theme-editor.use-built-in": { theme: string | number };
   "theme.device-resolved": { device: string | number; theme: string | number };
   "time.add.title": { issue: string | number };
   "time.breaks.hint": { example: string | number };

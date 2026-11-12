@@ -99,3 +99,42 @@ fn numbers(out: &mut String, file: &ThemeFile, kind: TokenKind) {
         }
     }
 }
+
+/// What an own theme may set besides its colors, for the theme editor: the corners with their
+/// bounds, the text faces and the limits of the shadow, from the same lines as the Rust data.
+pub(super) fn typescript(file: &ThemeFile) -> String {
+    let mut out = String::from(
+        "\n/** The corners an own theme may set, in pixels: the base theme's value and the bounds (ADR-0026 M8). */\nexport const ownRadii = [\n",
+    );
+    for token in &file.tokens {
+        if let Own::Pixels { min, max } = token.own {
+            let start = token
+                .same
+                .as_deref()
+                .and_then(|same| same.strip_suffix("px"))
+                .unwrap_or("0");
+            let _ = writeln!(
+                out,
+                "  {{ name: {:?}, start: {start}, min: {min}, max: {max} }},",
+                token.name
+            );
+        }
+    }
+    out.push_str("] as const;\nexport type OwnRadius = (typeof ownRadii)[number][\"name\"];\n\n/** The text faces an own theme may choose a stack for; a stack is named by one of these. */\nexport const ownFonts = [\n");
+    for token in &file.tokens {
+        if token.kind == TokenKind::Font && token.own == Own::Yes {
+            let _ = writeln!(out, "  {:?},", token.name);
+        }
+    }
+    out.push_str("] as const;\nexport type OwnFont = (typeof ownFonts)[number];\n");
+    if let Some((name, layers, pixels)) = file.tokens.iter().find_map(|token| match token.own {
+        Own::Shadow { layers, pixels } => Some((token.name.as_str(), layers, pixels)),
+        _ => None,
+    }) {
+        let _ = write!(
+            out,
+            "\n/** The shadow an own theme may set: at most `layers` layers, each offset, blur and spread within `pixels`. */\nexport const ownShadow = {{ name: {name:?}, layers: {layers}, pixels: {pixels} }} as const;\n"
+        );
+    }
+    out
+}

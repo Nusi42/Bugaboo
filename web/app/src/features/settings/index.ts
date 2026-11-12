@@ -15,6 +15,7 @@ export { AgentsPage } from "./AgentsPage.tsx";
 export { SecurityPage } from "./SecurityPage.tsx";
 export { SignInRulesPage } from "./SignInRulesPage.tsx";
 export { ThemesPage } from "./ThemesPage.tsx";
+export { useThemeControl } from "./theme-control.tsx";
 export { WorkingHoursPage } from "./WorkingHoursPage.tsx";
 export { sourceInWords, wordsOf } from "./texts.ts";
 export { useOrganizationSettings } from "./organization.ts";
