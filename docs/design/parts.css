@@ -2347,6 +2347,7 @@ textarea,
   display: flex;
   box-sizing: border-box;
   height: var(--size-timeline-row);
+  overflow: clip;
   border-bottom: var(--border-width) solid var(--border-subtle);
 }
 
@@ -2361,6 +2362,7 @@ textarea,
   box-sizing: border-box;
   width: var(--size-timeline-names);
   padding-inline: var(--pad-box);
+  overflow: hidden;
   border-inline-end: var(--border-width) solid var(--divider);
   background: var(--bg-raised);
   color: var(--fg);

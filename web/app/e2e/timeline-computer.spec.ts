@@ -35,8 +35,11 @@ const weekDayPixels = 16;
 
 /** The head of the group of the goal. */
 function goalHead(page: Parameters<typeof chart>[0]) {
-  return chart(page).getByRole("button", { name: new RegExp(`^${planned.goal},`, "u") });
+  return chart(page).getByRole("button", { name: goalHeadName });
 }
+
+/** The name of the head of the group of the goal: its Issue ID and its count. */
+const goalHeadName = new RegExp(`^${planned.goal}\\s?\\d`, "u");
 
 test("plan_01_a_saved_search_shows_as_a_timeline_with_its_dates", async ({ page }) => {
   await signIn(page, ada);
@@ -217,12 +220,15 @@ test("plan_04_a_goal_with_a_due_date_is_a_diamond", async ({ page }) => {
   await signIn(page, ada);
   await openPlan(page);
   const goalRow = page.locator('[data-part="timeline-row"]').filter({
-    has: page.getByRole("button", { name: new RegExp(`^${planned.goal},`, "u") }),
+    has: page.getByRole("button", { name: goalHeadName }),
   });
   const diamond = goalRow.locator('[data-part="timeline-diamond"]');
   await expect(diamond).toHaveCount(1);
   await expect(goalRow.locator('[data-part="timeline-bracket"]')).toHaveCount(1);
-  await expect(diamond).toContainText(new RegExp(planned.goal, "u"));
+  // Screen readers hear the goal from the head of its group: its days and its due date.
+  await expect(goalHead(page)).toHaveAccessibleName(
+    new RegExp(t("timeline.goal-due", { key: planned.goal, day: ".+" }), "u"),
+  );
 });
 
 test("plan_01_an_issue_from_not_scheduled_yet_gets_dates_by_drag_or_by_set_dates", async ({

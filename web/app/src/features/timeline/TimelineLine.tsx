@@ -1,4 +1,3 @@
-import { t } from "@bugaboo/messages";
 import {
   buttonType,
   Icon,
@@ -14,6 +13,7 @@ import { useRef, type ReactNode } from "react";
 
 import { known } from "../../shared/present.ts";
 import type { GroupLine, IssueLine, Line } from "./lines.ts";
+import { goalWords } from "./goal-words.ts";
 import { GoalMarks } from "./marks.tsx";
 import { useTimeline } from "./timeline-context.ts";
 import { TimelineBar } from "./TimelineBar.tsx";
@@ -47,10 +47,6 @@ export interface GroupHeadProps {
 
 /** The head of a group (a goal, a project, a person …): folds its rows, and shows the goal's bracket and diamond. */
 export function GroupHead({ line, at, name, onToggle }: GroupHeadProps) {
-  const words = t(line.open ? "issues.group-open" : "issues.group-folded", {
-    group: name,
-    count: line.count,
-  });
   return (
     <Row
       at={at}
@@ -59,16 +55,18 @@ export function GroupHead({ line, at, name, onToggle }: GroupHeadProps) {
         <button
           type={buttonType.button}
           aria-expanded={line.open}
-          aria-label={words}
           onClick={onToggle}
           {...partOf(part.timelineRowToggle)}
         >
           <Icon name={line.open ? iconName.down : iconName.next} size={iconSize.small} />
           <span {...partOf(part.timelineRowTitle)}>{name}</span>
           <span {...partOf(part.timelineRowCount)}>{line.count}</span>
+          {line.goal === undefined ? null : (
+            <span {...partOf(part.visuallyHidden)}>{goalWords(line.goal, name)}</span>
+          )}
         </button>
       }
-      lane={line.goal === undefined ? null : <GoalMarks goal={line.goal} label={name} />}
+      lane={line.goal === undefined ? null : <GoalMarks goal={line.goal} />}
     />
   );
 }
@@ -107,7 +105,7 @@ export function IssueRow({ line, at, described }: IssueRowProps) {
             <TimelineBar line={line} days={days} described={described} />
           )}
           {goal?.due === undefined || goal.due === null ? null : (
-            <GoalMarks goal={{ ...goal, span: null }} label={key} />
+            <GoalMarks goal={{ ...goal, span: null }} />
           )}
         </>
       }

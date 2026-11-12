@@ -3389,6 +3389,8 @@ part "timeline-row" {
     display flex
     box-sizing border-box
     height "$size-timeline-row"
+    // Clipped, not scrolled: the name of the row stays put while the box of the chart scrolls.
+    overflow clip
     border-bottom "$border-width solid $border-subtle"
 }
 
@@ -3403,6 +3405,7 @@ part "timeline-row.name" {
     box-sizing border-box
     width "$size-timeline-names"
     padding-inline "$pad-box"
+    overflow hidden
     border-inline-end "$border-width solid $divider"
     background "$bg-raised"
     color "$fg"

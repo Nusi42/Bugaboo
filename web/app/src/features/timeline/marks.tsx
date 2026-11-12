@@ -2,8 +2,6 @@ import { t } from "@bugaboo/messages";
 import { part, partOf, usePlace, type PartAttributes } from "@bugaboo/ui";
 import { useRef, type ReactNode } from "react";
 
-import { formatCalendarDay } from "../../shared/format.ts";
-import { daysText } from "./dates.ts";
 import { placeOf } from "./scale.ts";
 import { useTimeline } from "./timeline-context.ts";
 import type { TimelineGoal } from "./timeline-data.ts";
@@ -13,17 +11,15 @@ interface PlacedProps {
   /** The first day it covers, counted from the first day of the chart, and how many days. */
   readonly start: number;
   readonly length?: number;
-  readonly label?: string;
   readonly children?: ReactNode;
 }
 
 /** Something that stands on days of the chart: a weekend, the Today line, a bracket, a diamond. */
-function Placed({ look, start, length = 1, label, children }: PlacedProps) {
+function Placed({ look, start, length = 1, children }: PlacedProps) {
   const ref = useRef<HTMLSpanElement>(null);
   usePlace(ref, { "timeline-start": start, "timeline-length": length });
   return (
-    <span ref={ref} {...look}>
-      {label === undefined ? null : <span {...partOf(part.visuallyHidden)}>{label}</span>}
+    <span ref={ref} {...look} aria-hidden>
       {children}
     </span>
   );
@@ -47,13 +43,7 @@ export function TodayLine({ day }: { readonly day: number }) {
  * A goal on the timeline (ADR-0043, decision 7): a bracket over the days of its sub-issues, and a
  * diamond on its due date. Both come from the server; neither is worked out here.
  */
-export function GoalMarks({
-  goal,
-  label,
-}: {
-  readonly goal: TimelineGoal;
-  readonly label: string;
-}) {
+export function GoalMarks({ goal }: { readonly goal: TimelineGoal }) {
   const { span } = useTimeline();
   const bracket = goal.span ?? undefined;
   const start = bracket === undefined ? 0 : placeOf(span, bracket.first);
@@ -64,15 +54,10 @@ export function GoalMarks({
           look={partOf(part.timelineBracket)}
           start={start}
           length={placeOf(span, bracket.last) - start + 1}
-          label={t("timeline.goal", { key: label, days: daysText(bracket) })}
         />
       )}
       {goal.due === null ? null : (
-        <Placed
-          look={partOf(part.timelineDiamond)}
-          start={placeOf(span, goal.due)}
-          label={t("timeline.goal-due", { key: label, day: formatCalendarDay(goal.due) })}
-        />
+        <Placed look={partOf(part.timelineDiamond)} start={placeOf(span, goal.due)} />
       )}
     </>
   );
