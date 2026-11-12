@@ -1,5 +1,5 @@
-//! WebAssembly bindings for Markdown, the wording of changes and notifications and the rule of the
-//! same name (ADR-0011, ADR-0033). The search language has a module of its own, `bb-wasm-search`
+//! WebAssembly bindings for Markdown, the wording of changes and notifications, the rule of the
+//! same name and the readability of an own theme (ADR-0011, ADR-0033, ADR-0026 update M8). The search language has a module of its own, `bb-wasm-search`
 //! (ADR-0005, amendment M5).
 //!
 //! This crate only passes calls through to the pure crates, so the browser runs the very code the
@@ -12,6 +12,7 @@ pub mod names;
 
 use bb_core::fields::Field;
 use bb_core::history::TimeEvent;
+use bb_core::theme::{OwnValues, readability};
 use bb_core::time::Minutes;
 use bb_core::wording::{self, Change, File, Notice, Side, Time, TimeChange};
 use bb_markdown::Options;
@@ -171,9 +172,58 @@ pub fn length_on_clock(minutes: u32) -> String {
     Minutes::new(minutes).on_clock()
 }
 
+/// An own theme as the editor asks about it: the built-in theme it extends and its values, in the
+/// shape of a theme file.
+#[derive(Deserialize)]
+struct ThemeAsked {
+    extends: String,
+    values: serde_json::Value,
+}
+
+/// How readable each pair of colors of an own theme is, as the server rates it when the theme is
+/// saved (`bb_core::theme::readability`): a list of pairs as JSON, or `null` for values a save
+/// would refuse or a built-in theme that does not exist.
+///
+/// # Errors
+/// The text is not a theme with `extends` and `values`.
+#[wasm_bindgen]
+pub fn theme_readability(asked: &str) -> Result<String, JsError> {
+    answer(asked, |asked: &ThemeAsked| {
+        OwnValues::from_json(&asked.values)
+            .ok()
+            .and_then(|values| readability(&asked.extends, &values))
+    })
+    .map_err(|e| JsError::new(&e))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn thm_03_the_editor_gets_the_readability_of_the_server() {
+        let asked = r##"{"extends":"daylight","values":{"colors":{"fg":{"value":"#ffffff"}}}}"##;
+        let json = theme_readability_text(asked);
+        let said: serde_json::Value = serde_json::from_str(&json).unwrap_or_default();
+        let pairs = said.as_array().cloned().unwrap_or_default();
+        assert!(
+            pairs
+                .iter()
+                .any(|pair| pair["first"] == "fg" && pair["rating"] == "hard-to-read")
+        );
+        let unknown =
+            r##"{"extends":"daylight","values":{"colors":{"nothing":{"value":"#ffffff"}}}}"##;
+        assert_eq!(theme_readability_text(unknown), "null");
+    }
+
+    fn theme_readability_text(asked: &str) -> String {
+        answer(asked, |asked: &ThemeAsked| {
+            OwnValues::from_json(&asked.values)
+                .ok()
+                .and_then(|values| readability(&asked.extends, &values))
+        })
+        .unwrap_or_default()
+    }
 
     #[test]
     fn the_browser_gets_the_html_of_the_server() {
