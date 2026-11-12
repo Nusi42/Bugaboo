@@ -1,17 +1,11 @@
-import { t, type MessageKey } from "@bugaboo/messages";
+import { t } from "@bugaboo/messages";
 
-import { dateField, type DateField } from "../../shared/date-fields.ts";
+import { dateField, dateFieldName, type DateField } from "../../shared/date-fields.ts";
 import { formatCalendarDay } from "../../shared/format.ts";
 import { DateBox } from "../fields/index.ts";
 import type { ChangeableRowsProps } from "./ChangeableRows.tsx";
 import { DetailRow } from "./DetailRow.tsx";
 import { rowStatus } from "./row-status.ts";
-
-/** The name of each of the two dates of an issue (PLAN-01). */
-const names: Readonly<Record<DateField, MessageKey>> = {
-  [dateField.start]: "issue-field.start-date",
-  [dateField.due]: "issue-field.due-date",
-};
 
 /**
  * One date of the issue as a row of the Details: a box for who may change it, the day for who may
@@ -20,7 +14,7 @@ const names: Readonly<Record<DateField, MessageKey>> = {
  */
 function DateRow({ blocks, changes, field }: ChangeableRowsProps & { readonly field: DateField }) {
   const { issue, mask, form } = blocks;
-  const name = t(names[field]);
+  const name = t(dateFieldName[field]);
   const start = field === dateField.start;
   const day = (start ? issue.start_date : issue.due_date) ?? undefined;
   if (!form.shows(field) || !mask.sees(field)) {

@@ -22,23 +22,74 @@ fn change(field: &str, before: Option<Side>, after: Option<Side>) -> Change {
     }
 }
 
+/// A change of a date from one day to another, the days as the region of the reader words them.
+fn day_change(field: &str, before: &str, after: &str) -> Change {
+    let typed = |text: &str| {
+        Some(Side::Typed {
+            kind: FieldType::Date,
+            value: json!(text),
+            worded: Some(text.to_owned()),
+        })
+    };
+    Change {
+        who: "Lea".to_owned(),
+        field: field.to_owned(),
+        field_name: "A date".to_owned(),
+        before: typed(before),
+        after: typed(after),
+    }
+}
+
+fn moving_both() -> Vec<Change> {
+    vec![
+        day_change("start-date", "Nov 3", "Nov 10"),
+        word_change(),
+        day_change("due-date", "Nov 7", "Nov 14"),
+    ]
+}
+
+fn word_change() -> Change {
+    change("priority", Some(word("normal")), Some(word("high")))
+}
+
 #[test]
-fn plan_03_both_dates_moving_in_one_event_are_one_sentence() {
-    let said = dates_moved_sentence(
-        "Lea",
-        DayRange {
-            start: "Nov 3, 2026",
-            due: "Nov 7, 2026",
-        },
-        DayRange {
-            start: "Nov 10, 2026",
-            due: "Nov 14, 2026",
-        },
-    );
+fn plan_03_both_dates_moving_in_one_event_are_one_sentence_in_the_place_of_the_first() {
+    let said: Vec<String> = change_sentences(&moving_both())
+        .iter()
+        .map(Said::render)
+        .collect();
     assert_eq!(
-        said.render(),
-        "Lea moved the dates from Nov 3, 2026–Nov 7, 2026 to Nov 10, 2026–Nov 14, 2026"
+        said,
+        [
+            "Lea moved the dates from Nov 3\u{2013}Nov 7 to Nov 10\u{2013}Nov 14",
+            "Ben changed Priority from Normal to High"
+        ]
     );
+}
+
+#[test]
+fn plan_03_a_date_alone_or_one_without_a_day_is_said_on_its_own() {
+    let alone = [day_change("due-date", "Nov 7", "Nov 14")];
+    assert_eq!(change_sentences(&alone).len(), 1);
+    assert!(
+        change_sentences(&alone)[0]
+            .render()
+            .starts_with("Lea changed A date")
+    );
+    let mut set = day_change("start-date", "Nov 3", "Nov 10");
+    set.before = None;
+    let pair = [set, day_change("due-date", "Nov 7", "Nov 14")];
+    let said: Vec<String> = change_sentences(&pair).iter().map(Said::render).collect();
+    assert_eq!(said.len(), 2, "{said:?}");
+    assert!(said.iter().all(|each| !each.contains("moved the dates")));
+}
+
+#[test]
+fn plan_03_a_notification_says_an_event_the_way_the_history_does() {
+    let changes = moving_both();
+    let mut notice = notice(NotificationKind::FollowedFields);
+    notice.changes.clone_from(&changes);
+    assert_eq!(notification_sentences(&notice), change_sentences(&changes));
 }
 
 #[test]

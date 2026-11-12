@@ -6,9 +6,9 @@ import { whenOf } from "./when.ts";
 import { WordingNotice } from "../../shared/with-wording.tsx";
 import { relationSentence, useScrollTo } from "./history.ts";
 import { RunMark } from "./RunMark.tsx";
-import { DatesMovedItem, WordedItem } from "./WordedItem.tsx";
+import { ChangeLines } from "./ChangeLines.tsx";
+import { WordedItem } from "./WordedItem.tsx";
 import { timeFieldValues } from "./time-fields.ts";
-import { dateItems, datesMoveOf, type DatesMove } from "../../shared/dates-sentence.ts";
 
 /** What tells the items of one event apart: the field that changed, the relation, the file or the time. */
 function keyOf(item: Schema<"HistoryEntryItem">): string {
@@ -25,22 +25,6 @@ const worded: ReadonlySet<Schema<"HistoryEntryKind">> = new Set([
   "file",
   "time",
 ]);
-
-/** The line of both dates moving in one event. */
-function DatesMovedLine({
-  item,
-  move,
-}: {
-  readonly item: Schema<"HistoryEntryItem">;
-  readonly move: DatesMove;
-}) {
-  return (
-    <li {...partOf(part.itemText)}>
-      <DatesMovedItem item={item} move={move} />
-      <RunMark item={item} />
-    </li>
-  );
-}
 
 /**
  * The changes of one event as one entry: a sentence for each field that changed, and when. A
@@ -62,18 +46,17 @@ export function ChangeEntry({
   }
   // The own fields of booked time stand in the sentence of the time, not as sentences of their own.
   const ofTime = first.kind === "time";
-  // Both dates moving in one event are one sentence; each of them alone is said on its own.
-  const move = ofTime ? undefined : datesMoveOf(items);
-  const moved = new Set(move === undefined ? [] : dateItems(items));
-  const sentences = ofTime ? [first] : items.filter((item) => !moved.has(item));
+  const sentences = ofTime ? [first] : items;
+  // The changes of fields are worded together: the wording may say two of them as one sentence.
+  const ofFields = items.every((item) => item.kind === "change");
   const timeFields = ofTime ? timeFieldValues(items.slice(1)) : [];
   return (
     <article ref={shown} {...partOf(part.historyEntry, { states: [highlighted && "highlighted"] })}>
       <span {...partOf(part.historyWhen)}>{whenOf(first)}</span>
       <ul {...partOf(part.list)}>
-        {move === undefined ? null : <DatesMovedLine item={first} move={move} />}
+        {ofFields ? <ChangeLines items={items} /> : null}
         {sentences
-          .filter((item) => worded.has(item.kind))
+          .filter((item) => !ofFields && worded.has(item.kind))
           .map((item) => (
             <li key={keyOf(item)} {...partOf(part.itemText)}>
               {item.kind === "relation" ? (

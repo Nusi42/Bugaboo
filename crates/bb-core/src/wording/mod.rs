@@ -377,33 +377,76 @@ pub fn change_sentence(change: &Change) -> Said {
     }
 }
 
-/// A range of days as the region of the reader words them: the first day and the last.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct DayRange<'a> {
-    /// The *Start date*.
-    pub start: &'a str,
-    /// The *Due date*.
-    pub due: &'a str,
+/// The *Start date* or the *Due date* of a change, with the day before and the day after as the
+/// region of the reader words them: none unless the change is one of the two dates and holds a day
+/// on both sides.
+fn worded_days(change: &Change, field: Field) -> Option<(&str, &str)> {
+    fn day(side: &Option<Side>) -> Option<&str> {
+        match side {
+            Some(Side::Typed {
+                kind: FieldType::Date,
+                worded: Some(worded),
+                ..
+            }) => Some(worded.as_str()),
+            _ => None,
+        }
+    }
+    (Field::from_code(&change.field) == Some(field))
+        .then(|| day(&change.before).zip(day(&change.after)))
+        .flatten()
 }
 
 /// The sentence of both dates of an issue changing in one event (ADR-0043, decision 6): *Lea moved
-/// the dates from 3 Nov to 7 Nov to 10 Nov to 14 Nov*. The days are worded for the reader's region
-/// by the caller; the choice of words is here, once, for the history and anything that says it.
-#[must_use]
-pub fn dates_moved_sentence(who: &str, before: DayRange<'_>, after: DayRange<'_>) -> Said {
-    let range = |range: DayRange<'_>| {
+/// the dates from Nov 3–Nov 7 to Nov 10–Nov 14*. The days are the words the changes carry.
+fn dates_moved_sentence(who: &str, (start, due): (&Change, &Change)) -> Option<Said> {
+    let (start, due) = (
+        worded_days(start, Field::StartDate)?,
+        worded_days(due, Field::DueDate)?,
+    );
+    let range = |start: &str, due: &str| {
         said!(
             message::history_date_range,
-            Said::text(range.due),
-            Said::text(range.start)
+            Said::text(due),
+            Said::text(start)
         )
     };
-    said!(
+    Some(said!(
         message::history_dates_moved,
-        range(after),
-        range(before),
+        range(start.1, due.1),
+        range(start.0, due.0),
         Said::text(who)
-    )
+    ))
+}
+
+/// The sentences of the changes of one event: one for each change, except that a *Start date* and a
+/// *Due date* that both move from one day to another are one sentence (ADR-0043, decision 6). The
+/// one rule for every reader: the history of an issue and a notification say an event the same way,
+/// and the sentence takes the place of the first of the two.
+#[must_use]
+pub fn change_sentences(changes: &[Change]) -> Vec<Said> {
+    let first = |field: Field| {
+        changes
+            .iter()
+            .position(|each| Field::from_code(&each.field) == Some(field))
+    };
+    let folded = first(Field::StartDate)
+        .zip(first(Field::DueDate))
+        .and_then(|(start, due)| {
+            dates_moved_sentence(&changes[start].who, (&changes[start], &changes[due]))
+                .map(|said| (start.min(due), start.max(due), said))
+        });
+    let Some((place, other, moved)) = folded else {
+        return changes.iter().map(change_sentence).collect();
+    };
+    let mut said = Vec::with_capacity(changes.len());
+    for (at, change) in changes.iter().enumerate() {
+        if at == place {
+            said.push(moved.clone());
+        } else if at != other {
+            said.push(change_sentence(change));
+        }
+    }
+    said
 }
 
 /// What happened to a file of an issue.
@@ -618,7 +661,7 @@ pub fn notification_sentences(notice: &Notice) -> Vec<Said> {
         }
         NotificationKind::FollowedActivity | NotificationKind::FollowedFields => {
             if !notice.changes.is_empty() {
-                notice.changes.iter().map(change_sentence).collect()
+                change_sentences(&notice.changes)
             } else if let Some(file) = &notice.file {
                 one(file_words(&notice.who, file))
             } else if notice.comment {

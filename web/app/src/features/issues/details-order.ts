@@ -1,10 +1,22 @@
 import type { Schema } from "@bugaboo/api-client";
 import { fieldWords } from "@bugaboo/api-client";
 
-export { dateField } from "../../shared/date-fields.ts";
+import { dateField } from "../../shared/date-fields.ts";
 
 /** The word of a built-in field, as the layout names it. */
 export type FieldWord = Schema<"Field">;
+
+/** The keys of the built-in groups of rows of the Details: the words of their fields in the layout. */
+export const detailFields = {
+  assignedTo: "assigned-to",
+  priority: "priority",
+  reportedBy: "reported-by",
+  startDate: dateField.start,
+  dueDate: dateField.due,
+  estimatedTime: "estimated-time",
+  timeLeft: "time-left",
+  timeSpent: "time-spent",
+} as const satisfies Record<string, FieldWord>;
 
 /** Where a group of rows of the Details goes, among the fields of the layout. */
 export type Places =

@@ -4,7 +4,9 @@
 //! Both dates are calendar days kept as the days since 1970-01-01 (the way a *Date* field keeps a
 //! day) and empty until somebody gives them; every issue made before keeps what it had and has
 //! neither. A kind of relation holds the word of its date effect, `none` until a kind is given one.
-//! The starting kind *blocks* gets `must-finish-first`: it is the kind at the first place. The
+//! The starting kind *blocks* gets `must-finish-first`: it is the kind at the first place, when
+//! its two names differ (a kind that reads the same from both ends has no direction, so it gets no
+//! effect, as a change of a kind refuses it). The
 //! place is the stable mark of a starting kind: the first start gives the four kinds the places 0
 //! to 3, a kind that somebody makes later goes to the end, and a place never changes, while a name
 //! can. So the kind is found by its place, never by its name. The place is written out here, not
@@ -12,7 +14,7 @@
 //! One `ALTER TABLE … ADD COLUMN` for each column, because SQLite adds one column at a time. No
 //! index yet: the benchmark of the plan decides whether sorting by the dates needs one.
 
-use sea_query::{ColumnDef, Expr, ExprTrait as _, Query, Table};
+use sea_query::{ColumnDef, Expr, ExprTrait as _, Func, Query, Table};
 
 use super::Step;
 use crate::schema::{IssueRow, RelationKindRow};
@@ -51,6 +53,12 @@ pub(super) fn steps() -> Vec<Step> {
                 .table(RelationKindRow::Table)
                 .value(RelationKindRow::DateEffect, MUST_FINISH_FIRST)
                 .and_where(Expr::col(RelationKindRow::Position).eq(BLOCKS_PLACE))
+                // The rule of `RelationKind::is_symmetric`: names that differ in capitals only
+                // read alike.
+                .and_where(
+                    Func::lower(Expr::col(RelationKindRow::Forward))
+                        .ne(Func::lower(Expr::col(RelationKindRow::Backward))),
+                )
                 .to_owned(),
         ),
     ]
@@ -160,6 +168,22 @@ mod tests {
             let row = database.fetch_optional(&read).await?;
             let kept = read_issue(&row.ok_or("the issue is gone")?)?;
             assert_eq!((kept.start_date, kept.due_date), (None, None));
+            Ok(())
+        })
+        .await
+    }
+
+    #[tokio::test]
+    async fn plan_02_a_renamed_kind_at_the_first_place_that_reads_alike_gets_no_effect()
+    -> TestResult {
+        each_database("migration_49_symmetric_first", async |db| {
+            let database = Database::connect(db.url()).await?;
+            database.migrate_until(48, at(0)).await?;
+            let first = RelationKindId::from_parts(Timestamp::UNIX_EPOCH, [1; 10])?;
+            // Renamed to read the same from both ends, up to capitals: it has no direction.
+            old_kind(&database, first, ("Related to", "related TO"), 0).await?;
+            database.migrate_until(49, at(1)).await?;
+            assert_eq!(effect_of(&database, first).await?, "none");
             Ok(())
         })
         .await

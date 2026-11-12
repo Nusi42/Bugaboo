@@ -1,14 +1,14 @@
 import { t } from "@bugaboo/messages";
-import { MarkdownEditor, SelectField, partOf, part } from "@bugaboo/ui";
-import { useState } from "react";
+import { MarkdownEditor, SelectField } from "@bugaboo/ui";
 
 import { useImageHosts } from "../../shared/image-hosts.ts";
 import { markdownLabels } from "../../shared/markdown-labels.ts";
-import { DateBox, LengthBox, OwnFieldInput } from "../fields/index.ts";
-import { AssignedPicker } from "./AssignedPicker.tsx";
-import { ChangeAssigned } from "./AssignedRow.tsx";
+import { isDateField } from "../../shared/date-fields.ts";
+import { LengthBox, OwnFieldInput } from "../fields/index.ts";
 import { priorityChoices } from "./issue-choices.ts";
-import { dateField, type NewIssueValues } from "./new-issue-form.ts";
+import { NewIssueAssignedField } from "./NewIssueAssignedField.tsx";
+import { NewIssueDayField } from "./NewIssueDayField.tsx";
+import type { NewIssueValues } from "./new-issue-form.ts";
 
 export interface NewIssueFieldProps {
   /** The key of the field: the word of a built-in field, or the ID of an own field. */
@@ -19,45 +19,6 @@ export interface NewIssueFieldProps {
   /** What the server said was wrong with this field. */
   readonly problem?: string | undefined;
   readonly onChange: (values: NewIssueValues) => void;
-}
-
-/** *Assigned to* on the form: the people chosen so far, and the button that opens the picker. */
-function AssignedField({
-  values,
-  project,
-  onChange,
-}: Omit<NewIssueFieldProps, "field" | "problem">) {
-  const [picking, setPicking] = useState(false);
-  const name = t("issue-field.assigned-to");
-  return (
-    <div>
-      <p {...partOf(part.fieldLabel)}>{name}</p>
-      <div {...partOf(part.startColumn)}>
-        {values.assignedTo.map((person) => (
-          <span key={person.id}>{person.name}</span>
-        ))}
-        <ChangeAssigned
-          name={name}
-          empty={values.assignedTo.length === 0}
-          onPress={() => {
-            setPicking(true);
-          }}
-        />
-      </div>
-      <AssignedPicker
-        isOpen={picking}
-        onClose={() => {
-          setPicking(false);
-        }}
-        project={project}
-        issueType={values.issueType === "" ? undefined : values.issueType}
-        assigned={values.assignedTo}
-        onChange={(assignedTo) => {
-          onChange({ ...values, assignedTo });
-        }}
-      />
-    </div>
-  );
 }
 
 /** *Estimated time* on the form: a length the person types; a text that is none holds the form back. */
@@ -82,22 +43,6 @@ function EstimateField({
   );
 }
 
-/** *Start date* or *Due date* on the form: a day the person types; the server judges the two together. */
-function DayField({ field, values, problem, onChange }: Omit<NewIssueFieldProps, "project">) {
-  const start = field === dateField.start;
-  return (
-    <DateBox
-      name={t(start ? "issue-field.start-date" : "issue-field.due-date")}
-      day={(start ? values.startDate : values.dueDate) || undefined}
-      inRow={false}
-      problem={problem}
-      onCommit={(day) => {
-        onChange(start ? { ...values, startDate: day ?? "" } : { ...values, dueDate: day ?? "" });
-      }}
-    />
-  );
-}
-
 /** *Description* on the form: the editor of text, with the hosts its images may come from. */
 function DescriptionField({ values, onChange }: Pick<NewIssueFieldProps, "values" | "onChange">) {
   const hosts = useImageHosts();
@@ -117,6 +62,9 @@ function DescriptionField({ values, onChange }: Pick<NewIssueFieldProps, "values
 /** One field of the form: a built-in field by its word, an own field by its ID. */
 export function NewIssueField(props: NewIssueFieldProps) {
   const { field, values, project, problem, onChange } = props;
+  if (isDateField(field)) {
+    return <NewIssueDayField field={field} values={values} problem={problem} onChange={onChange} />;
+  }
   switch (field) {
     case "description":
       return <DescriptionField values={values} onChange={onChange} />;
@@ -132,10 +80,7 @@ export function NewIssueField(props: NewIssueFieldProps) {
         />
       );
     case "assigned-to":
-      return <AssignedField values={values} project={project} onChange={onChange} />;
-    case dateField.start:
-    case dateField.due:
-      return <DayField {...props} />;
+      return <NewIssueAssignedField values={values} project={project} onChange={onChange} />;
     case "estimated-time":
       return <EstimateField values={values} problem={problem} onChange={onChange} />;
     default:

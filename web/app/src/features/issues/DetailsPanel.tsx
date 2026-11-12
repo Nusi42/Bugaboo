@@ -14,7 +14,7 @@ import {
   TotalRows,
 } from "./ChangeableRows.tsx";
 import { useAfterDelay } from "../../shared/use-optimistic.ts";
-import { dateField, inLayoutOrder, type FieldWord, type RowGroup } from "./details-order.ts";
+import { detailFields as fields, inLayoutOrder, type RowGroup } from "./details-order.ts";
 import { FixedRows } from "./FixedRows.tsx";
 import { SlotBlocks } from "./SlotBlocks.tsx";
 import { issueBlocks, issueSlots, type IssueBlockProps } from "./slots.ts";
@@ -26,18 +26,6 @@ export interface DetailsPanelProps {
   /** The panel sits under the title (a smaller screen) and is not a column of its own. */
   readonly stacked: boolean;
 }
-
-/** The keys of the built-in groups of rows: the words of their fields in the layout. */
-const fields = {
-  assignedTo: "assigned-to",
-  priority: "priority",
-  reportedBy: "reported-by",
-  startDate: dateField.start,
-  dueDate: dateField.due,
-  estimatedTime: "estimated-time",
-  timeLeft: "time-left",
-  timeSpent: "time-spent",
-} as const satisfies Record<string, FieldWord>;
 
 /** The keys of the groups that stand beside *Time spent*: the running timer and the totals. */
 const [timerKey, totalsKey] = ["timer", "totals"];

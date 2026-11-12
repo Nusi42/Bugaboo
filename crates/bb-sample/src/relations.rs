@@ -1,5 +1,6 @@
 //! The relations of the sample: how many of each kind, between which issues, including long
-//! chains of *blocks* (deeper than four steps) and one deliberate circle of *causes*, to see the warning.
+//! chains of *blocks* (deeper than four steps) and one deliberate circle of *causes*, which the
+//! plan and the map can show and which no check of dependencies refuses.
 
 use std::collections::BTreeSet;
 

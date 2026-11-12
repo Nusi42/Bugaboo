@@ -90,19 +90,20 @@ fn effect_holders(
         .filter(move |found| found.id != except && found.date_effect.is_dependency())
 }
 
-/// Judges giving the kind `kind` a date effect again on what is stored now, after the lock that
-/// every other adding of a relation waits for: the answer before the change named the kinds or the
-/// loop, and this one only stops the change when something happened in between.
+/// Judges giving the kind `kind` a date effect again on what is stored now: `kinds` were read
+/// after `lock_policy`, which every change of a kind waits for, so two kinds given the effect at the
+/// same moment are judged one after the other and the second one is counted after the first. The
+/// answer before the change named the kinds or the loop; this one only stops the change when
+/// something happened in between. The lock of the relations keeps a relation from being added while
+/// the loop is looked for.
 async fn judge_effect_in<S: AuthStore>(
     transaction: &mut S::Transaction,
+    kinds: &[RelationKind],
     kind: RelationKindId,
     stopped: &Why,
 ) -> Result<(), S::Error> {
     S::lock_issue_relations(transaction).await?;
-    // Read after the lock, so a change that came first is counted: two at the same moment cannot
-    // both be the second kind.
-    let kinds = S::relation_kinds_in(transaction).await?;
-    if effect_holders(&kinds, kind).count() >= DATE_EFFECT_KINDS_MOST {
+    if effect_holders(kinds, kind).count() >= DATE_EFFECT_KINDS_MOST {
         return Err(stopped.stop::<S>(ErrorCode::RelationKindDateEffectMost));
     }
     if loop_of_kind_in::<S>(transaction, kind).await?.is_some() {
@@ -353,7 +354,7 @@ pub async fn change_relation_kind<S: AuthStore>(
                     return Err(stopped.stop::<S>(ErrorCode::NameTaken));
                 }
                 if gives_effect {
-                    judge_effect_in::<S>(transaction, written.id, &stopped).await?;
+                    judge_effect_in::<S>(transaction, &kinds, written.id, &stopped).await?;
                 }
                 let updated =
                     S::update_relation_kind(transaction, &written, Version::new(version)).await?;

@@ -5,8 +5,6 @@ import { dateField } from "../../shared/date-fields.ts";
 import type { NamedPerson } from "../../shared/person.ts";
 import { forApi } from "../../shared/reference.ts";
 
-export { dateField };
-
 /** What a person has filled in on the form of a new issue. */
 export interface NewIssueValues {
   /** The ID of the issue type; empty until one is picked. */
