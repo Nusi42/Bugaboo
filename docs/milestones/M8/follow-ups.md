@@ -98,6 +98,21 @@ WP-02 brought a full run from five failing browser tests to one (2026-11-11): Ch
 | M8-F74 | A person's choice of an own theme is a setting of that person; the count of people who chose a theme counts every person who has it | *Remove a person* decides what happens to a person's appearance choices | M9 (*Remove a person*) |
 | M8-F75 | On a phone the choices of the fonts in *Shadow, corners and fonts* are cut off ("Text (Segoe UI Variable Te…"): a select shows one line as wide as the screen | The role and the face are both needed to tell the choices apart; a shorter wording or a choice list that wraps is a design question | Next round of the theme editor |
 
+## From WP-11 (touch everywhere)
+
+| ID | What | Why later | Planned in |
+|----|------|-----------|------------|
+| M8-F100 | The screens of the timeline (WP-09, WP-10) are measured and pictured with the others as soon as the route table lists them: `touch-targets-phone.spec.ts` and `screenshots-touch-phone.spec.ts` read the table (`places`), so they need no change. They were not on this branch yet | Built at the same time in another folder | Joining WP-09 and WP-10: run both specs (phone project) once they are in |
+| M8-F101 | Saved searches have no swipe: they have no list of rows of their own (they are links of the menu and of the sheet *More*), and their actions (*Share*, a standing rule) are windows on the page of the saved search | A list of saved searches with rows would be a new screen, and a link of a menu that swipes is not what UX §3.3 draws | Decision for the maintainer: a list of saved searches on the page of *Search*, or no swipe there |
+| M8-F102 | The action of a row of the issue list is *Change status or priority…*, not *Change status…* as the brief says: it opens the window that changes many issues at once for that one issue, which offers both and shows what changes first | One window, named as its title names it | The words review |
+| M8-F103 | *Follow* on a row of the issue list reads whether the person follows the issue once the row is touched (one read for each touched row); until the answer is there, the start side of a swipe stays empty | The rows of a search do not say whether the reader follows each issue | When a search answer can carry it (the next package of the issue list) |
+| M8-F104 | A *Follow* from a swipe that the server refuses says nothing on the row (`useFollowing().problem` is shown only in the Details) | Rare: following asks only for the right to see the issue | The next package of the issue list |
+| M8-F105 | *Stop* of an agent is no swipe action: it asks first, so it stays the button of the row; a swipe brings in *Pause* or *Resume* | A question that a swipe opens is a second way to the same question | Only if the UX review asks for it |
+| M8-F106 | The measure of targets reads every screen in the state it opens in; the windows, sheets and menus that a screen opens (the sheet *More*, a dialog of a form) are not opened and measured | Opening every one needs a step for each, screen by screen | The next package that touches the browser tests of a phone |
+| M8-F107 | The measure leaves out what WCAG 2.5.8 leaves out: a link inside a sentence (the guide to AI, the help), a link in a row of a list that is pressed as a whole (R8), and what only a screen reader reads; a control that fills a box with an edge (the chip of a filter, a search field) is measured by that box | The rules of the measure, written in `web/app/e2e/support/touch-targets.ts` | The UX review, to agree with them |
+| M8-F108 | `connect-apps.spec.ts` › *ai_22 taking an app back ends what it may do at once* fails on a computer: the page of *Connected apps* scrolls sideways by 1 px in one of the themes. It fails the same way without the changes of WP-11 (checked on the code it started from) | Not a change of this package | The next package of connected apps, or the lead's full run |
+| M8-F109 | `issue-list-end.spec.ts` › *the bar of many ticked issues stands whole …* failed once on a computer while 30 other files ran beside it (the box *Tick the issues shown* stayed empty) and passed 9 times of 9 alone | Seen once, under load | Watch in the full runs |
+
 ## From WP-06 (the plan on the server)
 
 | ID | What | Why later | Planned in |
