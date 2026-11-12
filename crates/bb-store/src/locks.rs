@@ -58,7 +58,9 @@ pub(crate) enum LockClass {
     /// one person at the same moment cannot both pass the limits of searches and of shares.
     SavedSearches = 12,
     /// The work days of one person (key: four bytes of the person's ID): two changes of one
-    /// person's days at the same moment are judged one after the other on what is stored.
+    /// person's days at the same moment are judged one after the other on what is stored. The
+    /// usual work days of the same person (`work_times`) take this lock too: both are the person's
+    /// own time and never change in one transaction, so one class serves.
     WorkDays = 13,
     /// The agents of one person (key: four bytes of the person's ID): two changes at the same
     /// moment cannot both pass the most agents of a person.

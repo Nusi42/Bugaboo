@@ -35,8 +35,13 @@ pub(super) struct Whose {
     level: PeopleLevel,
     /// The rights the person is named with: those of the reader in the project that gave the level.
     naming: Arc<Evaluation>,
-    /// Where `naming` counts.
-    context: PeopleContext,
+}
+
+/// How an evaluation shows people of the kind *Work times*: the one reading of the level, for the
+/// reader of a person, the share list of a project and the minutes of the plan alike. A holder of
+/// *Enter work times for others* is shown names (ADR-0030, amendment M8).
+pub(super) fn work_times_level(held: &Evaluation) -> PeopleLevel {
+    held.people_level(PeopleKind::WorkTimes, PeopleContext::WorkTimes)
 }
 
 impl Whose {
@@ -111,7 +116,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         self.person_ref(
             &whose.naming,
             PeopleKind::WorkTimes,
-            whose.context,
+            PeopleContext::WorkTimes,
             whose.person,
         )
         .await
@@ -125,23 +130,17 @@ impl<S: AuthStore> Ctx<'_, S> {
         let person = person.unwrap_or(actor.person.id);
         let evaluation = self.evaluation_of(actor, Place::Organization).await?;
         let own = person == actor.person.id;
-        let (level, naming, context) =
-            if own || evaluation.allows(Permission::EnterWorkTimesForOthers) {
-                (
-                    PeopleLevel::Names,
-                    Arc::clone(&evaluation),
-                    PeopleContext::WorkTimes,
-                )
-            } else {
-                self.shared_level(actor, person, &evaluation).await?
-            };
+        let (level, naming) = if own || evaluation.allows(Permission::EnterWorkTimesForOthers) {
+            (PeopleLevel::Names, Arc::clone(&evaluation))
+        } else {
+            self.shared_level(actor, person, &evaluation).await?
+        };
         Ok(Whose {
             person,
             own,
             evaluation,
             level,
             naming,
-            context,
         })
     }
 
@@ -153,25 +152,26 @@ impl<S: AuthStore> Ctx<'_, S> {
         actor: &Actor,
         person: UserId,
         organization: &Arc<Evaluation>,
-    ) -> Result<(PeopleLevel, Arc<Evaluation>, PeopleContext), AppError> {
+    ) -> Result<(PeopleLevel, Arc<Evaluation>), AppError> {
+        // First the projects the person works in, from one tree and one read of their rights; the
+        // reader is evaluated only there.
         let projects: Vec<ProjectId> = self.project_tree_now().await?.projects().collect();
-        self.evaluate_projects(actor.person.id, &projects).await?;
         let pairs: Vec<(UserId, ProjectId)> =
             projects.iter().map(|project| (person, *project)).collect();
         self.evaluate_people_in(&pairs).await?;
-        let mut best = (
-            PeopleLevel::Hidden,
-            Arc::clone(organization),
-            PeopleContext::Ordinary,
-        );
+        let mut theirs = Vec::new();
         for project in projects {
-            if !self.has_a_role_at(person, Place::Project(project)).await? {
-                continue;
+            if self.has_a_role_at(person, Place::Project(project)).await? {
+                theirs.push(project);
             }
+        }
+        self.evaluate_projects(actor.person.id, &theirs).await?;
+        let mut best = (PeopleLevel::Hidden, Arc::clone(organization));
+        for project in theirs {
             let held = self.evaluation_of(actor, Place::Project(project)).await?;
-            let level = held.people_level(PeopleKind::WorkTimes, PeopleContext::Ordinary);
+            let level = work_times_level(&held);
             if level > best.0 {
-                best = (level, held, PeopleContext::Ordinary);
+                best = (level, held);
             }
         }
         Ok(best)

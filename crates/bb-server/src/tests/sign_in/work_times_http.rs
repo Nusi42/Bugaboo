@@ -474,6 +474,11 @@ async fn plan_11_a_person_who_leaves_loses_all_work_times() -> TestResult {
             .await?;
         assert!(chose.status.is_success(), "{}", chose.body);
         let events_before = rig.event_count().await?;
+        // The choice of *Holidays* was a change with an event about one record of Bob's settings.
+        let holiday_events_of_bob = |entries: &[_]| holiday_events(entries, &bob_id.to_string());
+        let nobody = bb_core::technical::TechnicalName::new("never-reads")?;
+        let entries = rig.database.outbox_after(&nobody, 1_000_000).await?;
+        assert_eq!(holiday_events_of_bob(&entries), 1);
         let ctx = rig.services.ctx(RequestInfo::default());
         delete_work_times_of_person(&ctx, DeleteWorkTimesOfPerson { person: bob_id })
             .await
@@ -500,6 +505,12 @@ async fn plan_11_a_person_who_leaves_loses_all_work_times() -> TestResult {
         // share and the choice of *Holidays* before, none now, and the one event of the deletion
         // itself.
         let events_after = rig.event_count().await?;
+        let entries = rig.database.outbox_after(&nobody, 1_000_000).await?;
+        assert_eq!(
+            holiday_events_of_bob(&entries),
+            0,
+            "no event or outbox entry of the choice of holidays is left"
+        );
         assert_eq!(
             events_after + 4 - 1,
             events_before,
@@ -588,6 +599,97 @@ async fn plan_11_a_reader_sees_a_person_only_by_the_projects_they_share() -> Tes
             .await?;
         assert_eq!(ok(&by_ada)?["person"]["shown"], "name");
         let _ = carl_member;
+        Ok(())
+    })
+    .await
+}
+
+/// How many of these outbox entries are events about the choice of *Holidays* of this person.
+fn holiday_events<T>(entries: &[(T, bb_core::DomainEvent)], person: &str) -> usize {
+    let record = bb_auth::stable_id("setting", &format!("{person}/work-times.holidays"));
+    entries
+        .iter()
+        .filter(|(_, event)| {
+            event.entity.kind.as_str() == "setting" && event.entity.id.to_bytes() == record
+        })
+        .count()
+}
+
+/// A person given a role of their own making for the whole organization, signed in.
+async fn holder_of(
+    site: &Site<'_>,
+    app: &axum::Router,
+    permission: bb_app::access::Permission,
+) -> Result<Browser, Failure> {
+    let role = site.org.role("Time keeper", &[permission]).await?.id;
+    let started = site
+        .org
+        .rig
+        .person_called(&site.org.admin.session, "tina@example.test", "Tina Time")
+        .await?;
+    let member = super::policy_rig::Member {
+        id: started.person.id,
+        session: started.session_token,
+    };
+    site.org.give_everywhere(&member, role).await?;
+    Browser::signed_in_as(app, "tina@example.test").await
+}
+
+#[tokio::test]
+async fn plan_11_a_holder_of_the_permission_reads_by_name_though_no_project_is_shared() -> TestResult
+{
+    each_database("plan_11_holder_reads_by_name", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let other = project(&mut ada, "OTHER").await?;
+        let member = site.org.starting_roles().await?[StartingRole::TeamMember.code()];
+        let (_dora, dora_member) = site.person_holding(member, "dora", &other).await?;
+        // Tina holds only *Enter work times for others*: no role in any project.
+        let mut tina = holder_of(
+            &site,
+            &app,
+            bb_app::access::Permission::EnterWorkTimesForOthers,
+        )
+        .await?;
+        let dora = dora_member.id.to_string();
+        let read = tina.send("GET", &work_times_of(&dora), None).await?;
+        assert_eq!(ok(&read)?["person"]["shown"], "name");
+        assert_eq!(read.body["may_change"], true);
+        let entered = enter(&mut tina, Some(&dora), away("2027-02-01", "2027-02-02")).await?;
+        ok(&entered)?;
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn plan_11_the_most_open_level_in_the_shared_projects_counts() -> TestResult {
+    each_database("plan_11_most_open_level", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let other = project(&mut ada, "OTHER").await?;
+        let other_id = other.parse().map_err(|_| "no project ID")?;
+        let roles = site.org.starting_roles().await?;
+        let (guest, member) = (
+            roles[StartingRole::Guest.code()],
+            roles[StartingRole::TeamMember.code()],
+        );
+        // Gus is a Guest in ACME (people are Hidden to him there) and a Team member in OTHER.
+        let (mut gus, gus_member) = site.person_holding(guest, "gus", &site.acme).await?;
+        site.org.give(&gus_member, member, other_id).await?;
+        let (_erin, erin_member) = site.person_holding(member, "erin", &site.acme).await?;
+        site.org.give(&erin_member, member, other_id).await?;
+        let (_frank, frank_member) = site.person_holding(member, "frank", &site.acme).await?;
+        // Erin shares both projects: the open level of OTHER counts, by name.
+        let both = gus
+            .send("GET", &work_times_of(&erin_member.id.to_string()), None)
+            .await?;
+        assert_eq!(ok(&both)?["person"]["shown"], "name");
+        // Frank is only in ACME, where Gus is a Guest: nothing.
+        let only_acme = gus
+            .send("GET", &work_times_of(&frank_member.id.to_string()), None)
+            .await?;
+        assert_eq!(only_acme.status, StatusCode::NOT_FOUND);
         Ok(())
     })
     .await

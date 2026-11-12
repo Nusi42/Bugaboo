@@ -73,3 +73,48 @@ async fn perf_05_forty_people_with_their_shares_run_as_many_statements_as_five()
     })
     .await
 }
+
+#[tokio::test]
+async fn perf_05_a_read_of_one_persons_work_times_runs_as_many_statements_with_twenty_projects_as_with_two()
+-> TestResult {
+    each_database("perf_05_work_times_projects", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let roles = site.org.starting_roles().await?;
+        let member = roles[StartingRole::TeamMember.code()];
+        let (mut reader, reader_member) = site.person_holding(member, "reader", &site.acme).await?;
+        let (_target, target_member) = site.person_holding(member, "target", &site.acme).await?;
+        let path = format!(
+            "/api/v1/people/{}/work-times?from=2027-01-01&to=2027-12-31",
+            target_member.id
+        );
+        let mut counter = Counter::on(&rig.database);
+        // ACME and one more project, both shared by the two people.
+        for number in 0..1 {
+            let other = project(&mut ada, &format!("PA{number}")).await?;
+            let id = other.parse().map_err(|_| "no project ID")?;
+            site.org.give(&reader_member, member, id).await?;
+            site.org.give(&target_member, member, id).await?;
+        }
+        ok(&reader.send("GET", &path, None).await?)?;
+        counter.take();
+        let few = reader.send("GET", &path, None).await?;
+        assert_eq!(ok(&few)?["person"]["shown"], "name");
+        let (on_two, two_log) = counter.take_logged();
+        for number in 1..19 {
+            let other = project(&mut ada, &format!("PA{number}")).await?;
+            let id = other.parse().map_err(|_| "no project ID")?;
+            site.org.give(&reader_member, member, id).await?;
+            site.org.give(&target_member, member, id).await?;
+        }
+        ok(&reader.send("GET", &path, None).await?)?;
+        counter.take();
+        let many = reader.send("GET", &path, None).await?;
+        assert_eq!(ok(&many)?["person"]["shown"], "name");
+        let (on_twenty, twenty_log) = counter.take_logged();
+        assert_same_statements(&two_log, &twenty_log);
+        assert_as_many_statements(on_two, on_twenty, 60, "more projects in common");
+        Ok(())
+    })
+    .await
+}

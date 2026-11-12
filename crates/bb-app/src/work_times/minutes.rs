@@ -15,14 +15,14 @@ use std::collections::{BTreeMap, HashMap};
 use bb_core::access::PeopleLevel;
 use bb_core::holidays::Holiday;
 use bb_core::id::{ProjectId, UserId};
-use bb_core::people_kinds::PeopleKind;
 use bb_core::work_times::record::AwayTime;
 use bb_core::work_times::{Halves, Share, UsualDays, minutes_on};
-use bb_policy::{Evaluation, PeopleContext, Place};
+use bb_policy::{Evaluation, Place};
 use jiff::civil::Date;
 
 use super::PLAN_PEOPLE_MAX;
 use super::read::checked_range;
+use super::whose::work_times_level;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use bb_core::ErrorCode;
 
@@ -134,8 +134,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map(|person| (*person, query.project))
             .collect();
         self.evaluate_people_in(&pairs).await?;
-        let away_visible = reader.people_level(PeopleKind::WorkTimes, PeopleContext::Ordinary)
-            != PeopleLevel::Hidden;
+        let away_visible = work_times_level(reader) != PeopleLevel::Hidden;
         let days = dates(query.first, query.last);
         let mut holidays_by_region: HashMap<_, BTreeMap<Date, Holiday>> = HashMap::new();
         let mut found = Vec::with_capacity(people.len());

@@ -11,7 +11,7 @@ use bb_policy::{Authorized, Place};
 
 use super::read::usual_of;
 use super::types::{ChangeUsualDays, ChangedUsualDays};
-use crate::auth::{AppError, AuthStore, Ctx, by, change_failed, entity, internal};
+use crate::auth::{AppError, AuthStore, Ctx, Stops, by, change_failed, entity, internal};
 use crate::event_members::usual_days_recorded;
 use crate::projects::Why;
 
@@ -81,7 +81,7 @@ pub async fn change_usual_days<S: AuthStore>(
             if why.said() == Some(ErrorCode::VersionChanged) {
                 stale(actor.person.id, person)
             } else {
-                change_failed::<S>(&error, crate::auth::Stops::NONE)
+                change_failed::<S>(&error, Stops::NONE)
             }
         })?;
     Ok(whose.evaluation.authorize(ChangedUsualDays {

@@ -23,6 +23,7 @@ use super::types::{
     ChangedShare, MemberShare, ProjectShares, ProjectSharesQuery, SetShare, ShareItem,
     SharesOfPerson,
 };
+use super::whose::work_times_level;
 use crate::access::{Actor, Members, ProjectLabel, place_of_address};
 use crate::auth::{AppError, AuthStore, Ctx, Stops, by, change_failed, entity, internal};
 use crate::event_members::share_recorded;
@@ -168,7 +169,7 @@ pub async fn project_shares<S: AuthStore>(
     let project = project_of(place)?;
     let reader = ctx.require(&actor, Permission::SeeProjects, place).await?;
     let decides = reader.allows(Permission::DecideRoles);
-    let level = reader.people_level(PeopleKind::WorkTimes, PeopleContext::WorkTimes);
+    let level = work_times_level(&reader);
     if level == PeopleLevel::Hidden {
         return Ok(reader.authorize(ProjectShares {
             items: Vec::new(),
