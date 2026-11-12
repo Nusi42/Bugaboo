@@ -136,6 +136,20 @@ async fn a_type_of_the_target(fixture: &Fixture<'_>) -> Result<String, Failure> 
     }
 }
 
+/// The move of the dates of one issue of the target project.
+async fn move_dates_request(fixture: &Fixture<'_>) -> Result<Request, Failure> {
+    Ok((
+        "POST",
+        "/api/v1/issues/move-dates".into(),
+        Some(json!({"issues": [{
+            "issue": an_issue(fixture).await?,
+            "version": 1,
+            "start_date": "2026-11-03",
+            "due_date": "2026-11-07"
+        }]})),
+    ))
+}
+
 pub(super) async fn issue_request(
     fixture: &Fixture<'_>,
     operation: &str,
@@ -197,16 +211,7 @@ pub(super) async fn issue_request(
             format!("/api/v1/issues/{}", an_issue(fixture).await?),
             Some(json!({"version": 1, "priority": "high"})),
         ),
-        "moveDates" => (
-            "POST",
-            "/api/v1/issues/move-dates".into(),
-            Some(json!({"issues": [{
-                "issue": an_issue(fixture).await?,
-                "version": 1,
-                "start_date": "2026-11-03",
-                "due_date": "2026-11-07"
-            }]})),
-        ),
+        "moveDates" => move_dates_request(fixture).await?,
         "saveIssueDescription" => (
             "PUT",
             format!("/api/v1/issues/{}/description", an_issue(fixture).await?),

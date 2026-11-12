@@ -117,6 +117,30 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// What the person asks for, when they may ask it: they may create issues in the project, the
     /// fields they set are ones they may change (the title always), and the type is one that
     /// takes new issues.
+    /// The people a new issue is assigned to: those the request names, each once, or nobody.
+    async fn assigned_to_new(
+        &self,
+        actor: &Actor,
+        access: &Evaluation,
+        project: ProjectId,
+        input: &CreateIssue,
+    ) -> Result<Vec<UserId>, AppError> {
+        match &input.assigned_to {
+            Some(people) => {
+                self.clean_assigned_people(
+                    actor.person.id,
+                    access,
+                    project,
+                    actor.person.id,
+                    people,
+                    &[],
+                )
+                .await
+            }
+            None => Ok(Vec::new()),
+        }
+    }
+
     async fn plan_new_issue(
         &self,
         actor: &Actor,
@@ -146,20 +170,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             .as_deref()
             .map(clean_long_text)
             .transpose()?;
-        let assigned_people = match &input.assigned_to {
-            Some(people) => {
-                self.clean_assigned_people(
-                    actor.person.id,
-                    &access,
-                    project.id,
-                    actor.person.id,
-                    people,
-                    &[],
-                )
-                .await?
-            }
-            None => Vec::new(),
-        };
+        let assigned_people = self
+            .assigned_to_new(actor, &access, project.id, input)
+            .await?;
         let chain = self.chain_of(project.id).await?;
         let issue_type = self
             .writable_issue_type(actor, input.issue_type, &chain)

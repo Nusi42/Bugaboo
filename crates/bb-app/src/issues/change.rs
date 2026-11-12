@@ -119,6 +119,14 @@ fn named(input: &ChangeIssue) -> Vec<Field> {
     Given::from(input).fields()
 }
 
+/// Gives `next` the dates the request names (`SetTo::Nothing` takes one away) and refuses a start
+/// after the due date it has then.
+fn set_dates(next: &mut Issue, input: &ChangeIssue) -> Result<(), AppError> {
+    next.start_date = input.start_date.map_or(next.start_date, SetTo::into_option);
+    next.due_date = input.due_date.map_or(next.due_date, SetTo::into_option);
+    ensure_dates_in_order(next)
+}
+
 /// A change of the status of an issue, with the issue as it will be.
 struct StatusMove<'a> {
     input: &'a ChangeIssue,
@@ -268,11 +276,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             next.title = clean_title(title)?;
         }
         next.priority = input.priority.unwrap_or(current.priority);
-        next.start_date = input
-            .start_date
-            .map_or(current.start_date, SetTo::into_option);
-        next.due_date = input.due_date.map_or(current.due_date, SetTo::into_option);
-        ensure_dates_in_order(&next)?;
+        set_dates(&mut next, input)?;
         next.estimated_time = input
             .estimated_time
             .map_or(current.estimated_time, SetTo::into_option);

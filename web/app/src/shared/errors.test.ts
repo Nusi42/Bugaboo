@@ -38,7 +38,7 @@ describe("ux_06 a failure the person can try again", () => {
 
 /** The answer for a relation that closes a loop, with the issues of the loop as the server names them. */
 function loopAnswer(loop: readonly (string | null)[]): ApiError {
-  return new ApiError(409, {
+  const problem = {
     type: "relation.dependency-loop",
     title: "x",
     status: 409,
@@ -46,7 +46,8 @@ function loopAnswer(loop: readonly (string | null)[]): ApiError {
     message_key: "error.relation.dependency-loop",
     params: {},
     dependency_loop: loop,
-  });
+  } as const;
+  return new ApiError(409, problem);
 }
 
 describe("plan_02 a refusal that names a loop of dependencies", () => {

@@ -18,6 +18,7 @@ use bb_core::relation::{
 use bb_core::version::Version;
 use bb_core::version::{FIRST_VERSION, counted_up, next};
 use bb_policy::{Authorized, Permission, Place};
+use jiff::Timestamp;
 use serde_json::json;
 
 use super::dependencies::loop_of_kind_in;
@@ -56,6 +57,58 @@ fn name_taken(kinds: &[RelationKind], names: &[&str], except: Option<RelationKin
         })
 }
 
+/// The kind as a change leaves it: with the words, the date effect and the retired state the
+/// request names, and the version counted up. `now` is the moment a kind is retired.
+fn kind_after(
+    current: &RelationKind,
+    input: &ChangeRelationKind,
+    (forward, backward): (String, String),
+    now: Timestamp,
+) -> RelationKind {
+    let retired_at = match input.retired {
+        None => current.retired_at,
+        Some(true) => current.retired_at.or(Some(now)),
+        Some(false) => None,
+    };
+    RelationKind {
+        forward,
+        backward,
+        date_effect: input.date_effect.unwrap_or(current.date_effect),
+        retired_at,
+        version: next(current.version),
+        ..current.clone()
+    }
+}
+
+/// The kinds other than `except` that have a date effect.
+fn effect_holders(
+    kinds: &[RelationKind],
+    except: RelationKindId,
+) -> impl Iterator<Item = &RelationKind> {
+    kinds
+        .iter()
+        .filter(move |found| found.id != except && found.date_effect.is_dependency())
+}
+
+/// Judges giving the kind `kind` a date effect again on what is stored now, after the lock that
+/// every other adding of a relation waits for: the answer before the change named the kinds or the
+/// loop, and this one only stops the change when something happened in between.
+async fn judge_effect_in<S: AuthStore>(
+    transaction: &mut S::Transaction,
+    kinds: &[RelationKind],
+    kind: RelationKindId,
+    stopped: &Why,
+) -> Result<(), S::Error> {
+    S::lock_issue_relations(transaction).await?;
+    if effect_holders(kinds, kind).count() >= DATE_EFFECT_KINDS_MOST {
+        return Err(stopped.stop::<S>(ErrorCode::RelationKindDateEffectMost));
+    }
+    if loop_of_kind_in::<S>(transaction, kind).await?.is_some() {
+        return Err(stopped.stop::<S>(ErrorCode::RelationDependencyLoop));
+    }
+    Ok(())
+}
+
 impl<S: AuthStore> Ctx<'_, S> {
     /// Refuses (`relation-kind.date-effect-most`, `relation.dependency-loop`) giving `kind` a date
     /// effect when two other kinds have one, or when the relations of the kind would close a loop
@@ -67,9 +120,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         kinds: &[RelationKind],
         kind: &RelationKind,
     ) -> Result<(), AppError> {
-        let others: Vec<String> = kinds
-            .iter()
-            .filter(|found| found.id != kind.id && found.date_effect.is_dependency())
+        let others: Vec<String> = effect_holders(kinds, kind.id)
             .map(|found| found.forward.clone())
             .collect();
         if others.len() >= DATE_EFFECT_KINDS_MOST {
@@ -268,20 +319,7 @@ pub async fn change_relation_kind<S: AuthStore>(
     ) {
         return Err(ErrorCode::NameTaken.into());
     }
-    let now = ctx.now();
-    let retired_at = match input.retired {
-        None => current.retired_at,
-        Some(true) => current.retired_at.or(Some(now)),
-        Some(false) => None,
-    };
-    let after = RelationKind {
-        forward,
-        backward,
-        date_effect: input.date_effect.unwrap_or(current.date_effect),
-        retired_at,
-        version: next(current.version),
-        ..current.clone()
-    };
+    let after = kind_after(&current, &input, (forward, backward), ctx.now());
     let mut differences = differences(&current, &after);
     if differences.is_empty() {
         return Ok(held.authorize(RelationKindView::from(&current)));
@@ -309,23 +347,7 @@ pub async fn change_relation_kind<S: AuthStore>(
                     return Err(stopped.stop::<S>(ErrorCode::NameTaken));
                 }
                 if gives_effect {
-                    // Judged again on what is stored now, after the lock that every other adding
-                    // of a relation waits for (the answer above named the loop; this one only
-                    // stops the change when something happened in between).
-                    S::lock_issue_relations(transaction).await?;
-                    let others = kinds
-                        .iter()
-                        .filter(|kind| kind.id != written.id && kind.date_effect.is_dependency())
-                        .count();
-                    if others >= DATE_EFFECT_KINDS_MOST {
-                        return Err(stopped.stop::<S>(ErrorCode::RelationKindDateEffectMost));
-                    }
-                    if loop_of_kind_in::<S>(transaction, written.id)
-                        .await?
-                        .is_some()
-                    {
-                        return Err(stopped.stop::<S>(ErrorCode::RelationDependencyLoop));
-                    }
+                    judge_effect_in::<S>(transaction, &kinds, written.id, &stopped).await?;
                 }
                 let updated =
                     S::update_relation_kind(transaction, &written, Version::new(version)).await?;

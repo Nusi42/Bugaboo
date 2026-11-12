@@ -13,7 +13,9 @@ const dates = {
 } as const satisfies Record<string, { readonly word: string; readonly name: MessageKey }>;
 
 type Which = keyof typeof dates;
-const [startDate, dueDate]: readonly Which[] = ["start", "due"];
+
+/** The two dates by name, for the rows that stand for them. */
+const dateOf = { start: "start", due: "due" } as const satisfies Record<Which, Which>;
 
 /** The key under which the person's change of this date is sent. */
 const changeOf = { start: "startDate", due: "dueDate" } as const satisfies Record<Which, string>;
@@ -49,10 +51,10 @@ function DateRow({ blocks, changes, which }: ChangeableRowsProps & { readonly wh
 
 /** *Start date*. */
 export function StartDateRow(props: ChangeableRowsProps) {
-  return <DateRow {...props} which={startDate} />;
+  return <DateRow {...props} which={dateOf.start} />;
 }
 
 /** *Due date*. */
 export function DueDateRow(props: ChangeableRowsProps) {
-  return <DateRow {...props} which={dueDate} />;
+  return <DateRow {...props} which={dateOf.due} />;
 }

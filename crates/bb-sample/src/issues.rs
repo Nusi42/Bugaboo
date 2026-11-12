@@ -658,8 +658,7 @@ impl Maker<'_, '_> {
         person: usize,
     ) -> Result<(), SampleError> {
         let at = self.world.clock.now();
-        let mut random =
-            SeededRandom::new(self.world.seed ^ u64::from(at.as_second().unsigned_abs()));
+        let mut random = SeededRandom::new(self.world.seed ^ at.as_second().unsigned_abs());
         let relation = Relation {
             id: ordered(RelationId::from_parts, at, &mut random)?,
             kind,

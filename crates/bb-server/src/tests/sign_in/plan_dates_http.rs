@@ -269,19 +269,19 @@ async fn plan_01_search_filters_sorts_and_groups_by_the_dates() -> TestResult {
         let open = made_with(&site, &mut ada, "Open", json!({})).await?;
         assert_eq!(
             found(&mut ada, "due date < 2026-12-01").await?,
-            [early.clone()]
+            std::slice::from_ref(&early)
         );
         assert_eq!(
             found(&mut ada, "due date > 2026-12-01").await?,
-            [late.clone()]
+            std::slice::from_ref(&late)
         );
         assert_eq!(
             found(&mut ada, "start date is empty").await?,
-            [open.clone()]
+            std::slice::from_ref(&open)
         );
         assert_eq!(
             found(&mut ada, "start date is 2026-12-01").await?,
-            [late.clone()]
+            std::slice::from_ref(&late)
         );
         // Sorting by a date: the newest first without a word, as for any other day, and the
         // issues with none come last in either direction.
