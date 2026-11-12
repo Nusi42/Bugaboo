@@ -49,6 +49,13 @@ The two modules of the browser were at their budgets: `bb_wasm` at 153.3 KB with
 2. **Stable means were tried first and measured, and did not get the module under 150 KB.** The profile already had `opt-level = "z"`, `lto`, one codegen unit and `panic = "abort"`; `opt-level = "s"` made the module 6 KB bigger, further passes and `--converge` of `wasm-opt` changed nothing (153.25 KB to 153.26 KB at best), and giving up the formatted error text of `serde_json` in the entry points saved 0.65 KB, because serde writes the text of an error when it makes it (the float formatter stays reachable through `Unexpected`).
 3. **The risk is accepted and written down.** The three flags are unstable. The stable compiler takes them with `RUSTC_BOOTSTRAP=1`, which this one build sets and no other build of the program does. They can break with any update of the toolchain: the toolchain is pinned by `rust-toolchain.toml` (with `rust-src`, which the build of the standard library needs), and every update of it must build the modules with `cargo xtask wasm` and keep the budgets (PERF-BUNDLE) before it is taken in. The follow-up M7-F206 takes the flags out when stable Rust can do the same.
 
+## Amendment M8: the modules write no `Debug` text
+
+The own themes, the dates and the work times took `bb_wasm` to 166.3 KB with Brotli against its budget of 166.0 KB. A module still held the `Debug` formatting that nothing in a browser reads: the `Debug` text of the errors and values it names, and serde quoting a value with `{:?}` in the text of an error. Decided:
+
+1. **`cargo xtask wasm` builds the modules with `-Zfmt-debug=none`**: `{:?}` writes nothing in a module. A refusal of the module is still an error, and the text of a serde error loses only the value it quoted. Measured with Brotli at the server's quality: `bb_wasm` from 166.3 KB to 163.7 KB; `bb-wasm-search` stays at 72.1 KB, because it holds no such formatting. The budgets stay as they are.
+2. **The flag is unstable, like the three of amendment M7**, and is taken in under the same terms: only this build sets it, the pinned toolchain must build the modules with it and keep the budgets before an update is taken in, and M7-F206 takes it out with the others when stable Rust can do the same.
+
 ## Enforced by
 
 ARCH-PURE, ARCH-WASM, TEST-SEARCH-ROUNDTRIP (see `tools/checks/catalog.toml`).

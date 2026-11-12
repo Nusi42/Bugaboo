@@ -7,7 +7,7 @@
 import { markSafeHtml, type SafeHtml } from "@bugaboo/api-client";
 
 import init, {
-  change_sentence,
+  change_sentences,
   file_sentence,
   initSync,
   length_on_clock,
@@ -19,7 +19,6 @@ import init, {
   render,
   side_words,
   time_sentence,
-  change_sentences,
 } from "../generated/bb_wasm.js";
 import type {
   Change as WordedChange,
@@ -150,13 +149,19 @@ function ask(question: () => string): string {
   }
 }
 
+/**
+ * The sentences of the changes of one event. The module has this one entry for changes: a single
+ * change is a list of one, so the module carries no second reader for it (PERF-04).
+ */
+function changeSentencesOf(changes: readonly WordedChange[]): readonly Said[] {
+  const parsed: unknown = JSON.parse(ask(() => change_sentences(JSON.stringify(changes))));
+  return Array.isArray(parsed) ? parsed.filter((part) => isSaid(part)) : [];
+}
+
 const wording: Wording = {
-  changeSentence: (change) => saidIn(ask(() => change_sentence(JSON.stringify(change)))) ?? "",
+  changeSentence: (change) => changeSentencesOf([change])[0] ?? "",
   fileSentence: (file) => saidIn(ask(() => file_sentence(JSON.stringify(file)))) ?? "",
-  changeSentences: (changes) => {
-    const parsed: unknown = JSON.parse(ask(() => change_sentences(JSON.stringify(changes))));
-    return Array.isArray(parsed) ? parsed.filter((part) => isSaid(part)) : [];
-  },
+  changeSentences: changeSentencesOf,
   timeSentence: (time) =>
     saidIn(
       ask(() => time_sentence(time.who, time.what.event ?? "", time.what.minutes ?? undefined)),

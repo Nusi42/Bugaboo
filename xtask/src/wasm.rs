@@ -63,6 +63,10 @@ const SMALL_STANDARD_LIBRARY: [&str; 2] = [
 ];
 /// A panic of the module stops it at once, with no text: nobody reads the text in a browser.
 const PANIC_AT_ONCE: &str = "-Cpanic=immediate-abort -Zunstable-options";
+/// `{:?}` writes nothing in the module: the module shows no `Debug` text, and the error texts of
+/// serde that quote a value with it lose only the quote. It takes about 2.6 KB after Brotli out of
+/// `bb_wasm` (ADR-0005, amendment M8; PERF-04).
+const NO_DEBUG_TEXT: &str = "-Zfmt-debug=none";
 
 /// What `wasm-opt` is asked to do: optimize for size until nothing gets smaller, leave out the
 /// notes of the toolchain that nothing reads, with the features the compiler uses.
@@ -289,10 +293,14 @@ fn cargo_build(root: &Path, module: Module) -> anyhow::Result<PathBuf> {
             PROFILE,
         ])
         .args(SMALL_STANDARD_LIBRARY)
-        // The small standard library and a panic that stops at once are unstable features of the
-        // compiler; this build asks for them, and no other build of the program does.
+        // The small standard library, a panic that stops at once and no `Debug` text are unstable
+        // features of the compiler; this build asks for them, and no other build of the program
+        // does.
         .env("RUSTC_BOOTSTRAP", "1")
-        .env("RUSTFLAGS", format!("{existing} {PANIC_AT_ONCE}").trim())
+        .env(
+            "RUSTFLAGS",
+            format!("{existing} {PANIC_AT_ONCE} {NO_DEBUG_TEXT}").trim(),
+        )
         .current_dir(root)
         .stderr(Stdio::inherit())
         .output()

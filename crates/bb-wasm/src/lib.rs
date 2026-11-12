@@ -52,32 +52,27 @@ fn written<Output: Serialize>(output: &Output) -> Result<String, String> {
     serde_json::to_string(output).map_err(|error| format!("unwritable answer: {error}"))
 }
 
-/// The sentence of a change of one field, as the server words it (`bb_core::wording`): the message
-/// keys with the words for their placeholders, as JSON. The browser looks the keys up in its own
-/// catalog.
-///
-/// # Errors
-/// The text is not a change as `bb_core::wording::Change` reads it.
-#[wasm_bindgen]
-pub fn change_sentence(change: &str) -> Result<String, JsError> {
-    answer(change, |change: &Change| wording::change_sentence(change)).map_err(|e| JsError::new(&e))
-}
-
 /// The sentences of the changes of one event, as the server words them (`bb_core::wording`): one
-/// for each change, and one for a *Start date* and a *Due date* that both move (see
-/// [`change_sentence`]). The answer is a list of them, as JSON.
+/// for each change, and one for a *Start date* and a *Due date* that both move. Each is the message
+/// keys with the words for their placeholders; the answer is a list of them, as JSON. The browser
+/// looks the keys up in its own catalog. A single change is a list of one: one entry, so the module
+/// carries one reader of changes (PERF-04).
 ///
 /// # Errors
 /// The text is not a list of changes as `bb_core::wording::Change` reads them.
 #[wasm_bindgen]
 pub fn change_sentences(changes: &str) -> Result<String, JsError> {
+    sentences_of(changes).map_err(|e| JsError::new(&e))
+}
+
+/// The sentences of the changes the browser asks about, as JSON (see [`change_sentences`]).
+fn sentences_of(changes: &str) -> Result<String, String> {
     answer(changes, |changes: &Vec<Change>| {
         wording::change_sentences(changes)
     })
-    .map_err(|e| JsError::new(&e))
 }
 
-/// The sentence of a file that was added, deleted or brought back (see [`change_sentence`]).
+/// The sentence of a file that was added, deleted or brought back (see [`change_sentences`]).
 ///
 /// # Errors
 /// The text is not a file as `bb_core::wording::File` reads it.
@@ -86,7 +81,7 @@ pub fn file_sentence(file: &str) -> Result<String, JsError> {
     answer(file, |file: &File| wording::file_sentence(file)).map_err(|e| JsError::new(&e))
 }
 
-/// The sentence of time that was booked on an issue, changed or deleted (see [`change_sentence`]):
+/// The sentence of time that was booked on an issue, changed or deleted (see [`change_sentences`]):
 /// who did it, the word of what happened (`booked`, `changed`, `deleted`; another word, or none,
 /// is an event this version does not know) and the length in whole minutes, if the reader may read
 /// it. The three come as they are, not as JSON: reading them as JSON would put a reader of its own
@@ -106,7 +101,7 @@ pub fn time_sentence(who: &str, event: &str, minutes: Option<u32>) -> Result<Str
     written(&wording::time_sentence(&time)).map_err(|e| JsError::new(&e))
 }
 
-/// The sentences of a notification, as a list in JSON (see [`change_sentence`]).
+/// The sentences of a notification, as a list in JSON (see [`change_sentences`]).
 ///
 /// # Errors
 /// The text is not a notice as `bb_core::wording::Notice` reads it.
@@ -125,7 +120,7 @@ struct SideOf {
     side: Side,
 }
 
-/// The words of one side of a change, or `null` when it holds no value (see [`change_sentence`]).
+/// The words of one side of a change, or `null` when it holds no value (see [`change_sentences`]).
 ///
 /// # Errors
 /// The text is not a field with a side as `bb_core::wording::Side` reads it.
@@ -233,20 +228,17 @@ mod tests {
 
     #[test]
     fn the_browser_gets_the_sentence_of_the_server() {
-        let change = r#"{"who":"Ben","field":"priority","field_name":"Priority",
-            "before":{"shown":"text","text":"normal"},"after":{"shown":"text","text":"high"}}"#;
-        let json =
-            answer(change, |change: &Change| wording::change_sentence(change)).unwrap_or_default();
+        let change = r#"[{"who":"Ben","field":"priority","field_name":"Priority",
+            "before":{"shown":"text","text":"normal"},"after":{"shown":"text","text":"high"}}]"#;
+        let json = sentences_of(change).unwrap_or_default();
         let said: serde_json::Value = serde_json::from_str(&json).unwrap_or_default();
-        assert_eq!(said["key"], "history.changed");
-        assert_eq!(said["args"]["after"]["key"], "priority.high");
+        assert_eq!(said[0]["key"], "history.changed");
+        assert_eq!(said[0]["args"]["after"]["key"], "priority.high");
     }
 
     #[test]
     fn a_text_that_is_no_input_is_an_error_that_says_so() {
-        let error = answer("not json", |change: &Change| {
-            wording::change_sentence(change)
-        });
+        let error = sentences_of("not json");
         assert!(error.is_err_and(|text| text.contains("unreadable input")));
         // A side of a kind that Rust does not know is an error too, not an empty answer.
         let odd = r#"{"field":"tags","side":{"shown":"colors"}}"#;
