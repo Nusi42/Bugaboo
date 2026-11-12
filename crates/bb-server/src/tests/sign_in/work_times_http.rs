@@ -694,39 +694,3 @@ async fn plan_11_the_most_open_level_in_the_shared_projects_counts() -> TestResu
     })
     .await
 }
-
-#[tokio::test]
-async fn plan_11_the_work_times_name_the_next_three_holidays_of_the_choice() -> TestResult {
-    each_database("plan_11_next_holidays", async |db| {
-        let (rig, app) = rig_and_app(db).await?;
-        let (site, _ada) = Site::start(&rig, &app).await?;
-        let (mut bob, _) = site
-            .person_called(StartingRole::TeamMember, "bob", "Bob Baker")
-            .await?;
-        let choose = async |bob: &mut Browser, choice: &str| -> Result<Reply, Failure> {
-            let path = "/api/v1/me/settings/work-times.holidays";
-            ok(&bob
-                .send("PUT", path, Some(json!({"value": choice})))
-                .await?)?;
-            bob.send("GET", &format!("{MINE}?{RANGE}"), None).await
-        };
-        // Bavaria: the three days that come next from today, with what each is called.
-        let read = choose(&mut bob, "de-by").await?;
-        let today = bb_core::time::day::date_of(
-            bb_app::context::Clock::now(rig.clock.as_ref()),
-            &jiff::tz::TimeZone::UTC,
-        );
-        let expected: Vec<Value> = bb_core::holidays::Region::Bavaria
-            .next_holidays(today, bb_app::work_times::NEXT_HOLIDAYS)
-            .iter()
-            .map(|day| json!({"date": day.date.to_string(), "holiday": day.holiday.code()}))
-            .collect();
-        assert_eq!(expected.len(), 3);
-        assert_eq!(ok(&read)?["next_holidays"], json!(expected));
-        // *None* names none.
-        let none = choose(&mut bob, "none").await?;
-        assert_eq!(ok(&none)?["next_holidays"], json!([]));
-        Ok(())
-    })
-    .await
-}

@@ -125,6 +125,7 @@ mod timing;
 mod tls;
 mod upgrade;
 mod upkeep_writes;
+mod work_times_holidays_http;
 mod work_times_http;
 mod work_times_mail_http;
 mod work_times_perf;
