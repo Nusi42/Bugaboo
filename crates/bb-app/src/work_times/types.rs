@@ -1,6 +1,6 @@
 //! The inputs and answers of the use cases of work times.
 
-use bb_core::holidays::Region as HolidayRegion;
+use bb_core::holidays::{PublicHoliday, Region as HolidayRegion};
 use bb_core::id::{AwayTimeId, UserId};
 use bb_core::work_times::UsualDay;
 use bb_policy::{Masked, PersonRef};
@@ -81,6 +81,9 @@ pub struct WorkTimesView {
     pub usual_version: i64,
     /// Which public holidays count for the person (the setting *Holidays*).
     pub holidays: HolidayRegion,
+    /// The next [`NEXT_HOLIDAYS`](super::NEXT_HOLIDAYS) of them from the person's today, so the
+    /// choice is easy to check.
+    pub next_holidays: Vec<PublicHoliday>,
     /// The away times that touch the stretch, by first day.
     pub away: Vec<AwayView>,
     /// Whether more away times touch the stretch than `AWAY_TIMES_MAX`: the latest are left out.

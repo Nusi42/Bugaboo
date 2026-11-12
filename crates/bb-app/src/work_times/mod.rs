@@ -48,5 +48,8 @@ pub const PLAN_PEOPLE_MAX: usize = 200;
 /// year-long away time fits in a read.
 pub const RANGE_DAYS_MAX: i64 = 366;
 
+/// How many of the coming public holidays a read of work times names (UX §4.13: "Next: …").
+pub const NEXT_HOLIDAYS: usize = 3;
+
 /// The most away times of one person that a read lists.
 pub const AWAY_TIMES_MAX: usize = 500;

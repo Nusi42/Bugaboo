@@ -23640,6 +23640,47 @@
         "description": "Which rows of the history of an issue to list: everything, only the comments, or only the changes.",
         "enum": ["everything", "comments", "changes"]
       },
+      "Holiday": {
+        "type": "string",
+        "description": "One public holiday, by what it is called.",
+        "enum": [
+          "new-year",
+          "epiphany",
+          "women-day",
+          "good-friday",
+          "easter-sunday",
+          "easter-monday",
+          "labour-day",
+          "liberation-day",
+          "ascension-day",
+          "whit-sunday",
+          "whit-monday",
+          "corpus-christi",
+          "assumption-day",
+          "world-childrens-day",
+          "unity-day",
+          "reformation-day",
+          "all-saints",
+          "repentance-day",
+          "christmas-day",
+          "second-christmas-day"
+        ]
+      },
+      "HolidayBody": {
+        "type": "object",
+        "description": "A public holiday on a date.",
+        "required": ["date", "holiday"],
+        "properties": {
+          "date": {
+            "type": "string",
+            "description": "The day (`2026-12-25`)."
+          },
+          "holiday": {
+            "$ref": "#/components/schemas/Holiday",
+            "description": "Which holiday it is; its words are the message `holiday.<word>`."
+          }
+        }
+      },
       "HolidaysChoice": {
         "type": "string",
         "description": "Which public holidays count for a person: none, the days every state of Germany has (`de`), or those of one state by its ISO 3166-2 code, such as `de-by`.",
@@ -32895,6 +32936,7 @@
           "usual",
           "usual_version",
           "holidays",
+          "next_holidays",
           "away",
           "truncated",
           "shares"
@@ -32914,6 +32956,13 @@
           "may_change": {
             "type": "boolean",
             "description": "Whether the reader may change the usual work days and enter away times."
+          },
+          "next_holidays": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HolidayBody"
+            },
+            "description": "The next three of them from the person's today, by date: none for `none`."
           },
           "own": {
             "type": "boolean",

@@ -3,8 +3,10 @@
 //! its days.
 
 use bb_core::ErrorCode;
-use bb_core::holidays::Region as HolidayRegion;
+use bb_core::holidays::{PublicHoliday, Region as HolidayRegion};
 use bb_core::people_kinds::PeopleKind;
+use bb_core::time::day::date_of;
+use bb_core::wording::Region;
 use bb_core::work_times::UsualDays;
 use bb_core::work_times::record::AwayTime;
 use bb_policy::{Authorized, PeopleContext};
@@ -12,7 +14,7 @@ use jiff::civil::Date;
 
 use super::types::{AwayView, WorkTimesQuery, WorkTimesView};
 use super::whose::Whose;
-use super::{AWAY_TIMES_MAX, RANGE_DAYS_MAX};
+use super::{AWAY_TIMES_MAX, NEXT_HOLIDAYS, RANGE_DAYS_MAX};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 
@@ -59,14 +61,16 @@ impl<S: AuthStore> Ctx<'_, S> {
         })
     }
 
-    /// The public holidays that count for a person: their own choice, or the organization's.
+    /// The public holidays that count for a person (their own choice, or the organization's), and
+    /// the next of them from the person's today.
     pub(super) async fn holidays_of(
         &self,
         person: bb_core::id::UserId,
-    ) -> Result<HolidayRegion, AppError> {
-        Ok(HolidayRegion::chosen(
-            &self.setting_layers_of(Some(person)).await?,
-        ))
+    ) -> Result<(HolidayRegion, Vec<PublicHoliday>), AppError> {
+        let layers = self.setting_layers_of(Some(person)).await?;
+        let holidays = HolidayRegion::chosen(&layers);
+        let today = date_of(self.now(), Region::of(&layers).zone());
+        Ok((holidays, holidays.next_holidays(today, NEXT_HOLIDAYS)))
     }
 }
 
@@ -109,13 +113,15 @@ pub async fn work_times<S: AuthStore>(
     } else {
         None
     };
+    let (holidays, next_holidays) = ctx.holidays_of(whose.person).await?;
     let view = WorkTimesView {
         person: ctx.work_times_person_of(&whose).await?,
         own: whose.own,
         may_change: whose.may_change(),
         usual: usual_of(&usual),
         usual_version: stored.map_or(0, |stored| stored.version),
-        holidays: ctx.holidays_of(whose.person).await?,
+        holidays,
+        next_holidays,
         away,
         truncated,
         shares,

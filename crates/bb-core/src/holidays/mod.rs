@@ -160,6 +160,16 @@ impl Region {
             .filter(|day| first <= day.date && day.date <= last)
             .collect()
     }
+
+    /// The next `count` public holidays on or after `from`, by date: the ones a person checks their
+    /// choice of *Holidays* against. Every region has a holiday within a year, so a year is looked at.
+    #[must_use]
+    pub fn next_holidays(self, from: Date, count: usize) -> Vec<PublicHoliday> {
+        let last = from.saturating_add(jiff::Span::new().years(1));
+        let mut days = self.holidays_between(from, last);
+        days.truncate(count);
+        days
+    }
 }
 
 #[cfg(test)]

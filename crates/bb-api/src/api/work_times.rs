@@ -12,7 +12,7 @@ mod shares;
 use bb_app::work_times::{
     AwayDays, AwayView, ChangedAwayTime, ChangedUsualDays, ShareItem, SharesOfPerson, WorkTimesView,
 };
-use bb_core::holidays::Region as HolidayRegion;
+use bb_core::holidays::{Holiday, PublicHoliday, Region as HolidayRegion};
 use bb_core::work_times::UsualDay;
 use bb_policy::{Masked, PersonRef};
 use serde::{Deserialize, Serialize};
@@ -173,6 +173,24 @@ impl From<&SharesOfPerson> for SharesBody {
     }
 }
 
+/// A public holiday on a date.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct HolidayBody {
+    /// The day (`2026-12-25`).
+    date: String,
+    /// Which holiday it is; its words are the message `holiday.<word>`.
+    holiday: Holiday,
+}
+
+impl From<&PublicHoliday> for HolidayBody {
+    fn from(day: &PublicHoliday) -> Self {
+        Self {
+            date: day.date.to_string(),
+            holiday: day.holiday,
+        }
+    }
+}
+
 /// A person's work times.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct WorkTimesBody {
@@ -188,6 +206,8 @@ pub(crate) struct WorkTimesBody {
     usual_version: i64,
     /// Which public holidays count for the person: `none`, `de` or a state such as `de-by`.
     holidays: HolidayRegion,
+    /// The next three of them from the person's today, by date: none for `none`.
+    next_holidays: Vec<HolidayBody>,
     /// The away times that touch the stretch, by first day. Another person's show their days only.
     away: Vec<AwayBody>,
     /// Whether more away times touch the stretch than the answer holds: the latest are left out.
@@ -208,6 +228,7 @@ impl From<&WorkTimesView> for WorkTimesBody {
             usual: view.usual.iter().copied().map(UsualDayBody::from).collect(),
             usual_version: view.usual_version,
             holidays: view.holidays,
+            next_holidays: view.next_holidays.iter().map(HolidayBody::from).collect(),
             away: view.away.iter().map(AwayBody::from).collect(),
             truncated: view.truncated,
             shares: view.shares.as_ref().map(SharesBody::from),

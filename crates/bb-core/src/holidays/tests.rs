@@ -82,6 +82,39 @@ fn a_holiday_is_found_by_its_date_and_between_two_dates() {
 }
 
 #[test]
+fn plan_11_the_next_holidays_start_on_the_day_and_cross_the_year() {
+    // 24 December: Christmas Day, Boxing Day and New Year's Day come next.
+    let next = Region::Germany.next_holidays(Date::new(2026, 12, 24).unwrap(), 3);
+    let found: Vec<(Date, Holiday)> = next.iter().map(|day| (day.date, day.holiday)).collect();
+    assert_eq!(
+        found,
+        [
+            (Date::new(2026, 12, 25).unwrap(), Holiday::ChristmasDay),
+            (
+                Date::new(2026, 12, 26).unwrap(),
+                Holiday::SecondChristmasDay
+            ),
+            (Date::new(2027, 1, 1).unwrap(), Holiday::NewYear),
+        ]
+    );
+    // A holiday on the day itself is the first of them.
+    let on_the_day = Region::Bavaria.next_holidays(Date::new(2026, 11, 1).unwrap(), 1);
+    assert_eq!(on_the_day[0].holiday, Holiday::AllSaints);
+    // *None* has none, and no more are given than asked for.
+    assert!(
+        Region::None
+            .next_holidays(Date::new(2026, 1, 1).unwrap(), 3)
+            .is_empty()
+    );
+    assert_eq!(
+        Region::Hesse
+            .next_holidays(Date::new(2026, 1, 1).unwrap(), 2)
+            .len(),
+        2
+    );
+}
+
+#[test]
 fn every_region_and_holiday_has_its_own_name_in_the_catalog() {
     for region in Region::ALL {
         assert_eq!(

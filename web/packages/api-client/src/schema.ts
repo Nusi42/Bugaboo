@@ -7484,6 +7484,38 @@ export interface components {
      */
     HistoryTab: "everything" | "comments" | "changes";
     /**
+     * @description One public holiday, by what it is called.
+     * @enum {string}
+     */
+    Holiday:
+      | "new-year"
+      | "epiphany"
+      | "women-day"
+      | "good-friday"
+      | "easter-sunday"
+      | "easter-monday"
+      | "labour-day"
+      | "liberation-day"
+      | "ascension-day"
+      | "whit-sunday"
+      | "whit-monday"
+      | "corpus-christi"
+      | "assumption-day"
+      | "world-childrens-day"
+      | "unity-day"
+      | "reformation-day"
+      | "all-saints"
+      | "repentance-day"
+      | "christmas-day"
+      | "second-christmas-day";
+    /** @description A public holiday on a date. */
+    HolidayBody: {
+      /** @description The day (`2026-12-25`). */
+      date: string;
+      /** @description Which holiday it is; its words are the message `holiday.<word>`. */
+      holiday: components["schemas"]["Holiday"];
+    };
+    /**
      * @description Which public holidays count for a person: none, the days every state of Germany has (`de`), or those of one state by its ISO 3166-2 code, such as `de-by`.
      * @enum {string}
      */
@@ -12108,6 +12140,8 @@ export interface components {
       holidays: components["schemas"]["HolidaysChoice"];
       /** @description Whether the reader may change the usual work days and enter away times. */
       may_change: boolean;
+      /** @description The next three of them from the person's today, by date: none for `none`. */
+      next_holidays: components["schemas"]["HolidayBody"][];
       /** @description Whether they are the reader's own. */
       own: boolean;
       /** @description Whose they are, as the reader sees people of the kind *Work times*. */
