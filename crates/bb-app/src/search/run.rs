@@ -391,7 +391,9 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
             })
             .collect();
         let issues: Vec<_> = page.items.iter().map(|hit| hit.issue.clone()).collect();
-        let items = ctx.issue_items(actor, &issues, &places, extras).await?;
+        let items = ctx
+            .issue_items(actor, &issues, (&**seen, &places), extras)
+            .await?;
         Ok(FoundPage {
             issues,
             items,

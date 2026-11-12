@@ -8,19 +8,19 @@ use bb_core::ErrorCode;
 use bb_core::event::RecordKind;
 use bb_core::fields::{ASSIGNED_TO_PEOPLE, REPORTED_BY_PEOPLE};
 use bb_core::id::{EntityId, IssueId, IssueTypeId, ProjectId, UserId};
-use bb_core::issue::Issue;
+use bb_core::issue::{AssignedPerson, Issue};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::project::Project;
 use bb_core::readable_id::ReadableId;
 use bb_core::time::{Minutes, TimeLeft, time_left};
 use bb_core::workflow::WorkflowContent;
-use bb_policy::{Evaluation, PeopleContext, PersonRef};
+use bb_policy::{Evaluation, PeopleContext, PersonRef, Place};
 
 use super::types::{AgentMark, IssueTypeRef, IssueView, WithAgent};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::fields::ItemValues;
-use crate::projects::ProjectRef;
+use crate::projects::{ProjectRef, Shown};
 use crate::tags::{LabelCatalogue, LabelRef};
 use crate::workflows::{StatusChangeView, StatusCheck, StatusView};
 
@@ -120,7 +120,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         actor: &Actor,
         issues: &[Issue],
-        places: &HashMap<ProjectId, PagePlace>,
+        (seen, places): (&Shown, &HashMap<ProjectId, PagePlace>),
         extras: ReadOnRequest,
     ) -> Result<Vec<(Arc<Evaluation>, IssueView)>, AppError> {
         let ids: Vec<IssueId> = issues.iter().map(|issue| issue.id).collect();
@@ -129,6 +129,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             .assigned_people_of(&ids)
             .await
             .map_err(|error| internal::<S>(&error))?;
+        self.preload_page_people(issues, &assigned, (seen, places))
+            .await?;
         let values = self
             .load_values(
                 RecordKind::Issue,
@@ -203,6 +205,45 @@ impl<S: AuthStore> Ctx<'_, S> {
             ));
         }
         Ok(items)
+    }
+
+    /// The people a page of issues names, and the role labels of those it shows by their role,
+    /// each read in one go, so a page that meets more people reads no more statements than one that
+    /// meets fewer.
+    async fn preload_page_people(
+        &self,
+        issues: &[Issue],
+        assigned: &[AssignedPerson],
+        (seen, places): (&Shown, &HashMap<ProjectId, PagePlace>),
+    ) -> Result<(), AppError> {
+        let named: Vec<UserId> = issues
+            .iter()
+            .map(|issue| issue.reported_by)
+            .chain(assigned.iter().map(|each| each.person))
+            .collect();
+        self.preload_people(&named).await?;
+        // The role labels of the people the page shows by their role.
+        let by_role: Vec<(UserId, Place)> = issues
+            .iter()
+            .filter_map(|issue| Some((issue, places.get(&issue.project)?)))
+            .flat_map(|(issue, place)| {
+                std::iter::once((REPORTED_BY_PEOPLE, issue.reported_by))
+                    .chain(
+                        assigned
+                            .iter()
+                            .filter(|each| each.issue == issue.id)
+                            .map(|each| (ASSIGNED_TO_PEOPLE, each.person)),
+                    )
+                    .filter(|(kind, person)| {
+                        place
+                            .held
+                            .shows_role_label(*kind, PeopleContext::Ordinary, *person)
+                    })
+                    .map(|(_, person)| (person, Place::Project(issue.project)))
+                    .collect::<Vec<_>>()
+            })
+            .collect();
+        self.preload_role_labels(seen, &by_role).await
     }
 
     /// The views of the issues of `project` for the viewer, whose evaluation is the one at the

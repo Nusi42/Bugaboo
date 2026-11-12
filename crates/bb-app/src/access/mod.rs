@@ -366,7 +366,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// is what lets it decide a project without a read of its own, where `evaluate` reads the
     /// chain of each project; the decision is the same ([`Policy::evaluate_with`] is what a
     /// preview of a move asks too). Nothing is read when fewer than two of the places are not
-    /// kept yet. What was read is given back, so that the caller does not read the projects once
+    /// kept yet; once read, every project of the tree is kept, not only the ones asked for. What was read is given back, so that the caller does not read the projects once
     /// more.
     ///
     /// # Errors
@@ -390,10 +390,27 @@ impl<S: AuthStore> Ctx<'_, S> {
             return Ok(None);
         }
         let shown = self.shown_with_levels(person, None).await?;
-        for (project, found) in shown.evaluations_in(&wanted) {
+        self.remember_projects(&shown);
+        Ok(Some(shown))
+    }
+
+    /// Keeps the evaluation of the person of `shown` at every project of its tree that is not kept
+    /// yet, decided in memory from what `shown` read: a later question about any project costs no
+    /// read of its chain, so the reads of a request do not depend on which projects it met first.
+    /// Only for a view that is not narrowed to a key: the evaluations are the person's own.
+    pub(crate) fn remember_projects(&self, shown: &Leveled) {
+        let person = shown.person();
+        let everywhere: Vec<ProjectId> = shown
+            .tree()
+            .projects()
+            .filter(|project| {
+                self.cached_evaluation(person, Place::Project(*project))
+                    .is_none()
+            })
+            .collect();
+        for (project, found) in shown.evaluations_in(&everywhere) {
             self.remember_evaluation(person, Place::Project(project), &Arc::new(found));
         }
-        Ok(Some(shown))
     }
 
     /// The evaluation of `person` at `place`, decided by the engine from the person's rows, roles
