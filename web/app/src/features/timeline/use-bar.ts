@@ -51,7 +51,7 @@ export function useBar(line: IssueLine, days: BarDays) {
   };
   const { dragging, handlers } = useBarDrag(timeline.dayPixels, moveBy, select);
   const shown = dragging === null ? days : shownWhileMoving(days, dragging.move, dragging.days);
-  const drop = useDropOf(dragKinds.dependency, ref, mayMove, (first) => {
+  const drop = useDropOf(dragKinds.dependency.kind, ref, mayMove, (first) => {
     if (first !== line.issue) {
       timeline.onLink(first, line.issue);
     }

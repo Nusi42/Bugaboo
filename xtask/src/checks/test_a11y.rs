@@ -5,6 +5,11 @@
 //! `paths` in `web/app/src/shared/paths.ts`. This check fails when an address has no entry in the
 //! suite, so a new page cannot be added without being checked; the suite itself runs in
 //! `cargo xtask ci` (the browser end-to-end tests).
+//!
+//! Every drag of the timeline has a key (UX §4.7, ADR-0043): each kind of thing the timeline
+//! drags is named in `drag-kinds.ts` together with the message of the typed way that does the same
+//! (`typed:`), a drag in the timeline takes its kind from there and never writes one of its own, and
+//! the timeline that drags a bar with the pointer also moves it with keys (`keyMoveOf`).
 
 use super::web_source::code_of;
 use super::{Check, Context, Finding};
@@ -15,6 +20,10 @@ use crate::source::read_text;
 const PATHS_FILE: &str = "web/app/src/shared/paths.ts";
 const SUITE_FOLDER: &str = "web/app/e2e";
 const SUITE_PREFIX: &str = "a11y";
+/// The feature of the timeline, whose drags each have a key.
+const TIMELINE_FOLDER: &str = "web/app/src/features/timeline";
+/// The one place that names what the timeline drags, each with its typed way.
+const DRAG_KINDS_FILE: &str = "web/app/src/features/timeline/drag-kinds.ts";
 
 pub(crate) struct TestA11y;
 
@@ -32,8 +41,61 @@ impl Check for TestA11y {
                 suite.push_str(&read_text(repo, &format!("{SUITE_FOLDER}/{name}"))?);
             }
         }
-        Ok(evaluate(&paths, &suite))
+        let mut findings = evaluate(&paths, &suite);
+        let mut timeline = Vec::new();
+        for name in sorted_files(repo, TIMELINE_FOLDER, |name| {
+            (has_extension(name, "ts") || has_extension(name, "tsx")) && !name.contains(".test.")
+        })? {
+            let path = format!("{TIMELINE_FOLDER}/{name}");
+            let text = read_text(repo, &path)?;
+            timeline.push((path, text));
+        }
+        findings.extend(drags_have_keys(&timeline));
+        Ok(findings)
     }
+}
+
+/// Every drag of the timeline has a key: the kinds of `drag-kinds.ts` each name their typed way, no
+/// file of the timeline writes a kind of its own, and a drag of a bar comes with its keys.
+fn drags_have_keys(files: &[(String, String)]) -> Vec<Finding> {
+    let mut findings = Vec::new();
+    let code_of_file = |text: &str| code(text);
+    match files.iter().find(|(path, _)| path == DRAG_KINDS_FILE) {
+        None => findings.push(Finding::at(
+            DRAG_KINDS_FILE,
+            "The timeline has no `drag-kinds.ts`: name each kind it drags there, with its typed way.",
+        )),
+        Some((_, text)) => {
+            for line in code_of_file(text).lines() {
+                let trimmed = line.trim();
+                if trimmed.contains("kind:") && !trimmed.contains("typed:") {
+                    findings.push(Finding::at(
+                        DRAG_KINDS_FILE,
+                        format!(
+                            "`{trimmed}` names a drag without its typed way. Add `typed: \"<message key>\"`, the button or window that does the same with the keyboard."
+                        ),
+                    ));
+                }
+            }
+        }
+    }
+    let all: String = files.iter().map(|(_, text)| code_of_file(text)).collect();
+    for (path, text) in files.iter().filter(|(path, _)| path != DRAG_KINDS_FILE) {
+        let text = code_of_file(text);
+        if text.contains("kind=\"") || text.contains("kind={\"") {
+            findings.push(Finding::at(
+                path,
+                "A drag of the timeline writes its own kind. Take it from `dragKinds`, where its typed way is named.",
+            ));
+        }
+        if text.contains("useBarDrag(") && !all.contains("keyMoveOf(") {
+            findings.push(Finding::at(
+                path,
+                "A bar is dragged with the pointer but the timeline has no keys for it (`keyMoveOf`).",
+            ));
+        }
+    }
+    findings
 }
 
 /// The entries of `paths`: the name and the address of each.
@@ -141,6 +203,56 @@ visit(paths.longer); // paths.home and paths.signIn
     #[test]
     fn a_paths_file_without_addresses_is_a_finding() {
         assert_eq!(evaluate("export const other = 1;", "").len(), 1);
+    }
+
+    /// The files of a timeline whose drags have their keys.
+    fn timeline() -> Vec<(String, String)> {
+        vec![
+            (
+                DRAG_KINDS_FILE.to_owned(),
+                "export const dragKinds = {\n  dot: { kind: \"a-dot\", typed: \"timeline.add-dependency\" },\n};\n"
+                    .to_owned(),
+            ),
+            (
+                format!("{TIMELINE_FOLDER}/Bar.tsx"),
+                "useBarDrag(1); keyMoveOf(event); <DragHandle kind={dragKinds.dot.kind} />".to_owned(),
+            ),
+        ]
+    }
+
+    #[test]
+    fn every_drag_of_the_timeline_has_a_key() {
+        assert!(drags_have_keys(&timeline()).is_empty());
+    }
+
+    #[test]
+    fn a_drag_without_its_typed_way_or_its_keys_is_a_finding() {
+        let mut files = timeline();
+        files[0].1 = "export const dragKinds = {\n  dot: { kind: \"a-dot\" },\n};\n".to_owned();
+        files[1].1 = "useBarDrag(1); <DragHandle kind=\"a-dot\" />".to_owned();
+        let findings = drags_have_keys(&files);
+        let messages: Vec<&str> = findings.iter().map(|f| f.message.as_str()).collect();
+        assert_eq!(messages.len(), 3, "{messages:?}");
+        assert!(messages[0].contains("typed way"));
+        assert!(messages[1].contains("own kind"));
+        assert!(messages[2].contains("keyMoveOf"));
+    }
+
+    #[test]
+    fn the_real_timeline_has_a_key_for_every_drag() {
+        let repo = crate::repo::Repo::discover().unwrap();
+        let files: Vec<(String, String)> = sorted_files(&repo, TIMELINE_FOLDER, |name| {
+            has_extension(name, "ts") || has_extension(name, "tsx")
+        })
+        .unwrap()
+        .into_iter()
+        .map(|name| {
+            let path = format!("{TIMELINE_FOLDER}/{name}");
+            let text = read_text(&repo, &path).unwrap();
+            (path, text)
+        })
+        .collect();
+        assert!(drags_have_keys(&files).is_empty());
     }
 
     #[test]

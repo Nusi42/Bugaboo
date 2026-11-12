@@ -18,7 +18,7 @@ export function useCanvas(rows: number) {
     "timeline-days": timeline.span.days,
     "timeline-rows": rows,
   });
-  const drop = useDropOf(dragKinds.unscheduled, canvas, true, (issue, at) => {
+  const drop = useDropOf(dragKinds.unscheduled.kind, canvas, true, (issue, at) => {
     const day = Math.floor((at.x - pixelsOf("size-timeline-names")) / timeline.dayPixels);
     if (day >= 0 && day < timeline.span.days) {
       timeline.onPlace(issue, addDays(timeline.span.first, day));

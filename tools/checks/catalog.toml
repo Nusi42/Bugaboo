@@ -807,11 +807,15 @@ status = "active"
 
 [[check]]
 id = "TEST-A11Y"
-title = "No accessibility violations on key screens in all four themes"
-rule = "UX-04"
-tool = "Playwright + axe (web/app/e2e/a11y*.spec.ts); xtask checks that every address in paths.ts has an entry there, the suite itself runs in cargo xtask ci"
+title = "No accessibility violations on key screens in all four themes, and every drag of the timeline has a key"
+rule = "UX-04, UX design §4.7"
+tool = "Playwright + axe (web/app/e2e/a11y*.spec.ts); xtask checks that every address in paths.ts has an entry there, and that every kind the timeline drags is named in features/timeline/drag-kinds.ts with its typed way, no drag of the timeline writes a kind of its own, and a bar dragged with the pointer has its keys (keyMoveOf); the suite itself runs in cargo xtask ci"
 when = ["commit", "ci"]
-files = ["web/app/src/shared/paths.ts", "web/app/e2e/a11y*.spec.ts"]
+files = [
+  "web/app/src/shared/paths.ts",
+  "web/app/e2e/a11y*.spec.ts",
+  "web/app/src/features/timeline/**",
+]
 status = "active"
 
 [[check]]

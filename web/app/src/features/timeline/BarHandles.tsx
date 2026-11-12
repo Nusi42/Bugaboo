@@ -37,7 +37,7 @@ export function BarHandles({ issue, handlers }: BarHandlesProps) {
       />
       <span onPointerDown={keepToTheDot}>
         <DragHandle
-          kind={dragKinds.dependency}
+          kind={dragKinds.dependency.kind}
           id={issue}
           label={t("timeline.add-dependency")}
           look={partOf(part.timelineBarDot)}

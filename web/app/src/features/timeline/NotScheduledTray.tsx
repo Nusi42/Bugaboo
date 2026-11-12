@@ -34,7 +34,7 @@ export function NotScheduledTray({ rows, count, pages, onSetDates }: NotSchedule
           return (
             <li key={id}>
               <DraggableHead
-                kind={dragKinds.unscheduled}
+                kind={dragKinds.unscheduled.kind}
                 id={id}
                 label={t("timeline.drag-issue", { key })}
                 canDrag={row.may_move}
