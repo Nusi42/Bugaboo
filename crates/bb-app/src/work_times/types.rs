@@ -76,11 +76,14 @@ pub struct WorkTimesView {
     pub may_change: bool,
     /// The seven usual work days, Monday first.
     pub usual: Vec<UsualDay>,
+    /// The version of the usual work days: a change is made on the version that was looked at; 0
+    /// while the person has none of their own.
+    pub usual_version: i64,
     /// Which public holidays count for the person (the setting *Holidays*).
     pub holidays: HolidayRegion,
     /// The away times that touch the stretch, by first day.
     pub away: Vec<AwayView>,
-    /// Whether more away times touch the stretch than `AWAY_TIMES_MAX`: the oldest are left out.
+    /// Whether more away times touch the stretch than `AWAY_TIMES_MAX`: the latest are left out.
     pub truncated: bool,
     /// The shares the person set; only the person reads them here (a project lead reads them on
     /// *Project members*).
@@ -95,6 +98,9 @@ pub struct ChangeUsualDays {
     pub session_token: String,
     /// Whose; `None` for the reader's own.
     pub person: Option<UserId>,
+    /// The version of the usual work days the reader looked at; 0 while the person has none of
+    /// their own.
+    pub version: i64,
     /// The seven days, Monday first.
     pub days: [UsualDay; 7],
 }
@@ -104,6 +110,8 @@ pub struct ChangeUsualDays {
 pub struct ChangedUsualDays {
     /// The seven days, Monday first.
     pub usual: Vec<UsualDay>,
+    /// Their version now.
+    pub version: i64,
 }
 
 impl Masked for ChangedUsualDays {}
@@ -204,13 +212,14 @@ pub struct MemberShare {
     pub person: PersonRef,
     /// The share in the project, in percent: 100 for a person with none set.
     pub percent: u8,
-    /// Whether the shares of the person that apply add up to more than 100 percent; only for a
-    /// reader who decides who has which role in the project, who is told the fact and never the
-    /// sum, which would tell how much the projects they may not see hold.
+    /// Whether the shares of the person that were set and apply add up to more than 100 percent;
+    /// only for a reader who decides who has which role in the project, who is told the fact and
+    /// never the sum or a share of another project, which would tell how much the projects they
+    /// may not see hold.
     pub over_100: Option<bool>,
-    /// The other projects the person has a share in, as the reader may name them: a project the
+    /// The other projects the person has a share in that apply, by name only: a project the
     /// reader may not see is not named, and only `others_hidden` says there is one.
-    pub others: Vec<ShareItem>,
+    pub others: Vec<ProjectLabel>,
     /// Whether the person has a share in another project the reader may not see.
     pub others_hidden: bool,
 }

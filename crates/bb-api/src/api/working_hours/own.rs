@@ -17,10 +17,8 @@ use super::super::auth::{
     AuthHandle, ConflictAnswer, Info, InvalidAnswer, NotFoundAnswer, NotSignedInAnswer, Session,
     answer_authorized,
 };
-use super::{
-    BookedWeekBody, ChangeWorkDayBody, RangeParams, WorkDayBody, WorkDayHistoryBody, WorkDaysBody,
-    invalid,
-};
+use super::super::date_range::{RangeParams, invalid};
+use super::{BookedWeekBody, ChangeWorkDayBody, WorkDayBody, WorkDayHistoryBody, WorkDaysBody};
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 
 /// What *Start work day* may say.

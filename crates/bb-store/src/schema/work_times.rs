@@ -15,6 +15,7 @@ pub(crate) enum UsualWorkDayRow {
     Weekday,
     Works,
     Minutes,
+    Version,
 }
 
 /// The share of a person in a project: one row for each share that was set.
@@ -49,6 +50,7 @@ stored_tables! {
         Weekday => weekday,
         Works => works,
         Minutes => minutes,
+        Version => version,
     },
     ProjectShareRow => bb_core::work_times::record::ProjectShare {
         Person => person,

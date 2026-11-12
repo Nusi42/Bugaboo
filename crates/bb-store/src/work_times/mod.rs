@@ -8,15 +8,16 @@ mod old;
 use std::collections::BTreeMap;
 
 use bb_app::work_times::WorkTimesStore;
-use bb_core::id::{AwayTimeId, ProjectId, UserId};
+use bb_core::id::{AwayTimeId, EntityId, ProjectId, UserId};
 use bb_core::work_times::record::AwayTime;
-use bb_core::work_times::{Share, UsualDay, UsualDays};
+use bb_core::work_times::{Share, StoredUsualDays, UsualDay, UsualDays};
 use jiff::civil::{Date, Weekday};
 use sea_query::{Expr, ExprTrait as _, Order, Query, SelectStatement};
 
 use crate::auth::AuthStorage;
 use crate::db::{Row, StoredId, Transaction};
 use crate::error::StoreError;
+use crate::locks::{LockClass, lock_key};
 use crate::schema::{AwayTimeRow, ProjectShareRow, UsualWorkDayRow};
 
 /// The weekdays in the order they are stored: 1 for Monday to 7 for Sunday.
@@ -43,6 +44,7 @@ fn usual_select() -> SelectStatement {
             UsualWorkDayRow::Weekday,
             UsualWorkDayRow::Works,
             UsualWorkDayRow::Minutes,
+            UsualWorkDayRow::Version,
         ])
         .from(UsualWorkDayRow::Table);
     select
@@ -50,8 +52,8 @@ fn usual_select() -> SelectStatement {
 
 /// The usual work days of the people whose rows these are, a person's seven rows together. A weekday
 /// without a row has the starting values, which never happens for rows this adapter wrote.
-fn usual_days_from(rows: &[Row]) -> Result<Vec<(UserId, UsualDays)>, StoreError> {
-    let mut by_person: BTreeMap<[u8; 16], (UserId, [UsualDay; 7])> = BTreeMap::new();
+fn usual_days_from(rows: &[Row]) -> Result<Vec<(UserId, StoredUsualDays)>, StoreError> {
+    let mut by_person: BTreeMap<[u8; 16], (UserId, [UsualDay; 7], i64)> = BTreeMap::new();
     for row in rows {
         let person: UserId = row.id(UsualWorkDayRow::Person)?;
         let weekday: i64 = row.get(UsualWorkDayRow::Weekday)?;
@@ -62,7 +64,8 @@ fn usual_days_from(rows: &[Row]) -> Result<Vec<(UserId, UsualDays)>, StoreError>
         let minutes: i64 = row.get(UsualWorkDayRow::Minutes)?;
         let entry = by_person
             .entry(person.to_bytes())
-            .or_insert_with(|| (person, *UsualDays::start().days()));
+            .or_insert_with(|| (person, *UsualDays::start().days(), 0));
+        entry.2 = row.get(UsualWorkDayRow::Version)?;
         entry.1[at] = UsualDay {
             works: row.get(UsualWorkDayRow::Works)?,
             minutes: u16::try_from(minutes).map_err(|_| StoreError::Corrupt("work hours"))?,
@@ -70,9 +73,9 @@ fn usual_days_from(rows: &[Row]) -> Result<Vec<(UserId, UsualDays)>, StoreError>
     }
     by_person
         .into_values()
-        .map(|(person, days)| {
+        .map(|(person, days, version)| {
             UsualDays::new(days)
-                .map(|days| (person, days))
+                .map(|days| (person, StoredUsualDays { days, version }))
                 .ok_or(StoreError::Corrupt("work hours"))
         })
         .collect()
@@ -140,12 +143,25 @@ fn stored_ids(people: Vec<UserId>) -> Vec<Vec<u8>> {
     people.into_iter().map(StoredId::stored).collect()
 }
 
-/// Writes the seven rows of a person's usual work days, in place of the ones they had.
+/// Writes the seven rows of a person's usual work days, in place of the ones they had, if they are
+/// still at `version` (0 while the person has none of their own); says whether they were. The
+/// change takes the lock of the person's work times first, so two changes at the same moment are
+/// judged one after the other on what is stored.
 async fn write_usual(
     transaction: &mut Transaction,
     person: UserId,
     days: &UsualDays,
-) -> Result<(), StoreError> {
+    version: i64,
+) -> Result<bool, StoreError> {
+    transaction
+        .advisory_lock(LockClass::WorkDays, lock_key(person.to_bytes()))
+        .await?;
+    let mut current = usual_select();
+    current.and_where(Expr::col(UsualWorkDayRow::Person).eq(person.stored()));
+    let stored = usual_days_from(&transaction.fetch_all(&current).await?)?;
+    if stored.first().map_or(0, |(_, found)| found.version) != version {
+        return Ok(false);
+    }
     let mut delete = Query::delete();
     delete
         .from_table(UsualWorkDayRow::Table)
@@ -157,6 +173,7 @@ async fn write_usual(
         UsualWorkDayRow::Weekday,
         UsualWorkDayRow::Works,
         UsualWorkDayRow::Minutes,
+        UsualWorkDayRow::Version,
     ]);
     for (weekday, day) in WEEKDAYS.iter().zip(days.days()) {
         insert
@@ -165,24 +182,26 @@ async fn write_usual(
                 Expr::val(weekday_number(*weekday)),
                 Expr::val(day.works),
                 Expr::val(i64::from(day.minutes)),
+                Expr::val(version + 1),
             ])
             .map_err(|_| StoreError::Corrupt("a usual work day"))?;
     }
-    transaction.execute(&insert).await.map(|_| ())
+    transaction.execute(&insert).await?;
+    Ok(true)
 }
 
 impl WorkTimesStore for AuthStorage {
     async fn usual_days_in(
         transaction: &mut Transaction,
         person: UserId,
-    ) -> Result<Option<UsualDays>, StoreError> {
+    ) -> Result<Option<StoredUsualDays>, StoreError> {
         let mut select = usual_select();
         select.and_where(Expr::col(UsualWorkDayRow::Person).eq(person.stored()));
         let rows = transaction.fetch_all(&select).await?;
         Ok(usual_days_from(&rows)?
             .into_iter()
             .next()
-            .map(|(_, days)| days))
+            .map(|(_, stored)| stored))
     }
 
     async fn share_in(
@@ -224,7 +243,10 @@ impl WorkTimesStore for AuthStorage {
         let mut select = usual_select();
         select.and_where(Expr::col(UsualWorkDayRow::Person).is_in(stored_ids(people)));
         let rows = self.database().fetch_all(&select).await?;
-        usual_days_from(&rows)
+        Ok(usual_days_from(&rows)?
+            .into_iter()
+            .map(|(person, stored)| (person, stored.days))
+            .collect())
     }
 
     async fn shares_of(
@@ -278,6 +300,7 @@ impl WorkTimesStore for AuthStorage {
         people: Vec<UserId>,
         first: Date,
         last: Date,
+        limit: Option<u64>,
     ) -> Result<Vec<AwayTime>, StoreError> {
         if people.is_empty() {
             return Ok(Vec::new());
@@ -289,6 +312,9 @@ impl WorkTimesStore for AuthStorage {
             .and_where(Expr::col(AwayTimeRow::Last).gte(first.to_string()))
             .order_by(AwayTimeRow::First, Order::Asc)
             .order_by(AwayTimeRow::Id, Order::Asc);
+        if let Some(limit) = limit {
+            select.limit(limit);
+        }
         self.database()
             .fetch_all(&select)
             .await?
@@ -301,8 +327,9 @@ impl WorkTimesStore for AuthStorage {
         transaction: &mut Transaction,
         person: UserId,
         days: &UsualDays,
-    ) -> Result<(), StoreError> {
-        write_usual(transaction, person, days).await
+        version: i64,
+    ) -> Result<bool, StoreError> {
+        write_usual(transaction, person, days, version).await
     }
 
     async fn put_share(
@@ -407,7 +434,8 @@ impl WorkTimesStore for AuthStorage {
     async fn delete_work_times_of(
         transaction: &mut Transaction,
         person: UserId,
+        setting_record: EntityId,
     ) -> Result<(), StoreError> {
-        old::delete_of_person(transaction, person).await
+        old::delete_of_person(transaction, person, setting_record).await
     }
 }

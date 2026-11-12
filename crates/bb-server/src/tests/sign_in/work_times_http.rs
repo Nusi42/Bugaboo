@@ -15,19 +15,26 @@ use serde_json::{Value, json};
 
 use super::http::{Browser, Reply, rig_and_app};
 use super::issues_site::{PROJECTS, Site, ok};
-use super::working_hours_http::{TODAY, YESTERDAY};
 
-const MINE: &str = "/api/v1/me/work-times";
+pub(super) const MINE: &str = "/api/v1/me/work-times";
 /// A stretch that holds every date of these tests.
-const RANGE: &str = "from=2027-01-01&to=2027-12-31";
+pub(super) const RANGE: &str = "from=2027-01-01&to=2027-12-31";
 
-fn work_times_of(person: &str) -> String {
+pub(super) fn work_times_of(person: &str) -> String {
     format!("/api/v1/people/{person}/work-times?{RANGE}")
 }
 
 /// Seven usual work days: the first `works` ticked, `minutes` each.
 fn week(works: usize, minutes: u16) -> Value {
-    json!({"days": (0..7).map(|at| json!({"works": at < works, "minutes": minutes})).collect::<Vec<_>>()})
+    week_at(0, works, minutes)
+}
+
+/// The same, changed on the version of the usual work days that was looked at.
+fn week_at(version: i64, works: usize, minutes: u16) -> Value {
+    json!({
+        "version": version,
+        "days": (0..7).map(|at| json!({"works": at < works, "minutes": minutes})).collect::<Vec<_>>(),
+    })
 }
 
 /// The days of an away time.
@@ -419,6 +426,7 @@ async fn plan_11_an_away_time_is_deleted_one_year_after_its_last_day() -> TestRe
                 vec![bob_id.parse()?],
                 "2027-01-01".parse()?,
                 "2027-12-31".parse()?,
+                None,
             )
             .await
             .map_err(|error| error.to_string())?;
@@ -488,11 +496,12 @@ async fn plan_11_a_person_who_leaves_loses_all_work_times() -> TestResult {
             Some(1)
         );
         assert_eq!(told(&mut cleo, "work-times-changed").await?.len(), 2);
-        // The events of Bob's work times are deleted with them: three before, none now, and the one
-        // event of the deletion itself.
+        // The events of Bob's work times are deleted with them: an away time, the usual days, a
+        // share and the choice of *Holidays* before, none now, and the one event of the deletion
+        // itself.
         let events_after = rig.event_count().await?;
         assert_eq!(
-            events_after + 3 - 1,
+            events_after + 4 - 1,
             events_before,
             "{events_before} -> {events_after}"
         );
@@ -514,171 +523,71 @@ pub(super) async fn project(ada: &mut Browser, short_name: &str) -> Result<Strin
 }
 
 #[tokio::test]
-async fn plan_15_a_share_is_set_only_with_decide_who_has_which_role_in_the_project() -> TestResult {
-    each_database("plan_15_share_needs_decide_roles", async |db| {
+async fn plan_11_the_usual_work_days_take_the_version_they_were_read_at() -> TestResult {
+    each_database("plan_11_usual_days_version", async |db| {
         let (rig, app) = rig_and_app(db).await?;
-        let (site, _ada) = Site::start(&rig, &app).await?;
-        let (mut bea, _) = site
-            .person_in_acme(StartingRole::ProjectLead, "bea")
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut bob, bob_id) = site
+            .person_called(StartingRole::TeamMember, "bob", "Bob Baker")
             .await?;
-        let (mut cleo, cleo_id) = site
-            .person_in_acme(StartingRole::TeamMember, "cleo")
-            .await?;
-        let (mut bob, bob_id) = site.person_in_acme(StartingRole::TeamMember, "bob").await?;
-        let path = format!("{PROJECTS}/{}/shares/{bob_id}", site.acme);
-        // A Team member does not decide who has which role.
-        let refused = cleo
-            .send("PUT", &path, Some(json!({"percent": 60})))
-            .await?;
-        assert_eq!(
-            (refused.status, refused.code()),
-            (StatusCode::FORBIDDEN, "access.forbidden")
-        );
-        let own = bob.send("PUT", &path, Some(json!({"percent": 10}))).await?;
-        assert_eq!(
-            own.status,
-            StatusCode::FORBIDDEN,
-            "nobody sets their own without the permission"
-        );
-        // A Project lead does.
-        let set = bea.send("PUT", &path, Some(json!({"percent": 60}))).await?;
-        assert_eq!(ok(&set)?["percent"], 60);
-        let over = bea
-            .send("PUT", &path, Some(json!({"percent": 101})))
-            .await?;
-        assert_eq!(over.code(), "work-times.share-invalid", "{}", over.body);
-        let nobody = bea
-            .send(
-                "PUT",
-                &format!(
-                    "{PROJECTS}/{}/shares/01a3185c-5000-73b2-8f37-20757db0778e",
-                    site.acme
-                ),
-                Some(json!({"percent": 60})),
-            )
-            .await?;
-        assert_eq!(nobody.status, StatusCode::NOT_FOUND);
-        // The list of the project shows it, to those who see people of the kind: 100 for nobody who
-        // has none set.
-        let listed = cleo
-            .send("GET", &format!("{PROJECTS}/{}/shares", site.acme), None)
-            .await?;
-        let items = ok(&listed)?["items"]
-            .as_array()
-            .cloned()
-            .unwrap_or_default();
-        let share_of = |person: &str| -> Option<Value> {
-            items
-                .iter()
-                .find(|item| item["person"]["id"] == person)
-                .map(|item| item["percent"].clone())
-        };
-        assert_eq!(share_of(&bob_id.to_string()), Some(json!(60)), "{items:?}");
-        assert_eq!(
-            share_of(&cleo_id.to_string()),
-            Some(json!(100)),
-            "none set is 100"
-        );
+        let usual = format!("{MINE}/usual-days");
+        let read = bob.send("GET", &format!("{MINE}?{RANGE}"), None).await?;
+        assert_eq!(ok(&read)?["usual_version"], 0);
+        // The first change is made on version 0 and makes version 1.
+        let first = bob.send("PUT", &usual, Some(week_at(0, 4, 360))).await?;
+        assert_eq!(ok(&first)?["version"], 1);
+        // A second change on the old version is a conflict that names the version it has now.
+        let stale = bob.send("PUT", &usual, Some(week_at(0, 3, 300))).await?;
+        assert_eq!(stale.code(), "edit.version-changed", "{}", stale.body);
+        assert_eq!(stale.body["conflict"]["version"], 1);
+        // Somebody who enters work times for Bob changes them on the version they read.
+        let for_bob = format!("/api/v1/people/{bob_id}/work-times/usual-days");
+        let by_ada = ada.send("PUT", &for_bob, Some(week_at(1, 5, 420))).await?;
+        assert_eq!(ok(&by_ada)?["version"], 2);
+        // Bob, who still has version 1, is told instead of overwriting.
+        let late = bob.send("PUT", &usual, Some(week_at(1, 3, 300))).await?;
+        assert_eq!(late.code(), "edit.version-changed", "{}", late.body);
+        assert_eq!(late.body["conflict"]["version"], 2);
+        let now = bob.send("GET", &format!("{MINE}?{RANGE}"), None).await?;
+        assert_eq!(ok(&now)?["usual_version"], 2);
+        assert_eq!(now.body["usual"][4]["minutes"], 420);
+        // The same days again change nothing and keep the version.
+        let same = bob.send("PUT", &usual, Some(week_at(2, 5, 420))).await?;
+        assert_eq!(ok(&same)?["version"], 2);
         Ok(())
     })
     .await
 }
 
 #[tokio::test]
-async fn plan_15_a_project_lead_sees_over_100_percent_without_other_projects_names() -> TestResult {
-    each_database("plan_15_over_100_percent", async |db| {
+async fn plan_11_a_reader_sees_a_person_only_by_the_projects_they_share() -> TestResult {
+    each_database("plan_11_work_times_by_shared_project", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let secret = project(&mut ada, "SECRET").await?;
-        let open = project(&mut ada, "OPEN").await?;
+        let other = project(&mut ada, "OTHER").await?;
         let roles = site.org.starting_roles().await?;
-        let lead = roles[StartingRole::ProjectLead.code()];
         let member = roles[StartingRole::TeamMember.code()];
-        // Bea leads ACME and OPEN, and has no role in SECRET; Bob works in all three.
-        let (mut bea, bea_member) = site.person_holding(lead, "bea", &site.acme).await?;
-        site.org
-            .give(
-                &bea_member,
-                lead,
-                open.parse().map_err(|_| "no project ID")?,
-            )
+        let other_id = other.parse().map_err(|_| "no project ID")?;
+        let (mut carl, carl_member) = site.person_holding(member, "carl", &site.acme).await?;
+        let (_dora, dora_member) = site.person_holding(member, "dora", &other).await?;
+        let (_erin, erin_member) = site.person_holding(member, "erin", &site.acme).await?;
+        site.org.give(&erin_member, member, other_id).await?;
+        // A Team member of ACME reads nothing of somebody who is only in OTHER...
+        let nothing = carl
+            .send("GET", &work_times_of(&dora_member.id.to_string()), None)
             .await?;
-        let (mut bob, bob_member) = site.person_holding(member, "bob", &site.acme).await?;
-        for project in [&secret, &open] {
-            site.org
-                .give(
-                    &bob_member,
-                    member,
-                    project.parse().map_err(|_| "no project ID")?,
-                )
-                .await?;
-        }
-        for (project, percent) in [(&site.acme, 60), (&secret, 50), (&open, 20)] {
-            let set = ada
-                .send(
-                    "PUT",
-                    &format!("{PROJECTS}/{project}/shares/{}", bob_member.id),
-                    Some(json!({"percent": percent})),
-                )
-                .await?;
-            ok(&set)?;
-        }
-        // Bea sees that Bob is over 100 percent, and the projects she may see by name.
-        let listed = bea
-            .send("GET", &format!("{PROJECTS}/{}/shares", site.acme), None)
+        assert_eq!(nothing.status, StatusCode::NOT_FOUND, "{}", nothing.body);
+        // ...and reads somebody who is in ACME too, though that person is in OTHER as well.
+        let found = carl
+            .send("GET", &work_times_of(&erin_member.id.to_string()), None)
             .await?;
-        let items = ok(&listed)?["items"]
-            .as_array()
-            .cloned()
-            .unwrap_or_default();
-        let bob_text = bob_member.id.to_string();
-        let of_bob = items
-            .iter()
-            .find(|item| item["person"]["id"] == bob_text)
-            .ok_or("Bob is not listed")?;
-        // The fact, never the sum: it would tell how much the project she may not see holds.
-        assert!(of_bob.get("sum").is_none(), "{of_bob}");
-        assert_eq!(of_bob["over_100"], true);
-        assert_eq!(
-            of_bob["others"].as_array().map(Vec::len),
-            Some(1),
-            "{of_bob}"
-        );
-        assert_eq!(of_bob["others"][0]["project"]["short_name"], "OPEN");
-        assert_eq!(of_bob["others"][0]["percent"], 20);
-        assert_eq!(of_bob["others_hidden"], true);
-        // The project she may not see is counted and never named.
-        let text = listed.body.to_string();
-        assert!(
-            !text.contains("SECRET") && !text.contains(&secret),
-            "{text}"
-        );
-        // Somebody who does not decide who has which role sees the share and no sums.
-        let (mut cleo, _) = site
-            .person_in_acme(StartingRole::TeamMember, "cleo")
+        assert_eq!(ok(&found)?["person"]["shown"], "name");
+        // Whoever enters work times for others reaches everybody.
+        let by_ada = ada
+            .send("GET", &work_times_of(&dora_member.id.to_string()), None)
             .await?;
-        let seen = cleo
-            .send("GET", &format!("{PROJECTS}/{}/shares", site.acme), None)
-            .await?;
-        let theirs = ok(&seen)?["items"].as_array().cloned().unwrap_or_default();
-        let of_bob = theirs
-            .iter()
-            .find(|item| item["person"]["id"] == bob_text)
-            .ok_or("Bob is not listed for Cleo")?;
-        assert_eq!(of_bob["percent"], 60);
-        assert!(
-            of_bob.get("sum").is_none() && of_bob.get("over_100").is_none(),
-            "{of_bob}"
-        );
-        // Bob sees his own shares, the sum and that it is over 100 percent, by the names he may see.
-        let mine = bob.send("GET", &format!("{MINE}?{RANGE}"), None).await?;
-        assert_eq!(ok(&mine)?["shares"]["sum"], 130);
-        assert_eq!(mine.body["shares"]["over_100"], true);
-        assert_eq!(
-            mine.body["shares"]["items"].as_array().map(Vec::len),
-            Some(3)
-        );
-        let _ = (TODAY, YESTERDAY);
+        assert_eq!(ok(&by_ada)?["person"]["shown"], "name");
+        let _ = carl_member;
         Ok(())
     })
     .await

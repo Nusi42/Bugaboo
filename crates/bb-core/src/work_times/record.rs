@@ -57,6 +57,9 @@ pub struct UsualWorkDay {
     /// The work hours of the day, in minutes.
     #[personal(category = "employee_time", basis = "contract")]
     pub minutes: u16,
+    /// Counts up with every change of the seven days; the same in all seven rows.
+    #[not_personal]
+    pub version: i64,
 }
 
 /// The share of a person in a project, in percent. A person with no row has 100 percent; the row

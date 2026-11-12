@@ -8394,7 +8394,7 @@ export interface components {
        * @description The other projects the person has a share in, as the reader may name them; only for a reader
        *     who decides who has which role.
        */
-      others?: components["schemas"]["ShareItemBody"][];
+      others?: components["schemas"]["ProjectLabelBody"][];
       /**
        * @description Whether the person has a share in another project that the reader may not see: it is never
        *     named.
@@ -11827,6 +11827,12 @@ export interface components {
     UsualDaysBody: {
       /** @description The seven days, Monday first. */
       days: components["schemas"]["UsualDayBody"][];
+      /**
+       * Format: int64
+       * @description The version of the usual work days the person looked at; 0 while they have none of their
+       *     own. A change is made on the version that was looked at.
+       */
+      version: number;
     };
     /** @description What a setting holds: yes or no, a whole number, or text. */
     ValueBody: boolean | number | string;
@@ -12111,6 +12117,11 @@ export interface components {
       truncated: boolean;
       /** @description The seven usual work days, Monday first. */
       usual: components["schemas"]["UsualDayBody"][];
+      /**
+       * Format: int64
+       * @description The version of the usual work days; 0 while the person has none of their own.
+       */
+      usual_version: number;
     };
     /**
      * @description What somebody else did to the work times of the person: entered, changed or removed an away time, or changed the usual work days or the work hours.
@@ -18795,6 +18806,7 @@ export interface operations {
       };
       400: components["responses"]["BadRequest"];
       401: components["responses"]["NotSignedIn"];
+      409: components["responses"]["Conflict"];
       413: components["responses"]["TooLarge"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
@@ -19667,6 +19679,7 @@ export interface operations {
       401: components["responses"]["NotSignedIn"];
       403: components["responses"]["Forbidden"];
       404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
       413: components["responses"]["TooLarge"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];

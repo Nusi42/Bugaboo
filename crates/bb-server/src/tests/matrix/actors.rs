@@ -461,20 +461,22 @@ pub(super) fn standing(actor: Actor, at: Where) -> Standing {
     }
 }
 
-/// How the actor is shown people of the kind *Work times* at the organization, from the table of
-/// architecture §7 (*Starting roles*, *Who sees people*): what an organization-wide role says, and
-/// nothing for a person who has no role for the whole organization (ADR-0030, amendment M8).
+/// How the actor is shown the administrator of the matrix, who has a role in every project, as
+/// people of the kind *Work times*: the most open level the actor has in any project, from the
+/// table of architecture §7 (*Starting roles*, *Who sees people*). A person with no role in any
+/// project sees nobody (ADR-0030, amendment M8).
 pub(super) fn work_times_level(actor: Actor) -> PeopleLevel {
     let of = |role: StartingRole| role.people_level(PeopleKind::WorkTimes);
     match actor {
         Actor::Role(role) => of(role),
+        // *No access* on the target leaves the role in the other projects.
         Actor::NoAccessOnTarget => of(StartingRole::Viewer),
-        Actor::NoAccessUnderLead => of(StartingRole::ProjectLead),
+        Actor::NoAccessUnderLead | Actor::LeadOnParent | Actor::LeadOnSiblingOnly => {
+            of(StartingRole::ProjectLead)
+        }
         Actor::KeySeeOnly => of(StartingRole::Administrator),
         Actor::Nobody
         | Actor::NoRole
-        | Actor::LeadOnParent
-        | Actor::LeadOnSiblingOnly
         | Actor::Exactly(_)
         | Actor::ExactlyBoth(..)
         | Actor::KeyForAnotherProject

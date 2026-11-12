@@ -179,6 +179,8 @@ pub(crate) mod work_times {
     pub(crate) const PROJECT: &str = "project";
     /// The share in percent, before and after.
     pub(crate) const SHARE: &str = "share";
+    /// Marks the event of a person who left: all their work times were deleted.
+    pub(crate) const LEFT: &str = "work_times_left";
     /// How many old away times were deleted (an event about the person).
     pub(crate) const DELETED: &str = "away_times_deleted";
     /// The away times with a last day before this one were older than they are kept.

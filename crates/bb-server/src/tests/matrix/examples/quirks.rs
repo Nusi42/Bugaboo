@@ -77,8 +77,8 @@ pub(in crate::sign_in_tests::matrix) enum Quirk {
     /// project: a person who may not know that project is told `resource.not-found`, as for one
     /// that is not there (SEC-03, ADR-0027 amendment).
     NamesASubjectOfTheTarget,
-    /// The route belongs to an open editor, a tab of a signed-in person: an access key is turned
-    /// away from it, whatever the key may do (ADR-0019).
+    /// The route belongs to an open editor, a tab of a signed-in person, or reads or changes work
+    /// times: an access key is turned away from it, whatever the key may do (ADR-0019, ADR-0030).
     SessionOnly,
     /// The route answers every signed-in actor and says in its answer what it did to each issue it
     /// was asked about (changing many issues, ISS-09): the issue of the example, in the target

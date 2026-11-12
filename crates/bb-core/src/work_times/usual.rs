@@ -65,6 +65,17 @@ impl UsualDays {
     }
 }
 
+/// The usual work days of a person as they are stored, with the version that counts up with every
+/// change, for the check that nobody changed them meanwhile (ADR-0019). A person who never changed
+/// them has none stored: version 0.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct StoredUsualDays {
+    /// The seven days.
+    pub days: UsualDays,
+    /// Counts up with every change.
+    pub version: i64,
+}
+
 impl Default for UsualDays {
     fn default() -> Self {
         Self::start()

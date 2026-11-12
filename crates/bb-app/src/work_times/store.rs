@@ -12,9 +12,9 @@
 
 use std::future::Future;
 
-use bb_core::id::{AwayTimeId, ProjectId, UserId};
+use bb_core::id::{AwayTimeId, EntityId, ProjectId, UserId};
 use bb_core::work_times::record::AwayTime;
-use bb_core::work_times::{Share, UsualDays};
+use bb_core::work_times::{Share, StoredUsualDays, UsualDays};
 use jiff::civil::Date;
 
 use crate::settings::SettingsStore;
@@ -23,9 +23,9 @@ use crate::store_macros::{queries, reads, writes};
 /// What the use cases of work times need from storage.
 pub trait WorkTimesStore: SettingsStore + 'static {
     queries! {
-        /// The usual work days of a person, if they have changed them; a person who has not has
-        /// [`UsualDays::start`].
-        fn usual_days(person: UserId) -> Option<UsualDays> = usual_days_in;
+        /// The usual work days of a person with their version, if they have changed them; a person
+        /// who has not has [`UsualDays::start`] and version 0.
+        fn usual_days(person: UserId) -> Option<StoredUsualDays> = usual_days_in;
         /// The share of a person in a project, if one was set; a person with none has
         /// [`Share::START`].
         fn share(person: UserId, project: ProjectId) -> Option<Share> = share_in;
@@ -41,13 +41,20 @@ pub trait WorkTimesStore: SettingsStore + 'static {
         /// The shares that were set in one project for these people.
         fn shares_in(project: ProjectId, people: Vec<UserId>) -> Vec<(UserId, Share)>;
         /// The away times of these people that touch the days from `first` to `last`, by first day,
-        /// with their notes (the use case decides who reads a note).
-        fn away_times_of(people: Vec<UserId>, first: Date, last: Date) -> Vec<AwayTime>;
+        /// with their notes (the use case decides who reads a note), at most `limit` of them.
+        fn away_times_of(
+            people: Vec<UserId>,
+            first: Date,
+            last: Date,
+            limit: Option<u64>
+        ) -> Vec<AwayTime>;
     }
 
     writes! {
-        /// Writes the seven usual work days of a person, in place of the ones they had.
-        fn put_usual_days(person: UserId, days: &UsualDays) -> ();
+        /// Writes the seven usual work days of a person, in place of the ones they had, and counts
+        /// the version up, if they are still at `version` (0 while the person has none of their
+        /// own); says whether they were.
+        fn put_usual_days(person: UserId, days: &UsualDays, version: i64) -> bool;
         /// Writes the share of a person in a project, in place of the one they had.
         fn put_share(person: UserId, project: ProjectId, share: Share) -> ();
         /// Stores a new away time.
@@ -63,7 +70,8 @@ pub trait WorkTimesStore: SettingsStore + 'static {
         fn delete_old_away_times(before: Date) -> Vec<(UserId, u64)>;
         /// Deletes everything of work times that belongs to a person: usual work days, shares and
         /// away times with their events, the outbox entries and the notifications about them. The
-        /// person's choice of *Holidays* is a setting and goes through the registry.
-        fn delete_work_times_of(person: UserId) -> ();
+        /// person's choice of *Holidays* is a setting and goes through the registry; `setting_record`
+        /// is the record its events are about, which this deletes too.
+        fn delete_work_times_of(person: UserId, setting_record: EntityId) -> ();
     }
 }

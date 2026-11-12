@@ -4,7 +4,7 @@
 //! events and the notifications about them.
 
 use bb_core::event::RecordKind;
-use bb_core::id::UserId;
+use bb_core::id::{EntityId, UserId};
 use bb_core::notification::NotificationKind;
 use jiff::civil::Date;
 use jiff::tz::TimeZone;
@@ -151,11 +151,12 @@ pub(super) async fn delete(
 }
 
 /// Deletes everything of work times that belongs to a person: their usual work days, shares and
-/// away times, the events of changes of those (also of away times that were removed), and the
-/// notifications about them.
+/// away times, the events of changes of those (also of away times that were removed) and of the
+/// choice of *Holidays*, and the notifications about them.
 pub(super) async fn delete_of_person(
     transaction: &mut Transaction,
     person: UserId,
+    setting_record: EntityId,
 ) -> Result<(), StoreError> {
     delete_notifications(
         transaction,
@@ -181,6 +182,15 @@ pub(super) async fn delete_of_person(
         )
         .await?;
     }
+    // The choice of *Holidays* is a setting of the person; the events of its changes go with it.
+    delete_events(
+        transaction,
+        &events_where(
+            RecordKind::Setting,
+            Expr::col(Event::EntityId).eq(setting_record.stored()),
+        ),
+    )
+    .await?;
     let mut away = Query::delete();
     away.from_table(AwayTimeRow::Table)
         .and_where(Expr::col(AwayTimeRow::Person).eq(id.clone()));

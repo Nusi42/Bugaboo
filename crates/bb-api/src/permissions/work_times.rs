@@ -2,8 +2,9 @@
 //! signed-in person, another person's usual work days and away times the permission *Enter work
 //! times for others*, a share *Decide who has which role* in the project, and what depends on the
 //! record (another person's work times by *Who sees people*, an away time by whose it is) is
-//! judged by the use case, behind the route of a signed-in person: no access key reaches it. Every read of work times is personal data and is never stored by a
-//! cache; the answer to a change is never kept anyway.
+//! judged by the use case, behind the route of a signed-in person: no access key reaches it. Every
+//! read of work times is personal data and is never stored by a cache; the answer to a change is
+//! never kept anyway.
 
 use bb_policy::Permission;
 

@@ -89,9 +89,7 @@ pub async fn enter_away_time<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: EnterAwayTime,
 ) -> Result<Authorized<ChangedAwayTime>, AppError> {
-    let actor = ctx
-        .work_times_changer(&input.session_token, input.person)
-        .await?;
+    let actor = ctx.work_times_actor(&input.session_token).await?;
     let whose = ctx.work_times_to_change(&actor, input.person).await?;
     checked(&input.days)?;
     let note = note_of(&whose, input.days.note.as_deref())?;

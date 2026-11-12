@@ -7,8 +7,8 @@
 //! A share counts as nothing while the person has no role in the project. The answer holds no note
 //! and nobody who entered an away time: only the days, which the reader sees as *Away*, and the
 //! public holidays by their words. Whether the reader may name those days is the field
-//! `away_visible`; a reader who may not still gets the minutes (they shape the bar) and the bare
-//! fact that the person is away.
+//! `away_visible`; a reader who may not still gets the minutes (they shape the bar), and no away
+//! half and no holiday.
 
 use std::collections::{BTreeMap, HashMap};
 
@@ -45,9 +45,10 @@ pub struct DayMinutes {
     pub date: Date,
     /// The minutes the person can work on it in the project.
     pub minutes: u32,
-    /// Which halves of the day the person is away.
+    /// Which halves of the day the person is away; none for a reader who may not know the person's
+    /// work times (`PersonMinutes::away_visible`).
     pub away: Halves,
-    /// The public holiday that counts for the person on this day.
+    /// The public holiday that counts for the person on this day; none for such a reader.
     pub holiday: Option<Holiday>,
 }
 
@@ -121,7 +122,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let mut away: HashMap<UserId, Vec<AwayTime>> = HashMap::new();
         for time in self
             .store()
-            .away_times_of(people.clone(), query.first, query.last)
+            .away_times_of(people.clone(), query.first, query.last, None)
             .await
             .map_err(|error| internal::<S>(&error))?
         {
@@ -133,7 +134,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map(|person| (*person, query.project))
             .collect();
         self.evaluate_people_in(&pairs).await?;
-        let away_visible = reader.people_level(PeopleKind::WorkTimes, PeopleContext::WorkTimes)
+        let away_visible = reader.people_level(PeopleKind::WorkTimes, PeopleContext::Ordinary)
             != PeopleLevel::Hidden;
         let days = dates(query.first, query.last);
         let mut holidays_by_region: HashMap<_, BTreeMap<Date, Holiday>> = HashMap::new();
@@ -170,13 +171,16 @@ impl<S: AuthStore> Ctx<'_, S> {
                     .iter()
                     .map(|date| {
                         let holiday = holidays.get(date).copied();
+                        let away = times
+                            .iter()
+                            .fold(Halves::NONE, |halves, time| halves.and(time.away_on(*date)));
                         DayMinutes {
                             date: *date,
                             minutes: minutes_on(&usual, share, *date, times, holiday.is_some()),
-                            away: times
-                                .iter()
-                                .fold(Halves::NONE, |halves, time| halves.and(time.away_on(*date))),
-                            holiday,
+                            // The minutes shape the bar; the days are named only to a reader who
+                            // may know the person's work times.
+                            away: if away_visible { away } else { Halves::NONE },
+                            holiday: holiday.filter(|_| away_visible),
                         }
                     })
                     .collect(),

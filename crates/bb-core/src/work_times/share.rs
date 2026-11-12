@@ -48,3 +48,11 @@ pub fn sum_of_shares(shares: impl IntoIterator<Item = Share>) -> u32 {
         .map(|share| u32::from(share.percent()))
         .sum()
 }
+
+/// Whether shares that are in force add up to more than 100 percent: the one rule of *Too much at
+/// once*, for the person and for a project lead alike. Only shares that were set and apply count
+/// (a person with no row has the start value, which is no choice of anybody).
+#[must_use]
+pub fn over_100(shares: impl IntoIterator<Item = Share>) -> bool {
+    sum_of_shares(shares) > u32::from(Share::PERCENT_MAX)
+}

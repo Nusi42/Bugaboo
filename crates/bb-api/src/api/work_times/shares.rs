@@ -14,12 +14,12 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
 use super::super::access_bodies::cursor_error;
+use super::super::access_keys::ProjectLabelBody;
 use super::super::auth::{
     AuthHandle, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer, NotSignedInAnswer, Session,
     answer, answer_authorized,
 };
 use super::super::path_id;
-use super::ShareItemBody;
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
@@ -50,7 +50,7 @@ pub(crate) struct MemberShareBody {
     /// The other projects the person has a share in, as the reader may name them; only for a reader
     /// who decides who has which role.
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    others: Vec<ShareItemBody>,
+    others: Vec<ProjectLabelBody>,
     /// Whether the person has a share in another project that the reader may not see: it is never
     /// named.
     others_hidden: bool,
@@ -64,7 +64,7 @@ impl From<&MemberShare> for MemberShareBody {
             person: member.person.clone(),
             percent: member.percent,
             over_100: member.over_100,
-            others: member.others.iter().map(ShareItemBody::from).collect(),
+            others: member.others.iter().map(ProjectLabelBody::from).collect(),
             others_hidden: member.others_hidden,
         }
     }

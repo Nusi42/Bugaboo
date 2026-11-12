@@ -12,11 +12,11 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
 use super::super::auth::{
-    AuthHandle, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer, NotSignedInAnswer, Session,
-    answer_authorized,
+    AuthHandle, ConflictAnswer, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
+    NotSignedInAnswer, Session, answer_authorized,
 };
+use super::super::date_range::{RangeParams, person_and_range};
 use super::super::path_id;
-use super::super::working_hours::{RangeParams, person_and_range};
 use super::{UsualDaysBody, WorkTimesBody};
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 
@@ -107,7 +107,8 @@ async fn get_work_times_of_person(
     responses(
         (status = 200, description = "The usual work days as they are now.", body = UsualDaysBody),
         InvalidAnswer,
-        NotSignedInAnswer
+        NotSignedInAnswer,
+        ConflictAnswer
     )
 )]
 async fn change_my_usual_days(
@@ -116,8 +117,8 @@ async fn change_my_usual_days(
     Session(session_token): Session,
     body: Result<ApiJson<UsualDaysBody>, ApiError>,
 ) -> Result<Response, ApiError> {
-    let read = body.and_then(|ApiJson(body)| body.read());
-    let days = auth.after_who_asks(&info, &session_token, read).await?;
+    let read = body.and_then(|ApiJson(body)| Ok((body.version, body.read()?)));
+    let (version, days) = auth.after_who_asks(&info, &session_token, read).await?;
     let changed = auth
         .api()?
         .change_usual_days(
@@ -125,6 +126,7 @@ async fn change_my_usual_days(
             ChangeUsualDays {
                 session_token,
                 person: None,
+                version,
                 days,
             },
         )
@@ -146,7 +148,8 @@ async fn change_my_usual_days(
         InvalidAnswer,
         NotSignedInAnswer,
         ForbiddenAnswer,
-        NotFoundAnswer
+        NotFoundAnswer,
+        ConflictAnswer
     )
 )]
 async fn change_usual_days_of_person(
@@ -158,9 +161,9 @@ async fn change_usual_days_of_person(
 ) -> Result<Response, ApiError> {
     let read = path_id::<UserId>(&person).and_then(|person| {
         let ApiJson(body) = body?;
-        Ok((person, body.read()?))
+        Ok((person, body.version, body.read()?))
     });
-    let (person, days) = auth.after_who_asks(&info, &session_token, read).await?;
+    let (person, version, days) = auth.after_who_asks(&info, &session_token, read).await?;
     let changed = auth
         .api()?
         .change_usual_days(
@@ -168,6 +171,7 @@ async fn change_usual_days_of_person(
             ChangeUsualDays {
                 session_token,
                 person: Some(person),
+                version,
                 days,
             },
         )

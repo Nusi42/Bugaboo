@@ -21,7 +21,7 @@ use utoipa_axum::router::OpenApiRouter;
 
 use super::access_keys::ProjectLabelBody;
 use super::auth::AuthHandle;
-use super::working_hours::invalid;
+use super::date_range::invalid;
 use crate::errors::ApiError;
 
 /// One weekday of the usual work days.
@@ -47,6 +47,9 @@ impl From<UsualDay> for UsualDayBody {
 /// The seven usual work days, Monday first.
 #[derive(Serialize, Deserialize, ToSchema)]
 pub(crate) struct UsualDaysBody {
+    /// The version of the usual work days the person looked at; 0 while they have none of their
+    /// own. A change is made on the version that was looked at.
+    version: i64,
     /// The seven days, Monday first.
     #[schema(min_items = 7, max_items = 7)]
     days: Vec<UsualDayBody>,
@@ -55,8 +58,9 @@ pub(crate) struct UsualDaysBody {
 impl Masked for UsualDaysBody {}
 
 impl UsualDaysBody {
-    fn of(days: &[UsualDay]) -> Self {
+    fn of(days: &[UsualDay], version: i64) -> Self {
         Self {
+            version,
             days: days.iter().copied().map(UsualDayBody::from).collect(),
         }
     }
@@ -77,7 +81,7 @@ impl UsualDaysBody {
 
 impl From<&ChangedUsualDays> for UsualDaysBody {
     fn from(changed: &ChangedUsualDays) -> Self {
-        Self::of(&changed.usual)
+        Self::of(&changed.usual, changed.version)
     }
 }
 
@@ -180,6 +184,8 @@ pub(crate) struct WorkTimesBody {
     may_change: bool,
     /// The seven usual work days, Monday first.
     usual: Vec<UsualDayBody>,
+    /// The version of the usual work days; 0 while the person has none of their own.
+    usual_version: i64,
     /// Which public holidays count for the person: `none`, `de` or a state such as `de-by`.
     holidays: HolidayRegion,
     /// The away times that touch the stretch, by first day. Another person's show their days only.
@@ -200,6 +206,7 @@ impl From<&WorkTimesView> for WorkTimesBody {
             own: view.own,
             may_change: view.may_change,
             usual: view.usual.iter().copied().map(UsualDayBody::from).collect(),
+            usual_version: view.usual_version,
             holidays: view.holidays,
             away: view.away.iter().map(AwayBody::from).collect(),
             truncated: view.truncated,

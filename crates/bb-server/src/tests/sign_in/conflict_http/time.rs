@@ -71,6 +71,37 @@ pub(super) async fn work_day(
     )
 }
 
+/// The usual work days of Ada or of Bob, changed once so that they have a version, and a stale
+/// change of them.
+pub(super) async fn usual_days(
+    id: &str,
+    site: &Site<'_>,
+    ada: &mut Browser,
+) -> Result<Save, Failure> {
+    let week = |minutes: u16| -> serde_json::Value {
+        json!({"days": (0..7).map(|at| json!({"works": at < 4, "minutes": minutes})).collect::<Vec<_>>()})
+    };
+    let (path, read_path) = if id == "changeMyUsualDays" {
+        (
+            "/api/v1/me/work-times/usual-days".to_owned(),
+            "/api/v1/me/work-times?from=2027-01-01&to=2027-01-02".to_owned(),
+        )
+    } else {
+        let (_bob, bob_id) = site
+            .person_called(StartingRole::TeamMember, "bob-usual", "Bob Baker")
+            .await?;
+        (
+            format!("/api/v1/people/{bob_id}/work-times/usual-days"),
+            format!("/api/v1/people/{bob_id}/work-times?from=2027-01-01&to=2027-01-02"),
+        )
+    };
+    let mut first = week(360);
+    first["version"] = json!(0);
+    ok(&ada.send("PUT", &path, Some(first)).await?)?;
+    let now = read(ada, &read_path).await?;
+    Save::new("PUT", path, week(300), &now["usual_version"])
+}
+
 /// An away time of Ada's, and a stale change or removal of it.
 pub(super) async fn away_time(id: &str, ada: &mut Browser) -> Result<Save, Failure> {
     let made = made(

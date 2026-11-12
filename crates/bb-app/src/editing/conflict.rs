@@ -313,6 +313,13 @@ impl<S: AuthStore> Ctx<'_, S> {
                     .map_err(failed)?
                     .map(|time| time.version)
             }
+            // The usual work days of a person: told only to who may change them (`work_times`).
+            RecordKind::WorkTimes => {
+                found(UserId::from_bytes(bytes).ok(), |id| store.usual_days(id))
+                    .await
+                    .map_err(failed)?
+                    .map(|stored| stored.version)
+            }
             // An agent is its person's own: nobody else is told its version.
             RecordKind::Agent => found(AgentId::from_bytes(bytes).ok(), |id| store.agent(id))
                 .await

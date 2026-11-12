@@ -16,10 +16,10 @@ pub use crate::parts::{Counts, Kind, Topic};
 /// and single permissions (decisions on access keys and M3-Q6): a key cannot invite people,
 /// change who has which role or change the settings of the organization (which could switch off
 /// the two-step requirement, open signing up or change how long sessions last), take over
-/// somebody's editing, change issue types, layouts, fields, labels and tags, or read or change other
-/// people's working hours (ADR-0025, amendment M6) or enter their work times (amendment M8). These stay in the app, where the person is
-/// signed in. Defined once, here
-/// beside the kinds a key's choice keeps; narrowing, the key form and the key's own checks all
+/// somebody's editing, change issue types, layouts, fields, labels and tags, or read or change
+/// other people's working hours (ADR-0025, amendment M6) or enter their work times (amendment M8).
+/// These stay in the app, where the person is signed in. Defined once, here beside the kinds a
+/// key's choice keeps; narrowing, the key form and the key's own checks all
 /// read this list.
 // The last three entries are the permissions of working hours, `OF_WORKING_HOURS` below, and
 // *Enter work times for others* (ADR-0025, amendment M8): fifteen in all.

@@ -449,9 +449,3 @@ route = "GET /api/v1/people/{person}/work-times"
 property = "usual"
 whole_value = true
 reason = "The seven weekdays of one person, Monday first: a list bounded by the week, not one that grows with data, and the form of the usual work days needs all of them at once (PLAN-11, ADR-0030; M8-F31)."
-
-[[exempt]]
-route = "GET /api/v1/projects/{project}/shares"
-property = "others"
-embedded = true
-reason = "The other projects a person of the list has a share in, as the reader may name them: part of the item itself and no other resource, with the project as a reference that hides a project the reader may not see; only for a reader who decides who has which role in the project (PLAN-15, ADR-0030; M8-F33)."

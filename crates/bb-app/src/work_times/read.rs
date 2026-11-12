@@ -82,15 +82,20 @@ pub async fn work_times<S: AuthStore>(
     let actor: Actor = ctx.work_times_actor(&input.session_token).await?;
     let whose = ctx.work_times_to_read(&actor, input.person).await?;
     checked_range(input.first, input.last)?;
-    let usual = ctx
+    let stored = ctx
         .store()
         .usual_days(whose.person)
         .await
-        .map_err(|error| internal::<S>(&error))?
-        .unwrap_or_default();
+        .map_err(|error| internal::<S>(&error))?;
+    let usual = stored.map_or_else(UsualDays::start, |stored| stored.days);
     let mut times = ctx
         .store()
-        .away_times_of(vec![whose.person], input.first, input.last)
+        .away_times_of(
+            vec![whose.person],
+            input.first,
+            input.last,
+            Some(AWAY_TIMES_MAX as u64 + 1),
+        )
         .await
         .map_err(|error| internal::<S>(&error))?;
     let truncated = times.len() > AWAY_TIMES_MAX;
@@ -109,6 +114,7 @@ pub async fn work_times<S: AuthStore>(
         own: whose.own,
         may_change: whose.may_change(),
         usual: usual_of(&usual),
+        usual_version: stored.map_or(0, |stored| stored.version),
         holidays: ctx.holidays_of(whose.person).await?,
         away,
         truncated,

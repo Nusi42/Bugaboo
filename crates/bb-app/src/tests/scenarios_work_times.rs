@@ -70,6 +70,7 @@ pub(crate) async fn change_usual_days_scenario(world: &World) -> Added {
             ChangeUsualDays {
                 session_token: token(world),
                 person: None,
+                version: 0,
                 days: week(4, 360),
             },
         ),

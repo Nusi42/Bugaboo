@@ -4,20 +4,23 @@
 use bb_core::id::{AwayTimeId, EntityId, ProjectId, UserId};
 use bb_core::notification::NotificationKind;
 use bb_core::work_times::record::AwayTime;
-use bb_core::work_times::{Share, UsualDays};
+use bb_core::work_times::{Share, StoredUsualDays, UsualDays};
 use jiff::civil::Date;
 
 use super::fake::{FakeError, FakeStore, Tx};
 use crate::work_times::WorkTimesStore;
 
 impl WorkTimesStore for FakeStore {
-    async fn usual_days_in(tx: &mut Tx, person: UserId) -> Result<Option<UsualDays>, FakeError> {
+    async fn usual_days_in(
+        tx: &mut Tx,
+        person: UserId,
+    ) -> Result<Option<StoredUsualDays>, FakeError> {
         Ok(tx
             .state
             .usual_days
             .iter()
             .find(|(known, _)| *known == person)
-            .map(|(_, days)| *days))
+            .map(|(_, stored)| *stored))
     }
 
     async fn share_in(
@@ -51,7 +54,7 @@ impl WorkTimesStore for FakeStore {
                 .usual_days
                 .iter()
                 .filter(|(person, _)| people.contains(person))
-                .copied()
+                .map(|(person, stored)| (*person, stored.days))
                 .collect()
         }))
     }
@@ -92,6 +95,7 @@ impl WorkTimesStore for FakeStore {
         people: Vec<UserId>,
         first: Date,
         last: Date,
+        limit: Option<u64>,
     ) -> Result<Vec<AwayTime>, FakeError> {
         Ok(self.read(|state| {
             let mut found: Vec<AwayTime> = state
@@ -103,6 +107,9 @@ impl WorkTimesStore for FakeStore {
                 .cloned()
                 .collect();
             found.sort_by_key(|time| (time.first, time.id));
+            found.truncate(limit.map_or(usize::MAX, |most| {
+                usize::try_from(most).unwrap_or(usize::MAX)
+            }));
             found
         }))
     }
@@ -111,10 +118,26 @@ impl WorkTimesStore for FakeStore {
         tx: &mut Tx,
         person: UserId,
         days: &UsualDays,
-    ) -> Result<(), FakeError> {
+        version: i64,
+    ) -> Result<bool, FakeError> {
+        let current = tx
+            .state
+            .usual_days
+            .iter()
+            .find(|(known, _)| *known == person)
+            .map_or(0, |(_, stored)| stored.version);
+        if current != version {
+            return Ok(false);
+        }
         tx.state.usual_days.retain(|(known, _)| *known != person);
-        tx.state.usual_days.push((person, *days));
-        Ok(())
+        tx.state.usual_days.push((
+            person,
+            StoredUsualDays {
+                days: *days,
+                version: version + 1,
+            },
+        ));
+        Ok(true)
     }
 
     async fn put_share(
@@ -191,7 +214,11 @@ impl WorkTimesStore for FakeStore {
         Ok(found)
     }
 
-    async fn delete_work_times_of(tx: &mut Tx, person: UserId) -> Result<(), FakeError> {
+    async fn delete_work_times_of(
+        tx: &mut Tx,
+        person: UserId,
+        _setting_record: EntityId,
+    ) -> Result<(), FakeError> {
         tx.state.usual_days.retain(|(known, _)| *known != person);
         tx.state.shares.retain(|(known, _, _)| *known != person);
         tx.state.away_times.retain(|time| time.person != person);

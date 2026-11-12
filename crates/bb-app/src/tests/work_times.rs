@@ -32,6 +32,7 @@ async fn bob_in_a_project(world: &World) -> Result<(Started, ProjectId), String>
         ChangeUsualDays {
             session_token: bob.session_token.clone(),
             person: None,
+            version: 0,
             days: week(4, 360),
         },
     )
@@ -348,5 +349,98 @@ async fn plan_11_a_person_who_leaves_loses_all_work_times() -> Outcome {
     // Somebody else's work times stay.
     assert_eq!(away_count(&world), 1);
     assert_eq!(world.store.read(|state| state.shares.len()), 1);
+    Ok(())
+}
+
+#[tokio::test]
+async fn plan_15_a_reader_who_may_not_know_the_work_times_gets_the_minutes_and_no_days_named()
+-> Outcome {
+    let world = World::new().await?;
+    let (bob, project) = bob_in_a_project(&world).await?;
+    with_role(&world, &bob, StartingRole::TeamMember, Some(project)).await?;
+    // An away time on Thursday 14 May 2026, which is Ascension Day for Germany as well.
+    entered(
+        &world,
+        Some(bob.person.id),
+        days(date(2026, 5, 13), date(2026, 5, 13)),
+    )
+    .await
+    .map_err(text)?;
+    let guest = world.person("guest@example.test").await.map_err(text)?;
+    with_role(&world, &guest, StartingRole::Guest, Some(project)).await?;
+    let read_as = |person: UserId| {
+        let (world, bob) = (&world, &bob);
+        async move {
+            let reader = world
+                .ctx()
+                .evaluate(person, Place::Project(project))
+                .await
+                .map_err(text)?;
+            let found = world
+                .ctx()
+                .work_minutes(
+                    &reader,
+                    WorkMinutesQuery {
+                        people: vec![bob.person.id],
+                        project,
+                        first: date(2026, 5, 11),
+                        last: date(2026, 5, 14),
+                    },
+                )
+                .await
+                .map_err(text)?;
+            Ok::<_, String>(found.people[0].clone())
+        }
+    };
+    let seen = read_as(world.admin.person.id).await?;
+    let unseen = read_as(guest.person.id).await?;
+    assert!(seen.away_visible && !unseen.away_visible);
+    assert_eq!(seen.days[2].away, Halves::BOTH);
+    assert_eq!(seen.days[3].holiday, Some(Holiday::AscensionDay));
+    // The minutes are the same: they shape the bar.
+    let of = |person: &crate::work_times::PersonMinutes| -> Vec<u32> {
+        person.days.iter().map(|day| day.minutes).collect()
+    };
+    assert_eq!(of(&seen), of(&unseen));
+    assert!(unseen.days.iter().all(|day| day.away == Halves::NONE));
+    assert!(unseen.days.iter().all(|day| day.holiday.is_none()));
+    Ok(())
+}
+
+#[tokio::test]
+async fn plan_11_a_read_of_away_times_says_when_it_left_some_out() -> Outcome {
+    let world = World::new().await?;
+    let admin = world.admin.person.id;
+    let base = date(2020, 1, 1);
+    let first_id = entered(&world, None, days(base, base))
+        .await
+        .map_err(text)?;
+    {
+        let mut shared = world.store.lock();
+        let template = shared
+            .state
+            .away_times
+            .iter()
+            .find(|time| time.id == first_id)
+            .cloned()
+            .ok_or("no away time")?;
+        for _ in 0..crate::work_times::AWAY_TIMES_MAX {
+            shared.state.away_times.push(template.clone());
+        }
+    }
+    let read = crate::work_times::work_times(
+        &world.ctx(),
+        crate::work_times::WorkTimesQuery {
+            session_token: token(&world),
+            person: Some(admin),
+            first: base,
+            last: base,
+        },
+    )
+    .await
+    .map_err(text)?
+    .into_value();
+    assert_eq!(read.away.len(), crate::work_times::AWAY_TIMES_MAX);
+    assert!(read.truncated);
     Ok(())
 }

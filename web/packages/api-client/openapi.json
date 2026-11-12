@@ -11349,6 +11349,9 @@
           "401": {
             "$ref": "#/components/responses/NotSignedIn"
           },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
           "413": {
             "$ref": "#/components/responses/TooLarge"
           },
@@ -12965,6 +12968,9 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
           },
           "413": {
             "$ref": "#/components/responses/TooLarge"
@@ -25502,7 +25508,7 @@
           "others": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ShareItemBody"
+              "$ref": "#/components/schemas/ProjectLabelBody"
             },
             "description": "The other projects the person has a share in, as the reader may name them; only for a reader\nwho decides who has which role."
           },
@@ -32291,7 +32297,7 @@
       "UsualDaysBody": {
         "type": "object",
         "description": "The seven usual work days, Monday first.",
-        "required": ["days"],
+        "required": ["version", "days"],
         "properties": {
           "days": {
             "type": "array",
@@ -32301,6 +32307,11 @@
             "description": "The seven days, Monday first.",
             "maxItems": 7,
             "minItems": 7
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the usual work days the person looked at; 0 while they have none of their\nown. A change is made on the version that was looked at."
           }
         }
       },
@@ -32882,6 +32893,7 @@
           "own",
           "may_change",
           "usual",
+          "usual_version",
           "holidays",
           "away",
           "truncated",
@@ -32932,6 +32944,11 @@
               "$ref": "#/components/schemas/UsualDayBody"
             },
             "description": "The seven usual work days, Monday first."
+          },
+          "usual_version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the usual work days; 0 while the person has none of their own."
           }
         }
       },

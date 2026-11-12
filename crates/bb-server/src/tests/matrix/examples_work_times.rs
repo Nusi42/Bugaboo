@@ -21,7 +21,10 @@ const NOBODYS: &str = "01a3185c-5000-73b2-8f37-20757db0778e";
 
 /// Seven usual work days, Monday to Thursday with 6 hours.
 fn a_week() -> Value {
-    json!({"days": (0..7).map(|at| json!({"works": at < 4, "minutes": 360})).collect::<Vec<_>>()})
+    json!({
+        "version": 0,
+        "days": (0..7).map(|at| json!({"works": at < 4, "minutes": 360})).collect::<Vec<_>>(),
+    })
 }
 
 /// The days of an away time, a few days of its own for each call so the calls do not meet.

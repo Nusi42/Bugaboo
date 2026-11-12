@@ -170,7 +170,7 @@ pub(crate) struct State {
     pub(crate) starter_fields: Vec<bb_core::time::entry::StarterFieldMark>,
     pub(crate) starting_roles_due: Vec<bb_core::technical::TechnicalName>,
     pub(crate) work_days: Vec<bb_core::working_time::record::StoredDay>,
-    pub(crate) usual_days: Vec<(UserId, bb_core::work_times::UsualDays)>,
+    pub(crate) usual_days: Vec<(UserId, bb_core::work_times::StoredUsualDays)>,
     pub(crate) shares: Vec<(UserId, ProjectId, bb_core::work_times::Share)>,
     pub(crate) away_times: Vec<bb_core::work_times::record::AwayTime>,
 }

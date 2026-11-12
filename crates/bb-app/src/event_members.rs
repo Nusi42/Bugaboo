@@ -130,6 +130,7 @@ pub fn usual_days_recorded(
     person: UserId,
     before: Option<&UsualDays>,
     after: &UsualDays,
+    version_before: i64,
 ) -> Vec<FieldChange> {
     let json_of = |days: &UsualDays| {
         Value::Array(
@@ -145,6 +146,11 @@ pub fn usual_days_recorded(
             field: work_times_member::USUAL.to_owned(),
             before: before.map(json_of),
             after: Some(json_of(after)),
+        },
+        if version_before == 0 {
+            set_to(VERSION, json!(FIRST_VERSION))
+        } else {
+            counted_up(version_before)
         },
     ]
 }

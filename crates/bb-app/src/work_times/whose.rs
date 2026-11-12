@@ -2,18 +2,20 @@
 //! reads and who changes another person's work times (ADR-0030, decision 2 and amendment M8).
 //!
 //! - One's own, always, in a browser: no access key reaches work times.
-//! - Another person's are read as *Who sees people* allows for the kind *Work times*: *Hidden*
-//!   answers exactly like a person that does not exist, so nobody learns who has work times.
+//! - Another person's are read as *Who sees people* allows for the kind *Work times*, by the most
+//!   open level the reader has in the projects where the person has a role. A reader who shares no
+//!   project with the person is shown them as *Hidden*, which answers exactly like a person that
+//!   does not exist, so nobody learns who has work times.
 //! - Another person's usual work days, work hours and away times are changed with *Enter work times
-//!   for others* and nothing else. Whoever holds it also reads them, by name. Nobody but the person
-//!   reads or writes the note of an away time.
+//!   for others* and nothing else. Whoever holds it also reads them, by name, whatever the projects.
+//!   Nobody but the person reads or writes the note of an away time.
 //! - A share is set by a person who decides who has which role in the project (`shares.rs`).
 
 use std::sync::Arc;
 
 use bb_core::ErrorCode;
 use bb_core::access::PeopleLevel;
-use bb_core::id::UserId;
+use bb_core::id::{ProjectId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Evaluation, PeopleContext, Permission, PersonRef, Place};
 
@@ -28,13 +30,19 @@ pub(super) struct Whose {
     pub(super) own: bool,
     /// What the reader may do for the whole organization.
     pub(super) evaluation: Arc<Evaluation>,
+    /// How the reader is shown the person: the most open level of the kind *Work times* that they
+    /// have where the person has a role, and *Names* for a holder of *Enter work times for others*.
+    level: PeopleLevel,
+    /// The rights the person is named with: those of the reader in the project that gave the level.
+    naming: Arc<Evaluation>,
+    /// Where `naming` counts.
+    context: PeopleContext,
 }
 
 impl Whose {
-    /// How the reader is shown the people of work times.
-    pub(super) fn level(&self) -> PeopleLevel {
-        self.evaluation
-            .people_level(PeopleKind::WorkTimes, PeopleContext::WorkTimes)
+    /// How the reader is shown the person.
+    pub(super) const fn level(&self) -> PeopleLevel {
+        self.level
     }
 
     /// Whether the reader may enter usual work days, work hours and away times for the person.
@@ -44,31 +52,13 @@ impl Whose {
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// Who asks about work times: a person in a browser. No access key reads work times, so a key
+    /// Who asks about work times: a person in a browser. No access key reaches work times, so a key
     /// is turned away with `auth.access-key-not-allowed`.
     ///
     /// # Errors
     /// The refusals of signing in.
     pub(super) async fn work_times_actor(&self, session_token: &str) -> Result<Actor, AppError> {
         self.session_actor(session_token).await
-    }
-
-    /// Who changes the work times of `person` (the actor's own when `None`): one's own are a
-    /// record of the person in a browser, which no access key reaches; another person's are judged
-    /// by *Enter work times for others*, which no key holds either (ADR-0025, amendment M8), so a
-    /// key is refused there like anybody who lacks it.
-    ///
-    /// # Errors
-    /// The refusals of signing in, and `auth.access-key-not-allowed` for a key and one's own.
-    pub(super) async fn work_times_changer(
-        &self,
-        session_token: &str,
-        person: Option<UserId>,
-    ) -> Result<Actor, AppError> {
-        match person {
-            None => self.session_actor(session_token).await,
-            Some(_) => self.actor(session_token).await,
-        }
     }
 
     /// The work times of `person` (the actor's own when `None`) as the actor may read them.
@@ -119,9 +109,9 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// The person of the work times as the reader sees them.
     pub(super) async fn work_times_person_of(&self, whose: &Whose) -> Result<PersonRef, AppError> {
         self.person_ref(
-            &whose.evaluation,
+            &whose.naming,
             PeopleKind::WorkTimes,
-            PeopleContext::WorkTimes,
+            whose.context,
             whose.person,
         )
         .await
@@ -133,12 +123,58 @@ impl<S: AuthStore> Ctx<'_, S> {
         person: Option<UserId>,
     ) -> Result<Whose, AppError> {
         let person = person.unwrap_or(actor.person.id);
+        let evaluation = self.evaluation_of(actor, Place::Organization).await?;
+        let own = person == actor.person.id;
+        let (level, naming, context) =
+            if own || evaluation.allows(Permission::EnterWorkTimesForOthers) {
+                (
+                    PeopleLevel::Names,
+                    Arc::clone(&evaluation),
+                    PeopleContext::WorkTimes,
+                )
+            } else {
+                self.shared_level(actor, person, &evaluation).await?
+            };
         Ok(Whose {
             person,
-            // A key never reaches its owner's own work times: it is judged like anybody else.
-            own: person == actor.person.id && actor.key.is_none(),
-            evaluation: self.evaluation_of(actor, Place::Organization).await?,
+            own,
+            evaluation,
+            level,
+            naming,
+            context,
         })
+    }
+
+    /// The most open level of the kind *Work times* the reader has in the projects where the person
+    /// has a role, with the rights of the reader in that project to name the person by. With no
+    /// project in common the person is *Hidden* to the reader.
+    async fn shared_level(
+        &self,
+        actor: &Actor,
+        person: UserId,
+        organization: &Arc<Evaluation>,
+    ) -> Result<(PeopleLevel, Arc<Evaluation>, PeopleContext), AppError> {
+        let projects: Vec<ProjectId> = self.project_tree_now().await?.projects().collect();
+        self.evaluate_projects(actor.person.id, &projects).await?;
+        let pairs: Vec<(UserId, ProjectId)> =
+            projects.iter().map(|project| (person, *project)).collect();
+        self.evaluate_people_in(&pairs).await?;
+        let mut best = (
+            PeopleLevel::Hidden,
+            Arc::clone(organization),
+            PeopleContext::Ordinary,
+        );
+        for project in projects {
+            if !self.has_a_role_at(person, Place::Project(project)).await? {
+                continue;
+            }
+            let held = self.evaluation_of(actor, Place::Project(project)).await?;
+            let level = held.people_level(PeopleKind::WorkTimes, PeopleContext::Ordinary);
+            if level > best.0 {
+                best = (level, held, PeopleContext::Ordinary);
+            }
+        }
+        Ok(best)
     }
 
     /// Fails like a missing person when the person does not exist.

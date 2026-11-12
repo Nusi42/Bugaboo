@@ -14,8 +14,8 @@ mod share;
 mod usual;
 
 pub use away::{AWAY_TIME_DAYS_MAX, AwayProblem, Halves, away_cutoff};
-pub use share::{Share, sum_of_shares};
-pub use usual::{UsualDay, UsualDays, WORK_MINUTES_MAX};
+pub use share::{Share, over_100, sum_of_shares};
+pub use usual::{StoredUsualDays, UsualDay, UsualDays, WORK_MINUTES_MAX};
 
 use jiff::civil::Date;
 

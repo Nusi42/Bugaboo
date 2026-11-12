@@ -29,6 +29,11 @@ pub(super) fn steps() -> Vec<Step> {
                         .big_integer()
                         .not_null(),
                 )
+                .col(
+                    ColumnDef::new(UsualWorkDayRow::Version)
+                        .big_integer()
+                        .not_null(),
+                )
                 .primary_key(
                     Index::create()
                         .col(UsualWorkDayRow::Person)

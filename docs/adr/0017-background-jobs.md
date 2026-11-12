@@ -64,7 +64,7 @@ review; every job type has an idempotency test (part of ARCH-EVENTS test harness
 ## Amendment (M8, work times)
 
 - **Kinds of M8** ([ADR-0030](0030-planning-with-people.md), amendment M8), each idempotent:
-  - `work-times.delete-old-away-times` is daily (`FromTheStart`): it deletes every away time whose last day is more than one year ago (`AWAY_TIME_KEPT_FOR`), with its note.
+  - `work-times.delete-old-away-times` is daily (`FromTheStart`): it deletes every away time whose last day is more than one year ago (`AWAY_TIME_KEPT_FOR`), with its note, and also the events of away times that were removed, one year after the event.
   - A person who leaves the organization loses all their work times in the step that ends their membership, not in a job: one function of the module of work times, which *Remove a person* calls (M9). In M8 it is built and tested on its own.
 - **No job deletes shares.** The share of a person who no longer has a role in a project counts as nothing and is kept until the person leaves (ADR-0030, amendment M8): business data is deleted only explicitly.
 - **Nothing else of M8 is a job.** The plan is worked out when it is asked for (ADR-0030, amendment M8), and the public holidays are computed, never fetched.

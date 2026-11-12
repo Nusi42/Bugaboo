@@ -16,7 +16,7 @@ use bb_core::event::RecordKind;
 use bb_core::id::{ProjectId, UserId};
 use bb_core::paging::{Cut, page_len};
 use bb_core::people_kinds::PeopleKind;
-use bb_core::work_times::{Share, sum_of_shares};
+use bb_core::work_times::{Share, over_100, sum_of_shares};
 use bb_policy::{Authorized, PeopleContext, Permission, Place};
 
 use super::types::{
@@ -36,16 +36,12 @@ fn label_order(label: &ProjectLabel) -> (bool, String) {
     }
 }
 
-/// What a person's shares add up to: the shares that count, and whether that is over 100 percent.
-fn summed(items: &[ShareItem], extra: u32) -> (u32, bool) {
-    let sum = extra
-        + sum_of_shares(
-            items
-                .iter()
-                .filter(|item| item.applies)
-                .filter_map(|item| Share::new(item.percent)),
-        );
-    (sum, sum > u32::from(Share::PERCENT_MAX))
+/// The shares of items that were set and apply: the ones that count.
+fn applying(items: &[ShareItem]) -> impl Iterator<Item = Share> + '_ {
+    items
+        .iter()
+        .filter(|item| item.applies)
+        .filter_map(|item| Share::new(item.percent))
 }
 
 /// The project of a place that an address of a project made.
@@ -102,7 +98,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map(|(_, project, share)| (project, share))
             .collect();
         let items = self.share_items(actor, person, &rows).await?;
-        let (sum, over_100) = summed(&items, 0);
+        let (sum, over_100) = (sum_of_shares(applying(&items)), over_100(applying(&items)));
         Ok(SharesOfPerson {
             items,
             sum,
@@ -121,8 +117,7 @@ pub async fn set_share<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: SetShare,
 ) -> Result<Authorized<ChangedShare>, AppError> {
-    // A key is judged by the permission, which no key holds (*Decide who has which role*).
-    let actor = ctx.actor(&input.session_token).await?;
+    let actor = ctx.work_times_actor(&input.session_token).await?;
     let place = ctx.project_place(&input.project).await?;
     let decider = ctx.require(&actor, Permission::DecideRoles, place).await?;
     let share = Share::new(input.percent).ok_or(ErrorCode::ShareInvalid)?;
@@ -235,11 +230,16 @@ pub async fn project_shares<S: AuthStore>(
         if decides {
             let rows = others.remove(&person).unwrap_or_default();
             let all = ctx.share_items(&actor, person, &rows).await?;
-            member.over_100 = Some(summed(&all, u32::from(percent)).1);
-            member.others_hidden = all.iter().any(|item| item.project == ProjectLabel::Hidden);
+            // The same rule as the person's own sum: the shares that were set and apply, this
+            // project's among them only when it was set.
+            member.over_100 = Some(over_100(applying(&all).chain(here.get(&person).copied())));
+            member.others_hidden = all
+                .iter()
+                .any(|item| item.applies && item.project == ProjectLabel::Hidden);
             member.others = all
                 .into_iter()
-                .filter(|item| item.project != ProjectLabel::Hidden)
+                .filter(|item| item.applies && item.project != ProjectLabel::Hidden)
+                .map(|item| item.project)
                 .collect();
         }
         items.push(member);

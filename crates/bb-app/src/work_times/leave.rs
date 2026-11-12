@@ -9,8 +9,9 @@ use bb_core::id::UserId;
 use bb_core::settings::Scope;
 use bb_core::settings::work_times::WORK_TIMES_HOLIDAYS;
 
-use crate::auth::{AppError, AuthStore, Ctx, Stops, change_failed, entity, set_to};
+use crate::auth::{AppError, AuthStore, Ctx, Stops, change_failed, entity, fixed_entity, set_to};
 use crate::member::work_times as member;
+use crate::settings::record_of;
 
 /// Delete all work times of a person.
 pub struct DeleteWorkTimesOfPerson {
@@ -27,14 +28,17 @@ pub async fn delete_work_times_in<S: AuthStore>(
     transaction: &mut S::Transaction,
     person: UserId,
 ) -> Result<(), S::Error> {
-    S::delete_work_times_of(transaction, person).await?;
-    S::clear_setting_value(
-        transaction,
-        Scope::Person(person),
-        WORK_TIMES_HOLIDAYS.definition(),
+    let holidays = WORK_TIMES_HOLIDAYS.definition();
+    // The events of the choice of *Holidays* are about one record of the person's settings.
+    let record = fixed_entity(
+        RecordKind::Setting,
+        &record_of(Scope::Person(person), holidays.key()),
     )
-    .await
-    .map(|_| ())
+    .map_err(|_| S::aborted())?;
+    S::delete_work_times_of(transaction, person, record.id).await?;
+    S::clear_setting_value(transaction, Scope::Person(person), holidays)
+        .await
+        .map(|_| ())
 }
 
 /// Deletes all work times of a person who leaves, as a change of its own.
@@ -50,7 +54,7 @@ pub async fn delete_work_times_of_person<S: AuthStore>(
         .event_maker(Actor::System)
         .create(
             entity(RecordKind::Person, person),
-            vec![set_to(member::DELETED, serde_json::json!(true))],
+            vec![set_to(member::LEFT, serde_json::json!(true))],
         )
         .map_err(|error| AppError::Internal(error.to_string()))?;
     ctx.store()
