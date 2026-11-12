@@ -274,8 +274,9 @@ fn priv_12_every_kind_and_level_shows_the_person_as_the_rule_says() {
             }
         }
     }
-    // 10 kinds for 7 roles at their starting level, and for 3 levels in 3 projects.
-    assert_eq!(rows, 10 * 7 + 10 * 7 * 3 * 3);
+    // Every kind for 7 roles at their starting level, and for 3 levels in 3 projects.
+    let kinds = PeopleKind::ALL.len();
+    assert_eq!(rows, kinds * 7 + kinds * 7 * 3 * 3);
 }
 
 #[test]

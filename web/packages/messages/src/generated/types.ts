@@ -500,6 +500,10 @@ export interface MessageArguments {
   "notifications.taken-over": { who: string | number };
   "notifications.work-day-changed": { date: string | number; who: string | number };
   "notifications.work-day-reason": { reason: string | number };
+  "notifications.work-times-away-changed": { days: string | number; who: string | number };
+  "notifications.work-times-away-entered": { days: string | number; who: string | number };
+  "notifications.work-times-away-removed": { days: string | number; who: string | number };
+  "notifications.work-times-usual-changed": { who: string | number };
   "old-work-days.delete-all-text": { count: number };
   "old-work-days.delete-all-title": { count: number };
   "old-work-days.delete-person-name": { name: string | number };

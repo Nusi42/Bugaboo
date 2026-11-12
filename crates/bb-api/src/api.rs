@@ -94,6 +94,7 @@ mod themes;
 mod time;
 mod time_entries;
 mod time_totals;
+mod work_times;
 mod workflows;
 mod working_hours;
 
@@ -206,6 +207,7 @@ where
         .merge(saved_searches::routes())
         .merge(themes::routes())
         .merge(working_hours::routes())
+        .merge(work_times::routes())
         .merge(notifications::routes())
         .merge(ai_setup::routes())
         .merge(assistant::routes())

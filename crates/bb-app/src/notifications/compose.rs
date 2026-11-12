@@ -12,8 +12,8 @@ use bb_core::message::{self, Message};
 use bb_core::notification::{MAIL_ENTRIES_MAX, MAIL_TEXT_MAX, NotificationKind};
 use bb_core::text::{MAIL_SUBJECT_MAX, plain_line, plain_text};
 use bb_core::wording::{
-    Change, FileChange, Notice, Region, Renewal, Side, WorkDayNotice, end_sentence,
-    notification_sentences,
+    Change, FileChange, Notice, Region, Renewal, Side, WorkDayNotice, WorkTimesNotice,
+    end_sentence, notification_sentences,
 };
 use bb_policy::PersonRef;
 
@@ -178,6 +178,7 @@ fn lines_about(
         renewal: None,
         file: None,
         work_day: None,
+        work_times: None,
     };
     match what {
         NotificationWhat::Comment { .. } => notice.comment = true,
@@ -207,6 +208,18 @@ fn lines_about(
             notice.work_day = Some(WorkDayNotice {
                 date: region.date(*date),
                 reason: reason.clone(),
+            });
+        }
+        NotificationWhat::WorkTimesChanged { event, first, last } => {
+            notice.work_times = Some(WorkTimesNotice {
+                event: *event,
+                days: first.zip(*last).map_or_else(String::new, |(first, last)| {
+                    if first == last {
+                        region.date(first)
+                    } else {
+                        format!("{} – {}", region.date(first), region.date(last))
+                    }
+                }),
             });
         }
         NotificationWhat::Plain => {}

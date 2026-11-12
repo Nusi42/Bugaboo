@@ -107,6 +107,12 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .await
                 .map_err(|error| internal::<S>(&error))?;
             let full = batch.len() > wanted;
+            if let (Members::WithRole, Place::Project(project)) = (members, place) {
+                // The rights of the whole batch are read together, so judging each person of it
+                // costs no statement of its own.
+                let pairs: Vec<_> = batch.iter().map(|person| (person.id, project)).collect();
+                self.evaluate_people_in(&pairs).await?;
+            }
             for person in &batch {
                 if self.is_listed(person.id, place, members).await? {
                     page.push(person.clone());

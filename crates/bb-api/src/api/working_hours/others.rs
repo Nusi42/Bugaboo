@@ -23,6 +23,7 @@ use super::super::groups::{ChoiceItem, choice_page};
 use super::super::path_id;
 use super::{
     ChangeWorkDayBody, RangeParams, WorkDayBody, WorkDayHistoryBody, WorkDaysBody, invalid,
+    person_and_range,
 };
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{ListParams, Page};
@@ -49,15 +50,8 @@ async fn list_work_days_of_person(
     ApiPath(person): ApiPath<String>,
     range: Result<ApiQuery<RangeParams>, ApiError>,
 ) -> Result<Response, ApiError> {
-    let read = path_id::<UserId>(&person).and_then(|person| {
-        let ApiQuery(range) = range?;
-        Ok((
-            person,
-            read_date(&range.from).ok_or_else(invalid)?,
-            read_date(&range.to).ok_or_else(invalid)?,
-        ))
-    });
-    let (person, first, last) = auth.after_who_asks(&info, &session_token, read).await?;
+    let read = person_and_range(&person, range);
+    let (person, range) = auth.after_who_asks(&info, &session_token, read).await?;
     let page = auth
         .api()?
         .work_days(
@@ -65,8 +59,8 @@ async fn list_work_days_of_person(
             WorkDaysQuery {
                 session_token,
                 person: Some(person),
-                first,
-                last,
+                first: range.first,
+                last: range.last,
             },
         )
         .await?;

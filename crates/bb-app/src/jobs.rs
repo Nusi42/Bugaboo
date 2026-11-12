@@ -49,6 +49,9 @@ bb_core::words! {
         PurgeNotifications => "notifications.purge",
         /// Deleting the oldest blocks of the security log that outlived its keep period (M1-F21).
         PruneSecurityLog => "security-log.prune",
+        /// Deleting the away times whose last day is more than a year ago, with their notes and
+        /// everything that tells about them (ADR-0017, amendment M8): `delete_old_away_times`.
+        DeleteOldAwayTimes => "work-times.delete-old-away-times",
         /// Deleting the sessions nobody can use any more and the links of finished sign-ups
         /// (M1-F43).
         PurgeSessions => "sessions.purge",
@@ -104,6 +107,7 @@ impl JobKind {
             | Self::PurgeNotifications
             | Self::PruneSecurityLog
             | Self::PurgeSessions
+            | Self::DeleteOldAwayTimes
             | Self::RotateServerLog => true,
             Self::ManyChangesStep
             | Self::RenewIds
@@ -132,6 +136,7 @@ impl JobKind {
             | Self::PurgeNotifications
             | Self::PruneSecurityLog
             | Self::PurgeSessions
+            | Self::DeleteOldAwayTimes
             | Self::RotateServerLog
             | Self::ManyChangesStep
             | Self::RenewIds
@@ -426,6 +431,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             | JobKind::PurgeNotifications
             | JobKind::PruneSecurityLog
             | JobKind::PurgeSessions
+            | JobKind::DeleteOldAwayTimes
             | JobKind::RotateServerLog
             | JobKind::CleanUpFiles
             | JobKind::CleanOldGrants
@@ -492,6 +498,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 })
             }
             JobKind::PurgeSessions => self.purge_sessions_daily(job).await,
+            JobKind::DeleteOldAwayTimes => self.delete_old_away_times_daily(job).await,
             JobKind::RotateServerLog => self.rotate_server_log_daily(job).await,
             JobKind::CleanUpFiles => Box::pin(self.run_daily(JobKind::CleanUpFiles, async {
                 self.clean_up_files().await.map(|cleaned| {
@@ -545,6 +552,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 | JobKind::PurgeNotifications
                 | JobKind::PruneSecurityLog
                 | JobKind::PurgeSessions
+                | JobKind::DeleteOldAwayTimes
                 | JobKind::RotateServerLog
                 | JobKind::CleanUpFiles
                 | JobKind::CleanOldGrants

@@ -325,6 +325,13 @@ error_codes! {
     /// The keep period of work days is set below the two years the preset *Germany* asks for
     /// (ADR-0035, decision 7).
     KeepYearsTooShort => ("working-hours.keep-years-too-short", 400),
+    /// The days of an away time are not right: the last day lies before the first, the time is
+    /// longer than a year, or a single day is both *Afternoon only* and *Morning only* (PLAN-11).
+    AwayTimeInvalid => ("work-times.away-time-invalid", 400),
+    /// A work day of the usual work days has more than 24 hours (PLAN-11).
+    WorkHoursInvalid => ("work-times.hours-invalid", 400),
+    /// A share is not between 0 and 100 percent (PLAN-15).
+    ShareInvalid => ("work-times.share-invalid", 400),
     /// A search took longer than the time a search may take (SEC-17, architecture §7 *Search
     /// limits*); the person narrows it down.
     SearchTooSlow => ("search.too-slow", 503),

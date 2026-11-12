@@ -50,6 +50,7 @@ use crate::store_macros::{reads, writes};
 use crate::tags::TagStore;
 use crate::text_index::TextIndexStore;
 use crate::time::TimeStore;
+use crate::work_times::WorkTimesStore;
 use crate::workflows::WorkflowStore;
 use crate::working_hours::WorkingHoursStore;
 
@@ -363,6 +364,7 @@ pub trait AuthStore:
     + SearchStore
     + TimeStore
     + WorkingHoursStore
+    + WorkTimesStore
     + AiStore
     + NeverSentStore
     + ToolCallStore

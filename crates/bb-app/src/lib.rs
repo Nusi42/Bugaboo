@@ -48,6 +48,7 @@ pub mod text_index;
 pub mod themes;
 pub mod time;
 mod walk;
+pub mod work_times;
 pub mod workflows;
 pub mod working_hours;
 

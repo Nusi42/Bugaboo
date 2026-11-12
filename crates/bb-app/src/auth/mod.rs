@@ -202,6 +202,12 @@ use crate::time::{
     my_time_entries, start_timer, stop_timer, switch_timer, throw_away_timer, time_entry_defaults,
     timer,
 };
+use crate::work_times::{
+    ChangeAwayTime, ChangeUsualDays, ChangedAwayTime, ChangedShare, ChangedUsualDays,
+    EnterAwayTime, ProjectShares, ProjectSharesQuery, RemoveAwayTime, SetShare, WorkTimesQuery,
+    WorkTimesView, change_away_time, change_usual_days, enter_away_time, project_shares,
+    remove_away_time, set_share, work_times,
+};
 use crate::workflows::{
     CreateWorkflow, DeleteWorkflow, ProjectStatuses, ProjectStatusesQuery, PublishPreview,
     PublishPreviewQuery, PublishWorkflow, Published, Tried, TryWorkflowQuery, UseWorkflow,

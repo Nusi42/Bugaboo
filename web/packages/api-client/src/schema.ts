@@ -1055,6 +1055,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/away-times/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Removes an away time: the person's own, or another person's with *Enter work times for others*. */
+    delete: operations["removeAwayTime"];
+    options?: never;
+    head?: never;
+    /**
+     * Changes the days of an away time: the person's own, or another person's with *Enter work times
+     *     for others*, who never reads or writes the note, which stays as it is.
+     */
+    patch: operations["changeAwayTime"];
+    trace?: never;
+  };
   "/api/v1/check-access/people": {
     parameters: {
       query?: never;
@@ -2761,6 +2782,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/me/away-times": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Enters an away time for the person themselves. */
+    post: operations["enterMyAwayTime"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/me/handle": {
     parameters: {
       query?: never;
@@ -3098,6 +3136,43 @@ export interface paths {
     /** The history of one's own work day: every change with the old and the new times, who and why. */
     get: operations["getMyWorkDayHistory"];
     put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/work-times": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The person's own work times, with the away times that touch the stretch from `from` to `to`. */
+    get: operations["getMyWorkTimes"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/work-times/usual-days": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * New usual work days and work hours for the person: the seven days, Monday first, each ticked or
+     *     not, with the work hours of each in minutes.
+     */
+    put: operations["changeMyUsualDays"];
     post?: never;
     delete?: never;
     options?: never;
@@ -3446,6 +3521,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/people/{person}/away-times": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Enters an away time for another person. Needs *Enter work times for others*. The person is told;
+     *     the note is refused (only the person writes it), and nobody states a reason.
+     */
+    post: operations["enterAwayTimeForPerson"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/people/{person}/work-days": {
     parameters: {
       query?: never;
@@ -3499,6 +3594,47 @@ export interface paths {
      */
     get: operations["getWorkDayHistoryOfPerson"];
     put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/people/{person}/work-times": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Another person's work times, as *Who sees people* allows for the kind *Work times*: an away time
+     *     shows only its days. A reader who is shown the person as *Hidden* gets the answer of a person
+     *     that does not exist. No access key reaches work times.
+     */
+    get: operations["getWorkTimesOfPerson"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/people/{person}/work-times/usual-days": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * New usual work days and work hours for another person. Needs *Enter work times for others*; the
+     *     person is told.
+     */
+    put: operations["changeUsualDaysOfPerson"];
     post?: never;
     delete?: never;
     options?: never;
@@ -3800,6 +3936,48 @@ export interface paths {
      *     organization) counts again. Needs the permission *Change project settings* in the project.
      */
     delete: operations["resetProjectSetting"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/projects/{project}/shares": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The people of a project with their shares there, by name, a page at a time. Every reader who
+     *     sees the project and is shown people of the kind *Work times* reads the shares; a reader who
+     *     decides who has which role there is also told whether a person's shares add up to more than 100
+     *     percent, with the other projects they may see named and a mark when there are ones they may not.
+     */
+    get: operations["listProjectShares"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/projects/{project}/shares/{person}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Sets the share of a person in a project. Needs *Decide who has which role* in the project. A
+     *     share counts as nothing while the person has no role there, and is kept.
+     */
+    put: operations["setShare"];
+    post?: never;
+    delete?: never;
     options?: never;
     head?: never;
     patch?: never;
@@ -5509,6 +5687,43 @@ export interface components {
       /** @description What the app wants back unchanged. */
       state?: string;
     };
+    /** @description An away time as its reader sees it. */
+    AwayBody: {
+      entered_by: components["schemas"]["PersonRef"] | null;
+      /** @description The first day (`2026-10-26`). */
+      first: string;
+      /** @description Whether the person is away only in the afternoon of the first day. */
+      first_afternoon_only: boolean;
+      /** @description The ID of the away time. */
+      id: string;
+      /** @description The last day. */
+      last: string;
+      /** @description Whether the person is away only in the morning of the last day. */
+      last_morning_only: boolean;
+      /** @description The note, which only the person reads; `null` for everybody else and when there is none. */
+      note: string | null;
+      /**
+       * Format: int64
+       * @description Counts up with every change. A change is made on the version that was looked at.
+       */
+      version: number;
+    };
+    /** @description The days of an away time, as a request names them. */
+    AwayDaysBody: {
+      /** @description The first day (`2026-10-26`). */
+      first: string;
+      /** @description Away only in the afternoon of the first day. */
+      first_afternoon_only?: boolean;
+      /** @description The last day, on or after the first and less than a year after it. */
+      last: string;
+      /** @description Away only in the morning of the last day. */
+      last_morning_only?: boolean;
+      /**
+       * @description The note, which only the person reads: refused for another person's away time, at most 500
+       *     characters. Bugaboo stores no reason.
+       */
+      note?: string | null;
+    };
     /** @description Backup codes, shown once. */
     BackupCodesBody: {
       /** @description The codes. They are not stored in this form and cannot be shown again. */
@@ -5625,6 +5840,16 @@ export interface components {
       provider?: components["schemas"]["ProviderKind"] | null;
       /** @description Whether names of people go to an outside provider. */
       send_names?: boolean | null;
+    };
+    /** @description A change of an away time. */
+    ChangeAwayBody: {
+      /** @description The new days. */
+      days: components["schemas"]["AwayDaysBody"];
+      /**
+       * Format: int64
+       * @description The version the person looked at.
+       */
+      version: number;
     };
     /** @description What to change about a choice: what is left out stays as it is. */
     ChangeChoiceBody: {
@@ -6668,6 +6893,9 @@ export interface components {
       | "working-hours.reason-needed"
       | "working-hours.week-totals-only"
       | "working-hours.keep-years-too-short"
+      | "work-times.away-time-invalid"
+      | "work-times.hours-invalid"
+      | "work-times.share-invalid"
       | "search.too-slow"
       | "rate-limit.exceeded"
       | "server.unavailable"
@@ -7255,6 +7483,29 @@ export interface components {
      * @enum {string}
      */
     HistoryTab: "everything" | "comments" | "changes";
+    /**
+     * @description Which public holidays count for a person: none, the days every state of Germany has (`de`), or those of one state by its ISO 3166-2 code, such as `de-by`.
+     * @enum {string}
+     */
+    HolidaysChoice:
+      | "none"
+      | "de"
+      | "de-bw"
+      | "de-by"
+      | "de-be"
+      | "de-bb"
+      | "de-hb"
+      | "de-hh"
+      | "de-he"
+      | "de-mv"
+      | "de-ni"
+      | "de-nw"
+      | "de-rp"
+      | "de-sl"
+      | "de-sn"
+      | "de-st"
+      | "de-sh"
+      | "de-th";
     /** @description The hosts that images in text may come from, already split into one host for each item. */
     ImageHostsBody: {
       /** @description The hosts, such as `images.example.com`. Empty means no image from outside. */
@@ -8137,6 +8388,32 @@ export interface components {
       added_at?: string | null;
       person?: components["schemas"]["PersonRef"] | null;
     };
+    /** @description A person of a project with their share there. */
+    MemberShareBody: {
+      /**
+       * @description The other projects the person has a share in, as the reader may name them; only for a reader
+       *     who decides who has which role.
+       */
+      others?: components["schemas"]["ShareItemBody"][];
+      /**
+       * @description Whether the person has a share in another project that the reader may not see: it is never
+       *     named.
+       */
+      others_hidden: boolean;
+      /**
+       * @description Whether the shares of the person that are in force add up to more than 100 percent; only for
+       *     a reader who decides who has which role in the project. Never the sum itself: it would tell
+       *     how much the projects the reader may not see hold.
+       */
+      over_100?: boolean | null;
+      /**
+       * Format: int32
+       * @description The share in the project, in percent.
+       */
+      percent: number;
+      /** @description The person, as the reader sees people of the kind *Work times*. */
+      person: components["schemas"]["PersonRef"];
+    };
     /** @description One thing the writer may name after `@`. */
     MentionChoiceItem: {
       /** @description What is written after `@`. */
@@ -8641,6 +8918,14 @@ export interface components {
       text?: string | null;
       /** @description One of the person's work days that somebody else changed: its date (`2026-10-05`). */
       work_day?: string | null;
+      work_times_event?: components["schemas"]["WorkTimesEvent"] | null;
+      /**
+       * @description The first day of the away time that was entered, changed or removed (`2026-10-26`); left out
+       *     for a change of the usual work days.
+       */
+      work_times_first?: string | null;
+      /** @description The last day of that away time. */
+      work_times_last?: string | null;
     };
     /**
      * @description What a notification is about: a mention, an assignment, activity on an issue the person follows, other changes to what they follow, the end of a run of many changes, a note about their editing, or a timer that runs long.
@@ -8655,6 +8940,7 @@ export interface components {
       | "edit-notice"
       | "long-timer"
       | "work-day-changed"
+      | "work-times-changed"
       | "agent-asks"
       | "plan-waits"
       | "ready-for-review"
@@ -8945,6 +9231,13 @@ export interface components {
       next_cursor: string | null;
     };
     /** @description One page of a list: its items, and where the next page starts. */
+    Page_MemberShareBody: {
+      /** @description The items of this page. */
+      items: components["schemas"]["MemberShareBody"][];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
+    /** @description One page of a list: its items, and where the next page starts. */
     Page_MentionChoiceItem: {
       /** @description The items of this page. */
       items: components["schemas"]["MentionChoiceItem"][];
@@ -9133,7 +9426,8 @@ export interface components {
       | "time-entries"
       | "mentions"
       | "pictures"
-      | "project-members";
+      | "project-members"
+      | "work-times";
     /**
      * @description How people of one kind are shown: by name, by their role only, or hidden.
      * @enum {string}
@@ -9240,7 +9534,8 @@ export interface components {
       | "book-time"
       | "create-agents"
       | "see-working-hours-of-others"
-      | "change-working-hours-of-others";
+      | "change-working-hours-of-others"
+      | "enter-work-times-for-others";
     /** @description One permission with *yes* or *no* and the reasons. */
     PermissionAnswerBody: {
       /** @description Whether the person has it here. */
@@ -9877,7 +10172,10 @@ export interface components {
       | "time-entry"
       | "timer"
       | "starter-fields"
-      | "work-day";
+      | "work-day"
+      | "away-time"
+      | "work-times"
+      | "share";
     /** @description A record, by its kind and ID. */
     RecordRefBody: {
       /** @description The ID of the record. */
@@ -10777,6 +11075,18 @@ export interface components {
       /** @description The short name of a project. */
       short_name?: string | null;
     };
+    /** @description One share of a person, with the project as the reader may name it. */
+    ShareItemBody: {
+      /** @description Whether it is in force: it counts as nothing while the person has no role in the project. */
+      applies: boolean;
+      /**
+       * Format: int32
+       * @description The share in percent.
+       */
+      percent: number;
+      /** @description The project: its names only when the reader may know it. */
+      project: components["schemas"]["ProjectLabelBody"];
+    };
     /**
      * @description What a saved search is shared with: a group or a project.
      * @enum {string}
@@ -10792,6 +11102,18 @@ export interface components {
       name?: string | null;
       /** @description The short name of a project the person may know. */
       short_name?: string | null;
+    };
+    /** @description The shares a person set, and what the ones that count add up to. */
+    SharesBody: {
+      /** @description The shares, by the name of the project. */
+      items: components["schemas"]["ShareItemBody"][];
+      /** @description Whether that is more than 100 percent. */
+      over_100: boolean;
+      /**
+       * Format: int32
+       * @description What the shares that count add up to, in percent.
+       */
+      sum: number;
     };
     /** @description What a person types to sign in. */
     SignInBody: {
@@ -11490,6 +11812,22 @@ export interface components {
        */
       workflow?: string | null;
     };
+    /** @description One weekday of the usual work days. */
+    UsualDayBody: {
+      /**
+       * Format: int32
+       * @description The work hours of the day, in minutes: at most 1440. The hours are kept when the day is not
+       *     ticked.
+       */
+      minutes: number;
+      /** @description Whether the person usually works on this weekday. */
+      works: boolean;
+    };
+    /** @description The seven usual work days, Monday first. */
+    UsualDaysBody: {
+      /** @description The seven days, Monday first. */
+      days: components["schemas"]["UsualDayBody"][];
+    };
     /** @description What a setting holds: yes or no, a whole number, or text. */
     ValueBody: boolean | number | string;
     /**
@@ -11756,6 +12094,29 @@ export interface components {
       /** @description The time worked in each week of the stretch. */
       weeks: components["schemas"]["WeekBody"][];
     };
+    /** @description A person's work times. */
+    WorkTimesBody: {
+      /** @description The away times that touch the stretch, by first day. Another person's show their days only. */
+      away: components["schemas"]["AwayBody"][];
+      /** @description Which public holidays count for the person: `none`, `de` or a state such as `de-by`. */
+      holidays: components["schemas"]["HolidaysChoice"];
+      /** @description Whether the reader may change the usual work days and enter away times. */
+      may_change: boolean;
+      /** @description Whether they are the reader's own. */
+      own: boolean;
+      /** @description Whose they are, as the reader sees people of the kind *Work times*. */
+      person: components["schemas"]["PersonRef"];
+      shares: components["schemas"]["SharesBody"] | null;
+      /** @description Whether more away times touch the stretch than the answer holds: the latest are left out. */
+      truncated: boolean;
+      /** @description The seven usual work days, Monday first. */
+      usual: components["schemas"]["UsualDayBody"][];
+    };
+    /**
+     * @description What somebody else did to the work times of the person: entered, changed or removed an away time, or changed the usual work days or the work hours.
+     * @enum {string}
+     */
+    WorkTimesEvent: "away-entered" | "away-changed" | "away-removed" | "usual-changed";
     /** @description An agent shown on an issue as *worked on by*. */
     WorkedOnByBody: {
       /** @description The agent. */
@@ -14049,6 +14410,74 @@ export interface operations {
       };
       401: components["responses"]["WrongPassword"];
       403: components["responses"]["Forbidden"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  removeAwayTime: {
+    parameters: {
+      query: {
+        /** @description The version the person looked at. */
+        version: number;
+      };
+      header?: never;
+      path: {
+        /** @description The ID of the away time. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The away time is gone. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  changeAwayTime: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the away time. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ChangeAwayBody"];
+      };
+    };
+    responses: {
+      /** @description The away time as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AwayBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
       413: components["responses"]["TooLarge"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
@@ -17534,6 +17963,36 @@ export interface operations {
       503: components["responses"]["Unavailable"];
     };
   };
+  enterMyAwayTime: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AwayDaysBody"];
+      };
+    };
+    responses: {
+      /** @description The away time. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AwayBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
   getMyHandle: {
     parameters: {
       query?: never;
@@ -18034,7 +18493,7 @@ export interface operations {
       query: {
         /** @description The first date (`2026-10-05`). */
         from: string;
-        /** @description The last date, less than `RANGE_DAYS_MAX` days after the first. */
+        /** @description The last date, on or after the first; a stretch longer than the route takes is refused. */
         to: string;
       };
       header?: never;
@@ -18275,6 +18734,68 @@ export interface operations {
       400: components["responses"]["BadRequest"];
       401: components["responses"]["NotSignedIn"];
       404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  getMyWorkTimes: {
+    parameters: {
+      query: {
+        /** @description The first date (`2026-10-05`). */
+        from: string;
+        /** @description The last date, on or after the first; a stretch longer than the route takes is refused. */
+        to: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The work times. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WorkTimesBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  changeMyUsualDays: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UsualDaysBody"];
+      };
+    };
+    responses: {
+      /** @description The usual work days as they are now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["UsualDaysBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      413: components["responses"]["TooLarge"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];
@@ -18938,12 +19459,47 @@ export interface operations {
       503: components["responses"]["Unavailable"];
     };
   };
+  enterAwayTimeForPerson: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the person. */
+        person: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AwayDaysBody"];
+      };
+    };
+    responses: {
+      /** @description The away time, without a note. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AwayBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
   listWorkDaysOfPerson: {
     parameters: {
       query: {
         /** @description The first date (`2026-10-05`). */
         from: string;
-        /** @description The last date, less than `RANGE_DAYS_MAX` days after the first. */
+        /** @description The last date, on or after the first; a stretch longer than the route takes is refused. */
         to: string;
       };
       header?: never;
@@ -19041,6 +19597,77 @@ export interface operations {
       401: components["responses"]["NotSignedIn"];
       403: components["responses"]["Forbidden"];
       404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  getWorkTimesOfPerson: {
+    parameters: {
+      query: {
+        /** @description The first date (`2026-10-05`). */
+        from: string;
+        /** @description The last date, on or after the first; a stretch longer than the route takes is refused. */
+        to: string;
+      };
+      header?: never;
+      path: {
+        /** @description The ID of the person. */
+        person: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The work times. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WorkTimesBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  changeUsualDaysOfPerson: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the person. */
+        person: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UsualDaysBody"];
+      };
+    };
+    responses: {
+      /** @description The usual work days as they are now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["UsualDaysBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      413: components["responses"]["TooLarge"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];
@@ -19785,6 +20412,81 @@ export interface operations {
       401: components["responses"]["NotSignedIn"];
       403: components["responses"]["Forbidden"];
       404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  listProjectShares: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: components["parameters"]["Fields"];
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: components["parameters"]["Cursor"];
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        /** @description The ID of the project. */
+        project: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The people with their shares. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_MemberShareBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  setShare: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the project. */
+        project: string;
+        /** @description The ID of the person. */
+        person: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ShareBody"];
+      };
+    };
+    responses: {
+      /** @description The share as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ShareBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      413: components["responses"]["TooLarge"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];

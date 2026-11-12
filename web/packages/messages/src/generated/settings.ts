@@ -410,6 +410,17 @@ export const messages = {
     "Nobody holds the permission to see other people's working hours yet. Give the role HR to a group to change that.",
   "working-hours.who-not-allowed":
     "To see who holds it, you need both of these permissions: {manage}; {decide}.",
+  "setting.work-times.holidays.name": "Holidays",
+  "setting.work-times.holidays.help":
+    "Which public holidays count as days off for you in the plan. Germany means the days that count everywhere in Germany; a part of Germany adds its own. Until you choose, your organization's choice counts.",
+  "setting.notifications.work-times-changed-in-app.name":
+    "Your work times were changed: in the app",
+  "setting.notifications.work-times-changed-in-app.help":
+    "Tells you under Notifications when somebody else enters or changes an away time, your usual work days or your work hours. The note of an away time is never part of it.",
+  "setting.notifications.work-times-changed-by-mail.name":
+    "Your work times were changed: by e-mail",
+  "setting.notifications.work-times-changed-by-mail.help":
+    "Sends you an e-mail when somebody else enters or changes an away time, your usual work days or your work hours. E-mail goes only when your organization has switched it on.",
   "ai.provider.anthropic": "Anthropic",
   "ai.provider.openai-compatible": "Other provider or own server",
   "ai.provider.local-model": "A model on your own server",

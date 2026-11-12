@@ -386,7 +386,7 @@ async fn priv_12_who_sees_people_is_set_per_role_and_kind_and_inherited_like_fie
         let mut ada = Browser::signed_in_as(&app, ADA_EMAIL).await?;
         let table = ada.send("GET", PEOPLE, None).await?;
         assert_eq!(table.status, StatusCode::OK, "{}", table.body);
-        // The ten kinds, as the architecture lists them, in the order of the catalogue; three
+        // Every kind, as the architecture lists them, in the order of the catalogue; three
         // levels to choose from, the lowest first.
         let kinds: Vec<&str> = table.body["rows"]
             .as_array()
@@ -394,8 +394,9 @@ async fn priv_12_who_sees_people_is_set_per_role_and_kind_and_inherited_like_fie
             .flatten()
             .filter_map(|row| row["subject"].as_str())
             .collect();
-        assert_eq!(kinds.len(), 10);
+        assert_eq!(kinds.len(), bb_core::people_kinds::PeopleKind::ALL.len());
         assert!(kinds.contains(&"project-members"));
+        assert!(kinds.contains(&"work-times"));
         assert_eq!(
             table.body["levels"],
             json!(["hidden", "role-only", "names"])

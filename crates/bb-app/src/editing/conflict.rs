@@ -20,9 +20,9 @@ use bb_core::access::FieldLevel;
 use bb_core::event::{Actor as EventActor, DomainEvent, EntityKind, EntityRef, RecordKind};
 use bb_core::fields::{Field, FieldKey};
 use bb_core::id::{
-    AgentId, AgentWorkId, FieldId, GroupId, IssueId, IssueTypeId, LabelGroupId, LabelId, LayoutId,
-    ProjectId, RelationKindId, RoleId, SavedSearchId, StandingRuleId, TagId, ThemeId, TimeEntryId,
-    UserId, WorkDayId, WorkflowId,
+    AgentId, AgentWorkId, AwayTimeId, FieldId, GroupId, IssueId, IssueTypeId, LabelGroupId,
+    LabelId, LayoutId, ProjectId, RelationKindId, RoleId, SavedSearchId, StandingRuleId, TagId,
+    ThemeId, TimeEntryId, UserId, WorkDayId, WorkflowId,
 };
 use bb_core::own_fields::FieldType;
 use bb_core::people_kinds::PeopleKind;
@@ -306,6 +306,13 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(failed)?
             .filter(|entry| entry.person == stale.viewer)
             .map(|entry| entry.version),
+            // Only a person who may change the away time was told it is stale (`work_times`).
+            RecordKind::AwayTime => {
+                found(AwayTimeId::from_bytes(bytes).ok(), |id| store.away_time(id))
+                    .await
+                    .map_err(failed)?
+                    .map(|time| time.version)
+            }
             // An agent is its person's own: nobody else is told its version.
             RecordKind::Agent => found(AgentId::from_bytes(bytes).ok(), |id| store.agent(id))
                 .await

@@ -571,6 +571,37 @@ pub struct WorkDayNotice {
     pub reason: Option<String>,
 }
 
+words! {
+    /// What somebody else did to the reader's work times (ADR-0033, amendment M8).
+    pub enum WorkTimesEvent {
+        /// An away time was entered for the reader.
+        AwayEntered => "away-entered",
+        /// An away time of the reader was changed.
+        AwayChanged => "away-changed",
+        /// An away time of the reader was removed.
+        AwayRemoved => "away-removed",
+        /// The usual work days or the work hours of the reader were changed.
+        UsualChanged => "usual-changed",
+    }
+}
+
+words_in_api!(
+    WorkTimesEvent,
+    "What somebody else did to the work times of the person: entered, changed or removed an away time, or changed the usual work days or the work hours."
+);
+
+/// The work times of the reader that somebody else changed. It names the days of an away time and
+/// never its note, which only its person reads (ADR-0030, decision 2).
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct WorkTimesNotice {
+    /// What was done.
+    pub event: WorkTimesEvent,
+    /// The days of an away time, already written the way the reader writes dates (*26 Oct – 30
+    /// Oct*); empty for a change of the usual work days or the work hours.
+    #[serde(default)]
+    pub days: String,
+}
+
 /// What a notification says, with what the sentences need.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Notice {
@@ -599,6 +630,9 @@ pub struct Notice {
     /// A work day of the reader that somebody else changed.
     #[serde(default)]
     pub work_day: Option<WorkDayNotice>,
+    /// Work times of the reader that somebody else changed.
+    #[serde(default)]
+    pub work_times: Option<WorkTimesNotice>,
 }
 
 /// What happened, in words: one sentence, or one for each field a change touched.
@@ -659,6 +693,7 @@ pub fn notification_sentences(notice: &Notice) -> Vec<Said> {
             }
             said
         }
+        NotificationKind::WorkTimesChanged => one(work_times_sentence(notice)),
         NotificationKind::FollowedActivity | NotificationKind::FollowedFields => {
             if !notice.changes.is_empty() {
                 change_sentences(&notice.changes)
@@ -670,6 +705,27 @@ pub fn notification_sentences(notice: &Notice) -> Vec<Said> {
                 one(Said::key(message::NOTIFICATIONS_NEWS))
             }
         }
+    }
+}
+
+/// The sentence of a change of work times: who did what, and for an away time its days.
+fn work_times_sentence(notice: &Notice) -> Said {
+    let who = Said::text(notice.who.as_str());
+    let Some(times) = &notice.work_times else {
+        return said!(message::notifications_work_times_usual_changed, who);
+    };
+    let days = Said::text(times.days.as_str());
+    match times.event {
+        WorkTimesEvent::AwayEntered => {
+            said!(message::notifications_work_times_away_entered, days, who)
+        }
+        WorkTimesEvent::AwayChanged => {
+            said!(message::notifications_work_times_away_changed, days, who)
+        }
+        WorkTimesEvent::AwayRemoved => {
+            said!(message::notifications_work_times_away_removed, days, who)
+        }
+        WorkTimesEvent::UsualChanged => said!(message::notifications_work_times_usual_changed, who),
     }
 }
 

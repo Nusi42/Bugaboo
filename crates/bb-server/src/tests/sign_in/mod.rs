@@ -125,6 +125,8 @@ mod timing;
 mod tls;
 mod upgrade;
 mod upkeep_writes;
+mod work_times_http;
+mod work_times_perf;
 mod workflows_http;
 mod workflows_publish_http;
 mod working_hours_http;

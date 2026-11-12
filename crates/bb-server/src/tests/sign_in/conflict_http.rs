@@ -25,7 +25,7 @@ use super::layouts_http::{AN_EDITOR, LAYOUTS, LOCKS, customize};
 const AHEAD: i64 = 50;
 
 /// The routes of the API description that take a `version`, by operation ID: the rows of the table.
-const VERSIONED: [&str; 54] = [
+const VERSIONED: [&str; 56] = [
     "deleteIssue",
     "deleteComment",
     "answerAgentQuestion",
@@ -34,6 +34,8 @@ const VERSIONED: [&str; 54] = [
     "changeStandingRule",
     "changeMyWorkDay",
     "changeWorkDayOfPerson",
+    "changeAwayTime",
+    "removeAwayTime",
     "startBreak",
     "endBreak",
     "endWorkDay",
@@ -138,6 +140,7 @@ async fn prepare(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<Save, F
         "changeMyWorkDay" | "changeWorkDayOfPerson" | "startBreak" | "endBreak" | "endWorkDay" => {
             time::work_day(id, site, ada).await
         }
+        "changeAwayTime" | "removeAwayTime" => time::away_time(id, ada).await,
         "changeField" | "addChoice" | "reorderChoices" | "changeChoice" | "combineChoices" => {
             prepare_fields(id, ada).await
         }

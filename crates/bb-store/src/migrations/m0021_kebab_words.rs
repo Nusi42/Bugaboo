@@ -78,6 +78,7 @@ mod tests {
         let made_later = [
             NotificationKind::LongTimer.code(),
             NotificationKind::WorkDayChanged.code(),
+            NotificationKind::WorkTimesChanged.code(),
             NotificationKind::AgentAsks.code(),
             NotificationKind::PlanWaits.code(),
             NotificationKind::ReadyForReview.code(),

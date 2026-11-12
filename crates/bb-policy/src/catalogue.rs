@@ -17,11 +17,12 @@ pub use crate::parts::{Counts, Kind, Topic};
 /// change who has which role or change the settings of the organization (which could switch off
 /// the two-step requirement, open signing up or change how long sessions last), take over
 /// somebody's editing, change issue types, layouts, fields, labels and tags, or read or change other
-/// people's working hours (ADR-0025, amendment M6). These stay in the app, where the person is
+/// people's working hours (ADR-0025, amendment M6) or enter their work times (amendment M8). These stay in the app, where the person is
 /// signed in. Defined once, here
 /// beside the kinds a key's choice keeps; narrowing, the key form and the key's own checks all
 /// read this list.
-// The last two entries are the permissions of working hours, `OF_WORKING_HOURS` below.
+// The last three entries are the permissions of working hours, `OF_WORKING_HOURS` below, and
+// *Enter work times for others* (ADR-0025, amendment M8): fifteen in all.
 pub const NOT_FOR_KEYS: &[Permission] = &[
     Permission::ManageInvitations,
     Permission::ManagePeople,
@@ -37,6 +38,7 @@ pub const NOT_FOR_KEYS: &[Permission] = &[
     Permission::ManageWorkflows,
     Permission::SeeWorkingHoursOfOthers,
     Permission::ChangeWorkingHoursOfOthers,
+    Permission::EnterWorkTimesForOthers,
 ];
 
 /// The permissions an agent never holds besides every permission of kind *Manage* (AI-30,
@@ -172,6 +174,9 @@ permissions! {
     SeeWorkingHoursOfOthers => ("see-working-hours-of-others", Time, Organization, See),
     /// Change other people's work days, always with a reason (ADR-0035, decision 7).
     ChangeWorkingHoursOfOthers => ("change-working-hours-of-others", Time, Organization, Manage),
+    /// Enter and change other people's usual work days, work hours and away times, never the note
+    /// of an away time (ADR-0030, decision 2; ADR-0025, amendment M8).
+    EnterWorkTimesForOthers => ("enter-work-times-for-others", Time, Organization, Manage),
 }
 
 words_in_api!(Permission, "One permission of the catalogue.");

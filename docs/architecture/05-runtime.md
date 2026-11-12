@@ -159,6 +159,16 @@ The decisions are [ADR-0035](../adr/0035-time-on-issues-and-working-hours.md), d
 5. The page *Working hours of others* reads another person's days only for a holder of *See working hours of others*, as *Totals only* allows (ADR-0035, decision 8); a change there needs *Change working hours of others* and goes through steps 2 to 4.
 6. Nothing deletes a work day by itself. After the keep period an administrator deletes old work days from the settings page, with their breaks and the events of their changes (ADR-0035, decision 7).
 
+## Work times
+
+The decisions are [ADR-0030](../adr/0030-planning-with-people.md), decision 2 and its amendment M8; this is how the work times of a person move through the server (`bb-app::work_times`, the rules in `bb_core::work_times` and the public holidays in `bb_core::holidays`).
+
+1. A person reads and enters their own usual work days, work hours and away times; nobody else's access key reaches them. Another person's are read as *Who sees people* allows for the kind *Work times* (*Hidden* answers like a person that does not exist) and show an away time only as *Away* with its days: no note, no reason (the record has none) and nobody who entered it.
+2. Somebody with *Enter work times for others* enters and changes usual work days, work hours and away times of others, never reads or writes the note, and the person hears of it through the reader of the outbox (ADR-0033, amendment M8). The events never hold a note.
+3. A share is set on *Project members* by somebody who decides who has which role in the project. It counts as nothing while the person has no role there and counts again when a role comes back; nothing deletes it.
+4. The plan reads work times only through `Ctx::work_minutes`, which asks the port `WorkTimesStore` for the records of the people and the days once and works the minutes out with `bb_core::work_times::minutes_on`: usual work days times work hours times the share, minus away times and the public holidays of the person's setting *Holidays*.
+5. The daily job `work-times.delete-old-away-times` deletes each away time with its note, the events of its changes and the notifications about it one year after its last day. Shares and work hours are deleted only by `delete_work_times_in`, which *Remove a person* calls inside the change that ends the membership.
+
 ## Removing a person (GDPR)
 
 1. An admin chooses *Remove a person*. `bb-app::privacy` builds a **plan** from the personal-data marks: what will be deleted now, what will be anonymized, what must be kept by law and until when (DATA-MARKS; legal keep periods: review (compliance.md lists them)).

@@ -102,6 +102,7 @@ export const notificationKindWords = [
   "edit-notice",
   "long-timer",
   "work-day-changed",
+  "work-times-changed",
   "agent-asks",
   "plan-waits",
   "ready-for-review",

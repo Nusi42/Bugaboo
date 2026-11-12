@@ -8,7 +8,7 @@ use bb_core::event::FieldChange;
 use bb_core::fields::FieldKey;
 use bb_core::files::{Attachment, StoredFile};
 use bb_core::id::FieldId;
-use bb_core::id::{IssueId, UserId};
+use bb_core::id::{IssueId, ProjectId, UserId};
 use bb_core::issue::Issue;
 use bb_core::own_fields::FieldType;
 use bb_core::own_fields_value::FieldValue;
@@ -16,6 +16,8 @@ use bb_core::project::Project;
 use bb_core::relation::Relation;
 use bb_core::time::entry::TimeEntry;
 use bb_core::version::{FIELD as VERSION, FIRST_VERSION, counted_up};
+use bb_core::work_times::record::AwayTime;
+use bb_core::work_times::{Share, UsualDays};
 use bb_core::workflow::StatusKey;
 use bb_core::working_time::Times;
 use jiff::civil::Date;
@@ -27,6 +29,7 @@ use crate::issues::member as issue_member;
 use crate::member::comment as comment_member;
 use crate::member::time_entry as time_member;
 use crate::member::work_day as work_day_member;
+use crate::member::work_times as work_times_member;
 use crate::tags::NameRef;
 use crate::tags::labels_changed;
 use bb_core::tags::Label;
@@ -84,6 +87,84 @@ pub fn work_day_recorded(
             after: Some(json_of(after)),
         },
         version_before.map_or_else(|| set_to(VERSION, json!(FIRST_VERSION)), counted_up),
+    ]
+}
+
+/// An away time as an event holds it: its days and half days, never its note.
+fn away_json(time: &AwayTime) -> Value {
+    json!({
+        "first": time.first.to_string(),
+        "last": time.last.to_string(),
+        "first_afternoon_only": time.first_afternoon_only,
+        "last_morning_only": time.last_morning_only,
+    })
+}
+
+/// An away time entered, changed or removed: whose it is and the away time before (none when it was
+/// entered) and after (none when it was removed). The note is no part of it.
+#[must_use]
+pub fn away_time_recorded(before: Option<&AwayTime>, after: Option<&AwayTime>) -> Vec<FieldChange> {
+    let person = after.or(before).map(|time| time.person);
+    let mut changes: Vec<FieldChange> = person
+        .map(|person| set_to(work_times_member::PERSON, json!(person.to_string())))
+        .into_iter()
+        .collect();
+    changes.push(FieldChange {
+        field: work_times_member::AWAY.to_owned(),
+        before: before.map(away_json),
+        after: after.map(away_json),
+    });
+    if after.is_some() {
+        changes.push(before.map_or_else(
+            || set_to(VERSION, json!(FIRST_VERSION)),
+            |before| counted_up(before.version),
+        ));
+    }
+    changes
+}
+
+/// The usual work days and work hours of a person changed: before (none while the person had none
+/// of their own) and after.
+#[must_use]
+pub fn usual_days_recorded(
+    person: UserId,
+    before: Option<&UsualDays>,
+    after: &UsualDays,
+) -> Vec<FieldChange> {
+    let json_of = |days: &UsualDays| {
+        Value::Array(
+            days.days()
+                .iter()
+                .map(|day| json!({ "works": day.works, "minutes": day.minutes }))
+                .collect(),
+        )
+    };
+    vec![
+        set_to(work_times_member::PERSON, json!(person.to_string())),
+        FieldChange {
+            field: work_times_member::USUAL.to_owned(),
+            before: before.map(json_of),
+            after: Some(json_of(after)),
+        },
+    ]
+}
+
+/// The share of a person in a project changed.
+#[must_use]
+pub fn share_recorded(
+    person: UserId,
+    project: ProjectId,
+    before: Option<Share>,
+    after: Share,
+) -> Vec<FieldChange> {
+    vec![
+        set_to(work_times_member::PERSON, json!(person.to_string())),
+        set_to(work_times_member::PROJECT, json!(project.to_string())),
+        FieldChange {
+            field: work_times_member::SHARE.to_owned(),
+            before: before.map(|share| json!(share.percent())),
+            after: Some(json!(after.percent())),
+        },
     ]
 }
 

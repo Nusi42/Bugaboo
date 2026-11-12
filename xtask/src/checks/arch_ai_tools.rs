@@ -13,7 +13,8 @@
 //! - **No file builds a tool outside the registry**: no `ToolSpec` and no tool name written as a
 //!   string in product code of any other file (the words of `Tool` are the one home of the names).
 //! - **No tool calls a use case that is designed out** (COMP-10): the list `DESIGNED_OUT` of the
-//!   registry, every use case of the folders `working_hours/` and `roles/`, and their modules. This
+//!   registry, every use case of the folders `working_hours/`, `work_times/` and `roles/`, and their
+//!   modules (nothing of work times reaches an AI tool, ADR-0030). This
 //!   holds for the tools folder and for `bb-mcp` and `bb-ai`, which list and call tools only through
 //!   the registry.
 //!
@@ -32,15 +33,18 @@ const TOOLS_FOLDER: &str = "crates/bb-app/src/ai/tools/";
 const TESTS_FOLDER: &str = "crates/bb-app/src/tests/";
 const APP_FOLDER: &str = "crates/bb-app/src/";
 /// The folders whose use cases a tool never runs.
-const DESIGNED_OUT_FOLDERS: [&str; 2] = [
+const DESIGNED_OUT_FOLDERS: [&str; 3] = [
     "crates/bb-app/src/working_hours/",
+    "crates/bb-app/src/work_times/",
     "crates/bb-app/src/roles/",
 ];
 /// The modules a tool never imports.
-const DESIGNED_OUT_PATHS: [&str; 4] = [
+const DESIGNED_OUT_PATHS: [&str; 6] = [
     "working_hours::",
+    "work_times::",
     "roles::",
     "bb_app::working_hours",
+    "bb_app::work_times",
     "bb_app::roles",
 ];
 /// Places where a word that is also the name of a tool means something else, each with the word

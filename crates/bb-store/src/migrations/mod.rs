@@ -78,6 +78,7 @@ mod m0046_answer_time;
 mod m0047_work_project;
 mod m0048_rules_hand_over;
 mod m0049_dates_and_date_effect;
+mod m0050_work_times;
 mod m0051_own_themes;
 #[cfg(test)]
 mod old_rows;
@@ -421,6 +422,11 @@ const ALL: &[Definition] = &[
         version: 49,
         name: "dates_and_date_effect",
         steps: || Ok(m0049_dates_and_date_effect::steps()),
+    },
+    Definition {
+        version: 50,
+        name: "work_times",
+        steps: || Ok(m0050_work_times::steps()),
     },
     Definition {
         version: 51,

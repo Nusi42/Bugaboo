@@ -8,6 +8,7 @@ use bb_core::access::{FieldLevel, PeopleLevel};
 use bb_core::agent_work::{AgentWorkState, BriefPart};
 use bb_core::ai::{AuthorKind, Tool};
 use bb_core::fields::Field;
+use bb_core::holidays::{Holiday, Region as HolidayRegion};
 use bb_core::issue::{IssueIcon, Priority, StatusGroup};
 use bb_core::many_changes::{ManyChangeStatus, SkipReason};
 use bb_core::message::MessageKey;
@@ -30,6 +31,19 @@ fn agent_work_keys() -> Vec<Made> {
         word: format!("the part of a brief `{}`", lack.code()),
     });
     states.chain(lacks).collect()
+}
+
+/// The messages of the words of public holidays: the regions that can be chosen and the days.
+fn holiday_keys() -> Vec<Made> {
+    let regions = HolidayRegion::ALL.iter().map(|region| Made {
+        key: region.name(),
+        word: format!("the region of public holidays `{}`", region.code()),
+    });
+    let days = Holiday::ALL.iter().map(|holiday| Made {
+        key: holiday.name(),
+        word: format!("the public holiday `{}`", holiday.code()),
+    });
+    regions.chain(days).collect()
 }
 
 /// A message that the word of an enum makes, and the word.
@@ -139,5 +153,6 @@ pub(crate) fn made_keys() -> Vec<Made> {
     for kind in NotificationKind::ALL {
         keys.push(made("the kind of notification", kind.code(), kind.label()));
     }
+    keys.extend(holiday_keys());
     keys
 }

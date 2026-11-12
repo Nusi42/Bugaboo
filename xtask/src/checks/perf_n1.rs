@@ -14,9 +14,10 @@ const NOTIFICATIONS: &str = "crates/bb-server/src/tests/sign_in/perf_notificatio
 const LIST_LABELS: &str = "crates/bb-server/src/tests/sign_in/list_labels_http.rs";
 const SAVED_SEARCHES: &str = "crates/bb-server/src/tests/sign_in/saved_searches_http.rs";
 const TIME_ENTRIES: &str = "crates/bb-server/src/tests/sign_in/time_perf_http.rs";
+const WORK_TIMES: &str = "crates/bb-server/src/tests/sign_in/work_times_perf.rs";
 
 /// The reads that must not grow with the number of rows.
-pub(super) const REQUIRED: [Required; 14] = [
+pub(super) const REQUIRED: [Required; 15] = [
     // A stretch of work days reads its days, periods, breaks and changed days once each, however long.
     Required::both("perf_05_a_stretch_of_forty_work_days_runs_as_many_statements_as_one_of_five")
         .within("crates/bb-server/src/tests/sign_in/working_hours_perf.rs"),
@@ -64,6 +65,9 @@ pub(super) const REQUIRED: [Required; 14] = [
         "perf_05_a_page_of_forty_time_entries_runs_as_many_statements_as_a_page_of_five",
     )
     .within(TIME_ENTRIES),
+    // The people of a project with their shares and the other projects of each read together.
+    Required::both("perf_05_forty_people_with_their_shares_run_as_many_statements_as_five")
+        .within(WORK_TIMES),
 ];
 
 pub(crate) struct PerfN1;

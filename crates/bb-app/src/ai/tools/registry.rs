@@ -302,10 +302,10 @@ fn tools_of_agents<S: AuthStore>() -> [ToolSpec<S>; 8] {
     ]
 }
 
-/// The use cases no tool runs, besides every use case of `working_hours/` and `roles/`: they read
-/// or change what is not for AI (working hours, other people's time, roles and the answers of
-/// *Check access*). ARCH-AI-TOOLS reads this list and refuses a tool, or any file outside the
-/// registry, that calls one of them.
+/// The use cases no tool runs, besides every use case of `working_hours/`, `work_times/` and
+/// `roles/`: they read or change what is not for AI (working hours, work times, other people's time,
+/// roles and the answers of *Check access*). ARCH-AI-TOOLS reads this list and refuses a tool, or
+/// any file outside the registry, that calls one of them.
 pub const DESIGNED_OUT: &[&str] = &[
     "check_access",
     "people_to_check",

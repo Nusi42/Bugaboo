@@ -626,6 +626,16 @@ pub(super) const EXAMPLES: &[Example] = &[
         "getWorkDayHistoryOfPerson",
         &[Quirk::HidesThePerson, Quirk::NamesAMissingThing],
     ),
+    Example::route("getMyWorkTimes"),
+    Example::with("getWorkTimesOfPerson", &[Quirk::ShownByWorkTimes]),
+    Example::route("changeMyUsualDays"),
+    Example::with("changeUsualDaysOfPerson", &[Quirk::ShownByWorkTimes]),
+    Example::route("enterMyAwayTime"),
+    Example::with("enterAwayTimeForPerson", &[Quirk::ShownByWorkTimes]),
+    Example::route("changeAwayTime"),
+    Example::route("removeAwayTime"),
+    Example::with("listProjectShares", &[Quirk::SessionOnly]),
+    Example::route("setShare"),
     Example::route("countOldWorkDays"),
     Example::route("deleteOldWorkDays"),
     Example::with("getTimeEntryDefaults", &[Quirk::AnIssueOfTheTarget]),
@@ -710,32 +720,13 @@ pub(super) async fn request(
     if let Some(found) = super::examples_working_hours::working_hours_request(fixture, operation)? {
         return Ok(found);
     }
+    if let Some(found) =
+        super::examples_work_times::work_times_request(fixture, operation, browser).await?
+    {
+        return Ok(found);
+    }
     Err(format!("{operation} has a row in the table but no request").into())
 }
 
 #[cfg(test)]
-mod tests {
-    use std::collections::BTreeSet;
-
-    use super::*;
-
-    #[test]
-    fn every_route_has_one_row_only() {
-        let operations: BTreeSet<&str> = EXAMPLES.iter().map(|example| example.operation).collect();
-        assert_eq!(operations.len(), EXAMPLES.len());
-    }
-
-    #[test]
-    fn only_the_routes_that_list_what_is_seen_may_answer_a_person_without_the_permission() {
-        let filtering: Vec<&str> = EXAMPLES
-            .iter()
-            .filter(|example| example.has(Quirk::FiltersWhatIsSeen))
-            .map(|example| example.operation)
-            .collect();
-        assert_eq!(
-            filtering,
-            ["listProjects"],
-            "M2-F30: one route, with its reason"
-        );
-    }
-}
+mod tests;

@@ -74,6 +74,7 @@ mod text_index;
 mod themes;
 mod time;
 mod work;
+mod work_times;
 mod working_hours;
 
 pub(crate) use access::*;
@@ -91,6 +92,7 @@ pub(crate) use text_index::*;
 pub(crate) use themes::*;
 pub(crate) use time::*;
 pub(crate) use work::*;
+pub(crate) use work_times::*;
 pub(crate) use working_hours::*;
 
 /// The name of every table with the marks of the entity stored in it and the field behind each
@@ -113,6 +115,7 @@ pub fn tables() -> Vec<StoredTable> {
     tables.extend(themes::tables());
     tables.extend(time::tables());
     tables.extend(work::tables());
+    tables.extend(work_times::tables());
     tables.extend(working_hours::tables());
     tables
 }

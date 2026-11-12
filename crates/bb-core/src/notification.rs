@@ -87,6 +87,9 @@ words! {
         LongTimer => "long-timer",
         /// Somebody else changed one of the person's work days (ADR-0035, decision 7).
         WorkDayChanged => "work-day-changed",
+        /// Somebody with *Enter work times for others* entered or changed an away time, the usual
+        /// work days or the work hours of the person (ADR-0033, amendment M8).
+        WorkTimesChanged => "work-times-changed",
         /// An agent of the person, or on an issue they handed over, asks a question (ADR-0029,
         /// decision 5).
         AgentAsks => "agent-asks",
@@ -142,6 +145,9 @@ impl NotificationKind {
     /// value is the default of everybody; each person changes their own under *Customize*.
     #[must_use]
     pub const fn setting(self, via: Via) -> &'static Setting<Bool> {
+        use settings::work_times::{
+            NOTIFICATIONS_WORK_TIMES_CHANGED_BY_MAIL, NOTIFICATIONS_WORK_TIMES_CHANGED_IN_APP,
+        };
         use settings::working_hours::{
             NOTIFICATIONS_WORK_DAY_CHANGED_BY_MAIL, NOTIFICATIONS_WORK_DAY_CHANGED_IN_APP,
         };
@@ -177,6 +183,8 @@ impl NotificationKind {
             (Self::LongTimer, Via::Mail) => &NOTIFICATIONS_LONG_TIMER_BY_MAIL,
             (Self::WorkDayChanged, Via::App) => &NOTIFICATIONS_WORK_DAY_CHANGED_IN_APP,
             (Self::WorkDayChanged, Via::Mail) => &NOTIFICATIONS_WORK_DAY_CHANGED_BY_MAIL,
+            (Self::WorkTimesChanged, Via::App) => &NOTIFICATIONS_WORK_TIMES_CHANGED_IN_APP,
+            (Self::WorkTimesChanged, Via::Mail) => &NOTIFICATIONS_WORK_TIMES_CHANGED_BY_MAIL,
             (Self::AgentAsks, Via::App) => &NOTIFICATIONS_AGENT_ASKS_IN_APP,
             (Self::AgentAsks, Via::Mail) => &NOTIFICATIONS_AGENT_ASKS_BY_MAIL,
             (Self::PlanWaits, Via::App) => &NOTIFICATIONS_PLAN_WAITS_IN_APP,
@@ -307,6 +315,7 @@ mod tests {
             (NotificationKind::EditNotice, (true, false)),
             (NotificationKind::LongTimer, (true, false)),
             (NotificationKind::WorkDayChanged, (true, true)),
+            (NotificationKind::WorkTimesChanged, (true, false)),
             (NotificationKind::AgentAsks, (true, true)),
             (NotificationKind::PlanWaits, (true, true)),
             (NotificationKind::ReadyForReview, (true, true)),

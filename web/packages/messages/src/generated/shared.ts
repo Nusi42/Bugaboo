@@ -751,6 +751,18 @@ export const messages = {
     "You have {most} personal themes already. Delete one to add another.",
   "error.working-hours.keep-years-too-short":
     "With the rules of Germany, work days are kept for at least {years, plural, one {# year} other {# years}}. Choose No rules first, or keep them longer.",
+  "people-kind.work-times": "Work times",
+  "permission.enter-work-times-for-others":
+    "Enter work times for others: enter and change other people's usual work days, work hours and away times",
+  "notification.kind.work-times-changed": "Your work times were changed",
+  "notifications.work-times-away-entered": "{who} entered an away time for you: {days}",
+  "notifications.work-times-away-changed": "{who} changed your away time: {days}",
+  "notifications.work-times-away-removed": "{who} removed your away time: {days}",
+  "notifications.work-times-usual-changed": "{who} changed your usual work days or work hours",
+  "error.work-times.away-time-invalid":
+    "These days are not an away time. The last day cannot be before the first, an away time lasts a year at most, and a single day cannot be both afternoon only and morning only.",
+  "error.work-times.hours-invalid": "A work day has 24 hours at most.",
+  "error.work-times.share-invalid": "A share is between 0 and 100 percent.",
   "nav.assistant-settings": "Assistant",
   "agent-work.summary": "Attempt {number} is ready for review: {address}",
   "error.agent-work.already-open": "This agent already has this issue handed over.",

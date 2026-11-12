@@ -25,6 +25,7 @@ use super::scenarios_searches as ss;
 use super::scenarios_tags as st;
 use super::scenarios_themes as sth;
 use super::scenarios_time as sti;
+use super::scenarios_work_times as swt;
 use super::scenarios_workflows as sw;
 use super::scenarios_working_hours as swh;
 use super::world::{Outcome, World};
@@ -35,7 +36,7 @@ use crate::auth::USE_CASES;
 type Scenario = for<'a> fn(&'a World) -> Pin<Box<dyn Future<Output = Added> + 'a>>;
 
 /// The use cases the server calls itself, at every start, and not through `AuthApi`.
-const SYSTEM_USE_CASES: [&str; 8] = [
+const SYSTEM_USE_CASES: [&str; 10] = [
     "clean_old_grants",
     "issue_setup_code",
     "create_starting_roles",
@@ -44,6 +45,8 @@ const SYSTEM_USE_CASES: [&str; 8] = [
     "create_starting_workflows",
     "create_missing_handles",
     "create_starter_time_fields",
+    "delete_old_away_times",
+    "delete_work_times_of_person",
 ];
 
 /// The table: the name of the use case and its scenario. One line per command use case.
@@ -226,6 +229,13 @@ table! {
     "tap_work_day" => swh::tap_work_day_scenario,
     "change_work_day" => swh::change_work_day_scenario,
     "delete_old_work_days" => swh::delete_old_work_days_scenario,
+    "change_usual_days" => swt::change_usual_days_scenario,
+    "enter_away_time" => swt::enter_away_time_scenario,
+    "change_away_time" => swt::change_away_time_scenario,
+    "remove_away_time" => swt::remove_away_time_scenario,
+    "set_share" => swt::set_share_scenario,
+    "delete_old_away_times" => swt::delete_old_away_times_scenario,
+    "delete_work_times_of_person" => swt::delete_work_times_of_person_scenario,
 }
 
 #[test]

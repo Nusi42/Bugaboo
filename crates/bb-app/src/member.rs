@@ -165,6 +165,26 @@ pub(crate) mod work_day {
     pub(crate) const BEFORE: &str = "work_days_before";
 }
 
+/// The members of the events of work times (ADR-0030, amendment M8). An event never holds the note
+/// of an away time: it is read by the notifications and the log of changes, and only the person
+/// reads the note.
+pub(crate) mod work_times {
+    /// Whose work times they are.
+    pub(crate) const PERSON: &str = "person";
+    /// An away time: its first and last day and the half days, before and after.
+    pub(crate) const AWAY: &str = "away";
+    /// The usual work days and work hours, before and after.
+    pub(crate) const USUAL: &str = "usual_days";
+    /// The project of a share.
+    pub(crate) const PROJECT: &str = "project";
+    /// The share in percent, before and after.
+    pub(crate) const SHARE: &str = "share";
+    /// How many old away times were deleted (an event about the person).
+    pub(crate) const DELETED: &str = "away_times_deleted";
+    /// The away times with a last day before this one were older than they are kept.
+    pub(crate) const BEFORE: &str = "away_times_before";
+}
+
 pub(crate) mod saved_search {
     pub(crate) const NAME: &str = "name";
     pub(crate) const TEXT: &str = "text";

@@ -65,6 +65,10 @@ pub enum PeopleContext {
     /// The history of one's own work day and the notification of its change: whoever changed it
     /// is named, so the person knows who changed their record and why (ADR-0035, decision 7).
     OwnWorkDay,
+    /// Work times (ADR-0030, amendment M8): a holder of *Enter work times for others* sees the
+    /// names of the people whose work times they enter, whatever *Who sees people* says; everybody
+    /// else sees people as the kind *Work times* says.
+    WorkTimes,
 }
 
 /// The permissions that make a viewer a manager of people or roles at a place (M2-Q3).
@@ -113,6 +117,13 @@ impl Evaluation {
                 }
             }
             PeopleContext::OwnWorkDay => PeopleLevel::Names,
+            PeopleContext::WorkTimes => {
+                if self.allows(Permission::EnterWorkTimesForOthers) {
+                    PeopleLevel::Names
+                } else {
+                    self.kind_level(kind)
+                }
+            }
         }
     }
 

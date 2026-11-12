@@ -295,3 +295,19 @@ reason = "Making a new own theme, a copy of one or one from a file has no earlie
 [[exempt]]
 routes = ["DELETE /api/v1/themes/{theme}"]
 reason = "A DELETE has no body: taking an own theme away takes the version it read in the query (`?version=`), and a stale one is refused with the conflict, like a layout (ADR-0026, update M8)."
+
+[[exempt]]
+routes = [
+  "PUT /api/v1/me/work-times/usual-days",
+  "PUT /api/v1/people/{person}/work-times/usual-days",
+  "PUT /api/v1/projects/{project}/shares/{person}",
+]
+reason = "The usual work days of a person and a share are set to a value, whole, and can be set again: they have no version, only the value a person or somebody with the permission wants now, and the person is told when somebody else changes the days (ADR-0030, M8 work times; a version for the seven days is a follow-up)."
+
+[[exempt]]
+routes = ["POST /api/v1/me/away-times", "POST /api/v1/people/{person}/away-times"]
+reason = "An away time is made new: there is nothing yet that another change could overwrite (ADR-0019); every later change and its removal take the version."
+
+[[exempt]]
+routes = ["DELETE /api/v1/away-times/{id}"]
+reason = "A DELETE has no body: the removal of an away time takes the version it read in the query (`?version=`), and a stale one is refused with the conflict (ADR-0030)."

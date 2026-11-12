@@ -38,6 +38,23 @@ impl<S: AuthStore> Ctx<'_, S> {
         })
     }
 
+    /// The daily round of `work-times.delete-old-away-times` (in a function of its own, so
+    /// `do_daily_job` stays short).
+    pub(super) async fn delete_old_away_times_daily(&self, job: &Job) -> Result<(), JobFailure> {
+        Box::pin(self.run_daily(JobKind::DeleteOldAwayTimes, async {
+            crate::work_times::delete_old_away_times(self)
+                .await
+                .map(|deleted| {
+                    tracing::info!(deleted, "away times older than a year were deleted");
+                })
+        }))
+        .await
+        .map_err(|error| {
+            tracing::warn!(cause = %error, "old away times could not be deleted");
+            JobFailure::of(&error, FAILED, job)
+        })
+    }
+
     /// The daily round of `server-log.rotate`.
     pub(super) async fn rotate_server_log_daily(&self, job: &Job) -> Result<(), JobFailure> {
         Box::pin(self.run_daily(JobKind::RotateServerLog, async {

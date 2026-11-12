@@ -218,6 +218,12 @@ words! {
         StarterFields => "starter_fields",
         /// A work day of a person (TIME-08).
         WorkDay => "work_day",
+        /// An away time of a person (PLAN-11).
+        AwayTime => "away_time",
+        /// The usual work days and work hours of a person; the record is the person (PLAN-11).
+        WorkTimes => "work_times",
+        /// The share of a person in a project; the record is the person (PLAN-15).
+        Share => "share",
     }
 }
 

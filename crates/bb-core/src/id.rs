@@ -335,6 +335,11 @@ define_ordered_id! {
 }
 
 define_ordered_id! {
+    /// The ID of an away time of a person (PLAN-11, ADR-0030, decision 2).
+    AwayTimeId
+}
+
+define_ordered_id! {
     /// The ID of a file added to an issue or a comment (ATT-01).
     AttachmentId
 }
@@ -517,6 +522,7 @@ into_entity_id!(
     CommentId,
     TimeEntryId,
     WorkDayId,
+    AwayTimeId,
     ToolCallId,
     AttachmentId,
     UploadId,

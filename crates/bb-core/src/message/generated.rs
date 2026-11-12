@@ -2275,6 +2275,18 @@ pub const ERROR_TIMER_TOO_FAST: MessageKey = MessageKey::new("error.timer.too-fa
 /// The message `error.timer.too-long`.
 pub const ERROR_TIMER_TOO_LONG: MessageKey = MessageKey::new("error.timer.too-long");
 
+/// The message `error.work-times.away-time-invalid`.
+pub const ERROR_WORK_TIMES_AWAY_TIME_INVALID: MessageKey =
+    MessageKey::new("error.work-times.away-time-invalid");
+
+/// The message `error.work-times.hours-invalid`.
+pub const ERROR_WORK_TIMES_HOURS_INVALID: MessageKey =
+    MessageKey::new("error.work-times.hours-invalid");
+
+/// The message `error.work-times.share-invalid`.
+pub const ERROR_WORK_TIMES_SHARE_INVALID: MessageKey =
+    MessageKey::new("error.work-times.share-invalid");
+
 /// The message `error.workflow.cannot-fill`.
 pub const ERROR_WORKFLOW_CANNOT_FILL: MessageKey = MessageKey::new("error.workflow.cannot-fill");
 
@@ -3069,6 +3081,118 @@ pub const HISTORY_UNDID_RUN: MessageKey = MessageKey::new("history.undid-run");
 
 /// The message `history.undid-run-link`.
 pub const HISTORY_UNDID_RUN_LINK: MessageKey = MessageKey::new("history.undid-run-link");
+
+/// The message `holiday.all-saints`.
+pub const HOLIDAY_ALL_SAINTS: MessageKey = MessageKey::new("holiday.all-saints");
+
+/// The message `holiday.ascension-day`.
+pub const HOLIDAY_ASCENSION_DAY: MessageKey = MessageKey::new("holiday.ascension-day");
+
+/// The message `holiday.assumption-day`.
+pub const HOLIDAY_ASSUMPTION_DAY: MessageKey = MessageKey::new("holiday.assumption-day");
+
+/// The message `holiday.christmas-day`.
+pub const HOLIDAY_CHRISTMAS_DAY: MessageKey = MessageKey::new("holiday.christmas-day");
+
+/// The message `holiday.corpus-christi`.
+pub const HOLIDAY_CORPUS_CHRISTI: MessageKey = MessageKey::new("holiday.corpus-christi");
+
+/// The message `holiday.easter-monday`.
+pub const HOLIDAY_EASTER_MONDAY: MessageKey = MessageKey::new("holiday.easter-monday");
+
+/// The message `holiday.easter-sunday`.
+pub const HOLIDAY_EASTER_SUNDAY: MessageKey = MessageKey::new("holiday.easter-sunday");
+
+/// The message `holiday.epiphany`.
+pub const HOLIDAY_EPIPHANY: MessageKey = MessageKey::new("holiday.epiphany");
+
+/// The message `holiday.good-friday`.
+pub const HOLIDAY_GOOD_FRIDAY: MessageKey = MessageKey::new("holiday.good-friday");
+
+/// The message `holiday.labour-day`.
+pub const HOLIDAY_LABOUR_DAY: MessageKey = MessageKey::new("holiday.labour-day");
+
+/// The message `holiday.new-year`.
+pub const HOLIDAY_NEW_YEAR: MessageKey = MessageKey::new("holiday.new-year");
+
+/// The message `holiday.reformation-day`.
+pub const HOLIDAY_REFORMATION_DAY: MessageKey = MessageKey::new("holiday.reformation-day");
+
+/// The message `holiday.repentance-day`.
+pub const HOLIDAY_REPENTANCE_DAY: MessageKey = MessageKey::new("holiday.repentance-day");
+
+/// The message `holiday.second-christmas-day`.
+pub const HOLIDAY_SECOND_CHRISTMAS_DAY: MessageKey =
+    MessageKey::new("holiday.second-christmas-day");
+
+/// The message `holiday.unity-day`.
+pub const HOLIDAY_UNITY_DAY: MessageKey = MessageKey::new("holiday.unity-day");
+
+/// The message `holiday.whit-monday`.
+pub const HOLIDAY_WHIT_MONDAY: MessageKey = MessageKey::new("holiday.whit-monday");
+
+/// The message `holiday.whit-sunday`.
+pub const HOLIDAY_WHIT_SUNDAY: MessageKey = MessageKey::new("holiday.whit-sunday");
+
+/// The message `holiday.women-day`.
+pub const HOLIDAY_WOMEN_DAY: MessageKey = MessageKey::new("holiday.women-day");
+
+/// The message `holiday.world-childrens-day`.
+pub const HOLIDAY_WORLD_CHILDRENS_DAY: MessageKey = MessageKey::new("holiday.world-childrens-day");
+
+/// The message `holidays.region.de`.
+pub const HOLIDAYS_REGION_DE: MessageKey = MessageKey::new("holidays.region.de");
+
+/// The message `holidays.region.de-bb`.
+pub const HOLIDAYS_REGION_DE_BB: MessageKey = MessageKey::new("holidays.region.de-bb");
+
+/// The message `holidays.region.de-be`.
+pub const HOLIDAYS_REGION_DE_BE: MessageKey = MessageKey::new("holidays.region.de-be");
+
+/// The message `holidays.region.de-bw`.
+pub const HOLIDAYS_REGION_DE_BW: MessageKey = MessageKey::new("holidays.region.de-bw");
+
+/// The message `holidays.region.de-by`.
+pub const HOLIDAYS_REGION_DE_BY: MessageKey = MessageKey::new("holidays.region.de-by");
+
+/// The message `holidays.region.de-hb`.
+pub const HOLIDAYS_REGION_DE_HB: MessageKey = MessageKey::new("holidays.region.de-hb");
+
+/// The message `holidays.region.de-he`.
+pub const HOLIDAYS_REGION_DE_HE: MessageKey = MessageKey::new("holidays.region.de-he");
+
+/// The message `holidays.region.de-hh`.
+pub const HOLIDAYS_REGION_DE_HH: MessageKey = MessageKey::new("holidays.region.de-hh");
+
+/// The message `holidays.region.de-mv`.
+pub const HOLIDAYS_REGION_DE_MV: MessageKey = MessageKey::new("holidays.region.de-mv");
+
+/// The message `holidays.region.de-ni`.
+pub const HOLIDAYS_REGION_DE_NI: MessageKey = MessageKey::new("holidays.region.de-ni");
+
+/// The message `holidays.region.de-nw`.
+pub const HOLIDAYS_REGION_DE_NW: MessageKey = MessageKey::new("holidays.region.de-nw");
+
+/// The message `holidays.region.de-rp`.
+pub const HOLIDAYS_REGION_DE_RP: MessageKey = MessageKey::new("holidays.region.de-rp");
+
+/// The message `holidays.region.de-sh`.
+pub const HOLIDAYS_REGION_DE_SH: MessageKey = MessageKey::new("holidays.region.de-sh");
+
+/// The message `holidays.region.de-sl`.
+pub const HOLIDAYS_REGION_DE_SL: MessageKey = MessageKey::new("holidays.region.de-sl");
+
+/// The message `holidays.region.de-sn`.
+pub const HOLIDAYS_REGION_DE_SN: MessageKey = MessageKey::new("holidays.region.de-sn");
+
+/// The message `holidays.region.de-st`.
+pub const HOLIDAYS_REGION_DE_ST: MessageKey = MessageKey::new("holidays.region.de-st");
+
+/// The message `holidays.region.de-th`.
+pub const HOLIDAYS_REGION_DE_TH: MessageKey = MessageKey::new("holidays.region.de-th");
+
+/// The message `holidays.region.none`.
+pub const HOLIDAYS_REGION_NONE: MessageKey = MessageKey::new("holidays.region.none");
 
 /// The message `home.admin`.
 pub const HOME_ADMIN: MessageKey = MessageKey::new("home.admin");
@@ -4401,6 +4525,10 @@ pub const NOTIFICATION_KIND_RUN_ENDED: MessageKey = MessageKey::new("notificatio
 pub const NOTIFICATION_KIND_WORK_DAY_CHANGED: MessageKey =
     MessageKey::new("notification.kind.work-day-changed");
 
+/// The message `notification.kind.work-times-changed`.
+pub const NOTIFICATION_KIND_WORK_TIMES_CHANGED: MessageKey =
+    MessageKey::new("notification.kind.work-times-changed");
+
 /// The message `notifications.agent-asks`.
 pub const NOTIFICATIONS_AGENT_ASKS: MessageKey = MessageKey::new("notifications.agent-asks");
 
@@ -4636,6 +4764,9 @@ pub const PEOPLE_KIND_REPORTED_BY: MessageKey = MessageKey::new("people-kind.rep
 /// The message `people-kind.time-entries`.
 pub const PEOPLE_KIND_TIME_ENTRIES: MessageKey = MessageKey::new("people-kind.time-entries");
 
+/// The message `people-kind.work-times`.
+pub const PEOPLE_KIND_WORK_TIMES: MessageKey = MessageKey::new("people-kind.work-times");
+
 /// The message `people-level.hidden`.
 pub const PEOPLE_LEVEL_HIDDEN: MessageKey = MessageKey::new("people-level.hidden");
 
@@ -4745,6 +4876,10 @@ pub const PERMISSION_DELETE_ISSUES: MessageKey = MessageKey::new("permission.del
 
 /// The message `permission.edit-anyway`.
 pub const PERMISSION_EDIT_ANYWAY: MessageKey = MessageKey::new("permission.edit-anyway");
+
+/// The message `permission.enter-work-times-for-others`.
+pub const PERMISSION_ENTER_WORK_TIMES_FOR_OTHERS: MessageKey =
+    MessageKey::new("permission.enter-work-times-for-others");
 
 /// The message `permission.manage-fields`.
 pub const PERMISSION_MANAGE_FIELDS: MessageKey = MessageKey::new("permission.manage-fields");
@@ -6912,6 +7047,22 @@ pub const SETTING_NOTIFICATIONS_WORK_DAY_CHANGED_IN_APP_HELP: MessageKey =
 pub const SETTING_NOTIFICATIONS_WORK_DAY_CHANGED_IN_APP_NAME: MessageKey =
     MessageKey::new("setting.notifications.work-day-changed-in-app.name");
 
+/// The message `setting.notifications.work-times-changed-by-mail.help`.
+pub const SETTING_NOTIFICATIONS_WORK_TIMES_CHANGED_BY_MAIL_HELP: MessageKey =
+    MessageKey::new("setting.notifications.work-times-changed-by-mail.help");
+
+/// The message `setting.notifications.work-times-changed-by-mail.name`.
+pub const SETTING_NOTIFICATIONS_WORK_TIMES_CHANGED_BY_MAIL_NAME: MessageKey =
+    MessageKey::new("setting.notifications.work-times-changed-by-mail.name");
+
+/// The message `setting.notifications.work-times-changed-in-app.help`.
+pub const SETTING_NOTIFICATIONS_WORK_TIMES_CHANGED_IN_APP_HELP: MessageKey =
+    MessageKey::new("setting.notifications.work-times-changed-in-app.help");
+
+/// The message `setting.notifications.work-times-changed-in-app.name`.
+pub const SETTING_NOTIFICATIONS_WORK_TIMES_CHANGED_IN_APP_NAME: MessageKey =
+    MessageKey::new("setting.notifications.work-times-changed-in-app.name");
+
 /// The message `setting.page.assistant-intro`.
 pub const SETTING_PAGE_ASSISTANT_INTRO: MessageKey =
     MessageKey::new("setting.page.assistant-intro");
@@ -7117,6 +7268,14 @@ pub const SETTING_WINDOW_SIZES_HELP: MessageKey = MessageKey::new("setting.windo
 
 /// The message `setting.window.sizes.name`.
 pub const SETTING_WINDOW_SIZES_NAME: MessageKey = MessageKey::new("setting.window.sizes.name");
+
+/// The message `setting.work-times.holidays.help`.
+pub const SETTING_WORK_TIMES_HOLIDAYS_HELP: MessageKey =
+    MessageKey::new("setting.work-times.holidays.help");
+
+/// The message `setting.work-times.holidays.name`.
+pub const SETTING_WORK_TIMES_HOLIDAYS_NAME: MessageKey =
+    MessageKey::new("setting.work-times.holidays.name");
 
 /// The message `setting.working-hours.day-minutes-max.help`.
 pub const SETTING_WORKING_HOURS_DAY_MINUTES_MAX_HELP: MessageKey =
@@ -12525,6 +12684,60 @@ pub fn notifications_work_day_reason(reason: impl std::fmt::Display) -> Message 
     Message::with_arguments(
         MessageKey::new("notifications.work-day-reason"),
         vec![("reason", Value::Text(reason.to_string()))],
+    )
+}
+
+/// The message `notifications.work-times-away-changed`.
+#[must_use]
+pub fn notifications_work_times_away_changed(
+    days: impl std::fmt::Display,
+    who: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("notifications.work-times-away-changed"),
+        vec![
+            ("days", Value::Text(days.to_string())),
+            ("who", Value::Text(who.to_string())),
+        ],
+    )
+}
+
+/// The message `notifications.work-times-away-entered`.
+#[must_use]
+pub fn notifications_work_times_away_entered(
+    days: impl std::fmt::Display,
+    who: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("notifications.work-times-away-entered"),
+        vec![
+            ("days", Value::Text(days.to_string())),
+            ("who", Value::Text(who.to_string())),
+        ],
+    )
+}
+
+/// The message `notifications.work-times-away-removed`.
+#[must_use]
+pub fn notifications_work_times_away_removed(
+    days: impl std::fmt::Display,
+    who: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("notifications.work-times-away-removed"),
+        vec![
+            ("days", Value::Text(days.to_string())),
+            ("who", Value::Text(who.to_string())),
+        ],
+    )
+}
+
+/// The message `notifications.work-times-usual-changed`.
+#[must_use]
+pub fn notifications_work_times_usual_changed(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("notifications.work-times-usual-changed"),
+        vec![("who", Value::Text(who.to_string()))],
     )
 }
 
@@ -18495,6 +18708,18 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "{message} Code for support: {code}.",
     ),
     (
+        "error.work-times.away-time-invalid",
+        "These days are not an away time. The last day cannot be before the first, an away time lasts a year at most, and a single day cannot be both afternoon only and morning only.",
+    ),
+    (
+        "error.work-times.hours-invalid",
+        "A work day has 24 hours at most.",
+    ),
+    (
+        "error.work-times.share-invalid",
+        "A share is between 0 and 100 percent.",
+    ),
+    (
         "error.workflow.cannot-fill",
         "This status change needs a field that you cannot fill in. Ask the person it is assigned to, or the project lead.",
     ),
@@ -19116,6 +19341,46 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("history.type-unknown", "another issue type"),
     ("history.undid-run", "Undid a run"),
     ("history.undid-run-link", "Run that was undone"),
+    ("holiday.all-saints", "All Saints' Day"),
+    ("holiday.ascension-day", "Ascension Day"),
+    ("holiday.assumption-day", "Assumption Day"),
+    ("holiday.christmas-day", "Christmas Day"),
+    ("holiday.corpus-christi", "Corpus Christi"),
+    ("holiday.easter-monday", "Easter Monday"),
+    ("holiday.easter-sunday", "Easter Sunday"),
+    ("holiday.epiphany", "Epiphany"),
+    ("holiday.good-friday", "Good Friday"),
+    ("holiday.labour-day", "Labour Day"),
+    ("holiday.new-year", "New Year's Day"),
+    ("holiday.reformation-day", "Reformation Day"),
+    ("holiday.repentance-day", "Day of Repentance and Prayer"),
+    ("holiday.second-christmas-day", "Boxing Day"),
+    ("holiday.unity-day", "German Unity Day"),
+    ("holiday.whit-monday", "Whit Monday"),
+    ("holiday.whit-sunday", "Whit Sunday"),
+    ("holiday.women-day", "International Women's Day"),
+    ("holiday.world-childrens-day", "World Children's Day"),
+    (
+        "holidays.region.de",
+        "Germany (the days that count everywhere)",
+    ),
+    ("holidays.region.de-bb", "Brandenburg"),
+    ("holidays.region.de-be", "Berlin"),
+    ("holidays.region.de-bw", "Baden-Württemberg"),
+    ("holidays.region.de-by", "Bavaria"),
+    ("holidays.region.de-hb", "Bremen"),
+    ("holidays.region.de-he", "Hesse"),
+    ("holidays.region.de-hh", "Hamburg"),
+    ("holidays.region.de-mv", "Mecklenburg-Vorpommern"),
+    ("holidays.region.de-ni", "Lower Saxony"),
+    ("holidays.region.de-nw", "North Rhine-Westphalia"),
+    ("holidays.region.de-rp", "Rhineland-Palatinate"),
+    ("holidays.region.de-sh", "Schleswig-Holstein"),
+    ("holidays.region.de-sl", "Saarland"),
+    ("holidays.region.de-sn", "Saxony"),
+    ("holidays.region.de-st", "Saxony-Anhalt"),
+    ("holidays.region.de-th", "Thuringia"),
+    ("holidays.region.none", "No public holidays"),
     (
         "home.admin",
         "You can look after this server. Organization settings shows what you may do there.",
@@ -20168,6 +20433,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Your work day was changed",
     ),
     (
+        "notification.kind.work-times-changed",
+        "Your work times were changed",
+    ),
+    (
         "notifications.agent-asks",
         "An agent asked a question and waits for your answer.",
     ),
@@ -20279,6 +20548,22 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "{who} changed your work day of {date}",
     ),
     ("notifications.work-day-reason", "Why: {reason}"),
+    (
+        "notifications.work-times-away-changed",
+        "{who} changed your away time: {days}",
+    ),
+    (
+        "notifications.work-times-away-entered",
+        "{who} entered an away time for you: {days}",
+    ),
+    (
+        "notifications.work-times-away-removed",
+        "{who} removed your away time: {days}",
+    ),
+    (
+        "notifications.work-times-usual-changed",
+        "{who} changed your usual work days or work hours",
+    ),
     ("old-work-days.delete", "Delete them"),
     ("old-work-days.delete-all", "Delete them all"),
     (
@@ -20399,6 +20684,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("people-kind.project-members", "Project members"),
     ("people-kind.reported-by", "Reported by"),
     ("people-kind.time-entries", "Time entries"),
+    ("people-kind.work-times", "Work times"),
     ("people-level.hidden", "Hidden"),
     ("people-level.names", "Names"),
     ("people-level.role-only", "Role only"),
@@ -20511,6 +20797,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "permission.edit-anyway",
         "Take over text someone else is editing; their text is kept",
+    ),
+    (
+        "permission.enter-work-times-for-others",
+        "Enter work times for others: enter and change other people's usual work days, work hours and away times",
     ),
     (
         "permission.manage-fields",
@@ -22547,6 +22837,22 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Your work day was changed: in the app",
     ),
     (
+        "setting.notifications.work-times-changed-by-mail.help",
+        "Sends you an e-mail when somebody else enters or changes an away time, your usual work days or your work hours. E-mail goes only when your organization has switched it on.",
+    ),
+    (
+        "setting.notifications.work-times-changed-by-mail.name",
+        "Your work times were changed: by e-mail",
+    ),
+    (
+        "setting.notifications.work-times-changed-in-app.help",
+        "Tells you under Notifications when somebody else enters or changes an away time, your usual work days or your work hours. The note of an away time is never part of it.",
+    ),
+    (
+        "setting.notifications.work-times-changed-in-app.name",
+        "Your work times were changed: in the app",
+    ),
+    (
         "setting.page.assistant-intro",
         "How much the assistant looks up in Bugaboo to answer your questions. This page is only about the assistant; agents and AI apps are not changed by it.",
     ),
@@ -22726,6 +23032,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The size you gave each form that opens as a window. A form you did not resize keeps its usual size.",
     ),
     ("setting.window.sizes.name", "Your window sizes"),
+    (
+        "setting.work-times.holidays.help",
+        "Which public holidays count as days off for you in the plan. Germany means the days that count everywhere in Germany; a part of Germany adds its own. Until you choose, your organization's choice counts.",
+    ),
+    ("setting.work-times.holidays.name", "Holidays"),
     (
         "setting.working-hours.day-minutes-max.help",
         "A day with more work gets a warning.",

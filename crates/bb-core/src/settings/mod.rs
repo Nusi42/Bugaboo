@@ -19,6 +19,7 @@ mod format;
 mod layers;
 mod region;
 mod themes;
+pub mod work_times;
 pub mod working_hours;
 
 pub use ai::{AI_ADDRESS, AI_ENABLED, AI_MODEL, AI_PROVIDER, AI_SEND_NAMES, is_ai_setting};
@@ -647,6 +648,7 @@ pub fn registry() -> impl Iterator<Item = &'static SettingDefinition> {
     let extra: &[&SettingDefinition] = &[];
     ALL.iter()
         .chain(working_hours::ALL)
+        .chain(work_times::ALL)
         .chain(ai::ALL)
         .chain(ai_apps::ALL)
         .chain(assistant::ALL)

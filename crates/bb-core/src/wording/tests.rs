@@ -233,6 +233,7 @@ fn notice(kind: NotificationKind) -> Notice {
         renewal: None,
         file: None,
         work_day: None,
+        work_times: None,
     }
 }
 
@@ -255,6 +256,45 @@ fn time_10_a_changed_work_day_names_who_the_date_and_the_reason() {
         reason: None,
     });
     assert_eq!(sentences(&changed).len(), 1);
+}
+
+#[test]
+fn plan_11_changed_work_times_name_who_what_and_for_an_away_time_its_days() {
+    let mut changed = notice(NotificationKind::WorkTimesChanged);
+    for (event, days, said) in [
+        (
+            WorkTimesEvent::AwayEntered,
+            "26 Oct - 30 Oct",
+            "Ana entered an away time for you: 26 Oct - 30 Oct",
+        ),
+        (
+            WorkTimesEvent::AwayChanged,
+            "26 Oct - 30 Oct",
+            "Ana changed your away time: 26 Oct - 30 Oct",
+        ),
+        (
+            WorkTimesEvent::AwayRemoved,
+            "26 Oct",
+            "Ana removed your away time: 26 Oct",
+        ),
+        (
+            WorkTimesEvent::UsualChanged,
+            "",
+            "Ana changed your usual work days or work hours",
+        ),
+    ] {
+        changed.work_times = Some(WorkTimesNotice {
+            event,
+            days: days.to_owned(),
+        });
+        assert_eq!(sentences(&changed), [said]);
+    }
+    // A row without the details still says that somebody changed the work times.
+    changed.work_times = None;
+    assert_eq!(
+        sentences(&changed),
+        ["Ana changed your usual work days or work hours"]
+    );
 }
 
 fn sentences(notice: &Notice) -> Vec<String> {

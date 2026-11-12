@@ -37,12 +37,13 @@ use crate::errors::{ApiError, ApiJson, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
 use bb_app::history::FieldChangeView;
 use bb_core::history::FileEvent;
+use bb_core::wording::WorkTimesEvent;
 
 const NOTIFICATIONS_LIST: &str = "notifications";
 
 /// The fields of an item of the list that can be asked for. An item holds only the ones that
 /// belong to what it says.
-const NOTIFICATION_FIELDS: [FieldSpec; 19] = [
+const NOTIFICATION_FIELDS: [FieldSpec; 22] = [
     FieldSpec::by_default("id"),
     FieldSpec::by_default("kind"),
     FieldSpec::by_default("at"),
@@ -62,6 +63,9 @@ const NOTIFICATION_FIELDS: [FieldSpec; 19] = [
     FieldSpec::by_default("change"),
     FieldSpec::by_default("work_day"),
     FieldSpec::by_default("reason"),
+    FieldSpec::by_default("work_times_event"),
+    FieldSpec::by_default("work_times_first"),
+    FieldSpec::by_default("work_times_last"),
 ];
 
 /// One item of the list of notifications.
@@ -121,6 +125,17 @@ pub(crate) struct NotificationEntry {
     /// The work day: why it was changed, in the words of whoever changed it.
     #[serde(skip_serializing_if = "Option::is_none")]
     reason: Option<String>,
+    /// Work times of the person that somebody else changed: what was done. Never a note: only its
+    /// person reads that.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    work_times_event: Option<WorkTimesEvent>,
+    /// The first day of the away time that was entered, changed or removed (`2026-10-26`); left out
+    /// for a change of the usual work days.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    work_times_first: Option<String>,
+    /// The last day of that away time.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    work_times_last: Option<String>,
 }
 
 impl Masked for NotificationEntry {}
@@ -147,6 +162,9 @@ fn start(item: &NotificationItem) -> NotificationEntry {
         change: None,
         work_day: None,
         reason: None,
+        work_times_event: None,
+        work_times_first: None,
+        work_times_last: None,
     }
 }
 
@@ -197,6 +215,13 @@ fn entries_of(item: &NotificationItem) -> Vec<NotificationEntry> {
             let mut entry = start(item);
             entry.work_day = Some(date.to_string());
             entry.reason.clone_from(reason);
+            vec![entry]
+        }
+        NotificationWhat::WorkTimesChanged { event, first, last } => {
+            let mut entry = start(item);
+            entry.work_times_event = Some(*event);
+            entry.work_times_first = first.map(|date| date.to_string());
+            entry.work_times_last = last.map(|date| date.to_string());
             vec![entry]
         }
         NotificationWhat::Plain => vec![start(item)],
@@ -499,6 +524,9 @@ mod tests {
             change: Some(FieldChangeBody::blank()),
             work_day: Some(String::new()),
             reason: Some(String::new()),
+            work_times_event: Some(WorkTimesEvent::AwayEntered),
+            work_times_first: Some(String::new()),
+            work_times_last: Some(String::new()),
         };
         crate::lean::assert_fields_are_the_keys_of(&NOTIFICATION_FIELDS, &item);
     }

@@ -71,6 +71,26 @@ pub(super) async fn work_day(
     )
 }
 
+/// An away time of Ada's, and a stale change or removal of it.
+pub(super) async fn away_time(id: &str, ada: &mut Browser) -> Result<Save, Failure> {
+    let made = made(
+        ada,
+        "/api/v1/me/away-times",
+        json!({"first": "2027-02-01", "last": "2027-02-03"}),
+    )
+    .await?;
+    let path = format!("/api/v1/away-times/{}", text_in(&made, "id")?);
+    if id == "removeAwayTime" {
+        return Ok(Save::new("DELETE", path, json!({}), &made["version"])?.in_the_query());
+    }
+    Save::new(
+        "PATCH",
+        path,
+        json!({"days": {"first": "2027-02-01", "last": "2027-02-04"}}),
+        &made["version"],
+    )
+}
+
 /// The person's running timer (started on a new issue when it stands still), or one of their
 /// entries, and a change of it.
 pub(super) async fn entries(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<Save, Failure> {

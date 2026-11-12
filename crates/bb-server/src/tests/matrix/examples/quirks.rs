@@ -90,4 +90,9 @@ pub(in crate::sign_in_tests::matrix) enum Quirk {
     /// change them, the person answers like one that does not exist; an actor who may see them
     /// and lacks the permission of the route is refused (ADR-0035, decision 8).
     HidesThePerson,
+    /// The route is about another person's work times: an actor who is shown people of the kind
+    /// *Work times* as *Hidden* is told the person does not exist; one who sees them and lacks the
+    /// permission of the route is refused, and one who sees them and needs none reads them
+    /// (ADR-0030, amendment M8).
+    ShownByWorkTimes,
 }

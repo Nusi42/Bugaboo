@@ -28,6 +28,8 @@ words! {
         Pictures => "pictures",
         /// Member lists of a project (M2-Q3).
         ProjectMembers => "project-members",
+        /// Usual work days, work hours, shares and away times (PLAN-11, ADR-0030).
+        WorkTimes => "work-times",
     }
     messages name = "people-kind.";
 }
@@ -47,6 +49,6 @@ mod tests {
             assert!(seen.insert(key));
             assert!(!crate::message::Message::from(key).render().is_empty());
         }
-        assert_eq!(PeopleKind::ALL.len(), 10);
+        assert_eq!(PeopleKind::ALL.len(), 11);
     }
 }

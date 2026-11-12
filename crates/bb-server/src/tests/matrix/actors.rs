@@ -18,6 +18,8 @@ use std::collections::BTreeSet;
 use bb_api::permissions::Declared;
 use bb_api_words::sec_matrix as words;
 use bb_app::access::{Permission, StartingRole};
+use bb_core::access::PeopleLevel;
+use bb_core::people_kinds::PeopleKind;
 
 use super::examples::Example;
 
@@ -192,7 +194,7 @@ const ORGANIZATION_ONLY: [Permission; 8] = [
 /// The permissions no access key keeps, whatever its choice (`NOT_FOR_KEYS`, decisions on
 /// access keys and M3-Q6): inviting people, deciding who has which role, changing organization
 /// settings, taking over somebody's editing and the work settings stay in the app.
-const NOT_FOR_KEYS: [Permission; 12] = [
+const NOT_FOR_KEYS: [Permission; 13] = [
     Permission::ManageInvitations,
     Permission::ManagePeople,
     Permission::ManageGroups,
@@ -205,6 +207,7 @@ const NOT_FOR_KEYS: [Permission; 12] = [
     Permission::ManageFields,
     Permission::ManageLabels,
     Permission::ManageWorkflows,
+    Permission::EnterWorkTimesForOthers,
 ];
 
 /// The permissions of the kind *See*, which an access key that may only see keeps (*Kind: See*).
@@ -265,10 +268,10 @@ fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {
     use Permission::{
         BookTime, ChangeIssues, ChangeOrganizationSettings, ChangeOwnIssues, ChangeProjectSettings,
         CheckAccess, Comment, CreateAgents, CreateIssues, CreateProjects, CreateSubProjects,
-        DecideRoles, DecideWhatRolesSee, DeleteIssues, EditAnyway, ManageFields, ManageGroups,
-        ManageInvitations, ManageIssueTypes, ManageLabels, ManagePeople, ManageRoles,
-        ManageWorkflows, MoveIssues, MoveProjects, SeeIssues, SeeProjects, SeeStatus,
-        ShareSearches,
+        DecideRoles, DecideWhatRolesSee, DeleteIssues, EditAnyway, EnterWorkTimesForOthers,
+        ManageFields, ManageGroups, ManageInvitations, ManageIssueTypes, ManageLabels,
+        ManagePeople, ManageRoles, ManageWorkflows, MoveIssues, MoveProjects, SeeIssues,
+        SeeProjects, SeeStatus, ShareSearches,
     };
     match role {
         StartingRole::Administrator => BTreeSet::from([
@@ -301,6 +304,7 @@ fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {
             ManageRoles,
             ChangeOrganizationSettings,
             SeeStatus,
+            EnterWorkTimesForOthers,
         ]),
         StartingRole::ProjectLead => BTreeSet::from([
             SeeProjects,
@@ -454,6 +458,27 @@ pub(super) fn standing(actor: Actor, at: Where) -> Standing {
                 })
                 .collect(),
         ),
+    }
+}
+
+/// How the actor is shown people of the kind *Work times* at the organization, from the table of
+/// architecture §7 (*Starting roles*, *Who sees people*): what an organization-wide role says, and
+/// nothing for a person who has no role for the whole organization (ADR-0030, amendment M8).
+pub(super) fn work_times_level(actor: Actor) -> PeopleLevel {
+    let of = |role: StartingRole| role.people_level(PeopleKind::WorkTimes);
+    match actor {
+        Actor::Role(role) => of(role),
+        Actor::NoAccessOnTarget => of(StartingRole::Viewer),
+        Actor::NoAccessUnderLead => of(StartingRole::ProjectLead),
+        Actor::KeySeeOnly => of(StartingRole::Administrator),
+        Actor::Nobody
+        | Actor::NoRole
+        | Actor::LeadOnParent
+        | Actor::LeadOnSiblingOnly
+        | Actor::Exactly(_)
+        | Actor::ExactlyBoth(..)
+        | Actor::KeyForAnotherProject
+        | Actor::AgentWithoutWork => PeopleLevel::Hidden,
     }
 }
 

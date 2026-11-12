@@ -105,3 +105,7 @@ reason = "The roadmap picture of the front page, drawn by hand; web/tooling/road
 [[exempt]]
 path = "crates/bb-ai/tests/examples/*.json"
 reason = "Requests and answers of the providers as they were recorded; the adapters are tested against them byte for byte of meaning, and a formatter would only move them around."
+
+[[exempt]]
+path = "crates/bb-core/src/holidays/official_2026_2030.txt"
+reason = "Test data, not code: the public holidays of Germany and its 16 states for 2026 to 2030 as the official lists give them, written out by hand so that a mistake in the rules cannot hide in the data too; the test in crates/bb-core/src/holidays/tests.rs holds the rules to it (PLAN-11)."

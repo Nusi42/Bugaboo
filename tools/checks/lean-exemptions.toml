@@ -427,3 +427,31 @@ route = "GET /api/v1/themes/{theme}"
 property = "hard_to_read"
 whole_value = true
 reason = "The pairs of one theme that are hard to read: at most the pairs of the contrast rules of the base theme file, a list bounded by the code and not by data, which the warning names all at once (THM-03, M8-F45)."
+
+[[exempt]]
+route = "GET /api/v1/me/work-times"
+property = "away"
+reason = "The away times of one person that touch a stretch of at most `RANGE_DAYS_MAX` dates, at most `AWAY_TIMES_MAX` of them (`bb_app::work_times`); the answer says when the cap cut the list (`truncated`) (PLAN-11, ADR-0030; M1-F44)."
+
+[[exempt]]
+route = "GET /api/v1/people/{person}/work-times"
+property = "away"
+reason = "The away times of one person that touch a stretch of at most `RANGE_DAYS_MAX` dates, at most `AWAY_TIMES_MAX` of them (`bb_app::work_times`); the answer says when the cap cut the list (`truncated`) (PLAN-11, ADR-0030; M1-F44)."
+
+[[exempt]]
+route = "GET /api/v1/me/work-times"
+property = "usual"
+whole_value = true
+reason = "The seven weekdays of one person, Monday first: a list bounded by the week, not one that grows with data, and the form of the usual work days needs all of them at once (PLAN-11, ADR-0030; M8-F31)."
+
+[[exempt]]
+route = "GET /api/v1/people/{person}/work-times"
+property = "usual"
+whole_value = true
+reason = "The seven weekdays of one person, Monday first: a list bounded by the week, not one that grows with data, and the form of the usual work days needs all of them at once (PLAN-11, ADR-0030; M8-F31)."
+
+[[exempt]]
+route = "GET /api/v1/projects/{project}/shares"
+property = "others"
+embedded = true
+reason = "The other projects a person of the list has a share in, as the reader may name them: part of the item itself and no other resource, with the project as a reference that hides a project the reader may not see; only for a reader who decides who has which role in the project (PLAN-15, ADR-0030; M8-F33)."

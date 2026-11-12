@@ -130,7 +130,12 @@ const fn people_levels(kind: PeopleKind) -> [PeopleLevel; 7] {
         PeopleKind::ReportedBy | PeopleKind::Editing | PeopleKind::Pictures => {
             [N, N, N, N, N, O, O]
         }
-        PeopleKind::Followers | PeopleKind::ProjectMembers => [N, N, N, R, R, O, O],
+        // *Work times* start like *Project members*: Names for Administrator, Project lead and Team
+        // member, Role only for Contributor and Viewer, Hidden for Guest and for HR (ADR-0030,
+        // amendment M8).
+        PeopleKind::Followers | PeopleKind::ProjectMembers | PeopleKind::WorkTimes => {
+            [N, N, N, R, R, O, O]
+        }
         PeopleKind::TimeEntries => [N, N, N, O, O, O, O],
     }
 }

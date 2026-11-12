@@ -3430,6 +3430,130 @@
         "x-permission": "own-account"
       }
     },
+    "/api/v1/away-times/{id}": {
+      "delete": {
+        "tags": ["work-times"],
+        "summary": "Removes an away time: the person's own, or another person's with *Enter work times for others*.",
+        "operationId": "removeAwayTime",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID of the away time.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
+            "in": "query",
+            "description": "The version the person looked at.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The away time is gone."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "signed-in"
+      },
+      "patch": {
+        "tags": ["work-times"],
+        "summary": "Changes the days of an away time: the person's own, or another person's with *Enter work times\nfor others*, who never reads or writes the note, which stays as it is.",
+        "operationId": "changeAwayTime",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The ID of the away time.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeAwayBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The away time as it is now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AwayBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "signed-in"
+      }
+    },
     "/api/v1/check-access/people": {
       "get": {
         "tags": ["access"],
@@ -9787,6 +9911,54 @@
         "x-permission": "own-account"
       }
     },
+    "/api/v1/me/away-times": {
+      "post": {
+        "tags": ["work-times"],
+        "summary": "Enters an away time for the person themselves.",
+        "operationId": "enterMyAwayTime",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AwayDaysBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The away time.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AwayBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "signed-in"
+      }
+    },
     "/api/v1/me/handle": {
       "get": {
         "tags": ["people"],
@@ -10656,7 +10828,7 @@
           {
             "name": "to",
             "in": "query",
-            "description": "The last date, less than `RANGE_DAYS_MAX` days after the first.",
+            "description": "The last date, on or after the first; a stretch longer than the route takes is refused.",
             "required": true,
             "schema": {
               "type": "string"
@@ -11078,6 +11250,118 @@
           }
         },
         "x-never-stored": true,
+        "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/me/work-times": {
+      "get": {
+        "tags": ["work-times"],
+        "summary": "The person's own work times, with the away times that touch the stretch from `from` to `to`.",
+        "operationId": "getMyWorkTimes",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "description": "The first date (`2026-10-05`).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "The last date, on or after the first; a stretch longer than the route takes is refused.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The work times.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkTimesBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/me/work-times/usual-days": {
+      "put": {
+        "tags": ["work-times"],
+        "summary": "New usual work days and work hours for the person: the seven days, Monday first, each ticked or\nnot, with the work hours of each in minutes.",
+        "operationId": "changeMyUsualDays",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsualDaysBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The usual work days as they are now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsualDaysBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
         "x-permission": "signed-in"
       }
     },
@@ -12269,6 +12553,71 @@
         "x-permission": "manage-people"
       }
     },
+    "/api/v1/people/{person}/away-times": {
+      "post": {
+        "tags": ["work-times"],
+        "summary": "Enters an away time for another person. Needs *Enter work times for others*. The person is told;\nthe note is refused (only the person writes it), and nobody states a reason.",
+        "operationId": "enterAwayTimeForPerson",
+        "parameters": [
+          {
+            "name": "person",
+            "in": "path",
+            "description": "The ID of the person.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AwayDaysBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The away time, without a note.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AwayBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "enter-work-times-for-others"
+      }
+    },
     "/api/v1/people/{person}/work-days": {
       "get": {
         "tags": ["working-hours"],
@@ -12296,7 +12645,7 @@
           {
             "name": "to",
             "in": "query",
-            "description": "The last date, less than `RANGE_DAYS_MAX` days after the first.",
+            "description": "The last date, on or after the first; a stretch longer than the route takes is refused.",
             "required": true,
             "schema": {
               "type": "string"
@@ -12490,6 +12839,147 @@
         },
         "x-never-stored": true,
         "x-permission": "see-working-hours-of-others"
+      }
+    },
+    "/api/v1/people/{person}/work-times": {
+      "get": {
+        "tags": ["work-times"],
+        "summary": "Another person's work times, as *Who sees people* allows for the kind *Work times*: an away time\nshows only its days. A reader who is shown the person as *Hidden* gets the answer of a person\nthat does not exist. No access key reaches work times.",
+        "operationId": "getWorkTimesOfPerson",
+        "parameters": [
+          {
+            "name": "person",
+            "in": "path",
+            "description": "The ID of the person.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "The first date (`2026-10-05`).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "The last date, on or after the first; a stretch longer than the route takes is refused.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The work times.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkTimesBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/people/{person}/work-times/usual-days": {
+      "put": {
+        "tags": ["work-times"],
+        "summary": "New usual work days and work hours for another person. Needs *Enter work times for others*; the\nperson is told.",
+        "operationId": "changeUsualDaysOfPerson",
+        "parameters": [
+          {
+            "name": "person",
+            "in": "path",
+            "description": "The ID of the person.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsualDaysBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The usual work days as they are now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsualDaysBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "enter-work-times-for-others"
       }
     },
     "/api/v1/permissions": {
@@ -13891,6 +14381,155 @@
           }
         },
         "x-permission": "change-project-settings"
+      }
+    },
+    "/api/v1/projects/{project}/shares": {
+      "get": {
+        "tags": ["work-times"],
+        "summary": "The people of a project with their shares there, by name, a page at a time. Every reader who\nsees the project and is shown people of the kind *Work times* reads the shares; a reader who\ndecides who has which role there is also told whether a person's shares add up to more than 100\npercent, with the other projects they may see named and a mark when there are ones they may not.",
+        "operationId": "listProjectShares",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "description": "The ID of the project.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/Fields"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50, at most 100).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The people with their shares.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_MemberShareBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "see-projects"
+      }
+    },
+    "/api/v1/projects/{project}/shares/{person}": {
+      "put": {
+        "tags": ["work-times"],
+        "summary": "Sets the share of a person in a project. Needs *Decide who has which role* in the project. A\nshare counts as nothing while the person has no role there, and is kept.",
+        "operationId": "setShare",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "description": "The ID of the project.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "person",
+            "in": "path",
+            "description": "The ID of the person.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShareBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The share as it is now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShareBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "decide-roles"
       }
     },
     "/api/v1/projects/{project}/statuses": {
@@ -19518,6 +20157,89 @@
           }
         }
       },
+      "AwayBody": {
+        "type": "object",
+        "description": "An away time as its reader sees it.",
+        "required": [
+          "id",
+          "first",
+          "last",
+          "first_afternoon_only",
+          "last_morning_only",
+          "note",
+          "entered_by",
+          "version"
+        ],
+        "properties": {
+          "entered_by": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PersonRef",
+                "description": "Who entered it, which only the person sees; `null` for everybody else."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "first": {
+            "type": "string",
+            "description": "The first day (`2026-10-26`)."
+          },
+          "first_afternoon_only": {
+            "type": "boolean",
+            "description": "Whether the person is away only in the afternoon of the first day."
+          },
+          "id": {
+            "type": "string",
+            "description": "The ID of the away time."
+          },
+          "last": {
+            "type": "string",
+            "description": "The last day."
+          },
+          "last_morning_only": {
+            "type": "boolean",
+            "description": "Whether the person is away only in the morning of the last day."
+          },
+          "note": {
+            "type": ["string", "null"],
+            "description": "The note, which only the person reads; `null` for everybody else and when there is none."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Counts up with every change. A change is made on the version that was looked at."
+          }
+        }
+      },
+      "AwayDaysBody": {
+        "type": "object",
+        "description": "The days of an away time, as a request names them.",
+        "required": ["first", "last"],
+        "properties": {
+          "first": {
+            "type": "string",
+            "description": "The first day (`2026-10-26`)."
+          },
+          "first_afternoon_only": {
+            "type": "boolean",
+            "description": "Away only in the afternoon of the first day."
+          },
+          "last": {
+            "type": "string",
+            "description": "The last day, on or after the first and less than a year after it."
+          },
+          "last_morning_only": {
+            "type": "boolean",
+            "description": "Away only in the morning of the last day."
+          },
+          "note": {
+            "type": ["string", "null"],
+            "description": "The note, which only the person reads: refused for another person's away time, at most 500\ncharacters. Bugaboo stores no reason."
+          }
+        }
+      },
       "BackupCodesBody": {
         "type": "object",
         "description": "Backup codes, shown once.",
@@ -19725,6 +20447,22 @@
           "send_names": {
             "type": ["boolean", "null"],
             "description": "Whether names of people go to an outside provider."
+          }
+        }
+      },
+      "ChangeAwayBody": {
+        "type": "object",
+        "description": "A change of an away time.",
+        "required": ["version", "days"],
+        "properties": {
+          "days": {
+            "$ref": "#/components/schemas/AwayDaysBody",
+            "description": "The new days."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version the person looked at."
           }
         }
       },
@@ -21635,6 +22373,9 @@
           "working-hours.reason-needed",
           "working-hours.week-totals-only",
           "working-hours.keep-years-too-short",
+          "work-times.away-time-invalid",
+          "work-times.hours-invalid",
+          "work-times.share-invalid",
           "search.too-slow",
           "rate-limit.exceeded",
           "server.unavailable",
@@ -22892,6 +23633,30 @@
         "type": "string",
         "description": "Which rows of the history of an issue to list: everything, only the comments, or only the changes.",
         "enum": ["everything", "comments", "changes"]
+      },
+      "HolidaysChoice": {
+        "type": "string",
+        "description": "Which public holidays count for a person: none, the days every state of Germany has (`de`), or those of one state by its ISO 3166-2 code, such as `de-by`.",
+        "enum": [
+          "none",
+          "de",
+          "de-bw",
+          "de-by",
+          "de-be",
+          "de-bb",
+          "de-hb",
+          "de-hh",
+          "de-he",
+          "de-mv",
+          "de-ni",
+          "de-nw",
+          "de-rp",
+          "de-sl",
+          "de-sn",
+          "de-st",
+          "de-sh",
+          "de-th"
+        ]
       },
       "ImageHostsBody": {
         "type": "object",
@@ -24729,6 +25494,38 @@
           }
         }
       },
+      "MemberShareBody": {
+        "type": "object",
+        "description": "A person of a project with their share there.",
+        "required": ["person", "percent", "others_hidden"],
+        "properties": {
+          "others": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShareItemBody"
+            },
+            "description": "The other projects the person has a share in, as the reader may name them; only for a reader\nwho decides who has which role."
+          },
+          "others_hidden": {
+            "type": "boolean",
+            "description": "Whether the person has a share in another project that the reader may not see: it is never\nnamed."
+          },
+          "over_100": {
+            "type": ["boolean", "null"],
+            "description": "Whether the shares of the person that are in force add up to more than 100 percent; only for\na reader who decides who has which role in the project. Never the sum itself: it would tell\nhow much the projects the reader may not see hold."
+          },
+          "percent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The share in the project, in percent.",
+            "minimum": 0
+          },
+          "person": {
+            "$ref": "#/components/schemas/PersonRef",
+            "description": "The person, as the reader sees people of the kind *Work times*."
+          }
+        }
+      },
       "MentionChoiceItem": {
         "type": "object",
         "description": "One thing the writer may name after `@`.",
@@ -25840,6 +26637,25 @@
           "work_day": {
             "type": ["string", "null"],
             "description": "One of the person's work days that somebody else changed: its date (`2026-10-05`)."
+          },
+          "work_times_event": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/WorkTimesEvent",
+                "description": "Work times of the person that somebody else changed: what was done. Never a note: only its\nperson reads that."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "work_times_first": {
+            "type": ["string", "null"],
+            "description": "The first day of the away time that was entered, changed or removed (`2026-10-26`); left out\nfor a change of the usual work days."
+          },
+          "work_times_last": {
+            "type": ["string", "null"],
+            "description": "The last day of that away time."
           }
         }
       },
@@ -25855,6 +26671,7 @@
           "edit-notice",
           "long-timer",
           "work-day-changed",
+          "work-times-changed",
           "agent-asks",
           "plan-waits",
           "ready-for-review",
@@ -26492,6 +27309,24 @@
           }
         }
       },
+      "Page_MemberShareBody": {
+        "type": "object",
+        "description": "One page of a list: its items, and where the next page starts.",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MemberShareBody"
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
       "Page_MentionChoiceItem": {
         "type": "object",
         "description": "One page of a list: its items, and where the next page starts.",
@@ -26911,7 +27746,8 @@
           "time-entries",
           "mentions",
           "pictures",
-          "project-members"
+          "project-members",
+          "work-times"
         ]
       },
       "PeopleLevel": {
@@ -27116,7 +27952,8 @@
           "book-time",
           "create-agents",
           "see-working-hours-of-others",
-          "change-working-hours-of-others"
+          "change-working-hours-of-others",
+          "enter-work-times-for-others"
         ]
       },
       "PermissionAnswerBody": {
@@ -28338,7 +29175,10 @@
           "time-entry",
           "timer",
           "starter-fields",
-          "work-day"
+          "work-day",
+          "away-time",
+          "work-times",
+          "share"
         ]
       },
       "RecordRefBody": {
@@ -30043,6 +30883,27 @@
           }
         }
       },
+      "ShareItemBody": {
+        "type": "object",
+        "description": "One share of a person, with the project as the reader may name it.",
+        "required": ["project", "percent", "applies"],
+        "properties": {
+          "applies": {
+            "type": "boolean",
+            "description": "Whether it is in force: it counts as nothing while the person has no role in the project."
+          },
+          "percent": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The share in percent.",
+            "minimum": 0
+          },
+          "project": {
+            "$ref": "#/components/schemas/ProjectLabelBody",
+            "description": "The project: its names only when the reader may know it."
+          }
+        }
+      },
       "ShareKind": {
         "type": "string",
         "description": "What a saved search is shared with: a group or a project.",
@@ -30068,6 +30929,30 @@
           "short_name": {
             "type": ["string", "null"],
             "description": "The short name of a project the person may know."
+          }
+        }
+      },
+      "SharesBody": {
+        "type": "object",
+        "description": "The shares a person set, and what the ones that count add up to.",
+        "required": ["items", "sum", "over_100"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShareItemBody"
+            },
+            "description": "The shares, by the name of the project."
+          },
+          "over_100": {
+            "type": "boolean",
+            "description": "Whether that is more than 100 percent."
+          },
+          "sum": {
+            "type": "integer",
+            "format": "int32",
+            "description": "What the shares that count add up to, in percent.",
+            "minimum": 0
           }
         }
       },
@@ -31385,6 +32270,40 @@
           }
         }
       },
+      "UsualDayBody": {
+        "type": "object",
+        "description": "One weekday of the usual work days.",
+        "required": ["works", "minutes"],
+        "properties": {
+          "minutes": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The work hours of the day, in minutes: at most 1440. The hours are kept when the day is not\nticked.",
+            "maximum": 1440,
+            "minimum": 0
+          },
+          "works": {
+            "type": "boolean",
+            "description": "Whether the person usually works on this weekday."
+          }
+        }
+      },
+      "UsualDaysBody": {
+        "type": "object",
+        "description": "The seven usual work days, Monday first.",
+        "required": ["days"],
+        "properties": {
+          "days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UsualDayBody"
+            },
+            "description": "The seven days, Monday first.",
+            "maxItems": 7,
+            "minItems": 7
+          }
+        }
+      },
       "ValueBody": {
         "oneOf": [
           {
@@ -31955,6 +32874,72 @@
           }
         }
       },
+      "WorkTimesBody": {
+        "type": "object",
+        "description": "A person's work times.",
+        "required": [
+          "person",
+          "own",
+          "may_change",
+          "usual",
+          "holidays",
+          "away",
+          "truncated",
+          "shares"
+        ],
+        "properties": {
+          "away": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AwayBody"
+            },
+            "description": "The away times that touch the stretch, by first day. Another person's show their days only."
+          },
+          "holidays": {
+            "$ref": "#/components/schemas/HolidaysChoice",
+            "description": "Which public holidays count for the person: `none`, `de` or a state such as `de-by`."
+          },
+          "may_change": {
+            "type": "boolean",
+            "description": "Whether the reader may change the usual work days and enter away times."
+          },
+          "own": {
+            "type": "boolean",
+            "description": "Whether they are the reader's own."
+          },
+          "person": {
+            "$ref": "#/components/schemas/PersonRef",
+            "description": "Whose they are, as the reader sees people of the kind *Work times*."
+          },
+          "shares": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SharesBody",
+                "description": "The shares the person set; only for the person themselves."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "Whether more away times touch the stretch than the answer holds: the latest are left out."
+          },
+          "usual": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UsualDayBody"
+            },
+            "description": "The seven usual work days, Monday first."
+          }
+        }
+      },
+      "WorkTimesEvent": {
+        "type": "string",
+        "description": "What somebody else did to the work times of the person: entered, changed or removed an away time, or changed the usual work days or the work hours.",
+        "enum": ["away-entered", "away-changed", "away-removed", "usual-changed"]
+      },
       "WorkedOnByBody": {
         "type": "object",
         "description": "An agent shown on an issue as *worked on by*.",
@@ -32345,6 +33330,10 @@
     {
       "name": "saved-searches",
       "description": "Searches that people save with how their results are shown, share with groups and projects, and the list a project shows."
+    },
+    {
+      "name": "work-times",
+      "description": "Work times: usual work days and work hours, away times with no reason, and the share of a person in a project. Another person's are read as Who sees people allows."
     },
     {
       "name": "working-hours",

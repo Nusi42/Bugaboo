@@ -206,7 +206,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         };
         let by = match (row.by, row.kind) {
             // Whoever changed the person's own work day is named to them (ADR-0035, decision 7).
-            (Some(person), NotificationKind::WorkDayChanged) => Some(
+            (
+                Some(person),
+                NotificationKind::WorkDayChanged | NotificationKind::WorkTimesChanged,
+            ) => Some(
                 self.person_ref(
                     &held,
                     PeopleKind::Authors,
@@ -287,6 +290,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 Ok(Some(NotificationWhat::Plain))
             }
             NotificationKind::WorkDayChanged => Ok(work_day_change_of(&row.changes)),
+            NotificationKind::WorkTimesChanged => Ok(work_times_change_of(&row.changes)),
             NotificationKind::RunEnded => Ok(row.record.map(|run| NotificationWhat::RunEnded {
                 run,
                 // Only a run that says it is done ended well: one that failed, one that was
@@ -508,4 +512,41 @@ fn work_day_change_of(changes: &[FieldChange]) -> Option<NotificationWhat> {
             .ok()?,
         reason: text_set(changes, crate::member::work_day::REASON).map(str::to_owned),
     })
+}
+
+/// What a row about changed work times says: what was done, and for an away time its days. The
+/// row keeps no note: the event never held one.
+fn work_times_change_of(changes: &[FieldChange]) -> Option<NotificationWhat> {
+    use bb_core::wording::WorkTimesEvent;
+    let date_of = |value: &serde_json::Value, member: &str| {
+        value
+            .get(member)?
+            .as_str()?
+            .parse::<jiff::civil::Date>()
+            .ok()
+    };
+    if let Some(away) = changes
+        .iter()
+        .find(|change| change.field == crate::member::work_times::AWAY)
+    {
+        let shown = away.after.as_ref().or(away.before.as_ref())?;
+        let event = match (&away.before, &away.after) {
+            (None, _) => WorkTimesEvent::AwayEntered,
+            (_, None) => WorkTimesEvent::AwayRemoved,
+            _ => WorkTimesEvent::AwayChanged,
+        };
+        return Some(NotificationWhat::WorkTimesChanged {
+            event,
+            first: date_of(shown, "first"),
+            last: date_of(shown, "last"),
+        });
+    }
+    changes
+        .iter()
+        .any(|change| change.field == crate::member::work_times::USUAL)
+        .then_some(NotificationWhat::WorkTimesChanged {
+            event: WorkTimesEvent::UsualChanged,
+            first: None,
+            last: None,
+        })
 }

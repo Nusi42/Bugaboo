@@ -13,6 +13,24 @@ pub fn read_date(text: &str) -> Option<Date> {
     text.parse().ok()
 }
 
+/// A stretch of dates as a request writes it: the first and the last date.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct DateRange {
+    /// The first date.
+    pub first: Date,
+    /// The last date.
+    pub last: Date,
+}
+
+/// A stretch of dates as a request writes them (`2026-10-05`); `None` when one is none.
+#[must_use]
+pub fn read_range(first: &str, last: &str) -> Option<DateRange> {
+    Some(DateRange {
+        first: read_date(first)?,
+        last: read_date(last)?,
+    })
+}
+
 /// A stretch of a work day as a request writes it: its moments in RFC 3339, no end while it runs;
 /// `None` for a text that is no moment.
 #[must_use]

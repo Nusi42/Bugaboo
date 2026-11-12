@@ -26,7 +26,7 @@ use bb_api::openapi::{Operation, operations};
 use bb_api::permissions::Declared;
 use bb_app::access::{Permission, StartingRole};
 use bb_app::roles::SetFieldLevel;
-use bb_core::access::FieldLevel;
+use bb_core::access::{FieldLevel, PeopleLevel};
 use bb_core::fields::Field;
 use bb_core::id::{ProjectId, RoleId};
 use bb_testing::{Failure, TestResult, each_database};
@@ -34,6 +34,7 @@ use bb_testing::{Failure, TestResult, each_database};
 use super::actors::{
     Actor, Project, SETS_ISSUE_FIELDS, Where, actors, everything_seen, held_exactly,
     held_exactly_all, holds_in_some_project, initials, short_name, standing, top_of_the_tree,
+    work_times_level,
 };
 use super::examples::{EXAMPLES, Example, Quirk, request};
 use super::record::Record;
@@ -100,40 +101,60 @@ fn is_refused_as_the_persons_undo(actor: Actor, route: &Operation) -> bool {
     route.id == "undoRun" && matches!(actor, Actor::KeySeeOnly | Actor::AgentWithoutWork)
 }
 
-/// What the server must answer `actor` for `route`, from the table of `actors.rs`.
-pub(super) fn expectation(actor: Actor, route: &Operation, example: &Example) -> Expect {
-    if route.needs == Declared::Public {
-        return Expect::Allowed;
-    }
+/// What is answered before the permission of the route is looked at: a subject of a project the
+/// person may not know, what a key or an agent may not reach, a person who is not signed in.
+fn answered_before_the_permission(
+    actor: Actor,
+    route: &Operation,
+    example: &Example,
+) -> Option<Expect> {
     // A subject created in the target project is not there for a person who may not know it.
     if example.has(Quirk::NamesASubjectOfTheTarget)
         && actor.signed_in()
         && !standing(actor, Where::Target).knows
     {
-        return Expect::NotFound;
+        return Some(Expect::NotFound);
     }
     // A key never reaches its owner's own sign-in data (ADR-0025, decision 8); `signed-in` is about
     // the session of a browser: who is signed in, signing out.
     if reads_its_own_record(actor, route) {
-        return Expect::NotFound;
+        return Some(Expect::NotFound);
     }
     if is_refused_as_the_persons_own(actor, route, example)
         || is_refused_as_the_persons_undo(actor, route)
     {
-        return Expect::Forbidden;
+        return Some(Expect::Forbidden);
     }
     if actor.has_a_key() && matches!(route.needs, Declared::SignedIn | Declared::OwnAccount) {
-        return keys_and_the_persons_own_data(actor, route, example);
+        return Some(keys_and_the_persons_own_data(actor, route, example));
     }
     if !actor.signed_in() || example.has(Quirk::FinishesAHalfDoneSignIn) {
-        return Expect::NotSignedIn;
+        return Some(Expect::NotSignedIn);
     }
     // A lock or a draft belongs to an open editor of a signed-in person, never to a key.
     if actor.has_a_key() && example.has(Quirk::SessionOnly) {
-        return Expect::NotForKeys;
+        return Some(Expect::NotForKeys);
+    }
+    None
+}
+
+/// What the server must answer `actor` for `route`, from the table of `actors.rs`.
+pub(super) fn expectation(actor: Actor, route: &Operation, example: &Example) -> Expect {
+    if route.needs == Declared::Public {
+        return Expect::Allowed;
+    }
+    if let Some(answered) = answered_before_the_permission(actor, route, example) {
+        return answered;
     }
     if let Some(permission) = example.held_in_some_project() {
         return expectation_when_held_in_some_project(actor, permission);
+    }
+    if example.has(Quirk::ShownByWorkTimes)
+        && matches!(route.needs, Declared::SignedIn)
+        && work_times_level(actor) == PeopleLevel::Hidden
+    {
+        // Another person's work times, read by somebody who is shown no such person.
+        return Expect::NotFound;
     }
     let permission = match route.needs {
         Declared::Public | Declared::SignedIn | Declared::OwnAccount => return Expect::Allowed,
@@ -206,6 +227,11 @@ pub(super) fn expectation(actor: Actor, route: &Operation, example: &Example) ->
                     .contains(&Permission::SeeWorkingHoursOfOthers)
             {
                 // Another person's working hours: nobody learns whose days exist (ADR-0035).
+                Expect::NotFound
+            } else if example.has(Quirk::ShownByWorkTimes)
+                && work_times_level(actor) == PeopleLevel::Hidden
+            {
+                // Another person's work times: nobody learns whose exist (ADR-0030, amendment M8).
                 Expect::NotFound
             } else if example.has(Quirk::InTheTrash) || example.has(Quirk::TheirOwn) {
                 // Whoever may not take it out is not told that it is in the trash, and a record

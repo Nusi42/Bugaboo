@@ -66,13 +66,8 @@ async fn list_my_work_days(
     Session(session_token): Session,
     range: Result<ApiQuery<RangeParams>, ApiError>,
 ) -> Result<Response, ApiError> {
-    let read = range.and_then(|ApiQuery(range)| {
-        Ok((
-            read_date(&range.from).ok_or_else(invalid)?,
-            read_date(&range.to).ok_or_else(invalid)?,
-        ))
-    });
-    let (first, last) = auth.after_who_asks(&info, &session_token, read).await?;
+    let read = range.and_then(|ApiQuery(range)| range.read());
+    let range = auth.after_who_asks(&info, &session_token, read).await?;
     let page = auth
         .api()?
         .work_days(
@@ -80,8 +75,8 @@ async fn list_my_work_days(
             WorkDaysQuery {
                 session_token,
                 person: None,
-                first,
-                last,
+                first: range.first,
+                last: range.last,
             },
         )
         .await?;

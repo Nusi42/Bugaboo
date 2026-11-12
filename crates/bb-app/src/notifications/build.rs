@@ -39,11 +39,13 @@ use crate::files::member as file_member;
 use crate::history::{issue_in, visible_changes};
 use crate::issues::{Where, member as issue_member};
 use crate::jobs::{JobKind, QueuedJob};
-use crate::member::{comment, follower, timer};
+use crate::member::{comment, follower};
 use crate::outbox_reader::read_all;
 
 mod agent_work;
+mod timer_job;
 mod work_days;
+mod work_times;
 
 /// What one batch of events looks up once: people, their settings, the followers that lost
 /// access.
@@ -301,6 +303,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             RecordKind::Project => self.renewal_event(round, event).await,
             RecordKind::Attachment => self.file_event(round, event).await,
             RecordKind::WorkDay => self.work_day_event(round, event).await,
+            RecordKind::AwayTime | RecordKind::WorkTimes => {
+                self.work_times_event(round, event).await
+            }
             RecordKind::Agent => self.agent_event(round, event).await,
             RecordKind::AgentWork => self.agent_work_event(round, event).await,
             RecordKind::StandingRule => self.standing_rule_event(round, event).await,
@@ -328,6 +333,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             | RecordKind::SavedSearch
             | RecordKind::Session
             | RecordKind::Setting
+            | RecordKind::Share
             | RecordKind::SetupCode
             | RecordKind::StartingRoles
             | RecordKind::Tag
@@ -336,38 +342,6 @@ impl<S: AuthStore> Ctx<'_, S> {
             | RecordKind::StarterFields => Ok(()),
             RecordKind::Timer => self.timer_event(round, event).await,
         }
-    }
-
-    /// The job of a long timer marked the timer (ADR-0035, decision 3): its person hears of it
-    /// once, while they see the issue it runs on. No other change of a timer tells anybody.
-    async fn timer_event(&self, round: &mut Round, event: &DomainEvent) -> Result<(), AppError> {
-        let warned = event
-            .changes
-            .iter()
-            .any(|change| change.field == timer::WARNED_AT);
-        let Ok(person) = UserId::from_bytes(event.entity.id.to_bytes()) else {
-            return Ok(());
-        };
-        let Some(issue_id) = issue_in(&event.changes, timer::ISSUE, true).filter(|_| warned) else {
-            return Ok(());
-        };
-        let failed = |error| internal::<S>(&error);
-        let Some(issue) = self.store().issue(issue_id).await.map_err(failed)? else {
-            return Ok(());
-        };
-        let subject = Subject {
-            event,
-            issue: Some(&issue),
-            record: None,
-            keeps: Keeps::Nothing,
-        };
-        let hears = vec![Hears {
-            person,
-            kinds: vec![Some(NotificationKind::LongTimer)],
-            follows: false,
-            once: Once::Event(event.id),
-        }];
-        self.deliver(round, &subject, hears).await
     }
 
     /// A file added to an issue: the people who follow the issue hear of it. A file added to a

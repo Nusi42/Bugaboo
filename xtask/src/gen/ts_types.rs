@@ -118,12 +118,13 @@ pub(crate) fn is_serde_type(attributes: &[Attribute]) -> bool {
 
 /// Types that the generated API client declares already, by their Rust name, and how the browser
 /// names them. A file that uses one imports `Schema` from the client.
-const EXTERNAL_TYPES: [(&str, &str); 5] = [
+const EXTERNAL_TYPES: [(&str, &str); 6] = [
     ("FileEvent", "Schema<\"FileEvent\">"),
     ("TimeEvent", "Schema<\"TimeEvent\">"),
     ("FieldType", "Schema<\"FieldType\">"),
     ("NotificationKind", "Schema<\"NotificationKind\">"),
     ("NoticeKind", "Schema<\"NoticeKind\">"),
+    ("WorkTimesEvent", "Schema<\"WorkTimesEvent\">"),
 ];
 
 /// A Rust type as TypeScript, and whether it was an `Option`. `known` collects the names of other

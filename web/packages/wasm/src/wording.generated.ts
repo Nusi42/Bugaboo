@@ -106,6 +106,14 @@ export interface WorkDayNotice {
   readonly reason?: string | null;
 }
 
+/** The work times of the reader that somebody else changed. It names the days of an away time and never its note, which only its person reads (ADR-0030, decision 2). */
+export interface WorkTimesNotice {
+  /** What was done. */
+  readonly event: Schema<"WorkTimesEvent">;
+  /** The days of an away time, already written the way the reader writes dates (*26 Oct – 30 Oct*); empty for a change of the usual work days or the work hours. */
+  readonly days?: string;
+}
+
 /** What a notification says, with what the sentences need. */
 export interface Notice {
   /** What the notification is about. */
@@ -126,6 +134,8 @@ export interface Notice {
   readonly file?: FileChange | null;
   /** A work day of the reader that somebody else changed. */
   readonly work_day?: WorkDayNotice | null;
+  /** Work times of the reader that somebody else changed. */
+  readonly work_times?: WorkTimesNotice | null;
 }
 
 /** A length of time a person typed, as the browser hands it to the reader: the text, the person's *Number format* that says the decimal mark (the browser names the format of the device by the fixed one that writes the same mark), and the short words of the units from the browser's catalog, so the module carries no catalog of its own. */

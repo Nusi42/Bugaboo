@@ -357,3 +357,13 @@ reason = "Counts only changes to issues the reader may see: the undo leaves out,
 route = "GET /api/v1/issues/{issue}/agent-work"
 property = "hand_over_days"
 reason = "The days after which a hand-over ends when nobody sets an end: a setting of the organization that every reader may see, the same for all, and it counts no record."
+
+[[exempt]]
+route = "GET /api/v1/me/work-times"
+property = "sum"
+reason = "What the shares of the person themselves add up to, in percent: only the person reads it, and they may see everything about their own work times (ADR-0030, amendment M8)."
+
+[[exempt]]
+route = "GET /api/v1/people/{person}/work-times"
+property = "sum"
+reason = "The same member of the same answer, which the reader sees only when it is their own: another person's work times answer it as nothing, so it holds only what the viewer may see (ADR-0030, amendment M8)."

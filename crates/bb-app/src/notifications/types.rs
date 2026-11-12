@@ -77,6 +77,17 @@ pub enum NotificationWhat {
         /// Why, in the words of whoever changed it.
         reason: Option<String>,
     },
+    /// Somebody else entered, changed or removed an away time of the person, or changed their usual
+    /// work days or work hours (ADR-0033, amendment M8). An away time is named only by its days;
+    /// its note is never part of it.
+    WorkTimesChanged {
+        /// What was done.
+        event: bb_core::wording::WorkTimesEvent,
+        /// The first day of the away time; none for a change of the usual work days.
+        first: Option<jiff::civil::Date>,
+        /// The last day of the away time.
+        last: Option<jiff::civil::Date>,
+    },
     /// Something about the issue that the person has no words for here (a mention of a comment
     /// that is gone, an assignment): the kind says what it is.
     Plain,

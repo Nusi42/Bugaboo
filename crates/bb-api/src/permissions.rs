@@ -817,6 +817,7 @@ mod search_routes;
 mod tests;
 mod themes;
 mod time;
+mod work_times;
 mod working_hours;
 
 pub use lookup::{csrf_exempt, declared, rows};
