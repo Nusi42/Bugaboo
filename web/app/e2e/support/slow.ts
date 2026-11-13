@@ -11,3 +11,16 @@ export async function holdBackLocks(page: Page, milliseconds: number): Promise<v
     await route.continue();
   });
 }
+
+/**
+ * Holds every request that matches `url` until the returned function is called, as a slow read
+ * would: what the page shows while it waits can be looked at, and the answer comes on cue.
+ */
+export async function holdUntilReleased(page: Page, url: string): Promise<() => void> {
+  const { promise, resolve } = Promise.withResolvers<void>();
+  await page.route(url, async (route) => {
+    await promise;
+    await route.continue();
+  });
+  return resolve;
+}

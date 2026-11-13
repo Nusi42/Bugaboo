@@ -1,4 +1,4 @@
-import { Alert, alertTone, Skeleton, useLayout, part, partOf } from "@bugaboo/ui";
+import { Alert, alertTone, DelayedSkeleton, useLayout, part, partOf } from "@bugaboo/ui";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
@@ -44,35 +44,47 @@ export function SearchBar({
 }: SearchBarProps) {
   const language = useSearchLanguage();
   const fields = useSearchFields(within);
+  const phone = useLayout() === "phone";
   if (fields.isError) {
     return <Alert tone={alertTone.danger}>{messageOf(fields.error)}</Alert>;
   }
-  if (language === undefined || fields.data === undefined) {
-    return <Skeleton lines={1} />;
-  }
-  return (
-    <LoadedBar
-      language={language}
-      fields={fields.data.fields}
-      names={fields.data.names}
-      text={text}
-      onText={onText}
-      onStale={onStale}
-      actions={actions}
-      listView={listView}
-      phoneStart={phoneStart}
-    />
+  const bar =
+    language === undefined || fields.data === undefined ? (
+      <DelayedSkeleton lines={1} />
+    ) : (
+      <LoadedBar
+        language={language}
+        fields={fields.data.fields}
+        names={fields.data.names}
+        text={text}
+        onText={onText}
+        onStale={onStale}
+        actions={actions}
+        listView={listView}
+      />
+    );
+  // On a phone the row of its buttons stands from the start, and what comes before *Filters* (*New
+  // issue*) stays the same element while the bar loads (UX §6.4: the focus can come back to it).
+  return phone ? (
+    <div {...partOf(part.searchBar)}>
+      <div {...partOf(part.searchBarHead)}>
+        {phoneStart}
+        {bar}
+      </div>
+    </div>
+  ) : (
+    bar
   );
 }
 
-type LoadedProps = Omit<SearchBarProps, "within" | "onStale" | "listView"> & {
+type LoadedProps = Omit<SearchBarProps, "within" | "onStale" | "listView" | "phoneStart"> & {
   readonly onStale: ((stale: boolean) => void) | undefined;
   readonly listView: ListViewControl | undefined;
   readonly names: Readonly<Record<string, string>>;
 } & Required<Pick<Parameters<typeof useSearchBar>[0], "language" | "fields">>;
 
 function LoadedBar(props: LoadedProps) {
-  const { language, fields, names, text, onText, onStale, actions, listView, phoneStart } = props;
+  const { language, fields, names, text, onText, onStale, actions, listView } = props;
   const bar = useSearchBar({ language, fields, text, onText });
   const stale = bar.answer.mistakes.length > 0;
   useEffect(() => {
@@ -109,7 +121,6 @@ function LoadedBar(props: LoadedProps) {
       onOpenChange={setOpen}
       fields={{ names }}
       listView={listView}
-      start={phoneStart}
       footer={actions}
     >
       {body}

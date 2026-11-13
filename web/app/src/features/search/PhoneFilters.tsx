@@ -16,8 +16,6 @@ export interface PhoneFiltersProps {
   /** The names of the fields the person reads, for *Group by*. */
   readonly fields: Pick<SearchFieldsAnswer, "names">;
   readonly listView: ListViewControl | undefined;
-  /** Buttons before *Filters* in its row. */
-  readonly start?: ReactNode;
   /** What is done with the search (*Save search*, *Share*), next to the button that is done. */
   readonly footer?: ReactNode;
   /** The bar itself, which the sheet holds. */
@@ -33,7 +31,8 @@ function filtersWords(search: PhoneFiltersProps["search"], mistakes: number): st
 
 /**
  * The search bar of a phone: one button, *Filters*, with a count only where there is one (and the
- * mistakes of the text), and the sheet from the bottom it opens. The sheet has a title, holds the bar,
+ * mistakes of the text), and the sheet from the bottom it opens. The row it stands in is the search
+ * bar's (`SearchBar`), which keeps it while the bar loads. The sheet has a title, holds the bar,
  * then *Group by* (M5 exit decision D2), then what is done with the search and the button that
  * says it is done. *Spacing* is the person's, in *My settings › Appearance* (ADR-0034, amendment).
  */
@@ -44,22 +43,18 @@ export function PhoneFilters({
   onOpenChange,
   fields,
   listView,
-  start,
   footer,
   children,
 }: PhoneFiltersProps) {
   return (
-    <div {...partOf(part.searchBar)}>
-      <div {...partOf(part.searchBarHead)}>
-        {start}
-        <Button
-          onPress={() => {
-            onOpenChange(true);
-          }}
-        >
-          {filtersWords(search, mistakes)}
-        </Button>
-      </div>
+    <>
+      <Button
+        onPress={() => {
+          onOpenChange(true);
+        }}
+      >
+        {filtersWords(search, mistakes)}
+      </Button>
       <BottomSheet
         isOpen={open}
         onOpenChange={onOpenChange}
@@ -78,6 +73,6 @@ export function PhoneFilters({
           )}
         </div>
       </BottomSheet>
-    </div>
+    </>
   );
 }
