@@ -126,6 +126,7 @@ function Control({
 /** The three buttons at the top right, in the order of Windows; on a phone one *Back*. */
 function Controls({
   state,
+  edges,
   labels,
   resize,
   onMinimize,
@@ -133,7 +134,7 @@ function Controls({
   onClose,
 }: Pick<
   WindowFrameProps,
-  "state" | "labels" | "resize" | "onMinimize" | "onToggleMaximize" | "onClose"
+  "state" | "edges" | "labels" | "resize" | "onMinimize" | "onToggleMaximize" | "onClose"
 >) {
   if (state === windowState.full) {
     return (
@@ -147,7 +148,8 @@ function Controls({
   const maximized = state === windowState.maximized;
   return (
     <>
-      {maximized ? null : <SizeMenu labels={labels} onStep={resize.step} />}
+      {/* No size menu where there is nothing to resize: a maximized window, or one that waits. */}
+      {edges.length === 0 ? null : <SizeMenu labels={labels} onStep={resize.step} />}
       <Control name={labels.minimize} icon={iconName.minimize} onPress={onMinimize} />
       <Control
         name={maximized ? labels.restoreDown : labels.maximize}

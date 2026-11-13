@@ -6,6 +6,7 @@ import { descriptionBox } from "./support/description.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import {
+  expectQuietWhenInTime,
   newIssueDialog as dialog,
   openNewIssueDialog as openDialog,
   openNewIssueDialogFromTheMenu,
@@ -149,9 +150,7 @@ test("ux_6_1 a window that is still loading closes with Escape and with its own 
   await page.goto(projectIssuesAddress("WEB"));
   const release = await holdNewIssueLayout(page);
   // The first 0.3 s: the window is there but clear, says nothing yet, and Esc closes it.
-  const atEscape = await pressNewIssueAndEscapeAtOnce(page);
-  expect(atEscape.state.split(" "), "the window was in its clear first 0.3 s").toContain("quiet");
-  expect(atEscape.status, "nothing is said before the grey shapes show").toBe("");
+  expectQuietWhenInTime(await pressNewIssueAndEscapeAtOnce(page));
   await expect(dialog(page)).toHaveCount(0);
   // After 0.3 s: grey shapes, the status says it is loading, and its own button closes it.
   await pressNewIssue(page);

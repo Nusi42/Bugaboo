@@ -1,6 +1,7 @@
 import { t } from "@bugaboo/messages";
-import { expect, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
+import { skeletonDelayMs } from "../../../packages/ui/src/after-delay.ts";
 import { part } from "../../../packages/ui/src/tokens.ts";
 import { partSelector } from "./parts.ts";
 
@@ -19,40 +20,59 @@ function newIssueButton(page: Page) {
   return page.getByRole("button", { name: t("issues.new"), exact: true }).first();
 }
 
-/** What the window was doing, and what its status said, when Esc was pressed. */
+/** What the window was doing, what its status said, and how long after the click, when Esc was pressed. */
 export interface AtEscape {
   readonly state: string;
   readonly status: string;
+  readonly elapsedMs: number;
 }
 
 /**
- * Presses *New issue* and Esc in the same moment, in the page: Esc goes to what has the focus as soon
- * as the window has taken it, a frame or two after it opened, long before 0.3 s. Says what the window
- * was doing then.
+ * Presses *New issue* and Esc in the same moment, in the page: Esc is sent from the first `focusin`
+ * inside the window, as soon as the window has taken the focus. Says what the window was doing then.
  */
 export function pressNewIssueAndEscapeAtOnce(page: Page): Promise<AtEscape> {
   return newIssueButton(page).evaluate(
     (button, box) =>
       new Promise<AtEscape>((done) => {
-        button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-        const escapeOnceFocused = (): void => {
+        const clicked = performance.now();
+        const escapeOnFocus = (): void => {
           const modal = document.querySelector<HTMLElement>(box);
-          const focused = document.activeElement;
-          if (modal === null || focused === null || !modal.contains(focused)) {
-            requestAnimationFrame(escapeOnceFocused);
+          const target = document.activeElement;
+          if (modal === null || target === null || !modal.contains(target)) {
             return;
           }
+          document.removeEventListener("focusin", escapeOnFocus);
           const seen = {
             state: modal.dataset["state"] ?? "",
             status: modal.querySelector("output")?.textContent ?? "",
+            elapsedMs: performance.now() - clicked,
           };
-          focused.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+          target.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
           done(seen);
         };
-        requestAnimationFrame(escapeOnceFocused);
+        document.addEventListener("focusin", escapeOnFocus);
+        button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
       }),
     partSelector(part.overlayModal),
   );
+}
+
+/**
+ * The window was in its clear first 0.3 s and said nothing yet, when Esc came in time for that; a
+ * browser too slow to take the focus within 0.3 s is noted on the test instead, which then checks only
+ * that the window closed.
+ */
+export function expectQuietWhenInTime(atEscape: AtEscape): void {
+  if (atEscape.elapsedMs >= skeletonDelayMs) {
+    test.info().annotations.push({
+      type: "slow",
+      description: `the window took the focus after ${Math.round(atEscape.elapsedMs)} ms`,
+    });
+    return;
+  }
+  expect(atEscape.state.split(" "), "the window was in its clear first 0.3 s").toContain("quiet");
+  expect(atEscape.status, "nothing is said before the grey shapes show").toBe("");
 }
 
 /** Presses *New issue* in the bar (the sidebar on a computer, the bar of a phone); the form may still be on its way. */

@@ -1,3 +1,6 @@
+import { t } from "@bugaboo/messages";
+
+import { edgesOf, windowEdges, windowStand } from "../../packages/ui/src/window-size.ts";
 import { ada } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
@@ -21,8 +24,11 @@ test.use({ preparation: { run: prepareWeb } });
 /** How far the bottom edge is dragged. */
 const DRAG_PX = 80;
 
-/** The places to drag at the top of a window. */
-const TOP_HANDLES = '[data-variant="n"], [data-variant="ne"], [data-variant="nw"]';
+/** The places to drag that a window at the top of the page has not: its top cannot move. */
+const TOP_HANDLES = windowEdges
+  .filter((edge) => !edgesOf(windowStand.top).includes(edge))
+  .map((edge) => `[data-variant="${edge}"]`)
+  .join(", ");
 
 test("ux_6_3 the bottom edge of a window at the top of the page follows the pointer, and the top has no handle", async ({
   page,
@@ -35,10 +41,16 @@ test("ux_6_3 the bottom edge of a window at the top of the page follows the poin
   await expectWindowSeen(page);
   // While it waits it cannot be resized, so a size as tall as the page is never kept.
   await expect(partIn(page, "window.handle")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: t("window.size-menu"), exact: true })).toHaveCount(
+    0,
+  );
   release();
   await waitForNewIssueForm(page);
   await expect(partIn(page, "window.handle").and(page.locator(TOP_HANDLES))).toHaveCount(0);
   await expect(partIn(page, "window.handle", "s")).toHaveCount(1);
+  await expect(page.getByRole("button", { name: t("window.size-menu"), exact: true })).toHaveCount(
+    1,
+  );
   const before = await windowSize(page);
   await dragWindowEdge(page, "s", { x: 0, y: DRAG_PX });
   expect((await windowSize(page)).height - before.height).toBe(DRAG_PX);

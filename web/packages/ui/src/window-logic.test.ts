@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 
+import { windowState } from "./props.ts";
 import { applyWindowSize, resizeByKey, type ResizeKey } from "./use-window-resize.ts";
 import { edgesOf, notBelow, windowStand } from "./window-size.ts";
 import { keyboardStep, type WindowElement, type WindowSize } from "./window-size.ts";
 import {
   firstShape,
+  dragEdgesOf,
   hiddenPresence,
   isWaiting,
   phaseOf,
@@ -191,5 +193,15 @@ describe("ux_6_1 a window that waits is not resized, and one at the top has no t
   it("drags at every edge in the middle, and at all but the top ones at the top", () => {
     expect(edgesOf(windowStand.middle)).toHaveLength(8);
     expect([...edgesOf(windowStand.top)].toSorted()).toEqual(["e", "s", "se", "sw", "w"]);
+  });
+
+  it("has no places to drag when it is maximized, a full screen or waiting", () => {
+    expect(dragEdgesOf(windowState.maximized, windowPhase.middle)).toEqual([]);
+    expect(dragEdgesOf(windowState.full, windowPhase.middle)).toEqual([]);
+    expect(dragEdgesOf(windowState.normal, windowPhase.loading)).toEqual([]);
+    expect(dragEdgesOf(windowState.normal, windowPhase.middle)).toEqual(
+      edgesOf(windowStand.middle),
+    );
+    expect(dragEdgesOf(windowState.normal, windowPhase.top)).toEqual(edgesOf(windowStand.top));
   });
 });
