@@ -77,6 +77,9 @@ function detailChange(
 /** The label the preparation makes for the change of labels. */
 export const LABEL = "frontend";
 
+/** The title the table gives the issue. */
+const NEW_TITLE = "A title changed in place";
+
 /** The words of a comment made in the table. */
 const COMMENT = "A comment in place";
 
@@ -99,6 +102,11 @@ const issuePageChanges: readonly ChangeInPlace[] = [
   detailChange(t("issue-field.start-date"), "start date", async (page) => {
     const box = page.getByLabel(t("issue-field.start-date"), { exact: true });
     await box.fill("2026-11-20");
+    await box.blur();
+  }),
+  detailChange(t("issue-field.due-date"), "due date", async (page) => {
+    const box = page.getByLabel(t("issue-field.due-date"), { exact: true });
+    await box.fill("2026-12-20");
     await box.blur();
   }),
   detailChange(t("labels.labels-heading"), "labels", async (page) => {
@@ -125,6 +133,22 @@ const issuePageChanges: readonly ChangeInPlace[] = [
     act: async (page) => {
       await chooseStatus(page, serverWord("workflow-change.start-working"));
       await expect(statusButton(page)).toContainText(t("status.in-progress"));
+    },
+    landmarks: issuePageLandmarks,
+  },
+  {
+    screen: issueAddress("$issue"),
+    change: "title",
+    open: issuePage,
+    part: (page) => partIn(page, "issue-title"),
+    // Opening the box of the title and typing are the person's own; Enter makes the change.
+    before: async (page) => {
+      await partIn(page, "issue-title").getByRole("button").click();
+      await partIn(page, "issue-title").getByRole("textbox").fill(NEW_TITLE);
+    },
+    act: async (page) => {
+      await partIn(page, "issue-title").getByRole("textbox").press("Enter");
+      await expect(page.getByRole("heading", { level: 1, name: NEW_TITLE })).toBeVisible();
     },
     landmarks: issuePageLandmarks,
   },
