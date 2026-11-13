@@ -131,7 +131,7 @@ export function saveQueue<Row>(book: ChangeBook, ways: QueueWays<Row>) {
       ways.offers.offer({ message: change.refused });
     } else if (now !== undefined) {
       book.put(id, { ...now, saved: { dates: change.step.dates, days: change.step.days } });
-      if (now.newest === change.newest) {
+      if (now.newest === change.newest && !book.holds(id)) {
         const message = ways.text(change.row, change.said, change.step.dates);
         const undo = (): void => {
           save(change.row, stepBack(book, ways, change, back), { move: "set" });

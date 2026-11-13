@@ -1,10 +1,9 @@
 import type { Schema } from "@bugaboo/api-client";
 
-import { known } from "../../shared/present.ts";
 import { groupOfKey } from "../issues/index.ts";
 import type { Span } from "./scale.ts";
 import { placeOf } from "./scale.ts";
-import type { TimelineGoal, TimelineRow } from "./timeline-data.ts";
+import { idOf, type TimelineGoal, type TimelineRow } from "./timeline-data.ts";
 
 /**
  * The lines the chart draws, top to bottom (UX §4.7): the head of each group, foldable, and under
@@ -74,7 +73,7 @@ export function linesOf(
     }
     if (open) {
       for (const row of group.rows) {
-        const issue = known(row.issue.id) ?? "";
+        const issue = idOf(row);
         lines.push({ kind: "issue", id: `${id}/${issue}`, issue, row });
       }
     }

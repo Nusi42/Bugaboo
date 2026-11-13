@@ -107,4 +107,14 @@ describe("the queue of the changes of a bar (PLAN-03)", () => {
     await answer();
     expect(sent).toEqual([later, { start: "2027-03-11", end: "2027-03-13" }]);
   });
+
+  it("plan_03_a_change_answered_during_a_run_offers_no_undo", async () => {
+    const { clock, offers, saving, answer, undo } = queue();
+    saving.save(row, step(first, later), { move: "set" });
+    const keys = keyRuns(runBook<Row>(), saving, clock.schedule);
+    keys.onKeyMove(row, "both", 1);
+    await answer();
+    expect(offers.list().filter((each) => each.undo !== undefined)).toEqual([]);
+    expect(undo()).toBe(false);
+  });
 });

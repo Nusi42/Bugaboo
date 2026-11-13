@@ -8,7 +8,7 @@ import { known } from "../../shared/present.ts";
 import { sendChange } from "../issues/index.ts";
 import { changeOf, type DateFields, type KeptDates } from "./date-fields.ts";
 import type { BarDays } from "./lines.ts";
-import { refreshTimeline, type TimelineRow } from "./timeline-data.ts";
+import { idOf, refreshTimeline, type TimelineRow } from "./timeline-data.ts";
 
 export { moved, shownWhileMoving, type Move } from "./moves.ts";
 
@@ -64,7 +64,7 @@ const savedVersions = new Map<string, number>();
 
 /** The version a change is made on: what the page read, or what the last save made, whichever is newer. */
 function versionNow(row: TimelineRow): number {
-  const id = known(row.issue.id) ?? "";
+  const id = idOf(row);
   return Math.max(row.issue.version ?? 0, savedVersions.get(id) ?? 0);
 }
 
@@ -73,7 +73,7 @@ function versionNow(row: TimelineRow): number {
  * the one before made. A refusal comes back as the server's reason, in words.
  */
 function save(row: TimelineRow, fields: DateFields, dates: KeptDates): Promise<string | null> {
-  const id = known(row.issue.id) ?? "";
+  const id = idOf(row);
   return inOrder(`timeline:${id}`, async () => {
     try {
       const version = await sendChange(id, {

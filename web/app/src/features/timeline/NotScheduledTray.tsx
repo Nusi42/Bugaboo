@@ -4,7 +4,7 @@ import { Button, buttonLook, IssueId, part, partOf, ShowMoreOf, type PagedList }
 import { DraggableHead } from "../../shared/drag-and-drop.tsx";
 import { known } from "../../shared/present.ts";
 import { dragKinds } from "./drag-kinds.ts";
-import type { TimelineRow } from "./timeline-data.ts";
+import { idOf, type TimelineRow } from "./timeline-data.ts";
 
 export interface NotScheduledTrayProps {
   readonly rows: readonly TimelineRow[];
@@ -30,7 +30,7 @@ export function NotScheduledTray({ rows, count, pages, onSetDates }: NotSchedule
       </p>
       <ul {...partOf(part.timelineSideList)}>
         {rows.map((row) => {
-          const [id, key] = [known(row.issue.id) ?? "", known(row.issue.readable_id) ?? ""];
+          const [id, key] = [idOf(row), known(row.issue.readable_id) ?? ""];
           return (
             <li key={id}>
               <DraggableHead
