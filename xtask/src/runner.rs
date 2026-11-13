@@ -69,6 +69,12 @@ pub(crate) struct Ran<'e> {
 /// What a check answered, and how long it took; kept until every check has run.
 type Outcome = anyhow::Result<(Vec<Finding>, Duration)>;
 
+/// How many checks run at once at most: as many as the machine has cores. META-SPEED's reference
+/// workload uses as many threads, so it competes for the computer as the checks do.
+pub(crate) fn workers() -> usize {
+    std::thread::available_parallelism().map_or(1, std::num::NonZeroUsize::get)
+}
+
 /// Runs the checks side by side, as many at once as the machine has cores, and answers their
 /// results in the order of `entries` (catalogue order), so the output reads the same every time.
 /// Most checks are short, but several read the whole repository, so one after the other they
@@ -91,9 +97,7 @@ pub(crate) fn run_entries<'e>(
     let next = AtomicUsize::new(0);
     let results: Mutex<Vec<Option<Outcome>>> =
         Mutex::new((0..checks.len()).map(|_| None).collect());
-    let workers = std::thread::available_parallelism()
-        .map_or(1, std::num::NonZeroUsize::get)
-        .min(checks.len());
+    let workers = workers().min(checks.len());
     std::thread::scope(|scope| {
         for _ in 0..workers {
             scope.spawn(|| {
