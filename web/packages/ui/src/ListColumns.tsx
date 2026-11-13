@@ -47,7 +47,7 @@ function keepHeadAndRows(frame: HTMLElement, onGutter: (pixels: number) => void)
     return changed;
   };
   const sync = (): void => {
-    const gutter = box === null ? 0 : box.offsetWidth - box.clientWidth;
+    const gutter = box === null ? 0 : Math.max(0, box.offsetWidth - box.clientWidth);
     if (box !== null && give("list-gutter", `${String(gutter)}px`, "gutter")) {
       onGutter(gutter);
     }
