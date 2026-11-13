@@ -45,3 +45,5 @@ export { useFoundGroups } from "./found-issues.ts";
 export { groupName, groupOfKey, type GroupOfKey } from "./group-keys.ts";
 export { useOwnColumns, type OwnColumns } from "./own-columns.ts";
 export type { IssueRequestValues, IssueValues } from "./issue-values.ts";
+export { TimeFactorChange } from "./TimeFactorChange.tsx";
+export { AssignedPicker } from "./AssignedPicker.tsx";

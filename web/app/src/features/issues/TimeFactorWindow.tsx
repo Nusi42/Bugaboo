@@ -21,7 +21,8 @@ import { TimeFactorFields } from "./TimeFactorFields.tsx";
 import { useTimeFactorDraft } from "./use-time-factor-draft.ts";
 
 export interface TimeFactorWindowProps {
-  readonly issue: IssueView;
+  /** The issue: its *Estimated time*, when the reader may read it. */
+  readonly issue: Pick<IssueView, "estimated_time">;
   readonly readableId: string;
   readonly factor: TimeFactor;
   /** The factor the reader is shown now, in percent. */

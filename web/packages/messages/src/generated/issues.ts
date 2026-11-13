@@ -144,7 +144,6 @@ export const messages = {
   "many-changes.change-and-status": "{button} (to {status})",
   "layouts.customize-form": "Customize this form",
   "issues.time-factor-as-estimated": "×1 (as estimated)",
-  "issues.time-factor-own": "{factor} · {name}'s own estimate",
   "issues.time-factor-set-by": "{factor} · set by {name}",
   "issues.time-factor-change": "Change",
   "issues.time-factor-change-name": "Change the time factor",
@@ -159,8 +158,6 @@ export const messages = {
   "issues.time-factor-factor": "Time factor (1 is as estimated)",
   "issues.time-factor-not-a-factor": "Type a time factor like {example}.",
   "issues.time-factor-nothing": "Type how long it takes, or a time factor.",
-  "issues.time-factor-estimate": "Estimate {estimate}",
-  "issues.time-factor-sum": "Estimate {estimate} · {factor} = {total}",
   "issues.time-factor-save": "Save the time factor",
 } as const;
 

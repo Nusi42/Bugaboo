@@ -23,6 +23,14 @@ type TimelinePage = Schema<"TimelinePageBody">;
 /** A goal of the page: its due date and the days of its sub-issues. */
 export type TimelineGoal = Schema<"TimelineGoalBody">;
 
+/** A plan warning of an issue of the page, as the server words it for the reader. */
+export type PlanWarning = Schema<"PlanWarningBody">;
+
+/** What tells a warning from the others: an issue has at most one of each kind. */
+export function warningKey(warning: PlanWarning): string {
+  return `${warning.issue}/${warning.kind}`;
+}
+
 /** What a timeline is of: a search, where it looks, how its view is set, and the days on screen. */
 export interface TimelineAsk {
   /** The canonical text of the search. */
@@ -84,8 +92,12 @@ export interface TimelineRead {
   readonly rows: readonly TimelineRow[];
   readonly dependencies: readonly Schema<"TimelineDependencyBody">[];
   readonly goals: ReadonlyMap<string, TimelineGoal>;
+  /** The warnings of the issues read so far, each once. */
+  readonly warnings: readonly PlanWarning[];
   /** How many issues of the search wait in *Not scheduled yet*. */
   readonly notScheduled: number;
+  /** Whether the server planned the bars by effort (never for an access key). */
+  readonly byEffort: boolean;
 }
 
 /** The pages put together: the rows in order, every arrow and goal once. */
@@ -94,7 +106,11 @@ export function readOf(pages: readonly TimelinePage[] | undefined): TimelineRead
   const goals = new Map<string, TimelineGoal>();
   const seen = new Set<string>();
   const dependencies: Schema<"TimelineDependencyBody">[] = [];
+  const warnings = new Map<string, PlanWarning>();
   for (const page of all) {
+    for (const warning of page.warnings) {
+      warnings.set(warningKey(warning), warning);
+    }
     for (const goal of page.goals) {
       goals.set(goal.id, goal);
     }
@@ -110,7 +126,9 @@ export function readOf(pages: readonly TimelinePage[] | undefined): TimelineRead
     rows: all.flatMap((page) => page.rows),
     dependencies,
     goals,
+    warnings: [...warnings.values()],
     notScheduled: all[0]?.not_scheduled ?? 0,
+    byEffort: all[0]?.planned_by_effort ?? false,
   };
 }
 

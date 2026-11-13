@@ -101,7 +101,9 @@ export function useBar(line: IssueLine, days: BarDays) {
     dragging,
     handlers,
     drop,
-    labelBefore: after < pixelsOf("size-col-key"),
+    labelBefore: after < pixelsOf("size-timeline-label"),
+    marked: timeline.marked === line.issue,
+    warnings: timeline.warnedOf(line.issue),
     ...barKeys(timeline, line, mayMove, select),
   };
 }

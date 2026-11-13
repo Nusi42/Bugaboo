@@ -222,6 +222,10 @@ tokens {
     size "size-timeline-row" "$size-row-compact" touch="calc($size-control + 2 * $space-1 + $border-width)"
     size "size-timeline-head" "$size-control"
     size "size-timeline-side" "240px"
+    // The most a name at the end of a bar takes, and the room after a bar its Issue ID and that name need: with less
+    // room before the end of the chart, the label stands before the bar (UX §4.7, the person on the bar).
+    size "size-timeline-person" "calc(176px * $text-scale)"
+    size "size-timeline-label" "calc(264px * $text-scale)"
     // Where the screen puts things on the timeline, set by the code (UX §4.7, M3-F163): the width of a day at the
     // zoom, how many days and rows the chart has, and for one thing on it its row, its first day counted from the
     // first day of the chart, its length in days and how much of a bar is done. Only numbers come from code; the
@@ -3589,15 +3593,69 @@ part "timeline-bar[state=group-done] timeline-bar.done" {
     background "$st-done"
 }
 
+// The label after a bar: the sign of a plan warning, its Issue ID and the person on the bar (UX §4.7), on one line.
 part "timeline-bar.label" {
     position absolute
     top "50%"
     inset-inline-start "calc(100% + $space-2)"
+    display inline-flex
+    align-items center
+    gap "$space-1"
     translate "0 -50%"
     color "$fg-muted"
     font-size "$fs-xs"
     pointer-events none
     use "issue-id"
+}
+
+// The person on the bar (UX §4.7): the name as *Who sees people* shows it, cut with an ellipsis when it is long.
+part "timeline-bar.person" {
+    max-width "$size-timeline-person"
+    overflow hidden
+    text-overflow ellipsis
+    color "$fg-muted"
+    font-family "$font-ui"
+}
+
+// The sign of a plan warning at the end of a bar and before the sentence of a warning, in the color of warnings.
+part "timeline-bar.sign" "timeline-warning.sign" {
+    display inline-flex
+    flex none
+    color "$warning"
+}
+
+// A copy of a bar in the row of another assigned person (*Group by person*): an outline only, planned with the first
+// person's work times (ADR-0030, amendment M8).
+part "timeline-bar[state=copy]" {
+    border-style dashed
+    background none
+}
+
+// The bar of the warning that is pointed at in the list.
+part "timeline-bar[state=marked]" {
+    use "ring-row"
+}
+
+// Days without work inside a bar (ADR-0030, decision 3): away days hatched one way, public holidays the other way, and
+// days that are not usual work days shaded like the weekend. They fill the height of the bar inside its edge.
+part "timeline-bar.hatch" {
+    position absolute
+    inset-block 0
+    inset-inline-start "calc($timeline-start * $timeline-day * $size-px)"
+    width "calc($timeline-length * $timeline-day * $size-px)"
+    pointer-events none
+}
+
+part "timeline-bar.hatch[variant=away]" {
+    background "repeating-linear-gradient(135deg, $fg-muted 0, $fg-muted $border-width, transparent $border-width, transparent $space-1)"
+}
+
+part "timeline-bar.hatch[variant=holiday]" {
+    background "repeating-linear-gradient(45deg, $fg-muted 0, $fg-muted $border-width, transparent $border-width, transparent $space-1)"
+}
+
+part "timeline-bar.hatch[variant=day-off]" {
+    background "$bg-sunken"
 }
 
 // A selected bar has its dot after its end: the ID moves on past it.
@@ -3733,6 +3791,93 @@ part "timeline-side.list" {
     list-style none
 }
 
+// A line of the card with a button at its end: the effort and *Change* of the time factor.
+part "timeline-card.line" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-1" "$space-2"
+    margin 0
+}
+
+// The list of plan warnings at the side (UX §4.7, PLAN-13): each warning with its sign, its sentence and its ways out;
+// an accepted one faded at the end.
+part "timeline-warnings" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+    padding "$space-3"
+    border "$border-width solid $border"
+    border-radius "$r-card"
+    background "$bg-raised"
+    font-size "$fs-sm"
+}
+
+part "timeline-warning" {
+    display flex
+    flex-direction column
+    gap "$space-1"
+    padding-block-end "$space-2"
+    border-bottom "$border-width solid $border-subtle"
+}
+
+part "timeline-warning[state=accepted]" {
+    opacity "$opacity-faint"
+}
+
+// The sentence of a warning is a button: pointing at it marks the bar, pressing it selects the bar.
+part "timeline-warning.sentence" {
+    display flex
+    align-items flex-start
+    gap "$space-2"
+    margin 0
+    padding 0
+    border none
+    background none
+    color "$fg"
+    font-family inherit
+    font-size inherit
+    text-align start
+    cursor pointer
+}
+
+part "timeline-warning.sign" {
+    margin-block-start "calc(($fs-sm * $lh-body - $size-icon-small) / 2)"
+}
+
+part "timeline-warning.sentence:focus-visible" {
+    use "ring"
+}
+
+// The ways out of a warning: quiet buttons that wrap close under each other in the narrow side column.
+part "timeline-warning.ways" {
+    display flex
+    flex-wrap wrap
+    gap 0 "$space-3"
+}
+
+// A line of the preview of a way out, in the size of the list.
+part "timeline-warning.line" {
+    margin 0
+}
+
+// On a phone the card and the list of warnings fill a sheet, which is their frame.
+part "bottom-sheet timeline-card" "bottom-sheet timeline-warnings" {
+    padding 0
+    border none
+    background none
+}
+
+// What a way out will change, before anything is saved.
+part "timeline-warning.preview" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+    padding "$space-2"
+    border-radius "$r-ctl"
+    background "$bg-sunken"
+}
+
 part "timeline-card.actions" {
     display flex
     flex-wrap wrap
@@ -3759,6 +3904,89 @@ part "timeline-tray.line" {
     gap "$space-2"
     max-width "100%"
     min-width 0
+}
+
+// The timeline on a phone (UX §4.7, M8-Q12): a list grouped like the rows on a computer, each issue a button that opens
+// its card as a sheet, with its dates, its person and a short bar over seven weeks.
+part "timeline-phone" {
+    display flex
+    flex-direction column
+    margin 0
+    padding 0
+    list-style none
+    border-top "$border-width solid $border-subtle"
+}
+
+part "timeline-phone.group" {
+    display flex
+    align-items center
+    min-height "$size-control"
+    padding-inline "$space-3"
+    border-bottom "$border-width solid $border-subtle"
+    background "$bg-surface"
+}
+
+part "timeline-phone.item" {
+    display flex
+    flex-direction column
+    gap "$space-1"
+    box-sizing border-box
+    width "100%"
+    min-height "$size-control"
+    padding "$space-2 $space-3"
+    border none
+    border-bottom "$border-width solid $border-subtle"
+    background none
+    color "$fg"
+    font-family inherit
+    font-size inherit
+    text-align start
+    cursor pointer
+}
+
+part "timeline-phone.item:focus-visible" {
+    use "ring-inside"
+}
+
+part "timeline-phone.line" {
+    display flex
+    align-items center
+    gap "$space-2"
+    min-width 0
+}
+
+part "timeline-phone.facts" {
+    display flex
+    flex-wrap wrap
+    gap "$space-1" "$space-3"
+    color "$fg-muted"
+    font-size "$fs-sm"
+}
+
+// The seven weeks of the short bar: the bar and the Today line stand on the days `timeline-start` and
+// `timeline-length` give, as a share of the `timeline-days` of the lane, so the scale is the chart's, one day after the
+// other, only narrower.
+part "timeline-phone.lane" {
+    position relative
+    display block
+    box-sizing border-box
+    height "$space-4"
+    border "$border-width solid $border-subtle"
+    border-radius "$r-ctl"
+    background "$bg-sunken"
+}
+
+part "timeline-bar[variant=phone]" {
+    top 0
+    bottom 0
+    inset-inline-start "calc(100% * $timeline-start / $timeline-days)"
+    width "calc(100% * $timeline-length / $timeline-days)"
+}
+
+part "timeline-today[variant=phone]" {
+    top 0
+    bottom 0
+    inset-inline-start "calc(100% * ($timeline-start + 0.5) / $timeline-days)"
 }
 
 // While an issue of the tray is dragged over the chart, the chart shows that it takes it.
@@ -3990,6 +4218,24 @@ part "legend.swatch[variant=due]" {
     rotate "45deg"
     border-radius 0
     background "$fg"
+}
+
+// The days without work and the sign of a plan warning, drawn as on the chart (UX §4.7).
+part "legend.swatch[variant=away]" {
+    background "repeating-linear-gradient(135deg, $fg-muted 0, $fg-muted $border-width, transparent $border-width, transparent $space-1)"
+}
+
+part "legend.swatch[variant=holiday]" {
+    background "repeating-linear-gradient(45deg, $fg-muted 0, $fg-muted $border-width, transparent $border-width, transparent $space-1)"
+}
+
+part "legend.swatch[variant=warning]" {
+    width "$space-3"
+    height "$space-3"
+    border 0
+    border-radius 0
+    background "$warning"
+    clip-path "polygon(50% 0, 100% 100%, 0 100%)"
 }
 
 part "legend.swatch[variant=today]" {

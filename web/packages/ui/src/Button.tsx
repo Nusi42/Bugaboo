@@ -41,6 +41,8 @@ export interface ButtonProps {
   readonly "aria-label"?: string;
   /** The ID of the note that explains the button (why it waits). */
   readonly "aria-describedby"?: string;
+  /** Whether what the button opens beside it (a list at the side) is shown. */
+  readonly "aria-expanded"?: boolean;
 }
 
 export function Button({

@@ -1,5 +1,16 @@
 import { t } from "@bugaboo/messages";
-import { Button, buttonLook, ChoiceGroup, part, partOf, selectLook, Switch } from "@bugaboo/ui";
+import {
+  Button,
+  buttonLook,
+  ChoiceGroup,
+  Icon,
+  iconName,
+  iconSize,
+  part,
+  partOf,
+  selectLook,
+  Switch,
+} from "@bugaboo/ui";
 
 import { zoomWords, type ListView, type ZoomWord } from "../../shared/list-view.ts";
 import type { OwnColumns } from "../issues/index.ts";
@@ -14,6 +25,14 @@ export interface TimelineToolsProps {
   readonly own: OwnColumns;
   readonly onStep: (direction: -1 | 1) => void;
   readonly onToday: () => void;
+  /** A phone shows the seven weeks of its list: it has no zoom and no steps through time. */
+  readonly phone: boolean;
+  /** *Warnings (3)*: how many are open, and whether their list is shown. */
+  readonly warnings: {
+    readonly count: number;
+    readonly open: boolean;
+    readonly onToggle: () => void;
+  };
 }
 
 /** The name of each zoom: *Days · Weeks · Months · Quarters*. */
@@ -56,7 +75,8 @@ function TimeSteps({ onStep, onToday }: Pick<TimelineToolsProps, "onStep" | "onT
  * (*Dates from*), *Plan by effort*, the zoom, and the steps through time with *Today*. Every choice
  * is part of the view, kept in the address and saved with the search.
  */
-export function TimelineTools({ view, onView, fields, own, onStep, onToday }: TimelineToolsProps) {
+export function TimelineTools(props: TimelineToolsProps) {
+  const { view, onView, fields, own, onStep, onToday, phone, warnings } = props;
   const { timeline } = view;
   return (
     <div {...partOf(part.timelineTools)}>
@@ -75,15 +95,23 @@ export function TimelineTools({ view, onView, fields, own, onStep, onToday }: Ti
           onView({ ...view, timeline: { ...timeline, plan_by_effort: on } });
         }}
       />
-      <ChoiceGroup
-        legend={t("timeline.zoom")}
-        choices={zoomWords.map((zoom) => ({ value: zoom, label: t(zoomNames[zoom]) }))}
-        value={timeline.zoom}
-        onChange={(zoom) => {
-          onView({ ...view, timeline: { ...timeline, zoom } });
-        }}
-      />
-      <TimeSteps onStep={onStep} onToday={onToday} />
+      {phone ? null : (
+        <>
+          <ChoiceGroup
+            legend={t("timeline.zoom")}
+            choices={zoomWords.map((zoom) => ({ value: zoom, label: t(zoomNames[zoom]) }))}
+            value={timeline.zoom}
+            onChange={(zoom) => {
+              onView({ ...view, timeline: { ...timeline, zoom } });
+            }}
+          />
+          <TimeSteps onStep={onStep} onToday={onToday} />
+        </>
+      )}
+      <Button look={buttonLook.quiet} aria-expanded={warnings.open} onPress={warnings.onToggle}>
+        <Icon name={iconName.warning} size={iconSize.small} />
+        {t("timeline.warnings", { count: warnings.count })}
+      </Button>
     </div>
   );
 }

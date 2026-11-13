@@ -101,6 +101,8 @@
   --size-timeline-row: var(--size-row-compact);
   --size-timeline-head: var(--size-control);
   --size-timeline-side: 240px;
+  --size-timeline-person: calc(176px * var(--text-scale));
+  --size-timeline-label: calc(264px * var(--text-scale));
   --timeline-day: 0;
   --timeline-days: 0;
   --timeline-rows: 0;

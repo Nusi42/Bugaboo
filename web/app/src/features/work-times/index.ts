@@ -2,3 +2,4 @@
 import "@bugaboo/messages/parts/work-times";
 
 export { OwnWorkTimesPage, PersonWorkTimesPage } from "./WorkTimesPages.tsx";
+export { usualSummary, weekOf } from "./work-times-words.ts";

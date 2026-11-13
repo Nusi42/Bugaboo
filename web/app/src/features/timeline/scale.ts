@@ -48,6 +48,19 @@ export interface Span {
   readonly days: number;
 }
 
+/**
+ * The weeks of the short bar of the phone list (UX §4.7, M8-Q12): seven, from the week before last,
+ * so today stands in the third week with the weeks ahead after it.
+ */
+const phoneWeeks = 7;
+
+/** The span of the phone list around `today`: seven weeks from the week before last. */
+export function phoneSpan(today: string, firstDay: FirstDay): Span {
+  const first = firstAround(today, "week", firstDay);
+  const days = phoneWeeks * daysPerWeek;
+  return { first, last: addDays(first, days - 1), days };
+}
+
 /** The span of a zoom that starts on `first`. */
 export function spanFrom(first: string, zoom: ZoomWord): Span {
   const days = shownWeeks[zoom] * daysPerWeek;

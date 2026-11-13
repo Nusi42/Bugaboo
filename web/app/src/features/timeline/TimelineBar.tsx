@@ -1,10 +1,12 @@
 import { t } from "@bugaboo/messages";
-import { buttonType, IssueId, part, partOf, rowStates } from "@bugaboo/ui";
+import { buttonType, part, partOf, rowStates } from "@bugaboo/ui";
 
 import { known } from "../../shared/present.ts";
 import { BarHandles } from "./BarHandles.tsx";
-import { daysText } from "./dates.ts";
+import { BarLabel } from "./BarLabel.tsx";
+import { barSaid } from "./bar-words.ts";
 import type { BarDays, IssueLine } from "./lines.ts";
+import { Hatches } from "./people/Hatches.tsx";
 import { useBar } from "./use-bar.ts";
 
 export interface TimelineBarProps {
@@ -26,6 +28,7 @@ export function TimelineBar({ line, days, described }: TimelineBarProps) {
   const { ref, shown, selected, mayMove, dragging, handlers, drop } = bar;
   const { row } = line;
   const key = known(row.issue.readable_id) ?? "";
+  const said = barSaid(row, shown, bar.warnings);
   const states = rowStates({
     group: row.issue.status?.status_group ?? "not-started",
     priority: row.issue.priority ?? "normal",
@@ -42,18 +45,17 @@ export function TimelineBar({ line, days, described }: TimelineBarProps) {
           dragging !== null && "dragging",
           drop.isDropTarget && "target",
           bar.labelBefore && "label-before",
+          row.copy && "copy",
+          bar.marked && "marked",
         ],
       })}
       {...drop.dropProps}
     >
       <span {...partOf(part.timelineBarDone)} />
+      <Hatches stretches={said.stretches} />
       <button
         type={buttonType.button}
-        aria-label={t("timeline.bar", {
-          key,
-          title: row.issue.title ?? "",
-          days: daysText(shown),
-        })}
+        aria-label={said.name}
         aria-describedby={mayMove ? described.keys : described.locked}
         aria-pressed={selected}
         title={mayMove ? undefined : t("timeline.locked", { key })}
@@ -63,9 +65,7 @@ export function TimelineBar({ line, days, described }: TimelineBarProps) {
         onKeyUp={bar.onKeyUp}
         onBlur={bar.onBlur}
       />
-      <span {...partOf(part.timelineBarLabel)}>
-        <IssueId id={key} />
-      </span>
+      <BarLabel row={row} issueKey={key} warnings={bar.warnings} />
       {selected && mayMove ? <BarHandles issue={line.issue} handlers={handlers} /> : null}
     </div>
   );

@@ -22,7 +22,11 @@ export interface TimelineContextValue {
   readonly goalOf: (issue: string) => TimelineGoal | undefined;
   /** The issue whose bar is selected. */
   readonly selected: string | undefined;
-  readonly select: (issue: string | undefined) => void;
+  /** The issue whose warning is pointed at in the list: its bar is marked. */
+  readonly marked: string | undefined;
+  /** How many open plan warnings an issue has: its bar carries the sign. */
+  readonly warnedOf: (issue: string) => number;
+  readonly select: (issue?: string) => void;
   /** A bar was moved, or one of its ends, by `days`: a drag that ended, saved at once. */
   readonly onMove: (row: TimelineRow, move: Move, days: number) => void;
   /** A key moved a bar: the presses of a run are joined into one change (M8-F84). */

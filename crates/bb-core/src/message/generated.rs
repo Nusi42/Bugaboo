@@ -8586,8 +8586,23 @@ pub const TIMELINE_ADD_DEPENDENCY: MessageKey = MessageKey::new("timeline.add-de
 /// The message `timeline.add-it`.
 pub const TIMELINE_ADD_IT: MessageKey = MessageKey::new("timeline.add-it");
 
+/// The message `timeline.away`.
+pub const TIMELINE_AWAY: MessageKey = MessageKey::new("timeline.away");
+
+/// The message `timeline.away-afternoon`.
+pub const TIMELINE_AWAY_AFTERNOON: MessageKey = MessageKey::new("timeline.away-afternoon");
+
+/// The message `timeline.away-morning`.
+pub const TIMELINE_AWAY_MORNING: MessageKey = MessageKey::new("timeline.away-morning");
+
+/// The message `timeline.change-due`.
+pub const TIMELINE_CHANGE_DUE: MessageKey = MessageKey::new("timeline.change-due");
+
 /// The message `timeline.chart`.
 pub const TIMELINE_CHART: MessageKey = MessageKey::new("timeline.chart");
+
+/// The message `timeline.day-off`.
+pub const TIMELINE_DAY_OFF: MessageKey = MessageKey::new("timeline.day-off");
 
 /// The message `timeline.earlier`.
 pub const TIMELINE_EARLIER: MessageKey = MessageKey::new("timeline.earlier");
@@ -8609,6 +8624,9 @@ pub const TIMELINE_LEGEND_DUE: MessageKey = MessageKey::new("timeline.legend-due
 
 /// The message `timeline.legend-goal`.
 pub const TIMELINE_LEGEND_GOAL: MessageKey = MessageKey::new("timeline.legend-goal");
+
+/// The message `timeline.legend-holiday`.
+pub const TIMELINE_LEGEND_HOLIDAY: MessageKey = MessageKey::new("timeline.legend-holiday");
 
 /// The message `timeline.locked-here`.
 pub const TIMELINE_LOCKED_HERE: MessageKey = MessageKey::new("timeline.locked-here");
@@ -8640,8 +8658,20 @@ pub const TIMELINE_NOT_SCHEDULED_NONE: MessageKey = MessageKey::new("timeline.no
 /// The message `timeline.open`.
 pub const TIMELINE_OPEN: MessageKey = MessageKey::new("timeline.open");
 
+/// The message `timeline.phone-list`.
+pub const TIMELINE_PHONE_LIST: MessageKey = MessageKey::new("timeline.phone-list");
+
+/// The message `timeline.phone-sheet`.
+pub const TIMELINE_PHONE_SHEET: MessageKey = MessageKey::new("timeline.phone-sheet");
+
 /// The message `timeline.plan-by-effort`.
 pub const TIMELINE_PLAN_BY_EFFORT: MessageKey = MessageKey::new("timeline.plan-by-effort");
+
+/// The message `timeline.preview-move`.
+pub const TIMELINE_PREVIEW_MOVE: MessageKey = MessageKey::new("timeline.preview-move");
+
+/// The message `timeline.preview-nothing`.
+pub const TIMELINE_PREVIEW_NOTHING: MessageKey = MessageKey::new("timeline.preview-nothing");
 
 /// The message `timeline.save-dates`.
 pub const TIMELINE_SAVE_DATES: MessageKey = MessageKey::new("timeline.save-dates");
@@ -8664,8 +8694,26 @@ pub const TIMELINE_START_FIELD: MessageKey = MessageKey::new("timeline.start-fie
 /// The message `timeline.today`.
 pub const TIMELINE_TODAY: MessageKey = MessageKey::new("timeline.today");
 
+/// The message `timeline.warning-sign`.
+pub const TIMELINE_WARNING_SIGN: MessageKey = MessageKey::new("timeline.warning-sign");
+
+/// The message `timeline.warnings-closing`.
+pub const TIMELINE_WARNINGS_CLOSING: MessageKey = MessageKey::new("timeline.warnings-closing");
+
+/// The message `timeline.warnings-none`.
+pub const TIMELINE_WARNINGS_NONE: MessageKey = MessageKey::new("timeline.warnings-none");
+
+/// The message `timeline.warnings-title`.
+pub const TIMELINE_WARNINGS_TITLE: MessageKey = MessageKey::new("timeline.warnings-title");
+
 /// The message `timeline.which-way`.
 pub const TIMELINE_WHICH_WAY: MessageKey = MessageKey::new("timeline.which-way");
+
+/// The message `timeline.worked-out-due`.
+pub const TIMELINE_WORKED_OUT_DUE: MessageKey = MessageKey::new("timeline.worked-out-due");
+
+/// The message `timeline.worked-out-start`.
+pub const TIMELINE_WORKED_OUT_START: MessageKey = MessageKey::new("timeline.worked-out-start");
 
 /// The message `timeline.zoom`.
 pub const TIMELINE_ZOOM: MessageKey = MessageKey::new("timeline.zoom");
@@ -17531,6 +17579,15 @@ pub fn time_work_day_too_text(issue: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `timeline.accepted`.
+#[must_use]
+pub fn timeline_accepted(key: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.accepted"),
+        vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
 /// The message `timeline.add-dependency-title`.
 #[must_use]
 pub fn timeline_add_dependency_title(key: impl std::fmt::Display) -> Message {
@@ -17558,6 +17615,15 @@ pub fn timeline_amount_weeks(count: i64) -> Message {
     )
 }
 
+/// The message `timeline.assigned`.
+#[must_use]
+pub fn timeline_assigned(people: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.assigned"),
+        vec![("people", Value::Text(people.to_string()))],
+    )
+}
+
 /// The message `timeline.bar`.
 #[must_use]
 pub fn timeline_bar(
@@ -17571,6 +17637,18 @@ pub fn timeline_bar(
             ("days", Value::Text(days.to_string())),
             ("key", Value::Text(key.to_string())),
             ("title", Value::Text(title.to_string())),
+        ],
+    )
+}
+
+/// The message `timeline.bar-with`.
+#[must_use]
+pub fn timeline_bar_with(bar: impl std::fmt::Display, more: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.bar-with"),
+        vec![
+            ("bar", Value::Text(bar.to_string())),
+            ("more", Value::Text(more.to_string())),
         ],
     )
 }
@@ -17635,6 +17713,47 @@ pub fn timeline_drag_issue(key: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `timeline.effort-days`.
+#[must_use]
+pub fn timeline_effort_days(
+    days: i64,
+    estimate: impl std::fmt::Display,
+    factor: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.effort-days"),
+        vec![
+            ("days", Value::Number(days)),
+            ("estimate", Value::Text(estimate.to_string())),
+            ("factor", Value::Text(factor.to_string())),
+        ],
+    )
+}
+
+/// The message `timeline.estimate-days`.
+#[must_use]
+pub fn timeline_estimate_days(days: i64, estimate: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.estimate-days"),
+        vec![
+            ("days", Value::Number(days)),
+            ("estimate", Value::Text(estimate.to_string())),
+        ],
+    )
+}
+
+/// The message `timeline.given`.
+#[must_use]
+pub fn timeline_given(key: impl std::fmt::Display, name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.given"),
+        vec![
+            ("key", Value::Text(key.to_string())),
+            ("name", Value::Text(name.to_string())),
+        ],
+    )
+}
+
 /// The message `timeline.goal`.
 #[must_use]
 pub fn timeline_goal(days: impl std::fmt::Display, key: impl std::fmt::Display) -> Message {
@@ -17659,12 +17778,51 @@ pub fn timeline_goal_due(day: impl std::fmt::Display, key: impl std::fmt::Displa
     )
 }
 
+/// The message `timeline.hatched-on`.
+#[must_use]
+pub fn timeline_hatched_on(days: impl std::fmt::Display, what: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.hatched-on"),
+        vec![
+            ("days", Value::Text(days.to_string())),
+            ("what", Value::Text(what.to_string())),
+        ],
+    )
+}
+
+/// The message `timeline.holiday`.
+#[must_use]
+pub fn timeline_holiday(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.holiday"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
 /// The message `timeline.locked`.
 #[must_use]
 pub fn timeline_locked(key: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("timeline.locked"),
         vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
+/// The message `timeline.move-them`.
+#[must_use]
+pub fn timeline_move_them(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.move-them"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `timeline.moved-after`.
+#[must_use]
+pub fn timeline_moved_after(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.moved-after"),
+        vec![("count", Value::Number(count))],
     )
 }
 
@@ -17738,12 +17896,63 @@ pub fn timeline_other_chosen(key: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `timeline.person-more`.
+#[must_use]
+pub fn timeline_person_more(
+    count: impl std::fmt::Display,
+    name: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.person-more"),
+        vec![
+            ("count", Value::Text(count.to_string())),
+            ("name", Value::Text(name.to_string())),
+        ],
+    )
+}
+
 /// The message `timeline.person-on-bar`.
 #[must_use]
 pub fn timeline_person_on_bar(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("timeline.person-on-bar"),
         vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `timeline.planned-with`.
+#[must_use]
+pub fn timeline_planned_with(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.planned-with"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `timeline.preview-line`.
+#[must_use]
+pub fn timeline_preview_line(key: impl std::fmt::Display, to: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.preview-line"),
+        vec![
+            ("key", Value::Text(key.to_string())),
+            ("to", Value::Text(to.to_string())),
+        ],
+    )
+}
+
+/// The message `timeline.preview-longer`.
+#[must_use]
+pub fn timeline_preview_longer(
+    day: impl std::fmt::Display,
+    key: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.preview-longer"),
+        vec![
+            ("day", Value::Text(day.to_string())),
+            ("key", Value::Text(key.to_string())),
+        ],
     )
 }
 
@@ -17843,6 +18052,50 @@ pub fn timeline_waits(key: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("timeline.waits"),
         vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
+/// The message `timeline.warning-accepted`.
+#[must_use]
+pub fn timeline_warning_accepted(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.warning-accepted"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `timeline.warnings`.
+#[must_use]
+pub fn timeline_warnings(count: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.warnings"),
+        vec![("count", Value::Text(count.to_string()))],
+    )
+}
+
+/// The message `timeline.warnings-of`.
+#[must_use]
+pub fn timeline_warnings_of(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.warnings-of"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `timeline.work-time`.
+#[must_use]
+pub fn timeline_work_time(
+    project: impl std::fmt::Display,
+    share: impl std::fmt::Display,
+    usual: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.work-time"),
+        vec![
+            ("project", Value::Text(project.to_string())),
+            ("share", Value::Text(share.to_string())),
+            ("usual", Value::Text(usual.to_string())),
+        ],
     )
 }
 
@@ -26025,6 +26278,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("time.work-day.too-title", "Start your work day too?"),
     ("time.work-day.too-yes", "Start work day"),
+    (
+        "timeline.accepted",
+        "The warning on {key} is kept and accepted.",
+    ),
     ("timeline.add-dependency", "Add dependency…"),
     ("timeline.add-dependency-title", "Add dependency to {key}"),
     ("timeline.add-it", "Add dependency"),
@@ -26036,10 +26293,17 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "timeline.amount-weeks",
         "{count, plural, one {# week} other {# weeks}}",
     ),
+    ("timeline.assigned", "Assigned to: {people}"),
+    ("timeline.away", "Away"),
+    ("timeline.away-afternoon", "Away in the afternoon"),
+    ("timeline.away-morning", "Away in the morning"),
     ("timeline.bar", "{key} {title}, {days}"),
+    ("timeline.bar-with", "{bar}. {more}"),
     ("timeline.card", "Selected: {key}"),
+    ("timeline.change-due", "Change the due date"),
     ("timeline.chart", "Timeline"),
     ("timeline.dates-changed", "{key} now runs {dates}"),
+    ("timeline.day-off", "Not a work day"),
     ("timeline.days", "{first} to {last}"),
     (
         "timeline.dependency-made",
@@ -26048,12 +26312,23 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("timeline.drag-issue", "Drag {key} onto the timeline"),
     ("timeline.earlier", "Earlier"),
     (
+        "timeline.effort-days",
+        "Estimate {estimate} · {factor} = {days, plural, one {# work day} other {# work days}}",
+    ),
+    (
         "timeline.empty",
         "No issue of this search has a date yet. Give one dates from Not scheduled yet.",
     ),
     ("timeline.end-field", "Bars end at"),
+    (
+        "timeline.estimate-days",
+        "Estimate {estimate} = {days, plural, one {# work day} other {# work days}}",
+    ),
+    ("timeline.given", "{key} now goes to {name}"),
     ("timeline.goal", "Goal {key}, {days}"),
     ("timeline.goal-due", "Due date of {key}: {day}"),
+    ("timeline.hatched-on", "{what}: {days}"),
+    ("timeline.holiday", "Holiday: {name}"),
     (
         "timeline.keys",
         "Arrow keys move a selected bar by a day, with Shift by a week. Alt with an arrow key moves its due date, Alt and Shift with an arrow key its start date.",
@@ -26061,12 +26336,21 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("timeline.later", "Later"),
     ("timeline.legend-due", "Due date of a goal"),
     ("timeline.legend-goal", "Goal over its sub-issues"),
+    ("timeline.legend-holiday", "Holiday"),
     ("timeline.locked", "You may not change the dates of {key}."),
     (
         "timeline.locked-here",
         "You may not change the dates of this issue.",
     ),
     ("timeline.more-issues", "Show more issues"),
+    (
+        "timeline.move-them",
+        "Move {count, plural, one {it} other {all #}}",
+    ),
+    (
+        "timeline.moved-after",
+        "{count, plural, one {# issue moved} other {# issues moved}}",
+    ),
     (
         "timeline.moved-earlier",
         "{key} moved {amount} earlier, now {dates}",
@@ -26096,8 +26380,16 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("timeline.open", "Open"),
     ("timeline.other-chosen", "Chosen: {key}"),
+    ("timeline.person-more", "{name} +{count}"),
     ("timeline.person-on-bar", "Person on the bar: {name}"),
+    ("timeline.phone-list", "Issues on the timeline"),
+    ("timeline.phone-sheet", "Selected issue"),
     ("timeline.plan-by-effort", "Plan by effort"),
+    ("timeline.planned-with", "Planned with {name}'s work times"),
+    ("timeline.preview-line", "{key}: {to}"),
+    ("timeline.preview-longer", "{key} gets the due date {day}."),
+    ("timeline.preview-move", "What moves"),
+    ("timeline.preview-nothing", "Nothing would move."),
     ("timeline.save-dates", "Save dates"),
     ("timeline.saved-both", "from {start} to {end}"),
     ("timeline.saved-end", "until {end}"),
@@ -26114,7 +26406,29 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("timeline.start-field", "Bars start at"),
     ("timeline.today", "Today"),
     ("timeline.waits", "{key} comes after"),
+    ("timeline.warning-accepted", "Accepted by {name}"),
+    ("timeline.warning-sign", "Plan warning"),
+    ("timeline.warnings", "Warnings ({count})"),
+    (
+        "timeline.warnings-closing",
+        "Away times show only as Away. Bugaboo never suggests whom to give an issue.",
+    ),
+    ("timeline.warnings-none", "The plan has no warnings."),
+    (
+        "timeline.warnings-of",
+        "{count, plural, one {# plan warning} other {# plan warnings}}",
+    ),
+    ("timeline.warnings-title", "Plan warnings"),
     ("timeline.which-way", "Order"),
+    ("timeline.work-time", "{usual} · {share} in {project}"),
+    (
+        "timeline.worked-out-due",
+        "Plan by effort works out its due date; nothing is saved.",
+    ),
+    (
+        "timeline.worked-out-start",
+        "Plan by effort works out its start date; nothing is saved.",
+    ),
     ("timeline.zoom", "Zoom"),
     ("timeline.zoom-day", "Days"),
     ("timeline.zoom-month", "Months"),

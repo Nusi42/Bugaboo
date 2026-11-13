@@ -859,8 +859,25 @@ export const messages = {
   "editing.this-theme": "this theme",
   "theme-editor.preview": "Preview",
   "editing.is-editing-now": "{name} is editing {thing} right now",
+  "plan-warning.away": "{person} is away {days}, while {issue} is planned with their work times.",
+  "plan-warning.away-hidden": "The assigned person is away {days}, while {issue} is planned.",
+  "plan-warning.not-enough-days":
+    "{issue} needs {needs, plural, one {# work day} other {# work days}}; there {has, plural, one {is # work day} other {are # work days}} before its due date.",
+  "plan-warning.delay":
+    "{first} now ends {days, plural, =0 {on the day} one {# day after} other {# days after}} {issue} starts, and {issue} waits for it.",
+  "plan-warning.delay-goal":
+    "{sub_issue} now ends {days, plural, one {# day} other {# days}} after the due date of {issue}.",
+  "plan-warning.too-much-at-once":
+    "{person} has {planned} planned on {day} in {project}; the share there is {can}.",
+  "plan-way-out.move-it-after": "Move it after",
+  "plan-way-out.make-it-longer": "Make it longer",
+  "plan-way-out.give-to-someone-else": "Give it to someone else…",
+  "plan-way-out.keep-and-accept": "Keep and accept",
   "issue-field.time-factor": "Time factor",
   "issues.time-factor-value": "×{factor}",
+  "issues.time-factor-own": "{factor} · {name}'s own estimate",
+  "issues.time-factor-estimate": "Estimate {estimate}",
+  "issues.time-factor-sum": "Estimate {estimate} · {factor} = {total}",
   "notification.kind.time-factor-changed": "Your time factor was changed",
   "notifications.time-factor-changed": "{who} changed your time factor on this issue",
 } as const;

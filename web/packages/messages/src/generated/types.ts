@@ -558,6 +558,18 @@ export interface MessageArguments {
   "person.roles-none": { name: string | number };
   "person.via-app": { app: string | number; who: string | number };
   "person.work-times-intro": { name: string | number };
+  "plan-warning.away": { days: string | number; issue: string | number; person: string | number };
+  "plan-warning.away-hidden": { days: string | number; issue: string | number };
+  "plan-warning.delay": { days: number; first: string | number; issue: string | number };
+  "plan-warning.delay-goal": { days: number; issue: string | number; sub_issue: string | number };
+  "plan-warning.not-enough-days": { has: number; issue: string | number; needs: number };
+  "plan-warning.too-much-at-once": {
+    can: string | number;
+    day: string | number;
+    person: string | number;
+    planned: string | number;
+    project: string | number;
+  };
   "preview.line-changes": { after: string | number; field: string | number };
   "preview.summary": { changed: number; skipped: number };
   "project-members.also-in": { projects: string | number };
@@ -897,18 +909,28 @@ export interface MessageArguments {
   "time.work-day.timer-text": { issue: string | number };
   "time.work-day.timer-title": { issue: string | number };
   "time.work-day.too-text": { issue: string | number };
+  "timeline.accepted": { key: string | number };
   "timeline.add-dependency-title": { key: string | number };
   "timeline.amount-days": { count: number };
   "timeline.amount-weeks": { count: number };
+  "timeline.assigned": { people: string | number };
   "timeline.bar": { days: string | number; key: string | number; title: string | number };
+  "timeline.bar-with": { bar: string | number; more: string | number };
   "timeline.card": { key: string | number };
   "timeline.dates-changed": { dates: string | number; key: string | number };
   "timeline.days": { first: string | number; last: string | number };
   "timeline.dependency-made": { first: string | number; waiting: string | number };
   "timeline.drag-issue": { key: string | number };
+  "timeline.effort-days": { days: number; estimate: string | number; factor: string | number };
+  "timeline.estimate-days": { days: number; estimate: string | number };
+  "timeline.given": { key: string | number; name: string | number };
   "timeline.goal": { days: string | number; key: string | number };
   "timeline.goal-due": { day: string | number; key: string | number };
+  "timeline.hatched-on": { days: string | number; what: string | number };
+  "timeline.holiday": { name: string | number };
   "timeline.locked": { key: string | number };
+  "timeline.move-them": { count: number };
+  "timeline.moved-after": { count: number };
   "timeline.moved-earlier": {
     amount: string | number;
     dates: string | number;
@@ -919,7 +941,11 @@ export interface MessageArguments {
   "timeline.no-value": { field: string | number };
   "timeline.not-scheduled-count": { count: number };
   "timeline.other-chosen": { key: string | number };
+  "timeline.person-more": { count: string | number; name: string | number };
   "timeline.person-on-bar": { name: string | number };
+  "timeline.planned-with": { name: string | number };
+  "timeline.preview-line": { key: string | number; to: string | number };
+  "timeline.preview-longer": { day: string | number; key: string | number };
   "timeline.saved-both": { end: string | number; start: string | number };
   "timeline.saved-end": { end: string | number };
   "timeline.saved-start": { start: string | number };
@@ -929,6 +955,14 @@ export interface MessageArguments {
   "timeline.set-dates-of": { key: string | number };
   "timeline.set-dates-title": { key: string | number };
   "timeline.waits": { key: string | number };
+  "timeline.warning-accepted": { name: string | number };
+  "timeline.warnings": { count: string | number };
+  "timeline.warnings-of": { count: number };
+  "timeline.work-time": {
+    project: string | number;
+    share: string | number;
+    usual: string | number;
+  };
   "work-times.away-added": { days: string | number };
   "work-times.away-change-name": { days: string | number };
   "work-times.away-changed": { days: string | number };
