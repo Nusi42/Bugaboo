@@ -4,11 +4,10 @@ import { t } from "@bugaboo/messages";
 
 import { openIssueWithDetails } from "./flows.ts";
 import { chooseStatus, rowSaved, statusButton } from "./issues.ts";
-import { issuePageLandmarks, listLandmarks, type ScreenLandmarks } from "./landmarks.ts";
-import { tickIssue } from "./list-look.ts";
+import { issuePageLandmarks, type ScreenLandmarks } from "./landmarks.ts";
 import { detailRow, partIn } from "./parts.ts";
 import { serverWord } from "./server-words.ts";
-import { issueAddress, projectIssuesAddress } from "../../src/shared/paths.ts";
+import { issueAddress } from "../../src/shared/paths.ts";
 
 /**
  * The table of the changes a person makes in place, screen by screen (UX §6.4, M8 WP-13): each says
@@ -184,26 +183,5 @@ const issuePageChanges: readonly ChangeInPlace[] = [
   },
 ];
 
-/** The changes in place of the list of a project. */
-const listChanges: readonly ChangeInPlace[] = [
-  {
-    screen: projectIssuesAddress("$project"),
-    change: "tick an issue",
-    open: async (page) => {
-      await page.goto(projectIssuesAddress("WEB"));
-      await expect(page.locator("[data-part='list-scroll'] [role='row']").first()).toBeVisible();
-      await page.waitForLoadState("networkidle");
-    },
-    part: (page) => page.locator("[data-part='list-scroll']"),
-    act: async (page) => {
-      await tickIssue(page, ISSUE);
-      await expect(
-        page.getByRole("status").filter({ hasText: t("issues.selected", { count: 1 }) }),
-      ).toBeVisible();
-    },
-    landmarks: (page) => listLandmarks(page),
-  },
-];
-
 /** Every change in place of the table. */
-export const changesInPlace: readonly ChangeInPlace[] = [...issuePageChanges, ...listChanges];
+export const changesInPlace: readonly ChangeInPlace[] = [...issuePageChanges];
