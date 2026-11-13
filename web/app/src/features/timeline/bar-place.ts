@@ -24,7 +24,8 @@ export function useBarPlace(
 /**
  * Whether the label of a bar stands before it: there is too little room after the bar for the label
  * as it is drawn (`label`, its measured width), before the end of the chart or of the days on
- * screen, and room for it before the bar, after the start of the days on screen.
+ * screen, and room for it before the bar, after the start of the days on screen and clear of the
+ * Today line.
  */
 function labelGoesBefore(
   timeline: Pick<TimelineContextValue, "span" | "dayPixels">,
@@ -39,7 +40,11 @@ function labelGoesBefore(
   const start = placeOf(timeline.span, shown.first) * timeline.dayPixels;
   const end = (placeOf(timeline.span, shown.last) + 1) * timeline.dayPixels;
   const after = Math.min(timeline.span.days * timeline.dayPixels, view.end) - end;
-  return after < room && start - Math.max(0, view.start) >= room;
+  // A label never crosses the Today line (UX §4.7): before the bar only where the line is not in
+  // its way.
+  const today = view.today === undefined ? undefined : view.today + timeline.dayPixels / 2;
+  const clearOfToday = today === undefined || today <= start - room || today >= start;
+  return after < room && start - Math.max(0, view.start) >= room && clearOfToday;
 }
 
 /**

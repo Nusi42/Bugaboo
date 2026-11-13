@@ -1,6 +1,6 @@
 import { t } from "@bugaboo/messages";
 import { part, partOf, pixelsOf } from "@bugaboo/ui";
-import { useId } from "react";
+import { useId, useMemo } from "react";
 
 import { ChartBackdrop, type ChartBackdropProps } from "./ChartBackdrop.tsx";
 import type { GroupLine, Line } from "./lines.ts";
@@ -22,7 +22,12 @@ export interface TimelineChartProps extends ChartBackdropProps {
 export function TimelineChart({ lines, groupName, onToggle, ...backdrop }: TimelineChartProps) {
   const { canvas, drop, rowPixels, dayPixels, zoom } = useCanvas(lines.length);
   const { box, visible } = useVisibleRows(lines.length, rowPixels, pixelsOf("size-timeline-head"));
-  useDayInView(box, backdrop.today === undefined ? undefined : backdrop.today * dayPixels);
+  const todayPixels = backdrop.today === undefined ? undefined : backdrop.today * dayPixels;
+  useDayInView(box, todayPixels);
+  const view = useMemo(
+    () => ({ ...visible.view, today: todayPixels }),
+    [visible.view, todayPixels],
+  );
   const described = { keys: useId(), locked: useId() };
   return (
     <div ref={box} {...partOf(part.timelineScroll)}>
@@ -35,7 +40,7 @@ export function TimelineChart({ lines, groupName, onToggle, ...backdrop }: Timel
         {...drop.dropProps}
       >
         <ChartBackdrop {...backdrop} />
-        <ChartViewContext.Provider value={visible.view}>
+        <ChartViewContext.Provider value={view}>
           <ul {...partOf(part.timelineRows)} aria-label={t("timeline.chart")}>
             {lines.slice(visible.first, visible.last + 1).map((line, index) => (
               <TimelineLine

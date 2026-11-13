@@ -737,6 +737,7 @@ bold reason="Bold is kept for the titles, the headings of sections, the words of
     selector "top-bar.title" role="title"
     selector "card.heading" role="title"
     selector "bottom-sheet.title" role="title"
+    selector "assigned-picker picker.legend" role="title"
     selector "issue-details.heading" role="section"
     selector "issue-section.title" role="section"
     selector "form-section.title" role="section"
@@ -3823,6 +3824,16 @@ part "assigned-picker" {
     flex-direction column
     gap "$space-3"
     padding "$space-4"
+}
+
+// The legend of the picker of a person is the title of its dialog (UX §7.3: 20, bold).
+part "assigned-picker picker.legend" {
+    margin-block-end 0
+    color "$fg"
+    font-size "$fs-lg"
+    line-height "$lh-snug"
+    font-family "$font-display"
+    font-weight "$weight-bold"
 }
 
 // The search box and the rows fill the width of the picker; *Done* keeps its own width at the start.

@@ -2760,6 +2760,15 @@ textarea,
   padding: var(--space-4);
 }
 
+[data-part="assigned-picker"] [data-part="picker.legend"] {
+  margin-block-end: 0;
+  color: var(--fg);
+  font-size: var(--fs-lg);
+  line-height: var(--lh-snug);
+  font-family: var(--font-display);
+  font-weight: var(--weight-bold);
+}
+
 [data-part="assigned-picker"] > [data-part="button"] {
   align-self: flex-start;
 }

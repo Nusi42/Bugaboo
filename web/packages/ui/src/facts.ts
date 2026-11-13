@@ -12,3 +12,9 @@ export const factJoiner = ` ${factMark}`;
  * for one: a word joiner and a space that does not break, so a line never starts with the mark.
  */
 export const factJoinerHeld = `\u2060\u00A0${factMark}`;
+
+/**
+ * The same where the mark must stay with what follows it, two facts that each are held together: a
+ * space that may break and a space after the mark that does not, so a line never ends with the mark.
+ */
+export const factJoinerLeading = ` ${factSeparator}\u00A0`;

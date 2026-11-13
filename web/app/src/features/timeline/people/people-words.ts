@@ -1,13 +1,9 @@
 import { t } from "@bugaboo/messages";
 
-import { unbroken } from "../../../shared/format.ts";
-import { detailsText, listText } from "../../../shared/list-text.ts";
-import { percentText } from "../../../shared/number.ts";
+import { listText } from "../../../shared/list-text.ts";
 import { minutesText } from "../../../shared/own-value-text.ts";
 import { personName } from "../../../shared/person.ts";
-import type { FirstDay } from "../../../shared/region.ts";
 import { AS_ESTIMATED, factorText } from "../../../shared/time-factor-text.ts";
-import { usualSummary, weekOf } from "../../work-times/index.ts";
 import type { TimelineRow } from "../timeline-data.ts";
 
 /**
@@ -72,16 +68,4 @@ export function effortText(bar: Bar): string | undefined {
     : sum;
 }
 
-/**
- * The person's time on a bar: "Mon–Fri, 8h a day · 100 % in Mobile app", as far as the reader may
- * know it. The line breaks only between its two parts.
- */
-export function workTimeText(bar: Bar, project: string, firstDay: FirstDay): string | undefined {
-  const time = bar.work_time;
-  return time === null
-    ? undefined
-    : detailsText([
-        unbroken(usualSummary(weekOf(firstDay), time.usual)),
-        unbroken(t("timeline.work-share", { share: percentText(time.share), project })),
-      ]);
-}
+export { workTimeText } from "./work-time-words.ts";
