@@ -2,7 +2,7 @@ import { type Page } from "@playwright/test";
 
 // What the measure of movement (`movement.ts`) records in the page, frame by frame.
 
-/** Where a box stands and how big it is, in whole pixels. */
+/** Where a box stands and how big it is, in pixels, as the browser lays it out (not rounded). */
 export interface Box {
   readonly x: number;
   readonly y: number;
@@ -10,12 +10,17 @@ export interface Box {
   readonly height: number;
 }
 
+/** One element that a layout shift moved: the part it is (or its tag), and the landmarks it stands in. */
+export interface ShiftSource {
+  readonly part: string;
+  readonly within: readonly string[];
+}
+
 /** One entry of the browser's record of layout shifts. */
 export interface Shift {
   readonly value: number;
   readonly afterInput: boolean;
-  /** What shifted, by the part each element is (or its tag when it is no part). */
-  readonly parts: readonly string[];
+  readonly sources: readonly ShiftSource[];
 }
 
 /** What the page wrote down in every frame. */
@@ -32,55 +37,84 @@ const GREY_SHAPE = '[data-part="skeleton.line"]';
 export const SHIFTS_DONE = "data-movement-shifts-done";
 export const DONE_MARK = "data-movement-done";
 
+/** The attribute that names, on its element, each landmark an element is (names apart by `|`). */
+const STAMP = "data-movement-landmarks";
+
+/** Names each landmark on its element, so a shift can say which landmarks its elements stand in. */
+export async function stampLandmarks(
+  page: Page,
+  landmarks: readonly (readonly [string, string])[],
+): Promise<void> {
+  await page.evaluate(
+    ([stamp, named]) => {
+      for (const element of document.querySelectorAll(`[${stamp}]`)) {
+        element.removeAttribute(stamp);
+      }
+      for (const [name, selector] of named) {
+        const element = document.querySelector(selector);
+        const before = element?.getAttribute(stamp);
+        element?.setAttribute(
+          stamp,
+          before === null || before === undefined ? name : `${before}|${name}`,
+        );
+      }
+    },
+    [STAMP, landmarks] as const,
+  );
+}
+
 /**
  * The browser's record of layout shifts from now until the mark is set, where it keeps one (WebKit
- * keeps none, and its answer is empty).
+ * keeps none, and its answer is empty). Each element that shifted is named with the landmarks it
+ * stands in (`stampLandmarks`), so a shift inside a part that may move can be told apart.
  */
 export function recordShifts(page: Page): Promise<readonly Shift[]> {
   return page.evaluate(
-    (mark: string) =>
+    ([mark, stamp]) =>
       new Promise<readonly Shift[]>((done) => {
         const shifts: Shift[] = [];
         const noted = (entries: readonly Readonly<PerformanceEntry>[]): void => {
           for (const entry of entries) {
-            const sources: unknown = Reflect.get(entry, "sources");
-            const parts: string[] = [];
-            for (const source of Array.isArray(sources) ? (sources as readonly unknown[]) : []) {
-              const node: unknown =
-                typeof source === "object" && source !== null
-                  ? Reflect.get(source, "node")
-                  : undefined;
-              parts.push(
-                node instanceof HTMLElement ? (node.dataset.part ?? node.tagName) : "text",
-              );
+            const listed: unknown = Reflect.get(entry, "sources");
+            const sources: ShiftSource[] = [];
+            for (const source of Array.isArray(listed) ? (listed as readonly object[]) : []) {
+              const node: unknown = Reflect.get(source, "node");
+              const within: string[] = [];
+              let at = node instanceof Element ? node : null;
+              while (at !== null) {
+                within.push(...(at.getAttribute(stamp)?.split("|") ?? []));
+                at = at.parentElement;
+              }
+              const part =
+                node instanceof HTMLElement ? (node.dataset.part ?? node.tagName) : "text";
+              sources.push({ part, within });
             }
-            shifts.push({
-              value: Number(Reflect.get(entry, "value")),
-              afterInput: Reflect.get(entry, "hadRecentInput") === true,
-              parts,
-            });
+            const [value, afterInput] = [
+              Number(Reflect.get(entry, "value")),
+              Reflect.get(entry, "hadRecentInput") === true,
+            ];
+            shifts.push({ value, afterInput, sources });
           }
         };
-        const supported = PerformanceObserver.supportedEntryTypes.includes("layout-shift");
         const observer = new PerformanceObserver((list: Readonly<PerformanceObserverEntryList>) => {
           noted(list.getEntries());
         });
-        if (supported) {
+        if (PerformanceObserver.supportedEntryTypes.includes("layout-shift")) {
           observer.observe({ type: "layout-shift" });
         }
         const wait = (): void => {
-          if (document.documentElement.hasAttribute(mark)) {
-            document.documentElement.removeAttribute(mark);
-            noted(observer.takeRecords());
-            observer.disconnect();
-            done(shifts);
-          } else {
+          if (!document.documentElement.hasAttribute(mark)) {
             requestAnimationFrame(wait);
+            return;
           }
+          document.documentElement.removeAttribute(mark);
+          noted(observer.takeRecords());
+          observer.disconnect();
+          done(shifts);
         };
         requestAnimationFrame(wait);
       }),
-    SHIFTS_DONE,
+    [SHIFTS_DONE, STAMP] as const,
   );
 }
 
@@ -101,18 +135,13 @@ export function recordFrames(page: Page, selectors: readonly string[]): Promise<
             boxes.push(
               box === undefined || (box.width === 0 && box.height === 0)
                 ? null
-                : {
-                    x: Math.round(box.x),
-                    y: Math.round(box.y),
-                    width: Math.round(box.width),
-                    height: Math.round(box.height),
-                  },
+                : { x: box.x, y: box.y, width: box.width, height: box.height },
             );
           }
-          let scrolls = `page:${String(Math.round(window.scrollY))}`;
+          let scrolls = `page:${String(window.scrollY)}`;
           for (const each of document.querySelectorAll<HTMLElement>("[data-part]")) {
             if (each.scrollTop > 0 || each.scrollLeft > 0) {
-              scrolls += ` ${each.dataset.part ?? ""}:${String(Math.round(each.scrollTop))}/${String(Math.round(each.scrollLeft))}`;
+              scrolls += ` ${each.dataset.part ?? ""}:${String(each.scrollTop)}/${String(each.scrollLeft)}`;
             }
           }
           frames.boxes.push(boxes);

@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
+import { type Page } from "@playwright/test";
 
 import { ada } from "./support/accounts.ts";
-import { descriptionBox } from "./support/description.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openIssueWithDetails, signIn } from "./support/flows.ts";
 import {
@@ -12,9 +12,14 @@ import {
   titleLabel,
   webIssues,
 } from "./support/issues.ts";
-import { expectFocusIn, issuePageLandmarks, listLandmarks } from "./support/landmarks.ts";
+import {
+  expectFocusIn,
+  issuePageLandmarks,
+  listLandmarks,
+  newIssueWindowLandmarks,
+} from "./support/landmarks.ts";
 import { rowOf } from "./support/list-look.ts";
-import { expectStill, landmarkOf, movementWhile } from "./support/movement.ts";
+import { expectStill, movementWhile } from "./support/movement.ts";
 import { projectIssuesAddress } from "../src/shared/paths.ts";
 
 // Nothing moves under the cursor (UX §6, M8 WP-13): a change a person makes changes only what they
@@ -37,58 +42,68 @@ test("ux_01_adding_and_removing_a_tag_moves_nothing_else_on_the_issue_page", asy
     await tags.getByRole("button", { name: t("labels.add-tag-button"), exact: true }).click();
     await expect(tags.getByText(new RegExp(`^${t("save.saved")}`, "u"))).toBeVisible();
   });
-  expectStill(added, still.below);
+  expectStill(added, { follows: still.below });
   await expectFocusIn(tags);
   const removed = await movementWhile(page, still.all, async () => {
     await tags.getByRole("button", { name: t("labels.take-off", { name: "fresh" }) }).click();
     await expect(tags.getByText("fresh", { exact: true })).toHaveCount(0);
   });
-  expectStill(removed, still.below);
+  expectStill(removed, { follows: still.below });
   await expectFocusIn(tags);
 });
 
-test("ux_01_creating_an_issue_moves_nothing_on_the_list_but_the_new_row", async ({ page }) => {
+/** Opens the list of WEB and the new-issue window over it, once its form is whole, and gives the title box. */
+async function openTheWindowOverTheList(page: Page) {
   await signIn(page, ada);
   await page.goto(projectIssuesAddress("WEB"));
   await expect(rowOf(page, webIssues.typo)).toBeVisible();
-  const list = await listLandmarks(page, Object.values(webIssues));
   await openNewIssueDialog(page);
-  // The window is measured once its form is whole: how it opens is the window's own test.
-  await expect(descriptionBox(newIssueDialog(page))).toBeVisible();
-  // The fields of the layout of the type are there too (WebKit can take seconds to read them).
+  // The window is measured once its form is whole, with the fields of the layout of the type (WebKit
+  // can take seconds to read them): how it opens is the window's own test.
   await expect(
     newIssueDialog(page).getByLabel(t("issue-field.priority"), { exact: true }),
   ).toBeVisible();
-  const title = newIssueDialog(page).getByLabel(titleLabel(), { exact: true });
+  return newIssueDialog(page).getByLabel(titleLabel(), { exact: true });
+}
+
+test("ux_01_creating_an_issue_moves_nothing_on_the_list_but_the_new_row", async ({ page }) => {
+  const title = await openTheWindowOverTheList(page);
+  const list = await listLandmarks(page, Object.values(webIssues));
   await title.fill("The first of two");
-  const box = await landmarkOf(title, "the title box of the window");
   const another = newIssueDialog(page).getByRole("button", {
     name: t("issues.create-another"),
     exact: true,
   });
   // On a phone the button stands at the end of the form: the person scrolls to it first.
   await another.scrollIntoViewIfNeeded();
+  const window = await newIssueWindowLandmarks(title);
   // *Create the issue and start another*: the new row comes in where it belongs, the rest stands.
-  const madeAnother = await movementWhile(page, [...list.all, box], async () => {
+  const madeAnother = await movementWhile(page, [...list.all, ...window.all], async () => {
     await another.click();
     await expect(rowOf(page, "The first of two")).toBeVisible();
   });
-  expectStill(madeAnother, list.below);
+  expectStill(madeAnother, { follows: [...list.below, ...window.below], scrolls: window.scrolls });
   await expectFocusIn(title);
-  // Typing the next title moves nothing in the window (on a phone the person scrolls back up to it).
-  await title.scrollIntoViewIfNeeded();
-  const typing = await movementWhile(page, [box], async () => {
+  await expect(title).toBeInViewport();
+  // Typing the next title moves nothing in the window but the note of what is missing in the footer.
+  const typing = await movementWhile(page, window.all, async () => {
     await title.fill("The second of two");
   });
-  expectStill(typing);
-  // *Create the issue* opens it, read before it opens: the page does not scroll and does not jump.
-  // Parts it reads for the first time may show grey shapes after 0.3 s (UX §6.1), so only the scroll
-  // is held here.
+  expectStill(typing, { follows: window.below });
+});
+
+test("ux_01 Create the issue opens it read already, without a scroll or a jump", async ({
+  page,
+}) => {
+  const title = await openTheWindowOverTheList(page);
+  await title.fill("Opened whole");
+  // Parts the page reads for the first time may show grey shapes after 0.3 s (UX §6.1), so only the
+  // scroll is held here.
   const created = await movementWhile(page, [], async () => {
     await newIssueDialog(page)
       .getByRole("button", { name: t("issues.create"), exact: true })
       .click();
-    await expect(page.getByRole("heading", { name: /The second of two/u })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Opened whole/u })).toBeVisible();
   });
-  expect(created.scrolled).toBeUndefined();
+  expect(created.scrolled).toEqual([]);
 });

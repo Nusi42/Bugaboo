@@ -6,6 +6,7 @@ import {
   type Frames,
   recordFrames,
   recordShifts,
+  stampLandmarks,
   SHIFTS_DONE,
   type Shift,
   twoFrames,
@@ -44,6 +45,13 @@ export interface Moved {
   readonly last: Box;
 }
 
+/** The page or a part that scrolled, and its scroll from the first frame to the first that differed. */
+export interface Scrolled {
+  readonly part: string;
+  readonly from: string;
+  readonly to: string;
+}
+
 /** What moved, flashed or emptied while the action ran. */
 export interface Movement {
   readonly moved: readonly Moved[];
@@ -52,13 +60,16 @@ export interface Movement {
   readonly vanished: readonly string[];
   /** Whether grey shapes stood on the screen in any frame. */
   readonly greyShapes: boolean;
-  /** The scroll of the page and its scrolling parts in the first frame and the first one that differed (none when nothing scrolled). */
-  readonly scrolled: readonly [string, string] | undefined;
+  /** What scrolled: the page or each part whose scroll was not what it was in the first frame, with its scrolls (`list-scroll: 0/0 -> 40/0`). */
+  readonly scrolled: readonly Scrolled[];
   readonly frames: number;
 }
 
-/** A difference of this many pixels or less is the rounding of a box, not a move. */
-const LEAST_MOVE_PX = 1;
+/**
+ * A difference of more than half a pixel is a move (UX §6.4: not even 1 px). Less is the subpixel
+ * layout of the browser, which nobody sees.
+ */
+const LEAST_MOVE_PX = 0.5;
 
 function differs(first: Box, later: Box): boolean {
   return (
@@ -102,6 +113,32 @@ function judged(landmarks: readonly Landmark[], frames: Frames) {
   return { moved, vanished };
 }
 
+/** The scroll of each part in one frame, as the recording writes it (`page:0 list-scroll:40/0`). */
+function scrollsOf(frame: string): ReadonlyMap<string, string> {
+  return new Map(
+    frame.split(" ").map((each) => {
+      const at = each.lastIndexOf(":");
+      return [each.slice(0, at), each.slice(at + 1)] as const;
+    }),
+  );
+}
+
+/** Every part whose scroll in some frame was not what it was in the first frame. */
+function scrolledOf(frames: readonly string[]): readonly Scrolled[] {
+  const first = scrollsOf(frames[0] ?? "");
+  const found = new Map<string, Scrolled>();
+  for (const frame of frames) {
+    const now = scrollsOf(frame);
+    for (const part of new Set([...first.keys(), ...now.keys()])) {
+      const [from, to] = [first.get(part) ?? "0/0", now.get(part) ?? "0/0"];
+      if (from !== to && !found.has(part)) {
+        found.set(part, { part, from, to });
+      }
+    }
+  }
+  return [...found.values()];
+}
+
 /** The path of the requests the measure waits for: those of the API. */
 const API_PATH = "/api/";
 
@@ -111,24 +148,23 @@ const API_PATH = "/api/";
  * screen then.
  */
 function readsOnTheirWay(page: Page): { readonly settled: () => Promise<void> } {
-  let open = 0;
+  // Only requests seen from now on count: one that began before cannot end the wait early.
+  const open = new Set<Readonly<Request>>();
   const started = (request: Readonly<Request>): void => {
     if (request.url().includes(API_PATH)) {
-      open += 1;
+      open.add(request);
     }
   };
   const ended = (request: Readonly<Request>): void => {
-    if (request.url().includes(API_PATH)) {
-      open -= 1;
-    }
+    open.delete(request);
   };
   page.on("request", started);
   page.on("requestfinished", ended);
   page.on("requestfailed", ended);
   const settled = async (): Promise<void> => {
-    await expect.poll(() => open).toBeLessThanOrEqual(0);
+    await expect.poll(() => open.size).toBe(0);
     await twoFrames(page);
-    if (open > 0) {
+    if (open.size > 0) {
       await settled();
       return;
     }
@@ -149,6 +185,10 @@ export async function movementWhile(
   landmarks: readonly Landmark[],
   act: () => Promise<void>,
 ): Promise<Movement> {
+  await stampLandmarks(
+    page,
+    landmarks.map((landmark) => [landmark.name, landmark.selector] as const),
+  );
   const shifting = recordShifts(page);
   const recording = recordFrames(
     page,
@@ -168,12 +208,11 @@ export async function movementWhile(
   );
   const frames = await recording;
   const shifts = await shifting;
-  const changed = frames.scrolls.find((each) => each !== frames.scrolls[0]);
   return {
     ...judged(landmarks, frames),
     shifts,
     greyShapes: frames.grey.includes(true),
-    scrolled: changed === undefined ? undefined : [frames.scrolls[0] ?? "", changed],
+    scrolled: scrolledOf(frames.scrolls),
     frames: frames.boxes.length,
   };
 }
@@ -183,8 +222,8 @@ export function partLandmark(name: string, part: string): Landmark {
   return { name, selector: `[data-part="${part}"]` };
 }
 
-/** The attribute that names the element of a landmark found by a locator. */
-const LANDMARK = "data-landmark";
+/** The attribute that names the element of a landmark found by a locator or on a whole screen. */
+export const LANDMARK = "data-landmark";
 
 /**
  * The landmark of the element the locator finds now, marked with its name. An element that is drawn
@@ -201,20 +240,35 @@ export async function landmarkOf(found: Locator, name: string): Promise<Landmark
   return { name, selector: `[${LANDMARK}="${name}"]` };
 }
 
+/** What may change while the screen otherwise stands still. */
+export interface StillExcept {
+  /**
+   * The landmarks under what changed, and what changed itself: they may move once, in one step (a part
+   * that grows pushes what is under it once, never back and forth), and layout shifts inside them count.
+   */
+  readonly follows?: readonly string[];
+  /** The parts whose scroll the action is meant to change (`window.body` when a form starts again). */
+  readonly scrolls?: readonly string[];
+}
+
 /**
- * Fails unless the screen stood still (UX §6): no landmark moved, apart from those in `follows`, which
- * stand below what changed and may move once, in one step (a part that grows pushes what is under it
- * once, never back and forth); nothing went away, no grey shapes showed, and nothing scrolled.
+ * Fails unless the screen stood still (UX §6.4): no landmark moved by more than half a pixel, apart from
+ * those in `follows`; no layout shift above nothing outside them, before or after an input; nothing
+ * went away, no grey shapes showed, and nothing scrolled but what `scrolls` names.
  */
-export function expectStill(movement: Movement, follows: readonly string[] = []): void {
-  const wrong = movement.moved.filter((each) => !follows.includes(each.name) || each.steps > 1);
+export function expectStill(movement: Movement, except: StillExcept = {}): void {
+  const follows = except.follows ?? [];
+  const inFollows = (shift: Shift): boolean =>
+    shift.sources.length > 0 &&
+    shift.sources.every((source) => source.within.some((name) => follows.includes(name)));
   expect(
     {
-      moved: wrong,
+      moved: movement.moved.filter((each) => !follows.includes(each.name) || each.steps > 1),
+      shifts: movement.shifts.filter((shift) => shift.value > 0 && !inFollows(shift)),
       vanished: movement.vanished,
       greyShapes: movement.greyShapes,
-      scrolled: movement.scrolled,
+      scrolled: movement.scrolled.filter((each) => !(except.scrolls ?? []).includes(each.part)),
     },
-    `what moved, went away, flashed or scrolled (shifts: ${JSON.stringify(movement.shifts)})`,
-  ).toEqual({ moved: [], vanished: [], greyShapes: false, scrolled: undefined });
+    "what moved, shifted, went away, flashed or scrolled",
+  ).toEqual({ moved: [], shifts: [], vanished: [], greyShapes: false, scrolled: [] });
 }
