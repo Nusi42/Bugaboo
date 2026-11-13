@@ -64,3 +64,25 @@ test("iss_11 Enter in the title while the new issue is read before it opens make
   await expect(page.getByRole("heading", { name: /Once with Enter/u })).toBeVisible();
   expect(made()).toBe(1);
 });
+
+test("iss_11 the Enter that ends a composition of characters sends nothing", async ({ page }) => {
+  await readyToCreate(page, "Composed");
+  const title = dialog(page).getByLabel(titleLabel(), { exact: true });
+  // An input method (IME) ends a composition with Enter; Safari says so only by the key code 229.
+  // A form is sent at once, in the same turn, when it is sent at all: the answer is known after it.
+  const sent = (code: number) =>
+    title.evaluate((box, keyCode) => {
+      let submitted = false;
+      const note = (): void => {
+        submitted = true;
+      };
+      document.addEventListener("submit", note, { capture: true });
+      const press = new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true });
+      Object.defineProperty(press, "keyCode", { value: keyCode });
+      box.dispatchEvent(press);
+      document.removeEventListener("submit", note, { capture: true });
+      return submitted;
+    }, code);
+  expect(await sent(229)).toBe(false);
+  expect(await sent(13)).toBe(true);
+});
