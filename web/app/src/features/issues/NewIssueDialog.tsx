@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { focusFirstField, useLayout, Window } from "@bugaboo/ui";
+import { focusFirstField, useLayout, Window, withId } from "@bugaboo/ui";
 import { useEffect, useId } from "react";
 
 import { useWindowProps } from "../../shared/use-window-props.ts";
@@ -26,10 +26,16 @@ export function NewIssueDialog() {
   const onMade = useOnMade();
   const phone = useLayout() === "phone";
   // *Create the issue and start another* made one: the focus goes back to the title, for the next
-  // (the button that was pressed waits while the issue is made, and would drop the focus).
+  // (the button that was pressed waits while the issue is made, and would drop the focus). On a phone
+  // the title may be out of view at the end of the form: the form scrolls it into view, in its own
+  // box, so the focus is never out of sight (WCAG 2.4.11).
   useEffect(() => {
     if (form.lastKey !== null) {
       focusFirstField(formId);
+      const field = document.activeElement;
+      if (field instanceof HTMLElement && field.closest(withId(formId)) !== null) {
+        field.scrollIntoView({ block: "nearest" });
+      }
     }
   }, [form.lastKey, formId]);
   return (

@@ -45,35 +45,36 @@ export function SearchBar({
   const language = useSearchLanguage();
   const fields = useSearchFields(within);
   const phone = useLayout() === "phone";
-  if (fields.isError) {
-    return <Alert tone={alertTone.danger}>{messageOf(fields.error)}</Alert>;
-  }
-  const bar =
-    language === undefined || fields.data === undefined ? (
-      <DelayedSkeleton lines={1} />
-    ) : (
-      <LoadedBar
-        language={language}
-        fields={fields.data.fields}
-        names={fields.data.names}
-        text={text}
-        onText={onText}
-        onStale={onStale}
-        actions={actions}
-        listView={listView}
-      />
-    );
+  const failed = fields.isError ? (
+    <Alert tone={alertTone.danger}>{messageOf(fields.error)}</Alert>
+  ) : null;
+  const bar = fields.isError ? null : language === undefined || fields.data === undefined ? (
+    <DelayedSkeleton lines={1} />
+  ) : (
+    <LoadedBar
+      language={language}
+      fields={fields.data.fields}
+      names={fields.data.names}
+      text={text}
+      onText={onText}
+      onStale={onStale}
+      actions={actions}
+      listView={listView}
+    />
+  );
   // On a phone the row of its buttons stands from the start, and what comes before *Filters* (*New
-  // issue*) stays the same element while the bar loads (UX §6.4: the focus can come back to it).
+  // issue*) stays the same element while the bar loads, and when it could not (UX §6.4: the focus can
+  // come back to it).
   return phone ? (
     <div {...partOf(part.searchBar)}>
       <div {...partOf(part.searchBarHead)}>
         {phoneStart}
         {bar}
       </div>
+      {failed}
     </div>
   ) : (
-    bar
+    (failed ?? bar)
   );
 }
 
