@@ -8,6 +8,7 @@ pub(crate) mod bench_budgets;
 pub(crate) mod bold_spec;
 pub(crate) mod clippy;
 pub(crate) mod contrast_spec;
+pub(crate) mod favicon;
 pub(crate) mod icu;
 pub(crate) mod kdl_reader;
 pub(crate) mod load_book;
@@ -39,12 +40,33 @@ use crate::repo::Repo;
 pub(crate) struct Generated {
     /// Repository-relative path with `/`.
     pub(crate) path: &'static str,
+    /// The text of the file; empty for a picture.
     pub(crate) content: String,
+    /// The bytes of a picture (the icons of the app), which are compared and written as they are.
+    pub(crate) bytes: Option<Vec<u8>>,
 }
 
 impl Generated {
     pub(crate) fn new(path: &'static str, content: String) -> Self {
-        Self { path, content }
+        Self {
+            path,
+            content,
+            bytes: None,
+        }
+    }
+
+    /// A file that is no text, such as a PNG picture.
+    pub(crate) fn binary(path: &'static str, bytes: Vec<u8>) -> Self {
+        Self {
+            path,
+            content: String::new(),
+            bytes: Some(bytes),
+        }
+    }
+
+    /// What the file holds, as bytes.
+    pub(crate) fn as_bytes(&self) -> &[u8] {
+        self.bytes.as_deref().unwrap_or(self.content.as_bytes())
     }
 }
 
@@ -199,14 +221,14 @@ pub(crate) fn write_all(repo: &Repo, files: &[Generated]) -> anyhow::Result<Vec<
     let mut written = Vec::new();
     for file in files {
         let path = repo.path(file.path);
-        if std::fs::read_to_string(&path).is_ok_and(|current| current == file.content) {
+        if std::fs::read(&path).is_ok_and(|current| current == file.as_bytes()) {
             continue;
         }
         if let Some(folder) = path.parent() {
             std::fs::create_dir_all(folder)
                 .with_context(|| format!("could not create {}", folder.display()))?;
         }
-        std::fs::write(&path, &file.content)
+        std::fs::write(&path, file.as_bytes())
             .with_context(|| format!("could not write {}", path.display()))?;
         written.push(file.path.to_owned());
     }

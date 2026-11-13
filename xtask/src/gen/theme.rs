@@ -16,7 +16,7 @@ use super::theme_file::{
     AtRule, DOC_SHEETS, Declaration, DocSheet, Item, Keyframes, LightOrDark, Rule, RuleKind,
     ThemeFile, Token, Variant, references, substitute,
 };
-use super::{theme_own, theme_rules, theme_selector};
+use super::{favicon, theme_own, theme_rules, theme_selector};
 use crate::repo::Repo;
 
 /// The one style sheet of the browser app (the only CSS file of `web/`, THEME-ONLY).
@@ -43,6 +43,7 @@ pub(crate) fn output_paths() -> Vec<&'static str> {
     paths.push(RUST_OUTPUT);
     paths.push(theme_rules::OUTPUT);
     paths.push(theme_own::OUTPUT);
+    paths.extend(favicon::paths());
     paths
 }
 
@@ -81,6 +82,7 @@ pub(crate) fn generate(file: &ThemeFile) -> anyhow::Result<Vec<Generated>> {
             generated.push(Generated::new(path, doc_sheet_css(file, sheet)?));
         }
     }
+    generated.extend(favicon::files(file, GENERATED_BY)?);
     Ok(generated)
 }
 

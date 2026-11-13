@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>{{app.name}}</title>
+    <!-- The icon, made by `cargo xtask gen theme` from the accent of the theme into web/app/public: the PNG for
+         browsers that take no SVG icon, the SVG for the others, and the picture of a page saved to a phone. -->
+    <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <!-- React Aria adds a style element with the touch rule of global.css, unless an element with this id
          is there already. The page may not have inline styles (SEC-11), so the rule is in the style sheet. -->
     <template id="react-aria-pressable-style"></template>

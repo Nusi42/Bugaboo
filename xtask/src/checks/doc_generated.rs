@@ -15,13 +15,21 @@ impl Check for DocGenerated {
         let mut findings = Vec::new();
         for generator in &generate::GENERATORS {
             for file in (generator.generate)(context.repo, context.catalog)? {
-                let on_disk = read_text(context.repo, file.path).ok();
-                findings.extend(compare(
-                    generator.name,
-                    file.path,
-                    &file.content,
-                    on_disk.as_deref(),
-                ));
+                let finding = match &file.bytes {
+                    Some(bytes) => compare_bytes(
+                        generator.name,
+                        file.path,
+                        bytes,
+                        std::fs::read(context.repo.path(file.path)).ok().as_deref(),
+                    ),
+                    None => compare(
+                        generator.name,
+                        file.path,
+                        &file.content,
+                        read_text(context.repo, file.path).ok().as_deref(),
+                    ),
+                };
+                findings.extend(finding);
             }
         }
         Ok(findings)
@@ -32,17 +40,38 @@ impl Check for DocGenerated {
 /// not matter).
 fn compare(generator: &str, path: &str, expected: &str, on_disk: Option<&str>) -> Option<Finding> {
     let Some(actual) = on_disk else {
-        return Some(Finding::at(
-            path,
-            format!("This generated file is missing. Run `cargo xtask gen {generator}`."),
-        ));
+        return Some(missing(generator, path));
     };
-    (normalize(actual) != expected).then(|| {
-        Finding::at(
-            path,
-            format!("This generated file is out of date. Edit its source, run `cargo xtask gen {generator}` and commit the result."),
-        )
-    })
+    (normalize(actual) != expected).then(|| stale(generator, path))
+}
+
+/// Compares a generated picture with the one on disk, byte for byte.
+fn compare_bytes(
+    generator: &str,
+    path: &str,
+    expected: &[u8],
+    on_disk: Option<&[u8]>,
+) -> Option<Finding> {
+    let Some(actual) = on_disk else {
+        return Some(missing(generator, path));
+    };
+    (actual != expected).then(|| stale(generator, path))
+}
+
+fn missing(generator: &str, path: &str) -> Finding {
+    Finding::at(
+        path,
+        format!("This generated file is missing. Run `cargo xtask gen {generator}`."),
+    )
+}
+
+fn stale(generator: &str, path: &str) -> Finding {
+    Finding::at(
+        path,
+        format!(
+            "This generated file is out of date. Edit its source, run `cargo xtask gen {generator}` and commit the result."
+        ),
+    )
 }
 
 #[cfg(test)]
@@ -63,5 +92,14 @@ mod tests {
         assert!(missing.message.contains("`cargo xtask gen docs`"));
         let other = compare("roles", "a.md", "x\n", None).unwrap();
         assert!(other.message.contains("`cargo xtask gen roles`"));
+    }
+
+    #[test]
+    fn a_picture_is_compared_byte_for_byte() {
+        assert!(compare_bytes("theme", "a.png", b"\x89PNG\r\n", Some(b"\x89PNG\r\n")).is_none());
+        let changed = compare_bytes("theme", "a.png", b"\x89PNG\r\n", Some(b"\x89PNG\n")).unwrap();
+        assert!(changed.message.contains("out of date"));
+        let missing = compare_bytes("theme", "a.png", b"\x89PNG", None).unwrap();
+        assert!(missing.message.contains("missing"));
     }
 }

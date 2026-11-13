@@ -11,9 +11,12 @@ fn file() -> ThemeFile {
 fn generated_files_are_up_to_date() {
     let repo = Repo::discover().unwrap();
     for output in outputs(&repo).unwrap() {
-        let on_disk = crate::source::read_text(&repo, output.path).unwrap();
-        assert_eq!(
-            on_disk, output.content,
+        let stale = match &output.bytes {
+            Some(bytes) => std::fs::read(repo.path(output.path)).unwrap() != *bytes,
+            None => crate::source::read_text(&repo, output.path).unwrap() != output.content,
+        };
+        assert!(
+            !stale,
             "{} is stale; run `cargo xtask gen theme`",
             output.path
         );
