@@ -142,6 +142,35 @@ fn effort_shown(plan: &Plan, issue: &Issue, days: Days) -> Option<EffortShown> {
     })
 }
 
+/// What a warning tells of its days and its ways out.
+struct Told {
+    days: Days,
+    ways_out: Vec<bb_core::plan::warning::WayOut>,
+    move_after: Option<jiff::civil::Date>,
+    due_needed: Option<jiff::civil::Date>,
+}
+
+/// What a warning may tell the reader: all of it, or for *Away* about a person the reader does not
+/// see by name only that the assigned person is away (UX §4.7, *People on the bars*). Then its days
+/// are the bar's, not the away days, and no way out tells them either: *Move it after* would start
+/// after the away days and *Make it longer* would end around them, so only *Keep and accept* is left.
+fn told_of(plan: &Plan, issue: &Issue, warning: &Warning, (days, named): (Days, bool)) -> Told {
+    if named || !matches!(warning, Warning::Away { .. }) {
+        return Told {
+            days,
+            ways_out: warning.ways_out(),
+            move_after: warning.move_after(),
+            due_needed: warning.due_needed(),
+        };
+    }
+    Told {
+        days: plan.bars.get(&issue.id).map_or(days, |bar| bar.days),
+        ways_out: vec![bb_core::plan::warning::WayOut::KeepAndAccept],
+        move_after: None,
+        due_needed: None,
+    }
+}
+
 /// The days a warning is about.
 fn warning_days(plan: &Plan, issue: &Issue, warning: &Warning) -> Option<Days> {
     use bb_core::plan::warning::Delay;
@@ -511,6 +540,11 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
             };
             let first = plan.person_on_bar(*id);
             let named = names_person(held, first, person.as_ref());
+            // How much a person not named can work is not the reader's to know (UX §4.7).
+            if matches!(warning, Warning::TooMuchAtOnce { .. }) && !named {
+                continue;
+            }
+            let told = told_of(plan, issue, warning, (days, named));
             let accepted_by = match accepted.iter().find(|kept| {
                 kept.issue == *id
                     && kept.kind == warning.kind()
@@ -555,13 +589,13 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
                 issue: *id,
                 kind: warning.kind(),
                 sentence: warning.sentence(named),
-                days,
+                days: told.days,
                 what: *warning,
                 other,
                 person,
-                ways_out: warning.ways_out(),
-                move_after: warning.move_after(),
-                due_needed: warning.due_needed(),
+                ways_out: told.ways_out,
+                move_after: told.move_after,
+                due_needed: told.due_needed,
                 accepted: accepted_by,
             });
         }
@@ -669,6 +703,9 @@ pub async fn timeline<S: AuthStore + SearchStore>(
     } else {
         (Vec::new(), Vec::new())
     };
+    // Away days and public holidays are a person's in every project: only the minutes of a day
+    // depend on the share in a project, and a row hatches no minutes. One project of the page is
+    // enough to read them through the port of work times.
     let project = found.issues.first().map(|issue| issue.project);
     let people_days = ctx
         .people_days(&actor, &rows, (group_by, query.part), project, span)

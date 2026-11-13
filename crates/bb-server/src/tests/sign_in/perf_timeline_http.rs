@@ -1,7 +1,7 @@
 //! No N+1 queries in the timeline (PERF-05, PERF-N1): a page of forty rows over three projects,
 //! with their bars, the people on them and their work times, the dependencies, the warnings and
 //! who accepted them, runs as many statements as a page of five, for a reader who sees people by
-//! name and for one who sees them by their role, on SQLite and PostgreSQL.
+//! name, grouped by person, and for one who sees them by their role, on SQLite and PostgreSQL.
 
 use std::collections::HashSet;
 
@@ -30,7 +30,8 @@ const ONE_PROJECT_AT_MOST: usize = 100;
 /// dependencies and sub-issues around it, the time factors, the work times of the people on the bars
 /// in each project, the accepted warnings, who accepted them and the role labels of those the
 /// reader sees by their role, each read once for the page (for the reader who sees people by their
-/// role: 98 measured over three projects, 99 in one; 90 over three projects by name).
+/// role: 98 measured over three projects, 99 in one; 90 over three projects by name, 95 grouped by
+/// person, where each person's row reads their days once for the page).
 const TIMELINE_AT_MOST: usize = 100;
 
 /// The statements of a page of five and a page of forty of the timeline `body`, as `browser` reads
@@ -78,62 +79,69 @@ async fn accept_delay(browser: &mut Browser, key: &str) -> Result<(), Failure> {
     Ok(())
 }
 
+/// The scene of the test: Lea and Ben on the bars with their work times, ACME and two more
+/// projects, and a chain of issues through them whose delays Max and Mia accepted in turn.
+async fn scene(site: &Site<'_>, ada: &mut Browser) -> Result<(), Failure> {
+    let (_lea, lea) = site.person(StartingRole::TeamMember, "lea").await?;
+    let (_ben, ben) = site.person(StartingRole::TeamMember, "ben").await?;
+    // Two people on no bar accept the delays, in turn: whatever rows a page holds, it names
+    // people who accepted its warnings and are named nowhere else on it.
+    let (max, _) = site.person(StartingRole::TeamMember, "max").await?;
+    let (mia, _) = site.person(StartingRole::TeamMember, "mia").await?;
+    let mut accepters = [max, mia];
+    work_times(site, ada, lea, 360, 50).await?;
+    work_times(site, ada, ben, 480, 100).await?;
+    let mut projects = vec![site.acme.clone()];
+    for short_name in ["BETA", "GAMMA"] {
+        let made = ada
+            .send(
+                "POST",
+                PROJECTS,
+                Some(json!({"short_name": short_name, "name": short_name})),
+            )
+            .await?;
+        projects.push(ok(&made)?["id"].as_str().ok_or("no ID")?.to_owned());
+    }
+    let mut before: Option<String> = None;
+    for number in 0..ISSUES {
+        let first = if number % 2 == 0 { lea } else { ben };
+        let project = if number + 5 >= ISSUES {
+            &projects[number % 3]
+        } else if number % 5 == 4 {
+            &projects[1 + (number / 5) % 2]
+        } else {
+            &projects[0]
+        };
+        let key = key_of(
+            &ada.send(
+                "POST",
+                &format!("{PROJECTS}/{project}/issues"),
+                Some(json!({
+                    "issue_type": site.kind,
+                    "title": format!("Step {number}"),
+                    "start_date": MONDAY,
+                    "estimated_time": 240,
+                    "assigned_to": [first.to_string()],
+                })),
+            )
+            .await?,
+        )?;
+        // A chain of dependencies through the rows, each one a delay that Max or Mia accepted.
+        if let Some(earlier) = &before {
+            blocks(ada, earlier, &key).await?;
+            accept_delay(&mut accepters[number % 2], &key).await?;
+        }
+        before = Some(key);
+    }
+    Ok(())
+}
+
 #[tokio::test]
 async fn perf_05_a_timeline_of_forty_rows_runs_as_many_statements_as_one_of_five() -> TestResult {
     each_database("perf_05_timeline", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let (_lea, lea) = site.person(StartingRole::TeamMember, "lea").await?;
-        let (_ben, ben) = site.person(StartingRole::TeamMember, "ben").await?;
-        // Two people on no bar accept the delays, in turn: whatever rows a page holds, it names
-        // people who accepted its warnings and are named nowhere else on it.
-        let (max, _) = site.person(StartingRole::TeamMember, "max").await?;
-        let (mia, _) = site.person(StartingRole::TeamMember, "mia").await?;
-        let mut accepters = [max, mia];
-        work_times(&site, &mut ada, lea, 360, 50).await?;
-        work_times(&site, &mut ada, ben, 480, 100).await?;
-        let mut projects = vec![site.acme.clone()];
-        for short_name in ["BETA", "GAMMA"] {
-            let made = ada
-                .send(
-                    "POST",
-                    PROJECTS,
-                    Some(json!({"short_name": short_name, "name": short_name})),
-                )
-                .await?;
-            projects.push(ok(&made)?["id"].as_str().ok_or("no ID")?.to_owned());
-        }
-        let mut before: Option<String> = None;
-        for number in 0..ISSUES {
-            let first = if number % 2 == 0 { lea } else { ben };
-            let project = if number + 5 >= ISSUES {
-                &projects[number % 3]
-            } else if number % 5 == 4 {
-                &projects[1 + (number / 5) % 2]
-            } else {
-                &projects[0]
-            };
-            let key = key_of(
-                &ada.send(
-                    "POST",
-                    &format!("{PROJECTS}/{project}/issues"),
-                    Some(json!({
-                        "issue_type": site.kind,
-                        "title": format!("Step {number}"),
-                        "start_date": MONDAY,
-                        "estimated_time": 240,
-                        "assigned_to": [first.to_string()],
-                    })),
-                )
-                .await?,
-            )?;
-            // A chain of dependencies through the rows, each one a delay that Max or Mia accepted.
-            if let Some(earlier) = &before {
-                blocks(&mut ada, earlier, &key).await?;
-                accept_delay(&mut accepters[number % 2], &key).await?;
-            }
-            before = Some(key);
-        }
+        scene(&site, &mut ada).await?;
         let body = json!({
             "search_text": "",
             "timeline": {"zoom": "week", "plan_by_effort": true},
@@ -151,6 +159,20 @@ async fn perf_05_a_timeline_of_forty_rows_runs_as_many_statements_as_one_of_five
             .map(str::to_owned)
             .collect();
         assert_eq!(accepted.len(), 2, "{forty}");
+        // Grouped by person, by name: each person's row hatches their days, read once for the page.
+        let mut by_person = body.clone();
+        if let Some(asked) = by_person.as_object_mut() {
+            asked.insert("group_by".to_owned(), json!("assigned to"));
+        }
+        let (on_five, on_forty, grouped) =
+            five_and_forty(&mut ada, &rig.database, &by_person).await?;
+        assert!(
+            grouped["people_days"]
+                .as_array()
+                .is_some_and(|rows| rows.len() == 2),
+            "{grouped}"
+        );
+        assert_as_many_statements(on_five, on_forty, TIMELINE_AT_MOST, "a page by person");
         // A reader who sees the people on the bars and the people who accepted warnings by their
         // role, over all three projects.
         for kind in ["assigned-to", "authors"] {

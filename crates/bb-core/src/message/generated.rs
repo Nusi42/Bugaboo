@@ -13967,16 +13967,10 @@ pub fn plan_warning_away(
 
 /// The message `plan-warning.away-hidden`.
 #[must_use]
-pub fn plan_warning_away_hidden(
-    days: impl std::fmt::Display,
-    issue: impl std::fmt::Display,
-) -> Message {
+pub fn plan_warning_away_hidden(issue: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("plan-warning.away-hidden"),
-        vec![
-            ("days", Value::Text(days.to_string())),
-            ("issue", Value::Text(issue.to_string())),
-        ],
+        vec![("issue", Value::Text(issue.to_string()))],
     )
 }
 
@@ -23156,7 +23150,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "plan-warning.away-hidden",
-        "The assigned person is away {days}, while {issue} is planned.",
+        "The assigned person is away while {issue} is planned.",
     ),
     (
         "plan-warning.delay",

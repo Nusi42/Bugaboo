@@ -860,7 +860,7 @@ export const messages = {
   "theme-editor.preview": "Preview",
   "editing.is-editing-now": "{name} is editing {thing} right now",
   "plan-warning.away": "{person} is away {days}, while {issue} is planned with their work times.",
-  "plan-warning.away-hidden": "The assigned person is away {days}, while {issue} is planned.",
+  "plan-warning.away-hidden": "The assigned person is away while {issue} is planned.",
   "plan-warning.not-enough-days":
     "{issue} needs {needs, plural, one {# work day} other {# work days}}; there {has, plural, one {is # work day} other {are # work days}} before its due date.",
   "plan-warning.delay":

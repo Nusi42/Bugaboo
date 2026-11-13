@@ -18,7 +18,7 @@ use crate::work_times::{PLAN_PEOPLE_MAX, WorkMinutesQuery};
 /// What keeps a person from working on a day, as the reader may know it: away (only ever *Away*), a
 /// public holiday, and, when `days_off` is asked for, a day that is not a usual work day. `named`
 /// says whether the reader sees who the person is: without it a day carries no word, so no holiday
-/// name and no half of a day is sent.
+/// name, no half of a day and no day off is sent.
 pub(crate) fn hatched_of(day: &DayMinutes, days_off: bool, named: bool) -> Option<HatchedDay> {
     let what = if day.away.count() > 0 {
         if named {
@@ -33,7 +33,7 @@ pub(crate) fn hatched_of(day: &DayMinutes, days_off: bool, named: bool) -> Optio
         Hatched::Holiday {
             holiday: named.then_some(holiday),
         }
-    } else if days_off && day.minutes == 0 {
+    } else if days_off && named && day.minutes == 0 {
         Hatched::DayOff
     } else {
         return None;

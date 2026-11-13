@@ -11,7 +11,9 @@ use serde_json::{Value, json};
 use super::http::{Browser, rig_and_app};
 use super::issues_site::{Site, ok};
 use super::plan_privacy_http::{field_level, see_only_key};
-use super::plan_site::{MONDAY, TIMELINE, ask, page, planned, rows_of};
+use super::plan_site::{
+    MONDAY, TIMELINE, ask, id_of_key, issue, page, planned, rows_of, warnings_on,
+};
 
 /// The last day of the pages of these tests: the end of March 2027, after Good Friday (26 March).
 const END: &str = "2027-03-31";
@@ -178,6 +180,62 @@ async fn plan_10_the_row_of_a_person_hatches_their_days_as_far_as_work_times_all
         let secret = see_only_key(&mut ada).await?;
         let keyed = ada.script("POST", TIMELINE, Some(body), &secret).await?;
         assert_eq!(ok(&keyed)?["people_days"], json!([]));
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn plan_13_a_warning_about_a_person_not_named_tells_no_away_day() -> TestResult {
+    each_database("plan_13_away_unnamed", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut lea, lea_id) = site
+            .person_called(StartingRole::TeamMember, "lea", "Lea Lang")
+            .await?;
+        let key = over_good_friday(&site, &mut ada, &mut lea, lea_id).await?;
+        let id = id_of_key(&mut ada, &key).await?;
+        let body = ask(&site, MONDAY, END, json!({}));
+        // Ada accepts the warning; the reader sees who accepted by the kind *Authors*.
+        let version = issue(&mut ada, &key).await?["version"].clone();
+        ok(&ada
+            .send(
+                "POST",
+                &format!("{TIMELINE}/accepted-warnings"),
+                Some(json!({"issue": key, "version": version, "kind": "away", "timeline": {"zoom": "week"}})),
+            )
+            .await?)?;
+        let (mut reader, _) = site.person(StartingRole::Contributor, "reader").await?;
+        site.show_people(&mut ada, StartingRole::Contributor, "work-times", "names")
+            .await?;
+        for level in ["role-only", "hidden"] {
+            site.show_people(&mut ada, StartingRole::Contributor, "assigned-to", level)
+                .await?;
+            site.show_people(&mut ada, StartingRole::Contributor, "authors", level)
+                .await?;
+            let seen = page(&mut reader, body.clone()).await?;
+            let warning = warnings_on(&seen, &id)
+                .into_iter()
+                .find(|each| each["kind"] == "away")
+                .cloned()
+                .unwrap_or(Value::Null);
+            // "The assigned person is away", with no day: the days are the bar's, and no way out
+            // starts after or ends around the away days.
+            assert_eq!(warning["sentence"], "plan-warning.away-hidden", "{warning}");
+            assert_eq!(
+                warning["days"],
+                json!({"first": "2027-03-22", "last": END}),
+                "{warning}"
+            );
+            assert_eq!(warning["ways_out"], json!(["keep-and-accept"]), "{warning}");
+            assert_eq!(warning["move_after"], Value::Null, "{warning}");
+            assert_eq!(warning["due_needed"], Value::Null, "{warning}");
+            // Who accepted it is shown as *Who sees people* lets the reader see authors.
+            let by = &warning["accepted"]["by"];
+            assert!(by.get("name").is_none() && by.get("id").is_none(), "{warning}");
+            let shown = if level == "hidden" { "someone" } else { "role" };
+            assert_eq!(by["shown"], shown, "{warning}");
+        }
         Ok(())
     })
     .await

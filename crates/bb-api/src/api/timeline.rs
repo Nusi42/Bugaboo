@@ -186,7 +186,8 @@ pub(crate) struct PlanWarningBody {
     kind: WarningKind,
     /// The key of its sentence in the messages; the screen fills it in with the members below.
     sentence: String,
-    /// The days it is about.
+    /// The days it is about; for *Away* about a person the reader does not see by name, the days of
+    /// the bar, so no away day is told.
     days: DaysBody,
     /// The person on the bar it is about, for *Away* and *Too much at once*; `null` when the
     /// reader may not see who it is (*"the assigned person is away"*).
@@ -214,7 +215,8 @@ pub(crate) struct PlanWarningBody {
     /// *Too much at once*: the minutes the person can work on that day in the project.
     #[schema(required = true)]
     can_minutes: Option<u32>,
-    /// The ways out that fit it, in the order they are offered.
+    /// The ways out that fit it, in the order they are offered; only `keep-and-accept` for *Away*
+    /// about a person the reader does not see by name.
     ways_out: Vec<WayOut>,
     /// The day *Move it after* starts the issue after (the preview takes it).
     #[schema(required = true, value_type = Option<String>, format = Date)]

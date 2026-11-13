@@ -9990,7 +9990,10 @@ export interface components {
        * @description *Too much at once*: the minutes the person can work on that day in the project.
        */
       can_minutes: number | null;
-      /** @description The days it is about. */
+      /**
+       * @description The days it is about; for *Away* about a person the reader does not see by name, the days of
+       *     the bar, so no away day is told.
+       */
       days: components["schemas"]["DaysBody"];
       /**
        * Format: date
@@ -10031,7 +10034,10 @@ export interface components {
       planned_minutes: number | null;
       /** @description The key of its sentence in the messages; the screen fills it in with the members below. */
       sentence: string;
-      /** @description The ways out that fit it, in the order they are offered. */
+      /**
+       * @description The ways out that fit it, in the order they are offered; only `keep-and-accept` for *Away*
+       *     about a person the reader does not see by name.
+       */
       ways_out: components["schemas"]["WayOut"][];
       /**
        * Format: date
