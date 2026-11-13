@@ -41,11 +41,18 @@ function measure(control: Locator): Promise<Measured> {
   });
 }
 
+/** The selects of the options row above a list, by their names: *Show as* and *Group by*. */
+function selectsOf(options: Locator): readonly (readonly [string, Locator])[] {
+  return ["timeline.show-as", "issues.group-by"].map(
+    (key) => [t(key), options.getByLabel(t(key), { exact: true })] as const,
+  );
+}
+
 /** The controls of the options row and of the search bar that a person presses or picks from, by name. */
 function controlsOf(page: Page): readonly (readonly [string, Locator])[] {
   const options = partIn(page, "list-options");
   return [
-    ["select", options.locator("select")],
+    ...selectsOf(options),
     ["Customize", options.getByRole("button")],
     ["filter", partIn(page, "search-filter").first()],
     ["Add filter", partIn(page, "search-filters.action").getByRole("button").first()],
@@ -73,9 +80,13 @@ test("ux_7_3 the select and Customize stand level, bottoms on one line", async (
   test.skip(layoutOf(page) === "phone", "Customize is for a computer");
   await openList(page);
   const options = partIn(page, "list-options");
-  const select = await measure(options.locator("select"));
   const customize = await measure(options.getByRole("button"));
-  expect(customize.bottom).toBeCloseTo(select.bottom, 0);
+  await inOrder(
+    selectsOf(options).map(([name, control]) => async () => {
+      const select = await measure(control);
+      expect(customize.bottom, name).toBeCloseTo(select.bottom, 0);
+    }),
+  );
 });
 
 test("ux_4_2 Group by and Customize are quiet words with no box, the name beside the choice, in every theme", async ({
@@ -84,20 +95,27 @@ test("ux_4_2 Group by and Customize are quiet words with no box, the name beside
   test.skip(layoutOf(page) === "phone", "a phone has Group by in the sheet of the filters");
   await openList(page);
   const options = partIn(page, "list-options");
-  const select = options.locator("select");
-  const label = partIn(options, "field.label");
-  const customize = options.getByRole("button", { name: t("issues.customize"), exact: true });
-  // The name stands before the choice on the same line, not above it.
-  const [name, choice] = await Promise.all([measure(label), measure(select)]);
-  expect(name.left).toBeLessThan(choice.left);
-  expect(Math.abs(name.middle - choice.middle)).toBeLessThanOrEqual(2);
+  const selects = selectsOf(options);
+  const customize = options.getByRole("button", {
+    name: t("issues.customize"),
+    exact: true,
+  });
+  // Each name stands before its choice on the same line, not above it.
+  await inOrder(
+    selects.map(([word, select]) => async () => {
+      const label = partIn(options, "field.label").filter({ hasText: word });
+      const [name, choice] = await Promise.all([measure(label), measure(select)]);
+      expect(name.left, word).toBeLessThan(choice.left);
+      expect(Math.abs(name.middle - choice.middle), word).toBeLessThanOrEqual(2);
+    }),
+  );
   // Customize has its icon before its word.
   await expect(partIn(customize, "icon")).toHaveCount(1);
   await inEveryLook(page, async (look) => {
     const link = await resolved(page, "color", "var(--accent-fg)");
     const none = await resolved(page, "background-color", "transparent");
     await inOrder(
-      [select, customize].map((control) => async () => {
+      [...selects.map(([, select]) => select), customize].map((control) => async () => {
         await expect(control, look).toHaveCSS("color", link);
         await expect(control, look).toHaveCSS("background-color", none);
         await expect(control, look).toHaveCSS("border-top-color", none);
@@ -111,11 +129,13 @@ test("ux_4_2 the keyboard focus on Group by and Customize shows the ring", async
   await openList(page);
   const options = partIn(page, "list-options");
   await inOrder(
-    [options.locator("select"), options.getByRole("button")].map((control) => async () => {
-      await focusByKeyboard(page, control);
-      await expect(control).toBeFocused();
-      await expect(control).not.toHaveCSS("outline-style", "none");
-    }),
+    [...selectsOf(options).map(([, select]) => select), options.getByRole("button")].map(
+      (control) => async () => {
+        await focusByKeyboard(page, control);
+        await expect(control).toBeFocused();
+        await expect(control).not.toHaveCSS("outline-style", "none");
+      },
+    ),
   );
 });
 
@@ -126,13 +146,19 @@ test("ux_7_3 every label above a control is the one muted color and size, in eve
   // On a phone Group by is in the sheet of the filters (M5 exit D2).
   await openBar(page);
   const options = partIn(page, "list-options");
-  const group = partIn(options, "field.label");
+  const labels = selectsOf(options).map(([word]) =>
+    partIn(options, "field.label").filter({ hasText: word }),
+  );
   await inEveryLook(page, async (look) => {
     const muted = await resolved(page, "color", "var(--fg-muted)");
-    await expect(group, look).toHaveCSS("color", muted);
     // UX §7.3: field names and control labels are 13.
     const size = await resolved(page, "font-size", "var(--fs-sm)");
-    expect((await measure(group)).fontSize, look).toBe(size);
+    await inOrder(
+      labels.map((label) => async () => {
+        await expect(label, look).toHaveCSS("color", muted);
+        expect((await measure(label)).fontSize, look).toBe(size);
+      }),
+    );
   });
 });
 
