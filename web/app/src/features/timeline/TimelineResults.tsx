@@ -109,7 +109,7 @@ export function TimelineResults(props: TimelineResultsProps) {
             },
           }}
         />
-        {phone ? null : <TimelineLegend />}
+        {phone ? null : <TimelineLegend rows={model.read.rows} />}
         <TimelineBody
           props={props}
           model={model}

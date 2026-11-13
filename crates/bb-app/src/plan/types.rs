@@ -72,11 +72,14 @@ pub enum Hatched {
     },
     /// A public holiday that counts for the person.
     Holiday {
-        /// Which one; none when the reader may not see who the person is, so the day has no word.
-        holiday: Option<Holiday>,
+        /// Which one.
+        holiday: Holiday,
     },
     /// Not one of the person's usual work days, or no share in the project.
     DayOff,
+    /// A day without work of a person the reader does not see by name: away, a holiday and a day
+    /// off all look the same, so nobody learns that a day was an absence.
+    NoWork,
 }
 
 impl Hatched {

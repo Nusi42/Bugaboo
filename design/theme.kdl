@@ -775,6 +775,12 @@ mixin "hatch-holiday" {
     background "repeating-linear-gradient(45deg, $fg-muted 0, $fg-muted calc($border-width * 2), transparent calc($border-width * 2), transparent $space-2)"
 }
 
+// The one pattern of every day without work of a person the reader does not see (ADR-0030, amendment M8): a
+// fine grid of both directions, so it is told from *Away* and *Holiday* and says neither.
+mixin "hatch-no-work" {
+    background "repeating-linear-gradient(45deg, $fg-muted 0, $fg-muted $border-width, transparent $border-width, transparent $space-2), repeating-linear-gradient(135deg, $fg-muted 0, $fg-muted $border-width, transparent $border-width, transparent $space-2)"
+}
+
 mixin "shade-day-off" {
     background "color-mix(in srgb, $fg-muted 30%, transparent)"
 }
@@ -3681,6 +3687,10 @@ part "timeline-bar.hatch[variant=day-off]" {
     use "shade-day-off"
 }
 
+part "timeline-bar.hatch[variant=no-work]" {
+    use "hatch-no-work"
+}
+
 // A selected bar has its dot after its end: the ID moves on past it.
 part "timeline-bar[state=selected] timeline-bar.label" {
     inset-inline-start "calc(100% + $size-target-least + $space-1)"
@@ -4336,6 +4346,10 @@ part "legend.swatch[variant=away]" {
 
 part "legend.swatch[variant=holiday]" {
     use "hatch-holiday"
+}
+
+part "legend.swatch[variant=no-work]" {
+    use "hatch-no-work"
 }
 
 part "legend.swatch[variant=warning]" {

@@ -72,13 +72,14 @@ fn good_friday() -> (String, Value) {
     ("holiday".to_owned(), json!("good-friday"))
 }
 
-/// The hatched days of a bar of a person the reader does not see by name: hatched without a word, so
-/// no half of an away day, no holiday name and no day off.
+/// The hatched days of a bar of a person the reader does not see by name: every day without work is
+/// the one neutral kind, with no word, so away, holiday and day off are not told apart (the
+/// maintainer's decision of 2026-11-13).
 fn assert_no_words(bar: &Value) {
     let days = bar["hatched"].as_array().cloned().unwrap_or_default();
     assert!(!days.is_empty(), "{bar}");
     for day in &days {
-        assert_ne!(day["kind"], "day-off", "{bar}");
+        assert_eq!(day["kind"], "no-work", "{bar}");
         assert_eq!(day["holiday"], Value::Null, "{bar}");
         assert_eq!(day["morning"], false, "{bar}");
         assert_eq!(day["afternoon"], false, "{bar}");
@@ -86,7 +87,8 @@ fn assert_no_words(bar: &Value) {
 }
 
 #[tokio::test]
-async fn plan_11_hatched_days_have_no_word_for_a_reader_who_sees_nobody() -> TestResult {
+async fn plan_11_a_reader_who_does_not_see_the_person_sees_every_day_without_work_alike()
+-> TestResult {
     each_database("plan_11_hatched_words", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
@@ -106,7 +108,7 @@ async fn plan_11_hatched_days_have_no_word_for_a_reader_who_sees_nobody() -> Tes
             kinds(&named["hatched"]).contains(&("day-off".to_owned(), Value::Null)),
             "{named}"
         );
-        // Nobody on the bar: the days stay hatched, and no word of them is sent.
+        // Nobody on the bar: every day without work is the one neutral kind, with no word.
         site.show_people(&mut ada, StartingRole::Contributor, "assigned-to", "hidden")
             .await?;
         let nobody = bar(&page(&mut reader, body.clone()).await?, &key);

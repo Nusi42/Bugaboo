@@ -7602,17 +7602,14 @@ export interface components {
       holiday: components["schemas"]["Holiday"] | null;
       /** @description What it holds. */
       kind: components["schemas"]["HatchedKindBody"];
-      /**
-       * @description For an away day: whether the morning is away; `false` with `afternoon` when the reader may not
-       *     see who the person is.
-       */
+      /** @description For an away day: whether the morning is away. */
       morning: boolean;
     };
     /**
      * @description What a hatched day holds.
      * @enum {string}
      */
-    HatchedKindBody: "away" | "holiday" | "day-off";
+    HatchedKindBody: "away" | "holiday" | "day-off" | "no-work";
     /** @description Somebody else is editing. */
     HeldLockBody: {
       /** @description The person who asks may take the editing over (*Edit anyway*). */

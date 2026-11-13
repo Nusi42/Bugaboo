@@ -91,6 +91,7 @@ export const messages = {
   "timeline.away-afternoon": "Away in the afternoon",
   "timeline.holiday": "Holiday: {name}",
   "timeline.legend-holiday": "Holiday",
+  "timeline.legend-no-work": "Day without work",
   "timeline.day-off": "Not a work day",
   "timeline.planned-with": "Planned with {name}'s work times",
   "timeline.person-more": "{name} +{count}",

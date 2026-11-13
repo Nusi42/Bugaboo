@@ -97,6 +97,7 @@ export const legendLook = {
   away: "away",
   holiday: "holiday",
   warning: "warning",
+  noWork: "no-work",
 } as const satisfies Readonly<
   Record<string, (typeof partWords)["legend.swatch"]["variant"][number]>
 >;

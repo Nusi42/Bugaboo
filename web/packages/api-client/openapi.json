@@ -23983,7 +23983,7 @@
             "oneOf": [
               {
                 "$ref": "#/components/schemas/Holiday",
-                "description": "For a public holiday: which one; `null` when the reader may not see who the person is."
+                "description": "For a public holiday: which one."
               },
               {
                 "type": "null"
@@ -23996,14 +23996,14 @@
           },
           "morning": {
             "type": "boolean",
-            "description": "For an away day: whether the morning is away; `false` with `afternoon` when the reader may not\nsee who the person is."
+            "description": "For an away day: whether the morning is away."
           }
         }
       },
       "HatchedKindBody": {
         "type": "string",
         "description": "What a hatched day holds.",
-        "enum": ["away", "holiday", "day-off"]
+        "enum": ["away", "holiday", "day-off", "no-work"]
       },
       "HeldLockBody": {
         "type": "object",

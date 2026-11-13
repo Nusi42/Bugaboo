@@ -84,3 +84,17 @@ export function scaleOf(zoom: ZoomWord) {
     rowPixels: pixelsOf("size-timeline-row"),
   };
 }
+
+/** Which patterns of days without work the bars of the page carry. */
+export interface DaysWithoutWork {
+  /** *Away*, *Holiday* or a day off: of a person the reader sees. */
+  readonly distinct: boolean;
+  /** The one neutral pattern of a person the reader does not see (ADR-0030, amendment M8). */
+  readonly neutral: boolean;
+}
+
+/** Which patterns of days without work the bars of the rows carry, for the Legend. */
+export function daysWithoutWorkOf(rows: readonly TimelineRow[]): DaysWithoutWork {
+  const kinds = new Set(rows.flatMap((row) => (row.bar?.hatched ?? []).map((day) => day.kind)));
+  return { distinct: [...kinds].some((kind) => kind !== "no-work"), neutral: kinds.has("no-work") };
+}

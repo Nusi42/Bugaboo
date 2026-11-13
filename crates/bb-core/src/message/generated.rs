@@ -8631,6 +8631,9 @@ pub const TIMELINE_LEGEND_GOAL: MessageKey = MessageKey::new("timeline.legend-go
 /// The message `timeline.legend-holiday`.
 pub const TIMELINE_LEGEND_HOLIDAY: MessageKey = MessageKey::new("timeline.legend-holiday");
 
+/// The message `timeline.legend-no-work`.
+pub const TIMELINE_LEGEND_NO_WORK: MessageKey = MessageKey::new("timeline.legend-no-work");
+
 /// The message `timeline.locked-here`.
 pub const TIMELINE_LOCKED_HERE: MessageKey = MessageKey::new("timeline.locked-here");
 
@@ -26333,6 +26336,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("timeline.legend-due", "Due date of a goal"),
     ("timeline.legend-goal", "Goal over its sub-issues"),
     ("timeline.legend-holiday", "Holiday"),
+    ("timeline.legend-no-work", "Day without work"),
     ("timeline.locked", "You may not change the dates of {key}."),
     (
         "timeline.locked-here",

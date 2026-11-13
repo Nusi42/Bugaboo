@@ -23,6 +23,9 @@ pub(crate) enum HatchedKindBody {
     Holiday,
     /// Not a usual work day of the person, or no share in the project.
     DayOff,
+    /// A day without work of a person the reader does not see by name: away, a holiday and a day
+    /// off are told apart only for a person the reader sees.
+    NoWork,
 }
 
 /// One day of a bar on which its person does not work, as *Who sees people* allows.
@@ -33,12 +36,11 @@ pub(crate) struct HatchedDayBody {
     date: CalendarDay,
     /// What it holds.
     kind: HatchedKindBody,
-    /// For an away day: whether the morning is away; `false` with `afternoon` when the reader may not
-    /// see who the person is.
+    /// For an away day: whether the morning is away.
     morning: bool,
     /// For an away day: whether the afternoon is away.
     afternoon: bool,
-    /// For a public holiday: which one; `null` when the reader may not see who the person is.
+    /// For a public holiday: which one.
     #[schema(required = true)]
     holiday: Option<Holiday>,
 }
@@ -49,8 +51,9 @@ impl From<&HatchedDay> for HatchedDayBody {
             Hatched::Away { morning, afternoon } => {
                 (HatchedKindBody::Away, morning, afternoon, None)
             }
-            Hatched::Holiday { holiday } => (HatchedKindBody::Holiday, false, false, holiday),
+            Hatched::Holiday { holiday } => (HatchedKindBody::Holiday, false, false, Some(holiday)),
             Hatched::DayOff => (HatchedKindBody::DayOff, false, false, None),
+            Hatched::NoWork => (HatchedKindBody::NoWork, false, false, None),
         };
         Self {
             date: day.date,
