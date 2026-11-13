@@ -1,3 +1,4 @@
+import { inPlace } from "./in-place.ts";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Input, TextField } from "react-aria-components";
 
@@ -40,7 +41,7 @@ function Box({ label, value, required, onDone }: BoxProps) {
   });
   useEffect(() => {
     const element = box.current;
-    element?.focus();
+    element?.focus(inPlace);
     const finish = (save: boolean): void => {
       const { draft: typed, value: was, required: must, onDone: done } = latest.current;
       const next = typed.trim();

@@ -155,6 +155,7 @@ export { ChoiceText } from "./ChoiceText.tsx";
 export { IssueId } from "./IssueId.tsx";
 export { factJoiner, factJoinerHeld, factJoinerLeading, factMark, factSeparator } from "./facts.ts";
 export { focusFirstField, withId } from "./first-field.ts";
+export { inPlace } from "./in-place.ts";
 export { Facts, Length, type Fact } from "./Length.tsx";
 export { SaveStatus, type SaveState, type SaveStatusProps } from "./SaveStatus.tsx";
 export {

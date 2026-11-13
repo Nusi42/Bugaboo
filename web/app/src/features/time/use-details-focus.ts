@@ -1,4 +1,4 @@
-import { focusFirstField, withId } from "@bugaboo/ui";
+import { focusFirstField, withId, inPlace } from "@bugaboo/ui";
 import { useEffect, useRef } from "react";
 
 import { entryItemId } from "./entry-ids.ts";
@@ -18,7 +18,7 @@ export function useDetailsFocus(formId: string, picked: string | undefined): voi
       document
         .querySelector(withId(entryItemId(last.current)))
         ?.querySelector<HTMLElement>("button")
-        ?.focus();
+        ?.focus(inPlace);
     }
   }, [formId, picked]);
 }

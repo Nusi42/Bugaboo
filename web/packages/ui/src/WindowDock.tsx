@@ -1,3 +1,4 @@
+import { inPlace } from "./in-place.ts";
 import { useEffect, useRef, type ReactNode } from "react";
 import { Button } from "react-aria-components";
 
@@ -18,7 +19,7 @@ export interface WindowDockProps {
 export function WindowDock({ title, note, onRestore }: WindowDockProps) {
   const bar = useRef<HTMLButtonElement>(null);
   useEffect(() => {
-    bar.current?.focus();
+    bar.current?.focus(inPlace);
   }, []);
   return (
     <Button ref={bar} {...partOf(part.windowDock)} onPress={onRestore}>

@@ -1,3 +1,4 @@
+import { inPlace } from "./in-place.ts";
 import { useLayoutEffect, useRef, useState } from "react";
 
 import type { MenuAction } from "./ActionMenu.tsx";
@@ -26,7 +27,7 @@ export function OpenSide({
   const strip = useRef<HTMLDivElement>(null);
   const toMore = (): void => {
     close();
-    more.current?.querySelector("button")?.focus();
+    more.current?.querySelector("button")?.focus(inPlace);
   };
   useCloseOutside(strip, close, toMore);
   // The side slides in from the edge it belongs to as the page is written: before the first picture, the strip reads

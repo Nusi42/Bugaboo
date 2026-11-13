@@ -1,13 +1,6 @@
+import { inPlace } from "@bugaboo/ui";
 import { useRouterState } from "@tanstack/react-router";
 import { useEffect, useRef, type RefObject } from "react";
-
-/**
- * How the app moves the focus itself: without scrolling to it (UX §6, nothing moves under the
- * cursor). A heading or a page that takes the focus is where the person looks already, and the
- * browser would otherwise scroll the page by the height of what stands above it, then the router
- * scrolls back: the page jumped for a frame.
- */
-export const inPlace: FocusOptions = { preventScroll: true };
 
 /**
  * Gives back a ref for a container, and moves the focus to the heading inside it when `key`
@@ -98,19 +91,20 @@ const FRAMES_TO_WAIT = 60;
 /**
  * Runs a change that removes the row that has the focus (a press on its button) and moves the focus
  * as `focusTargetAfterRemoval` says, as soon as the row is gone. If the row never goes (the change
- * was refused), the focus stays where it is. `pressed` is the row whose button was pressed, where
- * the caller knows it: WebKit does not give the focus to a button that is pressed, and the place is
- * kept all the same.
+ * was refused), the focus stays where it is; a change that answers with a promise ends the watch
+ * once it has answered. `pressed` is the row whose button was pressed, where the caller knows it:
+ * WebKit does not give the focus to a button that is pressed, and the place is kept all the same.
  */
-export function removeKeepingFocus(run: () => void, pressed?: HTMLElement): void {
+export function removeKeepingFocus(run: () => unknown, pressed?: HTMLElement): void {
   const from = pressed ?? document.activeElement;
   const target = focusTargetAfterRemoval(pressed);
-  run();
+  const answer = run();
   if (target === null || from === null) {
     return;
   }
   // However long the answer takes: the row goes when the server has confirmed the change. The
-  // watch ends when the row is gone, or when the person moves the focus themselves.
+  // watch ends when the row is gone, when the person moves the focus themselves, or when the
+  // change has answered (made or refused) and what it changed is drawn.
   const watch = new MutationObserver(() => {
     if (!from.isConnected) {
       stop();
@@ -123,6 +117,13 @@ export function removeKeepingFocus(run: () => void, pressed?: HTMLElement): void
   };
   watch.observe(document.body, { childList: true, subtree: true });
   document.addEventListener("focusin", stop);
+  if (answer instanceof Promise) {
+    void answer.finally(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(stop);
+      });
+    });
+  }
 }
 
 /**

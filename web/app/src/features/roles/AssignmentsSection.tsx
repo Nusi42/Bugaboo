@@ -25,7 +25,8 @@ export function AssignmentsSection({ project, level = 2 }: AssignmentsSectionPro
   const [preset, setPreset] = useState<Subject>();
   const form = useRef<HTMLDivElement>(null);
   // "Change for this project" leads to the form, with the person or group in it: the focus goes to
-  // the field that is left to fill in, and the page scrolls there (also on a phone).
+  // the field that is left to fill in, and the page scrolls there (also on a phone): the person asked
+  // to go there, so this focus scrolls, unlike the app's others (`inPlace`, UX §6.4).
   useEffect(() => {
     if (preset !== undefined) {
       form.current?.querySelector("select")?.focus();

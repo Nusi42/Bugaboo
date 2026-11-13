@@ -1,3 +1,5 @@
+import { inPlace } from "./in-place.ts";
+
 /** The first thing a person types into or chooses in a form. */
 const FIRST_FIELD =
   "input:not([type=hidden]):not(:disabled), textarea:not(:disabled), select:not(:disabled)";
@@ -15,6 +17,6 @@ export function withId(id: string): string {
  */
 export function focusFirstField(id: string): boolean {
   const field = document.querySelector(withId(id))?.querySelector<HTMLElement>(FIRST_FIELD);
-  field?.focus({ preventScroll: true });
+  field?.focus(inPlace);
   return field !== undefined && field !== null;
 }

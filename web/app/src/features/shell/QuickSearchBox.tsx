@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Announce, Button, buttonLook, SearchField, partOf, part } from "@bugaboo/ui";
+import { Announce, Button, buttonLook, SearchField, partOf, part, inPlace } from "@bugaboo/ui";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Autocomplete } from "react-aria-components";
 
@@ -34,7 +34,7 @@ export function QuickSearchBox() {
   const fresh = useFreshList(root, found.waiting, found.quiet);
   // The dialog is made for typing: the box has the focus as soon as it appears.
   useEffect(() => {
-    field.current?.querySelector("input")?.focus();
+    field.current?.querySelector("input")?.focus(inPlace);
   }, []);
   return (
     <Autocomplete disableAutoFocusFirst inputValue={query} onInputChange={setQuery}>

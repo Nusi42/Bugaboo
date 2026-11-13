@@ -1,10 +1,9 @@
-import { Card, partOf, part } from "@bugaboo/ui";
+import { Card, partOf, part, inPlace } from "@bugaboo/ui";
 import { useLocation } from "@tanstack/react-router";
 import { useEffect, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 import { doNothing } from "../../shared/do-nothing.ts";
-import { inPlace } from "../../shared/focus.ts";
 import { CONTENT_ID } from "./content-id.ts";
 import { useItemTrail } from "./page-trail.ts";
 import { useEscape } from "./use-escape.ts";

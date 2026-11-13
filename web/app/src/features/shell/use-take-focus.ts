@@ -1,6 +1,5 @@
+import { inPlace } from "@bugaboo/ui";
 import { useEffect, useRef, type RefObject } from "react";
-
-import { inPlace } from "../../shared/focus.ts";
 
 /**
  * Gives a ref for an element; the focus moves to the element when it appears, and goes back to what
