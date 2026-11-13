@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { useLetGoWhenHidden } from "../../shared/editing/index.ts";
-import { browserSchedule } from "../../shared/optimistic.ts";
+import { browserSchedule } from "@bugaboo/ui";
 import { keyRuns, runBook } from "./key-runs.ts";
 import type { TimelineRow } from "./timeline-data.ts";
 import type { Saving } from "./use-saving.ts";

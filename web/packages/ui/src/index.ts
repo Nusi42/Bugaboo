@@ -1,4 +1,11 @@
 export { autoComplete, type AutoComplete } from "./autocomplete.ts";
+export {
+  browserSchedule,
+  skeletonDelayMs,
+  startDelay,
+  useAfterDelay,
+  type Schedule,
+} from "./after-delay.ts";
 export { Alert, type AlertProps } from "./Alert.tsx";
 export { AnswerNote, type AnswerNoteProps, type NoteAnswer } from "./AnswerNote.tsx";
 export {

@@ -1,4 +1,6 @@
-import { browserSchedule, undoWindowMs, type Schedule } from "./optimistic.ts";
+import { browserSchedule, type Schedule } from "@bugaboo/ui";
+
+import { undoWindowMs } from "./optimistic.ts";
 import { createStore } from "./store.ts";
 
 /** One action that can still be taken back. */

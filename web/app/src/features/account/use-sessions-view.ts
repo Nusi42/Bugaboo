@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { useAfterDelay } from "../../shared/use-optimistic.ts";
+import { useAfterDelay } from "@bugaboo/ui";
 import { sessionsOptions } from "./sessions.ts";
 
 /**

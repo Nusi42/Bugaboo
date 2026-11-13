@@ -1,6 +1,8 @@
 // Helpers for the tests of the optimistic helpers: a cache holding a list of names, a server that
 // answers when the test says so, and a clock that only moves when the test says so.
-import type { OptimisticChange, Schedule } from "./optimistic.ts";
+import type { Schedule } from "@bugaboo/ui";
+
+import type { OptimisticChange } from "./optimistic.ts";
 
 export interface Names {
   readonly names: readonly string[];

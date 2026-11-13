@@ -3,7 +3,7 @@ import { Alert, alertTone, Card, SaveStatus, Skeleton, partOf, part } from "@bug
 import { useQuery } from "@tanstack/react-query";
 
 import { messageOf } from "../../../shared/errors.ts";
-import { useAfterDelay } from "../../../shared/use-optimistic.ts";
+import { useAfterDelay } from "@bugaboo/ui";
 import { keysOptions, type AccessKey } from "./access-keys.ts";
 import { KeyRow } from "./KeyRow.tsx";
 import { useDeleteKey } from "./use-delete-key.ts";

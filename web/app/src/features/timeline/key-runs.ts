@@ -1,4 +1,4 @@
-import type { Schedule } from "../../shared/optimistic.ts";
+import type { Schedule } from "@bugaboo/ui";
 import type { Said } from "./dates.ts";
 import type { Move } from "./moves.ts";
 import { stepFrom, type SaveQueue, type Step } from "./save-queue.ts";

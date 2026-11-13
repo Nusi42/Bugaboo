@@ -151,28 +151,5 @@ export function summarizeCalls(calls: readonly Call[]): Summary {
   return { saveState: saveStateOf(calls.at(-1)?.status ?? "idle"), error: null };
 }
 
-/** How long nothing shows while content is on its way, so quick answers cause no flicker (§6.1). */
-export const skeletonDelayMs = 300;
-
 /** How long *Undo* stays on offer after a reversible action (UX §6). */
 export const undoWindowMs = 10_000;
-
-/** Starts a timer: how a clock is passed in, so tests can use their own. */
-export type Schedule = (done: () => void, ms: number) => () => void;
-
-/** The timers of the browser, as a `Schedule`. */
-export const browserSchedule: Schedule = (done, ms) => {
-  const timer = setTimeout(done, ms);
-  return () => {
-    clearTimeout(timer);
-  };
-};
-
-/** Calls `onElapsed` after `ms` unless the returned function stops it first. */
-export function startDelay(
-  ms: number,
-  onElapsed: () => void,
-  schedule: Schedule = browserSchedule,
-): () => void {
-  return schedule(onElapsed, ms);
-}

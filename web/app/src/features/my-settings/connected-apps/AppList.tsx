@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { messageOf } from "../../../shared/errors.ts";
 import { saveLabels } from "../../../shared/save-labels.ts";
-import { useAfterDelay } from "../../../shared/use-optimistic.ts";
+import { useAfterDelay } from "@bugaboo/ui";
 import { AppRow } from "./AppRow.tsx";
 import { appsOptions, type ConnectedApp } from "./connected-apps.ts";
 import { useTakeBack } from "./use-take-back.ts";

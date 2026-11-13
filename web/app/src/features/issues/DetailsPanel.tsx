@@ -13,7 +13,7 @@ import {
   StartDateRow,
   TotalRows,
 } from "./ChangeableRows.tsx";
-import { useAfterDelay } from "../../shared/use-optimistic.ts";
+import { useAfterDelay } from "@bugaboo/ui";
 import { detailFields as fields, inLayoutOrder, type RowGroup } from "./details-order.ts";
 import { FixedRows } from "./FixedRows.tsx";
 import { SlotBlocks } from "./SlotBlocks.tsx";

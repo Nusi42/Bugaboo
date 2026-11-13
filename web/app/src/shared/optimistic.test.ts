@@ -1,13 +1,9 @@
 import { QueryClient } from "@tanstack/react-query";
 import { describe, expect, it } from "vitest";
 
-import {
-  optimisticSend,
-  saveStateOf,
-  skeletonDelayMs,
-  startDelay,
-  summarizeCalls,
-} from "./optimistic.ts";
+import { skeletonDelayMs, startDelay } from "@bugaboo/ui";
+
+import { optimisticSend, saveStateOf, summarizeCalls } from "./optimistic.ts";
 import {
   addName,
   key,

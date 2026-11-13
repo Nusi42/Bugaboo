@@ -1,13 +1,11 @@
 import { useMutation, useMutationState, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useId, useState, useSyncExternalStore } from "react";
+import { useId, useState, useSyncExternalStore } from "react";
 
 import { messageOf } from "./errors.ts";
 import { removeKeepingFocus } from "./focus.ts";
 import {
   optimisticSend,
   summarizeCalls,
-  skeletonDelayMs,
-  startDelay,
   type Cacheable,
   type Described,
   type OptimisticChange,
@@ -67,31 +65,6 @@ export function useOptimisticMutation<
     saveState,
     problem: error === null ? null : messageOf(error),
   };
-}
-
-/**
- * Whether something that is still loading has been loading for `ms` (0.3 s by default). Skeleton
- * shapes show only then, so a quick answer never flashes grey shapes.
- */
-/** The delay that waits for nothing: used while there is nothing to wait for. */
-const noDelay = (): void => {
-  // Nothing was started, so nothing needs stopping.
-};
-
-export function useAfterDelay(active: boolean, ms: number = skeletonDelayMs): boolean {
-  const [elapsed, setElapsed] = useState(false);
-  useEffect(() => {
-    const stop = active
-      ? startDelay(ms, () => {
-          setElapsed(true);
-        })
-      : noDelay;
-    return () => {
-      stop();
-      setElapsed(false);
-    };
-  }, [active, ms]);
-  return active && elapsed;
 }
 
 /** The actions that can still be taken back, for the place that shows *Undo*. */
