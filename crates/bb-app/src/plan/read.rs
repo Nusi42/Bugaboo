@@ -450,7 +450,9 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
             own_estimate: kept.set_by == kept.person
                 && names_person(held, Some(kept.person), person.as_ref()),
         });
-        let named = person.is_some();
+        // One rule for the bar, its warnings and its factor: the reader sees the person by name or
+        // is the person; by role only or not at all, the days carry no word.
+        let named = names_person(held, plan.person_on_bar(issue.id), person.as_ref());
         Ok(Some(BarView {
             days: bar.days,
             worked_out: bar.worked_out,

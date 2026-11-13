@@ -12,7 +12,8 @@ use super::http::{Browser, rig_and_app};
 use super::issues_site::{Site, ok};
 use super::plan_privacy_http::{field_level, see_only_key};
 use super::plan_site::{
-    MONDAY, TIMELINE, ask, id_of_key, issue, page, planned, rows_of, warnings_on,
+    MONDAY, TIMELINE, ask, by_effort, id_of_key, issue, page, planned, rows_of, warnings_on,
+    work_times,
 };
 
 /// The last day of the pages of these tests: the end of March 2027, after Good Friday (26 March).
@@ -71,6 +72,19 @@ fn good_friday() -> (String, Value) {
     ("holiday".to_owned(), json!("good-friday"))
 }
 
+/// The hatched days of a bar of a person the reader does not see by name: hatched without a word, so
+/// no half of an away day, no holiday name and no day off.
+fn assert_no_words(bar: &Value) {
+    let days = bar["hatched"].as_array().cloned().unwrap_or_default();
+    assert!(!days.is_empty(), "{bar}");
+    for day in &days {
+        assert_ne!(day["kind"], "day-off", "{bar}");
+        assert_eq!(day["holiday"], Value::Null, "{bar}");
+        assert_eq!(day["morning"], false, "{bar}");
+        assert_eq!(day["afternoon"], false, "{bar}");
+    }
+}
+
 #[tokio::test]
 async fn plan_11_hatched_days_have_no_word_for_a_reader_who_sees_nobody() -> TestResult {
     each_database("plan_11_hatched_words", async |db| {
@@ -87,22 +101,17 @@ async fn plan_11_hatched_days_have_no_word_for_a_reader_who_sees_nobody() -> Tes
         // Names: Good Friday by its name.
         let named = bar(&page(&mut reader, body.clone()).await?, &key);
         assert!(kinds(&named["hatched"]).contains(&good_friday()), "{named}");
+        // The weekend of the bar is a day off for a reader who sees the person.
+        assert!(
+            kinds(&named["hatched"]).contains(&("day-off".to_owned(), Value::Null)),
+            "{named}"
+        );
         // Nobody on the bar: the days stay hatched, and no word of them is sent.
         site.show_people(&mut ada, StartingRole::Contributor, "assigned-to", "hidden")
             .await?;
         let nobody = bar(&page(&mut reader, body.clone()).await?, &key);
         assert_eq!(nobody["person"], Value::Null, "{nobody}");
-        let days = kinds(&nobody["hatched"]);
-        assert!(
-            days.contains(&("holiday".to_owned(), Value::Null)),
-            "{nobody}"
-        );
-        assert!(
-            days.iter().all(|(_, holiday)| holiday.is_null()),
-            "{nobody}"
-        );
-        assert_eq!(nobody["hatched"][0]["kind"], "away", "{nobody}");
-        assert_eq!(nobody["hatched"][0]["morning"], false, "{nobody}");
+        assert_no_words(&nobody);
         // *Assigned to* hidden by its field level: no hatched day and no warning about the person.
         field_level(
             &site,
@@ -214,6 +223,8 @@ async fn plan_13_a_warning_about_a_person_not_named_tells_no_away_day() -> TestR
             site.show_people(&mut ada, StartingRole::Contributor, "authors", level)
                 .await?;
             let seen = page(&mut reader, body.clone()).await?;
+            // The bar tells no more than the warning: its days are hatched without a word.
+            assert_no_words(&bar(&seen, &key));
             let warning = warnings_on(&seen, &id)
                 .into_iter()
                 .find(|each| each["kind"] == "away")
@@ -235,6 +246,55 @@ async fn plan_13_a_warning_about_a_person_not_named_tells_no_away_day() -> TestR
             assert!(by.get("name").is_none() && by.get("id").is_none(), "{warning}");
             let shown = if level == "hidden" { "someone" } else { "role" };
             assert_eq!(by["shown"], shown, "{warning}");
+        }
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn plan_13_too_much_at_once_about_a_person_not_named_is_left_out() -> TestResult {
+    each_database("plan_13_too_much_unnamed", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (_lea, lea_id) = site
+            .person_called(StartingRole::TeamMember, "lea", "Lea Lang")
+            .await?;
+        // 6 hours at 50 %: 3 hours a day. Two issues of 15 hours each over the same week plan 6.
+        work_times(&site, &mut ada, lea_id, 360, 50).await?;
+        for title in ["API", "Login screen"] {
+            planned(
+                &site,
+                &mut ada,
+                title,
+                json!({
+                    "start_date": MONDAY,
+                    "due_date": "2027-03-05",
+                    "estimated_time": 900,
+                    "assigned_to": [lea_id.to_string()],
+                }),
+            )
+            .await?;
+        }
+        let body = by_effort(&site, MONDAY, END);
+        let too_much = |page: &Value| {
+            page["warnings"].as_array().map_or(0, |all| {
+                all.iter()
+                    .filter(|each| each["kind"] == "too-much-at-once")
+                    .count()
+            })
+        };
+        let (mut reader, _) = site.person(StartingRole::Contributor, "reader").await?;
+        site.show_people(&mut ada, StartingRole::Contributor, "work-times", "names")
+            .await?;
+        // By name: Lea has too much at once.
+        assert!(too_much(&page(&mut reader, body.clone()).await?) > 0);
+        // By role only and not at all: the warning is not listed.
+        for level in ["role-only", "hidden"] {
+            site.show_people(&mut ada, StartingRole::Contributor, "assigned-to", level)
+                .await?;
+            let seen = page(&mut reader, body.clone()).await?;
+            assert_eq!(too_much(&seen), 0, "{seen}");
         }
         Ok(())
     })
