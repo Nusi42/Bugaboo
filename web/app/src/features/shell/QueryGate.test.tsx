@@ -30,7 +30,7 @@ const notFound = new ApiError(404, {
 });
 
 describe("ux_01 the gate of a page shows a refusal, also beside an answer", () => {
-  it("shows Not found for a read that was refused, and draws once", () => {
+  it("shows Not found for a read that was refused", () => {
     expect(drawn(undefined, notFound)).toContain(t("page.not-found.title"));
   });
 
