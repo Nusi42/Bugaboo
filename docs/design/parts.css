@@ -2679,6 +2679,16 @@ textarea,
   background: var(--border-control);
 }
 
+[data-part="timeline-canvas"][data-variant~="quarter"]
+  [data-part="timeline-bar"][data-state~="group-in-progress"] {
+  background: var(--st-ip);
+}
+
+[data-part="timeline-canvas"][data-variant~="quarter"]
+  [data-part="timeline-bar"][data-state~="group-done"] {
+  background: var(--st-done);
+}
+
 [data-part="timeline-canvas"][data-state~="over"] {
   background: var(--accent-soft);
 }

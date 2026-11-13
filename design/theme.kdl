@@ -3713,10 +3713,19 @@ part "timeline-tray.line" {
 }
 
 // While an issue of the tray is dragged over the chart, the chart shows that it takes it.
-// At the zoom of quarters a bar is a sliver: one of *Not started* is filled with the edge of a control, which
-// stands at 3:1 against every surface, so it is seen in the dark themes too.
+// At the zoom of quarters a bar is a sliver of the least width, filled solid in every state, so it is seen in the
+// dark themes too: one of *Not started* with the edge of a control, which stands at 3:1 against every surface, the
+// others with the color of their status group.
 part "timeline-canvas[variant=quarter] timeline-bar[state=group-not-started]" {
     background "$border-control"
+}
+
+part "timeline-canvas[variant=quarter] timeline-bar[state=group-in-progress]" {
+    background "$st-ip"
+}
+
+part "timeline-canvas[variant=quarter] timeline-bar[state=group-done]" {
+    background "$st-done"
 }
 
 part "timeline-canvas[state=over]" {
