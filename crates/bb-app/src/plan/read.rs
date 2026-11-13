@@ -149,12 +149,17 @@ fn warning_days(plan: &Plan, issue: &Issue, warning: &Warning) -> Option<Days> {
 }
 
 /// The field the rows are grouped by. *Assigned to* is no field of the search for a reader who sees
-/// people by their role or not at all: then there is no grouping by person (ADR-0030, decision 1).
+/// people by their role or not at all: then nobody is told apart, and every row is in the group of
+/// no value (ADR-0030, decision 1).
 /// A word that is no field the reader may group by is no request.
 fn group_target(looked: &Looked, word: &str) -> Result<Option<FieldTarget>, AppError> {
     match target_of(&looked.fields, word) {
         Some(target) if timeline_groups_by(target) => Ok(Some(target)),
-        None if word_key(word) == word_key(&Field::AssignedTo.search_word()) => Ok(None),
+        // Without names *Assigned to* is no field of the search: its rows are all in the group of
+        // no value (`groups_of`).
+        None if word_key(word) == word_key(&Field::AssignedTo.search_word()) => {
+            Ok(Some(FieldTarget::AssignedTo))
+        }
         Some(_) | None => Err(AppError::Refused(ErrorCode::InvalidRequest)),
     }
 }
@@ -315,10 +320,9 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
                 let people = plan.assigned.get(&issue.id).cloned().unwrap_or_default();
                 let by_name = held.people_level(ASSIGNED_TO_PEOPLE, PeopleContext::Ordinary)
                     == PeopleLevel::Names;
-                if !by_name {
-                    return Ok(one(None));
-                }
-                if people.is_empty() {
+                // Without names (*Role only*) nobody can be told apart: every row is in the group
+                // of no value, as a row without a person.
+                if people.is_empty() || !by_name {
                     return Ok(one(Some(GroupKey::Empty)));
                 }
                 let mut rows = Vec::with_capacity(people.len());

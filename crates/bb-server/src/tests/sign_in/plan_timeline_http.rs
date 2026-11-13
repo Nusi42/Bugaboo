@@ -130,7 +130,7 @@ async fn plan_10_the_timeline_shows_people_only_as_who_sees_people_allows() -> T
         let role = person(&page(&mut contributor, body.clone()).await?);
         assert!(role.get("name").is_none() && role.get("id").is_none(), "{role}");
         assert!(role.get("role").is_some(), "{role}");
-        // With Role only there is no grouping by person: one row, no group.
+        // With Role only nobody can be told apart: one row, in the group of no value.
         let grouped = page(
             &mut contributor,
             ask(&site, MONDAY, "2027-03-31", json!({"group_by": "assigned to"})),
@@ -138,7 +138,7 @@ async fn plan_10_the_timeline_shows_people_only_as_who_sees_people_allows() -> T
         .await?;
         let rows = rows_of(&grouped, &key);
         assert_eq!(rows.len(), 1);
-        assert_eq!(rows[0]["group"], Value::Null);
+        assert_eq!(rows[0]["group"], json!({"type": "empty"}), "{grouped}");
         site.show_people(&mut ada, StartingRole::Contributor, "assigned-to", "hidden")
             .await?;
         let nobody = person(&page(&mut contributor, body).await?);

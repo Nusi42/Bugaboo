@@ -127,6 +127,7 @@ async fn plan_04_a_goal_tells_only_what_the_reader_may_read() -> TestResult {
             "hidden",
         )
         .await?;
+        field_level(&site, &mut ada, StartingRole::TeamMember, "title", "hidden").await?;
         let body = ask(&site, MONDAY, "2027-03-31", json!({"group_by": "parent"}));
         let goal_id = id_of_key(&mut ada, &goal).await?;
         let hidden_goal_id = id_of_key(&mut ada, &hidden_goal).await?;
@@ -141,6 +142,7 @@ async fn plan_04_a_goal_tells_only_what_the_reader_may_read() -> TestResult {
         let theirs = page(&mut team, body).await?;
         let found = goal_of(&theirs, &goal_id).ok_or("no goal for the team member")?;
         assert_eq!(found["due"], Value::Null, "{theirs}");
+        assert_eq!(found["title"], Value::Null, "{theirs}");
         // The hidden sub-issue does not widen it; without the Due date, API is one day long.
         assert_eq!(
             found["span"],
