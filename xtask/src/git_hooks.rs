@@ -136,9 +136,14 @@ fn plan(root: &Path, git: &dyn Fn() -> Command) -> anyhow::Result<Plan> {
     })
 }
 
+/// What every hook the pinned lefthook writes holds (its `LEFTHOOK` variables); a wrapper that only
+/// runs `lefthook` does not.
+const LEFTHOOK_MARK: &[u8] = b"LEFTHOOK";
+
 /// Stops when `folder` holds a kept copy (`<hook>.old`) next to a hook that is not lefthook's:
 /// lefthook keeps a hook it replaces under that name, and `--force` would overwrite the older copy.
-/// When the hook is lefthook's own, it is replaced alone and the copy stays.
+/// When the hook is lefthook's own, it is replaced alone and the copy stays. A hook that cannot be
+/// read counts as foreign.
 fn refuse_kept_copies(folder: &Path) -> anyhow::Result<()> {
     let Ok(entries) = fs::read_dir(folder) else {
         return Ok(());
@@ -148,8 +153,12 @@ fn refuse_kept_copies(folder: &Path) -> anyhow::Result<()> {
             continue;
         }
         let hook = path.with_extension("");
-        let foreign = fs::read_to_string(&hook).is_ok_and(|text| !text.contains("lefthook"));
-        if foreign {
+        let own = fs::read(&hook).is_ok_and(|bytes| {
+            bytes
+                .windows(LEFTHOOK_MARK.len())
+                .any(|part| part == LEFTHOOK_MARK)
+        });
+        if !own {
             bail!(
                 "{} is a kept copy of an older hook, and installing the hooks would overwrite it \
                  with {}. Move or delete one of the two, then run the command again.",
@@ -261,8 +270,25 @@ mod tests {
             fs::read_to_string(hooks.join("pre-commit.old")).unwrap(),
             "#!/bin/sh\necho older\n"
         );
+        // A wrapper that only names lefthook is not lefthook's hook: lefthook would keep it as `.old`.
+        fs::write(
+            hooks.join("pre-commit"),
+            "#!/bin/sh\nnpx lefthook run pre-commit\n",
+        )
+        .unwrap();
+        let error = plan(&clone.repo(), &|| clone.git())
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("pre-commit.old"), "{error}");
+        // A hook that is not text is foreign too.
+        fs::write(hooks.join("pre-commit"), [0xff, 0xfe, b'L', 0x00]).unwrap();
+        assert!(plan(&clone.repo(), &|| clone.git()).is_err());
         // Once lefthook's own hook is in place, its kept copy is safe: the hook is replaced alone.
-        fs::write(hooks.join("pre-commit"), "#!/bin/sh\n# lefthook\n").unwrap();
+        fs::write(
+            hooks.join("pre-commit"),
+            "#!/bin/sh\nif [ \"$LEFTHOOK\" = \"0\" ]; then exit 0; fi\n",
+        )
+        .unwrap();
         assert_eq!(
             plan(&clone.repo(), &|| clone.git()).unwrap().arguments,
             ["install", "--force"]
