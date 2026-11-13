@@ -142,8 +142,8 @@ const LEFTHOOK_MARK: &[u8] = b"LEFTHOOK";
 
 /// Stops when `folder` holds a kept copy (`<hook>.old`) next to a hook that is not lefthook's:
 /// lefthook keeps a hook it replaces under that name, and `--force` would overwrite the older copy.
-/// When the hook is lefthook's own, it is replaced alone and the copy stays. A hook that cannot be
-/// read counts as foreign.
+/// When the hook is lefthook's own, it is replaced alone and the copy stays; where there is no hook,
+/// lefthook keeps nothing. A hook that cannot be read for another reason counts as foreign.
 fn refuse_kept_copies(folder: &Path) -> anyhow::Result<()> {
     let Ok(entries) = fs::read_dir(folder) else {
         return Ok(());
@@ -153,12 +153,13 @@ fn refuse_kept_copies(folder: &Path) -> anyhow::Result<()> {
             continue;
         }
         let hook = path.with_extension("");
-        let own = fs::read(&hook).is_ok_and(|bytes| {
-            bytes
+        let safe = match fs::read(&hook) {
+            Ok(bytes) => bytes
                 .windows(LEFTHOOK_MARK.len())
-                .any(|part| part == LEFTHOOK_MARK)
-        });
-        if !own {
+                .any(|part| part == LEFTHOOK_MARK),
+            Err(error) => error.kind() == std::io::ErrorKind::NotFound,
+        };
+        if !safe {
             bail!(
                 "{} is a kept copy of an older hook, and installing the hooks would overwrite it \
                  with {}. Move or delete one of the two, then run the command again.",
@@ -289,6 +290,19 @@ mod tests {
             "#!/bin/sh\nif [ \"$LEFTHOOK\" = \"0\" ]; then exit 0; fi\n",
         )
         .unwrap();
+        assert_eq!(
+            plan(&clone.repo(), &|| clone.git()).unwrap().arguments,
+            ["install", "--force"]
+        );
+    }
+
+    #[test]
+    fn good_example_a_kept_copy_with_no_hook_beside_it_is_safe() {
+        // lefthook keeps nothing where there is no hook, so the old copy is not overwritten.
+        let global = "[core]\n\thooksPath = .githooks\n";
+        let clone = ScratchRepo::new("setup-hooks-old-alone", global);
+        let hooks = clone.repo().join(".git").join("hooks");
+        fs::write(hooks.join("pre-push.old"), "#!/bin/sh\necho older\n").unwrap();
         assert_eq!(
             plan(&clone.repo(), &|| clone.git()).unwrap().arguments,
             ["install", "--force"]
