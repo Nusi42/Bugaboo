@@ -236,8 +236,17 @@ async fn plan_13_a_reader_who_does_not_see_the_person_gets_only_days_without_wor
             of_kind(&named, &id, "days-without-work").is_empty(),
             "{named}"
         );
-        // Ada accepts it for everybody; the reader sees who accepted by the kind *Authors*.
-        accept(&mut ada, &key, "days-without-work").await?;
+        // A Team member who sees people by role only, and so is shown the neutral warning, accepts
+        // it for everybody; the reader sees who accepted by the kind *Authors*.
+        site.show_people(
+            &mut ada,
+            StartingRole::TeamMember,
+            "assigned-to",
+            "role-only",
+        )
+        .await?;
+        let (mut tom, _) = site.person(StartingRole::TeamMember, "tom").await?;
+        accept(&mut tom, &key, "days-without-work").await?;
         let (mut reader, _) = site.person(StartingRole::Contributor, "reader").await?;
         site.show_people(&mut ada, StartingRole::Contributor, "work-times", "names")
             .await?;
@@ -357,6 +366,58 @@ async fn plan_13_too_much_at_once_about_a_person_not_named_is_left_out() -> Test
             let seen = page(&mut reader, body.clone()).await?;
             assert_eq!(too_much(&seen), 0, "{seen}");
         }
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn plan_13_accepting_a_kind_not_told_tests_for_no_absence() -> TestResult {
+    each_database("plan_13_accept_oracle", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut lea, lea_id) = site
+            .person_called(StartingRole::TeamMember, "lea", "Lea Lang")
+            .await?;
+        // One issue over an away day of Lea's, and one of hers over no day without work.
+        let away = over_good_friday(&site, &mut ada, &mut lea, lea_id).await?;
+        let plain = planned(
+            &site,
+            &mut ada,
+            "Plain week",
+            json!({"start_date": "2027-03-08", "due_date": "2027-03-10", "assigned_to": [lea_id.to_string()]}),
+        )
+        .await?;
+        // Tom may change both issues and sees Lea by role only.
+        site.show_people(&mut ada, StartingRole::TeamMember, "work-times", "names")
+            .await?;
+        site.show_people(&mut ada, StartingRole::TeamMember, "assigned-to", "role-only")
+            .await?;
+        let (mut tom, _) = site.person(StartingRole::TeamMember, "tom").await?;
+        let answer = async |browser: &mut Browser, key: &str, kind: &str| -> Result<String, Failure> {
+            let version = issue(browser, key).await?["version"].clone();
+            let reply = browser
+                .send(
+                    "POST",
+                    &format!("{TIMELINE}/accepted-warnings"),
+                    Some(json!({"issue": key, "version": version, "kind": kind, "timeline": {"zoom": "week"}})),
+                )
+                .await?;
+            Ok(format!("{} {}", reply.status, reply.code()))
+        };
+        // *Away* and *Too much at once* are refused alike, whether Lea is away or not.
+        for kind in ["away", "too-much-at-once"] {
+            let over_away = answer(&mut tom, &away, kind).await?;
+            let over_none = answer(&mut tom, &plain, kind).await?;
+            assert_eq!(over_away, over_none, "{kind}");
+            assert!(over_away.contains("request.invalid"), "{over_away}");
+        }
+        // Ada sees Lea: *Days without work* is not told to her, and is refused like a kind the issue
+        // does not have, while *Away* is accepted.
+        let neutral = answer(&mut ada, &away, "days-without-work").await?;
+        assert!(neutral.contains("request.invalid"), "{neutral}");
+        let named = answer(&mut ada, &away, "away").await?;
+        assert!(named.starts_with("200"), "{named}");
         Ok(())
     })
     .await

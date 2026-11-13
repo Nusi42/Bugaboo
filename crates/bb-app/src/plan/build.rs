@@ -180,6 +180,27 @@ impl Plan {
             .is_some_and(|person| self.work_times_known.contains(&(issue.project, person)))
     }
 
+    /// Whether a warning is told to the reader (ADR-0030, amendment M8, the maintainer's decisions of
+    /// 2026-11-13), the one rule of the list of warnings and of *Keep and accept*. A warning about
+    /// the person on the bar tells that the issue has one: never to a reader who may not read
+    /// *Assigned to*. *Away* and *Too much at once* go only to a reader who sees the person
+    /// (`named`), and *Days without work*, which never tells which days are away, only to a reader
+    /// who does not see the person and may know their work times. Every other warning is told.
+    pub(crate) fn tells(&self, issue: &Issue, warning: &Warning, named: bool) -> bool {
+        let about_person = matches!(
+            warning,
+            Warning::Away { .. } | Warning::TooMuchAtOnce { .. } | Warning::DaysWithoutWork { .. }
+        );
+        if about_person && !self.reads(issue, Field::AssignedTo) {
+            return false;
+        }
+        match warning {
+            Warning::Away { .. } | Warning::TooMuchAtOnce { .. } => named,
+            Warning::DaysWithoutWork { .. } => !named && self.work_times_known(issue),
+            Warning::NotEnoughDays(_) | Warning::Delay(_) => true,
+        }
+    }
+
     /// The usual work days and the share of the person on the bar of an issue, for a reader who may
     /// know their work times; none for any other reader.
     pub(crate) fn time_of(&self, issue: &Issue) -> Option<(UsualDays, Share)> {

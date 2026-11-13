@@ -142,18 +142,6 @@ fn effort_shown(plan: &Plan, issue: &Issue, days: Days) -> Option<EffortShown> {
     })
 }
 
-/// Whether a warning about the person on the bar is told to the reader (ADR-0030, amendment M8, the
-/// maintainer's decision of 2026-11-13): *Away* and *Too much at once* only to a reader who sees the
-/// person (`named`), and *Days without work*, which never tells which days are away, only to a
-/// reader who does not see the person and may know their work times. Every other warning is told.
-fn told_to(plan: &Plan, issue: &Issue, warning: &Warning, named: bool) -> bool {
-    match warning {
-        Warning::Away { .. } | Warning::TooMuchAtOnce { .. } => named,
-        Warning::DaysWithoutWork { .. } => !named && plan.work_times_known(issue),
-        Warning::NotEnoughDays(_) | Warning::Delay(_) => true,
-    }
-}
-
 /// The days a warning is about.
 fn warning_days(plan: &Plan, issue: &Issue, warning: &Warning) -> Option<Days> {
     use bb_core::plan::warning::Delay;
@@ -515,11 +503,6 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
                     | Warning::TooMuchAtOnce { .. }
                     | Warning::DaysWithoutWork { .. }
             );
-            // A warning about the person on the bar tells that the issue has one: not to a reader
-            // who may not read *Assigned to*, so neither the list nor its count says so.
-            if names_person_on_bar && !plan.reads(issue, Field::AssignedTo) {
-                continue;
-            }
             let person = match plan
                 .person_on_bar(*id)
                 .filter(|_| names_person_on_bar && plan.reads(issue, Field::AssignedTo))
@@ -529,7 +512,7 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
             };
             let first = plan.person_on_bar(*id);
             let named = names_person(held, first, person.as_ref());
-            if !told_to(plan, issue, warning, named) {
+            if !plan.tells(issue, warning, named) {
                 continue;
             }
             let accepted_by = match accepted.iter().find(|kept| {

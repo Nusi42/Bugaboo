@@ -27,7 +27,7 @@ use jiff::civil::Date;
 use serde_json::json;
 
 use super::build::{Plan, PlanAsk, window_of};
-use super::factor::person_on_bar;
+use super::factor::{names_person, person_on_bar};
 use super::read::{date_targets, date_words};
 use super::types::{
     AcceptWarning, AcceptedWarningView, MoveAfterQuery, MovePreview, MovePreviewPage,
@@ -242,7 +242,8 @@ fn ensure_may_accept(
 ///
 /// # Errors
 /// `resource.not-found` for an issue the person may not see; `access.forbidden` for somebody else;
-/// `request.invalid` for a view of own date fields or a warning the issue does not have;
+/// `request.invalid` for a view of own date fields, a warning the issue does not have, or one that is
+/// not told to the person (the same answer, so it tells nothing);
 /// `edit.version-changed` when the issue changed since it was read.
 pub async fn accept_warning<S: AuthStore + SearchStore>(
     ctx: &Ctx<'_, S>,
@@ -258,10 +259,22 @@ pub async fn accept_warning<S: AuthStore + SearchStore>(
     if issue.version != input.version {
         return Err(AppError::stale(record, place, actor.person.id));
     }
+    // Whether the person who accepts sees the person on the bar: a kind not told to them is answered
+    // like a kind the issue does not have, so accepting never tests for an absence (ADR-0030,
+    // amendment M8).
+    let first = person_on_bar(&ctx.assigned_to(issue.id).await?);
+    let mask = held.field_mask_for(Some(issue.issue_type));
+    let shown = match first.filter(|_| mask.can_see(Field::AssignedTo)) {
+        Some(person) => ctx.shown_person(&held, person).await?,
+        None => None,
+    };
+    let named = names_person(&held, first, shown.as_ref());
+    if input.kind == WarningKind::TooMuchAtOnce && !(named && mask.can_see(Field::AssignedTo)) {
+        return Err(ErrorCode::InvalidRequest.into());
+    }
     if input.kind != WarningKind::TooMuchAtOnce {
         // The work times are read around a date the reader may read, else around today: a date
         // they may not read never decides what they are answered.
-        let mask = held.field_mask_for(Some(issue.issue_type));
         let around = [
             (Field::StartDate, issue.start_date),
             (Field::DueDate, issue.due_date),
@@ -273,10 +286,9 @@ pub async fn accept_warning<S: AuthStore + SearchStore>(
             .ask_for(&actor, &issue, vec![issue.clone()], &input.options, around)
             .await?;
         let plan = ctx.plan_with_surroundings(ask).await?;
-        let has_it = plan
-            .warnings
-            .iter()
-            .any(|(id, warning)| *id == issue.id && warning.kind() == input.kind);
+        let has_it = plan.warnings.iter().any(|(id, warning)| {
+            *id == issue.id && warning.kind() == input.kind && plan.tells(&issue, warning, named)
+        });
         if !has_it {
             return Err(ErrorCode::InvalidRequest.into());
         }

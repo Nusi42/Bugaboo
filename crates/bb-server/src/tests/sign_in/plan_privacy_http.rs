@@ -331,7 +331,7 @@ async fn plan_13_a_hidden_person_on_the_bar_is_not_named_through_the_factor_or_a
             .send(
                 "POST",
                 &format!("{TIMELINE}/accepted-warnings"),
-                Some(json!({"issue": key, "version": version, "kind": "days-without-work", "timeline": {"zoom": "week"}})),
+                Some(json!({"issue": key, "version": version, "kind": "away", "timeline": {"zoom": "week"}})),
             )
             .await?)?;
         site.show_people(&mut ada, StartingRole::Contributor, "assigned-to", "hidden")
@@ -354,9 +354,11 @@ async fn plan_13_a_hidden_person_on_the_bar_is_not_named_through_the_factor_or_a
         assert_eq!(factors[0], factors[1]);
         let found = page(&mut contributor, ask(&site, MONDAY, "2027-03-31", json!({}))).await?;
         let id = id_of_key(&mut ada, &key).await?;
-        let away = warnings_on(&found, &id)[0].clone();
-        assert!(away["accepted"].is_object(), "{away}");
-        assert!(away["accepted"]["by"].get("name").is_none(), "{away}");
+        // Lea accepted *Away*, which the reader is never told: their neutral warning is not faded,
+        // and nothing of hers reaches them.
+        let neutral = warnings_on(&found, &id)[0].clone();
+        assert_eq!(neutral["kind"], "days-without-work", "{neutral}");
+        assert_eq!(neutral["accepted"], Value::Null, "{neutral}");
         assert_eq!(rows_of(&found, &key)[0]["bar"]["time_factor"]["own_estimate"], false);
         assert!(!found.to_string().contains("Lea Lang"), "{found}");
         Ok(())
