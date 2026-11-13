@@ -2903,6 +2903,10 @@ textarea,
   background: var(--bg-surface);
 }
 
+[data-part="timeline-phone.group"] [data-part="timeline-row.toggle"] {
+  min-height: var(--size-control);
+}
+
 [data-part="timeline-phone.item"] {
   display: flex;
   flex-direction: column;
