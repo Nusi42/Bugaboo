@@ -1,7 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 
 import { screenValues } from "./every-screen.ts";
-import { everyGuestScreen, everyScreen, type ScreenAddress } from "./screen-list.ts";
+import { everyGuestScreen, everyScreen, opened, type ScreenAddress } from "./screen-list.ts";
 import { signIn } from "./flows.ts";
 import { sampleAdministrator } from "./sample.ts";
 import { inOrder } from "./sequence.ts";
@@ -188,13 +188,6 @@ export interface ScreenTargets {
 
 /** The least size of a target with touch that UX §7.4 and §8 write down: `size-control` with touch is at least it. */
 const TOUCH_PX = 44;
-
-/** Waits until a screen has drawn what it reads: its title, and no read on its way. */
-async function opened(page: Page, address: string): Promise<void> {
-  await page.goto(address);
-  await expect(page.locator("h1, [data-part='top-bar.title']").first()).toBeVisible();
-  await page.waitForLoadState("networkidle");
-}
 
 /** The small targets of each screen, opened one after the other. */
 async function measured(

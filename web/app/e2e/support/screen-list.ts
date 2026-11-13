@@ -1,3 +1,5 @@
+import { expect, type Page } from "@playwright/test";
+
 import { type ScreenValues } from "./every-screen.ts";
 import { filled, paths, routeParam, type Path } from "../../src/shared/paths.ts";
 import { guestScreens, places } from "../../src/shared/places.ts";
@@ -48,4 +50,11 @@ export function everyScreen(values: ScreenValues): readonly ScreenAddress[] {
 /** The screens before sign-in (`guestScreens`), at their own addresses: each shows what it shows to nobody signed in. */
 export function everyGuestScreen(): readonly ScreenAddress[] {
   return guestScreens.map((path) => ({ path, address: path }));
+}
+
+/** Opens a screen and waits until it has drawn what it reads: its title, and no read on its way. */
+export async function opened(page: Page, address: string): Promise<void> {
+  await page.goto(address);
+  await expect(page.locator("h1, [data-part='top-bar.title']").first()).toBeVisible();
+  await page.waitForLoadState("networkidle");
 }

@@ -5,6 +5,7 @@ import { useLocation } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
+import { useKeptError } from "../../shared/use-kept-error.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { ConnectForm } from "./ConnectForm.tsx";
 import { connectRequestOf, type ConnectRequest } from "./request.ts";
@@ -34,11 +35,11 @@ function refusal(error: unknown): string {
  */
 export function ConnectPage({ request }: ConnectPageProps) {
   usePageTitle(t("connect.page"));
-  const seen = useQuery(
-    api.query.queryOptions("get", "/api/v1/oauth/authorization", {
-      params: { query: request },
-    }),
-  );
+  const options = api.query.queryOptions("get", "/api/v1/oauth/authorization", {
+    params: { query: request },
+  });
+  const seen = useQuery(options);
+  const refused = useKeptError({ queryKey: options.queryKey, data: seen.data, error: seen.error });
   return (
     <div {...partOf(part.stack)}>
       <Card
@@ -49,8 +50,8 @@ export function ConnectPage({ request }: ConnectPageProps) {
         }
         level={1}
       >
-        {seen.isPending ? <DelayedSkeleton /> : null}
-        {seen.isError ? <Alert tone={alertTone.danger}>{refusal(seen.error)}</Alert> : null}
+        {seen.isPending && refused === null ? <DelayedSkeleton /> : null}
+        {refused === null ? null : <Alert tone={alertTone.danger}>{refusal(refused)}</Alert>}
         {seen.data === undefined ? null : (
           <ConnectForm
             request={request}
