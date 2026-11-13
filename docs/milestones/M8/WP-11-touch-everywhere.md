@@ -9,12 +9,12 @@ Every screen works with a finger: every control has a target of at least 44 px o
 
 ## Owns
 
-The touch variants of the tokens and parts in `design/theme.kdl` (the `touch` choice of the device, ADR-0026 update M3 WP-16), the swipe actions on list rows in `web/packages/ui/src/` (one component, used by the issue list, the saved searches, notifications and *My agents*) and their entries in *More*, the fixes of M5-F158 (the *Compact* tick boxes) and M6-F121 (the gaps of phone form footers), a check of the size of targets in the browser tests (`web/app/e2e/support/`), the phone pictures of every screen.
+The touch variants of the tokens and parts in `design/theme.kdl` (the `touch` choice of the device, ADR-0026 update M3 WP-16), the swipe actions on list rows in `web/packages/ui/src/` (one component, used by the issue list, notifications and *My agents*; the saved searches wait for a later milestone, M8-F101) and their entries in *More*, the fixes of M5-F158 (the *Compact* tick boxes) and M6-F121 (the gaps of phone form footers), a check of the size of targets in the browser tests (`web/app/e2e/support/`), the phone pictures of every screen.
 
 ## What is decided
 
 - **44 px on touch, 36 px with a mouse** (the UX concept): through the `touch` choice of the theme file, never a size written in a component. *Compact* changes spacing, never a touch target below 44 px.
-- **Swipe actions** on list rows: one component, with at most two actions to each side, chosen per list (the issue list: *Follow* and *Change status…*; notifications: *Mark as read*), each also in the row's *More*, so nothing depends on a swipe (TEST-A11Y). *Less motion* shows the action without the slide.
+- **Swipe actions** on list rows: one component, with at most two actions to each side, chosen per list (the issue list: *Follow* and *Change status or priority…*, decided by the maintainer, M8-F102; notifications: *Mark as read*; *My agents*: *Pause* or *Resume*), each also in the row's *More*, so nothing depends on a swipe (TEST-A11Y). *Less motion* shows the action without the slide.
 - **The new screens of M8** (work times, project members, the theme editor, the phone timeline) are covered as well: WP-11 runs in wave 3 for that reason.
 - **Phone pictures of every screen** (04-milestones, M8 checks): one per screen in the four themes, named so the UX review can find each.
 
