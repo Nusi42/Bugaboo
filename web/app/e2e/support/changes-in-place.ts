@@ -39,10 +39,15 @@ const ISSUE = "WEB-1";
 /** The issue the change of following is made on: one the person neither reported nor commented on. */
 const NOT_FOLLOWED = "WEB-3";
 
-/** Opens an issue with its Details, once the History is there (the page is whole then). */
+/**
+ * Opens an issue with its Details, once every first read of the page has answered: a change is
+ * measured on a whole page. (WebKit on Windows takes 4 to 11 s for those reads, M8-F11; measured
+ * from the moment they all answered, its changes move nothing, M8-F127.)
+ */
 async function openIssue(page: Page, issue: string): Promise<void> {
   await openIssueWithDetails(page, issue);
   await expect(page.locator('[data-part="history.entry"]').first()).toBeVisible();
+  await page.waitForLoadState("networkidle");
 }
 
 /** Opens the issue of the changes with its Details. */
