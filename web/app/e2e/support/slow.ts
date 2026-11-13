@@ -12,15 +12,24 @@ export async function holdBackLocks(page: Page, milliseconds: number): Promise<v
   });
 }
 
+/** A read that is held: when it was asked for, and the way to let it go. */
+export interface Held {
+  /** Settles once the page has asked for it. */
+  readonly asked: Promise<void>;
+  readonly release: () => void;
+}
+
 /**
- * Holds every request that matches `url` until the returned function is called, as a slow read
- * would: what the page shows while it waits can be looked at, and the answer comes on cue.
+ * Holds every request that matches `url` until `release` is called, as a slow read would: what the
+ * page shows while it waits can be looked at, and the answer comes on cue.
  */
-export async function holdUntilReleased(page: Page, url: string): Promise<() => void> {
-  const { promise, resolve } = Promise.withResolvers<void>();
+export async function holdUntilReleased(page: Page, url: string): Promise<Held> {
+  const released = Promise.withResolvers<void>();
+  const asked = Promise.withResolvers<void>();
   await page.route(url, async (route) => {
-    await promise;
+    asked.resolve();
+    await released.promise;
     await route.continue();
   });
-  return resolve;
+  return { asked: asked.promise, release: released.resolve };
 }

@@ -18,7 +18,7 @@ test("ux_01_the_new_issue_button_of_a_phone_stays_the_same_while_the_list_loads"
   page,
 }) => {
   await signIn(page, ada);
-  const release = await holdUntilReleased(page, "**/api/v1/search/fields*");
+  const held = await holdUntilReleased(page, "**/api/v1/search/fields*");
   await page.goto(projectIssuesAddress("WEB"));
   const button = page
     .locator("[data-part='search-bar']")
@@ -27,7 +27,7 @@ test("ux_01_the_new_issue_button_of_a_phone_stays_the_same_while_the_list_loads"
   // bar has loaded, not a new one in its place.
   const still = await landmarkOf(button, "New issue");
   const loading = await movementWhile(page, [still], async () => {
-    release();
+    held.release();
     await expect(rowOf(page, webIssues.typo)).toBeVisible();
   });
   expect({ moved: loading.moved, vanished: loading.vanished }).toEqual({ moved: [], vanished: [] });

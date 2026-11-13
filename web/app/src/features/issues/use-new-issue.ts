@@ -53,6 +53,10 @@ export function useNewIssue(): NewIssue {
       state.change(next);
     },
     create: (another, onMade) => {
+      // Enter in a box sends the form even while the issue is made or opened: it is made once.
+      if (create.isPending || opening) {
+        return;
+      }
       create.mutate(forForm(state.values, layout.shows), {
         onSuccess: (made: Schema<"IssueItem">) => {
           const key = made.readable_id ?? "";
