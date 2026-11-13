@@ -546,6 +546,7 @@ export const part = {
   quickSearchItem: "quick-search.item",
   issueRow: "issue-row",
   timelineBar: "timeline-bar",
+  timelinePhoneItem: "timeline-phone.item",
   listGrid: "list-grid",
   listRowCell: "list-row.cell",
   rowMore: "row-more",
@@ -625,7 +626,6 @@ export const part = {
   timelineTrayLine: "timeline-tray.line",
   timelinePhone: "timeline-phone",
   timelinePhoneGroup: "timeline-phone.group",
-  timelinePhoneItem: "timeline-phone.item",
   timelinePhoneLine: "timeline-phone.line",
   timelinePhoneFacts: "timeline-phone.facts",
   timelinePhoneLane: "timeline-phone.lane",
@@ -1295,6 +1295,10 @@ export const partWords = {
       "target",
     ],
   },
+  "timeline-phone.item": {
+    variant: [],
+    state: ["group-not-started", "group-in-progress", "group-done"],
+  },
   "list-grid": { variant: [], state: [] },
   "list-row.cell": {
     variant: [
@@ -1391,7 +1395,6 @@ export const partWords = {
   "timeline-tray.line": { variant: [], state: [] },
   "timeline-phone": { variant: [], state: [] },
   "timeline-phone.group": { variant: [], state: [] },
-  "timeline-phone.item": { variant: [], state: [] },
   "timeline-phone.line": { variant: [], state: [] },
   "timeline-phone.facts": { variant: [], state: [] },
   "timeline-phone.lane": { variant: [], state: [] },

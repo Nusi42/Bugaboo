@@ -762,11 +762,10 @@ bold reason="Bold is kept for the titles, the headings of sections, the words of
 //
 // Lines that several rules share. `use "name"` puts them in the place of the line.
 
-// The line of the ring: the width and the color of every outline that says "here".
 // The patterns of the days without work on the timeline (ADR-0030, decision 3), one each, for the days inside a bar
 // and the swatches of the Legend: away days hatched one way, public holidays the other way, in lines of two widths
 // of a border in the quiet text color so they are seen in the dark themes and at the zoom of months; days that are
-// not usual work days shaded by a quarter of it, like a weekend.
+// not usual work days shaded by a third of it, like a weekend.
 mixin "hatch-away" {
     background "repeating-linear-gradient(135deg, $fg-muted 0, $fg-muted calc($border-width * 2), transparent calc($border-width * 2), transparent $space-2)"
 }
@@ -779,6 +778,7 @@ mixin "shade-day-off" {
     background "color-mix(in srgb, $fg-muted 30%, transparent)"
 }
 
+// The line of the ring: the width and the color of every outline that says "here".
 mixin "ring-line" {
     outline "$ring-width solid $accent"
 }
@@ -2595,15 +2595,15 @@ part "quick-search.item[focused]" {
     use "ring-inside"
 }
 
-part "list-row[state=group-not-started]" "issue-row[state=group-not-started]" "quick-search.item[state=group-not-started]" "timeline-bar[state=group-not-started]" {
+part "list-row[state=group-not-started]" "issue-row[state=group-not-started]" "quick-search.item[state=group-not-started]" "timeline-bar[state=group-not-started]" "timeline-phone.item[state=group-not-started]" {
     background "$tint-ns"
 }
 
-part "list-row[state=group-in-progress]" "issue-row[state=group-in-progress]" "quick-search.item[state=group-in-progress]" "timeline-bar[state=group-in-progress]" {
+part "list-row[state=group-in-progress]" "issue-row[state=group-in-progress]" "quick-search.item[state=group-in-progress]" "timeline-bar[state=group-in-progress]" "timeline-phone.item[state=group-in-progress]" {
     background "$tint-ip"
 }
 
-part "list-row[state=group-done]" "issue-row[state=group-done]" "quick-search.item[state=group-done]" "timeline-bar[state=group-done]" {
+part "list-row[state=group-done]" "issue-row[state=group-done]" "quick-search.item[state=group-done]" "timeline-bar[state=group-done]" "timeline-phone.item[state=group-done]" {
     background "$tint-done"
 }
 
@@ -3614,10 +3614,15 @@ part "timeline-bar.label" {
     position absolute
     top "50%"
     inset-inline-start "calc(100% + $space-2)"
+    z-index "$z-raised"
     display inline-flex
     align-items center
     gap "$space-1"
     translate "0 -50%"
+    // A pad of the chart's color: the Today line and the weekends pass behind the words, never through them.
+    padding-inline "$space-1"
+    border-radius "$r-ctl"
+    background "$bg-raised"
     color "$fg-muted"
     font-size "$fs-xs"
     pointer-events none
@@ -3816,9 +3821,13 @@ part "timeline-side.list" {
 part "assigned-picker" {
     display flex
     flex-direction column
-    align-items flex-start
     gap "$space-3"
     padding "$space-4"
+}
+
+// The search box and the rows fill the width of the picker; *Done* keeps its own width at the start.
+part "assigned-picker > button" {
+    align-self flex-start
 }
 
 // A line of the card with a button at its end: the effort and *Change* of the time factor.
@@ -3879,12 +3888,13 @@ part "timeline-warning.sentence:focus-visible" {
     use "ring"
 }
 
-// The ways out of a warning: quiet buttons one under the other, in the order the server offers them, the same in
-// every warning.
+// The ways out of a warning: buttons one under the other, in the order the server offers them, the same in every
+// warning (UX §4.7: "its ways out as buttons").
 part "timeline-warning.ways" {
     display flex
     flex-direction column
     align-items flex-start
+    gap "$space-2"
 }
 
 // An issue of the preview of *Move it after*: its ID, then its days before and after the move, each on a line.

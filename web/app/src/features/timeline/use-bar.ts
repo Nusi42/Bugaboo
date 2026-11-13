@@ -93,7 +93,7 @@ export function useBar(line: IssueLine, days: BarDays) {
     dragging,
     handlers,
     drop,
-    ...useLabelPlace(timeline, shown),
+    ...useLabelPlace(timeline, shown, selected),
     marked: timeline.marked === line.issue,
     warnings: timeline.warnedOf(line.issue),
     ...barKeys(timeline, line, mayMove, select),

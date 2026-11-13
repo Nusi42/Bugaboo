@@ -101,6 +101,20 @@ export function afterSaves<T>(row: TimelineRow, work: (version: number) => Promi
   return inOrder(`timeline:${idOf(row)}`, () => work(versionNow(row)));
 }
 
+/**
+ * Runs a change of an issue after every save of it that this screen asked for, like `afterSaves`,
+ * and keeps the version it made, so the next change of the screen is made on that one.
+ */
+export async function changeAfterSaves(
+  row: TimelineRow,
+  change: (version: number) => Promise<number | undefined>,
+): Promise<void> {
+  const made = await afterSaves(row, change);
+  if (made !== undefined) {
+    savedVersions.set(idOf(row), made);
+  }
+}
+
 /** What a change of dates says when it is done: by how many days it moved, or nothing more. */
 export type Said = { readonly move: "both"; readonly days: number } | { readonly move: "set" };
 

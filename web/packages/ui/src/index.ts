@@ -124,7 +124,13 @@ export {
 export { OrDivider, type OrDividerProps } from "./OrDivider.tsx";
 export { Overlay, type OverlayProps } from "./Overlay.tsx";
 export { Priority, type PriorityProps } from "./Priority.tsx";
-export { rowStates, type RowStateInput, type RowStateWord } from "./row-state.ts";
+export {
+  groupTint,
+  rowStates,
+  type RowStateInput,
+  type RowStateWord,
+  type TintWord,
+} from "./row-state.ts";
 export {
   browserStorage,
   forgetStored,

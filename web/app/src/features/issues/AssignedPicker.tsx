@@ -104,8 +104,9 @@ function Inside({
   const people = peopleOf(found.data?.pages);
   return (
     <div {...partOf(part.assignedPicker)}>
+      <h2 {...partOf(part.confirmTitle)}>{said.title}</h2>
       <SearchPicker
-        legend={said.title}
+        legend={t("issues.assign-list")}
         searchLabel={t("issues.assign-search")}
         listLabel={t("issues.assign-list")}
         {...frame}

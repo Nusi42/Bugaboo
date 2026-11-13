@@ -1,6 +1,7 @@
 import { Icon, iconName, iconSize, IssueId, part, partOf } from "@bugaboo/ui";
 import { useLayoutEffect, useRef } from "react";
 
+import { doNothing } from "../../shared/do-nothing.ts";
 import { personOnBarText } from "./people/people-words.ts";
 import type { TimelineRow } from "./timeline-data.ts";
 
@@ -22,9 +23,22 @@ export interface BarLabelProps {
 export function BarLabel({ row, issueKey, warnings, onWidth }: BarLabelProps) {
   const person = personOnBarText(row);
   const ref = useRef<HTMLSpanElement>(null);
+  // The width is measured once and again whenever the label changes size (its ID, its person or
+  // its sign changed), never on every draw.
   useLayoutEffect(() => {
-    onWidth(ref.current?.offsetWidth ?? 0);
-  });
+    const label = ref.current;
+    if (label === null) {
+      return doNothing;
+    }
+    onWidth(label.offsetWidth);
+    const sizes = new ResizeObserver(() => {
+      onWidth(label.offsetWidth);
+    });
+    sizes.observe(label);
+    return () => {
+      sizes.disconnect();
+    };
+  }, [onWidth]);
   return (
     <span ref={ref} {...partOf(part.timelineBarLabel)}>
       {warnings > 0 ? (

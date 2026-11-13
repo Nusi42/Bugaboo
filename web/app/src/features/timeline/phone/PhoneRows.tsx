@@ -1,6 +1,7 @@
 import { t } from "@bugaboo/messages";
 import {
   buttonType,
+  groupTint,
   Icon,
   iconName,
   iconSize,
@@ -39,7 +40,14 @@ export function PhoneIssue({ row, days, span, today, onOpen }: PhoneIssueProps) 
   const warned = useTimeline().warnedOf(known(issue.id) ?? "") > 0;
   return (
     <li>
-      <button type={buttonType.button} onClick={onOpen} {...partOf(part.timelinePhoneItem)}>
+      <button
+        type={buttonType.button}
+        onClick={onOpen}
+        // The tint of its status group, as a row of the issue list; the priority edge is on its bar.
+        {...partOf(part.timelinePhoneItem, {
+          states: [groupTint(issue.status?.status_group ?? "not-started")],
+        })}
+      >
         <span {...partOf(part.timelinePhoneLine)}>
           <StatusIcon
             group={issue.status?.status_group ?? "not-started"}

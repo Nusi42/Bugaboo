@@ -49,7 +49,7 @@ export interface GroupHeadProps {
 
 /** The head of a group (a goal, a project, a person …): folds its rows, and shows the goal's bracket and diamond. */
 export function GroupHead({ line, at, name, onToggle }: GroupHeadProps) {
-  const person = usePersonDays(line);
+  const person = usePersonDays(line.key);
   return (
     <Row
       at={at}
@@ -102,6 +102,8 @@ export function IssueRow({ line, at, described }: IssueRowProps) {
   const key = known(issue.readable_id) ?? "";
   const days = timeline.daysOf(line);
   const goal = timeline.goalOf(line.issue);
+  // Under *Group by person* the row hatches the days of the person of its group, behind the bar.
+  const personDays = usePersonDays(line.row.group);
   return (
     <Row
       at={at}
@@ -119,6 +121,7 @@ export function IssueRow({ line, at, described }: IssueRowProps) {
       }
       lane={
         <>
+          <Hatches stretches={personDays.stretches} />
           {days === undefined ? null : (
             <TimelineBar line={line} days={days} described={described} />
           )}

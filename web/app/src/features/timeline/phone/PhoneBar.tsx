@@ -51,8 +51,7 @@ export function PhoneBar({ row, days, span, today }: PhoneBarProps) {
   const [first, last] = [placeOf(span, days.first), placeOf(span, days.last)];
   const start = Math.max(0, first);
   const end = Math.min(span.days - 1, last);
-  const named = row.bar?.person !== null && row.bar?.person !== undefined;
-  const stretches = hatchedStretches(row.bar?.hatched ?? [], span.first, named);
+  const stretches = hatchedStretches(row.bar?.hatched ?? [], span.first);
   usePlace(lane, { "timeline-days": span.days });
   usePlace(bar, { "timeline-start": start, "timeline-length": Math.max(0, end - start + 1) });
   const states = rowStates({

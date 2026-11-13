@@ -63,8 +63,7 @@ export function barWords(base: string, facts: BarFacts): string {
  * screen readers. A bar whose person the reader may not see has hatched days without a word.
  */
 export function barSaid(row: TimelineRow, shown: BarDays, warnings: number) {
-  const named = row.bar?.person !== null && row.bar?.person !== undefined;
-  const stretches = hatchedStretches(row.bar?.hatched ?? [], shown.first, named);
+  const stretches = hatchedStretches(row.bar?.hatched ?? [], shown.first);
   const key = known(row.issue.readable_id) ?? "";
   const base = t("timeline.bar", { key, title: row.issue.title ?? "", days: daysText(shown) });
   return { stretches, name: barWords(base, { row, shown, stretches, warnings }) };

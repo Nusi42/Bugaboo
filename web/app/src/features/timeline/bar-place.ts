@@ -30,9 +30,12 @@ function labelGoesBefore(
   timeline: Pick<TimelineContextValue, "span" | "dayPixels">,
   shown: BarDays,
   view: ChartView,
-  label: number,
+  label: { readonly width: number; readonly selected: boolean },
 ): boolean {
-  const room = label + pixelsOf("space-2");
+  // The gap before the label and a margin at the end of what is seen; a selected bar has its dot
+  // and its ring between its end and its label.
+  const dot = label.selected ? pixelsOf("size-target-least") + pixelsOf("space-1") : 0;
+  const room = label.width + pixelsOf("space-2") * 2 + dot;
   const start = placeOf(timeline.span, shown.first) * timeline.dayPixels;
   const end = (placeOf(timeline.span, shown.last) + 1) * timeline.dayPixels;
   const after = Math.min(timeline.span.days * timeline.dayPixels, view.end) - end;
@@ -47,11 +50,12 @@ function labelGoesBefore(
 export function useLabelPlace(
   timeline: Pick<TimelineContextValue, "span" | "dayPixels">,
   shown: BarDays,
+  selected: boolean,
 ) {
   const view = useContext(ChartViewContext);
   const [width, setWidth] = useState(0);
   return {
     onLabelWidth: setWidth,
-    labelBefore: labelGoesBefore(timeline, shown, view, width),
+    labelBefore: labelGoesBefore(timeline, shown, view, { width, selected }),
   };
 }

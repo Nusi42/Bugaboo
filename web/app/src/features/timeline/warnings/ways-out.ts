@@ -7,7 +7,7 @@ import { undoStore } from "../../../shared/optimistic-undo.ts";
 import type { TimelineOptions } from "../../../shared/list-view.ts";
 import { namedPerson, type NamedPerson } from "../../../shared/person.ts";
 import { sendChange } from "../../issues/index.ts";
-import { afterSaves } from "../dates.ts";
+import { afterSaves, changeAfterSaves } from "../dates.ts";
 import { idOf, refreshTimeline, type PlanWarning, type TimelineRow } from "../timeline-data.ts";
 
 /**
@@ -126,7 +126,7 @@ export async function giveTo(row: TimelineRow, person: NamedPerson): Promise<voi
     .flatMap((each) => namedPerson(each) ?? [])
     .filter((each) => each.id !== person.id);
   try {
-    await afterSaves(row, (version) =>
+    await changeAfterSaves(row, (version) =>
       sendChange(idOf(row), { version, values: { assignedTo: [person, ...others] } }),
     );
     undoStore.offer({

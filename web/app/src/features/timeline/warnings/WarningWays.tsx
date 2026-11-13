@@ -163,7 +163,6 @@ export function WarningWays({ warning, described, ...ways }: WarningWaysProps) {
           .map((way) => (
             <Button
               key={way}
-              look={buttonLook.quiet}
               aria-describedby={described}
               onPress={() => {
                 take(way);
