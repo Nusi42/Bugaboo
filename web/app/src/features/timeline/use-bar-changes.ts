@@ -1,45 +1,15 @@
-import { t } from "@bugaboo/messages";
-
-import { undoStore } from "../../shared/optimistic-undo.ts";
-import { known } from "../../shared/present.ts";
 import { keptDates, type DateFields, type KeptDates } from "./date-fields.ts";
+import { sayLocked } from "./dates.ts";
 import { useLinks } from "./dependencies.ts";
 import type { BarDays } from "./lines.ts";
 import type { Move } from "./moves.ts";
-import type { TimelineRow } from "./timeline-data.ts";
+import { idOf, type TimelineRow } from "./timeline-data.ts";
 import { useKeyRuns, useSaveOnLeave } from "./use-key-runs.ts";
-import { idOf, stepFrom, useSaving, type Step } from "./use-saving.ts";
+import { placeOn, setTo, stepFrom } from "./save-queue.ts";
+import { useSaving } from "./use-saving.ts";
 
 /** The rows of the page and of the tray, by the ID of their issue. */
 export type RowOf = (issue: string) => TimelineRow | undefined;
-
-/** Says why a bar cannot be moved. */
-function sayLocked(row: TimelineRow): void {
-  undoStore.offer({ message: t("timeline.locked", { key: known(row.issue.readable_id) ?? "" }) });
-}
-
-/** Where an issue stands before a change: its bar on this screen, or the dates it keeps (the tray). */
-type Before = { readonly dates: KeptDates; readonly days: BarDays | undefined };
-
-/** The change of *Set dates…*; none without any date, which would send the issue to the tray. */
-function setTo(before: Before, dates: KeptDates): Step | undefined {
-  const [first, last] = [dates.start ?? dates.end, dates.end ?? dates.start];
-  return first === null || last === null
-    ? undefined
-    : { before: before.dates, from: before.days, dates, days: { first, last } };
-}
-
-/** The change of an issue dropped on a day: it starts there, and keeps a due date that comes after. */
-function placeOn(before: Before, day: string): Step {
-  const kept = before.dates.end;
-  const end = kept !== null && kept >= day ? kept : null;
-  return {
-    before: before.dates,
-    from: before.days,
-    dates: { start: day, end },
-    days: { first: day, last: end ?? day },
-  };
-}
 
 /**
  * What the person does to bars (PLAN-02, PLAN-03): new dates, worked out from where the issue stands
@@ -52,7 +22,7 @@ export function useBarChanges(fields: DateFields | undefined, rowOf: RowOf) {
   const keys = useKeyRuns(saving);
   useSaveOnLeave(keys.endAll);
   // A waiting run of keys is saved first, so the next change starts where it left the bar.
-  const beforeOf = (row: TimelineRow): Before | undefined => {
+  const beforeOf = (row: TimelineRow) => {
     keys.onRunEnd(idOf(row));
     const now = keys.standing(row);
     const kept = fields === undefined ? undefined : keptDates(row, fields);

@@ -3,6 +3,7 @@ import { t } from "@bugaboo/messages";
 import { messageOf } from "../../shared/errors.ts";
 import { formatCalendarDay } from "../../shared/format.ts";
 import { inOrder } from "../../shared/in-order.ts";
+import { undoStore } from "../../shared/optimistic-undo.ts";
 import { known } from "../../shared/present.ts";
 import { sendChange } from "../issues/index.ts";
 import { changeOf, type DateFields, type KeptDates } from "./date-fields.ts";
@@ -78,6 +79,8 @@ function save(row: TimelineRow, fields: DateFields, dates: KeptDates): Promise<s
       const version = await sendChange(id, {
         version: versionNow(row),
         values: changeOf(fields, dates),
+        // A run of keys is saved as the page is hidden; the browser still sends it (`use-key-runs.ts`).
+        keepalive: true,
       });
       if (version !== undefined) {
         savedVersions.set(id, version);
@@ -113,4 +116,9 @@ export async function changeDates(
   const refused = await save(row, fields, dates);
   await refreshTimeline();
   return refused;
+}
+
+/** Says why a bar cannot be moved. */
+export function sayLocked(row: TimelineRow): void {
+  undoStore.offer({ message: t("timeline.locked", { key: known(row.issue.readable_id) ?? "" }) });
 }

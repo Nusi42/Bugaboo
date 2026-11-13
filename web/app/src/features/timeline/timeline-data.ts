@@ -4,12 +4,18 @@ import { keepPreviousData, useInfiniteQuery } from "@tanstack/react-query";
 import { api } from "../../shared/api.ts";
 import type { TimelineOptions } from "../../shared/list-view.ts";
 import { pageSize } from "../../shared/paged.ts";
+import { known } from "../../shared/present.ts";
 import { queryClient } from "../../shared/query-client.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
 import type { Span } from "./scale.ts";
 
 /** A row of the timeline as the server sends it: a group, an issue, its bar. */
 export type TimelineRow = Schema<"TimelineRowBody">;
+
+/** The ID of the issue of a row. */
+export function idOf(row: TimelineRow): string {
+  return known(row.issue.id) ?? "";
+}
 
 /** A page of the timeline as the server sends it. */
 type TimelinePage = Schema<"TimelinePageBody">;

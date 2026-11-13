@@ -12,7 +12,11 @@ import { isDetail, type IssueEdit, type IssueRequestValues } from "./issue-value
  */
 export async function sendChange(
   id: string,
-  edit: Pick<IssueEdit, "version"> & { readonly values: IssueRequestValues },
+  edit: Pick<IssueEdit, "version"> & {
+    readonly values: IssueRequestValues;
+    /** The browser still sends the change when the page is closed at once (a run of keys, PLAN-03). */
+    readonly keepalive?: boolean;
+  },
 ): Promise<number | undefined> {
   const { values, version } = edit;
   const body = {
@@ -31,7 +35,11 @@ export async function sendChange(
   };
   // One after the other: each change is made on the version the one before it has just made.
   const answer = await inOrder(`issue:${id}`, () =>
-    api.client.PATCH("/api/v1/issues/{issue}", { params: { path: { issue: id } }, body }),
+    api.client.PATCH("/api/v1/issues/{issue}", {
+      params: { path: { issue: id } },
+      body,
+      keepalive: edit.keepalive === true,
+    }),
   );
   void queryClient.invalidateQueries({ queryKey: queryKeys.issues.lists() });
   // A length of this issue counts in the totals of the issues above it.

@@ -35,7 +35,7 @@ export function letGoWhenHidden(
 /**
  * Lets the lock go when the page is hidden and when the screen goes away, and says when the page
  * comes back from the cache (see [`letGoWhenHidden`]). The functions must stay the same while the
- * screen is on.
+ * screen is on. The timeline saves its waiting runs of keys the same way (`use-key-runs.ts`).
  */
 export function useLetGoWhenHidden(letGo: () => void, comeBack: () => void): void {
   useEffect(() => {
