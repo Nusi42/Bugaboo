@@ -1,4 +1,5 @@
-//! `cargo xtask dev`: the Vite dev server and the Bugaboo server, side by side (ADR-0023).
+//! `cargo xtask dev`: the Vite dev server and the Bugaboo server, side by side (ADR-0023). It
+//! first installs what building and running need, so a fresh clone needs no `cargo xtask setup`.
 //!
 //! The ports come from [`crate::ports`].
 
@@ -14,6 +15,8 @@ use anyhow::{Context as _, bail};
 use crate::dataset;
 use crate::output;
 use crate::ports::{PORTS_FILE, Ports};
+use crate::repo::Repo;
+use crate::setup;
 use crate::steps::{self, Profile};
 use crate::tools;
 
@@ -39,7 +42,11 @@ pub(crate) fn data_folder(root: &Path) -> PathBuf {
     root.join(DEV_DATA)
 }
 
-pub(crate) fn run(root: &Path, sample: bool) -> anyhow::Result<bool> {
+/// Installs or checks what building and running need (never the hooks, the identity or the tools
+/// of the tests: a person who only tries Bugaboo commits nothing), builds, and starts.
+pub(crate) fn run(repo: &Repo, sample: bool) -> anyhow::Result<bool> {
+    setup::run(repo, setup::Purpose::Run)?;
+    let root = repo.root();
     let ports = Ports::load(root)?;
     let built = steps::run(root, &[steps::server_build(Profile::Debug)])?;
     let Some(server) = built.executable.filter(|_| built.passed) else {

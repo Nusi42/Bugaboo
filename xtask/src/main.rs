@@ -21,6 +21,7 @@ mod fakecc;
 mod folder;
 #[path = "gen/mod.rs"]
 mod generate;
+mod git_hooks;
 mod git_identity;
 mod hook;
 mod load;
@@ -69,7 +70,8 @@ enum Command {
         #[command(subcommand)]
         scope: CheckScope,
     },
-    /// Start the Vite dev server and the Bugaboo server on the ports from tools/dev/ports.json.
+    /// Start the Vite dev server and the Bugaboo server on the ports from tools/dev/ports.json,
+    /// after installing what building and running need (no hooks, identity or test tools).
     Dev {
         /// Start on a fresh sample organization (50 fictional people; the program says where
         /// the passwords are).
@@ -127,7 +129,8 @@ enum Command {
     /// Store the API description as the frozen copy that ARCH-API-FREEZE compares with. The lead
     /// does it at `m4-done`; after that a change of /api/v1 may only add (ADR-0008).
     Freeze,
-    /// Install the pinned external tools into `.tools/` (tools/dev/tools.toml).
+    /// Set up for contributing: the pinned external tools into `.tools/` (tools/dev/tools.toml),
+    /// the npm packages, the browsers of the tests, the public Git identity and the Git hooks.
     Setup,
     /// Mark the master repository (ADR-0039): write `.env.local` with the role, make its pre-push
     /// hook run the checks that build nothing, and make Cargo refuse to compile there. Run it in
@@ -319,7 +322,7 @@ fn run() -> anyhow::Result<ExitCode> {
             Ok(ExitCode::SUCCESS)
         }
         Command::Setup => {
-            setup::run(&repo)?;
+            setup::run(&repo, setup::Purpose::Contribute)?;
             output::info(&format!(
                 "All tools are installed in {}/.",
                 tools::TOOLS_DIR
@@ -348,7 +351,7 @@ fn run() -> anyhow::Result<ExitCode> {
             repo.root(),
             data_dir.as_deref(),
         )?)),
-        Command::Dev { sample } => Ok(steps::exit_code(dev::run(repo.root(), sample)?)),
+        Command::Dev { sample } => Ok(steps::exit_code(dev::run(&repo, sample)?)),
         Command::Dataset { kind } => Ok(steps::exit_code(dataset::run(&repo, &request_of(kind))?)),
         Command::Bench { database } => Ok(steps::exit_code(bench::run(
             &repo,

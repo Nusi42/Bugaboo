@@ -15,6 +15,10 @@ use crate::repo::Repo;
 /// The variable that names the public identity (`Name <email>`).
 const IDENTITY_VARIABLE: &str = "BUGABOO_PUBLIC_IDENTITY";
 
+/// How setup starts the line about a missing identity: a note, not an error, because only a
+/// commit needs it and setup goes on.
+const MISSING_NOTE: &str = "note     no";
+
 /// What setup does about the identity.
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum Choice {
@@ -96,7 +100,9 @@ fn apply(root: &Path, configured: Option<Identity>) -> String {
             }
         }
         Choice::Missing => format!(
-            "MISSING  public Git identity: set user.name and user.email (the GitHub noreply              address), or the variable {IDENTITY_VARIABLE}; commits are refused without it"
+            "{MISSING_NOTE} public Git identity yet; it is needed only to commit. Before your \
+             first commit, set user.name and user.email (the GitHub noreply address) or the \
+             variable {IDENTITY_VARIABLE}: the commit-msg hook refuses commits until then"
         ),
     }
 }
@@ -170,7 +176,10 @@ mod tests {
     fn without_a_master_the_variable_is_used_and_a_private_value_is_not() {
         let work = TempDir::new("identity-variable");
         assert!(work.git(&["init", "--quiet"]));
-        assert!(apply(work.path(), Some(private())).starts_with("MISSING"));
+        let missing = apply(work.path(), Some(private()));
+        assert!(missing.starts_with(MISSING_NOTE), "{missing}");
+        assert!(missing.contains("needed only to commit"), "{missing}");
+        assert!(!missing.contains("MISSING"), "{missing}");
         assert_eq!(identity_in(work.path()), None);
         assert!(apply(work.path(), Some(public())).contains("copied"));
         assert_eq!(identity_in(work.path()), Some(public()));

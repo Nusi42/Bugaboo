@@ -1,4 +1,6 @@
-//! `cargo xtask setup`: installs every pinned tool into `.tools/` (ADR-0014, ADR-0024).
+//! `cargo xtask setup`: installs every pinned tool into `.tools/` (ADR-0014, ADR-0024), the npm
+//! packages, the browsers of the tests, the public Git identity and the Git hooks. `cargo xtask
+//! dev` uses the same code for the few parts that building and running need ([`Purpose::Run`]).
 //!
 //! Nothing is installed machine-wide. Running it again changes nothing, and a download whose
 //! sha256 does not match is refused before anything is unpacked.
@@ -17,14 +19,83 @@ use crate::output;
 use crate::repo::Repo;
 use crate::tools::{self, Tool};
 
-/// Installs or updates every tool in `tools/dev/tools.toml`, then the npm packages.
-pub(crate) fn run(repo: &Repo) -> anyhow::Result<()> {
-    let list = tools::load(repo)?;
+/// Who the work is for: a contributor (`cargo xtask setup`), or a person who only builds and runs
+/// Bugaboo (`cargo xtask dev`) and so needs no hooks, identity, test browsers or checking tools.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Purpose {
+    Contribute,
+    Run,
+}
+
+/// One part of the work, in the order it is done.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Stage {
+    /// Node.js and the parts of the Rust toolchain that the build needs.
+    Prerequisites,
+    /// The pinned tools of `tools/dev/tools.toml` (for running only those of [`wanted`]).
+    Tools,
+    /// The npm packages.
+    Npm,
+    /// The browsers of the end-to-end tests.
+    TestBrowsers,
+    /// The public Git identity of the folder.
+    Identity,
+    /// The Git hooks.
+    Hooks,
+}
+
+/// The parts of the work for `purpose`.
+fn stages(purpose: Purpose) -> &'static [Stage] {
+    match purpose {
+        Purpose::Contribute => &[
+            Stage::Prerequisites,
+            Stage::Tools,
+            Stage::Npm,
+            Stage::TestBrowsers,
+            Stage::Identity,
+            Stage::Hooks,
+        ],
+        Purpose::Run => &[Stage::Prerequisites, Stage::Tools, Stage::Npm],
+    }
+}
+
+/// The pinned tools that building and running need: the program that joins the WebAssembly
+/// modules with their glue (`cargo xtask wasm`, run before the browser app starts). `wasm-opt`
+/// comes with the npm packages; every other tool of the list checks or tests.
+const TOOLS_FOR_RUNNING: [&str; 1] = [crate::wasm::BINDGEN];
+
+/// Whether `tool` is installed for `purpose`.
+fn wanted(purpose: Purpose, tool: &Tool) -> bool {
+    purpose == Purpose::Contribute || TOOLS_FOR_RUNNING.contains(&tool.name.as_str())
+}
+
+/// Installs or checks what `purpose` needs, part by part (see [`stages`]). Running it again
+/// changes nothing.
+pub(crate) fn run(repo: &Repo, purpose: Purpose) -> anyhow::Result<()> {
     let root = repo.root();
+    for stage in stages(purpose) {
+        match stage {
+            Stage::Prerequisites => check_prerequisites(root)?,
+            Stage::Tools => {
+                let list = tools::load(repo)?;
+                let chosen: Vec<&Tool> = list.iter().filter(|tool| wanted(purpose, tool)).collect();
+                install_tools(root, &chosen)?;
+            }
+            Stage::Npm => install_npm(root)?,
+            Stage::TestBrowsers => install_browsers(root)?,
+            Stage::Identity => crate::git_identity::copy_into(repo),
+            Stage::Hooks => crate::git_hooks::install(root)?,
+        }
+    }
+    Ok(())
+}
+
+/// Installs or updates the tools of `list` into `.tools/`.
+fn install_tools(root: &Path, list: &[&Tool]) -> anyhow::Result<()> {
     fs::create_dir_all(tools::bin_dir(root))?;
     clean_old_binaries(&tools::bin_dir(root));
     let installed = installed_cargo_tools(root)?;
-    for tool in &list {
+    for tool in list {
         match tool.kind.as_str() {
             "cargo" => install_cargo(root, tool, &installed)?,
             "download" => install_download(root, tool)?,
@@ -36,33 +107,54 @@ pub(crate) fn run(repo: &Repo) -> anyhow::Result<()> {
             ),
         }
     }
-    install_npm(root)?;
-    install_browsers(root)?;
-    crate::git_identity::copy_into(repo);
-    install_git_hooks(root)
+    Ok(())
 }
 
-/// Makes Git run the checks on commit and push (`lefthook.yml`), using the pinned lefthook.
-/// Running it again only rewrites the same hook files.
-fn install_git_hooks(root: &Path) -> anyhow::Result<()> {
-    if !root.join(".git").exists() || !root.join("lefthook.yml").is_file() {
-        return Ok(());
+/// Stops with a plain message when Node.js or a part of the Rust toolchain that the build needs is
+/// missing. `rustup` adds the parts named in `rust-toolchain.toml` by itself; a toolchain that was
+/// installed another way may lack them.
+fn check_prerequisites(root: &Path) -> anyhow::Result<()> {
+    let node = tools::command("node").arg("--version").output();
+    if !node.is_ok_and(|out| out.status.success()) {
+        let version = fs::read_to_string(root.join(".node-version")).unwrap_or_default();
+        bail!(
+            "Node.js is not installed, or not on the PATH. Bugaboo needs Node.js {}: install it \
+             from https://nodejs.org, then run the command again.",
+            version.trim()
+        );
     }
-    let lefthook = tools::bin_dir(root).join(if cfg!(windows) {
-        "lefthook.exe"
-    } else {
-        "lefthook"
-    });
-    let status = tools::command(&lefthook)
-        .arg("install")
+    let out = tools::command("rustc")
+        .args(["--print", "sysroot"])
         .current_dir(root)
-        .status()
-        .with_context(|| format!("could not run {}", lefthook.display()))?;
-    if !status.success() {
-        bail!("lefthook install failed (see the messages above).");
+        .output()
+        .context("could not run rustc; is Rust installed (https://rustup.rs)?")?;
+    if !out.status.success() {
+        bail!("`rustc --print sysroot` failed; is Rust installed (https://rustup.rs)?");
     }
-    output::info("ok       Git hooks (lefthook)");
+    let sysroot = std::path::PathBuf::from(String::from_utf8_lossy(&out.stdout).trim());
+    let missing = missing_rust_parts(&sysroot);
+    if !missing.is_empty() {
+        bail!(
+            "The Rust toolchain lacks parts that the browser app is built with. Run\n  {}\nand \
+             then the command again.",
+            missing.join("\n  ")
+        );
+    }
     Ok(())
+}
+
+/// The `rustup` commands that add what the build needs and `sysroot` lacks: the target of the
+/// browser, and the source of the standard library (which is built again, small, for it).
+fn missing_rust_parts(sysroot: &Path) -> Vec<String> {
+    let rustlib = sysroot.join("lib").join("rustlib");
+    let mut missing = Vec::new();
+    if !rustlib.join(crate::wasm::TARGET).is_dir() {
+        missing.push(format!("rustup target add {}", crate::wasm::TARGET));
+    }
+    if !rustlib.join("src").join("rust").join("library").is_dir() {
+        missing.push("rustup component add rust-src".to_owned());
+    }
+    missing
 }
 
 /// The crate names and versions already in `.tools`, from `cargo install --list`.
@@ -584,6 +676,51 @@ mod tests {
         assert!(lock_is_installed(&lock, &lock.clone()));
         assert!(!lock_is_installed(&lock, &newer));
         assert!(!lock_is_installed(&lock, &empty));
+    }
+
+    #[test]
+    fn trying_bugaboo_installs_no_hooks_identity_or_test_browsers() {
+        let run = stages(Purpose::Run);
+        for stage in [Stage::Hooks, Stage::Identity, Stage::TestBrowsers] {
+            assert!(!run.contains(&stage), "{stage:?}");
+            assert!(stages(Purpose::Contribute).contains(&stage), "{stage:?}");
+        }
+        assert_eq!(run, [Stage::Prerequisites, Stage::Tools, Stage::Npm]);
+    }
+
+    #[test]
+    fn trying_bugaboo_installs_only_the_pinned_tool_the_build_needs() {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .unwrap()
+            .join(tools::TOOLS_PATH);
+        let list = tools::parse(&fs::read_to_string(path).unwrap()).unwrap();
+        let for_running: Vec<&str> = list
+            .iter()
+            .filter(|tool| wanted(Purpose::Run, tool))
+            .map(|tool| tool.name.as_str())
+            .collect();
+        assert_eq!(for_running, [crate::wasm::BINDGEN]);
+        assert!(list.iter().all(|tool| wanted(Purpose::Contribute, tool)));
+    }
+
+    #[test]
+    fn a_rust_toolchain_without_the_browser_parts_names_the_commands_that_add_them() {
+        let temp = TempDir::new("setup-rust-parts");
+        let missing = missing_rust_parts(temp.path());
+        assert_eq!(
+            missing,
+            [
+                format!("rustup target add {}", crate::wasm::TARGET),
+                "rustup component add rust-src".to_owned()
+            ]
+        );
+        temp.write(
+            &format!("lib/rustlib/{}/lib/.keep", crate::wasm::TARGET),
+            "",
+        );
+        temp.write("lib/rustlib/src/rust/library/.keep", "");
+        assert!(missing_rust_parts(temp.path()).is_empty());
     }
 
     #[test]
