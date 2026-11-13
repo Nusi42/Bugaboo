@@ -43,8 +43,8 @@ function measure(control: Locator): Promise<Measured> {
 
 /** The selects of the options row above a list, by their names: *Show as* and *Group by*. */
 function selectsOf(options: Locator): readonly (readonly [string, Locator])[] {
-  return ["timeline.show-as", "issues.group-by"].map(
-    (key) => [t(key), options.getByLabel(t(key), { exact: true })] as const,
+  return ([t("timeline.show-as"), t("issues.group-by")] as const).map(
+    (name) => [name, options.getByLabel(name, { exact: true })] as const,
   );
 }
 
