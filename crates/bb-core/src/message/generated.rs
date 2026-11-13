@@ -8601,9 +8601,6 @@ pub const TIMELINE_KEYS: MessageKey = MessageKey::new("timeline.keys");
 /// The message `timeline.later`.
 pub const TIMELINE_LATER: MessageKey = MessageKey::new("timeline.later");
 
-/// The message `timeline.legend`.
-pub const TIMELINE_LEGEND: MessageKey = MessageKey::new("timeline.legend");
-
 /// The message `timeline.legend-due`.
 pub const TIMELINE_LEGEND_DUE: MessageKey = MessageKey::new("timeline.legend-due");
 
@@ -8624,6 +8621,12 @@ pub const TIMELINE_NO_DATES: MessageKey = MessageKey::new("timeline.no-dates");
 
 /// The message `timeline.no-dependency-kind`.
 pub const TIMELINE_NO_DEPENDENCY_KIND: MessageKey = MessageKey::new("timeline.no-dependency-kind");
+
+/// The message `timeline.no-goal`.
+pub const TIMELINE_NO_GOAL: MessageKey = MessageKey::new("timeline.no-goal");
+
+/// The message `timeline.no-person`.
+pub const TIMELINE_NO_PERSON: MessageKey = MessageKey::new("timeline.no-person");
 
 /// The message `timeline.not-scheduled`.
 pub const TIMELINE_NOT_SCHEDULED: MessageKey = MessageKey::new("timeline.not-scheduled");
@@ -17563,13 +17566,13 @@ pub fn timeline_card(key: impl std::fmt::Display) -> Message {
 /// The message `timeline.dates-changed`.
 #[must_use]
 pub fn timeline_dates_changed(
-    days: impl std::fmt::Display,
+    dates: impl std::fmt::Display,
     key: impl std::fmt::Display,
 ) -> Message {
     Message::with_arguments(
         MessageKey::new("timeline.dates-changed"),
         vec![
-            ("days", Value::Text(days.to_string())),
+            ("dates", Value::Text(dates.to_string())),
             ("key", Value::Text(key.to_string())),
         ],
     )
@@ -17648,12 +17651,14 @@ pub fn timeline_locked(key: impl std::fmt::Display) -> Message {
 #[must_use]
 pub fn timeline_moved_earlier(
     amount: impl std::fmt::Display,
+    dates: impl std::fmt::Display,
     key: impl std::fmt::Display,
 ) -> Message {
     Message::with_arguments(
         MessageKey::new("timeline.moved-earlier"),
         vec![
             ("amount", Value::Text(amount.to_string())),
+            ("dates", Value::Text(dates.to_string())),
             ("key", Value::Text(key.to_string())),
         ],
     )
@@ -17663,12 +17668,14 @@ pub fn timeline_moved_earlier(
 #[must_use]
 pub fn timeline_moved_later(
     amount: impl std::fmt::Display,
+    dates: impl std::fmt::Display,
     key: impl std::fmt::Display,
 ) -> Message {
     Message::with_arguments(
         MessageKey::new("timeline.moved-later"),
         vec![
             ("amount", Value::Text(amount.to_string())),
+            ("dates", Value::Text(dates.to_string())),
             ("key", Value::Text(key.to_string())),
         ],
     )
@@ -17683,12 +17690,12 @@ pub fn timeline_must_finish_first(key: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `timeline.not-saved`.
+/// The message `timeline.no-value`.
 #[must_use]
-pub fn timeline_not_saved(key: impl std::fmt::Display) -> Message {
+pub fn timeline_no_value(field: impl std::fmt::Display) -> Message {
     Message::with_arguments(
-        MessageKey::new("timeline.not-saved"),
-        vec![("key", Value::Text(key.to_string()))],
+        MessageKey::new("timeline.no-value"),
+        vec![("field", Value::Text(field.to_string()))],
     )
 }
 
@@ -17707,6 +17714,45 @@ pub fn timeline_other_chosen(key: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("timeline.other-chosen"),
         vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
+/// The message `timeline.person-on-bar`.
+#[must_use]
+pub fn timeline_person_on_bar(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.person-on-bar"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `timeline.saved-both`.
+#[must_use]
+pub fn timeline_saved_both(end: impl std::fmt::Display, start: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.saved-both"),
+        vec![
+            ("end", Value::Text(end.to_string())),
+            ("start", Value::Text(start.to_string())),
+        ],
+    )
+}
+
+/// The message `timeline.saved-end`.
+#[must_use]
+pub fn timeline_saved_end(end: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.saved-end"),
+        vec![("end", Value::Text(end.to_string()))],
+    )
+}
+
+/// The message `timeline.saved-start`.
+#[must_use]
+pub fn timeline_saved_start(start: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.saved-start"),
+        vec![("start", Value::Text(start.to_string()))],
     )
 }
 
@@ -17749,6 +17795,15 @@ pub fn timeline_scale_quarter(
             ("quarter", Value::Text(quarter.to_string())),
             ("year", Value::Text(year.to_string())),
         ],
+    )
+}
+
+/// The message `timeline.set-dates-of`.
+#[must_use]
+pub fn timeline_set_dates_of(key: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.set-dates-of"),
+        vec![("key", Value::Text(key.to_string()))],
     )
 }
 
@@ -25960,7 +26015,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("timeline.bar", "{key} {title}, {days}"),
     ("timeline.card", "Selected: {key}"),
     ("timeline.chart", "Timeline"),
-    ("timeline.dates-changed", "{key} now runs {days}"),
+    ("timeline.dates-changed", "{key} now runs {dates}"),
     ("timeline.days", "{first} to {last}"),
     (
         "timeline.dependency-made",
@@ -25980,7 +26035,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Arrow keys move a selected bar by a day, with Shift by a week. Alt with an arrow key moves its due date, Alt and Shift with an arrow key its start date.",
     ),
     ("timeline.later", "Later"),
-    ("timeline.legend", "What the marks of the timeline mean"),
     ("timeline.legend-due", "Due date of a goal"),
     ("timeline.legend-goal", "Goal over its sub-issues"),
     ("timeline.locked", "You may not change the dates of {key}."),
@@ -25989,19 +26043,24 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "You may not change the dates of this issue.",
     ),
     ("timeline.more-issues", "Show more issues"),
-    ("timeline.moved-earlier", "{key} moved {amount} earlier"),
-    ("timeline.moved-later", "{key} moved {amount} later"),
-    ("timeline.must-finish-first", "{key} must finish first"),
+    (
+        "timeline.moved-earlier",
+        "{key} moved {amount} earlier, now {dates}",
+    ),
+    (
+        "timeline.moved-later",
+        "{key} moved {amount} later, now {dates}",
+    ),
+    ("timeline.must-finish-first", "{key} comes first"),
     ("timeline.names", "Issue"),
     ("timeline.no-dates", "No dates yet"),
     (
         "timeline.no-dependency-kind",
         "No kind of relation has the date effect Must finish first, so two issues cannot be connected here.",
     ),
-    (
-        "timeline.not-saved",
-        "The dates of {key} were not saved. The timeline shows them as they are now.",
-    ),
+    ("timeline.no-goal", "No goal"),
+    ("timeline.no-person", "No person"),
+    ("timeline.no-value", "No {field}"),
     ("timeline.not-scheduled", "Not scheduled yet"),
     (
         "timeline.not-scheduled-count",
@@ -26013,20 +26072,25 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("timeline.open", "Open"),
     ("timeline.other-chosen", "Chosen: {key}"),
+    ("timeline.person-on-bar", "Person on the bar: {name}"),
     ("timeline.plan-by-effort", "Plan by effort"),
     ("timeline.save-dates", "Save dates"),
+    ("timeline.saved-both", "from {start} to {end}"),
+    ("timeline.saved-end", "until {end}"),
+    ("timeline.saved-start", "from {start}"),
     ("timeline.scale-day", "{weekday} {day}"),
     ("timeline.scale-month", "{month} {year}"),
     ("timeline.scale-quarter", "Q{quarter} {year}"),
     ("timeline.set-dates", "Set dates…"),
+    ("timeline.set-dates-of", "Set dates… of {key}"),
     ("timeline.set-dates-title", "Set dates of {key}"),
     ("timeline.show-as", "Show as"),
     ("timeline.show-as-list", "List"),
     ("timeline.show-as-timeline", "Timeline"),
     ("timeline.start-field", "Bars start at"),
     ("timeline.today", "Today"),
-    ("timeline.waits", "{key} waits for the other one"),
-    ("timeline.which-way", "Which one waits"),
+    ("timeline.waits", "{key} comes after"),
+    ("timeline.which-way", "Which comes first?"),
     ("timeline.zoom", "Zoom"),
     ("timeline.zoom-day", "Days"),
     ("timeline.zoom-month", "Months"),

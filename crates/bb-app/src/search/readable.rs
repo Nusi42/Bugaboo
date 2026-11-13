@@ -70,6 +70,8 @@ pub struct FieldName {
     pub message_key: Option<String>,
     /// The name of an own field.
     pub name: Option<String>,
+    /// Whether a timeline can group its rows by the field (`plan::timeline_groups_by`).
+    pub timeline_group: bool,
 }
 
 /// The readable fields as an answer: what the checker takes and the browser gets, and how each
@@ -104,6 +106,7 @@ fn field_name(searchable: &Searchable, own: &[Definition]) -> FieldName {
     match searchable.target {
         FieldTarget::Own { field, .. } => FieldName {
             message_key: None,
+            timeline_group: crate::plan::timeline_groups_by(searchable.target),
             name: own
                 .iter()
                 .find(|definition| definition.field.id == field)
@@ -112,6 +115,7 @@ fn field_name(searchable: &Searchable, own: &[Definition]) -> FieldName {
         built_in => FieldName {
             message_key: built_in.message().map(|key| key.as_str().to_owned()),
             name: None,
+            timeline_group: crate::plan::timeline_groups_by(built_in),
         },
     }
 }

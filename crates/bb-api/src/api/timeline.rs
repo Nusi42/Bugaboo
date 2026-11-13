@@ -67,9 +67,10 @@ pub(crate) struct TimelineBody {
     project: Option<String>,
     /// The options of the view: the date fields, *Plan by effort* and the zoom.
     timeline: TimelineOptionsBody,
-    /// The field the rows are grouped by, by its search word: `project`, `parent` (the goal),
-    /// `assigned to` (*Group by person*), `status`, `priority` or an own field of choices (a row
-    /// for each choice an issue has).
+    /// The field the rows are grouped by, by its search word: one the readable fields mark
+    /// `timeline_group` (the project, the goal, the person, the status, the priority or an own
+    /// field of choices, a row for each choice an issue has). Rows without a value are in the group
+    /// `empty`.
     #[serde(default)]
     group_by: Option<String>,
     /// The first day the screen shows (`2026-11-02`).
@@ -236,6 +237,9 @@ pub(crate) struct TimelineRowBody {
 pub(crate) struct TimelineGoalBody {
     /// The goal, by its internal ID.
     id: String,
+    /// Its title; `null` when the person may not read it.
+    #[schema(required = true)]
+    title: Option<String>,
     /// Its *Due date*; `null` when it has none the person may read.
     #[schema(required = true, value_type = Option<String>, format = Date)]
     due: Option<CalendarDay>,
@@ -454,6 +458,7 @@ fn page_body(page: TimelinePage, list: &str) -> Result<TimelinePageBody, ApiErro
             .iter()
             .map(|goal| TimelineGoalBody {
                 id: goal.issue.to_string(),
+                title: goal.title.clone(),
                 due: goal.due,
                 span: goal.span.map(DaysBody::from),
             })

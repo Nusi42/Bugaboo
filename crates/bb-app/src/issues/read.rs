@@ -117,25 +117,7 @@ pub async fn issue<S: AuthStore>(
     let mut views = ctx.issue_views(&actor, held.clone(), project).await?;
     let view = ctx.issue_view(&mut views, &issue, &assigned_to).await?;
     let may_change = held.may_change_issue(issue.reported_by);
-    let mask = held.field_mask_for(Some(issue.issue_type));
-    let changeable = if may_change {
-        let mut keys: Vec<FieldKey> = CHANGEABLE
-            .into_iter()
-            .filter(|field| mask.can_change(*field))
-            .map(FieldKey::from)
-            .collect();
-        let item = Item {
-            kind: RecordKind::Issue,
-            id: Some(issue.id.into()),
-            chain: ctx.chain_of(issue.project).await?,
-            issue_type: Some(issue.issue_type),
-            reported_by: Some(issue.reported_by),
-        };
-        keys.extend(ctx.changeable_own_fields(&mask, &item, Held::Every).await?);
-        keys
-    } else {
-        Vec::new()
-    };
+    let changeable = ctx.changeable_fields(&held, &issue).await?;
     // A mention or an issue ID is a chip only when the reader may see what it names (SEC-06).
     let description_html = ctx
         .html_of(&actor, &held, &issue, &issue.description)
@@ -153,6 +135,53 @@ pub async fn issue<S: AuthStore>(
         may_delete: held.may_delete_issue(issue.reported_by),
         changeable,
     }))
+}
+
+/// The fields every issue has that `held` lets the person change on `issue`; none when they may
+/// not change the issue at all. The first part of [`Ctx::changeable_fields`], which a reader of
+/// built-in fields only (the timeline of *Start date* and *Due date*) asks alone.
+pub(crate) fn changeable_built_in(
+    held: &bb_policy::Evaluation,
+    issue: &bb_core::issue::Issue,
+) -> Vec<FieldKey> {
+    if !held.may_change_issue(issue.reported_by) {
+        return Vec::new();
+    }
+    let mask = held.field_mask_for(Some(issue.issue_type));
+    CHANGEABLE
+        .into_iter()
+        .filter(|field| mask.can_change(*field))
+        .map(FieldKey::from)
+        .collect()
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// The fields `held` lets the person change on `issue`, built-in and own, by their keys; none
+    /// when they may not change the issue at all. The one rule of the issue page, of the timeline
+    /// (whether a bar may be dragged) and of the change itself.
+    pub(crate) async fn changeable_fields(
+        &self,
+        held: &bb_policy::Evaluation,
+        issue: &bb_core::issue::Issue,
+    ) -> Result<Vec<FieldKey>, AppError> {
+        if !held.may_change_issue(issue.reported_by) {
+            return Ok(Vec::new());
+        }
+        let mut keys = changeable_built_in(held, issue);
+        let mask = held.field_mask_for(Some(issue.issue_type));
+        let item = Item {
+            kind: RecordKind::Issue,
+            id: Some(issue.id.into()),
+            chain: self.chain_of(issue.project).await?,
+            issue_type: Some(issue.issue_type),
+            reported_by: Some(issue.reported_by),
+        };
+        keys.extend(
+            self.changeable_own_fields(&mask, &item, Held::Every)
+                .await?,
+        );
+        Ok(keys)
+    }
 }
 
 /// The issues of a project the person sees and of the projects below it that they see, newest

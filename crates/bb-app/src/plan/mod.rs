@@ -20,7 +20,7 @@ pub use factor::{
     FactorGiven, SetTimeFactor, TimeFactorQuery, TimeFactorView, person_on_bar, reset_with_first,
     set_time_factor, time_factor,
 };
-pub use read::timeline;
+pub use read::{timeline, timeline_groups_by};
 pub use store::TimelineStore;
 pub use types::*;
 pub use ways::{accept_warning, move_after_preview};

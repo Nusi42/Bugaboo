@@ -8,7 +8,7 @@ import vectors from "../../../../../tools/testdata/search-vectors.json";
 const language = testSearchLanguage;
 
 describe("qry_04 every example of the help sheet is a search the checker accepts", () => {
-  const fields = readableFieldsOf({ fields: vectors.readable_fields.fields, truncated: false });
+  const fields = readableFieldsOf({ fields: vectors.readable_fields.fields });
   const examples = helpGroups.flatMap((group) => group.examples);
 
   it("has examples in every group", () => {

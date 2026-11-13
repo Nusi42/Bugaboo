@@ -153,10 +153,29 @@ fn warning_days(plan: &Plan, issue: &Issue, warning: &Warning) -> Option<Days> {
 /// A word that is no field the reader may group by is no request.
 fn group_target(looked: &Looked, word: &str) -> Result<Option<FieldTarget>, AppError> {
     match target_of(&looked.fields, word) {
-        Some(target) => Ok(Some(target)),
+        Some(target) if timeline_groups_by(target) => Ok(Some(target)),
         None if word_key(word) == word_key(&Field::AssignedTo.search_word()) => Ok(None),
-        None => Err(AppError::Refused(ErrorCode::InvalidRequest)),
+        Some(_) | None => Err(AppError::Refused(ErrorCode::InvalidRequest)),
     }
+}
+
+/// Whether a timeline groups its rows by a field (UX §4.7): the project, the goal, the person, the
+/// status, the priority or an own field of choices. The one rule of the timeline's grouping: the
+/// readable fields say it to the browser, and a page refuses any other field.
+#[must_use]
+pub fn timeline_groups_by(target: FieldTarget) -> bool {
+    matches!(
+        target,
+        FieldTarget::Project
+            | FieldTarget::Parent
+            | FieldTarget::AssignedTo
+            | FieldTarget::Status
+            | FieldTarget::Priority
+            | FieldTarget::Own {
+                kind: FieldType::PickOne | FieldType::PickSeveral,
+                ..
+            }
+    )
 }
 
 /// The groups of an issue by an own field of choices: one for each choice it has, or the group
@@ -210,6 +229,7 @@ fn goals_of(plan: &Plan, page: &HashSet<IssueId>) -> Vec<GoalView> {
                 });
             Some(GoalView {
                 issue: id,
+                title: plan.reads(goal, Field::Title).then(|| goal.title.clone()),
                 due: goal.due_date.filter(|_| plan.reads(goal, Field::DueDate)),
                 span,
             })
@@ -280,11 +300,13 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
             }) => choice_groups(view, field),
             None => one(None),
             Some(FieldTarget::Project) => one(Some(GroupKey::Project(issue.project))),
-            Some(FieldTarget::Parent) => one(plan
-                .parents
-                .iter()
-                .find(|(child, _)| *child == issue.id)
-                .map(|(_, parent)| GroupKey::Issue(*parent))),
+            // A goal the reader may not see is no goal: the plan holds only issues they see.
+            Some(FieldTarget::Parent) => one(Some(
+                plan.parents
+                    .iter()
+                    .find(|(child, _)| *child == issue.id)
+                    .map_or(GroupKey::Empty, |(_, parent)| GroupKey::Issue(*parent)),
+            )),
             Some(FieldTarget::Priority) => one(Some(GroupKey::Priority(issue.priority))),
             Some(FieldTarget::Status) => {
                 one(Some(GroupKey::Text(issue.status.as_str().to_owned())))
@@ -293,8 +315,11 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
                 let people = plan.assigned.get(&issue.id).cloned().unwrap_or_default();
                 let by_name = held.people_level(ASSIGNED_TO_PEOPLE, PeopleContext::Ordinary)
                     == PeopleLevel::Names;
-                if people.is_empty() || !by_name {
+                if !by_name {
                     return Ok(one(None));
+                }
+                if people.is_empty() {
+                    return Ok(one(Some(GroupKey::Empty)));
                 }
                 let mut rows = Vec::with_capacity(people.len());
                 for (at, person) in people.iter().enumerate() {
@@ -326,7 +351,13 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
             } else {
                 None
             };
-            let may_move = dates.changeable(&held, issue);
+            // Own date fields need the scopes of the own fields; built-in ones only the levels.
+            let changeable = if dates.own().is_empty() {
+                crate::issues::changeable_built_in(&held, issue)
+            } else {
+                self.changeable_fields(&held, issue).await?
+            };
+            let may_move = dates.changeable(&changeable);
             for (group, copy) in self
                 .groups_of(plan, (&held, &view), issue, group_by)
                 .await?

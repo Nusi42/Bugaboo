@@ -157,6 +157,8 @@ pub(crate) struct SearchFieldBody {
     word: String,
     /// What kind of values it holds.
     kind: String,
+    /// Whether a timeline can group its rows by the field (`group_by` of `POST /api/v1/timeline`).
+    timeline_group: bool,
     /// What may be asked of it.
     operators: Vec<String>,
     /// The values of a fixed list; empty when anything goes.
@@ -488,6 +490,7 @@ async fn list_search_fields(
                     choices: field.choices,
                     message_key: called.message_key,
                     name: called.name,
+                    timeline_group: called.timeline_group,
                 })
                 .collect(),
         }

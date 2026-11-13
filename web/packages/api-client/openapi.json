@@ -30877,7 +30877,7 @@
       "SearchFieldBody": {
         "type": "object",
         "description": "A field the person may search by.",
-        "required": ["word", "kind", "operators", "choices"],
+        "required": ["word", "kind", "timeline_group", "operators", "choices"],
         "properties": {
           "choices": {
             "type": "array",
@@ -30904,6 +30904,10 @@
               "type": "string"
             },
             "description": "What may be asked of it."
+          },
+          "timeline_group": {
+            "type": "boolean",
+            "description": "Whether a timeline can group its rows by the field (`group_by` of `POST /api/v1/timeline`)."
           },
           "word": {
             "type": "string",
@@ -32918,7 +32922,7 @@
           },
           "group_by": {
             "type": ["string", "null"],
-            "description": "The field the rows are grouped by, by its search word: `project`, `parent` (the goal),\n`assigned to` (*Group by person*), `status`, `priority` or an own field of choices (a row\nfor each choice an issue has)."
+            "description": "The field the rows are grouped by, by its search word: one the readable fields mark\n`timeline_group` (the project, the goal, the person, the status, the priority or an own\nfield of choices, a row for each choice an issue has). Rows without a value are in the group\n`empty`."
           },
           "last": {
             "type": "string",
@@ -32972,7 +32976,7 @@
       "TimelineGoalBody": {
         "type": "object",
         "description": "A goal of the page: its due date is the diamond of the timeline, and the span of its\nsub-issues' bars its bracket.",
-        "required": ["id", "due", "span"],
+        "required": ["id", "title", "due", "span"],
         "properties": {
           "due": {
             "type": ["string", "null"],
@@ -32993,6 +32997,10 @@
                 "type": "null"
               }
             ]
+          },
+          "title": {
+            "type": ["string", "null"],
+            "description": "Its title; `null` when the person may not read it."
           }
         }
       },

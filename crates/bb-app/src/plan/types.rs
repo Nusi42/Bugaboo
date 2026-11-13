@@ -150,6 +150,8 @@ pub struct TimelineRow {
 pub struct GoalView {
     /// The goal.
     pub issue: IssueId,
+    /// Its title, when the reader may read it: the head of its group names it.
+    pub title: Option<String>,
     /// Its *Due date*, when it has one the reader may read.
     pub due: Option<Date>,
     /// The days from the first day to the last day of the bars of its sub-issues that the plan

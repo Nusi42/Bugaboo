@@ -26,7 +26,7 @@ mod ids;
 mod issue_types;
 mod moving;
 mod read;
-pub(crate) use read::ReadAhead;
+pub(crate) use read::{ReadAhead, changeable_built_in};
 mod store;
 mod types;
 mod views;

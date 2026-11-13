@@ -28,7 +28,7 @@ pub(super) async fn see_only_key(browser: &mut Browser) -> Result<String, Failur
 }
 
 /// Sets the level of a field for a starting role in ACME, as Ada.
-async fn field_level(
+pub(super) async fn field_level(
     site: &Site<'_>,
     ada: &mut Browser,
     role: StartingRole,

@@ -11040,6 +11040,8 @@ export interface components {
       name?: string | null;
       /** @description What may be asked of it. */
       operators: string[];
+      /** @description Whether a timeline can group its rows by the field (`group_by` of `POST /api/v1/timeline`). */
+      timeline_group: boolean;
       /** @description The word of the field. */
       word: string;
     };
@@ -12115,9 +12117,10 @@ export interface components {
        */
       first: string;
       /**
-       * @description The field the rows are grouped by, by its search word: `project`, `parent` (the goal),
-       *     `assigned to` (*Group by person*), `status`, `priority` or an own field of choices (a row
-       *     for each choice an issue has).
+       * @description The field the rows are grouped by, by its search word: one the readable fields mark
+       *     `timeline_group` (the project, the goal, the person, the status, the priority or an own
+       *     field of choices, a row for each choice an issue has). Rows without a value are in the group
+       *     `empty`.
        */
       group_by?: string | null;
       /**
@@ -12161,6 +12164,8 @@ export interface components {
       /** @description The goal, by its internal ID. */
       id: string;
       span: components["schemas"]["DaysBody"] | null;
+      /** @description Its title; `null` when the person may not read it. */
+      title: string | null;
     };
     /**
      * @description The options of a timeline view (ADR-0034; ADR-0043, decision 2). Left out, a saved search keeps
