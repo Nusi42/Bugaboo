@@ -39,6 +39,7 @@ const webkitPhoneFiles = [
   "**/issues.spec.ts",
   "**/issues-editing.spec.ts",
   "**/issues-new.spec.ts",
+  "**/nothing-moves.spec.ts",
   "**/concurrent/locks.spec.ts",
 ];
 

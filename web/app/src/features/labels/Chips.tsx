@@ -1,6 +1,8 @@
 import { t } from "@bugaboo/messages";
 import { Button, buttonLook, FieldValue, partOf, part } from "@bugaboo/ui";
+import { useRef } from "react";
 
+import { removeKeepingFocus } from "../../shared/focus.ts";
 import { chipLook, type Chip } from "./labels.ts";
 
 export interface ChipsProps {
@@ -15,12 +17,13 @@ export interface ChipsProps {
 
 /** The tags or labels of an issue side by side, each with the button that takes it off. */
 export function Chips({ label, chips, none, onTakeOff }: ChipsProps) {
+  const list = useRef<HTMLUListElement>(null);
   if (chips.length === 0) {
     return <p {...partOf(part.muted)}>{none}</p>;
   }
   return (
-    <ul {...partOf(part.chips)} aria-label={label}>
-      {chips.map((chip) => (
+    <ul ref={list} {...partOf(part.chips)} aria-label={label}>
+      {chips.map((chip, index) => (
         <li key={chip.id} {...partOf(part.chip)}>
           <FieldValue look={chipLook} text={chip.name} color={chip.color} />
           {onTakeOff === undefined ? null : (
@@ -28,7 +31,14 @@ export function Chips({ label, chips, none, onTakeOff }: ChipsProps) {
               look={buttonLook.quiet}
               aria-label={t("labels.take-off", { name: chip.name })}
               onPress={() => {
-                onTakeOff(chip);
+                // The button goes with its chip: the focus moves to the next one, or to adding one.
+                const row = list.current?.children[index];
+                removeKeepingFocus(
+                  () => {
+                    onTakeOff(chip);
+                  },
+                  row instanceof HTMLElement ? row : undefined,
+                );
               }}
             >
               {t("labels.take-off-short")}

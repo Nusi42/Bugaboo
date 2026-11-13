@@ -1,6 +1,15 @@
 import { t } from "@bugaboo/messages";
-import { Button, buttonLook, buttonType, Form, TextField, partOf, part } from "@bugaboo/ui";
-import { useState } from "react";
+import {
+  Button,
+  buttonLook,
+  buttonType,
+  focusFirstField,
+  Form,
+  TextField,
+  partOf,
+  part,
+} from "@bugaboo/ui";
+import { useId, useState } from "react";
 
 import { useTagSuggestions } from "./labels.ts";
 
@@ -46,36 +55,45 @@ function Suggestions({ project, issueType, text, pick }: SuggestionsProps) {
   );
 }
 
+/** The quiet *Add tag* that opens the box. */
+function Opener({ onOpen }: { readonly onOpen: () => void }) {
+  return (
+    <div {...partOf(part.row)}>
+      <Button look={buttonLook.quiet} onPress={onOpen}>
+        {t("labels.add-tag-button")}
+      </Button>
+    </div>
+  );
+}
+
 /**
  * *Add a tag*: the words typed offer the tags of the project that fit; a tag that does not exist
- * yet is made by adding it (TAG-01).
+ * yet is made by adding it (TAG-01). Once a tag is added the box stays open and empty, with the focus
+ * in it, for the next one: closing it would move what stands under the row and drop the focus (UX §6).
  */
 export function AddTag({ project, issueType, onAdd, pending }: AddTagProps) {
   const [text, setText] = useState("");
   const [open, setOpen] = useState(false);
+  const formId = useId();
   const empty = text.trim() === "";
   // A row with no tag in it is one quiet *Add tag* until the person wants to add one (UX §4.4).
   if (!open) {
     return (
-      <div {...partOf(part.row)}>
-        <Button
-          look={buttonLook.quiet}
-          onPress={() => {
-            setOpen(true);
-          }}
-        >
-          {t("labels.add-tag-button")}
-        </Button>
-      </div>
+      <Opener
+        onOpen={() => {
+          setOpen(true);
+        }}
+      />
     );
   }
   return (
     <Form
+      id={formId}
       onSubmit={() => {
         void onAdd(text.trim()).then((added) => {
           if (added) {
+            focusFirstField(formId);
             setText("");
-            setOpen(false);
           }
         });
       }}

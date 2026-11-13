@@ -54,13 +54,16 @@ export function usePageFocus(contentId: string): void {
 /** What can be pressed in a row. */
 const PRESSABLE = "button, a[href]";
 
+/** What the focus may go to after the last row of a list: what can be pressed or typed into beside it. */
+const AFTER_THE_LIST = `${PRESSABLE}, input, select, textarea`;
+
 /**
  * Where the focus goes when the row that has it goes away: the next row's button or link, else the
- * one before it, else the heading of the list. Without it the focus falls to the page and a
- * screen reader starts again from the top.
+ * one before it, else what can be pressed or typed into after the list, else the heading of the
+ * list. Without it the focus falls to the page and a screen reader starts again from the top.
  */
-export function focusTargetAfterRemoval(): HTMLElement | null {
-  const row = document.activeElement?.closest("li") ?? null;
+export function focusTargetAfterRemoval(from?: HTMLElement): HTMLElement | null {
+  const row = (from ?? document.activeElement)?.closest("li") ?? null;
   const list = row?.parentElement ?? null;
   if (row === null || list === null) {
     return null;
@@ -74,7 +77,11 @@ export function focusTargetAfterRemoval(): HTMLElement | null {
       return pressable;
     }
   }
-  return list.closest("section, main")?.querySelector<HTMLElement>("h1, h2") ?? null;
+  // The last one: what comes after the list where it stands (the way to add one), else the heading.
+  const after = [...(list.parentElement?.querySelectorAll<HTMLElement>(AFTER_THE_LIST) ?? [])].find(
+    (each) => !list.contains(each),
+  );
+  return after ?? list.closest("section, main")?.querySelector<HTMLElement>("h1, h2") ?? null;
 }
 
 /** How many frames to wait for the row to go away before giving up. */
@@ -83,27 +90,31 @@ const FRAMES_TO_WAIT = 60;
 /**
  * Runs a change that removes the row that has the focus (a press on its button) and moves the focus
  * as `focusTargetAfterRemoval` says, as soon as the row is gone. If the row never goes (the change
- * was refused), the focus stays where it is.
+ * was refused), the focus stays where it is. `pressed` is the row whose button was pressed, where
+ * the caller knows it: WebKit does not give the focus to a button that is pressed, and the place is
+ * kept all the same.
  */
-export function removeKeepingFocus(run: () => void): void {
-  const from = document.activeElement;
-  const target = focusTargetAfterRemoval();
+export function removeKeepingFocus(run: () => void, pressed?: HTMLElement): void {
+  const from = pressed ?? document.activeElement;
+  const target = focusTargetAfterRemoval(pressed);
   run();
   if (target === null || from === null) {
     return;
   }
-  const wait = (framesLeft: number): void => {
+  // However long the answer takes: the row goes when the server has confirmed the change. The
+  // watch ends when the row is gone, or when the person moves the focus themselves.
+  const watch = new MutationObserver(() => {
     if (!from.isConnected) {
+      stop();
       target.focus();
-    } else if (framesLeft > 0) {
-      requestAnimationFrame(() => {
-        wait(framesLeft - 1);
-      });
     }
-  };
-  requestAnimationFrame(() => {
-    wait(FRAMES_TO_WAIT);
   });
+  const stop = (): void => {
+    watch.disconnect();
+    document.removeEventListener("focusin", stop);
+  };
+  watch.observe(document.body, { childList: true, subtree: true });
+  document.addEventListener("focusin", stop);
 }
 
 /**

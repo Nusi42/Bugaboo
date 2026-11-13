@@ -1,10 +1,11 @@
 import { dataOf, type Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
+import { useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
 import { fieldList, linesFrom, pageSize, usePaged } from "../../shared/paged.ts";
 import { queryClient } from "../../shared/query-client.ts";
-import { queryKeys, refreshLabelReads } from "../../shared/query-keys.ts";
+import { queryKeys, refreshLabelReads, reread } from "../../shared/query-keys.ts";
 import { versionCounted } from "../issues/index.ts";
 import { useLabels, type Label, type LabelGroup } from "./label-lists.ts";
 
@@ -70,11 +71,16 @@ export function tagLinesOf(pages: readonly Schema<"Page_TagItem">[] | undefined)
   return linesFrom(pages, tagLineOf);
 }
 
-/** The tags and labels of one issue, and what the person may do with them. */
-export function useIssueLabelsAndTags(issue: string) {
-  return api.query.useQuery("get", "/api/v1/issues/{issue}/labels-and-tags", {
+/** The read of the tags and labels of one issue: the key it has in the cache, and how it is made. */
+function labelsAndTagsOptions(issue: string) {
+  return api.query.queryOptions("get", "/api/v1/issues/{issue}/labels-and-tags", {
     params: { path: { issue } },
   });
+}
+
+/** The tags and labels of one issue, and what the person may do with them. */
+export function useIssueLabelsAndTags(issue: string) {
+  return useQuery(labelsAndTagsOptions(issue));
 }
 
 /** The tags to offer in a project, for an issue of this type, while a person types. */
@@ -139,18 +145,21 @@ export async function takeLabelOff(issue: string, label: string): Promise<IssueL
   );
 }
 
-/** The answer of putting a tag or a label on an issue or taking one off: the version it counted to. */
-export interface Counted {
-  readonly version: number;
-}
-
 /**
- * A tag or label was put on an issue or taken off: the page writes the version the issue counted
- * up to into what it knows, so a change made right after does not conflict, and shows the rest again.
+ * A tag or label was put on an issue or taken off. The answer is the tags and labels of the issue
+ * now: the row shows them at once, from the answer, and is not read again (UX §6: the change shows in
+ * place). The page writes the version the issue counted up to into what it knows, so a change made
+ * right after does not conflict. Read again, in place, is what the change made different elsewhere:
+ * the issue (*Last changed*), the lists of issues, its history, and the tags and labels that can be
+ * offered (adding one by a new name made it); not every read of every issue, as before.
  */
-export function afterLabelsAndTags(issue: string, { version }: Counted): void {
-  versionCounted(issue, version);
-  refreshLabels();
+export function afterLabelsAndTags(issue: string, made: IssueLabelsAndTags): void {
+  versionCounted(issue, made.version);
+  queryClient.setQueryData(labelsAndTagsOptions(issue).queryKey, made);
+  reread({ queryKey: queryKeys.issues.one(issue) });
+  reread({ queryKey: queryKeys.issues.lists() });
+  reread({ queryKey: queryKeys.tags.all });
+  refreshLabelReads();
 }
 
 /** The choice that stands for a label in no group. */
