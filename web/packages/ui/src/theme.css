@@ -4526,10 +4526,6 @@ textarea,
   animation: none;
 }
 
-[data-part="window.form"] {
-  display: contents;
-}
-
 [data-part="window.form"][data-state~="loading"] {
   display: none;
 }

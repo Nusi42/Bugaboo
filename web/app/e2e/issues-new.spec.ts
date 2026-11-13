@@ -25,6 +25,7 @@ import {
   holdNewIssueCode,
   holdNewIssueLayout,
   pageSize,
+  roomUnderWindowContent,
   windowIsClear,
   TALLER_THAN_THE_FORM_PX,
   windowCloseName,
@@ -142,6 +143,8 @@ test("ux_6_1 a window whose fields are slow says it is loading, shows grey shape
   expect([...placesSeen], "the loading window and the filled one stand in one place").toHaveLength(
     1,
   );
+  // A window at the top is as tall as its content once it is there, not as tall as the page (M7-F246).
+  expect(await roomUnderWindowContent(page, dialog(page))).toBeLessThanOrEqual(1);
   // The form is there: the status says nothing more, and the focus is where the person types first.
   await expect(dialog(page).getByRole("status")).toHaveText("");
   await expect(dialog(page).getByLabel(titleLabel(), { exact: true })).toBeFocused();
@@ -202,6 +205,7 @@ test("ux_6_1 on the first open the window waits for its code as it waits for its
     [...placesSeen],
     "the window stands in one place from its code to its fields",
   ).toHaveLength(1);
+  expect(await roomUnderWindowContent(page, dialog(page))).toBeLessThanOrEqual(1);
   // The real window took over from the stand-in; closing it still puts the focus back on New issue.
   await page.keyboard.press("Escape");
   await expect(dialog(page)).toHaveCount(0);

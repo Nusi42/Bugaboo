@@ -4437,10 +4437,7 @@ part "overlay.modal[state=quiet]" {
 }
 
 // The form of a window while grey shapes stand in for it: it is there, so what it reads is asked for, but not seen.
-part "window.form" {
-    display contents
-}
-
+// Otherwise it is a plain block, so it ends where its content ends and the window is as tall as that (M7-F246).
 part "window.form[state=loading]" {
     display none
 }

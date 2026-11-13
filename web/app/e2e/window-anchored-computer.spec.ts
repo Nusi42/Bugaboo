@@ -4,13 +4,19 @@ import { edgesOf, windowEdges, windowStand } from "../../packages/ui/src/window-
 import { ada } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { prepareWeb, pressNewIssue, waitForNewIssueForm } from "./support/issues.ts";
+import {
+  newIssueDialog,
+  prepareWeb,
+  pressNewIssue,
+  waitForNewIssueForm,
+} from "./support/issues.ts";
 import { partIn } from "./support/parts.ts";
 import {
   dragWindowEdge,
   expectWindowSeen,
   holdNewIssueLayout,
   pageSize,
+  roomUnderWindowContent,
   TALLER_THAN_THE_FORM_PX,
   windowSize,
 } from "./support/windows.ts";
@@ -51,6 +57,8 @@ test("ux_6_3 the bottom edge of a window at the top of the page follows the poin
   await expect(page.getByRole("button", { name: t("window.size-menu"), exact: true })).toHaveCount(
     1,
   );
+  // It is as tall as its content, not as the page it filled while it waited (M7-F246).
+  expect(await roomUnderWindowContent(page, newIssueDialog(page))).toBeLessThanOrEqual(1);
   const before = await windowSize(page);
   await dragWindowEdge(page, "s", { x: 0, y: DRAG_PX });
   expect((await windowSize(page)).height - before.height).toBe(DRAG_PX);
