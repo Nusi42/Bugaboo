@@ -88,11 +88,14 @@ export function useProjectIssues(project: string) {
 
 /** One issue by its readable or internal ID, with what the person may do with it; nothing is read without an ID. */
 export function useIssue(address: string | undefined) {
-  const issue = address ?? "";
-  return useQuery({
+  return useQuery({ ...issueOptions(address ?? ""), enabled: address !== undefined });
+}
+
+/** The read of one issue: its key in the cache and how it is made, for the hook and for a read ahead. */
+export function issueOptions(issue: string) {
+  return {
     queryKey: queryKeys.issues.one(issue),
     queryFn: async (): Promise<IssueDetail> =>
       dataOf(await api.client.GET("/api/v1/issues/{issue}", { params: { path: { issue } } })),
-    enabled: address !== undefined,
-  });
+  };
 }

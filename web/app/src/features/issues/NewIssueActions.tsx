@@ -59,19 +59,25 @@ function missingForCreate(form: NewIssue) {
 
 /**
  * The footer of the new-issue window (UX §4.5, §6.3): what is missing (it comes and goes with the
- * title), the buttons at the right with the main one last (R6), and below them the note: that the
- * draft is kept, and *Customize this form*. The note under the buttons never changes while the
- * person types, so the buttons stay where a finger is on its way to them. The footer stays in place
- * while the form scrolls.
+ * title), after the issue *Create the issue and start another* made last, on that one line so the
+ * form above stays where it is (UX §6); the buttons at the right with the main one last (R6); and
+ * below them the note: that the draft is kept, and *Customize this form*. The note under the buttons
+ * never changes while the person types, so the buttons stay where a finger is on its way to them.
+ * The footer stays in place while the form scrolls.
  */
 export function NewIssueActions({ form, formId, onMade, onClose, whyId }: NewIssueActionsProps) {
   const missing = missingForCreate(form);
   const phone = useLayout() === "phone";
   return (
     <>
-      <p id={whyId} {...partOf(part.muted)}>
-        {t(missing ?? "issues.ready-to-create")}
-      </p>
+      <div {...partOf(part.row)}>
+        {form.lastKey === null ? null : (
+          <output {...partOf(part.muted)}>{t("issues.created", { key: form.lastKey })}</output>
+        )}
+        <p id={whyId} {...partOf(part.muted)}>
+          {t(missing ?? "issues.ready-to-create")}
+        </p>
+      </div>
       <div {...partOf(part.windowFooterActions)}>
         {phone ? null : (
           <>

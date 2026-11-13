@@ -5,6 +5,7 @@ import { t } from "@bugaboo/messages";
 import { layoutOf } from "./layout.ts";
 import { type Landmark, landmarkOf, partLandmark } from "./movement.ts";
 import { detailRow } from "./parts.ts";
+import { rowOf } from "./list-look.ts";
 
 /**
  * The landmarks of the screens that must stand still while a person changes something on them (UX §6),
@@ -43,4 +44,27 @@ export async function expectFocusIn(changed: Locator): Promise<void> {
   await expect
     .poll(() => changed.evaluate((element) => element.contains(document.activeElement)))
     .toBe(true);
+}
+
+/**
+ * The landmarks of a list of issues: its heading, the toolbar and the first row stand still (the list
+ * itself may grow at its end); the rows of these issues stand under where a new issue comes in and
+ * may move once, by one row.
+ */
+export async function listLandmarks(
+  page: Page,
+  titles: readonly string[],
+): Promise<ScreenLandmarks> {
+  const rows = await Promise.all(
+    titles.map((title) => landmarkOf(rowOf(page, title), `the row of ${title}`)),
+  );
+  return {
+    all: [
+      { name: "the heading", selector: "h1" },
+      partLandmark("the toolbar", "list-toolbar"),
+      { name: "the first row", selector: '[data-part="list-scroll"] [role="row"]' },
+      ...rows,
+    ],
+    below: rows.map((row) => row.name),
+  };
 }

@@ -1,5 +1,7 @@
 import { useEffect, useRef, type RefObject } from "react";
 
+import { inPlace } from "../../shared/focus.ts";
+
 /**
  * Gives a ref for an element; the focus moves to the element when it appears, and goes back to what
  * had it before when the element goes away. A panel or view that opens from a button is then
@@ -9,12 +11,12 @@ export function useTakeFocus<Element extends HTMLElement>(): RefObject<Element |
   const element = useRef<Element>(null);
   useEffect(() => {
     const before = document.activeElement;
-    element.current?.focus();
+    element.current?.focus(inPlace);
     return () => {
       // After the next paint: what had the focus may only be shown again once this has gone.
       requestAnimationFrame(() => {
         if (before instanceof HTMLElement && before.isConnected) {
-          before.focus();
+          before.focus(inPlace);
         }
       });
     };

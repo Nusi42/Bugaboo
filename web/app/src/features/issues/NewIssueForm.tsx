@@ -61,9 +61,6 @@ export function NewIssueForm({ form, formId, onMade }: NewIssueFormProps) {
             onDrop={form.dropDraft}
           />
         )}
-        {form.lastKey === null ? null : (
-          <Alert tone={alertTone.success}>{t("issues.created", { key: form.lastKey })}</Alert>
-        )}
         {project === undefined ? null : (
           <NewIssueText
             values={values}

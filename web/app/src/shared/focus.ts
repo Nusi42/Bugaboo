@@ -2,6 +2,14 @@ import { useRouterState } from "@tanstack/react-router";
 import { useEffect, useRef, type RefObject } from "react";
 
 /**
+ * How the app moves the focus itself: without scrolling to it (UX §6, nothing moves under the
+ * cursor). A heading or a page that takes the focus is where the person looks already, and the
+ * browser would otherwise scroll the page by the height of what stands above it, then the router
+ * scrolls back: the page jumped for a frame.
+ */
+export const inPlace: FocusOptions = { preventScroll: true };
+
+/**
  * Gives back a ref for a container, and moves the focus to the heading inside it when `key`
  * changes (and not on the first showing). A step of a wizard replaces the one before it, so a
  * screen reader would otherwise stay on a button that is gone.
@@ -12,7 +20,7 @@ export function useFocusHeading(key: string): RefObject<HTMLDivElement | null> {
   useEffect(() => {
     if (shown.current !== key) {
       shown.current = key;
-      container.current?.querySelector<HTMLElement>("h1")?.focus();
+      container.current?.querySelector<HTMLElement>("h1")?.focus(inPlace);
     }
   }, [key]);
   return container;
@@ -42,7 +50,7 @@ export function usePageFocus(contentId: string): void {
     const frame = changed
       ? requestAnimationFrame(() => {
           const content = document.querySelector<HTMLElement>(`#${contentId}`);
-          (content?.querySelector<HTMLElement>("h1") ?? content)?.focus();
+          (content?.querySelector<HTMLElement>("h1") ?? content)?.focus(inPlace);
         })
       : 0;
     return () => {
@@ -106,7 +114,7 @@ export function removeKeepingFocus(run: () => void, pressed?: HTMLElement): void
   const watch = new MutationObserver(() => {
     if (!from.isConnected) {
       stop();
-      target.focus();
+      target.focus(inPlace);
     }
   });
   const stop = (): void => {
@@ -129,14 +137,14 @@ export function focusRestored(
   const wait = (framesLeft: number): void => {
     const restored = find?.() ?? null;
     if (restored !== null) {
-      restored.focus();
+      restored.focus(inPlace);
     } else if (find !== undefined && framesLeft > 0) {
       requestAnimationFrame(() => {
         wait(framesLeft - 1);
       });
     } else {
       const content = document.querySelector<HTMLElement>(`#${contentId}`);
-      (content?.querySelector<HTMLElement>("h1") ?? content)?.focus();
+      (content?.querySelector<HTMLElement>("h1") ?? content)?.focus(inPlace);
     }
   };
   requestAnimationFrame(() => {

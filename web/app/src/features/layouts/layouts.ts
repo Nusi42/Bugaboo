@@ -119,22 +119,27 @@ export function formViewOf(
  * (CFG-01): the layout of the project and issue type, applied on the server to the roles and
  * the levels of the person, so a field they may not see (or fill in) is not in it.
  */
-export function useFormLayout({ project, issueType, kind }: FormQuery): FormView {
-  const asked = project !== undefined && project !== "";
+export function useFormLayout(asked: FormQuery): FormView {
+  const known = asked.project !== undefined && asked.project !== "";
   const form = useQuery({
-    ...api.query.queryOptions("get", "/api/v1/layouts/form", {
-      params: {
-        query: {
-          project: project ?? "",
-          kind,
-          ...(issueType === undefined || issueType === "" ? {} : { issue_type: issueType }),
-        },
-      },
-    }),
+    ...formLayoutOptions(asked),
     select: (body: Schema<"FormLayoutBody">) => body,
-    enabled: asked,
+    enabled: known,
   });
-  return formViewOf(form, asked);
+  return formViewOf(form, known);
+}
+
+/** The read of the layout of a form: its key in the cache and how it is made, for the hook and for a read ahead. */
+export function formLayoutOptions({ project, issueType, kind }: FormQuery) {
+  return api.query.queryOptions("get", "/api/v1/layouts/form", {
+    params: {
+      query: {
+        project: project ?? "",
+        kind,
+        ...(issueType === undefined || issueType === "" ? {} : { issue_type: issueType }),
+      },
+    },
+  });
 }
 
 /** Which layout to edit: a project (none for the whole organization), an issue type (none for all) and a form. */

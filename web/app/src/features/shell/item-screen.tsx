@@ -4,6 +4,7 @@ import { useEffect, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 import { doNothing } from "../../shared/do-nothing.ts";
+import { inPlace } from "../../shared/focus.ts";
 import { CONTENT_ID } from "./content-id.ts";
 import { useItemTrail } from "./page-trail.ts";
 import { useEscape } from "./use-escape.ts";
@@ -26,11 +27,11 @@ function Screen({ name, onClose, children }: ItemScreenProps) {
   const screen = useEscape<HTMLElement>(onClose);
   useEffect(() => {
     const before = document.activeElement;
-    screen.current?.querySelector("h1")?.focus();
+    screen.current?.querySelector("h1")?.focus(inPlace);
     return () => {
       requestAnimationFrame(() => {
         if (before instanceof HTMLElement && before.isConnected) {
-          before.focus();
+          before.focus(inPlace);
         }
       });
     };

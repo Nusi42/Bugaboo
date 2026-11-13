@@ -1,6 +1,6 @@
 import { t } from "@bugaboo/messages";
-import { useLayout, Window } from "@bugaboo/ui";
-import { useId } from "react";
+import { focusFirstField, useLayout, Window } from "@bugaboo/ui";
+import { useEffect, useId } from "react";
 
 import { useWindowProps } from "../../shared/use-window-props.ts";
 import { windowForms } from "../../shared/window-forms.ts";
@@ -25,6 +25,13 @@ export function NewIssueDialog() {
   const whyId = useId();
   const onMade = useOnMade();
   const phone = useLayout() === "phone";
+  // *Create the issue and start another* made one: the focus goes back to the title, for the next
+  // (the button that was pressed waits while the issue is made, and would drop the focus).
+  useEffect(() => {
+    if (form.lastKey !== null) {
+      focusFirstField(formId);
+    }
+  }, [form.lastKey, formId]);
   return (
     <Window
       {...overlay}

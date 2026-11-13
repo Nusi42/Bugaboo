@@ -8,6 +8,7 @@ export type { LayoutsScreenProps, ProjectLayoutsScreenProps } from "./LayoutsScr
 export { isPlain, onlyFields } from "./form-tabs.ts";
 export {
   formViewOf,
+  formLayoutOptions,
   useFormLayout,
   type FormKind,
   type FormSection,
