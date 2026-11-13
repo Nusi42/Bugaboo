@@ -11,35 +11,13 @@ use serde_json::{Value, json};
 
 use super::fields_http::{create_field, reader_of};
 use super::http::{Browser, rig_and_app};
-use super::issues_site::{ISSUES, PROJECTS, Site, key_of, ok};
+use super::issues_site::{PROJECTS, Site, key_of, ok};
 use super::plan_privacy_http::{field_level, see_only_key};
-use super::plan_site::{MONDAY, TIMELINE, ask, id_of_key, issue, page, planned, rows_of};
+use super::plan_site::{MONDAY, TIMELINE, ask, goal_of, id_of_key, page, planned, rows_of, under};
 
 /// Whether the row of the issue with this readable ID may be dragged.
 fn may_move(page: &Value, key: &str) -> Value {
     rows_of(page, key)[0]["may_move"].clone()
-}
-
-/// Puts `child` under `parent`, as `browser`.
-async fn under(browser: &mut Browser, child: &str, parent: &str) -> Result<(), Failure> {
-    let version = issue(browser, child).await?["version"].clone();
-    let reply = browser
-        .send(
-            "PUT",
-            &format!("{ISSUES}/{child}/parent"),
-            Some(json!({"version": version, "parent": parent})),
-        )
-        .await?;
-    ok(&reply)?;
-    Ok(())
-}
-
-/// The goal of a page with this internal ID.
-fn goal_of<'a>(page: &'a Value, id: &str) -> Option<&'a Value> {
-    page["goals"]
-        .as_array()?
-        .iter()
-        .find(|goal| goal["id"] == id)
 }
 
 /// An issue in a second project SEC, which only Ada sees, with these members: its readable ID.

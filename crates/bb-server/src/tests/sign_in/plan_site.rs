@@ -212,3 +212,25 @@ pub(super) async fn change(
         .send("PATCH", &format!("{ISSUES}/{key}"), Some(body))
         .await
 }
+
+/// Puts `child` under `parent`, as `browser`.
+pub(super) async fn under(browser: &mut Browser, child: &str, parent: &str) -> Result<(), Failure> {
+    let version = issue(browser, child).await?["version"].clone();
+    let reply = browser
+        .send(
+            "PUT",
+            &format!("{ISSUES}/{child}/parent"),
+            Some(json!({"version": version, "parent": parent})),
+        )
+        .await?;
+    ok(&reply)?;
+    Ok(())
+}
+
+/// The goal of a page with this internal ID.
+pub(super) fn goal_of<'a>(page: &'a Value, id: &str) -> Option<&'a Value> {
+    page["goals"]
+        .as_array()?
+        .iter()
+        .find(|goal| goal["id"] == id)
+}

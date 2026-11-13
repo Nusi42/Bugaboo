@@ -4,35 +4,13 @@
 
 use axum::http::StatusCode;
 use bb_app::access::StartingRole;
-use bb_testing::{Failure, TestResult, each_database};
+use bb_testing::{TestResult, each_database};
 use serde_json::{Value, json};
 
 use super::fields_http::create_field;
-use super::http::{Browser, rig_and_app};
-use super::issues_site::{ISSUES, Site, ok};
-use super::plan_site::{MONDAY, ask, id_of_key, issue, page, planned, rows_of};
-
-/// Puts `child` under `parent`, as `browser`.
-async fn under(browser: &mut Browser, child: &str, parent: &str) -> Result<(), Failure> {
-    let version = issue(browser, child).await?["version"].clone();
-    let reply = browser
-        .send(
-            "PUT",
-            &format!("{ISSUES}/{child}/parent"),
-            Some(json!({"version": version, "parent": parent})),
-        )
-        .await?;
-    ok(&reply)?;
-    Ok(())
-}
-
-/// The goal of a page with this internal ID.
-fn goal_of<'a>(page: &'a Value, id: &str) -> Option<&'a Value> {
-    page["goals"]
-        .as_array()?
-        .iter()
-        .find(|goal| goal["id"] == id)
-}
+use super::http::rig_and_app;
+use super::issues_site::Site;
+use super::plan_site::{MONDAY, ask, goal_of, id_of_key, page, planned, rows_of, under};
 
 #[tokio::test]
 async fn plan_03_a_row_says_whether_the_reader_may_move_its_dates() -> TestResult {
