@@ -8,7 +8,7 @@ import { sampleAdministrator } from "./sample.ts";
 import { type Instance } from "./server.ts";
 import { ISSUE, ISSUE_PROJECT, showcaseIds } from "./showcase-sample.ts";
 import { filled, paths, routeParam, type Path, type RouteParam } from "../../src/shared/paths.ts";
-import { places } from "../../src/shared/places.ts";
+import { guestScreens, places } from "../../src/shared/places.ts";
 
 /** One screen of the route table, at an address that opens it on the sample. */
 export interface ScreenAddress {
@@ -95,4 +95,9 @@ function addressOf(path: Path, values: ScreenValues): string {
 /** Every screen of the route table (`places`), at an address on the sample. */
 export function everyScreen(values: ScreenValues): readonly ScreenAddress[] {
   return places.map((place) => ({ path: place.path, address: addressOf(place.path, values) }));
+}
+
+/** The screens before sign-in (`guestScreens`), at their own addresses: each shows what it shows to nobody signed in. */
+export function everyGuestScreen(): readonly ScreenAddress[] {
+  return guestScreens.map((path) => ({ path, address: path }));
 }

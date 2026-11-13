@@ -6,9 +6,10 @@ import {
   part,
   partOf,
   rowStates,
-  swipeSide,
   type ListColumn,
+  type SwipeSide,
 } from "@bugaboo/ui";
+import { useCallback, useState } from "react";
 import { Collection, GridListItem, GridListLoadMoreItem } from "react-aria-components";
 
 import type { FoundLine } from "./found-issues.ts";
@@ -19,9 +20,6 @@ import { IssueRowActions } from "./IssueRowActions.tsx";
 import { useListContext } from "./list-context.ts";
 
 const selectColumn = "select" satisfies ListColumn;
-
-/** The sides of a card of a phone a swipe opens: *Follow* at the start, the windows of other areas at the end. */
-const rowSides = [swipeSide.start, swipeSide.end] as const;
 
 /** A row with the key it has in its group. */
 interface KeyedLine {
@@ -46,6 +44,19 @@ function TickCell({ line, selected }: { readonly line: FoundLine; readonly selec
   );
 }
 
+/** The swipe of a row of the issue list: the sides its actions have now, and whether it was touched. */
+function useIssueSwipe() {
+  const [awake, setAwake] = useState(false);
+  const [sides, setSides] = useState<readonly SwipeSide[]>([]);
+  const row = useRowSwipe(sides, () => {
+    setAwake(true);
+  });
+  const onSides = useCallback((next: readonly SwipeSide[]) => {
+    setSides((known) => (known.join(" ") === next.join(" ") ? known : next));
+  }, []);
+  return { awake, row, onSides, rowProps: row.rowProps };
+}
+
 /** One issue of the list (UX §4.2): a box to tick, then a cell for each column. */
 export function IssueItem({ id, line }: { readonly id: string; readonly line: FoundLine }) {
   const context = useListContext();
@@ -60,7 +71,7 @@ export function IssueItem({ id, line }: { readonly id: string; readonly line: Fo
     current,
   });
   const spoken = `${line.key} ${line.title}`;
-  const swipe = useRowSwipe(rowSides);
+  const swipe = useIssueSwipe();
   return (
     <GridListItem
       id={id}
@@ -83,7 +94,11 @@ export function IssueItem({ id, line }: { readonly id: string; readonly line: Fo
         </ListCell>
       ))}
       {context.phone ? (
-        <IssueRowActions issue={{ id: line.id, key: line.key, project }} swipe={swipe} />
+        <IssueRowActions
+          input={{ issue: { id: line.id, key: line.key, project }, awake: swipe.awake }}
+          row={swipe.row}
+          onSides={swipe.onSides}
+        />
       ) : null}
     </GridListItem>
   );

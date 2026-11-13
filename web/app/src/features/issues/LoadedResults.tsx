@@ -1,7 +1,7 @@
 import { useLayout, part, partOf } from "@bugaboo/ui";
 import { useState } from "react";
 
-import { RowDialogs } from "./IssueRowActions.tsx";
+import { RowDialogs } from "./RowDialogs.tsx";
 import { ListContext } from "./list-context.ts";
 import { ListMain } from "./ListMain.tsx";
 import { ListPanel } from "./ListPanel.tsx";

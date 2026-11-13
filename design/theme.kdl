@@ -1112,10 +1112,11 @@ mixin "touch-row" {
 }
 
 // A row that a finger swipes for its actions (UX §3.3): the page still scrolls up and down, and the sideways move is
-// kept for the swipe; the actions lie over the row.
+// kept for the swipe; the actions slide in inside the row.
 mixin "swipe-row" {
     position relative
     touch-action "pan-y"
+    overflow-x clip
 }
 
 // A link that is a target a finger can hit, and still reads as a link in a line of text.
@@ -1266,6 +1267,20 @@ keyframes "from-start" {
 keyframes "from-end" {
     from {
         transform "translateX(100%)"
+    }
+}
+
+// A line that slides in from the start or the end edge of its box, as the writing goes: from the left in a page written
+// left to right, from the right in one written right to left (the swipe actions of a row).
+keyframes "in-from-start" {
+    from {
+        margin-inline-start "-100%"
+    }
+}
+
+keyframes "in-from-end" {
+    from {
+        margin-inline-start "100%"
     }
 }
 
@@ -5735,13 +5750,17 @@ part "theme-editor.bar" {
 }
 
 // The end of the bar: *Preview* (on a phone), *Throw my changes away* and *Save theme* in one row; where they do not fit
-// in the width of a phone, *Save theme* takes a row of its own under the others.
+// in the width of a phone, *Save theme* takes a row of its own under the others. On a phone the bar is one column, so
+// its buttons start on the edge of the content, as every column does (R1).
 part "theme-editor.bar-end" {
     display flex
     flex-wrap wrap
     align-items center
     justify-content flex-end
     gap "$space-2"
+    media "(max-width: calc($bp-tablet - 1px))" {
+        justify-content flex-start
+    }
 }
 
 part "theme-editor.bar-end button[variant=primary]" {
@@ -7435,30 +7454,34 @@ part "action-sheet action-menu" "action-sheet action-menu.title" {
 // A row of a list on a phone that a finger swipes (the mixin `swipe-row`): at most two actions come in at each side, and
 // each is in the row's *More* too (principle 9).
 
-// The actions lie over the row at the edge they came in from, as high as the row, and slide in from that edge; with
-// *Less motion* the motion tokens are 0, so they are there at once without the slide.
+// The actions come in under the row's words, on a line of their own across the whole row, so the ID and the words stay
+// readable: a box with an edge in the color of a raised box, which stands out from every tint of a row. They slide in
+// from the edge the finger pulled them from; with *Less motion* the motion tokens are 0, so they are there at once.
 part "swipe-actions" {
-    position absolute
-    inset-block 0
+    // Above the link of the row's title, which reaches over the whole row.
+    position relative
     z-index "$z-raised"
+    box-sizing border-box
     display flex
+    flex-wrap wrap
     align-items center
     gap "$space-2"
-    padding "0 $pad-box"
-    background "$bg-surface"
-    box-shadow "$shadow"
+    flex-basis "100%"
+    grid-column "1 / -1"
+    padding "$space-2"
+    border "$border-width solid $border-control"
+    border-radius "$r-ctl"
+    background "$bg-raised"
 }
 
 part "swipe-actions[variant=start]" {
-    inset-inline-start 0
-    border-inline-end "$border-width solid $divider"
-    animation "from-start $motion-base $ease-out"
+    justify-content flex-start
+    animation "in-from-start $motion-base $ease-out"
 }
 
 part "swipe-actions[variant=end]" {
-    inset-inline-end 0
-    border-inline-start "$border-width solid $divider"
-    animation "from-end $motion-base $ease-out"
+    justify-content flex-end
+    animation "in-from-end $motion-base $ease-out"
 }
 
 // The page of an issue scrolls under the bar of actions: a shadow at the end of the page while there is more below it
@@ -16357,7 +16380,10 @@ part "sheet.issue" {
     min-width 0
 }
 
+// A row of time on an issue on a phone: the ID and *Details* over the title, as wide as all the room beside the box of
+// the time, so *Details* stands in one column on every row.
 part "sheet.issue[variant=stacked]" {
+    flex 1
     flex-direction column
     align-items flex-start
     gap 0
@@ -17112,4 +17138,9 @@ part "agents.fact-value" {
     margin 0
     color "$fg"
     font-size "$fs-md"
+}
+
+// What the server refused an action of a card of a phone stands under its words, across the card.
+part "list-row[variant=phone] alert" {
+    grid-column "1 / -1"
 }

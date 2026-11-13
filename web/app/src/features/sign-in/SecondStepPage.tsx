@@ -23,9 +23,10 @@ export function SecondStepPage() {
           <PasskeySecondStep />
         </>
       ) : null}
-      <p {...partOf(part.muted)}>
+      {/* A link on its own line, a target a finger can hit (UX-02). */}
+      <div {...partOf(part.row)}>
         <Link href={paths.signIn}>{t("second-step.back")}</Link>
-      </p>
+      </div>
     </Card>
   );
 }

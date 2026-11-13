@@ -130,6 +130,7 @@ export const messages = {
   "common.close": "Close",
   "common.undo": "Undo",
   "common.row-more": "More: {what}",
+  "common.swipe-shown": "Actions: {actions}",
   "window.minimize": "Minimize",
   "window.maximize": "Maximize",
   "window.restore-down": "Restore down",

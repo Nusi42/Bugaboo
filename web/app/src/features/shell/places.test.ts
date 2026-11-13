@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { paths, savedSearchAddress } from "../../shared/paths.ts";
 import type { Permissions } from "../../shared/permissions.ts";
 import {
+  guestScreens,
   howCurrent,
   mayOpen,
   placeAt,
@@ -17,18 +18,8 @@ import { askerFor } from "../../shared/quick-search-testing.ts";
 
 const asker = askerFor();
 
-/**
- * The addresses of the pages before sign-in, and the one page of a person who may only set up a
- * second step: they are not screens of the signed-in app.
- */
-const guestPaths: ReadonlySet<string> = new Set([
-  paths.setup,
-  paths.signIn,
-  paths.secondStep,
-  paths.setUpSecondStep,
-  paths.signUp,
-  paths.invitation,
-]);
+/** The addresses of the pages before sign-in, which are not screens of the signed-in app. */
+const guestPaths: ReadonlySet<string> = new Set(guestScreens);
 
 /** The addresses quick search finds for these words. */
 async function found(query: string, permissions: Permissions): Promise<readonly string[]> {

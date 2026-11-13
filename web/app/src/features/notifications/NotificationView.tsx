@@ -7,14 +7,13 @@ import {
   longestNameIn,
   SentenceWithName,
   Skeleton,
-  sidesOf,
   type RowActions,
 } from "@bugaboo/ui";
 import { Suspense, useState } from "react";
 
 import { formatDateTime } from "../../shared/format.ts";
 import { listText } from "../../shared/list-text.ts";
-import { useRowSwipe } from "../../shared/use-row-swipe.tsx";
+import { useSwipedRow } from "../../shared/use-row-swipe.tsx";
 import { useWording } from "../../shared/use-wording.ts";
 import { RunProgress } from "../many-changes/index.ts";
 import { NotificationActions } from "./NotificationActions.tsx";
@@ -109,7 +108,7 @@ export function NotificationView({ row, onRead, isReading }: NotificationViewPro
   const sentences = loaded.state === "ready" ? sentencesOf(loaded.wording, row) : [];
   const what = sentences.length === 0 ? t("notifications.new") : listText(sentences);
   const actions = rowActions(row, onRead);
-  const swipe = useRowSwipe(sidesOf(actions));
+  const swipe = useSwipedRow(actions, what);
   return (
     <li {...partOf(part.notification, { states: [!row.read && "unread"] })} {...swipe.rowProps}>
       <div {...partOf(part.notificationHead)}>
@@ -128,7 +127,7 @@ export function NotificationView({ row, onRead, isReading }: NotificationViewPro
         what={what}
         onRead={onRead}
         isReading={isReading}
-        more={swipe.actions(actions, what)}
+        more={swipe.more}
       />
       <RunResult row={row} />
     </li>

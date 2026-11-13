@@ -10566,6 +10566,15 @@ pub fn common_show_all(count: i64) -> Message {
     )
 }
 
+/// The message `common.swipe-shown`.
+#[must_use]
+pub fn common_swipe_shown(actions: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("common.swipe-shown"),
+        vec![("actions", Value::Text(actions.to_string()))],
+    )
+}
+
 /// The message `common.time-24`.
 #[must_use]
 pub fn common_time_24(hour: impl std::fmt::Display, minute: impl std::fmt::Display) -> Message {
@@ -20000,6 +20009,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("common.save", "Save"),
     ("common.show-all", "Show all {count, number}"),
     ("common.show-fewer", "Show fewer"),
+    ("common.swipe-shown", "Actions: {actions}"),
     ("common.time-24", "{hour}:{minute}"),
     ("common.time-am", "{hour}:{minute} AM"),
     ("common.time-pm", "{hour}:{minute} PM"),

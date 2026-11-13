@@ -3,6 +3,7 @@ import { t } from "@bugaboo/messages";
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
 import { refreshHistory } from "../../shared/query-keys.ts";
+import type { RowActionInput, RowActionState } from "../issues/index.ts";
 
 const reasonMessage = {
   reported: "followers.reason-reported",
@@ -10,6 +11,11 @@ const reasonMessage = {
   commented: "followers.reason-commented",
   chose: "followers.reason-chose",
 } as const;
+
+/** What went wrong in words, or nothing. */
+function messageOrNull(error: unknown): string | null {
+  return error === null || error === undefined ? null : messageOf(error);
+}
 
 /** What the person's own choice to follow an issue is, and the way to turn it round. */
 export interface Following {
@@ -50,7 +56,7 @@ export function useFollowing(issue: string, asked = true): Following {
     // Why the person follows: read with the button that turns it round, for those who cannot point at it.
     why: reason === undefined || reason === null ? undefined : t(reasonMessage[reason]),
     pending: follow.isPending || leave.isPending,
-    problem: follow.error === null ? null : messageOf(follow.error),
+    problem: messageOrNull(follow.error ?? leave.error),
     turn: () => {
       if (following) {
         leave.mutate(params);
@@ -58,5 +64,23 @@ export function useFollowing(issue: string, asked = true): Following {
         follow.mutate(params);
       }
     },
+  };
+}
+
+/**
+ * *Follow* or *Stop following* on a row of the issue list (UX §3.3), once the person's choice is read: the row reads
+ * it only after it was touched. A refusal is said on the row.
+ */
+export function useFollowOnRow({ issue, awake }: RowActionInput): RowActionState {
+  const mine = useFollowing(issue.key, awake);
+  return {
+    action: mine.known
+      ? {
+          id: "follow",
+          label: mine.following ? t("followers.stop") : t("followers.follow"),
+          onAction: mine.turn,
+        }
+      : undefined,
+    problem: mine.problem,
   };
 }

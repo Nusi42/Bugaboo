@@ -2,13 +2,13 @@ import { projectIssuesAddress } from "../src/shared/paths.ts";
 import { ada } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { tickBox, webIssues } from "./support/issues.ts";
+import { webIssues } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
-import { chooseSpacing, listFrame, prepareLook, rowOf } from "./support/list-look.ts";
+import { listFrame, prepareLook, rowOf } from "./support/list-look.ts";
 import { boxOf } from "./support/windows.ts";
 
-// The list that is wider than its box (UX §4.2): the head scrolls with the rows; and the person's
-// Compact spacing keeps a target a finger can press on touch (UX §7.4).
+// The list that is wider than its box (UX §4.2): the head scrolls with the rows. That Compact keeps a
+// target a finger can press on touch is `touch-compact-phone.spec.ts` (UX-02).
 
 test.use({ preparation: { run: prepareLook } });
 test.describe.configure({ mode: "serial" });
@@ -32,21 +32,6 @@ test("ux_4_2 the head scrolls sideways with the rows", async ({ page }) => {
     await boxOf(titleOf("[data-part='list-scroll']")),
   ];
   expect(Math.abs(headCell.x - rowCell.x)).toBeLessThanOrEqual(1);
-});
-
-test("ux_7_4 the tick box of a compact list keeps a target of 44 on touch", async ({
-  page,
-  server,
-}) => {
-  test.skip(layoutOf(page) !== "phone", "touch is the phone project");
-  await chooseSpacing(server, "compact");
-  await signIn(page, ada);
-  await page.goto(projectIssuesAddress("WEB"));
-  await expect(rowOf(page, webIssues.login)).toBeVisible();
-  await expect(listFrame(page)).toHaveAttribute("data-variant", /compact/u);
-  const box = await boxOf(tickBox(page, "WEB-1").locator("xpath=ancestor::label"));
-  expect(box.height).toBeGreaterThanOrEqual(44);
-  await chooseSpacing(server, "comfortable");
 });
 
 test("ux_4_2 a list that was wide and becomes a phone's cards does not scroll sideways", async ({

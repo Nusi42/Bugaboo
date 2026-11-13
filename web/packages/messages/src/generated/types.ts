@@ -255,6 +255,7 @@ export interface MessageArguments {
   "common.percent": { percent: string | number; sign: string | number };
   "common.row-more": { what: string | number };
   "common.show-all": { count: number };
+  "common.swipe-shown": { actions: string | number };
   "common.time-24": { hour: string | number; minute: string | number };
   "common.time-am": { hour: string | number; minute: string | number };
   "common.time-pm": { hour: string | number; minute: string | number };

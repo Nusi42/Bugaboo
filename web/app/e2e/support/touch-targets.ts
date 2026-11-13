@@ -1,12 +1,13 @@
 import { expect, type Page } from "@playwright/test";
 
-import { everyScreen, screenValues } from "./every-screen.ts";
+import { everyGuestScreen, everyScreen, screenValues, type ScreenAddress } from "./every-screen.ts";
 import { signIn } from "./flows.ts";
 import { sampleAdministrator } from "./sample.ts";
 import { inOrder } from "./sequence.ts";
 import { type Instance } from "./server.ts";
 
 import { pixelsOf } from "./tokens.ts";
+import { paths } from "../../src/shared/paths.ts";
 
 /**
  * The size of targets for a finger (UX §7.4, §8; UX-02): every control a finger presses is at least as high and as
@@ -44,8 +45,6 @@ interface TargetFacts {
    * link of a row covers (`::after`, `link[variant=row]`), the box with an edge that the control fills, else its own.
    */
   readonly hit: Size;
-  /** For a link in a row of a grid, the height of the row, which is pressed as a whole to the same place (R8); else 0. */
-  readonly row: number;
   /** Hidden, covered by a window (`inert`), or a box that only a screen reader reads. */
   readonly unseen: boolean;
   /** A link that flows in a line of words: WCAG 2.5.8 leaves it out, the sentence keeps the room. */
@@ -101,7 +100,6 @@ function placesOf(page: Page): Promise<PlaceFacts[]> {
           (edged ? frame : null) ??
           target
         ).getBoundingClientRect();
-        const row = target.closest("[role='grid'] [role='row']");
         const around = frame?.closest<HTMLElement>("[data-part]")?.dataset;
         const named = (word: string | undefined, kind: string | undefined): string =>
           `${word ?? target.tagName.toLowerCase()}${kind === undefined ? "" : `[${kind}]`}`;
@@ -111,7 +109,6 @@ function placesOf(page: Page): Promise<PlaceFacts[]> {
           name: target.getAttribute("aria-label") ?? (target.textContent ?? "").trim().slice(0, 40),
           box: { width: box.width, height: box.height },
           hit: { width: hit.width, height: hit.height },
-          row: target.tagName === "A" ? (row?.getBoundingClientRect().height ?? 0) : 0,
         };
       }),
     pressed,
@@ -156,7 +153,6 @@ async function factsOf(page: Page): Promise<TargetFacts[]> {
     name: place.name,
     box: place.box,
     hit: place.hit,
-    row: place.row,
     unseen: seen[at]?.unseen ?? true,
     inSentence: seen[at]?.inSentence ?? false,
   }));
@@ -165,12 +161,13 @@ async function factsOf(page: Page): Promise<TargetFacts[]> {
 /**
  * The controls of the page that a finger presses and that are smaller than `least` in one direction. What is not a
  * target of its own is left out, as WCAG 2.5.8 leaves it out: a link inside a sentence, what is hidden or covered by a
- * window, a box that only a screen reader reads, and a link in a row of a list that is pressed as a whole (R8).
+ * window, and a box that only a screen reader reads. The link of a row that reaches over the whole row (R8) is measured
+ * by the row it covers.
  */
 export async function smallTargets(page: Page, least: number): Promise<SmallTarget[]> {
   const wanted = least - ROUNDING_PX;
   return (await factsOf(page))
-    .filter((fact) => !fact.unseen && !fact.inSentence && fact.row < wanted)
+    .filter((fact) => !fact.unseen && !fact.inSentence)
     .filter((fact) => fact.hit.width < wanted || fact.hit.height < wanted)
     .map(({ part, within, name, hit }) => ({
       part,
@@ -187,30 +184,46 @@ export interface ScreenTargets {
   readonly targets: readonly SmallTarget[];
 }
 
-/** Waits until a screen has drawn what it reads: its main part, and no read on its way. */
+/** The size of a target with touch that UX §7.4 and §8 write down: what the theme file must give `size-control`. */
+const TOUCH_PX = 44;
+
+/** Waits until a screen has drawn what it reads: its title, and no read on its way. */
 async function opened(page: Page, address: string): Promise<void> {
   await page.goto(address);
-  await expect(page.getByRole("main")).toBeVisible();
+  await expect(page.locator("h1, [data-part='top-bar.title']").first()).toBeVisible();
   await page.waitForLoadState("networkidle");
 }
 
+/** The small targets of each screen, opened one after the other. */
+async function measured(
+  page: Page,
+  screens: readonly ScreenAddress[],
+  least: number,
+): Promise<ScreenTargets[]> {
+  const found: ScreenTargets[] = [];
+  await inOrder(
+    screens.map((screen) => async () => {
+      await opened(page, screen.address);
+      found.push({ screen: screen.path, targets: await smallTargets(page, least) });
+    }),
+  );
+  return found;
+}
+
 /**
- * Opens every screen of the route table as the sample's administrator sees it (the most controls), in the window of
- * the page, and gives the small targets of each.
+ * Opens every screen before sign-in as nobody, then every screen of the route table as the sample's administrator
+ * sees it (the most controls), in the window of the page, and gives the small targets of each. The size it measures
+ * against is the touch value of the theme file, or it measures nothing.
  */
 export async function smallTargetsOfEveryScreen(
   page: Page,
   server: Instance,
 ): Promise<readonly ScreenTargets[]> {
   const values = await screenValues(server);
-  await signIn(page, sampleAdministrator());
+  await page.goto(paths.signIn);
   const least = await touchTarget(page);
-  const found: ScreenTargets[] = [];
-  await inOrder(
-    everyScreen(values).map((screen) => async () => {
-      await opened(page, screen.address);
-      found.push({ screen: screen.path, targets: await smallTargets(page, least) });
-    }),
-  );
-  return found;
+  expect(least).toBe(TOUCH_PX);
+  const guests = await measured(page, everyGuestScreen(), least);
+  await signIn(page, sampleAdministrator());
+  return [...guests, ...(await measured(page, everyScreen(values), least))];
 }

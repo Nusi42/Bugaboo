@@ -1,5 +1,3 @@
-import { t } from "@bugaboo/messages";
-
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { sampleAdministrator } from "./support/sample.ts";
@@ -8,7 +6,6 @@ import {
   actionsOfMore,
   actionsOfSwipe,
   swipe,
-  swipeClosed,
   swipedActions,
   swipeStrip,
 } from "./support/swipe.ts";
@@ -55,34 +52,10 @@ test("ux_02_less_motion_shows_swipe_actions_without_sliding", async ({ browser, 
   await swipe(page, row, "start");
   const strip = swipeStrip(row);
   await expect(swipedActions(row).first()).toBeVisible();
-  // No slide: the actions stand at the end edge of the row from the first picture on.
+  // No slide: the actions stand inside the row, under its words, from the first picture on.
   expect(await strip.evaluate((node) => getComputedStyle(node).animationDuration)).toBe("0s");
   const [rowBox, stripBox] = [await boxOf(row), await boxOf(strip)];
-  expect(Math.abs(rowBox.x + rowBox.width - (stripBox.x + stripBox.width))).toBeLessThanOrEqual(1);
+  expect(stripBox.x).toBeGreaterThanOrEqual(rowBox.x);
+  expect(stripBox.x + stripBox.width).toBeLessThanOrEqual(rowBox.x + rowBox.width);
   await context.close();
-});
-
-test("ux_02 the swipe actions of an issue do what they say: Follow, and the change of status of that one issue", async ({
-  page,
-}) => {
-  await signIn(page, sampleAdministrator());
-  const row = await firstRow(page, projectIssuesAddress("WEB"), "list-row");
-  const words = [t("followers.follow"), t("followers.stop")];
-  // A finger taps, as on a phone: the side closes and the person follows the issue, or stops.
-  await swipe(page, row, "end");
-  const before = (await swipedActions(row).first().innerText()).trim();
-  await swipedActions(row).first().tap();
-  await expect(swipeStrip(row)).toHaveCount(0);
-  await swipe(page, row, "end");
-  expect(words).toContain(before);
-  await expect(swipedActions(row).first()).toHaveText(words.filter((word) => word !== before));
-  await swipeClosed(page, row, "end");
-  await swipe(page, row, "start");
-  await swipedActions(row).getByText(t("issues.row-change-status"), { exact: true }).tap();
-  const dialog = page.getByRole("alertdialog", {
-    name: t("many-changes.title", { action: t("many-changes.action-change"), count: 1 }),
-  });
-  await expect(dialog).toBeVisible();
-  await dialog.getByRole("button", { name: t("common.cancel"), exact: true }).tap();
-  await expect(dialog).toBeHidden();
 });

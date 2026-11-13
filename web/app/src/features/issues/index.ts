@@ -10,7 +10,12 @@ export { IssueLongText, type IssueLongTextProps } from "./IssueLongText.tsx";
 export { registerIssues } from "./register.tsx";
 export { addMoreEntry, type MoreDialogProps, type MoreEntry } from "./more-entries.ts";
 export { addSelectionBar, type SelectionBarProps } from "./selection-bars.ts";
-export { addRowDialog, type RowDialogProps, type RowIssue } from "./row-dialogs.ts";
+export {
+  addRowAction,
+  type RowActionInput,
+  type RowActionState,
+  type RowDialogProps,
+} from "./row-actions.ts";
 export type { IssueSelection } from "./use-selection.ts";
 export { peopleOf, useAssignablePeople } from "./use-assignable-people.ts";
 export { issueCells } from "./issue-cells.tsx";

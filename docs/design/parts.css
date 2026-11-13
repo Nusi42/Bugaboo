@@ -43,6 +43,18 @@
   }
 }
 
+@keyframes in-from-start {
+  from {
+    margin-inline-start: -100%;
+  }
+}
+
+@keyframes in-from-end {
+  from {
+    margin-inline-start: 100%;
+  }
+}
+
 @keyframes pulse {
   from {
     opacity: var(--opacity-faint);
@@ -1806,6 +1818,7 @@ textarea,
 [data-part="list-row"][data-variant~="phone"] {
   position: relative;
   touch-action: pan-y;
+  overflow-x: clip;
   grid-template-columns: var(--size-control) var(--size-col-icon) minmax(0, 1fr) auto var(
       --size-control
     );
@@ -4741,6 +4754,12 @@ textarea,
 }
 
 @media (max-width: calc(768px - 1px)) {
+  [data-part="theme-editor.bar-end"] {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: calc(768px - 1px)) {
   [data-part="theme-editor.bar-end"] [data-part="button"][data-variant~="primary"] {
     flex-basis: 100%;
   }
@@ -6501,27 +6520,29 @@ textarea,
 }
 
 [data-part="swipe-actions"] {
-  position: absolute;
-  inset-block: 0;
+  position: relative;
   z-index: var(--z-raised);
+  box-sizing: border-box;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
-  padding: 0 var(--pad-box);
-  background: var(--bg-surface);
-  box-shadow: var(--shadow);
+  flex-basis: 100%;
+  grid-column: 1 / -1;
+  padding: var(--space-2);
+  border: var(--border-width) solid var(--border-control);
+  border-radius: var(--r-ctl);
+  background: var(--bg-raised);
 }
 
 [data-part="swipe-actions"][data-variant~="start"] {
-  inset-inline-start: 0;
-  border-inline-end: var(--border-width) solid var(--divider);
-  animation: from-start var(--motion-base) var(--ease-out);
+  justify-content: flex-start;
+  animation: in-from-start var(--motion-base) var(--ease-out);
 }
 
 [data-part="swipe-actions"][data-variant~="end"] {
-  inset-inline-end: 0;
-  border-inline-start: var(--border-width) solid var(--divider);
-  animation: from-end var(--motion-base) var(--ease-out);
+  justify-content: flex-end;
+  animation: in-from-end var(--motion-base) var(--ease-out);
 }
 
 @supports (animation-timeline: scroll()) {
@@ -7697,6 +7718,7 @@ textarea,
 [data-part="notification"] {
   position: relative;
   touch-action: pan-y;
+  overflow-x: clip;
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -9053,6 +9075,7 @@ textarea,
 }
 
 [data-part="sheet.issue"][data-variant~="stacked"] {
+  flex: 1;
   flex-direction: column;
   align-items: flex-start;
   gap: 0;
@@ -9704,6 +9727,7 @@ textarea,
   background: var(--bg-surface);
   position: relative;
   touch-action: pan-y;
+  overflow-x: clip;
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
@@ -9800,4 +9824,8 @@ textarea,
   margin: 0;
   color: var(--fg);
   font-size: var(--fs-md);
+}
+
+[data-part="list-row"][data-variant~="phone"] [data-part="alert"] {
+  grid-column: 1 / -1;
 }

@@ -6,6 +6,9 @@
 export const swipeSide = { none: "none", start: "start", end: "end" } as const;
 export type SwipeSide = (typeof swipeSide)[keyof typeof swipeSide];
 
+/** The most actions a swipe brings in at one side (UX §3.3); *More* holds every action of the row. */
+export const MOST_SWIPED = 2;
+
 /**
  * How far a finger moves sideways before a swipe opens or closes a side: about the width of a fingertip, so a tap
  * that wobbles is still a tap.

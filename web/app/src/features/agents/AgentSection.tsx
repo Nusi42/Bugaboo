@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
-import { Link, partOf, part, sidesOf, type RowActions } from "@bugaboo/ui";
+import { Link, partOf, part, type RowActions } from "@bugaboo/ui";
 
-import { useRowSwipe } from "../../shared/use-row-swipe.tsx";
+import { useSwipedRow } from "../../shared/use-row-swipe.tsx";
 import { agentAddress } from "./agent-address.ts";
 import { mayAct, type ListedAgent, type MyWorkItem } from "./agents.ts";
 import { AgentStateLine } from "./AgentState.tsx";
@@ -25,7 +25,7 @@ export function AgentSection({ agent, work }: AgentSectionProps) {
   const change = useAgentState(agent);
   const actions: RowActions =
     change.pauseOrResume === undefined ? {} : { end: [change.pauseOrResume] };
-  const swipe = useRowSwipe(sidesOf(actions));
+  const swipe = useSwipedRow(actions, agent.name);
   return (
     <li
       {...partOf(part.agentsAgent, { variants: [!mayAct(agent) && "stopped"] })}
@@ -38,7 +38,7 @@ export function AgentSection({ agent, work }: AgentSectionProps) {
           </span>
           <AgentStateLine agent={agent} />
         </span>
-        <StateButtons agent={agent} change={change} more={swipe.actions(actions, agent.name)} />
+        <StateButtons agent={agent} change={change} more={swipe.more} />
       </div>
       {open.length > 0 ? <WorkLines work={open} /> : null}
       {/* A stopped agent says nothing more than its state: the card is quiet. */}

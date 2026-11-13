@@ -65,6 +65,19 @@ export const places: readonly Place[] = [
   },
 ];
 
+/**
+ * The screens before sign-in, and the one screen of a person who may only set up a second step: they are not screens
+ * of the signed-in app, so `places` does not list them.
+ */
+export const guestScreens: readonly Path[] = [
+  paths.setup,
+  paths.signIn,
+  paths.secondStep,
+  paths.setUpSecondStep,
+  paths.signUp,
+  paths.invitation,
+];
+
 /** The screen at an address, if there is one. */
 export function placeAt(path: string): Place | undefined {
   return places.find((place) => place.path === path);
