@@ -43,6 +43,11 @@ const sides = {
 export const windowStand = { middle: "middle", top: "top" } as const;
 export type WindowStand = (typeof windowStand)[keyof typeof windowStand];
 
+/** The places to drag of a window that stands there: one at the top has no top edge, because its top cannot move. */
+export function edgesOf(stand: WindowStand): readonly WindowEdge[] {
+  return stand === windowStand.top ? windowEdges.filter((edge) => sides[edge].y >= 0) : windowEdges;
+}
+
 /**
  * How many pixels a size changes for each pixel the pointer moves. A window is centred across, so
  * it grows on both sides; one in the middle grows on both sides up and down too, and one at the top

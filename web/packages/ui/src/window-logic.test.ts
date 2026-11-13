@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import { applyWindowSize, resizeByKey, type ResizeKey } from "./use-window-resize.ts";
-import { notBelow } from "./window-size.ts";
+import { edgesOf, notBelow, windowStand } from "./window-size.ts";
 import { keyboardStep, type WindowElement, type WindowSize } from "./window-size.ts";
 import {
   firstShape,
   hiddenPresence,
+  isWaiting,
   phaseOf,
   presenceAfter,
   reduceShape,
@@ -174,5 +175,21 @@ describe("ux_6_1 a window is shown once its content is there and then stays show
         { ...open, ready: true },
       ]),
     ).toEqual([windowPhase.quiet, windowPhase.loading, windowPhase.top]);
+  });
+});
+
+describe("ux_6_1 a window that waits is not resized, and one at the top has no top edge", () => {
+  it("waits while nothing or grey shapes show, and not once its content is there", () => {
+    expect(Object.values(windowPhase).map((phase) => [phase, isWaiting(phase)])).toEqual([
+      [windowPhase.quiet, true],
+      [windowPhase.loading, true],
+      [windowPhase.top, false],
+      [windowPhase.middle, false],
+    ]);
+  });
+
+  it("drags at every edge in the middle, and at all but the top ones at the top", () => {
+    expect(edgesOf(windowStand.middle)).toHaveLength(8);
+    expect([...edgesOf(windowStand.top)].toSorted()).toEqual(["e", "s", "se", "sw", "w"]);
   });
 });

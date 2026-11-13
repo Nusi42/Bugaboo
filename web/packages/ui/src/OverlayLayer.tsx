@@ -4,7 +4,7 @@ import { Modal, ModalOverlay } from "react-aria-components";
 import { partOf } from "./parts.ts";
 import type { OverlayEdge } from "./props.ts";
 import { part } from "./tokens.ts";
-import { windowPhase, type WindowPhase } from "./window-shape.ts";
+import { isWaiting, windowPhase, type WindowPhase } from "./window-shape.ts";
 import type { WindowElement } from "./window-size.ts";
 
 export interface OverlayLayerProps {
@@ -38,7 +38,7 @@ export function OverlayLayer({
   children,
 }: OverlayLayerProps) {
   const states = [maximized && "maximized"] as const;
-  const waiting = phase === windowPhase.quiet || phase === windowPhase.loading;
+  const waiting = isWaiting(phase);
   return (
     <ModalOverlay
       isOpen={isOpen}

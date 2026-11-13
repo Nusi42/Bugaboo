@@ -6,6 +6,7 @@ import { windowState, type WindowState } from "./props.ts";
 import { WindowDock } from "./WindowDock.tsx";
 import { WindowFrame, type WindowLabels, type WindowResize } from "./WindowFrame.tsx";
 import { WindowLayout } from "./WindowLayout.tsx";
+import { windowPhase } from "./window-shape.ts";
 import { windowEdges } from "./window-size.ts";
 import { doNothing } from "./do-nothing.ts";
 
@@ -32,7 +33,8 @@ function frame(state: WindowState, footer?: ReactNode): string {
       title={text.title}
       labels={labels}
       state={state}
-      loading={false}
+      phase={windowPhase.middle}
+      edges={state === windowState.normal ? windowEdges : []}
       footer={footer}
       onMinimize={doNothing}
       onToggleMaximize={doNothing}

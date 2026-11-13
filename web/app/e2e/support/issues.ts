@@ -215,7 +215,9 @@ export {
   openNewIssueDialog,
   openNewIssueDialogFromTheMenu,
   pressNewIssue,
+  pressNewIssueAndEscapeAtOnce,
   titleLabel,
+  waitForNewIssueForm,
 } from "./new-issue-dialog.ts";
 
 /** Changes the status and the priority of an issue as the session's person, on the version the test knows. */

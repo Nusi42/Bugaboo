@@ -13,8 +13,8 @@ import { iconName } from "./icons.ts";
 import { partOf } from "./parts.ts";
 import { iconSize, windowState, type WindowState } from "./props.ts";
 import { part } from "./tokens.ts";
-import { WindowBody } from "./WindowBody.tsx";
-import { windowEdges, windowSteps, type WindowEdge, type WindowStep } from "./window-size.ts";
+import { WindowBody, type WindowBodyProps } from "./WindowBody.tsx";
+import { windowSteps, type WindowEdge, type WindowStep } from "./window-size.ts";
 
 /** The words on the buttons of a window, in the person's language. */
 export interface WindowLabels {
@@ -54,8 +54,10 @@ export interface WindowFrameProps {
   readonly title: ReactNode;
   readonly labels: WindowLabels;
   readonly state: WindowState;
-  /** The content is on its way: grey shapes stand in for it, and it is kept out of sight until it is there. */
-  readonly loading: boolean;
+  /** Whether the content is there or on its way, and where the window stands. */
+  readonly phase: WindowBodyProps["phase"];
+  /** The places to drag; none while the window cannot be resized (maximized, a full screen, or waiting). */
+  readonly edges: readonly WindowEdge[];
   /** The buttons of the form; the main one stands at the right (R6). */
   readonly footer?: ReactNode;
   readonly onMinimize: () => void;
@@ -163,11 +165,11 @@ function Controls({
  * place while the form scrolls (UX §6.3).
  */
 export function WindowFrame(props: WindowFrameProps) {
-  const { title, labels, state, loading, footer, resize, children } = props;
+  const { title, labels, phase, edges, footer, resize, children } = props;
   const dialog = useRef<HTMLElement>(null);
   const hint = useId();
   const bodyId = useId();
-  const draggable = state === windowState.normal;
+  const draggable = edges.length > 0;
   return (
     <Dialog
       ref={dialog}
@@ -181,7 +183,7 @@ export function WindowFrame(props: WindowFrameProps) {
           </Heading>
           <Controls {...props} />
         </div>
-        <WindowBody id={bodyId} loading={loading} loadingLabel={labels.loading} dialog={dialog}>
+        <WindowBody id={bodyId} phase={phase} loadingLabel={labels.loading} dialog={dialog}>
           {children}
         </WindowBody>
         {footer === undefined ? null : <div {...partOf(part.windowFooter)}>{footer}</div>}
@@ -190,7 +192,7 @@ export function WindowFrame(props: WindowFrameProps) {
             <span id={hint} {...partOf(part.visuallyHidden)}>
               {labels.resizeKeys}
             </span>
-            {windowEdges.map((edge) => (
+            {edges.map((edge) => (
               <div
                 key={edge}
                 {...partOf(part.windowHandle, { variants: [edge] })}

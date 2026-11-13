@@ -5,8 +5,10 @@ import { useLayout } from "./layout.ts";
 import { windowState, type WindowState } from "./props.ts";
 import { applyWindowSize, useWindowResize } from "./use-window-resize.ts";
 import {
+  dragEdgesOf,
   firstShape,
   hiddenPresence,
+  isWaiting,
   phaseOf,
   presenceAfter,
   reduceShape,
@@ -15,7 +17,7 @@ import {
   type WindowPhase,
 } from "./window-shape.ts";
 import type { WindowResize } from "./WindowFrame.tsx";
-import type { WindowElement, WindowSize } from "./window-size.ts";
+import type { WindowEdge, WindowElement, WindowSize } from "./window-size.ts";
 
 /** What the window is showing: on a phone a full screen, else normal or maximized. */
 function stateOf(full: boolean, maximized: boolean): WindowState {
@@ -34,6 +36,8 @@ export interface UseWindow {
   readonly resize: WindowResize;
   /** Whether the window shows its content, grey shapes or nothing yet, and where it stands. */
   readonly phase: WindowPhase;
+  /** The places to drag (`dragEdgesOf`). */
+  readonly edges: readonly WindowEdge[];
   /** The reference of the element that is the window: it gets its remembered size when it appears. */
   readonly placed: (element: WindowElement | null) => void;
 }
@@ -65,7 +69,7 @@ export function useWindow(
   }
   const [element, setElement] = useState<WindowElement | null>(null);
   const phase = phaseOf(next, late);
-  const resize = useWindowResize(element, onResized, standOf(phase));
+  const resize = useWindowResize(isWaiting(phase) ? null : element, onResized, standOf(phase));
   const placed = useCallback(
     (modal: WindowElement | null) => {
       setElement(modal);
@@ -75,8 +79,9 @@ export function useWindow(
     },
     [size],
   );
+  const state = stateOf(full, shape.maximized);
   return {
-    state: stateOf(full, shape.maximized),
+    state,
     minimized: shape.minimized,
     minimize: () => {
       act(shapeAction.minimize);
@@ -89,6 +94,7 @@ export function useWindow(
     },
     resize,
     phase,
+    edges: dragEdgesOf(state, phase),
     placed,
   };
 }

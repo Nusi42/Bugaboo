@@ -1,4 +1,5 @@
-import { windowStand, type WindowStand } from "./window-size.ts";
+import { windowState, type WindowState } from "./props.ts";
+import { edgesOf, windowStand, type WindowEdge, type WindowStand } from "./window-size.ts";
 
 /** What a window is doing besides being open: parked as a bar, or filling the page. */
 export interface WindowShape {
@@ -90,4 +91,18 @@ export function phaseOf(presence: WindowPresence, late: boolean): WindowPhase {
 /** Where a window of this phase stands: in the middle, or at the top where its grey shapes stood. */
 export function standOf(phase: WindowPhase): WindowStand {
   return phase === windowPhase.middle ? windowStand.middle : windowStand.top;
+}
+
+/** The window waits for its content: nothing shows yet, or grey shapes do. */
+export function isWaiting(phase: WindowPhase): boolean {
+  return phase === windowPhase.quiet || phase === windowPhase.loading;
+}
+
+/**
+ * The places to drag: every edge of a normal window in the middle, no top edge at the top (its top
+ * cannot move), and none while it waits (it is as tall as the page then, and resizing it would keep
+ * that size) or fills the screen.
+ */
+export function dragEdgesOf(state: WindowState, phase: WindowPhase): readonly WindowEdge[] {
+  return state === windowState.normal && !isWaiting(phase) ? edgesOf(standOf(phase)) : [];
 }

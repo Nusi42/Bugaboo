@@ -5,29 +5,20 @@ import { part } from "../../../packages/ui/src/tokens.ts";
 import { keyboardStep, menuStep, windowEdges } from "../../../packages/ui/src/window-size.ts";
 import { descriptionBox } from "./description.ts";
 import { layoutOf } from "./layout.ts";
-import { placesWhile, type Place } from "./frames.ts";
-
-// The windows that wait for a slow answer are tested with it.
-export { holdNewIssueLayout } from "./slow-answers.ts";
-import { partIn, partSelector } from "./parts.ts";
+import { partIn } from "./parts.ts";
 import { newIssueDialog, openNewIssueDialog, titleLabel } from "./issues.ts";
+
+// The windows that wait for their content are tested with the rest.
+export { expectWindowSeen, holdNewIssueLayout, windowPlacesWhile } from "./window-waiting.ts";
+
+/** A page taller than the filled new-issue form (about 1030 high), so the window does not fill it. */
+export const TALLER_THAN_THE_FORM_PX = 1300;
 
 export { keyboardStep, menuStep, windowEdges };
 
 /** The box of the window: the part that the size variables are set on. */
 export function windowBox(page: Page): Locator {
   return partIn(page, part.overlayModal, "window");
-}
-
-/** Where the open window stands in every frame in which it is shown while `act` runs (see `placesWhile`). */
-export function windowPlacesWhile(page: Page, act: () => Promise<void>): Promise<readonly Place[]> {
-  const variant = layoutOf(page) === "phone" ? "full" : "window";
-  return placesWhile(page, partSelector(part.overlayModal, variant), act);
-}
-
-/** Waits until the open window can be seen: for its first 0.3 s a window that is loading is there but clear. */
-export async function expectWindowSeen(page: Page): Promise<void> {
-  await expect(partIn(page, part.overlayModal)).toHaveCSS("opacity", "1");
 }
 
 /** The name of the button that closes the window: *Close* in its title bar, *Back* on a phone. */

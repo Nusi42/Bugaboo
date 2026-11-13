@@ -5,7 +5,6 @@ import { overlayEdge, windowState } from "./props.ts";
 import { useWindow } from "./use-window.ts";
 import { WindowDock } from "./WindowDock.tsx";
 import { WindowFrame, type WindowLabels } from "./WindowFrame.tsx";
-import { windowPhase } from "./window-shape.ts";
 import type { WindowSize } from "./window-size.ts";
 
 export interface WindowProps {
@@ -60,7 +59,8 @@ export function Window(props: WindowProps) {
           title={title}
           labels={labels}
           state={shape.state}
-          loading={shape.phase === windowPhase.quiet || shape.phase === windowPhase.loading}
+          phase={shape.phase}
+          edges={shape.edges}
           footer={footer}
           resize={shape.resize}
           onMinimize={shape.minimize}

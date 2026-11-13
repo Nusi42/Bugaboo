@@ -10,7 +10,9 @@ import {
   openNewIssueDialog as openDialog,
   openNewIssueDialogFromTheMenu,
   pressNewIssue,
+  pressNewIssueAndEscapeAtOnce,
   titleLabel,
+  waitForNewIssueForm,
   prepareWeb,
 } from "./support/issues.ts";
 import { onThisLayout } from "./support/layout.ts";
@@ -19,6 +21,7 @@ import {
   expectWindowSeen,
   holdNewIssueLayout,
   pageSize,
+  TALLER_THAN_THE_FORM_PX,
   windowCloseName,
   windowPlacesWhile,
 } from "./support/windows.ts";
@@ -111,9 +114,6 @@ test("ux_6_3 the new-issue window stands still on the first open of a project", 
   expect(second.at(-1), "the second open stands where the first ended").toEqual(first.at(-1));
 });
 
-/** A page taller than the filled new-issue form (about 1030 high with the description), so the window does not fill it. */
-const TALLER_THAN_THE_FORM_PX = 1300;
-
 test("ux_6_1 a window whose fields are slow says it is loading, shows grey shapes and stands still", async ({
   page,
 }) => {
@@ -137,18 +137,23 @@ test("ux_6_1 a window whose fields are slow says it is loading, shows grey shape
   expect([...placesSeen], "the loading window and the filled one stand in one place").toHaveLength(
     1,
   );
-  await expect(dialog(page).getByRole("status")).toHaveCount(0);
+  // The form is there: the status says nothing more, and the focus is where the person types first.
+  await expect(dialog(page).getByRole("status")).toHaveText("");
+  await expect(dialog(page).getByLabel(titleLabel(), { exact: true })).toBeFocused();
 });
 
-test("ux_6_1 a window that is still loading closes with Escape and with its own button", async ({
+test("ux_6_1 a window that is still loading closes with Escape and with its own button, and says so once", async ({
   page,
 }) => {
   await signIn(page, ada);
   await page.goto(projectIssuesAddress("WEB"));
   const release = await holdNewIssueLayout(page);
-  await pressNewIssue(page);
-  await page.keyboard.press("Escape");
+  // The first 0.3 s: the window is there but clear, says nothing yet, and Esc closes it.
+  const atEscape = await pressNewIssueAndEscapeAtOnce(page);
+  expect(atEscape.state.split(" "), "the window was in its clear first 0.3 s").toContain("quiet");
+  expect(atEscape.status, "nothing is said before the grey shapes show").toBe("");
   await expect(dialog(page)).toHaveCount(0);
+  // After 0.3 s: grey shapes, the status says it is loading, and its own button closes it.
   await pressNewIssue(page);
   await expectWindowSeen(page);
   await expect(dialog(page).getByRole("status")).toHaveText(t("common.loading"));
@@ -157,6 +162,20 @@ test("ux_6_1 a window that is still loading closes with Escape and with its own 
     .click();
   await expect(dialog(page)).toHaveCount(0);
   release();
+});
+
+test("cfg_01 a layout that cannot be read is said inside the window, which shows its form", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await page.goto(projectIssuesAddress("WEB"));
+  // Refused here (a status the browser tests accept as an answer, not a defect); any failure takes the same way.
+  await page.route("**/api/v1/layouts/form?*kind=new-issue*", (route) =>
+    route.fulfill({ status: 403 }),
+  );
+  await pressNewIssue(page);
+  await waitForNewIssueForm(page);
+  await expect(dialog(page).getByText(t("layouts.unreadable"), { exact: true })).toBeVisible();
 });
 
 test("iss_11 a half-filled dialog keeps its draft, and the draft is gone after Create", async ({
