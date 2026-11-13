@@ -104,31 +104,30 @@ fn plan(root: &Path, git: &dyn Fn() -> Command) -> anyhow::Result<Plan> {
         );
     }
     refuse_kept_copies(&root.join(&own))?;
-    let note = match local {
-        Some(_) => None,
-        None => {
-            let status = git()
-                .args(["config", "--local", HOOKS_PATH, &own])
-                .status()
-                .context("could not run git")?;
-            if !status.success() {
-                bail!("could not set {HOOKS_PATH} of this clone.");
-            }
-            let everywhere = setting(&["--global"]).map_or_else(
-                || "The hooks folder that your system Git configuration names".to_owned(),
-                |folder| {
-                    format!(
-                        "`{folder}`, the hooks folder that your global Git configuration names \
+    let note = if local.is_some() {
+        None
+    } else {
+        let status = git()
+            .args(["config", "--local", HOOKS_PATH, &own])
+            .status()
+            .context("could not run git")?;
+        if !status.success() {
+            bail!("could not set {HOOKS_PATH} of this clone.");
+        }
+        let everywhere = setting(&["--global"]).map_or_else(
+            || "The hooks folder that your system Git configuration names".to_owned(),
+            |folder| {
+                format!(
+                    "`{folder}`, the hooks folder that your global Git configuration names \
                          for every repository,"
-                    )
-                },
-            );
-            Some(format!(
-                "{everywhere} no longer runs its hooks in this clone. So that the checks of \
+                )
+            },
+        );
+        Some(format!(
+            "{everywhere} no longer runs its hooks in this clone. So that the checks of \
                  Bugaboo run, this clone now uses its own folder ({HOOKS_PATH} = {own}, set for \
                  this clone only; your global setting is unchanged). To undo it: {UNSET}"
-            ))
-        }
+        ))
     };
     Ok(Plan {
         arguments: &["install", "--force"],
