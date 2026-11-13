@@ -31,6 +31,7 @@ function frame(state: WindowState, footer?: ReactNode): string {
       title={text.title}
       labels={labels}
       state={state}
+      shown
       footer={footer}
       onMinimize={doNothing}
       onToggleMaximize={doNothing}

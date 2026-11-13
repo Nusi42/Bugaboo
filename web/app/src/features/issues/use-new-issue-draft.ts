@@ -16,6 +16,8 @@ const SERVER_DELAY_MS = 1500;
 export interface NewIssueDraft {
   /** The draft found for this project, until it is used or thrown away. */
   readonly found: FormDraft | null;
+  /** The draft is still being looked for. */
+  readonly looking: boolean;
   /** Keeps what is written now (the browser at once, the server a moment after the last key). */
   readonly keep: (values: NewIssueValues) => void;
   /** Throws the draft away on both sides: the issue was made, or the person started again. */
@@ -48,6 +50,7 @@ export function useNewIssueDraft(project: string | undefined): NewIssueDraft {
   };
   return {
     found: found.data ?? null,
+    looking: found.isLoading,
     keep: (values) => {
       if (target === undefined) {
         return;

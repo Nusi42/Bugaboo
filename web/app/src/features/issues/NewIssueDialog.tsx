@@ -29,6 +29,7 @@ export function NewIssueDialog() {
     <Window
       {...overlay}
       {...windowProps}
+      ready={form.ready}
       title={t("issues.new-title")}
       footer={
         <NewIssueActions

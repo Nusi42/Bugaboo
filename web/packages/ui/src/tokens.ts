@@ -1228,7 +1228,7 @@ export const partWords = {
   },
   "overlay.modal": {
     variant: ["center", "question", "full", "bottom", "start", "end", "top", "window"],
-    state: ["maximized"],
+    state: ["maximized", "loading"],
   },
   "overlay.dialog": { variant: [], state: [] },
   "picker.options": { variant: ["list"], state: [] },

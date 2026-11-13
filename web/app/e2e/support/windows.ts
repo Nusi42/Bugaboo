@@ -5,7 +5,8 @@ import { part } from "../../../packages/ui/src/tokens.ts";
 import { keyboardStep, menuStep, windowEdges } from "../../../packages/ui/src/window-size.ts";
 import { descriptionBox } from "./description.ts";
 import { layoutOf } from "./layout.ts";
-import { partIn } from "./parts.ts";
+import { placesWhile, type Place } from "./frames.ts";
+import { partIn, partSelector } from "./parts.ts";
 import { newIssueDialog, openNewIssueDialog, titleLabel } from "./issues.ts";
 
 export { keyboardStep, menuStep, windowEdges };
@@ -13,6 +14,11 @@ export { keyboardStep, menuStep, windowEdges };
 /** The box of the window: the part that the size variables are set on. */
 export function windowBox(page: Page): Locator {
   return partIn(page, part.overlayModal, "window");
+}
+
+/** Where the open window stands in every frame in which it is shown while `act` runs (see `placesWhile`). */
+export function windowPlacesWhile(page: Page, act: () => Promise<void>): Promise<readonly Place[]> {
+  return placesWhile(page, partSelector(part.overlayModal), act);
 }
 
 /** The bar a minimized window becomes. */
@@ -54,7 +60,7 @@ export async function windowSize(page: Page): Promise<{ width: number; height: n
 export async function openWindowReady(page: Page): Promise<void> {
   await openNewIssueDialog(page);
   await expect(newIssueDialog(page).getByLabel(titleLabel(), { exact: true })).toBeVisible();
-  // The fields of the layout arrive after the title and make the window taller (a few pixels under load): measure after them.
+  // The window is shown once its fields are there; measure after them all the same.
   await expect(descriptionBox(newIssueDialog(page))).toBeVisible();
 }
 

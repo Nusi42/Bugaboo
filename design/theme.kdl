@@ -4419,6 +4419,13 @@ part "overlay.modal[variant=window][state=maximized]" {
     border-radius 0
 }
 
+// A window whose content is still on its way shows only the dimmed page. Shown at once, it would grow as its fields
+// arrive and, standing in the middle, jump to a new place (the first open of a project). It is shown when its content
+// is there, and then stays shown.
+part "overlay.modal[state=loading]" {
+    visibility hidden
+}
+
 part "window" {
     display flex
     flex 1

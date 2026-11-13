@@ -7,10 +7,15 @@ import { type Locator, type Page } from "@playwright/test";
  */
 export { ariaCurrent } from "@bugaboo/ui/aria-current";
 
+/** The CSS selector of a part, as the theme file names it, and of its variant if it has one. */
+export function partSelector(name: string, variant?: string): string {
+  const variantSelector = variant === undefined ? "" : `[data-variant="${variant}"]`;
+  return `[data-part="${name}"]${variantSelector}`;
+}
+
 /** An element of the app by the part it draws, as the theme file names it, and by its variant if it has one. */
 export function partIn(scope: Locator | Page, name: string, variant?: string): Locator {
-  const variantSelector = variant === undefined ? "" : `[data-variant="${variant}"]`;
-  return scope.locator(`[data-part="${name}"]${variantSelector}`);
+  return scope.locator(partSelector(name, variant));
 }
 
 /** The row of a field in the Details of the issue page, found by the name of the field. */

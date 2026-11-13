@@ -24,6 +24,8 @@ export interface NewIssueValuesState {
   readonly types: readonly { readonly id: string; readonly name: string }[];
   /** The project offers no issue type, so no issue can be created in it. */
   readonly noType: boolean;
+  /** The project, its types and its draft have been read (or there is no project to read yet). */
+  readonly loaded: boolean;
   readonly values: NewIssueValues;
   /** The person may change the layout of the form of this project (*Customize this form*). */
   readonly canCustomize: boolean;
@@ -39,6 +41,16 @@ export interface NewIssueValuesState {
 }
 
 /**
+ * The types the project offers: a retired type, or one the project switched off, is not chosen
+ * from. The server refuses them as well.
+ */
+function offeredOnly(
+  lines: Readonly<ReturnType<typeof issueTypeLinesOf>>,
+): ReturnType<typeof issueTypeLinesOf> {
+  return lines.filter((type) => !type.retired && type.here?.offered !== false);
+}
+
+/**
  * The values of the form of a new issue (ISS-11): the project it starts with, the type that is the
  * first until another is picked, and the draft that is kept while the person writes and offered
  * when the form opens.
@@ -47,13 +59,11 @@ export function useNewIssueValues(): NewIssueValuesState {
   const [address, setAddress] = useState<string | undefined>(lastProject());
   const [typed, setTyped] = useState<NewIssueValues>(emptyForm);
   const [dropped, setDropped] = useState(false);
-  const found = useProject(address).data;
-  // The types the project offers: a retired type, or one the project switched off, is not chosen
-  // from. The server refuses them as well. Until the project is known nothing is asked.
+  const projectRead = useProject(address);
+  const found = projectRead.data;
+  // Until the project is known nothing is asked.
   const read = useIssueTypes(found?.project.short_name ?? "");
-  const types = issueTypeLinesOf(read.data?.pages).filter(
-    (type) => !type.retired && type.here?.offered !== false,
-  );
+  const types = offeredOnly(issueTypeLinesOf(read.data?.pages));
   const draft = useNewIssueDraft(found?.project.id);
   const values = withType(typed, types);
   const change = (next: NewIssueValues): void => {
@@ -64,6 +74,7 @@ export function useNewIssueValues(): NewIssueValuesState {
     address,
     types,
     noType: found !== undefined && offersNoType(read.isSuccess, types),
+    loaded: found === undefined ? !projectRead.isLoading : !read.isLoading && !draft.looking,
     values,
     canCustomize: found !== undefined && mayOpenProjectPage(projectPages.layouts, found),
     change,

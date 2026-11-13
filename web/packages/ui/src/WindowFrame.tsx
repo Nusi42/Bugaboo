@@ -52,6 +52,8 @@ export interface WindowFrameProps {
   readonly title: ReactNode;
   readonly labels: WindowLabels;
   readonly state: WindowState;
+  /** The window is on the screen; a hidden one cannot take the focus, so the focus goes in when it is shown. */
+  readonly shown: boolean;
   /** The buttons of the form; the main one stands at the right (R6). */
   readonly footer?: ReactNode;
   readonly onMinimize: () => void;
@@ -159,14 +161,16 @@ function Controls({
  * place while the form scrolls (UX §6.3).
  */
 export function WindowFrame(props: WindowFrameProps) {
-  const { title, labels, state, footer, resize, children } = props;
+  const { title, labels, state, shown, footer, resize, children } = props;
   const hint = useId();
   const bodyId = useId();
   // The focus goes where the person types first, as a dialog does (WCAG 2.4.3), not to the buttons
   // of the title bar that stand before the form; a window with no box keeps it on the window.
   useEffect(() => {
-    focusFirstField(bodyId);
-  }, [bodyId]);
+    if (shown) {
+      focusFirstField(bodyId);
+    }
+  }, [bodyId, shown]);
   const draggable = state === windowState.normal;
   return (
     <Dialog {...partOf(part.window)} {...(draggable ? { "aria-describedby": hint } : {})}>

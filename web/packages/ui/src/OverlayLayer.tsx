@@ -13,6 +13,8 @@ export interface OverlayLayerProps {
   readonly from: OverlayEdge;
   /** The layer fills the page (a maximized window). */
   readonly maximized?: boolean;
+  /** The content of the box is still on its way: only the dimmed page is shown, not the box. */
+  readonly loading?: boolean;
   /** A press outside closes it. A window does not: its form keeps what was typed. */
   readonly isDismissable: boolean;
   /** The element that is the box of the layer, for what must size it. */
@@ -29,6 +31,7 @@ export function OverlayLayer({
   onOpenChange,
   from,
   maximized = false,
+  loading = false,
   isDismissable,
   modalRef,
   children,
@@ -41,7 +44,13 @@ export function OverlayLayer({
       isDismissable={isDismissable}
       {...partOf(part.overlay, { variants: [from], states })}
     >
-      <Modal ref={modalRef} {...partOf(part.overlayModal, { variants: [from], states })}>
+      <Modal
+        ref={modalRef}
+        {...partOf(part.overlayModal, {
+          variants: [from],
+          states: [...states, loading && "loading"],
+        })}
+      >
         {children}
       </Modal>
     </ModalOverlay>

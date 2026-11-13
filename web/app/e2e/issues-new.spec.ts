@@ -13,7 +13,7 @@ import {
   prepareWeb,
 } from "./support/issues.ts";
 import { onThisLayout } from "./support/layout.ts";
-import { boxOf } from "./support/windows.ts";
+import { boxOf, windowPlacesWhile } from "./support/windows.ts";
 import { projectIssuesAddress } from "../src/shared/paths.ts";
 
 // The new-issue dialog (ISS-11, UX §4.5, M3 WP-06): project, type and fields, required fields that
@@ -68,7 +68,7 @@ test("iss_11 typing the title does not move the buttons under the form", async (
   await openDialog(page);
   // The note about what is missing comes and goes with the title; a finger that is on its way to
   // Cancel must not find another button there.
-  // Measured when the form has its fields; before that the layout is still on its way.
+  // Measured when the form has its fields.
   await expect(descriptionBox(dialog(page))).toBeVisible();
   const cancel = dialog(page).getByRole("button", { name: t("common.cancel"), exact: true });
   const before = await cancel.boundingBox();
@@ -79,14 +79,37 @@ test("iss_11 typing the title does not move the buttons under the form", async (
   expect(await cancel.boundingBox()).toEqual(before);
 });
 
+test("ux_6_3 the new-issue window stands still on the first open of a project", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await page.goto(projectIssuesAddress("WEB"));
+  // The first open of a project in a session reads its types, its layout and its draft while the window opens. A
+  // window shown before they are there grows when its fields arrive and jumps to a new middle (a user's report); the
+  // second open finds them read and stands still. Every frame in which the window is shown counts.
+  const openUntilTheFieldsAreThere = async (): Promise<void> => {
+    await openDialog(page);
+    await expect(
+      dialog(page).getByText(t("issue-field.priority"), { exact: true }).first(),
+    ).toBeVisible();
+  };
+  const first = await windowPlacesWhile(page, openUntilTheFieldsAreThere);
+  expect(first.length, "the window was seen").toBeGreaterThan(0);
+  const placesSeen = new Set(first.map(({ x, y }) => `${x} ${y}`));
+  expect([...placesSeen], "every frame shows the window in one place").toHaveLength(1);
+  await page.keyboard.press("Escape");
+  await expect(dialog(page)).toHaveCount(0);
+  const second = await windowPlacesWhile(page, openUntilTheFieldsAreThere);
+  expect(second.at(-1), "the second open stands where the first ended").toEqual(first.at(-1));
+});
+
 test("iss_11 a half-filled dialog keeps its draft, and the draft is gone after Create", async ({
   page,
 }) => {
   await signIn(page, ada);
   await page.goto(projectIssuesAddress("WEB"));
   await openDialog(page);
-  // The fields of the layout arrive after the dialog opens and push the buttons down; press Cancel
-  // when they are there.
+  // The window is shown once its fields are there; wait for them before pressing Cancel.
   await expect(descriptionBox(dialog(page))).toBeVisible();
   await dialog(page).getByLabel(titleLabel(), { exact: true }).fill("Half written");
   await expect(dialog(page).getByText(t("issues.draft-kept"))).toBeVisible();

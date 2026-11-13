@@ -12,6 +12,8 @@ export interface NewIssue extends NewIssueValuesState {
   readonly now: number;
   /** Which fields the layout of the form asks this person for. */
   readonly layout: FormView;
+  /** Everything the form is made of has arrived: the project, its types, its draft and the layout. */
+  readonly ready: boolean;
   /** Makes the issue; the dialog is done, or starts again with the same project and type. */
   readonly create: (another: boolean, onMade: (key: string, project: string) => void) => void;
   readonly pending: boolean;
@@ -36,6 +38,7 @@ export function useNewIssue(): NewIssue {
     ...state,
     now,
     layout,
+    ready: state.loaded && layout.ready,
     lastKey,
     change: (next) => {
       setLastKey(null);

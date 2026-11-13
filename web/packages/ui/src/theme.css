@@ -4513,6 +4513,10 @@ textarea,
   border-radius: 0;
 }
 
+[data-part="overlay.modal"][data-state~="loading"] {
+  visibility: hidden;
+}
+
 [data-part="window"] {
   display: flex;
   flex: 1;

@@ -20,6 +20,11 @@ export interface WindowProps {
   readonly size?: WindowSize | undefined;
   /** Called with the size the window ended with after a drag or a key, to be remembered. */
   readonly onResized?: ((size: WindowSize) => void) | undefined;
+  /**
+   * What the window shows has arrived (the data its form is made of). Until then only the dimmed page
+   * is shown; once shown, the window stays shown. Left out, the content is there at once.
+   */
+  readonly ready?: boolean | undefined;
   readonly children: ReactNode;
 }
 
@@ -33,8 +38,8 @@ export interface WindowProps {
  * (`ConfirmDialog`).
  */
 export function Window(props: WindowProps) {
-  const { isOpen, onOpenChange, title, labels, footer, size, onResized, children } = props;
-  const { placed, ...shape } = useWindow(isOpen, size, onResized);
+  const { isOpen, onOpenChange, title, labels, footer, size, onResized, ready, children } = props;
+  const { placed, ...shape } = useWindow(isOpen, ready ?? true, size, onResized);
   return (
     <>
       {isOpen && shape.minimized ? (
@@ -45,6 +50,7 @@ export function Window(props: WindowProps) {
         onOpenChange={onOpenChange}
         from={shape.state === windowState.full ? overlayEdge.full : overlayEdge.window}
         maximized={shape.state === windowState.maximized}
+        loading={!shape.shown}
         isDismissable={false}
         modalRef={placed}
       >
@@ -52,6 +58,7 @@ export function Window(props: WindowProps) {
           title={title}
           labels={labels}
           state={shape.state}
+          shown={shape.shown}
           footer={footer}
           resize={shape.resize}
           onMinimize={shape.minimize}
