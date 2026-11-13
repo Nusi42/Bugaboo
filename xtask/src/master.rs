@@ -110,7 +110,8 @@ pub(crate) fn mark(master: &Path, xtask: &Path) -> anyhow::Result<Vec<String>> {
     let existing = fs::read_to_string(&config_path).unwrap_or_default();
     if !existing.is_empty() && !existing.starts_with(WRITTEN_MARK) {
         bail!(
-            "{CARGO_CONFIG} exists and was not written by this command; add \n             `rustc-wrapper = \"{}\"` under `[build]` by hand.",
+            "{CARGO_CONFIG} exists and was not written by this command; add \
+             `rustc-wrapper = \"{}\"` under `[build]` by hand.",
             slashed(&git_folder.join(HOOKS_FOLDER).join(refuse_program().0))
         );
     }
@@ -232,7 +233,11 @@ mod tests {
         master.write(CARGO_CONFIG, "[build]\njobs = 2\n");
         let tool = master.path().join("made-up-xtask");
         // A Cargo setting file that is not ours stops the command before it writes it.
-        assert!(mark(master.path(), &tool).is_err());
+        let error = mark(master.path(), &tool).unwrap_err().to_string();
+        assert!(
+            error.contains("by this command; add `rustc-wrapper"),
+            "{error}"
+        );
         assert_eq!(
             fs::read_to_string(master.path().join(CARGO_CONFIG)).unwrap(),
             "[build]\njobs = 2\n"
