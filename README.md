@@ -142,16 +142,15 @@ Eight of the 16 milestones are done. The version number counts toward the plan (
 
 ## Try it
 
-Bugaboo is not released yet, so you run it from its source. You need [Git](https://git-scm.com), [Node.js](https://nodejs.org) 26 and [Rust](https://rustup.rs), on Windows, Linux or WSL:
+Bugaboo is not released yet, so you run it from its source. First install [Git](https://git-scm.com), [Node.js](https://nodejs.org) 26 and [Rust](https://rustup.rs), on Windows, Linux or WSL. Then type:
 
 ```sh
 git clone https://github.com/Nusi42/Bugaboo.git
 cd Bugaboo
-cargo xtask setup
 cargo xtask dev --sample
 ```
 
-The last command starts Bugaboo on a sample organization of 50 made-up people and shows the address to open. It also says where the file `sign-in.txt` is: sign in as the first person in it, an administrator. Without `--sample`, Bugaboo starts empty and a short setup guides you.
+The last command fetches the few other things it needs, builds Bugaboo (the first time takes a while) and starts it on a sample organization of 50 made-up people. Then it shows the address to open in your browser. It also says where the file `sign-in.txt` is: sign in as the first person in it, an administrator. Without `--sample`, Bugaboo starts empty and a short setup guides you.
 
 ## Privacy
 

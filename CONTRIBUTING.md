@@ -11,8 +11,8 @@ read and accept the contributor license agreement below.
   and the words in [`docs/glossary.md`](docs/glossary.md): tests with every
   change, zero warnings, no duplicated logic, and commit messages in the
   Conventional Commits style (the commit-msg hook checks them).
-- Set up with `cargo xtask setup` (see [Working on Bugaboo](#working-on-bugaboo)
-  below); it installs the Git hooks.
+- Run `cargo xtask setup` before you work on the code (see
+  [Working on Bugaboo](#working-on-bugaboo) below); it installs the Git hooks.
 - Run the checks before you push: the pre-push hook runs the full check, and
   `cargo xtask check all` runs it by hand. Run the test suites that cover
   your change.
@@ -32,8 +32,14 @@ cd Bugaboo
 cargo xtask setup
 ```
 
-`cargo xtask setup` installs the pinned developer tools into `.tools/`, the npm packages, the
-browsers for the tests and the Git hooks.
+Run `cargo xtask setup` before you work on the code. It installs the pinned developer tools into
+`.tools/`, the npm packages, the browsers for the tests and the Git hooks, and copies a public Git
+identity into the clone when it finds one (otherwise it notes that commits will need one). Only
+trying Bugaboo needs none of this: `cargo xtask dev` installs just what building and running need.
+
+When your global Git configuration sets `core.hooksPath` for every repository, setup leaves it
+alone and sets `core.hooksPath` of this clone only, back to its own `.git/hooks`. When the clone
+already sets its own `core.hooksPath`, setup stops and names the two commands to choose from.
 
 Start the server and the browser app on a sample organization of 50 made-up people:
 
