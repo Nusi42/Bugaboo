@@ -785,6 +785,14 @@ mixin "shade-day-off" {
     background "color-mix(in srgb, $fg-muted 30%, transparent)"
 }
 
+// The title of a dialog, a question and a sheet (UX §7.3: 20): the one place that writes its size and color. Its
+// display face and bold weight stand in each rule that uses it, where STY-BOLD reads them for every title.
+mixin "dialog-title" {
+    color "$fg"
+    font-size "$fs-lg"
+    line-height "$lh-snug"
+}
+
 // The line of the ring: the width and the color of every outline that says "here".
 mixin "ring-line" {
     outline "$ring-width solid $accent"
@@ -3838,12 +3846,11 @@ part "assigned-picker" {
 
 // The legend of the picker of a person is the title of its dialog (UX §7.3: 20, bold).
 part "assigned-picker picker.legend" {
-    margin-block-end 0
-    color "$fg"
-    font-size "$fs-lg"
-    line-height "$lh-snug"
+    use "dialog-title"
     font-family "$font-display"
     font-weight "$weight-bold"
+    // A legend stands outside the gap of its fieldset: the space under it is its own.
+    margin-block-end "$space-3"
 }
 
 // The search box and the rows fill the width of the picker; *Done* keeps its own width at the start.
@@ -5286,11 +5293,10 @@ part "confirm.body::after" {
 
 // The title of a question or of a sheet (the fields, the help): bold, at the top, with no line of its own.
 part "confirm.title" {
-    margin 0
-    font-size "$fs-lg"
-    line-height "$lh-snug"
+    use "dialog-title"
     font-family "$font-display"
     font-weight "$weight-bold"
+    margin 0
 }
 
 // Only the title of the question itself has the line under it; the same title in the head of a sheet (the fields, the
@@ -15994,12 +16000,10 @@ part "bottom-sheet[variant=tall]" {
 
 // The name of what the sheet is for (Filters), as the title of a page is.
 part "bottom-sheet.title" {
-    margin 0
-    font-size "$fs-lg"
-    line-height "$lh-snug"
-    color "$fg"
+    use "dialog-title"
     font-family "$font-display"
     font-weight "$weight-bold"
+    margin 0
 }
 
 // The head of a panel: its title, and the button that closes it at the end of the same row.

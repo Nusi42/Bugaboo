@@ -2779,12 +2779,12 @@ textarea,
 }
 
 [data-part="assigned-picker"] [data-part="picker.legend"] {
-  margin-block-end: 0;
   color: var(--fg);
   font-size: var(--fs-lg);
   line-height: var(--lh-snug);
   font-family: var(--font-display);
   font-weight: var(--weight-bold);
+  margin-block-end: var(--space-3);
 }
 
 [data-part="assigned-picker"] > [data-part="button"] {
@@ -4203,11 +4203,12 @@ textarea,
 }
 
 [data-part="confirm.title"] {
-  margin: 0;
+  color: var(--fg);
   font-size: var(--fs-lg);
   line-height: var(--lh-snug);
   font-family: var(--font-display);
   font-weight: var(--weight-bold);
+  margin: 0;
 }
 
 [data-part="confirm.dialog"] > [data-part="confirm.title"] {
@@ -8697,12 +8698,12 @@ textarea,
 }
 
 [data-part="bottom-sheet.title"] {
-  margin: 0;
+  color: var(--fg);
   font-size: var(--fs-lg);
   line-height: var(--lh-snug);
-  color: var(--fg);
   font-family: var(--font-display);
   font-weight: var(--weight-bold);
+  margin: 0;
 }
 
 [data-part="search-panel.head"] {

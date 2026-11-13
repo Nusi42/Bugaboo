@@ -11,11 +11,11 @@ const overscan = 10;
 export interface ChartView {
   readonly start: number;
   readonly end: number;
-  /** Where the Today line stands, in the middle of today; none when today is not on the chart. */
+  /** Where today starts, in pixels from the first day; none when today is not on the chart. */
   readonly today?: number | undefined;
 }
 
-/** The first and the last line that are drawn, and where the days on screen end. */
+/** The first and the last line that are drawn, and where the days on screen start and end. */
 export interface Visible {
   readonly first: number;
   readonly last: number;

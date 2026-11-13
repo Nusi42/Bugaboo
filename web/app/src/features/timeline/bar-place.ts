@@ -40,8 +40,8 @@ function labelGoesBefore(
   const start = placeOf(timeline.span, shown.first) * timeline.dayPixels;
   const end = (placeOf(timeline.span, shown.last) + 1) * timeline.dayPixels;
   const after = Math.min(timeline.span.days * timeline.dayPixels, view.end) - end;
-  // A label never crosses the Today line (UX §4.7): before the bar only where the line is not in
-  // its way.
+  // A label never crosses the Today line (UX §4.7), which stands in the middle of today: before the
+  // bar only where the line is not between the start of the label and the start of the bar.
   const today = view.today === undefined ? undefined : view.today + timeline.dayPixels / 2;
   const clearOfToday = today === undefined || today <= start - room || today >= start;
   return after < room && start - Math.max(0, view.start) >= room && clearOfToday;
