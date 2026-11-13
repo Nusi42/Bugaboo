@@ -23,8 +23,7 @@ Every button and box is big enough for a finger, also with *Spacing* set to *Com
 **Swipe** a row of a list sideways for its quick actions:
 
 - In a list of issues, swipe to the right for *Follow* (or *Stop following*), and to the left for *Change status or priority…*, which shows what will change before anything does.
-- In *Notifications*, swipe an unread notification to the left for *Mark as read*.
-- In *My agents*, swipe an agent to the left for *Pause* or *Resume*.
+- A notification or an agent shows all its buttons already, so it has nothing to swipe.
 
 Swiping is never needed: the same actions are in the row's "More" button (the three dots). Swipe the other way to put the actions away. With *Less motion* the actions appear without sliding in.
 
