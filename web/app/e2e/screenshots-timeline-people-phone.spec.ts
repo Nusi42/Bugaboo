@@ -8,6 +8,7 @@ import { signIn } from "./support/flows.ts";
 import { screenshotFolder } from "./support/screenshots.ts";
 import { planned } from "./support/timeline.ts";
 import {
+  acceptAway,
   people,
   prepareTimelinePeople,
   viewersSeeAssigned,
@@ -26,7 +27,9 @@ const MILESTONE = "M8/people-timeline";
 /** The address of the search of WEB as a timeline. */
 const address = `/search?s=${encodeURIComponent("project is WEB")}&show=timeline&group=parent`;
 
-test("the phone list, its card, its warnings and Set dates", async ({ page }) => {
+test("the phone list, its card, its warnings and Set dates", async ({ page, server }) => {
+  // An accepted warning stands faded at the end of the sheet, as in the list of a computer.
+  await acceptAway(server, people.holiday);
   await signIn(page, ada);
   await page.goto(address);
   const list = page.getByRole("list", { name: t("timeline.phone-list"), exact: true });

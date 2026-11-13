@@ -65,13 +65,39 @@ export async function setBobsShare(server: Instance, percent: number): Promise<v
 }
 
 /** How a Viewer of WEB (Ana) sees the people on the bars: by name, by role or not at all. */
-export async function viewersSeeAssigned(
+export function viewersSeeAssigned(
   server: Instance,
+  level: "names" | "role-only" | "hidden",
+): Promise<void> {
+  return viewersSee(server, "assigned-to", level);
+}
+
+/** How a Viewer of WEB (Ana) sees people of a kind: by name, by role or not at all. */
+export async function viewersSee(
+  server: Instance,
+  kind: "assigned-to" | "authors",
   level: "names" | "role-only" | "hidden",
 ): Promise<void> {
   const admin = await signInThroughApi(server, ada);
   const role = await roleId(admin, roleName.viewer);
-  await setPeopleLevel(admin, { role, kind: "assigned-to" }, level);
+  await setPeopleLevel(admin, { role, kind }, level);
+  await admin.dispose();
+}
+
+/** Accepts the warning Away of an issue, as the administrator: it shows faded, with who accepted it. */
+export async function acceptAway(server: Instance, key: string): Promise<void> {
+  const admin = await signInThroughApi(server, ada);
+  const version = await versionOf(admin, await issueOf(admin, key));
+  dataOf(
+    await admin.client.POST("/api/v1/timeline/accepted-warnings", {
+      body: {
+        issue: key,
+        version,
+        kind: "away",
+        timeline: { start_field: null, end_field: null, zoom: "week" },
+      },
+    }),
+  );
   await admin.dispose();
 }
 

@@ -11,6 +11,7 @@ import {
   openWarnings,
   people,
   prepareTimelinePeople,
+  viewersSee,
   viewersSeeAssigned,
   warningAbout,
 } from "./support/timeline-people.ts";
@@ -81,6 +82,11 @@ test("the bars as a reader who sees people by role only, and as one who sees nob
   await inFourThemes(page, "reader-role-only", MILESTONE);
   await openWarnings(page);
   await inFourThemes(page, "reader-role-only-warnings", MILESTONE);
+  // Who accepted a warning follows the kind Authors: by role only, no name.
+  await viewersSee(server, "authors", "role-only");
+  await page.reload();
+  await openWarnings(page);
+  await inFourThemes(page, "reader-authors-role-only-warnings", MILESTONE);
   await viewersSeeAssigned(server, "hidden");
   await page.reload();
   await expect(chart(page)).toBeVisible();
