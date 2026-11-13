@@ -1,9 +1,10 @@
 import { t } from "@bugaboo/messages";
 import { Alert, AnswerNote, alertTone, partOf, part } from "@bugaboo/ui";
-import { useQueryClient } from "@tanstack/react-query";
+import { type QueryKey, useQueryClient } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 
 import { codeOf, isRetryable, messageOf, supportCodeOf } from "../../shared/errors.ts";
+import { useKeptError } from "../../shared/use-kept-error.ts";
 
 export interface QueryGateProps<Data> {
   /** Why the query failed, if it did (`query.error`). */
@@ -17,9 +18,18 @@ export interface QueryGateProps<Data> {
   readonly notFound?: ReactNode;
   /** What shows while the data loads; the word *Loading* by default. */
   readonly loading?: ReactNode;
+  /**
+   * The key of the read, where one gate shows reads of several addresses (an issue, a project): the
+   * failure is kept while the same read is done again, never for another one. Without it the gate
+   * stands for one read.
+   */
+  readonly read?: QueryKey;
   /** The page, once the data is there. */
   readonly children: (data: Readonly<Data>) => ReactNode;
 }
+
+/** The key of the read of a gate that shows one read only. */
+const ONE_READ: QueryKey = ["query-gate"];
 
 /**
  * The part of a page that comes before the page: a failure is told in plain words (a thing that is
@@ -30,21 +40,24 @@ export function QueryGate<Data>({
   data,
   notFound,
   loading,
+  read = ONE_READ,
   children,
 }: QueryGateProps<Data>) {
   const client = useQueryClient();
-  if (error !== null && error !== undefined) {
-    if (notFound !== undefined && codeOf(error) === "resource.not-found") {
+  // A failure stays on screen while the read is done again in the background (UX §6.4).
+  const failed = useKeptError({ queryKey: read, data, error });
+  if (failed !== null && failed !== undefined) {
+    if (notFound !== undefined && codeOf(failed) === "resource.not-found") {
       return notFound;
     }
-    const code = supportCodeOf(error);
-    return isRetryable(error) ? (
+    const code = supportCodeOf(failed);
+    return isRetryable(failed) ? (
       <AnswerNote
         tone={alertTone.danger}
         text={
           code === undefined
-            ? messageOf(error)
-            : t("error.with-support-code", { message: messageOf(error), code })
+            ? messageOf(failed)
+            : t("error.with-support-code", { message: messageOf(failed), code })
         }
         main={{
           label: t("common.try-again"),
@@ -54,7 +67,7 @@ export function QueryGate<Data>({
         }}
       />
     ) : (
-      <Alert tone={alertTone.danger}>{messageOf(error)}</Alert>
+      <Alert tone={alertTone.danger}>{messageOf(failed)}</Alert>
     );
   }
   if (data === undefined) {

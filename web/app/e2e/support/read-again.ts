@@ -3,10 +3,13 @@ import { type Page } from "@playwright/test";
 import { LANDMARK, type Landmark } from "./movement.ts";
 
 /**
- * Makes the page read again, in the background, everything it shows: the browser says that the
- * connection went and came back, and the query cache reads every answer on the screen again, as it
- * does after a real loss of the connection. The answers are the same as before, so nothing on the
- * screen may move, flash or be drawn afresh (UX §6.4).
+ * Makes the page read again, in the background, what it shows: the browser says that the connection
+ * went and came back, and the query cache reads again every answer on the screen that may be read
+ * again, as it does after a real loss of the connection. The answers are the same as before, so
+ * nothing on the screen may move, flash or be drawn afresh (UX §6.4). What it does not read again:
+ * a read that is switched off (`enabled: false`, a group not opened yet), one kept as fresh for a
+ * while (`staleTime`, the module of the search language), and what the app reads outside the query
+ * cache (who is signed in, the words of the wasm module).
  */
 export async function readEverythingAgain(page: Page): Promise<void> {
   await page.evaluate(() => {

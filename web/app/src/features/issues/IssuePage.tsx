@@ -1,7 +1,7 @@
 import { NotFoundPage, QueryGate } from "../shell/index.ts";
 import { IssueFrame } from "./IssueFrame.tsx";
 import type { IssueShow } from "./issue-show.ts";
-import { useIssue } from "./issues.ts";
+import { issueOptions, useIssue } from "./issues.ts";
 import type { IssueDetail } from "./slots.ts";
 import { useIssuePage } from "./use-issue-page.ts";
 
@@ -30,7 +30,12 @@ function Loaded(props: IssuePageProps & { readonly detail: IssueDetail }) {
 export function IssuePage(props: IssuePageProps) {
   const found = useIssue(props.address);
   return (
-    <QueryGate error={found.error} data={found.data} notFound={<NotFoundPage />}>
+    <QueryGate
+      error={found.error}
+      data={found.data}
+      read={issueOptions(props.address).queryKey}
+      notFound={<NotFoundPage />}
+    >
       {(detail) => <Loaded {...props} detail={detail} />}
     </QueryGate>
   );

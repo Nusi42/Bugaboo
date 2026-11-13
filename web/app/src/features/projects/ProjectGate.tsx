@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import type { ProjectPage } from "../../shared/project-pages.ts";
+import { queryKeys } from "../../shared/query-keys.ts";
 import { NotFoundPage, QueryGate } from "../shell/index.ts";
 import { useProjectPage } from "./use-project-page.ts";
 import type { OneProject } from "./use-projects.ts";
@@ -20,7 +21,12 @@ export interface ProjectGateProps {
 export function ProjectGate({ address, page, children }: ProjectGateProps) {
   const project = useProjectPage(address, page);
   return (
-    <QueryGate error={project.error} data={project.data} notFound={<NotFoundPage />}>
+    <QueryGate
+      error={project.error}
+      data={project.data}
+      read={queryKeys.projects.one(address)}
+      notFound={<NotFoundPage />}
+    >
       {children}
     </QueryGate>
   );
