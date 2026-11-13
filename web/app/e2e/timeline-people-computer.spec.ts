@@ -146,6 +146,13 @@ test("plan_13_a_reader_who_sees_people_by_role_or_not_at_all_reads_no_name_in_th
     new RegExp(t("timeline.away"), "u"),
   );
   await expect(pressOf(page, people.shared)).not.toHaveAccessibleName(new RegExp(bob.name, "u"));
+  // Every day without work of Bob is the one neutral pattern, and the Legend shows only that one.
+  const hatches = barOf(page, people.shared).locator('[data-part="timeline-bar.hatch"]');
+  await expect(hatches).not.toHaveCount(0);
+  await expect(hatches.and(page.locator(':not([data-variant="no-work"])'))).toHaveCount(0);
+  const legend = page.locator('[data-part="legend"]');
+  await expect(legend).toContainText(t("timeline.legend-no-work"));
+  await expect(legend).not.toContainText(t("timeline.legend-holiday"));
 });
 
 test("plan_11_the_row_of_a_person_hatches_their_away_days_across_the_chart", async ({ page }) => {
