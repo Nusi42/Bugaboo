@@ -17076,6 +17076,12 @@ part "agents.actions" {
     gap "$space-2"
 }
 
+// While a swipe shows its actions under the buttons of an agent, the buttons take the width of the card, so the
+// actions do too.
+part "agents.actions:has(swipe-actions)" {
+    align-self stretch
+}
+
 part "agents.work" {
     use "list-reset"
     display flex

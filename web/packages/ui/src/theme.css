@@ -10946,6 +10946,10 @@ textarea,
   gap: var(--space-2);
 }
 
+[data-part="agents.actions"]:has([data-part="swipe-actions"]) {
+  align-self: stretch;
+}
+
 [data-part="agents.work"] {
   margin: 0;
   padding: 0;
