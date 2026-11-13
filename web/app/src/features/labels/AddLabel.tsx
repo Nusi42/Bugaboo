@@ -19,14 +19,19 @@ export interface AddLabelProps {
   readonly pending: boolean;
 }
 
-/** *Add a label*: one of the labels of the organization that the issue does not have yet. */
+/**
+ * *Add a label*: one of the labels of the organization that the issue does not have yet. When the
+ * last one was put on, the box stays and says that there is nothing more to add, so the row does not
+ * shrink under the person's hand and grow again with the answer (UX §6.4).
+ */
 export function AddLabel({ has, project, onAdd, pending }: AddLabelProps) {
   const [picked, setPicked] = useState(NONE);
   const offered = useLabelsToAdd(project, has);
-  if (offered.length === 0) {
-    // With no label on the issue the row says so once, in its own line (`LabelsRow`).
-    return has.length === 0 ? null : <p {...partOf(part.muted)}>{t("labels.nothing-to-add")}</p>;
+  // With no label on the issue and none to add, the row says so once, in its own line (`LabelsRow`).
+  if (offered.length === 0 && has.length === 0) {
+    return null;
   }
+  const none = offered.length === 0;
   return (
     <Form
       onSubmit={() => {
@@ -44,11 +49,12 @@ export function AddLabel({ has, project, onAdd, pending }: AddLabelProps) {
         hideLabel
         label={t("labels.add-label")}
         choices={[
-          { value: NONE, label: t("labels.pick-label") },
+          { value: NONE, label: t(none ? "labels.nothing-to-add" : "labels.pick-label") },
           ...offered.map((label) => ({ value: label.id, label: label.name })),
         ]}
         value={picked}
         onChange={setPicked}
+        isDisabled={none}
       />
       <div {...partOf(part.row)}>
         <Button type={buttonType.submit} isPending={pending} isDisabled={picked === NONE}>

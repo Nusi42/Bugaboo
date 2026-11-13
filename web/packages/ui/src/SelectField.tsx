@@ -30,6 +30,8 @@ export interface SelectFieldProps<Value extends string> {
   readonly choices: readonly SelectChoice<Value>[];
   readonly value: Value;
   readonly onChange: (value: Value) => void;
+  /** Nothing can be chosen now: the box stays, so what stands under it does not move. */
+  readonly isDisabled?: boolean;
 }
 
 /** The choices of the list, as the browser's own options. */
@@ -47,6 +49,34 @@ function ErrorNote({ id, text }: { readonly id: string; readonly text: string | 
     <span id={id} {...partOf(part.fieldError)}>
       {text}
     </span>
+  );
+}
+
+/** The name of the field and its description, seen or only read out. */
+function FieldHead({
+  id,
+  helpId,
+  label,
+  description,
+  hideLabel,
+}: {
+  readonly id: string;
+  readonly helpId: string;
+  readonly label: string;
+  readonly description: string | undefined;
+  readonly hideLabel: boolean;
+}) {
+  return (
+    <>
+      <label {...partOf(hideLabel ? part.visuallyHidden : part.fieldLabel)} htmlFor={id}>
+        {label}
+      </label>
+      {description === undefined ? null : (
+        <span id={helpId} {...partOf(hideLabel ? part.visuallyHidden : part.fieldDescription)}>
+          {description}
+        </span>
+      )}
+    </>
   );
 }
 
@@ -70,6 +100,7 @@ export function SelectField<Value extends string>({
   choices,
   value,
   onChange,
+  isDisabled = false,
 }: SelectFieldProps<Value>) {
   const id = useId();
   const select = useRef<HTMLSelectElement>(null);
@@ -82,19 +113,19 @@ export function SelectField<Value extends string>({
   const inline = look === selectLook.inline && "inline";
   return (
     <div {...partOf(part.field, { variants: [inline] })}>
-      <label {...partOf(hideLabel ? part.visuallyHidden : part.fieldLabel)} htmlFor={id}>
-        {label}
-      </label>
-      {description === undefined ? null : (
-        <span id={helpId} {...partOf(hideLabel ? part.visuallyHidden : part.fieldDescription)}>
-          {description}
-        </span>
-      )}
+      <FieldHead
+        id={id}
+        helpId={helpId}
+        label={label}
+        description={description}
+        hideLabel={hideLabel}
+      />
       <select
         ref={select}
         id={id}
         {...partOf(part.fieldInput, { variants: [inline] })}
         value={value}
+        disabled={isDisabled}
         {...(describedBy === undefined ? {} : { "aria-describedby": describedBy })}
         {...(errorMessage === undefined ? {} : { "aria-invalid": true })}
         onChange={() => {
