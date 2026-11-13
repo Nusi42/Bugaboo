@@ -132,16 +132,34 @@ fn quoted_after<'a>(line: &'a str, marker: &str) -> Option<&'a str> {
     rest.split_once('"').map(|(inside, _)| inside)
 }
 
-/// The places that take the kind of a drag: an element that drags or the hook that drops.
-const DRAG_PLACES: [&str; 2] = ["<DragHandle", "<DraggableHead"];
+/// The places that take the kind of a drag: an element that drags or one that is dropped on (the
+/// hook that drops is looked for apart).
+const DRAG_PLACES: [&str; 3] = ["<DragHandle", "<DraggableHead", "<DropSlot"];
+
+/// An element from its `<` to the `>` that ends its tag: a `>` inside braces (`() => end()`) or
+/// inside quotes is part of an attribute, not the end.
+fn element_at(text: &str) -> &str {
+    let mut depth = 0_usize;
+    let mut quoted = false;
+    for (at, sign) in text.char_indices() {
+        match sign {
+            '"' if depth == 0 => quoted = !quoted,
+            '{' if !quoted => depth += 1,
+            '}' if !quoted => depth = depth.saturating_sub(1),
+            '>' if depth == 0 && !quoted => return &text[..at],
+            _ => {}
+        }
+    }
+    text
+}
 
 /// Whether code gives a drag a kind of its own, where a drag takes one: a text as the `kind` of
-/// `DragHandle` or `DraggableHead`, or as the first argument of `useDropOf`.
+/// `DragHandle`, `DraggableHead` or `DropSlot`, or as the first argument of `useDropOf`.
 fn writes_a_kind(text: &str) -> bool {
     let compact: String = text.split_whitespace().collect();
     let in_an_element = DRAG_PLACES.iter().any(|place| {
         compact.match_indices(place).any(|(at, _)| {
-            let element = compact[at..].split('>').next().unwrap_or_default();
+            let element = element_at(&compact[at..]);
             element.contains("kind=\"") || element.contains("kind={\"")
         })
     });
@@ -330,6 +348,27 @@ visit(paths.longer); // paths.home and paths.signIn
             assert_eq!(messages.len(), 1, "{written}: {messages:?}");
             assert!(messages[0].contains("own kind"), "{written}");
         }
+    }
+
+    #[test]
+    fn a_kind_after_an_arrow_in_the_element_is_a_finding() {
+        let mut files = timeline();
+        files[2].1 =
+            "useBarDrag(1); keyMoveOf(event); <DragHandle onEnd={() => end()} kind=\"a-dot\" />"
+                .to_owned();
+        let messages = found(&files);
+        assert_eq!(messages.len(), 1, "{messages:?}");
+        assert!(messages[0].contains("own kind"));
+    }
+
+    #[test]
+    fn a_drop_slot_with_a_kind_written_in_place_is_a_finding() {
+        let mut files = timeline();
+        files[2].1 = "useBarDrag(1); keyMoveOf(event); <DropSlot kind=\"a-dot\" onDrop={place} />"
+            .to_owned();
+        let messages = found(&files);
+        assert_eq!(messages.len(), 1, "{messages:?}");
+        assert!(messages[0].contains("own kind"));
     }
 
     #[test]
