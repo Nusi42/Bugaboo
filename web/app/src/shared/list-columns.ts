@@ -158,17 +158,23 @@ export function isOwnField(word: string): boolean {
 /** The words that cannot be grouped by: a long text and the Issue ID have no groups. */
 export const notGroupable: ReadonlySet<string> = new Set([listWord.description, listWord.id]);
 
+/** A column the list keeps longest where it has little room, and whether it may give way at last. */
+export interface StayingColumn {
+  readonly word: string;
+  readonly givesWay: boolean;
+}
+
 /**
  * The columns the list keeps longest where it has little room (UX §4.2, beside the side panel or
- * with Customize open): the status, the ID, the title and the priority. The columns of fields go
- * first, from the right; the title never goes (`fit-columns.ts`).
+ * with Customize open), in the order they give way after the columns of fields: the priority, then
+ * the status. The ID and the title never give way; the title shrinks instead (`fit-columns.ts`).
  */
-export const staysColumns: ReadonlySet<string> = new Set([
-  listWord.status,
-  listWord.id,
-  listWord.title,
-  listWord.priority,
-]);
+export const staysColumns: readonly StayingColumn[] = [
+  { word: listWord.priority, givesWay: true },
+  { word: listWord.status, givesWay: true },
+  { word: listWord.id, givesWay: false },
+  { word: listWord.title, givesWay: false },
+];
 
 /** The columns a phone draws in each card (UX section 4.2): columns are not offered there. */
 export const phoneColumns: readonly string[] = [

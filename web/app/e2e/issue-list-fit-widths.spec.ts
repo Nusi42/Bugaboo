@@ -57,5 +57,9 @@ for (const { spacing, width, where, opened } of cases) {
     const found = await sideways(page);
     expect(found).not.toHaveLength(0);
     expect(Math.max(...found)).toBeLessThanOrEqual(0);
+    // The ID always stays.
+    await expect(
+      page.locator("[data-part='list-row.cell'][data-variant~='key']").first(),
+    ).toBeVisible();
   });
 }

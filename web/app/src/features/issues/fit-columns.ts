@@ -25,28 +25,22 @@ function needOf(words: readonly string[], { ticks, widths, keyChars }: FitInput)
 }
 
 /**
- * The columns that stay longest, in the order they give way where even they do not fit: the
- * priority, then the status, then the ID. The title never gives way.
- */
-const lastToGo = [listWord.priority, listWord.status, listWord.id] as const;
-
-/**
  * The index of the column to drop next: the last column of a field from the right, except that a
  * column of an agent (*Agent*, *Agent state*) outranks *Changed*, which goes first while it is
- * still there; where only the columns that stay are left, the first of {@link lastToGo} that is
- * there. None where only the title is left.
+ * still there; where only the columns that stay are left, the first of {@link staysColumns} that
+ * gives way and is there. None where only the ID and the title are left.
  */
 function nextToDrop(kept: readonly string[]): number {
   for (let at = kept.length - 1; at >= 0; at -= 1) {
     const word = kept[at] ?? "";
-    if (staysColumns.has(word)) {
+    if (staysColumns.some((stays) => stays.word === word)) {
       continue;
     }
     const changed = kept.indexOf(listWord.changed);
     return isAgentWord(word) && changed >= 0 ? changed : at;
   }
-  const last = lastToGo.find((word) => kept.includes(word));
-  return last === undefined ? -1 : kept.indexOf(last);
+  const next = staysColumns.find(({ word, givesWay }) => givesWay && kept.includes(word));
+  return next === undefined ? -1 : kept.indexOf(next.word);
 }
 
 /**
@@ -54,9 +48,10 @@ function nextToDrop(kept: readonly string[]): number {
  * them as they are drawn (the widths a person gave counted, the ID as wide as it is), the columns of
  * fields are dropped from the right, one by one (*Changed* before the columns of an agent), until
  * it has; the status, the ID, the title and the priority stay longest. Where even those do not fit,
- * the priority, the status and the ID give way in that order, so the list does not scroll sideways;
- * only the title alone, at its least width, can still be wider than the room. The room is what the
- * rows have, without the bar they scroll with. No room measured yet keeps every column.
+ * the priority and then the status give way, so the list does not scroll sideways. The ID and the
+ * title always stay: where they do not fit either, the title shrinks below its least width and cuts
+ * its text. The room is what the rows have, without the bar they scroll with. No room measured yet
+ * keeps every column.
  */
 export function columnsThatFit(words: readonly string[], input: FitInput): readonly string[] {
   if (input.room === undefined) {

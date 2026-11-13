@@ -55,8 +55,10 @@ export function listTemplate(columns: readonly ListColumnSpec[], keyChars = 0): 
         return `${String(width)}px`;
       }
       if (column === "title") {
-        // The title is what people read: the columns of fields give way before it.
-        return `minmax(${lengthOf(column)}, 1fr)`;
+        // The title is what people read: the other columns give way before it, as the fit counts
+        // its least width (listNeeds). Where only the ID and the title are left and still do not
+        // fit, the title shrinks and cuts its text rather than the list scrolling sideways.
+        return "minmax(0, 1fr)";
       }
       if (column === "key" && keyChars > 0) {
         // The ID is as wide as the longest one drawn, and not narrower than its head needs.
