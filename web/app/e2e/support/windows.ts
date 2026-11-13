@@ -67,11 +67,16 @@ export async function windowSize(page: Page): Promise<{ width: number; height: n
   return { width: Math.round(box.width), height: Math.round(box.height) };
 }
 
-/** Opens the new-issue window and waits until its fields are there, so its size is settled. */
+/**
+ * Opens the new-issue window in the middle of the page, with its fields: the first open fetches its code and fields, and
+ * one that waits longer than 0.3 s stands at the top (UX §6.1), so it is opened a second time, with nothing to wait for.
+ */
 export async function openWindowReady(page: Page): Promise<void> {
   await openNewIssueDialog(page);
+  await page.keyboard.press("Escape");
+  await expect(newIssueDialog(page)).toHaveCount(0);
+  await openNewIssueDialog(page);
   await expect(newIssueDialog(page).getByLabel(titleLabel(), { exact: true })).toBeVisible();
-  // The window is shown once its fields are there; measure after them all the same.
   await expect(descriptionBox(newIssueDialog(page))).toBeVisible();
 }
 
