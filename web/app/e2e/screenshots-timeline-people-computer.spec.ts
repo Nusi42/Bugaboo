@@ -77,7 +77,7 @@ test("the bars as a reader who sees people by role only, and as one who sees nob
   page,
   server,
 }) => {
-  // The readers see the neutral warning instead of Away: Ada accepts it for everybody.
+  // The readers see the neutral warning instead of Away: Cleo, who is told it, accepts it for everybody.
   await acceptDaysWithoutWork(server, people.holiday);
   await viewersSeeAssigned(server, "role-only");
   await signIn(page, ana);

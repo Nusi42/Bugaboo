@@ -85,10 +85,10 @@ export async function viewersSee(
 }
 
 /** Accepts a warning of an issue as the person of a session, who must be told that kind. */
-async function acceptAs(admin: ApiSession, key: string, kind: "away" | "days-without-work") {
-  const version = await versionOf(admin, await issueOf(admin, key));
+async function acceptAs(session: ApiSession, key: string, kind: "away" | "days-without-work") {
+  const version = await versionOf(session, await issueOf(session, key));
   dataOf(
-    await admin.client.POST("/api/v1/timeline/accepted-warnings", {
+    await session.client.POST("/api/v1/timeline/accepted-warnings", {
       body: {
         issue: key,
         version,
