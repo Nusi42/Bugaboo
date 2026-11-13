@@ -19,8 +19,12 @@ describe("ux_4_2 the columns that fit", () => {
     expect(columnsThatFit(words, { ...input, room: 499 })).toEqual(fixed);
   });
 
-  it("never drops the status, the ID, the title and the priority", () => {
-    expect(columnsThatFit(words, { ...input, room: 1 })).toEqual(fixed);
+  it("where even the status, the ID, the title and the priority do not fit, drops the priority, then the status, then the ID, and never the title", () => {
+    expect(columnsThatFit(words, { ...input, room: 400 })).toEqual(fixed);
+    expect(columnsThatFit(words, { ...input, room: 399 })).toEqual(["status", "id", "title"]);
+    expect(columnsThatFit(words, { ...input, room: 299 })).toEqual(["id", "title"]);
+    expect(columnsThatFit(words, { ...input, room: 199 })).toEqual(["title"]);
+    expect(columnsThatFit(words, { ...input, room: 1 })).toEqual(["title"]);
   });
 
   it("counts the width a person gave a column: a wide Assigned to takes its column and the one after it away", () => {

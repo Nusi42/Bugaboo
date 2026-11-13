@@ -159,9 +159,9 @@ export function isOwnField(word: string): boolean {
 export const notGroupable: ReadonlySet<string> = new Set([listWord.description, listWord.id]);
 
 /**
- * The columns the list never drops where it has little room (UX §4.2, beside the side panel or with
- * Customize open): the status, the ID, the title and the priority. The columns of fields go first,
- * from the right.
+ * The columns the list keeps longest where it has little room (UX §4.2, beside the side panel or
+ * with Customize open): the status, the ID, the title and the priority. The columns of fields go
+ * first, from the right; the title never goes (`fit-columns.ts`).
  */
 export const staysColumns: ReadonlySet<string> = new Set([
   listWord.status,
