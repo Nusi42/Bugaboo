@@ -1,10 +1,9 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Card, SaveStatus, Skeleton, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, Card, DelayedSkeleton, SaveStatus, partOf, part } from "@bugaboo/ui";
 import { useQuery } from "@tanstack/react-query";
 
 import { messageOf } from "../../../shared/errors.ts";
 import { saveLabels } from "../../../shared/save-labels.ts";
-import { useAfterDelay } from "@bugaboo/ui";
 import { AppRow } from "./AppRow.tsx";
 import { appsOptions, type ConnectedApp } from "./connected-apps.ts";
 import { useTakeBack } from "./use-take-back.ts";
@@ -41,7 +40,6 @@ function Head() {
 /** *Your connected apps*: a table with each app, what it may do and where, and a way to take it back. */
 export function AppList() {
   const apps = useQuery(appsOptions());
-  const shapes = useAfterDelay(apps.isPending);
   const takeBack = useTakeBack();
   const items: readonly ConnectedApp[] = apps.data?.items ?? [];
   return (
@@ -67,7 +65,7 @@ export function AppList() {
             </tbody>
           </table>
         )}
-        {shapes ? <Skeleton /> : null}
+        {apps.isPending ? <DelayedSkeleton /> : null}
       </div>
       <SaveStatus state={takeBack.saveState} labels={saveLabels()} />
       {takeBack.problem === null ? null : <Alert tone={alertTone.danger}>{takeBack.problem}</Alert>}

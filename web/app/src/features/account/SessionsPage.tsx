@@ -1,18 +1,19 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Card, SaveStatus, Skeleton, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, Card, DelayedSkeleton, SaveStatus, partOf, part } from "@bugaboo/ui";
+import { useQuery } from "@tanstack/react-query";
 
 import { messageOf } from "../../shared/errors.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { SessionRow } from "./SessionRow.tsx";
 import { SignOutEverywhere } from "./SignOutEverywhere.tsx";
 import { useEndSession } from "./use-end-session.ts";
-import { useSessionsView } from "./use-sessions-view.ts";
+import { sessionsOptions } from "./sessions.ts";
 import { saveLabels } from "../../shared/save-labels.ts";
 
 /** The sessions page: every place with its browser and system, and the way to sign out everywhere. */
 export function SessionsPage() {
   usePageTitle(t("sessions.title"));
-  const { sessions, shapes } = useSessionsView();
+  const sessions = useQuery(sessionsOptions());
   const end = useEndSession();
   return (
     <Card heading={t("sessions.title")} level={1} intro={t("sessions.intro")}>
@@ -29,7 +30,7 @@ export function SessionsPage() {
             />
           ))}
         </ul>
-        {shapes ? <Skeleton /> : null}
+        {sessions.isPending ? <DelayedSkeleton /> : null}
       </div>
       <SaveStatus state={end.saveState} labels={saveLabels()} />
       {end.problem === null ? null : <Alert tone={alertTone.danger}>{end.problem}</Alert>}

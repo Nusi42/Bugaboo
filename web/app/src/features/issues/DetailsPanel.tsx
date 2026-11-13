@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { NameValueList, Skeleton, partOf, part } from "@bugaboo/ui";
+import { DelayedSkeleton, NameValueList, partOf, part } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
 import {
@@ -13,7 +13,6 @@ import {
   StartDateRow,
   TotalRows,
 } from "./ChangeableRows.tsx";
-import { useAfterDelay } from "@bugaboo/ui";
 import { detailFields as fields, inLayoutOrder, type RowGroup } from "./details-order.ts";
 import { FixedRows } from "./FixedRows.tsx";
 import { SlotBlocks } from "./SlotBlocks.tsx";
@@ -89,7 +88,6 @@ function groupsOf({ blocks, changes }: Pick<DetailsPanelProps, "blocks" | "chang
  * they stand once in the order of the layout and never move when it arrives (CFG-01, M3-F102).
  */
 export function DetailsPanel({ blocks, changes, stacked }: DetailsPanelProps) {
-  const shapes = useAfterDelay(!blocks.form.ready);
   return (
     <aside
       aria-busy={!blocks.form.ready}
@@ -104,9 +102,9 @@ export function DetailsPanel({ blocks, changes, stacked }: DetailsPanelProps) {
             groupsOf({ blocks, changes }),
           )}
         </NameValueList>
-      ) : shapes ? (
-        <Skeleton />
-      ) : null}
+      ) : (
+        <DelayedSkeleton />
+      )}
       <SlotBlocks slot={issueSlots.detailSections} blocks={blocks} />
     </aside>
   );

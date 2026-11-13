@@ -1,9 +1,8 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Card, SaveStatus, Skeleton, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, Card, DelayedSkeleton, SaveStatus, partOf, part } from "@bugaboo/ui";
 import { useQuery } from "@tanstack/react-query";
 
 import { messageOf } from "../../../shared/errors.ts";
-import { useAfterDelay } from "@bugaboo/ui";
 import { keysOptions, type AccessKey } from "./access-keys.ts";
 import { KeyRow } from "./KeyRow.tsx";
 import { useDeleteKey } from "./use-delete-key.ts";
@@ -12,7 +11,6 @@ import { saveLabels } from "../../../shared/save-labels.ts";
 /** *Your access keys*: each with what it may do and where, and a way to delete it. */
 export function KeyList() {
   const keys = useQuery(keysOptions());
-  const shapes = useAfterDelay(keys.isPending);
   const remove = useDeleteKey();
   const items: readonly AccessKey[] = keys.data?.items ?? [];
   return (
@@ -33,7 +31,7 @@ export function KeyList() {
             />
           ))}
         </ul>
-        {shapes ? <Skeleton /> : null}
+        {keys.isPending ? <DelayedSkeleton /> : null}
       </div>
       <SaveStatus state={remove.saveState} labels={saveLabels()} />
       {remove.problem === null ? null : <Alert tone={alertTone.danger}>{remove.problem}</Alert>}
