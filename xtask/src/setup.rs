@@ -110,6 +110,9 @@ fn install_tools(root: &Path, list: &[&Tool]) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// What a message asks when Rust itself seems to be missing.
+const RUST_QUESTION: &str = "is Rust installed (https://rustup.rs)?";
+
 /// Stops with a plain message when Node.js or a part of the Rust toolchain that the build needs is
 /// missing. `rustup` adds the parts named in `rust-toolchain.toml` by itself; a toolchain that was
 /// installed another way may lack them.
@@ -127,9 +130,9 @@ fn check_prerequisites(root: &Path) -> anyhow::Result<()> {
         .args(["--print", "sysroot"])
         .current_dir(root)
         .output()
-        .context("could not run rustc; is Rust installed (https://rustup.rs)?")?;
+        .with_context(|| format!("could not run rustc; {RUST_QUESTION}"))?;
     if !out.status.success() {
-        bail!("`rustc --print sysroot` failed; is Rust installed (https://rustup.rs)?");
+        bail!("`rustc --print sysroot` failed; {RUST_QUESTION}");
     }
     let sysroot = std::path::PathBuf::from(String::from_utf8_lossy(&out.stdout).trim());
     let missing = missing_rust_parts(&sysroot);
@@ -216,7 +219,7 @@ fn install_cargo(
     if !status.success() {
         bail!(
             "cargo install of {crate_name} {} failed (see the messages above). On Windows this \
-             also happens while the tool is running: close {} and run `cargo xtask setup` again.",
+             also happens while the tool is running: close {} and run the command again.",
             tool.version,
             binary.display()
         );

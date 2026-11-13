@@ -38,8 +38,11 @@ identity into the clone when it finds one (otherwise it notes that commits will 
 trying Bugaboo needs none of this: `cargo xtask dev` installs just what building and running need.
 
 When your global Git configuration sets `core.hooksPath` for every repository, setup leaves it
-alone and sets `core.hooksPath` of this clone only, back to its own `.git/hooks`. When the clone
-already sets its own `core.hooksPath`, setup stops and names the two commands to choose from.
+alone and sets `core.hooksPath` of this clone only, back to its own `.git/hooks`, and says so: the
+hooks of your global folder then no longer run in this clone. To undo it, run
+`git config --local --unset core.hooksPath`. Setup stops instead, and names the file or the
+commands, when the hooks folder holds a kept copy of an older hook (`<hook>.old`) that installing
+would overwrite, or when the clone already sets its own `core.hooksPath`.
 
 Start the server and the browser app on a sample organization of 50 made-up people:
 

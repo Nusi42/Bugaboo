@@ -154,7 +154,8 @@ pub(crate) fn find(name: &str) -> Result<PathBuf, Finding> {
     .find(|candidate| candidate.is_file())
     .ok_or_else(|| {
         Finding::general(format!(
-            "The tool `{name}` is not installed. Run `cargo xtask setup` first."
+            "The tool `{name}` is not installed. Run the command again: `cargo xtask dev` \
+             installs the tools that running needs, `cargo xtask setup` all of them."
         ))
     })
 }

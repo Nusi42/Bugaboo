@@ -2,6 +2,7 @@
 //! with the pinned lefthook. A hooks folder that the global Git configuration names for every
 //! repository is left as it is; the clone is told to use its own folder instead.
 
+use std::fs;
 use std::path::Path;
 use std::process::Command;
 
@@ -12,6 +13,9 @@ use crate::tools;
 
 /// The Git setting that names the folder of the hooks.
 const HOOKS_PATH: &str = "core.hooksPath";
+
+/// The command that undoes the setting of the clone.
+const UNSET: &str = "git config --local --unset core.hooksPath";
 
 /// Makes Git run the checks on commit and push (`lefthook.yml`), using the pinned lefthook.
 /// Running it again only rewrites the same hook files.
@@ -24,10 +28,13 @@ pub(crate) fn install(root: &Path) -> anyhow::Result<()> {
         command.current_dir(root);
         command
     };
-    let arguments = lefthook_arguments(&git)?;
+    let plan = plan(root, &git)?;
+    if let Some(note) = &plan.note {
+        output::note(note);
+    }
     let lefthook = tools::bin_dir(root).join(tools::exe("lefthook"));
     let status = tools::command(&lefthook)
-        .args(arguments)
+        .args(plan.arguments)
         .current_dir(root)
         .status()
         .with_context(|| format!("could not run {}", lefthook.display()))?;
@@ -38,13 +45,25 @@ pub(crate) fn install(root: &Path) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// The arguments of lefthook that install the hooks of this clone; `git` makes a Git command that
-/// runs in it. When the global (or system) Git configuration names a hooks folder for every
-/// repository, lefthook refuses to install. This clone is then told to use its own folder again,
-/// with a setting of this clone only (the global one stays as it is), and lefthook installs there.
-/// A hooks folder that this clone names for itself is never replaced: the message names the two
-/// ways on.
-fn lefthook_arguments(git: &dyn Fn() -> Command) -> anyhow::Result<&'static [&'static str]> {
+/// How lefthook installs the hooks of a clone.
+#[derive(Debug)]
+struct Plan {
+    /// The arguments of lefthook.
+    arguments: &'static [&'static str],
+    /// What the person should know about a change to the Git settings of the clone.
+    note: Option<String>,
+}
+
+/// How to install the hooks of the clone at `root`; `git` makes a Git command that runs in it.
+///
+/// When the global (or system) Git configuration names a hooks folder for every repository,
+/// lefthook refuses to install. The clone is then told to use its own folder again, with a setting
+/// of the clone only (the global one stays as it is), and lefthook installs there with `--force`.
+/// The note says that the hooks of the global folder no longer run in this clone and how to undo
+/// it; setup does not ask, because agents run it unattended. `--force` would overwrite a kept copy
+/// (`<hook>.old`) of a hook of the person's own, so setup stops first and names it. A hooks folder
+/// that the clone names for itself is never replaced: the message names the two ways on.
+fn plan(root: &Path, git: &dyn Fn() -> Command) -> anyhow::Result<Plan> {
     let setting = |scope: &[&str]| -> Option<String> {
         let out = git()
             .arg("config")
@@ -56,7 +75,10 @@ fn lefthook_arguments(git: &dyn Fn() -> Command) -> anyhow::Result<&'static [&'s
         (out.status.success() && !value.is_empty()).then_some(value)
     };
     if setting(&[]).is_none() {
-        return Ok(&["install"]);
+        return Ok(Plan {
+            arguments: &["install"],
+            note: None,
+        });
     }
     let out = git()
         .args(["rev-parse", "--git-common-dir"])
@@ -69,14 +91,21 @@ fn lefthook_arguments(git: &dyn Fn() -> Command) -> anyhow::Result<&'static [&'s
         bail!("`git rev-parse --git-common-dir` failed in this clone.");
     }
     let own = format!("{git_folder}/hooks");
-    match setting(&["--local"]) {
-        Some(local) if local.replace('\\', "/") == own => {}
-        Some(local) => bail!(
+    let local = setting(&["--local"]);
+    if let Some(local) = local
+        .as_ref()
+        .filter(|local| local.replace('\\', "/") != own)
+    {
+        bail!(
             "This clone names its own hooks folder ({HOOKS_PATH} = {local}). Choose one:\n  \
-             git config --local --unset {HOOKS_PATH}    (then run `cargo xtask setup` again)\n  \
+             {UNSET}    (then run the command again)\n  \
              {}/bin/lefthook install --force    (puts the hooks into {local})",
             tools::TOOLS_DIR
-        ),
+        );
+    }
+    refuse_kept_copies(&root.join(&own))?;
+    let note = match local {
+        Some(_) => None,
         None => {
             let status = git()
                 .args(["config", "--local", HOOKS_PATH, &own])
@@ -85,13 +114,51 @@ fn lefthook_arguments(git: &dyn Fn() -> Command) -> anyhow::Result<&'static [&'s
             if !status.success() {
                 bail!("could not set {HOOKS_PATH} of this clone.");
             }
-            output::info(&format!(
-                "note     your Git configuration names a hooks folder for every repository; this \
-                 clone now uses its own ({HOOKS_PATH} = {own}, set for this clone only)"
-            ));
+            let everywhere = setting(&["--global"]).map_or_else(
+                || "The hooks folder that your system Git configuration names".to_owned(),
+                |folder| {
+                    format!(
+                        "`{folder}`, the hooks folder that your global Git configuration names \
+                         for every repository,"
+                    )
+                },
+            );
+            Some(format!(
+                "{everywhere} no longer runs its hooks in this clone. So that the checks of \
+                 Bugaboo run, this clone now uses its own folder ({HOOKS_PATH} = {own}, set for \
+                 this clone only; your global setting is unchanged). To undo it: {UNSET}"
+            ))
+        }
+    };
+    Ok(Plan {
+        arguments: &["install", "--force"],
+        note,
+    })
+}
+
+/// Stops when `folder` holds a kept copy (`<hook>.old`) next to a hook that is not lefthook's:
+/// lefthook keeps a hook it replaces under that name, and `--force` would overwrite the older copy.
+/// When the hook is lefthook's own, it is replaced alone and the copy stays.
+fn refuse_kept_copies(folder: &Path) -> anyhow::Result<()> {
+    let Ok(entries) = fs::read_dir(folder) else {
+        return Ok(());
+    };
+    for path in entries.flatten().map(|entry| entry.path()) {
+        if path.extension().is_none_or(|extension| extension != "old") {
+            continue;
+        }
+        let hook = path.with_extension("");
+        let foreign = fs::read_to_string(&hook).is_ok_and(|text| !text.contains("lefthook"));
+        if foreign {
+            bail!(
+                "{} is a kept copy of an older hook, and installing the hooks would overwrite it \
+                 with {}. Move or delete one of the two, then run the command again.",
+                path.display(),
+                hook.display()
+            );
         }
     }
-    Ok(&["install", "--force"])
+    Ok(())
 }
 
 #[cfg(test)]
@@ -148,7 +215,9 @@ mod tests {
     #[test]
     fn good_example_without_a_hooks_folder_lefthook_installs_as_usual() {
         let clone = ScratchRepo::new("setup-hooks-plain", "");
-        assert_eq!(lefthook_arguments(&|| clone.git()).unwrap(), ["install"]);
+        let plan = plan(&clone.repo(), &|| clone.git()).unwrap();
+        assert_eq!(plan.arguments, ["install"]);
+        assert_eq!(plan.note, None);
         assert_eq!(clone.local_hooks_path(), None);
     }
 
@@ -156,18 +225,48 @@ mod tests {
     fn a_global_hooks_folder_is_left_alone_and_this_clone_uses_its_own() {
         let global = "[core]\n\thooksPath = .githooks\n";
         let clone = ScratchRepo::new("setup-hooks-global", global);
-        assert_eq!(
-            lefthook_arguments(&|| clone.git()).unwrap(),
-            ["install", "--force"]
+        let first = plan(&clone.repo(), &|| clone.git()).unwrap();
+        assert_eq!(first.arguments, ["install", "--force"]);
+        let note = first.note.unwrap();
+        assert!(note.contains(".githooks"), "{note}");
+        assert!(
+            note.contains("no longer runs its hooks in this clone"),
+            "{note}"
+        );
+        assert!(
+            note.contains("git config --local --unset core.hooksPath"),
+            "{note}"
         );
         assert_eq!(clone.local_hooks_path().as_deref(), Some(".git/hooks"));
         assert_eq!(fs::read_to_string(&clone.global).unwrap(), global);
         // A second run finds the setting of the clone and changes nothing.
+        let second = plan(&clone.repo(), &|| clone.git()).unwrap();
+        assert_eq!(second.arguments, ["install", "--force"]);
+        assert_eq!(second.note, None);
+        assert_eq!(clone.local_hooks_path().as_deref(), Some(".git/hooks"));
+    }
+
+    #[test]
+    fn bad_example_a_kept_copy_of_a_hook_of_its_own_stops_before_it_is_overwritten() {
+        let global = "[core]\n\thooksPath = .githooks\n";
+        let clone = ScratchRepo::new("setup-hooks-old", global);
+        let hooks = clone.repo().join(".git").join("hooks");
+        fs::write(hooks.join("pre-commit"), "#!/bin/sh\necho mine\n").unwrap();
+        fs::write(hooks.join("pre-commit.old"), "#!/bin/sh\necho older\n").unwrap();
+        let error = plan(&clone.repo(), &|| clone.git())
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("pre-commit.old"), "{error}");
         assert_eq!(
-            lefthook_arguments(&|| clone.git()).unwrap(),
+            fs::read_to_string(hooks.join("pre-commit.old")).unwrap(),
+            "#!/bin/sh\necho older\n"
+        );
+        // Once lefthook's own hook is in place, its kept copy is safe: the hook is replaced alone.
+        fs::write(hooks.join("pre-commit"), "#!/bin/sh\n# lefthook\n").unwrap();
+        assert_eq!(
+            plan(&clone.repo(), &|| clone.git()).unwrap().arguments,
             ["install", "--force"]
         );
-        assert_eq!(clone.local_hooks_path().as_deref(), Some(".git/hooks"));
     }
 
     #[test]
@@ -179,7 +278,9 @@ mod tests {
             .status()
             .unwrap();
         assert!(status.success());
-        let error = lefthook_arguments(&|| clone.git()).unwrap_err().to_string();
+        let error = plan(&clone.repo(), &|| clone.git())
+            .unwrap_err()
+            .to_string();
         assert!(
             error.contains("git config --local --unset core.hooksPath"),
             "{error}"

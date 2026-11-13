@@ -63,6 +63,16 @@ pub(crate) fn info(message: &str) {
     println!("{message}");
 }
 
+/// A line about something that is not wrong now but matters later; the work goes on.
+pub(crate) fn note(message: &str) {
+    println!("{}", note_line(message));
+}
+
+/// The text of a [`note`] line.
+pub(crate) fn note_line(message: &str) -> String {
+    format!("note     {message}")
+}
+
 pub(crate) fn generated(written: &[String]) {
     if written.is_empty() {
         println!("Everything is already up to date.");
