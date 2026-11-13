@@ -600,7 +600,8 @@ async fn plan_13_a_hidden_person_is_named_only_as_the_assigned_person() -> TestR
         assert_eq!(away["sentence"], "plan-warning.away");
         assert_eq!(away["person"]["name"], "Lea Lang");
         assert_eq!(away["days"], json!({"first": "2027-03-02", "last": "2027-03-03"}));
-        // A Contributor who may not see who it is: the assigned person is away, nothing more.
+        // A Contributor who may not see who it is: the issue has days without work, nothing more
+        // (ADR-0030, amendment M8, the maintainer's decision of 2026-11-13).
         site.show_people(&mut ada, StartingRole::Contributor, "assigned-to", "hidden")
             .await?;
         let (mut contributor, _) = site
@@ -608,7 +609,8 @@ async fn plan_13_a_hidden_person_is_named_only_as_the_assigned_person() -> TestR
             .await?;
         let hidden = page(&mut contributor, body.clone()).await?;
         let nameless = warnings_on(&hidden, &id)[0].clone();
-        assert_eq!(nameless["sentence"], "plan-warning.away-hidden");
+        assert_eq!(nameless["kind"], "days-without-work");
+        assert_eq!(nameless["sentence"], "plan-warning.days-without-work");
         assert_eq!(nameless["person"], Value::Null);
         assert!(!hidden.to_string().contains("Lea Lang"), "{hidden}");
         // The hatched days are those of a reader who may know the work times.

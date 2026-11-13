@@ -16,7 +16,9 @@ use bb_core::own_fields::FieldType;
 use bb_core::own_fields_value::{FieldValue, date_of};
 use bb_core::plan::bar::{Bar, BarInput, bar, load, shortfall};
 use bb_core::plan::record::IssueTimeFactor;
-use bb_core::plan::warning::{Warning, away, delays, sub_issue_delays, too_much_at_once};
+use bb_core::plan::warning::{
+    Warning, away, days_without_work, delays, sub_issue_delays, too_much_at_once,
+};
 use bb_core::plan::{Days, TimeFactor};
 use bb_core::relation::Dependency;
 use bb_core::work_times::{DayMinutes, Share, UsualDays};
@@ -501,6 +503,8 @@ fn warnings_of(plan: &Plan, by_effort: bool) -> Vec<(IssueId, Warning)> {
         };
         let days = plan.days_of(issue);
         found.extend(away(bar_of, days).map(|warning| (*id, warning)));
+        // The same days, without telling which, for a reader who does not see the person.
+        found.extend(days_without_work(bar_of, days).map(|warning| (*id, warning)));
         if !by_effort {
             continue;
         }

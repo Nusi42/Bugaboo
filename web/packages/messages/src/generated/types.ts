@@ -559,7 +559,7 @@ export interface MessageArguments {
   "person.via-app": { app: string | number; who: string | number };
   "person.work-times-intro": { name: string | number };
   "plan-warning.away": { days: string | number; issue: string | number; person: string | number };
-  "plan-warning.away-hidden": { issue: string | number };
+  "plan-warning.days-without-work": { issue: string | number };
   "plan-warning.delay": { days: number; first: string | number; issue: string | number };
   "plan-warning.delay-goal": { days: number; issue: string | number; sub_issue: string | number };
   "plan-warning.not-enough-days": { has: number; issue: string | number; needs: number };

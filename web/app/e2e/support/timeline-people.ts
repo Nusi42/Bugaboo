@@ -84,8 +84,15 @@ export async function viewersSee(
   await admin.dispose();
 }
 
-/** Accepts the warning Away of an issue, as the administrator: it shows faded, with who accepted it. */
-export async function acceptAway(server: Instance, key: string): Promise<void> {
+/**
+ * Accepts a warning of an issue, *Away* unless another kind is named, as the administrator: it shows
+ * faded, with who accepted it.
+ */
+export async function acceptAway(
+  server: Instance,
+  key: string,
+  kind: "away" | "days-without-work" = "away",
+): Promise<void> {
   const admin = await signInThroughApi(server, ada);
   const version = await versionOf(admin, await issueOf(admin, key));
   dataOf(
@@ -93,7 +100,7 @@ export async function acceptAway(server: Instance, key: string): Promise<void> {
       body: {
         issue: key,
         version,
-        kind: "away",
+        kind,
         timeline: { start_field: null, end_field: null, zoom: "week" },
       },
     }),

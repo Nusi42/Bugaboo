@@ -331,7 +331,7 @@ async fn plan_13_a_hidden_person_on_the_bar_is_not_named_through_the_factor_or_a
             .send(
                 "POST",
                 &format!("{TIMELINE}/accepted-warnings"),
-                Some(json!({"issue": key, "version": version, "kind": "away", "timeline": {"zoom": "week"}})),
+                Some(json!({"issue": key, "version": version, "kind": "days-without-work", "timeline": {"zoom": "week"}})),
             )
             .await?)?;
         site.show_people(&mut ada, StartingRole::Contributor, "assigned-to", "hidden")

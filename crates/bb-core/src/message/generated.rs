@@ -8706,6 +8706,10 @@ pub const TIMELINE_WARNING_SIGN: MessageKey = MessageKey::new("timeline.warning-
 /// The message `timeline.warnings-closing`.
 pub const TIMELINE_WARNINGS_CLOSING: MessageKey = MessageKey::new("timeline.warnings-closing");
 
+/// The message `timeline.warnings-closing-neutral`.
+pub const TIMELINE_WARNINGS_CLOSING_NEUTRAL: MessageKey =
+    MessageKey::new("timeline.warnings-closing-neutral");
+
 /// The message `timeline.warnings-none`.
 pub const TIMELINE_WARNINGS_NONE: MessageKey = MessageKey::new("timeline.warnings-none");
 
@@ -13968,11 +13972,11 @@ pub fn plan_warning_away(
     )
 }
 
-/// The message `plan-warning.away-hidden`.
+/// The message `plan-warning.days-without-work`.
 #[must_use]
-pub fn plan_warning_away_hidden(issue: impl std::fmt::Display) -> Message {
+pub fn plan_warning_days_without_work(issue: impl std::fmt::Display) -> Message {
     Message::with_arguments(
-        MessageKey::new("plan-warning.away-hidden"),
+        MessageKey::new("plan-warning.days-without-work"),
         vec![("issue", Value::Text(issue.to_string()))],
     )
 }
@@ -23152,8 +23156,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "{person} is away {days}, while {issue} is planned with their work times.",
     ),
     (
-        "plan-warning.away-hidden",
-        "The assigned person is away while {issue} is planned.",
+        "plan-warning.days-without-work",
+        "{issue} has days without work in its time.",
     ),
     (
         "plan-warning.delay",
@@ -26413,6 +26417,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "timeline.warnings-closing",
         "Away times show only as Away. Bugaboo never suggests whom to give an issue.",
+    ),
+    (
+        "timeline.warnings-closing-neutral",
+        "Days without work look alike for people you do not see. Bugaboo never suggests whom to give an issue.",
     ),
     ("timeline.warnings-none", "The plan has no warnings."),
     (

@@ -71,6 +71,8 @@ export const messages = {
   "timeline.warnings-none": "The plan has no warnings.",
   "timeline.warnings-closing":
     "Away times show only as Away. Bugaboo never suggests whom to give an issue.",
+  "timeline.warnings-closing-neutral":
+    "Days without work look alike for people you do not see. Bugaboo never suggests whom to give an issue.",
   "timeline.warning-accepted": "Accepted by {name}",
   "timeline.warning-sign": "Plan warning",
   "timeline.warnings-of": "{count, plural, one {# plan warning} other {# plan warnings}}",

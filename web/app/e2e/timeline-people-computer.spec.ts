@@ -132,11 +132,12 @@ test("plan_13_a_reader_who_sees_people_by_role_or_not_at_all_reads_no_name_in_th
   const hidden = await openWarnings(page);
   await expect(hidden).not.toContainText(bob.name);
   await expect(hidden).not.toContainText(someone);
-  // No away day: the sentence says only that the assigned person is away, and the only way out is
-  // Keep and accept, since Move it after and Make it longer would tell the days.
+  // No Away: the neutral warning of days without work, whose only way out is Keep and accept, since
+  // Move it after and Make it longer would tell the days; the list ends without naming absences.
   await expect(hidden).toContainText(
-    t("plan-warning.away-hidden", { issue: keepingHyphens(people.shared) }),
+    t("plan-warning.days-without-work", { issue: keepingHyphens(people.shared) }),
   );
+  await expect(hidden).toContainText(t("timeline.warnings-closing-neutral"));
   await expect(hidden).not.toContainText(formatCalendarDay(awayDay));
   const away = warningAbout(hidden, people.shared);
   await expect(away.locator('[data-part="timeline-warning.ways"] button')).toHaveText([
@@ -153,6 +154,11 @@ test("plan_13_a_reader_who_sees_people_by_role_or_not_at_all_reads_no_name_in_th
   const legend = page.locator('[data-part="legend"]');
   await expect(legend).toContainText(t("timeline.legend-no-work"));
   await expect(legend).not.toContainText(t("timeline.legend-holiday"));
+  await expect(legend).not.toContainText(t("timeline.away"));
+  // The neutral days are said in the bar's name for screen readers, without a word of absence.
+  await expect(pressOf(page, people.shared)).toHaveAccessibleName(
+    new RegExp(t("timeline.legend-no-work"), "u"),
+  );
 });
 
 test("plan_11_the_row_of_a_person_hatches_their_away_days_across_the_chart", async ({ page }) => {

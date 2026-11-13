@@ -29002,7 +29002,7 @@
           },
           "days": {
             "$ref": "#/components/schemas/DaysBody",
-            "description": "The days it is about; for *Away* about a person the reader does not see by name, the days of\nthe bar, so no away day is told."
+            "description": "The days it is about; for *Days without work*, the days of the bar."
           },
           "due_needed": {
             "type": ["string", "null"],
@@ -29077,7 +29077,7 @@
             "items": {
               "$ref": "#/components/schemas/WayOut"
             },
-            "description": "The ways out that fit it, in the order they are offered; only `keep-and-accept` for *Away*\nabout a person the reader does not see by name."
+            "description": "The ways out that fit it, in the order they are offered; only `keep-and-accept` for *Days\nwithout work*."
           },
           "worst_day": {
             "type": ["string", "null"],
@@ -33757,8 +33757,8 @@
       },
       "WarningKind": {
         "type": "string",
-        "description": "The kind of a plan warning: the person on the bar is away, not enough days before the due date, a delay along a dependency or after a sub-issue, or too much at once for the person.",
-        "enum": ["away", "not-enough-days", "delay", "too-much-at-once"]
+        "description": "The kind of a plan warning: the person on the bar is away, not enough days before the due date, a delay along a dependency or after a sub-issue, too much at once for the person, or days without work on the weekdays of the bar.",
+        "enum": ["away", "not-enough-days", "delay", "too-much-at-once", "days-without-work"]
       },
       "WayOut": {
         "type": "string",

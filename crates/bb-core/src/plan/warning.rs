@@ -1,4 +1,5 @@
-//! The four plan warnings (PLAN-13, ADR-0030, decision 5, ADR-0043, decisions 5 and 7), one enum.
+//! The plan warnings (PLAN-13, ADR-0030, decision 5 and amendment M8, ADR-0043, decisions 5 and 7),
+//! one enum.
 //! A warning names issues by their IDs and no person at all: the use case shows them as the reader
 //! may know them, and leaves a warning out when the reader may not see an issue in it. Warnings
 //! never move anything: every way out is a person's choice.
@@ -29,6 +30,10 @@ words! {
         Delay => "delay",
         /// The person on the bar has more planned on a day in the project than their share there.
         TooMuchAtOnce => "too-much-at-once",
+        /// The bar has days without work on its weekdays: away days, public holidays and days off
+        /// alike. The one warning about days without work for a reader who does not see the person
+        /// on the bar, so it never tells which they are (ADR-0030, amendment M8).
+        DaysWithoutWork => "days-without-work",
     }
     messages sentence = "plan-warning.";
 }
@@ -58,12 +63,8 @@ words_in_api!(
 
 words_in_api!(
     WarningKind,
-    "The kind of a plan warning: the person on the bar is away, not enough days before the due date, a delay along a dependency or after a sub-issue, or too much at once for the person."
+    "The kind of a plan warning: the person on the bar is away, not enough days before the due date, a delay along a dependency or after a sub-issue, too much at once for the person, or days without work on the weekdays of the bar."
 );
-
-/// The sentence of *Away* for a person the reader may not see by name: *"the assigned person is
-/// away"* (ADR-0030, decision 5).
-pub const AWAY_NAMELESS: MessageKey = crate::derived_key!("plan-warning.", "away-hidden");
 
 /// The sentence of *Delay* of a goal after one of its sub-issues (ADR-0043, decision 7).
 pub const DELAY_OF_GOAL: MessageKey = crate::derived_key!("plan-warning.", "delay-goal");
@@ -123,6 +124,12 @@ pub enum Warning {
         /// issue on the day after it.
         after: Date,
     },
+    /// The bar has days without work on its weekdays: away, a public holiday or a day off, which the
+    /// warning does not tell apart.
+    DaysWithoutWork {
+        /// The days of the bar.
+        days: Days,
+    },
 }
 
 impl Warning {
@@ -134,16 +141,15 @@ impl Warning {
             Self::NotEnoughDays(_) => WarningKind::NotEnoughDays,
             Self::Delay(_) => WarningKind::Delay,
             Self::TooMuchAtOnce { .. } => WarningKind::TooMuchAtOnce,
+            Self::DaysWithoutWork { .. } => WarningKind::DaysWithoutWork,
         }
     }
 
-    /// The sentence of the warning: the message of its kind, the sentence of a goal for a delay
-    /// after a sub-issue, and the sentence that names nobody for the away time of a person the
-    /// reader may not see by name (ADR-0030, decision 5: *"the assigned person is away"*).
+    /// The sentence of the warning: the message of its kind, and the sentence of a goal for a delay
+    /// after a sub-issue.
     #[must_use]
-    pub const fn sentence(&self, person_named: bool) -> MessageKey {
+    pub const fn sentence(&self) -> MessageKey {
         match self {
-            Self::Away { .. } if !person_named => AWAY_NAMELESS,
             Self::Delay(Delay::SubIssue { .. }) => DELAY_OF_GOAL,
             _ => self.kind().sentence(),
         }
@@ -167,6 +173,8 @@ impl Warning {
             Self::Delay(Delay::Dependency { .. }) => vec![MoveItAfter, KeepAndAccept],
             Self::Delay(Delay::SubIssue { .. }) => vec![MakeItLonger, KeepAndAccept],
             Self::TooMuchAtOnce { .. } => vec![MoveItAfter, GiveToSomeoneElse, KeepAndAccept],
+            // Moving or lengthening the issue would tell which days are away.
+            Self::DaysWithoutWork { .. } => vec![KeepAndAccept],
         }
     }
 
@@ -177,7 +185,9 @@ impl Warning {
             Self::Away { due_needed, .. } => *due_needed,
             Self::NotEnoughDays(shortfall) => shortfall.due_needed,
             Self::Delay(Delay::SubIssue { due_needed, .. }) => Some(*due_needed),
-            Self::Delay(Delay::Dependency { .. }) | Self::TooMuchAtOnce { .. } => None,
+            Self::Delay(Delay::Dependency { .. })
+            | Self::TooMuchAtOnce { .. }
+            | Self::DaysWithoutWork { .. } => None,
         }
     }
 
@@ -189,7 +199,9 @@ impl Warning {
             Self::Delay(Delay::Dependency { after, .. }) | Self::TooMuchAtOnce { after, .. } => {
                 Some(*after)
             }
-            Self::NotEnoughDays(_) | Self::Delay(Delay::SubIssue { .. }) => None,
+            Self::NotEnoughDays(_)
+            | Self::Delay(Delay::SubIssue { .. })
+            | Self::DaysWithoutWork { .. } => None,
         }
     }
 
@@ -202,6 +214,27 @@ impl Warning {
             _ => None,
         }
     }
+}
+
+/// *Days without work*: a bar whose dates people set has, on one of its weekdays (Monday to Friday
+/// by the calendar, not by the person's usual days), a day on which its person does not work: away,
+/// a public holiday or not a usual work day. It is the same warning for all three, so it tells none
+/// of them; a bar that *Plan by effort* worked out grows around such days and has no warning.
+#[must_use]
+pub fn days_without_work(bar: &Bar, days: &[DayMinutes]) -> Option<Warning> {
+    if bar.worked_out != WorkedOut::Neither {
+        return None;
+    }
+    days.iter()
+        .any(|day| {
+            bar.days.contains(day.date)
+                && !matches!(
+                    day.date.weekday(),
+                    jiff::civil::Weekday::Saturday | jiff::civil::Weekday::Sunday
+                )
+                && day.minutes == 0
+        })
+        .then_some(Warning::DaysWithoutWork { days: bar.days })
 }
 
 /// *Away*: the days of a bar whose dates people set on which its person on the bar is away. A bar

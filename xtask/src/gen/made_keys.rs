@@ -15,7 +15,7 @@ use bb_core::message::MessageKey;
 use bb_core::notification::NotificationKind;
 use bb_core::own_fields::{ChoiceColor, FieldFor, FieldType, Look};
 use bb_core::people_kinds::PeopleKind;
-use bb_core::plan::warning::{AWAY_NAMELESS, DELAY_OF_GOAL, WarningKind, WayOut};
+use bb_core::plan::warning::{DELAY_OF_GOAL, WarningKind, WayOut};
 use bb_core::readable_id::IdMode;
 use bb_core::time::entry::StarterField;
 use bb_core::working_time::Preset;
@@ -54,7 +54,7 @@ fn plan_keys() -> Vec<Made> {
         key: kind.sentence(),
         word: format!("the plan warning `{}`", kind.code()),
     });
-    let others = [AWAY_NAMELESS, DELAY_OF_GOAL].into_iter().map(|key| Made {
+    let others = [DELAY_OF_GOAL].into_iter().map(|key| Made {
         key,
         word: format!("the sentence of a plan warning `{key}`"),
     });

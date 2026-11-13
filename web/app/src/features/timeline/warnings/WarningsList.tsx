@@ -15,6 +15,18 @@ export interface WarningsListProps extends WaysOfWarning {
   readonly onShow: (issue: string) => void;
 }
 
+/**
+ * The sentence that ends the list (UX §4.7): about away times where the list has *Away*, and about
+ * days without work where it has only the neutral warning of a person the reader does not see, so it
+ * names no absence there.
+ */
+function closingOf(warnings: readonly PlanWarning[]): string {
+  const neutral =
+    warnings.some((warning) => warning.kind === "days-without-work") &&
+    !warnings.some((warning) => warning.kind === "away");
+  return neutral ? t("timeline.warnings-closing-neutral") : t("timeline.warnings-closing");
+}
+
 /** The warnings in the order of the list: the open ones, then the accepted ones, faded, at the end. */
 function inListOrder(warnings: readonly PlanWarning[]): readonly PlanWarning[] {
   return [
@@ -90,7 +102,7 @@ export function WarningsList({ warnings, ...item }: WarningsListProps) {
           ))}
         </ul>
       )}
-      <p {...partOf(part.muted)}>{t("timeline.warnings-closing")}</p>
+      <p {...partOf(part.muted)}>{closingOf(warnings)}</p>
     </section>
   );
 }

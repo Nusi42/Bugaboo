@@ -114,6 +114,7 @@ async fn plan_11_a_reader_who_does_not_see_the_person_sees_every_day_without_wor
         let nobody = bar(&page(&mut reader, body.clone()).await?, &key);
         assert_eq!(nobody["person"], Value::Null, "{nobody}");
         assert_no_words(&nobody);
+        assert_eq!(nobody["work_time"], Value::Null, "{nobody}");
         // *Assigned to* hidden by its field level: no hatched day and no warning about the person.
         field_level(
             &site,
@@ -196,9 +197,30 @@ async fn plan_10_the_row_of_a_person_hatches_their_days_as_far_as_work_times_all
     .await
 }
 
+/// The warnings of a kind on an issue of a page.
+fn of_kind<'a>(page: &'a Value, id: &str, kind: &str) -> Vec<&'a Value> {
+    warnings_on(page, id)
+        .into_iter()
+        .filter(|each| each["kind"] == kind)
+        .collect()
+}
+
+/// Accepts the warning of `kind` of an issue, as `browser`.
+async fn accept(browser: &mut Browser, key: &str, kind: &str) -> Result<(), Failure> {
+    let version = issue(browser, key).await?["version"].clone();
+    ok(&browser
+        .send(
+            "POST",
+            &format!("{TIMELINE}/accepted-warnings"),
+            Some(json!({"issue": key, "version": version, "kind": kind, "timeline": {"zoom": "week"}})),
+        )
+        .await?)?;
+    Ok(())
+}
+
 #[tokio::test]
-async fn plan_13_a_warning_about_a_person_not_named_tells_no_away_day() -> TestResult {
-    each_database("plan_13_away_unnamed", async |db| {
+async fn plan_13_a_reader_who_does_not_see_the_person_gets_only_days_without_work() -> TestResult {
+    each_database("plan_13_neutral_warning", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let (mut lea, lea_id) = site
@@ -207,15 +229,15 @@ async fn plan_13_a_warning_about_a_person_not_named_tells_no_away_day() -> TestR
         let key = over_good_friday(&site, &mut ada, &mut lea, lea_id).await?;
         let id = id_of_key(&mut ada, &key).await?;
         let body = ask(&site, MONDAY, END, json!({}));
-        // Ada accepts the warning; the reader sees who accepted by the kind *Authors*.
-        let version = issue(&mut ada, &key).await?["version"].clone();
-        ok(&ada
-            .send(
-                "POST",
-                &format!("{TIMELINE}/accepted-warnings"),
-                Some(json!({"issue": key, "version": version, "kind": "away", "timeline": {"zoom": "week"}})),
-            )
-            .await?)?;
+        // Ada sees Lea: Away, and no warning of days without work.
+        let named = page(&mut ada, body.clone()).await?;
+        assert_eq!(of_kind(&named, &id, "away").len(), 1, "{named}");
+        assert!(
+            of_kind(&named, &id, "days-without-work").is_empty(),
+            "{named}"
+        );
+        // Ada accepts it for everybody; the reader sees who accepted by the kind *Authors*.
+        accept(&mut ada, &key, "days-without-work").await?;
         let (mut reader, _) = site.person(StartingRole::Contributor, "reader").await?;
         site.show_people(&mut ada, StartingRole::Contributor, "work-times", "names")
             .await?;
@@ -225,16 +247,19 @@ async fn plan_13_a_warning_about_a_person_not_named_tells_no_away_day() -> TestR
             site.show_people(&mut ada, StartingRole::Contributor, "authors", level)
                 .await?;
             let seen = page(&mut reader, body.clone()).await?;
-            // The bar tells no more than the warning: its days are hatched without a word.
-            assert_no_words(&bar(&seen, &key));
-            let warning = warnings_on(&seen, &id)
-                .into_iter()
-                .find(|each| each["kind"] == "away")
-                .cloned()
-                .unwrap_or(Value::Null);
-            // "The assigned person is away", with no day: the days are the bar's, and no way out
-            // starts after or ends around the away days.
-            assert_eq!(warning["sentence"], "plan-warning.away-hidden", "{warning}");
+            // The bar tells no more than the warning: its days are hatched without a word, and the
+            // person's time, which would tell which weekdays are absences, is not sent.
+            let shown = bar(&seen, &key);
+            assert_no_words(&shown);
+            assert_eq!(shown["work_time"], Value::Null, "{shown}");
+            // No *Away*: only *Days without work*, over the bar, kept and accepted.
+            assert!(of_kind(&seen, &id, "away").is_empty(), "{seen}");
+            let found = of_kind(&seen, &id, "days-without-work");
+            let warning = found.first().copied().unwrap_or(&Value::Null);
+            assert_eq!(
+                warning["sentence"], "plan-warning.days-without-work",
+                "{warning}"
+            );
             assert_eq!(
                 warning["days"],
                 json!({"first": "2027-03-22", "last": END}),
@@ -243,12 +268,46 @@ async fn plan_13_a_warning_about_a_person_not_named_tells_no_away_day() -> TestR
             assert_eq!(warning["ways_out"], json!(["keep-and-accept"]), "{warning}");
             assert_eq!(warning["move_after"], Value::Null, "{warning}");
             assert_eq!(warning["due_needed"], Value::Null, "{warning}");
-            // Who accepted it is shown as *Who sees people* lets the reader see authors.
             let by = &warning["accepted"]["by"];
-            assert!(by.get("name").is_none() && by.get("id").is_none(), "{warning}");
-            let shown = if level == "hidden" { "someone" } else { "role" };
-            assert_eq!(by["shown"], shown, "{warning}");
+            assert!(
+                by.get("name").is_none() && by.get("id").is_none(),
+                "{warning}"
+            );
+            let shown_as = if level == "hidden" { "someone" } else { "role" };
+            assert_eq!(by["shown"], shown_as, "{warning}");
         }
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn plan_13_days_without_work_fire_for_a_holiday_as_for_an_away_day() -> TestResult {
+    each_database("plan_13_neutral_holiday", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (_lea, lea_id) = site
+            .person_called(StartingRole::TeamMember, "lea", "Lea Lang")
+            .await?;
+        // Thursday and Good Friday 2027: no away day, one public holiday.
+        let key = planned(
+            &site,
+            &mut ada,
+            "Before Easter",
+            json!({"start_date": "2027-03-25", "due_date": "2027-03-26", "assigned_to": [lea_id.to_string()]}),
+        )
+        .await?;
+        let id = id_of_key(&mut ada, &key).await?;
+        let body = ask(&site, MONDAY, END, json!({}));
+        let named = page(&mut ada, body.clone()).await?;
+        assert!(of_kind(&named, &id, "away").is_empty(), "{named}");
+        let (mut reader, _) = site.person(StartingRole::Contributor, "reader").await?;
+        site.show_people(&mut ada, StartingRole::Contributor, "work-times", "names")
+            .await?;
+        site.show_people(&mut ada, StartingRole::Contributor, "assigned-to", "hidden")
+            .await?;
+        let seen = page(&mut reader, body).await?;
+        assert_eq!(of_kind(&seen, &id, "days-without-work").len(), 1, "{seen}");
         Ok(())
     })
     .await

@@ -142,32 +142,15 @@ fn effort_shown(plan: &Plan, issue: &Issue, days: Days) -> Option<EffortShown> {
     })
 }
 
-/// What a warning tells of its days and its ways out.
-struct Told {
-    days: Days,
-    ways_out: Vec<bb_core::plan::warning::WayOut>,
-    move_after: Option<jiff::civil::Date>,
-    due_needed: Option<jiff::civil::Date>,
-}
-
-/// What a warning may tell the reader: all of it, or for *Away* about a person the reader does not
-/// see by name only that the assigned person is away (UX §4.7, *People on the bars*). Then its days
-/// are the bar's, not the away days, and no way out tells them either: *Move it after* would start
-/// after the away days and *Make it longer* would end around them, so only *Keep and accept* is left.
-fn told_of(plan: &Plan, issue: &Issue, warning: &Warning, (days, named): (Days, bool)) -> Told {
-    if named || !matches!(warning, Warning::Away { .. }) {
-        return Told {
-            days,
-            ways_out: warning.ways_out(),
-            move_after: warning.move_after(),
-            due_needed: warning.due_needed(),
-        };
-    }
-    Told {
-        days: plan.bars.get(&issue.id).map_or(days, |bar| bar.days),
-        ways_out: vec![bb_core::plan::warning::WayOut::KeepAndAccept],
-        move_after: None,
-        due_needed: None,
+/// Whether a warning about the person on the bar is told to the reader (ADR-0030, amendment M8, the
+/// maintainer's decision of 2026-11-13): *Away* and *Too much at once* only to a reader who sees the
+/// person (`named`), and *Days without work*, which never tells which days are away, only to a
+/// reader who does not see the person and may know their work times. Every other warning is told.
+fn told_to(plan: &Plan, issue: &Issue, warning: &Warning, named: bool) -> bool {
+    match warning {
+        Warning::Away { .. } | Warning::TooMuchAtOnce { .. } => named,
+        Warning::DaysWithoutWork { .. } => !named && plan.work_times_known(issue),
+        Warning::NotEnoughDays(_) | Warning::Delay(_) => true,
     }
 }
 
@@ -175,7 +158,9 @@ fn told_of(plan: &Plan, issue: &Issue, warning: &Warning, (days, named): (Days, 
 fn warning_days(plan: &Plan, issue: &Issue, warning: &Warning) -> Option<Days> {
     use bb_core::plan::warning::Delay;
     match warning {
-        Warning::Away { days, .. } | Warning::TooMuchAtOnce { days, .. } => Some(*days),
+        Warning::Away { days, .. }
+        | Warning::TooMuchAtOnce { days, .. }
+        | Warning::DaysWithoutWork { days } => Some(*days),
         Warning::Delay(Delay::SubIssue { due_needed, .. }) => {
             issue.due_date.and_then(|due| Days::new(due, *due_needed))
         }
@@ -460,10 +445,11 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
             factor,
             hatched: hatched_days(plan, issue, (bar.days, span), named),
             effort: effort_shown(plan, issue, bar.days),
-            // The person's time tells whose it is: only to a reader who may read *Assigned to*.
+            // The person's time tells whose it is and which weekdays without work are absences: only
+            // to a reader who may read *Assigned to* and sees the person.
             work_time: plan
                 .time_of(issue)
-                .filter(|_| reads(Field::AssignedTo))
+                .filter(|_| named && reads(Field::AssignedTo))
                 .map(|(usual, share)| WorkTimeShown { usual, share }),
         }))
     }
@@ -525,7 +511,9 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
             };
             let names_person_on_bar = matches!(
                 warning,
-                Warning::Away { .. } | Warning::TooMuchAtOnce { .. }
+                Warning::Away { .. }
+                    | Warning::TooMuchAtOnce { .. }
+                    | Warning::DaysWithoutWork { .. }
             );
             // A warning about the person on the bar tells that the issue has one: not to a reader
             // who may not read *Assigned to*, so neither the list nor its count says so.
@@ -541,11 +529,9 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
             };
             let first = plan.person_on_bar(*id);
             let named = names_person(held, first, person.as_ref());
-            // How much a person not named can work is not the reader's to know (UX §4.7).
-            if matches!(warning, Warning::TooMuchAtOnce { .. }) && !named {
+            if !told_to(plan, issue, warning, named) {
                 continue;
             }
-            let told = told_of(plan, issue, warning, (days, named));
             let accepted_by = match accepted.iter().find(|kept| {
                 kept.issue == *id
                     && kept.kind == warning.kind()
@@ -589,14 +575,14 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
             views.push(WarningView {
                 issue: *id,
                 kind: warning.kind(),
-                sentence: warning.sentence(named),
-                days: told.days,
+                sentence: warning.sentence(),
+                days,
                 what: *warning,
                 other,
                 person,
-                ways_out: told.ways_out,
-                move_after: told.move_after,
-                due_needed: told.due_needed,
+                ways_out: warning.ways_out(),
+                move_after: warning.move_after(),
+                due_needed: warning.due_needed(),
                 accepted: accepted_by,
             });
         }

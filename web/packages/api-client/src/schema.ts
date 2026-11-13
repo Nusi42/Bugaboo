@@ -9987,10 +9987,7 @@ export interface components {
        * @description *Too much at once*: the minutes the person can work on that day in the project.
        */
       can_minutes: number | null;
-      /**
-       * @description The days it is about; for *Away* about a person the reader does not see by name, the days of
-       *     the bar, so no away day is told.
-       */
+      /** @description The days it is about; for *Days without work*, the days of the bar. */
       days: components["schemas"]["DaysBody"];
       /**
        * Format: date
@@ -10032,8 +10029,8 @@ export interface components {
       /** @description The key of its sentence in the messages; the screen fills it in with the members below. */
       sentence: string;
       /**
-       * @description The ways out that fit it, in the order they are offered; only `keep-and-accept` for *Away*
-       *     about a person the reader does not see by name.
+       * @description The ways out that fit it, in the order they are offered; only `keep-and-accept` for *Days
+       *     without work*.
        */
       ways_out: components["schemas"]["WayOut"][];
       /**
@@ -12546,10 +12543,10 @@ export interface components {
       words: Record<string, unknown>;
     };
     /**
-     * @description The kind of a plan warning: the person on the bar is away, not enough days before the due date, a delay along a dependency or after a sub-issue, or too much at once for the person.
+     * @description The kind of a plan warning: the person on the bar is away, not enough days before the due date, a delay along a dependency or after a sub-issue, too much at once for the person, or days without work on the weekdays of the bar.
      * @enum {string}
      */
-    WarningKind: "away" | "not-enough-days" | "delay" | "too-much-at-once";
+    WarningKind: "away" | "not-enough-days" | "delay" | "too-much-at-once" | "days-without-work";
     /**
      * @description A way out of a plan warning: move the issue after what is in the way, make it longer, give it to someone else, or keep the plan and accept the warning.
      * @enum {string}

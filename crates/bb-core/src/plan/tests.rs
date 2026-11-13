@@ -452,13 +452,46 @@ fn plan_13_each_warning_offers_the_ways_out_that_fit_it() {
             "{warning:?}"
         );
     }
-    // A person the reader may not see by name is *the assigned person*.
-    let away = Warning::Away {
-        days,
-        due_needed: None,
+    // *Days without work* is only kept and accepted: any other way would tell the days.
+    let neutral = Warning::DaysWithoutWork { days };
+    assert_eq!(neutral.ways_out(), vec![WayOut::KeepAndAccept]);
+    assert_eq!(neutral.sentence(), WarningKind::DaysWithoutWork.sentence());
+}
+
+#[test]
+fn plan_13_days_without_work_fire_alike_for_away_holiday_and_day_off_on_weekdays() {
+    use super::warning::days_without_work;
+    // 8 hours on Monday to Friday, from Monday, 2 November 2026: a bar from Monday to Friday.
+    let bar = Bar {
+        days: Days::new(MONDAY, date(2026, 11, 6)).unwrap(),
+        worked_out: WorkedOut::Neither,
     };
-    assert_eq!(away.sentence(true), WarningKind::Away.sentence());
-    assert_eq!(away.sentence(false).as_str(), "plan-warning.away-hidden");
+    let plain = person_days(MONDAY, 14, 8, 100, &[]);
+    assert_eq!(days_without_work(&bar, &plain), None);
+    // Away on Tuesday, a holiday on Wednesday, a day off on Thursday: the same warning each time.
+    let away = person_days(MONDAY, 14, 8, 100, &[date(2026, 11, 3)]);
+    let mut holiday = plain.clone();
+    holiday[2].holiday = Some(crate::holidays::Holiday::ReformationDay);
+    holiday[2].minutes = 0;
+    let mut day_off = plain.clone();
+    day_off[3].minutes = 0;
+    for days in [&away, &holiday, &day_off] {
+        assert_eq!(
+            days_without_work(&bar, days),
+            Some(Warning::DaysWithoutWork { days: bar.days })
+        );
+    }
+    // A weekend inside a bar is no warning, and a bar that Plan by effort worked out has none.
+    let over_weekend = Bar {
+        days: Days::new(date(2026, 11, 6), date(2026, 11, 9)).unwrap(),
+        worked_out: WorkedOut::Neither,
+    };
+    assert_eq!(days_without_work(&over_weekend, &plain), None);
+    let worked = Bar {
+        worked_out: WorkedOut::Due,
+        ..bar
+    };
+    assert_eq!(days_without_work(&worked, &away), None);
 }
 
 #[test]

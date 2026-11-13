@@ -7,16 +7,17 @@ import { daysBetween } from "../../../shared/clock.ts";
 export type HatchedDay = Schema<"HatchedDayBody">;
 
 /**
- * What a hatched day is called: *Away* (only ever that, never why), a holiday by its name, or not a
- * work day. The server sends no word for the days of a person the reader may not see (ADR-0030): an
- * away day without its halves and a holiday without its name, and no day off, so they stay hatched
- * without a word.
+ * What a hatched day is called: *Away* (only ever that, never why), a holiday by its name, not a
+ * work day, or, for a person the reader does not see, only *Day without work*: the server sends that
+ * one neutral kind for all three, so nobody learns that a day was an absence (ADR-0030, amendment
+ * M8).
  */
 export function hatchedText(day: HatchedDay): string | undefined {
-  if (day.kind === "holiday") {
-    return day.holiday === null
-      ? undefined
-      : t("timeline.holiday", { name: t(`holiday.${day.holiday}`) });
+  if (day.kind === "no-work") {
+    return t("timeline.legend-no-work");
+  }
+  if (day.kind === "holiday" && day.holiday !== null) {
+    return t("timeline.holiday", { name: t(`holiday.${day.holiday}`) });
   }
   if (day.kind === "day-off") {
     return t("timeline.day-off");
