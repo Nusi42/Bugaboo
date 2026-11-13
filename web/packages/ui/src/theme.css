@@ -7758,10 +7758,12 @@ textarea,
   border-radius: var(--r-ctl);
   background: var(--bg-raised);
   width: 100%;
-  padding: var(--space-2) var(--pad-control);
+  padding: 0 var(--pad-control);
   color: var(--fg);
-  font-family: var(--font-ui);
-  font-size: var(--fs-ui);
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
 }
 
 [data-part="in-place.input"]:focus {

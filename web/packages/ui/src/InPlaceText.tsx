@@ -94,6 +94,13 @@ export function InPlaceText({
   onSave,
 }: InPlaceTextProps) {
   const [typing, setTyping] = useState(false);
+  // What was saved shows at once, until the value changes: the change reaches the value a moment
+  // later, and the old text would stand there for a frame in between (UX §6.4).
+  const [saved, setSaved] = useState<{ readonly from: string; readonly text: string } | null>(null);
+  if (saved !== null && saved.from !== value) {
+    setSaved(null);
+  }
+  const shown = saved === null || saved.from !== value ? value : saved.text;
   if (readOnly) {
     return <span {...partOf(part.inPlaceText)}>{value}</span>;
   }
@@ -106,6 +113,7 @@ export function InPlaceText({
         onDone={(next) => {
           setTyping(false);
           if (next !== undefined) {
+            setSaved({ from: value, text: next });
             onSave(next);
           }
         }}
@@ -121,7 +129,7 @@ export function InPlaceText({
         setTyping(true);
       }}
     >
-      {value}
+      {shown}
     </button>
   );
 }
