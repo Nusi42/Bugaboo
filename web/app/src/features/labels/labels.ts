@@ -6,8 +6,9 @@ import { api } from "../../shared/api.ts";
 import { fieldList, linesFrom, pageSize, usePaged } from "../../shared/paged.ts";
 import { queryClient } from "../../shared/query-client.ts";
 import { queryKeys, refreshLabelReads, refreshReads, reread } from "../../shared/query-keys.ts";
-import { listRowsChanged, versionCounted } from "../issues/index.ts";
+import { counting, listRowsChanged, versionCounted } from "../issues/index.ts";
 import { useLabels, type Label, type LabelGroup } from "./label-lists.ts";
+import { newestAnswer } from "./newest-answer.ts";
 
 export { useLabels, type Label, type LabelGroup } from "./label-lists.ts";
 
@@ -150,18 +151,23 @@ export async function takeLabelOff(issue: string, label: string): Promise<IssueL
  * now, its version and when it was last changed: the row shows them at once, *Last changed* and the
  * rows of the lists take them from the answer, and none of them is read again (UX §6.4: the change
  * shows in place), unless somebody else changed the issue in between (`versionCounted`). A list
- * grouped or filtered by labels keeps the row in its group until it is read again. Read again, in place, is only what the answer does not hold: the history of this
- * issue, the lists of labels and the tags offered in its project. The pages of tags read a tag that
- * a new name made when they are opened next.
+ * grouped or filtered by labels keeps the row in its group until it is read again. An answer that
+ * comes late never takes the row back. Read again, in place, is only what the answer does not hold:
+ * the history of this issue, the lists of labels and the tags offered in its project. The pages of
+ * tags read a tag that a new name made when they are opened next.
  */
 export function afterLabelsAndTags(issue: string, project: string, made: IssueLabelsAndTags): void {
-  queryClient.setQueryData(labelsAndTagsOptions(issue).queryKey, made);
-  if (versionCounted(issue, { version: made.version, updatedAt: made.updated_at })) {
-    listRowsChanged(made.issue, {
-      version: made.version,
-      labels: made.labels,
-      updated_at: made.updated_at,
-    });
+  // An answer that comes late (an older version than the row shows) never takes the row back.
+  queryClient.setQueryData(labelsAndTagsOptions(issue).queryKey, (known: unknown) =>
+    newestAnswer(known, made),
+  );
+  const stood = versionCounted(issue, { version: made.version, updatedAt: made.updated_at });
+  if (stood !== counting.outOfStep) {
+    listRowsChanged(
+      made.issue,
+      { version: made.version, labels: made.labels, updated_at: made.updated_at },
+      stood === counting.late,
+    );
   }
   reread({ queryKey: queryKeys.history.listsOf(issue) });
   reread({ queryKey: queryKeys.history.changedByOf(issue) });

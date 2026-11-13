@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { queryClient } from "../../shared/query-client.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
-import { listRowsChanged, versionCounted, versionNow } from "./issue-requests.ts";
+import { counting, listRowsChanged, versionCounted, versionNow } from "./issue-requests.ts";
 import type { IssueDetail } from "./slots.ts";
 
 const address = "WEB-142";
@@ -22,7 +22,9 @@ afterEach(() => {
 describe("adr_0017 a tag or label counts the version up and the page knows it at once", () => {
   it("writes the version the server counted to into the issue on screen", () => {
     queryClient.setQueryData(queryKeys.issues.one(address), detail);
-    expect(versionCounted(address, { version: 5, updatedAt: "2026-11-13T10:00:00Z" })).toBe(true);
+    expect(versionCounted(address, { version: 5, updatedAt: "2026-11-13T10:00:00Z" })).toBe(
+      counting.inStep,
+    );
     // A status change made right after is made on the new version, not on the old one.
     expect(versionNow(address, { version: 1 })).toBe(5);
   });
@@ -31,7 +33,9 @@ describe("adr_0017 a tag or label counts the version up and the page knows it at
     queryClient.setQueryData(queryKeys.issues.one(address), detail);
     versionCounted(address, { version: 5, updatedAt: "2026-11-13T10:00:05Z" });
     versionCounted(address, { version: 6, updatedAt: "2026-11-13T10:00:06Z" });
-    versionCounted(address, { version: 5, updatedAt: "2026-11-13T10:00:05Z" });
+    expect(versionCounted(address, { version: 5, updatedAt: "2026-11-13T10:00:05Z" })).toBe(
+      counting.late,
+    );
     expect(versionNow(address, { version: 1 })).toBe(6);
   });
 
@@ -46,7 +50,9 @@ describe("adr_0017 a tag or label counts the version up and the page knows it at
     queryClient.setQueryData(list, { pages: [{ items: [] }], pageParams: [null] });
     // On screen is version 4; the tag made it 7, so 5 and 6 were made by somebody else: the page
     // must not take 7 as its own, or the next save would overwrite that change (ADR-0017).
-    expect(versionCounted(address, { version: 7, updatedAt: "2026-11-13T10:00:00Z" })).toBe(false);
+    expect(versionCounted(address, { version: 7, updatedAt: "2026-11-13T10:00:00Z" })).toBe(
+      counting.outOfStep,
+    );
     expect(versionNow(address, { version: 1 })).toBe(4);
     await vi.waitFor(() => {
       expect(queryClient.getQueryState(queryKeys.issues.one(address))?.isInvalidated).toBe(true);
@@ -86,5 +92,13 @@ describe("ux_6_4 a change in place shows its answer without reading the issue ag
     expect(queryClient.getQueryData(key)).toEqual({
       pages: [{ items: [{ id: "i1", version: 5, labels }] }, { items: [newer] }],
     });
+  });
+
+  it("leaves a row without its version alone when the answer came late", () => {
+    const key = queryKeys.search.found("", "p1", "id,labels");
+    const row = { id: "i1", labels: [] };
+    queryClient.setQueryData(key, { pages: [{ items: [row] }] });
+    listRowsChanged("i1", { version: 5, labels: [{ id: "l1", name: "Urgent" }] }, true);
+    expect(queryClient.getQueryData(key)).toEqual({ pages: [{ items: [row] }] });
   });
 });

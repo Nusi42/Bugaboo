@@ -23,7 +23,7 @@ export { priorityChoices } from "./issue-choices.ts";
 export { useProjectStatusChanges } from "./use-project-status-changes.ts";
 export { choiceIdOf, choiceLabelOf, type ProjectChange } from "./status-choices.ts";
 export { inLayoutOrder } from "./details-order.ts";
-export { listRowsChanged, versionCounted } from "./issue-requests.ts";
+export { counting, listRowsChanged, versionCounted } from "./issue-requests.ts";
 export { rowStatusOf, type RowChange } from "./row-status.ts";
 export type { SaveLongText } from "./use-description.ts";
 export {

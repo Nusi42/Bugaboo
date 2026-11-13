@@ -60,6 +60,17 @@ export function versionNow(
   return versionOf(isDetail(known) ? known.issue : shown);
 }
 
+/** How the answer of a change in place stood to the version on screen (`versionCounted`). */
+export const counting = {
+  /** The very next version, or no issue on screen to tell: the answer is written. */
+  inStep: "in step",
+  /** The page knows this version or a newer one already: an answer that came late. */
+  late: "late",
+  /** It skips a version: somebody else changed the issue in between, which is read again. */
+  outOfStep: "out of step",
+} as const;
+export type Counting = (typeof counting)[keyof typeof counting];
+
 /** What the answer of a change in place says about the issue now. */
 export interface Counted {
   readonly version: number;
@@ -75,23 +86,27 @@ export interface Counted {
  * next version: when it skips one, somebody else changed the issue in between, and taking the new
  * version as the page's own would let the next save overwrite that change unseen (ADR-0017), so the
  * issue and the lists are read again instead. An answer that comes in late never takes the version
- * back. Says whether the answer was in step (written, late, or no issue on screen).
+ * back. Says how the answer stood: the very next version (or no issue on screen to tell), one that
+ * came late, or one out of step.
  */
-export function versionCounted(address: string, { version, updatedAt }: Counted): boolean {
+export function versionCounted(address: string, { version, updatedAt }: Counted): Counting {
   const known: unknown = queryClient.getQueryData(queryKeys.issues.one(address));
-  if (!isDetail(known) || (known.issue.version ?? 0) >= version) {
-    return true;
+  if (!isDetail(known)) {
+    return counting.inStep;
+  }
+  if ((known.issue.version ?? 0) >= version) {
+    return counting.late;
   }
   if (version !== (known.issue.version ?? 0) + 1) {
     reread({ queryKey: queryKeys.issues.one(address) });
     reread({ queryKey: queryKeys.issues.lists() });
-    return false;
+    return counting.outOfStep;
   }
   queryClient.setQueryData(queryKeys.issues.one(address), {
     ...known,
     issue: { ...known.issue, version, updated_at: updatedAt },
   });
-  return true;
+  return counting.inStep;
 }
 
 /** A page of a list of issues, as the cache keeps it: the items with the fields the list asked for. */
@@ -127,21 +142,29 @@ function withChanged(
   return { ...item, ...asked };
 }
 
-/** Whether a row knows this version of its issue, or a newer one, already. */
-function newerThan(item: Readonly<Record<string, unknown>>, version: number): boolean {
-  return typeof item.version === "number" && item.version >= version;
+/**
+ * Whether a row knows this version of its issue, or a newer one, already. A row without its version
+ * cannot tell: it takes the answer only when the answer is not one that came late.
+ */
+function newerThan(
+  item: Readonly<Record<string, unknown>>,
+  version: number,
+  late: boolean,
+): boolean {
+  return typeof item.version === "number" ? item.version >= version : late;
 }
 
 /**
  * The row of one issue in every list that is kept, changed from the answer of a change in place
  * instead of reading the lists again (UX §6.4): only the fields that each row has, its version among
  * them. A row that knows the answer's version or a newer one already is left as it is (an answer
- * that came late). A list grouped or filtered by what changed keeps the row where it stands until it
+ * that came late), and so is a row without its version when the answer came late. A list grouped or filtered by what changed keeps the row where it stands until it
  * is read again, by the rule that nothing moves.
  */
 export function listRowsChanged(
   id: string,
   changed: Readonly<{ version: number } & Record<string, unknown>>,
+  late = false,
 ): void {
   queryClient.setQueriesData({ queryKey: queryKeys.issues.lists() }, (known: unknown) =>
     isListPages(known)
@@ -150,7 +173,7 @@ export function listRowsChanged(
           pages: known.pages.map((page) => ({
             ...page,
             items: page.items.map((item) =>
-              item.id === id && !newerThan(item, changed.version)
+              item.id === id && !newerThan(item, changed.version, late)
                 ? withChanged(item, changed)
                 : item,
             ),
