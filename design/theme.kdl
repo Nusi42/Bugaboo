@@ -881,19 +881,9 @@ mixin "marked" {
 mixin "control-box" {
     box-sizing border-box
     min-height "$size-control"
-    border "$border-width solid $fg-muted"
+    border "$border-width solid $border-control"
     border-radius "$r-ctl"
     background "$bg-raised"
-}
-
-// From right to left the start edge is on the right, so the actions of each side slide in from the other physical
-// edge; the component says the page is written so (`rtl`), from the direction the browser works out.
-part "swipe-actions[variant=start][state=rtl]" {
-    animation-name "from-end"
-}
-
-part "swipe-actions[variant=end][state=rtl]" {
-    animation-name "from-start"
 }
 
 // The hint under a control or beside a row of a list: 13 and muted (UX §7.3: "13 field names, times, counts,
@@ -7467,7 +7457,7 @@ part "swipe-actions" {
     flex-basis "100%"
     grid-column "1 / -1"
     padding "$space-2"
-    border "$border-width solid $border-control"
+    border "$border-width solid $fg-muted"
     border-radius "$r-ctl"
     background "$bg-raised"
 }
@@ -7480,6 +7470,16 @@ part "swipe-actions[variant=start]" {
 part "swipe-actions[variant=end]" {
     justify-content flex-end
     animation "from-end $motion-base $ease-out"
+}
+
+// From right to left the start edge is on the right, so the actions of each side slide in from the other physical
+// edge; the component says the page is written so (`rtl`), from the direction the browser works out.
+part "swipe-actions[variant=start][state=rtl]" {
+    animation-name "from-end"
+}
+
+part "swipe-actions[variant=end][state=rtl]" {
+    animation-name "from-start"
 }
 
 // The page of an issue scrolls under the bar of actions: a shadow at the end of the page while there is more below it

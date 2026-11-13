@@ -1230,14 +1230,6 @@
   }
 }
 
-[data-part="swipe-actions"][data-variant~="start"][data-state~="rtl"] {
-  animation-name: from-end;
-}
-
-[data-part="swipe-actions"][data-variant~="end"][data-state~="rtl"] {
-  animation-name: from-start;
-}
-
 html,
 body,
 #root {
@@ -1319,7 +1311,7 @@ textarea,
   gap: var(--space-2);
   box-sizing: border-box;
   min-height: var(--size-control);
-  border: var(--border-width) solid var(--fg-muted);
+  border: var(--border-width) solid var(--border-control);
   border-radius: var(--r-ctl);
   background: var(--bg-raised);
   padding: var(--space-1) var(--pad-control);
@@ -1558,7 +1550,7 @@ textarea,
 [data-part="field.input"] {
   box-sizing: border-box;
   min-height: var(--size-control);
-  border: var(--border-width) solid var(--fg-muted);
+  border: var(--border-width) solid var(--border-control);
   border-radius: var(--r-ctl);
   background: var(--bg-raised);
   width: 100%;
@@ -1739,7 +1731,7 @@ textarea,
   gap: var(--space-2);
   box-sizing: border-box;
   min-height: var(--size-control);
-  border: var(--border-width) solid var(--fg-muted);
+  border: var(--border-width) solid var(--border-control);
   border-radius: var(--r-ctl);
   background: var(--bg-raised);
   padding: var(--space-1) var(--pad-control);
@@ -2570,7 +2562,7 @@ textarea,
   gap: var(--space-2);
   box-sizing: border-box;
   min-height: var(--size-control);
-  border: var(--border-width) solid var(--fg-muted);
+  border: var(--border-width) solid var(--border-control);
   border-radius: var(--r-ctl);
   background: var(--bg-raised);
   padding: 0 var(--pad-control);
@@ -4926,7 +4918,7 @@ textarea,
   gap: var(--space-2);
   box-sizing: border-box;
   min-height: var(--size-control);
-  border: var(--border-width) solid var(--fg-muted);
+  border: var(--border-width) solid var(--border-control);
   border-radius: var(--r-ctl);
   background: var(--bg-raised);
   padding: 0 var(--space-3);
@@ -7364,7 +7356,7 @@ textarea,
 [data-part="in-place.input"] {
   box-sizing: border-box;
   min-height: var(--size-control);
-  border: var(--border-width) solid var(--fg-muted);
+  border: var(--border-width) solid var(--border-control);
   border-radius: var(--r-ctl);
   background: var(--bg-raised);
   width: 100%;
@@ -7707,7 +7699,7 @@ textarea,
   flex-basis: 100%;
   grid-column: 1 / -1;
   padding: var(--space-2);
-  border: var(--border-width) solid var(--border-control);
+  border: var(--border-width) solid var(--fg-muted);
   border-radius: var(--r-ctl);
   background: var(--bg-raised);
 }
@@ -7720,6 +7712,14 @@ textarea,
 [data-part="swipe-actions"][data-variant~="end"] {
   justify-content: flex-end;
   animation: from-end var(--motion-base) var(--ease-out);
+}
+
+[data-part="swipe-actions"][data-variant~="start"][data-state~="rtl"] {
+  animation-name: from-end;
+}
+
+[data-part="swipe-actions"][data-variant~="end"][data-state~="rtl"] {
+  animation-name: from-start;
 }
 
 @supports (animation-timeline: scroll()) {
@@ -7754,7 +7754,7 @@ textarea,
 [data-part="key-capture-field.box"] {
   box-sizing: border-box;
   min-height: var(--size-control);
-  border: var(--border-width) solid var(--fg-muted);
+  border: var(--border-width) solid var(--border-control);
   border-radius: var(--r-ctl);
   background: var(--bg-raised);
   width: 100%;
@@ -9408,7 +9408,7 @@ textarea,
 [data-part="search-filter"] {
   box-sizing: border-box;
   min-height: var(--size-control);
-  border: var(--border-width) solid var(--fg-muted);
+  border: var(--border-width) solid var(--border-control);
   border-radius: var(--r-ctl);
   background: var(--bg-raised);
   font-size: var(--fs-ui);
@@ -9591,7 +9591,7 @@ textarea,
 [data-part="search-text"] {
   box-sizing: border-box;
   min-height: var(--size-control);
-  border: var(--border-width) solid var(--fg-muted);
+  border: var(--border-width) solid var(--border-control);
   border-radius: var(--r-ctl);
   background: var(--bg-raised);
   width: 100%;
@@ -10157,7 +10157,7 @@ textarea,
 [data-part="sheet.input"] {
   box-sizing: border-box;
   min-height: var(--size-control);
-  border: var(--border-width) solid var(--fg-muted);
+  border: var(--border-width) solid var(--border-control);
   border-radius: var(--r-ctl);
   background: var(--bg-raised);
   font-family: var(--font-mono);
