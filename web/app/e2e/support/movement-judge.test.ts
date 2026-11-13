@@ -10,7 +10,7 @@ function box(x: number, y: number, width: number, height: number): Box {
 
 /** A landmark that went from one box to another in one step. */
 function moved(name: string, from: Box, last: Box): Moved {
-  return { name, from, to: last, frame: 1, steps: 1, last };
+  return { name, from, to: last, frame: 1, steps: 1, last, turns: 0 };
 }
 
 /** A measure where only these landmarks moved and nothing else happened. */
@@ -85,5 +85,10 @@ describe("ux_01 the measure holds what is named nowhere, what came in and what g
     const twice = { ...labels(700), steps: 2 };
     const found = wrongIn(movementOf([tags, twice]), { grows: ["tags"], follows: ["labels"] });
     expect(found.moved).toEqual([twice]);
+  });
+
+  it("fails a part that changes and shrinks and grows back, even when it ends as it should", () => {
+    const bouncing = { ...tags, turns: 2 };
+    expect(wrongIn(movementOf([bouncing]), { grows: ["tags"] }).moved).toEqual([bouncing]);
   });
 });

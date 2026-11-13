@@ -2,8 +2,7 @@ import { expect, type Locator, type Page } from "@playwright/test";
 
 import { t } from "@bugaboo/messages";
 
-import { type Landmark, landmarkOf, partLandmark } from "./movement.ts";
-import { layoutOf } from "./layout.ts";
+import { LANDMARK, type Landmark, landmarkOf, partLandmark } from "./movement.ts";
 import { detailRow } from "./parts.ts";
 
 /**
@@ -48,33 +47,115 @@ async function mainParts(page: Page): Promise<readonly MainPart[]> {
   }));
 }
 
+/** Where a landmark stands now, by its edges. */
+interface Placed {
+  readonly name: string;
+  readonly top: number;
+  readonly bottom: number;
+  readonly left: number;
+  readonly right: number;
+}
+
+/** Where each landmark stands now. */
+function placesOf(page: Page, landmarks: readonly Landmark[]): Promise<readonly Placed[]> {
+  return page.evaluate(
+    (marks: readonly (readonly [string, string])[]) =>
+      marks.map((mark): Placed => {
+        const [name, selector] = mark;
+        const box = document.querySelector(selector)?.getBoundingClientRect();
+        return {
+          name,
+          top: box?.top ?? 0,
+          bottom: box?.bottom ?? 0,
+          left: box?.left ?? 0,
+          right: box?.right ?? 0,
+        };
+      }),
+    landmarks.map((landmark) => [landmark.name, landmark.selector] as const),
+  );
+}
+
+/** Whether one place holds the other (a pixel of rounding aside). */
+function holdsPlace(outer: Placed, inner: Placed): boolean {
+  return (
+    outer.top <= inner.top + 1 &&
+    outer.bottom >= inner.bottom - 1 &&
+    outer.left <= inner.left + 1 &&
+    outer.right >= inner.right - 1
+  );
+}
+
+/** Whether a place stands under another, in its column. */
+function standsUnder(place: Placed, above: Placed): boolean {
+  return (
+    above.name !== place.name &&
+    above.bottom <= place.top + 1 &&
+    above.left < place.right &&
+    place.left < above.right
+  );
+}
+
 /**
- * The landmarks of an issue page around the row of *Tags*: the head, the title, the heading of the
- * Details and their first row, and each part of the main column above the History stand still. The
- * row of *Tags* changes and grows, with the list of the Details around it, and so does the History,
- * which the change adds a line to. The row of *Labels* under it is pushed by exactly that. On a phone
- * the main column stands under the Details, so each part of it is pushed by exactly that too.
+ * What a change may grow and push: the changed part, what holds it and the History grow; what
+ * stands under any of them, in its column, may be pushed (by exactly that, as the measure checks).
  */
-export async function issuePageLandmarks(page: Page): Promise<ScreenLandmarks> {
-  const tags = await landmarkOf(detailRow(page, t("labels.tags-heading")), "the row of Tags");
-  const labels = await landmarkOf(detailRow(page, t("labels.labels-heading")), "the row of Labels");
-  const details = partLandmark("the rows of the Details", "name-values");
+function aroundTheChange(
+  places: readonly Placed[],
+  changed: string,
+  history: readonly string[],
+): Pick<ScreenLandmarks, "grows" | "follows"> {
+  const target = places.find((place) => place.name === changed);
+  const holders = places.filter(
+    (place) => target !== undefined && place.name !== changed && holdsPlace(place, target),
+  );
+  const grows = [changed, ...holders.map((place) => place.name), ...history];
+  const growing = places.filter((place) => grows.includes(place.name));
+  // What stands under a part that grows may be pushed, the History too when it grows itself.
+  const follows = places.filter(
+    (place) =>
+      place.name !== changed &&
+      !holders.includes(place) &&
+      growing.some((above) => standsUnder(place, above)),
+  );
+  return { grows, follows: follows.map((place) => place.name) };
+}
+
+/**
+ * The landmarks of an issue page around the part a person changes (`changed`, a row of the Details,
+ * the title, the status, the History): the head, the title, the heading of the Details, each row of
+ * the Details, the list of them and each part of the main column. What changes may grow: the part
+ * itself, what holds it, and the History, which the change adds a line to. What stands under a part
+ * that grows, in its column, may be pushed by exactly that growth (the measure checks the amount);
+ * everything else stands still.
+ */
+export async function issuePageLandmarks(
+  page: Page,
+  changed: Locator = detailRow(page, t("labels.tags-heading")),
+): Promise<ScreenLandmarks> {
+  const rows = await page.locator("[data-part='issue-details'] [data-part='name-value']").all();
+  const details = await Promise.all(
+    rows.map((row, index) => landmarkOf(row, `row ${String(index + 1)} of the Details`)),
+  );
   const main = await mainParts(page);
-  const phone = layoutOf(page) === "phone";
+  // A part that is a landmark already (a row of the Details, a part of the main column) keeps its name.
+  const named = await changed.evaluate((element, mark) => element.getAttribute(mark), LANDMARK);
+  const known = [...details, ...main.map((each) => each.landmark)].find(
+    (landmark) => landmark.name === named,
+  );
+  const target = known ?? (await landmarkOf(changed, "the part that changes"));
+  const all = [
+    ...(known === undefined ? [target] : []),
+    partLandmark("the head", "issue-head"),
+    partLandmark("the title", "issue-title"),
+    partLandmark("the heading of the Details", "issue-details.heading"),
+    partLandmark("the rows of the Details", "name-values"),
+    ...details,
+    ...main.map((each) => each.landmark),
+  ];
   const history = main.filter((each) => each.fromHistory).map((each) => each.landmark.name);
   return {
-    all: [
-      partLandmark("the head", "issue-head"),
-      partLandmark("the title", "issue-title"),
-      partLandmark("the heading of the Details", "issue-details.heading"),
-      partLandmark("the first row of the Details", "name-value"),
-      tags,
-      labels,
-      details,
-      ...main.map((each) => each.landmark),
-    ],
-    grows: [tags.name, details.name, ...history],
-    follows: [labels.name, ...(phone ? main.map((each) => each.landmark.name) : [])],
+    all,
+    ...aroundTheChange(await placesOf(page, all), target.name, history),
     scrolls: [],
   };
 }

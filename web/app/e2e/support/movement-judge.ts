@@ -14,6 +14,8 @@ export interface Moved {
   readonly steps: number;
   /** Where it stood in the last frame. */
   readonly last: Box;
+  /** How many times its height turned from growing to shrinking or back, frame by frame. */
+  readonly turns: number;
 }
 
 /** A landmark that was not there in the first frame and is there in the last (a row that came in). */
@@ -63,6 +65,15 @@ function differs(first: Box, later: Box): boolean {
   return standsElsewhere(first, later) || far(first.height, later.height);
 }
 
+/** How many times a height turned from growing to shrinking or back, frame by frame. */
+function turnsOf(shown: readonly Box[]): number {
+  const signs = shown
+    .map((box, index) => box.height - (shown[index - 1] ?? box).height)
+    .filter((change) => Math.abs(change) > LEAST_MOVE_PX)
+    .map((change) => Math.sign(change));
+  return signs.filter((sign, index) => index > 0 && sign !== signs[index - 1]).length;
+}
+
 /** The first frame in which this landmark stood elsewhere than in the first frame, if any. */
 function movedOf(name: string, column: readonly (Box | null)[]): Moved | undefined {
   const [first] = column;
@@ -78,7 +89,7 @@ function movedOf(name: string, column: readonly (Box | null)[]): Moved | undefin
   const steps = shown.filter(
     (box, index) => index > 0 && standsElsewhere(shown[index - 1] ?? box, box),
   ).length;
-  return { name, from: first, to, frame, steps, last: shown.at(-1) ?? to };
+  return { name, from: first, to, frame, steps, last: shown.at(-1) ?? to, turns: turnsOf(shown) };
 }
 
 /** What the frames say about the landmarks, named in the order of `names`. */
@@ -187,11 +198,15 @@ function pushOf(part: Moved, growths: readonly Growth[]): number {
     .reduce((sum, growth) => sum + growth.by, 0);
 }
 
-/** Whether a part that changes grew in place: its top or its bottom edge stayed, or it was pushed by what grew above. */
+/**
+ * Whether a part that changes grew in place: in one direction only, frame by frame (never shrinking
+ * and growing back), with its top or its bottom edge staying, or its top pushed by what grew above.
+ */
 function grewInPlace(part: Moved, pushed: number): boolean {
   const top = part.last.y - part.from.y;
   const bottom = top + part.last.height - part.from.height;
   return (
+    part.turns === 0 &&
     !far(part.from.x, part.last.x) &&
     !far(part.from.width, part.last.width) &&
     (!far(top, pushed) || !far(bottom, 0))
