@@ -5,11 +5,12 @@ import { inOrder } from "./support/sequence.ts";
 import {
   actionsOfMore,
   actionsOfSwipe,
+  moreOf,
   swipe,
   swipedActions,
   swipeStrip,
 } from "./support/swipe.ts";
-import { firstRow, prepareAgent, swipedLists } from "./support/swipe-lists.ts";
+import { firstRow, prepareAgent, swipedLists, unswipedLists } from "./support/swipe-lists.ts";
 import { boxOf } from "./support/windows.ts";
 import { projectIssuesAddress } from "../src/shared/paths.ts";
 import { viewports } from "../../tooling/viewports.ts";
@@ -34,6 +35,26 @@ test("ux_02_a_swipe_on_a_list_row_offers_the_same_actions_as_more", async ({ pag
       );
       expect(swiped.length, list.name).toBeGreaterThan(0);
       expect(await actionsOfMore(page, row), list.name).toEqual(swiped);
+    }),
+  );
+});
+
+test("ux_02 a row that shows every action as a button has no swipe and no More", async ({
+  page,
+  server,
+}) => {
+  await prepareAgent(server);
+  await signIn(page, sampleAdministrator());
+  await inOrder(
+    unswipedLists.map((list) => async () => {
+      const row = await list.open(page);
+      await inOrder(
+        list.swipes.map((towards) => async () => {
+          await swipe(page, row, towards);
+          await expect(swipeStrip(row), list.name).toHaveCount(0);
+        }),
+      );
+      await expect(moreOf(row), list.name).toHaveCount(0);
     }),
   );
 });

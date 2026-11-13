@@ -78,7 +78,7 @@ test("ux_02 Change status or priority on a swipe changes that one issue on the s
   await admin.dispose();
 });
 
-test("ux_02 after a swiped action the focus is on More, Escape and a press outside close the side, and opening is announced", async ({
+test("ux_02 after a swiped action and after Escape the focus is on More, a press outside closes the side, and opening is announced", async ({
   page,
   server,
 }) => {
@@ -93,6 +93,7 @@ test("ux_02 after a swiped action the focus is on More, Escape and a press outsi
   );
   await page.keyboard.press("Escape");
   await expect(swipeStrip(row)).toHaveCount(0);
+  await expect(moreOf(row)).toBeFocused();
   await swipe(page, row, "start");
   await page.locator("[data-part='top-bar.title']").tap();
   await expect(swipeStrip(row)).toHaveCount(0);
@@ -116,9 +117,9 @@ test("ux_02 from right to left a swipe opens the side of the writing and it slid
   await swipe(page, row, "start");
   const strip = swipeStrip(row);
   await expect(strip).toHaveAttribute("data-variant", "start");
-  expect(await strip.evaluate((node) => getComputedStyle(node).animationName)).toBe(
-    "in-from-start",
-  );
+  // The start is on the right: it slides in from the right edge, as the end does from left to right.
+  await expect(strip).toHaveAttribute("data-state", "rtl");
+  expect(await strip.evaluate((node) => getComputedStyle(node).animationName)).toBe("from-end");
 });
 
 test("ux_02 a Stop following that the server refuses says so on the row", async ({

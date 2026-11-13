@@ -1,12 +1,10 @@
 import { t } from "@bugaboo/messages";
-import { Link, partOf, part, type RowActions } from "@bugaboo/ui";
+import { Link, partOf, part } from "@bugaboo/ui";
 
-import { useSwipedRow } from "../../shared/use-row-swipe.tsx";
 import { agentAddress } from "./agent-address.ts";
 import { mayAct, type ListedAgent, type MyWorkItem } from "./agents.ts";
 import { AgentStateLine } from "./AgentState.tsx";
 import { StateButtons } from "./StateButtons.tsx";
-import { useAgentState } from "./use-agent-state.ts";
 import { WorkLines } from "./WorkLines.tsx";
 
 export interface AgentSectionProps {
@@ -17,20 +15,12 @@ export interface AgentSectionProps {
 
 /**
  * One agent on *My agents* (UX §4.17): its name and state pill (and the limit that paused it), what
- * it works on with the state of each piece of work, and *Pause* or *Resume* and *Stop*. On a phone a swipe brings in
- * *Pause* or *Resume*, which the row's *More* holds too (UX §3.3); *Stop* asks first, so it stays a button.
+ * it works on with the state of each piece of work, and *Pause* or *Resume* and *Stop*.
  */
 export function AgentSection({ agent, work }: AgentSectionProps) {
   const open = work.filter((item) => item.work.open);
-  const change = useAgentState(agent);
-  const actions: RowActions =
-    change.pauseOrResume === undefined ? {} : { end: [change.pauseOrResume] };
-  const swipe = useSwipedRow(actions, agent.name);
   return (
-    <li
-      {...partOf(part.agentsAgent, { variants: [!mayAct(agent) && "stopped"] })}
-      {...swipe.rowProps}
-    >
+    <li {...partOf(part.agentsAgent, { variants: [!mayAct(agent) && "stopped"] })}>
       <div {...partOf(part.agentsAgentHead)}>
         <span {...partOf(part.startColumn)}>
           <span {...partOf(part.itemTitle)}>
@@ -38,7 +28,7 @@ export function AgentSection({ agent, work }: AgentSectionProps) {
           </span>
           <AgentStateLine agent={agent} />
         </span>
-        <StateButtons agent={agent} change={change} more={swipe.more} />
+        <StateButtons agent={agent} />
       </div>
       {open.length > 0 ? <WorkLines work={open} /> : null}
       {/* A stopped agent says nothing more than its state: the card is quiet. */}

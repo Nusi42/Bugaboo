@@ -11,7 +11,8 @@ import { paths } from "../../src/shared/paths.ts";
 
 /**
  * The size of targets for a finger (UX §7.4, §8; UX-02): every control a finger presses is at least as high and as
- * wide as `size-control` says with touch (44). The number comes from the theme file, never from here.
+ * wide as `size-control` says with touch. The measure takes the size from the theme file and only checks it against
+ * the least that the UX concept writes down (`TOUCH_PX`).
  */
 export function touchTarget(page: Page): Promise<number> {
   return pixelsOf(page, "--size-control");
@@ -184,7 +185,7 @@ export interface ScreenTargets {
   readonly targets: readonly SmallTarget[];
 }
 
-/** The size of a target with touch that UX §7.4 and §8 write down: what the theme file must give `size-control`. */
+/** The least size of a target with touch that UX §7.4 and §8 write down: `size-control` with touch is at least it. */
 const TOUCH_PX = 44;
 
 /** Waits until a screen has drawn what it reads: its title, and no read on its way. */
@@ -213,7 +214,7 @@ async function measured(
 /**
  * Opens every screen before sign-in as nobody, then every screen of the route table as the sample's administrator
  * sees it (the most controls), in the window of the page, and gives the small targets of each. The size it measures
- * against is the touch value of the theme file, or it measures nothing.
+ * against is the touch value of the theme file, at least the one of the UX concept, or it measures nothing.
  */
 export async function smallTargetsOfEveryScreen(
   page: Page,
@@ -222,7 +223,7 @@ export async function smallTargetsOfEveryScreen(
   const values = await screenValues(server);
   await page.goto(paths.signIn);
   const least = await touchTarget(page);
-  expect(least).toBe(TOUCH_PX);
+  expect(least).toBeGreaterThanOrEqual(TOUCH_PX);
   const guests = await measured(page, everyGuestScreen(), least);
   await signIn(page, sampleAdministrator());
   return [...guests, ...(await measured(page, everyScreen(values), least))];

@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 
 import type { MenuAction } from "./ActionMenu.tsx";
 import { Button } from "./Button.tsx";
@@ -9,8 +9,8 @@ import { part } from "./tokens.ts";
 import { useCloseOutside } from "./use-close-outside.ts";
 
 /**
- * The actions of the open side, under the row's words, sliding in from its edge. Pressing one
- * closes the side, gives the focus to the row's *More* and does the action.
+ * The actions of the open side, under the row's words, sliding in from its edge. Pressing one, or *Escape*, closes
+ * the side and gives the focus to the row's *More*; an action is done then.
  */
 export function OpenSide({
   side,
@@ -24,15 +24,28 @@ export function OpenSide({
   readonly more: { readonly current: HTMLElement | null };
 }) {
   const strip = useRef<HTMLDivElement>(null);
-  useCloseOutside(strip, close);
+  const toMore = (): void => {
+    close();
+    more.current?.querySelector("button")?.focus();
+  };
+  useCloseOutside(strip, close, toMore);
+  // The side slides in from the edge it belongs to as the page is written: before the first picture, the strip reads
+  // the direction the browser works out for it.
+  const [rightToLeft, setRightToLeft] = useState(false);
+  useLayoutEffect(() => {
+    const element = strip.current;
+    setRightToLeft(element !== null && getComputedStyle(element).direction === "rtl");
+  }, []);
   return (
-    <div ref={strip} {...partOf(part.swipeActions, { variants: [side] })}>
+    <div
+      ref={strip}
+      {...partOf(part.swipeActions, { variants: [side], states: [rightToLeft && "rtl"] })}
+    >
       {actions.map((action) => (
         <Button
           key={action.id}
           onPress={() => {
-            close();
-            more.current?.querySelector("button")?.focus();
+            toMore();
             action.onAction();
           }}
         >

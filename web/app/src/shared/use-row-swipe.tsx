@@ -1,6 +1,5 @@
 import { t } from "@bugaboo/messages";
 import {
-  sidesOf,
   SwipeActions,
   useLayout,
   useSwipe,
@@ -22,7 +21,7 @@ export interface RowSwipe {
 
 /**
  * The swipe of a row of a list: only a phone swipes, over the `sides` that have actions. `onTouch` hears that the row
- * was touched. One hook for every list that swipes: the issue list, notifications and *My agents*.
+ * was touched.
  */
 export function useRowSwipe(sides: readonly SwipeSide[], onTouch?: () => void): RowSwipe {
   const swipe = useSwipe(sides, onTouch);
@@ -44,13 +43,4 @@ export function swipeMore(row: RowSwipe, actions: RowActions, what: string): Rea
       announce={(names) => t("common.swipe-shown", { actions: listText(names) })}
     />
   ) : null;
-}
-
-/** The swipe of a row whose actions are known when it is drawn (notifications, *My agents*), and its *More*. */
-export function useSwipedRow(
-  actions: RowActions,
-  what: string,
-): { readonly rowProps: RowSwipe["rowProps"]; readonly more: ReactNode } {
-  const row = useRowSwipe(sidesOf(actions));
-  return { rowProps: row.rowProps, more: swipeMore(row, actions, what) };
 }

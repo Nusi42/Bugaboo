@@ -470,6 +470,7 @@ export type TokenName = (typeof tokenNames)[number];
 
 /** The parts the theme file styles: what a component puts in `data-part`. */
 export const part = {
+  swipeActions: "swipe-actions",
   muted: "muted",
   cardIntro: "card.intro",
   accessPreviewLine: "access.preview-line",
@@ -895,7 +896,6 @@ export const part = {
   issueBar: "issue-bar",
   issueBarItem: "issue-bar.item",
   actionSheet: "action-sheet",
-  swipeActions: "swipe-actions",
   keyCaptureFieldLabel: "key-capture-field.label",
   keyCaptureFieldBox: "key-capture-field.box",
   keys: "keys",
@@ -1143,6 +1143,7 @@ export type PartName = (typeof part)[keyof typeof part];
 
 /** The words of `data-variant` and `data-state` that the theme file styles, by part. */
 export const partWords = {
+  "swipe-actions": { variant: ["start", "end"], state: ["rtl"] },
   muted: { variant: ["warning"], state: [] },
   "card.intro": { variant: [], state: [] },
   "access.preview-line": { variant: [], state: [] },
@@ -1644,7 +1645,6 @@ export const partWords = {
   "issue-bar": { variant: [], state: [] },
   "issue-bar.item": { variant: [], state: [] },
   "action-sheet": { variant: [], state: [] },
-  "swipe-actions": { variant: ["start", "end"], state: [] },
   "key-capture-field.label": { variant: [], state: [] },
   "key-capture-field.box": { variant: [], state: [] },
   keys: { variant: [], state: [] },

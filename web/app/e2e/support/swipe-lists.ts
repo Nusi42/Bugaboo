@@ -33,13 +33,20 @@ export interface SwipedList {
   readonly swipes: readonly Towards[];
 }
 
-/** The lists whose rows are swiped: the issue list, notifications and *My agents*. */
+/** The lists whose rows are swiped: the issue list. */
 export const swipedLists: readonly SwipedList[] = [
   {
     name: "the issue list",
     open: (page) => firstRow(page, projectIssuesAddress("WEB"), "list-row"),
     swipes: ["end", "start"],
   },
+];
+
+/**
+ * The lists whose rows show every action they have as a button (*Mark as read*, *Pause*): a swipe would only repeat
+ * one, so they have none (UX §3.3), and no *More* of a row either. `swipes` are the ways a finger tries.
+ */
+export const unswipedLists: readonly SwipedList[] = [
   {
     name: "notifications",
     open: async (page) => {

@@ -41,7 +41,7 @@ function AllEntries({
     return children([]);
   }
   return (
-    <OneEntry entry={first} input={input}>
+    <OneEntry key={first.id} entry={first} input={input}>
       {(state) => (
         <AllEntries entries={rest} input={input}>
           {(states) => children([[first, state], ...states])}

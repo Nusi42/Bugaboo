@@ -1,23 +1,29 @@
 import { t } from "@bugaboo/messages";
 import {
   Button,
+  buttonLook,
   MarkdownView,
   partOf,
   part,
   longestNameIn,
   SentenceWithName,
   Skeleton,
-  type RowActions,
 } from "@bugaboo/ui";
+import { useNavigate } from "@tanstack/react-router";
 import { Suspense, useState } from "react";
 
 import { formatDateTime } from "../../shared/format.ts";
 import { listText } from "../../shared/list-text.ts";
-import { useSwipedRow } from "../../shared/use-row-swipe.tsx";
 import { useWording } from "../../shared/use-wording.ts";
+import { addressInProject, issueAddress, issueTargetAddress, paths } from "../../shared/paths.ts";
 import { RunProgress } from "../many-changes/index.ts";
-import { NotificationActions } from "./NotificationActions.tsx";
-import { fileNamesOf, sentencesOf, type NotificationRow } from "./notifications.ts";
+import {
+  failedRenewalProjectOf,
+  fileNamesOf,
+  sentencesOf,
+  targetOf,
+  type NotificationRow,
+} from "./notifications.ts";
 
 export interface NotificationViewProps {
   readonly row: NotificationRow;
@@ -60,21 +66,65 @@ function RunResult({ row }: { readonly row: NotificationRow }) {
   );
 }
 
-/** What a swipe on an unread notification brings in, and its *More* holds: *Mark as read* (UX §3.3, §4.11). */
-function rowActions(row: NotificationRow, onRead: (id: string) => void): RowActions {
-  return row.read
-    ? {}
-    : {
-        end: [
-          {
-            id: "mark-read",
-            label: t("notifications.mark-read"),
-            onAction: () => {
-              onRead(row.id);
-            },
-          },
-        ],
-      };
+/** *Open the project settings* for a renewal of issue IDs that gave up, where the person may know the project. */
+function ProjectSettingsButton({ row }: { readonly row: NotificationRow }) {
+  const navigate = useNavigate();
+  const shortName = failedRenewalProjectOf(row);
+  if (shortName === undefined) {
+    return null;
+  }
+  return (
+    <Button
+      onPress={() => {
+        void navigate({ href: addressInProject(paths.projectSettings, shortName) });
+      }}
+    >
+      {t("notifications.open-project-settings")}
+    </Button>
+  );
+}
+
+/** The buttons of a notification: *Open*, the one for a renewal that gave up, and *Mark as read*. */
+function NotificationActions({
+  row,
+  what,
+  onRead,
+  isReading,
+}: NotificationViewProps & { readonly what: string }) {
+  const navigate = useNavigate();
+  const [key, target] = [row.issue?.readable_id, targetOf(row)];
+  return (
+    <div {...partOf(part.notificationActions)}>
+      {key === undefined ? null : (
+        <Button
+          aria-label={t("notifications.open-name", { what })}
+          onPress={() => {
+            // An entry that Open names scrolls itself into view; the router must not put the page at
+            // its top after it, which it would if the entry were drawn before the router is done.
+            void navigate({
+              href: target === undefined ? issueAddress(key) : issueTargetAddress(key, target),
+              resetScroll: target === undefined,
+            });
+          }}
+        >
+          {t("notifications.open")}
+        </Button>
+      )}
+      <ProjectSettingsButton row={row} />
+      {row.read ? null : (
+        <Button
+          look={buttonLook.quiet}
+          isPending={isReading}
+          aria-label={t("notifications.mark-read-name", { what })}
+          onPress={() => {
+            onRead(row.id);
+          }}
+        >
+          {t("notifications.mark-read")}
+        </Button>
+      )}
+    </div>
+  );
 }
 
 /** What one notification says, once the shared wording is there. */
@@ -107,10 +157,8 @@ export function NotificationView({ row, onRead, isReading }: NotificationViewPro
   const loaded = useWording();
   const sentences = loaded.state === "ready" ? sentencesOf(loaded.wording, row) : [];
   const what = sentences.length === 0 ? t("notifications.new") : listText(sentences);
-  const actions = rowActions(row, onRead);
-  const swipe = useSwipedRow(actions, what);
   return (
-    <li {...partOf(part.notification, { states: [!row.read && "unread"] })} {...swipe.rowProps}>
+    <li {...partOf(part.notification, { states: [!row.read && "unread"] })}>
       <div {...partOf(part.notificationHead)}>
         {row.read ? null : (
           <strong {...partOf(part.notificationNew)}>{t("notifications.new")}</strong>
@@ -122,13 +170,7 @@ export function NotificationView({ row, onRead, isReading }: NotificationViewPro
       ) : null}
       {loaded.state === "loading" ? <Skeleton /> : null}
       <CommentText row={row} />
-      <NotificationActions
-        row={row}
-        what={what}
-        onRead={onRead}
-        isReading={isReading}
-        more={swipe.more}
-      />
+      <NotificationActions row={row} what={what} onRead={onRead} isReading={isReading} />
       <RunResult row={row} />
     </li>
   );

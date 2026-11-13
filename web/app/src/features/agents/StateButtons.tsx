@@ -1,41 +1,42 @@
 import { t } from "@bugaboo/messages";
 import { Button, buttonLook, ConfirmDialog, partOf, part } from "@bugaboo/ui";
-import type { ReactNode } from "react";
 
 import { ActionError } from "./ActionError.tsx";
-import { mayAct, type ListedAgent } from "./agents.ts";
-import { useAgentState, type AgentStateChange } from "./use-agent-state.ts";
+import { mayAct, useChangeAgent, type AgentActionWord, type ListedAgent } from "./agents.ts";
 
 export interface StateButtonsProps {
   readonly agent: ListedAgent;
-  /** The change of the agent's state the screen keeps (`useAgentState`): its row's swipe sends the same one. */
-  readonly change: AgentStateChange;
   /** Only *Stop*: the list of every agent of the organization, where an administrator stops any agent. */
   readonly stopOnly?: boolean;
-  /** The row's *More* on a phone, at the end of the buttons (*My agents*). */
-  readonly more?: ReactNode;
 }
 
 /**
  * *Pause* or *Resume* for the agent's own person, and *Stop* in the color of danger with its
  * question first: the one set of buttons of an agent, on *My agents*, its page and the list of agents.
  */
-export function StateButtons({ agent, change, stopOnly = false, more }: StateButtonsProps) {
+export function StateButtons({ agent, stopOnly = false }: StateButtonsProps) {
+  const change = useChangeAgent();
+  const send = (action: AgentActionWord): void => {
+    change.mutate({
+      params: { path: { agent: agent.id } },
+      body: { action, version: agent.version },
+    });
+  };
   if (!mayAct(agent)) {
     return null;
   }
-  const { pauseOrResume, send } = change;
+  const paused = agent.state === "paused";
   return (
     <div {...partOf(part.agentsActions)}>
-      {pauseOrResume !== undefined && !stopOnly ? (
+      {agent.yours && !stopOnly ? (
         <Button
           isPending={change.isPending}
-          aria-label={t(change.paused ? "agents.resume-name" : "agents.pause-name", {
-            agent: agent.name,
-          })}
-          onPress={pauseOrResume.onAction}
+          aria-label={t(paused ? "agents.resume-name" : "agents.pause-name", { agent: agent.name })}
+          onPress={() => {
+            send(paused ? "resume" : "pause");
+          }}
         >
-          {pauseOrResume.label}
+          {t(paused ? "agents.resume" : "agents.pause")}
         </Button>
       ) : null}
       <ConfirmDialog
@@ -51,14 +52,7 @@ export function StateButtons({ agent, change, stopOnly = false, more }: StateBut
           send("stop");
         }}
       />
-      {more}
       <ActionError error={change.error} />
     </div>
   );
-}
-
-/** The buttons of an agent that keep the change of its state themselves: the page of an agent, the list of every agent. */
-export function OwnStateButtons(props: Omit<StateButtonsProps, "change">) {
-  const change = useAgentState(props.agent);
-  return <StateButtons {...props} change={change} />;
 }

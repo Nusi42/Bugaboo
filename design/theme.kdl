@@ -879,9 +879,19 @@ mixin "marked" {
 mixin "control-box" {
     box-sizing border-box
     min-height "$size-control"
-    border "$border-width solid $border-control"
+    border "$border-width solid $fg-muted"
     border-radius "$r-ctl"
     background "$bg-raised"
+}
+
+// From right to left the start edge is on the right, so the actions of each side slide in from the other physical
+// edge; the component says the page is written so (`rtl`), from the direction the browser works out.
+part "swipe-actions[variant=start][state=rtl]" {
+    animation-name "from-end"
+}
+
+part "swipe-actions[variant=end][state=rtl]" {
+    animation-name "from-start"
 }
 
 // The hint under a control or beside a row of a list: 13 and muted (UX §7.3: "13 field names, times, counts,
@@ -1267,20 +1277,6 @@ keyframes "from-start" {
 keyframes "from-end" {
     from {
         transform "translateX(100%)"
-    }
-}
-
-// A line that slides in from the start or the end edge of its box, as the writing goes: from the left in a page written
-// left to right, from the right in one written right to left (the swipe actions of a row).
-keyframes "in-from-start" {
-    from {
-        margin-inline-start "-100%"
-    }
-}
-
-keyframes "in-from-end" {
-    from {
-        margin-inline-start "100%"
     }
 }
 
@@ -7455,7 +7451,7 @@ part "action-sheet action-menu" "action-sheet action-menu.title" {
 // each is in the row's *More* too (principle 9).
 
 // The actions come in under the row's words, on a line of their own across the whole row, so the ID and the words stay
-// readable: a box with an edge in the color of a raised box, which stands out from every tint of a row. They slide in
+// readable: a raised box with an edge in the muted text color, which stands out from every tint of a row, also dark. They slide in
 // from the edge the finger pulled them from; with *Less motion* the motion tokens are 0, so they are there at once.
 part "swipe-actions" {
     // Above the link of the row's title, which reaches over the whole row.
@@ -7476,12 +7472,12 @@ part "swipe-actions" {
 
 part "swipe-actions[variant=start]" {
     justify-content flex-start
-    animation "in-from-start $motion-base $ease-out"
+    animation "from-start $motion-base $ease-out"
 }
 
 part "swipe-actions[variant=end]" {
     justify-content flex-end
-    animation "in-from-end $motion-base $ease-out"
+    animation "from-end $motion-base $ease-out"
 }
 
 // The page of an issue scrolls under the bar of actions: a shadow at the end of the page while there is more below it
@@ -15027,7 +15023,6 @@ part "app-layout[variant=phone] notification-group" {
 }
 
 part "notification" {
-    use "swipe-row"
     display flex
     flex-direction column
     gap "$space-2"
@@ -17035,7 +17030,6 @@ part "agents.heading" {
 // One agent: its head (name, state, buttons), then what it works on.
 part "agents.agent" {
     use "surface-box"
-    use "swipe-row"
     display flex
     flex-direction column
     gap "$space-3"
@@ -17074,12 +17068,6 @@ part "agents.actions" {
     flex-wrap wrap
     align-items center
     gap "$space-2"
-}
-
-// While a swipe shows its actions under the buttons of an agent, the buttons take the width of the card, so the
-// actions do too.
-part "agents.actions:has(swipe-actions)" {
-    align-self stretch
 }
 
 part "agents.work" {
@@ -17146,7 +17134,10 @@ part "agents.fact-value" {
     font-size "$fs-md"
 }
 
-// What the server refused an action of a card of a phone stands under its words, across the card.
+// What the server refused an action of a card of a phone stands under its words, across the card, above the link of
+// the title that reaches over the card.
 part "list-row[variant=phone] alert" {
+    position relative
+    z-index "$z-raised"
     grid-column "1 / -1"
 }
