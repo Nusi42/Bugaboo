@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { readPorts } from "./ports.ts";
-import { serverPathPattern, serverPaths } from "./server-paths.ts";
+import { parseServerPaths, serverPathPattern, serverPaths } from "./server-paths.ts";
 import config from "./vite.config.ts";
 
 const proxy: Readonly<Record<string, unknown>> = config.server?.proxy ?? {};
@@ -31,5 +31,27 @@ describe("dev_proxy the dev server passes the server's addresses on", () => {
     const app = ["/healthy", "/apiary", "/assets/app.js", "/p/BLOG/issues", "/x.well-known"];
     expect(server.filter((address) => !passedOn.test(address))).toEqual([]);
     expect(app.filter((address) => passedOn.test(address))).toEqual([]);
+    expect(passedOn.test("/")).toBe(false);
+  });
+
+  it("reads the list as rustfmt writes it once it grows: one name a line, a trailing comma, comments", () => {
+    const router = [
+      "/// The addresses.",
+      "const NO_PAGE_FALLBACK: [&str; 3] = [",
+      '    "assets",',
+      "    // The probes of the load balancer.",
+      '    "health", /* for now */',
+      '    ".well-known",',
+      "];",
+    ].join("\n");
+    expect(parseServerPaths(router)).toEqual(["assets", "health", ".well-known"]);
+  });
+
+  it("refuses a list it cannot read, rather than passing the start page on", () => {
+    expect(() => parseServerPaths('const OTHER: [&str; 1] = ["api"];')).toThrow(
+      /NO_PAGE_FALLBACK/u,
+    );
+    expect(() => parseServerPaths('const NO_PAGE_FALLBACK: [&str; 1] = ["a b"];')).toThrow(/a b/u);
+    expect(() => parseServerPaths("const NO_PAGE_FALLBACK: [&str; 1] = [api];")).toThrow(/api/u);
   });
 });
