@@ -1,6 +1,7 @@
 import type { EditTarget } from "@bugaboo/api-client";
 
 import { queryClient } from "./query-client.ts";
+import { checkAccessKeys } from "./check-access-keys.ts";
 import { searchKeys } from "./search-keys.ts";
 
 /**
@@ -133,20 +134,7 @@ export const queryKeys = {
     all: ["invitations"],
     one: (secret: string) => ["invitations", "one", secret],
   },
-  checkAccess: {
-    people: (project: string | undefined, search: string) => [
-      "check-access",
-      "people",
-      project ?? null,
-      search,
-    ],
-    projects: (search: string) => ["check-access", "projects", search],
-    answer: (
-      person: string | undefined,
-      project: string | undefined,
-      issueType: string | undefined,
-    ) => ["check-access", "answer", person ?? null, project ?? null, issueType ?? null],
-  },
+  checkAccess: checkAccessKeys,
 } as const;
 
 /** The reads that hold an own field, its choices or the values of one. */
@@ -185,10 +173,12 @@ export function refreshIssues(): void {
   reread({ queryKey: queryKeys.issues.all });
 }
 
-/** Reads again every answer of these routes of the API (their keys are made by the client). */
-function refreshReads(paths: readonly string[]): void {
+/** Reads again every answer of these routes of the API (their keys are made by the client), or those for these path values. */
+function refreshReads(paths: readonly string[], values?: object): void {
   for (const path of paths) {
-    reread({ queryKey: ["get", path] });
+    reread({
+      queryKey: ["get", path, ...(values === undefined ? [] : [{ params: { path: values } }])],
+    });
   }
 }
 
@@ -208,6 +198,16 @@ const LABEL_READS = [
 export function refreshLabelReads(): void {
   reread({ queryKey: queryKeys.labels.all });
   refreshReads(LABEL_READS);
+}
+
+/**
+ * A tag or label was put on one issue or taken off, and its row shows the answer: only the labels,
+ * the history of that issue and the tags offered in its project are read again (UX §6.4).
+ */
+export function refreshIssueLabelReads(issue: string, project: string): void {
+  reread({ queryKey: queryKeys.labels.all });
+  refreshReads(["/api/v1/issues/{issue}/history"], { issue });
+  refreshReads(["/api/v1/projects/{project}/tag-suggestions"], { project });
 }
 
 /** A layout was made, saved or taken away: the forms and the editor read it again. */

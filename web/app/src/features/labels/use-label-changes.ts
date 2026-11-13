@@ -45,11 +45,11 @@ export interface LabelChanges {
   readonly error: unknown;
   /** Whether a change is on its way. */
   readonly pending: boolean;
-  /** Adding says whether the change was made, so the box can be emptied; taking off needs no answer. */
+  /** Each says whether the change was made: adding empties the box then, taking off moves the focus. */
   readonly addTag: (name: string, has: readonly Chip[]) => Promise<boolean>;
-  readonly takeTagOff: (tag: Chip) => void;
+  readonly takeTagOff: (tag: Chip) => Promise<boolean>;
   readonly addLabel: (label: Named) => Promise<boolean>;
-  readonly takeLabelOff: (label: Chip) => void;
+  readonly takeLabelOff: (label: Chip) => Promise<boolean>;
 }
 
 /** The moment of a change, for *Saved at …*. */
@@ -62,7 +62,7 @@ function momentNow(): string {
  * how to take the change back, it is offered through the store of undo, inline in the row, like
  * any other change of the Details; *Undo* makes that change and then only says *Saved*.
  */
-function useChange(issue: string) {
+function useChange(issue: string, project: string) {
   const [last, setLast] = useState<Last | undefined>();
   const [error, setError] = useState<unknown>(null);
   const change = async (row: LabelRow, send: Sending, back?: TakingBack): Promise<boolean> => {
@@ -70,7 +70,7 @@ function useChange(issue: string) {
     setLast({ row, state: "saving", savedAt: null });
     try {
       const made = await send();
-      afterLabelsAndTags(issue, made);
+      afterLabelsAndTags(issue, project, made);
       const inverse = back?.send(made);
       const offer =
         back === undefined || inverse === undefined
@@ -99,8 +99,8 @@ function useChange(issue: string) {
  * The changes of the tags and labels of one issue. Each is made in place and says *Saved* with
  * *Undo* in its own row (UX §4.4, R7), by the helper every row of the Details uses.
  */
-export function useLabelChanges(issue: string): LabelChanges {
-  const { last, error, change } = useChange(issue);
+export function useLabelChanges(issue: string, project: string): LabelChanges {
+  const { last, error, change } = useChange(issue, project);
   const offers = useUndoOffers();
   return {
     status: (row) =>
@@ -126,22 +126,20 @@ export function useLabelChanges(issue: string): LabelChanges {
           return added === undefined ? undefined : () => takeTagOff(issue, added.id);
         },
       }),
-    takeTagOff: (tag) => {
-      void change("tags", () => takeTagOff(issue, tag.id), {
+    takeTagOff: (tag) =>
+      change("tags", () => takeTagOff(issue, tag.id), {
         message: t("labels.tag-taken-off", { name: tag.name }),
         send: () => () => putTag(issue, tag.name),
-      });
-    },
+      }),
     addLabel: (label) =>
       change("labels", () => putLabel(issue, label.id), {
         message: t("labels.label-added", { name: label.name }),
         send: () => () => takeLabelOff(issue, label.id),
       }),
-    takeLabelOff: (label) => {
-      void change("labels", () => takeLabelOff(issue, label.id), {
+    takeLabelOff: (label) =>
+      change("labels", () => takeLabelOff(issue, label.id), {
         message: t("labels.label-taken-off", { name: label.name }),
         send: () => () => putLabel(issue, label.id),
-      });
-    },
+      }),
   };
 }

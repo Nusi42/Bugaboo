@@ -5,7 +5,12 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "../../shared/api.ts";
 import { fieldList, linesFrom, pageSize, usePaged } from "../../shared/paged.ts";
 import { queryClient } from "../../shared/query-client.ts";
-import { queryKeys, refreshLabelReads, reread } from "../../shared/query-keys.ts";
+import {
+  queryKeys,
+  refreshIssueLabelReads,
+  refreshLabelReads,
+  reread,
+} from "../../shared/query-keys.ts";
 import { versionCounted } from "../issues/index.ts";
 import { useLabels, type Label, type LabelGroup } from "./label-lists.ts";
 
@@ -150,16 +155,17 @@ export async function takeLabelOff(issue: string, label: string): Promise<IssueL
  * now: the row shows them at once, from the answer, and is not read again (UX §6: the change shows in
  * place). The page writes the version the issue counted up to into what it knows, so a change made
  * right after does not conflict. Read again, in place, is what the change made different elsewhere:
- * the issue (*Last changed*), the lists of issues, its history, and the tags and labels that can be
- * offered (adding one by a new name made it); not every read of every issue, as before.
+ * the issue (*Last changed*), the lists of issues, the lists of tags and labels (adding one by a new
+ * name made it), the history of this issue and the tags offered in its project; nothing of other
+ * issues or projects.
  */
-export function afterLabelsAndTags(issue: string, made: IssueLabelsAndTags): void {
+export function afterLabelsAndTags(issue: string, project: string, made: IssueLabelsAndTags): void {
   versionCounted(issue, made.version);
   queryClient.setQueryData(labelsAndTagsOptions(issue).queryKey, made);
   reread({ queryKey: queryKeys.issues.one(issue) });
   reread({ queryKey: queryKeys.issues.lists() });
   reread({ queryKey: queryKeys.tags.all });
-  refreshLabelReads();
+  refreshIssueLabelReads(issue, project);
 }
 
 /** The choice that stands for a label in no group. */

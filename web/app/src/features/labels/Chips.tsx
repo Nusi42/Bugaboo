@@ -11,8 +11,8 @@ export interface ChipsProps {
   readonly chips: readonly Chip[];
   /** What to say when there are none. */
   readonly none: string;
-  /** Takes a chip off; the buttons are there only where the person may change the issue. */
-  readonly onTakeOff?: ((chip: Chip) => void) | undefined;
+  /** Takes a chip off and says whether it went; the buttons are there only where the person may change the issue. */
+  readonly onTakeOff?: ((chip: Chip) => Promise<boolean>) | undefined;
 }
 
 /** The tags or labels of an issue side by side, each with the button that takes it off. */
@@ -34,9 +34,7 @@ export function Chips({ label, chips, none, onTakeOff }: ChipsProps) {
                 // The button goes with its chip: the focus moves to the next one, or to adding one.
                 const row = list.current?.children[index];
                 removeKeepingFocus(
-                  () => {
-                    onTakeOff(chip);
-                  },
+                  () => onTakeOff(chip),
                   row instanceof HTMLElement ? row : undefined,
                 );
               }}
