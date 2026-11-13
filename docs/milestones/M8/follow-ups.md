@@ -1,6 +1,6 @@
 # M8 follow-ups
 
-Points found while building M8 that were accepted for later. Each names where it will be done. The IDs (`M8-F01` …) are what the review refers to. WP-01 uses F01 and up, WP-02 F10 and up, WP-03 F20 and up, WP-04 F30 and up, WP-05 F40 and up, WP-06 F50 and up, WP-07 F60 and up, WP-08 F70 and up, WP-09 F80 and up, WP-10 F90 and up, WP-11 F100 and up, WP-12 F110 and up; rows found by the lead outside a package take F200 and up.
+Points found while building M8 that were accepted for later. Each names where it will be done. The IDs (`M8-F01` …) are what the review refers to. WP-01 uses F01 and up, WP-02 F10 and up, WP-03 F20 and up, WP-04 F30 and up, WP-05 F40 and up, WP-06 F50 and up, WP-07 F60 and up, WP-08 F70 and up, WP-09 F80 and up, WP-10 F90 and up, WP-11 F100 and up, WP-12 F110 and up, WP-13 F120 and up; rows found by the lead outside a package take F200 and up.
 
 ## From WP-02 (a green full run)
 
@@ -167,3 +167,14 @@ WP-02 brought a full run from five failing browser tests to one (2026-11-11): Ch
 | ID | What | Why later | Planned in |
 |----|------|-----------|------------|
 | M8-F140 | Done (the maintainer decided, 2026-11-14): the ordinary API refuses a `limit` outside 1 to 100, a negative one and one that is not a whole number, in a query or a body, with `request.limit-out-of-range` and the range, by the rule of `bb_core::paging` (`page_size_within`) that the tools of AI use. The browser asks only for 1 to 100 (`pageSize` of `web/app/src/shared/paged.ts` and the counts of quick search). Tests: `perf_02_a_limit_outside_one_to_a_hundred_is_refused_with_the_range`, `perf_02_the_invitation_list_takes_fields_cursor_and_limit_over_http` | — | Done |
+
+## From WP-13 (nothing moves under the cursor)
+
+The first part (2026-11-13) fixed the two cases of the maintainer's report, adding and taking off a tag and creating an issue, and their shared causes. These rows are what the measure found beside them and is not fixed yet; the full pass over every screen and the scroll model come next in the same package.
+
+| ID | What | Why later | Planned in |
+|----|------|-----------|------------|
+| M8-F120 | A grouped list after a change shows the new count in the head of a group before the new row: the groups and the rows of each group are separate reads, answered one after the other (about 450 ms apart in WebKit) | Needs one way to apply several reads again at once | WP-13, with the pass of reads in the background |
+| M8-F121 | In WebKit the read of the layout of the new-issue form for its type waits about 4.5 s, until the next request goes out; the Details of the form come late and push *Create the issue and start another* down by 288 px | Looks like the WebKit connections of M8-F11, not the app | WP-13 with M8-F11; the test waits for the fields first |
+| M8-F122 | On the first read of a list the rows move 32 px down when the count line arrives above them | A first read, not a change; the space of the count line is reserved in the pass | WP-13, pass of every screen |
+| M8-F123 | On a phone the footer of the new-issue window grows by two lines when an issue was made with *Create the issue and start another* (the note and what is missing wrap); the form above keeps its place, the footer's top edge moves up | The form stands still; a shorter note is a wording choice | WP-13, with the scroll model |
