@@ -1265,7 +1265,7 @@ sort by priority, highest first</div>
       <div class="state u-padding-0--overflow-hidden--text-align-left"><div class="offline">You're offline. Changes will be possible again when you're back online.</div><div class="u-padding-10px-12px"><b>Offline</b><p class="u-margin-6px-0-0--font-size-12-5px">Recently opened issues stay readable (UX-03).</p></div></div>
     </div>
     <ul>
-      <li><b>Loading:</b> grey shapes of the coming content. Nothing shows for the first 0.3 s, to avoid flicker.</li>
+      <li><b>Loading:</b> grey shapes of the coming content. Nothing shows for the first 0.3 s, to avoid flicker. Only on a first read: a part that is read again keeps what it shows until the new answer is there (§6.4).</li>
       <li><b>Empty:</b> one sentence and a button.</li>
       <li><b>Error:</b> shown next to the cause, in plain words, with what to do. A short code for support sits at the end, never a technical dump.</li>
       <li><b>Offline:</b> a slim bar; recently opened issues stay readable.</li>
@@ -1296,6 +1296,18 @@ sort by priority, highest first</div>
       <li><b>A question</b> stays a small fixed dialog (440 wide) and never becomes a window.</li>
       <li><b>On a phone</b> a window is a full screen with <i>Back</i>.</li>
     </ul>
+
+    <h3 id="s6-4"><button type="button" class="sec" data-sec>§6.4</button>Nothing moves under the cursor <span class="ids">UX-01, UX-02</span></h3>
+    <p>A change a person makes changes only what they changed. After an action, only the thing they changed may change its size or place, and what the action is meant to open, close, add or remove (a new row appears where it belongs; a closed window goes). Everything else stands still: no part of the page moves by even 1 px, and the scroll does not change.</p>
+    <ul>
+      <li><b>Read again in place:</b> a read in the background keeps what is shown until the new answer is there, then replaces it in place. Grey shapes appear only on a first read, after 0.3 s (§6.1), never on a read again. A list keeps its rows and their keys while it is read again.</li>
+      <li><b>The answer of a change</b> shows at once where the change was made; only what the change made different elsewhere is read again, and in place.</li>
+      <li><b>Growing:</b> a part that may grow (a tag list, a note, <i>Saving…</i> and <i>Saved</i>) grows downwards from where it is, never pushing what is above it, and once: what stands under it moves at most one step, never back and forth. <i>Saving…</i> and <i>Saved</i> with <i>Undo</i> take the same height.</li>
+      <li><b>Focus:</b> stays where the person works. A button that goes with its row gives the focus to the next one, or to the way to add one; a form that starts again puts it into its first box. The app moves the focus without scrolling to it.</li>
+      <li><b>Opening:</b> what opens is read before it is shown, where that is quick (a new issue opens once it is read), so it is drawn whole, not empty and then filled.</li>
+      <li><b>On touch</b> the same holds, and nothing a finger is on moves between touch and release.</li>
+    </ul>
+    <p>The browser tests measure it in every frame (architecture §11, <i>Nothing moves under the cursor: the measure</i>).</p>
 
     <!-- ================= 7 ================= -->
     <h2 id="s7"><button type="button" class="sec" data-sec>§7</button>Visual design</h2>

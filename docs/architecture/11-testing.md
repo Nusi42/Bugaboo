@@ -305,6 +305,16 @@ A test that is right on a quiet computer can lose a race in the full run, where 
 
 No retry and no longer timeout is added to hide a race; the fix is the missing wait.
 
+## Nothing moves under the cursor: the measure (M8 WP-13)
+
+A change a person makes may change only what they changed (UX §6.4). A browser test checks it with one measure, `movementWhile` in `web/app/e2e/support/movement.ts`; no spec has its own copy. While the action runs, and until every read of the API it started has answered and been drawn, it records in every frame the browser draws:
+
+- the browser's own record of layout shifts (`PerformanceObserver` with `layout-shift`, every entry, also those right after an input, which the browser leaves out of its own score; WebKit keeps no such record, so there the boxes are what holds);
+- the box of each named **landmark** (a CSS selector, or an element found by a locator and marked with `landmarkOf`; an element that is drawn afresh loses the mark and counts as gone), and the scroll of the page and of every part that scrolls;
+- whether grey shapes stood on the screen.
+
+`expectStill` fails when a landmark moved by more than 1 px, went away, when grey shapes showed, or when anything scrolled. Landmarks that stand under the part that changed may move once, in one step, when it grows (`follows`); a part that pushes them back and forth fails. The landmarks of each screen are written once, in `support/landmarks.ts`, with what the person changes there; `nothing-moves.spec.ts` holds the tests (`ux_01_…`), on a computer, a phone and the WebKit phone. A test measures from the person's action, not from the opening of a window or a page: it first waits until the screen is whole.
+
 ## Local ports (ADR-0023)
 
 Your machine runs other Vite projects, so Bugaboo never uses default ports. All ports live in **`tools/dev/ports.json`** (single source); Vite, Playwright, the server and xtask read them from there, and every tool uses `strictPort`, so a busy port fails with a clear message instead of silently moving.
