@@ -4,6 +4,7 @@
 //! and the pictures for browsers without SVG icons are drawn from the same shapes, on a fixed grid,
 //! so they are the same on every computer.
 
+use std::fmt::Write as _;
 use std::io::Write as _;
 
 use anyhow::Context as _;
@@ -134,13 +135,17 @@ const EYE_RY: f64 = 2.1;
 fn svg(colors: IconColors, generated_by: &str) -> String {
     let accent = colors.accent.hex();
     let on_accent = colors.on_accent.hex();
-    let body: String = BODY[1..].iter().map(|(x, y)| format!("L{x} {y}")).collect();
-    let eyes: String = EYES
-        .iter()
-        .map(|(x, y)| {
-            format!("  <ellipse cx=\"{x}\" cy=\"{y}\" rx=\"{EYE_RX}\" ry=\"{EYE_RY}\" fill=\"{accent}\"/>\n")
-        })
-        .collect();
+    let body = BODY[1..].iter().fold(String::new(), |mut path, (x, y)| {
+        let _ = write!(path, "L{x} {y}");
+        path
+    });
+    let eyes = EYES.iter().fold(String::new(), |mut eyes, (x, y)| {
+        let _ = writeln!(
+            eyes,
+            "  <ellipse cx=\"{x}\" cy=\"{y}\" rx=\"{EYE_RX}\" ry=\"{EYE_RY}\" fill=\"{accent}\"/>"
+        );
+        eyes
+    });
     let (left, right) = (HEAD_X - HEAD_R, HEAD_X + HEAD_R);
     let head = format!("M{left} {HEAD_Y}A{HEAD_R} {HEAD_R} 0 0 1 {right} {HEAD_Y}");
     format!(
@@ -244,19 +249,19 @@ fn png(side: u32, rgba: &[u8]) -> anyhow::Result<Vec<u8>> {
     // Compression, filter method and interlacing: the only ones there are, and none.
     header.extend([BIT_DEPTH, COLOR_RGBA, 0, 0, 0]);
     let mut file = PNG_SIGNATURE.to_vec();
-    chunk(&mut file, b"IHDR", &header)?;
-    chunk(&mut file, b"IDAT", &encoder.finish()?)?;
-    chunk(&mut file, b"IEND", &[])?;
+    chunk(&mut file, *b"IHDR", &header)?;
+    chunk(&mut file, *b"IDAT", &encoder.finish()?)?;
+    chunk(&mut file, *b"IEND", &[])?;
     Ok(file)
 }
 
 /// Appends one chunk of a PNG file: its length, its kind, its data and their checksum.
-fn chunk(file: &mut Vec<u8>, kind: &[u8; 4], data: &[u8]) -> anyhow::Result<()> {
+fn chunk(file: &mut Vec<u8>, kind: [u8; 4], data: &[u8]) -> anyhow::Result<()> {
     file.extend(u32::try_from(data.len())?.to_be_bytes());
     let mut crc = Crc::new();
-    crc.update(kind);
+    crc.update(&kind);
     crc.update(data);
-    file.extend_from_slice(kind);
+    file.extend_from_slice(&kind);
     file.extend_from_slice(data);
     file.extend(crc.sum().to_be_bytes());
     Ok(())
