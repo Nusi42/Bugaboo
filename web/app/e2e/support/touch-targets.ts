@@ -1,6 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 
-import { everyGuestScreen, everyScreen, screenValues, type ScreenAddress } from "./every-screen.ts";
+import { screenValues } from "./every-screen.ts";
+import { everyGuestScreen, everyScreen, type ScreenAddress } from "./screen-list.ts";
 import { signIn } from "./flows.ts";
 import { sampleAdministrator } from "./sample.ts";
 import { inOrder } from "./sequence.ts";

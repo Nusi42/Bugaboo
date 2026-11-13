@@ -217,7 +217,9 @@ tokens {
     // The column of the rows' names on the timeline, the height of one row and of the scale, and the side column with
     // the card of a bar and the tray *Not scheduled yet*.
     size "size-timeline-names" "240px"
-    size "size-timeline-row" "$size-row-compact"
+    // A row of the timeline: as low as a compact row with a mouse; with touch its bar, which stands a step in from the
+    // top and the bottom of the row and above its line, is a finger's 44 (UX-02).
+    size "size-timeline-row" "$size-row-compact" touch="calc($size-control + 2 * $space-1 + $border-width)"
     size "size-timeline-head" "$size-control"
     size "size-timeline-side" "240px"
     // Where the screen puts things on the timeline, set by the code (UX §4.7, M3-F163): the width of a day at the

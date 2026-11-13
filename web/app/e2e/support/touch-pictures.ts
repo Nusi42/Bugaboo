@@ -1,7 +1,8 @@
 import { expect, type Page } from "@playwright/test";
 
 import { type Theme } from "./checks.ts";
-import { everyScreen, screenValues, type ScreenValues } from "./every-screen.ts";
+import { screenValues, type ScreenValues } from "./every-screen.ts";
+import { everyScreen } from "./screen-list.ts";
 import { layoutOf } from "./layout.ts";
 import { shotWholeAs } from "./screenshots.ts";
 import { inOrder } from "./sequence.ts";
@@ -11,7 +12,7 @@ import { changedPictures, TOUCH_PICTURES } from "./touch-changed-pictures.ts";
 
 /** The name of a screen in the file names: its route without slashes and changing parts (`settings-people-person`). */
 function slugOf(path: string): string {
-  const words = path.replaceAll("$", "").split("/").filter(Boolean);
+  const words = path.replaceAll("$", "").split(/[/ ]/u).filter(Boolean);
   return words.length === 0 ? "home" : words.join("-");
 }
 

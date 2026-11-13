@@ -954,6 +954,7 @@
     --size-control-small: 44px;
     --size-row: 64px;
     --size-row-compact: 44px;
+    --size-timeline-row: calc(var(--size-control) + 2 * var(--space-1) + var(--border-width));
   }
 }
 
