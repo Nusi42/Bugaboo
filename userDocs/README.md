@@ -24,6 +24,7 @@ End-user and administrator documentation. It is written alongside the work on Bu
 - [Connected apps](access-keys/connected-apps.md): AI apps you allowed to work with your account, and taking them back
 - [Time](time/README.md): the timer, adding time by hand, and the work day
 - [The timeline](planning/timeline.md): a search shown as bars over its days, with dependencies, goals and *Not scheduled yet*, changed by dragging or by the keyboard
+- [People on the timeline](planning/people-on-the-timeline.md): the person on each bar, *Group by person*, days without work, *Plan by effort*, the card of a bar, plan warnings and the timeline on a phone
 - [Agents](agents/README.md): handing issues over, agent work on an issue, the review, and standing rules
 - [AI in Bugaboo](ai/README.md): [the AI guide](ai/literacy.md), [the assistant](ai/assistant.md), [AI apps](ai/ai-apps.md) and [the numbers](ai/numbers.md)
 - [Cookies we use](cookies.md)

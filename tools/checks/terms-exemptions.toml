@@ -221,6 +221,13 @@ at = ["messages/en.json#issues.time-factor-*"]
 phrases = ["time factor"]
 reason = "Time factor is the glossary's own term for the estimate of the person on the bar (glossary, Time factor; ADR-0030, decision 4). It is not a second step of signing in."
 
+# The user docs of the people on the timeline: only the name of the way out.
+[[allow]]
+term = "make"
+at = ["userDocs/planning/people-on-the-timeline.md"]
+phrases = ["make it longer"]
+reason = "Make it longer is the glossary's own name of a way out of a plan warning (glossary, Move it after / Make it longer / Give it to someone else…). It brings nothing new into Bugaboo, which is what Create names."
+
 # The user docs: only the phrase of the glossary term.
 [[allow]]
 term = "factor"
@@ -228,6 +235,7 @@ at = [
   "userDocs/notifications/notifications.md",
   "userDocs/time/time-factor.md",
   "userDocs/time/README.md",
+  "userDocs/planning/people-on-the-timeline.md",
 ]
 phrases = ["time factor"]
 reason = "Time factor is the glossary's own term for the estimate of the person on the bar (glossary, Time factor). It is not a second step of signing in."
