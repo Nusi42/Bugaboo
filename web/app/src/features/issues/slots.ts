@@ -2,6 +2,11 @@ import { issueMemberOf, type Schema } from "@bugaboo/api-client";
 import type { ChangeStatus } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
+import {
+  orderedRegistry,
+  type Ordered,
+  type OrderedRegistry,
+} from "../../shared/ordered-registry.ts";
 import type { FormView } from "../layouts/index.ts";
 import type { Places } from "./details-order.ts";
 
@@ -104,11 +109,7 @@ export interface IssueBlockProps {
 export type IssueBlock = (props: IssueBlockProps) => ReactNode;
 
 /** A block with the slot it goes into and its place among the others in the slot. */
-export interface IssueBlockEntry {
-  /** Names the block in a test and in the order of the slot. */
-  readonly id: string;
-  /** Blocks of a slot are drawn in this order, then by `id`. */
-  readonly order: number;
+export interface IssueBlockEntry extends Ordered {
   /**
    * For a block of the Details slot: which fields of the layout its rows are, so that the Details
    * follow the order of the layout (CFG-01). A block that says nothing comes after the rest.
@@ -117,20 +118,18 @@ export interface IssueBlockEntry {
   readonly component: IssueBlock;
 }
 
-const blocks = new Map<IssueSlot, IssueBlockEntry[]>();
+const blocks = new Map<IssueSlot, OrderedRegistry<IssueBlockEntry>>();
 
 /** Puts a block into a slot. A block with the same `id` in the same slot replaces the old one. */
 export function addIssueBlock(slot: IssueSlot, entry: IssueBlockEntry): void {
-  const others = (blocks.get(slot) ?? []).filter((known) => known.id !== entry.id);
-  blocks.set(
-    slot,
-    [...others, entry].toSorted((a, b) => a.order - b.order || a.id.localeCompare(b.id)),
-  );
+  const slotBlocks = blocks.get(slot) ?? orderedRegistry<IssueBlockEntry>();
+  slotBlocks.add(entry);
+  blocks.set(slot, slotBlocks);
 }
 
 /** The blocks of a slot, in the order they are drawn. */
 export function issueBlocks(slot: IssueSlot): readonly IssueBlockEntry[] {
-  return blocks.get(slot) ?? [];
+  return blocks.get(slot)?.all() ?? [];
 }
 
 /**
