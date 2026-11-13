@@ -415,8 +415,6 @@ export const messages = {
   "history.file-restored": "{who} brought back the file {name}",
   "history.people-none": "nobody",
   "history.type-unknown": "another issue type",
-  "followers.follow": "Follow",
-  "followers.stop": "Stop following",
   "error.issue.parent-circle":
     "That would put an issue under itself or under one of its own sub-issues. Choose another issue.",
   "error.issue.parent-too-deep":
