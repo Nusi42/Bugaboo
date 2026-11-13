@@ -46,14 +46,16 @@ const COMMIT_SAMPLE: usize = 50;
 /// reference, the commit-time budget `COMMIT_BUDGET / REFERENCE_QUIET` times. The workload
 /// is fixed, so this number changes only together with the workload below.
 ///
-/// Measured on the maintainer's PC (32 logical cores, Windows 11) with no build or test running
-/// in any folder: the workload run 15 times in a row in a debug build of xtask, as
-/// `cargo xtask` runs it, in four rounds; the best runs were 138 to 141 ms, most runs 140 to
-/// 150 ms. While `cargo build --workspace --release` ran in another work folder (processor at
-/// 100 %) the best runs were 224 to 369 ms, a load factor of 1.6 to 2.6. The workload of before
-/// (small processes and one file of 256 KB on one thread) took 35 to 59 ms even then, and never
-/// left the quiet 90 ms it had.
-const REFERENCE_QUIET: Duration = Duration::from_millis(140);
+/// Measured on the maintainer's PC (32 logical cores, Windows 11) with no build running in any
+/// folder: the workload run 15 times in a row in a debug build of xtask, as `cargo xtask` runs
+/// it, in four rounds; the best runs were 124 to 126 ms, most runs 125 to 145 ms. The processor
+/// was not quite idle (about 20 % of other work: the sync of a cloud folder, a test run in
+/// another folder), so a fully quiet PC may be a little faster; the budgets are then a little
+/// stricter, never looser. While `cargo build --workspace --release` ran in another work folder
+/// (processor at 100 %) the best runs were 225 to 230 ms, most 250 to 500 ms, a load factor of
+/// 1.8 and more. The workload of before (small processes and one file of 256 KB on one thread)
+/// took 35 to 59 ms even then, and never left the quiet 90 ms it had.
+const REFERENCE_QUIET: Duration = Duration::from_millis(125);
 /// The reference workload starts this many small processes (a check starts tools the same way).
 const REFERENCE_PROCESSES: usize = 2;
 /// Each thread of the reference workload reads this many bytes of the repository's sources.
@@ -330,34 +332,51 @@ fn reference_workload(repo: &Repo, files: &[String]) -> anyhow::Result<Duration>
         tools::run(Path::new("git"), &["--version"], repo.root())?;
     }
     let starts = reference_starts(crate::runner::workers(), files.len());
-    tools::side_by_side(&starts, |start| {
-        read_and_hash(repo, files, *start);
-        Ok(())
-    })?;
+    tools::side_by_side(&starts, |start| read_and_hash(repo, files, *start))?;
     Ok(started.elapsed())
 }
 
-/// One thread of the reference workload: reads files from `start` on, round the list, until it
-/// has read [`REFERENCE_READ_BYTES`], and hashes each [`REFERENCE_HASH_ROUNDS`] times.
-fn read_and_hash(repo: &Repo, files: &[String], start: usize) {
-    if files.is_empty() {
-        return;
-    }
+/// One thread of the reference workload: reads files from `start` on, round the list, and hashes
+/// exactly [`REFERENCE_READ_BYTES`] of them (see [`hash_capped`]). A file that cannot be read stops
+/// it with the name of the file. Answers how many bytes it hashed.
+fn read_and_hash(repo: &Repo, files: &[String], start: usize) -> anyhow::Result<usize> {
+    let read = files.iter().cycle().skip(start).map(|file| {
+        let path = repo.path(file);
+        fs::read(&path).with_context(|| format!("could not read {file} for the reference workload"))
+    });
+    hash_capped(read, REFERENCE_READ_BYTES, files.len())
+}
+
+/// Hashes the bytes of `sources` in order, each part [`REFERENCE_HASH_ROUNDS`] times, until exactly
+/// `cap` bytes are hashed: the last file is cut, so the work does not depend on which files a thread
+/// meets. It ends early only where a whole round of `per_round` sources gave no byte (or there are
+/// no sources). Answers how many bytes it hashed.
+fn hash_capped(
+    sources: impl Iterator<Item = anyhow::Result<Vec<u8>>>,
+    cap: usize,
+    per_round: usize,
+) -> anyhow::Result<usize> {
     let mut digest = Sha256::new();
-    let mut read = 0;
-    for file in files.iter().cycle().skip(start) {
-        if read >= REFERENCE_READ_BYTES {
+    let mut hashed = 0;
+    let mut empty_in_a_row = 0;
+    for bytes in sources {
+        if hashed >= cap || empty_in_a_row >= per_round {
             break;
         }
-        let path = repo.path(file);
-        // A file deleted since it was listed counts as one byte, so the loop still ends.
-        let bytes = fs::read(&path).unwrap_or_default();
-        read += bytes.len().max(1);
+        let bytes = bytes?;
+        let part = &bytes[..bytes.len().min(cap - hashed)];
+        empty_in_a_row = if part.is_empty() {
+            empty_in_a_row + 1
+        } else {
+            0
+        };
         for _ in 0..REFERENCE_HASH_ROUNDS {
-            digest.update(&bytes);
+            digest.update(part);
         }
+        hashed += part.len();
     }
     std::hint::black_box(digest.finalize());
+    Ok(hashed)
 }
 
 /// Up to `count` files spread evenly over the list.
@@ -650,5 +669,39 @@ mod tests {
         let files = reference_files(&repo.all_files().unwrap());
         assert!(!files.is_empty());
         assert!(reference_workload(&repo, &files).unwrap() > Duration::ZERO);
+    }
+
+    /// Sources of the given sizes, as `hash_capped` reads them round the list from the start.
+    fn sources(sizes: &[usize]) -> impl Iterator<Item = anyhow::Result<Vec<u8>>> + '_ {
+        sizes.iter().cycle().map(|size| Ok(vec![0x5a; *size]))
+    }
+
+    #[test]
+    fn a_thread_hashes_exactly_its_share_of_one_huge_file() {
+        let cap = REFERENCE_READ_BYTES;
+        assert_eq!(hash_capped(sources(&[3 * cap]), cap, 1).unwrap(), cap);
+    }
+
+    #[test]
+    fn a_thread_hashes_exactly_its_share_of_small_files_round_the_list() {
+        let cap = REFERENCE_READ_BYTES;
+        let sizes = [cap / 3, cap / 5 + 7];
+        assert_eq!(hash_capped(sources(&sizes), cap, sizes.len()).unwrap(), cap);
+    }
+
+    #[test]
+    fn a_thread_ends_on_files_that_are_all_empty() {
+        assert_eq!(hash_capped(sources(&[0, 0, 0]), 1024, 3).unwrap(), 0);
+    }
+
+    #[test]
+    fn bad_example_a_file_that_cannot_be_read_stops_the_reference() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
+        let repo = Repo::at(root.to_path_buf());
+        let error = read_and_hash(&repo, &["no/such/file.rs".to_owned()], 0).unwrap_err();
+        assert!(
+            format!("{error:#}").contains("no/such/file.rs"),
+            "{error:#}"
+        );
     }
 }
