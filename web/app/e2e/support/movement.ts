@@ -1,18 +1,24 @@
 import { expect, type Locator, type Page, type Request } from "@playwright/test";
 
 import {
-  type Box,
+  judged,
+  type Movement,
+  nothingWrong,
+  scrolledOf,
+  type StillExcept,
+  wrongIn,
+} from "./movement-judge.ts";
+import {
   DONE_MARK,
-  type Frames,
   recordFrames,
   recordShifts,
   stampLandmarks,
   SHIFTS_DONE,
-  type Shift,
   twoFrames,
 } from "./movement-record.ts";
 
 export type { Box, Shift } from "./movement-record.ts";
+export type { Movement, Moved, Scrolled, StillExcept } from "./movement-judge.ts";
 
 /**
  * The measure of what moves on the screen while a person acts (UX §6, *Nothing moves under the cursor*;
@@ -30,129 +36,6 @@ export type { Box, Shift } from "./movement-record.ts";
 export interface Landmark {
   readonly name: string;
   readonly selector: string;
-}
-
-/** A landmark that stood somewhere else, or had another size, in a later frame than in the first. */
-export interface Moved {
-  readonly name: string;
-  readonly from: Box;
-  readonly to: Box;
-  /** The frame it was first seen so, counted from the start of the recording. */
-  readonly frame: number;
-  /** How many times it stood somewhere else than in the frame before: one that is pushed once has one step, one that jumps back and forth more. */
-  readonly steps: number;
-  /** How many times its height changed: a part that grows downwards once has one. */
-  readonly growths: number;
-  /** Where it stood in the last frame. */
-  readonly last: Box;
-}
-
-/** The page or a part that scrolled, and its scroll from the first frame to the first that differed. */
-export interface Scrolled {
-  readonly part: string;
-  readonly from: string;
-  readonly to: string;
-}
-
-/** What moved, flashed or emptied while the action ran. */
-export interface Movement {
-  readonly moved: readonly Moved[];
-  readonly shifts: readonly Shift[];
-  /** The landmarks that were there at the start and gone in some frame after it. */
-  readonly vanished: readonly string[];
-  /** Whether grey shapes stood on the screen in any frame. */
-  readonly greyShapes: boolean;
-  /** What scrolled: the page or each part whose scroll was not what it was in the first frame, with its scrolls (`list-scroll: 0/0 -> 40/0`). */
-  readonly scrolled: readonly Scrolled[];
-  readonly frames: number;
-}
-
-/**
- * A difference of more than half a pixel is a move (UX §6.4: not even 1 px). Less is the subpixel
- * layout of the browser, which nobody sees.
- */
-const LEAST_MOVE_PX = 0.5;
-
-/** Whether two values of a box are more than half a pixel apart. */
-function far(one: number, other: number): boolean {
-  return Math.abs(one - other) > LEAST_MOVE_PX;
-}
-
-/** Whether a box stands somewhere else, or has another width: its height growing is not that. */
-function standsElsewhere(first: Box, later: Box): boolean {
-  return far(first.x, later.x) || far(first.y, later.y) || far(first.width, later.width);
-}
-
-function differs(first: Box, later: Box): boolean {
-  return standsElsewhere(first, later) || far(first.height, later.height);
-}
-
-/** The first frame in which this landmark stood elsewhere than in the first frame, if any. */
-function movedOf(name: string, column: readonly (Box | null)[]): Moved | undefined {
-  const [first] = column;
-  if (first === null || first === undefined) {
-    return undefined;
-  }
-  const frame = column.findIndex((box) => box !== null && differs(first, box));
-  const to = column[frame] ?? null;
-  if (to === null) {
-    return undefined;
-  }
-  const shown = column.filter((box) => box !== null);
-  const changes = (changed: (before: Box, after: Box) => boolean): number =>
-    shown.filter((box, index) => index > 0 && changed(shown[index - 1] ?? box, box)).length;
-  return {
-    name,
-    from: first,
-    to,
-    frame,
-    steps: changes(standsElsewhere),
-    growths: changes((before, after) => far(before.height, after.height)),
-    last: shown.at(-1) ?? to,
-  };
-}
-
-/** What the frames say about the landmarks. */
-function judged(landmarks: readonly Landmark[], frames: Frames) {
-  const moved: Moved[] = [];
-  const vanished: string[] = [];
-  for (const [index, landmark] of landmarks.entries()) {
-    const column = frames.boxes.map((frame) => frame[index] ?? null);
-    if (column[0] !== null && column.includes(null)) {
-      vanished.push(landmark.name);
-    }
-    const found = movedOf(landmark.name, column);
-    if (found !== undefined) {
-      moved.push(found);
-    }
-  }
-  return { moved, vanished };
-}
-
-/** The scroll of each part in one frame, as the recording writes it (`page:0 list-scroll:40/0`). */
-function scrollsOf(frame: string): ReadonlyMap<string, string> {
-  return new Map(
-    frame.split(" ").map((each) => {
-      const at = each.lastIndexOf(":");
-      return [each.slice(0, at), each.slice(at + 1)] as const;
-    }),
-  );
-}
-
-/** Every part whose scroll in some frame was not what it was in the first frame. */
-function scrolledOf(frames: readonly string[]): readonly Scrolled[] {
-  const first = scrollsOf(frames[0] ?? "");
-  const found = new Map<string, Scrolled>();
-  for (const frame of frames) {
-    const now = scrollsOf(frame);
-    for (const part of new Set([...first.keys(), ...now.keys()])) {
-      const [from, to] = [first.get(part) ?? "0/0", now.get(part) ?? "0/0"];
-      if (from !== to && !found.has(part)) {
-        found.set(part, { part, from, to });
-      }
-    }
-  }
-  return [...found.values()];
 }
 
 /** The path of the requests the measure waits for: those of the API. */
@@ -225,7 +108,10 @@ export async function movementWhile(
   const frames = await recording;
   const shifts = await shifting;
   return {
-    ...judged(landmarks, frames),
+    ...judged(
+      landmarks.map((landmark) => landmark.name),
+      frames,
+    ),
     shifts,
     greyShapes: frames.grey.includes(true),
     scrolled: scrolledOf(frames.scrolls),
@@ -256,38 +142,13 @@ export async function landmarkOf(found: Locator, name: string): Promise<Landmark
   return { name, selector: `[${LANDMARK}="${name}"]` };
 }
 
-/** What may change while the screen otherwise stands still. */
-export interface StillExcept {
-  /**
-   * The landmarks under what changed, and what changed itself: each may be pushed once and grow
-   * downwards once (a part that grows pushes what is under it once, never back and forth), and
-   * layout shifts inside them are theirs.
-   */
-  readonly follows?: readonly string[];
-  /** The parts whose scroll the action is meant to change (`window.body` when a form starts again). */
-  readonly scrolls?: readonly string[];
-}
-
 /**
- * Fails unless the screen stood still (UX §6.4): no landmark moved by more than half a pixel, apart from
- * those in `follows`; no layout shift above nothing outside them, before or after an input; nothing
- * went away, no grey shapes showed, and nothing scrolled but what `scrolls` names.
+ * Fails unless the screen stood still (UX §6.4), by the rule of `wrongIn`: what the action changes
+ * grows in place, what stands under it is pushed once by exactly that, and nothing else moves,
+ * shifts, goes, flashes or scrolls.
  */
 export function expectStill(movement: Movement, except: StillExcept = {}): void {
-  const follows = except.follows ?? [];
-  const inFollows = (shift: Shift): boolean =>
-    shift.sources.length > 0 &&
-    shift.sources.every((source) => source.within.some((name) => follows.includes(name)));
-  expect(
-    {
-      moved: movement.moved.filter(
-        (each) => !follows.includes(each.name) || each.steps > 1 || each.growths > 1,
-      ),
-      shifts: movement.shifts.filter((shift) => shift.value > 0 && !inFollows(shift)),
-      vanished: movement.vanished,
-      greyShapes: movement.greyShapes,
-      scrolled: movement.scrolled.filter((each) => !(except.scrolls ?? []).includes(each.part)),
-    },
-    "what moved, shifted, went away, flashed or scrolled",
-  ).toEqual({ moved: [], shifts: [], vanished: [], greyShapes: false, scrolled: [] });
+  expect(wrongIn(movement, except), "what moved, shifted, went away, flashed or scrolled").toEqual(
+    nothingWrong,
+  );
 }

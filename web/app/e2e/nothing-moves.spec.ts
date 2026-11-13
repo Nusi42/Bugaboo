@@ -42,7 +42,7 @@ test("ux_01_adding_and_removing_a_tag_moves_nothing_else_on_the_issue_page", asy
     await tags.getByRole("button", { name: t("labels.add-tag-button"), exact: true }).click();
     await expect(tags.getByText(new RegExp(`^${t("save.saved")}`, "u"))).toBeVisible();
   });
-  expectStill(added, { follows: still.below });
+  expectStill(added, still);
   await expectFocusIn(tags);
   // The History shows the change without a reload: it is read again, in place.
   await expect(
@@ -55,7 +55,7 @@ test("ux_01_adding_and_removing_a_tag_moves_nothing_else_on_the_issue_page", asy
     await tags.getByRole("button", { name: t("labels.take-off", { name: "fresh" }) }).click();
     await expect(tags.getByText("fresh", { exact: true })).toHaveCount(0);
   });
-  expectStill(removed, { follows: still.below });
+  expectStill(removed, still);
   await expectFocusIn(tags);
 });
 
@@ -89,14 +89,18 @@ test("ux_01_creating_an_issue_moves_nothing_on_the_list_but_the_new_row", async 
     await another.click();
     await expect(rowOf(page, "The first of two")).toBeVisible();
   });
-  expectStill(madeAnother, { follows: [...list.below, ...window.below], scrolls: window.scrolls });
+  expectStill(madeAnother, {
+    grows: window.grows,
+    follows: list.follows,
+    scrolls: window.scrolls,
+  });
   await expectFocusIn(title);
   await expect(title).toBeInViewport();
   // Typing the next title moves nothing in the window but the note of what is missing in the footer.
   const typing = await movementWhile(page, window.all, async () => {
     await title.fill("The second of two");
   });
-  expectStill(typing, { follows: window.below });
+  expectStill(typing, window);
 });
 
 test("ux_01 Create the issue opens it read already, without a scroll or a jump", async ({

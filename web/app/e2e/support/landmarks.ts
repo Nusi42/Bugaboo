@@ -8,12 +8,15 @@ import { detailRow } from "./parts.ts";
 
 /**
  * The landmarks of the screens that must stand still while a person changes something on them (UX §6),
- * for the measure of movement (`movement.ts`). `all` is what the measure watches; `below` names those
- * that stand under the part that changes and may move once, in one step, when it grows.
+ * for the measure of movement (`movement.ts`). `all` is what the measure watches; `grows` and
+ * `follows` are what the action may change and what it may push (`StillExcept`).
  */
 export interface ScreenLandmarks {
   readonly all: readonly Landmark[];
-  readonly below: readonly string[];
+  /** What the action changes: it alone may grow. */
+  readonly grows: readonly string[];
+  /** What stands under what grows: it may be pushed once, by exactly that. */
+  readonly follows: readonly string[];
   /** The parts whose scroll the action is meant to change. */
   readonly scrolls: readonly string[];
 }
@@ -48,9 +51,9 @@ async function mainParts(page: Page): Promise<readonly MainPart[]> {
 /**
  * The landmarks of an issue page around the row of *Tags*: the head, the title, the heading of the
  * Details and their first row, and each part of the main column above the History stand still. The
- * row of *Tags* changes, and the rows of the Details under it (*Labels* among them) may move once;
- * so may the History, which the change adds a line to, and what stands after it. On a phone the
- * main column stands under the Details, so every part of it may move once.
+ * row of *Tags* changes and grows, with the list of the Details around it, and so does the History,
+ * which the change adds a line to. The row of *Labels* under it is pushed by exactly that. On a phone
+ * the main column stands under the Details, so each part of it is pushed by exactly that too.
  */
 export async function issuePageLandmarks(page: Page): Promise<ScreenLandmarks> {
   const tags = await landmarkOf(detailRow(page, t("labels.tags-heading")), "the row of Tags");
@@ -58,7 +61,7 @@ export async function issuePageLandmarks(page: Page): Promise<ScreenLandmarks> {
   const details = partLandmark("the rows of the Details", "name-values");
   const main = await mainParts(page);
   const phone = layoutOf(page) === "phone";
-  const moving = main.filter((each) => phone || each.fromHistory).map((each) => each.landmark.name);
+  const history = main.filter((each) => each.fromHistory).map((each) => each.landmark.name);
   return {
     all: [
       partLandmark("the head", "issue-head"),
@@ -70,7 +73,8 @@ export async function issuePageLandmarks(page: Page): Promise<ScreenLandmarks> {
       details,
       ...main.map((each) => each.landmark),
     ],
-    below: [tags.name, labels.name, details.name, ...moving],
+    grows: [tags.name, details.name, ...history],
+    follows: [labels.name, ...(phone ? main.map((each) => each.landmark.name) : [])],
     scrolls: [],
   };
 }
@@ -82,10 +86,13 @@ export async function expectFocusIn(changed: Locator): Promise<void> {
     .toBe(true);
 }
 
+/** The box of a row of the list that was not marked as a landmark: one that came in after. */
+const NEW_ROW = "[data-part='list-scroll'] :has(> [role='row']):not([data-landmark])";
+
 /**
  * The landmarks of a list of issues: its heading, the toolbar and the first row (the head of the
- * first group) stand still. A new issue comes in among the rows, so every other row, each a landmark
- * of its own, stands under it and may move once, by one row.
+ * first group) stand still. A new issue comes in among the rows (`the new row`, any row that was not
+ * there before), so every other row, each a landmark of its own, may be pushed by exactly that row.
  */
 export async function listLandmarks(page: Page): Promise<ScreenLandmarks> {
   // The box the list lays each row out in (the row's parent) is what moves when a row comes in.
@@ -102,8 +109,10 @@ export async function listLandmarks(page: Page): Promise<ScreenLandmarks> {
       partLandmark("the toolbar", "list-toolbar"),
       ...(first === undefined ? [] : [first]),
       ...rest,
+      { name: "the new row", selector: NEW_ROW },
     ],
-    below: rest.map((row) => row.name),
+    grows: [],
+    follows: rest.map((row) => row.name),
     scrolls: [],
   };
 }
@@ -122,6 +131,6 @@ export async function newIssueWindowLandmarks(title: Locator): Promise<ScreenLan
     return bottom > 0 && top < innerHeight;
   });
   return inView
-    ? { all: [footer, box], below: [footer.name], scrolls: [] }
-    : { all: [footer], below: [footer.name], scrolls: ["window.body"] };
+    ? { all: [footer, box], grows: [footer.name], follows: [], scrolls: [] }
+    : { all: [footer], grows: [footer.name], follows: [], scrolls: ["window.body"] };
 }
