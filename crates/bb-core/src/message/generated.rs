@@ -8613,6 +8613,9 @@ pub const TIMELINE_EMPTY: MessageKey = MessageKey::new("timeline.empty");
 /// The message `timeline.end-field`.
 pub const TIMELINE_END_FIELD: MessageKey = MessageKey::new("timeline.end-field");
 
+/// The message `timeline.give-to`.
+pub const TIMELINE_GIVE_TO: MessageKey = MessageKey::new("timeline.give-to");
+
 /// The message `timeline.keys`.
 pub const TIMELINE_KEYS: MessageKey = MessageKey::new("timeline.keys");
 
@@ -17730,15 +17733,12 @@ pub fn timeline_effort_days(
     )
 }
 
-/// The message `timeline.estimate-days`.
+/// The message `timeline.give-to-name`.
 #[must_use]
-pub fn timeline_estimate_days(days: i64, estimate: impl std::fmt::Display) -> Message {
+pub fn timeline_give_to_name(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
-        MessageKey::new("timeline.estimate-days"),
-        vec![
-            ("days", Value::Number(days)),
-            ("estimate", Value::Text(estimate.to_string())),
-        ],
+        MessageKey::new("timeline.give-to-name"),
+        vec![("name", Value::Text(name.to_string()))],
     )
 }
 
@@ -17929,15 +17929,21 @@ pub fn timeline_planned_with(name: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `timeline.preview-line`.
+/// The message `timeline.preview-after`.
 #[must_use]
-pub fn timeline_preview_line(key: impl std::fmt::Display, to: impl std::fmt::Display) -> Message {
+pub fn timeline_preview_after(days: impl std::fmt::Display) -> Message {
     Message::with_arguments(
-        MessageKey::new("timeline.preview-line"),
-        vec![
-            ("key", Value::Text(key.to_string())),
-            ("to", Value::Text(to.to_string())),
-        ],
+        MessageKey::new("timeline.preview-after"),
+        vec![("days", Value::Text(days.to_string()))],
+    )
+}
+
+/// The message `timeline.preview-before`.
+#[must_use]
+pub fn timeline_preview_before(days: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.preview-before"),
+        vec![("days", Value::Text(days.to_string()))],
     )
 }
 
@@ -18082,19 +18088,17 @@ pub fn timeline_warnings_of(count: i64) -> Message {
     )
 }
 
-/// The message `timeline.work-time`.
+/// The message `timeline.work-share`.
 #[must_use]
-pub fn timeline_work_time(
+pub fn timeline_work_share(
     project: impl std::fmt::Display,
     share: impl std::fmt::Display,
-    usual: impl std::fmt::Display,
 ) -> Message {
     Message::with_arguments(
-        MessageKey::new("timeline.work-time"),
+        MessageKey::new("timeline.work-share"),
         vec![
             ("project", Value::Text(project.to_string())),
             ("share", Value::Text(share.to_string())),
-            ("usual", Value::Text(usual.to_string())),
         ],
     )
 }
@@ -26320,10 +26324,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "No issue of this search has a date yet. Give one dates from Not scheduled yet.",
     ),
     ("timeline.end-field", "Bars end at"),
-    (
-        "timeline.estimate-days",
-        "Estimate {estimate} = {days, plural, one {# work day} other {# work days}}",
-    ),
+    ("timeline.give-to", "Give it"),
+    ("timeline.give-to-name", "Give it to {name}"),
     ("timeline.given", "{key} now goes to {name}"),
     ("timeline.goal", "Goal {key}, {days}"),
     ("timeline.goal-due", "Due date of {key}: {day}"),
@@ -26386,7 +26388,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("timeline.phone-sheet", "Selected issue"),
     ("timeline.plan-by-effort", "Plan by effort"),
     ("timeline.planned-with", "Planned with {name}'s work times"),
-    ("timeline.preview-line", "{key}: {to}"),
+    ("timeline.preview-after", "After: {days}"),
+    ("timeline.preview-before", "Before: {days}"),
     ("timeline.preview-longer", "{key} gets the due date {day}."),
     ("timeline.preview-move", "What moves"),
     ("timeline.preview-nothing", "Nothing would move."),
@@ -26420,7 +26423,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("timeline.warnings-title", "Plan warnings"),
     ("timeline.which-way", "Order"),
-    ("timeline.work-time", "{usual} · {share} in {project}"),
+    ("timeline.work-share", "{share} in {project}"),
     (
         "timeline.worked-out-due",
         "Plan by effort works out its due date; nothing is saved.",

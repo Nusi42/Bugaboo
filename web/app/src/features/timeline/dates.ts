@@ -92,6 +92,15 @@ function save(row: TimelineRow, fields: DateFields, dates: KeptDates): Promise<s
   });
 }
 
+/**
+ * Runs `work` on an issue after every save of it that this screen asked for before, with the
+ * version the last of them made: a way out of a plan warning sent right after a drag is made on the
+ * dates the drag saved, never on the version the page read.
+ */
+export function afterSaves<T>(row: TimelineRow, work: (version: number) => Promise<T>): Promise<T> {
+  return inOrder(`timeline:${idOf(row)}`, () => work(versionNow(row)));
+}
+
 /** What a change of dates says when it is done: by how many days it moved, or nothing more. */
 export type Said = { readonly move: "both"; readonly days: number } | { readonly move: "set" };
 

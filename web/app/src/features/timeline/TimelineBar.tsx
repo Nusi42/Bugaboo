@@ -65,7 +65,7 @@ export function TimelineBar({ line, days, described }: TimelineBarProps) {
         onKeyUp={bar.onKeyUp}
         onBlur={bar.onBlur}
       />
-      <BarLabel row={row} issueKey={key} warnings={bar.warnings} />
+      <BarLabel row={row} issueKey={key} warnings={bar.warnings} onWidth={bar.onLabelWidth} />
       {selected && mayMove ? <BarHandles issue={line.issue} handlers={handlers} /> : null}
     </div>
   );

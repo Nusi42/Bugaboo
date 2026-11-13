@@ -876,7 +876,6 @@ export const messages = {
   "issue-field.time-factor": "Time factor",
   "issues.time-factor-value": "×{factor}",
   "issues.time-factor-own": "{factor} · {name}'s own estimate",
-  "issues.time-factor-estimate": "Estimate {estimate}",
   "issues.time-factor-sum": "Estimate {estimate} · {factor} = {total}",
   "notification.kind.time-factor-changed": "Your time factor was changed",
   "notifications.time-factor-changed": "{who} changed your time factor on this issue",

@@ -27,17 +27,37 @@ export interface AssignedPickerProps {
   readonly assigned: readonly NamedPerson[];
   /** The people it is assigned to from now on: all of them. */
   readonly onChange: (people: readonly NamedPerson[]) => void;
+  /** What the picker is for, where it is not *Assigned to*: its title and the name of its button. */
+  readonly words?: PickerWords;
+}
+
+/** The title of the picker and the button that picks a person, by what the picker is for. */
+export interface PickerWords {
+  readonly title: string;
+  /** The words of the button of a person, and its name for screen readers. */
+  readonly pick: string;
+  readonly pickName: (name: string) => string;
+}
+
+/** The words of the picker of *Assigned to* (UX §4.4). */
+function assignWords(): PickerWords {
+  return {
+    title: t("issues.assign-title"),
+    pick: t("issues.assign"),
+    pickName: (name) => t("issues.assign-name", { name }),
+  };
 }
 
 interface RowProps {
   readonly person: NamedPerson;
+  readonly words: PickerWords;
   readonly assigned: boolean;
   readonly onAssign: () => void;
   readonly onUnassign: () => void;
 }
 
 /** A person of the project: a button to assign them, or the word that they are, and a button to take them away. */
-function Row({ person, assigned, onAssign, onUnassign }: RowProps) {
+function Row({ person, words, assigned, onAssign, onUnassign }: RowProps) {
   return (
     <PickerRow label={person.name}>
       {assigned ? (
@@ -51,8 +71,8 @@ function Row({ person, assigned, onAssign, onUnassign }: RowProps) {
           </Button>
         </>
       ) : (
-        <Button aria-label={t("issues.assign-name", { name: person.name })} onPress={onAssign}>
-          {t("issues.assign")}
+        <Button aria-label={words.pickName(person.name)} onPress={onAssign}>
+          {words.pick}
         </Button>
       )}
     </PickerRow>
@@ -66,17 +86,26 @@ interface InsideProps {
   readonly assigned: readonly NamedPerson[];
   readonly onChange: (people: readonly NamedPerson[]) => void;
   readonly onClose: () => void;
+  readonly words: PickerWords;
 }
 
 /** The inside of the dialog, drawn only while it is open so nothing is asked before. */
-function Inside({ project, issue, issueType, assigned, onChange, onClose }: InsideProps) {
+function Inside({
+  project,
+  issue,
+  issueType,
+  assigned,
+  onChange,
+  onClose,
+  words: said,
+}: InsideProps) {
   const { words, frame } = usePickerFrame();
   const found = useAssignablePeople(project, words, { issue, issueType });
   const people = peopleOf(found.data?.pages);
   return (
-    <div>
+    <div {...partOf(part.assignedPicker)}>
       <SearchPicker
-        legend={t("issues.assign-title")}
+        legend={said.title}
         searchLabel={t("issues.assign-search")}
         listLabel={t("issues.assign-list")}
         {...frame}
@@ -89,6 +118,7 @@ function Inside({ project, issue, issueType, assigned, onChange, onClose }: Insi
           <Row
             key={person.id}
             person={person}
+            words={said}
             assigned={assigned.some((known) => known.id === person.id)}
             onAssign={() => {
               onChange([...assigned, person]);
@@ -121,6 +151,7 @@ export function AssignedPicker({
   issueType,
   assigned,
   onChange,
+  words = assignWords(),
 }: AssignedPickerProps) {
   return (
     <Overlay
@@ -130,7 +161,7 @@ export function AssignedPicker({
           onClose();
         }
       }}
-      label={t("issues.assign-title")}
+      label={words.title}
     >
       {isOpen ? (
         <Inside
@@ -140,6 +171,7 @@ export function AssignedPicker({
           assigned={assigned}
           onChange={onChange}
           onClose={onClose}
+          words={words}
         />
       ) : null}
     </Overlay>

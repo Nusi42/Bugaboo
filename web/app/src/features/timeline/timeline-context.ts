@@ -4,7 +4,9 @@ import type { ZoomWord } from "../../shared/list-view.ts";
 import type { DateFields } from "./date-fields.ts";
 import type { Move } from "./moves.ts";
 import type { BarDays, IssueLine } from "./lines.ts";
+import type { HatchedDay } from "./people/hatched-words.ts";
 import type { Span } from "./scale.ts";
+import type { ChartView } from "./use-visible-rows.ts";
 import type { TimelineGoal, TimelineRow } from "./timeline-data.ts";
 
 /** What every part of the chart shares: where days and rows stand, and what a person does to a bar. */
@@ -22,6 +24,8 @@ export interface TimelineContextValue {
   readonly goalOf: (issue: string) => TimelineGoal | undefined;
   /** The issue whose bar is selected. */
   readonly selected: string | undefined;
+  /** Under *Group by person*: the away days and holidays of the person of a group, by their ID. */
+  readonly personDaysOf: (person: string) => readonly HatchedDay[];
   /** The issue whose warning is pointed at in the list: its bar is marked. */
   readonly marked: string | undefined;
   /** How many open plan warnings an issue has: its bar carries the sign. */
@@ -44,6 +48,15 @@ export interface TimelineContextValue {
 }
 
 export const TimelineContext = createContext<TimelineContextValue | null>(null);
+
+/**
+ * Where the days on screen start and end, in pixels from the first day of the chart: the chart sets
+ * it as it scrolls, and a bar puts its label before it when the label would run past the end.
+ */
+export const ChartViewContext = createContext<ChartView>({
+  start: 0,
+  end: Number.POSITIVE_INFINITY,
+});
 
 /** What the chart shares, for a part of it. */
 export function useTimeline(): TimelineContextValue {

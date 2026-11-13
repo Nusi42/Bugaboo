@@ -1,12 +1,17 @@
-import { pixelsOf } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { dateFieldsOf } from "./date-fields.ts";
 import { arrowsOf, linesOf, type IssueLine } from "./lines.ts";
-import { dayWidthOf } from "./scale.ts";
 import { sideOf } from "./side-of.ts";
 import { useBarChanges } from "./use-bar-changes.ts";
-import { barHandlers, rowFinder, selectedLine, useFolding, useWarningMarks } from "./use-marks.ts";
+import {
+  barHandlers,
+  rowFinder,
+  scaleOf,
+  selectedLine,
+  useFolding,
+  useWarningMarks,
+} from "./use-marks.ts";
 import { useTimelineReads, type TimelineInput } from "./use-timeline-reads.ts";
 
 export type { TimelineInput } from "./use-timeline-reads.ts";
@@ -26,12 +31,14 @@ export function useTimelineModel(
   const { folded, onToggle } = useFolding();
   const [selected, select] = useState<string>();
   const rowOf = rowFinder([...read.rows, ...waiting.rows]);
-  const marks = useWarningMarks(
-    read.warnings,
-    warningsOpen ? { rowOf, options: input.view.timeline, onShow: select } : undefined,
-  );
   const fields = dateFieldsOf(input.view.timeline, reads.own);
   const changes = useBarChanges(fields, rowOf);
+  const marks = useWarningMarks(
+    read.warnings,
+    warningsOpen
+      ? { rowOf, options: input.view.timeline, onShow: select, settle: changes.onRunEnd }
+      : undefined,
+  );
   const lines = linesOf(read.rows, folded, (id) => read.goals.get(id));
   const daysOf = (line: IssueLine) => changes.daysOf(line.issue, line.row.bar?.days);
   return {
@@ -53,12 +60,10 @@ export function useTimelineModel(
     onToggle,
     context: {
       span: chart.span,
-      zoom: input.view.timeline.zoom,
-      dayPixels: pixelsOf(dayWidthOf[input.view.timeline.zoom]),
-      rowPixels: pixelsOf("size-timeline-row"),
+      ...scaleOf(input.view.timeline.zoom),
       fields,
       daysOf,
-      goalOf: (issue: string) => read.goals.get(issue),
+      ...read.lookups,
       selected,
       select,
       ...marks.chart,

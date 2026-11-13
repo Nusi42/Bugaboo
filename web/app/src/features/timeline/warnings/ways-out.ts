@@ -7,6 +7,7 @@ import { undoStore } from "../../../shared/optimistic-undo.ts";
 import type { TimelineOptions } from "../../../shared/list-view.ts";
 import { namedPerson, type NamedPerson } from "../../../shared/person.ts";
 import { sendChange } from "../../issues/index.ts";
+import { afterSaves } from "../dates.ts";
 import { idOf, refreshTimeline, type PlanWarning, type TimelineRow } from "../timeline-data.ts";
 
 /**
@@ -18,17 +19,29 @@ import { idOf, refreshTimeline, type PlanWarning, type TimelineRow } from "../ti
 /** One issue of the preview of *Move it after*, with the dates it gets. */
 export type MovePreviewIssue = Schema<"MoveAfterIssueBody">;
 
-/** The preview of *Move it after*: every issue that would move, with its new days. Saves nothing. */
+/**
+ * The preview of *Move it after*: every issue that would move, with its new days, read after the
+ * changes of the issue that this screen still saves. Saves nothing. A refusal is said in the
+ * server's words, and the answer is then none.
+ */
 export async function previewMoveAfter(
   warning: PlanWarning,
+  row: TimelineRow,
   options: TimelineOptions,
-): Promise<readonly MovePreviewIssue[]> {
-  const preview = dataOf(
-    await api.client.POST("/api/v1/timeline/move-after", {
-      body: { issue: warning.issue, after: warning.move_after ?? "", timeline: options },
-    }),
-  );
-  return preview.issues;
+): Promise<readonly MovePreviewIssue[] | undefined> {
+  try {
+    const preview = await afterSaves(row, async () =>
+      dataOf(
+        await api.client.POST("/api/v1/timeline/move-after", {
+          body: { issue: warning.issue, after: warning.move_after ?? "", timeline: options },
+        }),
+      ),
+    );
+    return preview.issues;
+  } catch (error) {
+    undoStore.offer({ message: messageOf(error) });
+    return undefined;
+  }
 }
 
 /** Takes a run back: the preview of its undo first, so a change made since is never written over. */
@@ -84,21 +97,18 @@ export async function moveAsPreviewed(issues: readonly MovePreviewIssue[]): Prom
 /** *Keep and accept*: the warning stays, faded, until the dates of its issue change. */
 export async function keepAndAccept(
   warning: PlanWarning,
-  issue: { readonly key: string; readonly version: number },
+  row: TimelineRow,
   options: TimelineOptions,
 ): Promise<void> {
   try {
-    dataOf(
-      await api.client.POST("/api/v1/timeline/accepted-warnings", {
-        body: {
-          issue: warning.issue,
-          version: issue.version,
-          kind: warning.kind,
-          timeline: options,
-        },
-      }),
+    await afterSaves(row, async (version) =>
+      dataOf(
+        await api.client.POST("/api/v1/timeline/accepted-warnings", {
+          body: { issue: warning.issue, version, kind: warning.kind, timeline: options },
+        }),
+      ),
     );
-    undoStore.offer({ message: t("timeline.accepted", { key: issue.key }) });
+    undoStore.offer({ message: t("timeline.accepted", { key: row.issue.readable_id ?? "" }) });
   } catch (error) {
     undoStore.offer({ message: messageOf(error) });
   }
@@ -110,17 +120,15 @@ export async function keepAndAccept(
  * the others assigned after the first stay. Only people the reader sees by name can be named again,
  * so the way is offered only when every assigned person is shown by name (`mayGive`).
  */
-export async function giveTo(
-  row: TimelineRow,
-  person: NamedPerson,
-  version: number,
-): Promise<void> {
+export async function giveTo(row: TimelineRow, person: NamedPerson): Promise<void> {
   const others = (row.issue.assigned_to ?? [])
     .slice(1)
     .flatMap((each) => namedPerson(each) ?? [])
     .filter((each) => each.id !== person.id);
   try {
-    await sendChange(idOf(row), { version, values: { assignedTo: [person, ...others] } });
+    await afterSaves(row, (version) =>
+      sendChange(idOf(row), { version, values: { assignedTo: [person, ...others] } }),
+    );
     undoStore.offer({
       message: t("timeline.given", { key: row.issue.readable_id ?? "", name: person.name }),
     });

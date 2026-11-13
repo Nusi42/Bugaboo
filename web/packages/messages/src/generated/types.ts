@@ -922,7 +922,7 @@ export interface MessageArguments {
   "timeline.dependency-made": { first: string | number; waiting: string | number };
   "timeline.drag-issue": { key: string | number };
   "timeline.effort-days": { days: number; estimate: string | number; factor: string | number };
-  "timeline.estimate-days": { days: number; estimate: string | number };
+  "timeline.give-to-name": { name: string | number };
   "timeline.given": { key: string | number; name: string | number };
   "timeline.goal": { days: string | number; key: string | number };
   "timeline.goal-due": { day: string | number; key: string | number };
@@ -944,7 +944,8 @@ export interface MessageArguments {
   "timeline.person-more": { count: string | number; name: string | number };
   "timeline.person-on-bar": { name: string | number };
   "timeline.planned-with": { name: string | number };
-  "timeline.preview-line": { key: string | number; to: string | number };
+  "timeline.preview-after": { days: string | number };
+  "timeline.preview-before": { days: string | number };
   "timeline.preview-longer": { day: string | number; key: string | number };
   "timeline.saved-both": { end: string | number; start: string | number };
   "timeline.saved-end": { end: string | number };
@@ -958,11 +959,7 @@ export interface MessageArguments {
   "timeline.warning-accepted": { name: string | number };
   "timeline.warnings": { count: string | number };
   "timeline.warnings-of": { count: number };
-  "timeline.work-time": {
-    project: string | number;
-    share: string | number;
-    usual: string | number;
-  };
+  "timeline.work-share": { project: string | number; share: string | number };
   "work-times.away-added": { days: string | number };
   "work-times.away-change-name": { days: string | number };
   "work-times.away-changed": { days: string | number };

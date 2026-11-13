@@ -72,6 +72,11 @@ export function CardAndWarnings({ warnings: list, selected, onAsk, phone }: Card
     list === undefined ? null : (
       <WarningsList
         {...list}
+        // On a phone the sheet of the warnings closes before the card of the bar opens.
+        onShow={(issue) => {
+          phone?.onCloseWarnings();
+          list.onShow(issue);
+        }}
         onGive={(row) => {
           onAsk({ what: "give", row });
         }}

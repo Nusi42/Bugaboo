@@ -1,8 +1,11 @@
+import { pixelsOf } from "@bugaboo/ui";
 import { useState } from "react";
 
 import type { IssueLine, Line } from "./lines.ts";
 import type { TimelineContextValue } from "./timeline-context.ts";
+import type { ZoomWord } from "../../shared/list-view.ts";
 import { known } from "../../shared/present.ts";
+import { dayWidthOf } from "./scale.ts";
 import type { PlanWarning, TimelineRow } from "./timeline-data.ts";
 import type { WarningsListProps } from "./warnings/WarningsList.tsx";
 
@@ -39,7 +42,7 @@ export function useWarningMarks(warnings: readonly PlanWarning[], list: Warnings
 }
 
 /** What the list of warnings needs besides the warnings, while it is open. */
-type WarningsInput = Pick<WarningsListProps, "rowOf" | "options" | "onShow">;
+type WarningsInput = Pick<WarningsListProps, "rowOf" | "options" | "onShow" | "settle">;
 
 /** The handlers of what a person does to a bar, as the parts of the chart get them. */
 type BarHandlers = Pick<
@@ -71,4 +74,13 @@ export function selectedLine(
     (each): each is IssueLine => each.kind === "issue" && each.issue === selected,
   );
   return { line: mine[0], copied: mine.some((each) => each.row.copy) };
+}
+
+/** The zoom of the chart, and the width of a day and the height of a row there, in pixels. */
+export function scaleOf(zoom: ZoomWord) {
+  return {
+    zoom,
+    dayPixels: pixelsOf(dayWidthOf[zoom]),
+    rowPixels: pixelsOf("size-timeline-row"),
+  };
 }

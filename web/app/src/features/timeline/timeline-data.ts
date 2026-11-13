@@ -98,6 +98,12 @@ export interface TimelineRead {
   readonly notScheduled: number;
   /** Whether the server planned the bars by effort (never for an access key). */
   readonly byEffort: boolean;
+  /** What the parts of the chart look up in it: a goal, and the days of a person's row. */
+  readonly lookups: {
+    readonly goalOf: (issue: string) => TimelineGoal | undefined;
+    /** Under *Group by person*: the away days and holidays of a person's row, by their ID. */
+    readonly personDaysOf: (person: string) => readonly Schema<"HatchedDayBody">[];
+  };
 }
 
 /** The pages put together: the rows in order, every arrow and goal once. */
@@ -107,7 +113,13 @@ export function readOf(pages: readonly TimelinePage[] | undefined): TimelineRead
   const seen = new Set<string>();
   const dependencies: Schema<"TimelineDependencyBody">[] = [];
   const warnings = new Map<string, PlanWarning>();
+  const peopleDays = new Map<string, readonly Schema<"HatchedDayBody">[]>();
   for (const page of all) {
+    for (const row of page.people_days) {
+      if (row.person.shown === "name") {
+        peopleDays.set(row.person.id, row.hatched);
+      }
+    }
     for (const warning of page.warnings) {
       warnings.set(warningKey(warning), warning);
     }
@@ -129,6 +141,10 @@ export function readOf(pages: readonly TimelinePage[] | undefined): TimelineRead
     warnings: [...warnings.values()],
     notScheduled: all[0]?.not_scheduled ?? 0,
     byEffort: all[0]?.planned_by_effort ?? false,
+    lookups: {
+      goalOf: (issue) => goals.get(issue),
+      personDaysOf: (person) => peopleDays.get(person) ?? [],
+    },
   };
 }
 

@@ -1,4 +1,3 @@
-import { pixelsOf, usePlace } from "@bugaboo/ui";
 import { useRef, type KeyboardEvent } from "react";
 
 import { useDropOf } from "../../shared/drop-of.ts";
@@ -6,7 +5,7 @@ import { keyMoveOf } from "./bar-keys.ts";
 import { dragKinds } from "./drag-kinds.ts";
 import type { BarDays, IssueLine } from "./lines.ts";
 import { shownWhileMoving, type Move } from "./moves.ts";
-import { placeOf } from "./scale.ts";
+import { useBarPlace, useLabelPlace } from "./bar-place.ts";
 import { useTimeline } from "./timeline-context.ts";
 import { useBarDrag } from "./use-bar-drag.ts";
 
@@ -85,14 +84,7 @@ export function useBar(line: IssueLine, days: BarDays) {
       timeline.onLink(first, line.issue);
     }
   });
-  const start = placeOf(timeline.span, shown.first);
-  // Too little room after the bar for its Issue ID: it stands before the bar.
-  const after = (timeline.span.days - placeOf(timeline.span, shown.last) - 1) * timeline.dayPixels;
-  usePlace(ref, {
-    "timeline-start": start,
-    "timeline-length": placeOf(timeline.span, shown.last) - start + 1,
-    "timeline-done": row.bar?.done ?? 0,
-  });
+  useBarPlace(ref, timeline.span, shown, row.bar?.done ?? 0);
   return {
     ref,
     shown,
@@ -101,7 +93,7 @@ export function useBar(line: IssueLine, days: BarDays) {
     dragging,
     handlers,
     drop,
-    labelBefore: after < pixelsOf("size-timeline-label"),
+    ...useLabelPlace(timeline, shown),
     marked: timeline.marked === line.issue,
     warnings: timeline.warnedOf(line.issue),
     ...barKeys(timeline, line, mayMove, select),

@@ -1,3 +1,5 @@
+import { t } from "@bugaboo/messages";
+
 import { known } from "../../shared/present.ts";
 import { AssignedPicker } from "../issues/index.ts";
 import { AddDependencyWindow } from "./AddDependencyWindow.tsx";
@@ -36,10 +38,15 @@ function GivePicker({
       project={row.issue.project?.short_name ?? ""}
       issue={known(row.issue.id)}
       assigned={[]}
+      words={{
+        title: t("plan-way-out.give-to-someone-else"),
+        pick: t("timeline.give-to"),
+        pickName: (name) => t("timeline.give-to-name", { name }),
+      }}
       onChange={(people) => {
         const [person] = people;
         if (person !== undefined) {
-          void giveTo(row, person, row.issue.version ?? 0);
+          void giveTo(row, person);
         }
         onClose();
       }}

@@ -4,6 +4,7 @@ import { useId } from "react";
 
 import { ChartBackdrop, type ChartBackdropProps } from "./ChartBackdrop.tsx";
 import type { GroupLine, Line } from "./lines.ts";
+import { ChartViewContext } from "./timeline-context.ts";
 import { useCanvas } from "./use-canvas.ts";
 import { TimelineLine } from "./TimelineLine.tsx";
 import { useDayInView, useVisibleRows } from "./use-visible-rows.ts";
@@ -34,18 +35,20 @@ export function TimelineChart({ lines, groupName, onToggle, ...backdrop }: Timel
         {...drop.dropProps}
       >
         <ChartBackdrop {...backdrop} />
-        <ul {...partOf(part.timelineRows)} aria-label={t("timeline.chart")}>
-          {lines.slice(visible.first, visible.last + 1).map((line, index) => (
-            <TimelineLine
-              key={line.id}
-              line={line}
-              at={visible.first + index}
-              described={described}
-              groupName={groupName}
-              onToggle={onToggle}
-            />
-          ))}
-        </ul>
+        <ChartViewContext.Provider value={visible.view}>
+          <ul {...partOf(part.timelineRows)} aria-label={t("timeline.chart")}>
+            {lines.slice(visible.first, visible.last + 1).map((line, index) => (
+              <TimelineLine
+                key={line.id}
+                line={line}
+                at={visible.first + index}
+                described={described}
+                groupName={groupName}
+                onToggle={onToggle}
+              />
+            ))}
+          </ul>
+        </ChartViewContext.Provider>
       </div>
       <p id={described.keys} {...partOf(part.visuallyHidden)}>
         {t("timeline.keys")}

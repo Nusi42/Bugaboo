@@ -7,10 +7,18 @@ import { doNothing } from "../../shared/do-nothing.ts";
 /** The rows drawn above and below what is on screen, so a quick scroll shows no gap. */
 const overscan = 10;
 
-/** The first and the last line that are drawn. */
+/** The days on screen, in pixels from the first day of the chart: a label stands where it fits. */
+export interface ChartView {
+  readonly start: number;
+  readonly end: number;
+}
+
+/** The first and the last line that are drawn, and where the days on screen end. */
 export interface Visible {
   readonly first: number;
   readonly last: number;
+  /** Where the days on screen start and end, in pixels from the first day of the chart. */
+  readonly view: ChartView;
 }
 
 /**
@@ -21,7 +29,11 @@ export interface Visible {
  */
 export function useVisibleRows(count: number, rowPixels: number, headPixels: number) {
   const box = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState<Visible>({ first: 0, last: overscan * 2 });
+  const [visible, setVisible] = useState<Visible>({
+    first: 0,
+    last: overscan * 2,
+    view: { start: 0, end: Number.POSITIVE_INFINITY },
+  });
   useLayoutEffect(() => {
     const element = box.current;
     if (element === null || rowPixels <= 0) {
@@ -34,8 +46,15 @@ export function useVisibleRows(count: number, rowPixels: number, headPixels: num
         count - 1,
         Math.ceil((top + element.clientHeight) / rowPixels) + overscan,
       );
+      const start = element.scrollLeft;
+      const end = start + element.clientWidth - pixelsOf("size-timeline-names");
       setVisible((before) =>
-        before.first === first && before.last === last ? before : { first, last },
+        before.first === first &&
+        before.last === last &&
+        before.view.start === start &&
+        before.view.end === end
+          ? before
+          : { first, last, view: { start, end } },
       );
     };
     look();

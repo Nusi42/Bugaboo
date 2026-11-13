@@ -763,6 +763,22 @@ bold reason="Bold is kept for the titles, the headings of sections, the words of
 // Lines that several rules share. `use "name"` puts them in the place of the line.
 
 // The line of the ring: the width and the color of every outline that says "here".
+// The patterns of the days without work on the timeline (ADR-0030, decision 3), one each, for the days inside a bar
+// and the swatches of the Legend: away days hatched one way, public holidays the other way, in lines of two widths
+// of a border in the quiet text color so they are seen in the dark themes and at the zoom of months; days that are
+// not usual work days shaded by a quarter of it, like a weekend.
+mixin "hatch-away" {
+    background "repeating-linear-gradient(135deg, $fg-muted 0, $fg-muted calc($border-width * 2), transparent calc($border-width * 2), transparent $space-2)"
+}
+
+mixin "hatch-holiday" {
+    background "repeating-linear-gradient(45deg, $fg-muted 0, $fg-muted calc($border-width * 2), transparent calc($border-width * 2), transparent $space-2)"
+}
+
+mixin "shade-day-off" {
+    background "color-mix(in srgb, $fg-muted 30%, transparent)"
+}
+
 mixin "ring-line" {
     outline "$ring-width solid $accent"
 }
@@ -3627,7 +3643,8 @@ part "timeline-bar.sign" "timeline-warning.sign" {
 // A copy of a bar in the row of another assigned person (*Group by person*): an outline only, planned with the first
 // person's work times (ADR-0030, amendment M8).
 part "timeline-bar[state=copy]" {
-    border-style dashed
+    border "calc($border-width * 2) dashed $fg-muted"
+    border-inline-start-width "$size-edge"
     background none
 }
 
@@ -3647,15 +3664,15 @@ part "timeline-bar.hatch" {
 }
 
 part "timeline-bar.hatch[variant=away]" {
-    background "repeating-linear-gradient(135deg, $fg-muted 0, $fg-muted $border-width, transparent $border-width, transparent $space-1)"
+    use "hatch-away"
 }
 
 part "timeline-bar.hatch[variant=holiday]" {
-    background "repeating-linear-gradient(45deg, $fg-muted 0, $fg-muted $border-width, transparent $border-width, transparent $space-1)"
+    use "hatch-holiday"
 }
 
 part "timeline-bar.hatch[variant=day-off]" {
-    background "$bg-sunken"
+    use "shade-day-off"
 }
 
 // A selected bar has its dot after its end: the ID moves on past it.
@@ -3775,6 +3792,10 @@ part "timeline-card" "timeline-tray" {
 
 // The title of a card of the side, bold like the title of every card (UX §7.3).
 part "timeline-side.heading" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-1" "$space-2"
     margin 0
     color "$fg"
     font-family "$font-display"
@@ -3789,6 +3810,15 @@ part "timeline-side.list" {
     margin 0
     padding 0
     list-style none
+}
+
+// The picker of a person (*Assigned to*, *Give it to someone else…*): its title, the people and *Done*, with room around.
+part "assigned-picker" {
+    display flex
+    flex-direction column
+    align-items flex-start
+    gap "$space-3"
+    padding "$space-4"
 }
 
 // A line of the card with a button at its end: the effort and *Change* of the time factor.
@@ -3849,11 +3879,19 @@ part "timeline-warning.sentence:focus-visible" {
     use "ring"
 }
 
-// The ways out of a warning: quiet buttons that wrap close under each other in the narrow side column.
+// The ways out of a warning: quiet buttons one under the other, in the order the server offers them, the same in
+// every warning.
 part "timeline-warning.ways" {
     display flex
-    flex-wrap wrap
-    gap 0 "$space-3"
+    flex-direction column
+    align-items flex-start
+}
+
+// An issue of the preview of *Move it after*: its ID, then its days before and after the move, each on a line.
+part "timeline-warning.move" {
+    display flex
+    flex-direction column
+    gap "$space-1"
 }
 
 // A line of the preview of a way out, in the size of the list.
@@ -3863,9 +3901,13 @@ part "timeline-warning.line" {
 
 // On a phone the card and the list of warnings fill a sheet, which is their frame.
 part "bottom-sheet timeline-card" "bottom-sheet timeline-warnings" {
-    padding 0
+    flex "1 1 auto"
+    min-height 0
+    overflow-y auto
     border none
     background none
+    // It clips what is outside it: room for the rings of its buttons.
+    use "ring-room"
 }
 
 // What a way out will change, before anything is saved.
@@ -3882,6 +3924,12 @@ part "timeline-card.actions" {
     display flex
     flex-wrap wrap
     gap "$space-2"
+}
+
+// On a phone the buttons of the card stand one under the other, as wide as the sheet.
+part "bottom-sheet timeline-card.actions" {
+    display grid
+    grid-template-columns "minmax(0, 1fr)"
 }
 
 part "timeline-tray" {
@@ -3970,7 +4018,7 @@ part "timeline-phone.lane" {
     position relative
     display block
     box-sizing border-box
-    height "$space-4"
+    height "$size-target-least"
     border "$border-width solid $border-subtle"
     border-radius "$r-ctl"
     background "$bg-sunken"
@@ -3979,8 +4027,43 @@ part "timeline-phone.lane" {
 part "timeline-bar[variant=phone]" {
     top 0
     bottom 0
+    // A bar of a day is wider than its edge, so the priority edge is read beside the tint.
+    min-width "calc($size-edge * 3)"
     inset-inline-start "calc(100% * $timeline-start / $timeline-days)"
     width "calc(100% * $timeline-length / $timeline-days)"
+}
+
+// The hatched days of a bar of the phone list stand on their days of the seven weeks, over the bar.
+part "timeline-phone.lane timeline-bar.hatch" {
+    inset-inline-start "calc(100% * $timeline-start / $timeline-days)"
+    width "calc(100% * $timeline-length / $timeline-days)"
+}
+
+// *Earlier* or *Later* at an end of the seven weeks, where a bar goes on past them.
+part "timeline-phone.beyond" {
+    position absolute
+    top 0
+    bottom 0
+    display flex
+    align-items center
+    padding-inline "$space-1"
+    background "$bg-raised"
+    color "$fg-muted"
+    font-size "$fs-xs"
+}
+
+part "timeline-phone.beyond[variant=earlier]" {
+    inset-inline-start 0
+}
+
+part "timeline-phone.beyond[variant=later]" {
+    inset-inline-end 0
+}
+
+// *Show more* stands in the list, under the group it reads more of.
+part "timeline-phone.more" {
+    display flex
+    padding "$space-2 $space-3"
 }
 
 part "timeline-today[variant=phone]" {
@@ -4222,11 +4305,11 @@ part "legend.swatch[variant=due]" {
 
 // The days without work and the sign of a plan warning, drawn as on the chart (UX §4.7).
 part "legend.swatch[variant=away]" {
-    background "repeating-linear-gradient(135deg, $fg-muted 0, $fg-muted $border-width, transparent $border-width, transparent $space-1)"
+    use "hatch-away"
 }
 
 part "legend.swatch[variant=holiday]" {
-    background "repeating-linear-gradient(45deg, $fg-muted 0, $fg-muted $border-width, transparent $border-width, transparent $space-1)"
+    use "hatch-holiday"
 }
 
 part "legend.swatch[variant=warning]" {

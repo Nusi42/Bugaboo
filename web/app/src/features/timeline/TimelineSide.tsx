@@ -32,8 +32,8 @@ export interface TimelineSideProps {
 
 /**
  * The side of the chart: the list of plan warnings, the card of the selected bar, *Not scheduled yet*,
- * and the windows they open. On a phone the card and the list are sheets, *Not scheduled yet* is the
- * last group under the list, and nothing is dragged from it.
+ * and the windows they open. On a phone the card and the list are sheets, and *Not scheduled yet* is
+ * the last group of the phone list.
  */
 export function TimelineSide(props: TimelineSideProps) {
   const { selected, asked, dateNames, phone } = props;
@@ -48,13 +48,14 @@ export function TimelineSide(props: TimelineSideProps) {
   return (
     <div {...partOf(part.timelineSide)}>
       <CardAndWarnings phone={phone} warnings={props.warnings} selected={selected} onAsk={onAsk} />
-      <NotScheduledTray
-        {...props.tray}
-        draggable={phone === undefined}
-        onSetDates={(row) => {
-          onAsk({ what: "dates", row });
-        }}
-      />
+      {phone === undefined ? (
+        <NotScheduledTray
+          {...props.tray}
+          onSetDates={(row) => {
+            onAsk({ what: "dates", row });
+          }}
+        />
+      ) : null}
       {windows ? null : (
         <TimelineWindows
           asked={asked}

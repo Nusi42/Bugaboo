@@ -1,6 +1,7 @@
 import { t } from "@bugaboo/messages";
 
-import { listText } from "../../../shared/list-text.ts";
+import { unbroken } from "../../../shared/format.ts";
+import { detailsText, listText } from "../../../shared/list-text.ts";
 import { percentText } from "../../../shared/number.ts";
 import { minutesText } from "../../../shared/own-value-text.ts";
 import { personName } from "../../../shared/person.ts";
@@ -49,9 +50,10 @@ export function assignedText(row: TimelineRow): string | undefined {
 }
 
 /**
- * The effort of a bar: "Estimate 9h · ×1.5 = 4 work days · Lea's own estimate". The work days are
- * there when the bars are planned by effort; without them the sum ends in the length of the effort,
- * as the window of the time factor says it.
+ * The effort of a bar, as the card says it (UX §4.7): "Estimate 16h · ×1.25 = 3 work days · Lea's own
+ * estimate", the time factor always named, ×1 too. The work days are there when the bars are planned
+ * by effort; without them the sum ends in the length of the effort, as the window of the time factor
+ * says it. Lengths are written as everywhere, in hours and minutes (UX §4.9).
  */
 export function effortText(bar: Bar): string | undefined {
   const { effort } = bar;
@@ -59,35 +61,27 @@ export function effortText(bar: Bar): string | undefined {
     return undefined;
   }
   const estimate = minutesText(effort.estimate);
-  const percent = bar.time_factor?.percent ?? AS_ESTIMATED;
-  const factor = factorText(percent);
-  const days = effort.work_days;
-  let sum: string;
-  if (days === null) {
-    sum =
-      percent === AS_ESTIMATED
-        ? t("issues.time-factor-estimate", { estimate })
-        : t("issues.time-factor-sum", { estimate, factor, total: minutesText(effort.effort) });
-  } else {
-    sum =
-      percent === AS_ESTIMATED
-        ? t("timeline.estimate-days", { estimate, days })
-        : t("timeline.effort-days", { estimate, factor, days });
-  }
+  const factor = factorText(bar.time_factor?.percent ?? AS_ESTIMATED);
+  const sum =
+    effort.work_days === null
+      ? t("issues.time-factor-sum", { estimate, factor, total: minutesText(effort.effort) })
+      : t("timeline.effort-days", { estimate, factor, days: effort.work_days });
   const person = bar.person;
   return bar.time_factor?.own_estimate === true && person !== null
     ? t("issues.time-factor-own", { factor: sum, name: personName(person) })
     : sum;
 }
 
-/** The person's time on a bar: "Mon–Fri, 8h a day · 100 % in Mobile app", as far as the reader may know it. */
+/**
+ * The person's time on a bar: "Mon–Fri, 8h a day · 100 % in Mobile app", as far as the reader may
+ * know it. The line breaks only between its two parts.
+ */
 export function workTimeText(bar: Bar, project: string, firstDay: FirstDay): string | undefined {
   const time = bar.work_time;
   return time === null
     ? undefined
-    : t("timeline.work-time", {
-        usual: usualSummary(weekOf(firstDay), time.usual),
-        share: percentText(time.share),
-        project,
-      });
+    : detailsText([
+        unbroken(usualSummary(weekOf(firstDay), time.usual)),
+        unbroken(t("timeline.work-share", { share: percentText(time.share), project })),
+      ]);
 }

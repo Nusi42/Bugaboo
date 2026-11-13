@@ -15,6 +15,8 @@ import { known } from "../../shared/present.ts";
 import type { GroupLine, IssueLine, Line } from "./lines.ts";
 import { goalWords } from "./goal-words.ts";
 import { GoalMarks } from "./marks.tsx";
+import { Hatches } from "./people/Hatches.tsx";
+import { usePersonDays } from "./people/use-person-days.ts";
 import { useTimeline } from "./timeline-context.ts";
 import { TimelineBar } from "./TimelineBar.tsx";
 
@@ -47,6 +49,7 @@ export interface GroupHeadProps {
 
 /** The head of a group (a goal, a project, a person …): folds its rows, and shows the goal's bracket and diamond. */
 export function GroupHead({ line, at, name, onToggle }: GroupHeadProps) {
+  const person = usePersonDays(line);
   return (
     <Row
       at={at}
@@ -71,9 +74,17 @@ export function GroupHead({ line, at, name, onToggle }: GroupHeadProps) {
           {line.goal === undefined ? null : (
             <span {...partOf(part.visuallyHidden)}>{goalWords(line.goal, name)}</span>
           )}
+          {person.words === "" ? null : (
+            <span {...partOf(part.visuallyHidden)}>{person.words}</span>
+          )}
         </button>
       }
-      lane={line.goal === undefined ? null : <GoalMarks goal={line.goal} />}
+      lane={
+        <>
+          <Hatches stretches={person.stretches} />
+          {line.goal === undefined ? null : <GoalMarks goal={line.goal} />}
+        </>
+      }
     />
   );
 }

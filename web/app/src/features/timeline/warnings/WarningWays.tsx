@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Button, buttonLook, part, partOf } from "@bugaboo/ui";
+import { Button, buttonLook, IssueId, part, partOf } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { formatCalendarDay, keepingHyphens } from "../../../shared/format.ts";
@@ -27,6 +27,8 @@ export interface WaysOfWarning {
   readonly onLonger: (row: TimelineRow, due: string) => void;
   /** *Give it to someone else…*: the usual person picker opens, with nobody suggested. */
   readonly onGive: (row: TimelineRow) => void;
+  /** Saves a run of keys that waits on the bar of an issue, before a way out is sent. */
+  readonly settle: (issue: string) => void;
 }
 
 /** What a way out shows before it saves anything. */
@@ -53,7 +55,7 @@ function WayPreview({ preview, warning, row, onConfirm, onCancel }: PreviewProps
       {moving === undefined ? (
         <p {...partOf(part.timelineWarningLine)}>
           {t("timeline.preview-longer", {
-            key: row.issue.readable_id ?? "",
+            key: keepingHyphens(row.issue.readable_id ?? ""),
             day: formatCalendarDay(warning.due_needed ?? ""),
           })}
         </p>
@@ -64,11 +66,10 @@ function WayPreview({ preview, warning, row, onConfirm, onCancel }: PreviewProps
           </p>
           <ul {...partOf(part.timelineSideList)}>
             {moving.map((each) => (
-              <li key={each.id} {...partOf(part.timelineWarningLine)}>
-                {t("timeline.preview-line", {
-                  key: keepingHyphens(each.readable_id),
-                  to: daysText(each.to),
-                })}
+              <li key={each.id} {...partOf(part.timelineWarningMove)}>
+                <IssueId id={keepingHyphens(each.readable_id)} />
+                <span>{t("timeline.preview-before", { days: daysText(each.from) })}</span>
+                <span>{t("timeline.preview-after", { days: daysText(each.to) })}</span>
               </li>
             ))}
           </ul>
@@ -97,32 +98,28 @@ export interface WarningWaysProps extends WaysOfWarning {
 }
 
 /**
- * The ways out of one warning (UX §4.7), in the order the server offers them. *Move it after* and
- * *Make it longer* show what will change before anything is saved; *Give it to someone else…* opens
- * the usual person picker; *Keep and accept* keeps the plan as it is.
+ * What pressing a way out does, and what confirming its preview saves. Every way first ends a run
+ * of keys that waits on the bar (`settle`), so it is saved before the way is sent.
  */
-/** What pressing a way out does, and what confirming its preview saves. */
 function useWays(warning: PlanWarning, row: TimelineRow | undefined, ways: WaysOfWarning) {
   const [preview, setPreview] = useState<Preview | null>(null);
   const take = (way: Way): void => {
     if (row === undefined) {
       return;
     }
+    ways.settle(warning.issue);
     if (way === "move-it-after") {
       setPreview({ way, issues: undefined });
-      void previewMoveAfter(warning, ways.options).then((issues) => {
-        setPreview({ way, issues });
+      // A refused preview is said by the server's words and shows nothing.
+      void previewMoveAfter(warning, row, ways.options).then((issues) => {
+        setPreview(issues === undefined ? null : { way, issues });
       });
     } else if (way === "make-it-longer") {
       setPreview({ way });
     } else if (way === "give-to-someone-else") {
       ways.onGive(row);
     } else {
-      void keepAndAccept(
-        warning,
-        { key: row.issue.readable_id ?? "", version: row.issue.version ?? 0 },
-        ways.options,
-      );
+      void keepAndAccept(warning, row, ways.options);
     }
   };
   const confirm = (): void => {

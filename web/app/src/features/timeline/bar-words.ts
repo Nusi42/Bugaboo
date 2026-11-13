@@ -19,6 +19,28 @@ export interface BarFacts {
   readonly warnings: number;
 }
 
+/** Each named stretch of hatched days in words, "Away: 3 Mar 2027 to 4 Mar 2027", from `first`. */
+function stretchSaid(stretches: readonly HatchedStretch[], first: string): readonly string[] {
+  return stretches.flatMap((stretch) =>
+    stretch.words === undefined
+      ? []
+      : [
+          t("timeline.hatched-on", {
+            what: stretch.words,
+            days: daysText({
+              first: addDays(first, stretch.start),
+              last: addDays(first, stretch.start + stretch.length - 1),
+            }),
+          }),
+        ],
+  );
+}
+
+/** The named stretches of a row in words, side by side; empty when none has a word. */
+export function stretchesWords(stretches: readonly HatchedStretch[], first: string): string {
+  return detailsText(stretchSaid(stretches, first));
+}
+
 /**
  * The name of a bar for screen readers: its issue and days, then what the eye sees on it, the person
  * on it, the mark of a copy (*"Planned with Lea's work times"*), the named hatched days and the sign
@@ -30,17 +52,7 @@ export function barWords(base: string, facts: BarFacts): string {
   const more = [
     person === undefined ? undefined : t("timeline.person-on-bar", { name: person }),
     plannedWithText(row),
-    ...facts.stretches.map((stretch) =>
-      stretch.words === undefined
-        ? undefined
-        : t("timeline.hatched-on", {
-            what: stretch.words,
-            days: daysText({
-              first: addDays(shown.first, stretch.start),
-              last: addDays(shown.first, stretch.start + stretch.length - 1),
-            }),
-          }),
-    ),
+    ...stretchSaid(facts.stretches, shown.first),
     facts.warnings === 0 ? undefined : t("timeline.warnings-of", { count: facts.warnings }),
   ].filter((said) => said !== undefined);
   return more.length === 0 ? base : t("timeline.bar-with", { bar: base, more: detailsText(more) });

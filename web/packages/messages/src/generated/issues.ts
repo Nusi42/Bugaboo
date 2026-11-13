@@ -158,6 +158,7 @@ export const messages = {
   "issues.time-factor-factor": "Time factor (1 is as estimated)",
   "issues.time-factor-not-a-factor": "Type a time factor like {example}.",
   "issues.time-factor-nothing": "Type how long it takes, or a time factor.",
+  "issues.time-factor-estimate": "Estimate {estimate}",
   "issues.time-factor-save": "Save the time factor",
 } as const;
 

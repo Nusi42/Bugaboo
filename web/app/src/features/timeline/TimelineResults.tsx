@@ -60,6 +60,7 @@ function TimelineBody({ props, model, phone, onCloseWarnings }: BodyProps) {
           onOpen={(row) => {
             model.context.select(row.issue.id ?? undefined);
           }}
+          tray={model.side.tray}
         />
       ) : (
         <TimelineMain

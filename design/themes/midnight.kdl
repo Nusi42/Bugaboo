@@ -13,7 +13,7 @@ theme "midnight" extends="default" kind="dark" {
         color "bg-hover" "#1e2127"
         color "bg-selected" "#242046"
         color "border" "#272a31" more="#828388"
-        color "border-control" "#757a85" more="#828388"
+        color "border-control" "#8b909b" more="#828388"
         color "cue" "#9aa2b3"
         color "border-subtle" "#1a1c21" more="#66676a"
         color "divider" "#454b57" more="#828388"

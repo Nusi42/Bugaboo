@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Button, IssueId, Link, part, partOf } from "@bugaboo/ui";
+import { Button, iconSize, IssueId, Link, part, partOf, StatusIcon } from "@bugaboo/ui";
 
 import { issueAddress } from "../../shared/paths.ts";
 import { known } from "../../shared/present.ts";
@@ -72,7 +72,13 @@ export function BarCard(props: BarCardProps) {
   return (
     <section {...partOf(part.timelineCard)} aria-label={t("timeline.card", { key })}>
       <h2 {...partOf(part.timelineSideHeading)}>
-        <IssueId id={key} /> {row.issue.title}
+        <StatusIcon
+          group={row.issue.status?.status_group ?? "not-started"}
+          size={iconSize.small}
+          label={row.issue.status?.name ?? ""}
+        />
+        <IssueId id={key} />
+        <span>{row.issue.title}</span>
       </h2>
       <p {...partOf(part.muted)}>{days === undefined ? t("timeline.no-dates") : daysText(days)}</p>
       {facts.map((fact) => (

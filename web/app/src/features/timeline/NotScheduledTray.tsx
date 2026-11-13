@@ -11,19 +11,16 @@ export interface NotScheduledTrayProps {
   /** How many issues of the search have no dates. */
   readonly count: number;
   readonly pages: PagedList;
-  /** Whether an issue can be dragged onto the chart: never on a phone, which has no chart. */
-  readonly draggable: boolean;
   readonly onSetDates: (row: TimelineRow) => void;
 }
 
 interface TrayItemProps {
   readonly row: TimelineRow;
-  readonly draggable: boolean;
   readonly onSetDates: (row: TimelineRow) => void;
 }
 
 /** An issue of the tray: its handle where it may be dragged, its ID and title, and *Set dates…*. */
-function TrayItem({ row, draggable, onSetDates }: TrayItemProps) {
+function TrayItem({ row, onSetDates }: TrayItemProps) {
   const [id, key] = [idOf(row), known(row.issue.readable_id) ?? ""];
   return (
     <li>
@@ -31,7 +28,7 @@ function TrayItem({ row, draggable, onSetDates }: TrayItemProps) {
         kind={dragKinds.unscheduled.kind}
         id={id}
         label={t("timeline.drag-issue", { key })}
-        canDrag={draggable && row.may_move}
+        canDrag={row.may_move}
       >
         <span {...partOf(part.timelineTrayItem)}>
           <span {...partOf(part.timelineTrayLine)}>
@@ -60,13 +57,7 @@ function TrayItem({ row, draggable, onSetDates }: TrayItemProps) {
  * paged from the same route. One is dragged onto the chart to start on that day, or given its dates
  * with *Set dates…*, the way for the keyboard.
  */
-export function NotScheduledTray({
-  rows,
-  count,
-  pages,
-  draggable,
-  onSetDates,
-}: NotScheduledTrayProps) {
+export function NotScheduledTray({ rows, count, pages, onSetDates }: NotScheduledTrayProps) {
   return (
     <section {...partOf(part.timelineTray)} aria-label={t("timeline.not-scheduled")}>
       <h2 {...partOf(part.timelineSideHeading)}>{t("timeline.not-scheduled")}</h2>
@@ -77,7 +68,7 @@ export function NotScheduledTray({
       </p>
       <ul {...partOf(part.timelineSideList)}>
         {rows.map((row) => (
-          <TrayItem key={idOf(row)} row={row} draggable={draggable} onSetDates={onSetDates} />
+          <TrayItem key={idOf(row)} row={row} onSetDates={onSetDates} />
         ))}
       </ul>
       <ShowMoreOf label={t("timeline.more-issues")} list={pages} />

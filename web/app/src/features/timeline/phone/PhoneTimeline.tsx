@@ -1,26 +1,13 @@
 import { t } from "@bugaboo/messages";
-import {
-  buttonType,
-  Icon,
-  iconName,
-  iconSize,
-  IssueId,
-  part,
-  partOf,
-  ShowMoreOf,
-  Skeleton,
-  StatusIcon,
-  type PagedList,
-} from "@bugaboo/ui";
+import { IssueId, part, partOf, ShowMoreOf, Skeleton, type PagedList } from "@bugaboo/ui";
 
-import { known } from "../../../shared/present.ts";
-import { daysText } from "../dates.ts";
 import type { BarDays, GroupLine, IssueLine, Line } from "../lines.ts";
-import { personOnBarText } from "../people/people-words.ts";
 import type { Span } from "../scale.ts";
 import type { TimelineRow } from "../timeline-data.ts";
 import { useGroupNames, type GroupNamesInput } from "../use-group-names.ts";
-import { PhoneBar } from "./PhoneBar.tsx";
+import { PhoneGroup } from "./PhoneGroup.tsx";
+import { PhoneIssue } from "./PhoneRows.tsx";
+import { PhoneTray, type PhoneTrayProps } from "./PhoneTray.tsx";
 
 export interface PhoneTimelineProps extends GroupNamesInput {
   readonly lines: readonly Line[];
@@ -33,76 +20,19 @@ export interface PhoneTimelineProps extends GroupNamesInput {
   readonly onOpen: (row: TimelineRow) => void;
   /** The pages of the rows: *Show more* reads the next one. */
   readonly pages: PagedList & { readonly isPending: boolean };
+  /** *Not scheduled yet*: the last group of the list. */
+  readonly tray: Omit<PhoneTrayProps, "span" | "onOpen">;
 }
 
-/** The head of a group, folded and opened like the head of a row on a computer. */
-function PhoneGroup({
-  line,
-  name,
-  onToggle,
-}: {
-  readonly line: GroupLine;
-  readonly name: string;
-  readonly onToggle: () => void;
-}) {
-  return (
-    <li {...partOf(part.timelinePhoneGroup)}>
-      <button
-        type={buttonType.button}
-        aria-expanded={line.open}
-        onClick={onToggle}
-        {...partOf(part.timelineRowToggle)}
-      >
-        <Icon name={line.open ? iconName.down : iconName.next} size={iconSize.small} />
-        {line.goal === undefined ? (
-          <span {...partOf(part.timelineRowTitle)}>{name}</span>
-        ) : (
-          <>
-            <IssueId id={name} />
-            <span {...partOf(part.timelineRowTitle)}>{line.goal.title}</span>
-          </>
-        )}
-        <span {...partOf(part.timelineRowCount)}>{line.count}</span>
-      </button>
-    </li>
-  );
-}
-
-interface PhoneIssueProps {
-  readonly line: IssueLine;
-  readonly days: BarDays | undefined;
-  readonly span: Span;
-  readonly today: number | undefined;
-  readonly onOpen: () => void;
-}
-
-/** An issue of the list: its status icon, ID and title, its dates, its person, and its short bar. */
-function PhoneIssue({ line, days, span, today, onOpen }: PhoneIssueProps) {
-  const { issue } = line.row;
-  const key = known(issue.readable_id) ?? "";
-  const person = personOnBarText(line.row);
-  const dates = days === undefined ? t("timeline.no-dates") : daysText(days);
-  return (
-    <li>
-      <button type={buttonType.button} onClick={onOpen} {...partOf(part.timelinePhoneItem)}>
-        <span {...partOf(part.timelinePhoneLine)}>
-          <StatusIcon
-            group={issue.status?.status_group ?? "not-started"}
-            size={iconSize.small}
-            label={issue.status?.name ?? ""}
-          />
-          <IssueId id={key} />
-          <span {...partOf(part.timelineRowTitle)}>{issue.title}</span>
-        </span>
-        <span {...partOf(part.timelinePhoneFacts)}>
-          <span>{dates}</span>
-          {person === undefined ? null : <span>{person}</span>}
-        </span>
-        {days === undefined ? null : (
-          <PhoneBar row={line.row} days={days} span={span} today={today} />
-        )}
-      </button>
-    </li>
+/** The name of a group: words, or a goal's Issue ID and title. */
+function GroupName({ line, name }: { readonly line: GroupLine; readonly name: string }) {
+  return line.goal === undefined ? (
+    <span {...partOf(part.timelineRowTitle)}>{name}</span>
+  ) : (
+    <>
+      <IssueId id={name} />
+      <span {...partOf(part.timelineRowTitle)}>{line.goal.title}</span>
+    </>
   );
 }
 
@@ -125,16 +55,18 @@ export function PhoneTimeline(props: PhoneTimelineProps) {
           line.kind === "group" ? (
             <PhoneGroup
               key={line.id}
-              line={line}
-              name={groupName(line)}
+              open={line.open}
+              count={line.count}
               onToggle={() => {
                 props.onToggle(line.id);
               }}
-            />
+            >
+              <GroupName line={line} name={groupName(line)} />
+            </PhoneGroup>
           ) : (
             <PhoneIssue
               key={line.id}
-              line={line}
+              row={line.row}
               days={props.daysOf(line)}
               span={props.span}
               today={props.today}
@@ -144,8 +76,11 @@ export function PhoneTimeline(props: PhoneTimelineProps) {
             />
           ),
         )}
+        <li {...partOf(part.timelinePhoneMore)}>
+          <ShowMoreOf label={t("timeline.more-issues")} list={pages} />
+        </li>
+        <PhoneTray {...props.tray} span={props.span} onOpen={props.onOpen} />
       </ul>
-      <ShowMoreOf label={t("timeline.more-issues")} list={pages} />
     </div>
   );
 }
