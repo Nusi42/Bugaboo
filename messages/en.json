@@ -3718,7 +3718,7 @@
   "timeline.set-dates-title": "Set dates of {key}",
   "timeline.save-dates": "Save dates",
   "timeline.add-dependency-title": "Add dependency to {key}",
-  "timeline.which-way": "Which comes first?",
+  "timeline.which-way": "Order",
   "timeline.must-finish-first": "{key} comes first",
   "timeline.waits": "{key} comes after",
   "timeline.add-it": "Add dependency",

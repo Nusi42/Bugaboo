@@ -29,12 +29,16 @@ export function BarHandles({ issue, handlers }: BarHandlesProps) {
         {...partOf(part.timelineBarHandle, { variants: ["start"] })}
         {...handlers("start")}
         aria-hidden
-      />
+      >
+        <span {...partOf(part.timelineBarGrip)} />
+      </span>
       <span
         {...partOf(part.timelineBarHandle, { variants: ["end"] })}
         {...handlers("end")}
         aria-hidden
-      />
+      >
+        <span {...partOf(part.timelineBarGrip)} />
+      </span>
       <span onPointerDown={keepToTheDot}>
         <DragHandle
           kind={dragKinds.dependency.kind}

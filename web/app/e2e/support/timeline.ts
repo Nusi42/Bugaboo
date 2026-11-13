@@ -38,6 +38,8 @@ export const planned = {
   ownDates: "WEB-11",
   pressed: "WEB-12",
   oneDate: "WEB-13",
+  keyThenDrag: "WEB-14",
+  twice: "WEB-15",
 } as const;
 
 /** The title of the goal. */
@@ -63,6 +65,8 @@ const scene: readonly {
   { key: planned.ownDates, title: "Own dates" },
   { key: planned.pressed, title: "Pressed fast", from: 4, to: 6 },
   { key: planned.oneDate, title: "Only a start", from: 5 },
+  { key: planned.keyThenDrag, title: "Key then drag", from: 1, to: 2 },
+  { key: planned.twice, title: "Moved twice", from: 2, to: 3 },
 ];
 
 /** Gives an issue dates (or other members), on the version it has. */

@@ -17,7 +17,7 @@ export type GroupKey = Schema<"SearchGroupKeyBody">;
 
 /** The head of a group: what it is, how many rows it holds, and its goal when it is grouped by goal. */
 export interface GroupLine {
-  readonly is: "group";
+  readonly kind: "group";
   readonly id: string;
   readonly key: GroupKey;
   readonly count: number;
@@ -27,7 +27,7 @@ export interface GroupLine {
 
 /** The row of an issue. */
 export interface IssueLine {
-  readonly is: "issue";
+  readonly kind: "issue";
   /** Tells the row from every other: an issue has a row in each of its groups. */
   readonly id: string;
   readonly issue: string;
@@ -64,7 +64,7 @@ export function linesOf(
     if (group.key !== null) {
       const { key } = group;
       lines.push({
-        is: "group",
+        kind: "group",
         id,
         key,
         count: group.rows.length,
@@ -75,7 +75,7 @@ export function linesOf(
     if (open) {
       for (const row of group.rows) {
         const issue = known(row.issue.id) ?? "";
-        lines.push({ is: "issue", id: `${id}/${issue}`, issue, row });
+        lines.push({ kind: "issue", id: `${id}/${issue}`, issue, row });
       }
     }
   }
@@ -109,7 +109,7 @@ export function arrowsOf(
 ): readonly Arrow[] {
   const at = new Map<string, number>();
   lines.forEach((line, index) => {
-    if (line.is === "issue" && !at.has(line.issue) && !line.row.copy) {
+    if (line.kind === "issue" && !at.has(line.issue) && !line.row.copy) {
       at.set(line.issue, index);
     }
   });
@@ -121,8 +121,8 @@ export function arrowsOf(
     }
     const [from, to] = [lines[fromLine], lines[toLine]];
     const [fromDays, toDays] = [
-      from?.is === "issue" ? daysOf(from) : undefined,
-      to?.is === "issue" ? daysOf(to) : undefined,
+      from?.kind === "issue" ? daysOf(from) : undefined,
+      to?.kind === "issue" ? daysOf(to) : undefined,
     ];
     if (fromDays === undefined || toDays === undefined) {
       continue;

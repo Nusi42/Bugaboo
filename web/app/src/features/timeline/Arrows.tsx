@@ -10,8 +10,9 @@ function arrowSizes(): { readonly head: number; readonly step: number; readonly 
 
 /**
  * The path of one arrow in pixels of the chart: out of the bottom (or the top) of the bar that must
- * finish first, a little before its end, so it never crosses the Issue ID after the bar; down or up
- * to the middle of the row of the one that waits, and into its start; and the head at its end.
+ * finish first, a little before its end, so it never crosses the Issue ID after the bar; along the
+ * line between the rows, never across a bar; down or up beside the start of the bar that waits; and
+ * into its left edge, where its head ends.
  */
 function pathOf(
   arrow: Arrow,
@@ -22,9 +23,11 @@ function pathOf(
   const down = arrow.to.line >= arrow.from.line;
   const x1 = Math.max(arrow.from.day * day - step, (arrow.from.day - 1) * day);
   const y1 = down ? (arrow.from.line + 1) * row - inset : arrow.from.line * row + inset;
+  const between = down ? arrow.to.line * row : (arrow.to.line + 1) * row;
   const [x2, y2] = [arrow.to.day * day, (arrow.to.line + 0.5) * row];
+  const elbow = x2 - step;
   return {
-    line: `M ${x1} ${y1} V ${y2} H ${x2}`,
+    line: `M ${x1} ${y1} V ${between} H ${elbow} V ${y2} H ${x2 - head * 2}`,
     head: `M ${x2} ${y2} l ${-head * 2} ${-head} v ${head * 2} z`,
   };
 }

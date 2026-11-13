@@ -116,3 +116,21 @@ describe("a notice in the place of the offers", () => {
     expect(store.list().map((each) => each.id)).toEqual([first]);
   });
 });
+
+describe("plan_03 an undo that a newer change made wrong", () => {
+  it("withdraws an offer that a newer change made wrong, and takes nothing back", () => {
+    const clock = manualClock();
+    const store = createUndoStore(clock.schedule);
+    let undone = 0;
+    const id = store.offer({
+      message: "Moved",
+      undo: () => {
+        undone += 1;
+      },
+    });
+    store.withdraw(id);
+    expect(store.list()).toEqual([]);
+    expect(store.take(id)).toBe(false);
+    expect(undone).toBe(0);
+  });
+});

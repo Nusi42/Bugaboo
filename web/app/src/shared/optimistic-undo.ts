@@ -40,6 +40,8 @@ export interface UndoStore {
   readonly offer: (request: UndoRequest) => number;
   /** Takes the action back, if it is still on offer; returns whether it was. */
   readonly take: (id: number) => boolean;
+  /** Withdraws an offer without taking anything back: a newer change made it wrong. */
+  readonly withdraw: (id: number) => void;
   readonly list: () => readonly UndoOffer[];
   readonly subscribe: (listener: () => void) => () => void;
 }
@@ -130,6 +132,7 @@ export function createUndoStore(
       found.undo?.();
       return true;
     },
+    withdraw: drop,
     list: offers.snapshot,
     subscribe: offers.subscribe,
   };

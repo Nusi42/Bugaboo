@@ -134,7 +134,7 @@ export function TimelineLine({
   readonly groupName: (line: GroupLine) => string;
   readonly onToggle: (group: string) => void;
 }) {
-  return line.is === "group" ? (
+  return line.kind === "group" ? (
     <GroupHead
       line={line}
       at={at}

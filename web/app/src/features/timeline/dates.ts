@@ -3,7 +3,6 @@ import { t } from "@bugaboo/messages";
 import { messageOf } from "../../shared/errors.ts";
 import { formatCalendarDay } from "../../shared/format.ts";
 import { inOrder } from "../../shared/in-order.ts";
-import { undoStore } from "../../shared/optimistic-undo.ts";
 import { known } from "../../shared/present.ts";
 import { sendChange } from "../issues/index.ts";
 import { changeOf, type DateFields, type KeptDates } from "./date-fields.ts";
@@ -93,43 +92,25 @@ function save(row: TimelineRow, fields: DateFields, dates: KeptDates): Promise<s
 /** What a change of dates says when it is done: by how many days it moved, or nothing more. */
 export type Said = { readonly move: "both"; readonly days: number } | { readonly move: "set" };
 
-/** One change of the dates of a bar: the dates it keeps before and after. */
-export interface DatesChange {
-  readonly before: KeptDates;
-  readonly dates: KeptDates;
-  readonly said: Said;
+/** What a change of dates says once it is saved: what happened and the dates it saved. */
+export function changedText(row: TimelineRow, said: Said, dates: KeptDates): string {
+  const key = known(row.issue.readable_id) ?? "";
+  return said.move === "both"
+    ? movedText(key, said.days, dates)
+    : t("timeline.dates-changed", { key, dates: savedText(dates) });
 }
 
 /**
- * Saves the new dates of a bar and offers *Undo*, which puts back the dates it kept before. A save
- * the server refuses says the server's reason, and the timeline is read again either way, so it
- * shows the plan the server answers.
+ * Saves new dates of a bar, after every change of it asked for before, and reads the timeline again
+ * either way, so it shows the plan the server answers. Answers the server's reason when it refused.
+ * Who offers *Undo* is the one who knows which change is the newest (`use-saving.ts`).
  */
 export async function changeDates(
   row: TimelineRow,
   fields: DateFields,
-  change: DatesChange,
-): Promise<void> {
-  const key = known(row.issue.readable_id) ?? "";
-  const refused = await save(row, fields, change.dates);
+  dates: KeptDates,
+): Promise<string | null> {
+  const refused = await save(row, fields, dates);
   await refreshTimeline();
-  if (refused !== null) {
-    undoStore.offer({ message: refused });
-    return;
-  }
-  const { said, dates } = change;
-  undoStore.offer({
-    message:
-      said.move === "both"
-        ? movedText(key, said.days, dates)
-        : t("timeline.dates-changed", { key, dates: savedText(dates) }),
-    undo: () => {
-      void save(row, fields, change.before).then(async (undoRefused) => {
-        await refreshTimeline();
-        if (undoRefused !== null) {
-          undoStore.offer({ message: undoRefused });
-        }
-      });
-    },
-  });
+  return refused;
 }

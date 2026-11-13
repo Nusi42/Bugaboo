@@ -41,6 +41,7 @@ export function TimelineBar({ line, days, described }: TimelineBarProps) {
           !mayMove && "locked",
           dragging !== null && "dragging",
           drop.isDropTarget && "target",
+          bar.labelBefore && "label-before",
         ],
       })}
       {...drop.dropProps}

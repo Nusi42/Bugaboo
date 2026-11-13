@@ -29,6 +29,6 @@ export function useCanvas(rows: number) {
     drop,
     rowPixels: timeline.rowPixels,
     dayPixels: timeline.dayPixels,
-    first: timeline.span.first,
+    zoom: timeline.zoom,
   };
 }

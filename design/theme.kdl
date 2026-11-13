@@ -224,7 +224,9 @@ tokens {
     // zoom, how many days and rows the chart has, and for one thing on it its row, its first day counted from the
     // first day of the chart, its length in days and how much of a bar is done. Only numbers come from code; the
     // rules turn them into places.
-    size "timeline-day" "16" run-time="true"
+    // The width of a day is the token of the zoom (`size-day-…`), which the screen gives as a number before the chart
+    // is drawn; until then the chart has no width.
+    size "timeline-day" "0" run-time="true"
     size "timeline-days" "0" run-time="true"
     size "timeline-rows" "0" run-time="true"
     size "timeline-row" "0" run-time="true"
@@ -3554,13 +3556,30 @@ part "timeline-bar[state=selected] timeline-bar.label" {
     inset-inline-start "calc(100% + $size-target-least + $space-1)"
 }
 
+// A bar near the end of the chart has its ID before it, where there is room.
+part "timeline-bar[state=label-before] timeline-bar.label" {
+    inset-inline-start auto
+    inset-inline-end "calc(100% + $space-2)"
+}
+
 // The handles of a selected bar change one of its dates; the dot after its end makes a dependency.
 part "timeline-bar.handle" {
     position absolute
     inset-block 0
     z-index "$z-raised"
+    display flex
+    align-items center
+    justify-content center
     width "$size-target-least"
     cursor ew-resize
+}
+
+// The grip of a handle: a short upright bar, so a selected bar shows where its ends are taken.
+part "timeline-bar.grip" {
+    width "calc($border-width * 3)"
+    height "$space-3"
+    border-radius "$r-ctl"
+    background "$fg-muted"
 }
 
 part "timeline-bar.handle[variant=start]" {
@@ -3694,6 +3713,12 @@ part "timeline-tray.line" {
 }
 
 // While an issue of the tray is dragged over the chart, the chart shows that it takes it.
+// At the zoom of quarters a bar is a sliver: one of *Not started* is filled with the edge of a control, which
+// stands at 3:1 against every surface, so it is seen in the dark themes too.
+part "timeline-canvas[variant=quarter] timeline-bar[state=group-not-started]" {
+    background "$border-control"
+}
+
 part "timeline-canvas[state=over]" {
     background "$accent-soft"
 }

@@ -26090,7 +26090,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("timeline.start-field", "Bars start at"),
     ("timeline.today", "Today"),
     ("timeline.waits", "{key} comes after"),
-    ("timeline.which-way", "Which comes first?"),
+    ("timeline.which-way", "Order"),
     ("timeline.zoom", "Zoom"),
     ("timeline.zoom-day", "Days"),
     ("timeline.zoom-month", "Months"),

@@ -1,4 +1,4 @@
-import { usePlace } from "@bugaboo/ui";
+import { pixelsOf, usePlace } from "@bugaboo/ui";
 import { useRef, type KeyboardEvent } from "react";
 
 import { useDropOf } from "../../shared/drop-of.ts";
@@ -86,6 +86,8 @@ export function useBar(line: IssueLine, days: BarDays) {
     }
   });
   const start = placeOf(timeline.span, shown.first);
+  // Too little room after the bar for its Issue ID: it stands before the bar.
+  const after = (timeline.span.days - placeOf(timeline.span, shown.last) - 1) * timeline.dayPixels;
   usePlace(ref, {
     "timeline-start": start,
     "timeline-length": placeOf(timeline.span, shown.last) - start + 1,
@@ -99,6 +101,7 @@ export function useBar(line: IssueLine, days: BarDays) {
     dragging,
     handlers,
     drop,
+    labelBefore: after < pixelsOf("size-col-key"),
     ...barKeys(timeline, line, mayMove, select),
   };
 }

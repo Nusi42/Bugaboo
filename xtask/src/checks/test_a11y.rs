@@ -44,18 +44,24 @@ impl Check for TestA11y {
             }
         }
         let mut findings = evaluate(&paths, &suite);
-        let mut timeline = Vec::new();
-        for name in sorted_files(repo, TIMELINE_FOLDER, |name| {
-            (has_extension(name, "ts") || has_extension(name, "tsx")) && !name.contains(".test.")
-        })? {
-            let path = format!("{TIMELINE_FOLDER}/{name}");
-            let text = read_text(repo, &path)?;
-            timeline.push((path, text));
-        }
+        let timeline = timeline_files(repo)?;
         let messages = read_text(repo, MESSAGES_FILE)?;
         findings.extend(drags_have_keys(&timeline, &messages));
         Ok(findings)
     }
+}
+
+/// The code of the timeline, by path: its TypeScript files, tests left out.
+fn timeline_files(repo: &crate::repo::Repo) -> anyhow::Result<Vec<(String, String)>> {
+    let mut files = Vec::new();
+    for name in sorted_files(repo, TIMELINE_FOLDER, |name| {
+        (has_extension(name, "ts") || has_extension(name, "tsx")) && !name.contains(".test.")
+    })? {
+        let path = format!("{TIMELINE_FOLDER}/{name}");
+        let text = read_text(repo, &path)?;
+        files.push((path, text));
+    }
+    Ok(files)
 }
 
 /// Every drag of the timeline has a key: the kinds of `drag-kinds.ts` each name their typed way, no
@@ -126,13 +132,20 @@ fn quoted_after<'a>(line: &'a str, marker: &str) -> Option<&'a str> {
     rest.split_once('"').map(|(inside, _)| inside)
 }
 
-/// Whether code gives a drag a kind of its own: a text as the kind of `DraggableHead` or
-/// `DragHandle`, as the first argument of `useDropOf`, or as `kind: "…"`.
+/// The places that take the kind of a drag: an element that drags or the hook that drops.
+const DRAG_PLACES: [&str; 2] = ["<DragHandle", "<DraggableHead"];
+
+/// Whether code gives a drag a kind of its own, where a drag takes one: a text as the `kind` of
+/// `DragHandle` or `DraggableHead`, or as the first argument of `useDropOf`.
 fn writes_a_kind(text: &str) -> bool {
     let compact: String = text.split_whitespace().collect();
-    ["kind=\"", "kind={\"", "kind:\"", "useDropOf(\""]
-        .iter()
-        .any(|literal| compact.contains(literal))
+    let in_an_element = DRAG_PLACES.iter().any(|place| {
+        compact.match_indices(place).any(|(at, _)| {
+            let element = compact[at..].split('>').next().unwrap_or_default();
+            element.contains("kind=\"") || element.contains("kind={\"")
+        })
+    });
+    in_an_element || compact.contains("useDropOf(\"")
 }
 
 /// The entries of `paths`: the name and the address of each.
@@ -310,7 +323,6 @@ visit(paths.longer); // paths.home and paths.signIn
             "<DragHandle kind=\"a-dot\" />",
             "<DraggableHead kind={\"a-dot\"} />",
             "useDropOf( \"a-dot\", ref)",
-            "const drag = { kind: \"a-dot\" };",
         ] {
             let mut files = timeline();
             files[2].1 = format!("useBarDrag(1); keyMoveOf(event); {written}");
@@ -321,19 +333,17 @@ visit(paths.longer); // paths.home and paths.signIn
     }
 
     #[test]
+    fn a_kind_that_is_no_drag_is_no_finding() {
+        let mut files = timeline();
+        files[2].1 =
+            "useBarDrag(1); keyMoveOf(event); const line = { kind: \"group\" };".to_owned();
+        assert!(found(&files).is_empty());
+    }
+
+    #[test]
     fn the_real_timeline_has_a_key_for_every_drag() {
         let repo = crate::repo::Repo::discover().unwrap();
-        let files: Vec<(String, String)> = sorted_files(&repo, TIMELINE_FOLDER, |name| {
-            (has_extension(name, "ts") || has_extension(name, "tsx")) && !name.contains(".test.")
-        })
-        .unwrap()
-        .into_iter()
-        .map(|name| {
-            let path = format!("{TIMELINE_FOLDER}/{name}");
-            let text = read_text(&repo, &path).unwrap();
-            (path, text)
-        })
-        .collect();
+        let files = timeline_files(&repo).unwrap();
         let messages = read_text(&repo, MESSAGES_FILE).unwrap();
         assert!(drags_have_keys(&files, &messages).is_empty());
     }

@@ -19,7 +19,7 @@ export interface TimelineChartProps extends ChartBackdropProps {
  * the names of the rows at its start, and only the rows that are on screen drawn.
  */
 export function TimelineChart({ lines, groupName, onToggle, ...backdrop }: TimelineChartProps) {
-  const { canvas, drop, rowPixels, dayPixels } = useCanvas(lines.length);
+  const { canvas, drop, rowPixels, dayPixels, zoom } = useCanvas(lines.length);
   const { box, visible } = useVisibleRows(lines.length, rowPixels, pixelsOf("size-timeline-head"));
   useDayInView(box, backdrop.today === undefined ? undefined : backdrop.today * dayPixels);
   const described = { keys: useId(), locked: useId() };
@@ -27,7 +27,10 @@ export function TimelineChart({ lines, groupName, onToggle, ...backdrop }: Timel
     <div ref={box} {...partOf(part.timelineScroll)}>
       <div
         ref={canvas}
-        {...partOf(part.timelineCanvas, { states: [drop.isDropTarget && "over"] })}
+        {...partOf(part.timelineCanvas, {
+          variants: [zoom === "quarter" && zoom],
+          states: [drop.isDropTarget && "over"],
+        })}
         {...drop.dropProps}
       >
         <ChartBackdrop {...backdrop} />

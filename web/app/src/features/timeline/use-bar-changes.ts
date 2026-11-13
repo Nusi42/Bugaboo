@@ -7,8 +7,8 @@ import { useLinks } from "./dependencies.ts";
 import type { BarDays } from "./lines.ts";
 import type { Move } from "./moves.ts";
 import type { TimelineRow } from "./timeline-data.ts";
-import { useKeyRuns } from "./use-key-runs.ts";
-import { stepFrom, useSaving, type Step } from "./use-saving.ts";
+import { useKeyRuns, useSaveOnLeave } from "./use-key-runs.ts";
+import { idOf, stepFrom, useSaving, type Step } from "./use-saving.ts";
 
 /** The rows of the page and of the tray, by the ID of their issue. */
 export type RowOf = (issue: string) => TimelineRow | undefined;
@@ -18,42 +18,61 @@ function sayLocked(row: TimelineRow): void {
   undoStore.offer({ message: t("timeline.locked", { key: known(row.issue.readable_id) ?? "" }) });
 }
 
+/** Where an issue stands before a change: its bar on this screen, or the dates it keeps (the tray). */
+type Before = { readonly dates: KeptDates; readonly days: BarDays | undefined };
+
 /** The change of *Set dates…*; none without any date, which would send the issue to the tray. */
-function setTo(before: KeptDates, dates: KeptDates): Step | undefined {
+function setTo(before: Before, dates: KeptDates): Step | undefined {
   const [first, last] = [dates.start ?? dates.end, dates.end ?? dates.start];
-  return first === null || last === null ? undefined : { before, dates, days: { first, last } };
+  return first === null || last === null
+    ? undefined
+    : { before: before.dates, from: before.days, dates, days: { first, last } };
 }
 
 /** The change of an issue dropped on a day: it starts there, and keeps a due date that comes after. */
-function placeOn(before: KeptDates, day: string): Step {
-  const end = before.end !== null && before.end >= day ? before.end : null;
-  return { before, dates: { start: day, end }, days: { first: day, last: end ?? day } };
+function placeOn(before: Before, day: string): Step {
+  const kept = before.dates.end;
+  const end = kept !== null && kept >= day ? kept : null;
+  return {
+    before: before.dates,
+    from: before.days,
+    dates: { start: day, end },
+    days: { first: day, last: end ?? day },
+  };
 }
 
 /**
  * What the person does to bars (PLAN-02, PLAN-03): new dates, worked out from where the issue stands
  * on this screen, shown at once and saved one change after the other with *Undo*; the presses of a
- * run of keys are one change; a dependency; and the sentence that says why a bar cannot be moved.
+ * run of keys are one change, which a drag or a typed change of the same bar ends first; a
+ * dependency; and the sentence that says why a bar cannot be moved.
  */
 export function useBarChanges(fields: DateFields | undefined, rowOf: RowOf) {
   const saving = useSaving(fields);
   const keys = useKeyRuns(saving);
-  const keptOf = (row: TimelineRow) => (fields === undefined ? undefined : keptDates(row, fields));
+  useSaveOnLeave(keys.endAll);
+  // A waiting run of keys is saved first, so the next change starts where it left the bar.
+  const beforeOf = (row: TimelineRow): Before | undefined => {
+    keys.onRunEnd(idOf(row));
+    const now = keys.standing(row);
+    const kept = fields === undefined ? undefined : keptDates(row, fields);
+    return now ?? (kept === undefined ? undefined : { dates: kept, days: undefined });
+  };
   return {
     daysOf: (issue: string, bar: BarDays | undefined): BarDays | undefined =>
       saving.shown[issue] ?? bar,
     onMove: (row: TimelineRow, move: Move, days: number): void => {
-      const now = keys.standing(row);
-      if (now !== undefined) {
+      const now = beforeOf(row);
+      if (now?.days !== undefined) {
         const said = move === "both" ? { move, days } : ({ move: "set" } as const);
-        saving.save(row, stepFrom(now, move, days), said);
+        saving.save(row, stepFrom({ dates: now.dates, days: now.days }, move, days), said);
       }
     },
     onKeyMove: keys.onKeyMove,
     onRunPause: keys.onRunPause,
     onRunEnd: keys.onRunEnd,
     onSet: (row: TimelineRow, dates: KeptDates): void => {
-      const before = keptOf(row);
+      const before = beforeOf(row);
       const step = before === undefined ? undefined : setTo(before, dates);
       if (step !== undefined) {
         saving.save(row, step, { move: "set" });
@@ -61,7 +80,7 @@ export function useBarChanges(fields: DateFields | undefined, rowOf: RowOf) {
     },
     onPlace: (issue: string, day: string): void => {
       const row = rowOf(issue);
-      const before = row === undefined ? undefined : keptOf(row);
+      const before = row === undefined ? undefined : beforeOf(row);
       if (row !== undefined && before !== undefined) {
         saving.save(row, placeOn(before, day), { move: "set" });
       }
