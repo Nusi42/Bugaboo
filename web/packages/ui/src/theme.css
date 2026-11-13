@@ -4513,8 +4513,25 @@ textarea,
   border-radius: 0;
 }
 
-[data-part="overlay.modal"][data-state~="loading"] {
-  visibility: hidden;
+[data-part="overlay"][data-variant~="window"][data-state~="anchored"] {
+  align-items: flex-start;
+}
+
+[data-part="overlay.modal"][data-variant~="window"][data-state~="loading"] {
+  height: 100%;
+}
+
+[data-part="overlay.modal"][data-state~="quiet"] {
+  opacity: 0;
+  animation: none;
+}
+
+[data-part="window.form"] {
+  display: contents;
+}
+
+[data-part="window.form"][data-state~="loading"] {
+  display: none;
 }
 
 [data-part="window"] {

@@ -1,9 +1,18 @@
 import { useCallback, useReducer, useState } from "react";
 
+import { useAfterDelay } from "./after-delay.ts";
 import { useLayout } from "./layout.ts";
 import { windowState, type WindowState } from "./props.ts";
 import { applyWindowSize, useWindowResize } from "./use-window-resize.ts";
-import { firstShape, reduceShape, shapeAction } from "./window-shape.ts";
+import {
+  firstShape,
+  hiddenPresence,
+  phaseOf,
+  presenceAfter,
+  reduceShape,
+  shapeAction,
+  type WindowPhase,
+} from "./window-shape.ts";
 import type { WindowResize } from "./WindowFrame.tsx";
 import type { WindowElement, WindowSize } from "./window-size.ts";
 
@@ -22,17 +31,17 @@ export interface UseWindow {
   readonly restore: () => void;
   readonly toggleMaximize: () => void;
   readonly resize: WindowResize;
-  /** The window is on the screen: its content had arrived when it opened, and it stays shown until it closes. */
-  readonly shown: boolean;
+  /** Whether the window shows its content, grey shapes or nothing yet, and where it stands. */
+  readonly phase: WindowPhase;
   /** The reference of the element that is the window: it gets its remembered size when it appears. */
   readonly placed: (element: WindowElement | null) => void;
 }
 
 /**
  * What a window is doing besides being open: shown yet, minimized to a bar, maximized, resized. A
- * window that closes opens again as it was first drawn, not minimized and not maximized. It is shown
- * once its content is `ready` and stays shown while it is open: content that arrives after it is
- * drawn would make it grow and, standing in the middle of the page, jump to a new place.
+ * window that closes opens again as it was first drawn, not minimized and not maximized. Its
+ * content is shown once it is `ready` (see `presenceAfter`): content that arrived after the window
+ * was drawn would make it grow and, standing in the middle of the page, jump to a new place.
  */
 export function useWindow(
   isOpen: boolean,
@@ -47,10 +56,11 @@ export function useWindow(
     setWasOpen(isOpen);
     act(shapeAction.closed);
   }
-  const [shown, setShown] = useState(false);
-  const showing = isOpen && (shown || ready);
-  if (shown !== showing) {
-    setShown(showing);
+  const [presence, setPresence] = useState(hiddenPresence);
+  const late = useAfterDelay(isOpen && !presence.shown);
+  const next = presenceAfter(presence, { isOpen, ready, late });
+  if (next.shown !== presence.shown || next.anchored !== presence.anchored) {
+    setPresence(next);
   }
   const [element, setElement] = useState<WindowElement | null>(null);
   const resize = useWindowResize(element, onResized);
@@ -76,7 +86,7 @@ export function useWindow(
       act(shapeAction.toggleMaximize);
     },
     resize,
-    shown,
+    phase: phaseOf(next, late),
     placed,
   };
 }

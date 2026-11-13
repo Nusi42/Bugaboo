@@ -4,6 +4,7 @@ import { Modal, ModalOverlay } from "react-aria-components";
 import { partOf } from "./parts.ts";
 import type { OverlayEdge } from "./props.ts";
 import { part } from "./tokens.ts";
+import { windowPhase, type WindowPhase } from "./window-shape.ts";
 import type { WindowElement } from "./window-size.ts";
 
 export interface OverlayLayerProps {
@@ -13,8 +14,8 @@ export interface OverlayLayerProps {
   readonly from: OverlayEdge;
   /** The layer fills the page (a maximized window). */
   readonly maximized?: boolean;
-  /** The content of the box is still on its way: only the dimmed page is shown, not the box. */
-  readonly loading?: boolean;
+  /** How a window stands while its content arrives (`middle` for every other box). */
+  readonly phase?: WindowPhase;
   /** A press outside closes it. A window does not: its form keeps what was typed. */
   readonly isDismissable: boolean;
   /** The element that is the box of the layer, for what must size it. */
@@ -31,24 +32,28 @@ export function OverlayLayer({
   onOpenChange,
   from,
   maximized = false,
-  loading = false,
+  phase = windowPhase.middle,
   isDismissable,
   modalRef,
   children,
 }: OverlayLayerProps) {
   const states = [maximized && "maximized"] as const;
+  const waiting = phase === windowPhase.quiet || phase === windowPhase.loading;
   return (
     <ModalOverlay
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       isDismissable={isDismissable}
-      {...partOf(part.overlay, { variants: [from], states })}
+      {...partOf(part.overlay, {
+        variants: [from],
+        states: [...states, phase !== windowPhase.middle && "anchored"],
+      })}
     >
       <Modal
         ref={modalRef}
         {...partOf(part.overlayModal, {
           variants: [from],
-          states: [...states, loading && "loading"],
+          states: [...states, waiting && "loading", phase === windowPhase.quiet && "quiet"],
         })}
       >
         {children}

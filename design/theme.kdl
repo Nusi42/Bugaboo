@@ -4419,11 +4419,30 @@ part "overlay.modal[variant=window][state=maximized]" {
     border-radius 0
 }
 
-// A window whose content is still on its way shows only the dimmed page. Shown at once, it would grow as its fields
-// arrive and, standing in the middle, jump to a new place (the first open of a project). It is shown when its content
-// is there, and then stays shown.
-part "overlay.modal[state=loading]" {
-    visibility hidden
+// A window whose content is still on its way (the first open of a project) does not stand in the middle, where it would
+// jump as its fields arrive: it waits at the top, as tall as the page lets it be, with grey shapes (UX §6.1). For the
+// first 0.3 s it is there but clear, so a quick answer shows no shapes and Esc already closes it. A window that showed
+// its shapes keeps that top when its content arrives.
+part "overlay[variant=window][state=anchored]" {
+    align-items flex-start
+}
+
+part "overlay.modal[variant=window][state=loading]" {
+    height "100%"
+}
+
+part "overlay.modal[state=quiet]" {
+    opacity 0
+    animation none
+}
+
+// The form of a window while grey shapes stand in for it: it is there, so what it reads is asked for, but not seen.
+part "window.form" {
+    display contents
+}
+
+part "window.form[state=loading]" {
+    display none
 }
 
 part "window" {

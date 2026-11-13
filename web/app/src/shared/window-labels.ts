@@ -10,6 +10,7 @@ export function windowLabels(): WindowLabels {
     close: t("common.close"),
     back: t("shell.back"),
     resizeKeys: t("window.resize-keys"),
+    loading: t("common.loading"),
     draftKept: t("window.draft-kept"),
     sizeMenu: t("window.size-menu"),
     steps: {

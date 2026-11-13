@@ -17,6 +17,7 @@ const labels = {
   close: "Close",
   back: "Back",
   resizeKeys: "Press Ctrl and Alt with the arrow keys to change the size.",
+  loading: "Loading…",
   draftKept: "Draft kept",
   sizeMenu: "Window size",
   steps: { wider: "Wider", narrower: "Narrower", taller: "Taller", shorter: "Shorter" },
@@ -31,7 +32,7 @@ function frame(state: WindowState, footer?: ReactNode): string {
       title={text.title}
       labels={labels}
       state={state}
-      shown
+      loading={false}
       footer={footer}
       onMinimize={doNothing}
       onToggleMaximize={doNothing}

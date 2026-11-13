@@ -1,6 +1,6 @@
 import {
-  useEffect,
   useId,
+  useRef,
   type DOMAttributes,
   type KeyboardEventHandler,
   type ReactNode,
@@ -11,9 +11,9 @@ import { ActionMenu, type ActionMenuTriggerProps } from "./ActionMenu.tsx";
 import { Icon } from "./Icon.tsx";
 import { iconName } from "./icons.ts";
 import { partOf } from "./parts.ts";
-import { focusFirstField } from "./first-field.ts";
 import { iconSize, windowState, type WindowState } from "./props.ts";
 import { part } from "./tokens.ts";
+import { WindowBody } from "./WindowBody.tsx";
 import { windowEdges, windowSteps, type WindowEdge, type WindowStep } from "./window-size.ts";
 
 /** The words on the buttons of a window, in the person's language. */
@@ -26,6 +26,8 @@ export interface WindowLabels {
   readonly back: string;
   /** How to resize with the keyboard, read to screen readers when the focus enters the window. */
   readonly resizeKeys: string;
+  /** What a window says while its content is on the way: *Loading…*. */
+  readonly loading: string;
   /** What the bar of a minimized window says it keeps: *Draft kept*. */
   readonly draftKept: string;
   /** The button and the menu that change the size without dragging (WCAG 2.5.7): *Window size*. */
@@ -52,8 +54,8 @@ export interface WindowFrameProps {
   readonly title: ReactNode;
   readonly labels: WindowLabels;
   readonly state: WindowState;
-  /** The window is on the screen; a hidden one cannot take the focus, so the focus goes in when it is shown. */
-  readonly shown: boolean;
+  /** The content is on its way: grey shapes stand in for it, and it is kept out of sight until it is there. */
+  readonly loading: boolean;
   /** The buttons of the form; the main one stands at the right (R6). */
   readonly footer?: ReactNode;
   readonly onMinimize: () => void;
@@ -161,19 +163,17 @@ function Controls({
  * place while the form scrolls (UX §6.3).
  */
 export function WindowFrame(props: WindowFrameProps) {
-  const { title, labels, state, shown, footer, resize, children } = props;
+  const { title, labels, state, loading, footer, resize, children } = props;
+  const dialog = useRef<HTMLElement>(null);
   const hint = useId();
   const bodyId = useId();
-  // The focus goes where the person types first, as a dialog does (WCAG 2.4.3), not to the buttons
-  // of the title bar that stand before the form; a window with no box keeps it on the window.
-  useEffect(() => {
-    if (shown) {
-      focusFirstField(bodyId);
-    }
-  }, [bodyId, shown]);
   const draggable = state === windowState.normal;
   return (
-    <Dialog {...partOf(part.window)} {...(draggable ? { "aria-describedby": hint } : {})}>
+    <Dialog
+      ref={dialog}
+      {...partOf(part.window)}
+      {...(draggable ? { "aria-describedby": hint } : {})}
+    >
       <div {...partOf(part.windowContent)} {...(draggable ? { onKeyDown: resize.onKeyDown } : {})}>
         <div {...partOf(part.windowTitleBar)}>
           <Heading slot={titleSlot} level={2} {...partOf(part.windowTitle)}>
@@ -181,9 +181,9 @@ export function WindowFrame(props: WindowFrameProps) {
           </Heading>
           <Controls {...props} />
         </div>
-        <div id={bodyId} {...partOf(part.windowBody)}>
+        <WindowBody id={bodyId} loading={loading} loadingLabel={labels.loading} dialog={dialog}>
           {children}
-        </div>
+        </WindowBody>
         {footer === undefined ? null : <div {...partOf(part.windowFooter)}>{footer}</div>}
         {draggable ? (
           <>

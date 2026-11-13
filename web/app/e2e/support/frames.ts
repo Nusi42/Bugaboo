@@ -1,6 +1,18 @@
 import { type Page } from "@playwright/test";
 
-import { drawn } from "./screenshots.ts";
+/** Waits until the browser has drawn what just changed: two frames, not a guess of time. */
+export async function drawn(page: Page): Promise<void> {
+  await page.evaluate(
+    () =>
+      new Promise<void>((done) => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            done();
+          });
+        });
+      }),
+  );
+}
 
 /** Where an element stands on the page, from the top left, in pixels. */
 export interface Place {
@@ -13,7 +25,7 @@ const DONE_MARK = "data-places-done";
 
 /**
  * Where the element that `selector` finds stands in every frame the browser draws while `act` runs, from the first frame
- * in which it is shown (a hidden one is not seen by a person, so it is not counted). A box that stands still has one place;
+ * in which it is shown (a hidden or wholly clear one is not seen by a person, so it is not counted). A box that stands still has one place;
  * one that jumps while its content arrives has more.
  */
 export async function placesWhile(
@@ -27,7 +39,8 @@ export async function placesWhile(
         const places: Place[] = [];
         const note = (): void => {
           const box = document.querySelector(chosen);
-          if (box !== null && getComputedStyle(box).visibility !== "hidden") {
+          const look = box === null ? undefined : getComputedStyle(box);
+          if (box !== null && look?.visibility !== "hidden" && look?.opacity !== "0") {
             const { x, y } = box.getBoundingClientRect();
             places.push({ x, y });
           }

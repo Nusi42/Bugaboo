@@ -4,6 +4,9 @@ import { join } from "node:path";
 import { type Locator, type Page } from "@playwright/test";
 
 import { inOrder } from "./sequence.ts";
+
+// The pictures wait for the browser to draw; the wait lives with the other helpers of frames.
+export { drawn } from "./frames.ts";
 import { settingDefaults } from "@bugaboo/api-client";
 import { expectLook, putOnTheme, themes } from "./checks.ts";
 
@@ -218,20 +221,6 @@ export function shootWholeAs(
       mask: [...mask],
     });
   });
-}
-
-/** Waits until the browser has drawn what just changed: two frames, not a guess of time. */
-export async function drawn(page: Page): Promise<void> {
-  await page.evaluate(
-    () =>
-      new Promise<void>((done) => {
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            done();
-          });
-        });
-      }),
-  );
 }
 
 /**

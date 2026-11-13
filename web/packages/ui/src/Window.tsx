@@ -5,6 +5,7 @@ import { overlayEdge, windowState } from "./props.ts";
 import { useWindow } from "./use-window.ts";
 import { WindowDock } from "./WindowDock.tsx";
 import { WindowFrame, type WindowLabels } from "./WindowFrame.tsx";
+import { windowPhase } from "./window-shape.ts";
 import type { WindowSize } from "./window-size.ts";
 
 export interface WindowProps {
@@ -21,8 +22,9 @@ export interface WindowProps {
   /** Called with the size the window ended with after a drag or a key, to be remembered. */
   readonly onResized?: ((size: WindowSize) => void) | undefined;
   /**
-   * What the window shows has arrived (the data its form is made of). Until then only the dimmed page
-   * is shown; once shown, the window stays shown. Left out, the content is there at once.
+   * What the window shows has arrived (the data its form is made of). Until then the window shows
+   * nothing for 0.3 s and then grey shapes at the top of the page (UX §6.1); it can be closed all the
+   * while. Left out, the content is there at once.
    */
   readonly ready?: boolean | undefined;
   readonly children: ReactNode;
@@ -50,7 +52,7 @@ export function Window(props: WindowProps) {
         onOpenChange={onOpenChange}
         from={shape.state === windowState.full ? overlayEdge.full : overlayEdge.window}
         maximized={shape.state === windowState.maximized}
-        loading={!shape.shown}
+        phase={shape.phase}
         isDismissable={false}
         modalRef={placed}
       >
@@ -58,7 +60,7 @@ export function Window(props: WindowProps) {
           title={title}
           labels={labels}
           state={shape.state}
-          shown={shape.shown}
+          loading={shape.phase === windowPhase.quiet || shape.phase === windowPhase.loading}
           footer={footer}
           resize={shape.resize}
           onMinimize={shape.minimize}

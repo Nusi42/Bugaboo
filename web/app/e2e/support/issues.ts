@@ -210,33 +210,13 @@ export async function createProjectWithIssue(
   return createIssue(admin, shortName, webIssues.login);
 }
 
-/** The name of the box of the title on the form of a new issue: every required field says so. */
-export function titleLabel(): string {
-  return t("fields.label-required", { field: t("issue-field.title") });
-}
-
-/** The dialog that makes an issue. */
-export function newIssueDialog(page: Page) {
-  return page.getByRole("dialog", { name: t("issues.new-title"), exact: true });
-}
-
-/** Opens the dialog with the button of the bar: the sidebar on a computer, the bar of a phone. */
-export async function openNewIssueDialog(page: Page): Promise<void> {
-  await page
-    .getByRole("button", { name: t("issues.new"), exact: true })
-    .first()
-    .click();
-  await expect(newIssueDialog(page)).toBeVisible();
-}
-
-/** Opens the dialog with the button in the menu of a phone. */
-export async function openNewIssueDialogFromTheMenu(page: Page): Promise<void> {
-  await page
-    .getByRole("navigation", { name: t("shell.menu") })
-    .getByRole("button", { name: t("issues.new"), exact: true })
-    .click();
-  await expect(newIssueDialog(page)).toBeVisible();
-}
+export {
+  newIssueDialog,
+  openNewIssueDialog,
+  openNewIssueDialogFromTheMenu,
+  pressNewIssue,
+  titleLabel,
+} from "./new-issue-dialog.ts";
 
 /** Changes the status and the priority of an issue as the session's person, on the version the test knows. */
 export async function setStatusAndPriority(

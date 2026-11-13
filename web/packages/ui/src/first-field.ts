@@ -10,8 +10,10 @@ export function withId(id: string): string {
 /**
  * Puts the focus on the first box of the element with this ID (WCAG 2.4.3): where a window opens,
  * and where the part of a window that was swapped for a form begins. Nothing happens where there
- * is no box.
+ * is no box, and the answer says whether there was one.
  */
-export function focusFirstField(id: string): void {
-  document.querySelector(withId(id))?.querySelector<HTMLElement>(FIRST_FIELD)?.focus();
+export function focusFirstField(id: string): boolean {
+  const field = document.querySelector(withId(id))?.querySelector<HTMLElement>(FIRST_FIELD);
+  field?.focus();
+  return field !== undefined && field !== null;
 }

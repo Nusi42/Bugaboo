@@ -9,11 +9,19 @@ import {
   newIssueDialog as dialog,
   openNewIssueDialog as openDialog,
   openNewIssueDialogFromTheMenu,
+  pressNewIssue,
   titleLabel,
   prepareWeb,
 } from "./support/issues.ts";
 import { onThisLayout } from "./support/layout.ts";
-import { boxOf, windowPlacesWhile } from "./support/windows.ts";
+import {
+  boxOf,
+  expectWindowSeen,
+  holdNewIssueLayout,
+  pageSize,
+  windowCloseName,
+  windowPlacesWhile,
+} from "./support/windows.ts";
 import { projectIssuesAddress } from "../src/shared/paths.ts";
 
 // The new-issue dialog (ISS-11, UX §4.5, M3 WP-06): project, type and fields, required fields that
@@ -101,6 +109,54 @@ test("ux_6_3 the new-issue window stands still on the first open of a project", 
   await expect(dialog(page)).toHaveCount(0);
   const second = await windowPlacesWhile(page, openUntilTheFieldsAreThere);
   expect(second.at(-1), "the second open stands where the first ended").toEqual(first.at(-1));
+});
+
+/** A page taller than the filled new-issue form (about 1030 high with the description), so the window does not fill it. */
+const TALLER_THAN_THE_FORM_PX = 1300;
+
+test("ux_6_1 a window whose fields are slow says it is loading, shows grey shapes and stands still", async ({
+  page,
+}) => {
+  // Taller than the filled form, so a window that went back to the middle would stand lower than the grey shapes did.
+  await page.setViewportSize({ ...pageSize(page), height: TALLER_THAN_THE_FORM_PX });
+  await signIn(page, ada);
+  await page.goto(projectIssuesAddress("WEB"));
+  const release = await holdNewIssueLayout(page);
+  const places = await windowPlacesWhile(page, async () => {
+    await pressNewIssue(page);
+    // After 0.3 s the window shows its bar and grey shapes, and says it is loading (UX §6.1).
+    await expectWindowSeen(page);
+    await expect(dialog(page).getByRole("status")).toHaveText(t("common.loading"));
+    await expect(dialog(page).getByRole("button", { name: windowCloseName(page) })).toBeVisible();
+    release();
+    await expect(
+      dialog(page).getByText(t("issue-field.priority"), { exact: true }).first(),
+    ).toBeVisible();
+  });
+  const placesSeen = new Set(places.map(({ x, y }) => `${x} ${y}`));
+  expect([...placesSeen], "the loading window and the filled one stand in one place").toHaveLength(
+    1,
+  );
+  await expect(dialog(page).getByRole("status")).toHaveCount(0);
+});
+
+test("ux_6_1 a window that is still loading closes with Escape and with its own button", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await page.goto(projectIssuesAddress("WEB"));
+  const release = await holdNewIssueLayout(page);
+  await pressNewIssue(page);
+  await page.keyboard.press("Escape");
+  await expect(dialog(page)).toHaveCount(0);
+  await pressNewIssue(page);
+  await expectWindowSeen(page);
+  await expect(dialog(page).getByRole("status")).toHaveText(t("common.loading"));
+  await dialog(page)
+    .getByRole("button", { name: windowCloseName(page) })
+    .click();
+  await expect(dialog(page)).toHaveCount(0);
+  release();
 });
 
 test("iss_11 a half-filled dialog keeps its draft, and the draft is gone after Create", async ({

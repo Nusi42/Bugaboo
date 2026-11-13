@@ -6,6 +6,9 @@ import { keyboardStep, menuStep, windowEdges } from "../../../packages/ui/src/wi
 import { descriptionBox } from "./description.ts";
 import { layoutOf } from "./layout.ts";
 import { placesWhile, type Place } from "./frames.ts";
+
+// The windows that wait for a slow answer are tested with it.
+export { holdNewIssueLayout } from "./slow-answers.ts";
 import { partIn, partSelector } from "./parts.ts";
 import { newIssueDialog, openNewIssueDialog, titleLabel } from "./issues.ts";
 
@@ -18,7 +21,18 @@ export function windowBox(page: Page): Locator {
 
 /** Where the open window stands in every frame in which it is shown while `act` runs (see `placesWhile`). */
 export function windowPlacesWhile(page: Page, act: () => Promise<void>): Promise<readonly Place[]> {
-  return placesWhile(page, partSelector(part.overlayModal), act);
+  const variant = layoutOf(page) === "phone" ? "full" : "window";
+  return placesWhile(page, partSelector(part.overlayModal, variant), act);
+}
+
+/** Waits until the open window can be seen: for its first 0.3 s a window that is loading is there but clear. */
+export async function expectWindowSeen(page: Page): Promise<void> {
+  await expect(partIn(page, part.overlayModal)).toHaveCSS("opacity", "1");
+}
+
+/** The name of the button that closes the window: *Close* in its title bar, *Back* on a phone. */
+export function windowCloseName(page: Page): string {
+  return layoutOf(page) === "phone" ? t("shell.back") : t("common.close");
 }
 
 /** The bar a minimized window becomes. */

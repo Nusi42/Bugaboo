@@ -3,7 +3,18 @@ import { describe, expect, it } from "vitest";
 import { applyWindowSize, resizeByKey, type ResizeKey } from "./use-window-resize.ts";
 import { notBelow } from "./window-size.ts";
 import { keyboardStep, type WindowElement, type WindowSize } from "./window-size.ts";
-import { firstShape, reduceShape, shapeAction } from "./window-shape.ts";
+import {
+  firstShape,
+  hiddenPresence,
+  phaseOf,
+  presenceAfter,
+  reduceShape,
+  shapeAction,
+  windowPhase,
+  type PresenceFacts,
+  type WindowPhase,
+  type WindowPresence,
+} from "./window-shape.ts";
 
 /** A window element that remembers what was set on it, and is as big as `size`. */
 function fakeWindow(size: WindowSize): { element: WindowElement; set: [string, string][] } {
@@ -101,5 +112,67 @@ describe("ux_6_3 a window that is as tall as its content is not made taller by m
     expect(notBelow({ width: 500, height: 100 }, 360, 700)).toEqual({ width: 500, height: 360 });
     expect(notBelow({ width: 500, height: 150 }, 360, 220)).toEqual({ width: 500, height: 220 });
     expect(notBelow({ width: 500, height: 900 }, 360, 700)).toEqual({ width: 500, height: 900 });
+  });
+});
+
+/** The presence of a window after each of these moments, one after the other, from a closed window. */
+function presencesThrough(moments: readonly PresenceFacts[]): WindowPresence[] {
+  const seen: WindowPresence[] = [];
+  moments.reduce((before, facts) => {
+    const after = presenceAfter(before, facts);
+    seen.push(after);
+    return after;
+  }, hiddenPresence);
+  return seen;
+}
+
+/** Whether the window is shown after each moment. */
+function shownThrough(moments: readonly PresenceFacts[]): boolean[] {
+  return presencesThrough(moments).map((presence) => presence.shown);
+}
+
+/** How the window stands after each moment. */
+function phasesThrough(moments: readonly PresenceFacts[]): WindowPhase[] {
+  const presences = presencesThrough(moments);
+  return moments.map((facts, at) => phaseOf(presences[at] ?? hiddenPresence, facts.late));
+}
+
+const open = { isOpen: true, late: false } as const;
+const closed = { isOpen: false, ready: false, late: false } as const;
+
+describe("ux_6_1 a window is shown once its content is there and then stays shown", () => {
+  it("stays shown when its content is on its way again (another project picked)", () => {
+    const moments = [
+      { ...open, ready: false },
+      { ...open, ready: true },
+      { ...open, ready: false },
+    ];
+    expect(shownThrough(moments)).toEqual([false, true, true]);
+    expect(phasesThrough(moments).at(-1)).toBe(windowPhase.middle);
+  });
+
+  it("starts hidden again after it closes and opens", () => {
+    expect(shownThrough([{ ...open, ready: true }, closed, { ...open, ready: false }])).toEqual([
+      true,
+      false,
+      false,
+    ]);
+  });
+
+  it("is shown in its first frame, in the middle, when its content is there at once", () => {
+    expect(presencesThrough([{ ...open, ready: true }])).toEqual([
+      { shown: true, anchored: false },
+    ]);
+    expect(phasesThrough([{ ...open, ready: true }])).toEqual([windowPhase.middle]);
+  });
+
+  it("shows nothing for the first 0.3 s, then grey shapes, and keeps their top when the content arrives", () => {
+    expect(
+      phasesThrough([
+        { ...open, ready: false },
+        { isOpen: true, ready: false, late: true },
+        { ...open, ready: true },
+      ]),
+    ).toEqual([windowPhase.quiet, windowPhase.loading, windowPhase.top]);
   });
 });
