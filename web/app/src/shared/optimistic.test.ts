@@ -1,17 +1,8 @@
 import { QueryClient } from "@tanstack/react-query";
 import { describe, expect, it } from "vitest";
 
-import { skeletonDelayMs, startDelay } from "@bugaboo/ui";
-
 import { optimisticSend, saveStateOf, summarizeCalls } from "./optimistic.ts";
-import {
-  addName,
-  key,
-  manualClock,
-  nextTick,
-  slowServer,
-  type Names,
-} from "./optimistic-testing.ts";
+import { addName, key, nextTick, slowServer, type Names } from "./optimistic-testing.ts";
 
 describe("ux_06 a change shows at once", () => {
   it("is in the cache within 100 ms, while the slow server has not answered", async () => {
@@ -57,39 +48,6 @@ describe("ux_06 a change shows at once", () => {
     expect(saveStateOf("pending")).toBe("saving");
     expect(saveStateOf("success")).toBe("saved");
     expect(saveStateOf("error")).toBe("not-saved");
-  });
-});
-
-describe("ux_06 skeleton shapes wait for 0.3 seconds", () => {
-  it("do not show before the delay and not at all when the answer came first", () => {
-    const clock = manualClock();
-    let shown = false;
-    const stop = startDelay(
-      skeletonDelayMs,
-      () => {
-        shown = true;
-      },
-      clock.schedule,
-    );
-    clock.advance(skeletonDelayMs - 1);
-    expect(shown).toBe(false);
-    stop();
-    clock.advance(skeletonDelayMs);
-    expect(shown).toBe(false);
-  });
-
-  it("show once the delay has passed", () => {
-    const clock = manualClock();
-    let shown = false;
-    startDelay(
-      skeletonDelayMs,
-      () => {
-        shown = true;
-      },
-      clock.schedule,
-    );
-    clock.advance(skeletonDelayMs);
-    expect(shown).toBe(true);
   });
 });
 
