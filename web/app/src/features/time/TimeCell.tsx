@@ -124,6 +124,7 @@ function goDown(event: KeyboardEvent<HTMLInputElement>, column: number): void {
   ];
   const next = cells[cells.indexOf(here) + 1];
   if (next instanceof HTMLInputElement) {
+    // The cell under it takes the focus, as a sheet does: it is scrolled into view (UX §6.4).
     next.focus();
     next.select();
   } else {

@@ -20,6 +20,7 @@ export function useRowKeys(): RefObject<HTMLDivElement | null> {
     for (const [index, row] of rows.entries()) {
       at = row.contains(document.activeElement) ? index : at;
     }
+    // `j` and `k` go to the next row: the list scrolls to it, as the person asked (UX §6.4).
     rows[Math.min(Math.max(at + direction, 0), rows.length - 1)]?.focus();
   };
   useShortcuts({

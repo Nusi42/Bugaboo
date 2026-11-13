@@ -28,6 +28,7 @@ export function useSearchKey(openSheet: () => void) {
       const target =
         bar?.querySelector<HTMLElement>(boxSelector) ??
         bar?.querySelector<HTMLElement>(buttonSelector);
+      // The key `/` asks for the search bar: the page scrolls to it where it is out of view (UX §6.4).
       target?.focus();
     },
   });

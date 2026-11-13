@@ -1,5 +1,6 @@
 import { useEffect, useRef, type RefObject } from "react";
 
+import { inPlace } from "../in-place.ts";
 import { applyFormat, type FormatAction, type FormatWords } from "./format.ts";
 
 /** Where the selection goes once the text has changed. */
@@ -31,7 +32,7 @@ export function useFormatting(
     const next = wanted.current;
     if (next !== null && area.current !== null && next.text === value) {
       wanted.current = null;
-      area.current.focus();
+      area.current.focus(inPlace);
       area.current.setSelectionRange(next.start, next.end);
     }
   }, [value]);

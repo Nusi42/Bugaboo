@@ -1,3 +1,4 @@
+import { inPlace } from "@bugaboo/ui";
 import { t } from "@bugaboo/messages";
 import type { MenuAction } from "@bugaboo/ui";
 import { use } from "react";
@@ -41,7 +42,8 @@ export function PhoneBar({
           openStatusMenu();
         }}
         onComment={() => {
-          goTo(historyId)?.querySelector("textarea")?.focus();
+          // `goTo` has brought the History into view: the box takes the focus where it stands.
+          goTo(historyId)?.querySelector("textarea")?.focus(inPlace);
         }}
         actions={actions}
         issue={entryIssueOf(issue)}

@@ -1,4 +1,4 @@
-import type { ColorToken } from "@bugaboo/ui";
+import { inPlace, type ColorToken } from "@bugaboo/ui";
 
 /** The ID of the row of a color on the page, which *Show* of a pair that is hard to read goes to. */
 export function colorRowId(token: ColorToken): string {
@@ -16,7 +16,7 @@ export function focusColor(token: ColorToken): void {
     group.open = true;
   }
   row?.scrollIntoView({ block: "center" });
-  row?.querySelector<HTMLInputElement>(TYPED_FIELD)?.focus();
+  row?.querySelector<HTMLInputElement>(TYPED_FIELD)?.focus(inPlace);
 }
 
 /** The ID of the readability on top of the editor: a refused save brings the cursor there. */
@@ -26,5 +26,5 @@ export const READABILITY_ID = "theme-readability";
 export function focusReadability(): void {
   const found = document.querySelector<HTMLElement>(`#${READABILITY_ID}`);
   found?.scrollIntoView({ block: "start" });
-  found?.focus();
+  found?.focus(inPlace);
 }
