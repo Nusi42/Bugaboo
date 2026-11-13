@@ -37,7 +37,9 @@ const HEALTH_LIVE_BODY: &str = r#"{"status":"ok"}"#;
 const IMMUTABLE_PREFIX: &str = "assets/";
 const CACHE_IMMUTABLE: &str = "public, max-age=31536000, immutable";
 const CACHE_REVALIDATE: &str = "no-cache";
-/// Addresses below these are never browser pages: when missing they are plain 404s.
+/// Addresses below these are never browser pages: when missing they are plain 404s. The dev server
+/// of the browser app passes all but `assets` on to the server (`web/tooling/vite.config.ts`;
+/// `dev-proxy.test.ts` holds the two lists together).
 const NO_PAGE_FALLBACK: [&str; 6] = ["assets", "health", "api", "mcp", "oauth", ".well-known"];
 /// Smaller files are not worth compressing.
 const COMPRESS_FROM_BYTES: u64 = 256;
