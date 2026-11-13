@@ -220,6 +220,20 @@ export function shootWholeAs(
   });
 }
 
+/** Waits until the browser has drawn what just changed: two frames, not a guess of time. */
+export async function drawn(page: Page): Promise<void> {
+  await page.evaluate(
+    () =>
+      new Promise<void>((done) => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            done();
+          });
+        });
+      }),
+  );
+}
+
 /**
  * Takes the window as it is in the theme it shows, as `<name>-<theme>.png` in the folder of the
  * milestone, without growing it to the page: for a list that reads more rows when it is made taller.

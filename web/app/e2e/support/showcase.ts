@@ -15,7 +15,7 @@ import { pickTheme, type Theme, expectLook } from "./checks.ts";
 import { sampleStartMs } from "./sample.ts";
 import { type Instance } from "./server.ts";
 import { type ShowcaseIds, type Who } from "./showcase-sample.ts";
-import { screenshotFolder, shootWindowAs, shotWholeAs } from "./screenshots.ts";
+import { drawn, screenshotFolder, shootWindowAs, shotWholeAs } from "./screenshots.ts";
 import { viewports } from "../../../tooling/viewports.ts";
 
 /**
@@ -126,25 +126,14 @@ const withCrops: ReadonlySet<string> = new Set([
 /** The tall screens a phone also gets the two windows' worth for: the page of an issue and its details (M5 exit, round 8). */
 const withPhoneCrops: ReadonlySet<string> = new Set(["issue", "issue-details"]);
 
-/** Waits until the browser has drawn what was just scrolled to, so a picture is never of an empty page. */
-function painted(page: Page): Promise<unknown> {
-  return page.evaluate(
-    () =>
-      new Promise((done) => {
-        requestAnimationFrame(() => {
-          requestAnimationFrame(done);
-        });
-      }),
-  );
-}
-
 /** Scrolls the page to this height: the window on a computer, the main area of the page on a phone, where that is the box that scrolls. */
 async function scrollPageTo(page: Page, top: number): Promise<void> {
   await page.evaluate((to) => {
     window.scrollTo(0, to);
     document.querySelector("[data-part='app-layout.main']")?.scrollTo(0, to);
   }, top);
-  await painted(page);
+  // The browser draws what was just scrolled to, so a picture is never of an empty page.
+  await drawn(page);
 }
 
 /** The pictures of the top and of the next part of a tall page, at the size of the window. */
