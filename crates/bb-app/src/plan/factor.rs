@@ -195,11 +195,12 @@ impl<S: AuthStore> Ctx<'_, S> {
         factor: Option<&IssueTimeFactor>,
         first: Option<UserId>,
     ) -> Result<TimeFactorView, AppError> {
-        let person = match first {
-            Some(first) => self.shown_person(held, first).await?,
-            None => None,
-        };
-        let named = names_person(held, first, person.as_ref());
+        // The one way of the plan to see the person on the bar, with the field level of *Assigned
+        // to* for the type of the issue.
+        let reads_assigned = held
+            .field_mask_for(Some(issue.issue_type))
+            .can_see(Field::AssignedTo);
+        let (person, named) = self.person_for(held, first, reads_assigned).await?;
         let percent = factor.map_or(TimeFactor::ONE, |kept| kept.factor).percent();
         let set_by = match factor {
             // Not more openly than the person on the bar, whoever set it: a factor the person set

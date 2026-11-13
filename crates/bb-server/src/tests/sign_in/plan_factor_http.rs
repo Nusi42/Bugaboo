@@ -9,6 +9,7 @@ use serde_json::{Value, json};
 
 use super::http::{Browser, Reply, rig_and_app};
 use super::issues_site::{ISSUES, Site, ok};
+use super::plan_privacy_http::field_level;
 use super::plan_site::{MONDAY, by_effort, change, issue, page, planned, rows_of, work_times};
 
 /// The route of the time factor of an issue.
@@ -258,6 +259,35 @@ async fn plan_14_the_time_factor_says_who_may_change_it() -> TestResult {
             super::ai_mcp_rig::an_agent_with_a_key(&mut ada, "Fixer", Some(&key)).await?;
         let by_agent = ada.script("GET", &route, None, &agent).await?;
         assert_eq!(ok(&by_agent)?["may_change"], false, "{}", by_agent.body);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn plan_14_the_time_factor_names_no_person_where_assigned_to_is_hidden() -> TestResult {
+    each_database("plan_14_factor_assigned_hidden", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut lea, lea_id) = site
+            .person_called(StartingRole::TeamMember, "lea", "Lea Lang")
+            .await?;
+        let key = planned(
+            &site,
+            &mut ada,
+            "Login screen",
+            json!({"start_date": MONDAY, "estimated_time": 480, "assigned_to": [lea_id.to_string()]}),
+        )
+        .await?;
+        ok(&set_factor(&mut lea, &key, json!({"percent": 150})).await?)?;
+        // A reader whose field level hides *Assigned to* is told no person on the bar, by any
+        // answer of the time factor.
+        let (mut reader, _) = site.person(StartingRole::Contributor, "reader").await?;
+        field_level(&site, &mut ada, StartingRole::Contributor, "assigned-to", "hidden").await?;
+        let read = reader.send("GET", &factor_of(&key), None).await?;
+        let read = ok(&read)?;
+        assert_eq!(read["person"], Value::Null, "{read}");
+        assert!(!read.to_string().contains("Lea Lang"), "{read}");
         Ok(())
     })
     .await

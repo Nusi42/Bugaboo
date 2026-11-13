@@ -493,11 +493,14 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
             };
             let names_person_on_bar = warning.about_person();
             let first = plan.person_on_bar(*id);
-            let (shown, named) = self
-                .person_for(held, first, plan.reads(issue, Field::AssignedTo))
-                .await?;
-            // Only a warning about the person on the bar names them.
-            let person = shown.filter(|_| names_person_on_bar);
+            // Only a warning about the person on the bar names them, or asks how the reader sees
+            // them.
+            let (person, named) = if names_person_on_bar {
+                self.person_for(held, first, plan.reads(issue, Field::AssignedTo))
+                    .await?
+            } else {
+                (None, false)
+            };
             if !plan.tells(issue, warning, named) {
                 continue;
             }
