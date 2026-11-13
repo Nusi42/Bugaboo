@@ -148,13 +148,19 @@ pub fn shortfall(bar: &Bar, effort: Minutes, days: &[DayMinutes]) -> Option<Shor
     if held >= u64::from(effort.get()) {
         return None;
     }
-    let due_needed = forward_end(bar.days.first, effort, days);
-    let needs = due_needed.map(|end| work_days(days, Days::new(bar.days.first, end)));
     Some(Shortfall {
-        needs,
+        needs: effort_days(bar.days.first, effort, days),
         has: work_days(days, Some(bar.days)),
-        due_needed,
+        due_needed: forward_end(bar.days.first, effort, days),
     })
+}
+
+/// How many work days an effort that starts on `start` takes: the days from `start` to the day it
+/// is done ([`forward_end`]) on which the person can work at all. `None` when the known days do not
+/// hold it. The card of a bar says it (*"= 10 work days"*), and *Not enough days* names it.
+#[must_use]
+pub fn effort_days(start: Date, effort: Minutes, days: &[DayMinutes]) -> Option<u32> {
+    forward_end(start, effort, days).map(|end| work_days(days, Days::new(start, end)))
 }
 
 /// The days of `within` on which the person can work at all.

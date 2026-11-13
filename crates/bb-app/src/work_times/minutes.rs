@@ -46,6 +46,8 @@ pub struct PersonMinutes {
     pub project: ProjectId,
     /// The share that counts in the project: nothing while the person has no role there.
     pub share: Share,
+    /// The person's usual work days with their work hours.
+    pub usual: UsualDays,
     /// Whether the reader may name the person's away days (the kind *Work times* is not *Hidden*
     /// for them).
     pub away_visible: bool,
@@ -159,6 +161,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 person,
                 project,
                 share,
+                usual,
                 away_visible,
                 days: days
                     .iter()

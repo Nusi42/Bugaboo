@@ -27,8 +27,8 @@ use bb_searchlang::{Expr, FieldRef, Span, Test};
 use super::build::{DateTargets, Plan, PlanAsk, window_of};
 use super::factor::names_person;
 use super::types::{
-    AcceptedView, BarView, FactorShown, GoalView, Hatched, HatchedDay, TimelinePage, TimelinePart,
-    TimelineQuery, TimelineRow, TimelineSearch, WarningView,
+    AcceptedView, BarView, EffortShown, FactorShown, GoalView, Hatched, HatchedDay, TimelinePage,
+    TimelinePart, TimelineQuery, TimelineRow, TimelineSearch, WarningView, WorkTimeShown,
 };
 use crate::access::{Actor, place_of_address};
 use crate::auth::{AppError, AuthStore, Ctx, internal};
@@ -132,6 +132,21 @@ fn hatched_days(plan: &Plan, issue: &Issue, days: Days, span: Days) -> Vec<Hatch
             })
         })
         .collect()
+}
+
+/// The effort of a bar as its card shows it: the estimate, the effort with the time factor the
+/// reader may read, and, when the bars are planned by effort, the work days it takes from the
+/// first day of the bar.
+fn effort_shown(plan: &Plan, issue: &Issue, days: Days) -> Option<EffortShown> {
+    let effort = plan.effort_of(issue)?;
+    Some(EffortShown {
+        estimate: issue.estimated_time?,
+        effort,
+        work_days: plan
+            .by_effort
+            .then(|| bb_core::plan::bar::effort_days(days.first, effort, plan.days_of(issue)))
+            .flatten(),
+    })
 }
 
 /// The days a warning is about.
@@ -420,6 +435,10 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
             person,
             factor,
             hatched: hatched_days(plan, issue, bar.days, span),
+            effort: effort_shown(plan, issue, bar.days),
+            work_time: plan
+                .time_of(issue)
+                .map(|(usual, share)| WorkTimeShown { usual, share }),
         }))
     }
 

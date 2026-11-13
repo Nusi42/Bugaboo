@@ -35,6 +35,7 @@ use super::auth::{
 use super::issues::IssueItem;
 use super::saved_searches::TimelineOptionsBody;
 use super::search::{SearchGroupKeyBody, counted, group_key};
+use super::work_times::UsualDayBody;
 use crate::errors::{ApiError, ApiJson};
 use crate::limits::Limits;
 use crate::paging;
@@ -152,6 +153,30 @@ pub(crate) struct BarTimeFactorBody {
     own_estimate: bool,
 }
 
+/// The effort of a bar, as its card says it: *"Estimate 8h · ×1.25 = 10 work days"*.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct BarEffortBody {
+    /// *Estimated time*, in minutes.
+    estimate: u32,
+    /// The estimate times the time factor, in minutes.
+    effort: u32,
+    /// How many of the person's work days the effort takes from the first day of the bar; `null`
+    /// unless the bars are planned by effort and the days the plan reads hold it.
+    #[schema(required = true)]
+    work_days: Option<u32>,
+}
+
+/// The time of the person on a bar, as its card says it: *"Mon–Fri, 8 hours a day · 100 % in
+/// Mobile app"*.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct BarWorkTimeBody {
+    /// The seven usual work days, Monday first.
+    #[schema(min_items = 7, max_items = 7)]
+    usual: Vec<UsualDayBody>,
+    /// The share in the project of the issue that counts, in percent.
+    share: u8,
+}
+
 /// The bar of a row.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct BarBody {
@@ -172,6 +197,12 @@ pub(crate) struct BarBody {
     time_factor: Option<BarTimeFactorBody>,
     /// The days inside the span on which the person does not work.
     hatched: Vec<HatchedDayBody>,
+    /// The effort; `null` without an estimate the reader may read or without a person on the bar.
+    #[schema(required = true)]
+    effort: Option<BarEffortBody>,
+    /// The time of the person on the bar; `null` unless the reader may know their work times.
+    #[schema(required = true)]
+    work_time: Option<BarWorkTimeBody>,
 }
 
 impl From<&BarView> for BarBody {
@@ -207,6 +238,21 @@ impl From<&BarView> for BarBody {
                     }
                 })
                 .collect(),
+            effort: bar.effort.map(|effort| BarEffortBody {
+                estimate: effort.estimate.get(),
+                effort: effort.effort.get(),
+                work_days: effort.work_days,
+            }),
+            work_time: bar.work_time.map(|time| BarWorkTimeBody {
+                usual: time
+                    .usual
+                    .days()
+                    .iter()
+                    .copied()
+                    .map(UsualDayBody::from)
+                    .collect(),
+                share: time.share.percent(),
+            }),
         }
     }
 }

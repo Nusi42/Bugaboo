@@ -6,7 +6,8 @@ use bb_core::plan::Days;
 use bb_core::plan::bar::WorkedOut;
 use bb_core::plan::warning::{Warning, WarningKind, WayOut};
 use bb_core::saved_search::TimelineOptions;
-use bb_core::work_times::Halves;
+use bb_core::time::Minutes;
+use bb_core::work_times::{Halves, Share, UsualDays};
 use bb_policy::{Authorized, Masked, PersonRef};
 use jiff::Timestamp;
 use jiff::civil::Date;
@@ -107,6 +108,29 @@ pub struct FactorShown {
     pub own_estimate: bool,
 }
 
+/// The effort of a bar, as its card shows it (*"Estimate 8h · ×1.25 = 10 work days"*): only with an
+/// estimate the reader may read and a person on the bar.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+pub struct EffortShown {
+    /// *Estimated time*.
+    pub estimate: Minutes,
+    /// The estimate times the time factor the reader may read.
+    pub effort: Minutes,
+    /// How many of the person's work days the effort takes from the first day of the bar; only when
+    /// the bars are planned by effort and the days the plan reads hold it.
+    pub work_days: Option<u32>,
+}
+
+/// The time of the person on a bar, as its card shows it (*"Mon–Fri, 8 hours a day · 100 % in
+/// Mobile app"*): only to a reader who may know the person's work times.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+pub struct WorkTimeShown {
+    /// The usual work days with their work hours.
+    pub usual: UsualDays,
+    /// The share in the project of the issue that counts.
+    pub share: Share,
+}
+
 /// The bar of an issue.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct BarView {
@@ -123,6 +147,10 @@ pub struct BarView {
     pub factor: Option<FactorShown>,
     /// The days of the bar on which its person does not work, as *Who sees people* allows.
     pub hatched: Vec<HatchedDay>,
+    /// The effort, with an estimate the reader may read and a person on the bar.
+    pub effort: Option<EffortShown>,
+    /// The time of the person on the bar, for a reader who may know their work times.
+    pub work_time: Option<WorkTimeShown>,
 }
 
 /// One row of the timeline: an issue in a group, with its bar.

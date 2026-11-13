@@ -19,7 +19,7 @@ use bb_core::plan::record::IssueTimeFactor;
 use bb_core::plan::warning::{Warning, away, delays, sub_issue_delays, too_much_at_once};
 use bb_core::plan::{Days, TimeFactor};
 use bb_core::relation::Dependency;
-use bb_core::work_times::DayMinutes;
+use bb_core::work_times::{DayMinutes, Share, UsualDays};
 use bb_policy::{Evaluation, Place};
 use jiff::ToSpan as _;
 use jiff::civil::Date;
@@ -137,6 +137,9 @@ pub(crate) struct Plan {
     pub(crate) bars: HashMap<IssueId, Bar>,
     /// The days of each person on the bar in each project, as the reader may know them.
     pub(crate) days: HashMap<(ProjectId, UserId), Vec<DayMinutes>>,
+    /// The usual work days and the share of each person on the bar in each project: the card of a
+    /// bar names them only to a reader who may know the person's work times.
+    pub(crate) times: HashMap<(ProjectId, UserId), (UsualDays, Share)>,
     /// The people on a bar whose work times the reader may know in the project (the kind *Work
     /// times* is not *Hidden* for them): only theirs are hatched or named in a warning about how
     /// much they can work.
@@ -175,6 +178,17 @@ impl Plan {
             .is_some_and(|person| self.work_times_known.contains(&(issue.project, person)))
     }
 
+    /// The usual work days and the share of the person on the bar of an issue, for a reader who may
+    /// know their work times; none for any other reader.
+    pub(crate) fn time_of(&self, issue: &Issue) -> Option<(UsualDays, Share)> {
+        if !self.work_times_known(issue) {
+            return None;
+        }
+        self.person_on_bar(issue.id)
+            .and_then(|person| self.times.get(&(issue.project, person)))
+            .copied()
+    }
+
     /// The days of the person on the bar of an issue.
     pub(crate) fn days_of(&self, issue: &Issue) -> &[DayMinutes] {
         self.person_on_bar(issue.id)
@@ -192,7 +206,7 @@ impl Plan {
 
     /// The effort of an issue under *Plan by effort*: its estimate times its time factor, when it
     /// has a person on the bar and an estimate the reader may read.
-    fn effort_of(&self, issue: &Issue) -> Option<bb_core::time::Minutes> {
+    pub(crate) fn effort_of(&self, issue: &Issue) -> Option<bb_core::time::Minutes> {
         self.person_on_bar(issue.id)?;
         let estimate = issue
             .estimated_time
@@ -379,6 +393,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             factors,
             bars: HashMap::new(),
             days: HashMap::new(),
+            times: HashMap::new(),
             work_times_known: HashSet::new(),
             dependencies: dependencies
                 .iter()
@@ -464,6 +479,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 if person.away_visible {
                     plan.work_times_known.insert(at);
                 }
+                plan.times.insert(at, (person.usual, person.share));
                 plan.days.insert(at, person.days);
             }
         }

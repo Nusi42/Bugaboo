@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use jiff::civil::{Date, date};
 
-use super::bar::{Bar, BarInput, Shortfall, WorkedOut, bar, load, shortfall};
+use super::bar::{Bar, BarInput, Shortfall, WorkedOut, bar, effort_days, load, shortfall};
 use super::order::move_after;
 use super::warning::{Delay, Warning, away, delays, sub_issue_delays, too_much_at_once};
 use super::{Days, TimeFactor};
@@ -148,6 +148,21 @@ fn plan_12_plan_by_effort_counts_work_hours_share_away_days_and_holidays() {
         .unwrap();
         assert_eq!(found.days, Days::new(MONDAY, date(2026, 11, 5)).unwrap());
     }
+}
+
+#[test]
+fn plan_12_the_work_days_of_an_effort_skip_the_days_without_work() {
+    // 6 hours at 50 % is 3 hours a day: 9 hours take three work days.
+    let plain = person_days(MONDAY, 21, 6, 50, &[]);
+    assert_eq!(effort_days(MONDAY, hours(9), &plain), Some(3));
+    // Away on Tuesday: still three work days, over four calendar days.
+    let away = person_days(MONDAY, 21, 6, 50, &[date(2026, 11, 3)]);
+    assert_eq!(effort_days(MONDAY, hours(9), &away), Some(3));
+    // Over the weekend: Thursday, Friday and Monday.
+    assert_eq!(effort_days(date(2026, 11, 5), hours(9), &plain), Some(3));
+    // Nothing to do is done on its first day; days that do not hold it answer nothing.
+    assert_eq!(effort_days(MONDAY, Minutes::new(0), &plain), Some(1));
+    assert_eq!(effort_days(MONDAY, hours(900), &plain), None);
 }
 
 #[test]

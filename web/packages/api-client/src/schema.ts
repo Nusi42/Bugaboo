@@ -5851,12 +5851,33 @@ export interface components {
        * @description How much of it is done, in percent; `null` without an estimate the person may read.
        */
       done: number | null;
+      effort: components["schemas"]["BarEffortBody"] | null;
       /** @description The days inside the span on which the person does not work. */
       hatched: components["schemas"]["HatchedDayBody"][];
       person: components["schemas"]["PersonRef"] | null;
       time_factor: components["schemas"]["BarTimeFactorBody"] | null;
+      work_time: components["schemas"]["BarWorkTimeBody"] | null;
       /** @description Which date *Plan by effort* worked out (shown, never stored): `neither`, `start` or `due`. */
       worked_out: string;
+    };
+    /** @description The effort of a bar, as its card says it: *"Estimate 8h · ×1.25 = 10 work days"*. */
+    BarEffortBody: {
+      /**
+       * Format: int32
+       * @description The estimate times the time factor, in minutes.
+       */
+      effort: number;
+      /**
+       * Format: int32
+       * @description *Estimated time*, in minutes.
+       */
+      estimate: number;
+      /**
+       * Format: int32
+       * @description How many of the person's work days the effort takes from the first day of the bar; `null`
+       *     unless the bars are planned by effort and the days the plan reads hold it.
+       */
+      work_days: number | null;
     };
     /** @description The time factor a bar is planned with. */
     BarTimeFactorBody: {
@@ -5867,6 +5888,19 @@ export interface components {
        * @description In percent of the estimate (125 is ×1.25).
        */
       percent: number;
+    };
+    /**
+     * @description The time of the person on a bar, as its card says it: *"Mon–Fri, 8 hours a day · 100 % in
+     *     Mobile app"*.
+     */
+    BarWorkTimeBody: {
+      /**
+       * Format: int32
+       * @description The share in the project of the issue that counts, in percent.
+       */
+      share: number;
+      /** @description The seven usual work days, Monday first. */
+      usual: components["schemas"]["UsualDayBody"][];
     };
     /** @description One day of one's own week compared with the time booked on issues, in whole minutes. */
     BookedDayBody: {

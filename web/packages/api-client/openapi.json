@@ -20629,7 +20629,16 @@
       "BarBody": {
         "type": "object",
         "description": "The bar of a row.",
-        "required": ["days", "worked_out", "done", "person", "time_factor", "hatched"],
+        "required": [
+          "days",
+          "worked_out",
+          "done",
+          "person",
+          "time_factor",
+          "hatched",
+          "effort",
+          "work_time"
+        ],
         "properties": {
           "days": {
             "$ref": "#/components/schemas/DaysBody",
@@ -20640,6 +20649,17 @@
             "format": "int32",
             "description": "How much of it is done, in percent; `null` without an estimate the person may read.",
             "minimum": 0
+          },
+          "effort": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BarEffortBody",
+                "description": "The effort; `null` without an estimate the reader may read or without a person on the bar."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "hatched": {
             "type": "array",
@@ -20670,9 +20690,45 @@
               }
             ]
           },
+          "work_time": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BarWorkTimeBody",
+                "description": "The time of the person on the bar; `null` unless the reader may know their work times."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "worked_out": {
             "type": "string",
             "description": "Which date *Plan by effort* worked out (shown, never stored): `neither`, `start` or `due`."
+          }
+        }
+      },
+      "BarEffortBody": {
+        "type": "object",
+        "description": "The effort of a bar, as its card says it: *\"Estimate 8h · ×1.25 = 10 work days\"*.",
+        "required": ["estimate", "effort", "work_days"],
+        "properties": {
+          "effort": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The estimate times the time factor, in minutes.",
+            "minimum": 0
+          },
+          "estimate": {
+            "type": "integer",
+            "format": "int32",
+            "description": "*Estimated time*, in minutes.",
+            "minimum": 0
+          },
+          "work_days": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "How many of the person's work days the effort takes from the first day of the bar; `null`\nunless the bars are planned by effort and the days the plan reads hold it.",
+            "minimum": 0
           }
         }
       },
@@ -20690,6 +20746,28 @@
             "format": "int32",
             "description": "In percent of the estimate (125 is ×1.25).",
             "minimum": 0
+          }
+        }
+      },
+      "BarWorkTimeBody": {
+        "type": "object",
+        "description": "The time of the person on a bar, as its card says it: *\"Mon–Fri, 8 hours a day · 100 % in\nMobile app\"*.",
+        "required": ["usual", "share"],
+        "properties": {
+          "share": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The share in the project of the issue that counts, in percent.",
+            "minimum": 0
+          },
+          "usual": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UsualDayBody"
+            },
+            "description": "The seven usual work days, Monday first.",
+            "maxItems": 7,
+            "minItems": 7
           }
         }
       },

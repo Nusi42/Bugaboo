@@ -3,7 +3,8 @@
 /// How much of a person's work hours belong to one project, from 0 to 100 percent. A person with
 /// no row has [`Share::START`]; while the person has no role in the project the share counts as
 /// nothing and is kept, and it counts again when a role comes back.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Serialize)]
+#[serde(transparent)]
 pub struct Share(u8);
 
 impl Share {

@@ -1,6 +1,7 @@
 //! The usual work days of a person and the work hours of each (PLAN-11, PLAN-15, ADR-0030).
 
 use jiff::civil::Weekday;
+use serde::Serialize;
 
 /// The most work minutes of one day: all 24 hours.
 pub const WORK_MINUTES_MAX: u16 = 24 * 60;
@@ -10,7 +11,7 @@ const START_MINUTES: u16 = 8 * 60;
 
 /// One weekday: whether the person usually works on it, and the hours they work then. The hours
 /// are kept when the day is not ticked, so ticking it again brings them back.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 pub struct UsualDay {
     /// Whether the person usually works on this weekday.
     pub works: bool,
@@ -19,7 +20,8 @@ pub struct UsualDay {
 }
 
 /// The seven weekdays of a person, Monday first. At the start Monday to Friday, 8 hours each.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[serde(transparent)]
 pub struct UsualDays([UsualDay; 7]);
 
 impl UsualDays {
