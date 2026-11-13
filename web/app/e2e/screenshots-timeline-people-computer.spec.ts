@@ -6,7 +6,7 @@ import { expect, test } from "./support/fixtures.ts";
 import { inFourThemes, inFourThemesAsWindow } from "./support/four-themes.ts";
 import { signIn } from "./support/flows.ts";
 import { screenshotFolder } from "./support/screenshots.ts";
-import { chart, openTimeline, pressOf } from "./support/timeline.ts";
+import { barOf, chart, openTimeline, pressOf } from "./support/timeline.ts";
 import {
   openWarnings,
   people,
@@ -32,6 +32,15 @@ test("the people on the bars, by person, by effort, and the card", async ({ page
   await openTimeline(page, `&group=${encodeURIComponent("assigned to")}&effort=1`);
   await expect(chart(page)).toBeVisible();
   await inFourThemes(page, "group-by-person", MILESTONE);
+  // The copy in Ada's row, selected: its card says whose work times plan it.
+  await barOf(page, people.shared)
+    .and(page.locator('[data-state~="copy"]'))
+    .locator('[data-part="timeline-bar.press"]')
+    .click();
+  await expect(
+    page.getByRole("region", { name: t("timeline.card", { key: people.shared }) }),
+  ).toBeVisible();
+  await inFourThemes(page, "selected-copy", MILESTONE);
   await pressOf(page, people.effort).first().click();
   await expect(
     page.getByRole("region", { name: t("timeline.card", { key: people.effort }) }),
@@ -55,6 +64,11 @@ test("the list of plan warnings, a preview and the person picker", async ({ page
     .click();
   await inFourThemesAsWindow(page, "give-picker", MILESTONE);
   await page.keyboard.press("Escape");
+  await warningAbout(list, people.holiday)
+    .getByRole("button", { name: t("plan-way-out.keep-and-accept"), exact: true })
+    .click();
+  await expect(list.locator('[data-state~="accepted"]')).toBeVisible();
+  await inFourThemes(page, "warning-accepted", MILESTONE);
 });
 
 test("the bars as a reader who sees people by role only, and as one who sees nobody", async ({
@@ -65,8 +79,12 @@ test("the bars as a reader who sees people by role only, and as one who sees nob
   await signIn(page, ana);
   await openTimeline(page);
   await inFourThemes(page, "reader-role-only", MILESTONE);
+  await openWarnings(page);
+  await inFourThemes(page, "reader-role-only-warnings", MILESTONE);
   await viewersSeeAssigned(server, "hidden");
   await page.reload();
   await expect(chart(page)).toBeVisible();
   await inFourThemes(page, "reader-hidden", MILESTONE);
+  await openWarnings(page);
+  await inFourThemes(page, "reader-hidden-warnings", MILESTONE);
 });

@@ -4,7 +4,6 @@ import type { Page } from "@playwright/test";
 import { ada, bob } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { topOf } from "./support/geometry.ts";
 import { dayFromToday, goalTitle, planned } from "./support/timeline.ts";
 import { datesAs } from "./support/timeline-api.ts";
 import { people, prepareTimelinePeople, warningsButton } from "./support/timeline-people.ts";
@@ -50,14 +49,20 @@ test("ux_02_the_phone_timeline_is_a_grouped_list_with_dates_person_and_a_seven_w
     shared.locator('[data-part="timeline-phone.lane"] [data-part="timeline-bar"]'),
   ).toHaveCount(1);
   await expect(shared.locator('[data-part="timeline-today"]')).toHaveCount(1);
-  // *Not scheduled yet* is the last group, under the list.
-  const tray = page.getByRole("region", { name: t("timeline.not-scheduled") });
-  expect(await topOf(tray)).toBeGreaterThan(await topOf(phoneList(page)));
+  // *Not scheduled yet* is the last group of the list, drawn like the others.
+  await expect(phoneList(page).locator('[data-part="timeline-phone.group"]').last()).toContainText(
+    t("timeline.not-scheduled"),
+  );
   // *Warnings (N)* opens the list as a sheet.
   await warningsButton(page).click();
   const sheet = page.getByRole("dialog", { name: t("timeline.warnings-title") });
   await expect(sheet.getByRole("region", { name: t("timeline.warnings-title") })).toBeVisible();
   await expect(sheet).toContainText(t("timeline.warnings-closing"));
+  // Pressing a warning closes the sheet of the warnings, then opens the card of its issue.
+  await sheet.locator('[data-part="timeline-warning.sentence"]').first().click();
+  await expect(sheet).toBeHidden();
+  await expect(page.getByRole("dialog", { name: t("timeline.phone-sheet") })).toBeVisible();
+  await expect(page.getByRole("dialog")).toHaveCount(1);
 });
 
 test("ux_02_on_a_phone_set_dates_changes_the_dates_and_nothing_is_dragged", async ({

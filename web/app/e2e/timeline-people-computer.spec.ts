@@ -5,8 +5,9 @@ import { ada, bob } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { widthOf } from "./support/geometry.ts";
-import { barOf, openTimeline, pressOf } from "./support/timeline.ts";
+import { barOf, chart, openTimeline, pressOf } from "./support/timeline.ts";
 import {
+  openWarnings,
   people,
   prepareTimelinePeople,
   setBobsShare,
@@ -107,4 +108,42 @@ test("plan_12_plan_by_effort_doubles_the_bars_when_the_share_is_halved", async (
   await pressOf(page, people.effort).click();
   const card = page.getByRole("region", { name: t("timeline.card", { key: people.effort }) });
   await expect(card).toContainText(t("timeline.worked-out-due"));
+});
+
+test("plan_13_a_reader_who_sees_people_by_role_or_not_at_all_reads_no_name_in_the_warnings", async ({
+  page,
+  server,
+}) => {
+  // Ana is a Viewer of WEB: with Role only, a warning about Bob says "the assigned person", never
+  // his name (the server picks the sentence without a person).
+  await viewersSeeAssigned(server, "role-only");
+  await signIn(page, ana);
+  await openTimeline(page);
+  const list = await openWarnings(page);
+  const someone = t("person.role", { role: t("starting-role.team-member") });
+  await expect(list).not.toContainText(bob.name);
+  await expect(list).not.toContainText(someone);
+  // With Hidden: the assigned person is away, without who; no bar says Away or names a holiday.
+  await viewersSeeAssigned(server, "hidden");
+  await page.reload();
+  const hidden = await openWarnings(page);
+  await expect(hidden).not.toContainText(bob.name);
+  await expect(hidden).not.toContainText(someone);
+  await expect(pressOf(page, people.shared)).not.toHaveAccessibleName(
+    new RegExp(t("timeline.away"), "u"),
+  );
+  await expect(pressOf(page, people.shared)).not.toHaveAccessibleName(new RegExp(bob.name, "u"));
+});
+
+test("plan_11_the_row_of_a_person_hatches_their_away_days_across_the_chart", async ({ page }) => {
+  await signIn(page, ada);
+  await openTimeline(page, byPerson);
+  // Bob's row: his away day hatched in the row of the group, and said in its words.
+  const head = chart(page)
+    .locator('[data-part="timeline-row"][data-variant~="group"]')
+    .filter({ hasText: bob.name });
+  await expect(
+    head.locator('[data-part="timeline-bar.hatch"][data-variant="away"]'),
+  ).not.toHaveCount(0);
+  await expect(head.getByRole("button")).toContainText(t("timeline.away"));
 });

@@ -39,9 +39,15 @@ test("plan_13_each_warning_offers_its_ways_out_and_keep_and_accept_fades_it", as
   await signIn(page, ada);
   await openTimeline(page);
   const list = await openWarnings(page);
-  // *Away* on Bob's issue: all four ways out; *Delay* of WEB-2: Move it after and Keep and accept.
+  // *Away* on Bob's issue: all four ways out, in the order the server offers them; *Delay* of
+  // WEB-2: Move it after and Keep and accept.
   const away = warningAbout(list, people.shared);
   await expect(away).toContainText(bob.name);
+  await expect(away.locator('[data-part="timeline-warning.ways"] button')).toHaveText(
+    (["move-it-after", "make-it-longer", "give-to-someone-else", "keep-and-accept"] as const).map(
+      (each) => t(`plan-way-out.${each}`),
+    ),
+  );
   await Promise.all(
     (["move-it-after", "give-to-someone-else", "keep-and-accept"] as const).map((each) =>
       expect(away.getByRole("button", way(each))).toBeVisible(),
@@ -60,6 +66,60 @@ test("plan_13_each_warning_offers_its_ways_out_and_keep_and_accept_fades_it", as
   await expect(accepted).toContainText(t("timeline.warning-accepted", { name: ada.name }));
   await expect(accepted.getByRole("button", way("keep-and-accept"))).toHaveCount(0);
   await expect(warningsButton(page)).not.toHaveText(before);
+});
+
+test("plan_13_a_preview_the_server_refuses_says_why_and_shows_nothing", async ({ page }) => {
+  await signIn(page, ada);
+  await openTimeline(page);
+  const list = await openWarnings(page);
+  await page.route(
+    "**/api/v1/timeline/move-after",
+    (route) =>
+      route.fulfill({
+        status: 404,
+        contentType: "application/problem+json",
+        body: JSON.stringify({
+          type: "urn:bugaboo:error:resource.not-found",
+          title: "resource.not-found",
+          status: 404,
+          code: "resource.not-found",
+          message_key: "error.resource.not-found",
+          params: {},
+        }),
+      }),
+    { times: 1 },
+  );
+  const delay = warningAbout(list, delaySentence);
+  await delay.getByRole("button", way("move-it-after")).click();
+  await expect(page.getByText(t("error.resource.not-found"))).toBeVisible();
+  await expect(delay.locator('[data-part="timeline-warning.preview"]')).toHaveCount(0);
+  await expect(delay.getByRole("button", way("move-it-after"))).toBeEnabled();
+});
+
+test("plan_13_make_it_longer_saves_only_after_confirming_and_undo_puts_it_back", async ({
+  page,
+  server,
+}) => {
+  const before = await datesAs(server, ada, people.shared);
+  await signIn(page, ada);
+  await openTimeline(page);
+  const list = await openWarnings(page);
+  const away = warningAbout(list, people.shared);
+  await away.getByRole("button", way("make-it-longer")).click();
+  // The preview names the due date the issue needs; nothing is saved yet.
+  const preview = away.locator('[data-part="timeline-warning.preview"]');
+  await expect(preview).toContainText(keepingHyphens(people.shared));
+  expect(await datesAs(server, ada, people.shared)).toEqual(before);
+  await preview.getByRole("button", { name: t("timeline.change-due"), exact: true }).click();
+  await expect
+    .poll(async () => (await datesAs(server, ada, people.shared)).due)
+    .not.toBe(before.due);
+  const after = await datesAs(server, ada, people.shared);
+  expect(after.start).toBe(before.start);
+  expect(String(after.due).localeCompare(String(before.due))).toBe(1);
+  // *Undo* puts the due date back.
+  await page.getByRole("button", { name: t("common.undo"), exact: true }).click();
+  await expect.poll(() => datesAs(server, ada, people.shared)).toEqual(before);
 });
 
 test("plan_13_move_it_after_shows_a_preview_before_anything_moves", async ({ page, server }) => {
@@ -86,13 +146,17 @@ test("plan_13_give_it_to_someone_else_suggests_nobody", async ({ page, server })
   await openTimeline(page);
   const list = await openWarnings(page);
   await warningAbout(list, people.shared).getByRole("button", way("give-to-someone-else")).click();
-  // The usual person picker: the people of the project by name, none marked, none first by rank.
-  const picker = page.getByRole("dialog", { name: t("issues.assign-title") });
+  // The usual person picker, named for the way out: the people of the project by name, in the
+  // order of their names, none marked and none first by rank.
+  const picker = page.getByRole("dialog", { name: t("plan-way-out.give-to-someone-else") });
   await expect(picker).toBeVisible();
   await expect(picker.getByText(t("issues.assigned"), { exact: true })).toHaveCount(0);
-  const assign = new RegExp(`^${t("issues.assign-name", { name: "" })}`, "u");
-  expect(await picker.getByRole("button", { name: assign }).count()).toBeGreaterThan(1);
-  await picker.getByRole("button", { name: t("issues.assign-name", { name: ada.name }) }).click();
+  const give = new RegExp(`^${t("timeline.give-to-name", { name: "" })}`, "u");
+  const names = await picker.getByRole("button", { name: give }).allInnerTexts();
+  expect(names.length).toBeGreaterThan(1);
+  await picker
+    .getByRole("button", { name: t("timeline.give-to-name", { name: ada.name }) })
+    .click();
   // Ada is now the person on the bar; the others assigned after the first stay.
   await expect.poll(() => firstAssigned(server, people.shared)).toBe(ada.name);
 });

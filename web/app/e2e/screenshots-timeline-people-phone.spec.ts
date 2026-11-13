@@ -59,4 +59,7 @@ test("the phone list as a reader who sees people by role only", async ({ page, s
   ).toBeVisible();
   await expect(page.getByText(planned.keys, { exact: true })).toBeVisible();
   await inFourThemes(page, "phone-reader-role-only", MILESTONE);
+  await warningsButton(page).click();
+  await expect(page.getByRole("dialog", { name: t("timeline.warnings-title") })).toBeVisible();
+  await inFourThemesAsWindow(page, "phone-reader-role-only-warnings", MILESTONE);
 });
