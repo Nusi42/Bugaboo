@@ -7,7 +7,7 @@ import { type Instance } from "./support/server.ts";
 import { anotherBrowser, openFromMenu, signIn } from "./support/flows.ts";
 import { partOn } from "./support/styles.ts";
 import { part } from "../../packages/ui/src/tokens.ts";
-import { skeletonDelayMs } from "../src/shared/optimistic.ts";
+import { skeletonDelayMs } from "../../packages/ui/src/after-delay.ts";
 import { paths } from "../src/shared/paths.ts";
 
 test.use({
