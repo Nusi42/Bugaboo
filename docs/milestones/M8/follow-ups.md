@@ -26,6 +26,7 @@ WP-02 brought a full run from five failing browser tests to one (2026-11-11): Ch
 | M8-F213 | Quarter zoom of the timeline: a short bar can be wider than its span by the least width, and the grips of a selected bar sit close to its ring | Notes of the last picture review of the timeline | WP-10, with the phone timeline |
 | M8-F214 | Touch notes: the timeline pictures on a tablet show a row of about 28 px (the touch measure passes, so the pictures may run with a fine pointer); the project timeline pictures have no issue with dates; on a tablet *Plan by effort* and the zoom buttons stand on different lines; no test checks that a left-to-right swipe slides from the start; the refusal test does not check that the alert stands above the title link | Notes of the last reviews of touch everywhere | WP-10 or the M8 exit |
 | M8-F216 | `a11y-agent-work` (phone) failed once in a full run: the *Agent work* heading did not show within the wait; it passed alone | Seen in the full run of the people timeline landing | Find what the issue page waits for under load |
+| M8-F217 | `web/tooling/server-paths.ts` strips block comments before line comments, so a `/*` inside a `//` comment of the router's path list can drop a name silently (the dev server then sends that path to the app, not the server) | Note of the last review of the try-out setup | Strip both kinds in one pass, with a test |
 
 ## From WP-03 (dates and dependencies)
 
