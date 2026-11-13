@@ -6,7 +6,7 @@ import { api } from "../../shared/api.ts";
 import { fieldList, linesFrom, pageSize, usePaged } from "../../shared/paged.ts";
 import { queryClient } from "../../shared/query-client.ts";
 import { queryKeys, refreshLabelReads, refreshReads, reread } from "../../shared/query-keys.ts";
-import { rowChanged, versionCounted } from "../issues/index.ts";
+import { listRowsChanged, versionCounted } from "../issues/index.ts";
 import { useLabels, type Label, type LabelGroup } from "./label-lists.ts";
 
 export { useLabels, type Label, type LabelGroup } from "./label-lists.ts";
@@ -149,14 +149,20 @@ export async function takeLabelOff(issue: string, label: string): Promise<IssueL
  * A tag or label was put on an issue or taken off. The answer is the tags and labels of the issue
  * now, its version and when it was last changed: the row shows them at once, *Last changed* and the
  * rows of the lists take them from the answer, and none of them is read again (UX §6.4: the change
- * shows in place). Read again, in place, is only what the answer does not hold: the history of this
+ * shows in place), unless somebody else changed the issue in between (`versionCounted`). A list
+ * grouped or filtered by labels keeps the row in its group until it is read again. Read again, in place, is only what the answer does not hold: the history of this
  * issue, the lists of labels and the tags offered in its project. The pages of tags read a tag that
  * a new name made when they are opened next.
  */
 export function afterLabelsAndTags(issue: string, project: string, made: IssueLabelsAndTags): void {
-  versionCounted(issue, { version: made.version, updatedAt: made.updated_at });
   queryClient.setQueryData(labelsAndTagsOptions(issue).queryKey, made);
-  rowChanged(made.issue, { labels: made.labels, updated_at: made.updated_at });
+  if (versionCounted(issue, { version: made.version, updatedAt: made.updated_at })) {
+    listRowsChanged(made.issue, {
+      version: made.version,
+      labels: made.labels,
+      updated_at: made.updated_at,
+    });
+  }
   reread({ queryKey: queryKeys.history.listsOf(issue) });
   reread({ queryKey: queryKeys.history.changedByOf(issue) });
   reread({ queryKey: queryKeys.labels.all });

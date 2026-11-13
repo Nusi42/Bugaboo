@@ -1,7 +1,7 @@
 import { api } from "../../shared/api.ts";
 import { inOrder } from "../../shared/in-order.ts";
 import { queryClient } from "../../shared/query-client.ts";
-import { queryKeys, refreshHistory } from "../../shared/query-keys.ts";
+import { queryKeys, refreshHistory, reread } from "../../shared/query-keys.ts";
 import { versionOf } from "../../shared/version.ts";
 import { isDetail, type IssueEdit, type IssueRequestValues } from "./issue-values.ts";
 
@@ -71,15 +71,27 @@ export interface Counted {
  * A change that is not one of the fields (a tag or a label put on or taken off) counted the issue
  * up to `version`: the page writes it, and when the issue was last changed, into what it knows, so
  * a change made right after is made on it and does not conflict with the person's own, and *Last
- * changed* shows the answer without a read of the issue (UX §6.4). An answer that comes in late
- * never takes the version back.
+ * changed* shows the answer without a read of the issue (UX §6.4). Only when the answer is the very
+ * next version: when it skips one, somebody else changed the issue in between, and taking the new
+ * version as the page's own would let the next save overwrite that change unseen (ADR-0017), so the
+ * issue and the lists are read again instead. An answer that comes in late never takes the version
+ * back. Says whether the answer was in step (written, late, or no issue on screen).
  */
-export function versionCounted(address: string, { version, updatedAt }: Counted): void {
-  queryClient.setQueryData(queryKeys.issues.one(address), (known: unknown) =>
-    isDetail(known) && (known.issue.version ?? 0) < version
-      ? { ...known, issue: { ...known.issue, version, updated_at: updatedAt } }
-      : known,
-  );
+export function versionCounted(address: string, { version, updatedAt }: Counted): boolean {
+  const known: unknown = queryClient.getQueryData(queryKeys.issues.one(address));
+  if (!isDetail(known) || (known.issue.version ?? 0) >= version) {
+    return true;
+  }
+  if (version !== (known.issue.version ?? 0) + 1) {
+    reread({ queryKey: queryKeys.issues.one(address) });
+    reread({ queryKey: queryKeys.issues.lists() });
+    return false;
+  }
+  queryClient.setQueryData(queryKeys.issues.one(address), {
+    ...known,
+    issue: { ...known.issue, version, updated_at: updatedAt },
+  });
+  return true;
 }
 
 /** A page of a list of issues, as the cache keeps it: the items with the fields the list asked for. */
@@ -115,18 +127,33 @@ function withChanged(
   return { ...item, ...asked };
 }
 
+/** Whether a row knows this version of its issue, or a newer one, already. */
+function newerThan(item: Readonly<Record<string, unknown>>, version: number): boolean {
+  return typeof item.version === "number" && item.version >= version;
+}
+
 /**
  * The row of one issue in every list that is kept, changed from the answer of a change in place
- * instead of reading the lists again (UX §6.4): only the fields that each row has.
+ * instead of reading the lists again (UX §6.4): only the fields that each row has, its version among
+ * them. A row that knows the answer's version or a newer one already is left as it is (an answer
+ * that came late). A list grouped or filtered by what changed keeps the row where it stands until it
+ * is read again, by the rule that nothing moves.
  */
-export function rowChanged(id: string, changed: Readonly<Record<string, unknown>>): void {
+export function listRowsChanged(
+  id: string,
+  changed: Readonly<{ version: number } & Record<string, unknown>>,
+): void {
   queryClient.setQueriesData({ queryKey: queryKeys.issues.lists() }, (known: unknown) =>
     isListPages(known)
       ? {
           ...known,
           pages: known.pages.map((page) => ({
             ...page,
-            items: page.items.map((item) => (item.id === id ? withChanged(item, changed) : item)),
+            items: page.items.map((item) =>
+              item.id === id && !newerThan(item, changed.version)
+                ? withChanged(item, changed)
+                : item,
+            ),
           })),
         }
       : known,
