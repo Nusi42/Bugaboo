@@ -21,10 +21,12 @@ function drawn(data: unknown, error: unknown): string {
 }
 
 const notFound = new ApiError(404, {
-  type: "urn:bugaboo:error:resource.not-found",
-  title: "resource.not-found",
-  status: 404,
   code: "resource.not-found",
+  message_key: "error.resource.not-found",
+  params: {},
+  status: 404,
+  title: "Not found",
+  type: "about:blank",
 });
 
 describe("ux_01 the gate of a page shows a refusal, also beside an answer", () => {
