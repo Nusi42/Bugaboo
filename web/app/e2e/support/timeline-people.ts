@@ -6,7 +6,7 @@ import { keepingHyphens } from "../../src/shared/format.ts";
 import { roleId, projectIdOf, setPeopleLevel, roleName } from "./access.ts";
 import { ada, bob, ownId, signInThroughApi } from "./accounts.ts";
 import type { ApiSession } from "./api.ts";
-import { createIssue } from "./issues.ts";
+import { createIssue, issueOf, versionOf } from "./issues.ts";
 import type { Instance } from "./server.ts";
 import { changeIssue, chart, dayFromToday, planned, prepareTimeline } from "./timeline.ts";
 
@@ -78,7 +78,7 @@ export async function viewersSeeAssigned(
 /** Bob's away day and the issues of the scene, made through the API. */
 async function peopleOfTheScene(admin: ApiSession, bobs: ApiSession): Promise<void> {
   const [bobId, adaId] = [await ownId(bobs), await ownId(admin)];
-  await changeIssue(admin, people.shared, { assigned_to: [bobId, adaId] });
+  await changeIssue(admin, people.shared, { assigned_to: [bobId, adaId], estimated_time: 480 });
   const christmas = christmasAhead();
   // Away on a day of each of two issues: two warnings *Away*.
   await Promise.all(
@@ -92,6 +92,14 @@ async function peopleOfTheScene(admin: ApiSession, bobs: ApiSession): Promise<vo
     estimated_time: effortMinutes,
     assigned_to: [bobId],
   });
+  // Bob gives his own estimate for the issue he shares with Ada: the card says whose it is.
+  const sharedVersion = await versionOf(bobs, await issueOf(bobs, people.shared));
+  dataOf(
+    await bobs.client.PUT("/api/v1/issues/{issue}/time-factor", {
+      params: { path: { issue: people.shared } },
+      body: { version: sharedVersion, percent: 125 },
+    }),
+  );
   await createIssue(admin, "WEB", "Over Christmas");
   await changeIssue(admin, people.holiday, {
     start_date: christmas.first,

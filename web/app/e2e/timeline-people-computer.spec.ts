@@ -6,12 +6,15 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { widthOf } from "./support/geometry.ts";
 import { barOf, chart, openTimeline, pressOf } from "./support/timeline.ts";
+import { formatCalendarDay, keepingHyphens } from "../src/shared/format.ts";
 import {
+  awayDay,
   openWarnings,
   people,
   prepareTimelinePeople,
   setBobsShare,
   viewersSeeAssigned,
+  warningAbout,
 } from "./support/timeline-people.ts";
 
 // The people on the timeline on a computer (PLAN-10 … PLAN-12, UX §4.7, ADR-0030 and its amendment
@@ -129,6 +132,16 @@ test("plan_13_a_reader_who_sees_people_by_role_or_not_at_all_reads_no_name_in_th
   const hidden = await openWarnings(page);
   await expect(hidden).not.toContainText(bob.name);
   await expect(hidden).not.toContainText(someone);
+  // No away day: the sentence says only that the assigned person is away, and the only way out is
+  // Keep and accept, since Move it after and Make it longer would tell the days.
+  await expect(hidden).toContainText(
+    t("plan-warning.away-hidden", { issue: keepingHyphens(people.shared) }),
+  );
+  await expect(hidden).not.toContainText(formatCalendarDay(awayDay));
+  const away = warningAbout(hidden, people.shared);
+  await expect(away.locator('[data-part="timeline-warning.ways"] button')).toHaveText([
+    t("plan-way-out.keep-and-accept"),
+  ]);
   await expect(pressOf(page, people.shared)).not.toHaveAccessibleName(
     new RegExp(t("timeline.away"), "u"),
   );
@@ -146,4 +159,12 @@ test("plan_11_the_row_of_a_person_hatches_their_away_days_across_the_chart", asy
     head.locator('[data-part="timeline-bar.hatch"][data-variant="away"]'),
   ).not.toHaveCount(0);
   await expect(head.getByRole("button")).toContainText(t("timeline.away"));
+  // Every row of Bob's group hatches the day too, behind its bar.
+  const row = chart(page)
+    .locator('[data-part="timeline-row"]')
+    .filter({ has: page.getByText(people.effort, { exact: true }) })
+    .first();
+  await expect(
+    row.locator('[data-part="timeline-row.lane"] > [data-part="timeline-bar.hatch"]'),
+  ).not.toHaveCount(0);
 });
