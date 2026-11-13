@@ -7,7 +7,8 @@
 //!
 //! Wall-clock time alone fails whenever other builds run on the same PC, so every timing is
 //! judged against a **reference workload** timed right before and right after it: a few small
-//! processes plus some file and CPU work, like a typical check. The workload takes
+//! processes, then reading and hashing the repository's sources on as many threads as the checks
+//! run on side by side, so it competes for the cores and the files as the checks do. It takes
 //! [`REFERENCE_QUIET`] on a quiet PC. When it takes twice as long, the PC is twice as busy
 //! (the load factor is 2) and the budget doubles too. Each timing is taken up to
 //! [`ATTEMPTS`] times and the best attempt counts, which drops one-off spikes. A check that is
@@ -32,8 +33,6 @@ use crate::tools;
 
 /// Where the measured numbers are written, relative to the repository root.
 const REPORT_PATH: &str = "target/meta-speed.txt";
-/// The scratch file of the reference workload, relative to the repository root.
-const REFERENCE_FILE: &str = "target/meta-speed-reference.tmp";
 
 /// The slowest an edit-time check may be on one file, on a quiet PC.
 const EDIT_BUDGET: Duration = Duration::from_secs(3);
@@ -46,12 +45,21 @@ const COMMIT_SAMPLE: usize = 50;
 /// multiples of this: the edit-time budget is `EDIT_BUDGET / REFERENCE_QUIET` times the
 /// reference, the commit-time budget `COMMIT_BUDGET / REFERENCE_QUIET` times. The workload
 /// is fixed, so this number changes only together with the workload below.
-const REFERENCE_QUIET: Duration = Duration::from_millis(90);
+///
+/// Measured on the maintainer's PC (32 logical cores, Windows 11) with no build or test running
+/// in any folder: the workload run 15 times in a row in a debug build of xtask, as
+/// `cargo xtask` runs it, in four rounds; the best runs were 138 to 141 ms, most runs 140 to
+/// 150 ms. While `cargo build --workspace --release` ran in another work folder (processor at
+/// 100 %) the best runs were 224 to 369 ms, a load factor of 1.6 to 2.6. The workload of before
+/// (small processes and one file of 256 KB on one thread) took 35 to 59 ms even then, and never
+/// left the quiet 90 ms it had.
+const REFERENCE_QUIET: Duration = Duration::from_millis(140);
 /// The reference workload starts this many small processes (a check starts tools the same way).
 const REFERENCE_PROCESSES: usize = 2;
-/// The reference workload writes, reads and hashes this many bytes, [`REFERENCE_ROUNDS`] times.
-const REFERENCE_BYTES: usize = 256 * 1024;
-const REFERENCE_ROUNDS: usize = 8;
+/// Each thread of the reference workload reads this many bytes of the repository's sources.
+const REFERENCE_READ_BYTES: usize = 1024 * 1024;
+/// Each thread hashes what it read this many times: the work on the processor a check does.
+const REFERENCE_HASH_ROUNDS: usize = 128;
 
 /// A busy PC may stretch the budgets by at most this factor. Beyond it the time is never
 /// accepted: a check that needs a minute for one file is slow whatever else is running.
@@ -82,6 +90,7 @@ impl Check for MetaSpeed {
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         let repo = context.repo;
         let files = repo.all_files()?;
+        let read = reference_files(&files);
         let registry = super::registry();
         let active: Vec<&Entry> = context
             .catalog
@@ -154,7 +163,7 @@ impl Check for MetaSpeed {
                     Ok(took)
                 }
             },
-            || reference_workload(repo),
+            || reference_workload(repo, &read),
         )?;
 
         let report: String = measurements.iter().fold(String::new(), |mut out, m| {
@@ -291,30 +300,64 @@ fn collect(
     Ok(())
 }
 
-/// A fixed piece of work that a busy PC slows down in the same way as a check: it starts
-/// small processes, writes, reads and hashes a file. Its time on a quiet PC is
-/// [`REFERENCE_QUIET`].
-fn reference_workload(repo: &Repo) -> anyhow::Result<Duration> {
+/// The files the reference workload reads: the Rust sources of the repository, as the checks
+/// read them, in the order Git lists them.
+fn reference_files(files: &[String]) -> Vec<String> {
+    files
+        .iter()
+        .filter(|file| {
+            Path::new(file)
+                .extension()
+                .is_some_and(|extension| extension.eq_ignore_ascii_case("rs"))
+        })
+        .cloned()
+        .collect()
+}
+
+/// Where in the list of `count` files each of `threads` threads starts reading, spread evenly.
+fn reference_starts(threads: usize, count: usize) -> Vec<usize> {
+    (0..threads).map(|n| n * count / threads.max(1)).collect()
+}
+
+/// A fixed piece of work that a busy PC slows down in the same way as the checks: it starts
+/// small processes, and then, on as many threads as the checks run on side by side
+/// ([`crate::runner::workers`]), each thread reads [`REFERENCE_READ_BYTES`] of the repository's
+/// Rust sources and hashes them [`REFERENCE_HASH_ROUNDS`] times. A build elsewhere that takes the
+/// cores slows it as it slows the checks. Its time on a quiet PC is [`REFERENCE_QUIET`].
+fn reference_workload(repo: &Repo, files: &[String]) -> anyhow::Result<Duration> {
     let started = Instant::now();
     for _ in 0..REFERENCE_PROCESSES {
         tools::run(Path::new("git"), &["--version"], repo.root())?;
     }
-    let path = repo.path(REFERENCE_FILE);
-    if let Some(folder) = path.parent() {
-        fs::create_dir_all(folder)
-            .with_context(|| format!("could not create {}", folder.display()))?;
+    let starts = reference_starts(crate::runner::workers(), files.len());
+    tools::side_by_side(&starts, |start| {
+        read_and_hash(repo, files, *start);
+        Ok(())
+    })?;
+    Ok(started.elapsed())
+}
+
+/// One thread of the reference workload: reads files from `start` on, round the list, until it
+/// has read [`REFERENCE_READ_BYTES`], and hashes each [`REFERENCE_HASH_ROUNDS`] times.
+fn read_and_hash(repo: &Repo, files: &[String], start: usize) {
+    if files.is_empty() {
+        return;
     }
-    let block = vec![0x5a_u8; REFERENCE_BYTES];
     let mut digest = Sha256::new();
-    for _ in 0..REFERENCE_ROUNDS {
-        fs::write(&path, &block).with_context(|| format!("could not write {}", path.display()))?;
-        let back = fs::read(&path).with_context(|| format!("could not read {}", path.display()))?;
-        digest.update(&back);
+    let mut read = 0;
+    for file in files.iter().cycle().skip(start) {
+        if read >= REFERENCE_READ_BYTES {
+            break;
+        }
+        let path = repo.path(file);
+        // A file deleted since it was listed counts as one byte, so the loop still ends.
+        let bytes = fs::read(&path).unwrap_or_default();
+        read += bytes.len().max(1);
+        for _ in 0..REFERENCE_HASH_ROUNDS {
+            digest.update(&bytes);
+        }
     }
     std::hint::black_box(digest.finalize());
-    // Best effort: a left-over scratch file in `target/` does no harm.
-    let _ = fs::remove_file(&path);
-    Ok(started.elapsed())
 }
 
 /// Up to `count` files spread evenly over the list.
@@ -565,5 +608,47 @@ mod tests {
         assert_eq!(picked[0], "0");
         assert_eq!(picked[49], "196");
         assert_eq!(sample(&files[..3], 50).len(), 3);
+    }
+
+    #[test]
+    fn a_reference_a_little_slower_lets_a_check_a_little_slower_pass() {
+        // A build in another folder slows the reference by a tenth: 3.2 s for one file is fine
+        // then, and 3.4 s is not; on a quiet PC 3.2 s is too slow.
+        let busier = quiet_ms() * 11 / 10;
+        let allowed = verdict_of(busier).allowed(EDIT_BUDGET);
+        assert!(allowed >= Duration::from_millis(3_250), "{allowed:?}");
+        assert!(allowed < Duration::from_millis(3_400), "{allowed:?}");
+        let check = |took, reference| {
+            evaluate(&[measurement(
+                "edit",
+                EDIT_BUDGET,
+                &times(3, sample_of(took, reference)),
+            )])
+            .len()
+        };
+        assert_eq!(check(3_200, busier), 0);
+        assert_eq!(check(3_400, busier), 1);
+        assert_eq!(check(3_200, quiet_ms()), 1);
+    }
+
+    #[test]
+    fn the_reference_reads_source_files_from_as_many_places_as_it_has_threads() {
+        let files: Vec<String> = ["a.rs", "b.md", "c.rs", "d.rs", "e.toml", "f.rs"]
+            .map(str::to_owned)
+            .to_vec();
+        let read = reference_files(&files);
+        assert_eq!(read, ["a.rs", "c.rs", "d.rs", "f.rs"]);
+        assert_eq!(reference_starts(2, read.len()), [0, 2]);
+        assert_eq!(reference_starts(8, read.len()).len(), 8);
+        assert!(reference_starts(3, 0).iter().all(|start| *start == 0));
+    }
+
+    #[test]
+    fn good_example_the_reference_does_its_fixed_work_on_this_repository() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
+        let repo = Repo::at(root.to_path_buf());
+        let files = reference_files(&repo.all_files().unwrap());
+        assert!(!files.is_empty());
+        assert!(reference_workload(&repo, &files).unwrap() > Duration::ZERO);
     }
 }
