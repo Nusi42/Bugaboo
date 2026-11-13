@@ -6,7 +6,7 @@ import {
   Button,
   fieldKind,
   Form,
-  Skeleton,
+  DelayedSkeleton,
   SubmitButton,
   TextField,
   partOf,
@@ -34,7 +34,7 @@ export function KeyForm({ agent, renewing, onMade, onCancel }: KeyFormProps) {
   const draft = useKeyDraft();
   const request = useKeyRequest(agent, renewing, onMade);
   if (rules.data === undefined) {
-    return <Skeleton />;
+    return <DelayedSkeleton />;
   }
   const loaded = rules.data;
   return (

@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { part, partOf, Skeleton } from "@bugaboo/ui";
+import { part, partOf, DelayedSkeleton } from "@bugaboo/ui";
 
 import { useFoundGroups } from "./found-issues.ts";
 import { groupsOfKeys } from "./group-keys.ts";
@@ -13,7 +13,7 @@ export function GroupedList() {
   const { search, groupBy, own } = useListContext();
   const groups = useFoundGroups(search, groupBy);
   if (groups.isPending) {
-    return <Skeleton lines={3} />;
+    return <DelayedSkeleton lines={3} />;
   }
   if (groups.data?.groups.length === 0) {
     return <ListEmpty />;

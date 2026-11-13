@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Skeleton } from "@bugaboo/ui";
+import { DelayedSkeleton } from "@bugaboo/ui";
 import { lazy, Suspense } from "react";
 
 import { isDrawnColumn, withKeptColumns } from "../../shared/list-columns.ts";
@@ -24,12 +24,12 @@ export function IssueResults(props: IssueResultsProps) {
   const language = useSearchLanguage();
   const fields = useSearchFields(props.within);
   if (language === undefined || fields.data === undefined) {
-    return <Skeleton lines={3} />;
+    return <DelayedSkeleton lines={3} />;
   }
   const { view, defaults } = props;
   if (view.kind === "timeline") {
     return (
-      <Suspense fallback={<Skeleton lines={3} />}>
+      <Suspense fallback={<DelayedSkeleton lines={3} />}>
         <TimelineResults
           text={props.text}
           within={props.within}

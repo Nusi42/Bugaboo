@@ -1,4 +1,4 @@
-import { Skeleton } from "@bugaboo/ui";
+import { DelayedSkeleton } from "@bugaboo/ui";
 
 import { linesFrom } from "../../shared/paged.ts";
 import { foundLineOf, useFoundIssues } from "./found-issues.ts";
@@ -19,7 +19,7 @@ export function PlainList() {
   useReportShown("all", lines);
   // While the first answer is on its way the list shows that it is loading, not an empty frame.
   if (found.isPending) {
-    return <Skeleton lines={3} />;
+    return <DelayedSkeleton lines={3} />;
   }
   if (found.isSuccess && lines.length === 0) {
     return <ListEmpty />;

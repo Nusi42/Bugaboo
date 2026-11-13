@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, Skeleton } from "@bugaboo/ui";
+import { Alert, alertTone, Button, DelayedSkeleton } from "@bugaboo/ui";
 import type { Wording } from "@bugaboo/wasm";
 import type { ReactNode } from "react";
 
@@ -14,7 +14,7 @@ import { retryWording, useWording } from "./use-wording.ts";
 export function WithWording({ children }: { readonly children: (wording: Wording) => ReactNode }) {
   const loaded = useWording();
   if (loaded.state === "loading") {
-    return <Skeleton />;
+    return <DelayedSkeleton />;
   }
   return loaded.state === "failed" ? null : <>{children(loaded.wording)}</>;
 }

@@ -1,6 +1,6 @@
 import { ApiError } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Card, Skeleton, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, Card, DelayedSkeleton, partOf, part } from "@bugaboo/ui";
 import { useLocation } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 
@@ -49,7 +49,7 @@ export function ConnectPage({ request }: ConnectPageProps) {
         }
         level={1}
       >
-        {seen.isPending ? <Skeleton /> : null}
+        {seen.isPending ? <DelayedSkeleton /> : null}
         {seen.isError ? <Alert tone={alertTone.danger}>{refusal(seen.error)}</Alert> : null}
         {seen.data === undefined ? null : (
           <ConnectForm

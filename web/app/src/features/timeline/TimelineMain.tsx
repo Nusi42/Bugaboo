@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { part, partOf, ShowMoreOf, Skeleton, type PagedList } from "@bugaboo/ui";
+import { part, partOf, ShowMoreOf, DelayedSkeleton, type PagedList } from "@bugaboo/ui";
 
 import type { ZoomWord } from "../../shared/list-view.ts";
 import type { FirstDay } from "../../shared/region.ts";
@@ -33,7 +33,7 @@ export function TimelineMain(props: TimelineMainProps) {
   const { lines, chart, pages } = props;
   const groupName = useGroupNames(props);
   if (pages.isPending) {
-    return <Skeleton lines={5} />;
+    return <DelayedSkeleton lines={5} />;
   }
   return (
     <div {...partOf(part.timelineSide)}>

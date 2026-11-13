@@ -7,7 +7,7 @@ import {
   part,
   longestNameIn,
   SentenceWithName,
-  Skeleton,
+  DelayedSkeleton,
 } from "@bugaboo/ui";
 import { useNavigate } from "@tanstack/react-router";
 import { Suspense, useState } from "react";
@@ -168,7 +168,7 @@ export function NotificationView({ row, onRead, isReading }: NotificationViewPro
       {loaded.state === "ready" ? (
         <Sentences sentences={sentences} fileNames={fileNamesOf(row)} />
       ) : null}
-      {loaded.state === "loading" ? <Skeleton /> : null}
+      {loaded.state === "loading" ? <DelayedSkeleton /> : null}
       <CommentText row={row} />
       <NotificationActions row={row} what={what} onRead={onRead} isReading={isReading} />
       <RunResult row={row} />

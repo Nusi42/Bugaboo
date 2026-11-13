@@ -1,5 +1,5 @@
 import type { Schema } from "@bugaboo/api-client";
-import { Alert, alertTone, Form, Skeleton } from "@bugaboo/ui";
+import { Alert, alertTone, Form, DelayedSkeleton } from "@bugaboo/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -62,7 +62,7 @@ export function CreateKeyForm(props: CreateKeyFormProps) {
     return rules.isError ? (
       <Alert tone={alertTone.danger}>{messageOf(rules.error)}</Alert>
     ) : (
-      <Skeleton />
+      <DelayedSkeleton />
     );
   }
   return <Fields {...props} rules={rules.data} />;

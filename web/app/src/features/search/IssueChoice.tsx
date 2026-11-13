@@ -3,7 +3,7 @@ import {
   PickerChoice,
   IssueId,
   SearchPicker,
-  Skeleton,
+  DelayedSkeleton,
   StatusPill,
   part,
   partOf,
@@ -74,7 +74,7 @@ export function IssueFinder({ language, onPick }: IssueFinderProps) {
 export function IssuePicker({ onPick }: Pick<IssueFinderProps, "onPick">) {
   const language = useSearchLanguage();
   return language === undefined ? (
-    <Skeleton lines={1} />
+    <DelayedSkeleton lines={1} />
   ) : (
     <IssueFinder language={language} onPick={onPick} />
   );
