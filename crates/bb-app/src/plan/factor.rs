@@ -146,6 +146,23 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(person_on_bar(&self.assigned_to(issue).await?))
     }
 
+    /// How the reader sees the first assigned person of an issue (`first`), the one way every path
+    /// of the plan works it out: the person as shown (none for nobody, or when the reader may not
+    /// read *Assigned to*, `reads_assigned`), and whether they are named ([`names_person`]).
+    pub(crate) async fn person_for(
+        &self,
+        held: &Evaluation,
+        first: Option<UserId>,
+        reads_assigned: bool,
+    ) -> Result<(Option<PersonRef>, bool), AppError> {
+        let shown = match first.filter(|_| reads_assigned) {
+            Some(person) => self.shown_person(held, person).await?,
+            None => None,
+        };
+        let named = names_person(held, first, shown.as_ref());
+        Ok((shown, named))
+    }
+
     /// What the reader may see of a person on a bar: by name, as a role, or nobody (*Hidden*).
     /// The person themselves always sees themselves.
     pub(crate) async fn shown_person(

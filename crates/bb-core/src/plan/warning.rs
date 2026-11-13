@@ -132,7 +132,26 @@ pub enum Warning {
     },
 }
 
+impl WarningKind {
+    /// Whether a warning of this kind is about the person on the bar: it tells that the issue has
+    /// one, and how openly it is told follows how the reader sees that person (ADR-0030, amendment
+    /// M8).
+    #[must_use]
+    pub const fn about_person(self) -> bool {
+        matches!(
+            self,
+            Self::Away | Self::TooMuchAtOnce | Self::DaysWithoutWork
+        )
+    }
+}
+
 impl Warning {
+    /// Whether the warning is about the person on the bar ([`WarningKind::about_person`]).
+    #[must_use]
+    pub const fn about_person(&self) -> bool {
+        self.kind().about_person()
+    }
+
     /// The kind of the warning.
     #[must_use]
     pub const fn kind(&self) -> WarningKind {

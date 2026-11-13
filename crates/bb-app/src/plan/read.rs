@@ -25,7 +25,6 @@ use bb_policy::{Authorized, Evaluation, PeopleContext, PersonRef, Place as Where
 use bb_searchlang::{Expr, FieldRef, Span, Test};
 
 use super::build::{DateTargets, Plan, PlanAsk, window_of};
-use super::factor::names_person;
 use super::person_days::hatched_of;
 use super::types::{
     AcceptedView, BarView, EffortShown, FactorShown, GoalView, HatchedDay, TimelinePage,
@@ -410,16 +409,11 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
                 .filter(|_| reads(Field::TimeLeft)),
             done_group,
         );
-        let person = match plan
-            .person_on_bar(issue.id)
-            .filter(|_| reads(Field::AssignedTo))
-        {
-            Some(person) => self.shown_person(held, person).await?,
-            None => None,
-        };
         // One rule for the bar, its warnings and its factor: the reader sees the person by name or
         // is the person; by role only or not at all, every day without work looks the same.
-        let named = names_person(held, plan.person_on_bar(issue.id), person.as_ref());
+        let (person, named) = self
+            .person_for(held, plan.person_on_bar(issue.id), reads(Field::AssignedTo))
+            .await?;
         let factor = plan.factor_of(issue).map(|kept| FactorShown {
             percent: kept.factor.percent(),
             // Whose estimate it is is told only as openly as the person on the bar.
@@ -497,21 +491,13 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
             let Some(held) = plan.held.get(&issue.project) else {
                 continue;
             };
-            let names_person_on_bar = matches!(
-                warning,
-                Warning::Away { .. }
-                    | Warning::TooMuchAtOnce { .. }
-                    | Warning::DaysWithoutWork { .. }
-            );
-            let person = match plan
-                .person_on_bar(*id)
-                .filter(|_| names_person_on_bar && plan.reads(issue, Field::AssignedTo))
-            {
-                Some(person) => self.shown_person(held, person).await?,
-                None => None,
-            };
+            let names_person_on_bar = warning.about_person();
             let first = plan.person_on_bar(*id);
-            let named = names_person(held, first, person.as_ref());
+            let (shown, named) = self
+                .person_for(held, first, plan.reads(issue, Field::AssignedTo))
+                .await?;
+            // Only a warning about the person on the bar names them.
+            let person = shown.filter(|_| names_person_on_bar);
             if !plan.tells(issue, warning, named) {
                 continue;
             }

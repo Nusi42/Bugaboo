@@ -17,7 +17,7 @@ use bb_core::own_fields_value::{FieldValue, date_of};
 use bb_core::plan::bar::{Bar, BarInput, bar, load, shortfall};
 use bb_core::plan::record::IssueTimeFactor;
 use bb_core::plan::warning::{
-    Warning, away, days_without_work, delays, sub_issue_delays, too_much_at_once,
+    Warning, WarningKind, away, days_without_work, delays, sub_issue_delays, too_much_at_once,
 };
 use bb_core::plan::{Days, TimeFactor};
 use bb_core::relation::Dependency;
@@ -180,25 +180,14 @@ impl Plan {
             .is_some_and(|person| self.work_times_known.contains(&(issue.project, person)))
     }
 
-    /// Whether a warning is told to the reader (ADR-0030, amendment M8, the maintainer's decisions of
-    /// 2026-11-13), the one rule of the list of warnings and of *Keep and accept*. A warning about
-    /// the person on the bar tells that the issue has one: never to a reader who may not read
-    /// *Assigned to*. *Away* and *Too much at once* go only to a reader who sees the person
-    /// (`named`), and *Days without work*, which never tells which days are away, only to a reader
-    /// who does not see the person and may know their work times. Every other warning is told.
+    /// Whether a warning of an issue of the plan is told to the reader ([`tells_kind`]).
     pub(crate) fn tells(&self, issue: &Issue, warning: &Warning, named: bool) -> bool {
-        let about_person = matches!(
-            warning,
-            Warning::Away { .. } | Warning::TooMuchAtOnce { .. } | Warning::DaysWithoutWork { .. }
-        );
-        if about_person && !self.reads(issue, Field::AssignedTo) {
-            return false;
-        }
-        match warning {
-            Warning::Away { .. } | Warning::TooMuchAtOnce { .. } => named,
-            Warning::DaysWithoutWork { .. } => !named && self.work_times_known(issue),
-            Warning::NotEnoughDays(_) | Warning::Delay(_) => true,
-        }
+        tells_kind(
+            warning.kind(),
+            named,
+            self.reads(issue, Field::AssignedTo),
+            self.work_times_known(issue),
+        )
     }
 
     /// The usual work days and the share of the person on the bar of an issue, for a reader who may
@@ -238,6 +227,29 @@ impl Plan {
             .factor_of(issue)
             .map_or(TimeFactor::ONE, |kept| kept.factor);
         Some(factor.effort(estimate))
+    }
+}
+
+/// Whether a warning of `kind` is told to the reader (ADR-0030, amendment M8, the maintainer's
+/// decisions of 2026-11-13): the one rule of the list of warnings and of *Keep and accept*. A warning
+/// about the person on the bar tells that the issue has one: never to a reader who may not read
+/// *Assigned to* (`reads_assigned`). *Away* and *Too much at once* go only to a reader who sees the
+/// person (`named`), and *Days without work*, which never tells which days are away, only to a reader
+/// who does not see the person and may know their work times (`work_times_known`, asked only for
+/// that kind). Every other warning is told.
+pub(crate) fn tells_kind(
+    kind: WarningKind,
+    named: bool,
+    reads_assigned: bool,
+    work_times_known: bool,
+) -> bool {
+    if kind.about_person() && !reads_assigned {
+        return false;
+    }
+    match kind {
+        WarningKind::Away | WarningKind::TooMuchAtOnce => named,
+        WarningKind::DaysWithoutWork => !named && work_times_known,
+        WarningKind::NotEnoughDays | WarningKind::Delay => true,
     }
 }
 

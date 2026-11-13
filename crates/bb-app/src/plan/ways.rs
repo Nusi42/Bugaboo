@@ -26,8 +26,8 @@ use jiff::ToSpan as _;
 use jiff::civil::Date;
 use serde_json::json;
 
-use super::build::{Plan, PlanAsk, window_of};
-use super::factor::{names_person, person_on_bar};
+use super::build::{Plan, PlanAsk, tells_kind, window_of};
+use super::factor::person_on_bar;
 use super::read::{date_targets, date_words};
 use super::types::{
     AcceptWarning, AcceptedWarningView, MoveAfterQuery, MovePreview, MovePreviewPage,
@@ -252,7 +252,8 @@ pub async fn accept_warning<S: AuthStore + SearchStore>(
     let actor = ctx.actor(&input.session_token).await?;
     ensure_built_in_dates(&input.options)?;
     let (issue, held) = ctx.visible_issue(&actor, &input.issue).await?;
-    let on_bar = person_on_bar(&ctx.assigned_to(issue.id).await?) == Some(actor.person.id);
+    let first = person_on_bar(&ctx.assigned_to(issue.id).await?);
+    let on_bar = first == Some(actor.person.id);
     ensure_may_accept(&actor, &held, &issue, on_bar)?;
     let record = entity(RecordKind::Issue, issue.id);
     let place = Place::Project(issue.project);
@@ -262,14 +263,14 @@ pub async fn accept_warning<S: AuthStore + SearchStore>(
     // Whether the person who accepts sees the person on the bar: a kind not told to them is answered
     // like a kind the issue does not have, so accepting never tests for an absence (ADR-0030,
     // amendment M8).
-    let first = person_on_bar(&ctx.assigned_to(issue.id).await?);
     let mask = held.field_mask_for(Some(issue.issue_type));
-    let shown = match first.filter(|_| mask.can_see(Field::AssignedTo)) {
-        Some(person) => ctx.shown_person(&held, person).await?,
-        None => None,
-    };
-    let named = names_person(&held, first, shown.as_ref());
-    if input.kind == WarningKind::TooMuchAtOnce && !(named && mask.can_see(Field::AssignedTo)) {
+    let reads_assigned = mask.can_see(Field::AssignedTo);
+    let (_, named) = ctx.person_for(&held, first, reads_assigned).await?;
+    // *Too much at once* is taken as it is said, without the plan, when it is told at all; the work
+    // times do not decide whether it is told.
+    if input.kind == WarningKind::TooMuchAtOnce
+        && !tells_kind(input.kind, named, reads_assigned, false)
+    {
         return Err(ErrorCode::InvalidRequest.into());
     }
     if input.kind != WarningKind::TooMuchAtOnce {
