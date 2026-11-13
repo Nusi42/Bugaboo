@@ -1,5 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 
+import { doNothing } from "../../shared/do-nothing.ts";
 import { queryClient } from "../../shared/query-client.ts";
 import { formLayoutOptions } from "../layouts/index.ts";
 import { closeOverlay } from "../shell/index.ts";
@@ -19,18 +20,20 @@ async function readAhead(key: string, project: string): Promise<void> {
   );
 }
 
+/** What the new-issue window does with the issue it made; it is done once the issue is open. */
+export type OnMade = (key: string, project: string) => Promise<void>;
+
 /**
  * What happens when the new-issue window made an issue: the issue is read, then the window closes
  * and the issue opens the way the person chose to open issues (the focus view or the side panel).
  */
-export function useOnMade(): (key: string, project: string) => void {
+export function useOnMade(): OnMade {
   const openIn = useOpenIssuesIn();
   const navigate = useNavigate();
-  return (key, project) => {
-    const open = (): void => {
-      closeOverlay();
-      void navigate({ href: hrefOf(openIn, undefined, project, key) });
-    };
-    readAhead(key, project).then(open, open);
+  return async (key, project) => {
+    // A read that fails opens the page all the same; the page says why.
+    await readAhead(key, project).catch(doNothing);
+    closeOverlay();
+    void navigate({ href: hrefOf(openIn, undefined, project, key) });
   };
 }

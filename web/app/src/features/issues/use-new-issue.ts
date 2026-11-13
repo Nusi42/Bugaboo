@@ -5,6 +5,7 @@ import { useNow } from "../../shared/use-now.ts";
 import { useFormLayout, type FormView } from "../layouts/index.ts";
 import { forForm } from "./new-issue-form.ts";
 import { useCreateIssue } from "./use-create-issue.ts";
+import type { OnMade } from "./use-on-made.ts";
 import { useNewIssueValues, type NewIssueValuesState } from "./use-new-issue-values.ts";
 
 /** What the new-issue form needs: its values and draft, and what making the issue does. */
@@ -14,8 +15,11 @@ export interface NewIssue extends NewIssueValuesState {
   readonly layout: FormView;
   /** Everything the form is made of has arrived: the project, its types, its draft and the layout. */
   readonly ready: boolean;
-  /** Makes the issue; the dialog is done, or starts again with the same project and type. */
-  readonly create: (another: boolean, onMade: (key: string, project: string) => void) => void;
+  /**
+   * Makes the issue; the dialog is done, or starts again with the same project and type. It is
+   * pending until the issue is open, so a second press cannot make it twice.
+   */
+  readonly create: (another: boolean, onMade: OnMade) => void;
   readonly pending: boolean;
   readonly error: unknown;
   /** The issue ID of the last issue made with *Create the issue and start another*. */
@@ -26,6 +30,8 @@ export interface NewIssue extends NewIssueValuesState {
 export function useNewIssue(): NewIssue {
   const state = useNewIssueValues();
   const [lastKey, setLastKey] = useState<string | null>(null);
+  // The issue is made and is being opened: the window waits for it, as it waited for the issue.
+  const [opening, setOpening] = useState(false);
   const shortName = state.project?.shortName;
   const create = useCreateIssue(shortName);
   const now = useNow();
@@ -55,12 +61,15 @@ export function useNewIssue(): NewIssue {
             setLastKey(key);
           } else {
             state.forgetDraft();
-            onMade(key, shortName ?? "");
+            setOpening(true);
+            void onMade(key, shortName ?? "").finally(() => {
+              setOpening(false);
+            });
           }
         },
       });
     },
-    pending: create.isPending,
+    pending: create.isPending || opening,
     error: create.isError ? create.error : null,
   };
 }

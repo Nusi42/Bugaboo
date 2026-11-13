@@ -6,12 +6,13 @@ import { layoutsAddress } from "../../shared/paths.ts";
 import { closeOverlay } from "../shell/index.ts";
 import { canCreate } from "./new-issue-form.ts";
 import type { NewIssue } from "./use-new-issue.ts";
+import type { OnMade } from "./use-on-made.ts";
 
 export interface NewIssueActionsProps {
   readonly form: NewIssue;
   /** The form that *Create* sends: the buttons stand in the footer of the window, outside it. */
   readonly formId: string;
-  readonly onMade: (key: string, project: string) => void;
+  readonly onMade: OnMade;
   readonly onClose: () => void;
   /** The ID of the sentence that says what is missing: the buttons it holds back are described by it. */
   readonly whyId: string;

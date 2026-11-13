@@ -6,13 +6,14 @@ import { useFieldName } from "../fields/index.ts";
 import { DraftOffer } from "./DraftOffer.tsx";
 import { NewIssueFields, NewIssueText } from "./NewIssueFields.tsx";
 import type { NewIssue } from "./use-new-issue.ts";
+import type { OnMade } from "./use-on-made.ts";
 
 export interface NewIssueFormProps {
   readonly form: NewIssue;
   /** Names the form, so the main button in the footer of the window can send it. */
   readonly formId: string;
   /** Called with the readable ID and the project when an issue was made and the window is done. */
-  readonly onMade: (key: string, project: string) => void;
+  readonly onMade: OnMade;
 }
 
 /** What was refused; when it is about a field the form does not show, the field is named. */
