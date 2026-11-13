@@ -4,7 +4,7 @@ import { useState } from "react";
 import { DetailsToggle } from "./DetailsToggle.tsx";
 import { DetailsPanel } from "./DetailsPanel.tsx";
 import { IssueMain } from "./IssueMain.tsx";
-import { IssueSaved } from "./IssueSaved.tsx";
+import { IssueSaved, IssueSaveState } from "./IssueSaved.tsx";
 import { StatusChange } from "./StatusChange.tsx";
 import type { IssueBlockProps, IssueDetail } from "./slots.ts";
 import type { IssueChanges } from "./use-issue-changes.ts";
@@ -30,7 +30,11 @@ export function IssueContent({ detail, address, changes, blocks, split }: IssueC
   const details = <DetailsPanel blocks={blocks} changes={changes} stacked={!split} />;
   return (
     <>
-      <StatusChange blocks={blocks} changes={changes} />
+      <StatusChange
+        blocks={blocks}
+        changes={changes}
+        saved={<IssueSaveState changes={changes} />}
+      />
       <IssueSaved changes={changes} />
       <div {...partOf(part.issueBody, { variants: [!split && "stacked"] })}>
         {split ? null : (

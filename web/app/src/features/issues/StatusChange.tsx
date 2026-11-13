@@ -1,6 +1,6 @@
 import { t } from "@bugaboo/messages";
 import { StatusButton, StatusMenu, partOf, part, type StatusGroup } from "@bugaboo/ui";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import { useShortcuts } from "../../shared/use-shortcuts.ts";
 import { statusActions, type OfferedChange } from "./ask-for.ts";
@@ -11,11 +11,20 @@ import type { IssueBlockProps } from "./slots.ts";
 import type { IssueChanges } from "./use-issue-changes.ts";
 
 /** The status button of a person who may not change the status: it says why. */
-function StatusLocked({ group, label }: { readonly group: StatusGroup; readonly label: string }) {
+function StatusLocked({
+  group,
+  label,
+  saved,
+}: {
+  readonly group: StatusGroup;
+  readonly label: string;
+  readonly saved: ReactNode;
+}) {
   return (
     <div {...partOf(part.issueStatusLine)}>
       <StatusButton isDisabled group={group} label={label} id={statusId} onPress={openStatusMenu} />
       <span {...partOf(part.muted)}>{readOnlyReason(t("issue-field.status"))}</span>
+      {saved}
     </div>
   );
 }
@@ -23,6 +32,8 @@ function StatusLocked({ group, label }: { readonly group: StatusGroup; readonly 
 export interface StatusChangeProps {
   readonly blocks: IssueBlockProps;
   readonly changes: IssueChanges;
+  /** What was saved last (*Saving…*, *Saved*): it stands beside the button, in its line. */
+  readonly saved: ReactNode;
 }
 
 /**
@@ -32,18 +43,18 @@ export interface StatusChangeProps {
  * once. A person who may not change it sees the button as it is, and why. The key `s` and the bar
  * of a phone open the list.
  */
-export function StatusChange({ blocks, changes }: StatusChangeProps) {
+export function StatusChange({ blocks, changes, saved }: StatusChangeProps) {
   const { issue, mask, form } = blocks;
   const { status } = issue;
   const canChange = mask.changes("status");
   const [asking, setAsking] = useState<OfferedChange | null>(null);
   useShortcuts(canChange ? { "change-status": openStatusMenu } : {});
   if (status === undefined || status === null || !form.shows("status")) {
-    return null;
+    return <div {...partOf(part.issueStatusLine)}>{saved}</div>;
   }
   const { name: word, status_group: group } = status;
   if (!canChange) {
-    return <StatusLocked group={group} label={word} />;
+    return <StatusLocked group={group} label={word} saved={saved} />;
   }
   return (
     <div {...partOf(part.issueStatusLine)}>
@@ -60,6 +71,7 @@ export function StatusChange({ blocks, changes }: StatusChangeProps) {
           },
         })}
       />
+      {saved}
       {asking === null ? null : (
         <AskFor
           issue={issue}

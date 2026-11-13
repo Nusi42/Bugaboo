@@ -7,11 +7,11 @@ import { detailRow, partIn } from "./parts.ts";
 const saved = new RegExp(`^${t("save.saved")}`, "u");
 
 /**
- * The *Saved* note under the title of the issue page: the one for a change that has no row in the
- * Details (the title, the status).
+ * The *Saved* note beside the status button of the issue page: the one for a change that has no row
+ * in the Details (the title, the status).
  */
 export function issueNote(page: Page) {
-  return partIn(page, "issue-note").getByText(saved);
+  return partIn(page, "issue-status-line").getByText(saved);
 }
 
 /** The *Saved* note in the row of a field of the Details, found by the name of the field. */
