@@ -7,6 +7,7 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import {
   expectQuietAtEscape,
+  newIssueButton,
   newIssueDialog as dialog,
   openNewIssueDialog as openDialog,
   openNewIssueDialogFromTheMenu,
@@ -15,6 +16,7 @@ import {
   titleLabel,
   waitForNewIssueForm,
   prepareWeb,
+  webIssues,
 } from "./support/issues.ts";
 import { onThisLayout } from "./support/layout.ts";
 import {
@@ -174,15 +176,19 @@ test("ux_6_1 on the first open the window waits for its code as it waits for its
   await signIn(page, ada);
   await page.goto(projectIssuesAddress("WEB"));
   const releaseLayout = await holdNewIssueLayout(page);
+  // The list behind is drawn first: a button that the page draws again while the window is open is a
+  // new element, and the focus cannot go back to the one that is gone.
+  await expect(page.getByText(webIssues.login, { exact: true }).first()).toBeVisible();
   // While its code is on the way the window is there at once: clear for 0.3 s, and Esc closes it.
   expectQuietAtEscape(await pressNewIssueAndEscapeAtOnce(page));
   await expect(dialog(page)).toHaveCount(0);
+  await expect(newIssueButton(page), "the focus is back on New issue").toBeFocused();
   const places = await windowPlacesWhile(page, async () => {
-    await pressNewIssue(page);
+    await newIssueButton(page).press("Enter");
     await expectWindowSeen(page);
     await expect(dialog(page).getByRole("status")).toHaveText(t("common.loading"));
     // The code arrives (its buttons show) while the fields are still on the way: still grey shapes.
-    releaseCode();
+    await releaseCode();
     await expect(
       dialog(page).getByRole("button", { name: t("issues.create"), exact: true }),
     ).toBeVisible();
@@ -196,6 +202,10 @@ test("ux_6_1 on the first open the window waits for its code as it waits for its
     [...placesSeen],
     "the window stands in one place from its code to its fields",
   ).toHaveLength(1);
+  // The real window took over from the stand-in; closing it still puts the focus back on New issue.
+  await page.keyboard.press("Escape");
+  await expect(dialog(page)).toHaveCount(0);
+  await expect(newIssueButton(page), "the focus is back on New issue").toBeFocused();
 });
 
 test("cfg_01 a layout that cannot be read is said inside the window, which shows its form", async ({

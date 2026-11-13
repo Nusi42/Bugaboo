@@ -40,6 +40,12 @@ export interface UseWindow {
   readonly placed: (element: WindowElement | null) => void;
 }
 
+/** Whether the content of a window has arrived, and the form it shows (which hands over while it waits). */
+export interface WindowWaiting {
+  readonly ready: boolean;
+  readonly form: string | undefined;
+}
+
 /**
  * What a window is doing besides being open: shown yet, minimized to a bar, maximized, resized. A
  * window that closes opens again as it was first drawn, not minimized and not maximized. Its
@@ -48,7 +54,7 @@ export interface UseWindow {
  */
 export function useWindow(
   isOpen: boolean,
-  ready: boolean,
+  waiting: WindowWaiting,
   size: WindowSize | undefined,
   onResized: ((size: WindowSize) => void) | undefined,
 ): UseWindow {
@@ -59,7 +65,7 @@ export function useWindow(
     setWasOpen(isOpen);
     act(shapeAction.closed);
   }
-  const { presence, late } = usePresence(isOpen, ready);
+  const { presence, late } = usePresence(isOpen, waiting.ready, waiting.form);
   const [element, setElement] = useState<WindowElement | null>(null);
   const phase = phaseOf(presence, late);
   const resize = useWindowResize(isWaiting(phase) ? null : element, onResized, standOf(phase));

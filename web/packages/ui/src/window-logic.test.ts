@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
 
+import { skeletonDelayMs } from "./after-delay.ts";
 import { windowState } from "./props.ts";
 import { applyWindowSize, resizeByKey, type ResizeKey } from "./use-window-resize.ts";
+import {
+  delayLeft,
+  handoverFor,
+  offerHandover,
+  withdrawHandover,
+  type Handover,
+} from "./window-presence.ts";
 import { edgesOf, notBelow, windowStand } from "./window-size.ts";
 import { keyboardStep, type WindowElement, type WindowSize } from "./window-size.ts";
 import {
@@ -208,5 +216,31 @@ describe("ux_6_1 a window that waits is not resized, and one at the top has no t
       edgesOf(windowStand.middle),
     );
     expect(dragEdgesOf(windowState.normal, windowPhase.top)).toEqual(edgesOf(windowStand.top));
+  });
+});
+
+/** What a waiting window of `form` offers, at the top. */
+function waitingAt(form: string): Handover {
+  return { form, presence: { shown: false, anchored: true }, returnTo: null, since: 0 };
+}
+
+describe("ux_6_1 a window that waits for its code hands over only to a window of its form", () => {
+  it("is taken over by the same form, not by another, and only its own offer is taken back", () => {
+    const newIssue = waitingAt("new-issue");
+    const timeEntry = waitingAt("time-entry");
+    offerHandover(newIssue);
+    expect(handoverFor("new-issue")).toBe(newIssue);
+    expect(handoverFor("time-entry")).toBeNull();
+    offerHandover(timeEntry);
+    withdrawHandover(newIssue);
+    expect(handoverFor("time-entry")).toBe(timeEntry);
+    withdrawHandover(timeEntry);
+    expect(handoverFor("time-entry")).toBeNull();
+  });
+
+  it("lets the window that takes over wait only for what is left of the 0.3 s", () => {
+    expect(delayLeft(1000, 1000)).toBe(skeletonDelayMs);
+    expect(delayLeft(1000, 1100)).toBe(skeletonDelayMs - 100);
+    expect(delayLeft(1000, 1000 + skeletonDelayMs + 50)).toBe(0);
   });
 });

@@ -26,6 +26,11 @@ export interface WindowProps {
    * while. Left out, the content is there at once.
    */
   readonly ready?: boolean | undefined;
+  /**
+   * The form the window shows, as the settings name it. A window of a form that waits for its code
+   * hands over to the next window of the same form (`WaitingWindow` of the app).
+   */
+  readonly form?: string | undefined;
   readonly children: ReactNode;
 }
 
@@ -39,8 +44,9 @@ export interface WindowProps {
  * (`ConfirmDialog`).
  */
 export function Window(props: WindowProps) {
-  const { isOpen, onOpenChange, title, labels, footer, size, onResized, ready, children } = props;
-  const { placed, ...shape } = useWindow(isOpen, ready ?? true, size, onResized);
+  const { isOpen, onOpenChange, title, labels, footer, size, onResized, ready, form, children } =
+    props;
+  const { placed, ...shape } = useWindow(isOpen, { ready: ready ?? true, form }, size, onResized);
   return (
     <>
       {isOpen && shape.minimized ? (

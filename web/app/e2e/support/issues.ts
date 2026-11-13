@@ -212,6 +212,7 @@ export async function createProjectWithIssue(
 
 export {
   expectQuietAtEscape,
+  newIssueButton,
   newIssueDialog,
   openNewIssueDialog,
   openNewIssueDialogFromTheMenu,

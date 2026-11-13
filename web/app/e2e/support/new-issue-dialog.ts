@@ -15,7 +15,7 @@ export function newIssueDialog(page: Page) {
 }
 
 /** The button *New issue* of the bar: the sidebar on a computer, the bar of a phone. */
-function newIssueButton(page: Page) {
+export function newIssueButton(page: Page) {
   return page.getByRole("button", { name: t("issues.new"), exact: true }).first();
 }
 
@@ -47,6 +47,10 @@ export function pressNewIssueAndEscapeAtOnce(page: Page): Promise<AtEscape> {
           target.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
           done(seen);
         };
+        // The button has the focus first, as after a press of a key, so the focus has a place to go back to.
+        if (button instanceof HTMLElement) {
+          button.focus();
+        }
         document.addEventListener("focusin", escapeOnFocus);
         button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
       }),
