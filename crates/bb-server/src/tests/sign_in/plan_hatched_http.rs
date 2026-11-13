@@ -12,8 +12,8 @@ use super::http::{Browser, rig_and_app};
 use super::issues_site::{Site, ok};
 use super::plan_privacy_http::{field_level, see_only_key};
 use super::plan_site::{
-    MONDAY, TIMELINE, ask, by_effort, id_of_key, issue, page, planned, rows_of, warnings_on,
-    work_times,
+    MONDAY, TIMELINE, ask, by_effort, change, id_of_key, issue, page, planned, rows_of,
+    warnings_on, work_times,
 };
 
 /// The last day of the pages of these tests: the end of March 2027, after Good Friday (26 March).
@@ -418,6 +418,53 @@ async fn plan_13_accepting_a_kind_not_told_tests_for_no_absence() -> TestResult 
         assert!(neutral.contains("request.invalid"), "{neutral}");
         let named = answer(&mut ada, &away, "away").await?;
         assert!(named.starts_with("200"), "{named}");
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn plan_13_who_accepted_is_not_named_once_they_are_the_person_on_the_bar() -> TestResult {
+    each_database("plan_13_accepter_on_bar", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut lea, lea_id) = site
+            .person_called(StartingRole::TeamMember, "lea", "Lea Lang")
+            .await?;
+        let key = over_good_friday(&site, &mut ada, &mut lea, lea_id).await?;
+        let id = id_of_key(&mut ada, &key).await?;
+        // Tom sees Lea by role only, so he is told the neutral warning, and accepts it.
+        site.show_people(
+            &mut ada,
+            StartingRole::TeamMember,
+            "assigned-to",
+            "role-only",
+        )
+        .await?;
+        let (mut tom, tom_id) = site
+            .person_called(StartingRole::TeamMember, "tom", "Tom Taylor")
+            .await?;
+        accept(&mut tom, &key, "days-without-work").await?;
+        // Later Tom becomes the person on the bar: Good Friday is a day without work of his too.
+        ok(&change(&mut ada, &key, json!({"assigned_to": [tom_id.to_string()]})).await?)?;
+        // A reader who sees nobody on the bar but every author by name: the warning is faded, and
+        // who accepted it is shown no more openly than the person on the bar.
+        let (mut reader, _) = site.person(StartingRole::Contributor, "reader").await?;
+        site.show_people(&mut ada, StartingRole::Contributor, "work-times", "names")
+            .await?;
+        site.show_people(&mut ada, StartingRole::Contributor, "assigned-to", "hidden")
+            .await?;
+        site.show_people(&mut ada, StartingRole::Contributor, "authors", "names")
+            .await?;
+        let seen = page(&mut reader, ask(&site, MONDAY, END, json!({}))).await?;
+        let found = of_kind(&seen, &id, "days-without-work");
+        let warning = found.first().copied().unwrap_or(&Value::Null);
+        assert_eq!(
+            warning["accepted"]["by"],
+            json!({"shown": "someone"}),
+            "{warning}"
+        );
+        assert!(!seen.to_string().contains("Tom Taylor"), "{seen}");
         Ok(())
     })
     .await
