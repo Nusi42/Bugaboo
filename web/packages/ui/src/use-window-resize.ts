@@ -14,6 +14,7 @@ import {
   type WindowStep,
   type WindowElement,
   type WindowSize,
+  type WindowStand,
 } from "./window-size.ts";
 
 /** The smallest height a person can make a window, from the theme file (`size-window-height-min`); none in a test of logic, which has no page. */
@@ -84,12 +85,14 @@ interface Drag {
 
 /**
  * Resizing of a window by the pointer at its edges, by the keys (Ctrl and Alt with an arrow key,
- * UX §6.3, UX-04) and by the size menu, which needs no dragging (WCAG 2.5.7). `onResized` is called with the size the window ended with, as it is shown, so a
+ * UX §6.3, UX-04) and by the size menu, which needs no dragging (WCAG 2.5.7). A drag takes where
+ * the window stands (`stand`), so the dragged edge follows the pointer. `onResized` is called with the size the window ended with, as it is shown, so a
  * size below the smallest is remembered as the smallest.
  */
 export function useWindowResize(
   frame: WindowElement | null,
   onResized: ((size: WindowSize) => void) | undefined,
+  stand: WindowStand,
 ): WindowResize {
   const [drag, setDrag] = useState<Drag | null>(null);
   const finish = (): void => {
@@ -117,10 +120,8 @@ export function useWindowResize(
         const began = drag;
         if (began !== null && frame !== null) {
           const by = { x: event.clientX - began.x, y: event.clientY - began.y };
-          applyWindowSize(
-            frame,
-            notBelow(resizedBy(began.from, began.edge, by), smallestHeight(), began.from.height),
-          );
+          const size = resizedBy(began.from, began.edge, by, stand);
+          applyWindowSize(frame, notBelow(size, smallestHeight(), began.from.height));
         }
       },
       onPointerUp: finish,

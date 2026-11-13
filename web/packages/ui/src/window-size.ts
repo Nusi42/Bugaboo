@@ -37,19 +37,38 @@ const sides = {
 } as const satisfies Readonly<Record<WindowEdge, Sides>>;
 
 /**
- * The size after an edge was dragged by `by` pixels from where the drag began. The window stays in
- * the middle of the page, so it grows on both sides and the edge that is dragged follows the
- * pointer. The smallest and the largest size are the theme file's (`min-width` and `max-width` of
- * the window), so a size too small is shown at the smallest and the size the person ends with is
- * read back from the window.
+ * Where a window stands on the page: in the `middle`, or at the `top` (one that showed grey shapes
+ * while its content arrived keeps that top, UX §6.1). `phaseOf` says which.
+ */
+export const windowStand = { middle: "middle", top: "top" } as const;
+export type WindowStand = (typeof windowStand)[keyof typeof windowStand];
+
+/**
+ * How many pixels a size changes for each pixel the pointer moves. A window is centred across, so
+ * it grows on both sides; one in the middle grows on both sides up and down too, and one at the top
+ * only downwards.
+ */
+const growth = {
+  middle: { x: 2, y: 2 },
+  top: { x: 2, y: 1 },
+} as const satisfies Readonly<Record<WindowStand, { readonly x: number; readonly y: number }>>;
+
+/**
+ * The size after an edge was dragged by `by` pixels from where the drag began, for a window that
+ * stands where `stand` says: the edge that is dragged follows the pointer (at the top the top edge
+ * cannot move, so dragging it grows the window downwards). The smallest and the largest size are the
+ * theme file's (`min-width` and `max-width` of the window), so a size too small is shown at the
+ * smallest and the size the person ends with is read back from the window.
  */
 export function resizedBy(
   from: WindowSize,
   edge: WindowEdge,
   by: { readonly x: number; readonly y: number },
+  stand: WindowStand,
 ): WindowSize {
   const { x, y } = sides[edge];
-  return { width: from.width + 2 * x * by.x, height: from.height + 2 * y * by.y };
+  const times = growth[stand];
+  return { width: from.width + times.x * x * by.x, height: from.height + times.y * y * by.y };
 }
 
 /**

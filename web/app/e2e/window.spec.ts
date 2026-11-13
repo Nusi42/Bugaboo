@@ -11,7 +11,7 @@ import { pixelsOf } from "./support/tokens.ts";
 import {
   boxOf,
   columns,
-  dragEastEdge,
+  dragWindowEdge,
   footerButtons,
   keyboardStep,
   menuStep,
@@ -222,7 +222,8 @@ test("ux_6_3 the footer has two rows: the buttons in one row with Create last, t
   expect(usual.create.x).toBeGreaterThan(usual.another.x);
   expect(usual.another.x).toBeGreaterThan(usual.cancel.x);
   // As small as it goes: Create is still not alone on a row, and the row ends at the right.
-  await dragEastEdge(page, -400);
+  // The window is centred, so it grows (here shrinks) on both sides: twice the 400 pixels.
+  await dragWindowEdge(page, "e", { x: -400, y: 0 });
   const smallest = await pixelsOf(page, "--size-window-width-min");
   await expect.poll(async () => (await windowSize(page)).width).toBeLessThanOrEqual(smallest);
   const small = await footerButtons(page);

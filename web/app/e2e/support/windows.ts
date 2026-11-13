@@ -141,13 +141,17 @@ export function pageSize(page: Page): { width: number; height: number } {
   return size;
 }
 
-/** Drags the east edge of the window by `by` pixels with the mouse; the window grows twice as much, centered. */
-export async function dragEastEdge(page: Page, by: number): Promise<void> {
-  const box = await boxOf(partIn(page, "window.handle", "e"));
+/** Drags a place of the window (an edge or a corner) by `by` pixels with the mouse. */
+export async function dragWindowEdge(
+  page: Page,
+  edge: (typeof windowEdges)[number],
+  by: { readonly x: number; readonly y: number },
+): Promise<void> {
+  const box = await boxOf(partIn(page, "window.handle", edge));
   const [x, y] = [box.x + box.width / 2, box.y + box.height / 2];
   await page.mouse.move(x, y);
   await page.mouse.down();
-  await page.mouse.move(x + by, y, { steps: 6 });
+  await page.mouse.move(x + by.x, y + by.y, { steps: 6 });
   await page.mouse.up();
 }
 

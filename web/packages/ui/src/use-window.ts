@@ -10,6 +10,7 @@ import {
   phaseOf,
   presenceAfter,
   reduceShape,
+  standOf,
   shapeAction,
   type WindowPhase,
 } from "./window-shape.ts";
@@ -63,7 +64,8 @@ export function useWindow(
     setPresence(next);
   }
   const [element, setElement] = useState<WindowElement | null>(null);
-  const resize = useWindowResize(element, onResized);
+  const phase = phaseOf(next, late);
+  const resize = useWindowResize(element, onResized, standOf(phase));
   const placed = useCallback(
     (modal: WindowElement | null) => {
       setElement(modal);
@@ -86,7 +88,7 @@ export function useWindow(
       act(shapeAction.toggleMaximize);
     },
     resize,
-    phase: phaseOf(next, late),
+    phase,
     placed,
   };
 }

@@ -1,3 +1,5 @@
+import { windowStand, type WindowStand } from "./window-size.ts";
+
 /** What a window is doing besides being open: parked as a bar, or filling the page. */
 export interface WindowShape {
   readonly minimized: boolean;
@@ -83,4 +85,9 @@ export function phaseOf(presence: WindowPresence, late: boolean): WindowPhase {
     return late ? windowPhase.loading : windowPhase.quiet;
   }
   return presence.anchored ? windowPhase.top : windowPhase.middle;
+}
+
+/** Where a window of this phase stands: in the middle, or at the top where its grey shapes stood. */
+export function standOf(phase: WindowPhase): WindowStand {
+  return phase === windowPhase.middle ? windowStand.middle : windowStand.top;
 }

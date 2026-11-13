@@ -8,10 +8,17 @@ import {
   sizeAfterStep,
   stepOfArrow,
   windowEdges,
+  windowStand,
   windowSteps,
+  type WindowEdge,
 } from "./window-size.ts";
 
 const start = { width: 760, height: 500 } as const;
+/** The size after a drag of a window in the middle of the page. */
+function inTheMiddle(edge: WindowEdge, by: { readonly x: number; readonly y: number }) {
+  return resizedBy(start, edge, by, windowStand.middle);
+}
+
 const key = { left: "ArrowLeft", right: "ArrowRight", up: "ArrowUp", down: "ArrowDown" } as const;
 
 describe("ux_6_3 a window is resized at every edge and corner", () => {
@@ -29,17 +36,34 @@ describe("ux_6_3 a window is resized at every edge and corner", () => {
   });
 
   it("the edge that is dragged follows the pointer, so the centered window grows on both sides", () => {
-    expect(resizedBy(start, "e", { x: 20, y: 7 })).toEqual({ width: 800, height: 500 });
-    expect(resizedBy(start, "w", { x: -20, y: 7 })).toEqual({ width: 800, height: 500 });
-    expect(resizedBy(start, "s", { x: 5, y: 10 })).toEqual({ width: 760, height: 520 });
-    expect(resizedBy(start, "n", { x: 5, y: -10 })).toEqual({ width: 760, height: 520 });
+    expect(inTheMiddle("e", { x: 20, y: 7 })).toEqual({ width: 800, height: 500 });
+    expect(inTheMiddle("w", { x: -20, y: 7 })).toEqual({ width: 800, height: 500 });
+    expect(inTheMiddle("s", { x: 5, y: 10 })).toEqual({ width: 760, height: 520 });
+    expect(inTheMiddle("n", { x: 5, y: -10 })).toEqual({ width: 760, height: 520 });
   });
 
   it("a corner changes both sides, the other way when the pointer goes inward", () => {
-    expect(resizedBy(start, "se", { x: 10, y: 10 })).toEqual({ width: 780, height: 520 });
-    expect(resizedBy(start, "nw", { x: 10, y: 10 })).toEqual({ width: 740, height: 480 });
-    expect(resizedBy(start, "ne", { x: -10, y: 10 })).toEqual({ width: 740, height: 480 });
-    expect(resizedBy(start, "sw", { x: -10, y: -10 })).toEqual({ width: 780, height: 480 });
+    expect(inTheMiddle("se", { x: 10, y: 10 })).toEqual({ width: 780, height: 520 });
+    expect(inTheMiddle("nw", { x: 10, y: 10 })).toEqual({ width: 740, height: 480 });
+    expect(inTheMiddle("ne", { x: -10, y: 10 })).toEqual({ width: 740, height: 480 });
+    expect(inTheMiddle("sw", { x: -10, y: -10 })).toEqual({ width: 780, height: 480 });
+  });
+});
+
+describe("ux_6_1 a window that showed grey shapes keeps its top while it is resized", () => {
+  it("a window at the top of the page grows only downwards, so its bottom edge follows the pointer", () => {
+    expect(resizedBy(start, "s", { x: 5, y: 10 }, windowStand.top)).toEqual({
+      width: 760,
+      height: 510,
+    });
+    expect(resizedBy(start, "n", { x: 5, y: -10 }, windowStand.top)).toEqual({
+      width: 760,
+      height: 510,
+    });
+    expect(resizedBy(start, "e", { x: 20, y: 7 }, windowStand.top)).toEqual({
+      width: 800,
+      height: 500,
+    });
   });
 });
 
