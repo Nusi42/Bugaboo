@@ -39,8 +39,10 @@ export interface Moved {
   readonly to: Box;
   /** The frame it was first seen so, counted from the start of the recording. */
   readonly frame: number;
-  /** How many times it stood somewhere else than in the frame before: a part that grows once has one step, one that jumps back and forth more. */
+  /** How many times it stood somewhere else than in the frame before: one that is pushed once has one step, one that jumps back and forth more. */
   readonly steps: number;
+  /** How many times its height changed: a part that grows downwards once has one. */
+  readonly growths: number;
   /** Where it stood in the last frame. */
   readonly last: Box;
 }
@@ -71,13 +73,18 @@ export interface Movement {
  */
 const LEAST_MOVE_PX = 0.5;
 
+/** Whether two values of a box are more than half a pixel apart. */
+function far(one: number, other: number): boolean {
+  return Math.abs(one - other) > LEAST_MOVE_PX;
+}
+
+/** Whether a box stands somewhere else, or has another width: its height growing is not that. */
+function standsElsewhere(first: Box, later: Box): boolean {
+  return far(first.x, later.x) || far(first.y, later.y) || far(first.width, later.width);
+}
+
 function differs(first: Box, later: Box): boolean {
-  return (
-    Math.abs(first.x - later.x) > LEAST_MOVE_PX ||
-    Math.abs(first.y - later.y) > LEAST_MOVE_PX ||
-    Math.abs(first.width - later.width) > LEAST_MOVE_PX ||
-    Math.abs(first.height - later.height) > LEAST_MOVE_PX
-  );
+  return standsElsewhere(first, later) || far(first.height, later.height);
 }
 
 /** The first frame in which this landmark stood elsewhere than in the first frame, if any. */
@@ -92,8 +99,17 @@ function movedOf(name: string, column: readonly (Box | null)[]): Moved | undefin
     return undefined;
   }
   const shown = column.filter((box) => box !== null);
-  const steps = shown.filter((box, index) => index > 0 && differs(shown[index - 1] ?? box, box));
-  return { name, from: first, to, frame, steps: steps.length, last: shown.at(-1) ?? to };
+  const changes = (changed: (before: Box, after: Box) => boolean): number =>
+    shown.filter((box, index) => index > 0 && changed(shown[index - 1] ?? box, box)).length;
+  return {
+    name,
+    from: first,
+    to,
+    frame,
+    steps: changes(standsElsewhere),
+    growths: changes((before, after) => far(before.height, after.height)),
+    last: shown.at(-1) ?? to,
+  };
 }
 
 /** What the frames say about the landmarks. */
@@ -243,8 +259,9 @@ export async function landmarkOf(found: Locator, name: string): Promise<Landmark
 /** What may change while the screen otherwise stands still. */
 export interface StillExcept {
   /**
-   * The landmarks under what changed, and what changed itself: they may move once, in one step (a part
-   * that grows pushes what is under it once, never back and forth), and layout shifts inside them count.
+   * The landmarks under what changed, and what changed itself: each may be pushed once and grow
+   * downwards once (a part that grows pushes what is under it once, never back and forth), and
+   * layout shifts inside them are theirs.
    */
   readonly follows?: readonly string[];
   /** The parts whose scroll the action is meant to change (`window.body` when a form starts again). */
@@ -263,7 +280,9 @@ export function expectStill(movement: Movement, except: StillExcept = {}): void 
     shift.sources.every((source) => source.within.some((name) => follows.includes(name)));
   expect(
     {
-      moved: movement.moved.filter((each) => !follows.includes(each.name) || each.steps > 1),
+      moved: movement.moved.filter(
+        (each) => !follows.includes(each.name) || each.steps > 1 || each.growths > 1,
+      ),
       shifts: movement.shifts.filter((shift) => shift.value > 0 && !inFollows(shift)),
       vanished: movement.vanished,
       greyShapes: movement.greyShapes,

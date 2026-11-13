@@ -44,6 +44,13 @@ test("ux_01_adding_and_removing_a_tag_moves_nothing_else_on_the_issue_page", asy
   });
   expectStill(added, { follows: still.below });
   await expectFocusIn(tags);
+  // The History shows the change without a reload: it is read again, in place.
+  await expect(
+    page
+      .getByRole("region", { name: t("history.title") })
+      .getByText(/fresh/u)
+      .first(),
+  ).toBeVisible();
   const removed = await movementWhile(page, still.all, async () => {
     await tags.getByRole("button", { name: t("labels.take-off", { name: "fresh" }) }).click();
     await expect(tags.getByText("fresh", { exact: true })).toHaveCount(0);
@@ -68,7 +75,7 @@ async function openTheWindowOverTheList(page: Page) {
 
 test("ux_01_creating_an_issue_moves_nothing_on_the_list_but_the_new_row", async ({ page }) => {
   const title = await openTheWindowOverTheList(page);
-  const list = await listLandmarks(page, Object.values(webIssues));
+  const list = await listLandmarks(page);
   await title.fill("The first of two");
   const another = newIssueDialog(page).getByRole("button", {
     name: t("issues.create-another"),

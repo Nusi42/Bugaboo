@@ -7973,6 +7973,11 @@ export interface components {
       /** @description The tags on it, in the order they were put there. */
       tags?: components["schemas"]["TagRefBody"][] | null;
       /**
+       * Format: date-time
+       * @description When the issue was last changed, now: a change of a tag or a label is a change of the issue.
+       */
+      updated_at: string;
+      /**
        * Format: int64
        * @description The version of the issue now. A change of a tag or a label counts it up.
        */

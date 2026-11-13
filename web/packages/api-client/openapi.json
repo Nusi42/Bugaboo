@@ -24705,7 +24705,14 @@
       "IssueLabelsAndTagsBody": {
         "type": "object",
         "description": "The tags and labels of one issue, and what the person may do with them. A member that holds a\nfield of the catalogue is left out when the person's level for the field is *Hidden*.",
-        "required": ["issue", "version", "issue_type", "may_change_tags", "may_change_labels"],
+        "required": [
+          "issue",
+          "version",
+          "updated_at",
+          "issue_type",
+          "may_change_tags",
+          "may_change_labels"
+        ],
         "properties": {
           "issue": {
             "type": "string",
@@ -24736,6 +24743,11 @@
               "$ref": "#/components/schemas/TagRefBody"
             },
             "description": "The tags on it, in the order they were put there."
+          },
+          "updated_at": {
+            "type": "string",
+            "description": "When the issue was last changed, now: a change of a tag or a label is a change of the issue.",
+            "format": "date-time"
           },
           "version": {
             "type": "integer",

@@ -93,6 +93,10 @@ export const queryKeys = {
   history: {
     all: ["history"],
     list: (issue: string, tab: string) => ["history", "list", issue, tab],
+    /** Every tab of the history of one issue: what a change of the issue reads again. */
+    listsOf: (issue: string) => ["history", "list", issue],
+    /** Who changed the texts of one issue, at every version. */
+    changedByOf: (issue: string) => ["history", "changed-by", issue],
     versions: (comment: string) => ["history", "versions", comment],
     /** Who changed a long text last, as of one version of the issue. */
     changedBy: (issue: string, part: string, version: number) => [
@@ -174,7 +178,7 @@ export function refreshIssues(): void {
 }
 
 /** Reads again every answer of these routes of the API (their keys are made by the client), or those for these path values. */
-function refreshReads(paths: readonly string[], values?: object): void {
+export function refreshReads(paths: readonly string[], values?: object): void {
   for (const path of paths) {
     reread({
       queryKey: ["get", path, ...(values === undefined ? [] : [{ params: { path: values } }])],
@@ -191,23 +195,13 @@ export function refreshFields(): void {
 const LABEL_READS = [
   "/api/v1/issues/{issue}/labels-and-tags",
   "/api/v1/projects/{project}/tag-suggestions",
-  "/api/v1/issues/{issue}/history",
 ] as const;
 
 /** A label or tag changed: the answers that show them are read again. */
 export function refreshLabelReads(): void {
   reread({ queryKey: queryKeys.labels.all });
+  reread({ queryKey: queryKeys.history.all });
   refreshReads(LABEL_READS);
-}
-
-/**
- * A tag or label was put on one issue or taken off, and its row shows the answer: only the labels,
- * the history of that issue and the tags offered in its project are read again (UX §6.4).
- */
-export function refreshIssueLabelReads(issue: string, project: string): void {
-  reread({ queryKey: queryKeys.labels.all });
-  refreshReads(["/api/v1/issues/{issue}/history"], { issue });
-  refreshReads(["/api/v1/projects/{project}/tag-suggestions"], { project });
 }
 
 /** A layout was made, saved or taken away: the forms and the editor read it again. */

@@ -60,16 +60,75 @@ export function versionNow(
   return versionOf(isDetail(known) ? known.issue : shown);
 }
 
+/** What the answer of a change in place says about the issue now. */
+export interface Counted {
+  readonly version: number;
+  /** When the issue was last changed, as the server writes it. */
+  readonly updatedAt: string;
+}
+
 /**
  * A change that is not one of the fields (a tag or a label put on or taken off) counted the issue
- * up to `version`: the page writes it into what it knows, so a change made right after is made on
- * it and does not conflict with the person's own. An answer that comes in late never takes the
- * version back.
+ * up to `version`: the page writes it, and when the issue was last changed, into what it knows, so
+ * a change made right after is made on it and does not conflict with the person's own, and *Last
+ * changed* shows the answer without a read of the issue (UX §6.4). An answer that comes in late
+ * never takes the version back.
  */
-export function versionCounted(address: string, version: number): void {
+export function versionCounted(address: string, { version, updatedAt }: Counted): void {
   queryClient.setQueryData(queryKeys.issues.one(address), (known: unknown) =>
     isDetail(known) && (known.issue.version ?? 0) < version
-      ? { ...known, issue: { ...known.issue, version } }
+      ? { ...known, issue: { ...known.issue, version, updated_at: updatedAt } }
+      : known,
+  );
+}
+
+/** A page of a list of issues, as the cache keeps it: the items with the fields the list asked for. */
+interface ListPages {
+  readonly pages: readonly { readonly items: readonly Readonly<Record<string, unknown>>[] }[];
+}
+
+/** Whether what a list keeps is pages of items. */
+function isListPages(known: unknown): known is ListPages {
+  return (
+    typeof known === "object" &&
+    known !== null &&
+    "pages" in known &&
+    Array.isArray(known.pages) &&
+    known.pages.every(
+      (page: unknown) =>
+        typeof page === "object" && page !== null && "items" in page && Array.isArray(page.items),
+    )
+  );
+}
+
+/** The item with the fields of `changed` that it has (a list asks only for what its columns show). */
+function withChanged(
+  item: Readonly<Record<string, unknown>>,
+  changed: Readonly<Record<string, unknown>>,
+): Readonly<Record<string, unknown>> {
+  const asked: Record<string, unknown> = {};
+  for (const field of Object.keys(changed)) {
+    if (field in item) {
+      asked[field] = changed[field];
+    }
+  }
+  return { ...item, ...asked };
+}
+
+/**
+ * The row of one issue in every list that is kept, changed from the answer of a change in place
+ * instead of reading the lists again (UX §6.4): only the fields that each row has.
+ */
+export function rowChanged(id: string, changed: Readonly<Record<string, unknown>>): void {
+  queryClient.setQueriesData({ queryKey: queryKeys.issues.lists() }, (known: unknown) =>
+    isListPages(known)
+      ? {
+          ...known,
+          pages: known.pages.map((page) => ({
+            ...page,
+            items: page.items.map((item) => (item.id === id ? withChanged(item, changed) : item)),
+          })),
+        }
       : known,
   );
 }

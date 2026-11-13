@@ -6,6 +6,7 @@ use bb_core::id::{IssueId, IssueTypeId, LabelGroupId, LabelId, ProjectId, TagId}
 use bb_core::own_fields::{ChoiceColor, Edit};
 use bb_core::tags::{IssueLabel, Label, Tag};
 use bb_policy::Masked;
+use jiff::Timestamp;
 use serde::Serialize;
 use std::collections::HashMap;
 
@@ -96,6 +97,10 @@ pub struct IssueLabelsAndTags {
     /// with the person's own (ADR-0019).
     #[masked(open)]
     pub version: i64,
+    /// When the issue was last changed, now: a change of a tag or a label is a change of the issue,
+    /// so the page shows *Last changed* from the answer and does not read the issue again.
+    #[masked(open)]
+    pub updated_at: Timestamp,
     /// Its issue type. The levels set for it count for the fields of this issue (ADR-0027).
     #[masked(nested, item_type)]
     pub issue_type: IssueTypeRef,

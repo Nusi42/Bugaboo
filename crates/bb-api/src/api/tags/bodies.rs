@@ -62,6 +62,9 @@ pub(crate) struct IssueLabelsAndTagsBody {
     /// The version of the issue now. A change of a tag or a label counts it up.
     #[masked(open)]
     pub(super) version: i64,
+    /// When the issue was last changed, now: a change of a tag or a label is a change of the issue.
+    #[masked(open)]
+    pub(super) updated_at: String,
     /// Its issue type. The levels set for it count for the fields of this issue.
     #[masked(nested, item_type)]
     pub(super) issue_type: IssueTypeRef,
@@ -86,6 +89,7 @@ impl From<IssueLabelsAndTags> for IssueLabelsAndTagsBody {
         Self {
             issue: labels_and_tags.issue.to_string(),
             version: labels_and_tags.version,
+            updated_at: labels_and_tags.updated_at.to_string(),
             issue_type: IssueTypeRef::from(&labels_and_tags.issue_type),
             tags: Some(labels_and_tags.tags.iter().map(TagRefBody::from).collect()),
             labels: Some(

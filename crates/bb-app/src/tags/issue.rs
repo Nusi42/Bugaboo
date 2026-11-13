@@ -100,6 +100,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(IssueLabelsAndTags {
             issue: issue.id,
             version: issue.version,
+            updated_at: issue.updated_at,
             issue_type: IssueTypeRef::from(&issue_type),
             tags: held_tags
                 .iter()

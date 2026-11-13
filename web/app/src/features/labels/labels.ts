@@ -5,13 +5,8 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "../../shared/api.ts";
 import { fieldList, linesFrom, pageSize, usePaged } from "../../shared/paged.ts";
 import { queryClient } from "../../shared/query-client.ts";
-import {
-  queryKeys,
-  refreshIssueLabelReads,
-  refreshLabelReads,
-  reread,
-} from "../../shared/query-keys.ts";
-import { versionCounted } from "../issues/index.ts";
+import { queryKeys, refreshLabelReads, refreshReads, reread } from "../../shared/query-keys.ts";
+import { rowChanged, versionCounted } from "../issues/index.ts";
 import { useLabels, type Label, type LabelGroup } from "./label-lists.ts";
 
 export { useLabels, type Label, type LabelGroup } from "./label-lists.ts";
@@ -152,20 +147,21 @@ export async function takeLabelOff(issue: string, label: string): Promise<IssueL
 
 /**
  * A tag or label was put on an issue or taken off. The answer is the tags and labels of the issue
- * now: the row shows them at once, from the answer, and is not read again (UX §6: the change shows in
- * place). The page writes the version the issue counted up to into what it knows, so a change made
- * right after does not conflict. Read again, in place, is what the change made different elsewhere:
- * the issue (*Last changed*), the lists of issues, the lists of tags and labels (adding one by a new
- * name made it), the history of this issue and the tags offered in its project; nothing of other
- * issues or projects.
+ * now, its version and when it was last changed: the row shows them at once, *Last changed* and the
+ * rows of the lists take them from the answer, and none of them is read again (UX §6.4: the change
+ * shows in place). Read again, in place, is only what the answer does not hold: the history of this
+ * issue, the lists of labels and the tags offered in its project. The pages of tags read a tag that
+ * a new name made when they are opened next.
  */
 export function afterLabelsAndTags(issue: string, project: string, made: IssueLabelsAndTags): void {
-  versionCounted(issue, made.version);
+  versionCounted(issue, { version: made.version, updatedAt: made.updated_at });
   queryClient.setQueryData(labelsAndTagsOptions(issue).queryKey, made);
-  reread({ queryKey: queryKeys.issues.one(issue) });
-  reread({ queryKey: queryKeys.issues.lists() });
-  reread({ queryKey: queryKeys.tags.all });
-  refreshIssueLabelReads(issue, project);
+  rowChanged(made.issue, { labels: made.labels, updated_at: made.updated_at });
+  reread({ queryKey: queryKeys.history.listsOf(issue) });
+  reread({ queryKey: queryKeys.history.changedByOf(issue) });
+  reread({ queryKey: queryKeys.labels.all });
+  refreshReads(["/api/v1/projects/{project}/tag-suggestions"], { project });
+  void queryClient.invalidateQueries({ queryKey: queryKeys.tags.all, refetchType: "none" });
 }
 
 /** The choice that stands for a label in no group. */

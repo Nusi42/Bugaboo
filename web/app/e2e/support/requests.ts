@@ -1,9 +1,4 @@
-import { type Page, type Request, type Response } from "@playwright/test";
-
-/** Whether a request has this method and goes to an address that starts with `path`. */
-function sentAs(request: Readonly<Pick<Request, "method" | "url">>, method: string, path: string) {
-  return request.method() === method && new URL(request.url()).pathname.startsWith(path);
-}
+import { type Page, type Request } from "@playwright/test";
 
 /**
  * Counts the requests a page sends with this method, from now on; with `path`, only the ones to
@@ -12,16 +7,9 @@ function sentAs(request: Readonly<Pick<Request, "method" | "url">>, method: stri
 export function countRequests(page: Page, method: string, path = ""): () => number {
   let sent = 0;
   page.on("request", (request: Readonly<Pick<Request, "method" | "url">>) => {
-    if (sentAs(request, method, path)) {
+    if (request.method() === method && new URL(request.url()).pathname.startsWith(path)) {
       sent += 1;
     }
   });
   return () => sent;
-}
-
-/** The answer to the next request the page sends with this method to an address that starts with `path`. */
-export function answerTo(page: Page, method: string, path: string): Promise<Response> {
-  return page.waitForResponse((response: Readonly<Response>) =>
-    sentAs(response.request(), method, path),
-  );
 }
