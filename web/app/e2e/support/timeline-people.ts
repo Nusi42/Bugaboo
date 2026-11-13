@@ -3,8 +3,8 @@ import { t } from "@bugaboo/messages";
 import { expect, type Locator, type Page } from "@playwright/test";
 
 import { keepingHyphens } from "../../src/shared/format.ts";
-import { roleId, projectIdOf, setPeopleLevel, roleName } from "./access.ts";
-import { ada, bob, ownId, signInThroughApi } from "./accounts.ts";
+import { createPeopleWithRoles, projectIdOf, roleId, roleName, setPeopleLevel } from "./access.ts";
+import { ada, bob, cleo, ownId, signInThroughApi } from "./accounts.ts";
 import type { ApiSession } from "./api.ts";
 import { createIssue, issueOf, versionOf } from "./issues.ts";
 import type { Instance } from "./server.ts";
@@ -84,16 +84,8 @@ export async function viewersSee(
   await admin.dispose();
 }
 
-/**
- * Accepts a warning of an issue, *Away* unless another kind is named, as the administrator: it shows
- * faded, with who accepted it.
- */
-export async function acceptAway(
-  server: Instance,
-  key: string,
-  kind: "away" | "days-without-work" = "away",
-): Promise<void> {
-  const admin = await signInThroughApi(server, ada);
+/** Accepts a warning of an issue as the person of a session, who must be told that kind. */
+async function acceptAs(admin: ApiSession, key: string, kind: "away" | "days-without-work") {
   const version = await versionOf(admin, await issueOf(admin, key));
   dataOf(
     await admin.client.POST("/api/v1/timeline/accepted-warnings", {
@@ -105,6 +97,31 @@ export async function acceptAway(
       },
     }),
   );
+}
+
+/** Accepts the warning *Away* of an issue, as the administrator: it shows faded, with who accepted it. */
+export async function acceptAway(server: Instance, key: string): Promise<void> {
+  const admin = await signInThroughApi(server, ada);
+  await acceptAs(admin, key, "away");
+  await admin.dispose();
+}
+
+/**
+ * Accepts the neutral warning *Days without work* of an issue, as Cleo, a Team member of WEB made for
+ * it, while Team members see the people on the bars by role only: only a person who is told that
+ * kind may accept it.
+ */
+export async function acceptDaysWithoutWork(server: Instance, key: string): Promise<void> {
+  const admin = await signInThroughApi(server, ada);
+  await createPeopleWithRoles(server, admin, [
+    { person: cleo, role: roleName.teamMember, project: "WEB" },
+  ]);
+  const role = await roleId(admin, roleName.teamMember);
+  await setPeopleLevel(admin, { role, kind: "assigned-to" }, "role-only");
+  const cleos = await signInThroughApi(server, cleo);
+  await acceptAs(cleos, key, "days-without-work");
+  await cleos.dispose();
+  await setPeopleLevel(admin, { role, kind: "assigned-to" }, "names");
   await admin.dispose();
 }
 

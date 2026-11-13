@@ -8,7 +8,7 @@ import { signIn } from "./support/flows.ts";
 import { screenshotFolder } from "./support/screenshots.ts";
 import { barOf, chart, openTimeline, pressOf } from "./support/timeline.ts";
 import {
-  acceptAway,
+  acceptDaysWithoutWork,
   openWarnings,
   people,
   prepareTimelinePeople,
@@ -78,7 +78,7 @@ test("the bars as a reader who sees people by role only, and as one who sees nob
   server,
 }) => {
   // The readers see the neutral warning instead of Away: Ada accepts it for everybody.
-  await acceptAway(server, people.holiday, "days-without-work");
+  await acceptDaysWithoutWork(server, people.holiday);
   await viewersSeeAssigned(server, "role-only");
   await signIn(page, ana);
   await openTimeline(page);
