@@ -23,7 +23,7 @@ export interface Held {
  * Holds every request that matches `url` until `release` is called, as a slow read would: what the
  * page shows while it waits can be looked at, and the answer comes on cue.
  */
-export async function holdUntilReleased(page: Page, url: string): Promise<Held> {
+export async function holdUntilReleased(page: Page, url: string | Readonly<RegExp>): Promise<Held> {
   const released = Promise.withResolvers<void>();
   const asked = Promise.withResolvers<void>();
   await page.route(url, async (route) => {
