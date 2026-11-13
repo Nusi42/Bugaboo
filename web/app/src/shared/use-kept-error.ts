@@ -17,14 +17,18 @@ export function useKeptError({ queryKey, data, error }: ShownRead): unknown {
   const key = hashKey(queryKey);
   const [kept, setKept] = useState<{ readonly key: string; readonly error: unknown } | null>(null);
   // Kept as the read changes, while it is drawn (React's way of state that follows a value).
+  // A read with an answer keeps no refusal of its own: a refusal of it shows while it lasts (and
+  // keeping it there would make the state go back and forth without end).
   const known = error !== null && error !== undefined;
-  if (known && (kept?.key !== key || kept.error !== error)) {
-    setKept({ key, error });
-  } else if (data !== undefined && kept !== null) {
-    setKept(null);
-  }
   if (data !== undefined) {
-    return null;
+    if (kept !== null) {
+      setKept(null);
+    }
+  } else if (known && (kept?.key !== key || kept.error !== error)) {
+    setKept({ key, error });
   }
-  return error ?? (kept?.key === key ? kept.error : null);
+  if (known || data !== undefined) {
+    return known ? error : null;
+  }
+  return kept?.key === key ? kept.error : null;
 }
