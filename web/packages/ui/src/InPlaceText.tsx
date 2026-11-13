@@ -42,7 +42,14 @@ function Box({ label, value, required, onDone }: BoxProps) {
   useEffect(() => {
     const element = box.current;
     element?.focus(inPlace);
+    // Enter ends the change, and the box then goes, which the browser also tells as a blur: the change
+    // is made once, not a second time on the version before it (a conflict with the person's own).
+    let finished = false;
     const finish = (save: boolean): void => {
+      if (finished) {
+        return;
+      }
+      finished = true;
       const { draft: typed, value: was, required: must, onDone: done } = latest.current;
       const next = typed.trim();
       done(save && next !== was && !(must && next === "") ? next : undefined);
