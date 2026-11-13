@@ -149,16 +149,17 @@ test("ux_6_1 a window that is still loading closes with Escape and with its own 
   await signIn(page, ada);
   await page.goto(projectIssuesAddress("WEB"));
   const release = await holdNewIssueLayout(page);
-  // The first 0.3 s: the window is there but clear, says nothing yet, and Esc closes it.
-  expectQuietWhenInTime(await pressNewIssueAndEscapeAtOnce(page));
-  await expect(dialog(page)).toHaveCount(0);
-  // After 0.3 s: grey shapes, the status says it is loading, and its own button closes it.
+  // After 0.3 s: grey shapes, the status says it is loading, and its own button closes it. This first
+  // open also brings the code of the window, which is loaded when it is first opened.
   await pressNewIssue(page);
   await expectWindowSeen(page);
   await expect(dialog(page).getByRole("status")).toHaveText(t("common.loading"));
   await dialog(page)
     .getByRole("button", { name: windowCloseName(page) })
     .click();
+  await expect(dialog(page)).toHaveCount(0);
+  // The first 0.3 s: the window is there but clear, says nothing yet, and Esc closes it.
+  expectQuietWhenInTime(await pressNewIssueAndEscapeAtOnce(page));
   await expect(dialog(page)).toHaveCount(0);
   release();
 });
