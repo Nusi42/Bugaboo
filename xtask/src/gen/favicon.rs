@@ -6,7 +6,7 @@
 
 use std::io::Write as _;
 
-use anyhow::{Context as _, bail};
+use anyhow::Context as _;
 use flate2::Crc;
 use flate2::write::ZlibEncoder;
 
@@ -43,6 +43,10 @@ pub(crate) struct Rgb {
 }
 
 impl Rgb {
+    /// Reads `#rrggbb` into whole numbers. `bb_core::contrast::channels` reads the same text into
+    /// fractions and takes a bad digit for 0; the pixels here are mixed in whole numbers (no cast
+    /// from a fraction back to a byte), and a color the theme reader let through wrongly must stop
+    /// the generator rather than draw a black icon.
     pub(crate) fn parse(text: &str) -> anyhow::Result<Self> {
         let digits = text
             .strip_prefix('#')
@@ -75,27 +79,12 @@ pub(crate) struct IconColors {
     pub(crate) on_accent: Rgb,
 }
 
-/// How often one color may name another before the file is taken to go round in a circle.
-const MOST_NAMES: usize = 8;
-
-/// The color of a token in the light theme that starts, following `$other` to the color it names.
+/// The color of a token in the light theme that starts, with a token that names another followed.
 fn color(file: &ThemeFile, name: &str) -> anyhow::Result<Rgb> {
-    let mut wanted = name;
-    for _ in 0..MOST_NAMES {
-        let value = file
-            .tokens
-            .iter()
-            .find(|token| token.name == wanted)
-            .and_then(|token| token.in_theme(&file.default_light))
-            .with_context(|| {
-                format!("the theme `{}` has no color `{wanted}`", file.default_light)
-            })?;
-        match value.strip_prefix('$') {
-            Some(other) => wanted = other,
-            None => return Rgb::parse(value),
-        }
-    }
-    bail!("the color `{name}` names other colors more than {MOST_NAMES} times")
+    let value = file
+        .color(name, &file.default_light)
+        .with_context(|| format!("the theme `{}` has no color `{name}`", file.default_light))?;
+    Rgb::parse(value)
 }
 
 /// The colors of the icon: the accent, and the color that is drawn on it.
