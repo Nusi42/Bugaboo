@@ -23983,7 +23983,7 @@
             "oneOf": [
               {
                 "$ref": "#/components/schemas/Holiday",
-                "description": "For a public holiday: which one."
+                "description": "For a public holiday: which one; `null` when the reader may not see who the person is."
               },
               {
                 "type": "null"
@@ -23996,7 +23996,7 @@
           },
           "morning": {
             "type": "boolean",
-            "description": "For an away day: whether the morning is away."
+            "description": "For an away day: whether the morning is away; `false` with `afternoon` when the reader may not\nsee who the person is."
           }
         }
       },
@@ -33116,7 +33116,8 @@
           "warnings",
           "goals",
           "not_scheduled",
-          "planned_by_effort"
+          "planned_by_effort",
+          "people_days"
         ],
         "properties": {
           "dependencies": {
@@ -33143,6 +33144,13 @@
             "description": "How many issues the search finds that wait in *Not scheduled yet*.",
             "minimum": 0
           },
+          "people_days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimelinePersonDaysBody"
+            },
+            "description": "Under *Group by person*: the away days and holidays of each person of a row whose work times\nthe reader may know; empty for any other grouping."
+          },
           "planned_by_effort": {
             "type": "boolean",
             "description": "Whether the bars were planned by effort: the view asked for it and the reader is no access\nkey. A key reads nobody's work times, so its bars keep the dates people set."
@@ -33167,6 +33175,24 @@
         "type": "string",
         "description": "Which part of the timeline a page is of.",
         "enum": ["rows", "not-scheduled"]
+      },
+      "TimelinePersonDaysBody": {
+        "type": "object",
+        "description": "The away days and public holidays of one person over the span, for their row in *Group by\nperson*.",
+        "required": ["person", "hatched"],
+        "properties": {
+          "hatched": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HatchedDayBody"
+            },
+            "description": "The days on which they are away or have a public holiday."
+          },
+          "person": {
+            "$ref": "#/components/schemas/PersonRef",
+            "description": "The person, by name: the same as the person of the group of the row."
+          }
+        }
       },
       "TimelineRowBody": {
         "type": "object",

@@ -11,13 +11,11 @@ use axum::extract::{FromRef, State};
 use axum::response::Response;
 use base64ct::{Base64UrlUnpadded, Encoding as _};
 use bb_app::plan::{
-    AcceptWarning, AcceptedWarningView, BarView, Hatched, MoveAfterQuery, MovePreview,
-    MovePreviewPage, TimelinePage, TimelinePart, TimelineQuery, TimelineSearch, WarningView,
+    AcceptWarning, AcceptedWarningView, MoveAfterQuery, MovePreview, MovePreviewPage, TimelinePage,
+    TimelinePart, TimelineQuery, TimelineSearch, WarningView,
 };
-use bb_core::holidays::Holiday;
 use bb_core::issue::CalendarDay;
 use bb_core::plan::Days;
-use bb_core::plan::bar::WorkedOut;
 use bb_core::plan::warning::{Delay, Warning, WarningKind, WayOut};
 use bb_core::saved_search::TimelineOptions;
 use bb_policy::{Masked, PersonRef};
@@ -35,7 +33,7 @@ use super::auth::{
 use super::issues::IssueItem;
 use super::saved_searches::TimelineOptionsBody;
 use super::search::{SearchGroupKeyBody, counted, group_key};
-use super::work_times::UsualDayBody;
+use super::timeline_bar::{BarBody, TimelinePersonDaysBody};
 use crate::errors::{ApiError, ApiJson};
 use crate::limits::Limits;
 use crate::paging;
@@ -111,148 +109,6 @@ impl From<Days> for DaysBody {
         Self {
             first: days.first,
             last: days.last,
-        }
-    }
-}
-
-/// What a hatched day holds.
-#[derive(Serialize, ToSchema)]
-#[serde(rename_all = "kebab-case")]
-pub(crate) enum HatchedKindBody {
-    /// The person is away (only ever *Away*).
-    Away,
-    /// A public holiday.
-    Holiday,
-    /// Not a usual work day of the person, or no share in the project.
-    DayOff,
-}
-
-/// One day of a bar on which its person does not work, as *Who sees people* allows.
-#[derive(Serialize, ToSchema)]
-pub(crate) struct HatchedDayBody {
-    /// The day.
-    #[schema(value_type = String, format = Date)]
-    date: CalendarDay,
-    /// What it holds.
-    kind: HatchedKindBody,
-    /// For an away day: whether the morning is away.
-    morning: bool,
-    /// For an away day: whether the afternoon is away.
-    afternoon: bool,
-    /// For a public holiday: which one.
-    #[schema(required = true)]
-    holiday: Option<Holiday>,
-}
-
-/// The time factor a bar is planned with.
-#[derive(Serialize, ToSchema)]
-pub(crate) struct BarTimeFactorBody {
-    /// In percent of the estimate (125 is ×1.25).
-    percent: u16,
-    /// Whether the person on the bar set it themselves.
-    own_estimate: bool,
-}
-
-/// The effort of a bar, as its card says it: *"Estimate 8h · ×1.25 = 10 work days"*.
-#[derive(Serialize, ToSchema)]
-pub(crate) struct BarEffortBody {
-    /// *Estimated time*, in minutes.
-    estimate: u32,
-    /// The estimate times the time factor, in minutes.
-    effort: u32,
-    /// How many of the person's work days the effort takes from the first day of the bar; `null`
-    /// unless the bars are planned by effort and the days the plan reads hold it.
-    #[schema(required = true)]
-    work_days: Option<u32>,
-}
-
-/// The time of the person on a bar, as its card says it: *"Mon–Fri, 8 hours a day · 100 % in
-/// Mobile app"*.
-#[derive(Serialize, ToSchema)]
-pub(crate) struct BarWorkTimeBody {
-    /// The seven usual work days, Monday first.
-    #[schema(min_items = 7, max_items = 7)]
-    usual: Vec<UsualDayBody>,
-    /// The share in the project of the issue that counts, in percent.
-    share: u8,
-}
-
-/// The bar of a row.
-#[derive(Serialize, ToSchema)]
-pub(crate) struct BarBody {
-    /// The days it covers.
-    days: DaysBody,
-    /// Which date *Plan by effort* worked out (shown, never stored): `neither`, `start` or `due`.
-    #[schema(value_type = String)]
-    worked_out: WorkedOut,
-    /// How much of it is done, in percent; `null` without an estimate the person may read.
-    #[schema(required = true)]
-    done: Option<u8>,
-    /// The person on the bar (the first assigned person) as the reader may see them; `null` for
-    /// nobody or when the reader may not see who it is.
-    #[schema(required = true)]
-    person: Option<PersonRef>,
-    /// The time factor, when it is not ×1 and the reader may read it.
-    #[schema(required = true)]
-    time_factor: Option<BarTimeFactorBody>,
-    /// The days inside the span on which the person does not work.
-    hatched: Vec<HatchedDayBody>,
-    /// The effort; `null` without an estimate the reader may read or without a person on the bar.
-    #[schema(required = true)]
-    effort: Option<BarEffortBody>,
-    /// The time of the person on the bar; `null` unless the reader may know their work times.
-    #[schema(required = true)]
-    work_time: Option<BarWorkTimeBody>,
-}
-
-impl From<&BarView> for BarBody {
-    fn from(bar: &BarView) -> Self {
-        Self {
-            days: bar.days.into(),
-            worked_out: bar.worked_out,
-            done: bar.done,
-            person: bar.person.clone(),
-            time_factor: bar.factor.map(|factor| BarTimeFactorBody {
-                percent: factor.percent,
-                own_estimate: factor.own_estimate,
-            }),
-            hatched: bar
-                .hatched
-                .iter()
-                .map(|day| {
-                    let (kind, morning, afternoon, holiday) = match day.what {
-                        Hatched::Away { morning, afternoon } => {
-                            (HatchedKindBody::Away, morning, afternoon, None)
-                        }
-                        Hatched::Holiday { holiday } => {
-                            (HatchedKindBody::Holiday, false, false, Some(holiday))
-                        }
-                        Hatched::DayOff => (HatchedKindBody::DayOff, false, false, None),
-                    };
-                    HatchedDayBody {
-                        date: day.date,
-                        kind,
-                        morning,
-                        afternoon,
-                        holiday,
-                    }
-                })
-                .collect(),
-            effort: bar.effort.map(|effort| BarEffortBody {
-                estimate: effort.estimate.get(),
-                effort: effort.effort.get(),
-                work_days: effort.work_days,
-            }),
-            work_time: bar.work_time.map(|time| BarWorkTimeBody {
-                usual: time
-                    .usual
-                    .days()
-                    .iter()
-                    .copied()
-                    .map(UsualDayBody::from)
-                    .collect(),
-                share: time.share.percent(),
-            }),
         }
     }
 }
@@ -436,6 +292,9 @@ pub(crate) struct TimelinePageBody {
     /// Whether the bars were planned by effort: the view asked for it and the reader is no access
     /// key. A key reads nobody's work times, so its bars keep the dates people set.
     planned_by_effort: bool,
+    /// Under *Group by person*: the away days and holidays of each person of a row whose work times
+    /// the reader may know; empty for any other grouping.
+    people_days: Vec<TimelinePersonDaysBody>,
 }
 
 impl Masked for TimelinePageBody {}
@@ -511,6 +370,11 @@ fn page_body(page: TimelinePage, list: &str) -> Result<TimelinePageBody, ApiErro
             .collect(),
         not_scheduled: page.not_scheduled,
         planned_by_effort: page.planned_by_effort,
+        people_days: page
+            .people_days
+            .iter()
+            .map(TimelinePersonDaysBody::from)
+            .collect(),
     })
 }
 

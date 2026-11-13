@@ -96,6 +96,7 @@ mod time;
 mod time_entries;
 mod time_totals;
 mod timeline;
+mod timeline_bar;
 mod timeline_factor;
 mod work_times;
 mod workflows;

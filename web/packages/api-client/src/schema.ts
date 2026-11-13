@@ -7602,7 +7602,10 @@ export interface components {
       holiday: components["schemas"]["Holiday"] | null;
       /** @description What it holds. */
       kind: components["schemas"]["HatchedKindBody"];
-      /** @description For an away day: whether the morning is away. */
+      /**
+       * @description For an away day: whether the morning is away; `false` with `afternoon` when the reader may not
+       *     see who the person is.
+       */
       morning: boolean;
     };
     /**
@@ -12232,6 +12235,11 @@ export interface components {
        */
       not_scheduled: number;
       /**
+       * @description Under *Group by person*: the away days and holidays of each person of a row whose work times
+       *     the reader may know; empty for any other grouping.
+       */
+      people_days: components["schemas"]["TimelinePersonDaysBody"][];
+      /**
        * @description Whether the bars were planned by effort: the view asked for it and the reader is no access
        *     key. A key reads nobody's work times, so its bars keep the dates people set.
        */
@@ -12246,6 +12254,16 @@ export interface components {
      * @enum {string}
      */
     TimelinePartBody: "rows" | "not-scheduled";
+    /**
+     * @description The away days and public holidays of one person over the span, for their row in *Group by
+     *     person*.
+     */
+    TimelinePersonDaysBody: {
+      /** @description The days on which they are away or have a public holiday. */
+      hatched: components["schemas"]["HatchedDayBody"][];
+      /** @description The person, by name: the same as the person of the group of the row. */
+      person: components["schemas"]["PersonRef"];
+    };
     /** @description One row of the timeline. */
     TimelineRowBody: {
       bar: components["schemas"]["BarBody"] | null;

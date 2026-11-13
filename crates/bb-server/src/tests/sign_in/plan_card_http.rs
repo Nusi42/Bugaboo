@@ -85,6 +85,11 @@ async fn plan_12_the_card_of_a_bar_tells_effort_and_work_time_only_as_far_as_all
         let partial = bar(&planned_page(&site, &mut team).await?, &key);
         assert_eq!(partial["effort"], Value::Null, "{partial}");
         assert_eq!(partial["work_time"]["share"], 50, "{partial}");
+        // A reader who may not read who the issue is assigned to: no person's time at all.
+        field_level(&site, &mut ada, StartingRole::TeamMember, "assigned-to", "hidden").await?;
+        let unassigned = bar(&planned_page(&site, &mut team).await?, &key);
+        assert_eq!(unassigned["work_time"], Value::Null, "{unassigned}");
+        assert_eq!(unassigned["person"], Value::Null, "{unassigned}");
         // An access key: nobody's work times, and no bar planned by effort.
         let secret = see_only_key(&mut ada).await?;
         let keyed = ada

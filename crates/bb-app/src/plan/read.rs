@@ -26,8 +26,9 @@ use bb_searchlang::{Expr, FieldRef, Span, Test};
 
 use super::build::{DateTargets, Plan, PlanAsk, window_of};
 use super::factor::names_person;
+use super::person_days::hatched_of;
 use super::types::{
-    AcceptedView, BarView, EffortShown, FactorShown, GoalView, Hatched, HatchedDay, TimelinePage,
+    AcceptedView, BarView, EffortShown, FactorShown, GoalView, HatchedDay, TimelinePage,
     TimelinePart, TimelineQuery, TimelineRow, TimelineSearch, WarningView, WorkTimeShown,
 };
 use crate::access::{Actor, place_of_address};
@@ -108,29 +109,21 @@ fn narrowing(
 }
 
 /// The hatched days of a bar inside the span, as *Who sees people* (the kind *Work times*) allows:
-/// none at all for a reader who may not know the person's work times.
-fn hatched_days(plan: &Plan, issue: &Issue, days: Days, span: Days) -> Vec<HatchedDay> {
-    if !plan.work_times_known(issue) {
+/// none at all for a reader who may not know the person's work times or may not read who the issue
+/// is assigned to, and without a word for a reader who does not see who the person is (`named`).
+fn hatched_days(
+    plan: &Plan,
+    issue: &Issue,
+    (days, span): (Days, Days),
+    named: bool,
+) -> Vec<HatchedDay> {
+    if !plan.work_times_known(issue) || !plan.reads(issue, Field::AssignedTo) {
         return Vec::new();
     }
     plan.days_of(issue)
         .iter()
         .filter(|day| days.contains(day.date) && span.contains(day.date))
-        .filter_map(|day| {
-            let what = if day.away.count() > 0 {
-                Hatched::away(day.away)
-            } else if let Some(holiday) = day.holiday {
-                Hatched::Holiday { holiday }
-            } else if day.minutes == 0 {
-                Hatched::DayOff
-            } else {
-                return None;
-            };
-            Some(HatchedDay {
-                date: day.date,
-                what,
-            })
-        })
+        .filter_map(|day| hatched_of(day, true, named))
         .collect()
 }
 
@@ -428,16 +421,19 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
             own_estimate: kept.set_by == kept.person
                 && names_person(held, Some(kept.person), person.as_ref()),
         });
+        let named = person.is_some();
         Ok(Some(BarView {
             days: bar.days,
             worked_out: bar.worked_out,
             done,
             person,
             factor,
-            hatched: hatched_days(plan, issue, bar.days, span),
+            hatched: hatched_days(plan, issue, (bar.days, span), named),
             effort: effort_shown(plan, issue, bar.days),
+            // The person's time tells whose it is: only to a reader who may read *Assigned to*.
             work_time: plan
                 .time_of(issue)
+                .filter(|_| reads(Field::AssignedTo))
                 .map(|(usual, share)| WorkTimeShown { usual, share }),
         }))
     }
@@ -501,6 +497,11 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
                 warning,
                 Warning::Away { .. } | Warning::TooMuchAtOnce { .. }
             );
+            // A warning about the person on the bar tells that the issue has one: not to a reader
+            // who may not read *Assigned to*, so neither the list nor its count says so.
+            if names_person_on_bar && !plan.reads(issue, Field::AssignedTo) {
+                continue;
+            }
             let person = match plan
                 .person_on_bar(*id)
                 .filter(|_| names_person_on_bar && plan.reads(issue, Field::AssignedTo))
@@ -566,6 +567,15 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
         }
         Ok(views)
     }
+}
+
+/// The dependencies between issues of the page.
+fn page_dependencies(plan: &Plan, page: &HashSet<IssueId>) -> Vec<(IssueId, IssueId)> {
+    plan.dependencies
+        .iter()
+        .copied()
+        .filter(|(first, then)| page.contains(first) && page.contains(then))
+        .collect()
 }
 
 /// A page of the timeline: the rows of a search that have a date the reader may read, or the
@@ -649,12 +659,7 @@ pub async fn timeline<S: AuthStore + SearchStore>(
             (query.part, span),
         )
         .await?;
-    let dependencies: Vec<(IssueId, IssueId)> = plan
-        .dependencies
-        .iter()
-        .copied()
-        .filter(|(first, then)| page.contains(first) && page.contains(then))
-        .collect();
+    let dependencies = page_dependencies(&plan, &page);
     let (warnings, goals) = if query.part == TimelinePart::Rows {
         (
             ctx.warning_views(&plan, &page, &prepared.looked.seen)
@@ -664,8 +669,13 @@ pub async fn timeline<S: AuthStore + SearchStore>(
     } else {
         (Vec::new(), Vec::new())
     };
+    let project = found.issues.first().map(|issue| issue.project);
+    let people_days = ctx
+        .people_days(&actor, &rows, (group_by, query.part), project, span)
+        .await?;
     Ok(organization.authorize(TimelinePage {
         rows,
+        people_days,
         next_cursor: found.next_cursor,
         dependencies,
         warnings,

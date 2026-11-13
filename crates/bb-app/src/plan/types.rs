@@ -72,8 +72,8 @@ pub enum Hatched {
     },
     /// A public holiday that counts for the person.
     Holiday {
-        /// Which one.
-        holiday: Holiday,
+        /// Which one; none when the reader may not see who the person is, so the day has no word.
+        holiday: Option<Holiday>,
     },
     /// Not one of the person's usual work days, or no share in the project.
     DayOff,
@@ -97,6 +97,17 @@ pub struct HatchedDay {
     pub date: Date,
     /// What it holds.
     pub what: Hatched,
+}
+
+/// The away days and public holidays of one person over the span, for their row in *Group by
+/// person* (ADR-0030, M8-F90): only for a person the reader sees by name and whose work times they
+/// may know.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct PersonDaysView {
+    /// The person, by name: a row of *Group by person* is only made for a person shown by name.
+    pub person: PersonRef,
+    /// The days of the span on which they are away or have a public holiday.
+    pub hatched: Vec<HatchedDay>,
 }
 
 /// The time factor of a bar, as its card shows it (*×1.25 · Lea's own estimate*).
@@ -244,6 +255,9 @@ pub struct TimelinePage {
     /// Whether the bars were planned by effort: the view asked for it, and the reader is no access
     /// key (no key reads work times).
     pub planned_by_effort: bool,
+    /// Under *Group by person*: the away days and holidays of each person of a row, as far as the
+    /// reader may know them; empty for any other grouping.
+    pub people_days: Vec<PersonDaysView>,
 }
 
 impl Masked for TimelinePage {}
@@ -261,6 +275,7 @@ impl TimelinePage {
             goals: Vec::new(),
             not_scheduled,
             planned_by_effort,
+            people_days: Vec::new(),
         }
     }
 }
