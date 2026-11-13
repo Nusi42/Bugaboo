@@ -40,9 +40,6 @@ export function SwipeActions({
   );
   return (
     <>
-      {open.length === 0 || swipe.side === swipeSide.none ? null : (
-        <OpenSide side={swipe.side} actions={open} close={swipe.close} more={more} />
-      )}
       {every.length === 0 ? null : (
         <span ref={more} {...partOf(part.rowMore)}>
           <ActionMenu
@@ -52,6 +49,10 @@ export function SwipeActions({
             trigger={MoreButton}
           />
         </span>
+      )}
+      {/* After *More*: in a row of buttons that wraps, the actions take the line under them. */}
+      {open.length === 0 || swipe.side === swipeSide.none ? null : (
+        <OpenSide side={swipe.side} actions={open} close={swipe.close} more={more} />
       )}
       <Announce>{open.length === 0 ? "" : announce(open.map((action) => action.label))}</Announce>
     </>
