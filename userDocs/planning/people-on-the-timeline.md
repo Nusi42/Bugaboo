@@ -14,7 +14,7 @@ You see people as *Who sees people* lets you see them:
 
 ## Group by person
 
-Set **Group by** to **Assigned to** to get one row for each person, so you see who has overlapping work. An issue with several people is in each of their rows. In the row of the first person it is drawn as usual; in the rows of the others it is an outline. Its card says "Planned with Lea's work times", and so does the name of the bar that is read out: the bar takes the days of the first person. The row of each person also shows their away days and public holidays across the chart, also where they have no bar, as far as you may see their work times.
+Set **Group by** to **Assigned to** to get one row for each person, so you see who has overlapping work. An issue with several people is in each of their rows. In the row of the first person it is drawn as usual; in the rows of the others it is an outline. Its card says "Planned with Lea's work times", and so does the name of the bar that is read out: the bar takes the days of the first person. Each row of a person's group also shows their away days and public holidays across the chart, also where they have no bar, as far as you may see their work times.
 
 ## Days without work
 
@@ -56,6 +56,8 @@ Each warning offers the ways out that fit it:
 - **Make it longer** shows the due date the issue needs; it changes only when you confirm it, with **Undo**.
 - **Give it to someone else…** opens the usual person picker. Bugaboo never suggests whom: the people of the project are listed by name, and **Give it** next to a name makes that person the person on the bar. The others assigned after the first stay.
 - **Keep and accept** keeps the plan as it is. The warning stays at the end of the list, faded, with who accepted it, until the dates of its issue change.
+
+When you do not see who the person on the bar is, a warning *Away* says only "The assigned person is away while WEB-280 is planned.", without the days, and offers only **Keep and accept**: moving or lengthening the issue would tell the days. Who accepted a warning is shown as you may see people.
 
 The list ends with "Away times show only as Away. Bugaboo never suggests whom to give an issue."
 
