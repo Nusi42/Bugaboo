@@ -146,9 +146,35 @@ impl Check for ArchAuthzOnly {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        let sources = context.sources(self.id(), Kind::Rust)?;
+        // Every rule looks at one file at a time, so a run for some files reads only those.
+        let wanted = context.files_for(self.id())?;
+        let triggered = |path: &str| {
+            wanted
+                .as_ref()
+                .is_none_or(|files| files.iter().any(|file| file == path))
+        };
+        let sources: Vec<Source> = match &wanted {
+            Some(files)
+                if !files.iter().any(|file| {
+                    std::path::Path::new(file)
+                        .extension()
+                        .is_some_and(|ext| ext.eq_ignore_ascii_case("rs"))
+                }) =>
+            {
+                Vec::new()
+            }
+            _ => context
+                .sources(self.id(), Kind::Rust)?
+                .into_iter()
+                .filter(|(path, _)| triggered(path))
+                .collect(),
+        };
         let mut manifests = Vec::new();
-        for file in context.repo.all_files()? {
+        let candidates = match &wanted {
+            Some(files) => files.clone(),
+            None => context.repo.all_files()?,
+        };
+        for file in candidates {
             if file == "Cargo.toml" || file.ends_with("/Cargo.toml") {
                 let text = read_text(context.repo, &file)?;
                 manifests.push((file, text));
