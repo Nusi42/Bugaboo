@@ -16,6 +16,12 @@ export interface ListFrameProps {
   readonly keyChars?: number;
   /** *Spacing: Compact*. */
   readonly compact: boolean;
+  /**
+   * Hears how wide the bar is that the rows scroll with (0 where the computer draws none or the
+   * rows fit), whenever it changes: that room is not the columns', so the columns that fit are
+   * counted without it.
+   */
+  readonly onGutter?: (pixels: number) => void;
   readonly children: ReactNode;
 }
 
@@ -23,26 +29,27 @@ export interface ListFrameProps {
  * Gives the rows what only the head knows. The rows are virtualized and have no width of their
  * own, so the head, which is not, is measured and its width is given to them (`list-width`, none
  * where there is no head: a phone has cards); and the room of the bar the rows have is kept at the
- * end of the head (`list-gutter`), so the columns stand over each other. Only the head, the box of
- * the rows and the first thing in it are measured, not what is drawn in it.
+ * end of the head (`list-gutter`), so the columns stand over each other, and told to `onGutter`.
+ * Only the head, the box of the rows and the first thing in it are measured, not what is drawn in
+ * it.
  */
-function keepHeadAndRows(frame: HTMLElement): () => void {
+function keepHeadAndRows(frame: HTMLElement, onGutter: (pixels: number) => void): () => void {
   let box: HTMLElement | null = null;
   let head: HTMLElement | null = null;
   const written = { gutter: "", width: "" };
-  const give = (
-    name: "list-gutter" | "list-width",
-    value: string,
-    was: "gutter" | "width",
-  ): void => {
-    if (value !== written[was]) {
+  /** Writes the variable when its value changed, and says whether it did. */
+  const give = (name: "list-gutter" | "list-width", value: string, was: keyof typeof written) => {
+    const changed = value !== written[was];
+    if (changed) {
       written[was] = value;
       frame.style.setProperty(variableOf(name), value);
     }
+    return changed;
   };
   const sync = (): void => {
-    if (box !== null) {
-      give("list-gutter", `${String(box.offsetWidth - box.clientWidth)}px`, "gutter");
+    const gutter = box === null ? 0 : box.offsetWidth - box.clientWidth;
+    if (box !== null && give("list-gutter", `${String(gutter)}px`, "gutter")) {
+      onGutter(gutter);
     }
     // The width as drawn, not rounded to a whole pixel; none where there is no head.
     give(
@@ -104,13 +111,24 @@ function keepCharacterWidth(frame: HTMLElement): () => void {
 }
 
 /** The box around the head and the rows of an issue list: it holds the columns they share. */
-export function ListFrame({ columns, keyChars = 0, compact, children }: ListFrameProps) {
+export function ListFrame({ columns, keyChars = 0, compact, onGutter, children }: ListFrameProps) {
   const frame = useRef<HTMLDivElement>(null);
   const template = listTemplate(columns, keyChars);
+  // The newest listener, so the measuring started once tells the one of the last render.
+  const gutterListener = useRef(onGutter);
+  useLayoutEffect(() => {
+    gutterListener.current = onGutter;
+  }, [onGutter]);
   useLayoutEffect(() => {
     frame.current?.style.setProperty(variableOf("list-columns"), template);
   }, [template]);
-  useEffect(() => (frame.current === null ? undefined : keepHeadAndRows(frame.current)), []);
+  useEffect(
+    () =>
+      frame.current === null
+        ? undefined
+        : keepHeadAndRows(frame.current, (pixels) => gutterListener.current?.(pixels)),
+    [],
+  );
   useLayoutEffect(
     () => (frame.current === null ? undefined : keepCharacterWidth(frame.current)),
     [],

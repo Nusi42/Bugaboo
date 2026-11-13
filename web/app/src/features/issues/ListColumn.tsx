@@ -18,7 +18,7 @@ export interface ListColumnProps {
   /** The characters of the longest readable ID drawn: the ID column is as wide. */
   readonly keyChars: number;
   readonly onDragged: (dragged: Readonly<Record<string, number>>) => void;
-  /** Tells how wide the list is, so the columns that do not fit can give way. */
+  /** Tells the room the columns have (without the bar the rows scroll with), so the columns that do not fit can give way. */
   readonly onRoom: (width: number) => void;
 }
 
@@ -38,7 +38,7 @@ export function ListColumn({
   const { words, ticks, phone, project, selection, search } = useListContext();
   const column = useRef<HTMLDivElement>(null);
   const getBox = useCallback(() => column.current, []);
-  useRoom(getBox, onRoom);
+  const onGutter = useRoom(getBox, onRoom);
   const compact = useCompact();
   const specs: readonly ListColumnSpec[] = [
     ...(ticks && !phone ? [selectSpec] : []),
@@ -46,7 +46,7 @@ export function ListColumn({
   ];
   return (
     <div ref={column} {...partOf(part.listColumn)}>
-      <ListFrame columns={specs} keyChars={keyChars} compact={compact}>
+      <ListFrame columns={specs} keyChars={keyChars} compact={compact} onGutter={onGutter}>
         {phone ? null : (
           <ListHeader
             view={view}

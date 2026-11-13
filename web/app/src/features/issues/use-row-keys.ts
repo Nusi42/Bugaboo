@@ -1,5 +1,5 @@
 import { part } from "@bugaboo/ui";
-import { useLayoutEffect, useRef, type RefObject } from "react";
+import { useLayoutEffect, useRef, useState, type RefObject } from "react";
 
 import { useShortcuts } from "../../shared/use-shortcuts.ts";
 
@@ -45,10 +45,25 @@ function watchRoom(box: HTMLElement, onRoom: (width: number) => void): () => voi
   };
 }
 
-/** Tells how wide the list is, now and whenever it changes, so the columns that do not fit can give way. */
-export function useRoom(getBox: () => HTMLElement | null, onRoom: (width: number) => void): void {
+/**
+ * Tells the room the columns have, now and whenever it changes, so the columns that do not fit can
+ * give way: the width of the list without the bar its rows scroll with (a computer with a mouse
+ * draws one; its room is not the columns'). Gives back what to tell the width of that bar.
+ */
+export function useRoom(
+  getBox: () => HTMLElement | null,
+  onRoom: (width: number) => void,
+): (gutter: number) => void {
+  const [width, setWidth] = useState<number>();
+  const [gutter, setGutter] = useState(0);
   useLayoutEffect(() => {
     const box = getBox();
-    return box === null ? undefined : watchRoom(box, onRoom);
-  }, [getBox, onRoom]);
+    return box === null ? undefined : watchRoom(box, setWidth);
+  }, [getBox]);
+  useLayoutEffect(() => {
+    if (width !== undefined) {
+      onRoom(width - gutter);
+    }
+  }, [width, gutter, onRoom]);
+  return setGutter;
 }
