@@ -2,8 +2,10 @@ import { t } from "@bugaboo/messages";
 import { Button, buttonLook } from "@bugaboo/ui";
 import { lazy, Suspense, useState } from "react";
 
+import { WaitingWindow } from "../../shared/WaitingWindow.tsx";
+import { windowForms } from "../../shared/window-forms.ts";
 import type { IssueView } from "./slots.ts";
-import { shownPercent, useTimeFactor } from "./time-factor.ts";
+import { shownPercent, timeFactorTitle, useTimeFactor } from "./time-factor.ts";
 
 /** The window loads when it first opens, so the page that offers *Change* does not carry the form. */
 const TimeFactorWindow = lazy(async () => ({
@@ -34,6 +36,10 @@ export function TimeFactorChange({
   const factor = useTimeFactor(readableId).data;
   const [open, setOpen] = useState(false);
   const percent = factor === undefined ? undefined : shownPercent(factor);
+  const close = (): void => {
+    setOpen(false);
+    onClosed?.();
+  };
   if (factor === undefined || percent === undefined || !factor.may_change) {
     return null;
   }
@@ -49,17 +55,22 @@ export function TimeFactorChange({
         {t("issues.time-factor-change")}
       </Button>
       {open ? (
-        <Suspense fallback={null}>
+        <Suspense
+          fallback={
+            <WaitingWindow
+              form={windowForms.timeFactor}
+              title={timeFactorTitle(factor)}
+              onClose={close}
+            />
+          }
+        >
           <TimeFactorWindow
             issue={issue}
             readableId={readableId}
             factor={factor}
             percent={percent}
             mayReadEstimate={mayReadEstimate}
-            onClose={() => {
-              setOpen(false);
-              onClosed?.();
-            }}
+            onClose={close}
           />
         </Suspense>
       ) : null}

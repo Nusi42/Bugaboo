@@ -211,7 +211,7 @@ export async function createProjectWithIssue(
 }
 
 export {
-  expectQuietWhenInTime,
+  expectQuietAtEscape,
   newIssueDialog,
   openNewIssueDialog,
   openNewIssueDialogFromTheMenu,

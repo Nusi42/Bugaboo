@@ -2,6 +2,9 @@ import { t } from "@bugaboo/messages";
 import { Button, buttonLook } from "@bugaboo/ui";
 import { lazy, Suspense, useState } from "react";
 
+import { WaitingWindow } from "../../shared/WaitingWindow.tsx";
+import { windowForms } from "../../shared/window-forms.ts";
+import { AddTimeTitle } from "./add-time-title.tsx";
 import type { EntryIssue } from "./entry-issue.ts";
 import { useEntryDefaults } from "./use-entry-defaults.ts";
 
@@ -36,7 +39,17 @@ export function AddTimeButton({ issue }: AddTimeButtonProps) {
         {t("time.add.button")}
       </Button>
       {open ? (
-        <Suspense fallback={null}>
+        <Suspense
+          fallback={
+            <WaitingWindow
+              form={windowForms.timeEntry}
+              title={<AddTimeTitle issue={issue} />}
+              onClose={() => {
+                setOpen(false);
+              }}
+            />
+          }
+        >
           <AddTimeWindow
             issue={issue}
             defaults={defaults}

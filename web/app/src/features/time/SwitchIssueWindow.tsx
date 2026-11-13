@@ -4,6 +4,7 @@ import { Button, buttonLook, partOf, part } from "@bugaboo/ui";
 import { IssuePicker } from "../search/index.ts";
 import { EntryWindow } from "./EntryWindow.tsx";
 import { IdsIn } from "./IdsIn.tsx";
+import { switchIssueTitle } from "./time-ask-titles.ts";
 import { closeTimeAsk } from "./time-asks.ts";
 import { startTimer } from "./timer-start.ts";
 import { useTimer } from "./use-timer.ts";
@@ -16,7 +17,7 @@ export function SwitchIssueWindow() {
   const running = useTimer().data?.timer.running ?? undefined;
   return (
     <EntryWindow
-      title={running === undefined ? t("time.timer.start-title") : t("time.switch.title")}
+      title={switchIssueTitle(running !== undefined)}
       isOpen
       onOpenChange={closeTimeAsk}
       footer={

@@ -6,7 +6,7 @@ import { descriptionBox } from "./support/description.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import {
-  expectQuietWhenInTime,
+  expectQuietAtEscape,
   newIssueDialog as dialog,
   openNewIssueDialog as openDialog,
   openNewIssueDialogFromTheMenu,
@@ -20,8 +20,10 @@ import { onThisLayout } from "./support/layout.ts";
 import {
   boxOf,
   expectWindowSeen,
+  holdNewIssueCode,
   holdNewIssueLayout,
   pageSize,
+  windowIsClear,
   TALLER_THAN_THE_FORM_PX,
   windowCloseName,
   windowPlacesWhile,
@@ -159,9 +161,41 @@ test("ux_6_1 a window that is still loading closes with Escape and with its own 
     .click();
   await expect(dialog(page)).toHaveCount(0);
   // The first 0.3 s: the window is there but clear, says nothing yet, and Esc closes it.
-  expectQuietWhenInTime(await pressNewIssueAndEscapeAtOnce(page));
+  expectQuietAtEscape(await pressNewIssueAndEscapeAtOnce(page));
   await expect(dialog(page)).toHaveCount(0);
   release();
+});
+
+test("ux_6_1 on the first open the window waits for its code as it waits for its fields, and does not jump", async ({
+  page,
+}) => {
+  await page.setViewportSize({ ...pageSize(page), height: TALLER_THAN_THE_FORM_PX });
+  const releaseCode = await holdNewIssueCode(page);
+  await signIn(page, ada);
+  await page.goto(projectIssuesAddress("WEB"));
+  const releaseLayout = await holdNewIssueLayout(page);
+  // While its code is on the way the window is there at once: clear for 0.3 s, and Esc closes it.
+  expectQuietAtEscape(await pressNewIssueAndEscapeAtOnce(page));
+  await expect(dialog(page)).toHaveCount(0);
+  const places = await windowPlacesWhile(page, async () => {
+    await pressNewIssue(page);
+    await expectWindowSeen(page);
+    await expect(dialog(page).getByRole("status")).toHaveText(t("common.loading"));
+    // The code arrives (its buttons show) while the fields are still on the way: still grey shapes.
+    releaseCode();
+    await expect(
+      dialog(page).getByRole("button", { name: t("issues.create"), exact: true }),
+    ).toBeVisible();
+    expect(await windowIsClear(page), "the real window goes on where the stand-in was").toBe(false);
+    await expect(dialog(page).getByRole("status")).toHaveText(t("common.loading"));
+    releaseLayout();
+    await waitForNewIssueForm(page);
+  });
+  const placesSeen = new Set(places.map(({ x, y }) => `${x} ${y}`));
+  expect(
+    [...placesSeen],
+    "the window stands in one place from its code to its fields",
+  ).toHaveLength(1);
 });
 
 test("cfg_01 a layout that cannot be read is said inside the window, which shows its form", async ({

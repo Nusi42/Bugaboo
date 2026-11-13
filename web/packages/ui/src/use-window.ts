@@ -1,16 +1,14 @@
 import { useCallback, useReducer, useState } from "react";
 
-import { useAfterDelay } from "./after-delay.ts";
 import { useLayout } from "./layout.ts";
 import { windowState, type WindowState } from "./props.ts";
 import { applyWindowSize, useWindowResize } from "./use-window-resize.ts";
+import { usePresence } from "./window-presence.ts";
 import {
   dragEdgesOf,
   firstShape,
-  hiddenPresence,
   isWaiting,
   phaseOf,
-  presenceAfter,
   reduceShape,
   standOf,
   shapeAction,
@@ -61,14 +59,9 @@ export function useWindow(
     setWasOpen(isOpen);
     act(shapeAction.closed);
   }
-  const [presence, setPresence] = useState(hiddenPresence);
-  const late = useAfterDelay(isOpen && !presence.shown);
-  const next = presenceAfter(presence, { isOpen, ready, late });
-  if (next.shown !== presence.shown || next.anchored !== presence.anchored) {
-    setPresence(next);
-  }
+  const { presence, late } = usePresence(isOpen, ready);
   const [element, setElement] = useState<WindowElement | null>(null);
-  const phase = phaseOf(next, late);
+  const phase = phaseOf(presence, late);
   const resize = useWindowResize(isWaiting(phase) ? null : element, onResized, standOf(phase));
   const placed = useCallback(
     (modal: WindowElement | null) => {

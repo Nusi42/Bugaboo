@@ -83,7 +83,8 @@ export type WindowPhase = (typeof windowPhase)[keyof typeof windowPhase];
 /** The phase of a window from its presence and whether its content is late. */
 export function phaseOf(presence: WindowPresence, late: boolean): WindowPhase {
   if (!presence.shown) {
-    return late ? windowPhase.loading : windowPhase.quiet;
+    // Grey shapes that showed once keep showing, also in a window that took over from a stand-in.
+    return late || presence.anchored ? windowPhase.loading : windowPhase.quiet;
   }
   return presence.anchored ? windowPhase.top : windowPhase.middle;
 }

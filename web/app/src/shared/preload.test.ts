@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { startPreload } from "./quick-search-preload.ts";
+import { startPreload } from "./preload.ts";
 
 beforeEach(() => {
   vi.useFakeTimers();

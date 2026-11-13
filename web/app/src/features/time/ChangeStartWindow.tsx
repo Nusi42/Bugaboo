@@ -14,6 +14,7 @@ import { useId } from "react";
 
 import { DayBox } from "../../shared/DayBox.tsx";
 import { EntryWindow } from "./EntryWindow.tsx";
+import { changeStartTitle } from "./time-ask-titles.ts";
 import { closeTimeAsk } from "./time-asks.ts";
 import { useChangeStart } from "./use-change-start.ts";
 
@@ -31,7 +32,7 @@ export function ChangeStartWindow() {
   const { day, setDay, time, setTime, problem, save } = start;
   return (
     <EntryWindow
-      title={t("time.start-time.title")}
+      title={changeStartTitle()}
       isOpen
       onOpenChange={closeTimeAsk}
       footer={

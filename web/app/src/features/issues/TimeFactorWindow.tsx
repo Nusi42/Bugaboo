@@ -12,11 +12,10 @@ import {
 } from "@bugaboo/ui";
 import { useId } from "react";
 
-import { personName } from "../../shared/person.ts";
 import { useWindowProps } from "../../shared/use-window-props.ts";
 import { windowForms } from "../../shared/window-forms.ts";
 import type { IssueView } from "./slots.ts";
-import { isOwnFactor, type TimeFactor } from "./time-factor.ts";
+import { otherPersonName, timeFactorTitle, type TimeFactor } from "./time-factor.ts";
 import { TimeFactorFields } from "./TimeFactorFields.tsx";
 import { useTimeFactorDraft } from "./use-time-factor-draft.ts";
 
@@ -45,16 +44,11 @@ export function TimeFactorWindow(props: TimeFactorWindowProps) {
   const windowProps = useWindowProps(windowForms.timeFactor);
   const estimate = mayReadEstimate ? (issue.estimated_time ?? undefined) : undefined;
   const draft = useTimeFactorDraft(readableId, factor, percent, estimate !== undefined);
-  const otherName =
-    isOwnFactor(factor) || factor.person === null ? undefined : personName(factor.person);
+  const otherName = otherPersonName(factor);
   return (
     <Window
       {...windowProps}
-      title={
-        otherName === undefined
-          ? t("issues.time-factor-ask-own")
-          : t("issues.time-factor-ask-other", { name: otherName })
-      }
+      title={timeFactorTitle(factor)}
       isOpen
       onOpenChange={(isOpen) => {
         if (!isOpen) {

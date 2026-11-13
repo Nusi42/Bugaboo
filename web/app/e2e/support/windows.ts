@@ -9,7 +9,13 @@ import { partIn } from "./parts.ts";
 import { newIssueDialog, openNewIssueDialog, titleLabel } from "./issues.ts";
 
 // The windows that wait for their content are tested with the rest.
-export { expectWindowSeen, holdNewIssueLayout, windowPlacesWhile } from "./window-waiting.ts";
+export {
+  expectWindowSeen,
+  holdNewIssueCode,
+  holdNewIssueLayout,
+  windowIsClear,
+  windowPlacesWhile,
+} from "./window-waiting.ts";
 
 /** A page taller than the filled new-issue form (about 1030 high), so the window does not fill it. */
 export const TALLER_THAN_THE_FORM_PX = 1300;

@@ -3,10 +3,7 @@ import { Overlay, overlayEdge, useLayout } from "@bugaboo/ui";
 import { lazy, Suspense, useEffect } from "react";
 
 import { useOverlay } from "./overlay-state.ts";
-import { startPreload } from "./quick-search-preload.ts";
-
-/** How long the page is left alone before the inside of the dialog is fetched. */
-const PRELOAD_AFTER_MS = 2000;
+import { idlePreloadMs, startPreload } from "../../shared/preload.ts";
 
 /** Fetches the inside of the dialog; the browser keeps the module, so it is fetched once. */
 function loadBox(): Promise<typeof import("./QuickSearchBox.tsx")> {
@@ -27,7 +24,7 @@ export function QuickSearch() {
   const phone = useLayout() === "phone";
   // Soon after the page is up the inside is fetched, so the box is there at the first key press and
   // letters typed at once are not taken as shortcuts.
-  useEffect(() => startPreload(loadBox, PRELOAD_AFTER_MS), []);
+  useEffect(() => startPreload(loadBox, idlePreloadMs), []);
   return (
     <Overlay
       {...overlay}

@@ -195,6 +195,11 @@ describe("ux_6_1 a window that waits is not resized, and one at the top has no t
     expect([...edgesOf(windowStand.top)].toSorted()).toEqual(["e", "s", "se", "sw", "w"]);
   });
 
+  it("goes on showing grey shapes when it takes over from a stand-in that showed them", () => {
+    expect(phaseOf({ shown: false, anchored: true }, false)).toBe(windowPhase.loading);
+    expect(phaseOf({ shown: false, anchored: false }, false)).toBe(windowPhase.quiet);
+  });
+
   it("has no places to drag when it is maximized, a full screen or waiting", () => {
     expect(dragEdgesOf(windowState.maximized, windowPhase.middle)).toEqual([]);
     expect(dragEdgesOf(windowState.full, windowPhase.middle)).toEqual([]);

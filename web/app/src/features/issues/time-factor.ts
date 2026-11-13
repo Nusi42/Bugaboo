@@ -85,3 +85,16 @@ export function factorWords(factor: TimeFactor, percent: number): string {
     ? factorSaid
     : t("issues.time-factor-set-by", { factor: factorSaid, name: personName(setBy) });
 }
+
+/** The name of the other person whose time factor this is; none for one's own. */
+export function otherPersonName(factor: TimeFactor): string | undefined {
+  return isOwnFactor(factor) || factor.person === null ? undefined : personName(factor.person);
+}
+
+/** The title of the window that changes a time factor: one's own, or another person's by name. */
+export function timeFactorTitle(factor: TimeFactor): string {
+  const name = otherPersonName(factor);
+  return name === undefined
+    ? t("issues.time-factor-ask-own")
+    : t("issues.time-factor-ask-other", { name });
+}

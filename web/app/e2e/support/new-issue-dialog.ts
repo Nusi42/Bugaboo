@@ -1,7 +1,6 @@
 import { t } from "@bugaboo/messages";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 
-import { skeletonDelayMs } from "../../../packages/ui/src/after-delay.ts";
 import { part } from "../../../packages/ui/src/tokens.ts";
 import { partSelector } from "./parts.ts";
 
@@ -20,11 +19,10 @@ function newIssueButton(page: Page) {
   return page.getByRole("button", { name: t("issues.new"), exact: true }).first();
 }
 
-/** What the window was doing, what its status said, and how long after the click, when Esc was pressed. */
+/** What the window was doing, and what its status said, when Esc was pressed. */
 export interface AtEscape {
   readonly state: string;
   readonly status: string;
-  readonly elapsedMs: number;
 }
 
 /**
@@ -35,7 +33,6 @@ export function pressNewIssueAndEscapeAtOnce(page: Page): Promise<AtEscape> {
   return newIssueButton(page).evaluate(
     (button, box) =>
       new Promise<AtEscape>((done) => {
-        const clicked = performance.now();
         const escapeOnFocus = (): void => {
           const modal = document.querySelector<HTMLElement>(box);
           const target = document.activeElement;
@@ -46,7 +43,6 @@ export function pressNewIssueAndEscapeAtOnce(page: Page): Promise<AtEscape> {
           const seen = {
             state: modal.dataset["state"] ?? "",
             status: modal.querySelector("output")?.textContent ?? "",
-            elapsedMs: performance.now() - clicked,
           };
           target.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
           done(seen);
@@ -59,18 +55,12 @@ export function pressNewIssueAndEscapeAtOnce(page: Page): Promise<AtEscape> {
 }
 
 /**
- * The window was in its clear first 0.3 s and said nothing yet, when Esc came in time for that; a
- * browser too slow to take the focus within 0.3 s is noted on the test instead, which then checks only
- * that the window closed.
+ * The window was in its clear first 0.3 s and said nothing yet when Esc came. This is asserted every
+ * time: the code of the window is loaded before, so Esc follows the click within a few frames.
+ * `page.clock` cannot hold the 0.3 s back instead: stopping its timers stops the frames of the page
+ * too, and then the window never opens.
  */
-export function expectQuietWhenInTime(atEscape: AtEscape): void {
-  if (atEscape.elapsedMs >= skeletonDelayMs) {
-    test.info().annotations.push({
-      type: "slow",
-      description: `the window took the focus after ${Math.round(atEscape.elapsedMs)} ms`,
-    });
-    return;
-  }
+export function expectQuietAtEscape(atEscape: AtEscape): void {
   expect(atEscape.state.split(" "), "the window was in its clear first 0.3 s").toContain("quiet");
   expect(atEscape.status, "nothing is said before the grey shapes show").toBe("");
 }

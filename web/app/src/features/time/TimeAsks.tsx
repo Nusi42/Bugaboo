@@ -1,6 +1,10 @@
 import { lazy, Suspense } from "react";
 
-import { useTimeAsk } from "./time-asks.ts";
+import { WaitingWindow } from "../../shared/WaitingWindow.tsx";
+import { windowForms } from "../../shared/window-forms.ts";
+import { changeStartTitle, switchIssueTitle } from "./time-ask-titles.ts";
+import { closeTimeAsk, useTimeAsk, type TimeAsk } from "./time-asks.ts";
+import { useTimer } from "./use-timer.ts";
 
 /** Each window loads when it first opens, so the first page carries none of them. */
 const StopTimerAsk = lazy(async () => ({
@@ -24,17 +28,42 @@ const TimerTooAsk = lazy(async () => ({
 const OpenDayAsk = lazy(async () => ({ default: (await import("./OpenDayAsk.tsx")).OpenDayAsk }));
 
 /**
+ * What stands in while the code of a window of the timer is fetched: the window itself, waiting
+ * (`WaitingWindow`). A question is a small dialog of a fixed size that does not wait for content,
+ * so nothing stands in for it.
+ */
+function WaitingFor({
+  kind,
+  timerRuns,
+}: {
+  readonly kind: TimeAsk["kind"];
+  readonly timerRuns: boolean;
+}) {
+  if (kind === "switch" || kind === "start-time") {
+    return (
+      <WaitingWindow
+        form={windowForms.timeEntry}
+        title={kind === "switch" ? switchIssueTitle(timerRuns) : changeStartTitle()}
+        onClose={closeTimeAsk}
+      />
+    );
+  }
+  return null;
+}
+
+/**
  * The windows and questions of the timer and the work day, over any page: *Stop timer*, *Switch
  * issue*, *Change start time*, *Throw away*, *Start your work day too?*, *Stop the timer … too?* and
  * *When did your work day … end?*. What is asked is set by `askTime`; one at a time.
  */
 export function TimeAsks() {
   const ask = useTimeAsk();
+  const timerRuns = (useTimer().data?.timer.running ?? undefined) !== undefined;
   if (ask === null) {
     return null;
   }
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<WaitingFor kind={ask.kind} timerRuns={timerRuns} />}>
       {ask.kind === "stop" ? <StopTimerAsk switchingTo={ask.switchingTo} /> : null}
       {ask.kind === "switch" ? <SwitchIssueWindow /> : null}
       {ask.kind === "start-time" ? <ChangeStartWindow /> : null}
