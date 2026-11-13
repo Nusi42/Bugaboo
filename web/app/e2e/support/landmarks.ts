@@ -104,17 +104,21 @@ function aroundTheChange(
   changed: string,
   history: readonly string[],
 ): Pick<ScreenLandmarks, "grows" | "follows"> {
-  const target = places.find((place) => place.name === changed);
+  // What holds a part that grows grows with it: the list of the Details around a row, the main
+  // column around the History.
+  const growers = places.filter((place) => place.name === changed || history.includes(place.name));
   const holders = places.filter(
-    (place) => target !== undefined && place.name !== changed && holdsPlace(place, target),
+    (place) => !growers.includes(place) && growers.some((inner) => holdsPlace(place, inner)),
   );
   const grows = [changed, ...holders.map((place) => place.name), ...history];
   const growing = places.filter((place) => grows.includes(place.name));
-  // What stands under a part that grows may be pushed, the History too when it grows itself.
+  // What stands under a part that grows may be pushed, the History and the column around it too
+  // when they grow themselves; never the changed part or what holds it.
+  const target = places.find((place) => place.name === changed);
   const follows = places.filter(
     (place) =>
       place.name !== changed &&
-      !holders.includes(place) &&
+      !(target !== undefined && holdsPlace(place, target)) &&
       growing.some((above) => standsUnder(place, above)),
   );
   return { grows, follows: follows.map((place) => place.name) };
@@ -149,6 +153,8 @@ export async function issuePageLandmarks(
     partLandmark("the title", "issue-title"),
     partLandmark("the heading of the Details", "issue-details.heading"),
     partLandmark("the rows of the Details", "name-values"),
+    partLandmark("the Details", "issue-details"),
+    partLandmark("the main column", "issue-main"),
     ...details,
     ...main.map((each) => each.landmark),
   ];

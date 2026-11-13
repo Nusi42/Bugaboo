@@ -18,7 +18,8 @@ import {
 } from "./movement-record.ts";
 
 export type { Box, Shift } from "./movement-record.ts";
-export type { Movement, Moved, Scrolled, StillExcept } from "./movement-judge.ts";
+export type { Movement, Moved, Scrolled, StillExcept, Wrong } from "./movement-judge.ts";
+export { nothingWrong, wrongIn } from "./movement-judge.ts";
 
 /**
  * The measure of what moves on the screen while a person acts (UX §6, *Nothing moves under the cursor*;

@@ -91,4 +91,9 @@ describe("ux_01 the measure holds what is named nowhere, what came in and what g
     const bouncing = { ...tags, turns: 2 };
     expect(wrongIn(movementOf([bouncing]), { grows: ["tags"] }).moved).toEqual([bouncing]);
   });
+
+  it("passes a changed part that gets wider from its start edge, as a button with a longer word", () => {
+    const button = moved("status", box(400, 240, 110, 36), box(400, 240, 140, 36));
+    expect(wrongIn(movementOf([button]), { grows: ["status"] })).toEqual(nothingWrong);
+  });
 });
