@@ -12,7 +12,8 @@ import { useSelection } from "./use-selection.ts";
 export function SearchResults(input: ResultsInput) {
   return (
     <>
-      <SearchToolbar />
+      {/* The timeline shows the Legend below its own tools: one Legend on the page. */}
+      {input.view.kind === "timeline" ? null : <SearchToolbar />}
       <IssueResults
         {...input}
         within={undefined}

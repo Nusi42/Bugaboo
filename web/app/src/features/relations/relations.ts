@@ -6,6 +6,30 @@ import { queryKeys, refreshIssueRelations } from "../../shared/query-keys.ts";
 import type { RelationKindLine } from "../relation-kinds/index.ts";
 import type { NameKey } from "@bugaboo/wasm";
 
+/**
+ * Makes a relation from an issue (by its readable ID) to another one, and reads the relations of
+ * issues again: the one way a relation is made, from the issue page and from the timeline.
+ */
+export async function createRelation(
+  issue: string,
+  body: Schema<"NewRelationBody">,
+): Promise<Schema<"RelatedIssueItem">> {
+  const made = dataOf(
+    await api.client.POST("/api/v1/issues/{issue}/relations", {
+      params: { path: { issue } },
+      body,
+    }),
+  );
+  refreshIssueRelations();
+  return made;
+}
+
+/** Takes a relation away (its *Undo*), and reads the relations of issues again. */
+export async function deleteRelation(relation: string): Promise<void> {
+  await api.client.DELETE("/api/v1/relations/{relation}", { params: { path: { relation } } });
+  refreshIssueRelations();
+}
+
 /** What a block of the issue page needs of the page: the readable ID of the issue. */
 export interface BlockProps {
   readonly readableId: string;

@@ -14,7 +14,7 @@ export function useCanvas(rows: number) {
   const timeline = useTimeline();
   const canvas = useRef<HTMLDivElement>(null);
   usePlace(canvas, {
-    "timeline-day": `${String(timeline.dayPixels)}px`,
+    "timeline-day": timeline.dayPixels,
     "timeline-days": timeline.span.days,
     "timeline-rows": rows,
   });

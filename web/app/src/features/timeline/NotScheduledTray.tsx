@@ -40,19 +40,22 @@ export function NotScheduledTray({ rows, count, pages, onSetDates }: NotSchedule
                 canDrag={row.may_move}
               >
                 <span {...partOf(part.timelineTrayItem)}>
-                  <IssueId id={key} />
-                  <span {...partOf(part.timelineRowTitle)}>{row.issue.title}</span>
+                  <span {...partOf(part.timelineTrayLine)}>
+                    <IssueId id={key} />
+                    <span {...partOf(part.timelineRowTitle)}>{row.issue.title}</span>
+                  </span>
+                  {row.may_move ? (
+                    <Button
+                      look={buttonLook.quiet}
+                      aria-label={t("timeline.set-dates-of", { key })}
+                      onPress={() => {
+                        onSetDates(row);
+                      }}
+                    >
+                      {t("timeline.set-dates")}
+                    </Button>
+                  ) : null}
                 </span>
-                {row.may_move ? (
-                  <Button
-                    look={buttonLook.quiet}
-                    onPress={() => {
-                      onSetDates(row);
-                    }}
-                  >
-                    {t("timeline.set-dates")}
-                  </Button>
-                ) : null}
               </DraggableHead>
             </li>
           );

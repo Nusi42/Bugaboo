@@ -1,6 +1,6 @@
 import { useRef, useState, type PointerEvent } from "react";
 
-import type { Move } from "./dates.ts";
+import type { Move } from "./moves.ts";
 
 /** A drag that is under way: what it moves and by how many days so far. */
 export interface Dragging {
@@ -16,30 +16,47 @@ export interface DragHandlers {
   readonly onPointerCancel: (event: PointerEvent<HTMLElement>) => void;
 }
 
+/** The button of a pointer that drags: the main one (the left button of a mouse, a finger, a pen). */
+const mainButton = 0;
+
+/** What the drag of a bar is told: the width of a day, and what happens at its end. */
+export interface BarDragInput {
+  readonly dayPixels: number;
+  /** Whether the bar may be dragged at all: a bar the person may not change is only pressed. */
+  readonly mayDrag: boolean;
+  readonly onEnd: (move: Move, days: number) => void;
+  readonly onPress: () => void;
+}
+
 /**
  * Dragging a bar with a pointer (PLAN-03, UX §4.7): while it is dragged it only moves on screen,
  * by whole days of the width the chart draws; when it is let go, `onEnd` gets the days, and a press
- * that did not move is a press (`onPress`). Every drag has a key too (`TimelineBar`).
+ * that did not move is a press (`onPress`). Only the main button drags, and a bar that may not be
+ * changed starts no drag. Every drag has a key too (`bar-keys.ts`).
  */
-export function useBarDrag(
-  dayPixels: number,
-  onEnd: (move: Move, days: number) => void,
-  onPress: () => void,
-): { readonly dragging: Dragging | null; readonly handlers: (move: Move) => DragHandlers } {
+export function useBarDrag({ dayPixels, mayDrag, onEnd, onPress }: BarDragInput): {
+  readonly dragging: Dragging | null;
+  readonly handlers: (move: Move) => DragHandlers;
+} {
   const [dragging, setDragging] = useState<Dragging | null>(null);
   const from = useRef<{ readonly x: number; readonly move: Move } | null>(null);
   const daysAt = (x: number): number =>
     from.current === null || dayPixels <= 0 ? 0 : Math.round((x - from.current.x) / dayPixels);
   const handlers = (move: Move): DragHandlers => ({
     onPointerDown: (event) => {
+      if (event.button !== mainButton) {
+        return;
+      }
       // A handle is inside the bar: its drag is not also a drag of the bar.
       event.stopPropagation();
-      event.currentTarget.setPointerCapture(event.pointerId);
       from.current = { x: event.clientX, move };
-      setDragging({ move, days: 0 });
+      if (mayDrag) {
+        event.currentTarget.setPointerCapture(event.pointerId);
+        setDragging({ move, days: 0 });
+      }
     },
     onPointerMove: (event) => {
-      if (from.current?.move === move) {
+      if (mayDrag && from.current?.move === move) {
         setDragging({ move, days: daysAt(event.clientX) });
       }
     },
@@ -48,7 +65,7 @@ export function useBarDrag(
         return;
       }
       event.stopPropagation();
-      const days = daysAt(event.clientX);
+      const days = mayDrag ? daysAt(event.clientX) : 0;
       from.current = null;
       setDragging(null);
       if (days === 0) {

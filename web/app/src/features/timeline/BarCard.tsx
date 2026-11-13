@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 import { Button, IssueId, Link, part, partOf } from "@bugaboo/ui";
 
 import { issueAddress } from "../../shared/paths.ts";
+import { personName } from "../../shared/person.ts";
 import { known } from "../../shared/present.ts";
 import { daysText } from "./dates.ts";
 import type { BarDays } from "./lines.ts";
@@ -30,6 +31,11 @@ export function BarCard({ row, days, mayMove, onSetDates, onAddDependency }: Bar
         <IssueId id={key} /> {row.issue.title}
       </h2>
       <p {...partOf(part.muted)}>{days === undefined ? t("timeline.no-dates") : daysText(days)}</p>
+      {row.bar?.person === null || row.bar?.person === undefined ? null : (
+        <p {...partOf(part.muted)}>
+          {t("timeline.person-on-bar", { name: personName(row.bar.person) })}
+        </p>
+      )}
       {mayMove ? null : <p {...partOf(part.muted)}>{t("timeline.locked", { key })}</p>}
       <div {...partOf(part.timelineCardActions)}>
         {mayMove ? (

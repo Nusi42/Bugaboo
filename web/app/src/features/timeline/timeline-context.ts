@@ -2,7 +2,7 @@ import { createContext, useContext } from "react";
 
 import type { ZoomWord } from "../../shared/list-view.ts";
 import type { DateFields } from "./date-fields.ts";
-import type { Move } from "./dates.ts";
+import type { Move } from "./moves.ts";
 import type { BarDays, IssueLine } from "./lines.ts";
 import type { Span } from "./scale.ts";
 import type { TimelineGoal, TimelineRow } from "./timeline-data.ts";
@@ -23,8 +23,14 @@ export interface TimelineContextValue {
   /** The issue whose bar is selected. */
   readonly selected: string | undefined;
   readonly select: (issue: string | undefined) => void;
-  /** A bar was moved, or one of its ends, by `days` (a drag that ended, or a key). */
+  /** A bar was moved, or one of its ends, by `days`: a drag that ended, saved at once. */
   readonly onMove: (row: TimelineRow, move: Move, days: number) => void;
+  /** A key moved a bar: the presses of a run are joined into one change (M8-F84). */
+  readonly onKeyMove: (row: TimelineRow, move: Move, days: number) => void;
+  /** The keys of a bar were let go: its run is saved after a short pause, unless a key comes. */
+  readonly onRunPause: (issue: string) => void;
+  /** The bar lost the focus: its run is saved now. */
+  readonly onRunEnd: (issue: string) => void;
   /** A bar that may not be moved was asked to: the screen says why. */
   readonly onLocked: (row: TimelineRow) => void;
   /** A dependency was dragged from the dot of `first` onto the bar of `then`. */

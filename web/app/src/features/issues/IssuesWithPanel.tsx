@@ -44,7 +44,11 @@ export function IssuesWithPanel({
     >
       <div {...partOf(part.listEditor)}>
         <div {...partOf(part.listEditorList)}>
-          <ProjectToolbar shortName={project.shortName} beside={open !== undefined} />
+          <ProjectToolbar
+            shortName={project.shortName}
+            beside={open !== undefined}
+            shownAs={state.view}
+          />
           <ProjectList
             project={project}
             state={state}

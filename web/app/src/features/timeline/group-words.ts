@@ -1,26 +1,13 @@
 import { listWord } from "../../shared/list-columns.ts";
-import { timelineStartGroup } from "../../shared/list-view.ts";
 import type { OwnColumns } from "../issues/index.ts";
+import type { SearchFieldsAnswer } from "../search/index.ts";
 
 /**
- * What a timeline can be grouped by (UX §4.7): the project, the goal, the person, the status, the
- * priority, or an own field of choices. The server answers the same set (`groups_of` of the plan)
- * and refuses any other; a release joins it in M10.
+ * What a timeline groups by (UX §4.7) is the server's to say: the readable fields mark each field it
+ * can group by (`timeline_group`, from `plan::timeline_groups_by`), and a page refuses any other.
  */
-const builtIn: ReadonlySet<string> = new Set([
-  listWord.project,
-  timelineStartGroup,
-  listWord.assignedTo,
-  listWord.status,
-  listWord.priority,
-]);
-
-/** Whether the timeline can be grouped by the field of this word. */
-export function timelineGroupable(own: OwnColumns): (word: string) => boolean {
-  return (word) => {
-    const kind = own[word]?.kind;
-    return builtIn.has(word) || kind === "pick-one" || kind === "pick-several";
-  };
+export function timelineGroupable(fields: Pick<SearchFieldsAnswer, "timelineGroups">) {
+  return (word: string): boolean => fields.timelineGroups.includes(word);
 }
 
 /** The date fields the bars can take their days from: *Start date*, *Due date* and the own date fields. */

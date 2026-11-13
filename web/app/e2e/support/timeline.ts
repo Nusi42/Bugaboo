@@ -3,7 +3,7 @@ import { t } from "@bugaboo/messages";
 import { expect, type Locator, type Page } from "@playwright/test";
 
 import { savedSearchAddress } from "../../src/shared/paths.ts";
-import { ada, signInThroughApi, type Person } from "./accounts.ts";
+import { ada, signInThroughApi } from "./accounts.ts";
 import type { ApiSession } from "./api.ts";
 import { createIssue, issueOf, prepareWeb, versionOf } from "./issues.ts";
 import { BLOCKS } from "./relate.ts";
@@ -36,6 +36,8 @@ export const planned = {
   found: "WEB-9",
   trayKeys: "WEB-10",
   ownDates: "WEB-11",
+  pressed: "WEB-12",
+  oneDate: "WEB-13",
 } as const;
 
 /** The title of the goal. */
@@ -59,6 +61,8 @@ const scene: readonly {
   { key: planned.found, title: "Found by the finder", from: 8, to: 9 },
   { key: planned.trayKeys, title: "Tray by keys" },
   { key: planned.ownDates, title: "Own dates" },
+  { key: planned.pressed, title: "Pressed fast", from: 4, to: 6 },
+  { key: planned.oneDate, title: "Only a start", from: 5 },
 ];
 
 /** Gives an issue dates (or other members), on the version it has. */
@@ -115,6 +119,21 @@ export async function relateBlocking(session: ApiSession, first: string, waiting
   );
 }
 
+/**
+ * Every look a bar can have, for the pictures and the eye: in progress with half of it done and a
+ * High edge, done, and Critical.
+ */
+async function lookOfTheScene(admin: ApiSession): Promise<void> {
+  await changeIssue(admin, planned.first, {
+    status: "in-progress",
+    priority: "high",
+    estimated_time: 480,
+    time_left: 240,
+  });
+  await changeIssue(admin, planned.dotFrom, { status: "done" });
+  await changeIssue(admin, planned.dotTo, { priority: "critical" });
+}
+
 /** The ID of the saved search *Plan*, which shows WEB as a timeline grouped by goal. */
 let planSearch = "";
 
@@ -124,7 +143,8 @@ export async function prepareTimeline(server: Instance): Promise<void> {
   const admin = await signInThroughApi(server, ada);
   await inOrder(scene.map((each) => () => createIssue(admin, "WEB", each.title)));
   await giveDates(admin, planned.first, 1, 3);
-  await giveDates(admin, planned.waits, 5, 8);
+  // WEB-2 starts before WEB-1 ends, although it waits for it: the plan warns of a Delay.
+  await giveDates(admin, planned.waits, 2, 8);
   // The issues of the tray keep no dates.
   await inOrder(
     scene
@@ -134,6 +154,7 @@ export async function prepareTimeline(server: Instance): Promise<void> {
   await under(admin, planned.first, planned.goal);
   await under(admin, planned.waits, planned.goal);
   await relateBlocking(admin, planned.first, planned.waits);
+  await lookOfTheScene(admin);
   const saved = dataOf(
     await admin.client.POST("/api/v1/saved-searches", {
       body: {
@@ -171,82 +192,14 @@ export function chart(page: Page): Locator {
 
 /** The bar of the issue with this readable ID. */
 export function barOf(page: Page, key: string): Locator {
-  return page.locator('[data-part="timeline-bar"]').filter({ hasText: key });
+  return page
+    .locator('[data-part="timeline-bar"]')
+    .filter({ has: page.getByText(key, { exact: true }) });
 }
 
 /** The button that fills the bar: what is pressed, dragged and moved by keys. */
 export function pressOf(page: Page, key: string): Locator {
   return barOf(page, key).locator('[data-part="timeline-bar.press"]');
-}
-
-/** The dates an issue keeps, as a person reads them. */
-export async function datesAs(server: Instance, person: Person, key: string) {
-  const session = await signInThroughApi(server, person);
-  const read = dataOf(
-    await session.client.GET("/api/v1/issues/{issue}", { params: { path: { issue: key } } }),
-  );
-  await session.dispose();
-  return { start: read.issue.start_date ?? null, due: read.issue.due_date ?? null };
-}
-
-/** The internal IDs of issues, as the administrator reads them. */
-export async function idsOf(server: Instance, keys: readonly string[]): Promise<readonly string[]> {
-  const admin = await signInThroughApi(server, ada);
-  const ids = await Promise.all(keys.map(async (key) => (await issueOf(admin, key)).id));
-  await admin.dispose();
-  return ids;
-}
-
-/** The own date fields *Begins* and *Ends*, made by the administrator: their IDs. */
-export async function createOwnDates(
-  server: Instance,
-): Promise<{ readonly begins: string; readonly ends: string }> {
-  const admin = await signInThroughApi(server, ada);
-  const create = async (name: string): Promise<string> => {
-    const made = dataOf(
-      await admin.client.POST("/api/v1/fields", {
-        body: { name, kind: "date", applies_to: "issues" },
-      }),
-    );
-    return made.id ?? "";
-  };
-  const begins = await create(ownDates.begins);
-  const ends = await create(ownDates.ends);
-  await admin.dispose();
-  return { begins, ends };
-}
-
-/** Gives an issue the values of these own fields, as the administrator. */
-export async function setOwnValues(
-  server: Instance,
-  key: string,
-  fields: Readonly<Record<string, string>>,
-): Promise<void> {
-  const admin = await signInThroughApi(server, ada);
-  await changeIssue(admin, key, { fields });
-  await admin.dispose();
-}
-
-/** The value an issue has in an own field, as the administrator reads it. */
-export async function ownValueOf(server: Instance, key: string, field: string): Promise<unknown> {
-  const admin = await signInThroughApi(server, ada);
-  const read = dataOf(
-    await admin.client.GET("/api/v1/issues/{issue}", { params: { path: { issue: key } } }),
-  );
-  await admin.dispose();
-  return read.issue.own_fields?.[field];
-}
-
-/** The issues related to an issue, as text, as the administrator reads them. */
-export async function relationsOf(server: Instance, key: string): Promise<string> {
-  const admin = await signInThroughApi(server, ada);
-  const relations = dataOf(
-    await admin.client.GET("/api/v1/issues/{issue}/related-issues", {
-      params: { path: { issue: key } },
-    }),
-  );
-  await admin.dispose();
-  return JSON.stringify(relations);
 }
 
 /** The arrow from the issue with the first internal ID to the one with the second. */
@@ -274,4 +227,9 @@ export async function dragAcross(page: Page, what: Locator, pixels: number): Pro
   await page.mouse.move(x + pixels / 2, y, { steps: 4 });
   await page.mouse.move(x + pixels, y, { steps: 4 });
   await page.mouse.up();
+}
+
+/** What a move says, up to the dates it names: "WEB-5 moved 1 week later, now". */
+export function movedLater(key: string, amount: string): string {
+  return t("timeline.moved-later", { key, amount, dates: "" }).trim();
 }

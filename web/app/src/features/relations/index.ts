@@ -20,4 +20,9 @@ export function registerRelationBlocks(): void {
   });
 }
 export { IssueRefLine } from "./IssueRefLine.tsx";
-export { relationChoices, type RelationChoice } from "./relations.ts";
+export {
+  createRelation,
+  deleteRelation,
+  relationChoices,
+  type RelationChoice,
+} from "./relations.ts";

@@ -36,7 +36,7 @@ export function sideOf(input: SideInput): Omit<TimelineSideProps, "asked" | "onA
         ? undefined
         : {
             row,
-            days: line?.kind === "issue" ? input.daysOf(line) : undefined,
+            days: line?.is === "issue" ? input.daysOf(line) : undefined,
             mayMove: row.may_move && fields !== undefined,
           },
     tray: input.tray,

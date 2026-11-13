@@ -222,3 +222,19 @@ describe("a timeline in the address and in a saved search (PLAN-01, PLAN-04)", (
     expect(viewFromPresentation(listOnly, everywhere).timeline).toEqual(builtInTimeline);
   });
 });
+
+describe("the date fields of a timeline in the address (ADR-0043, decision 2)", () => {
+  it("plan_01_goes_back_to_start_and_due_date_from_a_saved_view_of_own_dates", () => {
+    const saved = {
+      ...everywhere,
+      kind: "timeline",
+      timeline: { ...builtInTimeline, start_field: "begins", end_field: "ends" },
+    } as const;
+    const back = { ...saved, timeline: builtInTimeline };
+    const state = withView(readSearch({ search: {} }), back, saved);
+    expect(searchLocation(state).search).toEqual({ dates: "start date,due date" });
+    expect(viewOf(readSearch({ search: searchLocation(state).search }), saved).timeline).toEqual(
+      builtInTimeline,
+    );
+  });
+});

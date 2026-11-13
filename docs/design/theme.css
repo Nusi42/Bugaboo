@@ -101,13 +101,16 @@
   --size-timeline-row: var(--size-row-compact);
   --size-timeline-head: var(--size-control);
   --size-timeline-side: 240px;
-  --timeline-day: var(--size-day-week);
+  --timeline-day: 16;
   --timeline-days: 0;
   --timeline-rows: 0;
   --timeline-row: 0;
   --timeline-start: 0;
   --timeline-length: 1;
-  --timeline-done: 0%;
+  --timeline-done: 0;
+  --size-px: 1px;
+  --size-percent: 1%;
+  --size-bar-least: 6px;
   --ring-width: 2px;
   --ring-offset: 2px;
   --ring-room: calc(var(--ring-width) + var(--ring-offset));

@@ -7,7 +7,7 @@ import { IssuePicker } from "../search/index.ts";
 import type { Pair } from "./dependencies.ts";
 import { TimelineWindow } from "./TimelineWindow.tsx";
 
-/** Which of the two issues waits: the one of the bar, or the one that is chosen. */
+/** Which of the two issues comes first: the one of the bar, or the one that is chosen. */
 type Way = "first" | "waits";
 
 export interface AddDependencyWindowProps {

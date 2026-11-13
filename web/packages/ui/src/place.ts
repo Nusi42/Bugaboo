@@ -8,7 +8,7 @@ import { variableOf } from "./variables.ts";
  * base theme file marks `run-time="true"` (`timeline-start`, `timeline-length` …). The rules of the
  * theme file turn them into places, so a color or a spacing is never set from code (THEME-ONLY).
  */
-export type Place = Partial<Readonly<Record<RunTimeVariable, number | string>>>;
+export type Place = Partial<Readonly<Record<RunTimeVariable, number>>>;
 
 /**
  * Gives the element its place each time it is drawn: the browser draws again only what a changed

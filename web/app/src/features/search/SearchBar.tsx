@@ -107,7 +107,7 @@ function LoadedBar(props: LoadedProps) {
       mistakes={bar.answer.mistakes.length}
       open={open}
       onOpenChange={setOpen}
-      fields={{ fields, names }}
+      fields={{ names }}
       listView={listView}
       start={phoneStart}
       footer={actions}

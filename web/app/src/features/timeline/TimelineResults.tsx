@@ -2,7 +2,6 @@ import { part, partOf } from "@bugaboo/ui";
 import { useState } from "react";
 
 import type { ListView } from "../../shared/list-view.ts";
-import type { SearchFieldsAnswer } from "../search/index.ts";
 import { TimelineContext } from "./timeline-context.ts";
 import { TimelineLegend } from "./TimelineLegend.tsx";
 import { TimelineMain } from "./TimelineMain.tsx";
@@ -12,7 +11,6 @@ import { useTimelineModel, type TimelineInput } from "./use-timeline.ts";
 
 export interface TimelineResultsProps extends TimelineInput {
   readonly onView: (view: ListView) => void;
-  readonly fields: SearchFieldsAnswer;
 }
 
 /**
@@ -41,6 +39,7 @@ export function TimelineResults(props: TimelineResultsProps) {
             search={props}
             groupBy={model.groupBy}
             own={model.own}
+            names={props.fields.names}
             lines={model.lines}
             arrows={model.arrows}
             chart={{ ...model.chart, zoom: props.view.timeline.zoom }}

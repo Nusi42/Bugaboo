@@ -59,7 +59,14 @@ export function GroupHead({ line, at, name, onToggle }: GroupHeadProps) {
           {...partOf(part.timelineRowToggle)}
         >
           <Icon name={line.open ? iconName.down : iconName.next} size={iconSize.small} />
-          <span {...partOf(part.timelineRowTitle)}>{name}</span>
+          {line.goal === undefined ? (
+            <span {...partOf(part.timelineRowTitle)}>{name}</span>
+          ) : (
+            <>
+              <IssueId id={name} />
+              <span {...partOf(part.timelineRowTitle)}>{line.goal.title}</span>
+            </>
+          )}
           <span {...partOf(part.timelineRowCount)}>{line.count}</span>
           {line.goal === undefined ? null : (
             <span {...partOf(part.visuallyHidden)}>{goalWords(line.goal, name)}</span>
@@ -127,7 +134,7 @@ export function TimelineLine({
   readonly groupName: (line: GroupLine) => string;
   readonly onToggle: (group: string) => void;
 }) {
-  return line.kind === "group" ? (
+  return line.is === "group" ? (
     <GroupHead
       line={line}
       at={at}

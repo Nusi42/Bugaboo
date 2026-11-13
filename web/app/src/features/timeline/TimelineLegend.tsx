@@ -1,18 +1,23 @@
 import { t } from "@bugaboo/messages";
-import { Legend, legendLook, LegendItem } from "@bugaboo/ui";
+import { legendLook, LegendItem } from "@bugaboo/ui";
+
+import { IssueLegend } from "../issues/index.ts";
 
 /**
- * The marks of the timeline in a Legend below its tools (UX §4.7): the bracket of a goal, the
- * diamond of its due date and the Today line. The tints and edges of the rows stand in the Legend
- * of the list beside the toolbar; *Away*, *Holiday* and *Plan warning* join this one with the
- * people on the timeline.
+ * The one Legend of the timeline, below its tools (UX §4.7): the tints and the priority marks of the
+ * rows, then the bracket of a goal, the diamond of its due date and the Today line. *Away*,
+ * *Holiday* and *Plan warning* join it with the people on the timeline.
  */
 export function TimelineLegend() {
   return (
-    <Legend label={t("timeline.legend")}>
-      <LegendItem look={legendLook.goal}>{t("timeline.legend-goal")}</LegendItem>
-      <LegendItem look={legendLook.due}>{t("timeline.legend-due")}</LegendItem>
-      <LegendItem look={legendLook.today}>{t("timeline.today")}</LegendItem>
-    </Legend>
+    <IssueLegend
+      more={
+        <>
+          <LegendItem look={legendLook.goal}>{t("timeline.legend-goal")}</LegendItem>
+          <LegendItem look={legendLook.due}>{t("timeline.legend-due")}</LegendItem>
+          <LegendItem look={legendLook.today}>{t("timeline.today")}</LegendItem>
+        </>
+      }
+    />
   );
 }

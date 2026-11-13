@@ -98,9 +98,11 @@ export function builtInView({ everywhere }: BuiltInInput): ListView {
 /** The timeline an address asks for: what it says, and the defaults for what it leaves out. */
 function timelineOf(state: SearchState, defaults: TimelineOptions): TimelineOptions {
   const [start, end] = state.dates ?? [defaults.start_field, defaults.end_field];
+  // *Start date* and *Due date* are the view's own when it names no fields (`null`).
+  const usual = start === listWord.startDate && end === listWord.dueDate;
   return {
-    start_field: start,
-    end_field: end,
+    start_field: usual ? null : start,
+    end_field: usual ? null : end,
     plan_by_effort: state.effort ?? defaults.plan_by_effort ?? false,
     zoom: isZoom(state.zoom) ? state.zoom : defaults.zoom,
   };
@@ -180,10 +182,12 @@ function timelineParts(
   const { start_field: start, end_field: end } = timeline;
   const sameDates = start === usual.start_field && end === usual.end_field;
   const effort = timeline.plan_by_effort ?? false;
+  // Back to *Start date* and *Due date* from a saved view of own date fields is written too.
+  const dates = [start ?? listWord.startDate, end ?? listWord.dueDate] as const;
   return {
     ...(timeline.zoom === usual.zoom ? {} : { zoom: timeline.zoom }),
     ...(effort === (usual.plan_by_effort ?? false) ? {} : { effort }),
-    ...(sameDates || start === null || end === null ? {} : { dates: [start, end] as const }),
+    ...(sameDates ? {} : { dates }),
   };
 }
 

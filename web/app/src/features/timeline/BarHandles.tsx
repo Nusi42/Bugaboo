@@ -41,7 +41,9 @@ export function BarHandles({ issue, handlers }: BarHandlesProps) {
           id={issue}
           label={t("timeline.add-dependency")}
           look={partOf(part.timelineBarDot)}
-        />
+        >
+          <span {...partOf(part.timelineBarDotMark)} />
+        </DragHandle>
       </span>
     </>
   );

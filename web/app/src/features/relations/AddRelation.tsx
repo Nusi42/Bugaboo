@@ -11,13 +11,19 @@ import {
   partOf,
   part,
 } from "@bugaboo/ui";
+import type { Schema } from "@bugaboo/api-client";
+import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 
-import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
-import { refreshIssueRelations } from "../../shared/query-keys.ts";
 import { relationKindLinesOf, useRelationKinds } from "../relation-kinds/index.ts";
-import { relationChoices, type BlockProps, type RelationChoice } from "./relations.ts";
+import {
+  createRelation,
+  deleteRelation,
+  relationChoices,
+  type BlockProps,
+  type RelationChoice,
+} from "./relations.ts";
 import { exactName } from "../../shared/same-name.ts";
 import { useNameKey } from "../../shared/use-name-key.ts";
 
@@ -106,27 +112,24 @@ function useAddRelation(readableId: string) {
   const [chosen, setChosen] = useState<string | null>(null);
   const [other, setOther] = useState("");
   const [made, setMade] = useState<{ relation: string; other: string; name: string } | null>(null);
-  const add = api.query.useMutation("post", "/api/v1/issues/{issue}/relations", {
+  const add = useMutation({
+    mutationFn: (body: Schema<"NewRelationBody">) => createRelation(readableId, body),
     onSuccess: (relation) => {
-      refreshIssueRelations();
       setMade({ relation: relation.id, other: relation.issue.readable_id, name: relation.name });
       setOther("");
       setChosen(null);
     },
   });
-  const remove = api.query.useMutation("delete", "/api/v1/relations/{relation}", {
+  const remove = useMutation({
+    mutationFn: deleteRelation,
     onSuccess: () => {
-      refreshIssueRelations();
       setMade(null);
     },
   });
   const choice = choices.find((each) => each.key === chosen);
   const submit = () => {
     if (choice !== undefined) {
-      add.mutate({
-        params: { path: { issue: readableId } },
-        body: { other: other.trim(), relation_kind: choice.kind, direction: choice.direction },
-      });
+      add.mutate({ other: other.trim(), relation_kind: choice.kind, direction: choice.direction });
     }
   };
   return { kinds, choices, chosen, setChosen, other, setOther, made, add, remove, submit };
@@ -168,7 +171,7 @@ export function AddRelation({
           name={state.made.name}
           relation={state.made.relation}
           onUndo={(relation) => {
-            state.remove.mutate({ params: { path: { relation } } });
+            state.remove.mutate(relation);
           }}
         />
       )}

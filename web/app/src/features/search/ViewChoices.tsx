@@ -18,7 +18,7 @@ export interface ListViewControl {
 }
 
 export interface ViewChoicesProps extends ListViewControl {
-  readonly fields: SearchFieldsAnswer;
+  readonly fields: Pick<SearchFieldsAnswer, "names">;
   /** What stands after *Group by* (the button *Customize* on a computer). */
   readonly end?: ReactNode;
   /** How *Group by* looks: quiet words above a list on a computer, a box in the *Filters* sheet. */
@@ -33,7 +33,10 @@ function listGroupable(word: string): boolean {
 }
 
 /** The fields the results can be grouped by. */
-function groupChoicesOf(fields: SearchFieldsAnswer, groupable: (word: string) => boolean) {
+function groupChoicesOf(
+  fields: Pick<SearchFieldsAnswer, "names">,
+  groupable: (word: string) => boolean,
+) {
   return Object.keys(fields.names)
     .filter((word) => groupable(word))
     .map((word) => ({ value: word, label: fields.names[word] ?? word }));

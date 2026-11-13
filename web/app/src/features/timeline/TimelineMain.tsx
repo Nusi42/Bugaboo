@@ -13,6 +13,8 @@ export interface TimelineMainProps {
   readonly search: { readonly text: string; readonly within: string | undefined };
   readonly groupBy: string | null;
   readonly own: OwnColumns;
+  /** The names of the fields the person may read, by their words. */
+  readonly names: Readonly<Record<string, string>>;
   readonly lines: readonly Line[];
   readonly arrows: readonly Arrow[];
   readonly chart: {
@@ -29,7 +31,7 @@ export interface TimelineMainProps {
 /** The chart with *Show more*, or what stands in its place while it is read or has no rows. */
 export function TimelineMain(props: TimelineMainProps) {
   const { lines, chart, pages } = props;
-  const groupName = useGroupNames(props.search, props.groupBy, props.own);
+  const groupName = useGroupNames(props);
   if (pages.isPending) {
     return <Skeleton lines={5} />;
   }

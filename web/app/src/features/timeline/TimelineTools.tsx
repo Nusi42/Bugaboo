@@ -65,7 +65,7 @@ export function TimelineTools({ view, onView, fields, own, onStep, onToday }: Ti
         fields={fields}
         onView={onView}
         look={selectLook.inline}
-        groupable={timelineGroupable(own)}
+        groupable={timelineGroupable(fields)}
       />
       <DatesFrom view={view} onView={onView} names={fields.names} own={own} />
       <Switch

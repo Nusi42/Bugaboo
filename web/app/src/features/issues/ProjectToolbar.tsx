@@ -10,6 +10,8 @@ export interface ProjectToolbarProps {
   readonly shortName: string;
   /** An issue is open beside the list, which leaves the toolbar little room. */
   readonly beside: boolean;
+  /** How the address shows the results (`timeline`: the timeline has its own Legend). */
+  readonly shownAs: string | undefined;
 }
 
 /** *New issue* for the project. */
@@ -44,7 +46,7 @@ export function PhoneActions({ shortName }: { readonly shortName: string }) {
  * of the rows at the end (a *Legend* button where it has no room). A phone has it in the row of its
  * search bar. The project is remembered for the next new issue.
  */
-export function ProjectToolbar({ shortName, beside }: ProjectToolbarProps) {
+export function ProjectToolbar({ shortName, beside, shownAs }: ProjectToolbarProps) {
   const layout = useLayout();
   useEffect(() => {
     rememberProject(shortName);
@@ -55,7 +57,12 @@ export function ProjectToolbar({ shortName, beside }: ProjectToolbarProps) {
   return (
     <div {...partOf(part.listToolbar)}>
       <NewIssue shortName={shortName} />
-      {layout === "computer" && !beside ? <IssueLegend /> : <LegendButton />}
+      {/* The timeline shows the Legend below its own tools: one Legend on the page. */}
+      {shownAs === "timeline" ? null : layout === "computer" && !beside ? (
+        <IssueLegend />
+      ) : (
+        <LegendButton />
+      )}
     </div>
   );
 }

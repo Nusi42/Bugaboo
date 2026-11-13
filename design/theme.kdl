@@ -224,13 +224,19 @@ tokens {
     // zoom, how many days and rows the chart has, and for one thing on it its row, its first day counted from the
     // first day of the chart, its length in days and how much of a bar is done. Only numbers come from code; the
     // rules turn them into places.
-    size "timeline-day" "$size-day-week" run-time="true"
+    size "timeline-day" "16" run-time="true"
     size "timeline-days" "0" run-time="true"
     size "timeline-rows" "0" run-time="true"
     size "timeline-row" "0" run-time="true"
     size "timeline-start" "0" run-time="true"
     size "timeline-length" "1" run-time="true"
-    size "timeline-done" "0%" run-time="true"
+    size "timeline-done" "0" run-time="true"
+    // One pixel and one percent: the numbers above become lengths in the rules (`calc(n * $size-px)`), where they
+    // are used, so a number set on a bar is never read at the root.
+    size "size-px" "1px"
+    size "size-percent" "1%"
+    // The least width of a bar, so a short bar at the zoom of quarters is still seen and pressed.
+    size "size-bar-least" "6px"
 
     // Focus ring
     size "ring-width" "2px"
@@ -731,6 +737,7 @@ bold reason="Bold is kept for the titles, the headings of sections, the words of
     selector "card.topic" role="section"
     selector "notification-group.head" role="section"
     selector "search-help.title" role="section"
+    selector "timeline-side.heading" role="title"
     selector "priority[variant=critical]" role="priority"
     selector "priority[variant=high]" role="priority"
     selector "[data-part=markdown] h1" role="own"
@@ -3243,6 +3250,9 @@ part "timeline-body" {
     container "(max-width: $bp-list-beside)" {
         grid-template-columns "minmax(0, 1fr)"
     }
+    media "(max-width: calc($bp-computer - 1px))" {
+        grid-template-columns "minmax(0, 1fr)"
+    }
 }
 
 part "timeline-scroll" {
@@ -3258,7 +3268,7 @@ part "timeline-scroll" {
 // What the scroll box holds: the names and every day of the chart across, the scale and every row down.
 part "timeline-canvas" {
     position relative
-    width "calc($size-timeline-names + $timeline-days * $timeline-day)"
+    width "calc($size-timeline-names + $timeline-days * $timeline-day * $size-px)"
     height "calc($size-timeline-head + $timeline-rows * $size-timeline-row)"
 }
 
@@ -3292,7 +3302,7 @@ part "timeline-head.corner" {
 part "day-scale" {
     position relative
     flex none
-    width "calc($timeline-days * $timeline-day)"
+    width "calc($timeline-days * $timeline-day * $size-px)"
 }
 
 // One unit of the scale (a day, a week, a month or a quarter), its name at its start.
@@ -3300,11 +3310,11 @@ part "day-scale.cell" {
     position absolute
     top 0
     bottom 0
-    inset-inline-start "calc($timeline-start * $timeline-day)"
+    inset-inline-start "calc($timeline-start * $timeline-day * $size-px)"
     display flex
     align-items center
     box-sizing border-box
-    width "calc($timeline-length * $timeline-day)"
+    width "calc($timeline-length * $timeline-day * $size-px)"
     padding-inline "$space-1"
     overflow hidden
     border-inline-start "$border-width solid $border-subtle"
@@ -3318,8 +3328,8 @@ part "timeline-shade" {
     position absolute
     top "$size-timeline-head"
     bottom 0
-    inset-inline-start "calc($size-timeline-names + $timeline-start * $timeline-day)"
-    width "calc($timeline-length * $timeline-day)"
+    inset-inline-start "calc($size-timeline-names + $timeline-start * $timeline-day * $size-px)"
+    width "calc($timeline-length * $timeline-day * $size-px)"
     background "$bg-sunken"
     pointer-events none
 }
@@ -3330,7 +3340,7 @@ part "timeline-today" {
     position absolute
     top "$size-timeline-head"
     bottom 0
-    inset-inline-start "calc($size-timeline-names + ($timeline-start + 0.5) * $timeline-day)"
+    inset-inline-start "calc($size-timeline-names + ($timeline-start + 0.5) * $timeline-day * $size-px)"
     z-index "$z-raised"
     width "calc($border-width * 2)"
     background "$accent"
@@ -3356,7 +3366,7 @@ part "timeline-arrows" {
     top "$size-timeline-head"
     inset-inline-start "$size-timeline-names"
     z-index "$z-raised"
-    width "calc($timeline-days * $timeline-day)"
+    width "calc($timeline-days * $timeline-day * $size-px)"
     height "calc($timeline-rows * $size-timeline-row)"
     overflow visible
     pointer-events none
@@ -3454,7 +3464,7 @@ part "timeline-row.count" {
 part "timeline-row.lane" {
     position relative
     flex none
-    width "calc($timeline-days * $timeline-day)"
+    width "calc($timeline-days * $timeline-day * $size-px)"
     height "100%"
 }
 
@@ -3464,11 +3474,13 @@ part "timeline-bar" {
     position absolute
     top "$space-1"
     bottom "$space-1"
-    inset-inline-start "calc($timeline-start * $timeline-day)"
+    inset-inline-start "calc($timeline-start * $timeline-day * $size-px)"
     box-sizing border-box
-    width "calc($timeline-length * $timeline-day)"
-    min-width "$size-edge"
-    border "$border-width solid $border"
+    width "calc($timeline-length * $timeline-day * $size-px)"
+    min-width "$size-bar-least"
+    // The edge of a bar is the edge of a control: 3:1 against its tint, the rows and the weekends in every theme
+    // (the `lines` rules of the contrast check), so a bar of *Not started* is seen in the dark themes too.
+    border "$border-width solid $border-control"
     border-inline-start "$size-edge solid transparent"
     border-radius "$r-ctl"
     background "$bg-raised"
@@ -3511,7 +3523,7 @@ part "timeline-bar.done" {
     position absolute
     inset-block 0
     inset-inline-start 0
-    width "$timeline-done"
+    width "calc($timeline-done * $size-percent)"
     border-radius "inherit"
     background "$st-ns"
     opacity "$opacity-faint"
@@ -3539,36 +3551,50 @@ part "timeline-bar.label" {
 
 // A selected bar has its dot after its end: the ID moves on past it.
 part "timeline-bar[state=selected] timeline-bar.label" {
-    inset-inline-start "calc(100% + $size-window-handle * 2 + $space-2)"
+    inset-inline-start "calc(100% + $size-target-least + $space-1)"
 }
 
 // The handles of a selected bar change one of its dates; the dot after its end makes a dependency.
 part "timeline-bar.handle" {
     position absolute
     inset-block 0
-    width "$size-window-handle"
+    z-index "$z-raised"
+    width "$size-target-least"
     cursor ew-resize
 }
 
 part "timeline-bar.handle[variant=start]" {
-    inset-inline-start "calc($size-window-handle / -2)"
+    inset-inline-start "calc($size-target-least / -2)"
 }
 
 part "timeline-bar.handle[variant=end]" {
-    inset-inline-end "calc($size-window-handle / -2)"
+    inset-inline-end "calc($size-target-least / -2)"
 }
 
+// The dot is a target of 24 pixels after the end of the bar, with a small round mark in its middle.
 part "timeline-bar.dot" {
     position absolute
     top "50%"
-    inset-inline-end "calc($size-window-handle * -2)"
+    inset-inline-end "calc($size-target-least / -2 - $size-target-least / 2)"
+    z-index "$z-raised"
+    display flex
+    align-items center
+    justify-content center
     translate "0 -50%"
+    width "$size-target-least"
+    height "$size-target-least"
+    padding 0
+    border none
+    background none
+    cursor crosshair
+}
+
+part "timeline-bar.dot-mark" {
     width "$size-window-handle"
     height "$size-window-handle"
     border "$border-width solid $bg-raised"
     border-radius "50%"
     background "$accent"
-    cursor crosshair
 }
 
 // The bar a dependency is dragged onto.
@@ -3580,9 +3606,9 @@ part "timeline-bar[state=target]" {
 part "timeline-bracket" {
     position absolute
     top "calc(50% - $space-1)"
-    inset-inline-start "calc($timeline-start * $timeline-day)"
+    inset-inline-start "calc($timeline-start * $timeline-day * $size-px)"
     box-sizing border-box
-    width "calc($timeline-length * $timeline-day)"
+    width "calc($timeline-length * $timeline-day * $size-px)"
     height "$space-2"
     border "calc($border-width * 2) solid $fg-muted"
     border-bottom none
@@ -3592,7 +3618,7 @@ part "timeline-bracket" {
 part "timeline-diamond" {
     position absolute
     top "50%"
-    inset-inline-start "calc(($timeline-start + 0.5) * $timeline-day)"
+    inset-inline-start "calc(($timeline-start + 0.5) * $timeline-day * $size-px)"
     width "$space-3"
     height "$space-3"
     translate "-50% -50%"
@@ -3621,11 +3647,13 @@ part "timeline-card" "timeline-tray" {
     font-size "$fs-sm"
 }
 
+// The title of a card of the side, bold like the title of every card (UX §7.3).
 part "timeline-side.heading" {
     margin 0
     color "$fg"
+    font-family "$font-display"
     font-size "$fs-md"
-    font-weight "$weight-regular"
+    font-weight "$weight-bold"
 }
 
 part "timeline-side.list" {
@@ -3648,13 +3676,20 @@ part "timeline-tray" {
     overflow auto
 }
 
-// An issue of the tray: its ID and as much of its title as fits beside its handle; *Set dates…* goes under it when
-// the two do not fit on one line.
+// An issue of the tray: its ID and as much of its title as fits beside its handle, and *Set dates…* right under it.
 part "timeline-tray.item" {
     display flex
-    flex "1 1 $size-col-title-least"
+    flex-direction column
+    align-items flex-start
+    flex "1 1 0"
+    min-width 0
+}
+
+part "timeline-tray.line" {
+    display flex
     align-items center
     gap "$space-2"
+    max-width "100%"
     min-width 0
 }
 

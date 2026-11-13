@@ -24,6 +24,8 @@ const SUITE_PREFIX: &str = "a11y";
 const TIMELINE_FOLDER: &str = "web/app/src/features/timeline";
 /// The one place that names what the timeline drags, each with its typed way.
 const DRAG_KINDS_FILE: &str = "web/app/src/features/timeline/drag-kinds.ts";
+/// The catalog the typed ways are messages of.
+const MESSAGES_FILE: &str = "messages/en.json";
 
 pub(crate) struct TestA11y;
 
@@ -50,52 +52,87 @@ impl Check for TestA11y {
             let text = read_text(repo, &path)?;
             timeline.push((path, text));
         }
-        findings.extend(drags_have_keys(&timeline));
+        let messages = read_text(repo, MESSAGES_FILE)?;
+        findings.extend(drags_have_keys(&timeline, &messages));
         Ok(findings)
     }
 }
 
 /// Every drag of the timeline has a key: the kinds of `drag-kinds.ts` each name their typed way, no
 /// file of the timeline writes a kind of its own, and a drag of a bar comes with its keys.
-fn drags_have_keys(files: &[(String, String)]) -> Vec<Finding> {
+fn drags_have_keys(files: &[(String, String)], messages: &str) -> Vec<Finding> {
     let mut findings = Vec::new();
-    let code_of_file = |text: &str| code(text);
     match files.iter().find(|(path, _)| path == DRAG_KINDS_FILE) {
         None => findings.push(Finding::at(
             DRAG_KINDS_FILE,
             "The timeline has no `drag-kinds.ts`: name each kind it drags there, with its typed way.",
         )),
-        Some((_, text)) => {
-            for line in code_of_file(text).lines() {
-                let trimmed = line.trim();
-                if trimmed.contains("kind:") && !trimmed.contains("typed:") {
-                    findings.push(Finding::at(
-                        DRAG_KINDS_FILE,
-                        format!(
-                            "`{trimmed}` names a drag without its typed way. Add `typed: \"<message key>\"`, the button or window that does the same with the keyboard."
-                        ),
-                    ));
-                }
-            }
-        }
+        Some((_, text)) => findings.extend(kinds_have_typed_ways(&code(text), messages)),
     }
-    let all: String = files.iter().map(|(_, text)| code_of_file(text)).collect();
+    let mut keys_called = false;
     for (path, text) in files.iter().filter(|(path, _)| path != DRAG_KINDS_FILE) {
-        let text = code_of_file(text);
-        if text.contains("kind=\"") || text.contains("kind={\"") {
+        let text = code(text);
+        // A call, not the definition of the function.
+        keys_called |=
+            text.matches("keyMoveOf(").count() > text.matches("function keyMoveOf(").count();
+        if writes_a_kind(&text) {
             findings.push(Finding::at(
                 path,
                 "A drag of the timeline writes its own kind. Take it from `dragKinds`, where its typed way is named.",
             ));
         }
-        if text.contains("useBarDrag(") && !all.contains("keyMoveOf(") {
+    }
+    for (path, text) in files {
+        if code(text).contains("useBarDrag(") && !keys_called {
             findings.push(Finding::at(
                 path,
-                "A bar is dragged with the pointer but the timeline has no keys for it (`keyMoveOf`).",
+                "A bar is dragged with the pointer but no key moves it: call `keyMoveOf` where the keys of a bar are read.",
             ));
         }
     }
     findings
+}
+
+/// The kinds of `drag-kinds.ts` each name a typed way (`typed: "<message key>"`) that is a message
+/// of the catalog.
+fn kinds_have_typed_ways(text: &str, messages: &str) -> Vec<Finding> {
+    let mut findings = Vec::new();
+    for line in text
+        .lines()
+        .map(str::trim)
+        .filter(|line| line.contains("kind:"))
+    {
+        match quoted_after(line, "typed:") {
+            None => findings.push(Finding::at(
+                DRAG_KINDS_FILE,
+                format!(
+                    "`{line}` names a drag without its typed way. Add `typed: \"<message key>\"`, the button or window that does the same with the keyboard."
+                ),
+            )),
+            Some(key) if !messages.contains(&format!("\"{key}\":")) => findings.push(Finding::at(
+                DRAG_KINDS_FILE,
+                format!("The typed way `{key}` of `{line}` is no message of messages/en.json."),
+            )),
+            Some(_) => {}
+        }
+    }
+    findings
+}
+
+/// The text in quotes after `marker` on a line.
+fn quoted_after<'a>(line: &'a str, marker: &str) -> Option<&'a str> {
+    let rest = line.split_once(marker)?.1.trim_start();
+    let rest = rest.strip_prefix('"')?;
+    rest.split_once('"').map(|(inside, _)| inside)
+}
+
+/// Whether code gives a drag a kind of its own: a text as the kind of `DraggableHead` or
+/// `DragHandle`, as the first argument of `useDropOf`, or as `kind: "…"`.
+fn writes_a_kind(text: &str) -> bool {
+    let compact: String = text.split_whitespace().collect();
+    ["kind=\"", "kind={\"", "kind:\"", "useDropOf(\""]
+        .iter()
+        .any(|literal| compact.contains(literal))
 }
 
 /// The entries of `paths`: the name and the address of each.
@@ -205,6 +242,9 @@ visit(paths.longer); // paths.home and paths.signIn
         assert_eq!(evaluate("export const other = 1;", "").len(), 1);
     }
 
+    /// The catalog of the tests: the typed way of the dot.
+    const MESSAGES: &str = "{\"timeline.add-dependency\": \"Add dependency…\"}";
+
     /// The files of a timeline whose drags have their keys.
     fn timeline() -> Vec<(String, String)> {
         vec![
@@ -214,35 +254,77 @@ visit(paths.longer); // paths.home and paths.signIn
                     .to_owned(),
             ),
             (
+                format!("{TIMELINE_FOLDER}/bar-keys.ts"),
+                "export function keyMoveOf(event) {}".to_owned(),
+            ),
+            (
                 format!("{TIMELINE_FOLDER}/Bar.tsx"),
-                "useBarDrag(1); keyMoveOf(event); <DragHandle kind={dragKinds.dot.kind} />".to_owned(),
+                "useBarDrag(1); keyMoveOf(event); <DragHandle kind={dragKinds.dot.kind} />; useDropOf(dragKinds.dot.kind, ref)".to_owned(),
             ),
         ]
     }
 
-    #[test]
-    fn every_drag_of_the_timeline_has_a_key() {
-        assert!(drags_have_keys(&timeline()).is_empty());
+    /// The messages of the findings for the files.
+    fn found(files: &[(String, String)]) -> Vec<String> {
+        drags_have_keys(files, MESSAGES)
+            .into_iter()
+            .map(|finding| finding.message)
+            .collect()
     }
 
     #[test]
-    fn a_drag_without_its_typed_way_or_its_keys_is_a_finding() {
+    fn every_drag_of_the_timeline_has_a_key() {
+        assert!(found(&timeline()).is_empty());
+    }
+
+    #[test]
+    fn a_kind_without_its_typed_way_is_a_finding() {
         let mut files = timeline();
         files[0].1 = "export const dragKinds = {\n  dot: { kind: \"a-dot\" },\n};\n".to_owned();
-        files[1].1 = "useBarDrag(1); <DragHandle kind=\"a-dot\" />".to_owned();
-        let findings = drags_have_keys(&files);
-        let messages: Vec<&str> = findings.iter().map(|f| f.message.as_str()).collect();
-        assert_eq!(messages.len(), 3, "{messages:?}");
+        let messages = found(&files);
+        assert_eq!(messages.len(), 1, "{messages:?}");
         assert!(messages[0].contains("typed way"));
-        assert!(messages[1].contains("own kind"));
-        assert!(messages[2].contains("keyMoveOf"));
+    }
+
+    #[test]
+    fn a_typed_way_that_is_no_message_is_a_finding() {
+        let mut files = timeline();
+        files[0].1 = "export const dragKinds = {\n  dot: { kind: \"a-dot\", typed: \"timeline.nothing\" },\n};\n".to_owned();
+        let messages = found(&files);
+        assert_eq!(messages.len(), 1, "{messages:?}");
+        assert!(messages[0].contains("timeline.nothing"));
+    }
+
+    #[test]
+    fn a_bar_dragged_without_a_call_of_its_keys_is_a_finding() {
+        let mut files = timeline();
+        files[2].1 = "useBarDrag(1); <DragHandle kind={dragKinds.dot.kind} />".to_owned();
+        let messages = found(&files);
+        assert_eq!(messages.len(), 1, "{messages:?}");
+        assert!(messages[0].contains("keyMoveOf"));
+    }
+
+    #[test]
+    fn a_kind_written_in_place_is_a_finding_wherever_it_is_given() {
+        for written in [
+            "<DragHandle kind=\"a-dot\" />",
+            "<DraggableHead kind={\"a-dot\"} />",
+            "useDropOf( \"a-dot\", ref)",
+            "const drag = { kind: \"a-dot\" };",
+        ] {
+            let mut files = timeline();
+            files[2].1 = format!("useBarDrag(1); keyMoveOf(event); {written}");
+            let messages = found(&files);
+            assert_eq!(messages.len(), 1, "{written}: {messages:?}");
+            assert!(messages[0].contains("own kind"), "{written}");
+        }
     }
 
     #[test]
     fn the_real_timeline_has_a_key_for_every_drag() {
         let repo = crate::repo::Repo::discover().unwrap();
         let files: Vec<(String, String)> = sorted_files(&repo, TIMELINE_FOLDER, |name| {
-            has_extension(name, "ts") || has_extension(name, "tsx")
+            (has_extension(name, "ts") || has_extension(name, "tsx")) && !name.contains(".test.")
         })
         .unwrap()
         .into_iter()
@@ -252,7 +334,8 @@ visit(paths.longer); // paths.home and paths.signIn
             (path, text)
         })
         .collect();
-        assert!(drags_have_keys(&files).is_empty());
+        let messages = read_text(&repo, MESSAGES_FILE).unwrap();
+        assert!(drags_have_keys(&files, &messages).is_empty());
     }
 
     #[test]

@@ -6,6 +6,7 @@ import {
   daysBetween,
   isWeekend,
   monthName,
+  monthsLater,
   weekdayName,
   weekFirstOf,
 } from "../../shared/clock.ts";
@@ -51,12 +52,6 @@ export interface Span {
 export function spanFrom(first: string, zoom: ZoomWord): Span {
   const days = shownWeeks[zoom] * daysPerWeek;
   return { first, last: addDays(first, days - 1), days };
-}
-
-/** The first day of the month `months` after the month of `day`. */
-function monthsLater(day: string, months: number): string {
-  const [year, month] = dayNumbersOf(day);
-  return new Date(Date.UTC(year, month - 1 + months, 1)).toISOString().slice(0, day.length);
 }
 
 /** How many months a day is after the first month of its quarter. */

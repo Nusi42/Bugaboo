@@ -179,6 +179,12 @@ export function daysBetween(first: string, day: string): number {
   );
 }
 
+/** The first day of the month `months` after the month of a day on the calendar (`2027-03-14`, 1: `2027-04-01`). */
+export function monthsLater(day: string, months: number): string {
+  const [year, month] = dayNumbersOf(day);
+  return new Date(Date.UTC(year, month - 1 + months, 1)).toISOString().slice(0, day.length);
+}
+
 /** The short name of the month of a day on the calendar (`Mar`), in the language of the app. */
 export function monthName(day: string): string {
   return new Intl.DateTimeFormat(locale, { month: "short", timeZone: "UTC" }).format(

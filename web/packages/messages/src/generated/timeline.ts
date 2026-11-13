@@ -24,13 +24,11 @@ export const messages = {
   "timeline.keys":
     "Arrow keys move a selected bar by a day, with Shift by a week. Alt with an arrow key moves its due date, Alt and Shift with an arrow key its start date.",
   "timeline.locked": "You may not change the dates of {key}.",
-  "timeline.moved-later": "{key} moved {amount} later",
-  "timeline.moved-earlier": "{key} moved {amount} earlier",
+  "timeline.moved-later": "{key} moved {amount} later, now {dates}",
+  "timeline.moved-earlier": "{key} moved {amount} earlier, now {dates}",
   "timeline.amount-days": "{count, plural, one {# day} other {# days}}",
   "timeline.amount-weeks": "{count, plural, one {# week} other {# weeks}}",
-  "timeline.dates-changed": "{key} now runs {days}",
-  "timeline.not-saved":
-    "The dates of {key} were not saved. The timeline shows them as they are now.",
+  "timeline.dates-changed": "{key} now runs {dates}",
   "timeline.dependency-made": "{waiting} now waits for {first}",
   "timeline.no-dependency-kind":
     "No kind of relation has the date effect Must finish first, so two issues cannot be connected here.",
@@ -47,9 +45,9 @@ export const messages = {
   "timeline.set-dates-title": "Set dates of {key}",
   "timeline.save-dates": "Save dates",
   "timeline.add-dependency-title": "Add dependency to {key}",
-  "timeline.which-way": "Which one waits",
-  "timeline.must-finish-first": "{key} must finish first",
-  "timeline.waits": "{key} waits for the other one",
+  "timeline.which-way": "Which comes first?",
+  "timeline.must-finish-first": "{key} comes first",
+  "timeline.waits": "{key} comes after",
   "timeline.add-it": "Add dependency",
   "timeline.empty":
     "No issue of this search has a date yet. Give one dates from Not scheduled yet.",
@@ -60,7 +58,14 @@ export const messages = {
   "timeline.locked-here": "You may not change the dates of this issue.",
   "timeline.more-issues": "Show more issues",
   "timeline.other-chosen": "Chosen: {key}",
-  "timeline.legend": "What the marks of the timeline mean",
+  "timeline.saved-both": "from {start} to {end}",
+  "timeline.saved-start": "from {start}",
+  "timeline.saved-end": "until {end}",
+  "timeline.no-goal": "No goal",
+  "timeline.no-person": "No person",
+  "timeline.no-value": "No {field}",
+  "timeline.set-dates-of": "Set dates… of {key}",
+  "timeline.person-on-bar": "Person on the bar: {name}",
 } as const;
 
 register(messages);

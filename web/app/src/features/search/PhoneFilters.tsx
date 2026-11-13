@@ -14,7 +14,7 @@ export interface PhoneFiltersProps {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
   /** The names of the fields the person reads, for *Group by*. */
-  readonly fields: SearchFieldsAnswer;
+  readonly fields: Pick<SearchFieldsAnswer, "names">;
   readonly listView: ListViewControl | undefined;
   /** Buttons before *Filters* in its row. */
   readonly start?: ReactNode;

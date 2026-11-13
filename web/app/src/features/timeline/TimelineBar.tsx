@@ -22,7 +22,8 @@ export interface TimelineBarProps {
  * takes the pointer and the keys; the handles and the dot stand beside it, never inside it.
  */
 export function TimelineBar({ line, days, described }: TimelineBarProps) {
-  const { ref, shown, selected, mayMove, dragging, handlers, drop, onKeyDown } = useBar(line, days);
+  const bar = useBar(line, days);
+  const { ref, shown, selected, mayMove, dragging, handlers, drop } = bar;
   const { row } = line;
   const key = known(row.issue.readable_id) ?? "";
   const states = rowStates({
@@ -57,7 +58,9 @@ export function TimelineBar({ line, days, described }: TimelineBarProps) {
         title={mayMove ? undefined : t("timeline.locked", { key })}
         {...partOf(part.timelineBarPress)}
         {...handlers("both")}
-        onKeyDown={onKeyDown}
+        onKeyDown={bar.onKeyDown}
+        onKeyUp={bar.onKeyUp}
+        onBlur={bar.onBlur}
       />
       <span {...partOf(part.timelineBarLabel)}>
         <IssueId id={key} />

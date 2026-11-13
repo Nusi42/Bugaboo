@@ -53,7 +53,7 @@ export function DraggableHead({ kind, id, label, canDrag, children }: DraggableH
             aria-label={label}
             excludeFromTabOrder
           >
-            <Icon name={iconName.menu} />
+            <Icon name={iconName.grip} />
           </AriaButton>
         </span>
       ) : null}

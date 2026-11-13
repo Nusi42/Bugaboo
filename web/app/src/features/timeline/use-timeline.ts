@@ -32,7 +32,7 @@ export function useTimelineModel(input: TimelineInput, names: Readonly<Record<st
     lines,
     side: sideOf({
       row: selected === undefined ? undefined : rowOf(selected),
-      line: lines.find((each) => each.kind === "issue" && each.issue === selected),
+      line: lines.find((each) => each.is === "issue" && each.issue === selected),
       fields,
       daysOf,
       options: input.view.timeline,
@@ -57,6 +57,9 @@ export function useTimelineModel(input: TimelineInput, names: Readonly<Record<st
       selected,
       select,
       onMove: changes.onMove,
+      onKeyMove: changes.onKeyMove,
+      onRunPause: changes.onRunPause,
+      onRunEnd: changes.onRunEnd,
       onLocked: changes.onLocked,
       onLink: changes.onLink,
       onPlace: changes.onPlace,

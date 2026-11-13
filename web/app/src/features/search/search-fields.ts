@@ -51,7 +51,9 @@ function isOperator(word: string): word is Operator {
  * does not know is left out (a newer server): a search by it is then an unknown field, which is
  * safe, and the rest keeps working.
  */
-export function readableFieldsOf(body: Schema<"SearchFieldsBody">): ReadableFields {
+export function readableFieldsOf(body: {
+  readonly fields: readonly Omit<Schema<"SearchFieldBody">, "timeline_group">[];
+}): ReadableFields {
   const fields: Field[] = [];
   for (const field of body.fields) {
     if (isKind(field.kind)) {
@@ -64,6 +66,17 @@ export function readableFieldsOf(body: Schema<"SearchFieldsBody">): ReadableFiel
     }
   }
   return { fields };
+}
+
+/** The words of the fields a timeline can group by, as the server marks them. */
+function timelineGroupsOf(body: Schema<"SearchFieldsBody">): readonly string[] {
+  const words: string[] = [];
+  for (const field of body.fields) {
+    if (field.timeline_group) {
+      words.push(field.word);
+    }
+  }
+  return words;
 }
 
 /** The names of the fields as the server gives them, by the word of the field. */
@@ -80,6 +93,8 @@ export function fieldNamesOf(body: Schema<"SearchFieldsBody">): Readonly<Record<
 export interface SearchFieldsAnswer {
   readonly fields: ReadableFields;
   readonly names: Readonly<Record<string, string>>;
+  /** The words of the fields a timeline can group its rows by, as the server says (`timeline_group`). */
+  readonly timelineGroups: readonly string[];
 }
 
 /**
@@ -96,7 +111,11 @@ export function useSearchFields(within?: string) {
           params: { query: within === undefined ? {} : { within } },
         }),
       );
-      return { fields: readableFieldsOf(body), names: fieldNamesOf(body) };
+      return {
+        fields: readableFieldsOf(body),
+        names: fieldNamesOf(body),
+        timelineGroups: timelineGroupsOf(body),
+      };
     },
   });
 }

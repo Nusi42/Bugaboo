@@ -9,21 +9,25 @@ import {
   arrowOf,
   barOf,
   chart,
-  createOwnDates,
-  datesAs,
   dayFromToday,
   dragAcross,
-  idsOf,
+  goalTitle,
+  movedLater,
   openPlan,
   openTimeline,
-  ownValueOf,
   planned,
   pressOf,
   prepareTimeline,
-  relationsOf,
-  setOwnValues,
   trayHandle,
 } from "./support/timeline.ts";
+import {
+  createOwnDates,
+  datesAs,
+  idsOf,
+  ownValueOf,
+  relationsOf,
+  setOwnValues,
+} from "./support/timeline-api.ts";
 
 // The timeline on a computer (PLAN-01 … PLAN-04, UX §4.7, ADR-0043): a saved search shown as a
 // timeline, its bars, arrows, goals and tray, dragged with Undo and moved by keys and typed ways.
@@ -35,11 +39,11 @@ const weekDayPixels = 16;
 
 /** The head of the group of the goal. */
 function goalHead(page: Parameters<typeof chart>[0]) {
-  return chart(page).getByRole("button", { name: goalHeadName });
+  return chart(page).locator('[data-part="timeline-row.toggle"]').filter({ hasText: goalHeadName });
 }
 
-/** The name of the head of the group of the goal: its Issue ID and its count. */
-const goalHeadName = new RegExp(`^${planned.goal}\\s?\\d`, "u");
+/** The name of the head of the group of the goal: its Issue ID and its title. */
+const goalHeadName = new RegExp(`^${planned.goal}\\s?${goalTitle}`, "u");
 
 test("plan_01_a_saved_search_shows_as_a_timeline_with_its_dates", async ({ page }) => {
   await signIn(page, ada);
@@ -69,10 +73,7 @@ test("plan_01_a_view_with_own_date_fields_draws_and_drags_those_fields", async (
   // A key moves the bar a day later: the own fields change, Start date and Due date stay empty.
   await bar.focus();
   await page.keyboard.press("ArrowRight");
-  const said = t("timeline.moved-later", {
-    key: planned.ownDates,
-    amount: t("timeline.amount-days", { count: 1 }),
-  });
+  const said = movedLater(planned.ownDates, t("timeline.amount-days", { count: 1 }));
   await expect(page.getByText(said)).toBeVisible();
   await expect
     .poll(() => ownValueOf(server, planned.ownDates, fields.begins))
@@ -131,10 +132,7 @@ test("plan_03_dragging_a_bar_moves_its_dates_and_undo_takes_it_back", async ({ p
   await signIn(page, ada);
   await openTimeline(page);
   await dragAcross(page, pressOf(page, planned.dragged), weekDayPixels * 7);
-  const said = t("timeline.moved-later", {
-    key: planned.dragged,
-    amount: t("timeline.amount-weeks", { count: 1 }),
-  });
+  const said = movedLater(planned.dragged, t("timeline.amount-weeks", { count: 1 }));
   await expect(page.getByText(said)).toBeVisible();
   await expect
     .poll(async () => (await datesAs(server, ada, planned.dragged)).start)
@@ -154,7 +152,12 @@ test("plan_03_an_issue_the_person_may_not_change_cannot_be_dragged_and_says_why"
   const bar = pressOf(page, planned.keys);
   const why = t("timeline.locked", { key: planned.keys });
   await expect(bar).toHaveAttribute("title", why);
+  // A drag starts nothing: the bar does not move.
   await dragAcross(page, bar, weekDayPixels * 3);
+  await expect(barOf(page, planned.keys)).not.toHaveAttribute("data-state", /dragging/u);
+  // A key that would move it says why it does not.
+  await bar.focus();
+  await page.keyboard.press("ArrowRight");
   await expect(page.getByText(why).first()).toBeVisible();
   expect(await datesAs(server, ada, planned.keys)).toEqual(before);
 });
@@ -220,7 +223,7 @@ test("plan_04_a_goal_with_a_due_date_is_a_diamond", async ({ page }) => {
   await signIn(page, ada);
   await openPlan(page);
   const goalRow = page.locator('[data-part="timeline-row"]').filter({
-    has: page.getByRole("button", { name: goalHeadName }),
+    has: page.locator('[data-part="timeline-row.toggle"]').filter({ hasText: goalHeadName }),
   });
   const diamond = goalRow.locator('[data-part="timeline-diamond"]');
   await expect(diamond).toHaveCount(1);
