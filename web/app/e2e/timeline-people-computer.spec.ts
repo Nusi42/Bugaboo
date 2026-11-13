@@ -1,0 +1,110 @@
+import { t } from "@bugaboo/messages";
+
+import { ana } from "./support/access.ts";
+import { ada, bob } from "./support/accounts.ts";
+import { expect, test } from "./support/fixtures.ts";
+import { signIn } from "./support/flows.ts";
+import { widthOf } from "./support/geometry.ts";
+import { barOf, openTimeline, pressOf } from "./support/timeline.ts";
+import {
+  people,
+  prepareTimelinePeople,
+  setBobsShare,
+  viewersSeeAssigned,
+} from "./support/timeline-people.ts";
+
+// The people on the timeline on a computer (PLAN-10 … PLAN-12, UX §4.7, ADR-0030 and its amendment
+// M8): the person on a bar as *Who sees people* allows, *Group by person* with its copies, the
+// hatched days without work, and *Plan by effort*.
+
+test.use({ preparation: { run: prepareTimelinePeople } });
+
+/** The field the rows are grouped by, in the address: *Assigned to*. */
+const byPerson = `&group=${encodeURIComponent("assigned to")}`;
+
+test("plan_10_a_role_only_reader_sees_someone_and_no_group_by_person", async ({ page, server }) => {
+  await viewersSeeAssigned(server, "role-only");
+  // Ana is a Viewer of WEB: she sees who works on a bar only by their role.
+  await signIn(page, ana);
+  await openTimeline(page);
+  const someone = t("person.role", { role: t("starting-role.team-member") });
+  await expect(barOf(page, people.shared)).toContainText(`${someone} +1`);
+  await expect(barOf(page, people.shared)).not.toContainText(bob.name);
+  // *Group by* offers no person: nobody could be told apart.
+  const groupBy = page.getByLabel(t("issues.group-by"));
+  await expect(groupBy.locator("option", { hasText: t("issue-field.assigned-to") })).toHaveCount(0);
+  // With *Hidden* no person is on the bar at all.
+  await viewersSeeAssigned(server, "hidden");
+  await page.reload();
+  await expect(barOf(page, people.shared)).not.toContainText(someone);
+});
+
+test("plan_10_group_by_person_draws_the_other_assigned_people_as_an_outline_with_its_words", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await openTimeline(page, byPerson);
+  // The bar stands in Bob's row and in Ada's; Ada's copy is an outline planned with Bob's work times.
+  const bars = barOf(page, people.shared);
+  await expect(bars).toHaveCount(2);
+  const copy = bars.and(page.locator('[data-state~="copy"]'));
+  await expect(copy).toHaveCount(1);
+  const words = t("timeline.planned-with", { name: bob.name });
+  await expect(copy.locator('[data-part="timeline-bar.press"]')).toHaveAccessibleName(
+    new RegExp(words, "u"),
+  );
+  // The card of the copy says it too.
+  await copy.locator('[data-part="timeline-bar.press"]').click();
+  const card = page.getByRole("region", { name: t("timeline.card", { key: people.shared }) });
+  await expect(card).toContainText(words);
+});
+
+test("plan_11_away_days_are_hatched_and_labelled_away_and_holidays_carry_their_name", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await openTimeline(page);
+  // Bob's away day: hatched, and called only *Away*.
+  const shared = barOf(page, people.shared).first();
+  await expect(shared.locator('[data-part="timeline-bar.hatch"][data-variant="away"]')).toHaveCount(
+    1,
+  );
+  await expect(pressOf(page, people.shared).first()).toHaveAccessibleName(
+    new RegExp(t("timeline.away"), "u"),
+  );
+  // Over Christmas, at the zoom of months: the holidays hatched, each with its name.
+  await openTimeline(page, "&zoom=month");
+  const holiday = barOf(page, people.holiday);
+  await expect(
+    holiday.locator('[data-part="timeline-bar.hatch"][data-variant="holiday"]'),
+  ).not.toHaveCount(0);
+  await expect(pressOf(page, people.holiday)).toHaveAccessibleName(
+    new RegExp(t("timeline.holiday", { name: t("holiday.christmas-day") }), "u"),
+  );
+});
+
+test("plan_12_plan_by_effort_doubles_the_bars_when_the_share_is_halved", async ({
+  page,
+  server,
+}) => {
+  await signIn(page, ada);
+  await openTimeline(page);
+  // Without *Plan by effort* an issue with only a start date is one day long.
+  // The whole bar, edges included: as wide as its days.
+  const bar = barOf(page, people.effort);
+  const oneDay = await widthOf(bar);
+  // The switch is pressed where the eye sees it: its words.
+  await page.getByText(t("timeline.plan-by-effort"), { exact: true }).click();
+  await expect(page.getByRole("switch", { name: t("timeline.plan-by-effort") })).toBeChecked();
+  // 16 hours at 8 hours a day: two work days.
+  await expect.poll(() => widthOf(bar)).toBe(oneDay * 2);
+  const full = await widthOf(bar);
+  // At half of his hours in WEB, Bob needs twice the days.
+  await setBobsShare(server, 50);
+  await page.reload();
+  await expect.poll(() => widthOf(bar)).toBe(full * 2);
+  // The card says the effort in work days.
+  await pressOf(page, people.effort).click();
+  const card = page.getByRole("region", { name: t("timeline.card", { key: people.effort }) });
+  await expect(card).toContainText(t("timeline.worked-out-due"));
+});

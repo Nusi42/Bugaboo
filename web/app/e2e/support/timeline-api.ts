@@ -77,3 +77,14 @@ export async function datesAs(server: Instance, person: Person, key: string) {
   await session.dispose();
   return { start: read.issue.start_date ?? null, due: read.issue.due_date ?? null };
 }
+
+/** The name of the first person an issue is assigned to, as the administrator reads it. */
+export async function firstAssigned(server: Instance, key: string): Promise<string | undefined> {
+  const admin = await signInThroughApi(server, ada);
+  const read = dataOf(
+    await admin.client.GET("/api/v1/issues/{issue}", { params: { path: { issue: key } } }),
+  );
+  await admin.dispose();
+  const [first] = read.issue.assigned_to ?? [];
+  return first?.shown === "name" ? first.name : undefined;
+}

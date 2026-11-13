@@ -24,3 +24,12 @@ export function gapUnder(shown: Locator, above: string): Promise<number> {
     return node.getBoundingClientRect().top - (foot ?? Number.POSITIVE_INFINITY);
   }, above);
 }
+
+/** How wide what the locator shows is, in whole pixels. */
+export async function widthOf(shown: Locator): Promise<number> {
+  const box = await shown.boundingBox();
+  if (box === null) {
+    throw new TypeError("The element is not on the screen.");
+  }
+  return Math.round(box.width);
+}
