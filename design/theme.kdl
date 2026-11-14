@@ -4208,6 +4208,13 @@ part "followers-line" {
     min-width 0
 }
 
+// On a phone the count and *Stop following* stand one under the other, always: side by side they fit
+// for one follower and not for two, and the row would grow when a change adds a follower (UX §6.4).
+part "app-layout[variant=phone] followers-line" {
+    flex-direction column
+    align-items flex-start
+}
+
 // The button never breaks its words, so *Stop following* stays one line.
 part "followers-line button" {
     white-space nowrap
@@ -4821,6 +4828,13 @@ part "start-column" {
     align-items flex-start
     gap "$space-1"
     min-width 0
+}
+
+// A value that is a column (the people of *Assigned to*) takes the whole line of its row: *Saving…* and *Saved*
+// stand under it, both of them, and the short *Saving…* never sits beside it where the longer *Saved* with *Undo*
+// would not, which grew the row a second time when the answer came (UX §6.4).
+part "name-value.value > start-column" {
+    flex-basis "100%"
 }
 
 // A value of a row of the Details that is a column (the people of *Assigned to*): each line is as

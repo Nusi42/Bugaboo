@@ -3111,6 +3111,11 @@ textarea,
   min-width: 0;
 }
 
+[data-part="app-layout"][data-variant~="phone"] [data-part="followers-line"] {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
 [data-part="followers-line"] [data-part="button"] {
   white-space: nowrap;
 }
@@ -3718,6 +3723,10 @@ textarea,
   align-items: flex-start;
   gap: var(--space-1);
   min-width: 0;
+}
+
+[data-part="name-value.value"] > [data-part="start-column"] {
+  flex-basis: 100%;
 }
 
 [data-part="start-column.line"] {

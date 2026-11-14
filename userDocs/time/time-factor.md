@@ -10,7 +10,8 @@ On the issue page the row **Time factor** stands under *Estimated time*. It says
 
 - "×1.25 · Lea's own estimate" when the person on the bar set it;
 - "×1.5 · set by Ada Brandt" when somebody else set it;
-- "×1 (as estimated)" when nobody set one.
+- "×1 (as estimated)" when nobody set one;
+- "Nobody is assigned yet" when the issue is assigned to nobody: the time factor belongs to a person, and the row keeps its place until somebody is assigned.
 
 If you are the person on the bar, you always see the row, also where your role does not see the time factor of other people's issues. Everybody else sees it as the field permissions of *Time factor* allow (at the start Administrators, Project leads and Team members may change it, Contributors and Viewers see it, and Guests do not). Where *Who sees people* shows your role the person on the bar only by their role, the row says *set by Someone*.
 

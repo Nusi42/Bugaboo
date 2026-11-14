@@ -2,6 +2,7 @@ import { expect, type Page } from "@playwright/test";
 
 import { t } from "@bugaboo/messages";
 
+import { bob } from "./accounts.ts";
 import { type ChangeInPlace, detailChange, ISSUE, issuePage } from "./change-row.ts";
 import { issuePageLandmarks } from "./landmarks.ts";
 import { detailRow } from "./parts.ts";
@@ -49,6 +50,17 @@ function sectionChange(
 
 /** The changes in place of the issue page beyond the short values, the title and the status. */
 export const moreIssuePageChanges: readonly ChangeInPlace[] = [
+  {
+    ...detailChange(t("issue-field.assigned-to"), "assigned to", async (page) => {
+      await page
+        .getByRole("button", { name: t("issues.assign-name", { name: bob.name }), exact: true })
+        .click();
+    }),
+    // Opening the picker is the person's own; picking the person makes the change.
+    before: async (page) => {
+      await page.getByRole("button", { name: t("issues.assign-someone"), exact: true }).click();
+    },
+  },
   detailChange(OWN.one.name, "own field with one choice", async (page) => {
     await page.getByLabel(OWN.one.name, { exact: true }).selectOption({ label: "Critical" });
   }),
