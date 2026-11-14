@@ -522,6 +522,38 @@ async fn ai_03_a_search_never_tells_a_name_known_only_from_a_project_kept_from_a
     .await
 }
 
+/// The tools of the people, in the order of the registry: the four that read, then those that
+/// change.
+const READING: [&str; 4] = ["search_issues", "get_issue", "list_projects", "get_my_work"];
+const CHANGING: [&str; 7] = [
+    "create_issue",
+    "update_issue",
+    "change_status",
+    "add_comment",
+    "log_time",
+    "start_timer",
+    "stop_timer",
+];
+
+/// The names of the tools `tools/list` offers to the token.
+async fn tool_names(
+    mcp: &Mcp<'_>,
+    signed: &super::ai_mcp_rig::Signed,
+) -> Result<Vec<String>, bb_testing::Failure> {
+    let listed = mcp
+        .post(
+            Some(&signed.access),
+            json!({"jsonrpc": "2.0", "id": 1, "method": "tools/list"}),
+        )
+        .await?;
+    Ok(listed.json["result"]["tools"]
+        .as_array()
+        .ok_or("no tools")?
+        .iter()
+        .filter_map(|tool| tool["name"].as_str().map(str::to_owned))
+        .collect())
+}
+
 #[tokio::test]
 async fn ai_04_an_app_of_an_administrator_is_offered_the_tools_before_any_project_exists()
 -> TestResult {
@@ -531,17 +563,8 @@ async fn ai_04_an_app_of_an_administrator_is_offered_the_tools_before_any_projec
         let mut ada = super::http::Browser::signed_in_as(&app, super::http::ADA_EMAIL).await?;
         ai_on(&rig).await?;
         let mcp = Mcp::new(&app);
-        let names =
-            async |signed: &super::ai_mcp_rig::Signed| -> Result<String, bb_testing::Failure> {
-                let listed = mcp
-                    .post(
-                        Some(&signed.access),
-                        json!({"jsonrpc": "2.0", "id": 1, "method": "tools/list"}),
-                    )
-                    .await?;
-                Ok(listed.json["result"]["tools"].to_string())
-            };
-        // A role for the whole organization allows the tools wherever a project will be.
+        // While there is no project, the role for the whole organization decides, as it will in
+        // the first project.
         let looking = sign_in_app(
             &mcp,
             &mut ada,
@@ -550,9 +573,7 @@ async fn ai_04_an_app_of_an_administrator_is_offered_the_tools_before_any_projec
             "see-only",
         )
         .await?;
-        let seen = names(&looking).await?;
-        assert!(seen.contains("search_issues"), "{seen}");
-        assert!(!seen.contains("create_issue"), "{seen}");
+        assert_eq!(tool_names(&mcp, &looking).await?, READING);
         let changing = sign_in_app(
             &mcp,
             &mut ada,
@@ -561,8 +582,65 @@ async fn ai_04_an_app_of_an_administrator_is_offered_the_tools_before_any_projec
             "see-and-change",
         )
         .await?;
-        let all = names(&changing).await?;
-        assert!(all.contains("create_issue"), "{all}");
+        assert_eq!(
+            tool_names(&mcp, &changing).await?,
+            [&READING[..], &CHANGING[..]].concat()
+        );
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn ai_04_once_there_are_projects_they_decide_which_tools_an_app_is_offered() -> TestResult {
+    each_database("ai_04_tools_projects_decide_http", async |db| {
+        let (rig, app) = Mcp::start(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        ai_on(&rig).await?;
+        let mcp = Mcp::new(&app);
+        // Nora has a role for the whole organization and *No access* in ACME, the only project.
+        let (mut nora, nora_id) = site.person(StartingRole::TeamMember, "nora").await?;
+        let acme = site.acme.parse().map_err(|_| "no project ID")?;
+        site.org
+            .forbid(
+                &super::policy_rig::Member {
+                    id: nora_id,
+                    session: String::new(),
+                },
+                acme,
+            )
+            .await
+            .map_err(|error| format!("{error:?}"))?;
+        let noras = sign_in_app(
+            &mcp,
+            &mut nora,
+            "Claude Code",
+            "see-and-change",
+            "see-and-change",
+        )
+        .await?;
+        assert!(tool_names(&mcp, &noras).await?.is_empty());
+        // Ada's only project kept from AI leaves her role for the whole organization nothing.
+        let adas = sign_in_app(
+            &mcp,
+            &mut ada,
+            "Claude Code",
+            "see-and-change",
+            "see-and-change",
+        )
+        .await?;
+        assert_eq!(
+            tool_names(&mcp, &adas).await?,
+            [&READING[..], &CHANGING[..]].concat()
+        );
+        ok(&ada
+            .send(
+                "PUT",
+                "/api/v1/never-sent-to-ai/projects/ACME",
+                Some(json!({"marked": true, "version": 0})),
+            )
+            .await?)?;
+        assert!(tool_names(&mcp, &adas).await?.is_empty());
         Ok(())
     })
     .await

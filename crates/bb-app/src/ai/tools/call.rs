@@ -274,14 +274,19 @@ impl<S: AuthStore> Ctx<'_, S> {
                         self.withheld(asked.caller).await?,
                     ));
                 }
-                // A role for the whole organization allows the tool in every project, also before
-                // one exists; a project kept from AI allows no tool: the tool would find nothing
-                // there.
+                // A project kept from AI allows no tool: the tool would find nothing there. Only
+                // while the organization holds no project does its role for the whole
+                // organization decide, as it will in the first project; once there are projects,
+                // they decide, so a *No access* row or a mark *Never sent to AI* counts as it
+                // does for the call.
                 let allowed = seen.as_ref().is_some_and(|(shown, withheld)| {
-                    shown.at_organization(|held| need.met_by(held))
-                        || shown.anywhere(|project, held| {
+                    if shown.holds_no_project() {
+                        shown.at_organization(|held| need.met_by(held))
+                    } else {
+                        shown.anywhere(|project, held| {
                             !withheld.hides_project(project) && need.met_by(held)
                         })
+                    }
                 });
                 if !allowed {
                     continue;

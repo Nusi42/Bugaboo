@@ -4,6 +4,7 @@
 //! and a tool is offered only to a person who may use it somewhere outside what is kept from AI.
 
 use bb_core::ErrorCode;
+use bb_core::access::AppliesTo;
 use bb_core::ai::ToolScope;
 use bb_policy::StartingRole;
 use serde_json::json;
@@ -16,6 +17,7 @@ use super::world::{Outcome, World};
 use crate::ai::NeverSentTarget;
 use crate::ai::tools::{ToolListQuery, ToolMode, ToolSpec, call_tool, list_tools, search_refusal};
 use crate::auth::AppError;
+use crate::roles::{AssignRole, Given, Subject, assign_role};
 
 #[tokio::test]
 async fn ai_21_a_limit_outside_one_to_a_hundred_is_refused_with_the_range() -> Outcome {
@@ -217,14 +219,28 @@ async fn ai_21_a_timer_stopped_within_a_minute_says_that_nothing_was_booked() ->
 async fn ai_04_a_tool_allowed_only_in_projects_kept_from_ai_is_not_offered() -> Outcome {
     let world = World::new().await?;
     let web = a_project(&world, "WEB").await?;
-    // Tom works in WEB only; a role for the whole organization would count in every project.
+    // Tom works in WEB only; Nora has a role for the whole organization and *No access* in WEB,
+    // the only project; the administrator holds every role for the whole organization.
     let tom = world.person("tom@example.test").await?;
     with_role(&world, &tom, StartingRole::TeamMember, Some(web)).await?;
-    let list = async || -> Result<usize, AppError> {
+    let nora = world.person("nora@example.test").await?;
+    with_role(&world, &nora, StartingRole::TeamMember, None).await?;
+    assign_role(
+        &world.ctx(),
+        AssignRole {
+            session_token: token(&world),
+            subject: Subject::Person(nora.person.id),
+            given: Given::NoAccess,
+            project: Some(web),
+            applies_to: AppliesTo::ProjectAndSubProjects,
+        },
+    )
+    .await?;
+    let list = async |who: &str| -> Result<usize, AppError> {
         Ok(list_tools(
             &world.ctx(),
             ToolListQuery {
-                session_token: tom.session_token.clone(),
+                session_token: who.to_owned(),
                 granted: ToolScope::SeeAndChange,
                 caller: bb_core::ai::ToolCaller::AiApp,
             },
@@ -234,8 +250,17 @@ async fn ai_04_a_tool_allowed_only_in_projects_kept_from_ai_is_not_offered() -> 
         .tools
         .len())
     };
-    assert!(list().await? > 0);
+    let admin = token(&world);
+    assert!(list(&tom.session_token).await? > 0);
+    assert!(list(&admin).await? > 0);
+    // *No access* in every project leaves a role for the whole organization nothing to allow.
+    assert_eq!(list(&nora.session_token).await?, 0);
     mark(&world, NeverSentTarget::Project("WEB".to_owned())).await?;
-    assert_eq!(list().await?, 0);
+    assert_eq!(list(&tom.session_token).await?, 0);
+    assert_eq!(
+        list(&admin).await?,
+        0,
+        "the administrator's only project is kept from AI"
+    );
     Ok(())
 }
