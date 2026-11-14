@@ -286,7 +286,7 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
     ) -> Result<Option<Prepared>, AppError> {
         let nothing = AtomicBool::new(false);
         let prepared = self
-            .prepare_search_narrowed(actor, text, scope, None, |looked| {
+            .prepare_search_narrowed(actor, text, scope, |looked| {
                 narrowing(looked, words, part, &nothing)
             })
             .await?;

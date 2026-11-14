@@ -58,7 +58,10 @@ impl<S: AuthStore> Ctx<'_, S> {
 
     /// The issue types in use on the issues the person reads, read once for a request.
     async fn used_types(&self, shown: &Shown) -> Result<Arc<Vec<IssueTypeId>>, AppError> {
-        if let Some(known) = locked(&self.known.used_types).get(&shown.person()).cloned() {
+        // A view for the AI is not the person's whole view: it neither reads nor fills the cache.
+        let cached = !shown.is_kept_from_ai();
+        if cached && let Some(known) = locked(&self.known.used_types).get(&shown.person()).cloned()
+        {
             return Ok(known);
         }
         let found = Arc::new(
@@ -67,16 +70,20 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .await
                 .map_err(|error| internal::<S>(&error))?,
         );
-        locked(&self.known.used_types).insert(shown.person(), Arc::clone(&found));
+        if cached {
+            locked(&self.known.used_types).insert(shown.person(), Arc::clone(&found));
+        }
         Ok(found)
     }
 
     /// The groups of labels in use on the issues whose labels the person may see, read once for a
     /// request; the levels of their roles are read only now, for this.
     async fn used_groups(&self, shown: &Shown) -> Result<Arc<Vec<LabelGroupId>>, AppError> {
-        if let Some(known) = locked(&self.known.used_groups)
-            .get(&shown.person())
-            .cloned()
+        let cached = !shown.is_kept_from_ai();
+        if cached
+            && let Some(known) = locked(&self.known.used_groups)
+                .get(&shown.person())
+                .cloned()
         {
             return Ok(known);
         }
@@ -94,7 +101,9 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .await
                 .map_err(failed)?,
         );
-        locked(&self.known.used_groups).insert(shown.person(), Arc::clone(&found));
+        if cached {
+            locked(&self.known.used_groups).insert(shown.person(), Arc::clone(&found));
+        }
         Ok(found)
     }
 

@@ -125,7 +125,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             agent: crate::issues::WithAgent::No,
             time: false,
         };
-        let page = search_page_within(self, actor, &query, true, Some(withheld)).await?;
+        let page = search_page_within(self, actor, &query, true, withheld).await?;
         let mut parts = Vec::new();
         if let Some(Value::Array(items)) = masked(&page)?.get_mut("items").map(Value::take) {
             for item in items {

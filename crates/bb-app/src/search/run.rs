@@ -168,18 +168,19 @@ impl<S: AuthStore> Ctx<'_, S> {
         text: &str,
         scope: SearchScope,
     ) -> Result<Prepared, AppError> {
-        self.prepare_search_within(actor, text, scope, None).await
+        self.prepare(actor, text, scope, None, |_| None).await
     }
 
-    /// The same for the AI (AI-03): what is kept from AI is not among the fields or the projects.
+    /// The same for the AI (AI-03): what is kept from AI is not among the fields, the projects or
+    /// the names a search may use.
     pub(crate) async fn prepare_search_within(
         &self,
         actor: &Actor,
         text: &str,
         scope: SearchScope,
-        withheld: Option<&Withheld>,
+        withheld: &Withheld,
     ) -> Result<Prepared, AppError> {
-        self.prepare_search_narrowed(actor, text, scope, withheld, |_| None)
+        self.prepare(actor, text, scope, Some(withheld), |_| None)
             .await
     }
 
@@ -187,6 +188,17 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// read (the timeline keeps the issues with a date, or those with none), joined to the filter
     /// of the text with `and`, then checked like the rest.
     pub(crate) async fn prepare_search_narrowed(
+        &self,
+        actor: &Actor,
+        text: &str,
+        scope: SearchScope,
+        narrow: impl FnOnce(&Looked) -> Option<Expr>,
+    ) -> Result<Prepared, AppError> {
+        self.prepare(actor, text, scope, None, narrow).await
+    }
+
+    /// The one way a search is prepared: for the person, or for the AI with what is kept from AI.
+    async fn prepare(
         &self,
         actor: &Actor,
         text: &str,
@@ -287,7 +299,8 @@ pub(crate) async fn search_page<S: AuthStore + SearchStore>(
     query: &SearchQuery,
     with_people: bool,
 ) -> Result<Authorized<SearchPage>, AppError> {
-    search_page_within(ctx, actor, query, with_people, None).await
+    let prepared = ctx.prepare_search(actor, &query.text, query.scope).await?;
+    page_of(ctx, actor, query, with_people, prepared).await
 }
 
 /// The same page for the AI (AI-03): what is kept from AI is not looked at.
@@ -299,11 +312,22 @@ pub(crate) async fn search_page_within<S: AuthStore + SearchStore>(
     actor: &Actor,
     query: &SearchQuery,
     with_people: bool,
-    withheld: Option<&Withheld>,
+    withheld: &Withheld,
 ) -> Result<Authorized<SearchPage>, AppError> {
-    let mut prepared = ctx
+    let prepared = ctx
         .prepare_search_within(actor, &query.text, query.scope, withheld)
         .await?;
+    page_of(ctx, actor, query, with_people, prepared).await
+}
+
+/// The page a prepared search finds, for [`search_page`] and [`search_page_within`].
+async fn page_of<S: AuthStore + SearchStore>(
+    ctx: &Ctx<'_, S>,
+    actor: &Actor,
+    query: &SearchQuery,
+    with_people: bool,
+    mut prepared: Prepared,
+) -> Result<Authorized<SearchPage>, AppError> {
     let found = ctx
         .issues_page(
             actor,

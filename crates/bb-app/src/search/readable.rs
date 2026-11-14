@@ -188,9 +188,10 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// The same, from the tree and the levels of the person that the caller has read already (the
     /// saved searches read them once for a request and judge many texts with them).
     ///
-    /// For the AI, `withheld` takes the projects kept from AI out before anything is collected from
-    /// them, so no status, issue type or field is known only from such a project: a suggestion of
-    /// the checker (*Did you mean …*) can then name only what the AI may see (AI-03).
+    /// For the AI, `withheld` makes the projects kept from AI as if the person had no access to them
+    /// ([`crate::projects::Shown::kept_from_ai`]) before anything is collected, so no status, issue
+    /// type, field, tag or label is known only from such a project: a suggestion of the checker
+    /// (*Did you mean …*) and a name the search accepts can only be what the AI may see (AI-03).
     ///
     /// # Errors
     /// `resource.not-found` for a project that the person does not see; an internal error when the
@@ -201,6 +202,12 @@ impl<S: AuthStore> Ctx<'_, S> {
         scope: SearchScope,
         withheld: Option<&crate::ai::Withheld>,
     ) -> Result<Looked, AppError> {
+        // For the AI the projects kept from AI are as if the person had no access to them, for
+        // everything read below and for the names of the search (tags, labels) read later.
+        let seen = match withheld {
+            Some(withheld) => seen.kept_from_ai(withheld),
+            None => seen,
+        };
         let within = match scope {
             SearchScope::Everywhere => None,
             SearchScope::Within(project) if seen.sees(project) => Some(project),
@@ -211,14 +218,6 @@ impl<S: AuthStore> Ctx<'_, S> {
             .seen_places(within)
             .into_iter()
             .map(|(chain, held)| Place::of(chain, held))
-            .filter(|place: &Place| {
-                withheld.is_none_or(|withheld| {
-                    place
-                        .chain
-                        .last()
-                        .is_none_or(|project| !withheld.hides_project(*project))
-                })
-            })
             .collect();
         let mut types: Vec<IssueType> = Vec::new();
         let mut statuses: Vec<WorkflowStatus> = Vec::new();

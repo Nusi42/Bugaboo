@@ -32,6 +32,9 @@ pub(crate) struct Shown {
     tree: Tree,
     projects: BTreeMap<ProjectId, Project>,
     visible: BTreeSet<ProjectId>,
+    /// The projects kept from AI, for a view made for the AI ([`Shown::kept_from_ai`]): the person
+    /// holds nothing there and sees none of them, as if they had no access.
+    kept: BTreeSet<ProjectId>,
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -116,6 +119,11 @@ impl std::ops::Deref for Leveled {
 }
 
 impl Leveled {
+    /// The same view for the AI ([`Shown::kept_from_ai`]).
+    pub(crate) fn kept_from_ai(&self, withheld: &crate::ai::Withheld) -> Self {
+        Self(self.0.kept_from_ai(withheld))
+    }
+
     /// Which issues the person reads where their role lets them see `field` (SEC-06), judged for
     /// every project and issue type in memory: a project where the field is hidden for every type
     /// is left out, and the types for which it is hidden in the others are named in `hidden`.
@@ -193,7 +201,31 @@ impl Shown {
                 .into_iter()
                 .map(|project| (project.id, project))
                 .collect(),
+            kept: BTreeSet::new(),
         }
+    }
+
+    /// The view for the AI: every project kept from AI is as if the person had no access to it, so
+    /// nothing that only such a project holds (a tag, a group of labels, an issue type, a status)
+    /// is known through this view (AI-03).
+    pub(crate) fn kept_from_ai(&self, withheld: &crate::ai::Withheld) -> Self {
+        let mut narrowed = self.clone();
+        narrowed.kept = self
+            .projects
+            .keys()
+            .copied()
+            .filter(|project| withheld.hides_project(*project))
+            .collect();
+        narrowed
+            .visible
+            .retain(|project| !narrowed.kept.contains(project));
+        narrowed
+    }
+
+    /// Whether the view leaves out projects kept from AI, so what is read through it is not the
+    /// person's own whole view and is kept in no cache of the request.
+    pub(crate) fn is_kept_from_ai(&self) -> bool {
+        !self.kept.is_empty()
     }
 
     /// The rights of the person the view was made from.
@@ -284,6 +316,12 @@ impl Shown {
     }
 
     fn held_at(&self, place: Place) -> Option<std::sync::Arc<Evaluation>> {
+        if place
+            .project()
+            .is_some_and(|project| self.kept.contains(&project))
+        {
+            return None;
+        }
         self.policy
             .evaluate_as(self.person, self.key.as_ref(), &self.tree, place)
     }

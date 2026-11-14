@@ -410,35 +410,87 @@ async fn a_status_only_in_kept(ada: &mut super::http::Browser) -> Result<(), bb_
     Ok(())
 }
 
+/// What only the project KEPT knows besides its status: an issue type, a label in a group made
+/// there, and a tag used only on an issue there.
+async fn names_only_in_kept(
+    ada: &mut super::http::Browser,
+    kind: &str,
+) -> Result<(), bb_testing::Failure> {
+    ok(&ada
+        .send(
+            "POST",
+            "/api/v1/issue-types",
+            Some(json!({"name": "Blockwork", "icon": "star", "project": "KEPT"})),
+        )
+        .await?)?;
+    let group = ok(&ada
+        .send(
+            "POST",
+            "/api/v1/label-groups",
+            Some(json!({"name": "Weather", "pick_one": false, "project": "KEPT"})),
+        )
+        .await?)?["id"]
+        .clone();
+    ok(&ada
+        .send(
+            "POST",
+            "/api/v1/labels",
+            Some(json!({"name": "zephyr", "label_group": group})),
+        )
+        .await?)?;
+    let issue = ok(&ada
+        .send(
+            "POST",
+            "/api/v1/projects/KEPT/issues",
+            Some(json!({"issue_type": kind, "title": "Tagged"})),
+        )
+        .await?)?["readable_id"]
+        .as_str()
+        .ok_or("no key")?
+        .to_owned();
+    ok(&ada
+        .send(
+            "POST",
+            &format!("/api/v1/issues/{issue}/tags"),
+            Some(json!({"name": "zephyrtag"})),
+        )
+        .await?)?;
+    Ok(())
+}
+
 #[tokio::test]
-async fn ai_03_a_search_mistake_never_suggests_a_status_known_only_from_a_project_kept_from_ai()
--> TestResult {
+async fn ai_03_a_search_never_tells_a_name_known_only_from_a_project_kept_from_ai() -> TestResult {
     each_database("ai_03_suggestion_kept_http", async |db| {
         let (rig, app) = Mcp::start(db).await?;
-        let (_site, mut ada) = Site::start(&rig, &app).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
         ai_on(&rig).await?;
         let mcp = Mcp::new(&app);
         a_status_only_in_kept(&mut ada).await?;
+        names_only_in_kept(&mut ada, &site.kind).await?;
         let signed = sign_in_app(&mcp, &mut ada, "Claude Code", "see-only", "see-only").await?;
-        let refusal = async || -> Result<String, bb_testing::Failure> {
-            let refused = mcp
-                .call_tool(
-                    &signed,
-                    "search_issues",
-                    json!({"query": "status is Blockad"}),
-                )
+        let search = async |query: &str| -> Result<(bool, String), bb_testing::Failure> {
+            let answer = mcp
+                .call_tool(&signed, "search_issues", json!({ "query": query }))
                 .await?;
-            assert_eq!(
-                refused.json["result"]["isError"],
-                json!(true),
-                "{}",
-                refused.json
-            );
-            Ok(text_of(&refused))
+            Ok((
+                answer.json["result"]["isError"] == json!(true),
+                text_of(&answer),
+            ))
         };
-        // While the project may be read by AI, its status is a fair suggestion.
-        let open = refusal().await?;
-        assert!(open.contains("Blockade"), "{open}");
+        let misspelt = [
+            ("status is Blockad", "Blockade"),
+            ("type is Blockwor", "Blockwork"),
+        ];
+        let named = ["labels is zephyr", "tags is zephyrtag"];
+        // While the project may be read by AI, its names are fair suggestions and fair names.
+        for (query, name) in misspelt {
+            let (refused, said) = search(query).await?;
+            assert!(refused && said.contains(name), "{query}: {said}");
+        }
+        for query in named {
+            let (refused, said) = search(query).await?;
+            assert!(!refused, "{query}: {said}");
+        }
         ok(&ada
             .send(
                 "PUT",
@@ -446,8 +498,25 @@ async fn ai_03_a_search_mistake_never_suggests_a_status_known_only_from_a_projec
                 Some(json!({"marked": true, "version": 0})),
             )
             .await?)?;
-        let kept = refusal().await?;
-        assert!(!kept.contains("Blockade"), "{kept}");
+        for (query, name) in misspelt {
+            let (refused, said) = search(query).await?;
+            assert!(refused && !said.contains(name), "{query}: {said}");
+        }
+        // A name only the kept project knows is refused like a name nobody has.
+        for (query, unknown) in [
+            ("labels is zephyr", "labels is nonesuch"),
+            ("tags is zephyrtag", "tags is nonesuchtag"),
+        ] {
+            let (refused, said) = search(query).await?;
+            let (_, nobody) = search(unknown).await?;
+            assert!(refused, "{query}: {said}");
+            let word = |text: &str| text.rsplit(' ').next().unwrap_or_default().to_owned();
+            assert_eq!(
+                said.replace(&word(query), &word(unknown)),
+                nobody,
+                "{query}"
+            );
+        }
         Ok(())
     })
     .await
