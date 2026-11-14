@@ -4081,6 +4081,11 @@ textarea,
   font-weight: var(--weight-regular);
 }
 
+[data-part="stack"] > [data-part="save-status"] {
+  display: block;
+  min-block-size: var(--size-line);
+}
+
 [data-part="save-bar"] {
   display: flex;
   flex-wrap: wrap;

@@ -167,6 +167,8 @@ tokens {
     // What puts the first line of words in the middle of the height of a control, in the line height of the words
     // that use it.
     size "pad-line-in-control" "calc(($size-control - 1lh) / 2)"
+    // One line of the words that use it, in their own line height: the room a note keeps before it has words.
+    size "size-line" "1lh"
     // Where the text of a cell of the grid of the timesheet starts: level with the first line of the boxes of lengths (the room
     // the box has above its text, and the room around the box).
     size "size-sheet-text-top" "calc($space-1 + $pad-line-in-control)"
@@ -5185,6 +5187,13 @@ part "save-status" {
 part "save-status[state=not-saved]" {
     color "$fg"
     font-weight "$weight-regular"
+}
+
+// *Saving…* and *Saved* on a line of their own in a stack (a page of settings): the line is there before the first
+// change, so nothing under it moves when the words come (UX §6.4).
+part "stack > save-status" {
+    display block
+    min-block-size "$size-line"
 }
 
 // The bar under an editor: the plain buttons at the start, the one filled button at the end (R6).

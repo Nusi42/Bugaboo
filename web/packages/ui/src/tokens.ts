@@ -248,6 +248,7 @@ export const tokenNames = [
   "size-col-value",
   "size-col-changed",
   "pad-line-in-control",
+  "size-line",
   "size-sheet-text-top",
   "size-choice-number-box",
   "size-hours-box",
