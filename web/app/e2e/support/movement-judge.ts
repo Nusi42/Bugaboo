@@ -203,14 +203,17 @@ function pushOf(part: Moved, growths: readonly Growth[]): number {
 
 /**
  * Whether a part that changes grew in place: in one direction only, frame by frame (never shrinking
- * and growing back), with its start edge staying (it may get wider, as a button with a longer word),
- * and its top or its bottom edge staying, or its top pushed by what grew above.
+ * and growing back), with its start edge staying, as wide or wider (a button with a longer word),
+ * never narrower, and its top or its bottom edge staying, or its top pushed by what grew above.
  */
 function grewInPlace(part: Moved, pushed: number): boolean {
   const top = part.last.y - part.from.y;
   const bottom = top + part.last.height - part.from.height;
   return (
-    part.turns === 0 && !far(part.from.x, part.last.x) && (!far(top, pushed) || !far(bottom, 0))
+    part.turns === 0 &&
+    !far(part.from.x, part.last.x) &&
+    part.last.width >= part.from.width - LEAST_MOVE_PX &&
+    (!far(top, pushed) || !far(bottom, 0))
   );
 }
 

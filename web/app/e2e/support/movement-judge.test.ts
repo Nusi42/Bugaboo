@@ -96,6 +96,11 @@ describe("ux_01 the measure holds what is named nowhere, what came in and what g
     const button = moved("status", box(400, 240, 110, 36), box(400, 240, 140, 36));
     expect(wrongIn(movementOf([button]), { grows: ["status"] })).toEqual(nothingWrong);
   });
+
+  it("fails a changed part that gets narrower, as a title whose words wrap anew", () => {
+    const title = moved("title", box(400, 120, 600, 60), box(400, 120, 560, 60));
+    expect(wrongIn(movementOf([title]), { grows: ["title"] }).moved).toEqual([title]);
+  });
 });
 
 describe("ux_01 the measure tells a row that left the view from one drawn afresh", () => {

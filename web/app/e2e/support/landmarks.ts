@@ -130,11 +130,13 @@ function aroundTheChange(
  * the Details, the list of them and each part of the main column. What changes may grow: the part
  * itself, what holds it, and the History, which the change adds a line to. What stands under a part
  * that grows, in its column, may be pushed by exactly that growth (the measure checks the amount);
- * everything else stands still.
+ * everything else stands still. A change that adds no line to the History (following) says so with
+ * `addsHistory`, and the History then stands still too.
  */
 export async function issuePageLandmarks(
   page: Page,
   changed: Locator = detailRow(page, t("labels.tags-heading")),
+  addsHistory = true,
 ): Promise<ScreenLandmarks> {
   const rows = await page.locator("[data-part='issue-details'] [data-part='name-value']").all();
   const details = await Promise.all(
@@ -158,7 +160,9 @@ export async function issuePageLandmarks(
     ...details,
     ...main.map((each) => each.landmark),
   ];
-  const history = main.filter((each) => each.fromHistory).map((each) => each.landmark.name);
+  const history = addsHistory
+    ? main.filter((each) => each.fromHistory).map((each) => each.landmark.name)
+    : [];
   return {
     all,
     ...aroundTheChange(await placesOf(page, all), target.name, history),

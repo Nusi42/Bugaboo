@@ -93,6 +93,15 @@ function commentButton(page: Page): Locator {
     .getByRole("button", { name: t("comments.add"), exact: true });
 }
 
+/**
+ * The landmarks of the issue page for opening a box that takes the place of a text (the title): it
+ * stands where the text stood, at the same size, so nothing grows and nothing is pushed.
+ */
+async function openingMovesNothing(page: Page, part: Locator): Promise<ScreenLandmarks> {
+  const around = await issuePageLandmarks(page, part);
+  return { ...around, grows: [], follows: [] };
+}
+
 /** The changes in place of the issue page. */
 const issuePageChanges: readonly ChangeInPlace[] = [
   detailChange(t("issue-field.priority"), "priority", async (page) => {
@@ -139,6 +148,31 @@ const issuePageChanges: readonly ChangeInPlace[] = [
   },
   {
     screen: issueAddress("$issue"),
+    change: "open the box of the title",
+    open: issuePage,
+    part: (page) => partIn(page, "issue-title"),
+    act: async (page) => {
+      await partIn(page, "issue-title").getByRole("button").click();
+      await expect(partIn(page, "issue-title").getByRole("textbox")).toBeFocused();
+    },
+    landmarks: openingMovesNothing,
+  },
+  {
+    screen: issueAddress("$issue"),
+    change: "open the box of a tag",
+    open: issuePage,
+    part: (page) => detailRow(page, t("labels.tags-heading")),
+    act: async (page) => {
+      const tags = detailRow(page, t("labels.tags-heading"));
+      await tags.getByRole("button", { name: t("labels.add-tag-button"), exact: true }).click();
+      await expect(tags.getByLabel(t("labels.add-tag"), { exact: true })).toBeVisible();
+    },
+    // The box with its buttons is what the action opens: the row grows by it and pushes what stands
+    // under it once, by exactly that; opening adds no line to the History.
+    landmarks: (page, part) => issuePageLandmarks(page, part, false),
+  },
+  {
+    screen: issueAddress("$issue"),
     change: "title",
     open: issuePage,
     part: (page) => partIn(page, "issue-title"),
@@ -180,7 +214,8 @@ const issuePageChanges: readonly ChangeInPlace[] = [
         page.getByRole("button", { name: t("followers.stop"), exact: true }),
       ).toBeVisible();
     },
-    landmarks: issuePageLandmarks,
+    // Following adds no line to the History.
+    landmarks: (page, part) => issuePageLandmarks(page, part, false),
   },
 ];
 
