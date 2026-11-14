@@ -124,8 +124,8 @@ export function PaneWithHead({ head, look, children }: PaneWithHeadProps) {
   const known = useMemo(() => ({ slots: { search, view }, above }), [search, view, above]);
   return (
     <PaneHeadContext value={known}>
-      <div ref={pane} {...partOf(part.pane, { variants: [look] })}>
-        <div ref={top} {...partOf(part.paneHead, { states: [held && "whole"] })}>
+      <div ref={pane} {...partOf(part.pane, { variants: [look], states: [held && "whole"] })}>
+        <div ref={top} {...partOf(part.paneHead)}>
           <div {...partOf(part.paneHeadFold)}>
             <div ref={whole} {...partOf(part.paneHeadContent)}>
               {head}

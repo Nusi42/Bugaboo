@@ -36,8 +36,10 @@ function Focused({ address, project, lines, onFocus, onBack, onPanel }: InnerPro
     [here],
   );
   useProjectTrail(found.isPlaceholderData ? undefined : found.data, last);
+  /** The issue a step away from the open one, if the list has one there. */
+  const neighbour = (direction: 1 | -1): IssueLine | undefined => lines[at + direction];
   const step = (direction: 1 | -1): void => {
-    const next = lines[at + direction];
+    const next = neighbour(direction);
     if (next !== undefined) {
       onFocus(next.key);
     }
@@ -49,7 +51,7 @@ function Focused({ address, project, lines, onFocus, onBack, onPanel }: InnerPro
         onBack(project);
       }}
       onStep={step}
-      steps={{ previous: lines[at - 1] !== undefined, next: lines[at + 1] !== undefined }}
+      steps={{ previous: neighbour(-1) !== undefined, next: neighbour(1) !== undefined }}
     >
       <IssuePage
         address={address}

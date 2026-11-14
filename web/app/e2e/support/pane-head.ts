@@ -12,9 +12,15 @@ export const LOW_WINDOW = { width: 1280, height: 520 } as const;
 /** How far a person scrolls in one step: less than the head can fold. */
 const STEP = 30;
 
+/** The head of a pane. */
+export const PANE_HEAD = "[data-part='pane-head']";
+
+/** The boxes of an issue open on a computer, side by side under its head. */
+export const SPLIT_ISSUE = "[data-part='issue-body'][data-variant~='split']";
+
 /** The head of the pane on the screen. */
 function headOf(page: Page): Locator {
-  return page.locator("[data-part='pane-head']");
+  return page.locator(PANE_HEAD);
 }
 
 /** How high an element is drawn now. */
@@ -76,6 +82,10 @@ function foldedOf(page: Page): Promise<{ first: boolean; second: boolean; scroll
 export async function foldsWith(page: Page, box: Locator): Promise<void> {
   const head = headOf(page);
   await expect(head).toBeVisible();
+  // Once the box holds more than it shows: before that, there is nothing to scroll.
+  await expect
+    .poll(() => box.evaluate((node) => node.scrollHeight - node.clientHeight))
+    .toBeGreaterThan(STEP);
   const whole = await heightOf(head);
   const step = await scrollBy(box, STEP);
   expect(step).toEqual({ scrolled: STEP, moved: STEP });
@@ -172,13 +182,24 @@ export function coveredSteps(steps: readonly FocusStep[]): readonly FocusStep[] 
   return steps.filter((step) => step.inside && step.top < step.covered - 0.5);
 }
 
-/** Whether the focused element stands whole inside the head of the pane, and how far the head itself is scrolled. */
-export function focusInHead(page: Page): Promise<{ inside: boolean; scrolled: number }> {
+/**
+ * Whether the focused element stands whole inside the head of the pane and is what the browser draws on top at its
+ * middle (nothing of the page covers it), and how far the head itself is scrolled.
+ */
+export function focusInHead(
+  page: Page,
+): Promise<{ inside: boolean; onTop: boolean; scrolled: number }> {
   return headOf(page).evaluate((head) => {
     const box = head.getBoundingClientRect();
-    const focused = document.activeElement?.getBoundingClientRect();
+    const focused = document.activeElement;
+    const place = focused?.getBoundingClientRect();
+    const hit =
+      place === undefined
+        ? null
+        : document.elementFromPoint(place.left + place.width / 2, place.top + place.height / 2);
     return {
-      inside: focused !== undefined && focused.top >= box.top && focused.bottom <= box.bottom,
+      inside: place !== undefined && place.top >= box.top && place.bottom <= box.bottom,
+      onTop: hit !== null && focused !== null && focused.contains(hit),
       scrolled: head.scrollTop,
     };
   });

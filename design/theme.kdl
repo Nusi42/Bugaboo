@@ -16788,7 +16788,7 @@ part "pane[variant=folds] pane-head.fold" {
 
 // While a control in the head has the focus of the keyboard the head is whole, laid over the boxes: what has the focus
 // shows, and nothing in the boxes moves.
-part "pane[variant=folds] pane-head[state=whole]" "pane[variant=folds] pane-head[state=whole] pane-head.fold" {
+part "pane[variant=folds][state=whole] pane-head" "pane[variant=folds][state=whole] pane-head.fold" {
     animation none
 }
 
@@ -16819,8 +16819,8 @@ part "list-editor.list pane[variant=folds] pane-head.content" {
 part "pane[variant=folds] issue-body[variant=split] issue-main" {
     scroll-timeline "--pane-first block"
     margin-block-start 0
-    padding-block-start "calc($pane-head-end + $ring-room)"
-    scroll-padding-block-start "calc(var(--pane-head-folded-end) + $ring-room)"
+    padding-block-start "var(--pane-head-whole)"
+    scroll-padding-block-start "var(--pane-head-folded)"
     media "print" {
         padding-block-start "$ring-room"
     }
@@ -16829,7 +16829,7 @@ part "pane[variant=folds] issue-body[variant=split] issue-main" {
 part "pane[variant=folds] issue-body[variant=split] issue-details" {
     scroll-timeline "--pane-second block"
     padding-block-start "$pane-head-end"
-    scroll-padding-block-start "calc(var(--pane-head-folded-end) + $ring-room)"
+    scroll-padding-block-start "var(--pane-head-folded)"
     media "print" {
         padding-block-start 0
     }
@@ -16936,7 +16936,8 @@ part "app-layout:not(app-layout[variant=phone]) list-editor:has(timeline-body)" 
 part "list-main list-scroll" "list-main search-results:not(search-results:has(list-scroll))" {
     flex "0 1 auto"
     // Room for rows above the bar of ticked issues too, while it stands over the foot of the list.
-    min-height "calc($size-list-scroll-least + $bar-ticked-height)"
+    --list-rows-least "calc($size-list-scroll-least + $bar-ticked-height)"
+    min-height "var(--list-rows-least)"
 }
 
 // In a low window on a computer the frame of a list is at least as high as its head and the least of its rows: it does
@@ -17012,7 +17013,7 @@ part "app-layout pane[variant=folds] list-main list-row" "app-layout pane[varian
 part "app-layout pane[variant=folds] list-main list-scroll" {
     scroll-timeline "--pane-first block"
     margin-block-start "calc(-1 * $pane-head-end)"
-    min-height "calc($size-list-scroll-least + $bar-ticked-height + $pane-head-end)"
+    min-height "calc(var(--list-rows-least) + $pane-head-end)"
     scroll-padding-block-start "var(--pane-head-folded-end)"
     media "print" {
         margin-block-start 0
@@ -17033,6 +17034,12 @@ part "app-layout pane[variant=folds] list-main list-head" {
         use "pane-head-steps"
         animation-timeline "--pane-first"
     }
+}
+
+// While the head is whole for the keyboard, the head of the columns stands under it, where it stands when the rows are
+// at their start: it never covers a line of the head.
+part "app-layout pane[variant=folds][state=whole] list-main list-head" {
+    animation none
 }
 
 // What does not fold the head stands under the whole head: Customize beside the list, the grey shapes while the list is

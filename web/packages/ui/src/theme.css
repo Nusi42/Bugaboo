@@ -10657,10 +10657,8 @@ textarea,
   }
 }
 
-[data-part="pane"][data-variant~="folds"] [data-part="pane-head"][data-state~="whole"],
-[data-part="pane"][data-variant~="folds"]
-  [data-part="pane-head"][data-state~="whole"]
-  [data-part="pane-head.fold"] {
+[data-part="pane"][data-variant~="folds"][data-state~="whole"] [data-part="pane-head"],
+[data-part="pane"][data-variant~="folds"][data-state~="whole"] [data-part="pane-head.fold"] {
   animation: none;
 }
 
@@ -10687,8 +10685,8 @@ textarea,
   [data-part="issue-main"] {
   scroll-timeline: --pane-first block;
   margin-block-start: 0;
-  padding-block-start: calc(var(--pane-head-end) + var(--ring-room));
-  scroll-padding-block-start: calc(var(--pane-head-folded-end) + var(--ring-room));
+  padding-block-start: var(--pane-head-whole);
+  scroll-padding-block-start: var(--pane-head-folded);
 }
 
 @media print {
@@ -10704,7 +10702,7 @@ textarea,
   [data-part="issue-details"] {
   scroll-timeline: --pane-second block;
   padding-block-start: var(--pane-head-end);
-  scroll-padding-block-start: calc(var(--pane-head-folded-end) + var(--ring-room));
+  scroll-padding-block-start: var(--pane-head-folded);
 }
 
 @media print {
@@ -10914,7 +10912,8 @@ textarea,
 [data-part="list-main"]
   [data-part="search-results"]:not([data-part="search-results"]:has([data-part="list-scroll"])) {
   flex: 0 1 auto;
-  min-height: calc(var(--size-list-scroll-least) + var(--bar-ticked-height));
+  --list-rows-least: calc(var(--size-list-scroll-least) + var(--bar-ticked-height));
+  min-height: var(--list-rows-least);
 }
 
 @media screen and (max-height: 680px) {
@@ -11025,7 +11024,7 @@ textarea,
   [data-part="list-scroll"] {
   scroll-timeline: --pane-first block;
   margin-block-start: calc(-1 * var(--pane-head-end));
-  min-height: calc(var(--size-list-scroll-least) + var(--bar-ticked-height) + var(--pane-head-end));
+  min-height: calc(var(--list-rows-least) + var(--pane-head-end));
   scroll-padding-block-start: var(--pane-head-folded-end);
 }
 
@@ -11064,6 +11063,13 @@ textarea,
     animation-range: 0% var(--pane-head-fold-length);
     animation-timeline: --pane-first;
   }
+}
+
+[data-part="app-layout"]
+  [data-part="pane"][data-variant~="folds"][data-state~="whole"]
+  [data-part="list-main"]
+  [data-part="list-head"] {
+  animation: none;
 }
 
 [data-part="app-layout"] [data-part="pane"][data-variant~="folds"] [data-part="list-panel"],

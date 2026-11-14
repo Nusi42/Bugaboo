@@ -1,14 +1,18 @@
 import type { Page } from "@playwright/test";
 
+import { t } from "@bugaboo/messages";
+
 import { ada } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareManyWeb } from "./support/issues.ts";
+import { inOrder } from "./support/sequence.ts";
 import { expectStill, movementWhile, partLandmark } from "./support/movement.ts";
 import {
   coverColors,
   coveredSteps,
   firstRowGap,
+  focusInHead,
   foldsWith,
   keyThrough,
   LOW_WINDOW,
@@ -98,3 +102,25 @@ for (const scheme of ["light", "dark"] as const) {
     expect(colors.head).toBe(colors.card);
   });
 }
+
+test("ux_06 a control of the folded head of a list reached with the keyboard shows whole, over the head of the columns", async ({
+  page,
+}) => {
+  await openList(page, LAPTOP);
+  await page.locator(ROWS).evaluate((node) => {
+    node.scrollTop = node.scrollHeight;
+  });
+  // From the first line of the folded head (the toolbar) down through the search bar and the options.
+  await page
+    .getByRole("button", { name: t("issues.new"), exact: true })
+    .first()
+    .focus();
+  const seen: Awaited<ReturnType<typeof focusInHead>>[] = [];
+  await inOrder(
+    Array.from({ length: 6 }, () => async () => {
+      await page.keyboard.press("Tab");
+      seen.push(await focusInHead(page));
+    }),
+  );
+  expect(seen).toEqual(seen.map(() => ({ inside: true, onTop: true, scrolled: 0 })));
+});
