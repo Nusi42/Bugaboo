@@ -279,7 +279,7 @@ fn an_unknown_token_or_mixin_is_refused() {
 fn every_old_cue_keeps_its_covers_that_scroll_with_the_content() {
     // No browser test can see the old cue (Chromium draws the new one), so the sheet is read: in every block that
     // falls back to it the covers stay with the content (`local`), have their size, and the shadows stay (`scroll`);
-    // and each of the six boxes that scroll their own content is in such a block.
+    // and each of the boxes that scroll their own content is in such a block.
     let sheet = css(&file()).unwrap();
     let blocks: Vec<&str> = sheet
         .split("@supports not (animation-timeline: scroll())")
