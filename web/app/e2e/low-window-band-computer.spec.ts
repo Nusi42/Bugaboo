@@ -105,7 +105,10 @@ function heightOf(box: Locator): Promise<number> {
   return box.evaluate((node) => node.getBoundingClientRect().height);
 }
 
-/** Opens Customize on the address and gives the panel. */
+/**
+ * Opens Customize on the address and gives the panel, once the head of the list is read whole: the time of the project
+ * is its last line to come, and the panel keeps the room of the whole head above it.
+ */
 async function openCustomize(page: Page, address: string): Promise<Locator> {
   await page.goto(address);
   await page.getByRole("button", { name: t("issues.customize"), exact: true }).click();
@@ -113,6 +116,7 @@ async function openCustomize(page: Page, address: string): Promise<Locator> {
     name: t("issues.customize"),
   });
   await expect(panel).toBeVisible();
+  await expect(page.getByText(t("issues.project-time"), { exact: false })).toBeVisible();
   return panel;
 }
 
