@@ -1,5 +1,5 @@
 error[E0080]: evaluation panicked: a view masked by its issue type cannot hold another one: it would get the outer type's mask (ADR-0027)
-  --> tests/ui/masked_item_type_other_module.rs:30:14
+  --> tests/ui/masked_item_type_other_module.rs:37:14
    |
-30 |     related: Vec<other::Issue>,
+37 |     related: Vec<other::Issue>,
    |              ^^^ evaluation of `_` failed here

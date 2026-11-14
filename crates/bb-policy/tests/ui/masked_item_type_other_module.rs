@@ -7,21 +7,28 @@ struct TypeRef {
     id: String,
 }
 
+#[derive(Serialize, Masked)]
+struct Typed {
+    #[masked(nested, item_type)]
+    issue_type: TypeRef,
+    #[masked(field = "title")]
+    title: String,
+}
+
 mod other {
     use bb_policy::Masked;
     use serde::Serialize;
 
+    // Not masked by a type of its own, but it holds a view that is.
     #[derive(Serialize, Masked)]
     pub struct Issue {
-        #[masked(nested, item_type)]
-        pub issue_type: super::TypeRef,
-        #[masked(field = "title")]
-        pub title: String,
+        #[masked(nested)]
+        pub inner: super::Typed,
     }
 }
 
-// A view of another module with the same last name is not the view itself: it is masked by its own
-// issue type, so the derive refuses it inside a view masked by its type, as any other (ADR-0027).
+// A view of another module with the same last name is not the view itself: what it holds counts, as
+// for any other member, so the view masked by its type inside it is refused (ADR-0027).
 #[derive(Serialize, Masked)]
 struct Issue {
     #[masked(nested, item_type)]
