@@ -129,22 +129,32 @@ async function savedBesideOwnControl(
   expect(await overlap(said, head.locator("> :not([data-part='save-status'])"))).toBe(false);
 }
 
+/** A theme of the setting that offers the theme `named`, other than the one chosen now. */
+function otherTheme(page: Page, named: string): Locator {
+  return page
+    .locator("main [data-part='setting-head']")
+    .filter({ has: page.getByRole("radio", { name: named, exact: true }) })
+    .getByRole("radio", { checked: false })
+    .first();
+}
+
 test("ux_6_4 Saved beside a control a page draws itself covers none of its words", async ({
   page,
 }) => {
   await signIn(page, ada);
+  // Each press picks a value other than the one shown, so it changes the setting whatever an
+  // earlier test left there.
   await savedBesideOwnControl(page, paths.appearance, (here) =>
-    here.getByRole("radio", { name: t("theme.midnight"), exact: true }),
+    otherTheme(here, t("theme.midnight")),
   );
-  await savedBesideOwnControl(page, paths.themes, (here) =>
-    here.getByRole("radio", { name: t("theme.paper"), exact: true }),
-  );
+  await savedBesideOwnControl(page, paths.themes, (here) => otherTheme(here, t("theme.paper")));
   await savedBesideOwnControl(
     page,
     paths.startPage,
     (here) => here.getByRole("combobox", { name: t("nav.start-page"), exact: true }),
     async (found) => {
-      await found.selectOption({ index: 1 });
+      const other = await found.locator("option:not(:checked)").first().textContent();
+      await found.selectOption({ label: String(other) });
     },
   );
   await savedBesideOwnControl(page, addressInProject(paths.projectSettings, "WEB"), (here) =>
