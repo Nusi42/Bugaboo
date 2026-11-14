@@ -2212,7 +2212,8 @@ textarea,
 [data-part="timeline-body"] {
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--size-timeline-side);
-  align-items: start;
+  grid-auto-rows: minmax(0, auto);
+  align-items: stretch;
   gap: var(--space-4);
 }
 
@@ -2230,8 +2231,9 @@ textarea,
 
 [data-part="timeline-scroll"] {
   position: relative;
+  flex: 0 1 auto;
+  min-height: var(--size-list-scroll-least);
   overflow: auto;
-  max-height: var(--size-list-scroll);
   border: var(--border-width) solid var(--border);
   border-radius: var(--r-card);
   background: var(--bg-raised);
@@ -2880,7 +2882,8 @@ textarea,
 }
 
 [data-part="timeline-tray"] {
-  max-height: var(--size-list-scroll);
+  flex: 0 1 auto;
+  min-height: 0;
   overflow: auto;
 }
 
@@ -5620,11 +5623,14 @@ textarea,
 
 [data-part="shell.page"] {
   display: flex;
+  box-sizing: border-box;
   flex-direction: column;
   gap: var(--space-5);
   max-width: var(--size-form);
+  height: 100%;
   margin: 0 auto;
   padding: var(--space-4);
+  overflow-y: auto;
 }
 
 [data-part="shell.page"] > [data-part="shell.content"] {
@@ -9212,6 +9218,42 @@ textarea,
   min-height: 0;
 }
 
+[data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+  [data-part="app-layout.inner"]:has([data-part="timeline-body"]),
+[data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+  [data-part="card"]:has([data-part="timeline-body"]),
+[data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+  [data-part="card"]
+  > [data-part="stack"]:has([data-part="timeline-body"]),
+[data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+  [data-part="list-editor.list"]:has([data-part="timeline-body"]),
+[data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+  [data-part="timeline"] {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  flex: 1 1 0;
+}
+
+[data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+  [data-part="app-layout.inner"]:has([data-part="timeline-body"]),
+[data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+  [data-part="card"]:has([data-part="timeline-body"]),
+[data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+  [data-part="card"]
+  > [data-part="stack"]:has([data-part="timeline-body"]),
+[data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+  [data-part="list-editor.list"]:has([data-part="timeline-body"]),
+[data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+  [data-part="timeline"],
+[data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+  [data-part="timeline-body"],
+[data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+  [data-part="timeline-side"] {
+  min-height: 0;
+}
+
 [data-part="list-editor"]:has([data-part="list-main"]),
 [data-part="list-body"]:has([data-part="list-scroll"]) {
   flex: 1 1 0;
@@ -9243,6 +9285,20 @@ textarea,
   [data-part="list-body"]:has([data-part="list-scroll"]) {
   flex-direction: column;
   flex-wrap: nowrap;
+}
+
+[data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+  [data-part="list-editor"]:has([data-part="timeline-body"]),
+[data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+  [data-part="timeline-body"] {
+  flex: 1 1 0;
+  align-items: stretch;
+}
+
+[data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+  [data-part="list-editor"]:has([data-part="timeline-body"]) {
+  flex-wrap: nowrap;
+  min-height: 0;
 }
 
 [data-part="list-main"] [data-part="list-scroll"] {

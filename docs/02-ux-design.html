@@ -1313,8 +1313,9 @@ sort by priority, highest first</div>
     <p>The page itself never scrolls. The app is as high as the window, and each pane (the menu, the main column, a side panel, a window) has exactly one box that scrolls: the box of its main content. No box that scrolls up and down stands inside another, and nothing scrolls sideways but a chart that is wider than its pane. What stands above the box (the title, the toolbar, the filters, notices) gets smaller as the box scrolls, down to one line, and comes back at the top; it never jumps and keeps the place under the pointer.</p>
     <ul>
       <li><b>Pickers</b> have no box of their own: in a page they grow and the main column scrolls, in a window the box of its fields does. A picker of many options keeps its filter at the top, in view through the shrinking head. A picker that is all its window holds is the window's box.</li>
-      <li><b>Long lists</b> (issues, people, the timeline) are the box of their pane: the page fits the window and the list fills the rest.</li>
+      <li><b>Long lists</b> (issues, people, the timeline) are the box of their pane: the page fits the window and the list fills the rest. On a computer the chart of the timeline and <i>Not scheduled yet</i> are two boxes side by side, or one above the other where the window is narrow, sharing the room. On a phone the timeline stands in the main column, which is its one box: its tools and Legend would leave the chart no room.</li>
       <li><b>An issue on a computer</b>: its sections and its Details are two boxes side by side under the head of the issue. On a phone they stand one under the other in one box.</li>
+      <li><b>The pages before sign-in</b> are one box each: the card and the choice of theme under it scroll together, so a low window (a phone with the browser's bars) never hides the button of the card. The page itself still never scrolls.</li>
       <li><b>Growth above what is in view</b> keeps what is in view still: the browser changes the scroll by exactly that growth. Any other change of the scroll is a jump.</li>
     </ul>
     <p>Decided by the lead 2026-11-14 (M8 WP-13); the maintainer may overrule.</p>

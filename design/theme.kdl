@@ -1071,6 +1071,15 @@ mixin "page-body" {
 }
 
 // The focus view takes the whole width that the narrowed sidebar leaves.
+// A box between a pane and its one scroll box (UX §6.5): it gives the box below it the room that is left.
+mixin "fills-pane" {
+    display flex
+    flex-direction column
+    flex-wrap nowrap
+    align-items stretch
+    flex "1 1 0"
+}
+
 mixin "page-column-wide" {
     max-width none
 }
@@ -3310,10 +3319,15 @@ part "timeline-tools" {
 }
 
 // A narrow window puts the side column under the chart, where the list puts Customize.
+// Each row of the body (the chart, and the side under it where the window is narrow) is as high as what it holds and
+// never higher than its share of the room: the room is shared out evenly, and a row that needs less gives the rest to
+// the other (UX §6.5). The chart and *Not scheduled yet* each scroll in a box of their own, side by side, never inside
+// the main column.
 part "timeline-body" {
     display grid
     grid-template-columns "minmax(0, 1fr) $size-timeline-side"
-    align-items start
+    grid-auto-rows "minmax(0, auto)"
+    align-items stretch
     gap "$space-4"
     container "(max-width: $bp-list-beside)" {
         grid-template-columns "minmax(0, 1fr)"
@@ -3325,8 +3339,9 @@ part "timeline-body" {
 
 part "timeline-scroll" {
     position relative
+    flex "0 1 auto"
+    min-height "$size-list-scroll-least"
     overflow auto
-    max-height "$size-list-scroll"
     border "$border-width solid $border"
     border-radius "$r-card"
     background "$bg-raised"
@@ -3953,7 +3968,8 @@ part "bottom-sheet timeline-card.actions" {
 }
 
 part "timeline-tray" {
-    max-height "$size-list-scroll"
+    flex "0 1 auto"
+    min-height 0
     overflow auto
 }
 
@@ -6637,13 +6653,19 @@ part "shell.title" {
 
 // The pages before sign-in: the name, the narrow content and the choice of theme in one column, in the middle of the window
 // (M5 exit: it stood about 70 px left of the middle in a wider frame), each the same gap from the next.
+// One way to scroll (UX §6.5): the page itself never scrolls. The page before sign-in is as high as the window and is
+// the one box that scrolls: the card, its button and the choice of theme under it scroll together, so a low window
+// never hides the button of the card behind the choice of theme.
 part "shell.page" {
     display flex
+    box-sizing border-box
     flex-direction column
     gap "$space-5"
     max-width "$size-form"
+    height "100%"
     margin 0 auto
     padding "$space-4"
+    overflow-y auto
 }
 
 // The content does not grow to push the choice of theme to the foot of the window: it follows at the gap of the column.
@@ -16533,18 +16555,14 @@ part "search-panel search-suggestions" {
 
 // A page of a list gives the box of its rows the rest of the main column (UX §6.5): every box between the column and
 // the list gives the list the room that is left. Where the boxes above it leave the list less than its least height,
-// the main column scrolls. Only the page of a list (list-main): the slim list of the focus view stays in its page.
+// the main column scrolls. Only the page of a list (list-main) and the timeline: the slim list of the focus view stays in its page.
 // A phone has one scroller where the list is: the list. The page does not scroll.
 part "app-layout[variant=phone] app-layout.main:has(list-scroll)" {
     overflow-y hidden
 }
 
 part "app-layout app-layout.inner:has(list-main)" "app-layout card:has(list-main)" "app-layout card > stack:has(list-main)" "app-layout list-editor.list:has(list-main)" "app-layout list-main" "app-layout list-frame:has(list-scroll)" "app-layout search-results:has(list-scroll)" {
-    display flex
-    flex-direction column
-    flex-wrap nowrap
-    align-items stretch
-    flex "1 1 0"
+    use "fills-pane"
 }
 
 // Only where there are rows that scroll does every box give way below its content; a page without rows (nothing found,
@@ -16555,6 +16573,16 @@ part "app-layout app-layout.inner:has(list-scroll)" "app-layout card:has(list-sc
 
 // On a computer the list and the open issue stand side by side in one line as high as the room; the list and Customize
 // too, or Customize under the list where the room is narrow (each line as high as the room it is given).
+
+// The timeline on a computer fills the rest of the main column the same way: the chart and its side share the room.
+part "app-layout:not(app-layout[variant=phone]) app-layout.inner:has(timeline-body)" "app-layout:not(app-layout[variant=phone]) card:has(timeline-body)" "app-layout:not(app-layout[variant=phone]) card > stack:has(timeline-body)" "app-layout:not(app-layout[variant=phone]) list-editor.list:has(timeline-body)" "app-layout:not(app-layout[variant=phone]) timeline" {
+    use "fills-pane"
+}
+
+part "app-layout:not(app-layout[variant=phone]) app-layout.inner:has(timeline-body)" "app-layout:not(app-layout[variant=phone]) card:has(timeline-body)" "app-layout:not(app-layout[variant=phone]) card > stack:has(timeline-body)" "app-layout:not(app-layout[variant=phone]) list-editor.list:has(timeline-body)" "app-layout:not(app-layout[variant=phone]) timeline" "app-layout:not(app-layout[variant=phone]) timeline-body" "app-layout:not(app-layout[variant=phone]) timeline-side" {
+    min-height 0
+}
+
 part "list-editor:has(list-main)" "list-body:has(list-scroll)" {
     flex "1 1 0"
     align-items stretch
@@ -16580,6 +16608,17 @@ part "list-column:has(list-scroll)" {
 part "app-layout[variant=phone] list-editor:has(list-main)" "app-layout[variant=phone] list-body:has(list-scroll)" {
     flex-direction column
     flex-wrap nowrap
+}
+
+// The line of the timeline and its side on a computer, as high as the room it is given.
+part "app-layout:not(app-layout[variant=phone]) list-editor:has(timeline-body)" "app-layout:not(app-layout[variant=phone]) timeline-body" {
+    flex "1 1 0"
+    align-items stretch
+}
+
+part "app-layout:not(app-layout[variant=phone]) list-editor:has(timeline-body)" {
+    flex-wrap nowrap
+    min-height 0
 }
 
 // The box of the rows is as high as its rows, and no higher than the rest of the window: min(its rows, the rest).
