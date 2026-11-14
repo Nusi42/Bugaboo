@@ -34,7 +34,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         reaching: &Reaching,
     ) -> Result<Judge<'a>, AppError> {
         let looked = self
-            .looked_in(reaching.shown.clone(), SearchScope::Everywhere)
+            .looked_in(reaching.shown.clone(), SearchScope::Everywhere, None)
             .await?;
         let fields = readable_of(&looked.fields);
         Ok(Judge {

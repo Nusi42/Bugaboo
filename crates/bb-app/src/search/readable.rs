@@ -91,7 +91,7 @@ pub async fn readable_fields<S: AuthStore>(
     query: ReadableFieldsQuery,
 ) -> Result<Authorized<SearchFields>, AppError> {
     let actor = ctx.actor(&query.session_token).await?;
-    let looked = ctx.looked_at(&actor, query.scope).await?;
+    let looked = ctx.looked_at(&actor, query.scope, None).await?;
     let names = looked
         .fields
         .iter()
@@ -148,7 +148,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         withheld: &crate::ai::Withheld,
     ) -> Result<ReadableFields, AppError> {
         Ok(readable_of(
-            &self.looked_at(actor, scope).await?.without(withheld).fields,
+            &self.looked_at(actor, scope, Some(withheld)).await?.fields,
         ))
     }
 
@@ -164,12 +164,13 @@ impl<S: AuthStore> Ctx<'_, S> {
         actor: &Actor,
         scope: SearchScope,
     ) -> Result<Vec<Searchable>, AppError> {
-        Ok(self.looked_at(actor, scope).await?.fields)
+        Ok(self.looked_at(actor, scope, None).await?.fields)
     }
 
     /// What the person may search by where a search looks, and what the names in a search can
     /// stand for there: the fields, the statuses and issue types the person may know, the own
-    /// fields, and the projects. Read once for a request.
+    /// fields, and the projects. Read once for a request. For the AI, `withheld` leaves out what is
+    /// kept from AI ([`Ctx::looked_in`]).
     ///
     /// # Errors
     /// `resource.not-found` for a project that the actor does not see; an internal error when the
@@ -178,13 +179,18 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         actor: &Actor,
         scope: SearchScope,
+        withheld: Option<&crate::ai::Withheld>,
     ) -> Result<Looked, AppError> {
         let seen = self.shown_with_levels_to(actor).await?;
-        self.looked_in(seen, scope).await
+        self.looked_in(seen, scope, withheld).await
     }
 
     /// The same, from the tree and the levels of the person that the caller has read already (the
     /// saved searches read them once for a request and judge many texts with them).
+    ///
+    /// For the AI, `withheld` takes the projects kept from AI out before anything is collected from
+    /// them, so no status, issue type or field is known only from such a project: a suggestion of
+    /// the checker (*Did you mean …*) can then name only what the AI may see (AI-03).
     ///
     /// # Errors
     /// `resource.not-found` for a project that the person does not see; an internal error when the
@@ -193,6 +199,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         seen: crate::projects::Leveled,
         scope: SearchScope,
+        withheld: Option<&crate::ai::Withheld>,
     ) -> Result<Looked, AppError> {
         let within = match scope {
             SearchScope::Everywhere => None,
@@ -204,6 +211,14 @@ impl<S: AuthStore> Ctx<'_, S> {
             .seen_places(within)
             .into_iter()
             .map(|(chain, held)| Place::of(chain, held))
+            .filter(|place: &Place| {
+                withheld.is_none_or(|withheld| {
+                    place
+                        .chain
+                        .last()
+                        .is_none_or(|project| !withheld.hides_project(*project))
+                })
+            })
             .collect();
         let mut types: Vec<IssueType> = Vec::new();
         let mut statuses: Vec<WorkflowStatus> = Vec::new();
@@ -241,7 +256,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 issue_types: definition.scope.limited_types().map(<[_]>::to_vec),
             })
             .collect();
-        Ok(Looked {
+        let looked = Looked {
             fields,
             own_reach,
             statuses,
@@ -252,6 +267,10 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .filter_map(|place| place.chain.last().copied())
                 .collect(),
             seen,
+        };
+        Ok(match withheld {
+            Some(withheld) => looked.without(withheld),
+            None => looked,
         })
     }
 }
@@ -280,7 +299,7 @@ impl Looked {
     /// AI. A word of such a field is then unknown, exactly like a word that is no field, and no
     /// issue of such a project is found (AI-03).
     #[must_use]
-    pub(crate) fn without(mut self, withheld: &crate::ai::Withheld) -> Self {
+    fn without(mut self, withheld: &crate::ai::Withheld) -> Self {
         self.fields
             .retain(|searchable| !withheld.hides_target(searchable.target));
         self.projects

@@ -360,3 +360,95 @@ async fn ai_21_search_issues_reads_plain_words_as_a_search_of_the_texts() -> Tes
     })
     .await
 }
+
+/// The project KEPT with a workflow of its own whose status *Blockade* no other project has.
+async fn a_status_only_in_kept(ada: &mut super::http::Browser) -> Result<(), bb_testing::Failure> {
+    let kept = ok(&ada
+        .send(
+            "POST",
+            "/api/v1/projects",
+            Some(json!({"short_name": "KEPT", "name": "Kept"})),
+        )
+        .await?)?["id"]
+        .as_str()
+        .ok_or("no project ID")?
+        .to_owned();
+    let editor = ok(&ada
+        .send(
+            "POST",
+            "/api/v1/workflows",
+            Some(json!({ "project": kept })),
+        )
+        .await?)?
+    .clone();
+    let workflow = editor["workflow"]["id"]
+        .as_str()
+        .ok_or("no workflow ID")?
+        .to_owned();
+    let lock = super::workflows_http::lock_workflow(ada, &workflow).await?;
+    ok(&ada
+        .send(
+            "PUT",
+            &format!("/api/v1/workflows/{workflow}"),
+            Some(json!({
+                "version": editor["workflow"]["version"],
+                "lock_token": lock,
+                "name": "With a blockade",
+                "statuses": [
+                    {"key": "open", "name": "Open", "status_group": "not-started"},
+                    {"key": "blockade", "name": "Blockade", "status_group": "in-progress"},
+                    {"key": "done", "name": "Done", "status_group": "done"},
+                ],
+                "changes": [
+                    {"from": "open", "to": "blockade", "button": "Block"},
+                    {"from": "blockade", "to": "done", "button": "Finish"},
+                ],
+                "moves": [],
+            })),
+        )
+        .await?)?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn ai_03_a_search_mistake_never_suggests_a_status_known_only_from_a_project_kept_from_ai()
+-> TestResult {
+    each_database("ai_03_suggestion_kept_http", async |db| {
+        let (rig, app) = Mcp::start(db).await?;
+        let (_site, mut ada) = Site::start(&rig, &app).await?;
+        ai_on(&rig).await?;
+        let mcp = Mcp::new(&app);
+        a_status_only_in_kept(&mut ada).await?;
+        let signed = sign_in_app(&mcp, &mut ada, "Claude Code", "see-only", "see-only").await?;
+        let refusal = async || -> Result<String, bb_testing::Failure> {
+            let refused = mcp
+                .call_tool(
+                    &signed,
+                    "search_issues",
+                    json!({"query": "status is Blockad"}),
+                )
+                .await?;
+            assert_eq!(
+                refused.json["result"]["isError"],
+                json!(true),
+                "{}",
+                refused.json
+            );
+            Ok(text_of(&refused))
+        };
+        // While the project may be read by AI, its status is a fair suggestion.
+        let open = refusal().await?;
+        assert!(open.contains("Blockade"), "{open}");
+        ok(&ada
+            .send(
+                "PUT",
+                "/api/v1/never-sent-to-ai/projects/KEPT",
+                Some(json!({"marked": true, "version": 0})),
+            )
+            .await?)?;
+        let kept = refusal().await?;
+        assert!(!kept.contains("Blockade"), "{kept}");
+        Ok(())
+    })
+    .await
+}

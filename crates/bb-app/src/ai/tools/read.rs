@@ -144,8 +144,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         run: &Run<'_>,
         input: &SearchIssuesInput,
     ) -> Result<Vec<Part>, AppError> {
-        // Only a text that does not parse may be plain words; whether it is depends on the fields
-        // the reader may search by, so a mistyped search is told its mistake.
+        // `words_search` alone decides what plain words are. A text that parses is never plain
+        // words, so it is tried first only to spare a search the read of the fields the reader may
+        // search by, which the decision needs.
         let words = if bb_searchlang::parse(&input.query).is_err() {
             let fields = self
                 .readable_fields_within(run.actor, SearchScope::Everywhere, run.withheld)

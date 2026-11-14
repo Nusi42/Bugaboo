@@ -194,11 +194,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         withheld: Option<&Withheld>,
         narrow: impl FnOnce(&Looked) -> Option<Expr>,
     ) -> Result<Prepared, AppError> {
-        let looked = self.looked_at(actor, scope).await?;
-        let looked = match withheld {
-            Some(withheld) => looked.without(withheld),
-            None => looked,
-        };
+        let looked = self.looked_at(actor, scope, withheld).await?;
         let readable = readable_of(&looked.fields);
         let mut parsed =
             parse_with(text, &readable).map_err(|mistake| AppError::Mistakes(vec![mistake]))?;

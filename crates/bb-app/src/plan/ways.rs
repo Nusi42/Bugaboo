@@ -118,7 +118,7 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
         around: Date,
     ) -> Result<PlanAsk<'a>, AppError> {
         let looked = self
-            .looked_at(actor, SearchScope::Within(issue.project))
+            .looked_at(actor, SearchScope::Within(issue.project), None)
             .await?;
         Ok(PlanAsk {
             issues,
