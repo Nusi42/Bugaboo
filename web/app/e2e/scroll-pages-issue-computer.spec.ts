@@ -91,3 +91,17 @@ test("ux_06 the focus ring of a control at the edge of a box that scrolls is not
   const cut = await ringCutAt(first);
   expect(cut, "the edges where the ring is cut").toEqual([]);
 });
+
+test("ux_06 j opens the next issue of the slim list, and its sections start at the top", async ({
+  page,
+}) => {
+  await page.setViewportSize(LOW_WINDOW);
+  await signIn(page, ada);
+  // The slim list has the newest first: WEB-1, the oldest, comes after WEB-2.
+  await page.goto(issueAddress("WEB-2"));
+  const sections = sectionsOf(page);
+  await scrolled(sections);
+  await page.keyboard.press("j");
+  await expect(page).toHaveURL(/WEB-1$/u);
+  await expect.poll(() => sections.evaluate((element) => element.scrollTop)).toBe(0);
+});
