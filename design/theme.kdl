@@ -6688,9 +6688,12 @@ part "shell.footer" {
     border-top "$border-width solid $divider"
 }
 
+// One way to scroll (UX §6.5): the page itself never scrolls. The app is as high as the window, and each pane has
+// one scroll box of its own: the menu, the main column, a side panel, a window.
 part "app-layout" {
     display flex
-    min-height "100%"
+    height "100%"
+    min-height 0
     background "$bg-canvas"
 }
 
@@ -6699,16 +6702,20 @@ part "app-layout.column" {
     flex 1
     flex-direction column
     min-width 0
+    height "100%"
 }
 
 // The page scrolls inside this frame. It is also where the hidden parts (the box of a switch, a
 // choice) are placed, so that one far down the page does not make the document itself taller.
+// The main column is the scroll box of the page: what stands in it scrolls, the menu and the bars stay.
 part "app-layout.main" {
     position relative
     display flex
     flex 1
     flex-direction column
     min-width 0
+    min-height 0
+    overflow-y auto
     padding "$size-page-gutter"
 }
 
@@ -6786,19 +6793,8 @@ part "skip:focus" {
     transform "translateY(0)"
 }
 
-part "app-layout[variant=phone]" {
-    height "100%"
-    min-height 0
-}
 
-part "app-layout[variant=phone] app-layout.column" {
-    height "100%"
-}
 
-part "app-layout[variant=phone] app-layout.main" {
-    min-height 0
-    overflow-y auto
-}
 
 part "sidebar" {
     position sticky
