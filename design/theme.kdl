@@ -7499,19 +7499,31 @@ part "in-place.text" {
     overflow-wrap anywhere
 }
 
-part "in-place.button" {
-    use "bare-button"
-    use "hang-start"
+// The text of a value changed in place and the box that takes its place share one face: the same font as the
+// words around them, the same padding and a border of the same width (clear on the text), so the box wraps
+// its words where the text wraps them and is as high (UX §6.4).
+mixin "in-place-face" {
     box-sizing border-box
-    max-width "100%"
     min-height "$size-control"
-    padding 0 "$pad-control"
+    padding "calc($pad-line-in-control - $border-width)" "calc($pad-control - $border-width)"
+    border "$border-width solid transparent"
     border-radius "$r-ctl"
-    color inherit
+    font-family inherit
     font-size inherit
     font-weight inherit
+    line-height inherit
     text-align start
     overflow-wrap anywhere
+}
+
+part "in-place.button" {
+    use "in-place-face"
+    background transparent
+    cursor pointer
+    use "hang-start"
+    display block
+    max-width "100%"
+    color inherit
 }
 
 part "in-place.button:hover" {
@@ -7522,18 +7534,34 @@ part "in-place.button:focus-visible" {
     use "ring"
 }
 
-// The box takes the place of the text it changes at the same height: the text of the box is the text
-// of the button (the title is large), with the button's padding, so nothing under it moves when the
-// box opens or when the change is made (UX §6.4).
-part "in-place.input" {
-    use "control-box"
+// The box grows with its words: a copy of them, not seen, gives the cell its height, and the box fills the cell.
+// It opens where the text stood, and nothing under it moves when it opens, while it is typed in, or when the
+// change is made (UX §6.4).
+part "in-place.grow" {
+    use "hang-start"
+    display grid
     width "100%"
-    padding 0 "$pad-control"
+}
+
+part "in-place.mirror" {
+    use "in-place-face"
+    grid-column 1
+    grid-row 1
+    visibility hidden
+    white-space pre-wrap
+}
+
+part "in-place.input" {
+    use "in-place-face"
+    border-color "$border-control"
+    background "$bg-raised"
+    grid-column 1
+    grid-row 1
+    width "100%"
+    height "100%"
+    resize none
+    overflow hidden
     color "$fg"
-    font-family inherit
-    font-size inherit
-    font-weight inherit
-    line-height inherit
 }
 
 part "in-place.input:focus" {

@@ -168,8 +168,11 @@ function waysOf(
 
 /** What the page of an issue gets for changing short values. */
 export interface IssueChanges {
-  /** Shows the change at once and sends it; *Undo* is on offer for 10 seconds. */
-  readonly change: (values: IssueValues) => void;
+  /**
+   * Shows the change at once and sends it; *Undo* is on offer for 10 seconds. `settled` hears
+   * whether the server took it.
+   */
+  readonly change: (values: IssueValues, settled?: (saved: boolean) => void) => void;
   /**
    * Sends a change that asked for something first (*Ask for*) and waits for the answer, so the
    * window that asked can name the field the server says is still empty. Rejects with the refusal;
@@ -206,17 +209,23 @@ export function useIssueChanges(detail: IssueDetail, address: string): IssueChan
     apply: after,
     send: sendAndNote(id, { held: setHeld, savedAt: setSavedAt }),
   });
-  const run = (values: IssueValues, version: number, landed?: (version: number) => void): void => {
+  const run = (
+    values: IssueValues,
+    version: number,
+    landed?: (version: number) => void,
+    settled?: (saved: boolean) => void,
+  ): void => {
     setHeld(null);
-    mutation.change({ values, version, ...(landed === undefined ? {} : { landed }) });
+    mutation.change({ values, version, ...(landed === undefined ? {} : { landed }) }, settled);
   };
   return {
-    change: (values) => {
+    change: (values, settled) => {
       const before = valuesBefore(detail, values);
       const made: { version?: number } = {};
-      run(values, versionNow(address, detail.issue), (version) => {
+      const landed = (version: number): void => {
         made.version = version;
-      });
+      };
+      run(values, versionNow(address, detail.issue), landed, settled);
       const field = rowFieldOf(values);
       const offer = undoStore.offer({
         message: undoSentence(values),

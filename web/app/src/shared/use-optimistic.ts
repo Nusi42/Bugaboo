@@ -15,8 +15,11 @@ import { undoStore, type UndoOffer } from "./optimistic-undo.ts";
 import type { SaveState } from "@bugaboo/ui";
 
 export interface OptimisticMutation<Variables> {
-  /** Shows the change now and sends it. */
-  readonly change: (variables: Variables) => void;
+  /**
+   * Shows the change now and sends it; `settled` hears whether the server took it (false when it
+   * refused, and the screen shows the old data again).
+   */
+  readonly change: (variables: Variables, settled?: (saved: boolean) => void) => void;
   /**
    * Like `change`, for a row that goes away: the focus moves to the next row, or the one before it,
    * or the heading of the list, so a keyboard or screen reader user is not left on nothing.
@@ -49,11 +52,15 @@ export function useOptimisticMutation<
   // forgotten because a later change was accepted, but a new burst starts clean.
   const [burstStart, setBurstStart] = useState(0);
   const { saveState, error } = summarizeCalls(calls.slice(burstStart));
-  const run = (variables: Variables): void => {
+  const run = (variables: Variables, settled?: (saved: boolean) => void): void => {
     if (saveState !== "saving") {
       setBurstStart(calls.length);
     }
-    mutation.mutate(variables);
+    // Each call hears its own answer: the callbacks of `mutate` reach only the last call.
+    void mutation.mutateAsync(variables).then(
+      () => settled?.(true),
+      () => settled?.(false),
+    );
   };
   return {
     change: run,

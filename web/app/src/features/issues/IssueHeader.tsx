@@ -28,7 +28,8 @@ export interface IssueHeaderProps {
   readonly canChangeTitle: boolean;
   /** What *More* offers. */
   readonly actions: readonly MenuAction[];
-  readonly onTitle: (title: string) => void;
+  /** Saves the title; `settled` hears whether the server took it. */
+  readonly onTitle: (title: string, settled: (saved: boolean) => void) => void;
   /** Open in the other way: from the panel to the full page, from the focus view to the panel. */
   readonly onSwitch: () => void;
 }
@@ -101,7 +102,7 @@ export function IssueHeader(props: IssueHeaderProps) {
       <Heading {...partOf(part.issueTitle)}>
         <InPlaceText
           label={t("issue-field.title")}
-          buttonLabel={t("issues.change-title-of", { title: issue.title ?? "" })}
+          buttonLabel={(title) => t("issues.change-title-of", { title })}
           value={issue.title ?? ""}
           required
           readOnly={!canChangeTitle}

@@ -35,8 +35,8 @@ export function IssueFrame(props: IssueFrameProps) {
         show={show}
         canChangeTitle={blocks.mask.changes("title")}
         actions={actions}
-        onTitle={(title) => {
-          changes.change({ title });
+        onTitle={(title, settled) => {
+          changes.change({ title }, settled);
         }}
         onSwitch={onSwitch}
       />

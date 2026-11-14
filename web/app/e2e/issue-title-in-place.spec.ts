@@ -33,3 +33,31 @@ test("iss_03 Enter in the box of the title saves the title once, with no conflic
   expectStill(saving, around);
   expect(saves()).toBe(1);
 });
+
+test("iss_03 the Enter that ends a composition of characters in the title saves nothing", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await openIssueWithDetails(page, "WEB-1");
+  await page.waitForLoadState("networkidle");
+  const title = partIn(page, "issue-title");
+  await title.getByRole("button").click();
+  const box = title.getByRole("textbox");
+  await box.fill("Composed title");
+  const saves = countRequests(page, "PATCH", "/api/v1/issues/");
+  // An input method (IME) ends a composition with Enter; Safari says so only by the key code 229.
+  // The box handles the key in the same turn: whether it took the key is known after it.
+  const taken = (code: number) =>
+    box.evaluate((element, keyCode) => {
+      const press = new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true });
+      Object.defineProperty(press, "keyCode", { value: keyCode });
+      element.dispatchEvent(press);
+      return press.defaultPrevented;
+    }, code);
+  expect(await taken(229)).toBe(false);
+  await expect(box).toBeFocused();
+  expect(saves()).toBe(0);
+  expect(await taken(13)).toBe(true);
+  await expect(page.getByRole("heading", { level: 1, name: "Composed title" })).toBeVisible();
+  expect(saves()).toBe(1);
+});

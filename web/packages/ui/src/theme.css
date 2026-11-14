@@ -7719,21 +7719,24 @@ textarea,
 }
 
 [data-part="in-place.button"] {
-  border: 0;
-  background: transparent;
-  font-family: var(--font-ui);
-  cursor: pointer;
-  margin-inline-start: calc(-1 * var(--pad-control));
   box-sizing: border-box;
-  max-width: 100%;
   min-height: var(--size-control);
-  padding: 0 var(--pad-control);
+  padding: calc(var(--pad-line-in-control) - var(--border-width))
+    calc(var(--pad-control) - var(--border-width));
+  border: var(--border-width) solid transparent;
   border-radius: var(--r-ctl);
-  color: inherit;
+  font-family: inherit;
   font-size: inherit;
   font-weight: inherit;
+  line-height: inherit;
   text-align: start;
   overflow-wrap: anywhere;
+  background: transparent;
+  cursor: pointer;
+  margin-inline-start: calc(-1 * var(--pad-control));
+  display: block;
+  max-width: 100%;
+  color: inherit;
 }
 
 [data-part="in-place.button"]:hover {
@@ -7752,19 +7755,53 @@ textarea,
   }
 }
 
-[data-part="in-place.input"] {
+[data-part="in-place.grow"] {
+  margin-inline-start: calc(-1 * var(--pad-control));
+  display: grid;
+  width: 100%;
+}
+
+[data-part="in-place.mirror"] {
   box-sizing: border-box;
   min-height: var(--size-control);
-  border: var(--border-width) solid var(--border-control);
+  padding: calc(var(--pad-line-in-control) - var(--border-width))
+    calc(var(--pad-control) - var(--border-width));
+  border: var(--border-width) solid transparent;
   border-radius: var(--r-ctl);
-  background: var(--bg-raised);
-  width: 100%;
-  padding: 0 var(--pad-control);
-  color: var(--fg);
   font-family: inherit;
   font-size: inherit;
   font-weight: inherit;
   line-height: inherit;
+  text-align: start;
+  overflow-wrap: anywhere;
+  grid-column: 1;
+  grid-row: 1;
+  visibility: hidden;
+  white-space: pre-wrap;
+}
+
+[data-part="in-place.input"] {
+  box-sizing: border-box;
+  min-height: var(--size-control);
+  padding: calc(var(--pad-line-in-control) - var(--border-width))
+    calc(var(--pad-control) - var(--border-width));
+  border: var(--border-width) solid transparent;
+  border-radius: var(--r-ctl);
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  text-align: start;
+  overflow-wrap: anywhere;
+  border-color: var(--border-control);
+  background: var(--bg-raised);
+  grid-column: 1;
+  grid-row: 1;
+  width: 100%;
+  height: 100%;
+  resize: none;
+  overflow: hidden;
+  color: var(--fg);
 }
 
 [data-part="in-place.input"]:focus {
