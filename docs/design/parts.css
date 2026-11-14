@@ -1008,7 +1008,6 @@ textarea,
 
 @supports (animation-timeline: scroll()) {
   [data-part="overlay.dialog"]::before,
-  [data-part="picker.options"][data-variant~="list"]::before,
   [data-part="list-scroll"]::before,
   [data-part="window.body"]::before,
   [data-part="confirm.body"]::before,
@@ -1038,7 +1037,6 @@ textarea,
 
 @supports (animation-timeline: scroll()) {
   [data-part="overlay.dialog"]::after,
-  [data-part="picker.options"][data-variant~="list"]::after,
   [data-part="list-scroll"]::after,
   [data-part="window.body"]::after,
   [data-part="confirm.body"]::after,
@@ -1152,36 +1150,14 @@ textarea,
   display: flex;
   flex-direction: column;
   gap: var(--size-option-gap);
-  box-sizing: content-box;
-  max-height: calc(var(--size-row) * 7 + var(--size-option-gap) * 6);
   scroll-padding: var(--ring-room);
   margin-block: 0;
   padding: var(--ring-room);
   list-style: none;
-  overflow-y: auto;
-}
-
-@supports (animation-timeline: scroll()) {
-  [data-part="picker.options"][data-variant~="list"]::before {
-    top: calc(-1 * var(--ring-room));
-    margin-block-end: calc(-1 * var(--size-option-gap));
-  }
-}
-
-@supports (animation-timeline: scroll()) {
-  [data-part="picker.options"][data-variant~="list"]::after {
-    bottom: calc(-1 * var(--ring-room));
-    margin-block-start: calc(-1 * var(--size-option-gap));
-  }
 }
 
 [data-part="picker.options"][data-variant~="list"]:has([data-part="picker.choice"]) {
   margin-inline: calc(var(--ring-room) * -1);
-}
-
-[data-part="picker.options"][data-variant~="list"]:has([data-part="picker.choice"]),
-[data-part="picker.options"][data-variant~="list"]:has([data-part="picker.row"]) {
-  max-height: calc(var(--size-control) * 7 + var(--size-option-gap) * 6);
 }
 
 [data-part="picker.option"][data-variant~="list"] {
@@ -4663,7 +4639,6 @@ textarea,
 
 @supports not (animation-timeline: scroll()) {
   [data-part="overlay.dialog"],
-  [data-part="picker.options"][data-variant~="list"],
   [data-part="list-scroll"],
   [data-part="window.body"],
   [data-part="confirm.body"],
