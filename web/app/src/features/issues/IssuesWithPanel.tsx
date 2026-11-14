@@ -1,5 +1,6 @@
 import { t } from "@bugaboo/messages";
-import { Card, cardLook, partOf, part } from "@bugaboo/ui";
+import { Card, cardLook, PaneWithHead, partOf, part, useLayout } from "@bugaboo/ui";
+import type { ReactNode } from "react";
 
 import type { HistoryStep, SearchState } from "../../shared/search-address.ts";
 
@@ -19,6 +20,27 @@ export interface IssuesWithPanelProps {
   readonly onFocus: (key: string) => void;
   /** Closes the side panel. */
   readonly onClose: () => void;
+}
+
+/**
+ * On a computer the toolbar, the search bar and the options of the list fold over its rows (UX §6.5); a phone keeps
+ * them above its one box.
+ */
+function FoldingHead({
+  head,
+  children,
+}: {
+  readonly head: ReactNode;
+  readonly children: ReactNode;
+}) {
+  return useLayout() === "phone" ? (
+    <>
+      {head}
+      {children}
+    </>
+  ) : (
+    <PaneWithHead head={head}>{children}</PaneWithHead>
+  );
 }
 
 /** The list of a project and, beside it, the issue that is open in the side panel. */
@@ -44,18 +66,23 @@ export function IssuesWithPanel({
     >
       <div {...partOf(part.listEditor)}>
         <div {...partOf(part.listEditorList)}>
-          <ProjectToolbar
-            shortName={project.shortName}
-            beside={open !== undefined}
-            shownAs={state.view}
-          />
-          <ProjectList
-            project={project}
-            state={state}
-            onState={onState}
-            openIn={openIn}
-            selection={selection}
-          />
+          <FoldingHead
+            head={
+              <ProjectToolbar
+                shortName={project.shortName}
+                beside={open !== undefined}
+                shownAs={state.view}
+              />
+            }
+          >
+            <ProjectList
+              project={project}
+              state={state}
+              onState={onState}
+              openIn={openIn}
+              selection={selection}
+            />
+          </FoldingHead>
         </div>
         {open === undefined ? null : <OpenIssue open={open} onFocus={onFocus} onClose={onClose} />}
       </div>

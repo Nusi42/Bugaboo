@@ -164,7 +164,8 @@ export { focusFirstField, withId } from "./first-field.ts";
 export { inPlace } from "./in-place.ts";
 export { composing, plainEnter } from "./plain-enter.ts";
 export { useHeightOnParent } from "./height-variable.ts";
-export { PaneWithHead, type PaneWithHeadProps } from "./PaneWithHead.tsx";
+export { InPaneHead, PaneWithHead, type PaneWithHeadProps } from "./PaneWithHead.tsx";
+export { usePaneHeadAbove } from "./pane-head.ts";
 export { Facts, Length, type Fact } from "./Length.tsx";
 export { SaveStatus, type SaveState, type SaveStatusProps } from "./SaveStatus.tsx";
 export {

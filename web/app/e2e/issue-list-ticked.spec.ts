@@ -20,9 +20,10 @@ test("ux_4_2 ticking two issues moves nothing above the list and the bar says ho
 }) => {
   test.skip(layoutOf(page) === "phone", "a phone ticks one card at a time");
   await openList(page);
-  // The head of the list stands where it stood: the bar takes its room from the box of the rows, which takes the rest
-  // of the window and scrolls inside (the rows in it may scroll to the ticked one).
-  const listHead = partIn(page, "list-head").first();
+  // The toolbar of the list stands where it stood: the bar takes its room from the box of the rows, which takes the rest
+  // of the window and scrolls inside (the rows in it may scroll to the ticked one, and the head over them folds with
+  // that scroll down to the toolbar, UX §6.5).
+  const listHead = partIn(page, "list-toolbar").first();
   const before = await boxOf(listHead);
   await tickIssues(page, ["WEB-1", "WEB-2"]);
   const after = await boxOf(listHead);

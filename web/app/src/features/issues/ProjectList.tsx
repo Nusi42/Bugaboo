@@ -1,3 +1,4 @@
+import { InPaneHead } from "@bugaboo/ui";
 import { useState } from "react";
 
 import {
@@ -56,15 +57,17 @@ export function ProjectList({ project, state, onState, openIn, selection }: Proj
   );
   return (
     <>
-      <SearchBar
-        text={text}
-        onText={onText}
-        within={project.id}
-        onStale={setStale}
-        listView={{ view: list.view, onView: list.onView }}
-        phoneStart={<PhoneActions shortName={project.shortName} />}
-        actions={save}
-      />
+      <InPaneHead>
+        <SearchBar
+          text={text}
+          onText={onText}
+          within={project.id}
+          onStale={setStale}
+          listView={{ view: list.view, onView: list.onView }}
+          phoneStart={<PhoneActions shortName={project.shortName} />}
+          actions={save}
+        />
+      </InPaneHead>
       <IssueResults
         {...list}
         text={text}

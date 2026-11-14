@@ -1,4 +1,4 @@
-import { part, partOf } from "@bugaboo/ui";
+import { InPaneHead, part, partOf } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
 import { ListColumn } from "./ListColumn.tsx";
@@ -39,19 +39,21 @@ export function ListMain({
   const rows = useRowKeys();
   return (
     <div ref={rows} {...partOf(part.listMain)}>
-      <ListOptions
-        view={view}
-        fields={fields}
-        customizing={customizing}
-        onView={onView}
-        onCustomize={onCustomize}
-      />
-      <ListInfo
-        scopeName={props.scopeName}
-        shown={shown}
-        stale={props.stale}
-        customizing={customizing}
-      />
+      <InPaneHead>
+        <ListOptions
+          view={view}
+          fields={fields}
+          customizing={customizing}
+          onView={onView}
+          onCustomize={onCustomize}
+        />
+        <ListInfo
+          scopeName={props.scopeName}
+          shown={shown}
+          stale={props.stale}
+          customizing={customizing}
+        />
+      </InPaneHead>
       <div {...partOf(part.listBody)}>
         <ListColumn
           props={props}

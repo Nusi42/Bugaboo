@@ -1393,9 +1393,24 @@ keyframes "pane-head-fold" {
 // line.
 mixin "pane-head-folds" {
     animation-name "pane-head-fold"
+    use "pane-head-steps"
+}
+
+// Along with the scroll of a box of the pane, from its start until the head is one line.
+mixin "pane-head-steps" {
     animation-fill-mode both
     animation-timing-function linear
     animation-range "0% calc($pane-head-height - $size-control - 2 * $ring-room)"
+}
+
+// What stands at the foot of the head of a pane and goes up with it as it folds (the head of the columns of a list).
+keyframes "pane-head-follow" {
+    from {
+        translate "0 0"
+    }
+    to {
+        translate "0 calc($size-control + 2 * $ring-room - $pane-head-height)"
+    }
 }
 
 // ───────────── The page ─────────────
@@ -16757,6 +16772,17 @@ part "pane-head.content" {
     padding "$ring-room $ring-room $space-4"
 }
 
+// What deeper parts of the pane put into its head stands in the line of what the head holds.
+part "pane-head.slot" {
+    display contents
+}
+
+// The head of a list keeps the room between its lines that the page of the list has.
+part "list-editor.list pane-head.content" {
+    gap "$space-3"
+    padding-block-end "$space-3"
+}
+
 // The boxes that drive the head, and the room each keeps for the whole head over its start.
 // Under the head the sections start at the top of the pane, with the room for the ring under the whole head, so the head
 // laid over them never covers the ring of the first control. The head reaches up by that room (above), so its bottom
@@ -16884,7 +16910,7 @@ part "list-main list-scroll" "list-main search-results:not(search-results:has(li
 
 // In a low window on a computer the frame of a list is at least as high as its head and the least of its rows: it does
 // not cut them, the main column scrolls (UX §6.5).
-part "app-layout:not(app-layout[variant=phone]) app-layout.inner:has(list-main search-results)" "app-layout:not(app-layout[variant=phone]) card:has(list-main search-results)" "app-layout:not(app-layout[variant=phone]) card > stack:has(list-main search-results)" "app-layout:not(app-layout[variant=phone]) list-editor.list:has(list-main search-results)" "app-layout:not(app-layout[variant=phone]) list-main:has(search-results)" "app-layout:not(app-layout[variant=phone]) list-main search-results" "app-layout:not(app-layout[variant=phone]) list-editor:has(search-results)" "app-layout:not(app-layout[variant=phone]) list-body:has(search-results)" "app-layout:not(app-layout[variant=phone]) list-column:has(search-results)" {
+part "app-layout:not(app-layout[variant=phone]) app-layout.inner:has(list-main search-results)" "app-layout:not(app-layout[variant=phone]) pane:has(list-main search-results)" "app-layout:not(app-layout[variant=phone]) card:has(list-main search-results)" "app-layout:not(app-layout[variant=phone]) card > stack:has(list-main search-results)" "app-layout:not(app-layout[variant=phone]) list-editor.list:has(list-main search-results)" "app-layout:not(app-layout[variant=phone]) list-main:has(search-results)" "app-layout:not(app-layout[variant=phone]) search-results:has(list-scroll)" "app-layout:not(app-layout[variant=phone]) list-editor:has(search-results)" "app-layout:not(app-layout[variant=phone]) list-body:has(search-results)" "app-layout:not(app-layout[variant=phone]) list-column:has(search-results)" {
     media "screen and (max-height: $size-low-window)" {
         min-height auto
     }
@@ -16899,7 +16925,7 @@ part "app-layout:not(app-layout[variant=phone]) list-main list-frame:has(search-
     }
 }
 
-part "app-layout:not(app-layout[variant=phone]) list-main list-scroll" "app-layout:not(app-layout[variant=phone]) list-main search-results:not(search-results:has(list-scroll))" {
+part "app-layout:not(app-layout[variant=phone]) list-main list-scroll" {
     media "screen and (max-height: $size-low-window)" {
         flex "1 1 0"
         contain size
@@ -16933,6 +16959,51 @@ part "app-layout:not(app-layout[variant=phone]) list-main list-body list-panel" 
 // so the last row can be scrolled above it.
 part "list-column:has(selected-bar[state=active]) list-scroll" {
     padding-block-end "calc($space-3 + $bar-ticked-height)"
+}
+
+// The list under the head of its pane: its frame starts where the whole head ends, as it stood in the page, and the box
+// of its rows reaches up under the head by as much, with that room above its first row (kept by the code that draws only
+// the rows on screen), so the rows stand where they stood and come into view under the head as it folds. The head of the
+// columns goes up with the head of the pane, at its foot.
+part "app-layout:not(app-layout[variant=phone]) pane list-main list-frame" {
+    padding-block-start "calc($pane-head-height - $ring-room)"
+    media "print" {
+        padding-block-start 0
+    }
+}
+
+part "app-layout:not(app-layout[variant=phone]) pane list-main list-scroll" {
+    scroll-timeline "--pane-first block"
+    margin-block-start "calc($ring-room - $pane-head-height)"
+    min-height "calc($size-list-scroll-least + $bar-ticked-height + $pane-head-height - $ring-room)"
+    media "print" {
+        margin-block-start 0
+    }
+}
+
+// The line at the start of the rows would stand over the head of the pane; the head of the columns at its foot marks
+// that edge there.
+part "app-layout:not(app-layout[variant=phone]) pane list-main list-scroll::before" {
+    display none
+}
+
+part "app-layout:not(app-layout[variant=phone]) pane list-main list-head" {
+    position relative
+    z-index "$z-raised"
+    supports "(animation-timeline: scroll())" {
+        animation-name "pane-head-follow"
+        use "pane-head-steps"
+        animation-timeline "--pane-first"
+    }
+}
+
+// What does not fold the head stands under the whole head: Customize beside the list, the grey shapes while the list is
+// read, the timeline.
+part "app-layout:not(app-layout[variant=phone]) pane list-panel" "app-layout:not(app-layout[variant=phone]) pane > column" "app-layout:not(app-layout[variant=phone]) pane > timeline" {
+    margin-block-start "calc($pane-head-height - $ring-room)"
+    media "print" {
+        margin-block-start 0
+    }
 }
 
 // ───────────── Timesheet (TIME-04, UX §4.9) ─────────────
