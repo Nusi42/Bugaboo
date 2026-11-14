@@ -2,9 +2,20 @@ import { dataOf, type Schema } from "@bugaboo/api-client";
 
 import { api } from "../../shared/api.ts";
 import { fieldList, pageSize, usePaged } from "../../shared/paged.ts";
-import { queryKeys, refreshIssueRelations } from "../../shared/query-keys.ts";
+import { queryKeys, reread, rereadNow, routeStartsWith } from "../../shared/query-keys.ts";
 import type { RelationKindLine } from "../relation-kinds/index.ts";
 import type { NameKey } from "@bugaboo/wasm";
+
+/** A sub-issue or a relation was added or taken away: what an issue stands among, and the totals above it, are read again. */
+export async function refreshIssueRelations(): Promise<void> {
+  reread({ queryKey: queryKeys.history.all });
+  reread({ queryKey: queryKeys.issues.time() });
+  // Waited for: what was made shows in its place in the frame its sentence comes (UX §6.4).
+  await Promise.all([
+    rereadNow({ queryKey: queryKeys.issueRelations.all }),
+    rereadNow({ predicate: routeStartsWith(["/api/v1/issues/{issue}/relations"]) }),
+  ]);
+}
 
 /**
  * Makes a relation from an issue (by its readable ID) to another one, and reads the relations of
@@ -20,14 +31,14 @@ export async function createRelation(
       body,
     }),
   );
-  refreshIssueRelations();
+  await refreshIssueRelations();
   return made;
 }
 
 /** Takes a relation away (its *Undo*), and reads the relations of issues again. */
 export async function deleteRelation(relation: string): Promise<void> {
   await api.client.DELETE("/api/v1/relations/{relation}", { params: { path: { relation } } });
-  refreshIssueRelations();
+  await refreshIssueRelations();
 }
 
 /** What a block of the issue page needs of the page: the readable ID of the issue. */
@@ -109,7 +120,7 @@ export async function setParentOf(child: string, parent: string | null): Promise
       body: { version, parent },
     }),
   );
-  refreshIssueRelations();
+  await refreshIssueRelations();
 }
 
 /** What a person picks when they add a relation: one of the words of a kind, and which end it is. */

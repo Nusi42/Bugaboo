@@ -89,6 +89,8 @@ export const queryKeys = {
     header: (issue: string) => ["issue-relations", "header", issue],
     subIssues: (issue: string) => ["issue-relations", "sub-issues", issue],
     related: (issue: string) => ["issue-relations", "related", issue],
+    /** The key of the changes of relations and parts (a mutation), not of an answer. */
+    changing: ["issue-relations", "changing"],
   },
   history: {
     all: ["history"],
@@ -169,7 +171,13 @@ type Rereading = Readonly<{
  * began after the change.
  */
 export function reread(filters: Rereading): void {
-  void queryClient.cancelQueries(filters).then(() => queryClient.invalidateQueries(filters));
+  void rereadNow(filters);
+}
+
+/** `reread`, done when the new answers are there: for a change that shows what it made only then. */
+export async function rereadNow(filters: Rereading): Promise<void> {
+  await queryClient.cancelQueries(filters);
+  await queryClient.invalidateQueries(filters);
 }
 
 /** Reads the lists of issues and what an issue shows about itself again: issues changed. */
@@ -254,14 +262,6 @@ export function refreshRoutes(routes: readonly string[]): void {
 export function refreshIssueFiles(): void {
   refreshHistory();
   refreshReads(["/api/v1/issues/{issue}/files"]);
-}
-
-/** A sub-issue or a relation was added or taken away: what an issue stands among, and the totals above it, are read again. */
-export function refreshIssueRelations(): void {
-  reread({ queryKey: queryKeys.issueRelations.all });
-  reread({ queryKey: queryKeys.history.all });
-  reread({ queryKey: queryKeys.issues.time() });
-  refreshRoutes(["/api/v1/issues/{issue}/relations"]);
 }
 
 /** A notification was read: the list and the number on the menu are read again. */

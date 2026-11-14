@@ -12,7 +12,6 @@ import {
   part,
 } from "@bugaboo/ui";
 import type { Schema } from "@bugaboo/api-client";
-import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
@@ -25,6 +24,7 @@ import {
   type RelationChoice,
 } from "./relations.ts";
 import { exactName } from "../../shared/same-name.ts";
+import { useRelationChange } from "./relation-change.ts";
 import { useNameKey } from "../../shared/use-name-key.ts";
 
 /** What *Add relation* shows after the third step: the relation that was made, with *Undo*. */
@@ -112,19 +112,16 @@ function useAddRelation(readableId: string) {
   const [chosen, setChosen] = useState<string | null>(null);
   const [other, setOther] = useState("");
   const [made, setMade] = useState<{ relation: string; other: string; name: string } | null>(null);
-  const add = useMutation({
-    mutationFn: (body: Schema<"NewRelationBody">) => createRelation(readableId, body),
-    onSuccess: (relation) => {
+  const add = useRelationChange(
+    (body: Schema<"NewRelationBody">) => createRelation(readableId, body),
+    (relation) => {
       setMade({ relation: relation.id, other: relation.issue.readable_id, name: relation.name });
       setOther("");
       setChosen(null);
     },
-  });
-  const remove = useMutation({
-    mutationFn: deleteRelation,
-    onSuccess: () => {
-      setMade(null);
-    },
+  );
+  const remove = useRelationChange(deleteRelation, () => {
+    setMade(null);
   });
   const choice = choices.find((each) => each.key === chosen);
   const submit = () => {

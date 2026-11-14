@@ -6,6 +6,7 @@ import { IssueReadProblem } from "../../shared/IssueReadProblem.tsx";
 import { itemsOf } from "../../shared/paged.ts";
 import { AddRelation } from "./AddRelation.tsx";
 import { RelatedLine } from "./RelatedLine.tsx";
+import { useHeldWhileChanging } from "./relation-change.ts";
 import { useIssueRelations, useRelatedIssues, type BlockProps } from "./relations.ts";
 
 /** *Add relation*, and the three steps behind it once it is pressed. */
@@ -42,8 +43,8 @@ export function RelatedIssuesBlock({ readableId }: BlockProps) {
   const heading = useId();
   const header = useIssueRelations(readableId);
   const list = useRelatedIssues(readableId);
-  const related = itemsOf(list.data?.pages);
-  const mayChange = header.data?.may_change === true;
+  const related = itemsOf(useHeldWhileChanging(list.data?.pages));
+  const mayChange = useHeldWhileChanging(header.data)?.may_change === true;
   return (
     <section {...partOf(part.stack)} aria-labelledby={heading}>
       <h2 id={heading} {...partOf(part.issueSectionTitle)}>

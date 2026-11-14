@@ -4,7 +4,7 @@ import { Alert, alertTone, Button, buttonLook } from "@bugaboo/ui";
 
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
-import { refreshIssueRelations } from "../../shared/query-keys.ts";
+import { refreshIssueRelations } from "./relations.ts";
 import { IssueRefRow } from "./IssueRefRow.tsx";
 
 /** *Take away* a relation; the page shows the change at once. */
