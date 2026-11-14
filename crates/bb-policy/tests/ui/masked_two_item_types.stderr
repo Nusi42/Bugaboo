@@ -1,0 +1,5 @@
+error: a view has one issue type: only one member is `item_type` (ADR-0027)
+  --> tests/ui/masked_two_item_types.rs:16:17
+   |
+16 |     other_type: TypeRef,
+   |                 ^^^^^^^

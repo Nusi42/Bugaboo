@@ -198,7 +198,7 @@ pub(crate) struct IssueItem {
     /// The agent that works on it now and where its work is; left out while no agent works on it.
     /// Only a list that asks for it reads it.
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[masked(nested, item_type)]
+    #[masked(nested)]
     agent_work: Option<AgentMarkRefBody>,
     /// Counts up with every change. A change is made on the version that was looked at.
     #[serde(skip_serializing_if = "Option::is_none")]

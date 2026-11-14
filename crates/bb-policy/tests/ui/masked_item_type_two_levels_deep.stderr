@@ -1,0 +1,5 @@
+error[E0080]: evaluation panicked: a view masked by its issue type cannot hold another one: it would get the outer type's mask (ADR-0027)
+  --> tests/ui/masked_item_type_two_levels_deep.rs:32:11
+   |
+32 |     page: Page,
+   |           ^^^^ evaluation of `_` failed here

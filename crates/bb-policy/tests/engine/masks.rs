@@ -559,3 +559,39 @@ fn sec_03_check_access_explains_a_field_level_for_one_issue_type() {
     assert_eq!(level_in(None), Some(FieldLevel::CanChange));
     assert_eq!(at_web.report(), at_web.report_for(None));
 }
+
+#[derive(Serialize, bb_policy::Masked)]
+struct TypeInside {
+    #[masked(open)]
+    id: String,
+}
+
+#[derive(Serialize, bb_policy::Masked)]
+struct TypedItem {
+    #[masked(nested, item_type)]
+    issue_type: TypeInside,
+}
+
+#[derive(Serialize, bb_policy::Masked)]
+struct PageOfItems {
+    #[masked(nested)]
+    items: Option<Box<Vec<TypedItem>>>,
+}
+
+#[derive(Serialize, bb_policy::Masked)]
+struct BookOfPages {
+    #[masked(nested)]
+    pages: Vec<PageOfItems>,
+}
+
+/// A view knows whether it holds a view masked by an issue type at any depth, through the views,
+/// lists, boxes and options between them, so that a view masked by its type refuses it at any
+/// depth (the compile-fail cases, ADR-0027).
+#[test]
+fn sec_04_a_view_knows_it_holds_one_masked_by_its_issue_type_at_any_depth() {
+    assert!(TypedItem::HOLDS_ITEM_TYPE);
+    assert!(PageOfItems::HOLDS_ITEM_TYPE);
+    assert!(BookOfPages::HOLDS_ITEM_TYPE);
+    assert!(!TypeInside::HOLDS_ITEM_TYPE);
+    assert!(!NestedIssue::HOLDS_ITEM_TYPE);
+}

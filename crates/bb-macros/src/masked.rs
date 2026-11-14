@@ -92,10 +92,16 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
             let name = &member.name;
             quote! { ::bb_policy::drop_hidden_own_fields(value, #name, mask); }
         });
-    let item_type = members
+    let mut item_types = members
         .iter()
-        .find(|member| member.special == Special::ItemType)
-        .map(|member| member.name.clone());
+        .filter(|member| member.special == Special::ItemType);
+    let item_type = item_types.next().map(|member| member.name.clone());
+    if let Some(second) = item_types.next() {
+        return Err(syn::Error::new(
+            second.ty.span(),
+            "a view has one issue type: only one member is `item_type` (ADR-0027)",
+        ));
+    }
     let pick_mask = item_type.as_ref().map(|name| {
         quote! {
             let item_mask = ::bb_policy::mask_of_item(value, #name, mask);
@@ -113,7 +119,7 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
             quote! { &floor },
         )
     };
-    let (mask_from, one_type) = mask_from(&members, item_type.is_some());
+    let (mask_from, one_type) = mask_from(view, &members, item_type.is_some());
     // An open member is a plain value: a type that is itself a view with a mask would leak.
     let plain = members.iter().filter(|member| member.open).map(|member| {
         let ty = member.ty;
@@ -209,24 +215,64 @@ fn read_member(ident: &Ident, attrs: &[Attribute]) -> syn::Result<MemberKind> {
 /// Where the mask of the view comes from (`MASK_FROM`), and, for a view masked by its issue type,
 /// the checks that no view inside it is masked by an issue type of its own: it would get the mask
 /// of the outer type, because the outer view hands the mask of its type to the views inside it.
-fn mask_from(members: &[Member<'_>], by_item_type: bool) -> (TokenStream, TokenStream) {
+///
+/// Every view says whether it holds a view masked by an issue type at any depth
+/// (`HOLDS_ITEM_TYPE`), so the check reaches through views inside views, not one level only. A
+/// member that holds the view itself (a parent, a sub-issue) adds only what the view is masked by:
+/// what it holds besides is the view's own, and asking it again would never end.
+fn mask_from(
+    view: &Ident,
+    members: &[Member<'_>],
+    by_item_type: bool,
+) -> (TokenStream, TokenStream) {
+    let inside: Vec<_> = members
+        .iter()
+        .filter(|member| member.nested && member.special != Special::ItemType)
+        .map(|member| {
+            let ty = member.ty;
+            let holds = if holds_itself(view, ty) {
+                quote! {
+                    ::core::matches!(
+                        <#ty as ::bb_policy::Masked>::MASK_FROM,
+                        ::bb_policy::MaskFrom::ItemType
+                    )
+                }
+            } else {
+                quote! { <#ty as ::bb_policy::Masked>::HOLDS_ITEM_TYPE }
+            };
+            (ty, holds)
+        })
+        .collect();
+    let any_inside = inside.iter().map(|(_, holds)| holds);
+    let holds = quote! { const HOLDS_ITEM_TYPE: bool = #by_item_type #(|| #any_inside)*; };
     if !by_item_type {
-        return (quote! {}, quote! {});
+        return (holds, quote! {});
     }
-    let one_type = members.iter().filter(|member| member.nested).map(|member| {
-        let ty = member.ty;
+    let one_type = inside.iter().map(|(ty, holds)| {
         quote_spanned! { ty.span() =>
             const _: () = ::core::assert!(
-                !::core::matches!(
-                    <#ty as ::bb_policy::Masked>::MASK_FROM,
-                    ::bb_policy::MaskFrom::ItemType
-                ),
+                !(#holds),
                 "a view masked by its issue type cannot hold another one: it would get the outer type's mask (ADR-0027)"
             );
         }
     });
     (
-        quote! { const MASK_FROM: ::bb_policy::MaskFrom = ::bb_policy::MaskFrom::ItemType; },
+        quote! {
+            const MASK_FROM: ::bb_policy::MaskFrom = ::bb_policy::MaskFrom::ItemType;
+            #holds
+        },
         quote! { #(#one_type)* },
     )
+}
+
+/// Whether the type of a member names the view itself (`Option<Box<Issue>>` inside `Issue`).
+fn holds_itself(view: &Ident, ty: &syn::Type) -> bool {
+    fn names(tokens: TokenStream, view: &Ident) -> bool {
+        tokens.into_iter().any(|token| match token {
+            proc_macro2::TokenTree::Ident(ident) => ident == *view || ident == "Self",
+            proc_macro2::TokenTree::Group(group) => names(group.stream(), view),
+            _ => false,
+        })
+    }
+    names(quote! { #ty }, view)
 }

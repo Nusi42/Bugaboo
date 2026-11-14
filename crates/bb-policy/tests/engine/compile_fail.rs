@@ -28,4 +28,6 @@ fn sec_04_an_open_member_cannot_be_a_view_with_fields_to_mask() {
 fn sec_04_a_view_masked_by_its_issue_type_cannot_hold_another_one() {
     let cases = trybuild::TestCases::new();
     cases.compile_fail("tests/ui/masked_item_type_inside_item_type.rs");
+    cases.compile_fail("tests/ui/masked_item_type_two_levels_deep.rs");
+    cases.compile_fail("tests/ui/masked_two_item_types.rs");
 }

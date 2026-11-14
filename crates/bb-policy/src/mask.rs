@@ -195,6 +195,11 @@ pub trait Masked {
     /// it when it is derived).
     const MASK_FROM: MaskFrom = MaskFrom::Given;
 
+    /// Whether the view, or a view inside it at any depth, is masked by its issue type. A view
+    /// masked by its issue type refuses such a member: the view inside would get the mask of the
+    /// outer type (ADR-0027).
+    const HOLDS_ITEM_TYPE: bool = matches!(Self::MASK_FROM, MaskFrom::ItemType);
+
     /// Drops the hidden fields from `value`, the serialized form of `Self`.
     fn mask(value: &mut Value, mask: &FieldMask) {
         drop_hidden(value, Self::FIELDS, mask);
@@ -261,6 +266,7 @@ pub fn mask_member<T: Masked>(value: &mut Value, name: &str, mask: &FieldMask) {
 
 impl<T: Masked> Masked for Vec<T> {
     const MASK_FROM: MaskFrom = T::MASK_FROM;
+    const HOLDS_ITEM_TYPE: bool = T::HOLDS_ITEM_TYPE;
 
     fn mask(value: &mut Value, mask: &FieldMask) {
         if let Value::Array(items) = value {
@@ -277,6 +283,7 @@ impl<T: Masked> Masked for Vec<T> {
 
 impl<T: Masked> Masked for Box<T> {
     const MASK_FROM: MaskFrom = T::MASK_FROM;
+    const HOLDS_ITEM_TYPE: bool = T::HOLDS_ITEM_TYPE;
 
     fn mask(value: &mut Value, mask: &FieldMask) {
         T::mask(value, mask);
@@ -289,6 +296,7 @@ impl<T: Masked> Masked for Box<T> {
 
 impl<T: Masked> Masked for Option<T> {
     const MASK_FROM: MaskFrom = T::MASK_FROM;
+    const HOLDS_ITEM_TYPE: bool = T::HOLDS_ITEM_TYPE;
 
     fn mask(value: &mut Value, mask: &FieldMask) {
         if !value.is_null() {
