@@ -96,18 +96,20 @@ export function DetailsPanel({ blocks, changes, stacked }: DetailsPanelProps) {
       {...keptScroll(scrollBox.issueDetails)}
       aria-label={t("issues.details")}
     >
-      <h2 {...partOf(part.issueDetailsHeading)}>{t("issues.details")}</h2>
-      {blocks.form.ready ? (
-        <NameValueList>
-          {inLayoutOrder(
-            blocks.form.sections.flatMap((section) => section.fields),
-            groupsOf({ blocks, changes }),
-          )}
-        </NameValueList>
-      ) : (
-        <DelayedSkeleton />
-      )}
-      <SlotBlocks slot={issueSlots.detailSections} blocks={blocks} />
+      <div {...partOf(part.issueDetailsCard)}>
+        <h2 {...partOf(part.issueDetailsHeading)}>{t("issues.details")}</h2>
+        {blocks.form.ready ? (
+          <NameValueList>
+            {inLayoutOrder(
+              blocks.form.sections.flatMap((section) => section.fields),
+              groupsOf({ blocks, changes }),
+            )}
+          </NameValueList>
+        ) : (
+          <DelayedSkeleton />
+        )}
+        <SlotBlocks slot={issueSlots.detailSections} blocks={blocks} />
+      </div>
     </aside>
   );
 }

@@ -49,6 +49,15 @@
   }
 }
 
+@keyframes pane-head-fold {
+  from {
+    max-height: var(--pane-head-height);
+  }
+  to {
+    max-height: var(--size-control);
+  }
+}
+
 html,
 body,
 #root {
@@ -6824,18 +6833,21 @@ textarea,
 }
 
 [data-part="issue-details"] {
+  flex: none;
+  box-sizing: border-box;
+  width: var(--size-details);
+  max-height: var(--size-viewport);
+  overflow-y: auto;
+}
+
+[data-part="issue-details.card"] {
   border: var(--border-width) solid var(--border-subtle);
   border-radius: var(--r-ctl);
   background: var(--bg-surface);
   display: flex;
-  flex: none;
   flex-direction: column;
   gap: var(--space-3);
-  box-sizing: border-box;
-  width: var(--size-details);
-  max-height: var(--size-viewport);
   padding: var(--space-3) var(--space-4);
-  overflow-y: auto;
 }
 
 [data-part="issue-body"][data-variant~="split"] [data-part="issue-main"],
@@ -9353,6 +9365,103 @@ textarea,
     min-height: auto;
     max-height: none;
     overflow: visible;
+  }
+}
+
+[data-part="pane"] {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  flex: 1 1 0;
+  min-height: 0;
+  position: relative;
+  timeline-scope: --pane-first, --pane-second;
+}
+
+@media print {
+  [data-part="pane"] {
+    flex: none;
+    height: auto;
+    min-height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+[data-part="pane-head"],
+[data-part="pane-head.fold"] {
+  overflow: hidden;
+}
+
+@media print {
+  [data-part="pane-head"],
+  [data-part="pane-head.fold"] {
+    overflow: visible;
+  }
+}
+
+[data-part="pane-head"] {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  z-index: var(--z-raised);
+  background: var(--bg-canvas);
+}
+
+@media print {
+  [data-part="pane-head"] {
+    position: static;
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  [data-part="pane-head"] {
+    animation-name: pane-head-fold;
+    animation-fill-mode: both;
+    animation-timing-function: linear;
+    animation-range: 0% calc(var(--pane-head-height) - var(--size-control));
+    animation-timeline: --pane-first;
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  [data-part="pane-head.fold"] {
+    animation-name: pane-head-fold;
+    animation-fill-mode: both;
+    animation-timing-function: linear;
+    animation-range: 0% calc(var(--pane-head-height) - var(--size-control));
+    animation-timeline: --pane-second;
+  }
+}
+
+[data-part="pane-head.content"] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding-block-end: var(--space-4);
+}
+
+[data-part="pane"] [data-part="issue-body"][data-variant~="split"] [data-part="issue-main"] {
+  scroll-timeline: --pane-first block;
+  margin-block-start: 0;
+  padding-block-start: calc(var(--pane-head-height) + var(--ring-room));
+}
+
+@media print {
+  [data-part="pane"] [data-part="issue-body"][data-variant~="split"] [data-part="issue-main"] {
+    padding-block-start: var(--ring-room);
+  }
+}
+
+[data-part="pane"] [data-part="issue-body"][data-variant~="split"] [data-part="issue-details"] {
+  scroll-timeline: --pane-second block;
+  padding-block-start: var(--pane-head-height);
+}
+
+@media print {
+  [data-part="pane"] [data-part="issue-body"][data-variant~="split"] [data-part="issue-details"] {
+    padding-block-start: 0;
   }
 }
 

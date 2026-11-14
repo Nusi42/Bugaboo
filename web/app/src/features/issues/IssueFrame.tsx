@@ -1,4 +1,4 @@
-import { Alert, alertTone, IssueId, useLayout, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, IssueId, type MenuAction, useLayout, partOf, part } from "@bugaboo/ui";
 
 import { SidePanel } from "../shell/index.ts";
 import { useMoreActions } from "./issue-actions.ts";
@@ -18,20 +18,23 @@ export interface IssueFrameProps extends IssuePageState {
   readonly onSwitch: () => void;
 }
 
-/**
- * The open issue in its frame: in the focus view it is the page, in the side panel it sits in the
- * panel next to the list, and on a phone the bar of the most used actions stays under it.
- */
-export function IssueFrame(props: IssueFrameProps) {
-  const { detail, address, show, onClose, onSwitch, changes, blocks } = props;
-  const layout = useLayout();
-  const closeLabel = useCloseLabel();
-  const { issue } = detail;
-  const { actions, refusal, dialog } = useMoreActions(issue, detail.may_delete, onClose);
-  const inside = (
-    <div {...partOf(part.issuePage)}>
+/** The top of the issue: its head, and why *More* could not do what was asked. */
+function IssueTop({
+  detail,
+  show,
+  blocks,
+  changes,
+  onSwitch,
+  actions,
+  refusal,
+}: IssueFrameProps & {
+  readonly actions: readonly MenuAction[];
+  readonly refusal: string | null;
+}) {
+  return (
+    <>
       <IssueHeader
-        issue={issue}
+        issue={detail.issue}
         show={show}
         canChangeTitle={blocks.mask.changes("title")}
         actions={actions}
@@ -41,6 +44,22 @@ export function IssueFrame(props: IssueFrameProps) {
         onSwitch={onSwitch}
       />
       {refusal === null ? null : <Alert tone={alertTone.danger}>{refusal}</Alert>}
+    </>
+  );
+}
+
+/**
+ * The open issue in its frame: in the focus view it is the page, in the side panel it sits in the
+ * panel next to the list, and on a phone the bar of the most used actions stays under it.
+ */
+export function IssueFrame(props: IssueFrameProps) {
+  const { detail, address, show, onClose, changes, blocks } = props;
+  const layout = useLayout();
+  const closeLabel = useCloseLabel();
+  const { issue } = detail;
+  const { actions, refusal, dialog } = useMoreActions(issue, detail.may_delete, onClose);
+  const inside = (
+    <div {...partOf(part.issuePage)}>
       {dialog}
       <IssueContent
         detail={detail}
@@ -48,6 +67,7 @@ export function IssueFrame(props: IssueFrameProps) {
         changes={changes}
         blocks={blocks}
         split={layout === "computer" && show === "focus"}
+        head={<IssueTop {...props} actions={actions} refusal={refusal} />}
       />
     </div>
   );

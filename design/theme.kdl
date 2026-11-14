@@ -208,6 +208,9 @@ tokens {
     // The height of the bar of the ticked issues as the browser draws it: the list keeps that much room at its end, so
     // its last row can be scrolled above the bar that stands over the foot of the list.
     size "bar-ticked-height" "0px" run-time="true"
+    // The height of the head of a pane as the browser draws it whole: its boxes start that far down under the head laid
+    // over them, whatever the head has shrunk to while they scroll, so nothing in them moves when it shrinks (UX §6.5).
+    size "pane-head-height" "0px" run-time="true"
     size "bp-window-side" "880px"
     // Narrower than this the list has no room for Customize beside it: the panel stands under the list, as high as its
     // columns, and the list takes the rest. It is size-list-main + space-4 (the gap of list-body) + size-list, written out
@@ -1373,6 +1376,26 @@ keyframes "pulse" {
     from {
         opacity "$opacity-faint"
     }
+}
+
+// The head of a pane folds to one line as a box of the pane scrolls (UX §6.5): from its whole height to the height of
+// a control.
+keyframes "pane-head-fold" {
+    from {
+        max-height "$pane-head-height"
+    }
+    to {
+        max-height "$size-control"
+    }
+}
+
+// A layer of the head of a pane that folds with the scroll of one box: from the start of the box until the head is one
+// line.
+mixin "pane-head-folds" {
+    animation-name "pane-head-fold"
+    animation-fill-mode both
+    animation-timing-function linear
+    animation-range "0% calc($pane-head-height - $size-control)"
 }
 
 // ───────────── The page ─────────────
@@ -7835,19 +7858,23 @@ part "issue-main.section ~ issue-main.section::before" {
     border-top "$border-width solid $border"
 }
 
-// Details on wide screens keep their own scroll bar, so long details never push the description away.
+// Details on wide screens keep their own scroll bar, so long details never push the description away. The box that
+// scrolls is clear; the card in it holds the rows, so the room the box keeps above the card is the page's own.
 part "issue-details" {
-    use "surface-box"
-    display flex
     flex none
-    flex-direction column
-    gap "$space-3"
     box-sizing border-box
     width "$size-details"
     max-height "$size-viewport"
+    overflow-y auto
+}
+
+part "issue-details.card" {
+    use "surface-box"
+    display flex
+    flex-direction column
+    gap "$space-3"
     // Room at the sides for the focus ring of a button that hangs back (the box scrolls, so it clips).
     padding "$space-3 $space-4"
-    overflow-y auto
 }
 
 // The boxes of the split issue scroll (UX §6.5). Each box holds what it hides for screen readers (the box of a choice, a
@@ -16671,6 +16698,80 @@ part "app-layout app-layout.inner:has(list-main)" "app-layout card:has(list-main
 
 part "app-layout app-layout.inner:has(list-scroll)" "app-layout card:has(list-scroll)" "app-layout card > stack:has(list-scroll)" "app-layout list-editor.list:has(list-scroll)" "app-layout list-main:has(list-scroll)" "app-layout list-frame:has(list-scroll)" "app-layout search-results:has(list-scroll)" {
     use "fills-pane-scrolls"
+}
+
+// ───────────── PaneWithHead ─────────────
+//
+// What stands above the boxes of a pane (the title, the toolbar, notices) is laid over them, and every box starts as far
+// down as the whole head is high, always: the head folds to one line while a box scrolls and opens again at the top,
+// driven by the scroll of the boxes (the first and the second box of the pane), and nothing in a box moves when it does.
+// A browser without scroll timelines keeps the whole head. The outer layer folds with the first box, the inner with the
+// second: the head is as low as the box scrolled furthest, and whole only when both are at their top.
+
+part "pane" {
+    use "fills-pane-scrolls"
+    position relative
+    timeline-scope "--pane-first, --pane-second"
+}
+
+part "pane-head" "pane-head.fold" {
+    overflow hidden
+    media "print" {
+        overflow visible
+    }
+}
+
+part "pane-head" {
+    position absolute
+    inset-block-start 0
+    inset-inline 0
+    z-index "$z-raised"
+    background "$bg-canvas"
+    media "print" {
+        position static
+    }
+}
+
+part "pane-head" {
+    supports "(animation-timeline: scroll())" {
+        use "pane-head-folds"
+        animation-timeline "--pane-first"
+    }
+}
+
+part "pane-head.fold" {
+    supports "(animation-timeline: scroll())" {
+        use "pane-head-folds"
+        animation-timeline "--pane-second"
+    }
+}
+
+// What the head holds, at its whole height: the room under it to the boxes is part of it.
+part "pane-head.content" {
+    display flex
+    flex-direction column
+    gap "$space-4"
+    padding-block-end "$space-4"
+}
+
+// The boxes that drive the head, and the room each keeps for the whole head over its start.
+// Under the head the sections start at the top of the pane, with the room for the ring under the whole head, so the head
+// laid over them never covers the ring of the first control.
+part "pane issue-body[variant=split] issue-main" {
+    scroll-timeline "--pane-first block"
+    margin-block-start 0
+    padding-block-start "calc($pane-head-height + $ring-room)"
+    media "print" {
+        padding-block-start "$ring-room"
+    }
+}
+
+part "pane issue-body[variant=split] issue-details" {
+    scroll-timeline "--pane-second block"
+    padding-block-start "$pane-head-height"
+    media "print" {
+        padding-block-start 0
+    }
 }
 
 // An open issue on a computer fills the rest of the main column the same way (UX §6.5): its sections and its Details are
