@@ -3,7 +3,7 @@ import { useState, type ReactNode } from "react";
 
 import { keptScroll, scrollBox } from "../../shared/scroll-boxes.ts";
 import { useShortcuts } from "../../shared/use-shortcuts.ts";
-import { FocusBar } from "./FocusBar.tsx";
+import { FocusBar, type Steps } from "./FocusBar.tsx";
 import { useNarrowSidebarWhile } from "./sidebar-state.ts";
 import { escapeInField, useEscape } from "./use-escape.ts";
 import { useTakeFocus } from "./use-take-focus.ts";
@@ -15,6 +15,8 @@ export interface FocusViewProps {
   readonly onBack: () => void;
   /** Opens the next (`1`) or the previous (`-1`) item of the list. */
   readonly onStep: (direction: 1 | -1) => void;
+  /** Whether the list has an item before and after the open one. */
+  readonly steps: Steps;
   /** The open item. */
   readonly children: ReactNode;
 }
@@ -25,7 +27,7 @@ export interface FocusViewProps {
  * *Previous* and *Next* buttons) move through the list and Esc, or *Back to list*, returns to it.
  * Phones always show the item on a screen of its own, with *Back* in the top bar of every screen.
  */
-export function FocusView({ list, onBack, onStep, children }: FocusViewProps) {
+export function FocusView({ list, onBack, onStep, steps, children }: FocusViewProps) {
   const layout = useLayout();
   const [listHidden, setListHidden] = useState(false);
   useNarrowSidebarWhile(layout === "computer");
@@ -53,6 +55,7 @@ export function FocusView({ list, onBack, onStep, children }: FocusViewProps) {
           <FocusBar
             onBack={phone ? undefined : onBack}
             onStep={onStep}
+            steps={steps}
             list={listState}
             onToggleList={() => {
               setListHidden(!listHidden);

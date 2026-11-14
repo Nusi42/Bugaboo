@@ -1,5 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
 
+import { t } from "@bugaboo/messages";
+
 import { ada } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
@@ -121,4 +123,22 @@ test("ux_06 j opens the next issue of the slim list, and its sections start at t
   await page.keyboard.press("j");
   await expect(page).toHaveURL(/WEB-1$/u);
   await expect.poll(() => sections.evaluate((element) => element.scrollTop)).toBe(0);
+});
+
+test("ux_3_4 Previous is off at the first issue of the slim list and Next at the last", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  const previous = page.getByRole("button", { name: t("list.previous"), exact: true });
+  const next = page.getByRole("button", { name: t("list.next"), exact: true });
+  // The slim list has the newest first: WEB-3 is the first, WEB-1 the last.
+  await page.goto(issueAddress("WEB-3"));
+  await expect(previous).toBeDisabled();
+  await expect(next).toBeEnabled();
+  await page.goto(issueAddress("WEB-2"));
+  await expect(previous).toBeEnabled();
+  await expect(next).toBeEnabled();
+  await page.goto(issueAddress("WEB-1"));
+  await expect(next).toBeDisabled();
+  await expect(previous).toBeEnabled();
 });

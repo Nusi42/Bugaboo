@@ -49,6 +49,7 @@ function Focused({ address, project, lines, onFocus, onBack, onPanel }: InnerPro
         onBack(project);
       }}
       onStep={step}
+      steps={{ previous: lines[at - 1] !== undefined, next: lines[at + 1] !== undefined }}
     >
       <IssuePage
         address={address}
