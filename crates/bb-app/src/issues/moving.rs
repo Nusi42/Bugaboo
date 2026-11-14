@@ -13,7 +13,7 @@ use std::sync::Arc;
 
 use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
-use bb_core::id::{IdSource, IssueId, IssueTypeId, ProjectId, UserId};
+use bb_core::id::{IdSource, IssueId, IssueTypeId, ProjectId};
 use bb_core::issue::{Issue, IssueAlias, StatusGroup};
 use bb_core::project::{Project, ShortName};
 use bb_core::readable_id::{IssueCode, ReadableId};
@@ -291,14 +291,7 @@ pub async fn move_issue<S: AuthStore>(
             ..issue.clone()
         }
     };
-    let assigned: Vec<UserId> = ctx
-        .store()
-        .assigned_people(moved.id)
-        .await
-        .map_err(|error| internal::<S>(&error))?
-        .into_iter()
-        .map(|assigned_person| assigned_person.person)
-        .collect();
+    let assigned = ctx.assigned_to(moved.id).await?;
     let mut views = ctx.issue_views(&actor, held.clone(), target).await?;
     let view = ctx.issue_view(&mut views, &moved, &assigned).await?;
     Ok(held.authorize(view))

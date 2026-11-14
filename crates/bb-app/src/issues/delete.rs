@@ -3,7 +3,6 @@
 
 use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
-use bb_core::id::UserId;
 use bb_core::issue::Issue;
 use bb_core::version::{Version, counted_up};
 use bb_policy::{Authorized, Place};
@@ -152,21 +151,10 @@ pub async fn restore_issue<S: AuthStore>(
         .await
         .map_err(|error| internal::<S>(&error))?
         .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-    let project = ctx
-        .store()
-        .project(restored.project)
-        .await
-        .map_err(|error| internal::<S>(&error))?
-        .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-    let assigned_to: Vec<UserId> = ctx
-        .store()
-        .assigned_people(id)
-        .await
-        .map_err(|error| internal::<S>(&error))?
-        .into_iter()
-        .map(|assigned_person| assigned_person.person)
-        .collect();
-    let mut views = ctx.issue_views(&actor, held.clone(), project).await?;
+    let assigned_to = ctx.assigned_to(id).await?;
+    let mut views = ctx
+        .issue_views_in(&actor, held.clone(), restored.project)
+        .await?;
     let view = ctx.issue_view(&mut views, &restored, &assigned_to).await?;
     Ok(held.authorize(view))
 }

@@ -22,7 +22,7 @@ use bb_policy::Evaluation;
 
 use super::pattern::Linear;
 use super::types::Definition;
-use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
+use crate::auth::{AppError, AuthStore, Ctx, by, entity};
 use crate::editing::{DraftText, TextSave, Written};
 use crate::fields::Item;
 use crate::input::clean_long_text;
@@ -216,14 +216,7 @@ pub async fn save_field_text<S: AuthStore>(
     let mut saved = current;
     saved.version = next(version);
     saved.updated_at = at;
-    let assigned: Vec<bb_core::id::UserId> = ctx
-        .store()
-        .assigned_people(saved.id)
-        .await
-        .map_err(|error| internal::<S>(&error))?
-        .into_iter()
-        .map(|assigned_person| assigned_person.person)
-        .collect();
+    let assigned = ctx.assigned_to(saved.id).await?;
     let view = ctx.issue_view(&mut views, &saved, &assigned).await?;
     Ok(held.authorize(view))
 }

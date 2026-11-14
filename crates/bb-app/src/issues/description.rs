@@ -7,7 +7,6 @@ use bb_core::ErrorCode;
 use bb_core::edit::{DESCRIPTION_PART, EditWhat};
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::fields::Field;
-use bb_core::id::UserId;
 use bb_core::technical::TechnicalName;
 use bb_core::version::Version;
 use bb_core::version::{counted_up, next as next_version};
@@ -17,7 +16,7 @@ use serde_json::json;
 use super::fields::{ensure_may_change, member};
 use super::types::{IssueView, SaveDescription};
 use crate::agent_work::issue_member;
-use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
+use crate::auth::{AppError, AuthStore, Ctx, by, entity};
 use crate::editing::{TextSave, Written};
 use crate::input::clean_long_text;
 
@@ -46,14 +45,7 @@ pub async fn save_description<S: AuthStore>(
         &[Field::Description],
     )?;
     let text = clean_long_text(&input.text)?;
-    let assigned: Vec<UserId> = ctx
-        .store()
-        .assigned_people(current.id)
-        .await
-        .map_err(|error| internal::<S>(&error))?
-        .into_iter()
-        .map(|assigned_person| assigned_person.person)
-        .collect();
+    let assigned = ctx.assigned_to(current.id).await?;
     let mut views = ctx
         .issue_views_in(&actor, held.clone(), current.project)
         .await?;

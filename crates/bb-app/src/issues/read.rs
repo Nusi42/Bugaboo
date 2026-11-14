@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use bb_core::ErrorCode;
 use bb_core::event::RecordKind;
 use bb_core::fields::FieldKey;
-use bb_core::id::{IssueId, UserId};
+use bb_core::id::IssueId;
 use bb_core::readable_id::ReadableId;
 use bb_policy::Authorized;
 use jiff::Timestamp;
@@ -99,22 +99,11 @@ pub async fn issue<S: AuthStore>(
 ) -> Result<Authorized<IssueDetail>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let (issue, held) = ctx.visible_issue(&actor, &input.issue).await?;
-    let project = ctx
-        .store()
-        .project(issue.project)
-        .await
-        .map_err(|error| internal::<S>(&error))?
-        .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-    let assigned_to: Vec<UserId> = ctx
-        .store()
-        .assigned_people(issue.id)
-        .await
-        .map_err(|error| internal::<S>(&error))?
-        .into_iter()
-        .map(|assigned_person| assigned_person.person)
-        .collect();
+    let assigned_to = ctx.assigned_to(issue.id).await?;
     // The labels of the issue are read through their own route, not here.
-    let mut views = ctx.issue_views(&actor, held.clone(), project).await?;
+    let mut views = ctx
+        .issue_views_in(&actor, held.clone(), issue.project)
+        .await?;
     let view = ctx.issue_view(&mut views, &issue, &assigned_to).await?;
     let may_change = held.may_change_issue(issue.reported_by);
     let changeable = ctx.changeable_fields(&held, &issue).await?;

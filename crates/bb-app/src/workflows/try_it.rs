@@ -13,7 +13,7 @@ use bb_policy::{Authorized, Permission, Place};
 
 use super::status::StatusCheck;
 use super::types::{StatusView, Tried, TriedChange, TriedVerdict, TryWorkflowQuery};
-use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::auth::{AppError, AuthStore, Ctx};
 
 /// The answer of the judge as *Try it* tells it. A change whose rules name a field the person who
 /// tries may not see is answered `cannot fill`, with no field and no detail, whatever the judge
@@ -63,14 +63,7 @@ pub async fn try_workflow<S: AuthStore>(
     let chain = held.chain().to_vec();
     let directory = ctx.workflow_directory().await?;
     let workflow = directory.in_force(&chain, Some(issue.issue_type));
-    let assigned: Vec<_> = ctx
-        .store()
-        .assigned_people(issue.id)
-        .await
-        .map_err(|error| internal::<S>(&error))?
-        .into_iter()
-        .map(|each| each.person)
-        .collect();
+    let assigned = ctx.assigned_to(issue.id).await?;
     let values = ctx
         .load_values(RecordKind::Issue, &[issue.id.into()])
         .await?;
