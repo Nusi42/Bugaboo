@@ -379,6 +379,10 @@ async fn ai_21_preview_propose_answers_what_would_change_and_saves_nothing() -> 
     let saved = used(&world, &given.key, "propose", input).await?;
     assert_eq!(preview.changes, saved.changes);
     assert_eq!(world.store.lock().state.work.proposals.len(), 1);
+    // The answer of the call says the proposal was saved on the issue.
+    assert!(saved.text.contains("\nchanged:"), "{}", saved.text);
+    let last = saved.text.lines().last().unwrap_or_default();
+    assert!(last.starts_with("Saved on "), "{}", saved.text);
     Ok(())
 }
 

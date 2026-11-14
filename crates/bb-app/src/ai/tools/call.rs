@@ -10,14 +10,14 @@
 use bb_core::ErrorCode;
 use bb_core::ai::{ToolCaller, ToolEffect, ToolOutcome, ToolScope};
 use bb_core::event::RecordKind;
-use bb_core::message::Message;
+use bb_core::message::{self, Message};
 use bb_core::sign_in::SecurityAction;
 use bb_policy::{Authorized, Masked, Place};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::log::Called;
-use super::preview::{ProposedChange, proposed_changes};
+use super::preview::{ProposedChange, as_saved, proposed_changes};
 use super::registry::{Run, ToolSpec, registry};
 use crate::access::Actor;
 use crate::ai::context::{Part, PeopleMode, render};
@@ -107,8 +107,70 @@ pub struct ToolUndo {
 /// The name of the part an *Apply* leaves for the way back.
 pub(super) const UNDO_PART: &str = "undo";
 
-/// The name of the part an *Apply* of a change to an issue leaves with the version the write gave.
-pub(super) const VERSION_PART: &str = "saved_version";
+/// The name of the part an *Apply* leaves with what it saved ([`Saved`]).
+const SAVED_PART: &str = "saved";
+
+/// What an *Apply* saved. The call takes it out of the parts and tells it in one line under the
+/// answer, so an answer of a call that saved never reads like a preview.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "kebab-case")]
+pub(super) enum Saved {
+    /// A new issue, by its readable ID, at its first version.
+    NewIssue {
+        /// The readable ID.
+        key: String,
+        /// The version the write gave back.
+        version: i64,
+    },
+    /// A change to an issue, at the version the write gave back: not read again, so it is the
+    /// version of this change and never one a later change by somebody else made. *Undo* of fields
+    /// is made on it.
+    Issue {
+        /// The readable ID.
+        key: String,
+        /// The version the write gave back.
+        version: i64,
+    },
+    /// Something saved on an issue: a comment, a time entry, the timer, the work of an agent or a
+    /// proposal.
+    On {
+        /// The readable ID of the issue.
+        key: String,
+    },
+    /// Something saved that names no issue the actor may name.
+    Done,
+}
+
+impl Saved {
+    /// The part that carries it, among the parts of an *Apply*.
+    pub(super) fn part(&self) -> Part {
+        Part {
+            name: SAVED_PART,
+            value: serde_json::to_value(self).unwrap_or(Value::Null),
+            author: bb_core::ai::AuthorKind::Assistant,
+            project: None,
+        }
+    }
+
+    /// The line the AI reads under the answer.
+    fn sentence(&self) -> String {
+        match self {
+            Self::NewIssue { key, version } => message::ai_saved_new_issue(key, version),
+            Self::Issue { key, version } => message::ai_saved_issue(key, version),
+            Self::On { key } => message::ai_saved_on(key),
+            Self::Done => Message::from(message::AI_SAVED_DONE),
+        }
+        .render()
+    }
+
+    /// The version of a changed issue, which *Undo* of its fields is made on.
+    const fn version_of_change(&self) -> Option<i64> {
+        match self {
+            Self::Issue { version, .. } => Some(*version),
+            _ => None,
+        }
+    }
+}
 
 impl Masked for ToolAnswer {}
 
@@ -266,10 +328,10 @@ fn take_undo(parts: &mut Vec<Part>) -> Option<ToolUndo> {
     serde_json::from_value(parts.remove(at).value).ok()
 }
 
-/// The version the write of a change to an issue gave back, taken out of the parts like the way back.
-fn take_version(parts: &mut Vec<Part>) -> Option<i64> {
-    let at = parts.iter().position(|part| part.name == VERSION_PART)?;
-    parts.remove(at).value.as_i64()
+/// What an *Apply* saved, taken out of the parts like the way back.
+fn take_saved(parts: &mut Vec<Part>) -> Option<Saved> {
+    let at = parts.iter().position(|part| part.name == SAVED_PART)?;
+    serde_json::from_value(parts.remove(at).value).ok()
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -387,7 +449,10 @@ impl<S: AuthStore> Ctx<'_, S> {
             Err(error) => return Err(error),
         };
         let undo = take_undo(&mut parts);
-        let version = take_version(&mut parts);
+        let saved = take_saved(&mut parts);
+        if mode == ToolMode::Apply {
+            as_saved(&mut parts);
+        }
         let changes = if spec.effect() == ToolEffect::Changes {
             proposed_changes(&parts)
         } else {
@@ -396,11 +461,16 @@ impl<S: AuthStore> Ctx<'_, S> {
         let people = self
             .people_as(actor.person.id, request.people, &parts)
             .await?;
+        let mut text = render(&parts, &people, &nonce()?);
+        if let Some(saved) = &saved {
+            text.push_str(&saved.sentence());
+            text.push('\n');
+        }
         Ok(ToolAnswer {
-            text: render(&parts, &people, &nonce()?),
+            text,
             changes,
             undo,
-            version,
+            version: saved.as_ref().and_then(Saved::version_of_change),
         })
     }
 }

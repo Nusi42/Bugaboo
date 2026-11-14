@@ -9,7 +9,7 @@
 use bb_policy::{Authorized, Masked};
 use serde_json::{Value, json};
 
-use super::call::{ToolUndo, UNDO_PART, UndoKind, VERSION_PART};
+use super::call::{Saved, ToolUndo, UNDO_PART, UndoKind};
 use super::registry::{Boxed, Run};
 use super::{preview, read, requests};
 use crate::access::Actor;
@@ -61,22 +61,28 @@ fn made_issue_part(made: &Authorized<IssueView>) -> Part {
     }
 }
 
-/// The version an issue is at after a change, as the write gave it back: not read again, so it is
-/// the version of this change and never one a later change by somebody else made.
-fn version_part(changed: &Authorized<IssueView>) -> Part {
-    let version = changed
-        .masked_value()
-        .ok()
-        .and_then(|value| version_in(&value));
-    Part {
-        name: VERSION_PART,
-        value: json!(version),
-        author: AuthorKind::Assistant,
-        project: None,
-    }
+/// What a write of an issue saved, as the write gave it back: the readable ID and the version, not
+/// read again, so it is the version of this change and never one a later change by somebody else
+/// made.
+fn issue_saved(written: &Authorized<IssueView>, new: bool) -> Part {
+    let value = written.masked_value().unwrap_or(Value::Null);
+    let key = value.get("key").and_then(Value::as_str).map(str::to_owned);
+    let saved = match (key, version_in(&value)) {
+        (Some(key), Some(version)) if new => Saved::NewIssue { key, version },
+        (Some(key), Some(version)) => Saved::Issue { key, version },
+        _ => Saved::Done,
+    };
+    saved.part()
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
+    /// What was saved on the issue at `address`, by the readable ID the actor may name it by.
+    async fn saved_on(&self, actor: &Actor, address: &str) -> Result<Part, AppError> {
+        let (issue, _) = self.visible_issue(actor, address).await?;
+        let key = self.readable_id_for(actor, issue.id).await?;
+        Ok(key.map_or(Saved::Done, |key| Saved::On { key }).part())
+    }
+
     /// Whether the actor may delete the issue they just made.
     async fn may_delete_made(&self, actor: &Actor, made: &Authorized<IssueView>) -> bool {
         let key = made
@@ -100,6 +106,7 @@ pub(super) fn create_issue<'a, S: AuthStore>(
         let mut shown = preview::create_issue(ctx, run).await?;
         let made = create_issue_as_person(ctx, requests::create_issue(&run)?).await?;
         shown.push(made_issue_part(&made));
+        shown.push(issue_saved(&made, true));
         // *Undo* of a new issue sends it to the trash: only for a person who may delete it.
         if ctx.may_delete_made(run.actor, &made).await {
             shown.push(undo_part(UndoKind::Issue, &made));
@@ -116,7 +123,7 @@ pub(super) fn update_issue<'a, S: AuthStore>(
     Box::pin(async move {
         let mut shown = preview::update_issue(ctx, run).await?;
         let changed = change_issue(ctx, requests::update_issue(&run)?).await?;
-        shown.push(version_part(&changed));
+        shown.push(issue_saved(&changed, false));
         Ok(shown)
     })
 }
@@ -129,7 +136,7 @@ pub(super) fn change_status<'a, S: AuthStore>(
     Box::pin(async move {
         let mut shown = preview::change_status(ctx, run).await?;
         let changed = change_issue(ctx, requests::change_status(&run)?).await?;
-        shown.push(version_part(&changed));
+        shown.push(issue_saved(&changed, false));
         Ok(shown)
     })
 }
@@ -141,8 +148,11 @@ pub(super) fn add_comment<'a, S: AuthStore>(
 ) -> Boxed<'a, Result<Vec<Part>, AppError>> {
     Box::pin(async move {
         let mut shown = preview::add_comment(ctx, run).await?;
-        let made = add_comment_as_person(ctx, requests::add_comment(&run)?).await?;
+        let request = requests::add_comment(&run)?;
+        let on = ctx.saved_on(run.actor, &request.issue).await?;
+        let made = add_comment_as_person(ctx, request).await?;
         shown.push(undo_part(UndoKind::Comment, &made));
+        shown.push(on);
         Ok(shown)
     })
 }
@@ -154,8 +164,11 @@ pub(super) fn log_time<'a, S: AuthStore>(
 ) -> Boxed<'a, Result<Vec<Part>, AppError>> {
     Box::pin(async move {
         let mut shown = preview::log_time(ctx, run).await?;
-        let made = add_time(ctx, requests::log_time(&run)?).await?;
+        let request = requests::log_time(&run)?;
+        let on = ctx.saved_on(run.actor, &request.issue).await?;
+        let made = add_time(ctx, request).await?;
         shown.push(undo_part(UndoKind::TimeEntry, &made));
+        shown.push(on);
         Ok(shown)
     })
 }
@@ -167,8 +180,11 @@ pub(super) fn start_timer<'a, S: AuthStore>(
 ) -> Boxed<'a, Result<Vec<Part>, AppError>> {
     Box::pin(async move {
         let mut shown = preview::start_timer(ctx, run).await?;
-        let made = start_timer_as_person(ctx, requests::start_timer(&run)?).await?;
+        let request = requests::start_timer(&run)?;
+        let on = ctx.saved_on(run.actor, &request.issue).await?;
+        let made = start_timer_as_person(ctx, request).await?;
         shown.push(undo_part(UndoKind::Timer, &made));
+        shown.push(on);
         Ok(shown)
     })
 }
@@ -179,9 +195,18 @@ pub(super) fn stop_timer<'a, S: AuthStore>(
     run: Run<'a>,
 ) -> Boxed<'a, Result<Vec<Part>, AppError>> {
     Box::pin(async move {
-        let shown = preview::stop_timer(ctx, run).await?;
+        let mut shown = preview::stop_timer(ctx, run).await?;
         // Time that was worked and recorded is never erased by *Undo*: stopping the timer has no way back.
-        stop_timer_as_person(ctx, requests::stop_timer(&run)?).await?;
+        let stopped = stop_timer_as_person(ctx, requests::stop_timer(&run)?).await?;
+        // The entry names its issue; a timer that ran for less than a minute booked none.
+        let key = stopped.masked_value().ok().and_then(|value| {
+            value
+                .get("entry")?
+                .get("readable_id")?
+                .as_str()
+                .map(str::to_owned)
+        });
+        shown.push(key.map_or(Saved::Done, |key| Saved::On { key }).part());
         Ok(shown)
     })
 }

@@ -19,6 +19,7 @@ use std::future::Future;
 
 use serde_json::{Value, json};
 
+use super::call::Saved;
 use super::inputs::{
     AskInput, AttachInput, ChangesSinceInput, GiveUpInput, ProposeInput, ReportInput, SubmitInput,
     TakeInput,
@@ -138,6 +139,20 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(issue)
     }
 
+    /// The issue in the agent's reach at `address`, and the readable ID it is named by.
+    async fn agent_issue_and_key(
+        &self,
+        run: &Run<'_>,
+        address: &str,
+    ) -> Result<(bb_core::issue::Issue, String), AppError> {
+        let issue = self.agent_issue_in_reach(run, address).await?;
+        let key = self
+            .readable_id_for(run.actor, issue.id)
+            .await?
+            .unwrap_or_else(|| address.to_owned());
+        Ok((issue, key))
+    }
+
     /// What an agent reads about its work after a tool changed it: where it stands, the note of the
     /// brief, the answers and the notes of a review (each with the kind of the author who really
     /// wrote it), and what it asked itself.
@@ -148,11 +163,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         work: &Value,
     ) -> Result<Vec<Part>, AppError> {
         let failed = |error| crate::auth::internal::<S>(&error);
-        let issue = self.agent_issue_in_reach(run, address).await?;
-        let key = self
-            .readable_id_for(run.actor, issue.id)
-            .await?
-            .unwrap_or_else(|| address.to_owned());
+        let (issue, key) = self.agent_issue_and_key(run, address).await?;
         let attempt = work
             .get("attempts")
             .and_then(Value::as_array)
@@ -160,6 +171,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .and_then(|last| last.get("number"))
             .cloned()
             .unwrap_or(Value::Null);
+        let saved = Saved::On { key: key.clone() }.part();
         let mut parts = vec![Part {
             name: "work",
             value: json!({
@@ -171,6 +183,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             author: AuthorKind::Agent,
             project: Some(issue.project),
         }];
+        parts.push(saved);
         let Some(id) = work
             .get("id")
             .and_then(Value::as_str)
@@ -460,8 +473,11 @@ pub(super) fn apply_propose<'a, S: AuthStore>(
     run: Run<'a>,
 ) -> Boxed<'a, Result<Vec<Part>, AppError>> {
     Box::pin(async move {
-        let shown = preview_propose(ctx, run).await?;
-        propose_change(ctx, propose_request(&run)?).await?;
+        let mut shown = preview_propose(ctx, run).await?;
+        let request = propose_request(&run)?;
+        let (_, key) = ctx.agent_issue_and_key(&run, &request.issue).await?;
+        propose_change(ctx, request).await?;
+        shown.push(Saved::On { key }.part());
         Ok(shown)
     })
 }

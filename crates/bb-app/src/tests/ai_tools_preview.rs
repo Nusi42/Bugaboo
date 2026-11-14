@@ -10,7 +10,7 @@ use serde_json::json;
 
 use super::agent_tools::{previewed, used};
 use super::agent_work::{handed, handed_with, start_attempt};
-use super::ai_tools::{call, issue_with};
+use super::ai_tools::{call, issue_with, without_nonces};
 use super::scenarios::{a_project, token};
 use super::scenarios_issues::{a_type, an_issue};
 use super::world::{Outcome, World};
@@ -217,6 +217,74 @@ async fn ai_21_a_created_issue_is_named_by_its_id_its_readable_id_and_its_versio
         .await?
         .into_value();
         assert_eq!(line_value(&read.text, "key"), Some(key), "{}", read.text);
+    }
+    Ok(())
+}
+
+/// The answer of a call as text, without the new word of its fences.
+async fn text_of(world: &World, query: crate::ai::tools::ToolCallQuery) -> Result<String, String> {
+    let answer = call_tool(&world.ctx(), query)
+        .await
+        .map_err(|error| error.to_string())?;
+    Ok(without_nonces(&answer.into_value().text))
+}
+
+#[tokio::test]
+async fn ai_21_a_saved_change_says_what_changed_and_the_version_it_was_saved_at() -> Outcome {
+    let world = World::new().await?;
+    a_project(&world, "WEB").await?;
+    let key = issue_with(&world, "WEB", "Old title", "d", BTreeMap::new()).await?;
+    let who = token(&world);
+    let input = json!({"issue": key, "version": 1, "title": "New title"});
+    let mut asked = call(&who, "update_issue", input.clone());
+    asked.caller = ToolCaller::AiApp;
+    asked.mode = ToolMode::Preview;
+    let preview = text_of(&world, asked).await?;
+    let saved = text_of(&world, applying(&who, "update_issue", input)).await?;
+    // The preview proposes and saves nothing; the answer of the real call says it changed.
+    assert_ne!(preview, saved);
+    assert!(preview.contains("\nwould_change:"), "{preview}");
+    assert!(!preview.contains("Saved"), "{preview}");
+    assert!(saved.contains("\nchanged:"), "{saved}");
+    assert!(!saved.contains("would_change"), "{saved}");
+    assert_eq!(
+        saved.lines().last(),
+        Some(format!("Saved: {key} is now at version 2.").as_str()),
+        "{saved}"
+    );
+    // A new issue, and what is saved on an issue, say so too; the way back stays hidden.
+    let kind = a_type(&world).await?.to_string();
+    let made = text_of(
+        &world,
+        applying(
+            &who,
+            "create_issue",
+            json!({"project": "WEB", "issue_type": kind, "title": "Brakes squeak"}),
+        ),
+    )
+    .await?;
+    let new_key = line_value(&made, "key").ok_or(made.clone())?;
+    assert_eq!(
+        made.lines().last(),
+        Some(format!("Saved as {new_key}, version 1.").as_str()),
+        "{made}"
+    );
+    for (tool, input) in [
+        ("add_comment", json!({"issue": key, "text": "Looked at it"})),
+        (
+            "log_time",
+            json!({"issue": key, "date": "2027-01-14", "minutes": 30}),
+        ),
+        ("start_timer", json!({"issue": key})),
+    ] {
+        let saved = text_of(&world, applying(&who, tool, input)).await?;
+        assert!(saved.contains("\nchanged:"), "{tool}: {saved}");
+        assert!(!saved.contains("undo"), "{tool}: {saved}");
+        assert_eq!(
+            saved.lines().last(),
+            Some(format!("Saved on {key}.").as_str()),
+            "{tool}: {saved}"
+        );
     }
     Ok(())
 }

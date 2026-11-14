@@ -247,6 +247,24 @@ async fn the_preview_saves_nothing_and_the_call_does_what_it_said(tool: &str) ->
     let saved = used(&world, &given.key, tool, input).await?;
     assert_eq!(preview.changes, saved.changes, "{tool}");
     assert_ne!(before, stored(&world), "{tool} saved nothing");
+    // The answer of the call says it changed, not that it would, and where it was saved.
+    assert_ne!(preview.text, saved.text, "{tool}");
+    assert!(saved.text.contains("\nchanged:"), "{tool}: {}", saved.text);
+    assert!(
+        !saved.text.contains("would_change"),
+        "{tool}: {}",
+        saved.text
+    );
+    let key = saved
+        .text
+        .lines()
+        .find_map(|line| line.trim_start().strip_prefix("key: "))
+        .ok_or_else(|| format!("{tool}: no key in {}", saved.text))?;
+    assert_eq!(
+        saved.text.lines().last(),
+        Some(format!("Saved on {key}.").as_str()),
+        "{tool}"
+    );
     Ok(())
 }
 

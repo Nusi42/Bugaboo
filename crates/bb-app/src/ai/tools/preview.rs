@@ -61,6 +61,19 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 }
 
+/// The part of a preview that names a field the call would change.
+const WOULD_CHANGE: &str = "would_change";
+/// The same part in the answer of a call that saved: the field was changed.
+const CHANGED: &str = "changed";
+
+/// Turns the parts of a preview into those of a call that saved what it showed: each field that
+/// would change is one that changed.
+pub(super) fn as_saved(parts: &mut [Part]) {
+    for part in parts.iter_mut().filter(|part| part.name == WOULD_CHANGE) {
+        part.name = CHANGED;
+    }
+}
+
 /// The parts of a preview: for each change the field, the value now and the value after. A change
 /// of a field kept from AI is left out.
 pub(super) fn preview_parts(
@@ -78,7 +91,7 @@ pub(super) fn preview_parts(
             continue;
         }
         parts.push(Part {
-            name: "would_change",
+            name: WOULD_CHANGE,
             value: json!({ "field": change.field }),
             author: proposer(run.caller),
             project: None,
@@ -224,13 +237,13 @@ pub struct ProposedChange {
     pub after: Option<Value>,
 }
 
-/// The changes a preview lists, in order: each `would_change` part opens one, and the `before` and
-/// `after` parts after it fill it.
+/// The changes a preview or a call that saved lists, in order: each `would_change` or `changed`
+/// part opens one, and the `before` and `after` parts after it fill it.
 pub(super) fn proposed_changes(parts: &[Part]) -> Vec<ProposedChange> {
     let mut changes: Vec<ProposedChange> = Vec::new();
     for part in parts {
         match part.name {
-            "would_change" => changes.push(ProposedChange {
+            WOULD_CHANGE | CHANGED => changes.push(ProposedChange {
                 field: part
                     .value
                     .get("field")

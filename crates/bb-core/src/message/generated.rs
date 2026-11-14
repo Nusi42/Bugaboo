@@ -824,6 +824,9 @@ pub const AI_AUTHOR_MEMBER: MessageKey = MessageKey::new("ai-author.member");
 /// The message `ai-author.outsider`.
 pub const AI_AUTHOR_OUTSIDER: MessageKey = MessageKey::new("ai-author.outsider");
 
+/// The message `ai-saved.done`.
+pub const AI_SAVED_DONE: MessageKey = MessageKey::new("ai-saved.done");
+
 /// The message `ai-setup.address-add`.
 pub const AI_SETUP_ADDRESS_ADD: MessageKey = MessageKey::new("ai-setup.address-add");
 
@@ -10097,6 +10100,42 @@ pub fn agents_work_state(state: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("agents.work-state"),
         vec![("state", Value::Text(state.to_string()))],
+    )
+}
+
+/// The message `ai-saved.issue`.
+#[must_use]
+pub fn ai_saved_issue(issue: impl std::fmt::Display, version: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("ai-saved.issue"),
+        vec![
+            ("issue", Value::Text(issue.to_string())),
+            ("version", Value::Text(version.to_string())),
+        ],
+    )
+}
+
+/// The message `ai-saved.new-issue`.
+#[must_use]
+pub fn ai_saved_new_issue(
+    issue: impl std::fmt::Display,
+    version: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("ai-saved.new-issue"),
+        vec![
+            ("issue", Value::Text(issue.to_string())),
+            ("version", Value::Text(version.to_string())),
+        ],
+    )
+}
+
+/// The message `ai-saved.on`.
+#[must_use]
+pub fn ai_saved_on(issue: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("ai-saved.on"),
+        vec![("issue", Value::Text(issue.to_string()))],
     )
 }
 
@@ -19504,6 +19543,13 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("ai-author.guest", "a Guest"),
     ("ai-author.member", "someone in the project"),
     ("ai-author.outsider", "someone outside"),
+    ("ai-saved.done", "Saved."),
+    (
+        "ai-saved.issue",
+        "Saved: {issue} is now at version {version}.",
+    ),
+    ("ai-saved.new-issue", "Saved as {issue}, version {version}."),
+    ("ai-saved.on", "Saved on {issue}."),
     ("ai-setup.address-add", "Allow this address"),
     ("ai-setup.address-added", "Allowed {date}"),
     (
