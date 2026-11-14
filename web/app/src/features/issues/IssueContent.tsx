@@ -36,7 +36,7 @@ export function IssueContent({ detail, address, changes, blocks, split }: IssueC
         saved={<IssueSaveState changes={changes} />}
       />
       <IssueSaved changes={changes} />
-      <div {...partOf(part.issueBody, { variants: [!split && "stacked"] })}>
+      <div {...partOf(part.issueBody, { variants: [split ? "split" : "stacked"] })}>
         {split ? null : (
           <DetailsToggle
             issue={detail.issue}

@@ -80,6 +80,11 @@ export const moreIssuePageChanges: readonly ChangeInPlace[] = [
       await page.getByRole("button", { name: t("related-issues.add"), exact: true }).click();
       await page.getByRole("radio", { name: BLOCKS, exact: true }).check();
       await section(page, t("related-issues.title")).getByLabel(t("common.issue-id")).fill(OTHER);
+      // The person brings the button into view before pressing it: the section with its form may be higher than the
+      // box of the sections that scrolls.
+      await page
+        .getByRole("button", { name: t("related-issues.add-it"), exact: true })
+        .scrollIntoViewIfNeeded();
     },
     act: async (page) => {
       await page.getByRole("button", { name: t("related-issues.add-it"), exact: true }).click();

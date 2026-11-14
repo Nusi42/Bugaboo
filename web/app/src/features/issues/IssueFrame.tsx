@@ -52,7 +52,7 @@ export function IssueFrame(props: IssueFrameProps) {
     </div>
   );
   const article = (
-    <article>
+    <article {...partOf(part.issueFrame)}>
       {inside}
       {layout === "phone" ? <PhoneBar actions={actions} issue={issue} /> : null}
     </article>

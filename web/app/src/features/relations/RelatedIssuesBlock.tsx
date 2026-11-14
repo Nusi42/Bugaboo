@@ -51,15 +51,19 @@ export function RelatedIssuesBlock({ readableId }: BlockProps) {
         {t("related-issues.title")}
       </h2>
       {list.isError ? <IssueReadProblem error={list.error} /> : null}
-      {related.length === 0 ? (
-        <p {...partOf(part.muted)}>{t("related-issues.none")}</p>
-      ) : (
-        <ListGrid label={t("related-issues.title")}>
-          {related.map((each) => (
-            <RelatedLine key={each.id} each={each} mayChange={mayChange} />
-          ))}
-        </ListGrid>
-      )}
+      {/* One box for the words of no relations and for the list that takes their place: the browser keeps it where it
+          stands when it grows, so the first relation pushes the form down and nothing above it moves (UX §6.4). */}
+      <div>
+        {related.length === 0 ? (
+          <p {...partOf(part.muted)}>{t("related-issues.none")}</p>
+        ) : (
+          <ListGrid label={t("related-issues.title")}>
+            {related.map((each) => (
+              <RelatedLine key={each.id} each={each} mayChange={mayChange} />
+            ))}
+          </ListGrid>
+        )}
+      </div>
       <ShowMoreOf label={t("related-issues.more")} list={list} />
       {mayChange ? <Adding readableId={readableId} /> : null}
     </section>

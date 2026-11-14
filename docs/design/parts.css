@@ -6804,6 +6804,18 @@ textarea,
   overflow-y: auto;
 }
 
+[data-part="issue-body"][data-variant~="split"] [data-part="issue-main"],
+[data-part="focus-view"]:has([data-part="issue-body"][data-variant~="split"])
+  [data-part="focus-view.list"] {
+  position: relative;
+  overflow-y: auto;
+}
+
+[data-part="issue-body"][data-variant~="split"] [data-part="issue-details"] {
+  position: relative;
+  max-height: none;
+}
+
 [data-part="issue-details"][data-variant~="stacked"] {
   width: 100%;
   max-height: none;
@@ -9216,6 +9228,41 @@ textarea,
 [data-part="app-layout"] [data-part="list-frame"]:has([data-part="list-scroll"]),
 [data-part="app-layout"] [data-part="search-results"]:has([data-part="list-scroll"]) {
   min-height: 0;
+}
+
+[data-part="app-layout"]
+  [data-part="app-layout.inner"]:has([data-part="issue-body"][data-variant~="split"]),
+[data-part="focus-view"]:has([data-part="issue-body"][data-variant~="split"])
+  [data-part="shell.content"],
+[data-part="focus-view"]:has([data-part="issue-body"][data-variant~="split"])
+  [data-part="issue-frame"],
+[data-part="issue-page"]:has([data-part="issue-body"][data-variant~="split"]) {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  flex: 1 1 0;
+}
+
+[data-part="app-layout"]
+  [data-part="app-layout.inner"]:has([data-part="issue-body"][data-variant~="split"]),
+[data-part="focus-view"]:has([data-part="issue-body"][data-variant~="split"])
+  [data-part="shell.content"],
+[data-part="focus-view"]:has([data-part="issue-body"][data-variant~="split"])
+  [data-part="issue-frame"],
+[data-part="issue-page"]:has([data-part="issue-body"][data-variant~="split"]),
+[data-part="focus-view"]:has([data-part="issue-body"][data-variant~="split"]),
+[data-part="focus-view"]:has([data-part="issue-body"][data-variant~="split"])
+  [data-part="focus-view.list"],
+[data-part="issue-body"][data-variant~="split"] {
+  min-height: 0;
+}
+
+[data-part="app-layout"]
+  [data-part="focus-view"]:has([data-part="issue-body"][data-variant~="split"]),
+[data-part="issue-body"][data-variant~="split"] {
+  flex: 1 1 0;
+  align-items: stretch;
 }
 
 [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])

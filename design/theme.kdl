@@ -7792,6 +7792,18 @@ part "issue-details" {
     overflow-y auto
 }
 
+// The boxes of the split issue scroll (UX §6.5). Each box holds what it hides for screen readers (the box of a choice, a
+// switch), so a hidden one far down a box does not make the main column taller than the window.
+part "issue-body[variant=split] issue-main" "focus-view:has(issue-body[variant=split]) focus-view.list" {
+    position relative
+    overflow-y auto
+}
+
+part "issue-body[variant=split] issue-details" {
+    position relative
+    max-height none
+}
+
 part "issue-details[variant=stacked]" {
     width "100%"
     max-height none
@@ -16582,6 +16594,22 @@ part "app-layout app-layout.inner:has(list-scroll)" "app-layout card:has(list-sc
 
 // On a computer the list and the open issue stand side by side in one line as high as the room; the list and Customize
 // too, or Customize under the list where the room is narrow (each line as high as the room it is given).
+
+// An open issue on a computer fills the rest of the main column the same way (UX §6.5): its sections and its Details are
+// two boxes that scroll side by side under the head of the issue, and the slim list of the focus view beside them is a
+// third. The page itself fits the window.
+part "app-layout app-layout.inner:has(issue-body[variant=split])" "focus-view:has(issue-body[variant=split]) shell.content" "focus-view:has(issue-body[variant=split]) issue-frame" "issue-page:has(issue-body[variant=split])" {
+    use "fills-pane"
+}
+
+part "app-layout app-layout.inner:has(issue-body[variant=split])" "focus-view:has(issue-body[variant=split]) shell.content" "focus-view:has(issue-body[variant=split]) issue-frame" "issue-page:has(issue-body[variant=split])" "focus-view:has(issue-body[variant=split])" "focus-view:has(issue-body[variant=split]) focus-view.list" "issue-body[variant=split]" {
+    min-height 0
+}
+
+part "app-layout focus-view:has(issue-body[variant=split])" "issue-body[variant=split]" {
+    flex "1 1 0"
+    align-items stretch
+}
 
 // The timeline on a computer fills the rest of the main column the same way: the chart and its side share the room.
 part "app-layout:not(app-layout[variant=phone]) app-layout.inner:has(timeline-body)" "app-layout:not(app-layout[variant=phone]) card:has(timeline-body)" "app-layout:not(app-layout[variant=phone]) card > stack:has(timeline-body)" "app-layout:not(app-layout[variant=phone]) list-editor.list:has(timeline-body)" "app-layout:not(app-layout[variant=phone]) timeline" {
