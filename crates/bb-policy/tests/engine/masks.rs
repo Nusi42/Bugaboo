@@ -575,7 +575,7 @@ struct TypedItem {
 #[derive(Serialize, bb_policy::Masked)]
 struct PageOfItems {
     #[masked(nested)]
-    items: Option<Box<Vec<TypedItem>>>,
+    first: Option<Box<TypedItem>>,
 }
 
 #[derive(Serialize, bb_policy::Masked)]
@@ -586,12 +586,14 @@ struct BookOfPages {
 
 /// A view knows whether it holds a view masked by an issue type at any depth, through the views,
 /// lists, boxes and options between them, so that a view masked by its type refuses it at any
-/// depth (the compile-fail cases, ADR-0027).
+/// depth (the compile-fail cases, ADR-0027). Checked when the test is built.
 #[test]
 fn sec_04_a_view_knows_it_holds_one_masked_by_its_issue_type_at_any_depth() {
-    assert!(TypedItem::HOLDS_ITEM_TYPE);
-    assert!(PageOfItems::HOLDS_ITEM_TYPE);
-    assert!(BookOfPages::HOLDS_ITEM_TYPE);
-    assert!(!TypeInside::HOLDS_ITEM_TYPE);
-    assert!(!NestedIssue::HOLDS_ITEM_TYPE);
+    const {
+        assert!(TypedItem::HOLDS_ITEM_TYPE);
+        assert!(PageOfItems::HOLDS_ITEM_TYPE);
+        assert!(BookOfPages::HOLDS_ITEM_TYPE);
+        assert!(!TypeInside::HOLDS_ITEM_TYPE);
+        assert!(!NestedIssue::HOLDS_ITEM_TYPE);
+    }
 }
