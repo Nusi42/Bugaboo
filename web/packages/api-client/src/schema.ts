@@ -7809,12 +7809,10 @@ export interface components {
       id?: string | null;
     };
     /**
-     * @description The answer of a change of an issue: the issue as it is now and, when the change set the people
-     *     it is assigned to, its time factor.
+     * @description The answer of a change of an issue: the issue as it is now, its members at the top, and, when the
+     *     change set the people it is assigned to, its time factor.
      */
-    IssueAfterChangeBody: {
-      /** @description The issue as it is now. */
-      issue: components["schemas"]["IssueItem"];
+    IssueAfterChangeBody: components["schemas"]["IssueItem"] & {
       time_factor?: components["schemas"]["TimeFactorBody"] | null;
     };
     /** @description The agent work on an issue. */
@@ -16875,7 +16873,7 @@ export interface operations {
       };
     };
     responses: {
-      /** @description The issue as it is now. */
+      /** @description The issue as it is now, and its time factor when the change set the people. */
       200: {
         headers: {
           [name: string]: unknown;

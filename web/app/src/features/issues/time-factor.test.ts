@@ -59,10 +59,7 @@ describe("plan_14 the time factor shows with a change of the people", () => {
   it("writes the factor the answer tells and does not ask for it again", async () => {
     queryClient.setQueryData(factorKey, factorAt(4, 150));
     queryClient.setQueryData(projectTime, { total: 0 });
-    server.answer = {
-      issue: { id: "i1", readable_id: address, version: 5 },
-      time_factor: factorAt(5, 100),
-    };
+    server.answer = { id: "i1", readable_id: address, version: 5, time_factor: factorAt(5, 100) };
     await sendChange("i1", { version: 4, values: { assignedTo: [] } });
     expect(queryClient.getQueryData(factorKey)).toEqual(factorAt(5, 100));
     expect(queryClient.getQueryState(factorKey)?.isInvalidated).toBe(false);
@@ -72,7 +69,7 @@ describe("plan_14 the time factor shows with a change of the people", () => {
 
   it("reads the factor again after a change that does not tell it", async () => {
     queryClient.setQueryData(factorKey, factorAt(4, 150));
-    server.answer = { issue: { id: "i1", readable_id: address, version: 5 } };
+    server.answer = { id: "i1", readable_id: address, version: 5 };
     await sendChange("i1", { version: 4, values: { title: "Login fails" } });
     expect(queryClient.getQueryState(factorKey)?.isInvalidated).toBe(true);
   });

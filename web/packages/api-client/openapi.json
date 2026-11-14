@@ -6605,7 +6605,7 @@
         },
         "responses": {
           "200": {
-            "description": "The issue as it is now.",
+            "description": "The issue as it is now, and its time factor when the change set the people.",
             "content": {
               "application/json": {
                 "schema": {
@@ -24406,26 +24406,29 @@
         }
       },
       "IssueAfterChangeBody": {
-        "type": "object",
-        "description": "The answer of a change of an issue: the issue as it is now and, when the change set the people\nit is assigned to, its time factor.",
-        "required": ["issue"],
-        "properties": {
-          "issue": {
+        "allOf": [
+          {
             "$ref": "#/components/schemas/IssueItem",
             "description": "The issue as it is now."
           },
-          "time_factor": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/TimeFactorBody",
-                "description": "The time factor of the issue as it is after this change, as its own route answers it: only\nwhen the change set the people it is assigned to, whose first person the factor belongs to\n(ADR-0030, amendment M8), so the screen shows it with the change. Left out when the issue\nchanged again before the factor could be read; the screen reads it then."
-              },
-              {
-                "type": "null"
+          {
+            "type": "object",
+            "properties": {
+              "time_factor": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TimeFactorBody",
+                    "description": "The time factor of the issue as it is after this change, as its own route answers it: only\nwhen the change set the people it is assigned to, whose first person the factor belongs to\n(ADR-0030, amendment M8), so the screen shows it with the change. Left out when the issue\nchanged again before the factor could be read; the screen reads it then."
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               }
-            ]
+            }
           }
-        }
+        ],
+        "description": "The answer of a change of an issue: the issue as it is now, its members at the top, and, when the\nchange set the people it is assigned to, its time factor."
       },
       "IssueAgentWorkBody": {
         "type": "object",

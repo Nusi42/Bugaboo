@@ -44,7 +44,7 @@ export async function sendChange(
   );
   // A change of the people answers the time factor of the new first person: it shows with the change.
   const factor = answer.data?.time_factor;
-  const readable = answer.data?.issue.readable_id;
+  const readable = answer.data?.readable_id;
   const told = factor !== undefined && factor !== null && typeof readable === "string";
   if (told) {
     keepTimeFactor(readable, factor);
@@ -58,7 +58,7 @@ export async function sendChange(
       !told || !isTimeFactorKey(readable, query.queryKey),
   });
   refreshHistory();
-  return answer.data?.issue.version ?? undefined;
+  return answer.data?.version ?? undefined;
 }
 
 /**

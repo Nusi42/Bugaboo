@@ -46,7 +46,7 @@ async function changeOn(
         body: { version, title },
       }),
     );
-    context.book.kept({ key: work.key, version: changed.issue.version ?? 0, title });
+    context.book.kept({ key: work.key, version: changed.version ?? 0, title });
   } catch (error) {
     const newer = conflictOf(error);
     if (newer === undefined) {

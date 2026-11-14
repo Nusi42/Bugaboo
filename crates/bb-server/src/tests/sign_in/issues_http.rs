@@ -68,8 +68,8 @@ async fn iss_01_a_person_makes_and_changes_an_issue_they_may() -> TestResult {
                 Some(json!({"version": 1, "title": "The login button does nothing at all"})),
             )
             .await?;
-        assert_eq!(ok(&renamed)?["issue"]["version"], 2);
-        assert_eq!(renamed.body["issue"]["title"], "The login button does nothing at all");
+        assert_eq!(ok(&renamed)?["version"], 2);
+        assert_eq!(renamed.body["title"], "The login button does nothing at all");
         // The status is a field she can see and not change.
         let status = cora
             .send("PATCH", &path, Some(json!({"version": 2, "status": "done"})))
@@ -92,8 +92,8 @@ async fn iss_01_a_person_makes_and_changes_an_issue_they_may() -> TestResult {
         let done = ada
             .send("PATCH", &path, Some(json!({"version": 2, "status": "done"})))
             .await?;
-        assert_eq!(ok(&done)?["issue"]["status"]["status_group"], "done");
-        assert!(done.body["issue"]["closed_at"].is_string());
+        assert_eq!(ok(&done)?["status"]["status_group"], "done");
+        assert!(done.body["closed_at"].is_string());
         let reopened = ada
             .send(
                 "PATCH",
@@ -102,7 +102,7 @@ async fn iss_01_a_person_makes_and_changes_an_issue_they_may() -> TestResult {
             )
             .await?;
         assert!(ok(&reopened)?.get("closed_at").is_none());
-        assert_eq!(reopened.body["issue"]["assigned_to"][0]["id"], cora_id.to_string());
+        assert_eq!(reopened.body["assigned_to"][0]["id"], cora_id.to_string());
         // A person who only looks cannot make one.
         let (mut vera, _) = site.person(StartingRole::Viewer, "vera").await?;
         let refused = site.create(&mut vera, "Not for her").await?;
@@ -235,7 +235,7 @@ async fn iss_01_who_may_change_their_own_issues_may_change_its_type_but_not_that
                 Some(json!({"version": 1, "issue_type": bug})),
             )
             .await?;
-        assert_eq!(ok(&moved)?["issue"]["issue_type"]["name"], "Bug");
+        assert_eq!(ok(&moved)?["issue_type"]["name"], "Bug");
         let theirs = site.create(&mut ada, "Ada's").await?;
         let their_path = format!("{ISSUES}/{}", key_in(ok(&theirs)?)?);
         let refused = cora
@@ -284,7 +284,7 @@ async fn iss_01_a_guest_sees_only_the_issues_they_reported() -> TestResult {
                 Some(json!({"version": 1, "title": "Gus found a worse bug"})),
             )
             .await?;
-        assert_eq!(ok(&changed)?["issue"]["title"], "Gus found a worse bug");
+        assert_eq!(ok(&changed)?["title"], "Gus found a worse bug");
         Ok(())
     })
     .await
@@ -305,7 +305,7 @@ async fn iss_01_a_stale_version_is_refused() -> TestResult {
                 Some(json!({"version": 1, "priority": "high"})),
             )
             .await?;
-        assert_eq!(ok(&first)?["issue"]["version"], 2);
+        assert_eq!(ok(&first)?["version"], 2);
         // Ada looked at version 1: the refusal is `edit.version-changed` with the structured
         // answer (ADR-0019): who changed it, which fields, and what they are now.
         let late = ada
@@ -426,7 +426,7 @@ async fn iss_02_a_retired_type_keeps_its_issues_and_takes_no_new_ones() -> TestR
                 Some(json!({"version": 1, "priority": "high"})),
             )
             .await?;
-        assert_eq!(ok(&changed)?["issue"]["issue_type"]["retired"], true);
+        assert_eq!(ok(&changed)?["issue_type"]["retired"], true);
         // Moving an issue to a retired type is refused as well; to another type it works.
         let back_to_bug = ada
             .send(
@@ -435,7 +435,7 @@ async fn iss_02_a_retired_type_keeps_its_issues_and_takes_no_new_ones() -> TestR
                 Some(json!({"version": 2, "issue_type": bug})),
             )
             .await?;
-        assert_eq!(ok(&back_to_bug)?["issue"]["issue_type"]["name"], "Bug");
+        assert_eq!(ok(&back_to_bug)?["issue_type"]["name"], "Bug");
         let to_retired = ada
             .send(
                 "PATCH",

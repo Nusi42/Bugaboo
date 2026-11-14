@@ -134,7 +134,7 @@ async fn prepare_plan(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<Sa
         )
         .await?)?
     .clone();
-    let version = &assigned["issue"]["version"];
+    let version = &assigned["version"];
     if id == "acceptWarning" {
         Save::new(
             "POST",

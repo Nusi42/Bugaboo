@@ -17,12 +17,12 @@ use bb_app::issues::{
 };
 use std::collections::BTreeMap;
 
-use bb_core::fields::FieldKey;
+use bb_core::fields::{Field, FieldKey};
 use bb_core::given::SetTo;
 use bb_core::id::{IssueTypeId, UserId};
 use bb_core::issue::{CalendarDay, Priority};
 use bb_core::time::Minutes;
-use bb_policy::{Masked, PersonRef};
+use bb_policy::{FieldMask, MaskFrom, Masked, MaskedValue, PersonRef, mask_member};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
@@ -60,20 +60,34 @@ pub(crate) struct OwnHtmlBody {
     html: String,
 }
 
-/// The answer of a change of an issue: the issue as it is now and, when the change set the people
-/// it is assigned to, its time factor.
-#[derive(Serialize, ToSchema, Masked)]
+/// The answer of a change of an issue: the issue as it is now, its members at the top, and, when the
+/// change set the people it is assigned to, its time factor.
+#[derive(Serialize, ToSchema)]
 pub(crate) struct IssueAfterChangeBody {
     /// The issue as it is now.
-    #[masked(nested)]
+    #[serde(flatten)]
     issue: IssueItem,
     /// The time factor of the issue as it is after this change, as its own route answers it: only
     /// when the change set the people it is assigned to, whose first person the factor belongs to
     /// (ADR-0030, amendment M8), so the screen shows it with the change. Left out when the issue
     /// changed again before the factor could be read; the screen reads it then.
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[masked(nested)]
     time_factor: Option<TimeFactorBody>,
+}
+
+/// Written out because the members of the item stand at the top (`Masked` cannot be derived over
+/// `flatten`): the item is masked as itself, on the whole answer, and the factor as its own view
+/// inside it, both with the mask of the issue's type the answer is authorized with.
+impl Masked for IssueAfterChangeBody {
+    const FIELDS: &'static [(&'static str, Field)] = <IssueItem as Masked>::FIELDS;
+    const MASK_FROM: MaskFrom = <IssueItem as Masked>::MASK_FROM;
+    const HOLDS_ITEM_TYPE: bool = <IssueItem as Masked>::HOLDS_ITEM_TYPE
+        || <Option<TimeFactorBody> as Masked>::HOLDS_ITEM_TYPE;
+
+    fn mask(value: &mut MaskedValue, mask: &FieldMask) {
+        <IssueItem as Masked>::mask(value, mask);
+        mask_member::<Option<TimeFactorBody>>(value, "time_factor", mask);
+    }
 }
 
 impl From<ChangedIssue> for IssueAfterChangeBody {
@@ -428,7 +442,7 @@ async fn get_issue(
     params(("issue" = String, Path, description = "The readable ID (WEB-142) or the internal ID of the issue.")),
     request_body = ChangeIssueBody,
     responses(
-        (status = 200, description = "The issue as it is now.", body = IssueAfterChangeBody),
+        (status = 200, description = "The issue as it is now, and its time factor when the change set the people.", body = IssueAfterChangeBody),
         InvalidAnswer,
         NotSignedInAnswer,
         ForbiddenAnswer,

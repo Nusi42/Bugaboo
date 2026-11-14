@@ -52,11 +52,7 @@ export async function moveOn(context: Context, work: Work): Promise<void> {
         },
       }),
     );
-    context.book.kept({
-      key: work.key,
-      version: changed.issue.version ?? 0,
-      status: change.to.key,
-    });
+    context.book.kept({ key: work.key, version: changed.version ?? 0, status: change.to.key });
   } catch (error) {
     const code = codeOf(error);
     if (code === MUST_BE_FILLED_IN && (await issueMovedSince(context, work, found.issue.version))) {

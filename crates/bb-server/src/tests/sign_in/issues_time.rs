@@ -61,14 +61,14 @@ async fn time_03_estimated_time_and_time_left_are_changed_like_any_field() -> Te
                 Some(json!({"version": 1, "estimated_time": 240})),
             )
             .await?;
-        assert_eq!(ok(&estimated)?["issue"]["estimated_time"], 240);
-        assert_eq!(ok(&estimated)?["issue"]["version"], 2);
+        assert_eq!(ok(&estimated)?["estimated_time"], 240);
+        assert_eq!(ok(&estimated)?["version"], 2);
         rig.clock.advance(1);
         let typed = ada
             .send("PATCH", &path, Some(json!({"version": 2, "time_left": 90})))
             .await?;
-        assert_eq!(ok(&typed)?["issue"]["time_left"], 90);
-        assert_eq!(ok(&typed)?["issue"]["time_left_worked_out"], false);
+        assert_eq!(ok(&typed)?["time_left"], 90);
+        assert_eq!(ok(&typed)?["time_left_worked_out"], false);
         // A change made on an old version is refused.
         let stale = ada
             .send("PATCH", &path, Some(json!({"version": 2, "time_left": 30})))
@@ -94,7 +94,7 @@ async fn time_03_estimated_time_and_time_left_are_changed_like_any_field() -> Te
                 Some(json!({"version": 3, "time_left": null})),
             )
             .await?;
-        let cleared = &ok(&cleared)?["issue"];
+        let cleared = ok(&cleared)?;
         // The answer of the change holds only a typed value; the issue's time works it out.
         assert!(cleared.get("time_left").is_none(), "{cleared}");
         assert_eq!(cleared["estimated_time"], 240);

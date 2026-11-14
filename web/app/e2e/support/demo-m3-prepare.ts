@@ -70,10 +70,10 @@ export async function takeTheGuestsBug(server: Instance): Promise<Taken> {
   );
   await session.dispose();
   const assigned: string[] = [];
-  for (const person of changed.issue.assigned_to ?? []) {
+  for (const person of changed.assigned_to ?? []) {
     if (person.shown === "name") {
       assigned.push(person.name);
     }
   }
-  return { assigned, cost: changed.issue.own_fields?.[field] };
+  return { assigned, cost: changed.own_fields?.[field] };
 }

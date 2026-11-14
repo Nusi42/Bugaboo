@@ -72,7 +72,7 @@ async fn wf_03_the_status_level_of_the_new_type_counts_when_the_type_changes() -
                 Some(json!({"version": 1, "status": "in-progress"})),
             )
             .await?;
-        assert_eq!(ok(&status)?["issue"]["version"], 2);
+        assert_eq!(ok(&status)?["version"], 2);
         let type_then_status = tim
             .send(
                 "PATCH",

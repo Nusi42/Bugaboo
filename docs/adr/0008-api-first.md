@@ -53,7 +53,7 @@ The frozen copy is `tools/checks/api-frozen.json`, the generated description in 
 ### Kept in v1 for good, schemas (decided by the lead, WP-16)
 
 - **The `Page_*` names.** The 26 schemas that utoipa names `Page_X` for the page of a list of `X` keep these names. They are the name of a page of an item, and the client types are made from them.
-- **`IssueItem`.** The five operations that answer `IssueItem` (`saveIssueDescription`, `saveIssueFieldText`, `moveIssue`, `restoreIssue`, `createIssue`) keep it: its members are always there when no `fields=` is sent, so the optional types are only the type of the list. `changeIssue` answers it as the `issue` of `IssueAfterChangeBody`, beside the time factor a change of the people tells (M8, ADR-0030): the factor is no member of the item, so no list carries it.
+- **`IssueItem`.** The six operations that answer `IssueItem` (`changeIssue`, `saveIssueDescription`, `saveIssueFieldText`, `moveIssue`, `restoreIssue`, `createIssue`) keep it: its members are always there when no `fields=` is sent, so the optional types are only the type of the list.
 - **The tables of levels.** `FieldLevelTableBody`, `PeopleLevelTableBody` and their rows, cells and answers have plain names (a macro writes one struct for each kind of subject), so there is no generic schema name left.
 
 ### Compatible later (not in the freeze)
@@ -63,6 +63,10 @@ These are additions after the freeze and break no client: optional and nullable 
 ## Amendment M6 WP-05: a retired word of a frozen enum
 
 A word of a frozen enum may leave the code when an amendment of the decision that owns it says so: the schema keeps the word marked retired, a request that names it is accepted with no effect, and no answer names it. The first case is `activity` and `cost-center` of `Field` (ADR-0035, amendment WP-05). The frozen copy is not written again.
+
+## Amendment M8: the answer of a change of an issue holds the time factor
+
+`changeIssue` answers `IssueAfterChangeBody`: every member of `IssueItem` at the top, as at the freeze (an `allOf` of `IssueItem`), and beside them the time factor when the change set the people the issue is assigned to (ADR-0030, amendment M8). The factor is no member of `IssueItem`, so no list carries it. Adding a member is free under the freeze; the frozen copy is not written again.
 
 ## Alternatives considered
 
