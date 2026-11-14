@@ -264,9 +264,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     ) -> Result<Vec<Part>, AppError> {
         let mut parts = self.agent_preview(run, address, planned).await?;
         let work = made.await?;
-        let value = work
-            .masked_value()
-            .map_err(|error| AppError::Internal(error.to_string()))?;
+        let value = super::read::masked(&work)?;
         parts.extend(self.work_parts(run, address, &value).await?);
         Ok(parts)
     }
@@ -499,9 +497,7 @@ pub(super) fn changes<'a, S: AuthStore>(
             },
         )
         .await?;
-        let value = page
-            .masked_value()
-            .map_err(|error| AppError::Internal(error.to_string()))?;
+        let value = super::read::masked(&page)?;
         Ok(parts_of_changes(&run, &value))
     })
 }
