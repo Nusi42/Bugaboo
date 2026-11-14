@@ -1,0 +1,5 @@
+error[E0080]: evaluation panicked: a view masked by its issue type cannot hold another one: it would get the outer type's mask (ADR-0027)
+  --> tests/ui/masked_item_type_inside_item_type.rs:25:14
+   |
+25 |     related: Vec<Item>,
+   |              ^^^ evaluation of `_` failed here

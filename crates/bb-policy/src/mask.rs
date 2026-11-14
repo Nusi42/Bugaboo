@@ -170,6 +170,15 @@ impl Evaluation {
     }
 }
 
+/// Where the mask of a view comes from.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MaskFrom {
+    /// The mask the view is given: the one of the view around it, or of the answer.
+    Given,
+    /// The issue type the view holds (`#[masked(item_type)]`): the mask of that type (ADR-0027).
+    ItemType,
+}
+
 /// A view that holds fields of the catalogue under known names, so the mask can drop them.
 ///
 /// A view lists which of its JSON members hold which field ([`Masked::FIELDS`]); the default
@@ -180,6 +189,11 @@ pub trait Masked {
     /// The members of the serialized form that hold a field of the catalogue: the name in the
     /// JSON and the field.
     const FIELDS: &'static [(&'static str, Field)] = &[];
+
+    /// Where the mask of the view comes from. A view masked by its issue type cannot hold another
+    /// one: the view inside would get the mask of the outer type, not of its own (`Masked` refuses
+    /// it when it is derived).
+    const MASK_FROM: MaskFrom = MaskFrom::Given;
 
     /// Drops the hidden fields from `value`, the serialized form of `Self`.
     fn mask(value: &mut Value, mask: &FieldMask) {
@@ -246,6 +260,8 @@ pub fn mask_member<T: Masked>(value: &mut Value, name: &str, mask: &FieldMask) {
 }
 
 impl<T: Masked> Masked for Vec<T> {
+    const MASK_FROM: MaskFrom = T::MASK_FROM;
+
     fn mask(value: &mut Value, mask: &FieldMask) {
         if let Value::Array(items) = value {
             for item in items {
@@ -260,6 +276,8 @@ impl<T: Masked> Masked for Vec<T> {
 }
 
 impl<T: Masked> Masked for Box<T> {
+    const MASK_FROM: MaskFrom = T::MASK_FROM;
+
     fn mask(value: &mut Value, mask: &FieldMask) {
         T::mask(value, mask);
     }
@@ -270,6 +288,8 @@ impl<T: Masked> Masked for Box<T> {
 }
 
 impl<T: Masked> Masked for Option<T> {
+    const MASK_FROM: MaskFrom = T::MASK_FROM;
+
     fn mask(value: &mut Value, mask: &FieldMask) {
         if !value.is_null() {
             T::mask(value, mask);

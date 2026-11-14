@@ -41,8 +41,8 @@ pub use levels::{
     RoleLevel, TypedFieldRule, level_of_role, nearest_rule, nearest_typed_rule,
 };
 pub use mask::{
-    Authorized, FieldMask, Masked, MaskedValue, drop_hidden, drop_hidden_own_fields, mask_member,
-    mask_of_item,
+    Authorized, FieldMask, MaskFrom, Masked, MaskedValue, drop_hidden, drop_hidden_own_fields,
+    mask_member, mask_of_item,
 };
 pub use moves::{
     Access, Change, Lift, MoveRefusal, MoveRequest, Preview, check_move, preview_move,

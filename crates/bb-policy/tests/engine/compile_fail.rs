@@ -23,3 +23,9 @@ fn sec_04_an_open_member_cannot_be_a_view_with_fields_to_mask() {
     cases.compile_fail("tests/ui/masked_open_view.rs");
     cases.compile_fail("tests/ui/plain_by_hand.rs");
 }
+
+#[test]
+fn sec_04_a_view_masked_by_its_issue_type_cannot_hold_another_one() {
+    let cases = trybuild::TestCases::new();
+    cases.compile_fail("tests/ui/masked_item_type_inside_item_type.rs");
+}

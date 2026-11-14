@@ -113,6 +113,7 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
             quote! { &floor },
         )
     };
+    let (mask_from, one_type) = mask_from(&members, item_type.is_some());
     // An open member is a plain value: a type that is itself a view with a mask would leak.
     let plain = members.iter().filter(|member| member.open).map(|member| {
         let ty = member.ty;
@@ -124,8 +125,11 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
             #(#plain)*
         };
 
+        #one_type
+
         impl ::bb_policy::Masked for #view {
             const FIELDS: &'static [(&'static str, ::bb_core::fields::Field)] = &[#(#entries),*];
+            #mask_from
 
             fn mask(value: &mut ::bb_policy::MaskedValue, mask: &::bb_policy::FieldMask) {
                 #pick_mask
@@ -200,4 +204,29 @@ fn read_member(ident: &Ident, attrs: &[Attribute]) -> syn::Result<MemberKind> {
             ),
         ))
     }
+}
+
+/// Where the mask of the view comes from (`MASK_FROM`), and, for a view masked by its issue type,
+/// the checks that no view inside it is masked by an issue type of its own: it would get the mask
+/// of the outer type, because the outer view hands the mask of its type to the views inside it.
+fn mask_from(members: &[Member<'_>], by_item_type: bool) -> (TokenStream, TokenStream) {
+    if !by_item_type {
+        return (quote! {}, quote! {});
+    }
+    let one_type = members.iter().filter(|member| member.nested).map(|member| {
+        let ty = member.ty;
+        quote_spanned! { ty.span() =>
+            const _: () = ::core::assert!(
+                !::core::matches!(
+                    <#ty as ::bb_policy::Masked>::MASK_FROM,
+                    ::bb_policy::MaskFrom::ItemType
+                ),
+                "a view masked by its issue type cannot hold another one: it would get the outer type's mask (ADR-0027)"
+            );
+        }
+    });
+    (
+        quote! { const MASK_FROM: ::bb_policy::MaskFrom = ::bb_policy::MaskFrom::ItemType; },
+        quote! { #(#one_type)* },
+    )
 }
