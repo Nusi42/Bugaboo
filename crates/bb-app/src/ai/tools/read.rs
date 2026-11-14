@@ -8,6 +8,7 @@ use serde_json::Value;
 use super::inputs::{
     GetIssueInput, GetMyWorkInput, ListProjectsInput, SearchIssuesInput, limit_within,
 };
+use super::preview::proposer;
 use super::registry::{Boxed, Run};
 use crate::access::Actor;
 use crate::ai::Withheld;
@@ -136,16 +137,36 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(parts)
     }
 
-    /// `search_issues`.
+    /// `search_issues`: a text that is no search is read as plain words to find in the texts of the
+    /// issues (`bb_searchlang::words_search`), and the answer says how it was read.
     pub(super) async fn tool_search_issues(
         &self,
-        actor: &Actor,
-        session_token: &str,
+        run: &Run<'_>,
         input: &SearchIssuesInput,
-        withheld: &Withheld,
     ) -> Result<Vec<Part>, AppError> {
-        self.search_parts(actor, session_token, &input.query, input.limit, withheld)
-            .await
+        let Some(words) = bb_searchlang::words_search(&input.query) else {
+            return self
+                .search_parts(
+                    run.actor,
+                    run.token,
+                    &input.query,
+                    input.limit,
+                    run.withheld,
+                )
+                .await;
+        };
+        // The search is the caller's words, and fenced as theirs.
+        let mut parts = vec![Part {
+            name: "searched_as",
+            value: Value::String(words.clone()),
+            author: proposer(run.caller),
+            project: None,
+        }];
+        parts.extend(
+            self.search_parts(run.actor, run.token, &words, input.limit, run.withheld)
+                .await?,
+        );
+        Ok(parts)
     }
 
     /// `get_my_work`.
@@ -277,8 +298,7 @@ pub(super) fn search_issues<'a, S: AuthStore>(
 ) -> Boxed<'a, Result<Vec<Part>, AppError>> {
     Box::pin(async move {
         let input: SearchIssuesInput = run.input()?;
-        ctx.tool_search_issues(run.actor, run.token, &input, run.withheld)
-            .await
+        ctx.tool_search_issues(&run, &input).await
     })
 }
 

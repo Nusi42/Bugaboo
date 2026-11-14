@@ -184,10 +184,7 @@ impl Caller<'_> {
                 let code = error.code().unwrap_or(ErrorCode::Forbidden);
                 Ok(Err(code.text().render()))
             }
-            Err(AppError::Mistakes(_)) => Ok(Err(Message::from(
-                ErrorCode::SearchInvalid.message(),
-            )
-            .render())),
+            Err(AppError::Mistakes(_)) => Ok(Err(sentence(message::AI_SEARCH_MISTAKE))),
             Err(other) => Err(other.into()),
         }
     }

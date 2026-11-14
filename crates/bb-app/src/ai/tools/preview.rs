@@ -22,7 +22,7 @@ use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::issues::ChangeIssue;
 
 /// Who the AI is told wrote the values it proposes.
-const fn proposer(caller: ToolCaller) -> AuthorKind {
+pub(super) const fn proposer(caller: ToolCaller) -> AuthorKind {
     match caller {
         ToolCaller::Assistant => AuthorKind::Assistant,
         ToolCaller::AiApp | ToolCaller::Agent => AuthorKind::Agent,

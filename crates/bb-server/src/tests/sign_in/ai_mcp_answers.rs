@@ -201,3 +201,77 @@ async fn ai_04_tools_list_offers_only_the_tools_a_person_may_use_somewhere() -> 
     })
     .await
 }
+
+#[tokio::test]
+async fn ai_21_search_issues_reads_plain_words_as_a_search_of_the_texts() -> TestResult {
+    each_database("ai_21_plain_words_http", async |db| {
+        let (rig, app) = Mcp::start(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        ai_on(&rig).await?;
+        let mcp = Mcp::new(&app);
+        for title in ["Brakes squeak", "Lights flicker"] {
+            site.create(&mut ada, title).await?;
+        }
+        // The text index follows a new issue in the next round of the jobs (ADR-0016).
+        let ctx = rig.services.ctx(super::rig::Rig::info());
+        while ctx
+            .run_due_jobs()
+            .await
+            .map_err(|error| format!("{error:?}"))?
+            > 0
+        {}
+        let signed = sign_in_app(&mcp, &mut ada, "Claude Code", "see-only", "see-only").await?;
+        let search = async |query: &str| -> Result<String, bb_testing::Failure> {
+            let found = mcp
+                .call_tool(&signed, "search_issues", json!({ "query": query }))
+                .await?;
+            assert_eq!(
+                found.json["result"]["isError"],
+                json!(false),
+                "{query}: {}",
+                found.json
+            );
+            Ok(text_of(&found))
+        };
+        // Plain words find what the search language finds for them.
+        let words = search("brakes").await?;
+        let language = search("title contains \"brakes\"").await?;
+        assert!(words.contains("Brakes squeak"), "{words}");
+        assert!(!words.contains("Lights flicker"), "{words}");
+        assert!(
+            words.contains("contains \"brakes\""),
+            "the answer says how it was read: {words}"
+        );
+        assert!(language.contains("Brakes squeak"), "{language}");
+        // A search that cannot be read says how to write one.
+        let refused = mcp
+            .call_tool(&signed, "search_issues", json!({"query": "colour is red"}))
+            .await?;
+        assert_eq!(
+            refused.json["result"]["isError"],
+            json!(true),
+            "{}",
+            refused.json
+        );
+        assert!(
+            text_of(&refused).contains("title contains \"brakes\""),
+            "{}",
+            refused.json
+        );
+        // The tool says so in its description.
+        let listed = mcp
+            .post(
+                Some(&signed.access),
+                json!({"jsonrpc": "2.0", "id": 1, "method": "tools/list"}),
+            )
+            .await?;
+        let described = listed.json["result"]["tools"]
+            .as_array()
+            .and_then(|tools| tools.iter().find(|tool| tool["name"] == "search_issues"))
+            .map(|tool| tool["description"].to_string())
+            .unwrap_or_default();
+        assert!(described.contains("title contains"), "{described}");
+        Ok(())
+    })
+    .await
+}

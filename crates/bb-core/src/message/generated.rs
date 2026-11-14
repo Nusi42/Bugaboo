@@ -827,6 +827,9 @@ pub const AI_AUTHOR_OUTSIDER: MessageKey = MessageKey::new("ai-author.outsider")
 /// The message `ai-saved.done`.
 pub const AI_SAVED_DONE: MessageKey = MessageKey::new("ai-saved.done");
 
+/// The message `ai-search.mistake`.
+pub const AI_SEARCH_MISTAKE: MessageKey = MessageKey::new("ai-search.mistake");
+
 /// The message `ai-setup.address-add`.
 pub const AI_SETUP_ADDRESS_ADD: MessageKey = MessageKey::new("ai-setup.address-add");
 
@@ -19565,6 +19568,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("ai-saved.new-issue", "Saved as {issue}, version {version}."),
     ("ai-saved.on", "Saved on {issue}."),
+    (
+        "ai-search.mistake",
+        "The search could not be read. Write it in the search language, such as title contains \"brakes\" or status group is not Done and priority is High.",
+    ),
     ("ai-setup.address-add", "Allow this address"),
     ("ai-setup.address-added", "Allowed {date}"),
     (
@@ -19761,7 +19768,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "ai-tool.search-issues",
-        "Search the issues you may read with the search language.",
+        "Search the issues you may read. Write a search in the search language, such as title contains \"brakes\" or status group is not Done and priority is High, or plain words, which are looked for in the title, the description and the comments.",
     ),
     ("ai-tool.start-timer", "Start your timer on an issue."),
     ("ai-tool.stop-timer", "Stop your timer."),

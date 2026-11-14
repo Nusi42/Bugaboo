@@ -265,3 +265,27 @@ fn sort_key(key: &SortKey) -> String {
         None => field,
     }
 }
+
+/// The search that looks for plain words in the texts of an issue (`contains "…"`: its title, its
+/// description, its comments and the names of its files), written by the printer so that a quote
+/// in the words cannot become part of the language; `None` when the text is a search already or
+/// holds no word. A tool of AI reads a text that is no search this way, as quick search reads what
+/// is typed into it, so the grammar stays the same for everyone.
+#[must_use]
+pub fn words_search(text: &str) -> Option<String> {
+    let words = text.trim();
+    if words.is_empty() || crate::parse(words).is_ok() {
+        return None;
+    }
+    Some(print(&Search {
+        filter: Some(Expr::Contains {
+            text: Text {
+                text: words.to_owned(),
+                span: Span::default(),
+            },
+            span: Span::default(),
+        }),
+        sort: Vec::new(),
+        span: Span::default(),
+    }))
+}

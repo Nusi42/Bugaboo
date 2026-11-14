@@ -53,6 +53,7 @@ pub use limits::{
 pub use mistake::Mistake;
 pub use printer::{
     ROUND_TRIP_GUARD, canonical_text, empty_filter_text, is_filter_text, print, range_filter_text,
+    words_search,
 };
 pub use span::Span;
 pub use suggest::{AskKind, Suggestion, Suggestions, WordKind, suggest};

@@ -41,7 +41,9 @@ pub(super) fn limit_within(asked: Option<i64>) -> Result<Option<u32>, AppError> 
 #[derive(Debug, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct SearchIssuesInput {
-    /// The search, in the search language (for example `status group is not Done and priority is High`).
+    /// The search, in the search language (for example `title contains "brakes"` or
+    /// `status group is not Done and priority is High`), or plain words to find in the title, the
+    /// description and the comments.
     pub query: String,
     /// The most issues to answer with.
     #[schema(schema_with = limit_schema)]
