@@ -97,6 +97,13 @@ describe("ux_01 the measure holds what is named nowhere, what came in and what g
     expect(wrongIn(movementOf([button]), { grows: ["status"] })).toEqual(nothingWrong);
   });
 
+  it("passes a part the action moves, once, and fails one that goes there and back", () => {
+    const bar = moved("bar", box(400, 300, 120, 24), box(440, 300, 120, 24));
+    expect(wrongIn(movementOf([bar]), { moves: ["bar"] })).toEqual(nothingWrong);
+    const back = { ...bar, turns: 1 };
+    expect(wrongIn(movementOf([back]), { moves: ["bar"] }).moved).toEqual([back]);
+  });
+
   it("fails a changed part that gets narrower, as a title whose words wrap anew", () => {
     const title = moved("title", box(400, 120, 600, 60), box(400, 120, 560, 60));
     expect(wrongIn(movementOf([title]), { grows: ["title"] }).moved).toEqual([title]);

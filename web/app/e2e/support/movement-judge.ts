@@ -155,6 +155,11 @@ export interface StillExcept {
   readonly follows?: readonly string[];
   /** The parts whose scroll the action is meant to change (`window.body` when a form starts again). */
   readonly scrolls?: readonly string[];
+  /**
+   * The parts the action moves (a bar of the timeline moved by a day): each may take another place,
+   * in one direction only, and nothing is pushed by it.
+   */
+  readonly moves?: readonly string[];
 }
 
 /** A part that grew, by how much, and where it stood: what pushes the parts under it. */
@@ -262,13 +267,17 @@ export function wrongIn(movement: Movement, except: StillExcept): Wrong {
       cameIn: true,
     })),
   ];
-  const may = new Set([...grows, ...follows]);
+  const moves = except.moves ?? [];
+  const may = new Set([...grows, ...follows, ...moves]);
   const theirs = (shift: Shift): boolean =>
     shift.sources.length > 0 &&
     shift.sources.every((source) => source.within.some((name) => may.has(name)));
   return {
     moved: movement.moved.filter((part) => {
       const pushed = pushOf(part, growths);
+      if (moves.includes(part.name)) {
+        return part.turns !== 0;
+      }
       if (grows.includes(part.name)) {
         return !grewInPlace(part, follows.includes(part.name) ? pushed : 0);
       }
