@@ -1,17 +1,20 @@
 //! What a tool takes from an AI app and what it answers for it (AI-04, AI-21): a limit is a number
-//! in the range of a page, or the call is told the range; and a tool is offered only to a person
-//! who may use it somewhere, by the same rule that refuses its call.
+//! in the range of a page, or the call is told the range; a search that cannot be read is told its
+//! mistake, the same to an app and to the assistant; a stopped timer says whether time was booked;
+//! and a tool is offered only to a person who may use it somewhere outside what is kept from AI.
 
 use bb_core::ErrorCode;
 use bb_core::ai::ToolScope;
 use bb_policy::StartingRole;
 use serde_json::json;
 
-use super::ai_tools::{call, issue_with};
+use super::ai_tools::{call, issue_with, mark};
+use super::assistant::{ai_on, ask, question, tool_results, will_call, will_say};
 use super::scenarios::{a_project, token};
 use super::scenarios_searches::with_role;
 use super::world::{Outcome, World};
-use crate::ai::tools::{ToolListQuery, ToolMode, ToolSpec, call_tool, list_tools};
+use crate::ai::NeverSentTarget;
+use crate::ai::tools::{ToolListQuery, ToolMode, ToolSpec, call_tool, list_tools, search_refusal};
 use crate::auth::AppError;
 
 #[tokio::test]
@@ -41,7 +44,7 @@ async fn ai_21_a_limit_outside_one_to_a_hundred_is_refused_with_the_range() -> O
         ("search_issues", json!({"query": "title contains \"a\""})),
     ];
     for (tool, input) in tools {
-        for limit in [0, -1, 101] {
+        for limit in [json!(0), json!(-1), json!(101), json!(2.5)] {
             let mut asked = input.clone();
             asked["limit"] = json!(limit);
             let refused = call_tool(&world.ctx(), call(&who, tool, asked)).await;
@@ -118,6 +121,7 @@ async fn ai_04_a_tool_is_offered_only_to_a_person_who_may_use_it_somewhere() -> 
             ToolListQuery {
                 session_token: person.session_token.clone(),
                 granted: ToolScope::SeeAndChange,
+                caller: bb_core::ai::ToolCaller::AiApp,
             },
         )
         .await?
@@ -142,5 +146,93 @@ async fn ai_04_a_tool_is_offered_only_to_a_person_who_may_use_it_somewhere() -> 
             );
         }
     }
+    Ok(())
+}
+
+#[tokio::test]
+async fn ai_21_a_mistyped_search_is_told_its_mistake_and_plain_words_still_search() -> Outcome {
+    let world = World::new().await?;
+    a_project(&world, "WEB").await?;
+    ai_on(&world).await?;
+    let who = token(&world);
+    for typo in ["title includes x", "status open"] {
+        let refused = call_tool(
+            &world.ctx(),
+            call(&who, "search_issues", json!({ "query": typo })),
+        )
+        .await;
+        let Err(AppError::Mistakes(mistakes)) = refused else {
+            return Err(format!("{typo}: {refused:?}").into());
+        };
+        let said = search_refusal(&mistakes);
+        // The real mistake, then how a search is written.
+        assert!(said.contains("title contains \"brakes\""), "{said}");
+        assert!(!said.starts_with("Write"), "{typo}: {said}");
+        // The assistant reads the same sentence.
+        will_call(&world, "search_issues", json!({ "query": typo }));
+        will_say(&world, "That search did not work.");
+        ask(&world, question(&who, "Find it")).await?;
+        assert!(tool_results(&world).contains(&said), "{typo}");
+    }
+    let words = call_tool(
+        &world.ctx(),
+        call(&who, "search_issues", json!({"query": "brakes"})),
+    )
+    .await?
+    .into_value();
+    assert!(words.text.contains("contains \"brakes\""), "{}", words.text);
+    Ok(())
+}
+
+#[tokio::test]
+async fn ai_21_a_timer_stopped_within_a_minute_says_that_nothing_was_booked() -> Outcome {
+    let world = World::new().await?;
+    a_project(&world, "WEB").await?;
+    let key = issue_with(
+        &world,
+        "WEB",
+        "Brakes",
+        "d",
+        std::collections::BTreeMap::new(),
+    )
+    .await?;
+    let who = token(&world);
+    let mut start = call(&who, "start_timer", json!({ "issue": key }));
+    start.mode = ToolMode::Apply;
+    let started = call_tool(&world.ctx(), start).await?.into_value();
+    let version = started.undo.ok_or("no way back of the timer")?.version;
+    let mut stop = call(&who, "stop_timer", json!({ "version": version }));
+    stop.mode = ToolMode::Apply;
+    let stopped = call_tool(&world.ctx(), stop).await?.into_value();
+    assert_eq!(
+        stopped.text.lines().last(),
+        Some("The timer stopped. It ran for less than a minute, so no time was booked."),
+        "{}",
+        stopped.text
+    );
+    Ok(())
+}
+
+#[tokio::test]
+async fn ai_04_a_tool_allowed_only_in_projects_kept_from_ai_is_not_offered() -> Outcome {
+    let world = World::new().await?;
+    a_project(&world, "WEB").await?;
+    let list = async || -> Result<usize, AppError> {
+        Ok(list_tools(
+            &world.ctx(),
+            ToolListQuery {
+                session_token: token(&world),
+                granted: ToolScope::SeeAndChange,
+                caller: bb_core::ai::ToolCaller::AiApp,
+            },
+        )
+        .await?
+        .into_value()
+        .tools
+        .len())
+    };
+    assert!(list().await? > 0);
+    mark(&world, NeverSentTarget::Project("WEB".to_owned())).await?;
+    assert_eq!(list().await?, 0);
     Ok(())
 }

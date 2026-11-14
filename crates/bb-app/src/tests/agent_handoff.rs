@@ -89,6 +89,7 @@ async fn m7_f127_only_the_calls_of_the_message_take_what_its_entry_left_and_only
         ToolListQuery {
             session_token: given.key.clone(),
             granted: ToolScope::SeeAndChange,
+            caller: bb_core::ai::ToolCaller::Agent,
         },
     )
     .await;

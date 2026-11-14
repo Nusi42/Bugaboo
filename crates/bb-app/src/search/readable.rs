@@ -136,6 +136,22 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(readable_of(&self.searchables_of(actor, scope).await?))
     }
 
+    /// The fields the actor may search by for the AI, without what is kept from AI: what decides
+    /// whether a text a tool is given is plain words (`bb_searchlang::words_search`).
+    ///
+    /// # Errors
+    /// An internal error when the store fails.
+    pub(crate) async fn readable_fields_within(
+        &self,
+        actor: &Actor,
+        scope: SearchScope,
+        withheld: &crate::ai::Withheld,
+    ) -> Result<ReadableFields, AppError> {
+        Ok(readable_of(
+            &self.looked_at(actor, scope).await?.without(withheld).fields,
+        ))
+    }
+
     /// The same fields with what each one stands for, which the compiler needs: the one list the
     /// checker and the compiler both start from, so they cannot disagree about a word.
     ///

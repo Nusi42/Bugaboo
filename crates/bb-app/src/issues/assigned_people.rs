@@ -14,7 +14,9 @@ use bb_core::fields::{ASSIGNED_TO_PEOPLE, Field};
 use bb_core::id::{FieldId, IssueTypeId};
 use bb_core::own_fields::FieldFor;
 use bb_core::paging::{Cut, page_len};
-use bb_policy::{Authorized, Evaluation, Masked, PeopleContext, Permission, PersonRef, Place};
+use bb_policy::{
+    Authorized, CHANGES_ISSUES, Evaluation, Masked, PeopleContext, Permission, PersonRef, Place,
+};
 use serde::Serialize;
 
 use crate::access::{Members, place_of_address};
@@ -146,8 +148,7 @@ pub async fn assignable_people<S: AuthStore>(
 /// Whether the person may make or change issues here, and see them.
 fn may_set_issues(held: &Evaluation) -> bool {
     held.allows(Permission::SeeIssues)
-        && (held.allows(Permission::ChangeIssues)
-            || held.allows(Permission::ChangeOwnIssues)
+        && (CHANGES_ISSUES.iter().any(|each| held.allows(*each))
             || held.allows(Permission::CreateIssues))
 }
 

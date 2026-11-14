@@ -35,6 +35,7 @@ pub use evaluate::{
     row_reaches,
 };
 pub use explain::{AccessReport, LevelDecision, PermissionDecision, Reason, ReasonRow};
+pub use issues::CHANGES_ISSUES;
 pub use levels::{
     FieldRule, LevelKind, LevelRule, LevelRules, LevelSource, LevelSubject, Levels, PeopleRule,
     RoleLevel, TypedFieldRule, level_of_role, nearest_rule, nearest_typed_rule,

@@ -158,19 +158,33 @@ fn qry_03_a_field_that_begins_like_a_direction_is_a_quoted_key_of_sort_by() {
 #[test]
 fn ai_21_plain_words_are_read_as_a_search_of_the_texts_and_a_search_stays_one() {
     use bb_searchlang::words_search;
+    let fields = sample_fields();
     assert_eq!(
-        words_search("brakes").as_deref(),
+        words_search("brakes", &fields).as_deref(),
         Some("contains \"brakes\"")
     );
     assert_eq!(
-        words_search("  brakes squeak ").as_deref(),
+        words_search("  brakes squeak ", &fields).as_deref(),
         Some("contains \"brakes squeak\"")
     );
     // A quote in the words stays in the words.
-    let quoted = words_search("the \"new\" brakes").unwrap_or_default();
+    let quoted = words_search("the \"new\" brakes", &fields).unwrap_or_default();
     assert!(checked(&quoted).is_some(), "{quoted}");
-    // A search is left as it is, and so is nothing.
-    for search in ["title contains \"brakes\"", "contains brakes", "", "   "] {
-        assert_eq!(words_search(search), None, "{search}");
+    // A search is left as it is, and so is nothing; a text that starts with a field or holds a
+    // sign of a search is a mistake to be told, not words.
+    for search in [
+        "title contains \"brakes\"",
+        "contains brakes",
+        "",
+        "   ",
+        "title includes x",
+        "status open",
+        "status group open",
+        "brakes = loud",
+        "brakes != loud",
+        "(brakes",
+        "brakes > 2",
+    ] {
+        assert_eq!(words_search(search, &fields), None, "{search}");
     }
 }

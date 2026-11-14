@@ -7,8 +7,8 @@ use bb_core::ErrorCode;
 use bb_testing::{TestResult, each_database};
 use serde_json::json;
 
-use super::ai_mcp_rig::{Answer, Mcp, ai_on, sign_in_app};
-use super::issues_site::Site;
+use super::ai_mcp_rig::{Answer, Mcp, ai_on, an_agent_with_a_key, sign_in_app};
+use super::issues_site::{Site, ok};
 
 /// The text a tool answered with.
 fn text_of(answer: &Answer) -> String {
@@ -123,9 +123,9 @@ async fn ai_21_a_limit_of_zero_or_less_is_refused_over_mcp_with_the_range() -> T
             ("get_my_work", json!({})),
             ("search_issues", json!({"query": ""})),
         ] {
-            for limit in [0, -1, 101] {
+            for limit in [json!(0), json!(-1), json!(101), json!(2.5)] {
                 let mut asked = input.clone();
-                asked["limit"] = json!(limit);
+                asked["limit"] = limit.clone();
                 let refused = mcp.call_tool(&signed, tool, asked).await?;
                 assert_eq!(
                     refused.json["result"]["isError"],
@@ -134,6 +134,19 @@ async fn ai_21_a_limit_of_zero_or_less_is_refused_over_mcp_with_the_range() -> T
                 );
                 assert_eq!(text_of(&refused), range, "{tool} {limit}");
             }
+        }
+        // The tool of agents that takes a limit is judged the same way.
+        let (_, agent) = an_agent_with_a_key(&mut ada, "Fixer", None).await?;
+        for limit in [json!(0), json!(101), json!(2.5)] {
+            let refused = super::ai_mcp_agents::call(
+                &mcp,
+                &agent,
+                "changes_since",
+                json!({ "limit": limit }),
+            )
+            .await?;
+            assert_eq!(refused.json["result"]["isError"], json!(true), "{limit}");
+            assert_eq!(text_of(&refused), range, "changes_since {limit}");
         }
         // A limit of one answers one issue.
         let one = mcp
@@ -202,6 +215,54 @@ async fn ai_04_tools_list_offers_only_the_tools_a_person_may_use_somewhere() -> 
     .await
 }
 
+/// Words in a project the reader may not see, in a comment, and in a project kept from AI: BETA
+/// has the issue "Wheels" with a comment about brakes, KEPT the issue "Brakes kept from AI".
+async fn words_out_of_sight(
+    site: &Site<'_>,
+    ada: &mut super::http::Browser,
+) -> Result<(), bb_testing::Failure> {
+    for (short_name, title, comment) in [
+        ("BETA", "Wheels", "The brakes are hidden here"),
+        ("KEPT", "Brakes kept from AI", "brakes"),
+    ] {
+        let project = ok(&ada
+            .send(
+                "POST",
+                "/api/v1/projects",
+                Some(json!({"short_name": short_name, "name": short_name})),
+            )
+            .await?)?["id"]
+            .as_str()
+            .ok_or("no project ID")?
+            .to_owned();
+        let made = ok(&ada
+            .send(
+                "POST",
+                &format!("/api/v1/projects/{project}/issues"),
+                Some(json!({"issue_type": site.kind, "title": title})),
+            )
+            .await?)?["readable_id"]
+            .as_str()
+            .ok_or("no key")?
+            .to_owned();
+        ok(&ada
+            .send(
+                "POST",
+                &format!("/api/v1/issues/{made}/comments"),
+                Some(json!({ "text": comment })),
+            )
+            .await?)?;
+    }
+    ok(&ada
+        .send(
+            "PUT",
+            "/api/v1/never-sent-to-ai/projects/KEPT",
+            Some(json!({"marked": true, "version": 0})),
+        )
+        .await?)?;
+    Ok(())
+}
+
 #[tokio::test]
 async fn ai_21_search_issues_reads_plain_words_as_a_search_of_the_texts() -> TestResult {
     each_database("ai_21_plain_words_http", async |db| {
@@ -212,6 +273,7 @@ async fn ai_21_search_issues_reads_plain_words_as_a_search_of_the_texts() -> Tes
         for title in ["Brakes squeak", "Lights flicker"] {
             site.create(&mut ada, title).await?;
         }
+        words_out_of_sight(&site, &mut ada).await?;
         // The text index follows a new issue in the next round of the jobs (ADR-0016).
         let ctx = rig.services.ctx(super::rig::Rig::info());
         while ctx
@@ -221,6 +283,17 @@ async fn ai_21_search_issues_reads_plain_words_as_a_search_of_the_texts() -> Tes
             > 0
         {}
         let signed = sign_in_app(&mcp, &mut ada, "Claude Code", "see-only", "see-only").await?;
+        let (mut tom, _) = site.person_in_acme(StartingRole::TeamMember, "tom").await?;
+        let toms = sign_in_app(&mcp, &mut tom, "Claude Code", "see-only", "see-only").await?;
+        let found = mcp
+            .call_tool(&toms, "search_issues", json!({"query": "brakes"}))
+            .await?;
+        let found = text_of(&found);
+        assert!(found.contains("Brakes squeak"), "{found}");
+        assert!(
+            !found.contains("Wheels"),
+            "a comment in a project Tom cannot see: {found}"
+        );
         let search = async |query: &str| -> Result<String, bb_testing::Failure> {
             let found = mcp
                 .call_tool(&signed, "search_issues", json!({ "query": query }))
@@ -243,6 +316,18 @@ async fn ai_21_search_issues_reads_plain_words_as_a_search_of_the_texts() -> Tes
             "the answer says how it was read: {words}"
         );
         assert!(language.contains("Brakes squeak"), "{language}");
+        assert!(words.contains("Wheels"), "Ada reads the comment: {words}");
+        assert!(!words.contains("Brakes kept"), "kept from AI: {words}");
+        // A mistyped search is no words: it is told its mistake.
+        for typo in ["title includes x", "status open"] {
+            let refused = mcp
+                .call_tool(&signed, "search_issues", json!({ "query": typo }))
+                .await?;
+            assert_eq!(refused.json["result"]["isError"], json!(true), "{typo}");
+            let said = text_of(&refused);
+            assert!(!said.starts_with("Write"), "{typo}: {said}");
+            assert!(said.contains("title contains \"brakes\""), "{typo}: {said}");
+        }
         // A search that cannot be read says how to write one.
         let refused = mcp
             .call_tool(&signed, "search_issues", json!({"query": "colour is red"}))

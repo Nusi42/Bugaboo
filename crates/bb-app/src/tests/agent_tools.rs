@@ -374,6 +374,7 @@ async fn ai_36_the_tools_of_agents_are_offered_to_agents_and_to_nobody_else() ->
     let list = |token: String| ToolListQuery {
         session_token: token,
         granted: ToolScope::SeeAndChange,
+        caller: ToolCaller::Agent,
     };
     let agent = names(
         list_tools(&world.ctx(), list(given.key.clone()))

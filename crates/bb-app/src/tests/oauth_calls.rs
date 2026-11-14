@@ -137,6 +137,7 @@ async fn ai_23_an_access_key_works_as_the_person_narrowed_by_it() -> Outcome {
         ToolListQuery {
             session_token: see.clone(),
             granted: ToolScope::SeeAndChange,
+            caller: bb_core::ai::ToolCaller::AiApp,
         },
     )
     .await?
@@ -146,6 +147,7 @@ async fn ai_23_an_access_key_works_as_the_person_narrowed_by_it() -> Outcome {
         ToolListQuery {
             session_token: change.clone(),
             granted: ToolScope::SeeAndChange,
+            caller: bb_core::ai::ToolCaller::AiApp,
         },
     )
     .await?

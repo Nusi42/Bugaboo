@@ -70,7 +70,8 @@ fn issue_saved(written: &Authorized<IssueView>, new: bool) -> Part {
     let saved = match (key, version_in(&value)) {
         (Some(key), Some(version)) if new => Saved::NewIssue { key, version },
         (Some(key), Some(version)) => Saved::Issue { key, version },
-        _ => Saved::Done,
+        (None, Some(version)) => Saved::Version { version },
+        (_, None) => Saved::Done,
     };
     saved.part()
 }
@@ -206,7 +207,10 @@ pub(super) fn stop_timer<'a, S: AuthStore>(
                 .as_str()
                 .map(str::to_owned)
         });
-        shown.push(key.map_or(Saved::Done, |key| Saved::On { key }).part());
+        shown.push(
+            key.map_or(Saved::TimerStoppedEmpty, |key| Saved::On { key })
+                .part(),
+        );
         Ok(shown)
     })
 }

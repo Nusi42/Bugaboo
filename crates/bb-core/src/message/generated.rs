@@ -827,8 +827,9 @@ pub const AI_AUTHOR_OUTSIDER: MessageKey = MessageKey::new("ai-author.outsider")
 /// The message `ai-saved.done`.
 pub const AI_SAVED_DONE: MessageKey = MessageKey::new("ai-saved.done");
 
-/// The message `ai-search.mistake`.
-pub const AI_SEARCH_MISTAKE: MessageKey = MessageKey::new("ai-search.mistake");
+/// The message `ai-saved.timer-stopped-empty`.
+pub const AI_SAVED_TIMER_STOPPED_EMPTY: MessageKey =
+    MessageKey::new("ai-saved.timer-stopped-empty");
 
 /// The message `ai-setup.address-add`.
 pub const AI_SETUP_ADDRESS_ADD: MessageKey = MessageKey::new("ai-setup.address-add");
@@ -10139,6 +10140,24 @@ pub fn ai_saved_on(issue: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("ai-saved.on"),
         vec![("issue", Value::Text(issue.to_string()))],
+    )
+}
+
+/// The message `ai-saved.version`.
+#[must_use]
+pub fn ai_saved_version(version: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("ai-saved.version"),
+        vec![("version", Value::Text(version.to_string()))],
+    )
+}
+
+/// The message `ai-search.mistake`.
+#[must_use]
+pub fn ai_search_mistake(mistake: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("ai-search.mistake"),
+        vec![("mistake", Value::Text(mistake.to_string()))],
     )
 }
 
@@ -19569,8 +19588,13 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("ai-saved.new-issue", "Saved as {issue}, version {version}."),
     ("ai-saved.on", "Saved on {issue}."),
     (
+        "ai-saved.timer-stopped-empty",
+        "The timer stopped. It ran for less than a minute, so no time was booked.",
+    ),
+    ("ai-saved.version", "Saved at version {version}."),
+    (
         "ai-search.mistake",
-        "The search could not be read. Write it in the search language, such as title contains \"brakes\" or status group is not Done and priority is High.",
+        "{mistake} Write the search in the search language, such as title contains \"brakes\" or status group is not Done and priority is High.",
     ),
     ("ai-setup.address-add", "Allow this address"),
     ("ai-setup.address-added", "Allowed {date}"),

@@ -8,6 +8,7 @@
 use bb_core::ErrorCode;
 use bb_core::paging::{PAGE_SIZE_LEAST, PAGE_SIZE_MAX, page_size_within};
 use serde::Deserialize;
+use serde_json::Number;
 use utoipa::ToSchema;
 use utoipa::openapi::{Object, ObjectBuilder, Type};
 
@@ -25,15 +26,20 @@ fn limit_schema() -> Object {
         .build()
 }
 
-/// The `limit` a tool was given, when it is one: a number outside the range of a page, 0 and a
-/// negative one included, is refused with the range (`request.limit-out-of-range`) and never cut
-/// to another number.
+/// The `limit` a tool was given, when it is one: a number outside the range of a page, 0, a
+/// negative one and one that is not whole included, is refused with the range
+/// (`request.limit-out-of-range`) and never cut to another number.
 ///
 /// # Errors
 /// `request.limit-out-of-range` for a number outside the range.
-pub(super) fn limit_within(asked: Option<i64>) -> Result<Option<u32>, AppError> {
+pub(super) fn limit_within(asked: Option<&Number>) -> Result<Option<u32>, AppError> {
     asked
-        .map(|asked| page_size_within(asked).ok_or(AppError::Refused(ErrorCode::LimitOutOfRange)))
+        .map(|asked| {
+            asked
+                .as_i64()
+                .and_then(page_size_within)
+                .ok_or(AppError::Refused(ErrorCode::LimitOutOfRange))
+        })
         .transpose()
 }
 
@@ -47,7 +53,7 @@ pub struct SearchIssuesInput {
     pub query: String,
     /// The most issues to answer with.
     #[schema(schema_with = limit_schema)]
-    pub limit: Option<i64>,
+    pub limit: Option<Number>,
 }
 
 /// Read one issue.
@@ -66,7 +72,7 @@ pub struct ListProjectsInput {
     pub search: Option<String>,
     /// The most projects to answer with.
     #[schema(schema_with = limit_schema)]
-    pub limit: Option<i64>,
+    pub limit: Option<Number>,
 }
 
 /// The issues assigned to the person.
@@ -75,7 +81,7 @@ pub struct ListProjectsInput {
 pub struct GetMyWorkInput {
     /// The most issues to answer with.
     #[schema(schema_with = limit_schema)]
-    pub limit: Option<i64>,
+    pub limit: Option<Number>,
 }
 
 /// Create an issue.
@@ -254,7 +260,7 @@ pub struct ChangesSinceInput {
     pub since: Option<String>,
     /// The most changes to answer with.
     #[schema(schema_with = limit_schema)]
-    pub limit: Option<i64>,
+    pub limit: Option<Number>,
 }
 
 /// Propose a change under your standing rule.

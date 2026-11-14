@@ -280,6 +280,7 @@ async fn ai_04_a_key_that_may_only_see_lists_no_tool_that_changes() -> Outcome {
                 ToolListQuery {
                     session_token: token,
                     granted: ToolScope::SeeAndChange,
+                    caller: ToolCaller::AiApp,
                 },
             )
             .await

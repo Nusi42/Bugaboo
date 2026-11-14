@@ -2,6 +2,7 @@
 //! one space between words, brackets only where the meaning needs them, and the order of `sort by`
 //! kept. The address, the API and a saved search carry this text (ADR-0005, amendment M5).
 
+use crate::fields::ReadableFields;
 use crate::literal::{field_or_quoted, key_or_quoted, quoted, value_or_quoted};
 use crate::span::Span;
 use crate::syntax::{Comparison, Expr, FieldRef, Operand, Search, SortKey, Test, Text};
@@ -266,26 +267,42 @@ fn sort_key(key: &SortKey) -> String {
     }
 }
 
+/// The signs that make a text a search, not plain words: a comparison or a group.
+const SIGNS_OF_A_SEARCH: [char; 5] = ['=', '<', '>', '(', ')'];
+
 /// The search that looks for plain words in the texts of an issue (`contains "…"`: its title, its
 /// description, its comments and the names of its files), written by the printer so that a quote
-/// in the words cannot become part of the language; `None` when the text is a search already or
-/// holds no word. A tool of AI reads a text that is no search this way, as quick search reads what
-/// is typed into it, so the grammar stays the same for everyone.
+/// in the words cannot become part of the language. Only for a text that is plainly no search:
+/// it does not parse, none of its first words names a field the reader may search by (as the
+/// parser joins words into a field name, so `title includes x` and `status open` stay mistakes),
+/// and it holds no sign of comparison or grouping (`=`, `!=`, `<`, `>`, brackets). `None`
+/// otherwise, and for a text with no word. A tool of AI reads such a text this way, as quick
+/// search reads what is typed into it, so the grammar stays the same for everyone.
 #[must_use]
-pub fn words_search(text: &str) -> Option<String> {
+pub fn words_search(text: &str, fields: &ReadableFields) -> Option<String> {
     let words = text.trim();
-    if words.is_empty() || crate::parse(words).is_ok() {
-        return None;
-    }
-    Some(print(&Search {
-        filter: Some(Expr::Contains {
-            text: Text {
-                text: words.to_owned(),
+    let plain = !words.is_empty()
+        && !words.contains(SIGNS_OF_A_SEARCH)
+        && !names_a_field(words, fields)
+        && crate::parse_with(words, fields).is_err();
+    plain.then(|| {
+        print(&Search {
+            filter: Some(Expr::Contains {
+                text: Text {
+                    text: words.to_owned(),
+                    span: Span::default(),
+                },
                 span: Span::default(),
-            },
+            }),
+            sort: Vec::new(),
             span: Span::default(),
-        }),
-        sort: Vec::new(),
-        span: Span::default(),
-    }))
+        })
+    })
+}
+
+/// Whether the first words of the text, one or more, are the word of a field the reader may
+/// search by.
+fn names_a_field(text: &str, fields: &ReadableFields) -> bool {
+    let words: Vec<&str> = text.split_whitespace().collect();
+    (1..=words.len()).any(|count| fields.field(&words[..count].join(" ")).is_some())
 }

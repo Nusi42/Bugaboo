@@ -10,7 +10,7 @@
 use std::sync::Arc;
 
 use bb_app::ai::context::PeopleMode;
-use bb_app::ai::tools::{ToolCallQuery, ToolListQuery, ToolMode};
+use bb_app::ai::tools::{ToolCallQuery, ToolListQuery, ToolMode, search_refusal};
 use bb_app::auth::{AppError, AuthApi, McpIdentity, RequestInfo};
 use bb_core::ErrorCode;
 use bb_core::ai::{Tool, ToolCaller, ToolScope};
@@ -117,6 +117,15 @@ pub(crate) fn initialize(asked: Option<&str>) -> Value {
 }
 
 impl Caller<'_> {
+    /// How the tools are called: as an agent, or as an AI app.
+    fn caller(&self) -> ToolCaller {
+        if self.who.agent.is_some() {
+            ToolCaller::Agent
+        } else {
+            ToolCaller::AiApp
+        }
+    }
+
     /// Calls the tool as the person and gives the text the AI reads, or the sentence of the refusal.
     async fn call(
         &self,
@@ -134,11 +143,7 @@ impl Caller<'_> {
                 info,
                 ToolCallQuery {
                     session_token: self.token.to_owned(),
-                    caller: if self.who.agent.is_some() {
-                        ToolCaller::Agent
-                    } else {
-                        ToolCaller::AiApp
-                    },
+                    caller: self.caller(),
                     app: self.who.app.clone(),
                     granted: NARROWED_BY_THE_TOKEN,
                     people: PeopleMode::AsSeen,
@@ -184,7 +189,7 @@ impl Caller<'_> {
                 let code = error.code().unwrap_or(ErrorCode::Forbidden);
                 Ok(Err(code.text().render()))
             }
-            Err(AppError::Mistakes(_)) => Ok(Err(sentence(message::AI_SEARCH_MISTAKE))),
+            Err(AppError::Mistakes(mistakes)) => Ok(Err(search_refusal(&mistakes))),
             Err(other) => Err(other.into()),
         }
     }
@@ -200,6 +205,7 @@ impl Caller<'_> {
                 ToolListQuery {
                     session_token: self.token.to_owned(),
                     granted: NARROWED_BY_THE_TOKEN,
+                    caller: self.caller(),
                 },
             )
             .await?;

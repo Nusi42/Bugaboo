@@ -364,6 +364,7 @@ async fn ai_22_a_code_used_twice_ends_the_grant_it_made() -> Outcome {
         ToolListQuery {
             session_token: tokens.access_token.to_string(),
             granted: ToolScope::SeeAndChange,
+            caller: ToolCaller::AiApp,
         },
     )
     .await;
@@ -388,6 +389,7 @@ async fn ai_22_a_refresh_token_used_twice_ends_the_grant() -> Outcome {
         ToolListQuery {
             session_token: second.access_token.to_string(),
             granted: ToolScope::SeeAndChange,
+            caller: ToolCaller::AiApp,
         },
     )
     .await?;
@@ -402,6 +404,7 @@ async fn ai_22_a_refresh_token_used_twice_ends_the_grant() -> Outcome {
             ToolListQuery {
                 session_token: dead.to_string(),
                 granted: ToolScope::SeeAndChange,
+                caller: ToolCaller::AiApp,
             },
         )
         .await;
@@ -429,6 +432,7 @@ async fn ai_22_an_access_token_lives_fifteen_minutes_and_a_refresh_token_thirty_
         ToolListQuery {
             session_token: tokens.access_token.to_string(),
             granted: ToolScope::SeeOnly,
+            caller: ToolCaller::AiApp,
         },
     )
     .await;
@@ -454,6 +458,7 @@ async fn ai_22_a_see_only_grant_cannot_call_change_status() -> Outcome {
         ToolListQuery {
             session_token: tokens.access_token.to_string(),
             granted: ToolScope::SeeAndChange,
+            caller: ToolCaller::AiApp,
         },
     )
     .await?
@@ -549,6 +554,7 @@ async fn ai_24_connected_apps_lists_an_app_and_take_back_ends_it() -> Outcome {
         ToolListQuery {
             session_token: tokens.access_token.to_string(),
             granted: ToolScope::SeeAndChange,
+            caller: ToolCaller::AiApp,
         },
     )
     .await?;
@@ -594,6 +600,7 @@ async fn ai_24_connected_apps_lists_an_app_and_take_back_ends_it() -> Outcome {
         ToolListQuery {
             session_token: tokens.access_token.to_string(),
             granted: ToolScope::SeeAndChange,
+            caller: ToolCaller::AiApp,
         },
     )
     .await;
@@ -629,6 +636,7 @@ async fn ai_22_sign_out_everywhere_ends_every_grant() -> Outcome {
             ToolListQuery {
                 session_token: dead.to_string(),
                 granted: ToolScope::SeeAndChange,
+                caller: ToolCaller::AiApp,
             },
         )
         .await;
@@ -693,6 +701,7 @@ async fn ai_22_switching_apps_off_refuses_the_grants_but_keeps_them() -> Outcome
         ToolListQuery {
             session_token: tokens.access_token.to_string(),
             granted: ToolScope::SeeAndChange,
+            caller: ToolCaller::AiApp,
         },
     )
     .await;
@@ -706,6 +715,7 @@ async fn ai_22_switching_apps_off_refuses_the_grants_but_keeps_them() -> Outcome
         ToolListQuery {
             session_token: tokens.access_token.to_string(),
             granted: ToolScope::SeeAndChange,
+            caller: ToolCaller::AiApp,
         },
     )
     .await?;

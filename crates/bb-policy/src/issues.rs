@@ -11,6 +11,10 @@ use bb_core::id::UserId;
 use crate::catalogue::Permission;
 use crate::evaluate::Evaluation;
 
+/// The permissions that let a person change issues: *Change issues* for every issue they see, and
+/// *Change own issues* for the ones they reported. The one list of the pair.
+pub const CHANGES_ISSUES: [Permission; 2] = [Permission::ChangeIssues, Permission::ChangeOwnIssues];
+
 impl Evaluation {
     /// Whether the viewer reported the issue, which `reported_by` names.
     fn reported(&self, reported_by: UserId) -> bool {
@@ -30,13 +34,11 @@ impl Evaluation {
     /// somebody who holds neither lacks). The one place that tells own from all.
     #[must_use]
     pub fn permission_to_change_issue(&self, reported_by: UserId) -> Permission {
-        if !self.allows(Permission::ChangeIssues)
-            && self.allows(Permission::ChangeOwnIssues)
-            && self.reported(reported_by)
-        {
-            Permission::ChangeOwnIssues
+        let [all, own] = CHANGES_ISSUES;
+        if !self.allows(all) && self.allows(own) && self.reported(reported_by) {
+            own
         } else {
-            Permission::ChangeIssues
+            all
         }
     }
 
@@ -48,12 +50,11 @@ impl Evaluation {
     }
 
     /// Whether the viewer may change some issue of the project: they see it and hold *Change
-    /// issues* or *Change own issues*. The same permissions as [`Self::permission_to_change_issue`],
-    /// for when no issue is named yet (which tools of AI to offer).
+    /// issues* or *Change own issues* ([`CHANGES_ISSUES`]), for when no issue is named yet (which
+    /// tools of AI to offer).
     #[must_use]
     pub fn may_change_some_issue(&self) -> bool {
-        self.sees_project()
-            && (self.allows(Permission::ChangeIssues) || self.allows(Permission::ChangeOwnIssues))
+        self.sees_project() && CHANGES_ISSUES.iter().any(|each| self.allows(*each))
     }
 
     /// Whether the viewer may delete the issue into the trash: they see it and hold *Delete

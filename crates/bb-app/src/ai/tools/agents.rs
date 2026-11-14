@@ -144,12 +144,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         run: &Run<'_>,
         address: &str,
-    ) -> Result<(bb_core::issue::Issue, String), AppError> {
+    ) -> Result<(bb_core::issue::Issue, Option<String>), AppError> {
         let issue = self.agent_issue_in_reach(run, address).await?;
-        let key = self
-            .readable_id_for(run.actor, issue.id)
-            .await?
-            .unwrap_or_else(|| address.to_owned());
+        let key = self.readable_id_for(run.actor, issue.id).await?;
         Ok((issue, key))
     }
 
@@ -171,7 +168,12 @@ impl<S: AuthStore> Ctx<'_, S> {
             .and_then(|last| last.get("number"))
             .cloned()
             .unwrap_or(Value::Null);
-        let saved = Saved::On { key: key.clone() }.part();
+        // The line of what was saved names only a readable ID, never the address the caller gave.
+        let saved = key
+            .clone()
+            .map_or(Saved::Done, |key| Saved::On { key })
+            .part();
+        let key = key.unwrap_or_else(|| address.to_owned());
         let mut parts = vec![Part {
             name: "work",
             value: json!({
@@ -477,7 +479,7 @@ pub(super) fn apply_propose<'a, S: AuthStore>(
         let request = propose_request(&run)?;
         let (_, key) = ctx.agent_issue_and_key(&run, &request.issue).await?;
         propose_change(ctx, request).await?;
-        shown.push(Saved::On { key }.part());
+        shown.push(key.map_or(Saved::Done, |key| Saved::On { key }).part());
         Ok(shown)
     })
 }
@@ -496,7 +498,7 @@ pub(super) fn changes<'a, S: AuthStore>(
             ChangesSinceQuery {
                 session_token: run.token.to_owned(),
                 since: input.since,
-                limit: limit_within(input.limit)?,
+                limit: limit_within(input.limit.as_ref())?,
             },
         )
         .await?;

@@ -221,6 +221,7 @@ pub async fn ask_assistant<S: AuthStore>(
         ToolListQuery {
             session_token: input.session_token.clone(),
             granted: ToolScope::SeeAndChange,
+            caller: ToolCaller::Assistant,
         },
     )
     .await?;

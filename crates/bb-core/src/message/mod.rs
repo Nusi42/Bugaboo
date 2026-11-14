@@ -180,6 +180,21 @@ impl Value {
     }
 }
 
+/// The English text of a message whose key and words came as text, as the mistakes of a search
+/// carry them (a key of the catalog and the words of its placeholders); `None` for a key that is
+/// not in the catalog.
+#[must_use]
+pub fn render_named(key: &str, words: &[(&str, &str)]) -> Option<String> {
+    let found = CATALOG
+        .binary_search_by(|(each, _)| (*each).cmp(key))
+        .ok()?;
+    let arguments: Vec<(&str, Value)> = words
+        .iter()
+        .map(|(name, word)| (*name, Value::Text((*word).to_owned())))
+        .collect();
+    Some(render::render(CATALOG[found].1, &arguments))
+}
+
 /// A message with the values for its placeholders, ready to be shown.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Message {

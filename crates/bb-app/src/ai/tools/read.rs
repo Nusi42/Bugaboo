@@ -111,7 +111,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         actor: &Actor,
         session_token: &str,
         text: &str,
-        limit: Option<i64>,
+        limit: Option<&serde_json::Number>,
         withheld: &Withheld,
     ) -> Result<Vec<Part>, AppError> {
         let limit = limit_within(limit)?;
@@ -144,13 +144,23 @@ impl<S: AuthStore> Ctx<'_, S> {
         run: &Run<'_>,
         input: &SearchIssuesInput,
     ) -> Result<Vec<Part>, AppError> {
-        let Some(words) = bb_searchlang::words_search(&input.query) else {
+        // Only a text that does not parse may be plain words; whether it is depends on the fields
+        // the reader may search by, so a mistyped search is told its mistake.
+        let words = if bb_searchlang::parse(&input.query).is_err() {
+            let fields = self
+                .readable_fields_within(run.actor, SearchScope::Everywhere, run.withheld)
+                .await?;
+            bb_searchlang::words_search(&input.query, &fields)
+        } else {
+            None
+        };
+        let Some(words) = words else {
             return self
                 .search_parts(
                     run.actor,
                     run.token,
                     &input.query,
-                    input.limit,
+                    input.limit.as_ref(),
                     run.withheld,
                 )
                 .await;
@@ -163,8 +173,14 @@ impl<S: AuthStore> Ctx<'_, S> {
             project: None,
         }];
         parts.extend(
-            self.search_parts(run.actor, run.token, &words, input.limit, run.withheld)
-                .await?,
+            self.search_parts(
+                run.actor,
+                run.token,
+                &words,
+                input.limit.as_ref(),
+                run.withheld,
+            )
+            .await?,
         );
         Ok(parts)
     }
@@ -179,7 +195,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     ) -> Result<Vec<Part>, AppError> {
         for text in MY_WORK {
             match self
-                .search_parts(actor, session_token, text, input.limit, withheld)
+                .search_parts(actor, session_token, text, input.limit.as_ref(), withheld)
                 .await
             {
                 // Only a field the reader may not see is a reason to ask for less; any other
@@ -264,7 +280,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 outside: None,
                 movable: None,
                 cursor: None,
-                limit: limit_within(input.limit)?.unwrap_or(ISSUES_DEFAULT),
+                limit: limit_within(input.limit.as_ref())?.unwrap_or(ISSUES_DEFAULT),
             },
         )
         .await?;
@@ -289,6 +305,28 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         Ok(parts)
     }
+}
+
+/// What the AI is told about a search that cannot be read: the first mistake, as the person would
+/// read it (with what may have been meant), and how a search is written. The one sentence of the
+/// tools over MCP and of the assistant.
+#[must_use]
+pub fn search_refusal(mistakes: &[bb_searchlang::Mistake]) -> String {
+    let mistake = mistakes
+        .first()
+        .and_then(|first| {
+            let words: Vec<(&str, &str)> = first
+                .args
+                .iter()
+                .map(|(name, word)| (name.as_str(), word.as_str()))
+                .collect();
+            bb_core::message::render_named(&first.key, &words)
+        })
+        .unwrap_or_default();
+    bb_core::message::ai_search_mistake(mistake)
+        .render()
+        .trim_start()
+        .to_owned()
 }
 
 /// `search_issues`.

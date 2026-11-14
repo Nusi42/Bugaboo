@@ -7,7 +7,7 @@
 use super::Value;
 
 /// The values a message is filled with.
-type Arguments<'a> = &'a [(&'static str, Value)];
+type Arguments<'a> = &'a [(&'a str, Value)];
 
 /// The text of `template` with every placeholder replaced. A placeholder with no value is empty.
 pub(super) fn render(template: &str, arguments: Arguments<'_>) -> String {

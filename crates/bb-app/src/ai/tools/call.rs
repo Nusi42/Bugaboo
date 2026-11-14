@@ -131,6 +131,14 @@ pub(super) enum Saved {
         /// The version the write gave back.
         version: i64,
     },
+    /// A change to an issue the actor may not name by its readable ID: the version is still the one
+    /// *Undo* of fields is made on.
+    Version {
+        /// The version the write gave back.
+        version: i64,
+    },
+    /// The timer was stopped before it ran a minute: nothing was booked.
+    TimerStoppedEmpty,
     /// Something saved on an issue: a comment, a time entry, the timer, the work of an agent or a
     /// proposal.
     On {
@@ -157,6 +165,8 @@ impl Saved {
         match self {
             Self::NewIssue { key, version } => message::ai_saved_new_issue(key, version),
             Self::Issue { key, version } => message::ai_saved_issue(key, version),
+            Self::Version { version } => message::ai_saved_version(version),
+            Self::TimerStoppedEmpty => Message::from(message::AI_SAVED_TIMER_STOPPED_EMPTY),
             Self::On { key } => message::ai_saved_on(key),
             Self::Done => Message::from(message::AI_SAVED_DONE),
         }
@@ -166,7 +176,7 @@ impl Saved {
     /// The version of a changed issue, which *Undo* of its fields is made on.
     const fn version_of_change(&self) -> Option<i64> {
         match self {
-            Self::Issue { version, .. } => Some(*version),
+            Self::Issue { version, .. } | Self::Version { version } => Some(*version),
             _ => None,
         }
     }
@@ -180,6 +190,8 @@ pub struct ToolListQuery {
     pub session_token: String,
     /// What the app or the assistant was allowed.
     pub granted: ToolScope,
+    /// How the tools are called, which decides what is kept from AI.
+    pub caller: ToolCaller,
 }
 
 /// One tool as an AI app is shown it.
@@ -239,27 +251,30 @@ impl<S: AuthStore> Ctx<'_, S> {
     async fn usable<'t>(
         &self,
         actor: &Actor,
-        granted: ToolScope,
-        tools: impl IntoIterator<Item = &'t ToolSpec<S>>,
-    ) -> Result<Vec<&'t ToolSpec<S>>, AppError>
-    where
-        S: 't,
-    {
-        let mut shown = None;
+        asked: &ToolListQuery,
+        tools: &'t [ToolSpec<S>],
+    ) -> Result<Vec<&'t ToolSpec<S>>, AppError> {
+        let mut seen = None;
         let mut usable = Vec::new();
         for spec in tools {
-            if !may_call(actor, granted, spec) {
+            if !may_call(actor, asked.granted, spec) {
                 continue;
             }
             let need = spec.need();
             if !matches!(need, Need::Nothing) {
-                if shown.is_none() {
-                    shown = Some(self.shown_to(actor).await?);
+                if seen.is_none() {
+                    seen = Some((
+                        self.shown_to(actor).await?,
+                        self.withheld(asked.caller).await?,
+                    ));
                 }
-                if !shown
-                    .as_ref()
-                    .is_some_and(|shown| shown.anywhere(|held| need.met_by(held)))
-                {
+                // A project kept from AI allows no tool: the tool would find nothing there.
+                let allowed = seen.as_ref().is_some_and(|(shown, withheld)| {
+                    shown.anywhere(|project, held| {
+                        !withheld.hides_project(project) && need.met_by(held)
+                    })
+                });
+                if !allowed {
                     continue;
                 }
             }
@@ -280,7 +295,7 @@ pub async fn list_tools<S: AuthStore>(
     let actor = ctx.actor_of_message(&input.session_token).await?;
     let all = registry::<S>();
     let tools = ctx
-        .usable(&actor, input.granted, &all)
+        .usable(&actor, &input, &all)
         .await?
         .into_iter()
         .map(|spec| ToolListing {
