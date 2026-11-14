@@ -218,7 +218,10 @@ pub(super) fn stop_timer<'a, S: AuthStore>(
         let mut shown = preview::stop_timer(ctx, run).await?;
         // Time that was worked and recorded is never erased by *Undo*: stopping the timer has no way back.
         let stopped = stop_timer_as_person(ctx, requests::stop_timer(&run)?).await?;
-        shown.push(saved_stop(&stopped.masked_value().unwrap_or(Value::Null)).part());
+        let stopped = stopped
+            .masked_value()
+            .map_err(|error| AppError::Internal(error.to_string()))?;
+        shown.push(saved_stop(&stopped).part());
         Ok(shown)
     })
 }
