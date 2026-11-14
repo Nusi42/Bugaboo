@@ -161,6 +161,11 @@ impl Evaluation {
 
     /// Wraps `value`, a view of one issue of `issue_type` that does not hold its type, with the
     /// mask of that type (ADR-0027): the same mask the view gets inside the issue's own view.
+    ///
+    /// The rule of the caller: `value` holds views of that one issue only (its `IssueView`, as the
+    /// whole issue does), never a view of another issue, whose type may have other levels. Nothing
+    /// refuses that when the code is built: a view that holds its type refuses another such view
+    /// inside it, but `value` names its type only here.
     #[must_use]
     pub fn authorize_item<T>(&self, issue_type: IssueTypeId, value: T) -> Authorized<T> {
         Authorized {
