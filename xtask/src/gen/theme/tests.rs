@@ -300,13 +300,16 @@ fn every_old_cue_keeps_its_covers_that_scroll_with_the_content() {
             );
         }
     }
+    // The boxes that scroll (UX §6.5); a picker and the list of people scroll with their pane and have no cue.
     for scroller in [
         "overlay.dialog",
-        "picker.options",
         "list-scroll",
         "window.body",
         "confirm.body",
-        "people",
+        "search-panel",
+        "search-suggestions",
+        "side-panel.body",
+        "list-panel",
     ] {
         let selector = format!("[data-part=\"{scroller}\"]");
         assert!(
