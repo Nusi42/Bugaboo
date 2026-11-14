@@ -77,6 +77,7 @@ import { invitationRoute, signUpRoute } from "./guest-pages.tsx";
 import { projectRoute, projectSettingsRoute } from "./project-pages.tsx";
 import {
   appRoute,
+  boxesToTop,
   guestRoute,
   mySettingsRoute,
   organizationSettingsRoute,
@@ -165,17 +166,11 @@ const routeTree = rootRoute.addChildren([
 ]);
 
 /** The routes of the app, with the types of their addresses. */
-/**
- * The boxes the router brings back to where they were (the main column, which scrolls instead of the
- * window, UX §6.5, marked by `scrollRestoration` of the shell): a new page starts them at the top.
- */
-const RESTORED_BOXES = "[data-scroll-restoration-id]";
-
-// A new page starts at the top of the main column, and Back brings it to where it was.
+// A new page starts its boxes at the top (`boxesToTop`), and Back brings each to where it was (UX §6.5).
 export const router = createRouter({
   routeTree,
   scrollRestoration: true,
-  scrollToTopSelectors: [RESTORED_BOXES],
+  scrollToTopSelectors: [...boxesToTop],
 });
 
 declare module "@tanstack/react-router" {

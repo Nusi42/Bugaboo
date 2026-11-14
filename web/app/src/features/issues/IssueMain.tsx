@@ -1,6 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { partOf, part } from "@bugaboo/ui";
 
+import { keptScroll, scrollBox } from "../../shared/scroll-boxes.ts";
 import { WrittenBy } from "../../shared/WrittenBy.tsx";
 import { FormNotice } from "../layouts/index.ts";
 import { DescriptionBlock } from "./DescriptionBlock.tsx";
@@ -43,7 +44,7 @@ function SectionBlocks({
 /** The main column: the description, then what other packages put under it (UX §4.4). */
 export function IssueMain({ detail, address, blocks }: IssueMainProps) {
   return (
-    <div {...partOf(part.issueMain)}>
+    <div {...partOf(part.issueMain)} {...keptScroll(scrollBox.issueSections)}>
       <FormNotice form={blocks.form} />
       {blocks.form.shows("description") ? (
         <div {...partOf(part.issueMainSection)}>

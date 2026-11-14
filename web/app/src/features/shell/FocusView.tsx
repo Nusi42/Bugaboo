@@ -1,6 +1,7 @@
 import { useLayout, partOf, part } from "@bugaboo/ui";
 import { useState, type ReactNode } from "react";
 
+import { keptScroll, scrollBox } from "../../shared/scroll-boxes.ts";
 import { useShortcuts } from "../../shared/use-shortcuts.ts";
 import { FocusBar } from "./FocusBar.tsx";
 import { useNarrowSidebarWhile } from "./sidebar-state.ts";
@@ -42,7 +43,11 @@ export function FocusView({ list, onBack, onStep, children }: FocusViewProps) {
   const listState = phone ? "none" : listHidden ? "hidden" : "shown";
   return (
     <div ref={view} {...partOf(part.focusView)}>
-      {listState === "shown" ? <div {...partOf(part.focusViewList)}>{list}</div> : null}
+      {listState === "shown" ? (
+        <div {...partOf(part.focusViewList)} {...keptScroll(scrollBox.focusList)}>
+          {list}
+        </div>
+      ) : null}
       <div ref={main} tabIndex={-1} {...partOf(part.shellContent)}>
         <div {...partOf(part.focusViewBar)}>
           <FocusBar

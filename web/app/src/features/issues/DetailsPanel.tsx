@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 import { DelayedSkeleton, NameValueList, partOf, part } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
+import { keptScroll, scrollBox } from "../../shared/scroll-boxes.ts";
 import {
   AssignedToRow,
   DueDateRow,
@@ -92,6 +93,7 @@ export function DetailsPanel({ blocks, changes, stacked }: DetailsPanelProps) {
     <aside
       aria-busy={!blocks.form.ready}
       {...partOf(part.issueDetails, { variants: [stacked && "stacked"] })}
+      {...keptScroll(scrollBox.issueDetails)}
       aria-label={t("issues.details")}
     >
       <h2 {...partOf(part.issueDetailsHeading)}>{t("issues.details")}</h2>
