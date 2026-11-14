@@ -68,8 +68,11 @@ export function optimisticSend<Variables extends Described, Cached extends Cache
   return async (variables) => {
     const client = getClient();
     const hash = hashKey(change.queryKey);
-    // An answer that is still on its way would put the old data back over the change.
-    await client.cancelQueries({ queryKey: change.queryKey });
+    // An answer that is still on its way would put the old data back over the change. When none
+    // is, nothing is waited for: the change shows in the turn it is made, with *Saving…* (UX §6.4).
+    if (client.isFetching({ queryKey: change.queryKey }) > 0) {
+      await client.cancelQueries({ queryKey: change.queryKey });
+    }
     const all = flights.get(client) ?? new Map<string, Flight>();
     flights.set(client, all);
     const flight = all.get(hash) ?? new Flight();

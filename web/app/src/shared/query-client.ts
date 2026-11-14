@@ -1,4 +1,10 @@
-import { CancelledError, MutationCache, QueryCache, QueryClient } from "@tanstack/react-query";
+import {
+  CancelledError,
+  MutationCache,
+  notifyManager,
+  QueryCache,
+  QueryClient,
+} from "@tanstack/react-query";
 
 import { isSecondStepRequired, sessionLostReason, type SessionLostReason } from "./errors.ts";
 
@@ -37,6 +43,11 @@ function lost(error: unknown): void {
     secondStepHandler();
   }
 }
+
+// The screen hears of changes of the cache in the turn they happen, not one timer later: a change
+// writes its new value and starts *Saving…* in one turn, and both must reach the same frame, or
+// what the change makes larger grows twice (UX §6.4).
+notifyManager.setScheduler(queueMicrotask);
 
 /**
  * The query cache of the app: the only place where data of the server is kept (ADR-0009). Asking

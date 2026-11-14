@@ -3663,6 +3663,7 @@
   "issue-field.time-factor": "Time factor",
   "issues.time-factor-value": "×{factor}",
   "issues.time-factor-as-estimated": "×1 (as estimated)",
+  "issues.time-factor-nobody": "Nobody is assigned yet",
   "issues.time-factor-own": "{factor} · {name}'s own estimate",
   "issues.time-factor-set-by": "{factor} · set by {name}",
   "issues.time-factor-change": "Change",

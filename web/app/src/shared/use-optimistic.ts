@@ -43,9 +43,13 @@ export function useOptimisticMutation<
   const client = useQueryClient();
   // Every call is a mutation of its own with this key, so changes that overlap each have a state.
   const mutationKey = ["optimistic", useId()];
+  const send = optimisticSend(() => client, change);
+  // The change is started before the mutation hears of it: its first part writes the change into
+  // the cache in this turn, so the change shows in the same frame as *Saving…* (UX §6.4); the
+  // mutation only waits for the answer.
   const mutation = useMutation({
     mutationKey,
-    mutationFn: optimisticSend(() => client, change),
+    mutationFn: (started: Readonly<Promise<Answer>>) => started,
   });
   const calls = useMutationState({ filters: { mutationKey } });
   // A burst is the run of changes since everything was last idle: an earlier refusal is not
@@ -57,7 +61,7 @@ export function useOptimisticMutation<
       setBurstStart(calls.length);
     }
     // Each call hears its own answer: the callbacks of `mutate` reach only the last call.
-    void mutation.mutateAsync(variables).then(
+    void mutation.mutateAsync(send(variables)).then(
       () => settled?.(true),
       () => settled?.(false),
     );

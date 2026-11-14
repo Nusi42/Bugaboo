@@ -11,17 +11,20 @@ import { TimeFactorChange } from "./TimeFactorChange.tsx";
  * by Ada Brandt" or "×1 (as estimated)", and *Change*, which opens the window *How long will it take
  * you?*. The person on the bar always sees the row; anybody else as the field level of *Time factor*
  * allows. Whether *Change* is offered the server says (`may_change`), by the rule that also decides a
- * save. An issue assigned to nobody has no row: the factor is the person's.
+ * save. An issue assigned to nobody says so in the row: the factor is the person's, and the row
+ * keeps its place when somebody is assigned, so nothing under it moves (UX §6.4).
  */
 export function TimeFactorRow({ blocks }: Pick<ChangeableRowsProps, "blocks">) {
   const factor = useTimeFactor(blocks.readableId).data;
   const percent = factor === undefined ? undefined : shownPercent(factor);
-  if (factor === undefined || percent === undefined || factor.person === null) {
+  if (factor === undefined || percent === undefined) {
     return null;
   }
   return (
     <DetailRow name={t("issue-field.time-factor")}>
-      <span {...partOf(part.nameValueWords)}>{factorWords(factor, percent)}</span>
+      <span {...partOf(part.nameValueWords)}>
+        {factor.person === null ? t("issues.time-factor-nobody") : factorWords(factor, percent)}
+      </span>
       <TimeFactorChange
         issue={blocks.issue}
         readableId={blocks.readableId}

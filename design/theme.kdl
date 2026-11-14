@@ -4249,10 +4249,12 @@ part "name-value.reason" {
 }
 
 // *Saved* and *Undo* where the change happened (R7).
-// *Saving…* and *Saved* with *Undo* take the same height, the height of the button, so the row does not
-// change its height again when the answer comes (UX §6: nothing under it moves back and forth).
+// *Saving…* and *Saved* with *Undo* take the same height, the height of the button, and the same place, a line of
+// their own under the value: the short *Saving…* would fit beside a value where the longer *Saved* with *Undo* does
+// not, and the row would grow a second time when the answer comes (UX §6.4: nothing under it moves back and forth).
 part "name-value.saved" {
     display inline-flex
+    flex-basis "100%"
     align-items center
     gap "$space-1"
     min-block-size "$size-control"

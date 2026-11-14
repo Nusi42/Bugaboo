@@ -3148,6 +3148,7 @@ textarea,
 
 [data-part="name-value.saved"] {
   display: inline-flex;
+  flex-basis: 100%;
   align-items: center;
   gap: var(--space-1);
   min-block-size: var(--size-control);

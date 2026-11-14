@@ -3727,6 +3727,9 @@ pub const ISSUES_TIME_FACTOR_FACTOR: MessageKey = MessageKey::new("issues.time-f
 /// The message `issues.time-factor-length`.
 pub const ISSUES_TIME_FACTOR_LENGTH: MessageKey = MessageKey::new("issues.time-factor-length");
 
+/// The message `issues.time-factor-nobody`.
+pub const ISSUES_TIME_FACTOR_NOBODY: MessageKey = MessageKey::new("issues.time-factor-nobody");
+
 /// The message `issues.time-factor-nothing`.
 pub const ISSUES_TIME_FACTOR_NOTHING: MessageKey = MessageKey::new("issues.time-factor-nothing");
 
@@ -22068,6 +22071,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Time factor (1 is as estimated)",
     ),
     ("issues.time-factor-length", "How long it takes"),
+    ("issues.time-factor-nobody", "Nobody is assigned yet"),
     (
         "issues.time-factor-not-a-factor",
         "Type a time factor like {example}.",
