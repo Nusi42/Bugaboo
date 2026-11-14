@@ -1236,7 +1236,7 @@
     max-height: var(--pane-head-height);
   }
   to {
-    max-height: var(--size-control);
+    max-height: calc(var(--size-control) + 2 * var(--ring-room));
   }
 }
 
@@ -10599,8 +10599,8 @@ textarea,
 
 [data-part="pane-head"] {
   position: absolute;
-  inset-block-start: 0;
-  inset-inline: 0;
+  inset-block-start: calc(var(--ring-room) * -1);
+  inset-inline: calc(var(--ring-room) * -1);
   z-index: var(--z-raised);
   background: var(--bg-canvas);
 }
@@ -10616,7 +10616,7 @@ textarea,
     animation-name: pane-head-fold;
     animation-fill-mode: both;
     animation-timing-function: linear;
-    animation-range: 0% calc(var(--pane-head-height) - var(--size-control));
+    animation-range: 0% calc(var(--pane-head-height) - var(--size-control) - 2 * var(--ring-room));
     animation-timeline: --pane-first;
   }
 }
@@ -10626,7 +10626,7 @@ textarea,
     animation-name: pane-head-fold;
     animation-fill-mode: both;
     animation-timing-function: linear;
-    animation-range: 0% calc(var(--pane-head-height) - var(--size-control));
+    animation-range: 0% calc(var(--pane-head-height) - var(--size-control) - 2 * var(--ring-room));
     animation-timeline: --pane-second;
   }
 }
@@ -10635,13 +10635,13 @@ textarea,
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  padding-block-end: var(--space-4);
+  padding: var(--ring-room) var(--ring-room) var(--space-4);
 }
 
 [data-part="pane"] [data-part="issue-body"][data-variant~="split"] [data-part="issue-main"] {
   scroll-timeline: --pane-first block;
   margin-block-start: 0;
-  padding-block-start: calc(var(--pane-head-height) + var(--ring-room));
+  padding-block-start: var(--pane-head-height);
 }
 
 @media print {
@@ -10652,7 +10652,7 @@ textarea,
 
 [data-part="pane"] [data-part="issue-body"][data-variant~="split"] [data-part="issue-details"] {
   scroll-timeline: --pane-second block;
-  padding-block-start: var(--pane-head-height);
+  padding-block-start: calc(var(--pane-head-height) - var(--ring-room));
 }
 
 @media print {

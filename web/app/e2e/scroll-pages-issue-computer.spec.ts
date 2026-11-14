@@ -39,10 +39,10 @@ async function openFromSlimList(page: Page, key: string): Promise<void> {
     .click();
 }
 
-/** The sides of its box that cut the focus ring of a control in the sections of an issue. */
-function ringCutAt(control: Locator): Promise<string[]> {
-  return control.evaluate((element) => {
-    const box = element.closest("[data-part='issue-main']") ?? document.body;
+/** The sides of the box it stands in (the sections of an issue, unless named) that cut the focus ring of a control. */
+function ringCutAt(control: Locator, inside = "issue-main"): Promise<string[]> {
+  return control.evaluate((element, part) => {
+    const box = element.closest(`[data-part='${part}']`) ?? document.body;
     const style = getComputedStyle(element);
     // Both are lengths in px as the browser computes them.
     const ring =
@@ -65,7 +65,7 @@ function ringCutAt(control: Locator): Promise<string[]> {
       sides.push("bottom");
     }
     return sides;
-  });
+  }, inside);
 }
 
 test("ux_06 another issue starts its sections at the top, and Back brings them to where they were", async ({
@@ -141,4 +141,27 @@ test("ux_3_4 Previous is off at the first issue of the slim list and Next at the
   await page.goto(issueAddress("WEB-1"));
   await expect(next).toBeDisabled();
   await expect(previous).toBeEnabled();
+});
+
+test("ux_06 the focus ring of a control in the head over the boxes of an issue is not cut", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await page.goto(issueAddress("WEB-1"));
+  const controls = page.locator(
+    "[data-part='pane-head'] :is(button, a[href], input, textarea, select)",
+  );
+  const [first, last] = [controls.first(), controls.last()];
+  await expect(first).toBeVisible();
+  // With the keyboard, so the ring shows (`:focus-visible`).
+  await last.focus();
+  await page.keyboard.press("Shift+Tab");
+  await page.keyboard.press("Tab");
+  await expect(last).toBeFocused();
+  expect(await ringCutAt(last, "pane-head"), "the edges where the ring is cut").toEqual([]);
+  await first.focus();
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Shift+Tab");
+  await expect(first).toBeFocused();
+  expect(await ringCutAt(first, "pane-head"), "the edges where the ring is cut").toEqual([]);
 });

@@ -1379,13 +1379,13 @@ keyframes "pulse" {
 }
 
 // The head of a pane folds to one line as a box of the pane scrolls (UX §6.5): from its whole height to the height of
-// a control.
+// a control, with the room for its focus ring around it.
 keyframes "pane-head-fold" {
     from {
         max-height "$pane-head-height"
     }
     to {
-        max-height "$size-control"
+        max-height "calc($size-control + 2 * $ring-room)"
     }
 }
 
@@ -1395,7 +1395,7 @@ mixin "pane-head-folds" {
     animation-name "pane-head-fold"
     animation-fill-mode both
     animation-timing-function linear
-    animation-range "0% calc($pane-head-height - $size-control)"
+    animation-range "0% calc($pane-head-height - $size-control - 2 * $ring-room)"
 }
 
 // ───────────── The page ─────────────
@@ -16722,10 +16722,12 @@ part "pane-head" "pane-head.fold" {
     }
 }
 
+// The head reaches out over the edges of the pane by the room of the focus ring, which it keeps inside, so the ring of a
+// control at its edge is not cut where it folds.
 part "pane-head" {
     position absolute
-    inset-block-start 0
-    inset-inline 0
+    inset-block-start "calc($ring-room * -1)"
+    inset-inline "calc($ring-room * -1)"
     z-index "$z-raised"
     background "$bg-canvas"
     media "print" {
@@ -16752,16 +16754,17 @@ part "pane-head.content" {
     display flex
     flex-direction column
     gap "$space-4"
-    padding-block-end "$space-4"
+    padding "$ring-room $ring-room $space-4"
 }
 
 // The boxes that drive the head, and the room each keeps for the whole head over its start.
 // Under the head the sections start at the top of the pane, with the room for the ring under the whole head, so the head
-// laid over them never covers the ring of the first control.
+// laid over them never covers the ring of the first control. The head reaches up by that room (above), so its bottom
+// stands the room above its own height.
 part "pane issue-body[variant=split] issue-main" {
     scroll-timeline "--pane-first block"
     margin-block-start 0
-    padding-block-start "calc($pane-head-height + $ring-room)"
+    padding-block-start "$pane-head-height"
     media "print" {
         padding-block-start "$ring-room"
     }
@@ -16769,7 +16772,7 @@ part "pane issue-body[variant=split] issue-main" {
 
 part "pane issue-body[variant=split] issue-details" {
     scroll-timeline "--pane-second block"
-    padding-block-start "$pane-head-height"
+    padding-block-start "calc($pane-head-height - $ring-room)"
     media "print" {
         padding-block-start 0
     }
