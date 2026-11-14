@@ -1,4 +1,10 @@
-import { type Browser, type BrowserContext, expect, test as base } from "@playwright/test";
+import {
+  type Browser,
+  type BrowserContext,
+  type Route,
+  expect,
+  test as base,
+} from "@playwright/test";
 
 import { setNumbersLocale } from "@bugaboo/messages";
 
@@ -268,3 +274,26 @@ export const test = base.extend<
 });
 
 export { expect } from "@playwright/test";
+
+/**
+ * The answer of a request the server refuses, as the server words it (problem details): the status, the error code
+ * and the message key of the code, unless the test needs another one.
+ */
+export function refusal(
+  status: number,
+  code: string,
+  messageKey = `error.${code}`,
+): Parameters<Route["fulfill"]>[0] {
+  return {
+    status,
+    contentType: "application/problem+json",
+    body: JSON.stringify({
+      type: `urn:bugaboo:error:${code}`,
+      title: code,
+      status,
+      code,
+      message_key: messageKey,
+      params: {},
+    }),
+  };
+}

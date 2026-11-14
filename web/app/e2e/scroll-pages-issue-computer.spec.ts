@@ -29,12 +29,12 @@ async function scrolled(box: Locator): Promise<number> {
   return box.evaluate((element) => element.scrollTop);
 }
 
-/** Goes to another address in the app the way a link does, without loading the page again. */
-async function follow(page: Page, address: string): Promise<void> {
-  await page.evaluate((to) => {
-    history.pushState(null, "", to);
-    dispatchEvent(new PopStateEvent("popstate"));
-  }, address);
+/** Opens another issue as a person does: by its row in the slim list beside the open one. */
+async function openFromSlimList(page: Page, key: string): Promise<void> {
+  await page
+    .locator(`[data-part~='focus-view.list'] a[href$='${issueAddress(key)}']`)
+    .first()
+    .click();
 }
 
 /** The sides of its box that cut the focus ring of a control in the sections of an issue. */
@@ -67,7 +67,7 @@ test("ux_06 another issue starts its sections at the top, and Back brings them t
   const sections = sectionsOf(page);
   await expect(sections).toBeVisible();
   const was = await scrolled(sections);
-  await follow(page, issueAddress("WEB-2"));
+  await openFromSlimList(page, "WEB-2");
   await expect(page).toHaveURL(/WEB-2$/u);
   await expect.poll(() => sections.evaluate((element) => element.scrollTop)).toBe(0);
   await page.goBack();

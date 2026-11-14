@@ -3,7 +3,7 @@ import { type Page } from "@playwright/test";
 
 import { ada, bob } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
-import { expect, test } from "./support/fixtures.ts";
+import { expect, refusal, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { itemArea } from "./support/layout.ts";
 import { detailRow, expectStatus, issueNote, prepareWeb, startWorking } from "./support/issues.ts";
@@ -120,18 +120,7 @@ test("tag_01 a read of the tags and labels that failed says why in their rows", 
   page,
 }) => {
   await page.route("**/api/v1/issues/*/labels-and-tags", (route) =>
-    route.fulfill({
-      status: 403,
-      contentType: "application/problem+json",
-      body: JSON.stringify({
-        type: "urn:bugaboo:error:access.forbidden",
-        title: "access.forbidden",
-        status: 403,
-        code: "access.forbidden",
-        message_key: "error.access.forbidden",
-        params: {},
-      }),
-    }),
+    route.fulfill(refusal(403, "access.forbidden")),
   );
   await signIn(page, ada);
   await page.goto(issueAddress("WEB-1"));

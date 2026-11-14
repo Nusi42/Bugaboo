@@ -3,7 +3,7 @@ import { t } from "@bugaboo/messages";
 import { addDays } from "../src/shared/format.ts";
 import { signedInAdmin } from "./support/access.ts";
 import { bob, signInThroughApi } from "./support/accounts.ts";
-import { expect, test } from "./support/fixtures.ts";
+import { expect, refusal, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareWeb, createIssue } from "./support/issues.ts";
 import { changesSeen, inOrder, waitForRefusedChange } from "./support/sequence.ts";
@@ -274,16 +274,7 @@ test("time_04 a second length that the server refuses stays in the cell with its
   await openWeek(page, week);
   // The change of the length is answered as if somebody had changed the entry meanwhile.
   await page.route("**/api/v1/me/time-entries/*", async (route) => {
-    await route.fulfill({
-      status: 409,
-      contentType: "application/problem+json",
-      body: JSON.stringify({
-        code: "edit.version-changed",
-        message_key: "error.edit.version-changed",
-        status: 409,
-        title: "Changed meanwhile",
-      }),
-    });
+    await route.fulfill(refusal(409, "edit.version-changed"));
   });
   const refused = waitForRefusedChange(page);
   const cell = cellOf(page, issue.key, 0, false);

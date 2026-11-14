@@ -4,7 +4,7 @@ import { t } from "@bugaboo/messages";
 
 import { ada } from "./support/accounts.ts";
 import { signedInAdmin } from "./support/access.ts";
-import { expect, test } from "./support/fixtures.ts";
+import { expect, refusal, test } from "./support/fixtures.ts";
 import { openIssueWithDetails, signIn } from "./support/flows.ts";
 import { issueOf, prepareWeb, versionOf } from "./support/issues.ts";
 import { partIn } from "./support/parts.ts";
@@ -44,17 +44,7 @@ test("iss_03 a title the server refuses for want of rights goes, the old one sho
   await page.route(
     "**/api/v1/issues/*",
     async (route) => {
-      await route.fulfill({
-        status: 403,
-        contentType: "application/problem+json",
-        body: JSON.stringify({
-          type: "about:blank",
-          title: "Forbidden",
-          status: 403,
-          code: "access.forbidden",
-          message_key: "error.access.forbidden",
-        }),
-      });
+      await route.fulfill(refusal(403, "access.forbidden"));
     },
     { times: 1 },
   );

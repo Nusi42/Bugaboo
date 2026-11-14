@@ -6,6 +6,7 @@ import { type ApiSession } from "./api.ts";
 import { readIssue } from "./issues.ts";
 import { sampleAdministrator } from "./sample.ts";
 import { type Instance } from "./server.ts";
+import { refusal } from "./fixtures.ts";
 
 /** The sample's administrator, through the API: who the swipe tests check and put back. */
 export function adminSession(server: Instance): Promise<ApiSession> {
@@ -65,19 +66,6 @@ export async function putStatusBack(
 export async function refuseStopFollowing(page: Page): Promise<void> {
   const code = "access.forbidden";
   await page.route("**/api/v1/issues/*/follow", (route) =>
-    route.request().method() === "DELETE"
-      ? route.fulfill({
-          status: 403,
-          contentType: "application/problem+json",
-          body: JSON.stringify({
-            type: `urn:bugaboo:error:${code}`,
-            title: "Refused",
-            status: 403,
-            code,
-            message_key: `error.${code}`,
-            params: {},
-          }),
-        })
-      : route.fallback(),
+    route.request().method() === "DELETE" ? route.fulfill(refusal(403, code)) : route.fallback(),
   );
 }

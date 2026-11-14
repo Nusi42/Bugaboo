@@ -3,7 +3,7 @@ import { t } from "@bugaboo/messages";
 import { projectIssuesAddress } from "../src/shared/paths.ts";
 import { ana } from "./support/access.ts";
 import { ada } from "./support/accounts.ts";
-import { expect, test } from "./support/fixtures.ts";
+import { expect, refusal, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { layoutOf } from "./support/layout.ts";
 import {
@@ -102,32 +102,10 @@ test("iss_01 pictures: no issue matches, and the search that takes too long", as
   await expect(page.getByText(t("search.found-none"))).toBeVisible();
   await listInFourThemes(page, "empty");
   await page.route("**/api/v1/search/issues/count*", (route) =>
-    route.fulfill({
-      status: 408,
-      contentType: "application/problem+json",
-      body: JSON.stringify({
-        code: "search.too-slow",
-        message_key: "error.search.too-slow",
-        params: {},
-        status: 408,
-        title: "This search took too long.",
-        type: "urn:bugaboo:error:search.too-slow",
-      }),
-    }),
+    route.fulfill(refusal(408, "search.too-slow")),
   );
   await page.route("**/api/v1/search/issues/groups*", (route) =>
-    route.fulfill({
-      status: 408,
-      contentType: "application/problem+json",
-      body: JSON.stringify({
-        code: "search.too-slow",
-        message_key: "error.search.too-slow",
-        params: {},
-        status: 408,
-        title: "This search took too long.",
-        type: "urn:bugaboo:error:search.too-slow",
-      }),
-    }),
+    route.fulfill(refusal(408, "search.too-slow")),
   );
   await page.goto(projectIssuesAddress("WEB"));
   await expect(page.getByRole("alert")).toContainText(t("error.search.too-slow"));

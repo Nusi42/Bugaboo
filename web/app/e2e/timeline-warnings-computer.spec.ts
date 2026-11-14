@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 
 import { keepingHyphens } from "../src/shared/format.ts";
 import { ada, bob } from "./support/accounts.ts";
-import { expect, test } from "./support/fixtures.ts";
+import { expect, refusal, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { dayFromToday, openTimeline, planned } from "./support/timeline.ts";
 import { datesAs, firstAssigned } from "./support/timeline-api.ts";
@@ -74,19 +74,7 @@ test("plan_13_a_preview_the_server_refuses_says_why_and_shows_nothing", async ({
   const list = await openWarnings(page);
   await page.route(
     "**/api/v1/timeline/move-after",
-    (route) =>
-      route.fulfill({
-        status: 404,
-        contentType: "application/problem+json",
-        body: JSON.stringify({
-          type: "urn:bugaboo:error:resource.not-found",
-          title: "resource.not-found",
-          status: 404,
-          code: "resource.not-found",
-          message_key: "error.resource.not-found",
-          params: {},
-        }),
-      }),
+    (route) => route.fulfill(refusal(404, "resource.not-found")),
     { times: 1 },
   );
   const delay = warningAbout(list, delaySentence);

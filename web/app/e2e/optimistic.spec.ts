@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { type Browser, type Locator, type Page, type Route } from "@playwright/test";
 
 import { ada, endEverySession, createAdmin } from "./support/accounts.ts";
-import { expect, test } from "./support/fixtures.ts";
+import { expect, refusal, test } from "./support/fixtures.ts";
 import { type Instance } from "./support/server.ts";
 import { anotherBrowser, openFromMenu, signIn } from "./support/flows.ts";
 import { partOn } from "./support/styles.ts";
@@ -70,17 +70,7 @@ test("ux_06 a change the server refuses goes back with a plain message", async (
 }) => {
   const other = await twoPlaces(page, browser, server);
   await page.route("**/api/v1/auth/sessions/*", async (route) => {
-    await route.fulfill({
-      status: 403,
-      contentType: "application/problem+json",
-      body: JSON.stringify({
-        type: "about:blank",
-        title: "Forbidden",
-        status: 403,
-        code: "access.forbidden",
-        message_key: "error.access.forbidden",
-      }),
-    });
+    await route.fulfill(refusal(403, "access.forbidden"));
   });
 
   await signOutOfOther(page).click();
@@ -157,17 +147,7 @@ function refuseTheFirst(): (route: Route) => Promise<void> {
     await new Promise((resolve) => {
       setTimeout(resolve, 600);
     });
-    await route.fulfill({
-      status: 403,
-      contentType: "application/problem+json",
-      body: JSON.stringify({
-        type: "about:blank",
-        title: "Forbidden",
-        status: 403,
-        code: "access.forbidden",
-        message_key: "error.access.forbidden",
-      }),
-    });
+    await route.fulfill(refusal(403, "access.forbidden"));
   };
 }
 

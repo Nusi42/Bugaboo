@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import type { Page } from "@playwright/test";
 
 import { ada, bob } from "./support/accounts.ts";
-import { expect, test } from "./support/fixtures.ts";
+import { expect, refusal, test } from "./support/fixtures.ts";
 import { anotherBrowser, signIn } from "./support/flows.ts";
 import { prepareWeb } from "./support/issues.ts";
 import { answerTo } from "./support/sequence.ts";
@@ -48,19 +48,7 @@ function editButton(page: Page) {
 async function refuseNextSave(page: Page, code: string, messageKey: string): Promise<void> {
   await page.route(
     "**/api/v1/comments/*",
-    (route) =>
-      route.fulfill({
-        status: 409,
-        contentType: "application/problem+json",
-        body: JSON.stringify({
-          type: `urn:bugaboo:error:${code}`,
-          title: "Refused",
-          status: 409,
-          code,
-          message_key: messageKey,
-          params: {},
-        }),
-      }),
+    (route) => route.fulfill(refusal(409, code, messageKey)),
     { times: 1 },
   );
 }

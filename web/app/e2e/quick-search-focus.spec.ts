@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 
 import { issueAddress, paths } from "../src/shared/paths.ts";
 import { ada, bob } from "./support/accounts.ts";
-import { expect, test } from "./support/fixtures.ts";
+import { expect, refusal, test } from "./support/fixtures.ts";
 import { addressEndingAt, signIn } from "./support/flows.ts";
 import {
   ask,
@@ -183,20 +183,8 @@ test("cfg_08 the live region says the count and that a source failed, one senten
   await signIn(page, bob);
   // The server refuses the search of issues with a problem that is no mistake of the text (a 4xx,
   // which the browser does not report as a defect): that source fails, the others answer.
-  const problem = {
-    type: "request.unknown-field",
-    title: "x",
-    status: 400,
-    code: "request.unknown-field",
-    message_key: "error.server.unavailable",
-    params: {},
-  };
   await page.route("**/api/v1/search/issues*", (route) =>
-    route.fulfill({
-      status: 400,
-      contentType: "application/problem+json",
-      body: JSON.stringify(problem),
-    }),
+    route.fulfill(refusal(400, "request.unknown-field", "error.server.unavailable")),
   );
   await ask(page, "passkey");
   const said = dialog(page).getByRole("status");
