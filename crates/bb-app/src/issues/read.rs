@@ -115,15 +115,19 @@ pub async fn issue<S: AuthStore>(
     let description_written_by = ctx
         .written_by(&held, RecordKind::Issue, issue.id, "description")
         .await?;
-    Ok(held.authorize(IssueDetail {
-        issue: view,
-        description_html,
-        description_written_by,
-        own_fields_html,
-        may_change,
-        may_delete: held.may_delete_issue(issue.reported_by),
-        changeable,
-    }))
+    // By the levels of the issue's own type, like the description in its view.
+    Ok(held.authorize_item(
+        issue.issue_type,
+        IssueDetail {
+            issue: view,
+            description_html,
+            description_written_by,
+            own_fields_html,
+            may_change,
+            may_delete: held.may_delete_issue(issue.reported_by),
+            changeable,
+        },
+    ))
 }
 
 /// The fields every issue has that `held` lets the person change on `issue`; none when they may

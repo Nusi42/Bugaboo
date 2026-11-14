@@ -172,6 +172,48 @@ async fn sec_04_the_description_is_judged_by_the_levels_of_the_type_of_the_issue
 }
 
 #[tokio::test]
+async fn sec_06_the_shown_description_follows_the_levels_of_the_type_of_the_issue() -> TestResult {
+    each_database("sec_06_description_html_per_type", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let task = other_type(&site, &mut ada).await?;
+        // The description may be seen by this role, except on an issue of the starting type.
+        let (mut tim, _) = person_with_levels(
+            &site,
+            &rig,
+            "tim",
+            &[Permission::SeeProjects, Permission::SeeIssues],
+            &[
+                (Field::Title.into(), None, FieldLevel::CanSee),
+                (Field::Description.into(), None, FieldLevel::CanSee),
+                (
+                    Field::Description.into(),
+                    Some(&site.kind),
+                    FieldLevel::Hidden,
+                ),
+            ],
+        )
+        .await?;
+        for (issue_type, shown) in [(task.as_str(), true), (site.kind.as_str(), false)] {
+            let (key, _) = issue_of_type(&site, &mut ada, issue_type, "Login screen").await?;
+            let read = tim.send("GET", &format!("{ISSUES}/{key}"), None).await?;
+            let detail = ok(&read)?;
+            assert_eq!(detail["issue"].get("description").is_some(), shown);
+            // The description as HTML, and who wrote it, go with the description: by the levels of
+            // the issue's own type, not by the lowest level the role has in any type. Who wrote it
+            // is left out when nobody but a person did.
+            assert_eq!(detail.get("description_html").is_some(), shown, "{detail}");
+            assert!(
+                shown || detail.get("description_written_by").is_none(),
+                "{detail}"
+            );
+        }
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn sec_06_a_related_issue_is_shown_by_the_levels_of_its_own_type() -> TestResult {
     each_database("sec_06_lines_per_type", async |db| {
         let (rig, app) = rig_and_app(db).await?;
