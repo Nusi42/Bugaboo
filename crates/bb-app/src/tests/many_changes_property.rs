@@ -24,7 +24,9 @@ use super::scenarios_tags::{a_label, labelled};
 use super::world::World;
 use crate::auth::AppError;
 use crate::history::{ChangeValue, FieldChangeView};
-use crate::issues::{ChangeIssue, DeleteIssue, IssueStore, change_issue, delete_issue};
+use crate::issues::{
+    ChangeIssue, ChangedIssue, DeleteIssue, IssueStore, change_issue, delete_issue,
+};
 use crate::many_changes::{
     ManyChange, ManyChangeAction, ManyChangeDetail, ManyChangePreview, ManyChangeResult,
     ManyChangeRow, ManyChangeTarget,
@@ -140,7 +142,7 @@ async fn set_up(world: &World, seeds: &[Seed]) -> Result<Setup, TestCaseError> {
         let project = if seed.in_secret_project { secret } else { open };
         let issue = an_issue(world, project).await.map_err(broke)?;
         if seed.status != 0 {
-            change_issue::<_, crate::issues::ChangedIssue>(
+            change_issue::<_, ChangedIssue>(
                 &world.ctx(),
                 ChangeIssue {
                     session_token: admin.clone(),

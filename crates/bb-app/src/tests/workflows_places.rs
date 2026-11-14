@@ -17,7 +17,7 @@ use super::workflows_rules::{key, member, offers, status_of, with_rules};
 use super::world::{Outcome, World};
 use crate::auth::AppError;
 use crate::history::{HistoryQuery, HistoryWhat, history};
-use crate::issues::change_issue;
+use crate::issues::{ChangedIssue, change_issue};
 use crate::many_changes::{ManyChange, ManyChangeAction};
 use crate::workflows::{
     DeleteWorkflow, PublishWorkflow, StatusMoveInput, TriedVerdict, TryWorkflowQuery, UseWorkflow,
@@ -52,11 +52,8 @@ async fn wf_01_a_project_uses_the_workflow_of_its_parent_until_it_has_its_own() 
     let admin = world.admin.session_token.clone();
     for (project, offered) in [(acme, false), (child, false), (other, true)] {
         let id = an_issue(&world, project).await?;
-        change_issue::<_, crate::issues::ChangedIssue>(
-            &world.ctx(),
-            change(&admin, &id.to_string(), 1, DONE)?,
-        )
-        .await?;
+        change_issue::<_, ChangedIssue>(&world.ctx(), change(&admin, &id.to_string(), 1, DONE)?)
+            .await?;
         assert_eq!(
             offers(&world, &admin, id, OPEN).await?,
             offered,
@@ -92,11 +89,8 @@ async fn wf_02_publishing_without_a_status_moves_its_issues_with_history() -> Ou
     let admin = world.admin.session_token.clone();
     let id = an_issue(&world, project).await?;
     let address = id.to_string();
-    change_issue::<_, crate::issues::ChangedIssue>(
-        &world.ctx(),
-        change(&admin, &address, 1, IN_PROGRESS)?,
-    )
-    .await?;
+    change_issue::<_, ChangedIssue>(&world.ctx(), change(&admin, &address, 1, IN_PROGRESS)?)
+        .await?;
     let editor = a_workflow(&world, "ACME").await?;
     let without = |sent: &mut PublishWorkflow| {
         sent.statuses

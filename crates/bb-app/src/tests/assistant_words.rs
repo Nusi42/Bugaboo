@@ -14,7 +14,7 @@ use super::search_fields::{bob_with_a_role, every_field};
 use super::world::{Outcome, World};
 use crate::ai::assistant::apply_proposal;
 use crate::history::ChangeValue;
-use crate::issues::{ChangeIssue, change_issue};
+use crate::issues::{ChangeIssue, ChangedIssue, change_issue};
 
 #[tokio::test]
 async fn ai_05_a_proposal_comes_with_the_words_of_the_history() -> Outcome {
@@ -152,7 +152,7 @@ async fn ai_05_the_version_after_apply_is_the_one_the_write_made_and_undo_on_it_
     // The write counted the issue from 1 to 2, and says so itself.
     assert_eq!(applied.version, Some(2));
     // Somebody else changes the issue right after: the version of the write is not read again.
-    change_issue::<_, crate::issues::ChangedIssue>(
+    change_issue::<_, ChangedIssue>(
         &world.ctx(),
         ChangeIssue {
             title: Some("Theirs".to_owned()),
@@ -160,7 +160,7 @@ async fn ai_05_the_version_after_apply_is_the_one_the_write_made_and_undo_on_it_
         },
     )
     .await?;
-    let undo = change_issue::<_, crate::issues::ChangedIssue>(
+    let undo = change_issue::<_, ChangedIssue>(
         &world.ctx(),
         ChangeIssue {
             priority: Some(bb_core::issue::Priority::Normal),

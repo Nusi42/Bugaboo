@@ -16,7 +16,8 @@ use super::scenarios_issues::{a_type, an_issue};
 use super::scenarios_tags::{a_label, a_label_group, labelled, tagged};
 use super::world::{Outcome, World};
 use crate::issues::{
-    ChangeIssue, CreateIssue, IssueTypesQuery, change_issue, create_issue, issue_types,
+    ChangeIssue, ChangedIssue, CreateIssue, IssueTypesQuery, change_issue, create_issue,
+    issue_types,
 };
 use crate::many_changes::{
     ApplyManyChanges, ManyChange, ManyChangeAction, ManyChangeDetail, ManyChangeNote,
@@ -163,7 +164,7 @@ async fn iss_09_an_issue_changed_after_the_preview_is_left_alone_and_named() -> 
     let asked = preview(&world, &admin, &[first, second], &done()).await?;
     assert_eq!(asked.summary.will_change, 2);
     // Somebody changes the first issue between the preview and the change.
-    change_issue::<_, crate::issues::ChangedIssue>(
+    change_issue::<_, ChangedIssue>(
         &world.ctx(),
         ChangeIssue {
             session_token: admin.clone(),

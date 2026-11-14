@@ -19,7 +19,7 @@ use super::world::{Outcome, World};
 use crate::auth::AppError;
 use crate::history::HistoryStore as _;
 use crate::history::{HistoryPage, HistoryQuery, history};
-use crate::issues::{ChangeIssue, IssueQuery, change_issue, issue};
+use crate::issues::{ChangeIssue, ChangedIssue, IssueQuery, change_issue, issue};
 use crate::roles::{
     AssignRole, CreateRole, Given, SetFieldLevel, Subject, assign_role, create_role, set_level,
 };
@@ -94,7 +94,7 @@ async fn changes(
         } else {
             Priority::Low
         };
-        change_issue::<_, crate::issues::ChangedIssue>(
+        change_issue::<_, ChangedIssue>(
             &world.ctx(),
             ChangeIssue {
                 session_token: admin.clone(),

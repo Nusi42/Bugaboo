@@ -13,6 +13,7 @@ use super::scenarios::{a_project, token};
 use super::world::{Outcome, World};
 use crate::ai::tools::{ToolListQuery, call_tool, list_tools};
 use crate::auth::{AppError, Ctx, RequestInfo};
+use crate::issues::ChangedIssue;
 
 /// The context of a request that comes in the run of a session of an app (`RequestInfo::run`).
 fn in_run(world: &World, run: Option<bb_core::id::RunId>) -> Ctx<'_, FakeStore> {
@@ -223,7 +224,7 @@ async fn ai_23_a_change_through_mcp_says_person_via_app_in_the_history() -> Outc
     assert!(made.agent.is_none());
     // What the person does in the browser has no app, a moment later, so the newest is the first.
     world.clock.advance(1);
-    crate::issues::change_issue::<_, crate::issues::ChangedIssue>(
+    crate::issues::change_issue::<_, ChangedIssue>(
         &world.ctx(),
         crate::issues::ChangeIssue {
             session_token: token(&world),

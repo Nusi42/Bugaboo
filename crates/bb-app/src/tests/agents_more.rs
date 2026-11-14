@@ -16,7 +16,9 @@ use super::world::{Outcome, World};
 use crate::agents::{AcceptAgent, AgentQuery, HandAgent, accept_agent, agent, hand_agent};
 use crate::auth::{AppError, create_access_key};
 use crate::history::{HistoryQuery, HistoryWhat, history};
-use crate::issues::{ChangeIssue, CreateIssue, IssueQuery, change_issue, create_issue, issue};
+use crate::issues::{
+    ChangeIssue, ChangedIssue, CreateIssue, IssueQuery, change_issue, create_issue, issue,
+};
 use crate::projects::{CreateProject, create_project};
 use crate::projects::{ProjectsQuery, projects};
 use crate::settings::{ChangeSetting, SettingsQuery, SettingsScope, change_setting, settings};
@@ -449,7 +451,7 @@ async fn ai_04_a_reader_who_sees_the_person_only_as_a_role_is_not_told_the_agent
     .into_value()
     .issue
     .version;
-    change_issue::<_, crate::issues::ChangedIssue>(
+    change_issue::<_, ChangedIssue>(
         &world.ctx(),
         ChangeIssue {
             session_token: key,

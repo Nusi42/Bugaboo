@@ -25,7 +25,7 @@ use crate::ai::tools::{
 use crate::ai::{NeverSentTarget, SetNeverSent, set_never_sent};
 use crate::auth::{AppError, create_access_key};
 use crate::fields::create_field;
-use crate::issues::{ChangeIssue, CreateIssue, change_issue, create_issue};
+use crate::issues::{ChangeIssue, ChangedIssue, CreateIssue, change_issue, create_issue};
 use crate::projects::{CreateProject, create_project};
 use bb_core::access_key::KeyChoice;
 use bb_core::message::{self, Message};
@@ -467,7 +467,7 @@ async fn ai_21_preview_update_issue_says_what_it_would_record_and_saves_nothing(
         "{text}"
     );
     // Nothing was saved: the same change on the same version still goes through.
-    change_issue::<_, crate::issues::ChangedIssue>(
+    change_issue::<_, ChangedIssue>(
         &world.ctx(),
         ChangeIssue {
             title: Some("Really new".to_owned()),

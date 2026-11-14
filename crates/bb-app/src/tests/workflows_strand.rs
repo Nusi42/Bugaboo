@@ -19,7 +19,9 @@ use super::workflows_rules::{assign, key, member, starting_role, status_of};
 use super::world::{Outcome, World};
 use crate::auth::AppError;
 use crate::history::{HistoryQuery, HistoryWhat, history};
-use crate::issues::{DeleteIssue, RestoreIssue, change_issue, delete_issue, restore_issue};
+use crate::issues::{
+    ChangedIssue, DeleteIssue, RestoreIssue, change_issue, delete_issue, restore_issue,
+};
 use crate::projects::{MovePreviewQuery, MoveProject, move_project, preview_move};
 use crate::roles::{CopyRole, SetFieldLevel, copy_role, set_level};
 use crate::workflows::{
@@ -90,11 +92,8 @@ async fn issue_in_review(world: &World) -> Result<(ProjectId, IssueId), AppError
     .await?;
     let id = an_issue(world, acme).await.map_err(AppError::Internal)?;
     let admin = world.admin.session_token.clone();
-    change_issue::<_, crate::issues::ChangedIssue>(
-        &world.ctx(),
-        change(&admin, &id.to_string(), 1, REVIEW)?,
-    )
-    .await?;
+    change_issue::<_, ChangedIssue>(&world.ctx(), change(&admin, &id.to_string(), 1, REVIEW)?)
+        .await?;
     Ok((acme, id))
 }
 
@@ -132,11 +131,8 @@ async fn wf_02_taking_a_workflow_away_never_strands_an_issue() -> Outcome {
         Some(AppError::Refused(ErrorCode::WorkflowStatusInUse))
     );
     // Once the issue is out of Review, the workflow can go.
-    change_issue::<_, crate::issues::ChangedIssue>(
-        &world.ctx(),
-        change(&admin, &id.to_string(), 2, OPEN)?,
-    )
-    .await?;
+    change_issue::<_, ChangedIssue>(&world.ctx(), change(&admin, &id.to_string(), 2, OPEN)?)
+        .await?;
     delete_workflow(&world.ctx(), away(slot)).await?;
     Ok(())
 }
@@ -236,7 +232,7 @@ async fn wf_03_a_moved_project_sends_the_issues_its_workflow_lacks_to_the_starti
     })
     .await?;
     let id = an_issue(&world, acme).await?;
-    change_issue::<_, crate::issues::ChangedIssue>(
+    change_issue::<_, ChangedIssue>(
         &world.ctx(),
         change(&admin, &id.to_string(), 1, IN_PROGRESS)?,
     )

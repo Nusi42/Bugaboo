@@ -23,7 +23,7 @@ use crate::agents::{
 };
 use crate::auth::{AppError, CreateAccessKey, create_access_key};
 use crate::history::{HistoryQuery, history};
-use crate::issues::{ChangeIssue, IssueQuery, change_issue, issue};
+use crate::issues::{ChangeIssue, ChangedIssue, IssueQuery, change_issue, issue};
 use crate::projects::{ChangeProject, ProjectsQuery, change_project, projects};
 use crate::roles::{AssignRole, Given, RemoveAssignment, Subject, assign_role, remove_assignment};
 use bb_core::history::HistoryTab;
@@ -447,7 +447,7 @@ async fn ai_30_an_agent_has_no_role_and_cannot_be_assigned() -> Outcome {
     )
     .await?
     .into_value();
-    let assigned = change_issue::<_, crate::issues::ChangedIssue>(
+    let assigned = change_issue::<_, ChangedIssue>(
         &world.ctx(),
         ChangeIssue {
             session_token: admin,
@@ -488,7 +488,7 @@ async fn ai_04_an_event_of_an_agent_names_the_agent_and_its_person() -> Outcome 
     )
     .await?
     .into_value();
-    change_issue::<_, crate::issues::ChangedIssue>(
+    change_issue::<_, ChangedIssue>(
         &world.ctx(),
         ChangeIssue {
             session_token: key,

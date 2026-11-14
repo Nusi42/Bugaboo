@@ -13,7 +13,7 @@ use super::scenarios_issues::an_issue;
 use super::workflows_rules::member;
 use super::world::{Outcome, World};
 use crate::auth::AppError;
-use crate::issues::{ChangeIssue, IssueQuery, change_issue, issue};
+use crate::issues::{ChangeIssue, ChangedIssue, IssueQuery, change_issue, issue};
 use crate::runs::{
     RunChangesQuery, RunQuery, RunStore, RunsOf, UndoRun, UndoView, preview_undo_run, run_changes,
     undo_run,
@@ -95,11 +95,7 @@ pub(super) async fn change_in_run(
 ) -> Result<(), AppError> {
     let ctx = world.ctx();
     ctx.set_run(Some(run));
-    change_issue::<_, crate::issues::ChangedIssue>(
-        &ctx,
-        priority_change(session, id, version, priority),
-    )
-    .await?;
+    change_issue::<_, ChangedIssue>(&ctx, priority_change(session, id, version, priority)).await?;
     Ok(())
 }
 
@@ -154,7 +150,7 @@ async fn ai_38_a_run_is_undone_in_one_step_and_skips_later_changes() -> Outcome 
         change_in_run(&world, &admin, run, each, 1, Priority::Critical).await?;
     }
     // Somebody changes the second issue again afterwards, outside the run.
-    change_issue::<_, crate::issues::ChangedIssue>(
+    change_issue::<_, ChangedIssue>(
         &world.ctx(),
         priority_change(&admin, issues[1], 2, Priority::Low),
     )

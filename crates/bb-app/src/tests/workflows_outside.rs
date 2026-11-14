@@ -18,7 +18,7 @@ use super::workflows_rules::status_of;
 use super::world::{Outcome, World};
 use crate::auth::AppError;
 use crate::issues::{
-    ChangeIssue, IssueTypesQuery, MoveIssue, change_issue, issue_types, move_issue,
+    ChangeIssue, ChangedIssue, IssueTypesQuery, MoveIssue, change_issue, issue_types, move_issue,
 };
 use crate::many_changes::ManyChangeAction;
 
@@ -75,14 +75,11 @@ async fn wf_03_changing_the_type_does_not_skip_the_rules() -> Outcome {
     // asking for it in the same request is not a way around that.
     let task = an_issue(&world, project).await?;
     let address = task.to_string();
-    change_issue::<_, crate::issues::ChangedIssue>(
-        &world.ctx(),
-        change(&admin, &address, 1, IN_PROGRESS)?,
-    )
-    .await?;
+    change_issue::<_, ChangedIssue>(&world.ctx(), change(&admin, &address, 1, IN_PROGRESS)?)
+        .await?;
     let around = as_type(change(&admin, &address, 2, DONE)?, bug);
     assert_eq!(
-        change_issue::<_, crate::issues::ChangedIssue>(&world.ctx(), around)
+        change_issue::<_, ChangedIssue>(&world.ctx(), around)
             .await
             .err(),
         Some(AppError::Refused(ErrorCode::WorkflowNoSuchChange))
@@ -90,12 +87,12 @@ async fn wf_03_changing_the_type_does_not_skip_the_rules() -> Outcome {
     // The type alone keeps the status, which the workflow of a Bug has too.
     let mut only_type = as_type(change(&admin, &address, 2, DONE)?, bug);
     only_type.status = None;
-    change_issue::<_, crate::issues::ChangedIssue>(&world.ctx(), only_type).await?;
+    change_issue::<_, ChangedIssue>(&world.ctx(), only_type).await?;
     assert_eq!(status_of(&world, &admin, task).await?, IN_PROGRESS);
     // A bug in testing becomes a task: Simple has no Testing, so the issue can only start again,
     // and asking for Done at the same time is refused.
     let tested = change(&admin, &address, 3, TESTING)?;
-    change_issue::<_, crate::issues::ChangedIssue>(&world.ctx(), tested).await?;
+    change_issue::<_, ChangedIssue>(&world.ctx(), tested).await?;
     let simple = crate::issues::IssueQuery {
         session_token: admin.clone(),
         issue: address.clone(),
@@ -108,7 +105,7 @@ async fn wf_03_changing_the_type_does_not_skip_the_rules() -> Outcome {
     let task_type = super::scenarios_issues::a_type(&world).await?;
     let skipping = as_type(change(&admin, &address, version, DONE)?, task_type);
     assert_eq!(
-        change_issue::<_, crate::issues::ChangedIssue>(&world.ctx(), skipping)
+        change_issue::<_, ChangedIssue>(&world.ctx(), skipping)
             .await
             .err(),
         Some(AppError::Refused(ErrorCode::WorkflowNoSuchChange))
@@ -116,26 +113,23 @@ async fn wf_03_changing_the_type_does_not_skip_the_rules() -> Outcome {
     // Naming the status it has already is no way around it either: Simple lacks Testing, and the
     // issue is not left in it.
     let named = as_type(change(&admin, &address, version, TESTING)?, task_type);
-    change_issue::<_, crate::issues::ChangedIssue>(&world.ctx(), named).await?;
+    change_issue::<_, ChangedIssue>(&world.ctx(), named).await?;
     assert_eq!(status_of(&world, &admin, task).await?, OPEN);
     // Back to a bug in testing, for the case where the request names no status.
     let version = version_of(&world, &admin, &address).await?;
     let mut bug_again = as_type(change(&admin, &address, version, OPEN)?, bug);
     bug_again.status = None;
-    change_issue::<_, crate::issues::ChangedIssue>(&world.ctx(), bug_again).await?;
+    change_issue::<_, ChangedIssue>(&world.ctx(), bug_again).await?;
     for (step, status) in [IN_PROGRESS, TESTING].into_iter().enumerate() {
         let next = version + 1 + i64::try_from(step)?;
-        change_issue::<_, crate::issues::ChangedIssue>(
-            &world.ctx(),
-            change(&admin, &address, next, status)?,
-        )
-        .await?;
+        change_issue::<_, ChangedIssue>(&world.ctx(), change(&admin, &address, next, status)?)
+            .await?;
     }
     let version = version + 3;
     // Without a status in the request, the issue is put into the starting status.
     let mut back = as_type(change(&admin, &address, version, OPEN)?, task_type);
     back.status = None;
-    change_issue::<_, crate::issues::ChangedIssue>(&world.ctx(), back).await?;
+    change_issue::<_, ChangedIssue>(&world.ctx(), back).await?;
     assert_eq!(status_of(&world, &admin, task).await?, OPEN);
     Ok(())
 }
@@ -172,11 +166,8 @@ async fn two_projects(world: &World) -> Result<IssueId, AppError> {
     .await?;
     let id = an_issue(world, acme).await.map_err(AppError::Internal)?;
     let admin = world.admin.session_token.clone();
-    change_issue::<_, crate::issues::ChangedIssue>(
-        &world.ctx(),
-        change(&admin, &id.to_string(), 1, DONE)?,
-    )
-    .await?;
+    change_issue::<_, ChangedIssue>(&world.ctx(), change(&admin, &id.to_string(), 1, DONE)?)
+        .await?;
     Ok(id)
 }
 

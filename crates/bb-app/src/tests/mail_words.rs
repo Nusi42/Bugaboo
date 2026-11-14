@@ -17,7 +17,7 @@ use super::notifications::Crew;
 use super::scenarios::{text, token};
 use super::scenarios_fields::a_field;
 use super::world::{Outcome, PUBLIC_URL};
-use crate::issues::{ChangeIssue, change_issue};
+use crate::issues::{ChangeIssue, ChangedIssue, change_issue};
 use crate::roles::{SetFieldLevel, set_level};
 use crate::settings::{ChangeSetting, SettingsScope, change_setting};
 
@@ -126,7 +126,7 @@ async fn ntf_02_a_moment_in_an_e_mail_is_written_in_the_time_zone_of_the_recipie
     )
     .await
     .map_err(text)?;
-    change_issue::<_, crate::issues::ChangedIssue>(
+    change_issue::<_, ChangedIssue>(
         &crew.world.ctx(),
         ChangeIssue {
             session_token: crew.bob.session_token.clone(),

@@ -20,7 +20,9 @@ use super::world::{Outcome, World};
 use crate::agent_work::hand_over;
 use crate::auth::{AppError, entity};
 use crate::editing::{TakeLockQuery, take_lock};
-use crate::issues::{ChangeIssue, SaveDescription, change_issue, issue, save_description};
+use crate::issues::{
+    ChangeIssue, ChangedIssue, SaveDescription, change_issue, issue, save_description,
+};
 
 /// A hand-over that lets the agent change the description.
 async fn handed_with_description(world: &World) -> Result<Handed, AppError> {
@@ -149,7 +151,7 @@ pub(super) async fn retitle(world: &World, id: IssueId, title: &str) -> Result<(
         .into_value()
         .issue
         .version;
-    change_issue::<_, crate::issues::ChangedIssue>(
+    change_issue::<_, ChangedIssue>(
         &world.ctx(),
         ChangeIssue {
             session_token: token(world),
@@ -606,7 +608,7 @@ async fn ai_36_the_answer_to_an_old_version_is_judged_for_the_agent_not_its_pers
         .into_value()
         .issue
         .version;
-    change_issue::<_, crate::issues::ChangedIssue>(
+    change_issue::<_, ChangedIssue>(
         &world.ctx(),
         ChangeIssue {
             session_token: admin,

@@ -17,7 +17,7 @@ use crate::agent_work::{
     change_standing_rule, create_standing_rule, decide_proposal, hand_over, propose_change,
 };
 use crate::auth::{AppError, Started};
-use crate::issues::{ChangeIssue, IssueTypesQuery, change_issue, issue, issue_types};
+use crate::issues::{ChangeIssue, ChangedIssue, IssueTypesQuery, change_issue, issue, issue_types};
 use crate::settings::{ChangeSetting, SettingsScope, change_setting};
 use bb_core::settings::SettingValue;
 
@@ -67,7 +67,7 @@ async fn ai_32_a_standing_rule_never_changes_people_fields() -> Outcome {
     let mut title = change(&key, issue_id, version);
     title.title = Some("Changed by an agent".to_owned());
     assert!(refused(
-        &change_issue::<_, crate::issues::ChangedIssue>(&world.ctx(), title)
+        &change_issue::<_, ChangedIssue>(&world.ctx(), title)
             .await
             .unwrap_err(),
         ErrorCode::Forbidden
@@ -106,13 +106,13 @@ async fn ai_31_ticked_fields_are_changed_and_people_and_the_status_never_unasked
     let version = version_of(&world, &key, issue_id).await?;
     let mut title = change(&key, issue_id, version);
     title.title = Some("Fixed title".to_owned());
-    change_issue::<_, crate::issues::ChangedIssue>(&world.ctx(), title).await?;
+    change_issue::<_, ChangedIssue>(&world.ctx(), title).await?;
     // A member that holds people is refused: the hand-over could not name it.
     let version = version_of(&world, &key, issue_id).await?;
     let mut people = change(&key, issue_id, version);
     people.assigned_to = Some(vec![team.person.id]);
     assert!(refused(
-        &change_issue::<_, crate::issues::ChangedIssue>(&world.ctx(), people)
+        &change_issue::<_, ChangedIssue>(&world.ctx(), people)
             .await
             .unwrap_err(),
         ErrorCode::Forbidden
@@ -121,7 +121,7 @@ async fn ai_31_ticked_fields_are_changed_and_people_and_the_status_never_unasked
     let mut priority = change(&key, issue_id, version);
     priority.priority = Some(bb_core::issue::Priority::High);
     assert!(refused(
-        &change_issue::<_, crate::issues::ChangedIssue>(&world.ctx(), priority)
+        &change_issue::<_, ChangedIssue>(&world.ctx(), priority)
             .await
             .unwrap_err(),
         ErrorCode::Forbidden
@@ -328,7 +328,7 @@ async fn m7_f120_an_agent_changes_nothing_on_an_issue_only_a_standing_rule_found
     let mut retype = change(&given.key, given.issue, version);
     retype.issue_type = Some(to);
     assert!(refused(
-        &change_issue::<_, crate::issues::ChangedIssue>(&world.ctx(), retype)
+        &change_issue::<_, ChangedIssue>(&world.ctx(), retype)
             .await
             .unwrap_err(),
         ErrorCode::Forbidden

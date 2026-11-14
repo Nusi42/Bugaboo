@@ -19,7 +19,7 @@ use super::world::{Outcome, World};
 use crate::agent_work::{attach_result, end_attempt};
 use crate::agent_work::{hand_over, review_work};
 use crate::auth::AppError;
-use crate::issues::{ChangeIssue, IssueTypesQuery, change_issue, issue, issue_types};
+use crate::issues::{ChangeIssue, ChangedIssue, IssueTypesQuery, change_issue, issue, issue_types};
 use crate::runs::{RunQuery, get_run, preview_undo_run};
 use crate::settings::{ChangeSetting, SettingsScope, change_setting};
 use bb_core::settings::SettingValue;
@@ -127,7 +127,7 @@ async fn retitle(world: &World, given: &Handed, title: &str) -> Result<(), AppEr
         assigned_to: None,
         fields: std::collections::BTreeMap::default(),
     };
-    change_issue::<_, crate::issues::ChangedIssue>(&world.ctx(), change)
+    change_issue::<_, ChangedIssue>(&world.ctx(), change)
         .await
         .map(drop)
 }

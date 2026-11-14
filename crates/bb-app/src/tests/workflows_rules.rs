@@ -16,7 +16,7 @@ use super::workflows::change;
 use super::world::{Outcome, World};
 use crate::access::PolicyStore as _;
 use crate::auth::{AppError, Started};
-use crate::issues::{ChangeIssue, IssueQuery, change_issue, issue};
+use crate::issues::{ChangeIssue, ChangedIssue, IssueQuery, change_issue, issue};
 use crate::roles::{
     AssignRole, CopyRole, Given, SetFieldLevel, Subject, assign_role, copy_role, set_level,
 };
@@ -157,7 +157,7 @@ pub(super) async fn go(
     version: i64,
     status: &str,
 ) -> Result<(), AppError> {
-    change_issue::<_, crate::issues::ChangedIssue>(
+    change_issue::<_, ChangedIssue>(
         &world.ctx(),
         change(token, &id.to_string(), version, status)?,
     )
@@ -233,7 +233,7 @@ async fn wf_03_who_can_do_it_allows_only_the_named_roles_and_people() -> Outcome
         status: None,
         ..change(&world.admin.session_token, &id.to_string(), 2, IN_PROGRESS)?
     };
-    change_issue::<_, crate::issues::ChangedIssue>(&world.ctx(), assign).await?;
+    change_issue::<_, ChangedIssue>(&world.ctx(), assign).await?;
     go(&world, &team.session_token, id, 3, DONE).await?;
     assert_eq!(status_of(&world, &team.session_token, id).await?, DONE);
     Ok(())
@@ -274,7 +274,7 @@ async fn wf_03_only_if_refuses_with_a_sentence() -> Outcome {
         assigned_to: Some(vec![team.person.id]),
         ..change(&team.session_token, &id.to_string(), 1, IN_PROGRESS)?
     };
-    change_issue::<_, crate::issues::ChangedIssue>(&world.ctx(), assign).await?;
+    change_issue::<_, ChangedIssue>(&world.ctx(), assign).await?;
     go(&world, &team.session_token, id, 2, IN_PROGRESS).await?;
     Ok(())
 }
@@ -343,7 +343,7 @@ async fn wf_04_must_be_filled_in_names_the_missing_field() -> Outcome {
         assigned_to: Some(vec![team.person.id]),
         ..change(&team.session_token, &id.to_string(), 1, IN_PROGRESS)?
     };
-    change_issue::<_, crate::issues::ChangedIssue>(&world.ctx(), both).await?;
+    change_issue::<_, ChangedIssue>(&world.ctx(), both).await?;
     Ok(())
 }
 
@@ -489,7 +489,7 @@ async fn wf_03_the_person_assigned_counts_only_for_who_sees_who_is_assigned() ->
     let mut assign_both = change(&admin, &id.to_string(), 1, OPEN)?;
     assign_both.status = None;
     assign_both.assigned_to = Some(vec![sighted.person.id, blind.person.id]);
-    change_issue::<_, crate::issues::ChangedIssue>(&world.ctx(), assign_both).await?;
+    change_issue::<_, ChangedIssue>(&world.ctx(), assign_both).await?;
     // Both are assigned; the buttons of the one who is not shown the field do not tell it.
     assert!(offers(&world, &sighted.session_token, id, IN_PROGRESS).await?);
     assert!(!offers(&world, &blind.session_token, id, IN_PROGRESS).await?);
@@ -503,7 +503,7 @@ pub(super) async fn issue_in_progress(
 ) -> Result<IssueId, AppError> {
     let id = an_issue(world, project).await.map_err(AppError::Internal)?;
     let admin = world.admin.session_token.clone();
-    change_issue::<_, crate::issues::ChangedIssue>(
+    change_issue::<_, ChangedIssue>(
         &world.ctx(),
         change(&admin, &id.to_string(), 1, IN_PROGRESS)?,
     )

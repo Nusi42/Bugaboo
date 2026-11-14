@@ -17,7 +17,7 @@ use super::search_fields::{bob_with_a_role, every_field};
 use super::search_run::{asked, hit, issue_of};
 use super::world::{Outcome, World};
 use crate::auth::AppError;
-use crate::issues::{ChangeIssue, change_issue};
+use crate::issues::{ChangeIssue, ChangedIssue, change_issue};
 use crate::search::{GroupCount, GroupKey, LengthTotals, search};
 use crate::time::totals::{IssueTimeQuery, ProjectTimeQuery, issue_time, project_time};
 
@@ -27,7 +27,7 @@ const fn minutes(count: u32) -> Minutes {
 
 /// Gives the issue an estimate, as a person does.
 async fn estimate(world: &World, issue: IssueId, estimated: u32) -> Result<(), String> {
-    change_issue::<_, crate::issues::ChangedIssue>(
+    change_issue::<_, ChangedIssue>(
         &world.ctx(),
         ChangeIssue {
             estimated_time: Some(SetTo::Value(minutes(estimated))),

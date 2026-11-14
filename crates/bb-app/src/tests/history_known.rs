@@ -16,7 +16,9 @@ use super::scenarios_issues::{a_type, an_issue};
 use super::world::{Outcome, World};
 use crate::auth::AppError;
 use crate::history::{HistoryQuery, history};
-use crate::issues::{ChangeIssue, IssueQuery, MoveIssue, change_issue, issue, move_issue};
+use crate::issues::{
+    ChangeIssue, ChangedIssue, IssueQuery, MoveIssue, change_issue, issue, move_issue,
+};
 use crate::ports::ChangeStore as _;
 use crate::tags::{RemoveLabel, remove_label};
 
@@ -42,7 +44,7 @@ async fn changed(
     issue_type: Option<IssueTypeId>,
     title: Option<String>,
 ) -> Result<(), AppError> {
-    change_issue::<_, crate::issues::ChangedIssue>(
+    change_issue::<_, ChangedIssue>(
         &world.ctx(),
         ChangeIssue {
             session_token: who.to_owned(),

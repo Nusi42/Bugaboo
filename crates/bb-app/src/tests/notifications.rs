@@ -21,7 +21,7 @@ use crate::editing::{
     AskToFinish, EditAnyway, TakeLockQuery, ask_to_finish, edit_anyway, take_lock,
 };
 use crate::follow::{FollowIssue, FollowersQuery, follow_issue, followers};
-use crate::issues::{ChangeIssue, change_issue};
+use crate::issues::{ChangeIssue, ChangedIssue, change_issue};
 use crate::notifications::{
     NotificationItem, NotificationPage, NotificationWhat, NotificationsQuery, ReadNotifications,
     UnreadQuery, Which, notifications, read_notifications, unread_notifications,
@@ -147,7 +147,7 @@ impl Crew {
             Change::Priority(priority) => (None, None, Some(priority), None),
             Change::Assign(people) => (None, None, None, Some(people)),
         };
-        change_issue::<_, crate::issues::ChangedIssue>(
+        change_issue::<_, ChangedIssue>(
             &self.world.ctx(),
             ChangeIssue {
                 title,

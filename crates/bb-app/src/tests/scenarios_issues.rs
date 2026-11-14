@@ -16,10 +16,11 @@ use super::scenarios::{Added, a_project, measured, text, token};
 use super::world::World;
 use crate::editing::{LockOutcome, TakeLockQuery, take_lock};
 use crate::issues::{
-    ChangeIssue, ChangeIssueType, CreateIssue, CreateIssueType, CreateStartingIssueTypes, DatesOf,
-    DeleteIssue, IssueTypesQuery, MoveDates, MoveIssue, RestoreIssue, SaveDescription,
-    change_issue, change_issue_type, create_issue, create_issue_type, create_starting_issue_types,
-    delete_issue, issue_types, move_dates, move_issue, restore_issue, save_description,
+    ChangeIssue, ChangeIssueType, ChangedIssue, CreateIssue, CreateIssueType,
+    CreateStartingIssueTypes, DatesOf, DeleteIssue, IssueTypesQuery, MoveDates, MoveIssue,
+    RestoreIssue, SaveDescription, change_issue, change_issue_type, create_issue,
+    create_issue_type, create_starting_issue_types, delete_issue, issue_types, move_dates,
+    move_issue, restore_issue, save_description,
 };
 use crate::many_changes::{
     ApplyManyChanges, ManyChange, ManyChangeAction, ManyChangeTarget, apply_many_changes,
@@ -144,10 +145,7 @@ pub(crate) async fn change_issue_scenario(world: &World) -> Added {
     let issue = an_issue(world, project).await?;
     measured(
         &world.store,
-        change_issue::<_, crate::issues::ChangedIssue>(
-            &world.ctx(),
-            titled_and_done(world, &issue),
-        ),
+        change_issue::<_, ChangedIssue>(&world.ctx(), titled_and_done(world, &issue)),
     )
     .await
 }

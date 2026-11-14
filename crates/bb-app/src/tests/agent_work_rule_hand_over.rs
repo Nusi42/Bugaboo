@@ -22,6 +22,7 @@ use crate::agent_work::{
     change_standing_rule, create_standing_rule, end_attempt, hand_over, my_agent_work, review_work,
 };
 use crate::auth::AppError;
+use crate::issues::ChangedIssue;
 use crate::settings::{ChangeSetting, SettingsScope, change_setting};
 use bb_core::agent::LimitKind;
 
@@ -278,7 +279,7 @@ async fn retitle(world: &World, given: &RuleWorld, title: &str) -> Result<(), Ap
     .into_value()
     .issue
     .version;
-    crate::issues::change_issue::<_, crate::issues::ChangedIssue>(
+    crate::issues::change_issue::<_, ChangedIssue>(
         &world.ctx(),
         crate::issues::ChangeIssue {
             session_token: given.key.clone(),

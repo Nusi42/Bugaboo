@@ -15,7 +15,7 @@ use super::scenarios_issues::an_issue;
 use super::world::Outcome;
 use crate::auth::Started;
 use crate::follow::{FollowIssue, follow_issue};
-use crate::issues::{ChangeIssue, change_issue};
+use crate::issues::{ChangeIssue, ChangedIssue, change_issue};
 use crate::notifications::{NotificationWhat, UnreadQuery, unread_notifications};
 use crate::people::{AddGroupMember, CreateGroup, add_group_member, create_group};
 use crate::projects::{CreateProject, create_project};
@@ -53,7 +53,7 @@ async fn bob_changes(
     title: &str,
     priority: Option<Priority>,
 ) -> Result<(), String> {
-    change_issue::<_, crate::issues::ChangedIssue>(
+    change_issue::<_, ChangedIssue>(
         &crew.world.ctx(),
         ChangeIssue {
             session_token: crew.bob.session_token.clone(),

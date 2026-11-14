@@ -20,7 +20,7 @@ use super::scenarios_issues::an_issue;
 use super::workflows_rules::{assign, member, starting_role};
 use super::world::{Outcome, PASSWORD, World};
 use crate::auth::{AppError, CreateAccessKey, create_access_key};
-use crate::issues::{CreateIssueType, MoveIssue, create_issue_type, move_issue};
+use crate::issues::{ChangedIssue, CreateIssueType, MoveIssue, create_issue_type, move_issue};
 use crate::offers::{ChangeOffers, OfferChange, OffersQuery, change_offers, offers};
 use crate::roles::{CheckAccessQuery, check_access};
 use crate::tags::{
@@ -206,7 +206,7 @@ async fn sec_03_a_subject_in_use_on_an_issue_the_reader_reads_is_known() -> Outc
     let outside = outsiders(&g).await?;
     // An issue with the type and the label leaves ACME for OTHER, where the lead of OTHER reads it.
     let issue = an_issue(&g.world, g.acme).await?;
-    crate::issues::change_issue::<_, crate::issues::ChangedIssue>(
+    crate::issues::change_issue::<_, ChangedIssue>(
         &g.world.ctx(),
         crate::issues::ChangeIssue {
             session_token: g.admin.clone(),
