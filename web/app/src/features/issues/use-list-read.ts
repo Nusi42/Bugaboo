@@ -6,7 +6,8 @@ import { isOwnField, phoneColumns } from "../../shared/list-columns.ts";
 import type { ListView } from "../../shared/list-view.ts";
 import { useSameWidths } from "./use-same-widths.ts";
 import { columnsThatFit } from "./fit-columns.ts";
-import { useFoundGroups, useFoundIssues, type FoundSearch } from "./found-issues.ts";
+import { useFoundGroups, type FoundSearch } from "./found-issues.ts";
+import { useFoundIssues } from "./found-reads.ts";
 import { useOwnColumns, type OwnColumns } from "./own-columns.ts";
 
 /** What the list reads: the words of its columns, the own fields they need, and why the search was refused. */

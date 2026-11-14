@@ -3,7 +3,8 @@ import { useState } from "react";
 import { messageOf } from "../../shared/errors.ts";
 import { linesFrom } from "../../shared/paged.ts";
 import { withGroupFilter } from "../../shared/with-filter.ts";
-import { foundLineOf, useFoundIssues, type FoundLine } from "./found-issues.ts";
+import { foundLineOf, type FoundLine } from "./found-issues.ts";
+import { hasFirstFound, useFoundIssues } from "./found-reads.ts";
 import type { GroupOfKey } from "./group-keys.ts";
 import { useListContext } from "./list-context.ts";
 
@@ -28,9 +29,12 @@ export interface GroupRows {
  */
 export function useGroupRows(group: GroupOfKey, open: boolean): GroupRows {
   const { search, language, words } = useListContext();
-  const [asked, setAsked] = useState(false);
   const text =
     group.filter === undefined ? undefined : withGroupFilter(language, search.text, group.filter);
+  // A group whose first rows were read with the groups shows them at once (`useReadyGroups`).
+  const [asked, setAsked] = useState(
+    () => text !== undefined && hasFirstFound({ text, within: search.within }, words),
+  );
   const found = useFoundIssues(
     { text: text ?? "", within: search.within },
     words,

@@ -65,14 +65,18 @@ export function usePaged<Page extends CursorPage>(
     readonly placeholderData?: typeof keepPreviousData;
   } = {},
 ) {
-  return useInfiniteQuery({
+  return useInfiniteQuery({ ...pagedOptions(request), ...options });
+}
+
+/** How the pages of a list are read: by `usePaged`, and by a first page asked for ahead of time. */
+export function pagedOptions<Page extends CursorPage>(request: PagedRequest<Page>) {
+  return {
     queryKey: request.queryKey,
-    ...options,
     initialPageParam: null as string | null,
     queryFn: async ({ pageParam }: { readonly pageParam: string | null }) =>
       dataOf(await request.read(pageParam === null ? {} : { cursor: pageParam })),
     getNextPageParam: (last: Page) => last.next_cursor ?? null,
-  });
+  };
 }
 
 /**

@@ -1,10 +1,9 @@
-import { ApiError, dataOf, type Schema } from "@bugaboo/api-client";
+import { dataOf, type Schema } from "@bugaboo/api-client";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { useRef } from "react";
 
 import { api } from "../../shared/api.ts";
 import { listWord } from "../../shared/list-columns.ts";
-import { fieldList, linesFrom, pageSize, usePaged } from "../../shared/paged.ts";
+import { fieldList, linesFrom, pageSize } from "../../shared/paged.ts";
 import { known } from "../../shared/present.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
 import { timeLeftOf, type TimeLeft } from "./time-words.ts";
@@ -86,7 +85,7 @@ export function fieldsFor(columns: readonly string[]): string {
  * issue of the page hides is refused for the whole page, like one that does not exist (SEC-06),
  * and the list must still show the issues. The cells of the columns it leaves out stay empty.
  */
-const FALLBACK_FIELDS = fieldList<FoundItem>([
+export const FALLBACK_FIELDS = fieldList<FoundItem>([
   ...BASE_FIELDS,
   "issue_type",
   "assigned_to",
@@ -168,45 +167,12 @@ export interface FoundSearch {
   readonly within: string | undefined;
 }
 
-function queryOf({ text, within }: FoundSearch) {
+/** The query of a request for what a search finds. */
+export function queryOf({ text, within }: FoundSearch) {
   return {
     ...(text === "" ? {} : { q: text }),
     ...(within === undefined ? {} : { within }),
   };
-}
-
-/** The issues a search finds, a page at a time, with what the columns show. */
-export function useFoundIssues(search: FoundSearch, columns: readonly string[], enabled = true) {
-  const fields = fieldsFor(columns);
-  // Once the server refused the fields of the columns for this search, its next pages ask for the fallback at once.
-  const refused = useRef<string | null>(null);
-  const searchKey = `${search.text}|${search.within ?? ""}|${fields}`;
-  const page = (asked: string) => (after: { readonly cursor?: string }) =>
-    api.client.GET("/api/v1/search/issues", {
-      params: {
-        query: { ...queryOf(search), fields: asked, limit: pageSize.usual, ...after },
-      },
-    });
-  return usePaged(
-    {
-      queryKey: queryKeys.search.found(search.text, search.within, fields),
-      read: async (after) => {
-        if (refused.current === searchKey) {
-          return page(FALLBACK_FIELDS)(after);
-        }
-        try {
-          return await page(fields)(after);
-        } catch (error) {
-          if (error instanceof ApiError && error.problem?.code === "request.unknown-field") {
-            refused.current = searchKey;
-            return page(FALLBACK_FIELDS)(after);
-          }
-          throw error;
-        }
-      },
-    },
-    { placeholderData: keepPreviousData, enabled },
-  );
 }
 
 /** How many issues a search finds: the number the count line says. */

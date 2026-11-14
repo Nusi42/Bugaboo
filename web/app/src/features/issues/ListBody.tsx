@@ -1,7 +1,8 @@
 import { DelayedSkeleton } from "@bugaboo/ui";
 
 import { linesFrom } from "../../shared/paged.ts";
-import { foundLineOf, useFoundIssues } from "./found-issues.ts";
+import { foundLineOf } from "./found-issues.ts";
+import { useFoundIssues } from "./found-reads.ts";
 import { useListContext } from "./list-context.ts";
 import { ListEmpty } from "./ListEmpty.tsx";
 import { ListScroll } from "./ListScroll.tsx";
