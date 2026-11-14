@@ -21,7 +21,7 @@ async function openPage(page: Page, path: string): Promise<void> {
 /** The box, group or color row a control stands in: the part a change of the control changes. */
 function boxOf(control: Locator): Locator {
   return control.locator(
-    "xpath=ancestor::*[@data-part='box' or @data-part='theme-color' or self::fieldset][1]",
+    "xpath=ancestor::*[@data-part='box' or @data-part='theme-color' or @data-part='choice-group' or self::fieldset][1]",
   );
 }
 

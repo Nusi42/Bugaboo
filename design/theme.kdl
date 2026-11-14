@@ -290,7 +290,6 @@ tokens {
     // The gap between the parts of a stack (the fields of a form, the parts of a setting), and the gap between the lines of
     // the head of a setting: what stands under its first lines keeps the distance of the stack it stood in.
     size "gap-stack" "$space-4"
-    size "gap-setting-line" "$space-1"
     size "size-details-room" "calc($size-details + $gap-details)"
     // The warning that floats at the bottom of the start side beside the sidebar (the one of a timer that runs
     // long), and the room it takes: the offers to undo leave that room free.
@@ -1220,6 +1219,15 @@ mixin "note-box" {
 }
 
 // Lines under each other with a little room between them.
+// A frame inside a grid that takes the columns of the grid as its own (`subgrid`), with the gap between them of the grid,
+// so a line of the frame can stand in one column and the next across all of them.
+mixin "head-columns" {
+    display grid
+    grid-template-columns subgrid
+    grid-column "1 / -1"
+    column-gap normal
+}
+
 mixin "column-tight" {
     display flex
     flex-direction column
@@ -5235,14 +5243,13 @@ part "save-status.room::before" {
 // The head of the box of a setting: the setting, and a cell at the end of its first line for *Saving…* and
 // *Saved*. The cell is always there and keeps the room of the longest of the words a setting can say
 // (`save-status[variant=keeps-room]`), so the words take no room from the setting when they come and cover none of it
-// (UX §6.4). Only the first line gives the cell its room: the frames of the control give their lines to the head, and
-// every line under the first (the box, its hint, where the value comes from) runs the whole width.
+// (UX §6.4). Only the first line gives the cell its room: the frames of the control take the columns of the head
+// (`head-columns`), and every line under the first (the box, its hint, where the value comes from) runs the whole width.
 part "setting-head" {
     display grid
     grid-template-columns "minmax(0, 1fr) auto"
     align-items start
     column-gap "$space-2"
-    row-gap "$gap-setting-line"
 }
 
 // The bar under an editor: the plain buttons at the start, the one filled button at the end (R6).
@@ -5501,11 +5508,17 @@ part "settings.locked-value" {
     color "$fg"
 }
 
-// The frames of a setting that give their lines to its head (`setting-head`). The rest of these rules stand at the end
-// of the file; these two cannot join them, because the stack of a list page (`card > stack:has(…)`) is more specific
-// and has to come after them (stylelint no-descending-specificity).
+// The frames of a setting take the columns of its head (`setting-head`) and keep their own boxes and their own
+// distances between lines. The rest of these rules stand at the end of the file; these cannot join them, because the
+// stack of a list page (`card > stack:has(…)`) is more specific and has to come after them (stylelint
+// no-descending-specificity).
 part "setting-head > stack" "setting-head > stack > settings.control" {
-    display contents
+    use "head-columns"
+}
+
+// The control stands in the first line of the head, beside the cell of *Saving…* and *Saved*.
+part "setting-head > stack" {
+    grid-row 1
 }
 
 // ───────────── Access ─────────────
@@ -17667,23 +17680,19 @@ part "list-row[variant=phone] alert" {
     grid-column "1 / -1"
 }
 
-// The frames of the control of a setting give their lines to its head (`setting-head`). These rules stand at the end, after
-// every rule of a field, a row and a hint, because they are more specific than those (stylelint no-descending-specificity): the first line (the label, or
-// a control that is its own label) takes the first cell by itself, and every other line spans the whole width under it.
-part "setting-head > stack > field" "setting-head > stack > length-box" "setting-head > stack > length-box > field" "setting-head > stack > settings.control > field" {
-    display contents
+// The frames of the control of a setting take the columns of its head (`setting-head`). These rules stand at the end, after
+// every rule of a field, a row, a group of choices and a hint, because they are more specific than those (stylelint
+// no-descending-specificity): the first line (the label, the name of a group of choices, or a control that is its own
+// label) takes the first cell by itself, and every other line spans the whole width under it.
+part "setting-head > stack > field" "setting-head > stack > length-box" "setting-head > stack > length-box > field" "setting-head > stack > settings.control > field" "setting-head > stack > settings.control > choice-group" {
+    use "head-columns"
 }
 
-part "setting-head > stack > row" "setting-head > stack settings.help" "setting-head > stack settings.source" "setting-head > stack field.description" "setting-head > stack field.input" "setting-head > stack field.input-row" "setting-head > stack > field > field.error" "setting-head > stack > length-box > field > field.error" {
+part "setting-head > stack > row" "setting-head > stack settings.help" "setting-head > stack settings.source" "setting-head > stack field.description" "setting-head > stack field.input" "setting-head > stack field.input-row" "setting-head > stack > field > field.error" "setting-head > stack > length-box > field > field.error" "setting-head > stack > settings.control > choice-group > choice-group.choices" {
     grid-column "1 / -1"
 }
 
 part "setting-head > save-status" {
     grid-column 2
     grid-row 1
-}
-
-// What stands under the control (where the value comes from, *Save*) keeps the distance of the frame it stood in.
-part "setting-head > stack > row" "setting-head > stack > settings.source" {
-    margin-block-start "calc($gap-stack - $gap-setting-line)"
 }

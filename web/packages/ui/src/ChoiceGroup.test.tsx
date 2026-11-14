@@ -56,3 +56,20 @@ describe("ux_5 the one choice group, also for the colors", () => {
     expect(markup).not.toContain("choice-group.dot");
   });
 });
+
+describe("ux_6_4 a group of choices a page can set its name beside other things", () => {
+  it("is a group named by its first line, not a fieldset with a legend", () => {
+    const markup = renderToStaticMarkup(
+      <ChoiceGroup
+        legend={words.legend}
+        choices={choices}
+        value={choices[0].value}
+        onChange={doNothing}
+      />,
+    );
+    const name = /id="(?<id>[^"]+)" data-part="choice-group\.legend"/u.exec(markup)?.groups?.["id"];
+    expect(markup).toContain('role="group"');
+    expect(markup).toContain(`aria-labelledby="${String(name)}"`);
+    expect(markup).not.toContain("<fieldset");
+  });
+});

@@ -1,4 +1,5 @@
 import { useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { Group } from "react-aria-components";
 
 import { partOf } from "./parts.ts";
 import { choiceGroupLook, type ChoiceGroupLook } from "./props.ts";
@@ -133,9 +134,15 @@ export function ChoiceGroup<Value extends string>({
   ...options
 }: ChoiceGroupProps<Value>) {
   const group = useId();
+  const name = useId();
+  // A group named by its first line rather than a fieldset with its legend: a legend is drawn in the border of its
+  // fieldset and is never a line of a grid, so a page could not set something beside the name alone (the cell of
+  // *Saving…* and *Saved* of a setting). The group is the same to a screen reader.
   return (
-    <fieldset {...partOf(part.choiceGroup)}>
-      <legend {...partOf(part.choiceGroupLegend)}>{legend}</legend>
+    <Group aria-labelledby={name} {...partOf(part.choiceGroup)}>
+      <div id={name} {...partOf(part.choiceGroupLegend)}>
+        {legend}
+      </div>
       {look === undefined ? (
         <MeasuredChoices {...options} group={group} />
       ) : (
@@ -143,6 +150,6 @@ export function ChoiceGroup<Value extends string>({
           <Options {...options} group={group} dot={look === choiceGroupLook.radios} />
         </div>
       )}
-    </fieldset>
+    </Group>
   );
 }

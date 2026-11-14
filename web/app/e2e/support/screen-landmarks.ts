@@ -17,6 +17,7 @@ const PAGE_PARTS = [
   "main [data-part='theme-group']",
   "main [data-part='theme-color']",
   "main fieldset",
+  "main [data-part='choice-group']",
   "main output",
 ].join(", ");
 

@@ -16,21 +16,22 @@ import { addressInProject, paths } from "../src/shared/paths.ts";
 
 test.use({ preparation: { run: prepareWeb } });
 
-/** Where the words of an element are drawn, line by line: their ink, not the box around them. */
+/**
+ * Where the words of an element are drawn, line by line: their ink, not the boxes around them (a frame of a setting may
+ * stand under the cell of *Saved* while its words do not).
+ */
 function inkOf(words: Locator) {
   return words.evaluate((element) => {
+    const found: { left: number; right: number; top: number; bottom: number }[] = [];
+    const texts = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
     const range = document.createRange();
-    range.selectNodeContents(element);
-    const lines = range.getClientRects();
-    return Array.from({ length: lines.length }, (_, index) => {
-      const line = lines.item(index);
-      return {
-        left: line?.left ?? 0,
-        right: line?.right ?? 0,
-        top: line?.top ?? 0,
-        bottom: line?.bottom ?? 0,
-      };
-    });
+    for (let text = texts.nextNode(); text !== null; text = texts.nextNode()) {
+      range.selectNodeContents(text);
+      for (const line of range.getClientRects()) {
+        found.push({ left: line.left, right: line.right, top: line.top, bottom: line.bottom });
+      }
+    }
+    return found;
   });
 }
 
@@ -108,6 +109,29 @@ test("ux_6_4 only the first line of a setting gives room to Saved, the box under
   ]);
   expect(box.x).toBeCloseTo(whole.x, 0);
   expect(box.width).toBeCloseTo(whole.width, 0);
+});
+
+test("ux_6_4 a group of choices gives only its name to the line of Saved, and its choices run the whole width", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await page.goto(addressInProject(paths.projectSettings, "WEB"));
+  const choices = "[data-part='choice-group.choices']";
+  const head = page
+    .locator("main [data-part='setting-head']")
+    .filter({ has: page.locator(choices) });
+  await expect(head.first()).toBeVisible();
+  const [whole, row, name, status] = await Promise.all([
+    boxOf(head.first()),
+    boxOf(head.first().locator(choices)),
+    boxOf(head.first().locator("[data-part='choice-group.legend']")),
+    boxOf(head.first().locator("[data-part~='save-status']")),
+  ]);
+  expect(row.x).toBeCloseTo(whole.x, 0);
+  expect(row.width).toBeCloseTo(whole.width, 0);
+  // The name stands in the first line, beside the cell of Saved and never under it.
+  expect(name.y).toBeCloseTo(status.y, 0);
+  expect(name.x + name.width).toBeLessThanOrEqual(status.x);
 });
 
 /**

@@ -316,7 +316,6 @@ export const tokenNames = [
   "size-details",
   "gap-details",
   "gap-stack",
-  "gap-setting-line",
   "size-details-room",
   "size-floating-note",
   "size-floating-note-room",
