@@ -1894,6 +1894,7 @@ textarea,
 }
 
 [data-part="list-column"] {
+  position: relative;
   display: flex;
   flex: 1000 1 var(--size-list-main);
   flex-direction: column;
@@ -4859,16 +4860,15 @@ textarea,
   border: var(--border-width) solid var(--border);
   background: var(--bg-raised);
   box-shadow: var(--shadow);
-  position: sticky;
+  position: absolute;
+  inset-inline: 0;
   inset-block-end: 0;
   z-index: var(--z-sticky);
   padding: var(--space-2) var(--space-3);
-  margin-block-start: var(--space-3);
   border-radius: var(--r-card);
 }
 
 [data-part="app-layout"][data-variant~="phone"] [data-part="selected-bar"][data-state~="active"] {
-  position: static;
   max-height: var(--size-bar-ticked);
   overflow-y: auto;
 }
@@ -9194,6 +9194,11 @@ textarea,
 [data-part="list-main"] [data-part="list-scroll"] {
   flex: 0 1 auto;
   min-height: var(--size-list-scroll-least);
+}
+
+[data-part="list-column"]:has([data-part="selected-bar"][data-state~="active"])
+  [data-part="list-scroll"] {
+  padding-block-end: calc(var(--space-3) + var(--bar-ticked-height));
 }
 
 [data-part="sheet"] {

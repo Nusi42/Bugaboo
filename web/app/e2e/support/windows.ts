@@ -274,22 +274,6 @@ export function roomUnderContent(box: Locator): Promise<number> {
 }
 
 /**
- * Scrolls a box of rows of a list to its end and says how much room is under its last row. The
- * rows are read in one go in the page: the list draws only the rows in sight, so a row found in one
- * step can be gone in the next while it draws the end; no row (yet) is no room.
- */
-export function roomUnderLastRow(scroll: Locator): Promise<number> {
-  return scroll.evaluate((box, row) => {
-    box.scrollTop = box.scrollHeight;
-    const rows = box.querySelectorAll(`[data-part="${row}"]`);
-    const last = rows.item(rows.length - 1);
-    return last === null
-      ? Number.NEGATIVE_INFINITY
-      : box.getBoundingClientRect().bottom - last.getBoundingClientRect().bottom;
-  }, part.listRow);
-}
-
-/**
  * The empty room in a window under what it holds, past the padding of its body; none on a phone,
  * where a window is a screen whose buttons stand at its foot (UX §6.3).
  */

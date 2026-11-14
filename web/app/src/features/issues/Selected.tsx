@@ -1,9 +1,6 @@
 import { t } from "@bugaboo/messages";
-import { Announce, Button, buttonLook, partOf, part, useLayout } from "@bugaboo/ui";
-import { use } from "react";
-import { createPortal } from "react-dom";
-
-import { BarSlot } from "../shell/index.ts";
+import { Announce, Button, buttonLook, partOf, part, useHeightOnParent } from "@bugaboo/ui";
+import { useRef } from "react";
 
 import type { FoundSearch } from "./found-issues.ts";
 import { SelectionBars } from "./SelectionBars.tsx";
@@ -21,19 +18,19 @@ export interface SelectedProps {
 }
 
 /**
- * The bar of the ticked issues (UX §4.2), under the list so that ticking moves nothing above it, and
- * stuck to the bottom of the window while the list is longer than it (on a phone it stands in the
- * column of the app above the bottom navigation, with the same content): how many are ticked, the way to
- * clear them, what ticks all the results, and the bars that act on them (changing many issues at
- * once, WP-08; the bars decide for themselves when to show).
+ * The bar of the ticked issues (UX §4.2), over the foot of the list, on a phone too: it slides up
+ * over the last rows, nothing in the list moves, and the list keeps room at its end, the height of
+ * the bar (UX §6.4). It holds how many are ticked, the way to clear them, what ticks all the
+ * results, and the bars that act on them (changing many issues at once, WP-08; the bars decide for
+ * themselves when to show).
  */
 export function Selected({ selection, project, search, shown }: SelectedProps) {
   const count = selection.ids.length;
-  // A phone has the bar where the bar of an issue is: under the page and over nothing.
-  const slot = use(BarSlot);
-  const phone = useLayout() === "phone";
+  const section = useRef<HTMLElement>(null);
+  useHeightOnParent(section, "bar-ticked-height");
   const bar = (
     <section
+      ref={section}
       {...partOf(part.selectedBar, { states: [count > 0 && "active"] })}
       aria-label={count > 0 ? t("issues.selected-bar") : undefined}
     >
@@ -55,7 +52,7 @@ export function Selected({ selection, project, search, shown }: SelectedProps) {
   return (
     <>
       {told}
-      {phone && slot !== null ? createPortal(bar, slot) : bar}
+      {bar}
     </>
   );
 }

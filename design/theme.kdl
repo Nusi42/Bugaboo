@@ -202,6 +202,9 @@ tokens {
     size "list-gutter" "0px" run-time="true"
     // The width of the head of the list as the browser measured it (its columns at their least, at least the frame): the code gives it to the virtualized rows, which have no width of their own, so a list wider than its box scrolls sideways, head and rows together; none where there is no head.
     size "list-width" "0px" run-time="true"
+    // The height of the bar of the ticked issues as the browser draws it: the list keeps that much room at its end, so
+    // its last row can be scrolled above the bar that stands over the foot of the list.
+    size "bar-ticked-height" "0px" run-time="true"
     size "bp-window-side" "880px"
     // Narrower than this the list has no room for Customize beside it: the panel stands under the list, as high as its
     // columns, and the list takes the rest. It is size-list-main + space-4 (the gap of list-body) + size-list, written out
@@ -2990,6 +2993,7 @@ part "list-body" {
 }
 
 part "list-column" {
+    position relative
     display flex
     flex 1000 1 "$size-list-main"
     flex-direction column
@@ -5883,20 +5887,21 @@ part "selected-bar:empty" {
     display none
 }
 
-// At the foot of the list (the box of the rows takes the rest of the window), sticky to the bottom where the page scrolls.
+// Over the foot of the list (the box of the rows takes the rest of the window): the bar slides up over the last rows
+// and nothing in the list moves (UX §6.4); the list keeps room at its end, the height of the bar, so its last row can
+// be scrolled above it.
 part "selected-bar[state=active]" {
     use "floating-box"
-    position sticky
+    position absolute
+    inset-inline 0
     inset-block-end 0
     z-index "$z-sticky"
     padding "$space-2" "$space-3"
-    margin-block-start "$space-3"
     border-radius "$r-card"
 }
 
-// On a phone the bar stands in the column of the app above the bottom navigation (like the bar of an issue): fixed there, it covers no card.
+// On a phone the bar is never higher than part of the screen; what it holds more scrolls inside it.
 part "app-layout[variant=phone] selected-bar[state=active]" {
-    position static
     max-height "$size-bar-ticked"
     overflow-y auto
 }
@@ -16517,6 +16522,12 @@ part "app-layout[variant=phone] list-editor:has(list-main)" "app-layout[variant=
 part "list-main list-scroll" {
     flex "0 1 auto"
     min-height "$size-list-scroll-least"
+}
+
+// While the bar of ticked issues stands over the foot of the list, the rows end with empty room the height of the bar,
+// so the last row can be scrolled above it.
+part "list-column:has(selected-bar[state=active]) list-scroll" {
+    padding-block-end "calc($space-3 + $bar-ticked-height)"
 }
 
 // ───────────── Timesheet (TIME-04, UX §4.9) ─────────────
