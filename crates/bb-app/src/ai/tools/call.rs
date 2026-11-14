@@ -18,7 +18,7 @@ use serde_json::Value;
 
 use super::log::Called;
 use super::preview::{ProposedChange, as_saved, proposed_changes};
-use super::registry::{Run, ToolSpec, registry};
+use super::registry::{Need, Run, ToolSpec, registry};
 use crate::access::Actor;
 use crate::ai::context::{Part, PeopleMode, render};
 use crate::auth::{AppError, AuthStore, Ctx};
@@ -214,6 +214,12 @@ fn effective_scope(actor: &Actor, granted: ToolScope) -> ToolScope {
     }
 }
 
+/// Whether the scope lets the actor call the tool and the tool is for this kind of actor: the gate
+/// of every call, and the first half of what is listed.
+fn may_call(actor: &Actor, granted: ToolScope, spec: &ToolSpec<impl AuthStore>) -> bool {
+    effective_scope(actor, granted).covers(spec.scope()) && offered_to(actor, spec.tool)
+}
+
 /// Whether the tool is for this actor at all: a tool of agents only for an agent, and a tool about a
 /// person's own time (M7-Q7) never for an agent.
 fn offered_to(actor: &Actor, tool: bb_core::ai::Tool) -> bool {
@@ -221,6 +227,45 @@ fn offered_to(actor: &Actor, tool: bb_core::ai::Tool) -> bool {
         !tool.is_for_people()
     } else {
         !tool.is_for_agents()
+    }
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// Which of `tools` the actor may use somewhere, for the list: the call may be made
+    /// ([`may_call`]), and some project meets what the tool needs ([`Need`]: the permission its use
+    /// case checks), judged as the actor (narrowed to the key, the app or the work of the agent).
+    /// A call is still judged by the use case at its place, so a tool left out is refused there as
+    /// before. The view of the projects is read once, and only when a tool needs it.
+    async fn usable<'t>(
+        &self,
+        actor: &Actor,
+        granted: ToolScope,
+        tools: impl IntoIterator<Item = &'t ToolSpec<S>>,
+    ) -> Result<Vec<&'t ToolSpec<S>>, AppError>
+    where
+        S: 't,
+    {
+        let mut shown = None;
+        let mut usable = Vec::new();
+        for spec in tools {
+            if !may_call(actor, granted, spec) {
+                continue;
+            }
+            let need = spec.need();
+            if !matches!(need, Need::Nothing) {
+                if shown.is_none() {
+                    shown = Some(self.shown_to(actor).await?);
+                }
+                if !shown
+                    .as_ref()
+                    .is_some_and(|shown| shown.anywhere(|held| need.met_by(held)))
+                {
+                    continue;
+                }
+            }
+            usable.push(spec);
+        }
+        Ok(usable)
     }
 }
 
@@ -233,10 +278,11 @@ pub async fn list_tools<S: AuthStore>(
     input: ToolListQuery,
 ) -> Result<Authorized<ToolList>, AppError> {
     let actor = ctx.actor_of_message(&input.session_token).await?;
-    let scope = effective_scope(&actor, input.granted);
-    let tools = registry::<S>()
-        .iter()
-        .filter(|spec| scope.covers(spec.scope()) && offered_to(&actor, spec.tool))
+    let all = registry::<S>();
+    let tools = ctx
+        .usable(&actor, input.granted, &all)
+        .await?
+        .into_iter()
         .map(|spec| ToolListing {
             name: spec.name(),
             description: Message::from(spec.tool.description()).render(),
@@ -284,10 +330,7 @@ pub async fn call_tool<S: AuthStore>(
                 .await;
             Err(AppError::Refused(ErrorCode::NotFound))
         }
-        Some(spec)
-            if !effective_scope(&actor, request.granted).covers(spec.scope())
-                || !offered_to(&actor, spec.tool) =>
-        {
+        Some(spec) if !may_call(&actor, request.granted, spec) => {
             ctx.note(SecurityAction::AiToolRefused, Some(actor.person.id), None)
                 .await;
             Err(AppError::Refused(ErrorCode::Forbidden))

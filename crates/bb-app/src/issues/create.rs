@@ -67,6 +67,9 @@ struct NewIssueFacts<'a> {
     own: &'a PlannedValues,
 }
 
+/// The permission a person needs in a project to create issues there.
+pub(crate) const NEEDED_TO_CREATE: Permission = Permission::CreateIssues;
+
 impl<S: AuthStore> Ctx<'_, S> {
     /// The status a new issue starts in, with the status group it enters. A new issue starts in the
     /// first status of its workflow; another status is a status change from there, judged like any
@@ -145,7 +148,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map(|found| found.project)
             .ok_or(AppError::Refused(ErrorCode::NotFound))?;
         let access = self
-            .require(actor, Permission::CreateIssues, Place::Project(project.id))
+            .require(actor, NEEDED_TO_CREATE, Place::Project(project.id))
             .await?;
         // A project the person does not see is not there for them, whatever they may make in it.
         if !access.sees_project() {

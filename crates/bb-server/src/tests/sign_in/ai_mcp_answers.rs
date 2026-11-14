@@ -2,6 +2,7 @@
 //! issue is named so that it can be found again before the search knows it, and a call that saved
 //! says what changed and the version it saved, where its preview says what would change.
 
+use bb_app::access::StartingRole;
 use bb_core::ErrorCode;
 use bb_testing::{TestResult, each_database};
 use serde_json::json;
@@ -145,6 +146,57 @@ async fn ai_21_a_limit_of_zero_or_less_is_refused_over_mcp_with_the_range() -> T
             "{}",
             text_of(&one)
         );
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn ai_04_tools_list_offers_only_the_tools_a_person_may_use_somewhere() -> TestResult {
+    each_database("ai_04_tools_by_role_http", async |db| {
+        let (rig, app) = Mcp::start(db).await?;
+        let (site, _ada) = Site::start(&rig, &app).await?;
+        ai_on(&rig).await?;
+        let mcp = Mcp::new(&app);
+        for (role, name, offered) in [
+            (StartingRole::Hr, "hana", 0),
+            (StartingRole::Viewer, "vic", 4),
+            (StartingRole::Guest, "gus", 8),
+            (StartingRole::TeamMember, "tom", 11),
+        ] {
+            let (mut person, _) = site.person(role, name).await?;
+            let signed = sign_in_app(
+                &mcp,
+                &mut person,
+                "Claude Code",
+                "see-and-change",
+                "see-and-change",
+            )
+            .await?;
+            let listed = mcp
+                .post(
+                    Some(&signed.access),
+                    json!({"jsonrpc": "2.0", "id": 1, "method": "tools/list"}),
+                )
+                .await?;
+            let tools = listed.json["result"]["tools"]
+                .as_array()
+                .ok_or("no tools")?
+                .clone();
+            assert_eq!(tools.len(), offered, "{role:?}: {}", listed.json);
+            // A tool left out is still refused when it is called by its name.
+            if offered == 0 {
+                let refused = mcp
+                    .call_tool(&signed, "create_issue", json!({"project": "ACME"}))
+                    .await?;
+                assert_eq!(
+                    refused.json["result"]["isError"],
+                    json!(true),
+                    "{}",
+                    refused.json
+                );
+            }
+        }
         Ok(())
     })
     .await

@@ -36,6 +36,9 @@ fn clean_comment(text: &str) -> Result<String, AppError> {
     Ok(kept)
 }
 
+/// The permission a person needs where an issue is to write a comment on it.
+pub(crate) const NEEDED_TO_COMMENT: Permission = Permission::Comment;
+
 impl<S: AuthStore> Ctx<'_, S> {
     /// The comment as the actor sees it, whose evaluation at the project of its issue is `held`.
     pub(crate) async fn comment_view(
@@ -137,7 +140,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         AppError,
     > {
         let (issue, held) = self.visible_issue(actor, &input.issue).await?;
-        if !held.allows(Permission::Comment) {
+        if !held.allows(NEEDED_TO_COMMENT) {
             return Err(ErrorCode::Forbidden.into());
         }
         self.ensure_agent_runs_on(actor, issue.id).await?;

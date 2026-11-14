@@ -47,6 +47,15 @@ impl Evaluation {
         self.sees_issue(reported_by) && self.allows(self.permission_to_change_issue(reported_by))
     }
 
+    /// Whether the viewer may change some issue of the project: they see it and hold *Change
+    /// issues* or *Change own issues*. The same permissions as [`Self::permission_to_change_issue`],
+    /// for when no issue is named yet (which tools of AI to offer).
+    #[must_use]
+    pub fn may_change_some_issue(&self) -> bool {
+        self.sees_project()
+            && (self.allows(Permission::ChangeIssues) || self.allows(Permission::ChangeOwnIssues))
+    }
+
     /// Whether the viewer may delete the issue into the trash: they see it and hold *Delete
     /// issues*.
     #[must_use]

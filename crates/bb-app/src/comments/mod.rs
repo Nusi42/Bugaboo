@@ -21,4 +21,5 @@ pub use bb_markdown::{MAX_RESOLVED_ISSUE_IDS, MAX_RESOLVED_MENTIONS};
 pub(crate) use resolve::Named;
 pub use store::CommentStore;
 pub use types::*;
+pub(crate) use write::NEEDED_TO_COMMENT;
 pub use write::{add_comment, delete_comment, restore_comment, save_comment};

@@ -15,6 +15,7 @@ use std::pin::Pin;
 
 use bb_core::ErrorCode;
 use bb_core::ai::{Tool, ToolCaller, ToolEffect, ToolScope};
+use bb_policy::{Evaluation, Permission};
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 use utoipa::PartialSchema;
@@ -30,6 +31,9 @@ use crate::access::Actor;
 use crate::ai::Withheld;
 use crate::ai::context::Part;
 use crate::auth::{AppError, AuthStore, Ctx};
+use crate::comments::NEEDED_TO_COMMENT;
+use crate::issues::NEEDED_TO_CREATE;
+use crate::time::NEEDED_TO_BOOK;
 
 /// A future the registry hands back.
 pub(super) type Boxed<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
@@ -52,6 +56,34 @@ impl Run<'_> {
     }
 }
 
+/// What a person must be able to do in some project for a tool to be offered and called at all.
+/// The use case still judges each call at its own place; this only says whether there is any place
+/// where the tool could work, with the permission the use case itself checks, so a tool the
+/// person may use nowhere is neither listed nor run.
+#[derive(Clone, Copy, Debug)]
+pub(super) enum Need {
+    /// Nothing more than the tool asks itself: a tool of agents, which the work handed over decides.
+    Nothing,
+    /// To see a project.
+    SeesAProject,
+    /// To see a project and hold the permission there.
+    Holds(Permission),
+    /// To see a project and change some issue of it (`Evaluation::may_change_some_issue`).
+    ChangesAnIssue,
+}
+
+impl Need {
+    /// Whether what the person may do in one project meets the need.
+    pub(super) fn met_by(self, held: &Evaluation) -> bool {
+        match self {
+            Self::Nothing => true,
+            Self::SeesAProject => held.sees_project(),
+            Self::Holds(permission) => held.sees_project() && held.allows(permission),
+            Self::ChangesAnIssue => held.may_change_some_issue(),
+        }
+    }
+}
+
 /// The function that runs a tool, or previews it.
 pub(super) type Runner<S> =
     for<'a, 'c> fn(&'a Ctx<'c, S>, Run<'a>) -> Boxed<'a, Result<Vec<Part>, AppError>>;
@@ -64,6 +96,7 @@ pub struct ToolSpec<S: AuthStore> {
     pub use_case: &'static str,
     input: fn() -> Value,
     effect: ToolEffect,
+    need: Need,
     run: Runner<S>,
     /// For a tool that changes something: *Apply*, which saves what the preview showed.
     apply: Option<Runner<S>>,
@@ -80,6 +113,11 @@ impl<S: AuthStore> ToolSpec<S> {
     #[must_use]
     pub const fn effect(&self) -> ToolEffect {
         self.effect
+    }
+
+    /// What the person must be able to do in some project for the tool to be offered.
+    pub(super) const fn need(&self) -> Need {
+        self.need
     }
 
     /// The scope a caller needs to use the tool.
@@ -125,12 +163,14 @@ fn reads<S: AuthStore>(
     use_case: &'static str,
     input: fn() -> Value,
     run: Runner<S>,
+    need: Need,
 ) -> ToolSpec<S> {
     ToolSpec {
         tool,
         use_case,
         input,
         effect: ToolEffect::Reads,
+        need,
         run,
         apply: None,
     }
@@ -142,12 +182,14 @@ fn changes<S: AuthStore>(
     input: fn() -> Value,
     run: Runner<S>,
     apply: Runner<S>,
+    need: Need,
 ) -> ToolSpec<S> {
     ToolSpec {
         tool,
         use_case,
         input,
         effect: ToolEffect::Changes,
+        need,
         run,
         apply: Some(apply),
     }
@@ -169,24 +211,28 @@ fn tools_of_people<S: AuthStore>() -> [ToolSpec<S>; 11] {
             "search_page_within",
             schema_of::<SearchIssuesInput>,
             read::search_issues::<S>,
+            Need::SeesAProject,
         ),
         reads(
             Tool::GetIssue,
             "issue",
             schema_of::<GetIssueInput>,
             read::get_issue::<S>,
+            Need::SeesAProject,
         ),
         reads(
             Tool::ListProjects,
             "projects",
             schema_of::<ListProjectsInput>,
             read::list_projects::<S>,
+            Need::SeesAProject,
         ),
         reads(
             Tool::GetMyWork,
             "search_page_within",
             schema_of::<GetMyWorkInput>,
             read::get_my_work::<S>,
+            Need::SeesAProject,
         ),
         changes(
             Tool::CreateIssue,
@@ -194,6 +240,7 @@ fn tools_of_people<S: AuthStore>() -> [ToolSpec<S>; 11] {
             schema_of::<CreateIssueInput>,
             preview::create_issue::<S>,
             apply::create_issue::<S>,
+            Need::Holds(NEEDED_TO_CREATE),
         ),
         changes(
             Tool::UpdateIssue,
@@ -201,6 +248,7 @@ fn tools_of_people<S: AuthStore>() -> [ToolSpec<S>; 11] {
             schema_of::<UpdateIssueInput>,
             preview::update_issue::<S>,
             apply::update_issue::<S>,
+            Need::ChangesAnIssue,
         ),
         changes(
             Tool::ChangeStatus,
@@ -208,6 +256,7 @@ fn tools_of_people<S: AuthStore>() -> [ToolSpec<S>; 11] {
             schema_of::<ChangeStatusInput>,
             preview::change_status::<S>,
             apply::change_status::<S>,
+            Need::ChangesAnIssue,
         ),
         changes(
             Tool::AddComment,
@@ -215,6 +264,7 @@ fn tools_of_people<S: AuthStore>() -> [ToolSpec<S>; 11] {
             schema_of::<AddCommentInput>,
             preview::add_comment::<S>,
             apply::add_comment::<S>,
+            Need::Holds(NEEDED_TO_COMMENT),
         ),
         changes(
             Tool::LogTime,
@@ -222,6 +272,7 @@ fn tools_of_people<S: AuthStore>() -> [ToolSpec<S>; 11] {
             schema_of::<LogTimeInput>,
             preview::log_time::<S>,
             apply::log_time::<S>,
+            Need::Holds(NEEDED_TO_BOOK),
         ),
         changes(
             Tool::StartTimer,
@@ -229,6 +280,7 @@ fn tools_of_people<S: AuthStore>() -> [ToolSpec<S>; 11] {
             schema_of::<StartTimerInput>,
             preview::start_timer::<S>,
             apply::start_timer::<S>,
+            Need::Holds(NEEDED_TO_BOOK),
         ),
         changes(
             Tool::StopTimer,
@@ -236,6 +288,7 @@ fn tools_of_people<S: AuthStore>() -> [ToolSpec<S>; 11] {
             schema_of::<StopTimerInput>,
             preview::stop_timer::<S>,
             apply::stop_timer::<S>,
+            Need::Holds(NEEDED_TO_BOOK),
         ),
     ]
 }
@@ -250,6 +303,7 @@ fn tools_of_agents<S: AuthStore>() -> [ToolSpec<S>; 8] {
             schema_of::<TakeInput>,
             agents::preview_take::<S>,
             agents::apply_take::<S>,
+            Need::Nothing,
         ),
         changes(
             Tool::Report,
@@ -257,6 +311,7 @@ fn tools_of_agents<S: AuthStore>() -> [ToolSpec<S>; 8] {
             schema_of::<ReportInput>,
             agents::preview_report::<S>,
             agents::apply_report::<S>,
+            Need::Nothing,
         ),
         changes(
             Tool::Ask,
@@ -264,6 +319,7 @@ fn tools_of_agents<S: AuthStore>() -> [ToolSpec<S>; 8] {
             schema_of::<AskInput>,
             agents::preview_ask::<S>,
             agents::apply_ask::<S>,
+            Need::Nothing,
         ),
         changes(
             Tool::Attach,
@@ -271,6 +327,7 @@ fn tools_of_agents<S: AuthStore>() -> [ToolSpec<S>; 8] {
             schema_of::<AttachInput>,
             agents::preview_attach::<S>,
             agents::apply_attach::<S>,
+            Need::Nothing,
         ),
         changes(
             Tool::Submit,
@@ -278,6 +335,7 @@ fn tools_of_agents<S: AuthStore>() -> [ToolSpec<S>; 8] {
             schema_of::<SubmitInput>,
             agents::preview_submit::<S>,
             agents::apply_submit::<S>,
+            Need::Nothing,
         ),
         changes(
             Tool::GiveUp,
@@ -285,12 +343,14 @@ fn tools_of_agents<S: AuthStore>() -> [ToolSpec<S>; 8] {
             schema_of::<GiveUpInput>,
             agents::preview_give_up::<S>,
             agents::apply_give_up::<S>,
+            Need::Nothing,
         ),
         reads(
             Tool::ChangesSince,
             "changes_since",
             schema_of::<ChangesSinceInput>,
             agents::changes::<S>,
+            Need::Nothing,
         ),
         changes(
             Tool::Propose,
@@ -298,6 +358,7 @@ fn tools_of_agents<S: AuthStore>() -> [ToolSpec<S>; 8] {
             schema_of::<ProposeInput>,
             agents::preview_propose::<S>,
             agents::apply_propose::<S>,
+            Need::Nothing,
         ),
     ]
 }

@@ -94,6 +94,9 @@ pub(super) struct EntryTime {
     pub(super) started_at: Option<Timestamp>,
 }
 
+/// The permission a person needs where an issue is to book time on it, with the timer too.
+pub(crate) const NEEDED_TO_BOOK: Permission = Permission::BookTime;
+
 impl<S: AuthStore> Ctx<'_, S> {
     /// An issue the actor sees and may book time on: `resource.not-found` for one they do not see,
     /// `access.forbidden` without *Book time* there.
@@ -103,7 +106,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         address: &str,
     ) -> Result<(Issue, Arc<Evaluation>), AppError> {
         let (issue, held) = self.visible_issue(actor, address).await?;
-        if !held.allows(Permission::BookTime) {
+        if !held.allows(NEEDED_TO_BOOK) {
             return Err(ErrorCode::Forbidden.into());
         }
         Ok((issue, held))

@@ -22,7 +22,7 @@ mod store;
 mod timer;
 mod types;
 
-pub(crate) use entries::nearest_on_projects;
+pub(crate) use entries::{NEEDED_TO_BOOK, nearest_on_projects};
 pub use entries::{add_time, change_time_entry, delete_time_entry};
 pub use limits::{
     LONG_TIMER_HOURS, TIME_ENTRIES_PER_DAY_MAX, TIME_NOTE_CHARS_MAX, TIMER_CHANGES_PER_SECOND,

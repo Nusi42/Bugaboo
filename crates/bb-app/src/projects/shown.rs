@@ -314,9 +314,15 @@ impl Shown {
 
     /// Whether the person holds the permission in any project; stops at the first one.
     pub(crate) fn holds_anywhere(&self, permission: Permission) -> bool {
+        self.anywhere(|held| held.allows(permission))
+    }
+
+    /// Whether what the person may do in some project, narrowed like every other decision of the
+    /// view, passes `test`; stops at the first one.
+    pub(crate) fn anywhere(&self, test: impl Fn(&Evaluation) -> bool) -> bool {
         self.projects
             .keys()
-            .any(|project| self.allows(*project, permission))
+            .any(|project| self.held_in(*project).is_some_and(|held| test(&held)))
     }
 
     /// Every project, known or not, where the person holds the permission.
