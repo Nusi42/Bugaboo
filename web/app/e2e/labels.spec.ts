@@ -97,7 +97,7 @@ test("ux_4_4 Tags and Labels are rows of the one list of the Details and change 
   // One list for all the rows of the Details: the own fields, following, tags and labels too. Only a
   // titled group after it (the defaults for time booked on the issue) has a list of its own.
   const details = page.getByRole("complementary", { name: t("issues.details"), exact: true });
-  const rows = details.locator(":scope > dl");
+  const rows = details.locator(":scope > [data-part='issue-details.card'] > dl");
   await expect(rows).toHaveCount(1);
   await expect(rows.getByRole("term").filter({ hasText: t("labels.tags-heading") })).toBeVisible();
   await expect(

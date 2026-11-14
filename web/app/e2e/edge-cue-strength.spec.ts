@@ -7,7 +7,7 @@ import { partIn } from "./support/parts.ts";
 import { mostLevelsBetween } from "./support/png.ts";
 import { sampleAdministrator } from "./support/sample.ts";
 import { inOrder } from "./support/sequence.ts";
-import { shadowsOf } from "./support/windows.ts";
+import { expectShadesInTheMiddle, shadowsOf } from "./support/list-shades.ts";
 import { paths, projectIssuesAddress } from "../src/shared/paths.ts";
 
 // M5 exit, package O (round 8): the shadow at the end of a scrolling box is clearly seen in every theme, the
@@ -63,7 +63,7 @@ test("ux_5 the shadows at the ends of a scrolling box are clear in every theme",
   }
 });
 
-test("ux_5 the list of issues shades both ends in the middle of its rows", async ({ page }) => {
+test("ux_5 the list of issues shades its ends in the middle of its rows", async ({ page }) => {
   await signIn(page, sampleAdministrator());
   await page.goto(projectIssuesAddress("WEB"));
   const rows = partIn(page, "list-scroll");
@@ -72,7 +72,7 @@ test("ux_5 the list of issues shades both ends in the middle of its rows", async
   await rows.evaluate((node) => {
     node.scrollTop = (node.scrollHeight - node.clientHeight) / 2;
   });
-  await expect.poll(() => shadowsOf(rows)).toEqual({ start: 1, end: 1 });
+  await expectShadesInTheMiddle(page, rows);
 });
 
 test("ux_5 the list of issues has no shadow where all its rows fit in one page of results", async ({
