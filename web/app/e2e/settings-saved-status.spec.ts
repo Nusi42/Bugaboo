@@ -65,6 +65,49 @@ test("ux_6_4 every setting has its status from the start, and Saved covers none 
   expect(await overlap(said, head.getByText(name, { exact: true }))).toBe(false);
 });
 
+test("ux_6_4 a change the server refuses says Not saved yet in the head of its setting, on its first line", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await page.goto(paths.appearance);
+  const name = t("appearance.less-motion");
+  const head = page
+    .locator("main [data-part='setting-head']")
+    .filter({ has: page.getByRole("switch", { name, exact: true }) });
+  await expect(head).toBeVisible();
+  await page.route(
+    "**/api/v1/me/settings/*",
+    async (route) => {
+      await route.fulfill({
+        status: 403,
+        contentType: "application/problem+json",
+        body: JSON.stringify({
+          type: "about:blank",
+          title: "Forbidden",
+          status: 403,
+          code: "access.forbidden",
+          message_key: "error.access.forbidden",
+        }),
+      });
+    },
+    { times: 1 },
+  );
+  await head.getByText(name, { exact: true }).click();
+  const said = head.getByRole("status").filter({ hasText: t("save.not-saved") });
+  await expect(said).toBeVisible();
+  // One line, beside the name and inside the head: the narrow head of a phone has room for it too.
+  const [words, named, whole] = await Promise.all([
+    inkOf(said),
+    inkOf(head.getByText(name, { exact: true })),
+    boxOf(head),
+  ]);
+  expect(words).toHaveLength(1);
+  const firstLineEnd = Math.min(...named.map((line: Ink) => line.bottom));
+  expect(words.map((line: Ink) => line.top < firstLineEnd)).toEqual([true]);
+  expect(words.map((line: Ink) => line.right <= whole.x + whole.width + 1)).toEqual([true]);
+  expect(await overlap(said, head.getByText(name, { exact: true }))).toBe(false);
+});
+
 test("ux_6_4 the notification settings say Saved in a row that is there from the start", async ({
   page,
 }) => {
