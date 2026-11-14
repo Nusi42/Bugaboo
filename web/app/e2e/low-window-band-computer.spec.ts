@@ -132,15 +132,12 @@ async function holdBackRows(page: Page): Promise<() => void> {
   return release;
 }
 
-/** What Customize does when the rows come: under the list it is as high as its columns with rows or without, so it does
- * not move; beside the list it ends with the rows once there are rows (before, there is no box of rows to end with). */
-const WHEN_ROWS_COME = {
-  under: async (panel: Locator, _page: Page, before: number) => {
-    expect(await heightOf(panel)).toBe(before);
-  },
+/** Beside the list Customize also ends with the rows; under it, it is as high as its columns. */
+const ENDS_WITH_ROWS = {
   beside: async (panel: Locator, page: Page) => {
     await expect.poll(() => bottomsApart(panel, page)).toBeLessThanOrEqual(2);
   },
+  under: () => Promise.resolve(),
 };
 
 const WIDTHS = [
@@ -160,16 +157,18 @@ test("ux_06 in a low window Customize under the list keeps room for its columns"
 });
 
 for (const [place, size] of WIDTHS) {
-  test(`ux_06 in a low window Customize ${place} a list with nothing in it keeps its height`, async ({
+  test(`ux_06 in a low window Customize ${place} a list with nothing in it is as high as beside rows`, async ({
     page,
   }) => {
     await page.setViewportSize(size);
+    const withRows = await heightOf(await openCustomize(page, projectIssuesAddress("WEB")));
     const panel = await openCustomize(page, `${projectIssuesAddress("WEB")}${NOTHING_FOUND}`);
     await expect(page.getByText(t("search.found-none"), { exact: true })).toBeVisible();
     expect(await heightOf(panel)).toBeGreaterThan(FOLDED);
+    expect(await heightOf(panel)).toBe(withRows);
   });
 
-  test(`ux_06 in a low window Customize ${place} a list still loading has its full height at once and settles when the rows come`, async ({
+  test(`ux_06 in a low window Customize ${place} a list still loading keeps one height when the rows come`, async ({
     page,
   }) => {
     await page.setViewportSize(size);
@@ -180,7 +179,8 @@ for (const [place, size] of WIDTHS) {
     expect(before).toBeGreaterThan(FOLDED);
     release();
     await expect(page.locator("[data-part~='list-scroll']")).toBeVisible();
-    await WHEN_ROWS_COME[place](panel, page, before);
+    expect(await heightOf(panel)).toBe(before);
+    await ENDS_WITH_ROWS[place](panel, page);
   });
 }
 

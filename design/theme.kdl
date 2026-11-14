@@ -16675,7 +16675,7 @@ part "search-panel search-suggestions" {
 // the list gives the list the room that is left. Only the page of a list (list-main) and the timeline: the slim list of
 // the focus view stays in its page. A pane that its own boxes fill has those boxes only: the main column around them
 // never scrolls, on a computer as on a phone (the timeline on a phone stands in the main column, which is its box).
-part "app-layout.main:has(list-main list-scroll)" "app-layout.main:has(issue-body[variant=split])" "app-layout:not(app-layout[variant=phone]) app-layout.main:has(timeline-body)" {
+part "app-layout.main:has(list-main search-results)" "app-layout.main:has(issue-body[variant=split])" "app-layout:not(app-layout[variant=phone]) app-layout.main:has(timeline-body)" {
     overflow-y hidden
     media "print" {
         overflow visible
@@ -16684,19 +16684,20 @@ part "app-layout.main:has(list-main list-scroll)" "app-layout.main:has(issue-bod
 
 // A low window on a computer: the boxes keep their least height and the main column scrolls them into reach (UX §6.5).
 // A phone keeps its one box: its main column holds the list there.
-part "app-layout:not(app-layout[variant=phone]) app-layout.main:has(timeline-body)" "app-layout:not(app-layout[variant=phone]) app-layout.main:has(issue-body[variant=split])" "app-layout:not(app-layout[variant=phone]) app-layout.main:has(list-main list-scroll)" {
+part "app-layout:not(app-layout[variant=phone]) app-layout.main:has(timeline-body)" "app-layout:not(app-layout[variant=phone]) app-layout.main:has(issue-body[variant=split])" "app-layout:not(app-layout[variant=phone]) app-layout.main:has(list-main search-results)" {
     media "screen and (max-height: $size-low-window)" {
         overflow-y auto
     }
 }
 
-// Only where there are rows that scroll does every box give way below its content; a page without rows (nothing found,
-// a mistake) keeps the room of its content, with the padding of its card, and the page scrolls.
-part "app-layout app-layout.inner:has(list-main)" "app-layout card:has(list-main)" "app-layout card > stack:has(list-main)" "app-layout list-editor.list:has(list-main)" "app-layout list-main" "app-layout list-frame:has(list-scroll)" "app-layout search-results:has(list-scroll)" {
+// Where the results of a list stand (rows, the first answer on its way, nothing found) every box gives way below its
+// content, so the list takes one room whatever it holds; a refused search (a mistake) keeps the room of its content,
+// with the padding of its card, and the page scrolls.
+part "app-layout app-layout.inner:has(list-main)" "app-layout card:has(list-main)" "app-layout card > stack:has(list-main)" "app-layout list-editor.list:has(list-main)" "app-layout list-main" "app-layout list-main list-frame" "app-layout list-main search-results" {
     use "fills-pane"
 }
 
-part "app-layout app-layout.inner:has(list-scroll)" "app-layout card:has(list-scroll)" "app-layout card > stack:has(list-scroll)" "app-layout list-editor.list:has(list-scroll)" "app-layout list-main:has(list-scroll)" "app-layout list-frame:has(list-scroll)" "app-layout search-results:has(list-scroll)" {
+part "app-layout app-layout.inner:has(list-main search-results)" "app-layout card:has(list-main search-results)" "app-layout card > stack:has(list-main search-results)" "app-layout list-editor.list:has(list-main search-results)" "app-layout list-main:has(search-results)" "app-layout list-main list-frame:has(search-results)" "app-layout list-main search-results" {
     use "fills-pane-scrolls"
 }
 
@@ -16824,12 +16825,12 @@ part "app-layout:not(app-layout[variant=phone]) timeline-body" "app-layout:not(a
 
 // On a computer the list and the open issue stand side by side in one line as high as the room; the list and Customize
 // too, or Customize under the list where the room is narrow (each line as high as the room it is given).
-part "list-editor:has(list-main)" "list-body:has(list-scroll)" {
+part "list-editor:has(list-main)" "list-body:has(search-results)" {
     flex "1 1 0"
     align-items stretch
 }
 
-part "list-editor:has(list-scroll)" "list-body:has(list-scroll)" {
+part "list-editor:has(search-results)" "list-body:has(search-results)" {
     min-height 0
 }
 
@@ -16839,7 +16840,7 @@ part "list-editor:has(list-main)" {
 
 // The list column fills the line it stands in, and its frame the column. With Customize under it the list takes the
 // room the panel's columns leave.
-part "list-column:has(list-scroll)" {
+part "list-column:has(search-results)" {
     min-height 0
     container "(max-width: $bp-list-beside)" {
         flex "1 1 0"
@@ -16847,13 +16848,13 @@ part "list-column:has(list-scroll)" {
 }
 
 // On paper the lines of a list and of the timeline and their boxes are as long as what they hold: nothing scrolls there.
-part "list-editor:has(list-main)" "list-body:has(list-scroll)" "list-column:has(list-scroll)" "list-editor:has(timeline-body)" "list-scroll" "list-main list-scroll" "timeline-scroll" {
+part "list-editor:has(list-main)" "list-body:has(search-results)" "list-column:has(search-results)" "list-editor:has(timeline-body)" "list-scroll" "list-main list-scroll" "timeline-scroll" {
     media "print" {
         use "free-on-paper"
     }
 }
 
-part "app-layout[variant=phone] list-editor:has(list-main)" "app-layout[variant=phone] list-body:has(list-scroll)" {
+part "app-layout[variant=phone] list-editor:has(list-main)" "app-layout[variant=phone] list-body:has(search-results)" {
     flex-direction column
     flex-wrap nowrap
 }
@@ -16870,7 +16871,9 @@ part "app-layout:not(app-layout[variant=phone]) list-editor:has(timeline-body)" 
 }
 
 // The box of the rows is as high as its rows, and no higher than the rest of the window: min(its rows, the rest).
-part "list-main list-scroll" {
+// Without rows (the first answer on its way, nothing found) the results take the same room, so the list and Customize
+// beside it keep one height when the rows come.
+part "list-main list-scroll" "list-main search-results:not(search-results:has(list-scroll))" {
     flex "0 1 auto"
     // Room for rows above the bar of ticked issues too, while it stands over the foot of the list.
     min-height "calc($size-list-scroll-least + $bar-ticked-height)"
@@ -16878,7 +16881,7 @@ part "list-main list-scroll" {
 
 // In a low window on a computer the frame of a list is at least as high as its head and the least of its rows: it does
 // not cut them, the main column scrolls (UX §6.5).
-part "app-layout:not(app-layout[variant=phone]) app-layout.inner:has(list-scroll)" "app-layout:not(app-layout[variant=phone]) card:has(list-scroll)" "app-layout:not(app-layout[variant=phone]) card > stack:has(list-scroll)" "app-layout:not(app-layout[variant=phone]) list-editor.list:has(list-scroll)" "app-layout:not(app-layout[variant=phone]) list-main:has(list-scroll)" "app-layout:not(app-layout[variant=phone]) search-results:has(list-scroll)" "app-layout:not(app-layout[variant=phone]) list-editor:has(list-scroll)" "app-layout:not(app-layout[variant=phone]) list-body:has(list-scroll)" "app-layout:not(app-layout[variant=phone]) list-column:has(list-scroll)" {
+part "app-layout:not(app-layout[variant=phone]) app-layout.inner:has(list-main search-results)" "app-layout:not(app-layout[variant=phone]) card:has(list-main search-results)" "app-layout:not(app-layout[variant=phone]) card > stack:has(list-main search-results)" "app-layout:not(app-layout[variant=phone]) list-editor.list:has(list-main search-results)" "app-layout:not(app-layout[variant=phone]) list-main:has(search-results)" "app-layout:not(app-layout[variant=phone]) list-main search-results" "app-layout:not(app-layout[variant=phone]) list-editor:has(search-results)" "app-layout:not(app-layout[variant=phone]) list-body:has(search-results)" "app-layout:not(app-layout[variant=phone]) list-column:has(search-results)" {
     media "screen and (max-height: $size-low-window)" {
         min-height auto
     }
@@ -16887,13 +16890,13 @@ part "app-layout:not(app-layout[variant=phone]) app-layout.inner:has(list-scroll
 // The box of the rows still takes the rest of the window, down to its least height: it holds as little as nothing in the
 // line (contain), so the column is as high as its head and that least, and the main column scrolls only below it.
 // The frame clips, so it keeps that height by its basis: its head and the least of the rows, and it grows into the rest.
-part "app-layout:not(app-layout[variant=phone]) list-frame:has(list-scroll)" {
+part "app-layout:not(app-layout[variant=phone]) list-main list-frame:has(search-results)" {
     media "screen and (max-height: $size-low-window)" {
         flex "1 0 auto"
     }
 }
 
-part "app-layout:not(app-layout[variant=phone]) list-main list-scroll" {
+part "app-layout:not(app-layout[variant=phone]) list-main list-scroll" "app-layout:not(app-layout[variant=phone]) list-main search-results:not(search-results:has(list-scroll))" {
     media "screen and (max-height: $size-low-window)" {
         flex "1 1 0"
         contain size
@@ -16910,7 +16913,7 @@ part "app-layout:not(app-layout[variant=phone]) list-editor:has(list-main) side-
 
 // Customize is as high as the rows only while there are rows: while the first answer is on its way or nothing is found
 // the list has no box of rows to be as high as, and Customize keeps the height of what it holds.
-part "app-layout:not(app-layout[variant=phone]) list-body:has(list-scroll) list-panel" {
+part "app-layout:not(app-layout[variant=phone]) list-body:has(search-results) list-panel" {
     media "screen and (max-height: $size-low-window)" {
         contain size
     }
