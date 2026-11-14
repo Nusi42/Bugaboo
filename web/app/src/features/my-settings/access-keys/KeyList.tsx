@@ -15,7 +15,7 @@ export function KeyList() {
   const items: readonly AccessKey[] = keys.data?.items ?? [];
   return (
     <Card
-      actions={<SaveStatus state={remove.saveState} labels={saveLabels()} />}
+      actions={<SaveStatus state={remove.saveState} labels={saveLabels()} keepsRoom />}
       heading={t("access-keys.list")}
     >
       {keys.isError ? <Alert tone={alertTone.danger}>{messageOf(keys.error)}</Alert> : null}

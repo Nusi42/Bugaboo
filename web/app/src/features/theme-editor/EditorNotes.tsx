@@ -12,7 +12,7 @@ import type { KeptDraft } from "./use-kept-draft.ts";
  */
 export function UnsavedNote({ dirty }: { readonly dirty: boolean }) {
   const state: SaveState = dirty ? "not-saved" : "idle";
-  return <SaveStatus state={state} labels={saveLabels()} />;
+  return <SaveStatus state={state} labels={saveLabels()} keepsRoom />;
 }
 
 /** The note that the editor started from changes the person left, with the way back to the saved theme. */

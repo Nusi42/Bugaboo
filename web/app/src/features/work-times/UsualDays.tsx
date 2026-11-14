@@ -73,7 +73,7 @@ export function UsualDays({ whose, read, workTimes }: UsualDaysProps) {
   const { usual } = workTimes;
   return (
     <Card
-      actions={<SaveStatus state={edits.saveState} labels={saveLabels()} />}
+      actions={<SaveStatus state={edits.saveState} labels={saveLabels()} keepsRoom />}
       heading={t("work-times.usual")}
       intro={usualSummary(week, usual)}
     >

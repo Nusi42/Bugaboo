@@ -140,7 +140,7 @@ export function CustomizePage() {
             {t("setting.ui.reset")}
           </Button>
         )}
-        <SaveStatus state={progress.state} labels={saveLabels()} />
+        <SaveStatus state={progress.state} labels={saveLabels()} keepsRoom />
       </div>
     </Card>
   );

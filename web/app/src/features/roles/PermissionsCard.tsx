@@ -17,7 +17,7 @@ export function PermissionsCard({ role }: { readonly role: Schema<"RoleBody"> })
   const edits = useRoleEdits(role.id);
   return (
     <Card
-      actions={<SaveStatus state={edits.saveState} labels={saveLabels()} />}
+      actions={<SaveStatus state={edits.saveState} labels={saveLabels()} keepsRoom />}
       heading={t("roles.permissions-title")}
       intro={t("roles.permissions-intro")}
     >

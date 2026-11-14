@@ -4100,26 +4100,30 @@ textarea,
   font-weight: var(--weight-regular);
 }
 
-[data-part="card.actions"] > [data-part="save-status"],
-[data-part="theme-editor.bar-end"] > [data-part="save-status"] {
-  min-inline-size: var(--size-save-words);
-  text-align: end;
+[data-part="save-status"][data-variant~="keeps-room"] {
+  display: inline-grid;
+  justify-items: end;
+}
+
+[data-part="save-status.room"],
+[data-part="save-status.words"] {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+[data-part="save-status.room"] {
+  visibility: hidden;
+}
+
+[data-part="save-status.room"]::before {
+  content: attr(data-words);
 }
 
 [data-part="setting-head"] {
-  position: relative;
-}
-
-[data-part="setting-head"] > [data-part="save-status"] {
-  position: absolute;
-  inset-block-start: 0;
-  inset-inline-end: 0;
-}
-
-[data-part="setting-head"] [data-part="field.label"],
-[data-part="setting-head"] [data-part="choice-group.legend"],
-[data-part="setting-head"] [data-part="switch"] {
-  padding-inline-end: var(--size-save-words);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--space-2);
 }
 
 [data-part="save-bar"] {

@@ -44,7 +44,7 @@ export function AppList() {
   const items: readonly ConnectedApp[] = apps.data?.items ?? [];
   return (
     <Card
-      actions={<SaveStatus state={takeBack.saveState} labels={saveLabels()} />}
+      actions={<SaveStatus state={takeBack.saveState} labels={saveLabels()} keepsRoom />}
       heading={t("connected-apps.list")}
     >
       {apps.isError ? <Alert tone={alertTone.danger}>{messageOf(apps.error)}</Alert> : null}

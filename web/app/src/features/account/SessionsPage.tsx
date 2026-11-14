@@ -17,7 +17,7 @@ export function SessionsPage() {
   const end = useEndSession();
   return (
     <Card
-      actions={<SaveStatus state={end.saveState} labels={saveLabels()} />}
+      actions={<SaveStatus state={end.saveState} labels={saveLabels()} keepsRoom />}
       heading={t("sessions.title")}
       level={1}
       intro={t("sessions.intro")}

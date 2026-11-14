@@ -167,8 +167,6 @@ tokens {
     // What puts the first line of words in the middle of the height of a control, in the line height of the words
     // that use it.
     size "pad-line-in-control" "calc(($size-control - 1lh) / 2)"
-    // The room of *Saving…*, *Saved* and *Not saved yet*, the longest of them, in the size of the words that say them.
-    size "size-save-words" "13ch"
     // Where the text of a cell of the grid of the timesheet starts: level with the first line of the boxes of lengths (the room
     // the box has above its text, and the room around the box).
     size "size-sheet-text-top" "calc($space-1 + $pad-line-in-control)"
@@ -5214,28 +5212,35 @@ part "save-status[state=not-saved]" {
     font-weight "$weight-regular"
 }
 
-// *Saving…*, *Saved* and *Not saved yet* in the head of a card and beside *Save theme* keep the room of the longest
-// of them from the start, so nothing beside them changes its width when the words come or go (UX §6.4).
-part "card.actions > save-status" "theme-editor.bar-end > save-status" {
-    min-inline-size "$size-save-words"
-    text-align end
+// Words that keep their room: every word stands in one place, unseen, and gives it its width; the words of the state
+// stand over them. The place is as wide as the longest of them in any language and font, from the start (UX §6.4).
+part "save-status[variant=keeps-room]" {
+    display inline-grid
+    justify-items end
 }
 
-// The head of the box of a setting: the setting, and *Saving…* and *Saved* at the end of its first line. The
-// first line keeps room at its end as wide as the longest of the words, from the start, so the words take no room
-// from the setting when they come and cover none of it; the lines under it keep their whole width (UX §6.4).
+part "save-status.room" "save-status.words" {
+    grid-column 1
+    grid-row 1
+}
+
+part "save-status.room" {
+    visibility hidden
+}
+
+part "save-status.room::before" {
+    content "attr(data-words)"
+}
+
+
+// The head of the box of a setting: the setting, and a cell at the end of its first line for *Saving…* and
+// *Saved*. The cell is always there and keeps the room of the longest of the words (`save-status[variant=keeps-room]`),
+// so the words take no room from the setting when they come and cover none of it (UX §6.4).
 part "setting-head" {
-    position relative
-}
-
-part "setting-head > save-status" {
-    position absolute
-    inset-block-start 0
-    inset-inline-end 0
-}
-
-part "setting-head field.label" "setting-head choice-group.legend" "setting-head switch" {
-    padding-inline-end "$size-save-words"
+    display grid
+    grid-template-columns "minmax(0, 1fr) auto"
+    align-items start
+    gap "$space-2"
 }
 
 // The bar under an editor: the plain buttons at the start, the one filled button at the end (R6).

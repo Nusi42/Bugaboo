@@ -92,7 +92,7 @@ function useLastChanged(actions: SettingActions) {
  * setting changed last, so a screen reader hears the first change too.
  */
 function savedOf(state: SaveState) {
-  return <SaveStatus state={state} labels={saveLabels()} />;
+  return <SaveStatus state={state} labels={saveLabels()} keepsRoom />;
 }
 
 /**
