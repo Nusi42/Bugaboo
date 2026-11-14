@@ -6,6 +6,7 @@
 //! use case with the request that `requests.rs` makes from the same input, so what is saved is
 //! what was shown. There is no second way to change anything.
 
+use bb_core::ErrorCode;
 use bb_policy::{Authorized, Masked};
 use serde_json::{Value, json};
 
@@ -116,10 +117,12 @@ impl<S: AuthStore> Ctx<'_, S> {
         let Some(key) = value.get("key").and_then(Value::as_str) else {
             return Ok(false);
         };
-        Ok(match self.visible_issue(actor, key).await {
-            Ok((issue, held)) => held.may_delete_issue(issue.reported_by),
-            Err(_) => false,
-        })
+        // An issue the actor cannot see has no way back for them; any other failure is one.
+        match self.visible_issue(actor, key).await {
+            Ok((issue, held)) => Ok(held.may_delete_issue(issue.reported_by)),
+            Err(AppError::Refused(ErrorCode::NotFound)) => Ok(false),
+            Err(error) => Err(error),
+        }
     }
 }
 
@@ -131,6 +134,8 @@ pub(super) fn create_issue<'a, S: AuthStore>(
     Box::pin(async move {
         let mut shown = preview::create_issue(ctx, run).await?;
         let made = create_issue_as_person(ctx, requests::create_issue(&run)?).await?;
+        // The issue is saved now. Reading its answer can only fail in serde, which would be a
+        // fault of the program: the error is returned, the issue stays.
         shown.push(made_issue_part(&made)?);
         shown.push(issue_saved(&made, true)?);
         // *Undo* of a new issue sends it to the trash: only for a person who may delete it.

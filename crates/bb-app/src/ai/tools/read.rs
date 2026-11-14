@@ -53,7 +53,7 @@ fn drop_html(value: &mut Value) {
 }
 
 /// The masked value of an answer, or the error of masking it: the one way the tools read one.
-pub(super) fn masked<T: bb_policy::Masked + serde::Serialize>(
+pub(crate) fn masked<T: bb_policy::Masked + serde::Serialize>(
     answer: &bb_policy::Authorized<T>,
 ) -> Result<Value, AppError> {
     answer

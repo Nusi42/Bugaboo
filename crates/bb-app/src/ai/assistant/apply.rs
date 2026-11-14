@@ -93,12 +93,8 @@ pub async fn apply_proposal<S: AuthStore>(
         },
     )
     .await?;
-    let saved: ToolAnswer = serde_json::from_value(
-        applied
-            .masked_value()
-            .map_err(|error| AppError::Internal(error.to_string()))?,
-    )
-    .map_err(|error| AppError::Internal(error.to_string()))?;
+    let saved: ToolAnswer = serde_json::from_value(crate::ai::tools::masked(&applied)?)
+        .map_err(|error| AppError::Internal(error.to_string()))?;
     let held = ctx.evaluation_of(&actor, Place::Organization).await?;
     let words = ctx.words_of(&actor, &input_for_words, &saved.changes).await;
     Ok(held.authorize(Applied {

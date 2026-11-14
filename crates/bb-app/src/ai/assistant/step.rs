@@ -58,9 +58,13 @@ impl<'a, S: AuthStore> Tools<'a, S> {
     }
 
     /// What the model reads of this call.
-    pub(super) async fn call(&mut self, call: &AiToolCall) -> String {
+    ///
+    /// # Errors
+    /// An internal error when an answer of the registry cannot be read back, which is a fault of
+    /// the program and not something the model is told.
+    pub(super) async fn call(&mut self, call: &AiToolCall) -> Result<String, AppError> {
         if self.look_ups.calls().is_some_and(|most| self.used >= most) {
-            return LIMIT_REACHED.to_owned();
+            return Ok(LIMIT_REACHED.to_owned());
         }
         self.used += 1;
         // Only previews: a tool that changes something is never run from here, so nothing the
@@ -82,9 +86,9 @@ impl<'a, S: AuthStore> Tools<'a, S> {
         match answered {
             Ok(answer) => match self.effects.get(&call.name) {
                 Some(ToolEffect::Changes) => self.proposed(call, &answer).await,
-                _ => read_text(&answer),
+                _ => Ok(split(&answer)?.text),
             },
-            Err(error) => sentence_of(&error),
+            Err(error) => Ok(sentence_of(&error)),
         }
     }
 
@@ -98,16 +102,18 @@ impl<'a, S: AuthStore> Tools<'a, S> {
         Place::Organization
     }
 
-    async fn proposed(&mut self, call: &AiToolCall, answer: &Authorized<ToolAnswer>) -> String {
+    async fn proposed(
+        &mut self,
+        call: &AiToolCall,
+        answer: &Authorized<ToolAnswer>,
+    ) -> Result<String, AppError> {
         // *Apply* takes no input over this size back, so a proposal of one could never be applied.
         if call.arguments.to_string().len() > PROPOSAL_INPUT_BYTES_MAX {
-            return NOT_VALID.to_owned();
+            return Ok(NOT_VALID.to_owned());
         }
-        let Some(shown) = split(answer) else {
-            return COULD_NOT_RUN.to_owned();
-        };
+        let shown = split(answer)?;
         if shown.changes.is_empty() {
-            return NOTHING.to_owned();
+            return Ok(NOTHING.to_owned());
         }
         let place = self.place_of(&call.arguments).await;
         match self
@@ -122,8 +128,8 @@ impl<'a, S: AuthStore> Tools<'a, S> {
             .await
         {
             Ok(true) => {}
-            Ok(false) => return NO_PERSON.to_owned(),
-            Err(error) => return sentence_of(&error),
+            Ok(false) => return Ok(NO_PERSON.to_owned()),
+            Err(error) => return Ok(sentence_of(&error)),
         }
         let already = self
             .proposals
@@ -131,7 +137,7 @@ impl<'a, S: AuthStore> Tools<'a, S> {
             .any(|each| each.tool == call.name && each.input == call.arguments);
         if !already {
             if self.proposals.len() >= PROPOSALS_MAX {
-                return TOO_MANY.to_owned();
+                return Ok(TOO_MANY.to_owned());
             }
             let Some(reference) = reference::create(
                 &self.ctx.services.links,
@@ -140,7 +146,7 @@ impl<'a, S: AuthStore> Tools<'a, S> {
                 &call.name,
                 &call.arguments,
             ) else {
-                return COULD_NOT_RUN.to_owned();
+                return Ok(COULD_NOT_RUN.to_owned());
             };
             let words = self
                 .ctx
@@ -154,18 +160,15 @@ impl<'a, S: AuthStore> Tools<'a, S> {
                 words,
             });
         }
-        format!("{}\n{PROPOSED}", shown.text)
+        Ok(format!("{}\n{PROPOSED}", shown.text))
     }
 }
 
 /// The text and the changes of an answer. An answer leaves the use cases only as its masked JSON,
 /// so that is what is read back.
-fn split(answer: &Authorized<ToolAnswer>) -> Option<ToolAnswer> {
-    serde_json::from_value(answer.masked_value().ok()?).ok()
-}
-
-fn read_text(answer: &Authorized<ToolAnswer>) -> String {
-    split(answer).map_or_else(|| COULD_NOT_RUN.to_owned(), |answer| answer.text)
+fn split(answer: &Authorized<ToolAnswer>) -> Result<ToolAnswer, AppError> {
+    serde_json::from_value(crate::ai::tools::masked(answer)?)
+        .map_err(|error| AppError::Internal(error.to_string()))
 }
 
 /// A sentence for the model about a call that did not work. It names a class of problem and never

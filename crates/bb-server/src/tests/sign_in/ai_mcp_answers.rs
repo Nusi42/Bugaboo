@@ -620,7 +620,7 @@ async fn ai_04_once_there_are_projects_they_decide_which_tools_an_app_is_offered
         )
         .await?;
         assert!(tool_names(&mcp, &noras).await?.is_empty());
-        // Ada's only project kept from AI leaves her role for the whole organization nothing.
+        // Ada's role for the whole organization allows every tool in ACME.
         let adas = sign_in_app(
             &mcp,
             &mut ada,
@@ -633,6 +633,7 @@ async fn ai_04_once_there_are_projects_they_decide_which_tools_an_app_is_offered
             tool_names(&mcp, &adas).await?,
             [&READING[..], &CHANGING[..]].concat()
         );
+        // Her only project kept from AI leaves her role for the whole organization nothing.
         ok(&ada
             .send(
                 "PUT",

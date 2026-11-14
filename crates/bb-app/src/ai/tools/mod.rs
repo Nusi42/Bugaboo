@@ -22,5 +22,6 @@ pub use call::{
 pub use inputs::*;
 pub use log::ToolCallStore;
 pub use preview::ProposedChange;
+pub(crate) use read::masked;
 pub use read::search_refusal;
 pub use registry::{DESIGNED_OUT, ToolSpec, registry};

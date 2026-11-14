@@ -149,9 +149,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 fn tools_of(
     list: &Authorized<ToolList>,
 ) -> Result<(Vec<AiToolSpec>, HashMap<String, ToolEffect>), AppError> {
-    let value = list
-        .masked_value()
-        .map_err(|error| AppError::Internal(error.to_string()))?;
+    let value = crate::ai::tools::masked(list)?;
     let mut specs = Vec::new();
     let mut effects = HashMap::new();
     for tool in value
@@ -279,7 +277,7 @@ pub async fn ask_assistant<S: AuthStore>(
         for call in &answer.tool_calls {
             results.push(AiPart::ToolResult {
                 call: call.id.clone(),
-                text: tools.call(call).await,
+                text: tools.call(call).await?,
             });
         }
         turns.push(AiTurn {
