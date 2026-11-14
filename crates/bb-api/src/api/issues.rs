@@ -12,8 +12,8 @@ use crate::api::editing::SaveTextBody;
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::issues::{
-    AssignablePeopleQuery, ChangeIssue, CreateIssue, DeleteIssue, IssueDetail, IssueQuery,
-    IssuesQuery, MoveIssue, RestoreIssue, SaveDescription,
+    AssignablePeopleQuery, ChangeIssue, ChangedIssue, CreateIssue, DeleteIssue, IssueDetail,
+    IssueQuery, IssuesQuery, MoveIssue, RestoreIssue, SaveDescription,
 };
 use std::collections::BTreeMap;
 
@@ -58,6 +58,31 @@ pub(crate) struct OwnHtmlBody {
     /// mark `x-safe-html`).
     #[masked(open)]
     html: String,
+}
+
+/// The answer of a change of an issue: the issue as it is now and, when the change set the people
+/// it is assigned to, its time factor.
+#[derive(Serialize, ToSchema, Masked)]
+pub(crate) struct IssueAfterChangeBody {
+    /// The issue as it is now.
+    #[masked(nested)]
+    issue: IssueItem,
+    /// The time factor of the issue as it is after this change, as its own route answers it: only
+    /// when the change set the people it is assigned to, whose first person the factor belongs to
+    /// (ADR-0030, amendment M8), so the screen shows it with the change. Left out when the issue
+    /// changed again before the factor could be read; the screen reads it then.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[masked(nested)]
+    time_factor: Option<TimeFactorBody>,
+}
+
+impl From<ChangedIssue> for IssueAfterChangeBody {
+    fn from(changed: ChangedIssue) -> Self {
+        Self {
+            issue: IssueItem::from(&changed.issue),
+            time_factor: changed.time_factor.map(TimeFactorBody::from),
+        }
+    }
 }
 
 /// One issue with what the person may do with it.
@@ -403,7 +428,7 @@ async fn get_issue(
     params(("issue" = String, Path, description = "The readable ID (WEB-142) or the internal ID of the issue.")),
     request_body = ChangeIssueBody,
     responses(
-        (status = 200, description = "The issue as it is now.", body = IssueItem),
+        (status = 200, description = "The issue as it is now.", body = IssueAfterChangeBody),
         InvalidAnswer,
         NotSignedInAnswer,
         ForbiddenAnswer,
@@ -441,11 +466,7 @@ async fn change_issue(
             },
         )
         .await?;
-    answer_authorized(&changed.map(|changed| {
-        let mut item = IssueItem::from(&changed.issue);
-        item.time_factor = changed.time_factor.map(TimeFactorBody::from);
-        item
-    }))
+    answer_authorized(&changed.map(IssueAfterChangeBody::from))
 }
 
 /// Saves the description of an issue under the edit lock the person holds, on the version they

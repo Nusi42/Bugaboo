@@ -524,10 +524,14 @@ impl ChangeAnswer for ChangedIssue {
                 }
                 None => None,
             };
-            Ok(held.authorize(Self {
-                issue: view,
-                time_factor,
-            }))
+            // Views of this one issue only, by the levels of its type, as the route of the factor.
+            Ok(held.authorize_item(
+                issue.issue_type,
+                Self {
+                    issue: view,
+                    time_factor,
+                },
+            ))
         }
     }
 }

@@ -53,7 +53,7 @@ The frozen copy is `tools/checks/api-frozen.json`, the generated description in 
 ### Kept in v1 for good, schemas (decided by the lead, WP-16)
 
 - **The `Page_*` names.** The 26 schemas that utoipa names `Page_X` for the page of a list of `X` keep these names. They are the name of a page of an item, and the client types are made from them.
-- **`IssueItem`.** The six operations that answer `IssueItem` (`changeIssue`, `saveIssueDescription`, `saveIssueFieldText`, `moveIssue`, `restoreIssue`, `createIssue`) keep it: its members are always there when no `fields=` is sent, so the optional types are only the type of the list.
+- **`IssueItem`.** The five operations that answer `IssueItem` (`saveIssueDescription`, `saveIssueFieldText`, `moveIssue`, `restoreIssue`, `createIssue`) keep it: its members are always there when no `fields=` is sent, so the optional types are only the type of the list. `changeIssue` answers it as the `issue` of `IssueAfterChangeBody`, beside the time factor a change of the people tells (M8, ADR-0030): the factor is no member of the item, so no list carries it.
 - **The tables of levels.** `FieldLevelTableBody`, `PeopleLevelTableBody` and their rows, cells and answers have plain names (a macro writes one struct for each kind of subject), so there is no generic schema name left.
 
 ### Compatible later (not in the freeze)

@@ -6609,7 +6609,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IssueItem"
+                  "$ref": "#/components/schemas/IssueAfterChangeBody"
                 }
               }
             }
@@ -24405,6 +24405,28 @@
           }
         }
       },
+      "IssueAfterChangeBody": {
+        "type": "object",
+        "description": "The answer of a change of an issue: the issue as it is now and, when the change set the people\nit is assigned to, its time factor.",
+        "required": ["issue"],
+        "properties": {
+          "issue": {
+            "$ref": "#/components/schemas/IssueItem",
+            "description": "The issue as it is now."
+          },
+          "time_factor": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TimeFactorBody",
+                "description": "The time factor of the issue as it is after this change, as its own route answers it: only\nwhen the change set the people it is assigned to, whose first person the factor belongs to\n(ADR-0030, amendment M8), so the screen shows it with the change. Left out when the issue\nchanged again before the factor could be read; the screen reads it then."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
       "IssueAgentWorkBody": {
         "type": "object",
         "description": "The agent work on an issue.",
@@ -24669,17 +24691,6 @@
               "$ref": "#/components/schemas/StatusChangeRef"
             },
             "description": "The status changes the person may make now, with the text of each button and the fields it\nstill needs. Empty when they may not change the issue. Hidden with the status."
-          },
-          "time_factor": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/TimeFactorBody",
-                "description": "The time factor of the issue as it is after this change, as its own route answers it: only\nin the answer of a change that set the people it is assigned to, whose first person the\nfactor belongs to (ADR-0030, amendment M8), so the screen shows it with the change."
-              },
-              {
-                "type": "null"
-              }
-            ]
           },
           "time_left": {
             "type": ["integer", "null"],

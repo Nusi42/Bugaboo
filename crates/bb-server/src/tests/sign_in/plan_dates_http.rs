@@ -101,8 +101,12 @@ async fn plan_01_start_and_due_date_are_fields_with_field_permissions() -> TestR
                 Some(json!({"version": 1, "due_date": "2026-11-14", "start_date": null})),
             )
             .await?;
-        assert_eq!(ok(&changed)?["due_date"], "2026-11-14");
-        assert!(changed.body.get("start_date").is_none(), "{}", changed.body);
+        assert_eq!(ok(&changed)?["issue"]["due_date"], "2026-11-14");
+        assert!(
+            changed.body["issue"].get("start_date").is_none(),
+            "{}",
+            changed.body
+        );
         // The starting levels are those of *Estimated time*: a Team member changes the dates, a
         // Contributor sees them and may not, a Guest does not see them at all.
         let (mut team, _) = site.person(StartingRole::TeamMember, "team").await?;
@@ -114,7 +118,7 @@ async fn plan_01_start_and_due_date_are_fields_with_field_permissions() -> TestR
             )
             .await?)?
         .clone();
-        assert_eq!(theirs["due_date"], "2026-11-21");
+        assert_eq!(theirs["issue"]["due_date"], "2026-11-21");
         let (mut contributor, _) = site
             .person(StartingRole::Contributor, "contributor")
             .await?;
@@ -438,7 +442,7 @@ async fn plan_03_a_date_change_is_one_event_in_the_history_and_undone_by_undo() 
                 Some(json!({"version": 3, "due_date": "2026-11-14"})),
             )
             .await?;
-        assert_eq!(ok(&back)?["due_date"], "2026-11-14");
+        assert_eq!(ok(&back)?["issue"]["due_date"], "2026-11-14");
         Ok(())
     })
     .await

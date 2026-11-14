@@ -7808,6 +7808,15 @@ export interface components {
       /** @description The ID of the invitation. */
       id?: string | null;
     };
+    /**
+     * @description The answer of a change of an issue: the issue as it is now and, when the change set the people
+     *     it is assigned to, its time factor.
+     */
+    IssueAfterChangeBody: {
+      /** @description The issue as it is now. */
+      issue: components["schemas"]["IssueItem"];
+      time_factor?: components["schemas"]["TimeFactorBody"] | null;
+    };
     /** @description The agent work on an issue. */
     IssueAgentWorkBody: {
       /** @description The parts of a brief the issue lacks now, so a hand-over can say it before it is made. */
@@ -7924,7 +7933,6 @@ export interface components {
        *     still needs. Empty when they may not change the issue. Hidden with the status.
        */
       status_changes?: components["schemas"]["StatusChangeRef"][] | null;
-      time_factor?: components["schemas"]["TimeFactorBody"] | null;
       /**
        * Format: int32
        * @description *Time left* in whole minutes, typed or worked out from the estimate and the time spent;
@@ -16873,7 +16881,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["IssueItem"];
+          "application/json": components["schemas"]["IssueAfterChangeBody"];
         };
       };
       400: components["responses"]["BadRequest"];

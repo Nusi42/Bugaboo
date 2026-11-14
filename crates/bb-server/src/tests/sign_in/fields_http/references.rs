@@ -110,7 +110,7 @@ async fn cf_01_people_groups_and_issues_are_shown_for_the_viewer_and_a_long_text
                 Some(json!({"version": second["version"], "fields": values})),
             )
             .await?;
-        let own = &ok(&set)?["own_fields"];
+        let own = &ok(&set)?["issue"]["own_fields"];
         // A person is a PersonRef, a group is its ID (and its name for those who see names), an
         // issue is its readable ID.
         assert_eq!(own[tester]["shown"], "name", "{own}");
@@ -122,7 +122,7 @@ async fn cf_01_people_groups_and_issues_are_shown_for_the_viewer_and_a_long_text
         let seen = guest.send("GET", &path, None).await?;
         let theirs = &ok(&seen)?["issue"]["own_fields"];
         assert!(theirs.get(duplicate).is_none(), "{theirs}");
-        let version = ok(&set)?["version"].clone();
+        let version = ok(&set)?["issue"]["version"].clone();
         person_refusals(
             &mut ada,
             &rig,
@@ -139,7 +139,7 @@ async fn cf_01_people_groups_and_issues_are_shown_for_the_viewer_and_a_long_text
                 "PATCH",
                 &path,
                 Some(json!({
-                    "version": ok(&set)?["version"],
+                    "version": ok(&set)?["issue"]["version"],
                     "fields": { notes: "Steps" },
                 })),
             )

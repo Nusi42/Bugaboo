@@ -2420,7 +2420,7 @@ unit        = "day" | "days" | "week" | "weeks" | "month" | "months"</code></pre
 <h5>Kept in v1 for good, schemas (decided by the lead, WP-16)</h5>
 <ul>
 <li><strong>The <code>Page_*</code> names.</strong> The 26 schemas that utoipa names <code>Page_X</code> for the page of a list of <code>X</code> keep these names. They are the name of a page of an item, and the client types are made from them.</li>
-<li><strong><code>IssueItem</code>.</strong> The six operations that answer <code>IssueItem</code> (<code>changeIssue</code>, <code>saveIssueDescription</code>, <code>saveIssueFieldText</code>, <code>moveIssue</code>, <code>restoreIssue</code>, <code>createIssue</code>) keep it: its members are always there when no <code>fields=</code> is sent, so the optional types are only the type of the list.</li>
+<li><strong><code>IssueItem</code>.</strong> The five operations that answer <code>IssueItem</code> (<code>saveIssueDescription</code>, <code>saveIssueFieldText</code>, <code>moveIssue</code>, <code>restoreIssue</code>, <code>createIssue</code>) keep it: its members are always there when no <code>fields=</code> is sent, so the optional types are only the type of the list. <code>changeIssue</code> answers it as the <code>issue</code> of <code>IssueAfterChangeBody</code>, beside the time factor a change of the people tells (M8, ADR-0030): the factor is no member of the item, so no list carries it.</li>
 <li><strong>The tables of levels.</strong> <code>FieldLevelTableBody</code>, <code>PeopleLevelTableBody</code> and their rows, cells and answers have plain names (a macro writes one struct for each kind of subject), so there is no generic schema name left.</li>
 </ul>
 <h5>Compatible later (not in the freeze)</h5>

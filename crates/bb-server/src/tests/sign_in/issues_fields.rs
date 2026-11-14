@@ -174,8 +174,8 @@ async fn sec_06_issue_answers_refuse_every_field_the_role_may_not_see() -> TestR
                 })),
             )
             .await?;
-        assert_eq!(ok(&timed)?["estimated_time"], 240);
-        assert_eq!(timed.body["due_date"], "2026-11-07");
+        assert_eq!(ok(&timed)?["issue"]["estimated_time"], 240);
+        assert_eq!(timed.body["issue"]["due_date"], "2026-11-07");
         let mut readers = vec![(
             "title reader".to_owned(),
             title_only_reader(&site, &rig).await?,
@@ -344,7 +344,7 @@ async fn sec_04_an_unchanged_value_of_a_field_i_may_not_change_is_refused_like_a
                     Some(json!({"version": version, "title": name})),
                 )
                 .await?;
-            assert_eq!(ok(&renamed)?["title"], name);
+            assert_eq!(ok(&renamed)?["issue"]["title"], name);
         }
         Ok(())
     })
