@@ -30,6 +30,9 @@ pub struct FieldMask {
     /// The levels for each issue type that has levels of its own; empty when no role set a level
     /// for an issue type.
     types: BTreeMap<IssueTypeId, BTreeMap<FieldKey, FieldLevel>>,
+    /// The issue type the levels were narrowed to (`for_type`), when they were: an item of another
+    /// type inside it is masked as if nothing may be seen, never by the levels of this type.
+    narrowed: Option<IssueTypeId>,
 }
 
 impl FieldMask {
@@ -84,6 +87,16 @@ impl FieldMask {
     #[must_use]
     pub fn for_type(&self, issue_type: Option<IssueTypeId>) -> std::borrow::Cow<'_, Self> {
         use std::borrow::Cow;
+        if let (Some(narrowed), Some(known)) = (self.narrowed, issue_type)
+            && narrowed != known
+        {
+            // A view of another item where the levels of one item count: fail closed.
+            return Cow::Owned(Self {
+                levels: BTreeMap::new(),
+                types: BTreeMap::new(),
+                narrowed: Some(known),
+            });
+        }
         if self.types.is_empty() {
             return Cow::Borrowed(self);
         }
@@ -91,6 +104,7 @@ impl FieldMask {
             return Cow::Owned(Self {
                 levels: self.types.get(&known).unwrap_or(&self.levels).clone(),
                 types: BTreeMap::new(),
+                narrowed: Some(known),
             });
         }
         let lowest = self
@@ -108,6 +122,7 @@ impl FieldMask {
         Cow::Owned(Self {
             levels: lowest,
             types: BTreeMap::new(),
+            narrowed: None,
         })
     }
 }
@@ -134,7 +149,11 @@ impl Evaluation {
                 (issue_type, levels)
             })
             .collect();
-        FieldMask { levels, types }
+        FieldMask {
+            levels,
+            types,
+            narrowed: None,
+        }
     }
 
     /// Whether the viewer may see the field on an issue of some type (a name, not a value).

@@ -265,14 +265,32 @@ fn mask_from(
     )
 }
 
-/// Whether the type of a member names the view itself (`Option<Box<Issue>>` inside `Issue`).
+/// Whether the type of a member is the view itself, inside any wrapper (`Option<Box<Issue>>` inside
+/// `Issue`): the view or `Self` by its own name, not a type of another module that has the same
+/// last name (`other::Issue`), which is checked like any other member.
 fn holds_itself(view: &Ident, ty: &syn::Type) -> bool {
-    fn names(tokens: TokenStream, view: &Ident) -> bool {
-        tokens.into_iter().any(|token| match token {
-            proc_macro2::TokenTree::Ident(ident) => ident == *view || ident == "Self",
-            proc_macro2::TokenTree::Group(group) => names(group.stream(), view),
-            _ => false,
-        })
+    match ty {
+        syn::Type::Path(path) if path.qself.is_none() => {
+            let Some(last) = path.path.segments.last() else {
+                return false;
+            };
+            if path.path.segments.len() == 1 && (last.ident == *view || last.ident == "Self") {
+                return true;
+            }
+            match &last.arguments {
+                syn::PathArguments::AngleBracketed(arguments) => {
+                    arguments.args.iter().any(|argument| {
+                        matches!(argument, syn::GenericArgument::Type(inner) if holds_itself(view, inner))
+                    })
+                }
+                _ => false,
+            }
+        }
+        syn::Type::Reference(reference) => holds_itself(view, &reference.elem),
+        syn::Type::Array(array) => holds_itself(view, &array.elem),
+        syn::Type::Slice(slice) => holds_itself(view, &slice.elem),
+        syn::Type::Paren(inner) => holds_itself(view, &inner.elem),
+        syn::Type::Group(inner) => holds_itself(view, &inner.elem),
+        _ => false,
     }
-    names(quote! { #ty }, view)
 }

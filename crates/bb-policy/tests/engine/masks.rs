@@ -520,6 +520,28 @@ fn cf_06_a_level_for_an_issue_type_wins_over_the_level_for_all_types() {
 }
 
 #[test]
+fn sec_04_the_mask_of_one_item_hides_everything_of_an_item_of_another_type_inside_it() {
+    let TypedWorld {
+        world,
+        severity,
+        bug,
+        task,
+        ..
+    } = typed_world();
+    let at_web = world.at(world.web);
+    // The levels of a task: a view of the same task inside keeps them.
+    let of_task = at_web.field_mask_for(Some(task));
+    assert!(of_task.for_type(Some(task)).can_see(severity));
+    // A bug inside the answer of a task gets no levels of the task: it fails closed.
+    assert!(!of_task.for_type(Some(bug)).can_see(severity));
+    assert!(
+        !of_task
+            .for_type(Some(bug))
+            .can_see(FieldKey::BuiltIn(Field::Title))
+    );
+}
+
+#[test]
 fn sec_03_check_access_explains_a_field_level_for_one_issue_type() {
     use bb_policy::LevelSource;
 

@@ -368,6 +368,9 @@ pub(crate) struct Listed<V> {
 }
 
 impl<V: Masked> Masked for Listed<V> {
+    const MASK_FROM: bb_policy::MaskFrom = V::MASK_FROM;
+    const HOLDS_ITEM_TYPE: bool = V::HOLDS_ITEM_TYPE;
+
     fn mask(value: &mut Value, mask: &bb_policy::FieldMask) {
         mask_member::<Vec<V>>(value, ITEMS, mask);
     }
