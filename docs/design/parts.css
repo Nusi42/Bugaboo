@@ -1011,7 +1011,6 @@ textarea,
   [data-part="list-scroll"]::before,
   [data-part="window.body"]::before,
   [data-part="confirm.body"]::before,
-  [data-part="people"]::before,
   [data-part="search-panel"]::before,
   [data-part="bottom-sheet"] [data-part="search-bar"]::before,
   [data-part="search-suggestions"]::before,
@@ -1040,7 +1039,6 @@ textarea,
   [data-part="list-scroll"]::after,
   [data-part="window.body"]::after,
   [data-part="confirm.body"]::after,
-  [data-part="people"]::after,
   [data-part="search-panel"]::after,
   [data-part="bottom-sheet"] [data-part="search-bar"]::after,
   [data-part="search-suggestions"]::after,
@@ -4647,11 +4645,9 @@ textarea,
 
 [data-part="people"] {
   display: block;
-  max-block-size: min(var(--size-list-scroll), calc(5 * var(--size-person-row)));
   margin: 0;
   padding-block: 0;
   padding-inline: var(--ring-width);
-  overflow-y: auto;
   border: var(--border-width) solid var(--border-subtle);
   border-radius: var(--r-ctl);
   background: var(--bg-surface);
@@ -4662,7 +4658,6 @@ textarea,
   [data-part="list-scroll"],
   [data-part="window.body"],
   [data-part="confirm.body"],
-  [data-part="people"],
   [data-part="search-panel"],
   [data-part="bottom-sheet"] [data-part="search-bar"],
   [data-part="search-suggestions"],
@@ -4686,7 +4681,6 @@ textarea,
 }
 
 @supports not (animation-timeline: scroll()) {
-  [data-part="people"],
   [data-part="list-panel"] {
     --cue-cover: var(--bg-surface);
   }

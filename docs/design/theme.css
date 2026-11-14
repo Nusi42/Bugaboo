@@ -44,7 +44,6 @@
   --size-row: 44px;
   --size-row-compact: 28px;
   --pad-nothing: var(--pad-box);
-  --size-list-scroll: 70dvh;
   --size-list-scroll-least: 120px;
   --size-edge: 4px;
   --size-name: 112px;
@@ -156,10 +155,6 @@
   --size-page-gutter: var(--space-4);
   --size-dock-gap: var(--space-3);
   --size-dock-strip: calc(var(--size-control) + 2 * var(--size-dock-gap));
-  --size-person-row: calc(
-    2 * var(--space-2) + 2 * var(--space-1) + var(--fs-md) * var(--lh-body) + 3 * var(--fs-base) *
-      var(--lh-body) + var(--border-width)
-  );
   --size-list-tall: calc(var(--size-list) * 2);
   --size-line-medium: 80%;
   --size-line-short: 55%;

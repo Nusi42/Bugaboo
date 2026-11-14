@@ -115,8 +115,6 @@ tokens {
     size "size-row-compact" "28px" touch="44px"
     // The sentence of an empty list stands in from the list's edge on a computer and on the edge itself on a phone (R1).
     size "pad-nothing" "$pad-box" phone="0px"
-    // How tall the list of people may be before it scrolls inside the page (the issue lists take the rest of the window).
-    size "size-list-scroll" "70dvh"
     // The least the box of the rows of an issue list is high, where the page above it takes most of the window.
     size "size-list-scroll-least" "120px"
     // The coloured edge of a row for its priority.
@@ -323,8 +321,6 @@ tokens {
     // The room above and below the bar of a minimized window inside its strip, and the strip: bar and room.
     size "size-dock-gap" "$space-3"
     size "size-dock-strip" "calc($size-control + 2 * $size-dock-gap)"
-    // A row of the people list as tall as a name and three lines of small text need: the box of the list is five of them.
-    size "size-person-row" "calc(2 * $space-2 + 2 * $space-1 + $fs-md * $lh-body + 3 * $fs-base * $lh-body + $border-width)"
     size "size-list-tall" "calc($size-list * 2)"
     // Placeholder lines and the sample of a theme: how much of the width a shorter line takes.
     size "size-line-medium" "80%"
@@ -2198,10 +2194,10 @@ part "overlay.modal[variant=top]" {
 
 // The shadows at the ends of every box that scrolls its own content and has more behind it: a menu or a sheet taller than the
 // screen, the options of a picker, the rows of the list of issues (a box of its own, as high as the page lets it be), the body
-// of a window or of a question, the list of people, the help of the search, the body of a sheet of a phone and the offers
+// of a window or of a question, the help of the search, the body of a sheet of a phone and the offers
 // of Advanced search and the body of the side panel (L6, L7). The scroll position drives them, where the browser has scroll timelines.
 // A box that holds its rows or fields back from its edge (a ring room, a padding) moves them in its own rule.
-part "overlay.dialog::before" "list-scroll::before" "window.body::before" "confirm.body::before" "people::before" "search-panel::before" "bottom-sheet search-bar::before" "search-suggestions::before" "side-panel.body::before" "list-panel::before" {
+part "overlay.dialog::before" "list-scroll::before" "window.body::before" "confirm.body::before" "search-panel::before" "bottom-sheet search-bar::before" "search-suggestions::before" "side-panel.body::before" "list-panel::before" {
     supports "(animation-timeline: scroll())" {
         use "edge-block"
         use "edge-from-start"
@@ -2209,7 +2205,7 @@ part "overlay.dialog::before" "list-scroll::before" "window.body::before" "confi
     }
 }
 
-part "overlay.dialog::after" "list-scroll::after" "window.body::after" "confirm.body::after" "people::after" "search-panel::after" "bottom-sheet search-bar::after" "search-suggestions::after" "side-panel.body::after" "list-panel::after" {
+part "overlay.dialog::after" "list-scroll::after" "window.body::after" "confirm.body::after" "search-panel::after" "bottom-sheet search-bar::after" "search-suggestions::after" "side-panel.body::after" "list-panel::after" {
     supports "(animation-timeline: scroll())" {
         use "edge-block"
         use "edge-from-end"
@@ -5736,28 +5732,28 @@ part "row-chevron" {
 
 // ───────────── People ─────────────
 
+// The list of people stands in a page, above the cards of the invitations and of the rule of signing up: it has no
+// scroll box of its own (UX §6.5). It is as high as all its rows, and the main column scrolls it with the cards under it;
+// the list still draws only the rows that are in the window. A row is as tall as its words need (nothing is cut with
+// an ellipsis).
 part "people" {
     display block
-    // About five rows high, never more than most of the screen: a row is as tall as its words need (nothing is
-    // cut with an ellipsis), the list draws only the rows on screen.
-    max-block-size "min($size-list-scroll, calc(5 * $size-person-row))"
     margin 0
     padding-block 0
     padding-inline "$ring-width"
-    overflow-y auto
     use "surface-box"
 }
 
 // Where the browser has no scroll timelines these boxes keep the old cue (covers that scroll with the content). It comes after the six
 // boxes, so their own backgrounds do not reset it. The rows of `list-scroll` are opaque and paint over it: there that cue is not seen (accepted).
-part "overlay.dialog" "list-scroll" "window.body" "confirm.body" "people" "search-panel" "bottom-sheet search-bar" "search-suggestions" "side-panel.body" "list-panel" {
+part "overlay.dialog" "list-scroll" "window.body" "confirm.body" "search-panel" "bottom-sheet search-bar" "search-suggestions" "side-panel.body" "list-panel" {
     supports "not (animation-timeline: scroll())" {
         use "scroll-cue"
     }
 }
 
-// The covers of the old cue in the list of people and in Customize are the color of their box, the plain surface.
-part "people" "list-panel" {
+// The covers of the old cue in Customize are the color of its box, the plain surface.
+part "list-panel" {
     supports "not (animation-timeline: scroll())" {
         --cue-cover "$bg-surface"
     }

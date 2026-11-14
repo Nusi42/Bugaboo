@@ -42,7 +42,7 @@ test("ux_5 the shadows at the ends of a scrolling box are clear in every theme",
   const measured: Record<string, number> = {};
   const wanted: readonly (readonly [string, string])[] = [
     [paths.fieldPermissions, "access.scroll"],
-    [paths.people, "people"],
+    [projectIssuesAddress("WEB"), "list-scroll"],
   ];
   await inOrder(
     wanted.map(([address, part]) => async () => {
