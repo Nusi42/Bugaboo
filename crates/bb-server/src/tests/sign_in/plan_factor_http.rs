@@ -3,10 +3,13 @@
 //! searched, sorted or grouped by, and told to the person on the bar when somebody else changes it.
 //! Every flow runs on SQLite and PostgreSQL.
 
-use bb_app::access::StartingRole;
+use bb_app::access::{Permission, StartingRole};
+use bb_core::access::FieldLevel;
+use bb_core::fields::Field;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
+use super::exit_masks::{issue_of_type, other_type, person_with_levels};
 use super::http::{Browser, Reply, rig_and_app};
 use super::issues_site::{ISSUES, Site, ok};
 use super::plan_privacy_http::field_level;
@@ -295,6 +298,51 @@ async fn plan_14_the_time_factor_names_no_person_where_assigned_to_is_hidden() -
         let read = ok(&read)?;
         assert_eq!(read["person"], Value::Null, "{read}");
         assert!(!read.to_string().contains("Lea Lang"), "{read}");
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn plan_14_the_time_factor_is_hidden_by_the_levels_of_the_type_of_the_issue() -> TestResult {
+    each_database("plan_14_factor_per_type", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let task = other_type(&site, &mut ada).await?;
+        let (_lea, lea_id) = site.person(StartingRole::TeamMember, "lea").await?;
+        // The time factor is shown to this role, except on a bug (ADR-0027).
+        let (mut tim, _) = person_with_levels(
+            &site,
+            &rig,
+            "tim",
+            &[
+                Permission::SeeProjects,
+                Permission::SeeIssues,
+                Permission::ChangeIssues,
+            ],
+            &[
+                (Field::Title.into(), None, FieldLevel::CanSee),
+                (Field::AssignedTo.into(), None, FieldLevel::CanChange),
+                (Field::TimeFactor.into(), None, FieldLevel::CanSee),
+                (
+                    Field::TimeFactor.into(),
+                    Some(&site.kind),
+                    FieldLevel::Hidden,
+                ),
+            ],
+        )
+        .await?;
+        for (issue_type, shown) in [(task.as_str(), true), (site.kind.as_str(), false)] {
+            let (key, _) = issue_of_type(&site, &mut ada, issue_type, "Login screen").await?;
+            ok(&change(&mut ada, &key, json!({"assigned_to": [lea_id.to_string()]})).await?)?;
+            // The answer of a change of the people and the route of the factor mask it alike, by
+            // the levels of the issue's own type, so the screen does not show it and then lose it.
+            let changed = change(&mut tim, &key, json!({"assigned_to": []})).await?;
+            let answered = ok(&changed)?["time_factor"].clone();
+            let read = tim.send("GET", &factor_of(&key), None).await?;
+            assert_eq!(answered, *ok(&read)?, "{issue_type}");
+            assert_eq!(answered.get("percent").is_some(), shown, "{answered}");
+        }
         Ok(())
     })
     .await

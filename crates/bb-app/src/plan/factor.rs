@@ -257,7 +257,7 @@ pub async fn time_factor<S: AuthStore>(
     let actor = ctx.actor(&query.session_token).await?;
     let (issue, held) = ctx.visible_issue(&actor, &query.issue).await?;
     let view = ctx.factor_now(&actor, &held, &issue).await?;
-    Ok(held.authorize(view))
+    Ok(held.authorize_item(issue.issue_type, view))
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -390,7 +390,7 @@ pub async fn set_time_factor<S: AuthStore>(
                 Some(first),
             )
             .await?;
-        return Ok(held.authorize(view));
+        return Ok(held.authorize_item(issue.issue_type, view));
     }
     let changes = issue_counted_up(
         factor_changes(before.as_ref(), after.as_ref(), first),
@@ -433,5 +433,5 @@ pub async fn set_time_factor<S: AuthStore>(
             Some(first),
         )
         .await?;
-    Ok(held.authorize(view))
+    Ok(held.authorize_item(issue.issue_type, view))
 }

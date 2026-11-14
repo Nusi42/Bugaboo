@@ -76,9 +76,11 @@ impl FieldMask {
     }
 
     /// The mask for an item of this issue type. An issue type with levels of its own has its own
-    /// mask; one without has the general one. An item whose type is not known gets, for each field,
-    /// the lowest level it has in any type, so a field that is hidden for some type is never shown
-    /// by a view that does not say its type.
+    /// mask; one without has the general one. Either is the mask of that one type, without the
+    /// levels of the others, so a view inside the item that does not say its type is masked by
+    /// the item's type too. An item whose type is not known gets, for each field, the lowest level
+    /// it has in any type, so a field that is hidden for some type is never shown by a view that
+    /// does not say its type.
     #[must_use]
     pub fn for_type(&self, issue_type: Option<IssueTypeId>) -> std::borrow::Cow<'_, Self> {
         use std::borrow::Cow;
@@ -86,15 +88,10 @@ impl FieldMask {
             return Cow::Borrowed(self);
         }
         if let Some(known) = issue_type {
-            return self
-                .types
-                .get(&known)
-                .map_or(Cow::Borrowed(self), |levels| {
-                    Cow::Owned(Self {
-                        levels: levels.clone(),
-                        types: BTreeMap::new(),
-                    })
-                });
+            return Cow::Owned(Self {
+                levels: self.types.get(&known).unwrap_or(&self.levels).clone(),
+                types: BTreeMap::new(),
+            });
         }
         let lowest = self
             .levels
@@ -159,6 +156,16 @@ impl Evaluation {
         Authorized {
             value,
             mask: self.field_mask(),
+        }
+    }
+
+    /// Wraps `value`, a view of one issue of `issue_type` that does not hold its type, with the
+    /// mask of that type (ADR-0027): the same mask the view gets inside the issue's own view.
+    #[must_use]
+    pub fn authorize_item<T>(&self, issue_type: IssueTypeId, value: T) -> Authorized<T> {
+        Authorized {
+            value,
+            mask: self.field_mask_for(Some(issue_type)),
         }
     }
 }
