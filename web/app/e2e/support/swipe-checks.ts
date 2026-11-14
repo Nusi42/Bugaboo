@@ -6,7 +6,7 @@ import { type ApiSession } from "./api.ts";
 import { readIssue } from "./issues.ts";
 import { sampleAdministrator } from "./sample.ts";
 import { type Instance } from "./server.ts";
-import { refusal } from "./fixtures.ts";
+import { refusal } from "./answers.ts";
 
 /** The sample's administrator, through the API: who the swipe tests check and put back. */
 export function adminSession(server: Instance): Promise<ApiSession> {
