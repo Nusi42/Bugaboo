@@ -10,6 +10,7 @@ import {
   opened,
   type ScreenAddress,
 } from "./support/screen-list.ts";
+import { layoutOf } from "./support/layout.ts";
 import { inOrder } from "./support/sequence.ts";
 import { lowWindow, scrollingOf } from "./support/scrolling.ts";
 import { paths } from "../src/shared/paths.ts";
@@ -22,6 +23,9 @@ test.use({ sample: true });
 
 /** Every screen, one after the other, takes longer than an ordinary test. */
 const EVERY_SCREEN_MS = 900_000;
+
+/** A small phone (an iPhone SE with the browser's bars): lower than the low window of a computer. */
+const SMALL_PHONE = { width: 375, height: 548 } as const;
 
 /** What breaks the rule on one screen. */
 interface Found {
@@ -74,4 +78,13 @@ test("ux_06_a_low_window_scrolls_the_card_before_sign_in_and_never_the_page", as
   await expect(page).toHaveURL(addressWith(paths.secondStep));
   await expect(page.getByRole("heading", { level: 1, name: t("second-step.title") })).toBeVisible();
   expect([...signInPage, ...(await foundOn(page, paths.secondStep))]).toEqual([]);
+});
+
+test("ux_06_a_small_phone_keeps_one_box_on_every_screen", async ({ page, server }) => {
+  test.setTimeout(EVERY_SCREEN_MS);
+  test.skip(layoutOf(page) !== "phone", "the size of a phone");
+  await page.setViewportSize(SMALL_PHONE);
+  const values = await screenValues(server);
+  await signIn(page, sampleAdministrator());
+  expect(await scrollingOnEach(page, everyScreen(values))).toEqual([]);
 });

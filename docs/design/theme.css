@@ -45,7 +45,7 @@
   --size-row-compact: 28px;
   --pad-nothing: var(--pad-box);
   --size-list-scroll-least: 120px;
-  --size-pane-head-room: 440px;
+  --size-low-window: 680px;
   --size-edge: 4px;
   --size-name: 112px;
   --size-details-name: 112px;

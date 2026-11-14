@@ -72,8 +72,8 @@ test("ux_4_2 Customize beside the list fits the room the list has: its columns s
 }) => {
   test.skip(layoutOf(page) !== "computer", "only a computer has Customize beside the list");
   await signIn(page, ada);
-  // A low window, so the columns of Customize do not all fit.
-  await page.setViewportSize({ width: 1280, height: 600 });
+  // A window just above a low one (UX §6.5), so the columns of Customize do not all fit.
+  await page.setViewportSize({ width: 1280, height: 720 });
   await page.goto(projectIssuesAddress("WEB"));
   await expect(rowOf(page, webIssues.login)).toBeVisible();
   await page.getByRole("button", { name: t("issues.customize"), exact: true }).click();
@@ -82,7 +82,7 @@ test("ux_4_2 Customize beside the list fits the room the list has: its columns s
     boxOf(panel),
     boxOf(page.locator("[data-part='list-scroll']")),
   ]);
-  // In this low window the rows fill the rest of it: the panel, as high as its line, ends with the box of the rows,
+  // In this window the rows fill the rest of it: the panel, as high as its line, ends with the box of the rows,
   // inside the card and the window; what does not fit scrolls under a shadow.
   expect(Math.abs(side.y + side.height - (rows.y + rows.height))).toBeLessThanOrEqual(2);
   await expect.poll(() => shadowsOf(panel)).toEqual({ start: 0, end: 1 });

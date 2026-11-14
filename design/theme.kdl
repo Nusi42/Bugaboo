@@ -117,9 +117,12 @@ tokens {
     size "pad-nothing" "$pad-box" phone="0px"
     // The least the box of the rows of an issue list is high, where the page above it takes most of the window.
     size "size-list-scroll-least" "120px"
-    // The most the top bar and what stands above the boxes of a pane (the title, the toolbar, the counts) take of the
-    // window. A window lower than this and the least height of the boxes is low: there the main column scrolls (UX §6.5).
-    size "size-pane-head-room" "440px"
+    // A window this low or lower on a computer is low (UX §6.5): the top bar and what stands above the boxes of a pane
+    // (the title, the toolbar, the filters, the counts) take up to 506 px (the timeline with larger text), the box of
+    // the rows keeps its least 120 px, and the bar of ticked issues over its foot is a line of 54 px (a control, its
+    // padding and border). Lower than their sum, the main column scrolls them into reach. A plain number, as a media
+    // query needs; the browser tests measure the head of each pane against it.
+    size "size-low-window" "680px"
     // The coloured edge of a row for its priority.
     size "size-edge" "4px"
     // The name of a value in the details: 112 on a computer, 120 on a phone.
@@ -1131,6 +1134,12 @@ mixin "ring-room-flush" {
     margin-inline "calc($ring-room * -1)"
 }
 
+// With the ring room: the box reaches up by the same size, so what it holds starts level with the top of the box beside
+// it. Only at its start: its end stays at the end of the pane, where reaching out would hide the room under the edge.
+mixin "ring-room-flush-start" {
+    margin-block-start "calc($ring-room * -1)"
+}
+
 // What floats over or stands out of the page: a card, a sheet, a panel, an offer.
 mixin "floating-box" {
     box-sizing border-box
@@ -2098,13 +2107,13 @@ part "choice-group.choices[variant=radios] choice-group.label" {
     font-size "$fs-md"
 }
 
-// Many small choices (the colors) stand in a grid that wraps, several in a row, instead of one row or one column.
 // The samples of the themes: as high as the highest of them in each line, with the room of a row between them.
 part "choice-group.choices[variant=tiles]" {
     align-items stretch
     gap "$space-3"
 }
 
+// Many small choices (the colors) stand in a grid that wraps, several in a row, instead of one row or one column.
 part "choice-group.choices[variant=grid]" {
     display grid
     grid-template-columns "repeat(auto-fill, minmax($size-swatch, 1fr))"
@@ -6885,6 +6894,11 @@ part "sidebar" {
     padding "$space-3"
     border-right "$border-width solid $divider"
     background "$bg-surface"
+    // On paper the menu is as long as it is, like every box (UX §6.5).
+    media "print" {
+        position static
+        use "free-on-paper"
+    }
 }
 
 // In a window too low for the whole sidebar the sections stand closer, so the timer and the work day fit (M5-F150).
@@ -7837,9 +7851,9 @@ part "issue-details" {
 // switch), so a hidden one far down a box does not make the main column taller than the window.
 part "issue-body[variant=split] issue-main" "focus-view:has(issue-body[variant=split]) focus-view.list" {
     use "pane-scroll-box"
+    // The first section starts level with the top of the Details, with the room for the ring above it too.
+    use "ring-room-flush-start"
     position relative
-    // Room for the ring at the sides only: the first section starts level with the top of the Details.
-    padding-block 0
 }
 
 // The room for the ring at both sides comes on top of the width of the slim list, so its rows keep their width.
@@ -16633,15 +16647,18 @@ part "search-panel search-suggestions" {
 // never scrolls, on a computer as on a phone (the timeline on a phone stands in the main column, which is its box).
 part "app-layout.main:has(list-main list-scroll)" "app-layout.main:has(issue-body[variant=split])" "app-layout:not(app-layout[variant=phone]) app-layout.main:has(timeline-body)" {
     overflow-y hidden
-    // A low window: the boxes keep their least height and the main column scrolls them into reach (UX §6.5).
-    media "(max-height: calc($size-pane-head-room + $size-list-scroll-least))" {
-        overflow-y auto
-    }
     media "print" {
         overflow visible
     }
 }
 
+// A low window on a computer: the boxes keep their least height and the main column scrolls them into reach (UX §6.5).
+// A phone keeps its one box: its main column holds the list there.
+part "app-layout:not(app-layout[variant=phone]) app-layout.main:has(timeline-body)" "app-layout:not(app-layout[variant=phone]) app-layout.main:has(issue-body[variant=split])" "app-layout:not(app-layout[variant=phone]) app-layout.main:has(list-main list-scroll)" {
+    media "screen and (max-height: $size-low-window)" {
+        overflow-y auto
+    }
+}
 
 // Only where there are rows that scroll does every box give way below its content; a page without rows (nothing found,
 // a mistake) keeps the room of its content, with the padding of its card, and the page scrolls.
@@ -16675,10 +16692,17 @@ part "app-layout focus-view:has(issue-body[variant=split])" "issue-body[variant=
 }
 
 // The boxes of a pane keep their least height, also where the window is low.
-part "issue-body[variant=split]" "timeline-tray" {
+part "issue-body[variant=split]" {
     min-height "$size-list-scroll-least"
     media "print" {
         min-height auto
+    }
+}
+
+// *Not scheduled yet* keeps its least height where the window is low; otherwise it shares the room with the chart.
+part "timeline-tray" {
+    media "screen and (max-height: $size-low-window)" {
+        min-height "$size-list-scroll-least"
     }
 }
 
@@ -16748,17 +16772,32 @@ part "list-main list-scroll" {
     min-height "calc($size-list-scroll-least + $bar-ticked-height)"
 }
 
-// In a low window the frame of a list is as high as its head and the least of its rows: it does not cut them, the main
-// column scrolls (UX §6.5).
-part "app-layout app-layout.inner:has(list-scroll)" "app-layout card:has(list-scroll)" "app-layout card > stack:has(list-scroll)" "app-layout list-editor.list:has(list-scroll)" "app-layout list-main:has(list-scroll)" "app-layout search-results:has(list-scroll)" "app-layout list-editor:has(list-scroll)" "app-layout list-body:has(list-scroll)" "app-layout list-column:has(list-scroll)" {
-    media "(max-height: calc($size-pane-head-room + $size-list-scroll-least))" {
+// In a low window on a computer the frame of a list is as high as its head and the least of its rows: it does not cut
+// them, the main column scrolls (UX §6.5). The box of the rows is no higher than its least there, so it stays a box that
+// draws only the rows in view.
+part "app-layout:not(app-layout[variant=phone]) app-layout.inner:has(list-scroll)" "app-layout:not(app-layout[variant=phone]) card:has(list-scroll)" "app-layout:not(app-layout[variant=phone]) card > stack:has(list-scroll)" "app-layout:not(app-layout[variant=phone]) list-editor.list:has(list-scroll)" "app-layout:not(app-layout[variant=phone]) list-main:has(list-scroll)" "app-layout:not(app-layout[variant=phone]) search-results:has(list-scroll)" "app-layout:not(app-layout[variant=phone]) list-editor:has(list-scroll)" "app-layout:not(app-layout[variant=phone]) list-body:has(list-scroll)" "app-layout:not(app-layout[variant=phone]) list-column:has(list-scroll)" {
+    media "screen and (max-height: $size-low-window)" {
         min-height auto
     }
 }
 
-part "app-layout list-frame:has(list-scroll)" {
-    media "(max-height: calc($size-pane-head-room + $size-list-scroll-least))" {
+part "app-layout:not(app-layout[variant=phone]) list-frame:has(list-scroll)" {
+    media "screen and (max-height: $size-low-window)" {
         flex none
+    }
+}
+
+part "app-layout:not(app-layout[variant=phone]) list-main list-scroll" {
+    media "screen and (max-height: $size-low-window)" {
+        max-height "calc($size-list-scroll-least + $bar-ticked-height)"
+    }
+}
+
+// What stands beside the list there (an open issue, Customize) is as high as the list, not as high as what it holds: it
+// takes no room of its own in the line, and its own box scrolls what it holds.
+part "app-layout:not(app-layout[variant=phone]) list-editor side-panel" "app-layout:not(app-layout[variant=phone]) list-body list-panel" {
+    media "screen and (max-height: $size-low-window)" {
+        contain size
     }
 }
 

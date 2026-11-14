@@ -33,13 +33,15 @@ export function scrollingOf(page: Page): Promise<Scrolling> {
         boxes.push(element);
       }
     }
-    // A low window lets the main column scroll the boxes of its pane into reach (UX §6.5): lower than the room of the
-    // head and the least height of a box, both read from the tokens of the theme.
-    const tokens = getComputedStyle(document.documentElement);
-    const low =
-      innerHeight <
-      Number(tokens.getPropertyValue("--size-pane-head-room").trim().replace("px", "")) +
-        Number(tokens.getPropertyValue("--size-list-scroll-least").trim().replace("px", ""));
+    // A low window on a computer lets the main column scroll the boxes of its pane into reach (UX §6.5): the media query
+    // of the theme, built from the same token. A phone keeps its one box.
+    const lowest = getComputedStyle(document.documentElement)
+      .getPropertyValue("--size-low-window")
+      .trim();
+    const computer = document.querySelector(
+      "[data-part~='app-layout']:not([data-variant~='phone'])",
+    );
+    const low = computer !== null && matchMedia(`screen and (max-height: ${lowest})`).matches;
     const main = document.querySelector("[data-part~='app-layout.main']");
     const nested: string[] = [];
     for (const box of boxes) {

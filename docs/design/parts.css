@@ -5803,6 +5803,17 @@ textarea,
   background: var(--bg-surface);
 }
 
+@media print {
+  [data-part="sidebar"] {
+    position: static;
+    flex: none;
+    height: auto;
+    min-height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
 [data-part="sidebar"][data-variant~="short"] {
   gap: var(--space-1);
   padding-block: var(--space-2);
@@ -6833,8 +6844,8 @@ textarea,
   padding: var(--ring-room);
   margin-inline: calc(var(--ring-room) * -1);
   overflow-y: auto;
+  margin-block-start: calc(var(--ring-room) * -1);
   position: relative;
-  padding-block: 0;
 }
 
 @media print {
@@ -9262,21 +9273,23 @@ textarea,
   overflow-y: hidden;
 }
 
-@media (max-height: calc(440px + 120px)) {
-  [data-part="app-layout.main"]:has([data-part="list-main"] [data-part="list-scroll"]),
-  [data-part="app-layout.main"]:has([data-part="issue-body"][data-variant~="split"]),
-  [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
-    [data-part="app-layout.main"]:has([data-part="timeline-body"]) {
-    overflow-y: auto;
-  }
-}
-
 @media print {
   [data-part="app-layout.main"]:has([data-part="list-main"] [data-part="list-scroll"]),
   [data-part="app-layout.main"]:has([data-part="issue-body"][data-variant~="split"]),
   [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
     [data-part="app-layout.main"]:has([data-part="timeline-body"]) {
     overflow: visible;
+  }
+}
+
+@media screen and (max-height: 680px) {
+  [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+    [data-part="app-layout.main"]:has([data-part="timeline-body"]),
+  [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+    [data-part="app-layout.main"]:has([data-part="issue-body"][data-variant~="split"]),
+  [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+    [data-part="app-layout.main"]:has([data-part="list-main"] [data-part="list-scroll"]) {
+    overflow-y: auto;
   }
 }
 
@@ -9398,15 +9411,19 @@ textarea,
   }
 }
 
-[data-part="issue-body"][data-variant~="split"],
-[data-part="timeline-tray"] {
+[data-part="issue-body"][data-variant~="split"] {
   min-height: var(--size-list-scroll-least);
 }
 
 @media print {
-  [data-part="issue-body"][data-variant~="split"],
-  [data-part="timeline-tray"] {
+  [data-part="issue-body"][data-variant~="split"] {
     min-height: auto;
+  }
+}
+
+@media screen and (max-height: 680px) {
+  [data-part="timeline-tray"] {
+    min-height: var(--size-list-scroll-least);
   }
 }
 
@@ -9537,23 +9554,53 @@ textarea,
   min-height: calc(var(--size-list-scroll-least) + var(--bar-ticked-height));
 }
 
-@media (max-height: calc(440px + 120px)) {
-  [data-part="app-layout"] [data-part="app-layout.inner"]:has([data-part="list-scroll"]),
-  [data-part="app-layout"] [data-part="card"]:has([data-part="list-scroll"]),
-  [data-part="app-layout"] [data-part="card"] > [data-part="stack"]:has([data-part="list-scroll"]),
-  [data-part="app-layout"] [data-part="list-editor.list"]:has([data-part="list-scroll"]),
-  [data-part="app-layout"] [data-part="list-main"]:has([data-part="list-scroll"]),
-  [data-part="app-layout"] [data-part="search-results"]:has([data-part="list-scroll"]),
-  [data-part="app-layout"] [data-part="list-editor"]:has([data-part="list-scroll"]),
-  [data-part="app-layout"] [data-part="list-body"]:has([data-part="list-scroll"]),
-  [data-part="app-layout"] [data-part="list-column"]:has([data-part="list-scroll"]) {
+@media screen and (max-height: 680px) {
+  [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+    [data-part="app-layout.inner"]:has([data-part="list-scroll"]),
+  [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+    [data-part="card"]:has([data-part="list-scroll"]),
+  [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+    [data-part="card"]
+    > [data-part="stack"]:has([data-part="list-scroll"]),
+  [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+    [data-part="list-editor.list"]:has([data-part="list-scroll"]),
+  [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+    [data-part="list-main"]:has([data-part="list-scroll"]),
+  [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+    [data-part="search-results"]:has([data-part="list-scroll"]),
+  [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+    [data-part="list-editor"]:has([data-part="list-scroll"]),
+  [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+    [data-part="list-body"]:has([data-part="list-scroll"]),
+  [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+    [data-part="list-column"]:has([data-part="list-scroll"]) {
     min-height: auto;
   }
 }
 
-@media (max-height: calc(440px + 120px)) {
-  [data-part="app-layout"] [data-part="list-frame"]:has([data-part="list-scroll"]) {
+@media screen and (max-height: 680px) {
+  [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+    [data-part="list-frame"]:has([data-part="list-scroll"]) {
     flex: none;
+  }
+}
+
+@media screen and (max-height: 680px) {
+  [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+    [data-part="list-main"]
+    [data-part="list-scroll"] {
+    max-height: calc(var(--size-list-scroll-least) + var(--bar-ticked-height));
+  }
+}
+
+@media screen and (max-height: 680px) {
+  [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+    [data-part="list-editor"]
+    [data-part="side-panel"],
+  [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+    [data-part="list-body"]
+    [data-part="list-panel"] {
+    contain: size;
   }
 }
 

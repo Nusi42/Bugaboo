@@ -46,13 +46,21 @@ function ringCutAt(control: Locator): Promise<string[]> {
     const ring =
       Number(style.outlineWidth.replace("px", "")) + Number(style.outlineOffset.replace("px", ""));
     const own = element.getBoundingClientRect();
-    const start = box.getBoundingClientRect().left + box.clientLeft;
+    const frame = box.getBoundingClientRect();
+    const start = frame.left + box.clientLeft;
+    const top = frame.top + box.clientTop;
     const sides: string[] = [];
     if (own.left - ring < start) {
       sides.push("start");
     }
     if (own.right + ring > start + box.clientWidth) {
       sides.push("end");
+    }
+    if (own.top - ring < top) {
+      sides.push("top");
+    }
+    if (own.bottom + ring > top + box.clientHeight) {
+      sides.push("bottom");
     }
     return sides;
   });
@@ -88,8 +96,17 @@ test("ux_06 the focus ring of a control at the edge of a box that scrolls is not
   await page.keyboard.press("Shift+Tab");
   await page.keyboard.press("Tab");
   await expect(first).toBeFocused();
+  expect(await sections.evaluate((element) => element.scrollTop)).toBe(0);
   const cut = await ringCutAt(first);
   expect(cut, "the edges where the ring is cut").toEqual([]);
+  // The last control, with the box scrolled to its end.
+  const last = sections.locator("button, a[href], input, textarea, select").last();
+  await last.focus();
+  await sections.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+  });
+  await expect(last).toBeFocused();
+  expect(await ringCutAt(last), "the edges where the ring of the last control is cut").toEqual([]);
 });
 
 test("ux_06 j opens the next issue of the slim list, and its sections start at the top", async ({

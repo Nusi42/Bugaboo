@@ -1,9 +1,11 @@
 import type { Locator, Page } from "@playwright/test";
 
+import { t } from "@bugaboo/messages";
+
 import { ada } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { prepareWeb } from "./support/issues.ts";
+import { prepareManyWeb, prepareWeb } from "./support/issues.ts";
 import { tickIssue } from "./support/list-look.ts";
 import { openTimeline } from "./support/timeline.ts";
 import { issueAddress, projectIssuesAddress } from "../src/shared/paths.ts";
@@ -89,4 +91,58 @@ test("ux_06 in a low window Not scheduled yet is in reach", async ({ page }) => 
   await openTimeline(page);
   const tray = page.locator("[data-part='timeline-tray']");
   await wheelDown(page, tray, tray);
+});
+
+/**
+ * How high a pane beside the list is, how much its box of `inner` holds, and how high the line it stands in is: as high
+ * as the list beside it.
+ */
+function besideList(
+  side: Locator,
+  inner: string,
+): Promise<{ high: number; holds: number; line: number }> {
+  return side.evaluate((node, part) => {
+    const scrolls = node.querySelector(`[data-part~='${part}']`) ?? node;
+    const line = node.parentElement?.getBoundingClientRect().height ?? 0;
+    return { high: node.getBoundingClientRect().height, holds: scrolls.scrollHeight, line };
+  }, inner);
+}
+
+test("ux_06 in a low window the open issue and Customize beside the list stay boxes as high as the list", async ({
+  page,
+}) => {
+  await page.goto(`${projectIssuesAddress("WEB")}?open=WEB-1`);
+  const panel = page.locator("[data-part~='side-panel']");
+  await expect(panel).toBeVisible();
+  const open = await besideList(panel, "side-panel.body");
+  expect(open.high).toBeLessThanOrEqual(open.line);
+  expect(open.holds).toBeGreaterThan(open.high);
+  await page.goto(projectIssuesAddress("WEB"));
+  await page.getByRole("button", { name: t("issues.customize"), exact: true }).click();
+  const columns = await besideList(page.locator("[data-part~='list-panel']"), "list-panel");
+  expect(columns.high).toBeLessThanOrEqual(columns.line);
+  expect(columns.holds).toBeGreaterThan(columns.high);
+});
+
+test.describe("a long list in a low window", () => {
+  /** A long list: far more rows than any window shows. */
+  const MANY = 2000;
+
+  test.use({ preparation: { run: (server) => prepareManyWeb(server, MANY) } });
+
+  test("ux_06 in a low window a long list still draws only the rows in view", async ({ page }) => {
+    test.setTimeout(600_000);
+    await page.goto(projectIssuesAddress("WEB"));
+    const rows = page.locator("[data-part='list-scroll'] [data-part='list-row']");
+    await expect(rows.first()).toBeVisible();
+    expect(await rows.count(), "the rows drawn of the long list").toBeLessThan(MANY / 20);
+    // The box of the rows stays a box: no higher than the window, and its rows scroll inside it.
+    const box = await page.locator("[data-part='list-scroll']").evaluate((node) => ({
+      high: node.clientHeight,
+      holds: node.scrollHeight,
+      window: innerHeight,
+    }));
+    expect(box.high).toBeLessThanOrEqual(box.window);
+    expect(box.holds).toBeGreaterThan(box.high);
+  });
 });

@@ -222,7 +222,7 @@ export const tokenNames = [
   "size-row-compact",
   "pad-nothing",
   "size-list-scroll-least",
-  "size-pane-head-room",
+  "size-low-window",
   "size-edge",
   "size-name",
   "size-details-name",

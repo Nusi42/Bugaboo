@@ -6,6 +6,7 @@ import { signIn } from "./support/flows.ts";
 import { prepareWeb } from "./support/issues.ts";
 import { inOrder } from "./support/sequence.ts";
 import { openTimeline } from "./support/timeline.ts";
+import { panelAddress } from "./support/addresses.ts";
 import { issueAddress, projectIssuesAddress } from "../src/shared/paths.ts";
 
 // On paper nothing scrolls (UX §6.5): the boxes that scroll on the screen are as long as what they hold, so nothing is
@@ -13,36 +14,25 @@ import { issueAddress, projectIssuesAddress } from "../src/shared/paths.ts";
 
 test.use({ preparation: { run: prepareWeb } });
 
-/** The boxes that scroll on a screen. */
-const BOXES = [
-  "app-layout.main",
-  "list-scroll",
-  "timeline-scroll",
-  "timeline-tray",
-  "issue-main",
-  "issue-details",
-  "side-panel.body",
-  "focus-view.list",
-];
-
-/** The boxes that clip what they hold, by their parts, as the page is printed. */
+/** The boxes inside the app that clip what they hold, by their parts, as the page is printed. */
 function cutOnPaper(page: Page): Promise<string[]> {
-  return page.evaluate((parts: readonly string[]) => {
+  return page.evaluate(() => {
     const cut: string[] = [];
-    for (const name of parts) {
-      for (const box of document.querySelectorAll(`[data-part~='${name}']`)) {
-        // What a box shows past its edge is printed; only a box that clips cuts.
-        const clips = getComputedStyle(box).overflowY !== "visible";
-        if (clips && box.scrollHeight > box.clientHeight + 1) {
-          cut.push(name);
-        }
+    for (const box of document.querySelectorAll("[data-part~='app-layout'] *")) {
+      // What a box shows past its edge is printed; only a box that clips cuts. A box of one pixel is hidden on purpose
+      // (the words for a screen reader, the probe of a width): there is nothing to cut.
+      const clips = getComputedStyle(box).overflowY !== "visible" && box.clientHeight > 1;
+      if (clips && box.scrollHeight > box.clientHeight + 1) {
+        cut.push(box instanceof HTMLElement ? (box.dataset["part"] ?? box.tagName) : box.tagName);
       }
     }
     return cut;
-  }, BOXES);
+  });
 }
 
-test("ux_06 on paper the list, an issue and the timeline are whole", async ({ page }) => {
+test("ux_06 on paper the list, an issue, the timeline and the side panel are whole", async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1280, height: 400 });
   await signIn(page, ada);
   await page.emulateMedia({ media: "print" });
@@ -58,10 +48,14 @@ test("ux_06 on paper the list, an issue and the timeline are whole", async ({ pa
         await expect(page.locator("[data-part~='issue-main']")).toBeVisible();
       },
       () => openTimeline(page),
+      async () => {
+        await page.goto(panelAddress("WEB", "WEB-1"));
+        await expect(page.locator("[data-part~='side-panel.body']")).toBeVisible();
+      },
     ].map((open, at) => async () => {
       await open();
       cut[String(at)] = await cutOnPaper(page);
     }),
   );
-  expect(cut).toEqual({ "0": [], "1": [], "2": [] });
+  expect(cut).toEqual({ "0": [], "1": [], "2": [], "3": [] });
 });
