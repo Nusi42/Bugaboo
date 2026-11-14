@@ -5,7 +5,6 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { partIn } from "./support/parts.ts";
 import { sampleAdministrator } from "./support/sample.ts";
-import { shadowsOf } from "./support/windows.ts";
 import { paths } from "../src/shared/paths.ts";
 
 // M5 exit, package O (O3): the list of people to put into a group shows whole rows: no row is cut by the
@@ -87,12 +86,20 @@ test("ux_5 the rows of the people never cut their words, also with Larger text a
   expect(await textsCut(list), "words cut by an ellipsis or by the edge of their row").toEqual([]);
 });
 
-test("ux_5 the box of the people shows a shadow at its end while more people follow", async ({
+// The list of people has no scroll box of its own (UX §6.5): it is as high as all its rows and the
+// main column scrolls it, so it has no shadow at its start or its end; more people follow in the pane.
+test("ux_5 the list of people has no shadow at its ends: it grows and its pane scrolls", async ({
   page,
 }) => {
   await signIn(page, sampleAdministrator());
   await page.goto(paths.people);
   const list = page.getByRole("listbox", { name: t("people.list") });
   await expect(list.getByRole("option").first()).toBeVisible();
-  await expect.poll(() => shadowsOf(list)).toEqual({ start: 0, end: 1 });
+  expect(
+    await list.evaluate((node) => ({
+      overflow: getComputedStyle(node).overflowY,
+      start: getComputedStyle(node, "::before").content,
+      end: getComputedStyle(node, "::after").content,
+    })),
+  ).toEqual({ overflow: "visible", start: "none", end: "none" });
 });
