@@ -26,6 +26,8 @@ export interface Shift {
 /** What the page wrote down in every frame. */
 export interface Frames {
   readonly boxes: readonly (readonly (Box | null)[])[];
+  /** For each landmark that is gone in a frame: whether the same thing stands there drawn afresh. */
+  readonly redrawn: readonly (readonly boolean[])[];
   readonly scrolls: readonly string[];
   readonly grey: readonly boolean[];
 }
@@ -119,19 +121,27 @@ export function recordShifts(page: Page): Promise<readonly Shift[]> {
 }
 
 /** Writes down the landmarks, the scroll and the grey shapes in every frame until the mark is set. */
-export function recordFrames(page: Page, selectors: readonly string[]): Promise<Frames> {
+export function recordFrames(
+  page: Page,
+  selectors: readonly (readonly [string, string | null])[],
+): Promise<Frames> {
   return page.evaluate(
     ([chosen, grey, mark]) =>
       new Promise<Frames>((done) => {
         const frames = {
           boxes: [] as (Box | null)[][],
+          redrawn: [] as boolean[][],
           scrolls: [] as string[],
           grey: [] as boolean[],
         };
         const note = (): void => {
           const boxes: (Box | null)[] = [];
-          for (const selector of chosen) {
+          const redrawn: boolean[] = [];
+          for (const [selector, again] of chosen) {
             const box = document.querySelector(selector)?.getBoundingClientRect();
+            redrawn.push(
+              box === undefined && again !== null && document.querySelector(again) !== null,
+            );
             boxes.push(
               box === undefined || (box.width === 0 && box.height === 0)
                 ? null
@@ -145,6 +155,7 @@ export function recordFrames(page: Page, selectors: readonly string[]): Promise<
             }
           }
           frames.boxes.push(boxes);
+          frames.redrawn.push(redrawn);
           frames.scrolls.push(scrolls);
           frames.grey.push(document.querySelector(grey) !== null);
           if (document.documentElement.hasAttribute(mark)) {

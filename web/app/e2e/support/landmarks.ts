@@ -173,8 +173,27 @@ export async function expectFocusIn(changed: Locator): Promise<void> {
     .toBe(true);
 }
 
+/** The box the rows of a list scroll in. */
+export const ROWS_BOX = partLandmark("the box of the rows", "list-scroll");
+
 /** The box of a row of the list that was not marked as a landmark: one that came in after. */
 const NEW_ROW = "[data-part='list-scroll'] :has(> [role='row']):not([data-landmark])";
+
+/**
+ * The landmark of a row of a list: the box the list lays the row out in (the row's parent), which is
+ * what moves when a row comes in, found again by the key of the row when it is drawn afresh.
+ */
+async function rowLandmark(row: Locator, index: number): Promise<Landmark> {
+  const key = await row.evaluate((element) =>
+    element instanceof HTMLElement ? (element.dataset.key ?? "") : "",
+  );
+  const marked = await landmarkOf(row.locator("xpath=.."), `row ${String(index + 1)} of the list`);
+  return {
+    name: marked.name,
+    selector: marked.selector,
+    again: `[data-part='list-scroll'] :has(> [role='row'][data-key="${key}"])`,
+  };
+}
 
 /**
  * The landmarks of a list of issues: its heading, the toolbar and the first row (the head of the
@@ -182,23 +201,20 @@ const NEW_ROW = "[data-part='list-scroll'] :has(> [role='row']):not([data-landma
  * there before), so every other row, each a landmark of its own, may be pushed by exactly that row.
  */
 export async function listLandmarks(page: Page): Promise<ScreenLandmarks> {
-  // The box the list lays each row out in (the row's parent) is what moves when a row comes in.
-  const rows = await page
-    .locator("[data-part='list-scroll'] [role='row']")
-    .locator("xpath=..")
-    .all();
-  const [first, ...rest] = await Promise.all(
-    rows.map((row, index) => landmarkOf(row, `row ${String(index + 1)} of the list`)),
-  );
+  const rows = await page.locator("[data-part='list-scroll'] [role='row']").all();
+  const [first, ...rest] = await Promise.all(rows.map((row, index) => rowLandmark(row, index)));
   return {
     all: [
       { name: "the heading", selector: "h1" },
       partLandmark("the toolbar", "list-toolbar"),
+      // The box of the rows may grow at its end (a short list is as high as its rows, and it keeps room
+      // for the bar over its foot); its top stays.
+      ROWS_BOX,
       ...(first === undefined ? [] : [first]),
       ...rest,
       { name: "the new row", selector: NEW_ROW },
     ],
-    grows: [],
+    grows: [ROWS_BOX.name],
     follows: rest.map((row) => row.name),
     scrolls: [],
   };

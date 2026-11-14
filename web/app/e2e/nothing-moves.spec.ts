@@ -90,7 +90,7 @@ test("ux_01_creating_an_issue_moves_nothing_on_the_list_but_the_new_row", async 
     await expect(rowOf(page, "The first of two")).toBeVisible();
   });
   expectStill(madeAnother, {
-    grows: window.grows,
+    grows: [...list.grows, ...window.grows],
     follows: list.follows,
     scrolls: window.scrolls,
   });

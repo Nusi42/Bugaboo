@@ -37,6 +37,11 @@ export { nothingWrong, wrongIn } from "./movement-judge.ts";
 export interface Landmark {
   readonly name: string;
   readonly selector: string;
+  /**
+   * How to find the same thing drawn afresh, where it can be told apart from leaving the view (a row
+   * of a list, by its key): gone with nothing in its place, it only left the view.
+   */
+  readonly again?: string;
 }
 
 /** The path of the requests the measure waits for: those of the API. */
@@ -92,7 +97,7 @@ export async function movementWhile(
   const shifting = recordShifts(page);
   const recording = recordFrames(
     page,
-    landmarks.map((landmark) => landmark.selector),
+    landmarks.map((landmark) => [landmark.selector, landmark.again ?? null] as const),
   );
   const reads = readsOnTheirWay(page);
   await twoFrames(page);
@@ -110,7 +115,7 @@ export async function movementWhile(
   const shifts = await shifting;
   return {
     ...judged(
-      landmarks.map((landmark) => landmark.name),
+      landmarks.map((landmark) => [landmark.name, landmark.again !== undefined] as const),
       frames,
     ),
     shifts,
@@ -151,5 +156,13 @@ export async function landmarkOf(found: Locator, name: string): Promise<Landmark
 export function expectStill(movement: Movement, except: StillExcept = {}): void {
   expect(wrongIn(movement, except), "what moved, shifted, went away, flashed or scrolled").toEqual(
     nothingWrong,
+  );
+}
+
+/** Fails when the landmark got smaller while the action ran (the bar over the foot of a list takes no room from it). */
+export function expectNotSmaller(movement: Movement, name: string): void {
+  const part = movement.moved.find((each) => each.name === name);
+  expect(part?.last.height ?? 0, `${name} got smaller`).toBeGreaterThanOrEqual(
+    (part?.from.height ?? 0) - 0.5,
   );
 }

@@ -92,16 +92,19 @@ function movedOf(name: string, column: readonly (Box | null)[]): Moved | undefin
   return { name, from: first, to, frame, steps, last: shown.at(-1) ?? to, turns: turnsOf(shown) };
 }
 
-/** What the frames say about the landmarks, named in the order of `names`. */
-export function judged(names: readonly string[], frames: Frames) {
+/** What the frames say about the landmarks, named in the order of `names`, each with whether it can be found again. */
+export function judged(names: readonly (readonly [string, boolean])[], frames: Frames) {
   const moved: Moved[] = [];
   const appeared: Appeared[] = [];
   const vanished: string[] = [];
-  for (const [index, name] of names.entries()) {
+  for (const [index, [name, findsAgain]] of names.entries()) {
     const column = frames.boxes.map((frame) => frame[index] ?? null);
     const [first] = column;
     const last = column.at(-1) ?? null;
-    if (first !== null && column.includes(null)) {
+    // A part that can be found again (a row of a list, by its key) and is gone with nothing in its
+    // place only left the view (scrolled away, or no longer drawn by the list); drawn afresh, it went.
+    const redrawn = frames.redrawn.some((frame) => frame[index] === true);
+    if (first !== null && (redrawn || (!findsAgain && column.includes(null)))) {
       vanished.push(name);
     }
     if ((first ?? null) === null && last !== null) {
