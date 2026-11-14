@@ -21,22 +21,17 @@ export function scrollersOf(page: Page): Promise<string[]> {
   });
 }
 
-/** Scrolls an element to its end, until nothing more is loaded under it. */
-export function toTheEnd(box: Locator): Promise<number> {
-  return box.evaluate((element) => {
-    element.scrollTop = element.scrollHeight;
-    return element.scrollHeight - element.clientHeight - element.scrollTop;
-  });
-}
-
-/** The place, among the cards, of the last one that is whole inside the box of the list; -1 if none is. */
-export async function lastWholeCard(cards: Locator, list: Locator): Promise<number> {
+/**
+ * The place, among the cards, of the last one that is whole in sight: inside the box of the list
+ * and above `end` (the top of the bar that stands over its foot); -1 if none is.
+ */
+export async function lastWholeCard(cards: Locator, list: Locator, end: number): Promise<number> {
   const box = await boxOf(list);
   const count = await cards.count();
   const boxes = await Promise.all(Array.from({ length: count }, (_, at) => boxOf(cards.nth(at))));
   let found = -1;
   for (const [at, card] of boxes.entries()) {
-    if (card.y + card.height <= box.y + box.height + 1) {
+    if (card.y + card.height <= Math.min(box.y + box.height, end) + 1) {
       found = at;
     }
   }

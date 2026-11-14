@@ -94,9 +94,16 @@ export async function issuePageLandmarks(
   const history = addsHistory
     ? main.filter((each) => each.fromHistory).map((each) => each.landmark.name)
     : [];
+  const around = aroundTheChange(await placesOf(page, all), target.name, history);
+  // A row or a part under a row that a change brings into the Details (*Your timer*, *With
+  // sub-issues*) may be pushed by it too: the measure holds each to exactly what came in above it.
+  const pushable = [...details, ...main.map((each) => each.landmark)]
+    .map((landmark) => landmark.name)
+    .filter((name) => name !== target.name && !around.grows.includes(name));
   return {
     all,
-    ...aroundTheChange(await placesOf(page, all), target.name, history),
+    grows: around.grows,
+    follows: [...new Set([...around.follows, ...pushable])],
     scrolls: [],
   };
 }

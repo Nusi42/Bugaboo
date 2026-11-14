@@ -103,6 +103,20 @@ describe("ux_01 the measure holds what is named nowhere, what came in and what g
   });
 });
 
+describe("ux_01 the measure lets what holds a row that came in grow by that row", () => {
+  const row = { name: "new row", last: box(900, 700, 300, 44) };
+
+  it("passes a holder that grew by exactly the row that came into it", () => {
+    const rows = moved("rows", box(900, 400, 300, 600), box(900, 400, 300, 644));
+    expect(wrongIn(movementOf([rows], [row]), {})).toEqual(nothingWrong);
+  });
+
+  it("fails a holder that grew by more than the row that came into it", () => {
+    const rows = moved("rows", box(900, 400, 300, 600), box(900, 400, 300, 700));
+    expect(wrongIn(movementOf([rows], [row]), {}).moved).toEqual([rows]);
+  });
+});
+
 describe("ux_01 the measure lets a part the action moves move sideways, once", () => {
   it("passes a part the action moves, once, and fails one that goes there and back", () => {
     const bar = moved("bar", box(400, 300, 120, 24), box(440, 300, 120, 24));

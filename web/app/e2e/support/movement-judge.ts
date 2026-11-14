@@ -106,6 +106,23 @@ function pushedInStep(part: Moved, pushed: number): boolean {
   );
 }
 
+/**
+ * Whether a part grew in place by exactly the rows that came into it (the Details around a row that
+ * a change brings): a part holds what comes into it, and nothing else of it changed.
+ */
+function grewByWhatCameIn(part: Moved, appeared: Movement["appeared"]): boolean {
+  const inside = appeared.filter((each) => holds(part.last, each.last));
+  const cameIn = inside.reduce((sum, each) => sum + each.last.height, 0);
+  return (
+    inside.length > 0 &&
+    part.turns === 0 &&
+    !far(part.from.x, part.last.x) &&
+    !far(part.from.y, part.last.y) &&
+    !far(part.from.width, part.last.width) &&
+    !far(part.last.height - part.from.height, cameIn)
+  );
+}
+
 /** What broke the rule of a still screen; all empty when it held. */
 export interface Wrong {
   readonly moved: readonly Moved[];
@@ -153,6 +170,9 @@ export function wrongIn(movement: Movement, except: StillExcept): Wrong {
       }
       if (grows.includes(part.name)) {
         return !grewInPlace(part, follows.includes(part.name) ? pushed : 0);
+      }
+      if (grewByWhatCameIn(part, movement.appeared)) {
+        return false;
       }
       return !follows.includes(part.name) || !pushedInStep(part, pushed);
     }),

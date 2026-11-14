@@ -4,7 +4,7 @@ import { t } from "@bugaboo/messages";
 
 import { type ChangeInPlace, ISSUE } from "./change-row.ts";
 import { listLandmarks, ROWS_BOX } from "./landmarks.ts";
-import { columnButton, grid, tickIssue } from "./list-look.ts";
+import { columnButton, grid, groupOf, inViewChoices, tickIssue } from "./list-look.ts";
 import { listViewLandmarks, timelineLandmarks } from "./screen-landmarks.ts";
 import { barOf, movedLater, openTimeline, planned, pressOf } from "./timeline.ts";
 import { projectIssuesAddress } from "../../src/shared/paths.ts";
@@ -41,6 +41,21 @@ export const listChanges: readonly ChangeInPlace[] = [
       ).toBeVisible();
     },
     landmarks: (page) => listLandmarks(page),
+  },
+  {
+    screen: LIST,
+    change: "group by",
+    open: openList,
+    part: rowsBox,
+    act: async (page) => {
+      await inViewChoices(page, async (scope) => {
+        await scope
+          .getByLabel(t("issues.group-by"), { exact: true })
+          .selectOption({ label: t("issue-field.priority") });
+      });
+      await expect(groupOf(page, t("priority.critical"))).toBeVisible();
+    },
+    landmarks: () => Promise.resolve(listViewLandmarks()),
   },
   {
     screen: LIST,
