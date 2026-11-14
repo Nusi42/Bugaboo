@@ -48,15 +48,20 @@ function AddSubIssueForm({
   onCancel,
 }: {
   readonly pending: boolean;
-  readonly onAdd: (child: string) => void;
+  /** Adds the issue; says whether it was added. */
+  readonly onAdd: (child: string) => Promise<boolean>;
   readonly onCancel: () => void;
 }) {
   const [other, setOther] = useState("");
   return (
     <Form
       onSubmit={() => {
-        onAdd(other.trim());
-        setOther("");
+        // The ID stays in the box until the issue is added: a refusal leaves it to be fixed.
+        void onAdd(other.trim()).then((added) => {
+          if (added) {
+            setOther("");
+          }
+        });
       }}
     >
       <TextField
@@ -87,12 +92,12 @@ export function AddSubIssue({ readableId }: { readonly readableId: string }) {
       {open ? (
         <AddSubIssueForm
           pending={pending}
-          onAdd={(child) => {
+          onAdd={async (child) => {
             // The form stays until the issue stands in the list: it goes in the same frame as
             // the sentence comes, so the section changes once (UX §6.4).
-            void put(child, readableId).then((made) => {
-              setOpen(!made);
-            });
+            const made = await put(child, readableId);
+            setOpen(!made);
+            return made;
           }}
           onCancel={() => {
             setOpen(false);

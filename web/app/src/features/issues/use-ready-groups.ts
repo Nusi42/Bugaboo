@@ -6,6 +6,7 @@ import { withGroupFilter } from "../../shared/with-filter.ts";
 import { readFirstFound } from "./found-reads.ts";
 import { groupsOfKeys, type GroupOfKey } from "./group-keys.ts";
 import { useListContext } from "./list-context.ts";
+import type { OwnColumns } from "./own-columns.ts";
 import type { useFoundGroups } from "./found-issues.ts";
 
 /** How many groups from the top come with their first rows: those that fill the first screen. */
@@ -24,6 +25,12 @@ interface Drawn {
   readonly groupBy: string | null;
 }
 
+/** The groups of an answer, each with its place, for the grouping it was made for. */
+function groupsOf(drawn: Drawn, own: OwnColumns): readonly GroupOfKey[] {
+  const by = drawn.groupBy;
+  return groupsOfKeys(drawn.data.groups, by === null ? undefined : own[by], by ?? undefined);
+}
+
 /**
  * The groups of the list to draw (UX §6.4: a list keeps what it shows until the new answer is
  * there). New groups (another grouping, another search) are drawn once the first rows of the
@@ -39,11 +46,7 @@ export function useReadyGroups(answer: Drawn["data"] | undefined): ReadyGroups {
       return doNothing;
     }
     let current = true;
-    const leading = groupsOfKeys(
-      answer.groups,
-      groupBy === null ? undefined : own[groupBy],
-      groupBy ?? undefined,
-    )
+    const leading = groupsOf({ data: answer, groupBy }, own)
       .slice(0, LEADING)
       .flatMap((group) => {
         const text =
@@ -62,14 +65,7 @@ export function useReadyGroups(answer: Drawn["data"] | undefined): ReadyGroups {
     };
   }, [answer, drawn, groupBy, own, language, search, words]);
   return {
-    groups:
-      drawn === null
-        ? undefined
-        : groupsOfKeys(
-            drawn.data.groups,
-            drawn.groupBy === null ? undefined : own[drawn.groupBy],
-            drawn.groupBy ?? undefined,
-          ),
+    groups: drawn === null ? undefined : groupsOf(drawn, own),
     empty: drawn?.data.groups.length === 0,
     truncated: drawn?.data.truncated === true,
   };

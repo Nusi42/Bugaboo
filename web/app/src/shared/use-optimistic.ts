@@ -5,6 +5,7 @@ import { messageOf } from "./errors.ts";
 import { removeKeepingFocus } from "./focus.ts";
 import {
   optimisticSend,
+  startedChange,
   summarizeCalls,
   type Cacheable,
   type Described,
@@ -47,10 +48,7 @@ export function useOptimisticMutation<
   // The change is started before the mutation hears of it: its first part writes the change into
   // the cache in this turn, so the change shows in the same frame as *Saving…* (UX §6.4); the
   // mutation only waits for the answer.
-  const mutation = useMutation({
-    mutationKey,
-    mutationFn: (started: Readonly<Promise<Answer>>) => started,
-  });
+  const mutation = useMutation({ mutationKey, ...startedChange<Answer>() });
   const calls = useMutationState({ filters: { mutationKey } });
   // A burst is the run of changes since everything was last idle: an earlier refusal is not
   // forgotten because a later change was accepted, but a new burst starts clean.

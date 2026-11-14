@@ -23,8 +23,8 @@ export interface SettingRowProps {
   readonly control?: ControlRenderer | undefined;
   /** The page's own explanation of the setting, for the state it is in, instead of the registry's. */
   readonly help?: string | undefined;
-  /** *Saving…* or *Saved*, when this setting is the one changed last. */
-  readonly saved?: ReactNode;
+  /** The words *Saving…* and *Saved*: said for the setting changed last, and silent for the others. */
+  readonly saved: ReactNode;
 }
 
 /** The value in words, for a setting that cannot be changed here. */
@@ -131,26 +131,29 @@ export function SettingRow({ setting, actions, control, help, saved }: SettingRo
   const helpWithField = !lockedBelow && control === undefined && isBox(setting);
   return (
     <li {...partOf(part.box)}>
-      {helpWithField ? (
-        <SettingControl
-          setting={setting}
-          onChange={change}
-          help={wordsOf(setting.help_key)}
-          source={sourceNote(setting)}
-        />
-      ) : (
-        <WithHint setting={setting} help={help}>
-          {lockedBelow ? (
-            <Locked setting={setting} />
-          ) : (
-            (control?.(setting, change, reset) ?? (
-              <SettingControl setting={setting} onChange={change} />
-            ))
-          )}
-        </WithHint>
-      )}
+      {/* The words *Saving…* and *Saved* have a cell of their own at the end of the first line. */}
+      <div {...partOf(part.settingHead)}>
+        {helpWithField ? (
+          <SettingControl
+            setting={setting}
+            onChange={change}
+            help={wordsOf(setting.help_key)}
+            source={sourceNote(setting)}
+          />
+        ) : (
+          <WithHint setting={setting} help={help}>
+            {lockedBelow ? (
+              <Locked setting={setting} />
+            ) : (
+              (control?.(setting, change, reset) ?? (
+                <SettingControl setting={setting} onChange={change} />
+              ))
+            )}
+          </WithHint>
+        )}
+        {saved}
+      </div>
       <RowActions setting={setting} actions={actions} lockedBelow={lockedBelow} />
-      {saved}
     </li>
   );
 }

@@ -1,8 +1,17 @@
-import { QueryClient } from "@tanstack/react-query";
+import { MutationObserver, onlineManager, QueryClient } from "@tanstack/react-query";
 import { describe, expect, it } from "vitest";
 
-import { optimisticSend, saveStateOf, summarizeCalls } from "./optimistic.ts";
-import { addName, key, nextTick, slowServer, type Names } from "./optimistic-testing.ts";
+import { skeletonDelayMs, startDelay } from "@bugaboo/ui";
+
+import { optimisticSend, saveStateOf, startedChange, summarizeCalls } from "./optimistic.ts";
+import {
+  addName,
+  key,
+  manualClock,
+  nextTick,
+  slowServer,
+  type Names,
+} from "./optimistic-testing.ts";
 
 describe("ux_06 a change shows at once", () => {
   it("is in the cache within 100 ms, while the slow server has not answered", async () => {
@@ -93,5 +102,55 @@ describe("ux_06 what is said when changes overlap", () => {
       ]),
     ).toEqual({ saveState: "saved", error: null });
     expect(summarizeCalls([])).toEqual({ saveState: "idle", error: null });
+  });
+});
+
+describe("ux_06 a change made offline", () => {
+  it("is not held back: its refusal comes at once and says Not saved yet", async () => {
+    onlineManager.setOnline(false);
+    try {
+      const client = new QueryClient();
+      const observer = new MutationObserver(client, startedChange<string>());
+      const refused = observer.mutate(Promise.reject(new TypeError("offline")));
+      await expect(refused).rejects.toThrow("offline");
+      expect(saveStateOf(observer.getCurrentResult().status)).toBe("not-saved");
+    } finally {
+      onlineManager.setOnline(true);
+    }
+  });
+});
+
+describe("ux_06 a change waits only for a read of its data that is on its way", () => {
+  it("shows the change in the turn it is made when no read of the data is on its way", () => {
+    const client = new QueryClient();
+    client.setQueryData<Names>(key, { names: ["Ana"] });
+    const run = optimisticSend(
+      () => client,
+      addName(() => slowServer().promise),
+    );
+
+    void run({ name: "Ben" });
+    // Nothing is waited for: the change is in the cache before this line.
+    expect(client.getQueryData<Names>(key)?.names).toEqual(["Ana", "Ben"]);
+  });
+
+  it("drops a read of the data that is on its way, so it cannot put the old data back", async () => {
+    const client = new QueryClient();
+    client.setQueryData<Names>(key, { names: ["Ana"] });
+    const old = Promise.withResolvers<Names>();
+    const reading = client.query({ queryKey: key, queryFn: () => old.promise });
+    const run = optimisticSend(
+      () => client,
+      addName(() => slowServer().promise),
+    );
+
+    void run({ name: "Ben" });
+    await nextTick();
+    expect(client.isFetching({ queryKey: key })).toBe(0);
+    expect(client.getQueryData<Names>(key)?.names).toEqual(["Ana", "Ben"]);
+    // The answer of the dropped read comes late and never comes back over the change.
+    old.resolve({ names: ["Ana"] });
+    await reading;
+    expect(client.getQueryData<Names>(key)?.names).toEqual(["Ana", "Ben"]);
   });
 });

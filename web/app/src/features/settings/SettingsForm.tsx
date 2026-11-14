@@ -88,6 +88,14 @@ function useLastChanged(actions: SettingActions) {
 }
 
 /**
+ * *Saving…* and *Saved* of a setting: every box has its status from the start, silent but for the
+ * setting changed last, so a screen reader hears the first change too.
+ */
+function savedOf(state: SaveState) {
+  return <SaveStatus state={state} labels={saveLabels()} />;
+}
+
+/**
  * The generic settings form (ADR-0018): a topic drawn from what the registry knows about each
  * setting, with a search box that filters by name and explanation. It knows no setting by name,
  * so a setting that is added to the registry appears here with its explanation and nothing else
@@ -132,9 +140,7 @@ export function SettingsForm({
               actions={noted}
               control={controls?.[setting.key]}
               help={helps?.[setting.key]?.(setting)}
-              saved={
-                setting.key === last ? <SaveStatus state={saveState} labels={saveLabels()} /> : null
-              }
+              saved={savedOf(setting.key === last ? saveState : "idle")}
             />
           ))}
         </ul>

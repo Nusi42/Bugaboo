@@ -115,6 +115,15 @@ describe("ux_01 the measure lets what holds a row that came in grow by that row"
     const rows = moved("rows", box(900, 400, 300, 600), box(900, 400, 300, 700));
     expect(wrongIn(movementOf([rows], [row]), {}).moved).toEqual([rows]);
   });
+
+  it("fails a holder that moved, or grew and shrank, while the row came in", () => {
+    const pushed = moved("rows", box(900, 400, 300, 600), box(900, 420, 300, 644));
+    const bounced = {
+      ...moved("rows", box(900, 400, 300, 600), box(900, 400, 300, 644)),
+      turns: 2,
+    };
+    expect(wrongIn(movementOf([pushed, bounced], [row]), {}).moved).toEqual([pushed, bounced]);
+  });
 });
 
 describe("ux_01 the measure lets a part the action moves move sideways, once", () => {

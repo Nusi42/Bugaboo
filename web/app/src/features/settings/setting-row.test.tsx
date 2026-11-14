@@ -28,7 +28,11 @@ const locked: Setting = {
 describe("cfg_06 a locked setting that is typed in", () => {
   it("still says what it is for and where its value comes from", () => {
     const markup = renderToStaticMarkup(
-      <SettingRow setting={locked} actions={{ onChange: doNothing, onReset: doNothing }} />,
+      <SettingRow
+        setting={locked}
+        actions={{ onChange: doNothing, onReset: doNothing }}
+        saved={null}
+      />,
     );
     expect(markup).toContain(t("setting.security.session-idle-minutes.help"));
     expect(markup.replaceAll("&#x27;", "'")).toContain(t("setting.ui.source-organization"));

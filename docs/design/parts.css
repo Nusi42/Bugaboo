@@ -3148,7 +3148,6 @@ textarea,
 
 [data-part="name-value.saved"] {
   display: inline-flex;
-  flex-basis: 100%;
   align-items: center;
   gap: var(--space-1);
   min-block-size: var(--size-control);
@@ -3889,10 +3888,6 @@ textarea,
   min-width: 0;
 }
 
-[data-part="box"]:has([data-part="save-status"]) {
-  position: relative;
-}
-
 [data-part="strong"] {
   font-weight: var(--weight-regular);
   color: var(--fg);
@@ -4045,6 +4040,16 @@ textarea,
   outline: none;
 }
 
+[data-part="card.header"]:has([data-part="card.actions"] > [data-part="save-status"]) {
+  flex-wrap: nowrap;
+}
+
+[data-part="card.header"]:has([data-part="card.actions"] > [data-part="save-status"])
+  [data-part="card.heading"] {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
 [data-part="icon"] {
   flex: none;
   width: var(--size-icon);
@@ -4086,10 +4091,20 @@ textarea,
   font-weight: var(--weight-regular);
 }
 
-[data-part="box"] > [data-part="save-status"] {
+[data-part="setting-head"] {
+  position: relative;
+}
+
+[data-part="setting-head"] > [data-part="save-status"] {
   position: absolute;
-  inset-block-start: var(--space-3);
-  inset-inline-end: var(--space-3);
+  inset-block-start: 0;
+  inset-inline-end: 0;
+}
+
+[data-part="setting-head"] [data-part="field.label"],
+[data-part="setting-head"] [data-part="choice-group.legend"],
+[data-part="setting-head"] [data-part="switch"] {
+  padding-inline-end: var(--size-save-words);
 }
 
 [data-part="save-bar"] {

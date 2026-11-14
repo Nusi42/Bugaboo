@@ -167,6 +167,8 @@ tokens {
     // What puts the first line of words in the middle of the height of a control, in the line height of the words
     // that use it.
     size "pad-line-in-control" "calc(($size-control - 1lh) / 2)"
+    // The room of *Saving…*, *Saved* and *Not saved yet*, the longest of them, in the size of the words that say them.
+    size "size-save-words" "13ch"
     // Where the text of a cell of the grid of the timesheet starts: level with the first line of the boxes of lengths (the room
     // the box has above its text, and the room around the box).
     size "size-sheet-text-top" "calc($space-1 + $pad-line-in-control)"
@@ -4249,12 +4251,10 @@ part "name-value.reason" {
 }
 
 // *Saved* and *Undo* where the change happened (R7).
-// *Saving…* and *Saved* with *Undo* take the same height, the height of the button, and the same place, a line of
-// their own under the value: the short *Saving…* would fit beside a value where the longer *Saved* with *Undo* does
-// not, and the row would grow a second time when the answer comes (UX §6.4: nothing under it moves back and forth).
+// *Saving…* and *Saved* with *Undo* take the same height, the height of the button, so the row does not
+// change its height again when the answer comes (UX §6: nothing under it moves back and forth).
 part "name-value.saved" {
     display inline-flex
-    flex-basis "100%"
     align-items center
     gap "$space-1"
     min-block-size "$size-control"
@@ -4993,12 +4993,6 @@ part "box" {
     min-width 0
 }
 
-// *Saving…* and *Saved* of the setting changed last, at the end of the first line of its box: the line is there
-// anyway, so the words take no room and nothing moves when they come (UX §6.4).
-part "box:has(save-status)" {
-    position relative
-}
-
 part "strong" {
     font-weight "$weight-regular"
     color "$fg"
@@ -5153,6 +5147,17 @@ part "card.heading:focus" {
     outline none
 }
 
+// A head that says *Saving…* or *Saved* keeps the words on the line of the heading: the heading gives way and
+// wraps in its own room, so the words never drop to a line of their own when they come (UX §6.4).
+part "card.header:has(card.actions > save-status)" {
+    flex-wrap nowrap
+}
+
+part "card.header:has(card.actions > save-status) card.heading" {
+    flex "1 1 0"
+    min-width 0
+}
+
 part "icon" {
     flex none
     width "$size-icon"
@@ -5195,11 +5200,21 @@ part "save-status[state=not-saved]" {
     font-weight "$weight-regular"
 }
 
-// The words in the box of a setting stand at the end of its first line (see `box:has(save-status)`).
-part "box > save-status" {
+// The head of the box of a setting: the setting, and *Saving…* and *Saved* at the end of its first line. The
+// first line keeps room at its end as wide as the longest of the words, from the start, so the words take no room
+// from the setting when they come and cover none of it; the lines under it keep their whole width (UX §6.4).
+part "setting-head" {
+    position relative
+}
+
+part "setting-head > save-status" {
     position absolute
-    inset-block-start "$space-3"
-    inset-inline-end "$space-3"
+    inset-block-start 0
+    inset-inline-end 0
+}
+
+part "setting-head field.label" "setting-head choice-group.legend" "setting-head switch" {
+    padding-inline-end "$size-save-words"
 }
 
 // The bar under an editor: the plain buttons at the start, the one filled button at the end (R6).

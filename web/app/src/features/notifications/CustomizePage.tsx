@@ -127,22 +127,21 @@ export function CustomizePage() {
           <KindRow key={kind} kind={kind} settings={settings} />
         ))}
       </ul>
-      {/* *Saved* stands beside *Reset to default*, at the end of the card: it pushes nothing (UX §6.4). */}
-      {ownChoices.length === 0 && progress.state === "idle" ? null : (
-        <div {...partOf(part.customizeActions)}>
-          {ownChoices.length === 0 ? null : (
-            <Button
-              look={buttonLook.quiet}
-              onPress={() => {
-                void changeMySettings(ownChoices.map((key) => ({ key, value: null })));
-              }}
-            >
-              {t("setting.ui.reset")}
-            </Button>
-          )}
-          <SaveStatus state={progress.state} labels={saveLabels()} />
-        </div>
-      )}
+      {/* *Saved* stands beside *Reset to default*, at the end of the card, in a row that is always
+          there: it pushes nothing, and a screen reader hears the first change too (UX §6.4). */}
+      <div {...partOf(part.customizeActions)}>
+        {ownChoices.length === 0 ? null : (
+          <Button
+            look={buttonLook.quiet}
+            onPress={() => {
+              void changeMySettings(ownChoices.map((key) => ({ key, value: null })));
+            }}
+          >
+            {t("setting.ui.reset")}
+          </Button>
+        )}
+        <SaveStatus state={progress.state} labels={saveLabels()} />
+      </div>
     </Card>
   );
 }

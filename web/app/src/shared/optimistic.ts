@@ -107,6 +107,19 @@ export function optimisticSend<Variables extends Described, Cached extends Cache
   };
 }
 
+/**
+ * The mutation of a change that is started before the mutation hears of it (`optimisticSend`): it
+ * only waits for the answer. It runs offline too, where the request fails at once: a change is
+ * never held back while *Saving…* says it is on its way, and its refusal takes it back from the
+ * screen and says *Not saved yet*.
+ */
+export function startedChange<Answer>() {
+  return {
+    networkMode: "always",
+    mutationFn: (started: Readonly<Promise<Answer>>) => started,
+  } as const;
+}
+
 /** What a mutation has gone through, as the words *Saving…*, *Saved* and *Not saved yet* say it. */
 const saveStates = {
   idle: "idle",
