@@ -1,17 +1,8 @@
 import { MutationObserver, onlineManager, QueryClient } from "@tanstack/react-query";
 import { describe, expect, it } from "vitest";
 
-import { skeletonDelayMs, startDelay } from "@bugaboo/ui";
-
 import { optimisticSend, saveStateOf, startedChange, summarizeCalls } from "./optimistic.ts";
-import {
-  addName,
-  key,
-  manualClock,
-  nextTick,
-  slowServer,
-  type Names,
-} from "./optimistic-testing.ts";
+import { addName, key, nextTick, slowServer, type Names } from "./optimistic-testing.ts";
 
 describe("ux_06 a change shows at once", () => {
   it("is in the cache within 100 ms, while the slow server has not answered", async () => {
