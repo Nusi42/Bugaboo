@@ -48,8 +48,37 @@ function pressed(path: string, change: string, control: (page: Page) => Locator)
   };
 }
 
-/** The accent color the change of the theme editor gives the theme: one that reads well. */
-const ACCENT = "#a49aff";
+/** An accent color that reads well on the backgrounds of Dusk. */
+const READABLE = "#a49aff";
+
+/**
+ * A change of a color in the editor of a new personal theme.
+ */
+function colorOfATheme(
+  change: string,
+  theme: Readonly<{ name: string; color: string }>,
+): ChangeInPlace {
+  return {
+    screen: paths.appearance,
+    change,
+    open: (page) => openPage(page, paths.appearance),
+    part: (page) => boxOf(colorField(page, t("theme-color.accent"))),
+    // Making the theme and putting its color on screen are the person's own.
+    before: async (page) => {
+      await page.getByLabel(t("theme-editor.create-name")).fill(theme.name);
+      await page.getByLabel(t("theme-editor.create-from")).selectOption({ label: t("theme.dusk") });
+      await page.getByRole("button", { name: t("theme-editor.create"), exact: true }).click();
+      await expect(readabilityLine(page)).not.toHaveText(t("theme-editor.readability-loading"));
+      await changeColor(page, t("theme-editor.group.highlight"), t("theme-color.accent"));
+      await page.waitForLoadState("networkidle");
+    },
+    act: async (page) => {
+      await colorField(page, t("theme-color.accent")).fill(theme.color);
+      await expect(readabilityLine(page)).not.toHaveText(t("theme-editor.readability-loading"));
+    },
+    landmarks: pageLandmarks,
+  };
+}
 
 /** The changes in place of the pages of settings. */
 export const settingsChanges: readonly ChangeInPlace[] = [
@@ -95,24 +124,5 @@ export const settingsChanges: readonly ChangeInPlace[] = [
     },
     landmarks: pageLandmarks,
   },
-  {
-    screen: paths.appearance,
-    change: "a color of a theme",
-    open: (page) => openPage(page, paths.appearance),
-    part: (page) => boxOf(colorField(page, t("theme-color.accent"))),
-    // Making the theme and putting its color on screen are the person's own.
-    before: async (page) => {
-      await page.getByLabel(t("theme-editor.create-name")).fill("Harbor");
-      await page.getByLabel(t("theme-editor.create-from")).selectOption({ label: t("theme.dusk") });
-      await page.getByRole("button", { name: t("theme-editor.create"), exact: true }).click();
-      await expect(readabilityLine(page)).not.toHaveText(t("theme-editor.readability-loading"));
-      await changeColor(page, t("theme-editor.group.highlight"), t("theme-color.accent"));
-      await page.waitForLoadState("networkidle");
-    },
-    act: async (page) => {
-      await colorField(page, t("theme-color.accent")).fill(ACCENT);
-      await expect(readabilityLine(page)).not.toHaveText(t("theme-editor.readability-loading"));
-    },
-    landmarks: pageLandmarks,
-  },
+  colorOfATheme("a color of a theme", { name: "Harbor", color: READABLE }),
 ];

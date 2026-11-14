@@ -1,4 +1,4 @@
-import { type Locator } from "@playwright/test";
+import { type Locator, type Page } from "@playwright/test";
 
 import { t } from "@bugaboo/messages";
 
@@ -8,7 +8,7 @@ import { signIn } from "./support/flows.ts";
 import { prepareWeb } from "./support/issues.ts";
 import { savedWords } from "./support/saved.ts";
 import { boxOf } from "./support/windows.ts";
-import { paths } from "../src/shared/paths.ts";
+import { addressInProject, paths } from "../src/shared/paths.ts";
 
 // *Saving…* and *Saved* where the change was made (UX §6.4, M8 WP-13): every place that says them
 // has its status from the start, so a screen reader hears the first change, and the words take a
@@ -77,4 +77,46 @@ test("ux_6_4 Saved in the head of a card stays on the line of its heading", asyn
   ]);
   // The words start within the height of the heading's line, not on a line of their own under it.
   expect(words.y).toBeLessThan(heading.y + heading.height);
+});
+
+/**
+ * Presses a control of a page that draws its own control for a setting (UX §6.4): *Saved* comes in
+ * the head of its box and covers none of the control's words.
+ */
+async function savedBesideOwnControl(
+  page: Page,
+  path: string,
+  control: (page: Page) => Locator,
+  press: (control: Locator) => Promise<void> = (found) =>
+    found.locator("xpath=ancestor::label[1]").click(),
+) {
+  await page.goto(path);
+  const head = control(page).locator("xpath=ancestor::*[@data-part='setting-head'][1]");
+  await press(control(page));
+  const said = head.getByRole("status").filter({ hasText: savedWords });
+  await expect(said).toBeVisible();
+  expect(await overlap(said, head.locator("> :first-child"))).toBe(false);
+}
+
+test("ux_6_4 Saved beside a control a page draws itself covers none of its words", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await savedBesideOwnControl(page, paths.appearance, (here) =>
+    here.getByRole("radio", { name: t("theme.midnight"), exact: true }),
+  );
+  await savedBesideOwnControl(page, paths.themes, (here) =>
+    here.getByRole("radio", { name: t("theme.paper"), exact: true }),
+  );
+  await savedBesideOwnControl(
+    page,
+    paths.startPage,
+    (here) => here.getByRole("combobox", { name: t("nav.start-page"), exact: true }),
+    async (found) => {
+      await found.selectOption({ index: 1 });
+    },
+  );
+  await savedBesideOwnControl(page, addressInProject(paths.projectSettings, "WEB"), (here) =>
+    here.locator("main [data-part='setting-head']").getByRole("switch").first(),
+  );
 });

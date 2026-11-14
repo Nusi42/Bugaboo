@@ -60,7 +60,7 @@ export const listChanges: readonly ChangeInPlace[] = [
       });
       await expect(groupOf(page, t("priority.critical"))).toBeVisible();
     },
-    landmarks: () => Promise.resolve(listViewLandmarks()),
+    landmarks: (page) => Promise.resolve(listViewLandmarks(page)),
   },
   {
     screen: LIST,
@@ -74,7 +74,7 @@ export const listChanges: readonly ChangeInPlace[] = [
       await head.click();
       await expect(head).not.toHaveAttribute("aria-label", open);
     },
-    landmarks: () => Promise.resolve(listViewLandmarks()),
+    landmarks: (page) => Promise.resolve(listViewLandmarks(page)),
   },
   {
     screen: LIST,
@@ -87,7 +87,7 @@ export const listChanges: readonly ChangeInPlace[] = [
       await columnButton(page, t("issue-field.title")).click();
       await expect.poll(() => new URL(page.url()).searchParams.get("s")).toContain("sort by title");
     },
-    landmarks: () => Promise.resolve(listViewLandmarks()),
+    landmarks: (page) => Promise.resolve(listViewLandmarks(page)),
   },
   {
     screen: LIST,
@@ -109,8 +109,9 @@ export const listChanges: readonly ChangeInPlace[] = [
         .getByRole("button", { name: t("search.bar.add-filter-confirm") })
         .click();
       await expect(rowOf(page, webIssues.passkey)).toHaveCount(0);
+      await expect(rowOf(page, FOUND)).toHaveCount(1);
     },
-    landmarks: () => Promise.resolve(listViewLandmarks(true)),
+    landmarks: (page) => Promise.resolve(listViewLandmarks(page, true)),
   },
 ];
 

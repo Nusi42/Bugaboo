@@ -1,6 +1,7 @@
 import { type Locator, type Page } from "@playwright/test";
 
 import { HEADING, ROWS_BOX, type ScreenLandmarks } from "./landmarks.ts";
+import { layoutOf } from "./layout.ts";
 import { LANDMARK, type Landmark, landmarkOf, partLandmark } from "./movement.ts";
 import { aroundTheChange, placesOf } from "./places.ts";
 
@@ -26,7 +27,7 @@ const PAGE_PARTS = [
  * in the sheet of the filters the person works in, which brings *Add filter* back into view when its
  * window closes.
  */
-export function listViewLandmarks(filterAdded = false): ScreenLandmarks {
+export function listViewLandmarks(page: Page, filterAdded = false): ScreenLandmarks {
   const toolbar = partLandmark("the toolbar", "list-toolbar");
   const filters = partLandmark("the filters", "search-filters");
   // On a phone the filters stand in a sheet over the list; a computer has no such sheet.
@@ -38,7 +39,7 @@ export function listViewLandmarks(filterAdded = false): ScreenLandmarks {
     all: [HEADING, toolbar, ...(filterAdded ? [filters, sheet] : []), ROWS_BOX],
     grows: [ROWS_BOX.name, ...(filterAdded ? [toolbar.name, filters.name, sheet.name] : [])],
     follows: filterAdded ? [ROWS_BOX.name] : [],
-    scrolls: filterAdded ? ["search-panel"] : [],
+    scrolls: filterAdded && layoutOf(page) === "phone" ? ["search-panel"] : [],
   };
 }
 
@@ -50,18 +51,32 @@ async function marked(page: Page, selector: string): Promise<readonly Landmark[]
   );
 }
 
+/** The name of the landmark an element was marked as, if it was. */
+function nameOf(found: Locator): Promise<string | null> {
+  return found.evaluate((element, mark) => element.getAttribute(mark), LANDMARK);
+}
+
 /**
  * The landmarks of a page of settings or of the theme editor around the part a person changes: the
  * heading, the menu of the settings, each card, box, group and readout. What holds the part grows
- * with it; what stands under a part that grows, in its column, may be pushed by exactly that.
+ * with it, and so do the parts of `alsoGrows`, which the change is meant to grow too; what stands
+ * under a part that grows, in its column, may be pushed by exactly that.
  */
-export async function pageLandmarks(page: Page, changed: Locator): Promise<ScreenLandmarks> {
+export async function pageLandmarks(
+  page: Page,
+  changed: Locator,
+  alsoGrows: readonly Locator[] = [],
+): Promise<ScreenLandmarks> {
   const parts = await marked(page, PAGE_PARTS);
-  const named = await changed.evaluate((element, mark) => element.getAttribute(mark), LANDMARK);
+  const named = await nameOf(changed);
   const known = parts.find((landmark) => landmark.name === named);
   const target = known ?? (await landmarkOf(changed, "the part that changes"));
   const all = [HEADING, ...(known === undefined ? [target] : []), ...parts];
-  return { all, ...aroundTheChange(await placesOf(page, all), target.name, []), scrolls: [] };
+  // What the change is meant to grow besides its part (the readout of a theme's readability).
+  const growing = (await Promise.all(alsoGrows.map((found) => nameOf(found)))).filter(
+    (name) => name !== null,
+  );
+  return { all, ...aroundTheChange(await placesOf(page, all), target.name, growing), scrolls: [] };
 }
 
 /**
