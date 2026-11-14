@@ -287,6 +287,10 @@ tokens {
     // The gap between the text of an issue and its Details, and the room both take at the end of the
     // column: the offers to undo keep out of it (one rule for the page and for the offers).
     size "gap-details" "$space-5"
+    // The gap between the parts of a stack (the fields of a form, the parts of a setting), and the gap between the lines of
+    // the head of a setting: what stands under its first lines keeps the distance of the stack it stood in.
+    size "gap-stack" "$space-4"
+    size "gap-setting-line" "$space-1"
     size "size-details-room" "calc($size-details + $gap-details)"
     // The warning that floats at the bottom of the start side beside the sidebar (the one of a timer that runs
     // long), and the room it takes: the offers to undo leave that room free.
@@ -4780,7 +4784,7 @@ part "window-dock.note" {
 part "stack" {
     display flex
     flex-direction column
-    gap "$space-4"
+    gap "$gap-stack"
     min-width 0
 }
 
@@ -5222,7 +5226,7 @@ part "setting-head" {
     grid-template-columns "minmax(0, 1fr) auto"
     align-items start
     column-gap "$space-2"
-    row-gap "$space-1"
+    row-gap "$gap-setting-line"
 }
 
 // The bar under an editor: the plain buttons at the start, the one filled button at the end (R6).
@@ -5481,8 +5485,9 @@ part "settings.locked-value" {
     color "$fg"
 }
 
-// The frames of a setting that give their lines to its head (`setting-head`; the rest of the rules stand at the end of the
-// file).
+// The frames of a setting that give their lines to its head (`setting-head`). The rest of these rules stand at the end
+// of the file; these two cannot join them, because the stack of a list page (`card > stack:has(…)`) is more specific
+// and has to come after them (stylelint no-descending-specificity).
 part "setting-head > stack" "setting-head > stack > settings.control" {
     display contents
 }
@@ -17641,5 +17646,5 @@ part "setting-head > save-status" {
 
 // What stands under the control (where the value comes from, *Save*) keeps the distance of the frame it stood in.
 part "setting-head > stack > row" "setting-head > stack > settings.source" {
-    margin-block-start "calc($space-4 - $space-1)"
+    margin-block-start "calc($gap-stack - $gap-setting-line)"
 }

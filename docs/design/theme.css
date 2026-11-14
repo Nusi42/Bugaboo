@@ -138,6 +138,8 @@
   --legend-start: auto;
   --size-details: 340px;
   --gap-details: var(--space-5);
+  --gap-stack: var(--space-4);
+  --gap-setting-line: var(--space-1);
   --size-details-room: calc(var(--size-details) + var(--gap-details));
   --size-floating-note: var(--size-dialog);
   --size-floating-note-room: calc(var(--size-floating-note) + var(--space-4));

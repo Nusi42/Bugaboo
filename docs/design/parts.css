@@ -3683,7 +3683,7 @@ textarea,
 [data-part="stack"] {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--gap-stack);
   min-width: 0;
 }
 
@@ -4105,7 +4105,7 @@ textarea,
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
   column-gap: var(--space-2);
-  row-gap: var(--space-1);
+  row-gap: var(--gap-setting-line);
 }
 
 [data-part="save-bar"] {
@@ -10311,5 +10311,5 @@ textarea,
 
 [data-part="setting-head"] > [data-part="stack"] > [data-part="row"],
 [data-part="setting-head"] > [data-part="stack"] > [data-part="settings.source"] {
-  margin-block-start: calc(var(--space-4) - var(--space-1));
+  margin-block-start: calc(var(--gap-stack) - var(--gap-setting-line));
 }
