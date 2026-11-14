@@ -355,6 +355,14 @@ impl Shown {
         self.anywhere(|_, held| held.allows(permission))
     }
 
+    /// Whether what the person may do for the whole organization, narrowed like every other
+    /// decision of the view, passes `test`: a role there counts in every project, also in those
+    /// that are not made yet.
+    pub(crate) fn at_organization(&self, test: impl Fn(&Evaluation) -> bool) -> bool {
+        self.held_at(Place::Organization)
+            .is_some_and(|held| test(&held))
+    }
+
     /// Whether a project and what the person may do in it, narrowed like every other decision of
     /// the view, pass `test`; stops at the first one.
     pub(crate) fn anywhere(&self, test: impl Fn(ProjectId, &Evaluation) -> bool) -> bool {

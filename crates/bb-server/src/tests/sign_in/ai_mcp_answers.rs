@@ -521,3 +521,49 @@ async fn ai_03_a_search_never_tells_a_name_known_only_from_a_project_kept_from_a
     })
     .await
 }
+
+#[tokio::test]
+async fn ai_04_an_app_of_an_administrator_is_offered_the_tools_before_any_project_exists()
+-> TestResult {
+    each_database("ai_04_tools_no_project_http", async |db| {
+        let (rig, app) = Mcp::start(db).await?;
+        let _org = super::policy_rig::Org::start(&rig).await?;
+        let mut ada = super::http::Browser::signed_in_as(&app, super::http::ADA_EMAIL).await?;
+        ai_on(&rig).await?;
+        let mcp = Mcp::new(&app);
+        let names =
+            async |signed: &super::ai_mcp_rig::Signed| -> Result<String, bb_testing::Failure> {
+                let listed = mcp
+                    .post(
+                        Some(&signed.access),
+                        json!({"jsonrpc": "2.0", "id": 1, "method": "tools/list"}),
+                    )
+                    .await?;
+                Ok(listed.json["result"]["tools"].to_string())
+            };
+        // A role for the whole organization allows the tools wherever a project will be.
+        let looking = sign_in_app(
+            &mcp,
+            &mut ada,
+            "Claude Desktop",
+            "see-and-change",
+            "see-only",
+        )
+        .await?;
+        let seen = names(&looking).await?;
+        assert!(seen.contains("search_issues"), "{seen}");
+        assert!(!seen.contains("create_issue"), "{seen}");
+        let changing = sign_in_app(
+            &mcp,
+            &mut ada,
+            "Claude Code",
+            "see-and-change",
+            "see-and-change",
+        )
+        .await?;
+        let all = names(&changing).await?;
+        assert!(all.contains("create_issue"), "{all}");
+        Ok(())
+    })
+    .await
+}

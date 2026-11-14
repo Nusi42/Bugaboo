@@ -216,12 +216,15 @@ async fn ai_21_a_timer_stopped_within_a_minute_says_that_nothing_was_booked() ->
 #[tokio::test]
 async fn ai_04_a_tool_allowed_only_in_projects_kept_from_ai_is_not_offered() -> Outcome {
     let world = World::new().await?;
-    a_project(&world, "WEB").await?;
+    let web = a_project(&world, "WEB").await?;
+    // Tom works in WEB only; a role for the whole organization would count in every project.
+    let tom = world.person("tom@example.test").await?;
+    with_role(&world, &tom, StartingRole::TeamMember, Some(web)).await?;
     let list = async || -> Result<usize, AppError> {
         Ok(list_tools(
             &world.ctx(),
             ToolListQuery {
-                session_token: token(&world),
+                session_token: tom.session_token.clone(),
                 granted: ToolScope::SeeAndChange,
                 caller: bb_core::ai::ToolCaller::AiApp,
             },
