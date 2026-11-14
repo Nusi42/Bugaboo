@@ -9,29 +9,52 @@ use super::fake::{FakeError, FakeStore, Tx};
 use crate::plan::TimelineStore;
 use crate::ports::ChangeStore;
 
+/// When another request sets a time factor, measured from the next read of one.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(crate) enum Meanwhile {
+    /// Just before the read: the read finds it.
+    BeforeNextRead,
+    /// Just after the read: the read found the factor as it was before.
+    AfterNextRead,
+}
+
 impl FakeStore {
-    /// Sets `factor` just before the next read of a time factor, as another request that sets it
-    /// meanwhile: the factor is stored and the version of its issue counts up.
-    pub(crate) fn set_factor_before_next_read(&self, factor: IssueTimeFactor) {
-        self.lock().factor_set_meanwhile = Some(factor);
+    /// Sets `factor` just before or just after the next read of a time factor, as another request
+    /// that sets it meanwhile: the factor is stored and the version of its issue counts up.
+    pub(crate) fn set_factor_meanwhile(&self, factor: IssueTimeFactor, when: Meanwhile) {
+        self.lock().factor_set_meanwhile = Some((factor, when));
+    }
+
+    /// Stores the factor set meanwhile, when it is set at `when`.
+    fn factor_set_at(&self, when: Meanwhile) {
+        let mut shared = self.lock();
+        if shared
+            .factor_set_meanwhile
+            .as_ref()
+            .is_none_or(|(_, set_when)| *set_when != when)
+        {
+            return;
+        }
+        let Some((factor, _)) = shared.factor_set_meanwhile.take() else {
+            return;
+        };
+        let state = &mut shared.state;
+        state.time_factors.retain(|kept| kept.issue != factor.issue);
+        if let Some(set) = state.issues.iter_mut().find(|set| set.id == factor.issue) {
+            set.version += 1;
+        }
+        state.time_factors.push(factor);
     }
 }
 
 impl TimelineStore for FakeStore {
     async fn time_factor(&self, issue: IssueId) -> Result<Option<IssueTimeFactor>, FakeError> {
-        {
-            let mut shared = self.lock();
-            if let Some(factor) = shared.factor_set_meanwhile.take() {
-                let state = &mut shared.state;
-                state.time_factors.retain(|kept| kept.issue != factor.issue);
-                if let Some(set) = state.issues.iter_mut().find(|set| set.id == factor.issue) {
-                    set.version += 1;
-                }
-                state.time_factors.push(factor);
-            }
-        }
-        self.read_snapshot(move |tx| Box::pin(Self::time_factor_in(tx, issue)))
-            .await
+        self.factor_set_at(Meanwhile::BeforeNextRead);
+        let read = self
+            .read_snapshot(move |tx| Box::pin(Self::time_factor_in(tx, issue)))
+            .await;
+        self.factor_set_at(Meanwhile::AfterNextRead);
+        read
     }
 
     async fn time_factor_in(

@@ -5,24 +5,31 @@ use bb_core::ErrorCode;
 use bb_core::id::{IssueId, UserId};
 use bb_core::plan::TimeFactor;
 use bb_core::plan::record::IssueTimeFactor;
+use bb_policy::StartingRole;
 
+use super::fake_plan::Meanwhile;
 use super::scenarios::token;
 use super::scenarios_plan::an_assigned_issue;
+use super::workflows_rules::member;
 use super::world::{Outcome, World};
 use crate::auth::AppError;
 use crate::issues::{ChangeIssue, ChangedIssue, change_issue};
 use crate::plan::{TimeFactorQuery, time_factor};
 
-/// Somebody sets the time factor of `issue` to ×1.5 just before the next read of a time factor.
-fn factor_set_meanwhile(world: &World, issue: &str) -> Result<(), String> {
+/// Somebody sets the time factor of `issue` to ×1.5 just before or just after the next read of a
+/// time factor.
+fn factor_set_meanwhile(world: &World, issue: &str, when: Meanwhile) -> Result<(), String> {
     let id: IssueId = issue.parse().map_err(|_| "no issue ID")?;
     let person = world.admin.person.id;
-    world.store.set_factor_before_next_read(IssueTimeFactor {
-        issue: id,
-        factor: TimeFactor::new(150).ok_or("no factor")?,
-        person,
-        set_by: person,
-    });
+    world.store.set_factor_meanwhile(
+        IssueTimeFactor {
+            issue: id,
+            factor: TimeFactor::new(150).ok_or("no factor")?,
+            person,
+            set_by: person,
+        },
+        when,
+    );
     Ok(())
 }
 
@@ -51,9 +58,9 @@ fn people_change(world: &World, issue: &str, version: i64, people: Vec<UserId>) 
 async fn plan_14_a_time_factor_set_between_the_plan_and_the_write_stops_the_change() -> Outcome {
     let world = World::new().await?;
     let issue = an_assigned_issue(&world).await?;
-    // The person on the bar taken off: the plan reads the factor, which goes back to ×1, and the
-    // factor is set right after that read.
-    factor_set_meanwhile(&world, &issue)?;
+    // The person on the bar taken off: the plan reads the factor (there is none), which goes back
+    // to ×1, and the factor is set right after that read, before the change is written.
+    factor_set_meanwhile(&world, &issue, Meanwhile::AfterNextRead)?;
     let refused =
         change_issue::<_, ChangedIssue>(&world.ctx(), people_change(&world, &issue, 1, Vec::new()))
             .await;
@@ -75,7 +82,7 @@ async fn plan_14_a_change_that_writes_nothing_never_answers_a_later_time_factor(
     // The same people again: nothing is written, and the answer is the issue at version 1. The
     // factor is set before the answer reads it, so it belongs to version 2: the answer has none,
     // and the screen reads it again.
-    factor_set_meanwhile(&world, &issue)?;
+    factor_set_meanwhile(&world, &issue, Meanwhile::BeforeNextRead)?;
     let answered = change_issue::<_, ChangedIssue>(
         &world.ctx(),
         people_change(&world, &issue, 1, same.clone()),
@@ -91,5 +98,55 @@ async fn plan_14_a_change_that_writes_nothing_never_answers_a_later_time_factor(
             .into_value();
     let factor = answered.time_factor.ok_or("no time factor")?;
     assert_eq!((factor.version, factor.percent), (2, 150));
+    Ok(())
+}
+
+#[tokio::test]
+async fn plan_14_a_written_change_that_keeps_the_first_person_never_answers_a_later_factor()
+-> Outcome {
+    let world = World::new().await?;
+    let issue = an_assigned_issue(&world).await?;
+    let first = world.admin.person.id;
+    let id: IssueId = issue.parse().map_err(|_| "no issue ID")?;
+    let project = world
+        .store
+        .read(|state| {
+            state
+                .issues
+                .iter()
+                .find(|each| each.id == id)
+                .map(|each| each.project)
+        })
+        .ok_or("no issue")?;
+    let second = member(
+        &world,
+        "bob@example.test",
+        StartingRole::TeamMember,
+        project,
+    )
+    .await?
+    .person
+    .id;
+    // Somebody is added after the person on the bar, who stays: the change is written (version
+    // 2), and the factor is set before the answer reads it, so it belongs to version 3. The
+    // answer names version 2 and has no factor; the screen reads it again.
+    factor_set_meanwhile(&world, &issue, Meanwhile::BeforeNextRead)?;
+    let answered = change_issue::<_, ChangedIssue>(
+        &world.ctx(),
+        people_change(&world, &issue, 1, vec![first, second]),
+    )
+    .await?
+    .into_value();
+    assert_eq!(answered.issue.version, 2);
+    assert_eq!(answered.time_factor, None);
+    // Nothing set meanwhile: the answer holds the factor of the version it names.
+    let answered = change_issue::<_, ChangedIssue>(
+        &world.ctx(),
+        people_change(&world, &issue, 3, vec![first]),
+    )
+    .await?
+    .into_value();
+    let factor = answered.time_factor.ok_or("no time factor")?;
+    assert_eq!((factor.version, factor.percent), (4, 150));
     Ok(())
 }
