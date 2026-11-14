@@ -883,6 +883,11 @@ textarea,
   font-size: var(--fs-md);
 }
 
+[data-part="choice-group.choices"][data-variant~="tiles"] {
+  align-items: stretch;
+  gap: var(--space-3);
+}
+
 [data-part="choice-group.choices"][data-variant~="grid"] {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(var(--size-swatch), 1fr));
@@ -6325,13 +6330,23 @@ textarea,
 }
 
 [data-part="side-panel.body"] {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
   scroll-padding: var(--ring-room);
   margin-block: 0;
   padding: var(--ring-room);
   margin-inline: calc(var(--ring-room) * -1);
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+@media print {
+  [data-part="side-panel.body"] {
+    flex: none;
+    height: auto;
+    min-height: auto;
+    max-height: none;
+    overflow: visible;
+  }
 }
 
 @supports (animation-timeline: scroll()) {
@@ -6819,6 +6834,7 @@ textarea,
   margin-inline: calc(var(--ring-room) * -1);
   overflow-y: auto;
   position: relative;
+  padding-block: 0;
 }
 
 @media print {
@@ -6831,6 +6847,11 @@ textarea,
     max-height: none;
     overflow: visible;
   }
+}
+
+[data-part="focus-view"]:has([data-part="issue-body"][data-variant~="split"])
+  [data-part="focus-view.list"] {
+  width: calc(var(--size-list) + 2 * var(--ring-room));
 }
 
 [data-part="issue-body"][data-variant~="split"] [data-part="issue-details"] {
@@ -7446,6 +7467,7 @@ textarea,
   background: var(--bg-sunken);
   padding: var(--space-3);
   overflow-x: auto;
+  overflow-y: hidden;
 }
 
 [data-part="markdown"] pre code {
@@ -9240,6 +9262,15 @@ textarea,
   overflow-y: hidden;
 }
 
+@media (max-height: calc(440px + 120px)) {
+  [data-part="app-layout.main"]:has([data-part="list-main"] [data-part="list-scroll"]),
+  [data-part="app-layout.main"]:has([data-part="issue-body"][data-variant~="split"]),
+  [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+    [data-part="app-layout.main"]:has([data-part="timeline-body"]) {
+    overflow-y: auto;
+  }
+}
+
 @media print {
   [data-part="app-layout.main"]:has([data-part="list-main"] [data-part="list-scroll"]),
   [data-part="app-layout.main"]:has([data-part="issue-body"][data-variant~="split"]),
@@ -9367,6 +9398,18 @@ textarea,
   }
 }
 
+[data-part="issue-body"][data-variant~="split"],
+[data-part="timeline-tray"] {
+  min-height: var(--size-list-scroll-least);
+}
+
+@media print {
+  [data-part="issue-body"][data-variant~="split"],
+  [data-part="timeline-tray"] {
+    min-height: auto;
+  }
+}
+
 [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
   [data-part="app-layout.inner"]:has([data-part="timeline-body"]),
 [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
@@ -9451,6 +9494,22 @@ textarea,
   }
 }
 
+@media print {
+  [data-part="list-editor"]:has([data-part="list-main"]),
+  [data-part="list-body"]:has([data-part="list-scroll"]),
+  [data-part="list-column"]:has([data-part="list-scroll"]),
+  [data-part="list-editor"]:has([data-part="timeline-body"]),
+  [data-part="list-scroll"],
+  [data-part="list-main"] [data-part="list-scroll"],
+  [data-part="timeline-scroll"] {
+    flex: none;
+    height: auto;
+    min-height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
 [data-part="app-layout"][data-variant~="phone"]
   [data-part="list-editor"]:has([data-part="list-main"]),
 [data-part="app-layout"][data-variant~="phone"]
@@ -9475,7 +9534,27 @@ textarea,
 
 [data-part="list-main"] [data-part="list-scroll"] {
   flex: 0 1 auto;
-  min-height: var(--size-list-scroll-least);
+  min-height: calc(var(--size-list-scroll-least) + var(--bar-ticked-height));
+}
+
+@media (max-height: calc(440px + 120px)) {
+  [data-part="app-layout"] [data-part="app-layout.inner"]:has([data-part="list-scroll"]),
+  [data-part="app-layout"] [data-part="card"]:has([data-part="list-scroll"]),
+  [data-part="app-layout"] [data-part="card"] > [data-part="stack"]:has([data-part="list-scroll"]),
+  [data-part="app-layout"] [data-part="list-editor.list"]:has([data-part="list-scroll"]),
+  [data-part="app-layout"] [data-part="list-main"]:has([data-part="list-scroll"]),
+  [data-part="app-layout"] [data-part="search-results"]:has([data-part="list-scroll"]),
+  [data-part="app-layout"] [data-part="list-editor"]:has([data-part="list-scroll"]),
+  [data-part="app-layout"] [data-part="list-body"]:has([data-part="list-scroll"]),
+  [data-part="app-layout"] [data-part="list-column"]:has([data-part="list-scroll"]) {
+    min-height: auto;
+  }
+}
+
+@media (max-height: calc(440px + 120px)) {
+  [data-part="app-layout"] [data-part="list-frame"]:has([data-part="list-scroll"]) {
+    flex: none;
+  }
 }
 
 [data-part="list-column"]:has([data-part="selected-bar"][data-state~="active"])

@@ -117,6 +117,9 @@ tokens {
     size "pad-nothing" "$pad-box" phone="0px"
     // The least the box of the rows of an issue list is high, where the page above it takes most of the window.
     size "size-list-scroll-least" "120px"
+    // The most the top bar and what stands above the boxes of a pane (the title, the toolbar, the counts) take of the
+    // window. A window lower than this and the least height of the boxes is low: there the main column scrolls (UX §6.5).
+    size "size-pane-head-room" "440px"
     // The coloured edge of a row for its priority.
     size "size-edge" "4px"
     // The name of a value in the details: 112 on a computer, 120 on a phone.
@@ -2096,6 +2099,12 @@ part "choice-group.choices[variant=radios] choice-group.label" {
 }
 
 // Many small choices (the colors) stand in a grid that wraps, several in a row, instead of one row or one column.
+// The samples of the themes: as high as the highest of them in each line, with the room of a row between them.
+part "choice-group.choices[variant=tiles]" {
+    align-items stretch
+    gap "$space-3"
+}
+
 part "choice-group.choices[variant=grid]" {
     display grid
     grid-template-columns "repeat(auto-fill, minmax($size-swatch, 1fr))"
@@ -7348,11 +7357,9 @@ part "side-panel.head" {
 
 // What the panel holds scrolls under its head, with room for the rings of what is inside it (L7).
 part "side-panel.body" {
+    use "pane-scroll-box"
     flex "1 1 auto"
     min-height 0
-    overflow-y auto
-    use "ring-room"
-    use "ring-room-flush"
 }
 
 part "side-panel.body::before" {
@@ -7831,6 +7838,13 @@ part "issue-details" {
 part "issue-body[variant=split] issue-main" "focus-view:has(issue-body[variant=split]) focus-view.list" {
     use "pane-scroll-box"
     position relative
+    // Room for the ring at the sides only: the first section starts level with the top of the Details.
+    padding-block 0
+}
+
+// The room for the ring at both sides comes on top of the width of the slim list, so its rows keep their width.
+part "focus-view:has(issue-body[variant=split]) focus-view.list" {
+    width "calc($size-list + 2 * $ring-room)"
 }
 
 part "issue-body[variant=split] issue-details" {
@@ -8383,10 +8397,12 @@ base "[data-part=markdown] code" {
     background "$bg-sunken"
 }
 
+// A long line of code scrolls sideways; the box of the page around it scrolls up and down (UX §6.5).
 base "[data-part=markdown] pre" {
     use "sunken-box"
     padding "$space-3"
     overflow-x auto
+    overflow-y hidden
 }
 
 base "[data-part=markdown] pre code" {
@@ -16617,10 +16633,15 @@ part "search-panel search-suggestions" {
 // never scrolls, on a computer as on a phone (the timeline on a phone stands in the main column, which is its box).
 part "app-layout.main:has(list-main list-scroll)" "app-layout.main:has(issue-body[variant=split])" "app-layout:not(app-layout[variant=phone]) app-layout.main:has(timeline-body)" {
     overflow-y hidden
+    // A low window: the boxes keep their least height and the main column scrolls them into reach (UX §6.5).
+    media "(max-height: calc($size-pane-head-room + $size-list-scroll-least))" {
+        overflow-y auto
+    }
     media "print" {
         overflow visible
     }
 }
+
 
 // Only where there are rows that scroll does every box give way below its content; a page without rows (nothing found,
 // a mistake) keeps the room of its content, with the padding of its card, and the page scrolls.
@@ -16650,6 +16671,14 @@ part "app-layout focus-view:has(issue-body[variant=split])" "issue-body[variant=
     min-height 0
     media "print" {
         use "free-on-paper"
+    }
+}
+
+// The boxes of a pane keep their least height, also where the window is low.
+part "issue-body[variant=split]" "timeline-tray" {
+    min-height "$size-list-scroll-least"
+    media "print" {
+        min-height auto
     }
 }
 
@@ -16689,6 +16718,13 @@ part "list-column:has(list-scroll)" {
     }
 }
 
+// On paper the lines of a list and of the timeline and their boxes are as long as what they hold: nothing scrolls there.
+part "list-editor:has(list-main)" "list-body:has(list-scroll)" "list-column:has(list-scroll)" "list-editor:has(timeline-body)" "list-scroll" "list-main list-scroll" "timeline-scroll" {
+    media "print" {
+        use "free-on-paper"
+    }
+}
+
 part "app-layout[variant=phone] list-editor:has(list-main)" "app-layout[variant=phone] list-body:has(list-scroll)" {
     flex-direction column
     flex-wrap nowrap
@@ -16708,7 +16744,22 @@ part "app-layout:not(app-layout[variant=phone]) list-editor:has(timeline-body)" 
 // The box of the rows is as high as its rows, and no higher than the rest of the window: min(its rows, the rest).
 part "list-main list-scroll" {
     flex "0 1 auto"
-    min-height "$size-list-scroll-least"
+    // Room for rows above the bar of ticked issues too, while it stands over the foot of the list.
+    min-height "calc($size-list-scroll-least + $bar-ticked-height)"
+}
+
+// In a low window the frame of a list is as high as its head and the least of its rows: it does not cut them, the main
+// column scrolls (UX §6.5).
+part "app-layout app-layout.inner:has(list-scroll)" "app-layout card:has(list-scroll)" "app-layout card > stack:has(list-scroll)" "app-layout list-editor.list:has(list-scroll)" "app-layout list-main:has(list-scroll)" "app-layout search-results:has(list-scroll)" "app-layout list-editor:has(list-scroll)" "app-layout list-body:has(list-scroll)" "app-layout list-column:has(list-scroll)" {
+    media "(max-height: calc($size-pane-head-room + $size-list-scroll-least))" {
+        min-height auto
+    }
+}
+
+part "app-layout list-frame:has(list-scroll)" {
+    media "(max-height: calc($size-pane-head-room + $size-list-scroll-least))" {
+        flex none
+    }
 }
 
 // While the bar of ticked issues stands over the foot of the list, the rows end with empty room the height of the bar,

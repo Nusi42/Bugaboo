@@ -33,7 +33,7 @@ export function ThemePicker({ legend, choices, value, onChange }: ThemePickerPro
   const group = useId();
   return (
     <ChoiceGroupFrame legend={legend}>
-      <div {...partOf(part.row, { variants: ["stretch"] })}>
+      <div {...partOf(part.choiceGroupChoices, { variants: ["tiles"] })}>
         {choices.map((choice) => (
           <label key={choice.value} {...partOf(part.choiceGroupChoice)}>
             <input

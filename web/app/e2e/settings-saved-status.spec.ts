@@ -3,10 +3,11 @@ import { type Locator, type Page } from "@playwright/test";
 import { t } from "@bugaboo/messages";
 
 import { ada } from "./support/accounts.ts";
-import { expect, test } from "./support/fixtures.ts";
+import { expect, refusal, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareWeb } from "./support/issues.ts";
 import { savedWords } from "./support/saved.ts";
+import { inOrder } from "./support/sequence.ts";
 import { boxOf } from "./support/windows.ts";
 import { addressInProject, paths } from "../src/shared/paths.ts";
 
@@ -78,17 +79,7 @@ test("ux_6_4 a change the server refuses says Not saved yet in the head of its s
   await page.route(
     "**/api/v1/me/settings/*",
     async (route) => {
-      await route.fulfill({
-        status: 403,
-        contentType: "application/problem+json",
-        body: JSON.stringify({
-          type: "about:blank",
-          title: "Forbidden",
-          status: 403,
-          code: "access.forbidden",
-          message_key: "error.access.forbidden",
-        }),
-      });
+      await route.fulfill(refusal(403, "access.forbidden"));
     },
     { times: 1 },
   );
@@ -106,6 +97,32 @@ test("ux_6_4 a change the server refuses says Not saved yet in the head of its s
   expect(words.map((line: Ink) => line.top < firstLineEnd)).toEqual([true]);
   expect(words.map((line: Ink) => line.right <= whole.x + whole.width + 1)).toEqual([true]);
   expect(await overlap(said, head.getByText(name, { exact: true }))).toBe(false);
+});
+
+test("ux_6_4 the samples of the themes run the whole width of their setting, beside no Saved", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  const tiles = "[data-part='choice-group.choices'][data-variant~='tiles']";
+  await inOrder(
+    [paths.appearance, paths.themes].map((path) => async () => {
+      await page.goto(path);
+      const head = page
+        .locator("main [data-part='setting-head']")
+        .filter({ has: page.locator(tiles) })
+        .first();
+      await expect(head).toBeVisible();
+      const [whole, row, status] = await Promise.all([
+        boxOf(head),
+        boxOf(head.locator(tiles).first()),
+        boxOf(head.locator("[data-part~='save-status']")),
+      ]);
+      expect(row.x).toBeCloseTo(whole.x, 0);
+      expect(row.width).toBeCloseTo(whole.width, 0);
+      // The tiles stand under the line of Saved, never beside it.
+      expect(row.y).toBeGreaterThanOrEqual(status.y + status.height);
+    }),
+  );
 });
 
 test("ux_6_4 the notification settings say Saved in a row that is there from the start", async ({

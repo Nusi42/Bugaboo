@@ -33,11 +33,19 @@ export function scrollingOf(page: Page): Promise<Scrolling> {
         boxes.push(element);
       }
     }
+    // A low window lets the main column scroll the boxes of its pane into reach (UX §6.5): lower than the room of the
+    // head and the least height of a box, both read from the tokens of the theme.
+    const tokens = getComputedStyle(document.documentElement);
+    const low =
+      innerHeight <
+      Number(tokens.getPropertyValue("--size-pane-head-room").trim().replace("px", "")) +
+        Number(tokens.getPropertyValue("--size-list-scroll-least").trim().replace("px", ""));
+    const main = document.querySelector("[data-part~='app-layout.main']");
     const nested: string[] = [];
     for (const box of boxes) {
       let inside = false;
       for (const other of boxes) {
-        inside ||= other !== box && other.contains(box);
+        inside ||= other !== box && other.contains(box) && !(low && other === main);
       }
       if (inside) {
         nested.push(
