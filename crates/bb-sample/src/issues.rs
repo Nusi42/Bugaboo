@@ -523,7 +523,8 @@ impl Maker<'_, '_> {
                         fields: BTreeMap::new(),
                     },
                 )
-                .await,
+                .await
+                .map(|changed| changed.map(|changed| changed.issue)),
                 Step::Change,
             )?;
             let mut updated = MadeIssue::of(&changed)?;

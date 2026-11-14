@@ -35,6 +35,7 @@ use super::auth::{
 use super::bodies::OptionalVersionParams;
 use super::body_id;
 use super::check_access::{PERSON_FIELDS, PeopleSearch};
+use super::timeline_factor::TimeFactorBody;
 use super::workflows::status_in;
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{ListParams, Listed, Page};
@@ -440,7 +441,11 @@ async fn change_issue(
             },
         )
         .await?;
-    answer_authorized(&changed.map(|issue| IssueItem::from(&issue)))
+    answer_authorized(&changed.map(|changed| {
+        let mut item = IssueItem::from(&changed.issue);
+        item.time_factor = changed.time_factor.map(TimeFactorBody::from);
+        item
+    }))
 }
 
 /// Saves the description of an issue under the edit lock the person holds, on the version they

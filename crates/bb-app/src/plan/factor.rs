@@ -256,16 +256,44 @@ pub async fn time_factor<S: AuthStore>(
 ) -> Result<Authorized<TimeFactorView>, AppError> {
     let actor = ctx.actor(&query.session_token).await?;
     let (issue, held) = ctx.visible_issue(&actor, &query.issue).await?;
-    let factor = ctx
-        .store()
-        .time_factor(issue.id)
-        .await
-        .map_err(|error| internal::<S>(&error))?;
-    let first = ctx.first_assigned(issue.id).await?;
-    let view = ctx
-        .factor_view(&actor, &held, &issue, issue.version, factor.as_ref(), first)
-        .await?;
+    let view = ctx.factor_now(&actor, &held, &issue).await?;
     Ok(held.authorize(view))
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// The time factor of `issue` as it is stored now, for the reader: what its route answers,
+    /// and what a change of the people answers with the changed issue.
+    pub(crate) async fn factor_now(
+        &self,
+        actor: &Actor,
+        held: &Evaluation,
+        issue: &Issue,
+    ) -> Result<TimeFactorView, AppError> {
+        let factor = self
+            .store()
+            .time_factor(issue.id)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        let first = self.first_assigned(issue.id).await?;
+        self.factor_view(actor, held, issue, issue.version, factor.as_ref(), first)
+            .await
+    }
+
+    /// The time factor of `issue` as it is stored now, when `wanted` (a change that set the people
+    /// it is assigned to answers it with the issue), else none.
+    pub(crate) async fn factor_if(
+        &self,
+        wanted: bool,
+        actor: &Actor,
+        held: &Evaluation,
+        issue: &Issue,
+    ) -> Result<Option<TimeFactorView>, AppError> {
+        if wanted {
+            Ok(Some(self.factor_now(actor, held, issue).await?))
+        } else {
+            Ok(None)
+        }
+    }
 }
 
 /// Whether `actor` may set the time factor of `issue`, whose person on the bar is `first`: that

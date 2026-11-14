@@ -11,45 +11,6 @@ import { AS_ESTIMATED, factorText } from "../../shared/time-factor-text.ts";
 /** The time factor of an issue as the server answers it for the reader (PLAN-14, ADR-0030). */
 export type TimeFactor = Schema<"TimeFactorBody">;
 
-/** The reader of the issue page, as far as the time factor asks: who they are and their field level. */
-export interface FactorReader {
-  readonly id: string | undefined;
-  readonly mayChangeField: boolean;
-}
-
-/**
- * The time factor as the server answers it once the people on the issue changed (ADR-0030): a new
- * person on the bar takes it back to ×1, set by nobody, and the reader may change it as they may
- * for that person; an issue assigned to nobody has none to change. The row shows this from the
- * change on, so it changes once and not again when the answer comes (UX §6.4).
- */
-export function factorForPeople(
-  factor: TimeFactor,
-  first: Schema<"PersonRef"> | undefined,
-  reader: FactorReader,
-): TimeFactor {
-  if (first === undefined) {
-    return factor.person === null
-      ? factor
-      : { ...factor, person: null, set_by: null, own_estimate: false, may_change: false };
-  }
-  // A person the reader is shown only by a role cannot be told from another: the answer tells.
-  const was = factor.person;
-  if (first.shown !== "name" || (was?.shown === "name" && was.id === first.id)) {
-    return factor;
-  }
-  const own = reader.id === first.id;
-  return {
-    ...factor,
-    ...(Object.hasOwn(factor, "percent") ? { percent: AS_ESTIMATED } : {}),
-    own_percent: own ? AS_ESTIMATED : null,
-    own_estimate: false,
-    set_by: null,
-    person: first,
-    may_change: own || reader.mayChangeField,
-  };
-}
-
 /** How a new time factor is given: as a factor in percent, or as a length (*Takes me …*). */
 export type NewTimeFactor = { readonly percent: number } | { readonly takes_minutes: number };
 
@@ -59,6 +20,14 @@ export type NewTimeFactor = { readonly percent: number } | { readonly takes_minu
  */
 function factorKey(issue: string) {
   return queryKeys.issues.time("factor", issue);
+}
+
+/**
+ * Keeps the time factor an issue has after a change of its people, as the answer of the change
+ * says it: the row shows it in the turn the change lands, and never asks for it first (UX §6.4).
+ */
+export function keepTimeFactor(issue: string, factor: TimeFactor): void {
+  queryClient.setQueryData(factorKey(issue), factor);
 }
 
 /** The time factor of an issue, read once for the page and again after each change of the issue. */

@@ -17,8 +17,8 @@ use super::{
     ChangeLabelGroup, ChangeOffers, ChangePassword, ChangeProject, ChangeProjectAi,
     ChangeRelationKind, ChangeRole, ChangeSearch, ChangeSetting, ChangeSignUpPolicy,
     ChangeStandingRule, ChangeStartTime, ChangeTag, ChangeTimeEntry, ChangeUsualDays,
-    ChangeWorkDay, ChangedAwayTime, ChangedShare, ChangedUsualDays, ChangedWorkDay, ChangesPage,
-    ChangesSinceQuery, CheckAccessQuery, CheckVersionsQuery, ChoicePage, CodeAppSetup,
+    ChangeWorkDay, ChangedAwayTime, ChangedIssue, ChangedShare, ChangedUsualDays, ChangedWorkDay,
+    ChangesPage, ChangesSinceQuery, CheckAccessQuery, CheckVersionsQuery, ChoicePage, CodeAppSetup,
     CombineChoices, CombineLabels, CombineTags, CommentVersions, CommentVersionsQuery, CommentView,
     CompleteSetup, ConfirmAiAgreement, ConfirmCodeApp, ConnectedApps, ConnectedAppsQuery, CopyRole,
     CreateAccessKey, CreateAgent, CreateField, CreateGroup, CreateInvitation, CreateIssue,
@@ -378,8 +378,8 @@ use_cases! {
     create_issue(CreateIssue) -> Authorized<IssueView>;
     /// Shows one issue by its readable or internal ID.
     issue(IssueQuery) -> Authorized<IssueDetail>;
-    /// Changes the fields of an issue.
-    change_issue(ChangeIssue) -> Authorized<IssueView>;
+    /// Changes the fields of an issue; with its time factor when the change set the people.
+    change_issue(ChangeIssue) -> Authorized<ChangedIssue>;
     /// Moves the dates of several issues in one run.
     move_dates(MoveDates) -> Authorized<DatesMoved>;
     /// A page of the timeline: rows with their bars, dependencies and warnings.

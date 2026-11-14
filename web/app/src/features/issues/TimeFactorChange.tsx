@@ -5,7 +5,7 @@ import { lazy, Suspense, useState } from "react";
 import { WaitingWindow } from "../../shared/WaitingWindow.tsx";
 import { windowForms } from "../../shared/window-forms.ts";
 import type { IssueView } from "./slots.ts";
-import { shownPercent, timeFactorTitle, useTimeFactor, type TimeFactor } from "./time-factor.ts";
+import { shownPercent, timeFactorTitle, useTimeFactor } from "./time-factor.ts";
 
 /** The window loads when it first opens, so the page that offers *Change* does not carry the form. */
 const TimeFactorWindow = lazy(async () => ({
@@ -13,12 +13,6 @@ const TimeFactorWindow = lazy(async () => ({
 }));
 
 export interface TimeFactorChangeProps {
-  /**
-   * The factor the row beside it already shows, when that is ahead of the answer of the server (after
-   * a change of the people on the issue), so *Change* is offered as the row says; otherwise the
-   * answer.
-   */
-  readonly factor?: TimeFactor;
   /** The issue: its *Estimated time*, when the reader may read it. */
   readonly issue: Pick<IssueView, "estimated_time">;
   readonly readableId: string;
@@ -34,14 +28,12 @@ export interface TimeFactorChangeProps {
  * (`may_change`), by the rule that also decides a save.
  */
 export function TimeFactorChange({
-  factor: shown,
   issue,
   readableId,
   mayReadEstimate,
   onClosed,
 }: TimeFactorChangeProps) {
-  const read = useTimeFactor(readableId).data;
-  const factor = shown ?? read;
+  const factor = useTimeFactor(readableId).data;
   const [open, setOpen] = useState(false);
   const percent = factor === undefined ? undefined : shownPercent(factor);
   const close = (): void => {

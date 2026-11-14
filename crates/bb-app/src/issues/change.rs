@@ -12,7 +12,8 @@ use bb_core::issue::{Issue, StatusGroup, assigned_rows};
 use bb_core::plan::record::IssueTimeFactor;
 use bb_core::version::next as next_version;
 use bb_core::workflow::StatusKey;
-use bb_policy::{Authorized, Evaluation, Place};
+use bb_policy::{Authorized, Evaluation, Masked, Place};
+use serde::Serialize;
 use serde_json::json;
 
 use super::fields::{Given, clean_title, ensure_dates_in_order, ensure_may_change, member};
@@ -22,7 +23,7 @@ use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
 use crate::fields::{Item, ItemValues, Making, PlannedValues};
 use crate::follow::started_following;
 use crate::offers::ensure_type_takes_issues_in;
-use crate::plan::reset_with_first;
+use crate::plan::{TimeFactorView, reset_with_first};
 use crate::projects::Why;
 use crate::projects::lock_chain_in;
 use crate::workflows::{StatusCheck, ensure_written_status_in};
@@ -428,6 +429,18 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 }
 
+/// An issue changed, with its time factor when the change set the people it is assigned to.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Masked)]
+pub struct ChangedIssue {
+    /// The issue as it is now.
+    #[masked(nested)]
+    pub issue: IssueView,
+    /// The time factor as it is now, for the first assigned person, when the change set the
+    /// people (ADR-0030, amendment M8): the screen shows it with the change.
+    #[masked(nested)]
+    pub time_factor: Option<TimeFactorView>,
+}
+
 /// Changes the fields of an issue. What is left out stays as it is; a change that changes nothing
 /// writes nothing and answers with the issue as it is.
 ///
@@ -440,7 +453,8 @@ impl<S: AuthStore> Ctx<'_, S> {
 pub async fn change_issue<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: ChangeIssue,
-) -> Result<Authorized<IssueView>, AppError> {
+) -> Result<Authorized<ChangedIssue>, AppError> {
+    let sets_people = input.assigned_to.is_some();
     let actor = ctx.actor(&input.session_token).await?;
     let (held, plan) = ctx.plan_issue_change(&actor, &input).await?;
     let project = ctx
@@ -455,7 +469,13 @@ pub async fn change_issue<S: AuthStore>(
         let view = ctx
             .issue_view(&mut views, &plan.current, &plan.assigned_now)
             .await?;
-        return Ok(held.authorize(view));
+        let time_factor = ctx
+            .factor_if(sets_people, &actor, &held, &plan.current)
+            .await?;
+        return Ok(held.authorize(ChangedIssue {
+            issue: view,
+            time_factor,
+        }));
     }
     let now = ctx.now();
     let resets_factor = plan.resets_factor();
@@ -529,5 +549,9 @@ pub async fn change_issue<S: AuthStore>(
         })?;
     next.version = next_version(version);
     let view = ctx.issue_view(&mut views, &next, &assigned_next).await?;
-    Ok(held.authorize(view))
+    let time_factor = ctx.factor_if(sets_people, &actor, &held, &next).await?;
+    Ok(held.authorize(ChangedIssue {
+        issue: view,
+        time_factor,
+    }))
 }

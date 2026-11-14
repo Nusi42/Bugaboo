@@ -56,11 +56,18 @@ async fn plan_14_the_time_factor_resets_when_the_person_changes() -> TestResult 
         ok(&change(&mut ada, &key, json!({"assigned_to": [lea_text, ben_text, cy_text]})).await?)?;
         ok(&change(&mut ada, &key, json!({"assigned_to": [lea_text, cy_text]})).await?)?;
         assert_eq!(percent(&mut ada, &key).await?, 150);
-        // Another person first: back to ×1, in the same change, and the history says so.
-        ok(&change(&mut ada, &key, json!({"assigned_to": [cy_text, lea_text]})).await?)?;
+        // Another person first: back to ×1, in the same change, and the history says so. The
+        // answer of the change holds the factor as its own route reads it, for the screen to show
+        // with the change.
+        let changed = change(&mut ada, &key, json!({"assigned_to": [cy_text, lea_text]})).await?;
+        let answered = ok(&changed)?["time_factor"].clone();
         let reset = ada.send("GET", &factor_of(&key), None).await?;
         assert_eq!(ok(&reset)?["percent"], 100);
         assert_eq!(reset.body["set_by"], Value::Null);
+        assert_eq!(answered, reset.body);
+        // A change that does not set the people answers no time factor.
+        let titled = change(&mut ada, &key, json!({"title": "Login screen, again"})).await?;
+        assert_eq!(ok(&titled)?.get("time_factor"), None);
         let history = ada
             .send("GET", &format!("{ISSUES}/{key}/history"), None)
             .await?;

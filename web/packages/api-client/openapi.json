@@ -24670,6 +24670,17 @@
             },
             "description": "The status changes the person may make now, with the text of each button and the fields it\nstill needs. Empty when they may not change the issue. Hidden with the status."
           },
+          "time_factor": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TimeFactorBody",
+                "description": "The time factor of the issue as it is after this change, as its own route answers it: only\nin the answer of a change that set the people it is assigned to, whose first person the\nfactor belongs to (ADR-0030, amendment M8), so the screen shows it with the change."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "time_left": {
             "type": ["integer", "null"],
             "format": "int32",

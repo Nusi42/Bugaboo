@@ -107,13 +107,15 @@ async fn wf_01_a_status_change_follows_the_workflow_and_the_closed_date_follows_
     let admin = world.admin.session_token.clone();
     let done = change_issue(&world.ctx(), change(&admin, &id, 1, "done")?)
         .await?
-        .into_value();
+        .into_value()
+        .issue;
     assert_eq!(done.status.group, StatusGroup::Done);
     assert!(done.closed_at.is_some());
     // Leaving the group clears the date.
     let reopened = change_issue(&world.ctx(), change(&admin, &id, 2, "in-progress")?)
         .await?
-        .into_value();
+        .into_value()
+        .issue;
     assert_eq!(reopened.status.name, "In progress");
     assert!(reopened.closed_at.is_none());
     Ok(())
@@ -259,7 +261,8 @@ async fn wf_06_an_organization_that_has_issues_keeps_simple_for_every_type() -> 
     let admin = world.admin.session_token.clone();
     let done = change_issue(&world.ctx(), change(&admin, &id, 1, "done")?)
         .await?
-        .into_value();
+        .into_value()
+        .issue;
     assert_eq!(done.status.group, StatusGroup::Done);
     Ok(())
 }

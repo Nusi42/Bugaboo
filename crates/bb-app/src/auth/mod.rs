@@ -103,8 +103,8 @@ use crate::follow::{
 };
 use crate::history::{HistoryPage, HistoryQuery, history};
 use crate::issues::{
-    AssignablePeoplePage, AssignablePeopleQuery, ChangeIssue, ChangeIssueType, CreateIssue,
-    CreateIssueType, DatesMoved, DeleteIssue, IssueDetail, IssueQuery, IssueTypePage,
+    AssignablePeoplePage, AssignablePeopleQuery, ChangeIssue, ChangeIssueType, ChangedIssue,
+    CreateIssue, CreateIssueType, DatesMoved, DeleteIssue, IssueDetail, IssueQuery, IssueTypePage,
     IssueTypeView, IssueTypesQuery, IssueView, IssuesQuery, MoveDates, MoveIssue, RestoreIssue,
     SaveDescription, assignable_people, change_issue, change_issue_type, create_issue,
     create_issue_type, delete_issue, issue, issue_types, issues, move_dates, move_issue,

@@ -7924,6 +7924,7 @@ export interface components {
        *     still needs. Empty when they may not change the issue. Hidden with the status.
        */
       status_changes?: components["schemas"]["StatusChangeRef"][] | null;
+      time_factor?: components["schemas"]["TimeFactorBody"] | null;
       /**
        * Format: int32
        * @description *Time left* in whole minutes, typed or worked out from the estimate and the time spent;

@@ -12,6 +12,7 @@ use utoipa::ToSchema;
 
 use super::projects::ProjectRef;
 use super::tags::LabelRefBody;
+use super::timeline_factor::TimeFactorBody;
 use super::workflows::{StatusChangeRef, StatusRef};
 use crate::lean::{FieldSpec, ListParams};
 
@@ -203,6 +204,12 @@ pub(crate) struct IssueItem {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(open)]
     version: Option<i64>,
+    /// The time factor of the issue as it is after this change, as its own route answers it: only
+    /// in the answer of a change that set the people it is assigned to, whose first person the
+    /// factor belongs to (ADR-0030, amendment M8), so the screen shows it with the change.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[masked(nested)]
+    pub(crate) time_factor: Option<TimeFactorBody>,
 }
 
 impl From<&IssueView> for IssueItem {
@@ -243,6 +250,7 @@ impl From<&IssueView> for IssueItem {
                 .map(|labels| labels.iter().map(LabelRefBody::from).collect()),
             agent_work: issue.agent_work.as_ref().map(AgentMarkRefBody::from),
             version: Some(issue.version),
+            time_factor: None,
         }
     }
 }
@@ -312,6 +320,8 @@ mod tests {
                 state: AgentWorkState::AgentWorking,
             }),
             version: Some(1),
+            // Only the answer of a change holds it; no list asks for it.
+            time_factor: None,
         };
         crate::lean::assert_fields_are_the_keys_of(&ISSUE_FIELDS, &item);
     }

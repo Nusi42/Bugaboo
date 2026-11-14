@@ -120,29 +120,31 @@ pub(crate) async fn create_issue_scenario(world: &World) -> Added {
     .await
 }
 
+/// The change the scenarios of changing an issue make: a new title and the status *Done*.
+fn titled_and_done(world: &World, issue: &impl ToString) -> ChangeIssue {
+    ChangeIssue {
+        session_token: token(world),
+        issue: issue.to_string(),
+        version: 1,
+        issue_type: None,
+        title: Some("The login button does nothing at all".to_owned()),
+        status: Some(starter::done()),
+        priority: None,
+        start_date: None,
+        due_date: None,
+        estimated_time: None,
+        time_left: None,
+        assigned_to: None,
+        fields: std::collections::BTreeMap::new(),
+    }
+}
+
 pub(crate) async fn change_issue_scenario(world: &World) -> Added {
     let project = a_project(world, "ACME").await?;
     let issue = an_issue(world, project).await?;
     measured(
         &world.store,
-        change_issue(
-            &world.ctx(),
-            ChangeIssue {
-                session_token: token(world),
-                issue: issue.to_string(),
-                version: 1,
-                issue_type: None,
-                title: Some("The login button does nothing at all".to_owned()),
-                status: Some(starter::done()),
-                priority: None,
-                start_date: None,
-                due_date: None,
-                estimated_time: None,
-                time_left: None,
-                assigned_to: None,
-                fields: std::collections::BTreeMap::new(),
-            },
-        ),
+        change_issue(&world.ctx(), titled_and_done(world, &issue)),
     )
     .await
 }
