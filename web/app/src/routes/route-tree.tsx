@@ -1,5 +1,3 @@
-import { createRouter } from "@tanstack/react-router";
-
 import {
   groupRoute,
   groupsRoute,
@@ -77,7 +75,6 @@ import { invitationRoute, signUpRoute } from "./guest-pages.tsx";
 import { projectRoute, projectSettingsRoute } from "./project-pages.tsx";
 import {
   appRoute,
-  boxesToTop,
   guestRoute,
   mySettingsRoute,
   organizationSettingsRoute,
@@ -87,7 +84,8 @@ import {
 import { setupRoute } from "./setup.tsx";
 import { secondStepRoute, setUpSecondStepRoute, signInRoute } from "./sign-in.tsx";
 
-const routeTree = rootRoute.addChildren([
+/** Every route of the app, under the root. */
+export const routeTree = rootRoute.addChildren([
   guestRoute.addChildren([setupRoute, signInRoute, secondStepRoute, signUpRoute, invitationRoute]),
   setUpRoute.addChildren([setUpSecondStepRoute]),
   appRoute.addChildren([
@@ -164,17 +162,3 @@ const routeTree = rootRoute.addChildren([
     ]),
   ]),
 ]);
-
-/** The routes of the app, with the types of their addresses. */
-// A new page starts its boxes at the top (`boxesToTop`), and Back brings each to where it was (UX §6.5).
-export const router = createRouter({
-  routeTree,
-  scrollRestoration: true,
-  scrollToTopSelectors: [...boxesToTop],
-});
-
-declare module "@tanstack/react-router" {
-  interface Register {
-    router: typeof router;
-  }
-}

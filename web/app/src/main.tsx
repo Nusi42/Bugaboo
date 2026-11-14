@@ -9,7 +9,7 @@ import {
 } from "./shared/query-client.ts";
 import { forgetPerson, leaveSession } from "./shared/session.ts";
 import { renderApp } from "./render-app.tsx";
-import { router } from "./routes/router.tsx";
+import { router } from "./routes/router.ts";
 
 // The one style sheet, made from design/theme.kdl. It comes last, as the rules of the page frame
 // always did: they win over a rule of a feature that has the same weight.

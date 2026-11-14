@@ -16,9 +16,6 @@ import { OnlyWith } from "./OnlyWith.tsx";
 import { Root } from "./Root.tsx";
 import { loadStatus, startPath } from "./start.ts";
 
-/** The boxes the root of the app starts at the top on a new page; the router is made with them. */
-export { boxesToTop } from "../shared/scroll-boxes.ts";
-
 /** Whether the address says why the person is here: the sign-in page explains it. */
 function hasReason(search: unknown): boolean {
   return typeof search === "object" && search !== null && "reason" in search;

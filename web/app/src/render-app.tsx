@@ -5,7 +5,7 @@ import { createRoot } from "react-dom/client";
 
 import { isLeavingPage, shouldReport, watchLeavingPage } from "./shared/leaving-page.ts";
 import { queryClient } from "./shared/query-client.ts";
-import { router } from "./routes/router.tsx";
+import { router } from "./routes/router.ts";
 
 /**
  * What React does with an error that an error boundary caught, as it did before (with the stack of
