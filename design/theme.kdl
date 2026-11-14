@@ -7633,12 +7633,18 @@ part "issue-title" {
     font-weight "$weight-bold"
 }
 
-// The big status button under the title, and what stands beside it.
+// The big status button under the title, and *Saved* beside it: the note takes only the room left in the line and
+// wraps inside it, so it never drops under the button and pushes the page when it comes (UX §6.4). Why a status
+// cannot be changed stands on the line under them, from the start.
 part "issue-status-line" {
-    display flex
-    flex-wrap wrap
+    display grid
+    grid-template-columns "auto minmax(0, 1fr)"
     align-items center
     gap "$space-2" "$space-3"
+}
+
+part "issue-status-line muted" {
+    grid-column "1 / -1"
 }
 
 // On a smaller screen the Details sit behind a button that still says the main values.

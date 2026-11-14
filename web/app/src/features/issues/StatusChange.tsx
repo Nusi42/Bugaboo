@@ -10,7 +10,7 @@ import { readOnlyReason } from "./read-only.ts";
 import type { IssueBlockProps } from "./slots.ts";
 import type { IssueChanges } from "./use-issue-changes.ts";
 
-/** The status button of a person who may not change the status: it says why. */
+/** The status button of a person who may not change the status, *Saved* beside it, and why under them. */
 function StatusLocked({
   group,
   label,
@@ -23,8 +23,8 @@ function StatusLocked({
   return (
     <div {...partOf(part.issueStatusLine)}>
       <StatusButton isDisabled group={group} label={label} id={statusId} onPress={openStatusMenu} />
-      <span {...partOf(part.muted)}>{readOnlyReason(t("issue-field.status"))}</span>
       {saved}
+      <span {...partOf(part.muted)}>{readOnlyReason(t("issue-field.status"))}</span>
     </div>
   );
 }
