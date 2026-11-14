@@ -59,24 +59,15 @@ function nameOf(found: Locator): Promise<string | null> {
 /**
  * The landmarks of a page of settings or of the theme editor around the part a person changes: the
  * heading, the menu of the settings, each card, box, group and readout. What holds the part grows
- * with it, and so do the parts of `alsoGrows`, which the change is meant to grow too; what stands
- * under a part that grows, in its column, may be pushed by exactly that.
+ * with it; what stands under a part that grows, in its column, may be pushed by exactly that.
  */
-export async function pageLandmarks(
-  page: Page,
-  changed: Locator,
-  alsoGrows: readonly Locator[] = [],
-): Promise<ScreenLandmarks> {
+export async function pageLandmarks(page: Page, changed: Locator): Promise<ScreenLandmarks> {
   const parts = await marked(page, PAGE_PARTS);
   const named = await nameOf(changed);
   const known = parts.find((landmark) => landmark.name === named);
   const target = known ?? (await landmarkOf(changed, "the part that changes"));
   const all = [HEADING, ...(known === undefined ? [target] : []), ...parts];
-  // What the change is meant to grow besides its part (the readout of a theme's readability).
-  const growing = (await Promise.all(alsoGrows.map((found) => nameOf(found)))).filter(
-    (name) => name !== null,
-  );
-  return { all, ...aroundTheChange(await placesOf(page, all), target.name, growing), scrolls: [] };
+  return { all, ...aroundTheChange(await placesOf(page, all), target.name, []), scrolls: [] };
 }
 
 /**
