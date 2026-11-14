@@ -56,26 +56,39 @@ export interface Clock {
 /**
  * Notes when the page is being left (a reload, a link to another address, closing it). It is leaving from
  * `beforeunload` for a moment (the person may stay) and from `pagehide` for good, unless the browser keeps
- * the page for the way back (`persisted`), where `pageshow` ends it.
+ * the page for the way back (`persisted`), where `pageshow` ends it. `changed` is told each time it starts
+ * or ends being left.
  */
-export function watchLeavingPage(target: LeavingTarget, clock: Clock): void {
+export function watchLeavingPage(
+  target: LeavingTarget,
+  clock: Clock,
+  changed: (leaving: boolean) => void = () => {
+    // Nobody else needs to know.
+  },
+): void {
+  const note = (now: boolean): void => {
+    if (leaving !== now) {
+      leaving = now;
+      changed(now);
+    }
+  };
   target.addEventListener("beforeunload", () => {
-    leaving = true;
+    note(true);
     if (staying !== undefined) {
       clock.cancel(staying);
     }
     staying = clock.after(() => {
-      leaving = false;
       staying = undefined;
+      note(false);
     }, LEAVING_FOR_MS);
   });
   target.addEventListener("pagehide", (event) => {
     if (!event.persisted) {
-      leaving = true;
+      note(true);
     }
   });
   target.addEventListener("pageshow", () => {
-    leaving = false;
+    note(false);
   });
 }
 

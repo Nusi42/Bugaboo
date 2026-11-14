@@ -4,7 +4,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
 import { isLeavingPage, shouldReport, watchLeavingPage } from "./shared/leaving-page.ts";
-import { queryClient } from "./shared/query-client.ts";
+import { queryClient, readHeldOnStaying } from "./shared/query-client.ts";
 import { router } from "./routes/router.ts";
 
 /**
@@ -33,12 +33,16 @@ export function renderApp(): void {
   if (container === null) {
     throw new Error("index.html must contain the element with id root");
   }
-  watchLeavingPage(window, {
-    after: (run, ms) => window.setTimeout(run, ms),
-    cancel: (timer) => {
-      window.clearTimeout(timer);
+  watchLeavingPage(
+    window,
+    {
+      after: (run, ms) => window.setTimeout(run, ms),
+      cancel: (timer) => {
+        window.clearTimeout(timer);
+      },
     },
-  });
+    readHeldOnStaying,
+  );
   createRoot(container, {
     onCaughtError: reportCaught,
     onUncaughtError: reportUncaught,

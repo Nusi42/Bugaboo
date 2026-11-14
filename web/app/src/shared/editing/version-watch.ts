@@ -45,7 +45,7 @@ export interface WatchEnv {
   readonly onWindow: (name: string, run: () => void) => () => void;
   /** Calls `run` for each event of the document with this name; returns the way to stop. */
   readonly onDocument: (name: string, run: () => void) => () => void;
-  /** Whether the tab is hidden. */
+  /** Whether the tab is out of sight (hidden, or being left). */
   readonly hidden: () => boolean;
   /** Calls `run` every `seconds`; returns the way to stop. */
   readonly repeat: (seconds: number, run: () => void) => () => void;

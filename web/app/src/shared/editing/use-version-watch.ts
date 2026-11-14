@@ -2,6 +2,7 @@ import { msPerSecond, versionsOf, watchSeconds } from "@bugaboo/api-client";
 import { useEffect, useRef } from "react";
 
 import { api } from "../api.ts";
+import { isLeavingPage } from "../leaving-page.ts";
 import { startWatching, type Watched, type WatchEnv } from "./version-watch.ts";
 
 /** The browser behind the check of versions. */
@@ -18,7 +19,8 @@ const browser: WatchEnv = {
       document.removeEventListener(name, run);
     };
   },
-  hidden: () => document.visibilityState === "hidden",
+  // Out of sight, or being left: then no check starts (see `isLeavingPage`).
+  hidden: () => document.visibilityState === "hidden" || isLeavingPage(),
   repeat: (seconds, run) => {
     const timer = setInterval(run, seconds * msPerSecond);
     return () => {

@@ -13,6 +13,7 @@ import {
 function watched() {
   const heard = new Map<string, (event: PageChange) => void>();
   const timers = new Map<number, () => void>();
+  const told: boolean[] = [];
   let next = 0;
   watchLeavingPage(
     {
@@ -30,12 +31,16 @@ function watched() {
         timers.delete(timer);
       },
     },
+    (leaving) => {
+      told.push(leaving);
+    },
   );
   return {
     tell: (type: string, persisted = false) => {
       heard.get(type)?.({ persisted });
     },
     timers,
+    told,
   };
 }
 
@@ -87,5 +92,14 @@ describe("test_connections when the page counts as leaving", () => {
     expect(isLeavingPage()).toBe(true);
     page.tell("pageshow");
     expect(isLeavingPage()).toBe(false);
+  });
+  it("tells each change of leaving, so the background reads stop while the page is being left", () => {
+    const page = watched();
+    page.tell("beforeunload");
+    page.timers.values().next().value?.();
+    page.tell("pagehide", true);
+    page.tell("pagehide", false);
+    page.tell("pageshow");
+    expect(page.told).toEqual([true, false, true, false]);
   });
 });

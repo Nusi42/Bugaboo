@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-query";
 
 import { isSecondStepRequired, sessionLostReason, type SessionLostReason } from "./errors.ts";
+import { isLeavingPage } from "./leaving-page.ts";
 
 let sessionLostHandler: (reason: SessionLostReason) => void = () => {
   // Until the router is there, nobody can be taken anywhere.
@@ -62,8 +63,34 @@ export const queryClient = new QueryClient({
     },
   }),
   mutationCache: new MutationCache({ onError: lost }),
-  defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },
+  defaultOptions: {
+    queries: {
+      retry: false,
+      refetchOnWindowFocus: false,
+      // No read starts while the page is being left (a reload, a link to another address, closing
+      // it): the browser would cut it at once, and WebKit reports a read that starts after the
+      // question to leave as an error of the page. A read with a condition of its own decides itself.
+      enabled: () => !isLeavingPage(),
+    },
+  },
 });
+
+/**
+ * Makes the reads that were held while the page was being left, once it stays (the person stayed, or
+ * a download left the page where it was): those without an answer and those marked to be read again.
+ * Reads that come back by themselves (every 30 seconds, on return to the tab) wait for their time.
+ */
+export function readHeldOnStaying(leaving: boolean): void {
+  if (!leaving) {
+    void queryClient.refetchQueries({
+      type: "active",
+      predicate: ({
+        state,
+      }: Readonly<{ state: Readonly<{ data: unknown; isInvalidated: boolean }> }>) =>
+        state.data === undefined || state.isInvalidated,
+    });
+  }
+}
 
 let readHandler: (answer: unknown) => void = () => {
   // Until something wants to know what the server answered, nobody is told.
