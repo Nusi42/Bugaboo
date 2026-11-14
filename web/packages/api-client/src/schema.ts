@@ -7052,6 +7052,7 @@ export interface components {
       | "request.invalid"
       | "request.unknown-field"
       | "request.bad-cursor"
+      | "request.limit-out-of-range"
       | "mail.rejected"
       | "mail.unavailable"
       | "mail.off"

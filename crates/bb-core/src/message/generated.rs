@@ -11162,6 +11162,21 @@ pub fn error_relation_kind_date_effect_most(most: impl std::fmt::Display) -> Mes
     )
 }
 
+/// The message `error.request.limit-out-of-range`.
+#[must_use]
+pub fn error_request_limit_out_of_range(
+    least: impl std::fmt::Display,
+    most: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("error.request.limit-out-of-range"),
+        vec![
+            ("least", Value::Text(least.to_string())),
+            ("most", Value::Text(most.to_string())),
+        ],
+    )
+}
+
 /// The message `error.theme.too-many-for-everyone`.
 #[must_use]
 pub fn error_theme_too_many_for_everyone(most: impl std::fmt::Display) -> Message {
@@ -20860,6 +20875,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "error.request.invalid",
         "Something in your request is not valid. Check what you typed and try again.",
+    ),
+    (
+        "error.request.limit-out-of-range",
+        "The limit is a whole number from {least} to {most}.",
     ),
     (
         "error.request.method-not-allowed",

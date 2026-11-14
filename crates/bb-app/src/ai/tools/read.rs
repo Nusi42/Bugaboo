@@ -5,7 +5,9 @@
 use bb_core::id::{ProjectId, UserId};
 use serde_json::Value;
 
-use super::inputs::{GetIssueInput, GetMyWorkInput, ListProjectsInput, SearchIssuesInput};
+use super::inputs::{
+    GetIssueInput, GetMyWorkInput, ListProjectsInput, SearchIssuesInput, limit_within,
+};
 use super::registry::{Boxed, Run};
 use crate::access::Actor;
 use crate::ai::Withheld;
@@ -108,9 +110,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         actor: &Actor,
         session_token: &str,
         text: &str,
-        limit: Option<u32>,
+        limit: Option<i64>,
         withheld: &Withheld,
     ) -> Result<Vec<Part>, AppError> {
+        let limit = limit_within(limit)?;
         let query = SearchQuery {
             session_token: session_token.to_owned(),
             text: text.to_owned(),
@@ -240,7 +243,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 outside: None,
                 movable: None,
                 cursor: None,
-                limit: input.limit.unwrap_or(ISSUES_DEFAULT),
+                limit: limit_within(input.limit)?.unwrap_or(ISSUES_DEFAULT),
             },
         )
         .await?;

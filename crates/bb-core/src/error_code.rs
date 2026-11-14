@@ -15,6 +15,7 @@ use std::collections::BTreeMap;
 use serde::Serialize;
 
 use crate::message::{Message, MessageKey, Value};
+use crate::paging::{PAGE_SIZE_LEAST, PAGE_SIZE_MAX};
 use crate::relation::DATE_EFFECT_KINDS_MOST;
 use crate::theme::{PERSONAL_THEMES_MOST, THEMES_FOR_EVERYONE_MOST};
 use crate::time::{MINUTES_PER_HOUR, TIME_ENTRY_MINUTES_MAX, TIME_ENTRY_MINUTES_MIN};
@@ -233,6 +234,11 @@ error_codes! {
     UnknownField => ("request.unknown-field", 400),
     /// The cursor of a list page was changed or is not one of ours (PERF-02).
     BadCursor => ("request.bad-cursor", 400),
+    /// A tool of AI was asked for a number of items outside
+    /// [`PAGE_SIZE_LEAST`](crate::paging::PAGE_SIZE_LEAST) to
+    /// [`PAGE_SIZE_MAX`](crate::paging::PAGE_SIZE_MAX): it is told the range instead of being given
+    /// another number than it asked for.
+    LimitOutOfRange => ("request.limit-out-of-range", 400),
     /// The mail server turned an e-mail away for good: the sender or the address is not accepted
     /// (NTF-02).
     MailRejected => ("mail.rejected", 502),
@@ -363,6 +369,10 @@ impl ErrorCode {
             Self::RelationKindDateEffectMost => vec![("most", most(DATE_EFFECT_KINDS_MOST))],
             Self::ThemesForEveryoneMost => vec![("most", most(THEMES_FOR_EVERYONE_MOST))],
             Self::PersonalThemesMost => vec![("most", most(PERSONAL_THEMES_MOST))],
+            Self::LimitOutOfRange => vec![
+                ("least", Value::Number(i64::from(PAGE_SIZE_LEAST))),
+                ("most", Value::Number(i64::from(PAGE_SIZE_MAX))),
+            ],
             _ => Vec::new(),
         }
     }

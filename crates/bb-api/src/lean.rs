@@ -13,7 +13,7 @@
 
 use bb_api_words::paging::{CURSOR, FIELDS, ITEMS, LIMIT, NEXT_CURSOR};
 use bb_core::ErrorCode;
-use bb_core::paging::{PAGE_SIZE_DEFAULT, PAGE_SIZE_MAX};
+use bb_core::paging::{PAGE_SIZE_DEFAULT, PAGE_SIZE_LEAST, PAGE_SIZE_MAX};
 use bb_policy::{Authorized, Masked, mask_member};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -64,7 +64,7 @@ pub(crate) struct ListParams {
 pub(crate) fn page_limit_schema() -> Object {
     ObjectBuilder::new()
         .schema_type(Type::Integer)
-        .minimum(Some(1))
+        .minimum(Some(PAGE_SIZE_LEAST))
         .maximum(Some(PAGE_SIZE_MAX))
         .description(Some(page_limit_text()))
         .build()

@@ -22,7 +22,7 @@ use serde_json::{Value, json};
 use super::call::Saved;
 use super::inputs::{
     AskInput, AttachInput, ChangesSinceInput, GiveUpInput, ProposeInput, ReportInput, SubmitInput,
-    TakeInput,
+    TakeInput, limit_within,
 };
 use super::preview::preview_parts;
 use super::registry::{Boxed, Run};
@@ -496,7 +496,7 @@ pub(super) fn changes<'a, S: AuthStore>(
             ChangesSinceQuery {
                 session_token: run.token.to_owned(),
                 since: input.since,
-                limit: input.limit,
+                limit: limit_within(input.limit)?,
             },
         )
         .await?;

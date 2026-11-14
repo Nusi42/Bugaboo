@@ -161,3 +161,9 @@ WP-02 brought a full run from five failing browser tests to one (2026-11-11): Ch
 | M8-F205 | The speed test of the timeline names the same two people who accepted warnings on the page of five and on the page of forty, so reading their names once is not proven; and the page runs 98 or 99 statements against a ceiling of 100, because the role labels of who accepted are a read of their own | The count is the same for five and forty rows, which is what PERF-N1 asks | WP-12: more people who accept than five rows hold, and one read of role labels for the page |
 | M8-F206 | The test of the preview walks past issue IDs that do not exist, not real issues in a project the reader cannot see, and has no visible issue reached only through a hidden one; the test of the rights kept for a request has no person who sees some projects but not others | The behaviour is right in the code | WP-12 |
 | M8-F207 | `cached_evaluation` of `bb-app/src/access/mod.rs` is `pub(crate)` only for one test, so other code of the crate could read the cache without `require` | Nothing reads it today | The next package that changes access |
+
+## From the outside test pass of the MCP server
+
+| ID | What | Why later | Planned in |
+|----|------|-----------|------------|
+| M8-F140 | The ordinary API cuts a `limit` of 0 to 1 and one over 100 to 100 (`bb_core::paging::page_size`), while its description says 1 to 100. The tools of AI now refuse such a number with `request.limit-out-of-range` and the range | The cut of the API is deliberate and tested (`perf_02_paging_walks_every_item_once_and_refuses_a_changed_cursor`, `perf_02_the_page_size_is_at_least_one_and_at_most_the_maximum`); refusing would change what scripts get back | The maintainer decides: keep the cut, or refuse like the tools |

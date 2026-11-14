@@ -5,8 +5,37 @@
 //! `assigned_to` is for the case where the person named the people themselves (ADR-0029
 //! decision 9).
 
+use bb_core::ErrorCode;
+use bb_core::paging::{PAGE_SIZE_LEAST, PAGE_SIZE_MAX, page_size_within};
 use serde::Deserialize;
 use utoipa::ToSchema;
+use utoipa::openapi::{Object, ObjectBuilder, Type};
+
+use crate::auth::AppError;
+
+/// The schema of the `limit` of a tool: a whole number in the range of a page (`bb_core::paging`),
+/// described by the sentence of its refusal, so the schema an AI app is shown and the refusal say
+/// the same.
+fn limit_schema() -> Object {
+    ObjectBuilder::new()
+        .schema_type(Type::Integer)
+        .minimum(Some(PAGE_SIZE_LEAST))
+        .maximum(Some(PAGE_SIZE_MAX))
+        .description(Some(ErrorCode::LimitOutOfRange.text().render()))
+        .build()
+}
+
+/// The `limit` a tool was given, when it is one: a number outside the range of a page, 0 and a
+/// negative one included, is refused with the range (`request.limit-out-of-range`) and never cut
+/// to another number.
+///
+/// # Errors
+/// `request.limit-out-of-range` for a number outside the range.
+pub(super) fn limit_within(asked: Option<i64>) -> Result<Option<u32>, AppError> {
+    asked
+        .map(|asked| page_size_within(asked).ok_or(AppError::Refused(ErrorCode::LimitOutOfRange)))
+        .transpose()
+}
 
 /// Search the issues the person may read.
 #[derive(Debug, Deserialize, ToSchema)]
@@ -15,7 +44,8 @@ pub struct SearchIssuesInput {
     /// The search, in the search language (for example `status group is not Done and priority is High`).
     pub query: String,
     /// The most issues to answer with.
-    pub limit: Option<u32>,
+    #[schema(schema_with = limit_schema)]
+    pub limit: Option<i64>,
 }
 
 /// Read one issue.
@@ -33,7 +63,8 @@ pub struct ListProjectsInput {
     /// Words that the name or the short name of a project holds.
     pub search: Option<String>,
     /// The most projects to answer with.
-    pub limit: Option<u32>,
+    #[schema(schema_with = limit_schema)]
+    pub limit: Option<i64>,
 }
 
 /// The issues assigned to the person.
@@ -41,7 +72,8 @@ pub struct ListProjectsInput {
 #[serde(deny_unknown_fields)]
 pub struct GetMyWorkInput {
     /// The most issues to answer with.
-    pub limit: Option<u32>,
+    #[schema(schema_with = limit_schema)]
+    pub limit: Option<i64>,
 }
 
 /// Create an issue.
@@ -219,7 +251,8 @@ pub struct ChangesSinceInput {
     /// mark of now.
     pub since: Option<String>,
     /// The most changes to answer with.
-    pub limit: Option<u32>,
+    #[schema(schema_with = limit_schema)]
+    pub limit: Option<i64>,
 }
 
 /// Propose a change under your standing rule.

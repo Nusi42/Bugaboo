@@ -38,6 +38,7 @@ export const messages = {
   "error.request.unknown-field":
     "We could not find one of the fields you asked for. Check the field names and try again.",
   "error.request.bad-cursor": "This list changed. Start again from the top.",
+  "error.request.limit-out-of-range": "The limit is a whole number from {least} to {most}.",
   "error.request.wrong-origin":
     "That did not come from a Bugaboo page. Reload the page and try again.",
   "error.request.method-not-allowed": "Bugaboo does not do that here.",

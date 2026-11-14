@@ -90,11 +90,26 @@ impl<K: FromStr + Display> SkipCursor<K> {
 /// How many items a page holds when the request does not say.
 pub const PAGE_SIZE_DEFAULT: u32 = 50;
 
-/// The page size to use: what was asked for (or the default), at least 1 and at most
-/// [`PAGE_SIZE_MAX`].
+/// The fewest items a page holds.
+pub const PAGE_SIZE_LEAST: u32 = 1;
+
+/// The page size to use: what was asked for (or the default), at least [`PAGE_SIZE_LEAST`] and at
+/// most [`PAGE_SIZE_MAX`].
 #[must_use]
 pub fn page_size(asked: Option<u32>) -> u32 {
-    asked.unwrap_or(PAGE_SIZE_DEFAULT).clamp(1, PAGE_SIZE_MAX)
+    asked
+        .unwrap_or(PAGE_SIZE_DEFAULT)
+        .clamp(PAGE_SIZE_LEAST, PAGE_SIZE_MAX)
+}
+
+/// The page size asked for when a page can hold it, from [`PAGE_SIZE_LEAST`] to [`PAGE_SIZE_MAX`];
+/// `None` for any other number. For a caller that is told its number is wrong (the tools of AI)
+/// rather than given a page of another size than it asked for.
+#[must_use]
+pub fn page_size_within(asked: i64) -> Option<u32> {
+    u32::try_from(asked)
+        .ok()
+        .filter(|size| (PAGE_SIZE_LEAST..=PAGE_SIZE_MAX).contains(size))
 }
 
 /// The page size as a count of items, for a list that is cut in memory.
@@ -276,5 +291,19 @@ mod tests {
         assert_eq!(page_size(Some(0)), 1);
         assert_eq!(page_size(Some(PAGE_SIZE_MAX)), PAGE_SIZE_MAX);
         assert_eq!(page_size(Some(u32::MAX)), PAGE_SIZE_MAX);
+    }
+
+    #[test]
+    fn ai_21_a_page_size_asked_for_is_taken_only_within_the_range() {
+        for (asked, taken) in [
+            (-1, None),
+            (0, None),
+            (1, Some(1)),
+            (100, Some(PAGE_SIZE_MAX)),
+            (101, None),
+            (i64::MAX, None),
+        ] {
+            assert_eq!(page_size_within(asked), taken, "{asked}");
+        }
     }
 }

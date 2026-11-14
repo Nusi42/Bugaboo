@@ -7,7 +7,6 @@ use std::collections::HashMap;
 use bb_core::ai::{
     LookUps, PROPOSAL_INPUT_BYTES_MAX, PROPOSALS_MAX, ToolCaller, ToolEffect, ToolScope,
 };
-use bb_core::message::Message;
 use bb_policy::{Authorized, Place};
 use serde_json::Value;
 
@@ -173,7 +172,7 @@ fn read_text(answer: &Authorized<ToolAnswer>) -> String {
 /// what the store said.
 fn sentence_of(error: &AppError) -> String {
     match error {
-        AppError::Refused(code) => Message::from(code.message()).render(),
+        AppError::Refused(code) => code.text().render(),
         AppError::Mistakes(_) | AppError::RefusedAtField { .. } => NOT_VALID.to_owned(),
         AppError::Stale(_) | AppError::Conflict(_) => CHANGED.to_owned(),
         _ => COULD_NOT_RUN.to_owned(),

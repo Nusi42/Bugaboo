@@ -165,11 +165,9 @@ impl Caller<'_> {
             Err(AppError::Refused(code))
                 if !matches!(code, ErrorCode::NotSignedIn | ErrorCode::SecondStepRequired) =>
             {
-                Ok(Err(Message::from(code.message()).render()))
+                Ok(Err(code.text().render()))
             }
-            Err(AppError::RefusedAtField { code, .. }) => {
-                Ok(Err(Message::from(code.message()).render()))
-            }
+            Err(AppError::RefusedAtField { code, .. }) => Ok(Err(code.text().render())),
             // A change made from an old version: the agent is told it is old, which version the
             // record has now and which fields changed, in words of the program; the values are
             // not told here, so no text of people is in it.
@@ -184,7 +182,7 @@ impl Caller<'_> {
             ))),
             Err(error @ (AppError::TakenOver { .. } | AppError::DayLeftOpen { .. })) => {
                 let code = error.code().unwrap_or(ErrorCode::Forbidden);
-                Ok(Err(Message::from(code.message()).render()))
+                Ok(Err(code.text().render()))
             }
             Err(AppError::Mistakes(_)) => Ok(Err(Message::from(
                 ErrorCode::SearchInvalid.message(),

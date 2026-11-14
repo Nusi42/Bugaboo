@@ -2,6 +2,7 @@
 //! issue is named so that it can be found again before the search knows it, and a call that saved
 //! says what changed and the version it saved, where its preview says what would change.
 
+use bb_core::ErrorCode;
 use bb_testing::{TestResult, each_database};
 use serde_json::json;
 
@@ -98,6 +99,51 @@ async fn ai_21_a_saved_change_over_mcp_says_changed_and_its_version_where_the_pr
             saved.lines().last(),
             Some(format!("Saved: {key} is now at version {now}.").as_str()),
             "{saved}"
+        );
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn ai_21_a_limit_of_zero_or_less_is_refused_over_mcp_with_the_range() -> TestResult {
+    each_database("ai_21_limit_range_http", async |db| {
+        let (rig, app) = Mcp::start(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        ai_on(&rig).await?;
+        let mcp = Mcp::new(&app);
+        for title in ["Brakes squeak", "Lights flicker"] {
+            site.create(&mut ada, title).await?;
+        }
+        let signed = sign_in_app(&mcp, &mut ada, "Claude Code", "see-only", "see-only").await?;
+        let range = ErrorCode::LimitOutOfRange.text().render();
+        for (tool, input) in [
+            ("list_projects", json!({})),
+            ("get_my_work", json!({})),
+            ("search_issues", json!({"query": ""})),
+        ] {
+            for limit in [0, -1, 101] {
+                let mut asked = input.clone();
+                asked["limit"] = json!(limit);
+                let refused = mcp.call_tool(&signed, tool, asked).await?;
+                assert_eq!(
+                    refused.json["result"]["isError"],
+                    json!(true),
+                    "{tool} {limit}"
+                );
+                assert_eq!(text_of(&refused), range, "{tool} {limit}");
+            }
+        }
+        // A limit of one answers one issue.
+        let one = mcp
+            .call_tool(&signed, "search_issues", json!({"query": "", "limit": 1}))
+            .await?;
+        assert_eq!(one.json["result"]["isError"], json!(false), "{}", one.json);
+        assert_eq!(
+            text_of(&one).matches("\nissue:").count(),
+            1,
+            "{}",
+            text_of(&one)
         );
         Ok(())
     })
