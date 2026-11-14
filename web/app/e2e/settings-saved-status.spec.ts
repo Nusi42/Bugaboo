@@ -16,20 +16,35 @@ import { addressInProject, paths } from "../src/shared/paths.ts";
 
 test.use({ preparation: { run: prepareWeb } });
 
-/** Where the words of an element are drawn: their ink, not the box around them. */
+/** Where the words of an element are drawn, line by line: their ink, not the box around them. */
 function inkOf(words: Locator) {
   return words.evaluate((element) => {
     const range = document.createRange();
     range.selectNodeContents(element);
-    const { left, right, top, bottom } = range.getBoundingClientRect();
-    return { left, right, top, bottom };
+    const lines = range.getClientRects();
+    return Array.from({ length: lines.length }, (_, index) => {
+      const line = lines.item(index);
+      return {
+        left: line?.left ?? 0,
+        right: line?.right ?? 0,
+        top: line?.top ?? 0,
+        bottom: line?.bottom ?? 0,
+      };
+    });
   });
 }
 
-/** Whether the words of two elements share any room on the screen. */
+/** Where one line of words is drawn. */
+type Ink = Readonly<{ left: number; right: number; top: number; bottom: number }>;
+
+/** Whether the words of two elements share any room on the screen, on any of their lines. */
 async function overlap(one: Locator, other: Locator): Promise<boolean> {
-  const [a, b] = await Promise.all([inkOf(one), inkOf(other)]);
-  return a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+  const [lines, others] = await Promise.all([inkOf(one), inkOf(other)]);
+  return lines.some((a: Ink) =>
+    others.some(
+      (b: Ink) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom,
+    ),
+  );
 }
 
 test("ux_6_4 every setting has its status from the start, and Saved covers none of its words", async ({
@@ -79,6 +94,22 @@ test("ux_6_4 Saved in the head of a card stays on the line of its heading", asyn
   expect(words.y).toBeLessThan(heading.y + heading.height);
 });
 
+test("ux_6_4 only the first line of a setting gives room to Saved, the box under it is as wide as the setting", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await page.goto(paths.organizationSecurity);
+  const input = "[data-part='field.input']";
+  const head = page.locator("main [data-part='setting-head']").filter({ has: page.locator(input) });
+  await expect(head.first()).toBeVisible();
+  const [whole, box] = await Promise.all([
+    boxOf(head.first()),
+    boxOf(head.first().locator(input).first()),
+  ]);
+  expect(box.x).toBeCloseTo(whole.x, 0);
+  expect(box.width).toBeCloseTo(whole.width, 0);
+});
+
 /**
  * Presses a control of a page that draws its own control for a setting (UX §6.4): *Saved* comes in
  * the head of its box and covers none of the control's words.
@@ -95,7 +126,7 @@ async function savedBesideOwnControl(
   await press(control(page));
   const said = head.getByRole("status").filter({ hasText: savedWords });
   await expect(said).toBeVisible();
-  expect(await overlap(said, head.locator("> :first-child"))).toBe(false);
+  expect(await overlap(said, head.locator("> :not([data-part='save-status'])"))).toBe(false);
 }
 
 test("ux_6_4 Saved beside a control a page draws itself covers none of its words", async ({

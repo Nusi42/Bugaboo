@@ -5198,7 +5198,13 @@ part "save-status.room" "save-status.words" {
     grid-row 1
 }
 
+// The words of a place that keeps no room stand with it, unseen and taking no room.
 part "save-status.room" {
+    display none
+}
+
+part "save-status[variant=keeps-room] save-status.room" {
+    display inline
     visibility hidden
 }
 
@@ -5207,13 +5213,16 @@ part "save-status.room::before" {
 }
 
 // The head of the box of a setting: the setting, and a cell at the end of its first line for *Saving…* and
-// *Saved*. The cell is always there and keeps the room of the longest of the words (`save-status[variant=keeps-room]`),
-// so the words take no room from the setting when they come and cover none of it (UX §6.4).
+// *Saved*. The cell is always there and keeps the room of the longest of the words a setting can say
+// (`save-status[variant=keeps-room]`), so the words take no room from the setting when they come and cover none of it
+// (UX §6.4). Only the first line gives the cell its room: the frames of the control give their lines to the head, and
+// every line under the first (the box, its hint, where the value comes from) runs the whole width.
 part "setting-head" {
     display grid
     grid-template-columns "minmax(0, 1fr) auto"
     align-items start
-    gap "$space-2"
+    column-gap "$space-2"
+    row-gap "$space-1"
 }
 
 // The bar under an editor: the plain buttons at the start, the one filled button at the end (R6).
@@ -5470,6 +5479,12 @@ part "settings.locked" {
 
 part "settings.locked-value" {
     color "$fg"
+}
+
+// The frames of a setting that give their lines to its head (`setting-head`; the rest of the rules stand at the end of the
+// file).
+part "setting-head > stack" "setting-head > stack > settings.control" {
+    display contents
 }
 
 // ───────────── Access ─────────────
@@ -17606,4 +17621,25 @@ part "list-row[variant=phone] alert" {
     position relative
     z-index "$z-raised"
     grid-column "1 / -1"
+}
+
+// The frames of the control of a setting give their lines to its head (`setting-head`). These rules stand at the end, after
+// every rule of a field, a row and a hint, because they are more specific than those (stylelint no-descending-specificity): the first line (the label, or
+// a control that is its own label) takes the first cell by itself, and every other line spans the whole width under it.
+part "setting-head > stack > field" "setting-head > stack > length-box" "setting-head > stack > length-box > field" "setting-head > stack > settings.control > field" {
+    display contents
+}
+
+part "setting-head > stack > row" "setting-head > stack settings.help" "setting-head > stack settings.source" "setting-head > stack field.description" "setting-head > stack field.input" "setting-head > stack field.input-row" "setting-head > stack > field > field.error" "setting-head > stack > length-box > field > field.error" {
+    grid-column "1 / -1"
+}
+
+part "setting-head > save-status" {
+    grid-column 2
+    grid-row 1
+}
+
+// What stands under the control (where the value comes from, *Save*) keeps the distance of the frame it stood in.
+part "setting-head > stack > row" "setting-head > stack > settings.source" {
+    margin-block-start "calc($space-4 - $space-1)"
 }

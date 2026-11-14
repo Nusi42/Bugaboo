@@ -38,6 +38,13 @@ export type SelectLook = (typeof selectLook)[keyof typeof selectLook];
 /** Besides its look, a button can fill the width of its container or be square (an icon). */
 export const buttonShape = { wide: "wide", square: "square" } as const;
 
+/**
+ * The look of the words of a change (`SaveStatus`) in a place that keeps their room from the start,
+ * in any language and font: all of them stand in one place and only the one of the state is seen,
+ * so nothing beside the words changes its width when they come or go (UX §6.4).
+ */
+export const keepsRoom = "keeps-room";
+
 /** What a button or a text field is doing that the theme file styles: waiting for an answer. */
 export const busyState = { busy: "busy" } as const;
 

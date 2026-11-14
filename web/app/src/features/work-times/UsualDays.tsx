@@ -1,5 +1,15 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Card, Checkbox, Length, SaveStatus, partOf, part } from "@bugaboo/ui";
+import {
+  Alert,
+  alertTone,
+  Card,
+  Checkbox,
+  Length,
+  SaveStatus,
+  partOf,
+  part,
+  keepsRoom,
+} from "@bugaboo/ui";
 
 import { weekdayName } from "../../shared/clock.ts";
 import { minutesText } from "../../shared/own-value-text.ts";
@@ -73,7 +83,7 @@ export function UsualDays({ whose, read, workTimes }: UsualDaysProps) {
   const { usual } = workTimes;
   return (
     <Card
-      actions={<SaveStatus state={edits.saveState} labels={saveLabels()} keepsRoom />}
+      actions={<SaveStatus state={edits.saveState} labels={saveLabels()} variant={keepsRoom} />}
       heading={t("work-times.usual")}
       intro={usualSummary(week, usual)}
     >

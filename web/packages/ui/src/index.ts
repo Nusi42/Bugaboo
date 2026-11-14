@@ -183,6 +183,7 @@ export {
   iconSize,
   legendLook,
   listRowLook,
+  keepsRoom,
   overlayEdge,
   pickerLook,
   selectLook,

@@ -1,5 +1,14 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Card, DelayedSkeleton, SaveStatus, partOf, part } from "@bugaboo/ui";
+import {
+  Alert,
+  alertTone,
+  Card,
+  DelayedSkeleton,
+  SaveStatus,
+  partOf,
+  part,
+  keepsRoom,
+} from "@bugaboo/ui";
 import { useQuery } from "@tanstack/react-query";
 
 import { messageOf } from "../../../shared/errors.ts";
@@ -44,7 +53,7 @@ export function AppList() {
   const items: readonly ConnectedApp[] = apps.data?.items ?? [];
   return (
     <Card
-      actions={<SaveStatus state={takeBack.saveState} labels={saveLabels()} keepsRoom />}
+      actions={<SaveStatus state={takeBack.saveState} labels={saveLabels()} variant={keepsRoom} />}
       heading={t("connected-apps.list")}
     >
       {apps.isError ? <Alert tone={alertTone.danger}>{messageOf(apps.error)}</Alert> : null}

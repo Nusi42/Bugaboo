@@ -1,5 +1,14 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Card, DelayedSkeleton, SaveStatus, partOf, part } from "@bugaboo/ui";
+import {
+  Alert,
+  alertTone,
+  Card,
+  DelayedSkeleton,
+  SaveStatus,
+  partOf,
+  part,
+  keepsRoom,
+} from "@bugaboo/ui";
 import { useQuery } from "@tanstack/react-query";
 
 import { messageOf } from "../../../shared/errors.ts";
@@ -15,7 +24,7 @@ export function KeyList() {
   const items: readonly AccessKey[] = keys.data?.items ?? [];
   return (
     <Card
-      actions={<SaveStatus state={remove.saveState} labels={saveLabels()} keepsRoom />}
+      actions={<SaveStatus state={remove.saveState} labels={saveLabels()} variant={keepsRoom} />}
       heading={t("access-keys.list")}
     >
       {keys.isError ? <Alert tone={alertTone.danger}>{messageOf(keys.error)}</Alert> : null}

@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { SaveStatus, type SaveState } from "@bugaboo/ui";
+import { SaveStatus, type SaveState, keepsRoom } from "@bugaboo/ui";
 
 import { DraftNote } from "../../shared/editing/index.ts";
 import { saveLabels } from "../../shared/save-labels.ts";
@@ -12,7 +12,7 @@ import type { KeptDraft } from "./use-kept-draft.ts";
  */
 export function UnsavedNote({ dirty }: { readonly dirty: boolean }) {
   const state: SaveState = dirty ? "not-saved" : "idle";
-  return <SaveStatus state={state} labels={saveLabels()} keepsRoom />;
+  return <SaveStatus state={state} labels={saveLabels()} variant={keepsRoom} />;
 }
 
 /** The note that the editor started from changes the person left, with the way back to the saved theme. */

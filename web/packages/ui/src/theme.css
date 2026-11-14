@@ -5272,6 +5272,11 @@ textarea,
 }
 
 [data-part="save-status.room"] {
+  display: none;
+}
+
+[data-part="save-status"][data-variant~="keeps-room"] [data-part="save-status.room"] {
+  display: inline;
   visibility: hidden;
 }
 
@@ -5283,7 +5288,8 @@ textarea,
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
-  gap: var(--space-2);
+  column-gap: var(--space-2);
+  row-gap: var(--space-1);
 }
 
 [data-part="save-bar"] {
@@ -5569,6 +5575,11 @@ textarea,
 
 [data-part="settings.locked-value"] {
   color: var(--fg);
+}
+
+[data-part="setting-head"] > [data-part="stack"],
+[data-part="setting-head"] > [data-part="stack"] > [data-part="settings.control"] {
+  display: contents;
 }
 
 [data-part="access.chooser"] {
@@ -11450,4 +11461,39 @@ textarea,
   position: relative;
   z-index: var(--z-raised);
   grid-column: 1 / -1;
+}
+
+[data-part="setting-head"] > [data-part="stack"] > [data-part="field"],
+[data-part="setting-head"] > [data-part="stack"] > [data-part="length-box"],
+[data-part="setting-head"] > [data-part="stack"] > [data-part="length-box"] > [data-part="field"],
+[data-part="setting-head"]
+  > [data-part="stack"]
+  > [data-part="settings.control"]
+  > [data-part="field"] {
+  display: contents;
+}
+
+[data-part="setting-head"] > [data-part="stack"] > [data-part="row"],
+[data-part="setting-head"] > [data-part="stack"] [data-part="settings.help"],
+[data-part="setting-head"] > [data-part="stack"] [data-part="settings.source"],
+[data-part="setting-head"] > [data-part="stack"] [data-part="field.description"],
+[data-part="setting-head"] > [data-part="stack"] [data-part="field.input"],
+[data-part="setting-head"] > [data-part="stack"] [data-part="field.input-row"],
+[data-part="setting-head"] > [data-part="stack"] > [data-part="field"] > [data-part="field.error"],
+[data-part="setting-head"]
+  > [data-part="stack"]
+  > [data-part="length-box"]
+  > [data-part="field"]
+  > [data-part="field.error"] {
+  grid-column: 1 / -1;
+}
+
+[data-part="setting-head"] > [data-part="save-status"] {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+[data-part="setting-head"] > [data-part="stack"] > [data-part="row"],
+[data-part="setting-head"] > [data-part="stack"] > [data-part="settings.source"] {
+  margin-block-start: calc(var(--space-4) - var(--space-1));
 }

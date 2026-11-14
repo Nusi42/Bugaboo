@@ -1,5 +1,14 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Card, DelayedSkeleton, SaveStatus, partOf, part } from "@bugaboo/ui";
+import {
+  Alert,
+  alertTone,
+  Card,
+  DelayedSkeleton,
+  SaveStatus,
+  partOf,
+  part,
+  keepsRoom,
+} from "@bugaboo/ui";
 import { useQuery } from "@tanstack/react-query";
 
 import { messageOf } from "../../shared/errors.ts";
@@ -17,7 +26,7 @@ export function SessionsPage() {
   const end = useEndSession();
   return (
     <Card
-      actions={<SaveStatus state={end.saveState} labels={saveLabels()} keepsRoom />}
+      actions={<SaveStatus state={end.saveState} labels={saveLabels()} variant={keepsRoom} />}
       heading={t("sessions.title")}
       level={1}
       intro={t("sessions.intro")}

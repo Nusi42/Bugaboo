@@ -8,6 +8,7 @@ import {
   SearchField,
   partOf,
   part,
+  keepsRoom,
 } from "@bugaboo/ui";
 import { useState } from "react";
 
@@ -15,7 +16,7 @@ import { type Setting } from "../../shared/my-settings.ts";
 import { isLockedBelow, type SettingActions } from "./setting-actions.ts";
 import { SettingRow, type ControlRenderer } from "./SettingRow.tsx";
 import { hasNoGenericControl, isBox, wordsOf } from "./texts.ts";
-import { saveLabels } from "../../shared/save-labels.ts";
+import { settingSaveLabels } from "../../shared/save-labels.ts";
 
 export interface SettingsFormProps {
   /** The settings of the topic, as the server answered. */
@@ -92,7 +93,7 @@ function useLastChanged(actions: SettingActions) {
  * setting changed last, so a screen reader hears the first change too.
  */
 function savedOf(state: SaveState) {
-  return <SaveStatus state={state} labels={saveLabels()} keepsRoom />;
+  return <SaveStatus state={state} labels={settingSaveLabels()} variant={keepsRoom} />;
 }
 
 /**

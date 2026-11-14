@@ -10,6 +10,7 @@ import {
   Switch,
   partOf,
   part,
+  keepsRoom,
 } from "@bugaboo/ui";
 import { useId } from "react";
 
@@ -140,7 +141,7 @@ export function CustomizePage() {
             {t("setting.ui.reset")}
           </Button>
         )}
-        <SaveStatus state={progress.state} labels={saveLabels()} keepsRoom />
+        <SaveStatus state={progress.state} labels={saveLabels()} variant={keepsRoom} />
       </div>
     </Card>
   );
