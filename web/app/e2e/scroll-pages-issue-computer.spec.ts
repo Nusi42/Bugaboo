@@ -93,6 +93,8 @@ test("ux_06 the focus ring of a control at the edge of a box that scrolls is not
   const sections = sectionsOf(page);
   const first = sections.locator("button, a[href], input, textarea, select").first();
   await expect(first).toBeVisible();
+  // Once every first read of the page is answered: a part that comes later puts its controls before the first one.
+  await page.waitForLoadState("networkidle");
   // With the keyboard, so the ring shows (`:focus-visible`).
   await first.focus();
   await page.keyboard.press("Shift+Tab");

@@ -208,9 +208,12 @@ tokens {
     // The height of the bar of the ticked issues as the browser draws it: the list keeps that much room at its end, so
     // its last row can be scrolled above the bar that stands over the foot of the list.
     size "bar-ticked-height" "0px" run-time="true"
-    // The height of the head of a pane as the browser draws it whole: its boxes start that far down under the head laid
-    // over them, whatever the head has shrunk to while they scroll, so nothing in them moves when it shrinks (UX §6.5).
-    size "pane-head-height" "0px" run-time="true"
+    // Where the head of a pane ends, below the top of the pane, as the browser draws it whole: its boxes keep that much
+    // room at their start under the head laid over them, whatever the head has folded to while they scroll, so nothing in
+    // them moves when it folds (UX §6.5). The code reads the same measure for the rows it draws only where they show.
+    size "pane-head-end" "0px" run-time="true"
+    // The height of the first line of the head of a pane as the browser draws it (it may wrap): the head folds to it.
+    size "pane-head-line" "0px" run-time="true"
     size "bp-window-side" "880px"
     // Narrower than this the list has no room for Customize beside it: the panel stands under the list, as high as its
     // columns, and the list takes the rest. It is size-list-main + space-4 (the gap of list-body) + size-list, written out
@@ -1378,14 +1381,14 @@ keyframes "pulse" {
     }
 }
 
-// The head of a pane folds to one line as a box of the pane scrolls (UX §6.5): from its whole height to the height of
-// a control, with the room for its focus ring around it.
+// The head of a pane folds to its first line as a box of the pane scrolls (UX §6.5): from its whole height to that line,
+// with the room for the focus ring around it.
 keyframes "pane-head-fold" {
     from {
-        max-height "$pane-head-height"
+        max-height "var(--pane-head-whole)"
     }
     to {
-        max-height "calc($size-control + 2 * $ring-room)"
+        max-height "var(--pane-head-folded)"
     }
 }
 
@@ -1400,7 +1403,7 @@ mixin "pane-head-folds" {
 mixin "pane-head-steps" {
     animation-fill-mode both
     animation-timing-function linear
-    animation-range "0% calc($pane-head-height - $size-control - 2 * $ring-room)"
+    animation-range "0% var(--pane-head-fold-length)"
 }
 
 // What stands at the foot of the head of a pane and goes up with it as it folds (the head of the columns of a list).
@@ -1409,7 +1412,7 @@ keyframes "pane-head-follow" {
         translate "0 0"
     }
     to {
-        translate "0 calc($size-control + 2 * $ring-room - $pane-head-height)"
+        translate "0 calc(-1 * var(--pane-head-fold-length))"
     }
 }
 
@@ -16724,14 +16727,33 @@ part "app-layout app-layout.inner:has(list-main search-results)" "app-layout car
 // A browser without scroll timelines keeps the whole head. The outer layer folds with the first box, the inner with the
 // second: the head is as low as the box scrolled furthest, and whole only when both are at their top.
 
-part "pane" {
+// The sizes of the head, worked out once from the two the code measures: where the whole head ends, and its first line.
+// The head reaches up over the pane by the room of the focus ring (below), so it is that room higher than where it ends.
+part "pane[variant=folds]" {
+    --pane-head-whole "calc($pane-head-end + $ring-room)"
+    --pane-head-folded-end "calc($pane-head-line + $ring-room)"
+    --pane-head-folded "calc(var(--pane-head-folded-end) + $ring-room)"
+    --pane-head-fold-length "calc($pane-head-end - var(--pane-head-folded-end))"
+    // The head covers what scrolls under it with the background of what holds the pane: the page, or a card.
+    --pane-cover "$bg-canvas"
     use "fills-pane-scrolls"
     position relative
     timeline-scope "--pane-first, --pane-second"
 }
 
-part "pane-head" "pane-head.fold" {
-    overflow hidden
+part "card pane[variant=folds]" {
+    --pane-cover "$bg-raised"
+}
+
+// A pane that does not fold (a phone, a tablet, an issue beside a list) is no box of its own: its head and its boxes
+// stand in the page as if the pane were not there, so a change of the layout keeps every part where it is in the tree.
+part "pane[variant=still]" "pane[variant=still] pane-head" "pane[variant=still] pane-head.fold" "pane[variant=still] pane-head.content" {
+    display contents
+}
+
+// Cut, not scrolled: a control that takes the focus inside the folded head never scrolls the head itself.
+part "pane[variant=folds] pane-head" "pane[variant=folds] pane-head.fold" {
+    overflow clip
     media "print" {
         overflow visible
     }
@@ -16739,46 +16761,52 @@ part "pane-head" "pane-head.fold" {
 
 // The head reaches out over the edges of the pane by the room of the focus ring, which it keeps inside, so the ring of a
 // control at its edge is not cut where it folds.
-part "pane-head" {
+part "pane[variant=folds] pane-head" {
     position absolute
     inset-block-start "calc($ring-room * -1)"
     inset-inline "calc($ring-room * -1)"
     z-index "$z-raised"
-    background "$bg-canvas"
+    background "var(--pane-cover)"
     media "print" {
         position static
     }
 }
 
-part "pane-head" {
+part "pane[variant=folds] pane-head" {
     supports "(animation-timeline: scroll())" {
         use "pane-head-folds"
         animation-timeline "--pane-first"
     }
 }
 
-part "pane-head.fold" {
+part "pane[variant=folds] pane-head.fold" {
     supports "(animation-timeline: scroll())" {
         use "pane-head-folds"
         animation-timeline "--pane-second"
     }
 }
 
+// While a control in the head has the focus of the keyboard the head is whole, laid over the boxes: what has the focus
+// shows, and nothing in the boxes moves.
+part "pane[variant=folds] pane-head[state=whole]" "pane[variant=folds] pane-head[state=whole] pane-head.fold" {
+    animation none
+}
+
 // What the head holds, at its whole height: the room under it to the boxes is part of it.
-part "pane-head.content" {
+part "pane[variant=folds] pane-head.content" {
     display flex
     flex-direction column
     gap "$space-4"
     padding "$ring-room $ring-room $space-4"
 }
 
-// What deeper parts of the pane put into its head stands in the line of what the head holds.
+// What deeper parts of the pane put into its head stands in the line of what the head holds, in the order of the slots.
 part "pane-head.slot" {
     display contents
 }
 
 // The head of a list keeps the room between its lines that the page of the list has.
-part "list-editor.list pane-head.content" {
+part "list-editor.list pane[variant=folds] pane-head.content" {
     gap "$space-3"
     padding-block-end "$space-3"
 }
@@ -16787,18 +16815,21 @@ part "list-editor.list pane-head.content" {
 // Under the head the sections start at the top of the pane, with the room for the ring under the whole head, so the head
 // laid over them never covers the ring of the first control. The head reaches up by that room (above), so its bottom
 // stands the room above its own height.
-part "pane issue-body[variant=split] issue-main" {
+// What the keyboard brings into view stops under the folded head, with the room for its ring.
+part "pane[variant=folds] issue-body[variant=split] issue-main" {
     scroll-timeline "--pane-first block"
     margin-block-start 0
-    padding-block-start "$pane-head-height"
+    padding-block-start "calc($pane-head-end + $ring-room)"
+    scroll-padding-block-start "calc(var(--pane-head-folded-end) + $ring-room)"
     media "print" {
         padding-block-start "$ring-room"
     }
 }
 
-part "pane issue-body[variant=split] issue-details" {
+part "pane[variant=folds] issue-body[variant=split] issue-details" {
     scroll-timeline "--pane-second block"
-    padding-block-start "calc($pane-head-height - $ring-room)"
+    padding-block-start "$pane-head-end"
+    scroll-padding-block-start "calc(var(--pane-head-folded-end) + $ring-room)"
     media "print" {
         padding-block-start 0
     }
@@ -16910,7 +16941,7 @@ part "list-main list-scroll" "list-main search-results:not(search-results:has(li
 
 // In a low window on a computer the frame of a list is at least as high as its head and the least of its rows: it does
 // not cut them, the main column scrolls (UX §6.5).
-part "app-layout:not(app-layout[variant=phone]) app-layout.inner:has(list-main search-results)" "app-layout:not(app-layout[variant=phone]) pane:has(list-main search-results)" "app-layout:not(app-layout[variant=phone]) card:has(list-main search-results)" "app-layout:not(app-layout[variant=phone]) card > stack:has(list-main search-results)" "app-layout:not(app-layout[variant=phone]) list-editor.list:has(list-main search-results)" "app-layout:not(app-layout[variant=phone]) list-main:has(search-results)" "app-layout:not(app-layout[variant=phone]) search-results:has(list-scroll)" "app-layout:not(app-layout[variant=phone]) list-editor:has(search-results)" "app-layout:not(app-layout[variant=phone]) list-body:has(search-results)" "app-layout:not(app-layout[variant=phone]) list-column:has(search-results)" {
+part "app-layout:not(app-layout[variant=phone]) app-layout.inner:has(list-main search-results)" "app-layout:not(app-layout[variant=phone]) pane[variant=folds]:has(list-main search-results)" "app-layout:not(app-layout[variant=phone]) card:has(list-main search-results)" "app-layout:not(app-layout[variant=phone]) card > stack:has(list-main search-results)" "app-layout:not(app-layout[variant=phone]) list-editor.list:has(list-main search-results)" "app-layout:not(app-layout[variant=phone]) list-main:has(search-results)" "app-layout:not(app-layout[variant=phone]) search-results:has(list-scroll)" "app-layout:not(app-layout[variant=phone]) list-editor:has(search-results)" "app-layout:not(app-layout[variant=phone]) list-body:has(search-results)" "app-layout:not(app-layout[variant=phone]) list-column:has(search-results)" {
     media "screen and (max-height: $size-low-window)" {
         min-height auto
     }
@@ -16965,17 +16996,24 @@ part "list-column:has(selected-bar[state=active]) list-scroll" {
 // of its rows reaches up under the head by as much, with that room above its first row (kept by the code that draws only
 // the rows on screen), so the rows stand where they stood and come into view under the head as it folds. The head of the
 // columns goes up with the head of the pane, at its foot.
-part "app-layout:not(app-layout[variant=phone]) pane list-main list-frame" {
-    padding-block-start "calc($pane-head-height - $ring-room)"
+part "app-layout pane[variant=folds] list-main list-frame" {
+    padding-block-start "$pane-head-end"
     media "print" {
         padding-block-start 0
     }
 }
 
-part "app-layout:not(app-layout[variant=phone]) pane list-main list-scroll" {
+// What the keyboard brings into view stops under the head of the columns at the foot of the folded head, and a row
+// stops as far below that as the head folds: the first row brings the box back to its start, with the head whole.
+part "app-layout pane[variant=folds] list-main list-row" "app-layout pane[variant=folds] list-main list-group" {
+    scroll-margin-block-start "var(--pane-head-fold-length)"
+}
+
+part "app-layout pane[variant=folds] list-main list-scroll" {
     scroll-timeline "--pane-first block"
-    margin-block-start "calc($ring-room - $pane-head-height)"
-    min-height "calc($size-list-scroll-least + $bar-ticked-height + $pane-head-height - $ring-room)"
+    margin-block-start "calc(-1 * $pane-head-end)"
+    min-height "calc($size-list-scroll-least + $bar-ticked-height + $pane-head-end)"
+    scroll-padding-block-start "var(--pane-head-folded-end)"
     media "print" {
         margin-block-start 0
     }
@@ -16983,11 +17021,11 @@ part "app-layout:not(app-layout[variant=phone]) pane list-main list-scroll" {
 
 // The line at the start of the rows would stand over the head of the pane; the head of the columns at its foot marks
 // that edge there.
-part "app-layout:not(app-layout[variant=phone]) pane list-main list-scroll::before" {
+part "app-layout pane[variant=folds] list-main list-scroll::before" {
     display none
 }
 
-part "app-layout:not(app-layout[variant=phone]) pane list-main list-head" {
+part "app-layout pane[variant=folds] list-main list-head" {
     position relative
     z-index "$z-raised"
     supports "(animation-timeline: scroll())" {
@@ -16999,8 +17037,8 @@ part "app-layout:not(app-layout[variant=phone]) pane list-main list-head" {
 
 // What does not fold the head stands under the whole head: Customize beside the list, the grey shapes while the list is
 // read, the timeline.
-part "app-layout:not(app-layout[variant=phone]) pane list-panel" "app-layout:not(app-layout[variant=phone]) pane > column" "app-layout:not(app-layout[variant=phone]) pane > timeline" {
-    margin-block-start "calc($pane-head-height - $ring-room)"
+part "app-layout pane[variant=folds] list-panel" "app-layout pane[variant=folds] > column" "app-layout pane[variant=folds] > timeline" {
+    margin-block-start "$pane-head-end"
     media "print" {
         margin-block-start 0
     }

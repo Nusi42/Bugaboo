@@ -1,4 +1,4 @@
-import { InPaneHead } from "@bugaboo/ui";
+import { InPaneHead, paneHeadSlot } from "@bugaboo/ui";
 import { useState } from "react";
 
 import {
@@ -57,7 +57,7 @@ export function ProjectList({ project, state, onState, openIn, selection }: Proj
   );
   return (
     <>
-      <InPaneHead>
+      <InPaneHead slot={paneHeadSlot.search}>
         <SearchBar
           text={text}
           onText={onText}

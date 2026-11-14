@@ -1,4 +1,4 @@
-import { PaneWithHead, partOf, part } from "@bugaboo/ui";
+import { PaneWithHead, paneLook, partOf, part } from "@bugaboo/ui";
 import { useState, type ReactNode } from "react";
 
 import { DetailsToggle } from "./DetailsToggle.tsx";
@@ -57,12 +57,10 @@ export function IssueContent({ detail, address, changes, blocks, split, head }: 
       {split ? details : null}
     </div>
   );
-  return split ? (
-    <PaneWithHead head={top}>{body}</PaneWithHead>
-  ) : (
-    <>
-      {top}
+  // One tree whether the head folds or not, so what is typed in the issue stays when the window changes its layout.
+  return (
+    <PaneWithHead head={top} look={split ? paneLook.folds : paneLook.still}>
       {body}
-    </>
+    </PaneWithHead>
   );
 }

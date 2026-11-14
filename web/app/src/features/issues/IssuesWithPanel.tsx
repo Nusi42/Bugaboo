@@ -1,6 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Card, cardLook, PaneWithHead, partOf, part, useLayout } from "@bugaboo/ui";
-import type { ReactNode } from "react";
+import { Card, cardLook, PaneWithHead, paneLook, partOf, part, useLayout } from "@bugaboo/ui";
 
 import type { HistoryStep, SearchState } from "../../shared/search-address.ts";
 
@@ -22,27 +21,6 @@ export interface IssuesWithPanelProps {
   readonly onClose: () => void;
 }
 
-/**
- * On a computer the toolbar, the search bar and the options of the list fold over its rows (UX §6.5); a phone keeps
- * them above its one box.
- */
-function FoldingHead({
-  head,
-  children,
-}: {
-  readonly head: ReactNode;
-  readonly children: ReactNode;
-}) {
-  return useLayout() === "phone" ? (
-    <>
-      {head}
-      {children}
-    </>
-  ) : (
-    <PaneWithHead head={head}>{children}</PaneWithHead>
-  );
-}
-
 /** The list of a project and, beside it, the issue that is open in the side panel. */
 export function IssuesWithPanel({
   project,
@@ -55,6 +33,8 @@ export function IssuesWithPanel({
   const { open } = state;
   const selection = useSelection();
   const toPage = useIssueOnPhone(state);
+  // On a computer the toolbar, the search bar and the options of the list fold over its rows (UX §6.5).
+  const folds = useLayout() === "computer";
   if (toPage) {
     return null;
   }
@@ -66,7 +46,8 @@ export function IssuesWithPanel({
     >
       <div {...partOf(part.listEditor)}>
         <div {...partOf(part.listEditorList)}>
-          <FoldingHead
+          <PaneWithHead
+            look={folds ? paneLook.folds : paneLook.still}
             head={
               <ProjectToolbar
                 shortName={project.shortName}
@@ -82,7 +63,7 @@ export function IssuesWithPanel({
               openIn={openIn}
               selection={selection}
             />
-          </FoldingHead>
+          </PaneWithHead>
         </div>
         {open === undefined ? null : <OpenIssue open={open} onFocus={onFocus} onClose={onClose} />}
       </div>
