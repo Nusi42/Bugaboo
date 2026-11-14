@@ -53,7 +53,7 @@ async fn bob_changes(
     title: &str,
     priority: Option<Priority>,
 ) -> Result<(), String> {
-    change_issue(
+    change_issue::<_, crate::issues::ChangedIssue>(
         &crew.world.ctx(),
         ChangeIssue {
             session_token: crew.bob.session_token.clone(),

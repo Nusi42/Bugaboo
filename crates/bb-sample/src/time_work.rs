@@ -13,7 +13,7 @@ use std::collections::BTreeMap;
 
 use bb_app::access::StartingRole;
 use bb_app::auth::AppError;
-use bb_app::issues::{ChangeIssue, IssueQuery, change_issue, issue};
+use bb_app::issues::{ChangeIssue, IssueQuery, IssueView, change_issue, issue};
 use bb_app::settings::{ChangeSetting, ResetSetting, SettingsScope, change_setting, reset_setting};
 use bb_app::time::{AddTime, EntryDetails, StartTimer, add_time, start_timer};
 use bb_app::working_hours::{
@@ -276,7 +276,7 @@ impl Maker<'_, '_> {
             )?;
             let version = current["issue"]["version"].as_i64().unwrap_or(1);
             json(
-                change_issue(
+                change_issue::<_, IssueView>(
                     &self.world.services.ctx(self.world.request()),
                     ChangeIssue {
                         session_token: token,

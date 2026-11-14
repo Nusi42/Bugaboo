@@ -447,7 +447,7 @@ async fn ai_30_an_agent_has_no_role_and_cannot_be_assigned() -> Outcome {
     )
     .await?
     .into_value();
-    let assigned = change_issue(
+    let assigned = change_issue::<_, crate::issues::ChangedIssue>(
         &world.ctx(),
         ChangeIssue {
             session_token: admin,
@@ -488,7 +488,7 @@ async fn ai_04_an_event_of_an_agent_names_the_agent_and_its_person() -> Outcome 
     )
     .await?
     .into_value();
-    change_issue(
+    change_issue::<_, crate::issues::ChangedIssue>(
         &world.ctx(),
         ChangeIssue {
             session_token: key,

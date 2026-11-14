@@ -54,13 +54,9 @@ pub async fn save_description<S: AuthStore>(
         .into_iter()
         .map(|assigned_person| assigned_person.person)
         .collect();
-    let project = ctx
-        .store()
-        .project(current.project)
-        .await
-        .map_err(|error| internal::<S>(&error))?
-        .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-    let mut views = ctx.issue_views(&actor, held.clone(), project).await?;
+    let mut views = ctx
+        .issue_views_in(&actor, held.clone(), current.project)
+        .await?;
     let mut next = current.clone();
     next.description.clone_from(&text);
     next.updated_at = ctx.now();

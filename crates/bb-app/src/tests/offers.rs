@@ -158,7 +158,7 @@ async fn iss_02_an_issue_of_a_type_the_project_does_not_offer_is_refused() -> Ou
     assert_eq!(says(&types(&world, &admin, None).await?, bug), None);
     // Changing the type of an issue to one the project does not use is refused as well.
     let issue = an_issue(&world, acme).await?;
-    let changed = change_issue(
+    let changed = change_issue::<_, crate::issues::ChangedIssue>(
         &world.ctx(),
         ChangeIssue {
             session_token: admin.clone(),

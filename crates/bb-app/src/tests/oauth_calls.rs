@@ -223,7 +223,7 @@ async fn ai_23_a_change_through_mcp_says_person_via_app_in_the_history() -> Outc
     assert!(made.agent.is_none());
     // What the person does in the browser has no app, a moment later, so the newest is the first.
     world.clock.advance(1);
-    crate::issues::change_issue(
+    crate::issues::change_issue::<_, crate::issues::ChangedIssue>(
         &world.ctx(),
         crate::issues::ChangeIssue {
             session_token: token(&world),

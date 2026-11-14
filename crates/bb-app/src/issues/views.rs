@@ -246,6 +246,23 @@ impl<S: AuthStore> Ctx<'_, S> {
         self.preload_role_labels(seen, &by_role).await
     }
 
+    /// The views of the issues of the project `project` for the viewer, read by its ID: an
+    /// unknown project answers like a missing issue.
+    pub(crate) async fn issue_views_in(
+        &self,
+        actor: &Actor,
+        viewer: Arc<Evaluation>,
+        project: ProjectId,
+    ) -> Result<IssueViews, AppError> {
+        let project = self
+            .store()
+            .project(project)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .ok_or(AppError::Refused(ErrorCode::NotFound))?;
+        self.issue_views(actor, viewer, project).await
+    }
+
     /// The views of the issues of `project` for the viewer, whose evaluation is the one at the
     /// project.
     pub(crate) async fn issue_views(

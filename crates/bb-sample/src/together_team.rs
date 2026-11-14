@@ -1,6 +1,6 @@
 //! The Team members change statuses under the workflows.
 
-use bb_app::issues::{ChangeIssue, IssueQuery, change_issue, issue};
+use bb_app::issues::{ChangeIssue, IssueQuery, IssueView, change_issue, issue};
 use bb_core::id::IssueId;
 use bb_core::workflow::StatusKey;
 
@@ -68,7 +68,7 @@ impl Maker<'_, '_> {
         };
         self.world.tick();
         json(
-            change_issue(
+            change_issue::<_, IssueView>(
                 &ctx,
                 ChangeIssue {
                     session_token: token,

@@ -140,7 +140,7 @@ async fn set_up(world: &World, seeds: &[Seed]) -> Result<Setup, TestCaseError> {
         let project = if seed.in_secret_project { secret } else { open };
         let issue = an_issue(world, project).await.map_err(broke)?;
         if seed.status != 0 {
-            change_issue(
+            change_issue::<_, crate::issues::ChangedIssue>(
                 &world.ctx(),
                 ChangeIssue {
                     session_token: admin.clone(),

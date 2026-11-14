@@ -467,7 +467,7 @@ async fn ai_21_preview_update_issue_says_what_it_would_record_and_saves_nothing(
         "{text}"
     );
     // Nothing was saved: the same change on the same version still goes through.
-    change_issue(
+    change_issue::<_, crate::issues::ChangedIssue>(
         &world.ctx(),
         ChangeIssue {
             title: Some("Really new".to_owned()),

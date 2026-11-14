@@ -32,7 +32,7 @@ async fn ai_38_an_undone_run_says_who_undid_it_and_what_became_of_each_field() -
             .undone
             .is_none()
     );
-    change_issue(
+    change_issue::<_, crate::issues::ChangedIssue>(
         &world.ctx(),
         priority_change(&admin, second, 2, Priority::Low),
     )
@@ -123,7 +123,7 @@ async fn ai_38_the_preview_leaves_out_unreadable_fields_and_names_a_comment() ->
     let mut title = priority_change(&admin, id, 2, Priority::Critical);
     title.priority = None;
     title.title = Some("A new title".to_owned());
-    change_issue(&ctx, title).await?;
+    change_issue::<_, crate::issues::ChangedIssue>(&ctx, title).await?;
     // Two comments on one issue are one line under it.
     for text in ["Looked at it", "Looked again"] {
         add_comment(
@@ -199,7 +199,11 @@ async fn ai_38_a_field_that_went_back_stays_so_when_it_is_changed_after_the_undo
     change_in_run(&world, &admin, run, id, 1, Priority::Critical).await?;
     let preview = preview_of(&world, &admin, run).await?;
     undo(&world, &admin, run, preview).await?;
-    change_issue(&world.ctx(), priority_change(&admin, id, 3, Priority::Low)).await?;
+    change_issue::<_, crate::issues::ChangedIssue>(
+        &world.ctx(),
+        priority_change(&admin, id, 3, Priority::Low),
+    )
+    .await?;
     assert_eq!(
         outcomes_of(&world, &admin, run).await?,
         vec![Some(FieldOutcome::WentBack)]
@@ -223,7 +227,11 @@ async fn ai_38_a_change_between_the_plan_and_the_write_is_not_overwritten() -> O
     let runs = RunsOf::new(&ctx, &actor, &admin);
     let plan = runs.plan_for_reader(run).await?;
     // Somebody changes the issue after the plan looked at it.
-    change_issue(&world.ctx(), priority_change(&admin, id, 2, Priority::Low)).await?;
+    change_issue::<_, crate::issues::ChangedIssue>(
+        &world.ctx(),
+        priority_change(&admin, id, 2, Priority::Low),
+    )
+    .await?;
     let done = runs.apply_plan(run, plan).await?;
     assert_eq!(done.undone, 0);
     assert_eq!(done.skips[0].kind, UndoSkipKind::ChangedSince);
@@ -370,7 +378,7 @@ async fn ai_38_what_an_interrupted_undo_did_not_reach_gets_its_reason_when_it_ca
     .into_value()
     .issue
     .version;
-    change_issue(
+    change_issue::<_, crate::issues::ChangedIssue>(
         &world.ctx(),
         priority_change(&admin, not_reached, version, Priority::Low),
     )

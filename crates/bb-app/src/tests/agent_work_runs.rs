@@ -127,7 +127,9 @@ async fn retitle(world: &World, given: &Handed, title: &str) -> Result<(), AppEr
         assigned_to: None,
         fields: std::collections::BTreeMap::default(),
     };
-    change_issue(&world.ctx(), change).await.map(drop)
+    change_issue::<_, crate::issues::ChangedIssue>(&world.ctx(), change)
+        .await
+        .map(drop)
 }
 
 #[tokio::test]

@@ -18,6 +18,7 @@ use serde::Serialize;
 
 use super::change::change_issue;
 use super::types::ChangeIssue;
+use super::types::IssueView;
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx};
 use crate::relations::LineMaker;
@@ -152,7 +153,7 @@ pub async fn move_dates<S: AuthStore>(
     let mut written = Ok(());
     for each in &input.issues {
         let change = change_of(&input.session_token, each);
-        if let Err(error) = change_issue(ctx, change).await {
+        if let Err(error) = change_issue::<_, IssueView>(ctx, change).await {
             written = Err(error);
             break;
         }

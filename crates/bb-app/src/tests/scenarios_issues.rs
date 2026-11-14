@@ -144,7 +144,10 @@ pub(crate) async fn change_issue_scenario(world: &World) -> Added {
     let issue = an_issue(world, project).await?;
     measured(
         &world.store,
-        change_issue(&world.ctx(), titled_and_done(world, &issue)),
+        change_issue::<_, crate::issues::ChangedIssue>(
+            &world.ctx(),
+            titled_and_done(world, &issue),
+        ),
     )
     .await
 }

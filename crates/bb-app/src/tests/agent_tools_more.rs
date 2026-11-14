@@ -149,7 +149,7 @@ pub(super) async fn retitle(world: &World, id: IssueId, title: &str) -> Result<(
         .into_value()
         .issue
         .version;
-    change_issue(
+    change_issue::<_, crate::issues::ChangedIssue>(
         &world.ctx(),
         ChangeIssue {
             session_token: token(world),
@@ -606,7 +606,7 @@ async fn ai_36_the_answer_to_an_old_version_is_judged_for_the_agent_not_its_pers
         .into_value()
         .issue
         .version;
-    change_issue(
+    change_issue::<_, crate::issues::ChangedIssue>(
         &world.ctx(),
         ChangeIssue {
             session_token: admin,

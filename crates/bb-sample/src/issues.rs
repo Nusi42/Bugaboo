@@ -19,7 +19,7 @@ use bb_app::comments::{AddComment, SaveComment, add_comment, save_comment};
 use bb_app::context::Clock as _;
 use bb_app::context::SystemIds;
 use bb_app::editing::{TakeLockQuery, take_lock};
-use bb_app::issues::{ChangeIssue, CreateIssue, change_issue, create_issue};
+use bb_app::issues::{ChangeIssue, CreateIssue, IssueView, change_issue, create_issue};
 use bb_app::relations::{AddRelation, SetParent, add_relation, set_parent};
 use bb_app::tags::{AddLabel, AddTag, add_label, add_tag};
 use bb_core::comment::{TEXT_PART, handle_of};
@@ -500,7 +500,7 @@ impl Maker<'_, '_> {
             let token = self.hands.token(person).await?;
             let carried = made.assigned_for(next, self.world.people[person].id);
             let changed = json(
-                change_issue(
+                change_issue::<_, IssueView>(
                     &self.world.services.ctx(self.world.request()),
                     ChangeIssue {
                         session_token: token,
@@ -523,8 +523,7 @@ impl Maker<'_, '_> {
                         fields: BTreeMap::new(),
                     },
                 )
-                .await
-                .map(|changed| changed.map(|changed| changed.issue)),
+                .await,
                 Step::Change,
             )?;
             let mut updated = MadeIssue::of(&changed)?;

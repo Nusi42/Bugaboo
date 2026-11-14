@@ -24,7 +24,9 @@ use super::types::{
     ApplyManyChanges, ManyChangeAction, ManyChangeOutcome, ManyChangeResult, ManyChangeTarget,
 };
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, set_to};
-use crate::issues::{ChangeIssue, DeleteIssue, MoveIssue, change_issue, delete_issue, move_issue};
+use crate::issues::{
+    ChangeIssue, DeleteIssue, IssueView, MoveIssue, change_issue, delete_issue, move_issue,
+};
 use crate::jobs::JobKind;
 use crate::relations::{AddRelation, LineMaker, add_relation};
 use crate::tags::{AddLabel, add_label};
@@ -55,7 +57,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         // judgment gave and, if the issue changed in the instant between, says so.
         let token = selection.token.to_owned();
         let done = match selection.action {
-            ManyChangeAction::Change { change } => change_issue(
+            ManyChangeAction::Change { change } => change_issue::<_, IssueView>(
                 self,
                 ChangeIssue {
                     session_token: token,

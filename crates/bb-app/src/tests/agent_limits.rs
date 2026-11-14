@@ -246,7 +246,7 @@ async fn ai_37_the_changes_of_an_agent_over_the_api_count_against_its_limits() -
         let ctx = world.ctx();
         ctx.expect_change();
         counts.push(
-            change_issue(
+            change_issue::<_, crate::issues::ChangedIssue>(
                 &ctx,
                 ChangeIssue {
                     session_token: given.key.clone(),
@@ -288,7 +288,7 @@ async fn ai_37_a_change_that_is_refused_counts_nothing() -> Outcome {
         let version = version_of(&world, &given).await?;
         let ctx = world.ctx();
         ctx.expect_change();
-        let refusal = change_issue(
+        let refusal = change_issue::<_, crate::issues::ChangedIssue>(
             &ctx,
             ChangeIssue {
                 session_token: given.key.clone(),

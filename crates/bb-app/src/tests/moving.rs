@@ -88,7 +88,7 @@ async fn iss_09_a_move_on_an_old_version_is_stopped() -> Outcome {
         a_project(&world, "ELSE").await?,
     );
     let id = an_issue(&world, acme).await?;
-    change_issue(
+    change_issue::<_, crate::issues::ChangedIssue>(
         &world.ctx(),
         ChangeIssue {
             session_token: token(&world),
@@ -144,7 +144,7 @@ async fn iss_09_an_issue_with_a_value_the_other_project_has_no_field_for_stays()
     )
     .await?;
     let id = an_issue(&world, acme).await?;
-    change_issue(
+    change_issue::<_, crate::issues::ChangedIssue>(
         &world.ctx(),
         ChangeIssue {
             session_token: token(&world),

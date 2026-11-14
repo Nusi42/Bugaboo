@@ -70,7 +70,7 @@ async fn ai_31_a_hand_over_names_only_members_an_agent_may_be_given() -> Outcome
         .version;
     let mut change = ChangeIssue::of(&given.key, given.issue.to_string(), version);
     change.fields.insert(text.clone(), json!("Acme"));
-    change_issue(&world.ctx(), change).await?;
+    change_issue::<_, crate::issues::ChangedIssue>(&world.ctx(), change).await?;
     Ok(())
 }
 
@@ -94,7 +94,7 @@ async fn ai_31_an_agent_never_changes_an_own_field_that_holds_people_whatever_is
         people.id.to_string(),
         json!(given.team.person.id.to_string()),
     );
-    let refusal = change_issue(&world.ctx(), change).await;
+    let refusal = change_issue::<_, crate::issues::ChangedIssue>(&world.ctx(), change).await;
     assert!(refused(&refusal.unwrap_err(), ErrorCode::Forbidden));
     Ok(())
 }
@@ -586,7 +586,7 @@ async fn ai_35_a_throw_away_that_cannot_undo_stops_with_an_error_and_leaves_the_
         .version;
     let mut change = ChangeIssue::of(&given.key, given.issue.to_string(), version);
     change.title = Some("Changed by the attempt".to_owned());
-    change_issue(&world.ctx(), change).await?;
+    change_issue::<_, crate::issues::ChangedIssue>(&world.ctx(), change).await?;
     end_attempt(&world.ctx(), ready(&given.key, given.issue)).await?;
     let work = show(&world, &given).await?;
     // Whatever is looked at from now on has changed again since the last look.

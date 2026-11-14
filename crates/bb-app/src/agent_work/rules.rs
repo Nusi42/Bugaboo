@@ -23,7 +23,7 @@ use crate::access::Actor;
 use crate::auth::nothing_if_aborted;
 use crate::auth::{AppError, AuthStore, Ctx, Stops, change_failed, entity, internal, set_to};
 use crate::input::cursor_or_invalid;
-use crate::issues::{ChangeIssue, change_issue};
+use crate::issues::{ChangeIssue, IssueView, change_issue};
 use crate::jobs::{JobKind, QueuedJob};
 use crate::tags::{AddLabel, AddTag, add_label, add_tag};
 
@@ -557,7 +557,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                     .as_str()
                     .and_then(|text| text.parse().ok())
                     .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
-                change_issue(
+                change_issue::<_, IssueView>(
                     self,
                     ChangeIssue::issue_type(
                         token,

@@ -1,7 +1,9 @@
 //! Contributors and Guests report issues and comment under them; Contributors change what they reported.
 
 use bb_app::comments::{AddComment, add_comment};
-use bb_app::issues::{ChangeIssue, CreateIssue, IssueQuery, change_issue, create_issue, issue};
+use bb_app::issues::{
+    ChangeIssue, CreateIssue, IssueQuery, IssueView, change_issue, create_issue, issue,
+};
 use bb_app::tags::{AddTag, add_tag};
 use bb_core::id::IssueId;
 use bb_dev_words::sample::Layout;
@@ -199,7 +201,7 @@ impl Maker<'_, '_> {
             .unwrap_or_default();
         let title = work.words.fill(&template, "app", &mut work.random);
         json(
-            change_issue(
+            change_issue::<_, IssueView>(
                 ctx,
                 ChangeIssue {
                     session_token: token.to_owned(),

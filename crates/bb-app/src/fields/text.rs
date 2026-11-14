@@ -210,13 +210,9 @@ pub async fn save_field_text<S: AuthStore>(
         },
     )
     .await?;
-    let project = ctx
-        .store()
-        .project(current.project)
-        .await
-        .map_err(|error| internal::<S>(&error))?
-        .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-    let mut views = ctx.issue_views(&actor, held.clone(), project).await?;
+    let mut views = ctx
+        .issue_views_in(&actor, held.clone(), current.project)
+        .await?;
     let mut saved = current;
     saved.version = next(version);
     saved.updated_at = at;

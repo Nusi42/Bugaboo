@@ -163,7 +163,7 @@ async fn iss_09_an_issue_changed_after_the_preview_is_left_alone_and_named() -> 
     let asked = preview(&world, &admin, &[first, second], &done()).await?;
     assert_eq!(asked.summary.will_change, 2);
     // Somebody changes the first issue between the preview and the change.
-    change_issue(
+    change_issue::<_, crate::issues::ChangedIssue>(
         &world.ctx(),
         ChangeIssue {
             session_token: admin.clone(),

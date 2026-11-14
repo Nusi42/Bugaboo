@@ -25,7 +25,7 @@ use super::weigh::{Evaluation, Net, NetOfRun, weigh};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, entity, internal, set_to};
 use crate::history::visible_changes;
-use crate::issues::change_issue;
+use crate::issues::{IssueView, change_issue};
 use crate::many_changes::skip_of;
 
 /// How many events of a run are read at once.
@@ -438,7 +438,7 @@ impl<S: AuthStore> RunsOf<'_, '_, S> {
     async fn restore(&self, issue: IssueId, version: i64, nets: &[Net]) -> Result<(), Failed> {
         let input = issue_change(self.token, issue, version, nets)
             .ok_or(Failed::Kept(UndoSkipKind::NotUndoable))?;
-        match change_issue(self.ctx, input).await {
+        match change_issue::<_, IssueView>(self.ctx, input).await {
             Ok(_) => Ok(()),
             Err(error) => match skip_of(error) {
                 Ok(reason) => Err(Failed::Kept(kept(reason))),

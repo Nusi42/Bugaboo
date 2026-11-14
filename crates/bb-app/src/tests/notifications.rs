@@ -147,7 +147,7 @@ impl Crew {
             Change::Priority(priority) => (None, None, Some(priority), None),
             Change::Assign(people) => (None, None, None, Some(people)),
         };
-        change_issue(
+        change_issue::<_, crate::issues::ChangedIssue>(
             &self.world.ctx(),
             ChangeIssue {
                 title,

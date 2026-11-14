@@ -17,7 +17,7 @@ use super::types::{AnswerQuestion, ApprovePlan, LookAtWork, ReviewWork, WorkView
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, Stops, change_failed, entity, internal, set_to};
 use crate::input::{clean_long_text, clean_text};
-use crate::issues::{ChangeIssue, change_issue};
+use crate::issues::{ChangeIssue, IssueView, change_issue};
 use crate::runs::{RunStore, RunsOf};
 
 /// The longest an answer or a note may be.
@@ -448,7 +448,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         if !held.allows(Permission::ChangeIssues) && !held.may_change_issue(issue.reported_by) {
             return Err(ErrorCode::Forbidden.into());
         }
-        change_issue(
+        change_issue::<_, IssueView>(
             self,
             ChangeIssue::status(token, issue.id.to_string(), issue.version, status),
         )

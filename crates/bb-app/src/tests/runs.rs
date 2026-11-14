@@ -95,7 +95,11 @@ pub(super) async fn change_in_run(
 ) -> Result<(), AppError> {
     let ctx = world.ctx();
     ctx.set_run(Some(run));
-    change_issue(&ctx, priority_change(session, id, version, priority)).await?;
+    change_issue::<_, crate::issues::ChangedIssue>(
+        &ctx,
+        priority_change(session, id, version, priority),
+    )
+    .await?;
     Ok(())
 }
 
@@ -150,7 +154,7 @@ async fn ai_38_a_run_is_undone_in_one_step_and_skips_later_changes() -> Outcome 
         change_in_run(&world, &admin, run, each, 1, Priority::Critical).await?;
     }
     // Somebody changes the second issue again afterwards, outside the run.
-    change_issue(
+    change_issue::<_, crate::issues::ChangedIssue>(
         &world.ctx(),
         priority_change(&admin, issues[1], 2, Priority::Low),
     )

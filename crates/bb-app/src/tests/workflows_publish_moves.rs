@@ -169,7 +169,7 @@ async fn wf_02_the_preview_of_a_publish_counts_the_issues_of_each_dropped_status
     let admin = world.admin.session_token.clone();
     for _ in 0..2 {
         let id = an_issue(&world, project).await?;
-        change_issue(
+        change_issue::<_, crate::issues::ChangedIssue>(
             &world.ctx(),
             change(&admin, &id.to_string(), 1, IN_PROGRESS)?,
         )
@@ -209,7 +209,7 @@ async fn wf_02_the_preview_names_what_the_publisher_sees_and_only_counts_the_res
     let admin = world.admin.session_token.clone();
     for project in [acme, kid] {
         let id = an_issue(&world, project).await?;
-        change_issue(
+        change_issue::<_, crate::issues::ChangedIssue>(
             &world.ctx(),
             change(&admin, &id.to_string(), 1, IN_PROGRESS)?,
         )
@@ -391,9 +391,12 @@ async fn wf_02_a_move_ignores_the_rules_of_the_old_change_and_closes_by_the_grou
     };
     with_rules(&world, "ACME", &[(IN_PROGRESS, DONE, needs)]).await?;
     assert!(
-        change_issue(&world.ctx(), change(&admin, &id.to_string(), 2, DONE)?)
-            .await
-            .is_err()
+        change_issue::<_, crate::issues::ChangedIssue>(
+            &world.ctx(),
+            change(&admin, &id.to_string(), 2, DONE)?
+        )
+        .await
+        .is_err()
     );
     let editor = editor_of_acme(&world).await?;
     published_with(&world, &editor, |sent| {

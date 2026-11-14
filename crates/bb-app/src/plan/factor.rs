@@ -186,7 +186,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// it is told only as openly as the person on the bar: that it is the person's own estimate,
     /// and who set it, only to a reader who is shown the person by name; any other reader is shown
     /// the person on the bar as they see them, whoever set it.
-    async fn factor_view(
+    pub(crate) async fn factor_view(
         &self,
         actor: &Actor,
         held: &Evaluation,
@@ -261,9 +261,8 @@ pub async fn time_factor<S: AuthStore>(
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// The time factor of `issue` as it is stored now, for the reader: what its route answers,
-    /// and what a change of the people answers with the changed issue.
-    pub(crate) async fn factor_now(
+    /// The time factor of `issue` as it is stored now, for the reader: what its route answers.
+    async fn factor_now(
         &self,
         actor: &Actor,
         held: &Evaluation,
@@ -277,22 +276,6 @@ impl<S: AuthStore> Ctx<'_, S> {
         let first = self.first_assigned(issue.id).await?;
         self.factor_view(actor, held, issue, issue.version, factor.as_ref(), first)
             .await
-    }
-
-    /// The time factor of `issue` as it is stored now, when `wanted` (a change that set the people
-    /// it is assigned to answers it with the issue), else none.
-    pub(crate) async fn factor_if(
-        &self,
-        wanted: bool,
-        actor: &Actor,
-        held: &Evaluation,
-        issue: &Issue,
-    ) -> Result<Option<TimeFactorView>, AppError> {
-        if wanted {
-            Ok(Some(self.factor_now(actor, held, issue).await?))
-        } else {
-            Ok(None)
-        }
     }
 }
 

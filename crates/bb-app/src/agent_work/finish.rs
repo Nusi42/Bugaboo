@@ -12,7 +12,7 @@ use bb_core::run::{RunActor, RunEnd, RunKind};
 use super::attempt::Mine;
 use crate::auth::{AppError, AuthStore, Ctx, internal, locked};
 use crate::comments::{AddComment, add_comment};
-use crate::issues::{ChangeIssue, change_issue};
+use crate::issues::{ChangeIssue, IssueView, change_issue};
 use crate::runs::{RunStore, RunsOf};
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -91,7 +91,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             return Ok(false);
         };
         *locked(&self.accepting) = Some(issue.id);
-        let moved = change_issue(
+        let moved = change_issue::<_, IssueView>(
             self,
             ChangeIssue::status(token, issue.id.to_string(), issue.version, only),
         )

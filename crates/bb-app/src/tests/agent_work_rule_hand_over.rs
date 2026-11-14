@@ -278,7 +278,7 @@ async fn retitle(world: &World, given: &RuleWorld, title: &str) -> Result<(), Ap
     .into_value()
     .issue
     .version;
-    crate::issues::change_issue(
+    crate::issues::change_issue::<_, crate::issues::ChangedIssue>(
         &world.ctx(),
         crate::issues::ChangeIssue {
             session_token: given.key.clone(),

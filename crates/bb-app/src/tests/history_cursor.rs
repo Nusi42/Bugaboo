@@ -94,7 +94,7 @@ async fn changes(
         } else {
             Priority::Low
         };
-        change_issue(
+        change_issue::<_, crate::issues::ChangedIssue>(
             &world.ctx(),
             ChangeIssue {
                 session_token: admin.clone(),

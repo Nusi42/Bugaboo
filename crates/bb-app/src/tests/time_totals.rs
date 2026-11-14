@@ -27,7 +27,7 @@ const fn minutes(count: u32) -> Minutes {
 
 /// Gives the issue an estimate, as a person does.
 async fn estimate(world: &World, issue: IssueId, estimated: u32) -> Result<(), String> {
-    change_issue(
+    change_issue::<_, crate::issues::ChangedIssue>(
         &world.ctx(),
         ChangeIssue {
             estimated_time: Some(SetTo::Value(minutes(estimated))),

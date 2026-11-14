@@ -126,7 +126,7 @@ async fn ntf_02_a_moment_in_an_e_mail_is_written_in_the_time_zone_of_the_recipie
     )
     .await
     .map_err(text)?;
-    change_issue(
+    change_issue::<_, crate::issues::ChangedIssue>(
         &crew.world.ctx(),
         ChangeIssue {
             session_token: crew.bob.session_token.clone(),

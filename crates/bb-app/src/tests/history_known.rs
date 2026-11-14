@@ -42,7 +42,7 @@ async fn changed(
     issue_type: Option<IssueTypeId>,
     title: Option<String>,
 ) -> Result<(), AppError> {
-    change_issue(
+    change_issue::<_, crate::issues::ChangedIssue>(
         &world.ctx(),
         ChangeIssue {
             session_token: who.to_owned(),

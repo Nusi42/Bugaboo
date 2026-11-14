@@ -36,7 +36,7 @@ pub(crate) use views::{PagePlace, ReadOnRequest};
 pub(crate) use visible::{Where, seen_by};
 
 pub use assigned_people::{AssignablePeoplePage, AssignablePeopleQuery, assignable_people};
-pub use change::{ChangedIssue, change_issue};
+pub use change::{ChangeAnswer, ChangedIssue, change_issue};
 pub(crate) use create::NEEDED_TO_CREATE;
 pub use create::create_issue;
 pub use dates::{DatesMoved, DatesOf, MoveDates, MovedIssue, move_dates};

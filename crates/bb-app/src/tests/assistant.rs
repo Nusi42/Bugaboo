@@ -348,7 +348,7 @@ async fn comp_08_text_applied_from_the_assistant_is_marked_written_with_the_assi
     let event = world.store.lock().events.last().cloned().expect("an event");
     assert_eq!(event.channel, Channel::Assistant);
     // The channel belongs to that one apply, not to the next request of the person.
-    let next = change_issue(
+    let next = change_issue::<_, crate::issues::ChangedIssue>(
         &world.ctx(),
         ChangeIssue {
             session_token: token(&world),
@@ -378,7 +378,7 @@ async fn ai_05_apply_against_a_newer_version_is_refused_with_the_newer_value() -
     let (world, key) = with_an_issue().await?;
     let proposal = a_proposal(&world, &key).await?;
     // Somebody else changes the title first.
-    change_issue(
+    change_issue::<_, crate::issues::ChangedIssue>(
         &world.ctx(),
         ChangeIssue {
             session_token: token(&world),
