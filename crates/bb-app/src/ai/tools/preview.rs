@@ -107,15 +107,27 @@ pub(super) fn create_issue<'a, S: AuthStore>(
 ) -> Boxed<'a, Result<Vec<Part>, AppError>> {
     Box::pin(async move {
         let request = requests::create_issue(&run)?;
-        let in_kept_project = ctx
-            .find_project(&request.project)
-            .await?
-            .is_some_and(|found| run.withheld.hides_project(found.project.id));
-        if in_kept_project {
+        let found = ctx.find_project(&request.project).await?;
+        if found
+            .as_ref()
+            .is_some_and(|found| run.withheld.hides_project(found.project.id))
+        {
             return Err(AppError::Refused(ErrorCode::NotFound));
         }
         let changes = ctx.preview_create_issue(run.actor, &request).await?;
-        Ok(preview_parts(&run, changes, proposer(run.caller)))
+        // The issue has no ID before it is saved: the preview says which project it is new in, by
+        // the short name, once the use case found the project one the person may create issues in.
+        let mut parts: Vec<Part> = found
+            .map(|found| Part {
+                name: "new_issue",
+                value: json!({ "short_name": found.project.short_name.to_string() }),
+                author: proposer(run.caller),
+                project: Some(found.project.id),
+            })
+            .into_iter()
+            .collect();
+        parts.extend(preview_parts(&run, changes, proposer(run.caller)));
+        Ok(parts)
     })
 }
 

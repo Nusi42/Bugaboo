@@ -11,7 +11,7 @@ use serde_json::{Value, json};
 
 use super::call::{ToolUndo, UNDO_PART, UndoKind, VERSION_PART};
 use super::registry::{Boxed, Run};
-use super::{preview, requests};
+use super::{preview, read, requests};
 use crate::access::Actor;
 use crate::ai::context::{AuthorKind, Part};
 use crate::auth::{AppError, AuthStore, Ctx};
@@ -42,6 +42,23 @@ fn undo_part<T: Masked + serde::Serialize>(kind: UndoKind, made: &Authorized<T>)
 /// The version of the thing a write gave back.
 fn version_in(value: &Value) -> Option<i64> {
     value.get("version").and_then(Value::as_i64)
+}
+
+/// The issue a call made, as the AI may name it from now on: its internal ID, its readable ID and
+/// its version. The search finds a new issue only after the next round of the jobs (ADR-0016), so
+/// this is how the caller knows it was made and does not make it again.
+fn made_issue_part(made: &Authorized<IssueView>) -> Part {
+    let value = made.masked_value().unwrap_or(Value::Null);
+    Part {
+        name: "issue",
+        value: json!({
+            "id": value.get("id"),
+            "key": value.get("key"),
+            "version": value.get("version"),
+        }),
+        author: AuthorKind::Assistant,
+        project: read::project_of(&value),
+    }
 }
 
 /// The version an issue is at after a change, as the write gave it back: not read again, so it is
@@ -82,6 +99,7 @@ pub(super) fn create_issue<'a, S: AuthStore>(
     Box::pin(async move {
         let mut shown = preview::create_issue(ctx, run).await?;
         let made = create_issue_as_person(ctx, requests::create_issue(&run)?).await?;
+        shown.push(made_issue_part(&made));
         // *Undo* of a new issue sends it to the trash: only for a person who may delete it.
         if ctx.may_delete_made(run.actor, &made).await {
             shown.push(undo_part(UndoKind::Issue, &made));

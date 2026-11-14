@@ -58,7 +58,7 @@ fn masked<T: bb_policy::Masked + serde::Serialize>(
 }
 
 /// The ID of the project in the masked value of a view.
-fn project_of(value: &Value) -> Option<ProjectId> {
+pub(super) fn project_of(value: &Value) -> Option<ProjectId> {
     value.get("project")?.get("id")?.as_str()?.parse().ok()
 }
 
