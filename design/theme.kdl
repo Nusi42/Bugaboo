@@ -3022,11 +3022,13 @@ part "list-column" {
     min-width 0
 }
 
+// The frame scrolls sideways only: the box of the rows in it scrolls up and down (UX §6.5).
 part "list-frame" {
     display flex
     flex-direction column
     min-width 0
     overflow-x auto
+    overflow-y hidden
 }
 
 // Ten characters of the code font that nobody sees: the code measures them, so the ID column is as wide as the font really draws its IDs, whichever font the computer has for it.
@@ -5575,7 +5577,9 @@ part "access.scroll" {
     position relative
     // The table and the two lines of the edge shadows (below) are side by side, so a line is as high as the table.
     display flex
+    // Sideways only: the page around it scrolls up and down (UX §6.5).
     overflow-x auto
+    overflow-y hidden
     container-type inline-size
     // A column comes to rest whole, beside the names, where the scrolling stops near it (a control is not left cut).
     scroll-snap-type "x proximity"
@@ -16608,11 +16612,14 @@ part "search-panel search-suggestions" {
 }
 
 // A page of a list gives the box of its rows the rest of the main column (UX §6.5): every box between the column and
-// the list gives the list the room that is left. Where the boxes above it leave the list less than its least height,
-// the main column scrolls. Only the page of a list (list-main) and the timeline: the slim list of the focus view stays in its page.
-// A phone has one scroller where the list is: the list. The page does not scroll.
-part "app-layout[variant=phone] app-layout.main:has(list-scroll)" {
+// the list gives the list the room that is left. Only the page of a list (list-main) and the timeline: the slim list of
+// the focus view stays in its page. A pane that its own boxes fill has those boxes only: the main column around them
+// never scrolls, on a computer as on a phone (the timeline on a phone stands in the main column, which is its box).
+part "app-layout.main:has(list-main list-scroll)" "app-layout.main:has(issue-body[variant=split])" "app-layout:not(app-layout[variant=phone]) app-layout.main:has(timeline-body)" {
     overflow-y hidden
+    media "print" {
+        overflow visible
+    }
 }
 
 // Only where there are rows that scroll does every box give way below its content; a page without rows (nothing found,
@@ -16791,10 +16798,12 @@ part "run-table.cell" {
 }
 
 // The grid scrolls sideways on a narrow window; the ring of a cell is not cut at its edge.
+// Sideways only: the page around it scrolls up and down (UX §6.5).
 part "sheet.scroll" {
     use "ring-room"
     use "ring-room-flush"
     overflow-x auto
+    overflow-y hidden
 }
 
 part "sheet.col[variant=issue]" {

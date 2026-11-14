@@ -1881,6 +1881,7 @@ textarea,
   flex-direction: column;
   min-width: 0;
   overflow-x: auto;
+  overflow-y: hidden;
 }
 
 [data-part="list-char-probe"] {
@@ -4429,6 +4430,7 @@ textarea,
   position: relative;
   display: flex;
   overflow-x: auto;
+  overflow-y: hidden;
   container-type: inline-size;
   scroll-snap-type: x proximity;
   scroll-padding-inline-start: var(--size-matrix-names);
@@ -9231,9 +9233,20 @@ textarea,
   margin-block-start: var(--space-1);
 }
 
-[data-part="app-layout"][data-variant~="phone"]
-  [data-part="app-layout.main"]:has([data-part="list-scroll"]) {
+[data-part="app-layout.main"]:has([data-part="list-main"] [data-part="list-scroll"]),
+[data-part="app-layout.main"]:has([data-part="issue-body"][data-variant~="split"]),
+[data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+  [data-part="app-layout.main"]:has([data-part="timeline-body"]) {
   overflow-y: hidden;
+}
+
+@media print {
+  [data-part="app-layout.main"]:has([data-part="list-main"] [data-part="list-scroll"]),
+  [data-part="app-layout.main"]:has([data-part="issue-body"][data-variant~="split"]),
+  [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+    [data-part="app-layout.main"]:has([data-part="timeline-body"]) {
+    overflow: visible;
+  }
 }
 
 [data-part="app-layout"] [data-part="app-layout.inner"]:has([data-part="list-main"]),
@@ -9544,6 +9557,7 @@ textarea,
   padding: var(--ring-room);
   margin-inline: calc(var(--ring-room) * -1);
   overflow-x: auto;
+  overflow-y: hidden;
 }
 
 [data-part="sheet.col"][data-variant~="issue"] {
