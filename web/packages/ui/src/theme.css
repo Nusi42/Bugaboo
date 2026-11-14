@@ -5371,6 +5371,8 @@ textarea,
 }
 
 [data-part="search-field.input"] {
+  scroll-margin-block: var(--border-width);
+  scroll-margin-inline: calc(var(--border-width) + var(--space-3));
   flex: 1;
   align-self: stretch;
   min-width: 0;

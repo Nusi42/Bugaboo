@@ -5352,8 +5352,12 @@ part "search-field.box:focus-within" {
     use "ring"
 }
 
-// The field fills the height of its box, so a finger anywhere on the box types in it (UX-02).
+// The field fills the height of its box, so a finger anywhere on the box types in it (UX-02). The
+// ring is the box's, not the field's: a box that scrolls the field into view brings the whole box,
+// its border and its padding at the sides, so the ring room of that scroll box is kept round the box.
 part "search-field.input" {
+    scroll-margin-block "$border-width"
+    scroll-margin-inline "calc($border-width + $space-3)"
     flex 1
     align-self stretch
     min-width 0
