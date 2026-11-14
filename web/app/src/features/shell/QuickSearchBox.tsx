@@ -1,5 +1,14 @@
 import { t } from "@bugaboo/messages";
-import { Announce, Button, buttonLook, SearchField, partOf, part, inPlace } from "@bugaboo/ui";
+import {
+  Announce,
+  Button,
+  buttonLook,
+  composing,
+  SearchField,
+  partOf,
+  part,
+  inPlace,
+} from "@bugaboo/ui";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Autocomplete } from "react-aria-components";
 
@@ -13,7 +22,7 @@ import { useQuickResults } from "./use-quick-results.ts";
 /** Esc closes the dialog, also with something typed: the box would clear its text first, and the person has to press twice. */
 function closeOnEscape(event: KeyboardEvent<HTMLElement>): void {
   // A key that ends the composing of a letter (Japanese, Chinese) is not an Esc for the dialog.
-  if (event.key === "Escape" && !event.nativeEvent.isComposing) {
+  if (event.key === "Escape" && !composing(event.nativeEvent)) {
     event.preventDefault();
     event.stopPropagation();
     closeOverlay();

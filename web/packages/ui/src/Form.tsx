@@ -2,6 +2,7 @@ import { useEffect, useRef, type ReactNode } from "react";
 import { Form as AriaForm } from "react-aria-components";
 
 import { partOf } from "./parts.ts";
+import { plainEnter } from "./plain-enter.ts";
 import { part } from "./tokens.ts";
 
 export interface FormProps {
@@ -15,33 +16,13 @@ export interface FormProps {
 /** The boxes in which Enter sends the form, as a browser does where the button stands in the form. */
 const SENT_BY_ENTER = new Set(["text", "search", "email", "url", "tel", "password", "number"]);
 
-/** The key code of a key that a composition of characters (an input method, IME) takes for itself. */
-const COMPOSING_KEY_CODE = 229;
-
-/**
- * Whether this key press is Enter alone, meant for the form: not the Enter that ends a composition
- * (an input method; Safari says so only by the old key code 229, read without its deprecated name),
- * not Enter with Shift, Ctrl, Alt or Meta, and not one a part of the form has taken already.
- */
-function plainEnter(event: KeyboardEvent): boolean {
-  return (
-    event.key === "Enter" &&
-    !event.shiftKey &&
-    !event.ctrlKey &&
-    !event.altKey &&
-    !event.metaKey &&
-    !event.defaultPrevented &&
-    !event.isComposing &&
-    Reflect.get(event, "keyCode") !== COMPOSING_KEY_CODE
-  );
-}
-
 /**
  * Sends a form on Enter in a box when its button stands outside it (`form` attribute, the footer of a
  * window). Chromium does that by itself; WebKit does not, so the form does it, the same way in every
  * browser: the fields are checked and the form is sent as by its button (M8-F126). It listens on the
  * document, after React has handed the key to the parts of the form, so a part that takes Enter for
- * itself (and prevents the default) wins.
+ * itself (and prevents the default) wins. A field that stops the key on its way (a list that is open)
+ * keeps it from the form as well, so that field alone decides what Enter does there.
  */
 function useSendOnEnter() {
   const form = useRef<HTMLFormElement>(null);

@@ -1,3 +1,4 @@
+import { composing } from "@bugaboo/ui";
 import { useEffect, useLayoutEffect, useRef, useSyncExternalStore } from "react";
 
 import { createEngine } from "./shortcuts-engine.ts";
@@ -61,7 +62,7 @@ export function useShortcutHost(): void {
         metaKey: event.metaKey,
         altKey: event.altKey,
         shiftKey: event.shiftKey,
-        isComposing: event.isComposing,
+        isComposing: composing(event),
         target,
       });
       if (pressed) {

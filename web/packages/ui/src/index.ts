@@ -156,6 +156,7 @@ export { IssueId } from "./IssueId.tsx";
 export { factJoiner, factJoinerHeld, factJoinerLeading, factMark, factSeparator } from "./facts.ts";
 export { focusFirstField, withId } from "./first-field.ts";
 export { inPlace } from "./in-place.ts";
+export { composing, plainEnter } from "./plain-enter.ts";
 export { useHeightOnParent } from "./height-variable.ts";
 export { Facts, Length, type Fact } from "./Length.tsx";
 export { SaveStatus, type SaveState, type SaveStatusProps } from "./SaveStatus.tsx";
