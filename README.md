@@ -138,7 +138,7 @@ Every planned feature is in the [feature list](docs/01-feature-list.md).
   <img src="docs/media/roadmap.svg" alt="The 16 milestones M0 to M15 as tiles with their number of features: M0 to M7 are done, M8 (the timeline and theme editor) is next" width="100%">
 </p>
 
-Eight of the 16 milestones are done. The version number counts toward the plan ([how](docs/adr/0040-version-numbers.md)): today it is **0.5.0**, **0.9.0** will mean that every planned feature is built, and **1.0.0** comes after the last milestone.
+Eight of the 16 milestones are done, and M8 is being built. The version number counts toward the plan ([how](docs/adr/0040-version-numbers.md)): today it is **0.5.0**, **0.9.0** will mean that every planned feature is built, and **1.0.0** comes after the last milestone.
 
 ## Try it
 
