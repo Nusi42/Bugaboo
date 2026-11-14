@@ -104,3 +104,12 @@ export function factorRow(page: Page): Locator {
 }
 
 export { lea };
+
+/** Holds back every read of a time factor from now on (it never comes); its change still goes out. */
+export async function holdFactorReads(page: Page): Promise<void> {
+  await page.route(/\/time-factor$/u, async (route) => {
+    if (route.request().method() !== "GET") {
+      await route.fallback();
+    }
+  });
+}

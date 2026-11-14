@@ -1,6 +1,6 @@
 import { type Schema, dataOf } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { useQuery } from "@tanstack/react-query";
+import { hashKey, useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
 import { personName } from "../../shared/person.ts";
@@ -25,9 +25,19 @@ function factorKey(issue: string) {
 /**
  * Keeps the time factor an issue has after a change of its people, as the answer of the change
  * says it: the row shows it in the turn the change lands, and never asks for it first (UX §6.4).
+ * Only a factor of a newer version than the one kept is written: an answer that came late never
+ * takes the factor back.
  */
 export function keepTimeFactor(issue: string, factor: TimeFactor): void {
-  queryClient.setQueryData(factorKey(issue), factor);
+  const kept = queryClient.getQueryData<TimeFactor>(factorKey(issue));
+  if (kept === undefined || factor.version > kept.version) {
+    queryClient.setQueryData(factorKey(issue), factor);
+  }
+}
+
+/** Whether `queryKey` is the key of the time factor of `issue`. */
+export function isTimeFactorKey(issue: string, queryKey: readonly unknown[]): boolean {
+  return hashKey(queryKey) === hashKey(factorKey(issue));
 }
 
 /** The time factor of an issue, read once for the page and again after each change of the issue. */

@@ -4,7 +4,7 @@ import { queryClient } from "../../shared/query-client.ts";
 import { queryKeys, refreshHistory, reread } from "../../shared/query-keys.ts";
 import { versionOf } from "../../shared/version.ts";
 import { isDetail, type IssueEdit, type IssueRequestValues } from "./issue-values.ts";
-import { keepTimeFactor } from "./time-factor.ts";
+import { isTimeFactorKey, keepTimeFactor } from "./time-factor.ts";
 
 /**
  * Asks the server for the change, after the changes that were asked for before it. Answers with the
@@ -45,12 +45,18 @@ export async function sendChange(
   // A change of the people answers the time factor of the new first person: it shows with the change.
   const factor = answer.data?.time_factor;
   const readable = answer.data?.readable_id;
-  if (factor !== undefined && factor !== null && typeof readable === "string") {
+  const told = factor !== undefined && factor !== null && typeof readable === "string";
+  if (told) {
     keepTimeFactor(readable, factor);
   }
   void queryClient.invalidateQueries({ queryKey: queryKeys.issues.lists() });
-  // A length of this issue counts in the totals of the issues above it.
-  void queryClient.invalidateQueries({ queryKey: queryKeys.issues.time() });
+  // A length of this issue counts in the totals of the issues above it. The time factor the answer
+  // told is not asked for again.
+  void queryClient.invalidateQueries({
+    queryKey: queryKeys.issues.time(),
+    predicate: (query: Readonly<{ queryKey: readonly unknown[] }>) =>
+      !told || !isTimeFactorKey(readable, query.queryKey),
+  });
   refreshHistory();
   return answer.data?.version ?? undefined;
 }

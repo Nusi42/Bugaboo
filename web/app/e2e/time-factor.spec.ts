@@ -13,6 +13,7 @@ import {
   historyLine,
   lea,
   openIssue,
+  holdFactorReads,
   prepareTimeFactor,
   setFactorAs,
 } from "./support/time-factor.ts";
@@ -78,6 +79,8 @@ test("plan_14_the_time_factor_goes_back_to_x1_on_screen_when_the_person_changes"
   await signIn(page, ada);
   await openIssue(page, factorIssues.ada);
   await expect(factorRow(page)).toContainText(/×1[.,]5 .*Ada Admin/u);
+  // The factor is not read again: the row shows what the answer of the change of the people tells.
+  await holdFactorReads(page);
   // Ada puts herself in, then takes Bob out: she is the first assigned person now.
   const assigned = page.getByRole("button", {
     name: t("issues.change-field", { field: t("issue-field.assigned-to") }),
@@ -88,6 +91,7 @@ test("plan_14_the_time_factor_goes_back_to_x1_on_screen_when_the_person_changes"
   await page.getByRole("button", { name: t("common.done"), exact: true }).click();
   await expect(factorRow(page)).toContainText(t("issues.time-factor-as-estimated"));
   expect((await factorAs(server, ada, factorIssues.ada)).percent).toBe(100);
+  await page.unrouteAll({ behavior: "ignoreErrors" });
 });
 
 test("plan_14_a_field_level_that_hides_the_time_factor_hides_its_row", async ({ page, server }) => {
