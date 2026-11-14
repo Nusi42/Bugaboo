@@ -4191,9 +4191,9 @@ part "name-value.words" {
     padding "$pad-line-in-control 0"
 }
 
-// The *Followers* row is one line on a computer and on a phone: the count (or the words *You follow it*
-// where there is no count) and the button for turning it round (the review of M4: *Stop following*
-// dropped under the words). Where even the longest count ("20 or more followers") and the button do
+// The value of the *Followers* row is one line on a computer and on a phone: the count (or the words *You
+// follow it* where there is no count) and the button for turning it round (the review of M4: *Stop
+// following* dropped under the words). Where even the longest count ("20 or more followers") and the button do
 // not fit the column, the button as a whole goes to the next line, as a last resort; it never breaks
 // its words and never runs out of the column (the review of WP-18).
 part "followers-line" {
@@ -4204,11 +4204,11 @@ part "followers-line" {
     min-width 0
 }
 
-// On a phone the count and *Stop following* stand one under the other, always: side by side they fit
-// for one follower and not for two, and the row would grow when a change adds a follower (UX §6.4).
-part "app-layout[variant=phone] followers-line" {
-    flex-direction column
-    align-items flex-start
+// On a phone the value of *Followers* takes the whole width of its row, its name standing above it, so the
+// longest count and *Stop following* stay on one line there too, and the row keeps its height when a change
+// (an assignment) adds a follower (UX §6.4): beside the name they fit for one follower and not for two.
+part "app-layout[variant=phone] name-value:has(followers-line) name-value.name" "app-layout[variant=phone] name-value:has(followers-line) name-value.value" {
+    grid-column "1 / -1"
 }
 
 // The button never breaks its words, so *Stop following* stays one line.

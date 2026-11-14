@@ -4268,9 +4268,13 @@ textarea,
   min-width: 0;
 }
 
-[data-part="app-layout"][data-variant~="phone"] [data-part="followers-line"] {
-  flex-direction: column;
-  align-items: flex-start;
+[data-part="app-layout"][data-variant~="phone"]
+  [data-part="name-value"]:has([data-part="followers-line"])
+  [data-part="name-value.name"],
+[data-part="app-layout"][data-variant~="phone"]
+  [data-part="name-value"]:has([data-part="followers-line"])
+  [data-part="name-value.value"] {
+  grid-column: 1 / -1;
 }
 
 [data-part="followers-line"] [data-part="button"] {
