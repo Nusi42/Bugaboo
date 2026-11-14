@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 import { useLocation } from "@tanstack/react-router";
 
 import { NavLink } from "./NavItem.tsx";
+import { useScreenStart } from "./screen-start.ts";
 import { howCurrent, placeAt, placeCurrent, type Place } from "../../shared/places.ts";
 import { paths } from "../../shared/paths.ts";
 import { useMyAgentsEntry } from "../../shared/use-my-agents-entry.ts";
@@ -17,6 +18,7 @@ export interface PlaceLinkProps {
 /** The link to a screen of the app, as a list item. */
 export function PlaceLink({ path, narrow, onNavigate, count }: PlaceLinkProps) {
   const { pathname } = useLocation();
+  const start = useScreenStart(path);
   const place = placeAt(path);
   if (place === undefined) {
     return null;
@@ -24,7 +26,7 @@ export function PlaceLink({ path, narrow, onNavigate, count }: PlaceLinkProps) {
   return (
     <li>
       <NavLink
-        href={place.path}
+        href={start}
         icon={place.icon}
         label={t(place.name)}
         narrow={narrow}

@@ -7,6 +7,7 @@ import { deepestAround } from "../../shared/paths-within.ts";
 import { usePermissions } from "../../shared/use-me.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { NavLink } from "./NavItem.tsx";
+import { startOf } from "./screen-start.ts";
 import { placeAt, topicGroups, type Place, type TopicGroup } from "../../shared/places.ts";
 
 export interface SettingsFrameProps {
@@ -154,9 +155,9 @@ export function SettingsFrame({ parent }: SettingsFrameProps) {
   const groups = topicGroups(parent, permissions);
   const here = placeAt(parent);
   const heading = here === undefined ? t("app.name") : t(here.name);
-  const first = groups[0]?.topics[0];
-  if (pathname === parent && !phone && first !== undefined) {
-    return <Navigate to={first.path} replace />;
+  const start = startOf(parent, groups, phone);
+  if (pathname === parent && start !== parent) {
+    return <Navigate to={start} replace />;
   }
   return (
     <SettingsScreens

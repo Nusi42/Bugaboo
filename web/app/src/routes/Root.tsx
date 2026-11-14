@@ -12,7 +12,12 @@ export function Root() {
   return (
     <LinkRouter
       navigate={(to) => {
-        router.history.push(to);
+        // A link to the page that is open takes no second step in the history: one Back leaves it.
+        if (to === router.history.location.href) {
+          router.history.replace(to);
+        } else {
+          router.history.push(to);
+        }
       }}
       useHref={(to) => router.history.createHref(to)}
     >
