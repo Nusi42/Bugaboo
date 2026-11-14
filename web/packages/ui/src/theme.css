@@ -10762,7 +10762,7 @@ textarea,
 @media screen and (max-height: 680px) {
   [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
     [data-part="list-frame"]:has([data-part="list-scroll"]) {
-    flex: none;
+    flex: 1 0 auto;
   }
 }
 
@@ -10770,18 +10770,28 @@ textarea,
   [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
     [data-part="list-main"]
     [data-part="list-scroll"] {
-    max-height: calc(var(--size-list-scroll-least) + var(--bar-ticked-height));
+    flex: 1 1 0;
+    contain: size;
   }
 }
 
 @media screen and (max-height: 680px) {
   [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
-    [data-part="list-editor"]
+    [data-part="list-editor"]:has([data-part="list-main"])
     [data-part="side-panel"],
   [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
     [data-part="list-body"]
     [data-part="list-panel"] {
     contain: size;
+  }
+}
+
+@container (max-width: 876px) {
+  [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+    [data-part="list-main"]:has([data-part="list-scroll"])
+    [data-part="list-body"]
+    [data-part="list-panel"] {
+    contain: none;
   }
 }
 

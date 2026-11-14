@@ -118,10 +118,9 @@ tokens {
     // The least the box of the rows of an issue list is high, where the page above it takes most of the window.
     size "size-list-scroll-least" "120px"
     // A window this low or lower on a computer is low (UX §6.5): the top bar and what stands above the boxes of a pane
-    // (the title, the toolbar, the filters, the counts) take up to 506 px (the timeline with larger text), the box of
-    // the rows keeps its least 120 px, and the bar of ticked issues over its foot is a line of 54 px (a control, its
-    // padding and border). Lower than their sum, the main column scrolls them into reach. A plain number, as a media
-    // query needs; the browser tests measure the head of each pane against it.
+    // (the title, the toolbar, the filters, the counts), the least height of the box of the rows and the bar of ticked
+    // issues over its foot may not fit, so the main column scrolls them into reach. A plain number, as a media query
+    // needs; head-room-computer.spec.ts measures the head of each pane against it.
     size "size-low-window" "680px"
     // The coloured edge of a row for its priority.
     size "size-edge" "4px"
@@ -16772,32 +16771,42 @@ part "list-main list-scroll" {
     min-height "calc($size-list-scroll-least + $bar-ticked-height)"
 }
 
-// In a low window on a computer the frame of a list is as high as its head and the least of its rows: it does not cut
-// them, the main column scrolls (UX §6.5). The box of the rows is no higher than its least there, so it stays a box that
-// draws only the rows in view.
+// In a low window on a computer the frame of a list is at least as high as its head and the least of its rows: it does
+// not cut them, the main column scrolls (UX §6.5).
 part "app-layout:not(app-layout[variant=phone]) app-layout.inner:has(list-scroll)" "app-layout:not(app-layout[variant=phone]) card:has(list-scroll)" "app-layout:not(app-layout[variant=phone]) card > stack:has(list-scroll)" "app-layout:not(app-layout[variant=phone]) list-editor.list:has(list-scroll)" "app-layout:not(app-layout[variant=phone]) list-main:has(list-scroll)" "app-layout:not(app-layout[variant=phone]) search-results:has(list-scroll)" "app-layout:not(app-layout[variant=phone]) list-editor:has(list-scroll)" "app-layout:not(app-layout[variant=phone]) list-body:has(list-scroll)" "app-layout:not(app-layout[variant=phone]) list-column:has(list-scroll)" {
     media "screen and (max-height: $size-low-window)" {
         min-height auto
     }
 }
 
+// The box of the rows still takes the rest of the window, down to its least height: it holds as little as nothing in the
+// line (contain), so the column is as high as its head and that least, and the main column scrolls only below it.
+// The frame clips, so it keeps that height by its basis: its head and the least of the rows, and it grows into the rest.
 part "app-layout:not(app-layout[variant=phone]) list-frame:has(list-scroll)" {
     media "screen and (max-height: $size-low-window)" {
-        flex none
+        flex "1 0 auto"
     }
 }
 
 part "app-layout:not(app-layout[variant=phone]) list-main list-scroll" {
     media "screen and (max-height: $size-low-window)" {
-        max-height "calc($size-list-scroll-least + $bar-ticked-height)"
+        flex "1 1 0"
+        contain size
     }
 }
 
 // What stands beside the list there (an open issue, Customize) is as high as the list, not as high as what it holds: it
 // takes no room of its own in the line, and its own box scrolls what it holds.
-part "app-layout:not(app-layout[variant=phone]) list-editor side-panel" "app-layout:not(app-layout[variant=phone]) list-body list-panel" {
+part "app-layout:not(app-layout[variant=phone]) list-editor:has(list-main) side-panel" "app-layout:not(app-layout[variant=phone]) list-body list-panel" {
     media "screen and (max-height: $size-low-window)" {
         contain size
+    }
+}
+
+// Customize under the list, where the list has no room for it beside, is as high as its columns.
+part "app-layout:not(app-layout[variant=phone]) list-main:has(list-scroll) list-body list-panel" {
+    container "(max-width: $bp-list-beside)" {
+        contain none
     }
 }
 
