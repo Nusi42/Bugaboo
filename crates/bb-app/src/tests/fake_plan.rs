@@ -7,8 +7,33 @@ use bb_core::plan::warning::WarningKind;
 
 use super::fake::{FakeError, FakeStore, Tx};
 use crate::plan::TimelineStore;
+use crate::ports::ChangeStore;
+
+impl FakeStore {
+    /// Sets `factor` just before the next read of a time factor, as another request that sets it
+    /// meanwhile: the factor is stored and the version of its issue counts up.
+    pub(crate) fn set_factor_before_next_read(&self, factor: IssueTimeFactor) {
+        self.lock().factor_set_meanwhile = Some(factor);
+    }
+}
 
 impl TimelineStore for FakeStore {
+    async fn time_factor(&self, issue: IssueId) -> Result<Option<IssueTimeFactor>, FakeError> {
+        {
+            let mut shared = self.lock();
+            if let Some(factor) = shared.factor_set_meanwhile.take() {
+                let state = &mut shared.state;
+                state.time_factors.retain(|kept| kept.issue != factor.issue);
+                if let Some(set) = state.issues.iter_mut().find(|set| set.id == factor.issue) {
+                    set.version += 1;
+                }
+                state.time_factors.push(factor);
+            }
+        }
+        self.read_snapshot(move |tx| Box::pin(Self::time_factor_in(tx, issue)))
+            .await
+    }
+
     async fn time_factor_in(
         tx: &mut Tx,
         issue: IssueId,

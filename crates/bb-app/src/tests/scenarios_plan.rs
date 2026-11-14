@@ -12,7 +12,7 @@ use crate::issues::{CreateIssue, create_issue};
 use crate::plan::{AcceptWarning, FactorGiven, SetTimeFactor, accept_warning, set_time_factor};
 
 /// An issue in a new project, assigned to the administrator, with an estimate of a day.
-async fn an_assigned_issue(world: &World) -> Result<String, String> {
+pub(super) async fn an_assigned_issue(world: &World) -> Result<String, String> {
     let project = a_project(world, "PLAN").await?;
     Ok(create_issue(
         &world.ctx(),

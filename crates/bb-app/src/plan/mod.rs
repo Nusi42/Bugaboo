@@ -18,8 +18,8 @@ mod ways;
 
 pub(crate) use build::DateTargets;
 pub use factor::{
-    FactorGiven, SetTimeFactor, TimeFactorQuery, TimeFactorView, person_on_bar, reset_with_first,
-    set_time_factor, time_factor,
+    FactorGiven, SetTimeFactor, TimeFactorQuery, TimeFactorView, first_changes, person_on_bar,
+    reset_with_first, set_time_factor, time_factor,
 };
 pub use read::{timeline, timeline_groups_by};
 pub use store::TimelineStore;

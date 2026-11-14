@@ -23,7 +23,7 @@ use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
 use crate::fields::{Item, ItemValues, Making, PlannedValues};
 use crate::follow::started_following;
 use crate::offers::ensure_type_takes_issues_in;
-use crate::plan::{TimeFactorView, reset_with_first};
+use crate::plan::{TimeFactorView, first_changes, person_on_bar, reset_with_first};
 use crate::projects::Why;
 use crate::projects::lock_chain_in;
 use crate::workflows::{StatusCheck, ensure_written_status_in};
@@ -44,9 +44,9 @@ pub(crate) struct Plan {
     own: PlannedValues,
     /// The status group the issue enters, when its status changes: it decides the closed date.
     entering: Option<StatusGroup>,
-    /// The time factor the issue has, read when the request sets the people: it goes back to ×1
-    /// when the first person changes, and the answer of the change tells what it is then. Read
-    /// before the change is written, so it belongs to the version the change is made on.
+    /// The time factor the issue has, read only when the first assigned person changes: it goes
+    /// back to ×1 then, and the event tells the factor before. Read before the change is written,
+    /// so it belongs to the version the change is made on.
     factor: Option<IssueTimeFactor>,
 }
 
@@ -130,12 +130,16 @@ impl Plan {
         .is_some()
     }
 
-    /// What the answer of a change that sets the people tells of the time factor: the first of
-    /// them, and the factor the issue has once the change is written (none after a reset).
+    /// What the answer of a change that sets the people tells of the time factor: back to ×1 when
+    /// the first of them changes, else the factor as stored.
     fn factor_answered(&self, input: &ChangeIssue) -> Option<FactorAfter> {
-        input.assigned_to.as_ref().map(|_| FactorAfter {
-            first: crate::plan::person_on_bar(&self.assigned_next),
-            kept: self.factor.clone().filter(|_| !self.resets_factor()),
+        input.assigned_to.as_ref().map(|_| {
+            let first = person_on_bar(&self.assigned_next);
+            if first_changes(&self.assigned_now, &self.assigned_next) {
+                FactorAfter::BackToOne(first)
+            } else {
+                FactorAfter::Stays(first)
+            }
         })
     }
 }
@@ -255,14 +259,15 @@ impl<S: AuthStore> Ctx<'_, S> {
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// The time factor of an issue whose people a change sets ([`Plan::factor`]); a change that
-    /// leaves the people does not read it.
-    async fn factor_of_people_change(
+    /// The time factor of an issue whose first assigned person a change changes ([`Plan::factor`]):
+    /// it goes back to ×1. Any other change does not read it.
+    async fn factor_to_reset(
         &self,
         issue: IssueId,
-        input: &ChangeIssue,
+        assigned_now: &[UserId],
+        assigned_next: &[UserId],
     ) -> Result<Option<IssueTimeFactor>, AppError> {
-        if input.assigned_to.is_none() {
+        if !first_changes(assigned_now, assigned_next) {
             return Ok(None);
         }
         self.store()
@@ -360,7 +365,9 @@ impl<S: AuthStore> Ctx<'_, S> {
                 },
             )
             .await?;
-        let factor = self.factor_of_people_change(current.id, input).await?;
+        let factor = self
+            .factor_to_reset(current.id, &assigned_now, &assigned_next)
+            .await?;
         let plan = Plan {
             current,
             assigned_now,
@@ -444,14 +451,16 @@ pub struct ChangedIssue {
     #[masked(nested)]
     pub issue: IssueView,
     /// The time factor as it is now, for the first assigned person, when the change set the
-    /// people (ADR-0030, amendment M8): the screen shows it with the change.
+    /// people (ADR-0030, amendment M8): the screen shows it with the change. It belongs to the
+    /// version the issue has in the answer; none when the issue changed again before the factor
+    /// could be read, and the screen reads it then.
     #[masked(nested)]
     pub time_factor: Option<TimeFactorView>,
 }
 
-/// A change of an issue that is written: who made it, the issue and its view as they are now,
-/// and, when the change set the people, the first of them and the time factor they have.
-struct Written {
+/// What a change of an issue comes to, written or not: who asked, the issue and its view as they
+/// are now, and, when the change set the people, what it did to the time factor.
+pub struct ChangeOutcome {
     actor: Actor,
     held: Arc<Evaluation>,
     issue: Issue,
@@ -459,61 +468,67 @@ struct Written {
     factor: Option<FactorAfter>,
 }
 
-/// The time factor an issue has after a change that set its people.
-struct FactorAfter {
-    first: Option<UserId>,
-    kept: Option<IssueTimeFactor>,
+/// The time factor of an issue after a change that set its people, with the person on the bar.
+enum FactorAfter {
+    /// The first assigned person changed: the factor is back to ×1.
+    BackToOne(Option<UserId>),
+    /// The first assigned person stayed: the factor is the one stored.
+    Stays(Option<UserId>),
 }
 
 /// What a change of an issue answers: the issue alone (a run of many changes, an agent, the
 /// assistant), or the issue with its time factor (the screen). Only an answer that shows the
 /// factor pays for its view.
 pub trait ChangeAnswer: Sized {
-    /// Whether the answer shows the time factor after a change of the people.
-    const SHOWS_FACTOR: bool;
-    /// The answer, from the issue as it is now and the time factor it shows.
-    fn of(issue: IssueView, time_factor: Option<TimeFactorView>) -> Self;
+    /// The answer, from what the change came to.
+    fn answer<S: AuthStore>(
+        ctx: &Ctx<'_, S>,
+        outcome: ChangeOutcome,
+    ) -> impl Future<Output = Result<Authorized<Self>, AppError>> + Send;
 }
 
 impl ChangeAnswer for IssueView {
-    const SHOWS_FACTOR: bool = false;
-    fn of(issue: IssueView, _: Option<TimeFactorView>) -> Self {
-        issue
+    fn answer<S: AuthStore>(
+        _: &Ctx<'_, S>,
+        outcome: ChangeOutcome,
+    ) -> impl Future<Output = Result<Authorized<Self>, AppError>> + Send {
+        std::future::ready(Ok(outcome.held.authorize(outcome.view)))
     }
 }
 
 impl ChangeAnswer for ChangedIssue {
-    const SHOWS_FACTOR: bool = true;
-    fn of(issue: IssueView, time_factor: Option<TimeFactorView>) -> Self {
-        Self { issue, time_factor }
-    }
-}
-
-impl<S: AuthStore> Ctx<'_, S> {
-    /// The answer to a change that is written. The time factor, when the answer shows it and the
-    /// change set the people, is the view the route of the time factor shows, made from what the
-    /// change wrote: no read after the change, which could tell a later version (ADR-0030,
-    /// amendment M8).
-    async fn answer_change<A: ChangeAnswer>(
-        &self,
-        written: Written,
-    ) -> Result<Authorized<A>, AppError> {
-        let time_factor = match written.factor.as_ref().filter(|_| A::SHOWS_FACTOR) {
+    /// The time factor, when the change set the people, is the view the route of the time factor
+    /// shows. It never tells a factor newer than the version the answer names (ADR-0030,
+    /// amendment M8): after a change of the first person it is ×1, which the written change made
+    /// sure of; else it is read after the change and dropped when the version moved on.
+    fn answer<S: AuthStore>(
+        ctx: &Ctx<'_, S>,
+        outcome: ChangeOutcome,
+    ) -> impl Future<Output = Result<Authorized<Self>, AppError>> + Send {
+        let ChangeOutcome {
+            actor,
+            held,
+            issue,
+            view,
+            factor,
+        } = outcome;
+        async move {
             // Boxed: only the screen asks for it, and every other change carries no room for it.
-            Some(after) => Some(
-                Box::pin(self.factor_view(
-                    &written.actor,
-                    &written.held,
-                    &written.issue,
-                    written.issue.version,
-                    after.kept.as_ref(),
-                    after.first,
-                ))
-                .await?,
-            ),
-            None => None,
-        };
-        Ok(written.held.authorize(A::of(written.view, time_factor)))
+            let time_factor = match factor {
+                Some(FactorAfter::BackToOne(first)) => Some(
+                    Box::pin(ctx.factor_view(&actor, &held, &issue, issue.version, None, first))
+                        .await?,
+                ),
+                Some(FactorAfter::Stays(first)) => {
+                    Box::pin(ctx.factor_of_version(&actor, &held, &issue, first)).await?
+                }
+                None => None,
+            };
+            Ok(held.authorize(Self {
+                issue: view,
+                time_factor,
+            }))
+        }
     }
 }
 
@@ -541,14 +556,14 @@ pub async fn change_issue<S: AuthStore, A: ChangeAnswer>(
         let view = ctx
             .issue_view(&mut views, &plan.current, &plan.assigned_now)
             .await?;
-        let written = Written {
+        let outcome = ChangeOutcome {
             actor,
             held,
             issue: plan.current,
             view,
             factor,
         };
-        return ctx.answer_change(written).await;
+        return A::answer(ctx, outcome).await;
     }
     let now = ctx.now();
     let resets_factor = plan.resets_factor();
@@ -622,12 +637,12 @@ pub async fn change_issue<S: AuthStore, A: ChangeAnswer>(
         })?;
     next.version = next_version(version);
     let view = ctx.issue_view(&mut views, &next, &assigned_next).await?;
-    let written = Written {
+    let outcome = ChangeOutcome {
         actor,
         held,
         issue: next,
         view,
         factor,
     };
-    ctx.answer_change(written).await
+    A::answer(ctx, outcome).await
 }

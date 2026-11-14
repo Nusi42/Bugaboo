@@ -203,6 +203,9 @@ pub(crate) struct Shared {
     pub(crate) policy_reads_fail: bool,
     /// How many more times the saving of the progress of a run fails.
     pub(crate) progress_failures: usize,
+    /// A time factor somebody sets just before the next read of a time factor: it is stored and
+    /// the version of its issue counts up, as a request that set it meanwhile would leave them.
+    pub(crate) factor_set_meanwhile: Option<bb_core::plan::record::IssueTimeFactor>,
     /// The searches the store was asked to run, in order.
     pub(crate) searches: Vec<crate::search::SearchRequest>,
     /// What a search finds, in order (`fake_search.rs`).

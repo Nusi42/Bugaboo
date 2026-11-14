@@ -102,6 +102,7 @@ mod oauth_scenarios;
 mod offers;
 mod offers_known_uses;
 mod offers_secrecy;
+mod plan_factor_answer;
 mod prompt_injection;
 mod prompt_injection_agents;
 mod prompt_injection_assistant;

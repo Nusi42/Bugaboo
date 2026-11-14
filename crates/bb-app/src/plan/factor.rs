@@ -92,6 +92,14 @@ pub fn person_on_bar(people: &[UserId]) -> Option<UserId> {
     people.first().copied()
 }
 
+/// Whether the person on the bar changes when the people of an issue go from `people_now` to
+/// `people_next` (another person is put first, or the first is taken off): the time factor then
+/// goes back to ×1 (ADR-0030, amendment M8).
+#[must_use]
+pub fn first_changes(people_now: &[UserId], people_next: &[UserId]) -> bool {
+    person_on_bar(people_now) != person_on_bar(people_next)
+}
+
 /// The members of the event of a change of the time factor: the factor before and after (none for
 /// ×1), and the person on the bar it is for.
 fn factor_changes(
@@ -121,7 +129,7 @@ pub fn reset_with_first(
     people_next: &[UserId],
 ) -> Option<FieldChange> {
     let stored = stored?;
-    (person_on_bar(people_now) != person_on_bar(people_next)).then(|| FieldChange {
+    first_changes(people_now, people_next).then(|| FieldChange {
         field: member::TIME_FACTOR.to_owned(),
         before: Some(json!(stored.factor.percent())),
         after: Some(serde_json::Value::Null),
@@ -231,6 +239,40 @@ impl<S: AuthStore> Ctx<'_, S> {
             person,
             may_change: may_set_time_factor(actor, held, issue, first),
         })
+    }
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// The view of the time factor `issue` has at its version, read now: none when the issue has
+    /// another version by then, because a factor set since belongs to a later version and the answer
+    /// never tells a factor newer than the version it names (ADR-0030, amendment M8). The screen
+    /// reads the factor again when an answer has none.
+    pub(crate) async fn factor_of_version(
+        &self,
+        actor: &Actor,
+        held: &Evaluation,
+        issue: &Issue,
+        first: Option<UserId>,
+    ) -> Result<Option<TimeFactorView>, AppError> {
+        let factor = self
+            .store()
+            .time_factor(issue.id)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        // Read after the factor: setting a factor counts the version of the issue up, so the same
+        // version here means the factor read is the one of that version.
+        let stored = self
+            .store()
+            .issue(issue.id)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        if stored.is_none_or(|stored| stored.version != issue.version) {
+            return Ok(None);
+        }
+        Ok(Some(
+            self.factor_view(actor, held, issue, issue.version, factor.as_ref(), first)
+                .await?,
+        ))
     }
 }
 
