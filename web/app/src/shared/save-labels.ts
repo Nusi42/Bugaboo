@@ -14,12 +14,3 @@ export function saveLabels(savedAt: string | null = null): Required<SaveStatusPr
     "not-saved": t("save.not-saved"),
   };
 }
-
-/**
- * The words of a setting, which is sent the moment it is changed: *Saving…* and *Saved*, never
- * *Not saved yet*, so its place keeps no room for those.
- */
-export function settingSaveLabels(): SaveStatusProps["labels"] {
-  const { saving, saved } = saveLabels();
-  return { saving, saved };
-}

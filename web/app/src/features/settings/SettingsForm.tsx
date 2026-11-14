@@ -16,7 +16,7 @@ import { type Setting } from "../../shared/my-settings.ts";
 import { isLockedBelow, type SettingActions } from "./setting-actions.ts";
 import { SettingRow, type ControlRenderer } from "./SettingRow.tsx";
 import { hasNoGenericControl, isBox, wordsOf } from "./texts.ts";
-import { settingSaveLabels } from "../../shared/save-labels.ts";
+import { saveLabels } from "../../shared/save-labels.ts";
 
 export interface SettingsFormProps {
   /** The settings of the topic, as the server answered. */
@@ -89,11 +89,12 @@ function useLastChanged(actions: SettingActions) {
 }
 
 /**
- * *Saving…* and *Saved* of a setting: every box has its status from the start, silent but for the
- * setting changed last, so a screen reader hears the first change too.
+ * *Saving…*, *Saved* and *Not saved yet* of a setting: every box has its status from the start,
+ * silent but for the setting changed last, so a screen reader hears the first change too, and a
+ * change the server refused.
  */
 function savedOf(state: SaveState) {
-  return <SaveStatus state={state} labels={settingSaveLabels()} variant={keepsRoom} />;
+  return <SaveStatus state={state} labels={saveLabels()} variant={keepsRoom} />;
 }
 
 /**
