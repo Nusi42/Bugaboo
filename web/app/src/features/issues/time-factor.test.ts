@@ -4,10 +4,17 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { queryClient } from "../../shared/query-client.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
 import { sendChange } from "./issue-requests.ts";
-import { keepTimeFactor, type TimeFactor } from "./time-factor.ts";
+import { keepTimeFactor, timeFactorQuery, type TimeFactor } from "./time-factor.ts";
 
-/** What the server of these tests answers a change with. */
-const server = vi.hoisted(() => ({ answer: {} as Record<string, unknown> }));
+/**
+ * What the server of these tests answers: a change with `answer`; a read of the time factor with
+ * `factor`, once `factorRead` lets it go.
+ */
+const server = vi.hoisted(() => ({
+  answer: {} as Record<string, unknown>,
+  factor: {} as Record<string, unknown>,
+  factorRead: Promise.resolve(),
+}));
 
 vi.mock("../../shared/api.ts", async () => {
   const { createApi } = await import("@bugaboo/api-client");
@@ -15,7 +22,13 @@ vi.mock("../../shared/api.ts", async () => {
     api: createApi({
       baseUrl: "http://bugaboo.test",
       csrfToken: () => "token",
-      fetch: fakeServer(() => Response.json(server.answer)),
+      fetch: fakeServer(async (method, address) => {
+        if (method === "GET" && address.endsWith("/time-factor")) {
+          await server.factorRead;
+          return Response.json(server.factor);
+        }
+        return Response.json(server.answer);
+      }),
     }),
   };
 });
@@ -67,5 +80,25 @@ describe("plan_14 the time factor shows with a change of the people", () => {
     expect(queryClient.getQueryData(factorKey)).toEqual(factorAt(6, 200));
     keepTimeFactor(address, factorAt(7, 120));
     expect(queryClient.getQueryData(factorKey)).toEqual(factorAt(7, 120));
+  });
+
+  it("keeps the answered factor when a read started before the change ends after it", async () => {
+    queryClient.setQueryData(factorKey, factorAt(4, 150));
+    const gate = Promise.withResolvers<void>();
+    server.factorRead = gate.promise;
+    server.factor = factorAt(5, 150);
+    const read = queryClient.query({ ...timeFactorQuery(address), staleTime: 0 }).catch(() => null);
+    keepTimeFactor(address, factorAt(6, 100));
+    gate.resolve();
+    await read;
+    expect(queryClient.getQueryData(factorKey)).toEqual(factorAt(6, 100));
+  });
+
+  it("never lets a read take the factor back to an older version", async () => {
+    queryClient.setQueryData(factorKey, factorAt(6, 100));
+    server.factorRead = Promise.resolve();
+    server.factor = factorAt(5, 150);
+    await queryClient.query({ ...timeFactorQuery(address), staleTime: 0 });
+    expect(queryClient.getQueryData(factorKey)).toEqual(factorAt(6, 100));
   });
 });

@@ -29,10 +29,18 @@ function factorKey(issue: string) {
  * takes the factor back.
  */
 export function keepTimeFactor(issue: string, factor: TimeFactor): void {
+  // A read of the factor already on its way was started before this change: its answer is older.
+  void queryClient.cancelQueries({ queryKey: factorKey(issue) });
+  queryClient.setQueryData(factorKey(issue), newestFactor(issue, factor));
+}
+
+/**
+ * The newer of `factor` and the factor kept for the issue: whatever writes the factor (the answer of a
+ * change, a read) never takes it back to an older version.
+ */
+function newestFactor(issue: string, factor: TimeFactor): TimeFactor {
   const kept = queryClient.getQueryData<TimeFactor>(factorKey(issue));
-  if (kept === undefined || factor.version > kept.version) {
-    queryClient.setQueryData(factorKey(issue), factor);
-  }
+  return kept !== undefined && kept.version > factor.version ? kept : factor;
 }
 
 /** Whether `queryKey` is the key of the time factor of `issue`. */
@@ -42,15 +50,23 @@ export function isTimeFactorKey(issue: string, queryKey: readonly unknown[]): bo
 
 /** The time factor of an issue, read once for the page and again after each change of the issue. */
 export function useTimeFactor(issue: string) {
-  return useQuery({
+  return useQuery(timeFactorQuery(issue));
+}
+
+/** How the time factor of an issue is read: never older than the factor kept. */
+export function timeFactorQuery(issue: string) {
+  return {
     queryKey: factorKey(issue),
     queryFn: async (): Promise<TimeFactor> =>
-      dataOf(
-        await api.client.GET("/api/v1/issues/{issue}/time-factor", {
-          params: { path: { issue } },
-        }),
+      newestFactor(
+        issue,
+        dataOf(
+          await api.client.GET("/api/v1/issues/{issue}/time-factor", {
+            params: { path: { issue } },
+          }),
+        ),
       ),
-  });
+  };
 }
 
 /** Sets the time factor on the version of the issue that was looked at, and reads it again. */

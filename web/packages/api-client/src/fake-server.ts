@@ -5,7 +5,7 @@
  * use this (only the API client handles requests; `.oxlintrc.json`).
  */
 export function fakeServer(
-  respond: (method: string, address: string, body: string) => Response,
+  respond: (method: string, address: string, body: string) => Response | Promise<Response>,
 ): (request: Request) => Promise<Response> {
   return async (request) => respond(request.method, request.url, await request.text());
 }
