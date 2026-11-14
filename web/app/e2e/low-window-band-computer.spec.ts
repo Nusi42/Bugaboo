@@ -92,32 +92,97 @@ test("ux_06 in the band of a low window Customize beside the list ends with the 
 }) => {
   await page.goto(projectIssuesAddress("WEB"));
   await page.getByRole("button", { name: t("issues.customize"), exact: true }).click();
-  const panel = page.getByRole("complementary", { name: t("issues.customize") });
+  const panel = page.getByRole("complementary", {
+    name: t("issues.customize"),
+  });
   await expect(panel).toBeVisible();
   // Once the panel stands in its place beside the list.
   await expect.poll(() => bottomsApart(panel, page)).toBeLessThanOrEqual(2);
 });
 
+/** The height of a box, as it stands now. */
+function heightOf(box: Locator): Promise<number> {
+  return box.evaluate((node) => node.getBoundingClientRect().height);
+}
+
+/** Opens Customize on the address and gives the panel. */
+async function openCustomize(page: Page, address: string): Promise<Locator> {
+  await page.goto(address);
+  await page.getByRole("button", { name: t("issues.customize"), exact: true }).click();
+  const panel = page.getByRole("complementary", {
+    name: t("issues.customize"),
+  });
+  await expect(panel).toBeVisible();
+  return panel;
+}
+
+/** A search that finds nothing. */
+const NOTHING_FOUND = "?s=title+contains+zzzzqq";
+
+/** Customize is more than its padding and border: its head and several of its columns show. */
+const FOLDED = 60;
+
+/** Holds back the list of the issues until the function it returns is called. */
+async function holdBackRows(page: Page): Promise<() => void> {
+  const { promise: held, resolve: release } = Promise.withResolvers<void>();
+  await page.route("**/api/v1/search/issues?*", async (route) => {
+    await held;
+    await route.continue();
+  });
+  return release;
+}
+
+/** What Customize does when the rows come: under the list it is as high as its columns with rows or without, so it does
+ * not move; beside the list it ends with the rows once there are rows (before, there is no box of rows to end with). */
+const WHEN_ROWS_COME = {
+  under: async (panel: Locator, _page: Page, before: number) => {
+    expect(await heightOf(panel)).toBe(before);
+  },
+  beside: async (panel: Locator, page: Page) => {
+    await expect.poll(() => bottomsApart(panel, page)).toBeLessThanOrEqual(2);
+  },
+};
+
+const WIDTHS = [
+  ["beside", { width: 1366, height: 650 }],
+  ["under", { width: 900, height: 600 }],
+] as const;
+
 test("ux_06 in a low window Customize under the list keeps room for its columns", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 900, height: 600 });
-  await page.goto(projectIssuesAddress("WEB"));
-  await page.getByRole("button", { name: t("issues.customize"), exact: true }).click();
-  const panel = page.getByRole("complementary", { name: t("issues.customize") });
-  await expect(panel).toBeVisible();
+  const panel = await openCustomize(page, projectIssuesAddress("WEB"));
   const head = panel.locator("[data-part~='list-panel.head']");
-  // Not folded to its padding: its head and several of its columns show.
-  await expect
-    .poll(async () => {
-      const [panelHigh, headHigh] = await Promise.all([
-        panel.evaluate((node) => node.getBoundingClientRect().height),
-        head.evaluate((node) => node.getBoundingClientRect().height),
-      ]);
-      return panelHigh / headHigh;
-    })
-    .toBeGreaterThan(3);
+  // Not folded to its padding: its head and several of its columns show, at once.
+  const [panelHigh, headHigh] = await Promise.all([heightOf(panel), heightOf(head)]);
+  expect(panelHigh / headHigh).toBeGreaterThan(3);
 });
+
+for (const [place, size] of WIDTHS) {
+  test(`ux_06 in a low window Customize ${place} a list with nothing in it keeps its height`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(size);
+    const panel = await openCustomize(page, `${projectIssuesAddress("WEB")}${NOTHING_FOUND}`);
+    await expect(page.getByText(t("search.found-none"), { exact: true })).toBeVisible();
+    expect(await heightOf(panel)).toBeGreaterThan(FOLDED);
+  });
+
+  test(`ux_06 in a low window Customize ${place} a list still loading has its full height at once and settles when the rows come`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(size);
+    const release = await holdBackRows(page);
+    const panel = await openCustomize(page, projectIssuesAddress("WEB"));
+    await expect(page.locator("[data-part~='list-scroll']")).toHaveCount(0);
+    const before = await heightOf(panel);
+    expect(before).toBeGreaterThan(FOLDED);
+    release();
+    await expect(page.locator("[data-part~='list-scroll']")).toBeVisible();
+    await WHEN_ROWS_COME[place](panel, page, before);
+  });
+}
 
 test("ux_06 in a low window an editor of a list keeps the room of the item it opens", async ({
   page,

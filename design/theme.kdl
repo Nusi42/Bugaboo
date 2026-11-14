@@ -16795,16 +16795,24 @@ part "app-layout:not(app-layout[variant=phone]) list-main list-scroll" {
     }
 }
 
-// What stands beside the list there (an open issue, Customize) is as high as the list, not as high as what it holds: it
-// takes no room of its own in the line, and its own box scrolls what it holds.
-part "app-layout:not(app-layout[variant=phone]) list-editor:has(list-main) side-panel" "app-layout:not(app-layout[variant=phone]) list-body list-panel" {
+// What stands beside the list there (an open issue) is as high as the list, not as high as what it holds: it takes no
+// room of its own in the line, and its own box scrolls what it holds.
+part "app-layout:not(app-layout[variant=phone]) list-editor:has(list-main) side-panel" {
+    media "screen and (max-height: $size-low-window)" {
+        contain size
+    }
+}
+
+// Customize is as high as the rows only while there are rows: while the first answer is on its way or nothing is found
+// the list has no box of rows to be as high as, and Customize keeps the height of what it holds.
+part "app-layout:not(app-layout[variant=phone]) list-body:has(list-scroll) list-panel" {
     media "screen and (max-height: $size-low-window)" {
         contain size
     }
 }
 
 // Customize under the list, where the list has no room for it beside, is as high as its columns.
-part "app-layout:not(app-layout[variant=phone]) list-main:has(list-scroll) list-body list-panel" {
+part "app-layout:not(app-layout[variant=phone]) list-main list-body list-panel" {
     container "(max-width: $bp-list-beside)" {
         contain none
     }

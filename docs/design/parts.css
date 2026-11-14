@@ -9597,9 +9597,14 @@ textarea,
 @media screen and (max-height: 680px) {
   [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
     [data-part="list-editor"]:has([data-part="list-main"])
-    [data-part="side-panel"],
+    [data-part="side-panel"] {
+    contain: size;
+  }
+}
+
+@media screen and (max-height: 680px) {
   [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
-    [data-part="list-body"]
+    [data-part="list-body"]:has([data-part="list-scroll"])
     [data-part="list-panel"] {
     contain: size;
   }
@@ -9607,7 +9612,7 @@ textarea,
 
 @container (max-width: 876px) {
   [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
-    [data-part="list-main"]:has([data-part="list-scroll"])
+    [data-part="list-main"]
     [data-part="list-body"]
     [data-part="list-panel"] {
     contain: none;
