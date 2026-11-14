@@ -6811,13 +6811,39 @@ textarea,
 [data-part="issue-body"][data-variant~="split"] [data-part="issue-main"],
 [data-part="focus-view"]:has([data-part="issue-body"][data-variant~="split"])
   [data-part="focus-view.list"] {
-  position: relative;
+  scroll-padding: var(--ring-room);
+  margin-block: 0;
+  padding: var(--ring-room);
+  margin-inline: calc(var(--ring-room) * -1);
   overflow-y: auto;
+  position: relative;
+}
+
+@media print {
+  [data-part="issue-body"][data-variant~="split"] [data-part="issue-main"],
+  [data-part="focus-view"]:has([data-part="issue-body"][data-variant~="split"])
+    [data-part="focus-view.list"] {
+    flex: none;
+    height: auto;
+    min-height: auto;
+    max-height: none;
+    overflow: visible;
+  }
 }
 
 [data-part="issue-body"][data-variant~="split"] [data-part="issue-details"] {
   position: relative;
   max-height: none;
+}
+
+@media print {
+  [data-part="issue-body"][data-variant~="split"] [data-part="issue-details"] {
+    flex: none;
+    height: auto;
+    min-height: auto;
+    max-height: none;
+    overflow: visible;
+  }
 }
 
 [data-part="issue-details"][data-variant~="stacked"] {
@@ -9224,6 +9250,22 @@ textarea,
   flex: 1 1 0;
 }
 
+@media print {
+  [data-part="app-layout"] [data-part="app-layout.inner"]:has([data-part="list-main"]),
+  [data-part="app-layout"] [data-part="card"]:has([data-part="list-main"]),
+  [data-part="app-layout"] [data-part="card"] > [data-part="stack"]:has([data-part="list-main"]),
+  [data-part="app-layout"] [data-part="list-editor.list"]:has([data-part="list-main"]),
+  [data-part="app-layout"] [data-part="list-main"],
+  [data-part="app-layout"] [data-part="list-frame"]:has([data-part="list-scroll"]),
+  [data-part="app-layout"] [data-part="search-results"]:has([data-part="list-scroll"]) {
+    flex: none;
+    height: auto;
+    min-height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
 [data-part="app-layout"] [data-part="app-layout.inner"]:has([data-part="list-scroll"]),
 [data-part="app-layout"] [data-part="card"]:has([data-part="list-scroll"]),
 [data-part="app-layout"] [data-part="card"] > [data-part="stack"]:has([data-part="list-scroll"]),
@@ -9231,7 +9273,28 @@ textarea,
 [data-part="app-layout"] [data-part="list-main"]:has([data-part="list-scroll"]),
 [data-part="app-layout"] [data-part="list-frame"]:has([data-part="list-scroll"]),
 [data-part="app-layout"] [data-part="search-results"]:has([data-part="list-scroll"]) {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  flex: 1 1 0;
   min-height: 0;
+}
+
+@media print {
+  [data-part="app-layout"] [data-part="app-layout.inner"]:has([data-part="list-scroll"]),
+  [data-part="app-layout"] [data-part="card"]:has([data-part="list-scroll"]),
+  [data-part="app-layout"] [data-part="card"] > [data-part="stack"]:has([data-part="list-scroll"]),
+  [data-part="app-layout"] [data-part="list-editor.list"]:has([data-part="list-scroll"]),
+  [data-part="app-layout"] [data-part="list-main"]:has([data-part="list-scroll"]),
+  [data-part="app-layout"] [data-part="list-frame"]:has([data-part="list-scroll"]),
+  [data-part="app-layout"] [data-part="search-results"]:has([data-part="list-scroll"]) {
+    flex: none;
+    height: auto;
+    min-height: auto;
+    max-height: none;
+    overflow: visible;
+  }
 }
 
 [data-part="app-layout"]
@@ -9246,19 +9309,28 @@ textarea,
   flex-wrap: nowrap;
   align-items: stretch;
   flex: 1 1 0;
+  min-height: 0;
 }
 
-[data-part="app-layout"]
-  [data-part="app-layout.inner"]:has([data-part="issue-body"][data-variant~="split"]),
-[data-part="focus-view"]:has([data-part="issue-body"][data-variant~="split"])
-  [data-part="shell.content"],
-[data-part="focus-view"]:has([data-part="issue-body"][data-variant~="split"])
-  [data-part="issue-frame"],
-[data-part="issue-page"]:has([data-part="issue-body"][data-variant~="split"]),
+@media print {
+  [data-part="app-layout"]
+    [data-part="app-layout.inner"]:has([data-part="issue-body"][data-variant~="split"]),
+  [data-part="focus-view"]:has([data-part="issue-body"][data-variant~="split"])
+    [data-part="shell.content"],
+  [data-part="focus-view"]:has([data-part="issue-body"][data-variant~="split"])
+    [data-part="issue-frame"],
+  [data-part="issue-page"]:has([data-part="issue-body"][data-variant~="split"]) {
+    flex: none;
+    height: auto;
+    min-height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
 [data-part="focus-view"]:has([data-part="issue-body"][data-variant~="split"]),
 [data-part="focus-view"]:has([data-part="issue-body"][data-variant~="split"])
-  [data-part="focus-view.list"],
-[data-part="issue-body"][data-variant~="split"] {
+  [data-part="focus-view.list"] {
   min-height: 0;
 }
 
@@ -9267,6 +9339,19 @@ textarea,
 [data-part="issue-body"][data-variant~="split"] {
   flex: 1 1 0;
   align-items: stretch;
+  min-height: 0;
+}
+
+@media print {
+  [data-part="app-layout"]
+    [data-part="focus-view"]:has([data-part="issue-body"][data-variant~="split"]),
+  [data-part="issue-body"][data-variant~="split"] {
+    flex: none;
+    height: auto;
+    min-height: auto;
+    max-height: none;
+    overflow: visible;
+  }
 }
 
 [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
@@ -9285,24 +9370,47 @@ textarea,
   flex-wrap: nowrap;
   align-items: stretch;
   flex: 1 1 0;
+  min-height: 0;
 }
 
-[data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
-  [data-part="app-layout.inner"]:has([data-part="timeline-body"]),
-[data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
-  [data-part="card"]:has([data-part="timeline-body"]),
-[data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
-  [data-part="card"]
-  > [data-part="stack"]:has([data-part="timeline-body"]),
-[data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
-  [data-part="list-editor.list"]:has([data-part="timeline-body"]),
-[data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
-  [data-part="timeline"],
+@media print {
+  [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+    [data-part="app-layout.inner"]:has([data-part="timeline-body"]),
+  [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+    [data-part="card"]:has([data-part="timeline-body"]),
+  [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+    [data-part="card"]
+    > [data-part="stack"]:has([data-part="timeline-body"]),
+  [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+    [data-part="list-editor.list"]:has([data-part="timeline-body"]),
+  [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+    [data-part="timeline"] {
+    flex: none;
+    height: auto;
+    min-height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
 [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
   [data-part="timeline-body"],
 [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
   [data-part="timeline-side"] {
   min-height: 0;
+}
+
+@media print {
+  [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+    [data-part="timeline-body"],
+  [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+    [data-part="timeline-side"] {
+    flex: none;
+    height: auto;
+    min-height: auto;
+    max-height: none;
+    overflow: visible;
+  }
 }
 
 [data-part="list-editor"]:has([data-part="list-main"]),

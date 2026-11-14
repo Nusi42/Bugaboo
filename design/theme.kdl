@@ -285,8 +285,7 @@ tokens {
     // The gap between the text of an issue and its Details, and the room both take at the end of the
     // column: the offers to undo keep out of it (one rule for the page and for the offers).
     size "gap-details" "$space-5"
-    // The gap between the parts of a stack (the fields of a form, the parts of a setting), and the gap between the lines of
-    // the head of a setting: what stands under its first lines keeps the distance of the stack it stood in.
+    // The gap between the parts of a stack (the fields of a form, the parts of a setting).
     size "gap-stack" "$space-4"
     size "size-details-room" "calc($size-details + $gap-details)"
     // The warning that floats at the bottom of the start side beside the sidebar (the one of a timer that runs
@@ -1065,16 +1064,47 @@ mixin "page-body" {
     gap "$size-page-gutter"
 }
 
-// The focus view takes the whole width that the narrowed sidebar leaves.
-// A box between a pane and its one scroll box (UX §6.5): it gives the box below it the room that is left.
+// A box between a pane and its one scroll box (UX §6.5): it gives the box below it the room that is left. On paper
+// it is as long as what it holds, so nothing is cut at the height of the window.
 mixin "fills-pane" {
     display flex
     flex-direction column
     flex-wrap nowrap
     align-items stretch
     flex "1 1 0"
+    media "print" {
+        use "free-on-paper"
+    }
 }
 
+// A box between a pane and its one scroll box that may get smaller than what it holds, so the box below it scrolls
+// instead of the pane (UX §6.5).
+mixin "fills-pane-scrolls" {
+    use "fills-pane"
+    min-height 0
+}
+
+// A box that is the one scroll box of its pane (UX §6.5): room for the focus ring inside it, at the sides out to the
+// edge of the boxes above and below it, and on paper as long as what it holds.
+mixin "pane-scroll-box" {
+    use "ring-room"
+    use "ring-room-flush"
+    overflow-y auto
+    media "print" {
+        use "free-on-paper"
+    }
+}
+
+// On paper a box is as long as what it holds: nothing scrolls there, so nothing may be cut at the height of the window.
+mixin "free-on-paper" {
+    flex none
+    height auto
+    min-height auto
+    max-height none
+    overflow visible
+}
+
+// The focus view takes the whole width that the narrowed sidebar leaves.
 mixin "page-column-wide" {
     max-width none
 }
@@ -1214,7 +1244,6 @@ mixin "note-box" {
     padding "$space-3"
 }
 
-// Lines under each other with a little room between them.
 // A frame inside a grid that takes the columns of the grid as its own (`subgrid`), with the gap between them of the grid,
 // so a line of the frame can stand in one column and the next across all of them.
 mixin "head-columns" {
@@ -1224,6 +1253,7 @@ mixin "head-columns" {
     column-gap normal
 }
 
+// Lines under each other with a little room between them.
 mixin "column-tight" {
     display flex
     flex-direction column
@@ -7795,13 +7825,16 @@ part "issue-details" {
 // The boxes of the split issue scroll (UX §6.5). Each box holds what it hides for screen readers (the box of a choice, a
 // switch), so a hidden one far down a box does not make the main column taller than the window.
 part "issue-body[variant=split] issue-main" "focus-view:has(issue-body[variant=split]) focus-view.list" {
+    use "pane-scroll-box"
     position relative
-    overflow-y auto
 }
 
 part "issue-body[variant=split] issue-details" {
     position relative
     max-height none
+    media "print" {
+        use "free-on-paper"
+    }
 }
 
 part "issue-details[variant=stacked]" {
@@ -16582,44 +16615,51 @@ part "app-layout[variant=phone] app-layout.main:has(list-scroll)" {
     overflow-y hidden
 }
 
+// Only where there are rows that scroll does every box give way below its content; a page without rows (nothing found,
+// a mistake) keeps the room of its content, with the padding of its card, and the page scrolls.
 part "app-layout app-layout.inner:has(list-main)" "app-layout card:has(list-main)" "app-layout card > stack:has(list-main)" "app-layout list-editor.list:has(list-main)" "app-layout list-main" "app-layout list-frame:has(list-scroll)" "app-layout search-results:has(list-scroll)" {
     use "fills-pane"
 }
 
-// Only where there are rows that scroll does every box give way below its content; a page without rows (nothing found,
-// a mistake) keeps the room of its content, with the padding of its card, and the page scrolls.
 part "app-layout app-layout.inner:has(list-scroll)" "app-layout card:has(list-scroll)" "app-layout card > stack:has(list-scroll)" "app-layout list-editor.list:has(list-scroll)" "app-layout list-main:has(list-scroll)" "app-layout list-frame:has(list-scroll)" "app-layout search-results:has(list-scroll)" {
-    min-height 0
+    use "fills-pane-scrolls"
 }
-
-// On a computer the list and the open issue stand side by side in one line as high as the room; the list and Customize
-// too, or Customize under the list where the room is narrow (each line as high as the room it is given).
 
 // An open issue on a computer fills the rest of the main column the same way (UX §6.5): its sections and its Details are
 // two boxes that scroll side by side under the head of the issue, and the slim list of the focus view beside them is a
 // third. The page itself fits the window.
 part "app-layout app-layout.inner:has(issue-body[variant=split])" "focus-view:has(issue-body[variant=split]) shell.content" "focus-view:has(issue-body[variant=split]) issue-frame" "issue-page:has(issue-body[variant=split])" {
-    use "fills-pane"
+    use "fills-pane-scrolls"
 }
 
-part "app-layout app-layout.inner:has(issue-body[variant=split])" "focus-view:has(issue-body[variant=split]) shell.content" "focus-view:has(issue-body[variant=split]) issue-frame" "issue-page:has(issue-body[variant=split])" "focus-view:has(issue-body[variant=split])" "focus-view:has(issue-body[variant=split]) focus-view.list" "issue-body[variant=split]" {
+part "focus-view:has(issue-body[variant=split])" "focus-view:has(issue-body[variant=split]) focus-view.list" {
     min-height 0
 }
 
+// The line of the slim list and the issue, and the line of the sections and the Details, as high as the room.
 part "app-layout focus-view:has(issue-body[variant=split])" "issue-body[variant=split]" {
     flex "1 1 0"
     align-items stretch
+    min-height 0
+    media "print" {
+        use "free-on-paper"
+    }
 }
 
 // The timeline on a computer fills the rest of the main column the same way: the chart and its side share the room.
 part "app-layout:not(app-layout[variant=phone]) app-layout.inner:has(timeline-body)" "app-layout:not(app-layout[variant=phone]) card:has(timeline-body)" "app-layout:not(app-layout[variant=phone]) card > stack:has(timeline-body)" "app-layout:not(app-layout[variant=phone]) list-editor.list:has(timeline-body)" "app-layout:not(app-layout[variant=phone]) timeline" {
-    use "fills-pane"
+    use "fills-pane-scrolls"
 }
 
-part "app-layout:not(app-layout[variant=phone]) app-layout.inner:has(timeline-body)" "app-layout:not(app-layout[variant=phone]) card:has(timeline-body)" "app-layout:not(app-layout[variant=phone]) card > stack:has(timeline-body)" "app-layout:not(app-layout[variant=phone]) list-editor.list:has(timeline-body)" "app-layout:not(app-layout[variant=phone]) timeline" "app-layout:not(app-layout[variant=phone]) timeline-body" "app-layout:not(app-layout[variant=phone]) timeline-side" {
+part "app-layout:not(app-layout[variant=phone]) timeline-body" "app-layout:not(app-layout[variant=phone]) timeline-side" {
     min-height 0
+    media "print" {
+        use "free-on-paper"
+    }
 }
 
+// On a computer the list and the open issue stand side by side in one line as high as the room; the list and Customize
+// too, or Customize under the list where the room is narrow (each line as high as the room it is given).
 part "list-editor:has(list-main)" "list-body:has(list-scroll)" {
     flex "1 1 0"
     align-items stretch
