@@ -329,8 +329,21 @@ where
         axum::extract::Query::<T>::from_request_parts(parts, state)
             .await
             .map(|axum::extract::Query(value)| Self(value))
-            .map_err(|_| ApiError::new(ErrorCode::InvalidRequest))
+            .map_err(|rejection| {
+                ApiError::new(
+                    refused_limit(&rejection.body_text()).unwrap_or(ErrorCode::InvalidRequest),
+                )
+            })
     }
+}
+
+/// `request.limit-out-of-range` when the text of a rejected query or body says that a `limit` was
+/// refused (`lean::limit_within` names the code in its error), so the person is told the range and
+/// not only that the request is not valid.
+pub(crate) fn refused_limit(rejected: &str) -> Option<ErrorCode> {
+    rejected
+        .contains(ErrorCode::LimitOutOfRange.code())
+        .then_some(ErrorCode::LimitOutOfRange)
 }
 
 /// The parts of the address, with a bad one answered as problem+json.
@@ -404,6 +417,9 @@ impl<S: Send + Sync> FromRequest<S> for ApiBytes {
 /// request that is not valid. The text of the rejection is not sent. (A body that arrives too
 /// slowly is stopped by the time limit of the whole request, `api::time_limit`.)
 fn code_of(rejection: &JsonRejection) -> ErrorCode {
+    if let Some(code) = refused_limit(&rejection.body_text()) {
+        return code;
+    }
     match rejection.status() {
         StatusCode::PAYLOAD_TOO_LARGE => ErrorCode::TooLarge,
         _ => ErrorCode::InvalidRequest,

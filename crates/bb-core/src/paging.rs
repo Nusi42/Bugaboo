@@ -112,6 +112,13 @@ pub fn page_size_within(asked: i64) -> Option<u32> {
         .filter(|size| (PAGE_SIZE_LEAST..=PAGE_SIZE_MAX).contains(size))
 }
 
+/// The page size a request asked for in a text (a query string), by [`page_size_within`]: a text
+/// that is no whole number is outside the range too.
+#[must_use]
+pub fn page_size_of_text(asked: &str) -> Option<u32> {
+    asked.trim().parse::<i64>().ok().and_then(page_size_within)
+}
+
 /// The page size as a count of items, for a list that is cut in memory.
 #[must_use]
 pub fn page_len(asked: Option<u32>) -> usize {
@@ -304,6 +311,10 @@ mod tests {
             (i64::MAX, None),
         ] {
             assert_eq!(page_size_within(asked), taken, "{asked}");
+            assert_eq!(page_size_of_text(&asked.to_string()), taken, "{asked}");
+        }
+        for not_whole in ["2.5", "", "ten", "1e2"] {
+            assert_eq!(page_size_of_text(not_whole), None, "{not_whole}");
         }
     }
 }

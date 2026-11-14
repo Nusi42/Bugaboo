@@ -85,7 +85,7 @@ pub(crate) struct TimelineBody {
     #[serde(default)]
     cursor: Option<String>,
     /// How many issues a page holds at most.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "crate::lean::limit_within")]
     #[schema(schema_with = crate::lean::page_limit_schema)]
     limit: Option<u32>,
 }

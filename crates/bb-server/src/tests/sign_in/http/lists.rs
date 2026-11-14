@@ -58,7 +58,7 @@ async fn perf_02_the_invitation_list_takes_fields_cursor_and_limit_over_http() -
         default_keys.sort();
         assert_eq!(default_keys, ["email", "id"]);
         // A field that does not exist, a cursor that is not one or was changed, and a page size
-        // that is no number are refused, each with its own code.
+        // that is no number are refused, each with its own code: a page size with the range.
         let mut changed = cursor.clone();
         changed.pop();
         changed.push(if cursor.ends_with('A') { 'B' } else { 'A' });
@@ -66,7 +66,7 @@ async fn perf_02_the_invitation_list_takes_fields_cursor_and_limit_over_http() -
             ("fields=password".to_owned(), "request.unknown-field"),
             ("cursor=nonsense".to_owned(), "request.bad-cursor"),
             (format!("cursor={changed}"), "request.bad-cursor"),
-            ("limit=many".to_owned(), "request.invalid"),
+            ("limit=many".to_owned(), "request.limit-out-of-range"),
         ] {
             let reply = ada
                 .send("GET", &format!("/api/v1/auth/invitations?{bad}"), None)

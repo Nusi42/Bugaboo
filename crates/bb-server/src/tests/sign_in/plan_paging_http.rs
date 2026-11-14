@@ -75,10 +75,11 @@ async fn plan_01_the_pages_of_the_timeline_lose_and_repeat_no_row() -> TestResul
             planned(&site, &mut ada, &format!("Waiting {number}"), json!({})).await?;
         }
         let body = ask(&site, MONDAY, "2027-03-31", json!({}));
-        // A page holds at most what a page of any list holds, whatever was asked for.
+        // A page holds at most what a page of any list holds (asking for more is refused, like in
+        // every list).
         let mut most = body.clone();
         if let Some(most) = most.as_object_mut() {
-            most.insert("limit".to_owned(), json!(150));
+            most.insert("limit".to_owned(), json!(PAGE_SIZE_MAX));
         }
         let first = page(&mut ada, most).await?;
         assert_eq!(

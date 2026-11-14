@@ -56,7 +56,31 @@ impl FieldSpec {
 pub(crate) struct ListParams {
     fields: Option<String>,
     cursor: Option<String>,
+    #[serde(default, deserialize_with = "limit_within")]
     limit: Option<u32>,
+}
+
+/// A `limit` of a request, judged by the rule of `bb_core::paging` (1 to 100): a number outside the
+/// range, a negative one and one that is not whole are refused, and the refusal names
+/// `request.limit-out-of-range`, which `ApiQuery` and `ApiJson` answer with
+/// ([`crate::errors::refused_limit`]). It never cuts the number to another one.
+pub(crate) fn limit_within<'de, D>(deserializer: D) -> Result<Option<u32>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let asked = Option::<Value>::deserialize(deserializer)?;
+    asked
+        .map(|asked| {
+            let taken = match &asked {
+                Value::String(text) => bb_core::paging::page_size_of_text(text),
+                Value::Number(number) => {
+                    number.as_i64().and_then(bb_core::paging::page_size_within)
+                }
+                _ => None,
+            };
+            taken.ok_or_else(|| serde::de::Error::custom(ErrorCode::LimitOutOfRange.code()))
+        })
+        .transpose()
 }
 
 /// The page size as the API description says it, from `bb_core::paging`: the one schema of every
@@ -73,7 +97,7 @@ pub(crate) fn page_limit_schema() -> Object {
 /// What the page size says.
 fn page_limit_text() -> String {
     format!(
-        "How many items a page holds at most (default {PAGE_SIZE_DEFAULT}, at most {PAGE_SIZE_MAX})."
+        "How many items a page holds at most (default {PAGE_SIZE_DEFAULT}), from {PAGE_SIZE_LEAST} to {PAGE_SIZE_MAX}; any other number is refused with `request.limit-out-of-range`."
     )
 }
 

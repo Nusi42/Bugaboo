@@ -21,11 +21,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -141,11 +141,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -591,11 +591,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -1175,11 +1175,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -1535,11 +1535,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -1622,11 +1622,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -2063,11 +2063,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -3576,11 +3576,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -3920,11 +3920,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -4803,11 +4803,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -5443,11 +5443,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -5738,11 +5738,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -5826,11 +5826,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -6093,11 +6093,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -6297,11 +6297,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -6994,11 +6994,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -7199,11 +7199,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -7275,11 +7275,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -7541,11 +7541,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -7765,11 +7765,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -8081,11 +8081,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -8338,11 +8338,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -8655,11 +8655,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -8859,11 +8859,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -8991,11 +8991,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -10417,11 +10417,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -11706,11 +11706,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -11861,11 +11861,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -12147,11 +12147,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -12340,11 +12340,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -12455,11 +12455,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -13199,11 +13199,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -13605,11 +13605,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -13720,11 +13720,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -13819,11 +13819,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -13964,11 +13964,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -14570,11 +14570,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -15098,11 +15098,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -15323,11 +15323,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -15888,11 +15888,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -16076,11 +16076,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -16195,11 +16195,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -16754,11 +16754,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -17471,11 +17471,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -18738,11 +18738,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -18823,11 +18823,11 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "How many items a page holds at most (default 50, at most 100).",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
               "maximum": 100,
               "minimum": 1
             }
@@ -33010,7 +33010,7 @@
           },
           "limit": {
             "type": "integer",
-            "description": "How many items a page holds at most (default 50, at most 100).",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
             "maximum": 100,
             "minimum": 1
           },

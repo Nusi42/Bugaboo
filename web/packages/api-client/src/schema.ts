@@ -12166,7 +12166,7 @@ export interface components {
        * @description The last day the screen shows; a span is a year at most.
        */
       last: string;
-      /** @description How many items a page holds at most (default 50, at most 100). */
+      /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
       limit?: number;
       /** @description Which part: the rows, or the issues of *Not scheduled yet*. */
       part?: components["schemas"]["TimelinePartBody"];
@@ -13043,7 +13043,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
       };
       header?: never;
@@ -13110,7 +13110,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
       };
       header?: never;
@@ -13363,7 +13363,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
       };
       header?: never;
@@ -13685,7 +13685,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
       };
       header?: never;
@@ -13919,7 +13919,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
         /** @description What to list: people (when left out), groups or roles. */
         kind?: "person" | "group" | "role";
@@ -13958,7 +13958,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
       };
       header?: never;
@@ -14225,7 +14225,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
       };
       header?: never;
@@ -15192,7 +15192,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
         /**
          * @description The ID of the project. Without it the answer is about the whole organization: the level
@@ -15376,7 +15376,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
       };
       header?: never;
@@ -15875,7 +15875,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
       };
       header?: never;
@@ -16217,7 +16217,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
       };
       header?: never;
@@ -16379,7 +16379,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
         /** @description Words that every found name holds, without regard to capitals. */
         search?: string;
@@ -16420,7 +16420,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
       };
       header?: never;
@@ -16576,7 +16576,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
         /** @description The ID or short name of a project. */
         project?: string;
@@ -16681,7 +16681,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
       };
       header?: never;
@@ -17058,7 +17058,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
       };
       header?: never;
@@ -17178,7 +17178,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
       };
       header?: never;
@@ -17216,7 +17216,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
         /** @description Everything (the default), only the comments, or only the changes. */
         tab?: components["schemas"]["HistoryTab"];
@@ -17353,7 +17353,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
         /** @description The start of a name; every choice when left out. */
         search?: string;
@@ -17466,7 +17466,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
       };
       header?: never;
@@ -17634,7 +17634,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
       };
       header?: never;
@@ -17769,7 +17769,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
       };
       header?: never;
@@ -17941,7 +17941,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
         /** @description The ID or short name of a project. */
         project?: string;
@@ -18046,7 +18046,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
       };
       header?: never;
@@ -18120,7 +18120,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
         /** @description The ID or short name of a project. */
         project?: string;
@@ -18940,7 +18940,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
       };
       header?: never;
@@ -19674,7 +19674,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
         /** @description All of them (the default), the unread ones, or the ones that mention the person. */
         tab?: components["schemas"]["NotificationTab"];
@@ -19764,7 +19764,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
       };
       header?: never;
@@ -19904,7 +19904,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
       };
       header?: never;
@@ -20023,7 +20023,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
       };
       header?: never;
@@ -20088,7 +20088,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
         /**
          * @description Words that every found person holds in their name or e-mail address, without regard to
@@ -20476,7 +20476,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
         /**
          * @description The projects directly inside this one. Without it (and without `search`) the list is the top
@@ -20693,7 +20693,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
         /** @description Words that every found name holds, in any order; left out or empty, everybody is listed. */
         search?: string;
@@ -20747,7 +20747,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
         /** @description What to list: people (when left out), groups or roles. */
         kind?: "person" | "group" | "role";
@@ -20790,7 +20790,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
       };
       header?: never;
@@ -20865,7 +20865,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
       };
       header?: never;
@@ -21193,7 +21193,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
       };
       header?: never;
@@ -21469,7 +21469,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
       };
       header?: never;
@@ -21598,7 +21598,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
         /** @description Only the roles the person who asks may give: those whose permissions they all hold. */
         giveable?: boolean;
@@ -21902,7 +21902,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
       };
       header?: never;
@@ -22006,7 +22006,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
         /** @description The ones the person made (`mine`, the default) or the ones shared with them (`shared`). */
         scope?: components["schemas"]["SearchSet"];
@@ -22072,7 +22072,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
         /** @description Groups or projects. */
         kind: components["schemas"]["ShareKind"];
@@ -22380,7 +22380,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
       };
       header?: never;
@@ -22782,7 +22782,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
       };
       header?: never;
@@ -23507,7 +23507,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
         /** @description Words that every found name holds, without regard to capitals. */
         search?: string;
@@ -23546,7 +23546,7 @@ export interface operations {
         fields?: components["parameters"]["Fields"];
         /** @description Where the page starts: the `next_cursor` of the page before. */
         cursor?: components["parameters"]["Cursor"];
-        /** @description How many items a page holds at most (default 50, at most 100). */
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
         limit?: number;
       };
       header?: never;

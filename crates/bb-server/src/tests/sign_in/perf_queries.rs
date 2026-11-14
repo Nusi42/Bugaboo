@@ -566,7 +566,7 @@ async fn perf_05_types_and_label_groups_of_a_project_run_as_many_statements_for_
             }
             Ok(())
         };
-        let types = "/api/v1/issue-types?project=ACME&limit=200";
+        let types = "/api/v1/issue-types?project=ACME&limit=100";
         let labels = "/api/v1/label-groups?project=ACME";
         let mut counter = Counter::on(&rig.database);
         create(&mut ada, 0..5).await?;
@@ -574,7 +574,7 @@ async fn perf_05_types_and_label_groups_of_a_project_run_as_many_statements_for_
         ok(&ada.send("GET", types, None).await?)?;
         ok(&ada.send("GET", labels, None).await?)?;
         ok(&gus
-            .send("GET", "/api/v1/issue-types?limit=200", None)
+            .send("GET", "/api/v1/issue-types?limit=100", None)
             .await?)?;
         ok(&gus.send("GET", "/api/v1/label-groups", None).await?)?;
         counter.take();
@@ -583,7 +583,7 @@ async fn perf_05_types_and_label_groups_of_a_project_run_as_many_statements_for_
         ok(&ada.send("GET", labels, None).await?)?;
         let labels_on_five = counter.take();
         ok(&gus
-            .send("GET", "/api/v1/issue-types?limit=200", None)
+            .send("GET", "/api/v1/issue-types?limit=100", None)
             .await?)?;
         ok(&gus.send("GET", "/api/v1/label-groups", None).await?)?;
         let guest_on_five = counter.take();
@@ -596,7 +596,7 @@ async fn perf_05_types_and_label_groups_of_a_project_run_as_many_statements_for_
         assert!(ok(&listed)?["items"].as_array().map_or(0, Vec::len) >= 40);
         let labels_on_forty = counter.take();
         ok(&gus
-            .send("GET", "/api/v1/issue-types?limit=200", None)
+            .send("GET", "/api/v1/issue-types?limit=100", None)
             .await?)?;
         ok(&gus.send("GET", "/api/v1/label-groups", None).await?)?;
         let guest_on_forty = counter.take();
