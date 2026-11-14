@@ -1309,6 +1309,16 @@ sort by priority, highest first</div>
     </ul>
     <p>The browser tests measure it in every frame (architecture §11, <i>Nothing moves under the cursor: the measure</i>).</p>
 
+    <h3 id="s6-5"><button type="button" class="sec" data-sec>§6.5</button>One way to scroll <span class="ids">UX-01</span></h3>
+    <p>The page itself never scrolls. The app is as high as the window, and each pane (the menu, the main column, a side panel, a window) has exactly one box that scrolls: the box of its main content. No box that scrolls up and down stands inside another, and nothing scrolls sideways but a chart that is wider than its pane. What stands above the box (the title, the toolbar, the filters, notices) gets smaller as the box scrolls, down to one line, and comes back at the top; it never jumps and keeps the place under the pointer.</p>
+    <ul>
+      <li><b>Pickers</b> have no box of their own: in a page they grow and the main column scrolls, in a window the box of its fields does. A picker of many options keeps its filter at the top, in view through the shrinking head. A picker that is all its window holds is the window's box.</li>
+      <li><b>Long lists</b> (issues, people, the timeline) are the box of their pane: the page fits the window and the list fills the rest.</li>
+      <li><b>An issue on a computer</b>: its sections and its Details are two boxes side by side under the head of the issue. On a phone they stand one under the other in one box.</li>
+      <li><b>Growth above what is in view</b> keeps what is in view still: the browser changes the scroll by exactly that growth. Any other change of the scroll is a jump.</li>
+    </ul>
+    <p>Decided by the lead 2026-11-14 (M8 WP-13); the maintainer may overrule.</p>
+
     <!-- ================= 7 ================= -->
     <h2 id="s7"><button type="button" class="sec" data-sec>§7</button>Visual design</h2>
 

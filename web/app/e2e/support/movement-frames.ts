@@ -43,6 +43,8 @@ export interface Movement {
   /** What scrolled: the page or each part whose scroll was not what it was in the first frame. */
   readonly scrolled: readonly Scrolled[];
   readonly frames: number;
+  /** The height of the window, when it was recorded: what stands outside it is not in view. */
+  readonly view?: number;
 }
 
 /**

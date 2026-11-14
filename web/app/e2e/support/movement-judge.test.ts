@@ -149,6 +149,7 @@ describe("ux_01 the measure tells a row that left the view from one drawn afresh
     redrawn: [[false], [redrawn], [false]],
     scrolls: ["page:0", "page:0", "page:0"],
     grey: [false, false, false],
+    view: 800,
   });
 
   it("does not count a row of a list gone from the view as gone", () => {
@@ -161,5 +162,30 @@ describe("ux_01 the measure tells a row that left the view from one drawn afresh
 
   it("counts any other part that is no longer there as gone", () => {
     expect(judged([["head", false]], frames(false)).vanished).toEqual(["head"]);
+  });
+});
+
+describe("ux_01 the measure judges what is in view, and lets the browser keep it still", () => {
+  const view = 800;
+  /** Something above the view grew by 52 px, and the scroll of the page kept what is in view still. */
+  const above = moved("head", box(0, -300, 300, 100), box(0, -352, 300, 100));
+  const scroll = { part: "app-layout.main", from: "600/0", to: "652/0" };
+  const withScroll = (parts: readonly Moved[]): Movement => ({
+    ...movementOf(parts),
+    scrolled: [scroll],
+    view,
+  });
+
+  it("passes a scroll that kept what is in view still while something above it grew", () => {
+    expect(wrongIn(withScroll([above]), {})).toEqual(nothingWrong);
+  });
+
+  it("fails a part in view that moved, scroll or no scroll", () => {
+    const row = moved("row", box(0, 200, 300, 44), box(0, 230, 300, 44));
+    expect(wrongIn(withScroll([above, row]), {}).moved).toEqual([row]);
+  });
+
+  it("fails a scroll when nothing above the view changed", () => {
+    expect(wrongIn(withScroll([]), {}).scrolled).toEqual([scroll]);
   });
 });

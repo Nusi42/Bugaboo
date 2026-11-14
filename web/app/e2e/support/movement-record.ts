@@ -30,6 +30,8 @@ export interface Frames {
   readonly redrawn: readonly (readonly boolean[])[];
   readonly scrolls: readonly string[];
   readonly grey: readonly boolean[];
+  /** The height of the window: what is in view (UX §6.4 judges what is in view). */
+  readonly view: number;
 }
 
 /** The part of grey shapes (`Skeleton`). */
@@ -133,6 +135,7 @@ export function recordFrames(
           redrawn: [] as boolean[][],
           scrolls: [] as string[],
           grey: [] as boolean[],
+          view: window.innerHeight,
         };
         const note = (): void => {
           const boxes: (Box | null)[] = [];

@@ -122,6 +122,7 @@ export async function movementWhile(
     greyShapes: frames.grey.includes(true),
     scrolled: scrolledOf(frames.scrolls),
     frames: frames.boxes.length,
+    view: frames.view,
   };
 }
 

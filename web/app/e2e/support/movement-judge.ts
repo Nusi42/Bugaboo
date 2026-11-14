@@ -123,6 +123,22 @@ function grewByWhatCameIn(part: Moved, appeared: Movement["appeared"]): boolean 
   );
 }
 
+/**
+ * The parts that moved in view, and whether any moved out of view only. What stands outside the
+ * window at the start and at the end is not in view: the browser keeps what is in view still when
+ * something above it grows, by its scroll (UX §6.4).
+ */
+function inViewOf(movement: Movement): {
+  readonly seen: readonly Moved[];
+  readonly anchored: boolean;
+} {
+  const { view } = movement;
+  const inView = (box: Box): boolean =>
+    view === undefined || (box.y < view && box.y + box.height > 0);
+  const seen = movement.moved.filter((part) => inView(part.from) || inView(part.last));
+  return { seen, anchored: seen.length < movement.moved.length };
+}
+
 /** What broke the rule of a still screen; all empty when it held. */
 export interface Wrong {
   readonly moved: readonly Moved[];
@@ -158,28 +174,34 @@ export function wrongIn(movement: Movement, except: StillExcept): Wrong {
     })),
   ];
   const moves = except.moves ?? [];
+  const scrolls = except.scrolls ?? [];
   const may = new Set([...grows, ...follows, ...moves]);
   const theirs = (shift: Shift): boolean =>
     shift.sources.length > 0 &&
     shift.sources.every((source) => source.within.some((name) => may.has(name)));
+  const { seen, anchored } = inViewOf(movement);
+  const moved = seen.filter((part) => {
+    const pushed = pushOf(part, growths);
+    if (moves.includes(part.name)) {
+      return !movedAlong(part);
+    }
+    if (grows.includes(part.name)) {
+      return !grewInPlace(part, follows.includes(part.name) ? pushed : 0);
+    }
+    if (grewByWhatCameIn(part, movement.appeared)) {
+      return false;
+    }
+    return !follows.includes(part.name) || !pushedInStep(part, pushed);
+  });
+  // A scroll that kept what is in view still while something above it changed is the browser's
+  // own anchoring: allowed. Any other change of the scroll is wrong.
+  const keptStill = anchored && moved.length === 0;
   return {
-    moved: movement.moved.filter((part) => {
-      const pushed = pushOf(part, growths);
-      if (moves.includes(part.name)) {
-        return !movedAlong(part);
-      }
-      if (grows.includes(part.name)) {
-        return !grewInPlace(part, follows.includes(part.name) ? pushed : 0);
-      }
-      if (grewByWhatCameIn(part, movement.appeared)) {
-        return false;
-      }
-      return !follows.includes(part.name) || !pushedInStep(part, pushed);
-    }),
+    moved,
     shifts: movement.shifts.filter((shift) => shift.value > 0 && !theirs(shift)),
     vanished: movement.vanished,
     greyShapes: movement.greyShapes,
-    scrolled: movement.scrolled.filter((each) => !(except.scrolls ?? []).includes(each.part)),
+    scrolled: keptStill ? [] : movement.scrolled.filter((each) => !scrolls.includes(each.part)),
   };
 }
 
