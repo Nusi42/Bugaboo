@@ -169,10 +169,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .cloned()
             .unwrap_or(Value::Null);
         // The line of what was saved names only a readable ID, never the address the caller gave.
-        let saved = key
-            .clone()
-            .map_or(Saved::Done, |key| Saved::On { key })
-            .part();
+        let saved = Saved::on(key.clone()).part();
         let key = key.unwrap_or_else(|| address.to_owned());
         let mut parts = vec![Part {
             name: "work",
@@ -479,7 +476,7 @@ pub(super) fn apply_propose<'a, S: AuthStore>(
         let request = propose_request(&run)?;
         let (_, key) = ctx.agent_issue_and_key(&run, &request.issue).await?;
         propose_change(ctx, request).await?;
-        shown.push(key.map_or(Saved::Done, |key| Saved::On { key }).part());
+        shown.push(Saved::on(key).part());
         Ok(shown)
     })
 }

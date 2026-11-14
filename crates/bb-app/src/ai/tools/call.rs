@@ -150,6 +150,12 @@ pub(super) enum Saved {
 }
 
 impl Saved {
+    /// Something saved on the issue with this readable ID, or [`Self::Done`] when the actor may not
+    /// name it: the line never repeats an address the caller gave.
+    pub(super) fn on(key: Option<String>) -> Self {
+        key.map_or(Self::Done, |key| Self::On { key })
+    }
+
     /// The part that carries it, among the parts of an *Apply*.
     pub(super) fn part(&self) -> Part {
         Part {
@@ -174,7 +180,7 @@ impl Saved {
     }
 
     /// The version of a changed issue, which *Undo* of its fields is made on.
-    const fn version_of_change(&self) -> Option<i64> {
+    pub(super) const fn version_of_change(&self) -> Option<i64> {
         match self {
             Self::Issue { version, .. } | Self::Version { version } => Some(*version),
             _ => None,
