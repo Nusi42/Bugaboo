@@ -81,6 +81,9 @@ mod tests {
     }
 
     proptest! {
+        /// The walk uses the internal cut of the use cases (`bb_core::paging::page_size`), so 0 and
+        /// sizes over 100 are cut here; a request over HTTP with such a size is refused before any
+        /// list runs (`perf_02_a_limit_outside_one_to_a_hundred_is_refused_with_the_range`).
         #[test]
         fn perf_02_paging_walks_every_item_once_and_refuses_a_changed_cursor(
             count in 0_u32..400,

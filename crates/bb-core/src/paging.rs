@@ -1,13 +1,15 @@
 //! How big a page of a list is (PERF-02), how a page is cut and how its position is written:
-//! defined once, for the use cases that list and for the API that documents and cuts the page
-//! size.
+//! defined once, for the use cases that list, for the tools of AI and for the API. A page size a
+//! request asks for outside [`PAGE_SIZE_LEAST`] to [`PAGE_SIZE_MAX`] is refused at the API and by
+//! the tools ([`page_size_within`], `request.limit-out-of-range`); the use cases still cut what
+//! they are handed to the range ([`page_size`]), which only an internal caller can reach.
 
 use std::fmt::Display;
 use std::str::FromStr;
 
 use jiff::Timestamp;
 
-/// The most items one page holds. A bigger request is cut to this.
+/// The most items one page holds. A request for more is refused ([`page_size_within`]).
 pub const PAGE_SIZE_MAX: u32 = 100;
 /// The most rows one request for a list looks at while it skips the ones the person may not see
 /// (any more): a person who lost access to thousands of rows must not make one request read them
@@ -93,8 +95,10 @@ pub const PAGE_SIZE_DEFAULT: u32 = 50;
 /// The fewest items a page holds.
 pub const PAGE_SIZE_LEAST: u32 = 1;
 
-/// The page size to use: what was asked for (or the default), at least [`PAGE_SIZE_LEAST`] and at
-/// most [`PAGE_SIZE_MAX`].
+/// The page size a use case lists with: what it was handed (or the default), at least
+/// [`PAGE_SIZE_LEAST`] and at most [`PAGE_SIZE_MAX`]. A request from outside never reaches this with
+/// a number out of the range, because the API and the tools refuse it first; the cut only keeps an
+/// internal caller inside the range.
 #[must_use]
 pub fn page_size(asked: Option<u32>) -> u32 {
     asked
