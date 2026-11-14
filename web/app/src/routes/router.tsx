@@ -165,7 +165,18 @@ const routeTree = rootRoute.addChildren([
 ]);
 
 /** The routes of the app, with the types of their addresses. */
-export const router = createRouter({ routeTree, scrollRestoration: true });
+/**
+ * The boxes the router brings back to where they were (the main column, which scrolls instead of the
+ * window, UX §6.5, marked by `scrollRestoration` of the shell): a new page starts them at the top.
+ */
+const RESTORED_BOXES = "[data-scroll-restoration-id]";
+
+// A new page starts at the top of the main column, and Back brings it to where it was.
+export const router = createRouter({
+  routeTree,
+  scrollRestoration: true,
+  scrollToTopSelectors: [RESTORED_BOXES],
+});
 
 declare module "@tanstack/react-router" {
   interface Register {

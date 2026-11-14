@@ -5206,7 +5206,6 @@ part "save-status.room::before" {
     content "attr(data-words)"
 }
 
-
 // The head of the box of a setting: the setting, and a cell at the end of its first line for *Saving…* and
 // *Saved*. The cell is always there and keeps the room of the longest of the words (`save-status[variant=keeps-room]`),
 // so the words take no room from the setting when they come and cover none of it (UX §6.4).
@@ -6693,6 +6692,14 @@ part "app-layout.main" {
     padding "$size-page-gutter"
 }
 
+// On paper the frame is as long as what it holds: nothing is cut at the height of the window.
+part "app-layout" "app-layout.column" "app-layout.main" {
+    media "print" {
+        height auto
+        overflow visible
+    }
+}
+
 // What a phone shows under the page and above the bar of the app: the bar of the open issue. It is
 // a part of the column, not drawn over the page, so no part of the page is ever under it.
 part "app-layout.bar-slot" {
@@ -6766,9 +6773,6 @@ part "skip" {
 part "skip:focus" {
     transform "translateY(0)"
 }
-
-
-
 
 part "sidebar" {
     position sticky
@@ -7278,19 +7282,13 @@ part "side-panel.body::after" {
     }
 }
 
-// Beside a list the panel is a box of its own as high as the window at most: it keeps its place under the top bar while
-// the page scrolls, and what does not fit scrolls in its body (L7, UX §3.2).
+// Beside a list the panel is a box of its own, as high as the line it shares with the list (which fits the main column):
+// it keeps its place, a gutter from the top of the column, and what does not fit scrolls in its body (L7, UX §3.2,
+// §6.5).
 part "list-editor side-panel" {
     position sticky
-    top "calc($size-bar + $size-page-gutter)"
-    max-height "calc($size-viewport - $size-bar - 2 * $size-page-gutter)"
-}
-
-// On the page of a list the page itself does not scroll (its main box does, under the top bar): the panel is as high as
-// the line it shares with the list, and keeps a gutter from the top of that box when it does scroll.
-part "list-editor:has(list-main) side-panel" {
     top "$size-page-gutter"
-    max-height none
+    max-height "100%"
 }
 
 part "side-panel.title" {
@@ -16513,25 +16511,9 @@ part "search-panel search-suggestions" {
     margin-block-start "$space-1"
 }
 
-// A page of a list gives the box of its rows the rest of the window, on a computer as on a phone: the page column is a
-// full-height column, and every box between it and the list gives the list the room that is left. So the list ends above
-// the bar of the ticked issues and the navigation of a phone, and above the strip of a minimized window, whose room the
-// page takes off once (app-layout.main above). Where the boxes above the list leave it less than its least height, the
-// page scrolls. Only the page of a list (list-main): the slim list of the focus view stays in its page.
-part "app-layout:has(list-main)" {
-    height "100%"
-    min-height 0
-}
-
-part "app-layout:has(list-main) app-layout.column" {
-    height "100%"
-}
-
-part "app-layout:has(list-main) app-layout.main" {
-    min-height 0
-    overflow-y auto
-}
-
+// A page of a list gives the box of its rows the rest of the main column (UX §6.5): every box between the column and
+// the list gives the list the room that is left. Where the boxes above it leave the list less than its least height,
+// the main column scrolls. Only the page of a list (list-main): the slim list of the focus view stays in its page.
 // A phone has one scroller where the list is: the list. The page does not scroll.
 part "app-layout[variant=phone] app-layout.main:has(list-scroll)" {
     overflow-y hidden
