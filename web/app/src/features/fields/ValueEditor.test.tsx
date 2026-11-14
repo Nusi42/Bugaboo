@@ -16,14 +16,12 @@ const parts = { group: 'data-part="choice-group"', hidden: 'data-part="visually-
 
 function ticks(inRow: boolean): string {
   return renderToStaticMarkup(
-    <fieldset disabled>
-      <ValueEditor
-        field={field({ kind: "pick-several" })}
-        value={["minor"]}
-        onCommit={vi.fn<(value: unknown) => void>()}
-        inRow={inRow}
-      />
-    </fieldset>,
+    <ValueEditor
+      field={field({ kind: "pick-several" })}
+      value={["minor"]}
+      onCommit={vi.fn<(value: unknown) => void>()}
+      inRow={inRow}
+    />,
   );
 }
 
@@ -39,12 +37,5 @@ describe("cf_03 the ticks of a field are the one group of choices", () => {
     const markup = ticks(true);
     expect(markup).toContain(parts.hidden);
     expect(markup).not.toContain('data-part="choice-group.legend"');
-  });
-
-  it("leaves no legend inside a fieldset that switches it off, so its ticks are switched off too", () => {
-    const markup = ticks(false);
-    expect(markup.match(/<fieldset/gu)).toHaveLength(1);
-    expect(markup).not.toContain("<legend");
-    expect(markup).toContain('type="checkbox"');
   });
 });

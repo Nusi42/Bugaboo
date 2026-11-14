@@ -54,8 +54,12 @@ fn people_change(world: &World, issue: &str, version: i64, people: Vec<UserId>) 
     change
 }
 
+/// Setting a factor counts the version of the issue up, so the check of the version in the write
+/// stops a change planned before it: the reset the plan decided on an older factor is never
+/// written over the newer one. It is the check of the version every change has, seen from here.
 #[tokio::test]
-async fn plan_14_a_time_factor_set_between_the_plan_and_the_write_stops_the_change() -> Outcome {
+async fn plan_14_a_factor_set_after_the_plan_read_it_is_a_newer_version_the_write_refuses()
+-> Outcome {
     let world = World::new().await?;
     let issue = an_assigned_issue(&world).await?;
     // The person on the bar taken off: the plan reads the factor (there is none), which goes back

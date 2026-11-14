@@ -136,8 +136,7 @@ export interface ChoiceGroupFrameProps {
  *
  * A group named by its first line rather than a fieldset with its legend: a legend is drawn in the border of its
  * fieldset and is never a line of a grid, so a page could not set something beside the name alone (the cell of
- * *Saving…* and *Saved* of a setting). The group is the same to a screen reader. A fieldset around it that is
- * switched off still switches off the inputs inside, as nothing here is a legend.
+ * *Saving…* and *Saved* of a setting). The group is the same to a screen reader.
  */
 export function ChoiceGroupFrame({ legend, hideLegend = false, children }: ChoiceGroupFrameProps) {
   const name = useId();
