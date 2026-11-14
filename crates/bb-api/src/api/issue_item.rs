@@ -13,7 +13,7 @@ use utoipa::ToSchema;
 use super::projects::ProjectRef;
 use super::tags::LabelRefBody;
 use super::workflows::{StatusChangeRef, StatusRef};
-use crate::lean::{FieldSpec, ListParams};
+use crate::lean::{FieldSpec, ListParams, Listed};
 
 /// The fields of an issue in a list that can be asked for, and which of them a list holds when the
 /// request names none: what a row of a list needs.
@@ -204,6 +204,9 @@ pub(crate) struct IssueItem {
     #[masked(open)]
     version: Option<i64>,
 }
+
+// A page of issues is masked by the type of each issue, as the issue itself: the page passes it on (ADR-0027).
+const _: () = assert!(<Listed<IssueItem> as Masked>::HOLDS_ITEM_TYPE);
 
 impl From<&IssueView> for IssueItem {
     fn from(issue: &IssueView) -> Self {
