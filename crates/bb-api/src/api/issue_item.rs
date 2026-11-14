@@ -266,6 +266,16 @@ mod tests {
     use super::*;
 
     #[test]
+    fn plan_14_no_list_of_issues_names_the_time_factor() {
+        // Only the answer of a change of the people holds it, beside the item (ADR-0030).
+        assert!(
+            <IssueItem as Masked>::FIELDS
+                .iter()
+                .all(|(name, _)| *name != "time_factor")
+        );
+    }
+
+    #[test]
     fn time_03_each_member_of_time_asks_for_the_minutes_spent() {
         let asked = |fields: &str| -> ListParams {
             serde_json::from_value(serde_json::json!({ "fields": fields })).unwrap()

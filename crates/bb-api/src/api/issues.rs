@@ -78,6 +78,10 @@ pub(crate) struct IssueAfterChangeBody {
 /// Written out because the members of the item stand at the top (`Masked` cannot be derived over
 /// `flatten`): the item is masked as itself, on the whole answer, and the factor as its own view
 /// inside it, both with the mask of the issue's type the answer is authorized with.
+// The factor is a view of its own, not one masked by an issue type: the answer hands it the mask of
+// the issue's type (ADR-0027).
+const _: () = assert!(!<Option<TimeFactorBody> as Masked>::HOLDS_ITEM_TYPE);
+
 impl Masked for IssueAfterChangeBody {
     const FIELDS: &'static [(&'static str, Field)] = <IssueItem as Masked>::FIELDS;
     const MASK_FROM: MaskFrom = <IssueItem as Masked>::MASK_FROM;

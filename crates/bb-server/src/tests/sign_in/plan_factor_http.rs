@@ -329,6 +329,10 @@ async fn plan_14_the_time_factor_is_hidden_by_the_levels_of_the_type_of_the_issu
                     Some(&site.kind),
                     FieldLevel::Hidden,
                 ),
+                // A member of the issue item itself, hidden on a bug too: the answer is flat, and its
+                // members are masked by the same type.
+                (Field::Priority.into(), None, FieldLevel::CanSee),
+                (Field::Priority.into(), Some(&site.kind), FieldLevel::Hidden),
             ],
         )
         .await?;
@@ -342,6 +346,12 @@ async fn plan_14_the_time_factor_is_hidden_by_the_levels_of_the_type_of_the_issu
             let read = tim.send("GET", &factor_of(&key), None).await?;
             assert_eq!(answered, *ok(&read)?, "{issue_type}");
             assert_eq!(answered.get("percent").is_some(), shown, "{answered}");
+            assert_eq!(
+                changed.body.get("priority").is_some(),
+                shown,
+                "{}",
+                changed.body
+            );
         }
         Ok(())
     })
