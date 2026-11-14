@@ -4,6 +4,7 @@ import {
   alertTone,
   Button,
   buttonLook,
+  ChoiceGroupFrame,
   Form,
   MarkdownEditor,
   SubmitButton,
@@ -47,8 +48,7 @@ function MentionChoices({
     return null;
   }
   return (
-    <fieldset {...partOf(part.choiceGroup)}>
-      <legend {...partOf(part.choiceGroupLegend)}>{t("comments.mention-choices")}</legend>
+    <ChoiceGroupFrame legend={t("comments.mention-choices")}>
       {items.map((choice) => (
         <Button
           key={choice.handle}
@@ -60,7 +60,7 @@ function MentionChoices({
           {choice.name}
         </Button>
       ))}
-    </fieldset>
+    </ChoiceGroupFrame>
   );
 }
 

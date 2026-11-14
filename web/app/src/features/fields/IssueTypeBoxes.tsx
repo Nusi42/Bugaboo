@@ -1,6 +1,6 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Checkbox, partOf, part } from "@bugaboo/ui";
+import { Checkbox, ChoiceGroupFrame, partOf, part } from "@bugaboo/ui";
 import { useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
@@ -26,8 +26,7 @@ export function IssueTypeBoxes({
   return (
     <QueryGate error={issueTypes.error} data={issueTypes.data}>
       {(page) => (
-        <fieldset {...partOf(part.choiceGroup)}>
-          <legend {...partOf(part.choiceGroupLegend)}>{t("fields.scope-types")}</legend>
+        <ChoiceGroupFrame legend={t("fields.scope-types")}>
           <p {...partOf(part.muted)}>{t("fields.scope-types-help")}</p>
           {page.items.map((each) => (
             <Checkbox
@@ -39,7 +38,7 @@ export function IssueTypeBoxes({
               }}
             />
           ))}
-        </fieldset>
+        </ChoiceGroupFrame>
       )}
     </QueryGate>
   );

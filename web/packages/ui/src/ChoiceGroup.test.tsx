@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { ChoiceGroup } from "./ChoiceGroup.tsx";
+import { ChoiceGroup, ChoiceGroupFrame } from "./ChoiceGroup.tsx";
 import { doNothing } from "./do-nothing.ts";
 import { choiceGroupLook } from "./props.ts";
 
@@ -71,5 +71,32 @@ describe("ux_6_4 a group of choices a page can set its name beside other things"
     expect(markup).toContain('role="group"');
     expect(markup).toContain(`aria-labelledby="${String(name)}"`);
     expect(markup).not.toContain("<fieldset");
+  });
+});
+
+describe("ux_6_4 the one frame of a group of choices, whatever its choices are", () => {
+  it("names any choices it holds by its first line, with no fieldset or legend", () => {
+    const markup = renderToStaticMarkup(
+      <ChoiceGroupFrame legend={words.legend}>
+        <i>{words.one}</i>
+      </ChoiceGroupFrame>,
+    );
+    const name = /id="(?<id>[^"]+)" data-part="choice-group\.legend"/u.exec(markup)?.groups?.["id"];
+    expect(markup).toContain('data-part="choice-group"');
+    expect(markup).toContain(`aria-labelledby="${String(name)}"`);
+    expect(markup).toContain(words.one);
+    expect(markup).not.toContain("<fieldset");
+    expect(markup).not.toContain("<legend");
+  });
+
+  it("keeps the name for a screen reader only when the row shows it already", () => {
+    const markup = renderToStaticMarkup(
+      <ChoiceGroupFrame legend={words.legend} hideLegend>
+        {words.one}
+      </ChoiceGroupFrame>,
+    );
+    const name = /id="(?<id>[^"]+)" data-part="visually-hidden"/u.exec(markup)?.groups?.["id"];
+    expect(markup).toContain(`aria-labelledby="${String(name)}"`);
+    expect(markup).not.toContain("choice-group.legend");
   });
 });

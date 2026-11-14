@@ -1,5 +1,5 @@
 import { useId } from "react";
-import { partOf, part } from "@bugaboo/ui";
+import { ChoiceGroupFrame, partOf, part } from "@bugaboo/ui";
 
 import { ThemePreview, type PreviewedOwn } from "./ThemePreview.tsx";
 
@@ -32,8 +32,7 @@ export interface ThemePickerProps {
 export function ThemePicker({ legend, choices, value, onChange }: ThemePickerProps) {
   const group = useId();
   return (
-    <fieldset {...partOf(part.choiceGroup)}>
-      <legend {...partOf(part.choiceGroupLegend)}>{legend}</legend>
+    <ChoiceGroupFrame legend={legend}>
       <div {...partOf(part.row, { variants: ["stretch"] })}>
         {choices.map((choice) => (
           <label key={choice.value} {...partOf(part.choiceGroupChoice)}>
@@ -54,6 +53,6 @@ export function ThemePicker({ legend, choices, value, onChange }: ThemePickerPro
           </label>
         ))}
       </div>
-    </fieldset>
+    </ChoiceGroupFrame>
   );
 }

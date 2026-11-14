@@ -35,7 +35,13 @@ export { DayScale, type DayScaleProps, type ScaleUnit } from "./DayScale.tsx";
 export { CellInput, type CellInputProps } from "./CellInput.tsx";
 export { gridColumnSelector } from "./grid-column.ts";
 export { Checkbox, type CheckboxProps } from "./Checkbox.tsx";
-export { ChoiceGroup, type Choice, type ChoiceGroupProps } from "./ChoiceGroup.tsx";
+export {
+  ChoiceGroup,
+  ChoiceGroupFrame,
+  type Choice,
+  type ChoiceGroupFrameProps,
+  type ChoiceGroupProps,
+} from "./ChoiceGroup.tsx";
 export {
   AskDialog,
   ConfirmDialog,

@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Checkbox, SelectField, Switch, partOf, part } from "@bugaboo/ui";
+import { Checkbox, ChoiceGroupFrame, SelectField, Switch, partOf, part } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
 import { boxWords, labelOf } from "./box-words.ts";
@@ -93,10 +93,7 @@ function PickSeveralEditor({ field, value, onCommit, problem, inRow = false }: V
     ? value.filter((each): each is string => typeof each === "string")
     : [];
   return (
-    <fieldset {...partOf(part.choiceGroup)}>
-      <legend {...partOf(inRow ? part.visuallyHidden : part.choiceGroupLegend)}>
-        {labelOf(field)}
-      </legend>
+    <ChoiceGroupFrame legend={labelOf(field)} hideLegend={inRow}>
       {pickable(field, current).map((choice) => (
         <Checkbox
           key={choice.id}
@@ -111,7 +108,7 @@ function PickSeveralEditor({ field, value, onCommit, problem, inRow = false }: V
         />
       ))}
       {problem === undefined ? null : <p {...partOf(part.fieldError)}>{problem}</p>}
-    </fieldset>
+    </ChoiceGroupFrame>
   );
 }
 

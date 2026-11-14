@@ -122,6 +122,35 @@ function MeasuredChoices<Value extends string>(props: OptionsProps<Value>) {
   );
 }
 
+export interface ChoiceGroupFrameProps {
+  /** The visible name of the group, already in the person's language. */
+  readonly legend: string;
+  /** The name is read out but not drawn: the row the group stands in shows it already (a row of the Details). */
+  readonly hideLegend?: boolean;
+  readonly children: ReactNode;
+}
+
+/**
+ * The frame of every group of choices: a group named by its first line. Groups whose choices are not radios (ticks,
+ * buttons, theme samples) stand in it too, so a group of choices is built one way only.
+ *
+ * A group named by its first line rather than a fieldset with its legend: a legend is drawn in the border of its
+ * fieldset and is never a line of a grid, so a page could not set something beside the name alone (the cell of
+ * *Saving…* and *Saved* of a setting). The group is the same to a screen reader. A fieldset around it that is
+ * switched off still switches off the inputs inside, as nothing here is a legend.
+ */
+export function ChoiceGroupFrame({ legend, hideLegend = false, children }: ChoiceGroupFrameProps) {
+  const name = useId();
+  return (
+    <Group aria-labelledby={name} {...partOf(part.choiceGroup)}>
+      <div id={name} {...partOf(hideLegend ? part.visuallyHidden : part.choiceGroupLegend)}>
+        {legend}
+      </div>
+      {children}
+    </Group>
+  );
+}
+
 /**
  * One choice out of a few, shown as buttons that sit side by side while they all fit on one line, and under each
  * other, as wide as the screen, when they do not: themes, spacing and the like. With the grid look the choices stand
@@ -134,15 +163,8 @@ export function ChoiceGroup<Value extends string>({
   ...options
 }: ChoiceGroupProps<Value>) {
   const group = useId();
-  const name = useId();
-  // A group named by its first line rather than a fieldset with its legend: a legend is drawn in the border of its
-  // fieldset and is never a line of a grid, so a page could not set something beside the name alone (the cell of
-  // *Saving…* and *Saved* of a setting). The group is the same to a screen reader.
   return (
-    <Group aria-labelledby={name} {...partOf(part.choiceGroup)}>
-      <div id={name} {...partOf(part.choiceGroupLegend)}>
-        {legend}
-      </div>
+    <ChoiceGroupFrame legend={legend}>
       {look === undefined ? (
         <MeasuredChoices {...options} group={group} />
       ) : (
@@ -150,6 +172,6 @@ export function ChoiceGroup<Value extends string>({
           <Options {...options} group={group} dot={look === choiceGroupLook.radios} />
         </div>
       )}
-    </Group>
+    </ChoiceGroupFrame>
   );
 }
