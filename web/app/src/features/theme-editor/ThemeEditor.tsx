@@ -28,14 +28,9 @@ export function ThemeEditor({ detail, lock, notices }: ThemeEditorProps) {
   const { theme } = detail;
   const editing = useThemeEditing(detail, lock);
   const phone = useLayout() === "phone";
-  const { dirty } = editing;
   const preview = <EditorPreview theme={theme} draftShown={editing.draftShown} />;
   return (
-    <Card
-      heading={theme.name}
-      level={1}
-      {...(editing.mine && dirty ? { actions: <UnsavedNote /> } : {})}
-    >
+    <Card heading={theme.name} level={1}>
       {notices}
       <div {...partOf(part.themeEditor)}>
         <ReadabilityLine
@@ -59,6 +54,7 @@ export function ThemeEditor({ detail, lock, notices }: ThemeEditorProps) {
             editing={editing}
             lock={lock}
             extra={phone ? <PhonePreview>{preview}</PhonePreview> : null}
+            note={editing.mine ? <UnsavedNote dirty={editing.dirty} /> : null}
           />
         ) : null}
       </div>

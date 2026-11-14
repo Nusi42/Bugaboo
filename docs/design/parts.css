@@ -4100,6 +4100,12 @@ textarea,
   font-weight: var(--weight-regular);
 }
 
+[data-part="card.actions"] > [data-part="save-status"],
+[data-part="theme-editor.bar-end"] > [data-part="save-status"] {
+  min-inline-size: var(--size-save-words);
+  text-align: end;
+}
+
 [data-part="setting-head"] {
   position: relative;
 }

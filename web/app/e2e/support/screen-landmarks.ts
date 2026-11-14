@@ -22,15 +22,23 @@ const PAGE_PARTS = [
 /**
  * The landmarks of a list whose view a person changes (the grouping, the order, a filter, a group
  * folded): the heading and the toolbar stand still, and the box of the rows is what changes. With
- * `toolbarGrows` the toolbar is what changes too (a filter adds its chip there).
+ * `filterAdded` the filters change too: the new filter takes its place in their row, and on a phone
+ * in the sheet of the filters the person works in, which brings *Add filter* back into view when its
+ * window closes.
  */
-export function listViewLandmarks(toolbarGrows = false): ScreenLandmarks {
+export function listViewLandmarks(filterAdded = false): ScreenLandmarks {
   const toolbar = partLandmark("the toolbar", "list-toolbar");
+  const filters = partLandmark("the filters", "search-filters");
+  // On a phone the filters stand in a sheet over the list; a computer has no such sheet.
+  const sheet: Landmark = {
+    name: "the sheet of the filters",
+    selector: "[role='dialog'] [data-part='search-bar']",
+  };
   return {
-    all: [HEADING, toolbar, ROWS_BOX],
-    grows: [ROWS_BOX.name, ...(toolbarGrows ? [toolbar.name] : [])],
-    follows: toolbarGrows ? [ROWS_BOX.name] : [],
-    scrolls: [],
+    all: [HEADING, toolbar, ...(filterAdded ? [filters, sheet] : []), ROWS_BOX],
+    grows: [ROWS_BOX.name, ...(filterAdded ? [toolbar.name, filters.name, sheet.name] : [])],
+    follows: filterAdded ? [ROWS_BOX.name] : [],
+    scrolls: filterAdded ? ["search-panel"] : [],
   };
 }
 

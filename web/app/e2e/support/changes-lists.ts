@@ -3,9 +3,11 @@ import { expect, type Page } from "@playwright/test";
 import { t } from "@bugaboo/messages";
 
 import { type ChangeInPlace, ISSUE } from "./change-row.ts";
+import { webIssues } from "./issues.ts";
 import { listLandmarks, ROWS_BOX } from "./landmarks.ts";
-import { columnButton, grid, groupOf, inViewChoices, tickIssue } from "./list-look.ts";
+import { columnButton, grid, groupOf, inViewChoices, rowOf, tickIssue } from "./list-look.ts";
 import { listViewLandmarks, timelineLandmarks } from "./screen-landmarks.ts";
+import { openBar } from "./search-bar.ts";
 import { barOf, movedLater, openTimeline, planned, pressOf } from "./timeline.ts";
 import { projectIssuesAddress } from "../../src/shared/paths.ts";
 
@@ -26,6 +28,9 @@ async function openList(page: Page): Promise<void> {
 function rowsBox(page: Page) {
   return page.locator(ROWS_BOX.selector);
 }
+
+/** The title the filter of the table looks for: a filter of the title matches the whole title. */
+const FOUND = webIssues.login;
 
 /** The changes in place of the list of a project. */
 export const listChanges: readonly ChangeInPlace[] = [
@@ -83,6 +88,29 @@ export const listChanges: readonly ChangeInPlace[] = [
       await expect.poll(() => new URL(page.url()).searchParams.get("s")).toContain("sort by title");
     },
     landmarks: () => Promise.resolve(listViewLandmarks()),
+  },
+  {
+    screen: LIST,
+    change: "filter",
+    open: openList,
+    part: rowsBox,
+    // Choosing the field and typing the words are the person's own; adding the filter is the change.
+    before: async (page) => {
+      await openBar(page);
+      await page.getByRole("button", { name: t("search.bar.add-filter") }).click();
+      await page
+        .getByRole("button", { name: t("search.bar.filter-by", { field: "Title" }) })
+        .click();
+      await page.getByRole("textbox", { name: t("search.bar.value") }).fill(FOUND);
+    },
+    act: async (page) => {
+      await page
+        .getByRole("alertdialog", { name: "Title" })
+        .getByRole("button", { name: t("search.bar.add-filter-confirm") })
+        .click();
+      await expect(rowOf(page, webIssues.passkey)).toHaveCount(0);
+    },
+    landmarks: () => Promise.resolve(listViewLandmarks(true)),
   },
 ];
 

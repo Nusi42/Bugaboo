@@ -16,6 +16,44 @@ export interface EditorBarProps {
   readonly lock: EditLock;
   /** What a phone adds beside *Save theme*: the button that opens the preview. */
   readonly extra?: ReactNode;
+  /** *Not saved yet*, beside *Save theme*, in a place that is always there (UX §6.4). */
+  readonly note: ReactNode;
+}
+
+/** The end of the bar: the note, what a phone adds, *Throw my changes away* and *Save theme*. */
+function BarEnd({
+  detail,
+  editing,
+  saving,
+  extra,
+  note,
+}: Pick<EditorBarProps, "detail" | "editing" | "extra" | "note"> & {
+  readonly saving: ReturnType<typeof useSaving>;
+}) {
+  return (
+    <div {...partOf(part.themeEditorBarEnd)}>
+      {note}
+      {extra}
+      <Button
+        look={buttonLook.quiet}
+        isDisabled={!editing.dirty}
+        onPress={() => {
+          editing.setValues(detail.values);
+          editing.setName(detail.theme.name);
+        }}
+      >
+        {t("editing.changes-drop")}
+      </Button>
+      <Button
+        look={buttonLook.primary}
+        isPending={saving.pending}
+        isDisabled={!editing.dirty}
+        onPress={saving.save}
+      >
+        {t("theme-editor.save")}
+      </Button>
+    </div>
+  );
 }
 
 /**
@@ -25,8 +63,7 @@ export interface EditorBarProps {
  * *Save a copy* and *Download* stand in the page above it. A personal theme with colors that are hard
  * to read asks *Save this theme?* first; a theme for everyone sends the cursor to the readability.
  */
-export function EditorBar({ detail, editing, lock, extra }: EditorBarProps) {
-  const { dirty } = editing;
+export function EditorBar({ detail, editing, lock, extra, note }: EditorBarProps) {
   const { theme } = detail;
   const saving = useSaving(detail, editing, lock);
   // On a phone *Save a copy* and *Download* stand in the page; the pinned bar keeps the rest.
@@ -48,27 +85,7 @@ export function EditorBar({ detail, editing, lock, extra }: EditorBarProps) {
             <ThemeActions theme={theme} onFailed={setFailure} />
           </div>
         )}
-        <div {...partOf(part.themeEditorBarEnd)}>
-          {extra}
-          <Button
-            look={buttonLook.quiet}
-            isDisabled={!dirty}
-            onPress={() => {
-              editing.setValues(detail.values);
-              editing.setName(theme.name);
-            }}
-          >
-            {t("editing.changes-drop")}
-          </Button>
-          <Button
-            look={buttonLook.primary}
-            isPending={saving.pending}
-            isDisabled={!dirty}
-            onPress={saving.save}
-          >
-            {t("theme-editor.save")}
-          </Button>
-        </div>
+        <BarEnd detail={detail} editing={editing} saving={saving} extra={extra} note={note} />
       </div>
       <ActionFailure failure={failure} />
       <AskToSave saving={saving} hard={editing.read?.hard_colors ?? []} />
