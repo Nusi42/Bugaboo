@@ -105,11 +105,18 @@ export function factorRow(page: Page): Locator {
 
 export { lea };
 
-/** Holds back every read of a time factor from now on (it never comes); its change still goes out. */
-export async function holdFactorReads(page: Page): Promise<void> {
+/**
+ * Holds back every read of a time factor from now on (it never comes); its change still goes out.
+ * Answers how many reads were asked for since.
+ */
+export async function holdFactorReads(page: Page): Promise<() => number> {
+  let asked = 0;
   await page.route(/\/time-factor$/u, async (route) => {
-    if (route.request().method() !== "GET") {
+    if (route.request().method() === "GET") {
+      asked += 1;
+    } else {
       await route.fallback();
     }
   });
+  return () => asked;
 }
