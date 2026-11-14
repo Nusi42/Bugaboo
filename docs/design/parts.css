@@ -3888,6 +3888,10 @@ textarea,
   min-width: 0;
 }
 
+[data-part="box"]:has([data-part="save-status"]) {
+  position: relative;
+}
+
 [data-part="strong"] {
   font-weight: var(--weight-regular);
   color: var(--fg);
@@ -4081,9 +4085,10 @@ textarea,
   font-weight: var(--weight-regular);
 }
 
-[data-part="stack"] > [data-part="save-status"] {
-  display: block;
-  min-block-size: var(--size-line);
+[data-part="box"] > [data-part="save-status"] {
+  position: absolute;
+  inset-block-start: var(--space-3);
+  inset-inline-end: var(--space-3);
 }
 
 [data-part="save-bar"] {
@@ -8291,6 +8296,8 @@ textarea,
 [data-part="customize-actions"] {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
 }
 
 [data-part="workflow-editor"] {

@@ -3,6 +3,7 @@ import { expect, type Locator, type Page } from "@playwright/test";
 import { t } from "@bugaboo/messages";
 
 import type { ChangeInPlace } from "./change-row.ts";
+import { savedWords } from "./saved.ts";
 import { pageLandmarks } from "./screen-landmarks.ts";
 import { paths } from "../../src/shared/paths.ts";
 
@@ -25,7 +26,7 @@ function boxOf(control: Locator): Locator {
 
 /** *Saved* is on the page: the server has the change. */
 async function saved(page: Page): Promise<void> {
-  await expect(page.getByRole("status").filter({ hasText: t("save.saved") })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: savedWords })).toBeVisible();
 }
 
 /** A choice or a switch of a page of settings that is saved at once. */

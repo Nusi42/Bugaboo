@@ -68,13 +68,15 @@ function DayHours({
  * person who reads them), also on the page of somebody else, whose days the server sends Monday first.
  */
 export function UsualDays({ whose, read, workTimes }: UsualDaysProps) {
-  const region = useRegion();
-  const week = weekOf(region.firstDay);
+  const week = weekOf(useRegion().firstDay);
   const edits = useUsualDays(whose, read);
-  const usual = workTimes.usual;
+  const { usual } = workTimes;
   return (
-    <Card heading={t("work-times.usual")} intro={usualSummary(week, usual)}>
-      <SaveStatus state={edits.saveState} labels={saveLabels()} />
+    <Card
+      actions={<SaveStatus state={edits.saveState} labels={saveLabels()} />}
+      heading={t("work-times.usual")}
+      intro={usualSummary(week, usual)}
+    >
       {edits.problem === null ? null : <Alert tone={alertTone.danger}>{edits.problem}</Alert>}
       <ul {...partOf(part.list, { variants: ["snug"] })} aria-label={t("work-times.usual")}>
         {week.map(({ at, date }) => {

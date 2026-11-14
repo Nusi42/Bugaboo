@@ -61,6 +61,33 @@ function matches(setting: Setting, query: string): boolean {
 }
 
 /**
+ * The setting changed last, whose box says *Saving…* and *Saved* (UX §6.4: where the change
+ * happened, in a line that is there anyway), and the actions that note it.
+ */
+function useLastChanged(actions: SettingActions) {
+  const [last, setLast] = useState<string | null>(null);
+  const noted: SettingActions = {
+    onChange: (key, value) => {
+      setLast(key);
+      actions.onChange(key, value);
+    },
+    onReset: (key) => {
+      setLast(key);
+      actions.onReset(key);
+    },
+    ...(actions.onLock === undefined
+      ? {}
+      : {
+          onLock: (key: string, locked: boolean) => {
+            setLast(key);
+            actions.onLock?.(key, locked);
+          },
+        }),
+  };
+  return { last, noted };
+}
+
+/**
  * The generic settings form (ADR-0018): a topic drawn from what the registry knows about each
  * setting, with a search box that filters by name and explanation. It knows no setting by name,
  * so a setting that is added to the registry appears here with its explanation and nothing else
@@ -76,6 +103,7 @@ export function SettingsForm({
   helps,
 }: SettingsFormProps) {
   const [query, setQuery] = useState("");
+  const { last, noted } = useLastChanged(actions);
   const drawn = settings.filter((setting) => isDrawn(setting, controls));
   const shown = drawn.filter((setting) => matches(setting, query));
   // Where a switch stands beside a box with its own Save, the page says which is saved when (R7).
@@ -92,7 +120,6 @@ export function SettingsForm({
         />
       ) : null}
       {twoWays ? <p {...partOf(part.muted)}>{t("setting.ui.saved-at-once")}</p> : null}
-      <SaveStatus state={saveState} labels={saveLabels()} />
       {problem === null ? null : <Alert tone={alertTone.danger}>{problem}</Alert>}
       {shown.length === 0 ? (
         <p {...partOf(part.muted)}>{t("setting.ui.nothing")}</p>
@@ -102,9 +129,12 @@ export function SettingsForm({
             <SettingRow
               key={setting.key}
               setting={setting}
-              actions={actions}
+              actions={noted}
               control={controls?.[setting.key]}
               help={helps?.[setting.key]?.(setting)}
+              saved={
+                setting.key === last ? <SaveStatus state={saveState} labels={saveLabels()} /> : null
+              }
             />
           ))}
         </ul>

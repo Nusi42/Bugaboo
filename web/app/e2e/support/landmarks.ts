@@ -108,6 +108,9 @@ export async function expectFocusIn(changed: Locator): Promise<void> {
     .toBe(true);
 }
 
+/** The heading of the page. */
+export const HEADING: Landmark = { name: "the heading", selector: "main h1" };
+
 /** The box the rows of a list scroll in. */
 export const ROWS_BOX = partLandmark("the box of the rows", "list-scroll");
 
@@ -140,7 +143,7 @@ export async function listLandmarks(page: Page): Promise<ScreenLandmarks> {
   const [first, ...rest] = await Promise.all(rows.map((row, index) => rowLandmark(row, index)));
   return {
     all: [
-      { name: "the heading", selector: "h1" },
+      HEADING,
       partLandmark("the toolbar", "list-toolbar"),
       // The box of the rows may grow at its end (a short list is as high as its rows, and it keeps room
       // for the bar over its foot); its top stays.

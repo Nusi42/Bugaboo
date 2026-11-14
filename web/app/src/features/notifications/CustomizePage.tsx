@@ -121,23 +121,26 @@ export function CustomizePage() {
       level={1}
       intro={t("notifications.customize-intro")}
     >
-      <SaveStatus state={progress.state} labels={saveLabels()} />
       {progress.problem === null ? null : <Alert tone={alertTone.danger}>{progress.problem}</Alert>}
       <ul {...partOf(part.list)} aria-label={t("notifications.kind")}>
         {notificationKindWords.map((kind) => (
           <KindRow key={kind} kind={kind} settings={settings} />
         ))}
       </ul>
-      {ownChoices.length === 0 ? null : (
+      {/* *Saved* stands beside *Reset to default*, at the end of the card: it pushes nothing (UX §6.4). */}
+      {ownChoices.length === 0 && progress.state === "idle" ? null : (
         <div {...partOf(part.customizeActions)}>
-          <Button
-            look={buttonLook.quiet}
-            onPress={() => {
-              void changeMySettings(ownChoices.map((key) => ({ key, value: null })));
-            }}
-          >
-            {t("setting.ui.reset")}
-          </Button>
+          {ownChoices.length === 0 ? null : (
+            <Button
+              look={buttonLook.quiet}
+              onPress={() => {
+                void changeMySettings(ownChoices.map((key) => ({ key, value: null })));
+              }}
+            >
+              {t("setting.ui.reset")}
+            </Button>
+          )}
+          <SaveStatus state={progress.state} labels={saveLabels()} />
         </div>
       )}
     </Card>

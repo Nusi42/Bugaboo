@@ -16,7 +16,12 @@ export function SessionsPage() {
   const sessions = useQuery(sessionsOptions());
   const end = useEndSession();
   return (
-    <Card heading={t("sessions.title")} level={1} intro={t("sessions.intro")}>
+    <Card
+      actions={<SaveStatus state={end.saveState} labels={saveLabels()} />}
+      heading={t("sessions.title")}
+      level={1}
+      intro={t("sessions.intro")}
+    >
       {sessions.isError ? <Alert tone={alertTone.danger}>{messageOf(sessions.error)}</Alert> : null}
       <div aria-busy={sessions.isPending}>
         <ul {...partOf(part.list)} aria-label={t("sessions.list")}>
@@ -32,7 +37,6 @@ export function SessionsPage() {
         </ul>
         {sessions.isPending ? <DelayedSkeleton /> : null}
       </div>
-      <SaveStatus state={end.saveState} labels={saveLabels()} />
       {end.problem === null ? null : <Alert tone={alertTone.danger}>{end.problem}</Alert>}
       {end.saveState === "saved" ? (
         <Alert tone={alertTone.success}>{t("sessions.ended")}</Alert>

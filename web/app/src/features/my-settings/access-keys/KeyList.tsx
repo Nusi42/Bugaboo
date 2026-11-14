@@ -14,7 +14,10 @@ export function KeyList() {
   const remove = useDeleteKey();
   const items: readonly AccessKey[] = keys.data?.items ?? [];
   return (
-    <Card heading={t("access-keys.list")}>
+    <Card
+      actions={<SaveStatus state={remove.saveState} labels={saveLabels()} />}
+      heading={t("access-keys.list")}
+    >
       {keys.isError ? <Alert tone={alertTone.danger}>{messageOf(keys.error)}</Alert> : null}
       <div aria-busy={keys.isPending}>
         {keys.isSuccess && items.length === 0 ? (
@@ -33,7 +36,6 @@ export function KeyList() {
         </ul>
         {keys.isPending ? <DelayedSkeleton /> : null}
       </div>
-      <SaveStatus state={remove.saveState} labels={saveLabels()} />
       {remove.problem === null ? null : <Alert tone={alertTone.danger}>{remove.problem}</Alert>}
       {remove.saveState === "saved" ? (
         <Alert tone={alertTone.success}>{t("access-keys.deleted")}</Alert>

@@ -3,7 +3,7 @@ import { expect, type Page } from "@playwright/test";
 import { t } from "@bugaboo/messages";
 
 import { type ChangeInPlace, ISSUE } from "./change-row.ts";
-import { listLandmarks } from "./landmarks.ts";
+import { listLandmarks, ROWS_BOX } from "./landmarks.ts";
 import { columnButton, grid, tickIssue } from "./list-look.ts";
 import { listViewLandmarks, timelineLandmarks } from "./screen-landmarks.ts";
 import { barOf, movedLater, openTimeline, planned, pressOf } from "./timeline.ts";
@@ -24,7 +24,7 @@ async function openList(page: Page): Promise<void> {
 
 /** The box the rows of the list scroll in: what a change of the view changes. */
 function rowsBox(page: Page) {
-  return page.locator("[data-part='list-scroll']");
+  return page.locator(ROWS_BOX.selector);
 }
 
 /** The changes in place of the list of a project. */

@@ -16,8 +16,11 @@ export function PermissionsCard({ role }: { readonly role: Schema<"RoleBody"> })
   const catalogue = useCatalogue();
   const edits = useRoleEdits(role.id);
   return (
-    <Card heading={t("roles.permissions-title")} intro={t("roles.permissions-intro")}>
-      <SaveStatus state={edits.saveState} labels={saveLabels()} />
+    <Card
+      actions={<SaveStatus state={edits.saveState} labels={saveLabels()} />}
+      heading={t("roles.permissions-title")}
+      intro={t("roles.permissions-intro")}
+    >
       {edits.problem === null ? null : <Alert tone={alertTone.danger}>{edits.problem}</Alert>}
       <RoleSwitch
         id={role.id}

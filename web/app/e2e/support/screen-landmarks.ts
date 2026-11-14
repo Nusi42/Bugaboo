@@ -1,15 +1,12 @@
 import { type Locator, type Page } from "@playwright/test";
 
-import { ROWS_BOX, type ScreenLandmarks } from "./landmarks.ts";
+import { HEADING, ROWS_BOX, type ScreenLandmarks } from "./landmarks.ts";
 import { LANDMARK, type Landmark, landmarkOf, partLandmark } from "./movement.ts";
 import { aroundTheChange, placesOf } from "./places.ts";
 
 // The landmarks of the screens beyond the issue page and the rows of a list (UX §6.4, M8 WP-13),
 // for the table of changes: the frame of a list whose view changes, a page of settings or of the
 // theme editor, and the timeline.
-
-/** The heading of the page. */
-const HEADING: Landmark = { name: "the heading", selector: "main h1" };
 
 /** The parts of a page of settings or of the theme editor that must stand still around a change. */
 const PAGE_PARTS = [

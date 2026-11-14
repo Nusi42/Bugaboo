@@ -97,6 +97,13 @@ describe("ux_01 the measure holds what is named nowhere, what came in and what g
     expect(wrongIn(movementOf([button]), { grows: ["status"] })).toEqual(nothingWrong);
   });
 
+  it("fails a changed part that gets narrower, as a title whose words wrap anew", () => {
+    const title = moved("title", box(400, 120, 600, 60), box(400, 120, 560, 60));
+    expect(wrongIn(movementOf([title]), { grows: ["title"] }).moved).toEqual([title]);
+  });
+});
+
+describe("ux_01 the measure lets a part the action moves move sideways, once", () => {
   it("passes a part the action moves, once, and fails one that goes there and back", () => {
     const bar = moved("bar", box(400, 300, 120, 24), box(440, 300, 120, 24));
     expect(wrongIn(movementOf([bar]), { moves: ["bar"] })).toEqual(nothingWrong);
@@ -104,9 +111,10 @@ describe("ux_01 the measure holds what is named nowhere, what came in and what g
     expect(wrongIn(movementOf([back]), { moves: ["bar"] }).moved).toEqual([back]);
   });
 
-  it("fails a changed part that gets narrower, as a title whose words wrap anew", () => {
-    const title = moved("title", box(400, 120, 600, 60), box(400, 120, 560, 60));
-    expect(wrongIn(movementOf([title]), { grows: ["title"] }).moved).toEqual([title]);
+  it("fails a moved part that also goes down or changes its size", () => {
+    const down = moved("bar", box(400, 300, 120, 24), box(440, 330, 120, 24));
+    const wider = moved("bar", box(400, 300, 120, 24), box(440, 300, 160, 24));
+    expect(wrongIn(movementOf([down, wider]), { moves: ["bar"] }).moved).toEqual([down, wider]);
   });
 });
 

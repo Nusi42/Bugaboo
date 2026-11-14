@@ -43,7 +43,10 @@ export function AppList() {
   const takeBack = useTakeBack();
   const items: readonly ConnectedApp[] = apps.data?.items ?? [];
   return (
-    <Card heading={t("connected-apps.list")}>
+    <Card
+      actions={<SaveStatus state={takeBack.saveState} labels={saveLabels()} />}
+      heading={t("connected-apps.list")}
+    >
       {apps.isError ? <Alert tone={alertTone.danger}>{messageOf(apps.error)}</Alert> : null}
       <div aria-busy={apps.isPending}>
         {apps.isSuccess && items.length === 0 ? (
@@ -67,7 +70,6 @@ export function AppList() {
         )}
         {apps.isPending ? <DelayedSkeleton /> : null}
       </div>
-      <SaveStatus state={takeBack.saveState} labels={saveLabels()} />
       {takeBack.problem === null ? null : <Alert tone={alertTone.danger}>{takeBack.problem}</Alert>}
       {takeBack.saveState === "saved" ? (
         <Alert tone={alertTone.success}>{t("connected-apps.taken-back")}</Alert>

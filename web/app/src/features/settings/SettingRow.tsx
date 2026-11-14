@@ -23,6 +23,8 @@ export interface SettingRowProps {
   readonly control?: ControlRenderer | undefined;
   /** The page's own explanation of the setting, for the state it is in, instead of the registry's. */
   readonly help?: string | undefined;
+  /** *Saving…* or *Saved*, when this setting is the one changed last. */
+  readonly saved?: ReactNode;
 }
 
 /** The value in words, for a setting that cannot be changed here. */
@@ -116,7 +118,7 @@ function RowActions({
  * administrator on the organization's level, the lock. A setting the organization locked is
  * shown read only and says so.
  */
-export function SettingRow({ setting, actions, control, help }: SettingRowProps) {
+export function SettingRow({ setting, actions, control, help, saved }: SettingRowProps) {
   const lockedBelow = isLockedBelow(setting, actions);
   const change = (value: SettingValue): void => {
     actions.onChange(setting.key, value);
@@ -148,6 +150,7 @@ export function SettingRow({ setting, actions, control, help }: SettingRowProps)
         </WithHint>
       )}
       <RowActions setting={setting} actions={actions} lockedBelow={lockedBelow} />
+      {saved}
     </li>
   );
 }
