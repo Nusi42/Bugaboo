@@ -4,6 +4,7 @@ import { arrowPath } from "./arrow-path.ts";
 import { keyMoveOf } from "./bar-keys.ts";
 import { moved, shownWhileMoving } from "./moves.ts";
 import { firstAround, placeOf, scaleUnits, spanFrom, stepped, weekends } from "./scale.ts";
+import { unitStartOf } from "./use-visible-rows.ts";
 
 /** A key of a bar, with or without *Alt* and *Shift*. */
 function key(name: string, altKey = false, shiftKey = false) {
@@ -28,6 +29,15 @@ describe("the scale of the timeline (UX §4.7)", () => {
     expect(units[0]).toMatchObject({ key: "2027-03-01", start: 0, length: 31 });
     expect(units[1]).toMatchObject({ key: "2027-04-01", start: 31, length: 91 });
     expect(units.reduce((all, unit) => all + unit.length, 0)).toBe(span.days);
+  });
+
+  it("plan_04_opens_at_the_start_of_the_unit_that_holds_the_place_asked_for", () => {
+    const starts = [0, 112, 224, 336];
+    expect(unitStartOf(starts, 0)).toBe(0);
+    expect(unitStartOf(starts, 111.5)).toBe(0);
+    expect(unitStartOf(starts, 112)).toBe(112);
+    expect(unitStartOf(starts, 400)).toBe(336);
+    expect(unitStartOf([], 50)).toBe(0);
   });
 
   it("plan_04_shades_weekends_only_where_a_day_is_wide_enough", () => {

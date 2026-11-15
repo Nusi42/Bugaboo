@@ -7,6 +7,7 @@ import {
   useHoldWhileReading,
   type PagedList,
 } from "@bugaboo/ui";
+import { useMemo } from "react";
 
 import type { ZoomWord } from "../../shared/list-view.ts";
 import type { FirstDay } from "../../shared/region.ts";
@@ -39,6 +40,13 @@ export interface TimelineMainProps {
 export function TimelineMain(props: TimelineMainProps) {
   const { lines, chart, pages } = props;
   const groupName = useGroupNames(props);
+  // The units stay the same while the days of the chart do, so where the chart opens is worked out once for them.
+  const { first, last, days } = chart.span;
+  const { zoom, firstDay } = chart;
+  const units = useMemo(
+    () => scaleUnits({ first, last, days }, zoom, firstDay),
+    [first, last, days, zoom, firstDay],
+  );
   // The chart and Not scheduled yet show together once the rows are read (with the hold of the timeline).
   useHoldWhileReading(pages.isLoading);
   if (pages.isPending) {
@@ -50,7 +58,7 @@ export function TimelineMain(props: TimelineMainProps) {
       <TimelineChart
         lines={lines}
         arrows={props.arrows}
-        units={scaleUnits(chart.span, chart.zoom, chart.firstDay)}
+        units={units}
         weekends={weekends(chart.span, chart.zoom)}
         today={chart.today}
         groupName={groupName}

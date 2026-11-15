@@ -25,7 +25,7 @@ export function TimelineChart({ lines, groupName, onToggle, ...backdrop }: Timel
   const above = usePaneHeadAbove() + pixelsOf("size-timeline-head");
   const { box, visible } = useVisibleRows(lines.length, rowPixels, above);
   const todayPixels = backdrop.today === undefined ? undefined : backdrop.today * dayPixels;
-  useDayInView(box, todayPixels);
+  useDayInView(box, todayPixels, { units: backdrop.units, dayPixels });
   const view = useMemo(
     () => ({ ...visible.view, today: todayPixels }),
     [visible.view, todayPixels],

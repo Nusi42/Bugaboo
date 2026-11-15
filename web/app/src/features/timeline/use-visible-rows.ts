@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "react";
 
-import { pixelsOf } from "@bugaboo/ui";
+import { pixelsOf, type ScaleUnit } from "@bugaboo/ui";
 
 import { doNothing } from "../../shared/do-nothing.ts";
 
@@ -74,22 +74,32 @@ export function useVisibleRows(count: number, rowPixels: number, headPixels: num
 /** How far into the days on screen today stands when the chart opens: a quarter of the way. */
 const todayAt = 4;
 
+/** The start of the unit of the scale that holds `pixels`: the last of `starts` (in order) that is not after it. */
+export function unitStartOf(starts: readonly number[], pixels: number): number {
+  return starts.findLast((start) => start <= pixels) ?? 0;
+}
+
 /**
  * Scrolls the chart so that `day` (today) stands near the start of the days on screen (UX §4.7,
  * *Today* jumps to today): when it opens and when what it shows changes, never while a person
- * scrolls it. A chart without today on it starts at its first day.
+ * scrolls it. It stops at the start of a unit of the scale, so the name of the first unit on screen
+ * shows whole. A chart without today on it starts at its first day.
  */
 export function useDayInView(
   box: Readonly<{ current: HTMLElement | null }>,
   pixels: number | undefined,
+  scale: { readonly units: readonly ScaleUnit[]; readonly dayPixels: number },
 ) {
+  const { units, dayPixels } = scale;
   useLayoutEffect(() => {
     const element = box.current;
     if (element === null) {
       return doNothing;
     }
     const lanes = element.clientWidth - pixelsOf("size-timeline-names");
-    const left = pixels === undefined ? 0 : Math.max(0, pixels - lanes / todayAt);
+    const starts = units.map((unit) => unit.start * dayPixels);
+    const left =
+      pixels === undefined ? 0 : unitStartOf(starts, Math.max(0, pixels - lanes / todayAt));
     // The router puts back where a box was scrolled after a change of the address (a new zoom is
     // one): the chart is scrolled once more after that.
     element.scrollTo({ left });
@@ -99,5 +109,5 @@ export function useDayInView(
     return () => {
       cancelAnimationFrame(after);
     };
-  }, [box, pixels]);
+  }, [box, pixels, units, dayPixels]);
 }
