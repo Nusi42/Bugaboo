@@ -43,8 +43,9 @@ describe("iss_17 saving and what follows", () => {
     await w.editor.save();
     expect(w.saves).toEqual([{ text: "New words", version: 3, lockToken: "t1" }]);
     expect(w.editor.snapshot().phase.kind).toBe("reading");
-    expect(w.log).toContain("forget");
-    expect(w.log.at(-1)).toBe("refresh");
+    // The record is read again before the box closes, so it closes onto the saved text.
+    expect(w.log.indexOf("refresh")).toBeLessThan(w.log.indexOf("forget"));
+    expect(w.log.filter((each) => each === "refresh")).toEqual(["refresh"]);
     expect(w.log).not.toContain("release t1");
   });
 
@@ -124,5 +125,30 @@ describe("iss_17 comparing with the newest text", () => {
     await settle();
     await w.editor.reread();
     expect(w.log.at(-1)).toBe("refresh");
+  });
+});
+
+describe("iss_17 the box closes onto the text read again", () => {
+  it("keeps the box open while the record is read again, and closes it once the read is back", async () => {
+    const read = Promise.withResolvers<void>();
+    const w = world({ refresh: () => read.promise });
+    w.editor.open();
+    w.editor.type("New words");
+    await settle();
+    const saving = w.editor.save();
+    await settle();
+    expect(w.editor.snapshot().phase.kind).toBe("saving");
+    read.resolve();
+    await saving;
+    expect(w.editor.snapshot().phase.kind).toBe("reading");
+  });
+
+  it("closes the box when the read again fails: the text is saved", async () => {
+    const w = world({ refresh: () => Promise.reject(new Error("no connection")) });
+    w.editor.open();
+    w.editor.type("New words");
+    await settle();
+    await w.editor.save();
+    expect(w.editor.snapshot().phase.kind).toBe("reading");
   });
 });

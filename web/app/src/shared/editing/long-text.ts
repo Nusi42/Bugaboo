@@ -148,8 +148,10 @@ export class LongTextEditor extends WatchingEditor {
       await this.failed(error);
       return;
     }
-    this.finish();
+    // The record is read again before the box closes, so it closes onto the saved text in one frame (UX §6.4); a read
+    // that fails leaves the text saved, and the box closes all the same.
     await this.deps.refresh().catch(ignore);
+    this.finish();
   };
 
   private async failed(error: unknown): Promise<void> {

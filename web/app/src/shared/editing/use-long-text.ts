@@ -17,6 +17,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 
 import { api } from "../api.ts";
 import { signedInPersonId } from "../session.ts";
+import { readUnlessOffline } from "../read-unless-offline.ts";
 import { forgetBrowserDraft, readBrowserDraft, writeBrowserDraft } from "./browser-drafts.ts";
 import { useLetGoWhenHidden } from "./let-go-when-hidden.ts";
 import { LongTextEditor } from "./long-text.ts";
@@ -60,7 +61,7 @@ function depsOf(which: Which): LongTextDeps {
     heartbeat: (token, draft) => sendHeartbeat(client, what(), token, draft),
     release: (token) => letGoOfEditLock(client, what(), token),
     save: (input) => which.save(input),
-    refresh: () => which.refresh(),
+    refresh: () => readUnlessOffline(which.refresh),
     serverDraft: async () => {
       const found = await readDraft(client, target());
       return found === null
