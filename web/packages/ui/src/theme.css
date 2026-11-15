@@ -4320,7 +4320,8 @@ textarea,
 }
 
 [data-part="name-value.words"] {
-  padding: var(--pad-line-in-control) 0;
+  align-self: flex-start;
+  padding-block-start: var(--pad-line-in-control);
 }
 
 [data-part="followers-line"] {

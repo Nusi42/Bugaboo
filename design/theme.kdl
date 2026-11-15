@@ -4328,9 +4328,12 @@ part "name-value.value > muted" {
 }
 
 // Words of a value that may take two lines (*×1.25 · Lea's own estimate*): their first line stands in the
-// middle of the height of a control, level with the name, however many lines follow (R1).
+// middle of the height of a control, level with the name and with a button beside it, however many lines follow
+// (R1). They keep no room under their last line: a button that wraps under them (*Change*) follows with the one gap of
+// the value, not with a hole.
 part "name-value.words" {
-    padding "$pad-line-in-control 0"
+    align-self flex-start
+    padding-block-start "$pad-line-in-control"
 }
 
 // The value of the *Followers* row is one line on a computer and on a phone: the count (or the words *You
