@@ -59,7 +59,10 @@ const ROWS = "[data-part='list-scroll']";
 const LAPTOP = { width: 1280, height: 620 } as const;
 
 /** Opens the list of the project in the window and waits until it is read whole. */
-async function openList(page: Page, size: typeof LAPTOP): Promise<void> {
+async function openList(
+  page: Page,
+  size: { readonly width: number; readonly height: number },
+): Promise<void> {
   await page.setViewportSize(size);
   await signIn(page, ada);
   await page.goto(projectIssuesAddress("WEB"));
@@ -79,6 +82,78 @@ test("ux_06 the arrow keys bring a row out from under the folded head and the he
   await page.keyboard.press("Home");
   await expect.poll(() => page.locator(ROWS).evaluate((node) => node.scrollTop)).toBe(0);
 });
+
+/** A window as wide as a tablet's: the head of the list stands above the box and does not fold. */
+const TABLET = { width: 1000, height: 700 } as const;
+
+/** The keys that move the focus a page, or to the first or the last row. */
+const PAGE_KEYS = [
+  "PageDown",
+  "PageDown",
+  "PageDown",
+  "PageUp",
+  "PageUp",
+  "End",
+  "PageUp",
+  "Home",
+] as const;
+
+/**
+ * Where the focused row stands once the box has come to rest: whether any of it is under the head of the columns, or
+ * below the end of the box.
+ */
+async function focusedRowAtRest(page: Page): Promise<{ underHead: boolean; belowBox: boolean }> {
+  const box = page.locator(ROWS);
+  // At rest: the box scrolls no more from one frame to the next.
+  await expect
+    .poll(() =>
+      box.evaluate(
+        (node) =>
+          new Promise<boolean>((done) => {
+            const before = node.scrollTop;
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => {
+                done(node.scrollTop === before);
+              });
+            });
+          }),
+      ),
+    )
+    .toBe(true);
+  return box.evaluate((node) => {
+    const row = document.activeElement?.getBoundingClientRect();
+    const head = document.querySelector("[data-part='list-head']")?.getBoundingClientRect();
+    const end = node.getBoundingClientRect().top + node.clientTop + node.clientHeight;
+    return {
+      underHead: row === undefined || head === undefined || row.top < head.bottom - 0.5,
+      belowBox: row === undefined || row.bottom > end + 0.5,
+    };
+  });
+}
+
+for (const [layout, size] of [
+  ["computer", LAPTOP],
+  ["tablet", TABLET],
+] as const) {
+  test(`ux_06 Page down, Page up, End and Home keep the focused row whole in the box under the heads (${layout})`, async ({
+    page,
+  }) => {
+    await openList(page, size);
+    await page.locator(`${ROWS} [role='row']`).first().focus();
+    const seen: {
+      readonly key: string;
+      readonly underHead: boolean;
+      readonly belowBox: boolean;
+    }[] = [];
+    await inOrder(
+      PAGE_KEYS.map((key) => async () => {
+        await page.keyboard.press(key);
+        seen.push({ key, ...(await focusedRowAtRest(page)) });
+      }),
+    );
+    expect(seen).toEqual(seen.map(({ key }) => ({ key, underHead: false, belowBox: false })));
+  });
+}
 
 test("ux_06 on paper the first row stands under the head of the columns as on the screen", async ({
   page,

@@ -41,6 +41,39 @@ class RoomAboveLayout extends ListLayout<object, RoomAboveOptions> {
   }
 }
 
+/** The keys that move the focus a page up or down, or to the last row. */
+const PAGE_KEYS: ReadonlySet<string> = new Set(["PageUp", "PageDown", "End"]);
+
+/** What React Aria marks every row of the list with: its key. */
+const ROW_KEY = "data-key";
+
+/**
+ * React Aria moves the focus of a row a page, or to the last row, and brings it into view, but leaves the key to the
+ * browser too, which then scrolls the box a page more, or to its end while React Aria scrolls to the row, and the focused
+ * row out of view (M8-F225). The box scrolls once, by React Aria. *Home* keeps the scroll of the browser, which brings
+ * the box back to its very start, with the head whole (UX §6.5).
+ */
+function keepOneScroll(event: KeyboardEvent): void {
+  if (
+    PAGE_KEYS.has(event.key) &&
+    event.target instanceof HTMLElement &&
+    event.target.hasAttribute(ROW_KEY)
+  ) {
+    event.preventDefault();
+  }
+}
+
+/** Gives the box of the rows `keepOneScroll` while it is drawn. */
+function scrollsOnce(rows: HTMLElement | null): (() => void) | undefined {
+  if (rows === null) {
+    return undefined;
+  }
+  rows.addEventListener("keydown", keepOneScroll);
+  return () => {
+    rows.removeEventListener("keydown", keepOneScroll);
+  };
+}
+
 /**
  * The rows, drawn only where they are on screen (ADR-0009, amendment M5): the list measures the
  * real rows as they appear, so the height asked for here only makes the first guess of the scroll
@@ -54,6 +87,7 @@ export function ListScroll({ busy, children }: ListScrollProps) {
       <GridList
         aria-label={t("issues.list")}
         aria-busy={busy}
+        ref={scrollsOnce}
         {...keepsHeadersOutOfTheSelection}
         {...partOf(part.listScroll)}
       >
