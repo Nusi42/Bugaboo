@@ -15,7 +15,7 @@ use jiff::civil::{Date, Weekday};
 use sea_query::{Expr, ExprTrait as _, Order, Query, SelectStatement};
 
 use crate::auth::AuthStorage;
-use crate::db::{Row, StoredId, Transaction};
+use crate::db::{Database, Row, StoredId, Transaction};
 use crate::error::StoreError;
 use crate::locks::{LockClass, lock_key};
 use crate::schema::{AwayTimeRow, ProjectShareRow, UsualWorkDayRow};
@@ -190,6 +190,52 @@ async fn write_usual(
     Ok(true)
 }
 
+/// The away times of these people that touch the days from the first to the last of `days`, by
+/// first day.
+async fn away_times_between(
+    database: &Database,
+    people: Vec<UserId>,
+    (first, last): (Date, Date),
+    limit: Option<u64>,
+) -> Result<Vec<AwayTime>, StoreError> {
+    if people.is_empty() {
+        return Ok(Vec::new());
+    }
+    let mut select = away_select();
+    select
+        .and_where(Expr::col(AwayTimeRow::Person).is_in(stored_ids(people)))
+        .and_where(Expr::col(AwayTimeRow::First).lte(last.to_string()))
+        .and_where(Expr::col(AwayTimeRow::Last).gte(first.to_string()))
+        .order_by(AwayTimeRow::First, Order::Asc)
+        .order_by(AwayTimeRow::Id, Order::Asc);
+    if let Some(limit) = limit {
+        select.limit(limit);
+    }
+    database
+        .fetch_all(&select)
+        .await?
+        .iter()
+        .map(read_away)
+        .collect()
+}
+
+impl Database {
+    /// Every away time of a person, by first day: what the check after a load run reads.
+    ///
+    /// # Errors
+    /// Fails when the database fails or a row is unreadable.
+    #[cfg(any(test, feature = "testing"))]
+    pub async fn stored_away_times(&self, person: UserId) -> Result<Vec<AwayTime>, StoreError> {
+        away_times_between(
+            self,
+            vec![person],
+            (Date::constant(2000, 1, 1), Date::constant(9999, 12, 31)),
+            None,
+        )
+        .await
+    }
+}
+
 impl WorkTimesStore for AuthStorage {
     async fn usual_days_in(
         transaction: &mut Transaction,
@@ -302,25 +348,7 @@ impl WorkTimesStore for AuthStorage {
         last: Date,
         limit: Option<u64>,
     ) -> Result<Vec<AwayTime>, StoreError> {
-        if people.is_empty() {
-            return Ok(Vec::new());
-        }
-        let mut select = away_select();
-        select
-            .and_where(Expr::col(AwayTimeRow::Person).is_in(stored_ids(people)))
-            .and_where(Expr::col(AwayTimeRow::First).lte(last.to_string()))
-            .and_where(Expr::col(AwayTimeRow::Last).gte(first.to_string()))
-            .order_by(AwayTimeRow::First, Order::Asc)
-            .order_by(AwayTimeRow::Id, Order::Asc);
-        if let Some(limit) = limit {
-            select.limit(limit);
-        }
-        self.database()
-            .fetch_all(&select)
-            .await?
-            .iter()
-            .map(read_away)
-            .collect()
+        away_times_between(self.database(), people, (first, last), limit).await
     }
 
     async fn put_usual_days(

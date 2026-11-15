@@ -148,6 +148,67 @@ pub struct Lost {
     pub kept_after: u64,
 }
 
+/// A move of a bar that the server kept: the dates the issue had after it.
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+pub struct Moved {
+    /// The readable ID of the issue.
+    pub key: String,
+    /// The version the issue had after the move.
+    pub version: i64,
+    /// Its start date after the move (`2027-01-14`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub start: Option<String>,
+    /// Its due date after the move.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub due: Option<String>,
+}
+
+/// A plan warning that somebody kept and accepted, and the dates of its issue then.
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+pub struct Accepted {
+    /// The readable ID of the issue.
+    pub key: String,
+    /// Its start date when the warning was accepted.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub start: Option<String>,
+    /// Its due date when the warning was accepted.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub due: Option<String>,
+}
+
+/// An away time that a person entered while others read the plan.
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+pub struct AwayEntered {
+    /// The ID of the person who is away.
+    pub person: String,
+    /// The first day (`2027-01-14`).
+    pub first: String,
+    /// The last day.
+    pub last: String,
+    /// Whether the first answer of the plan after the away time was entered showed the days.
+    pub shown_on_next_read: bool,
+}
+
+/// One issue that *Move it after* named, and the version it had before.
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+pub struct NamedByMove {
+    /// The readable ID of the issue.
+    pub key: String,
+    /// The version it had when the preview was read.
+    pub version: i64,
+}
+
+/// A *Move it after* that was applied while somebody changed one of the issues it moves.
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+pub struct MovedAfter {
+    /// The issues the move names, with the versions the preview read.
+    pub named: Vec<NamedByMove>,
+    /// The readable ID of the issue somebody changed meanwhile.
+    pub changed: String,
+    /// Whether the server kept the move.
+    pub kept: bool,
+}
+
 /// Everything the people did that counts, in the order it happened to each of them.
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct Book {
@@ -198,6 +259,18 @@ pub struct Book {
     /// The readable ID of every issue whose change an undo of a run named as skipped.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub skipped: Vec<String>,
+    /// The moves of bars that the server kept (architecture §11, "Ten people plan at once").
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub moved: Vec<Moved>,
+    /// The plan warnings people accepted.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub accepted: Vec<Accepted>,
+    /// The away times people entered while others read the plan.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub away: Vec<AwayEntered>,
+    /// The moves after something that were applied while somebody changed an issue they move.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub moved_after: Vec<MovedAfter>,
 }
 
 impl Book {

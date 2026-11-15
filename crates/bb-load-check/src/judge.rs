@@ -380,6 +380,7 @@ pub fn judge(book: &Book, facts: &Facts, afterwards: &Afterwards) -> Vec<String>
     found.extend(no_text_lost(book, facts));
     found.extend(locks_are_gone(book, facts, afterwards));
     found.extend(crate::agents::agents_hold_the_rules(book, &facts.agents));
+    found.extend(crate::plan::plans_hold_the_rules(book, facts));
     found
 }
 
@@ -500,6 +501,9 @@ mod tests {
                     status: "in-progress".to_owned(),
                     attachments: 2,
                     timer_entries: Vec::new(),
+                    start_date: None,
+                    due_date: None,
+                    accepted_on: Vec::new(),
                 },
                 IssueFacts {
                     key: "A-2".to_owned(),
@@ -511,6 +515,9 @@ mod tests {
                     status: "open".to_owned(),
                     attachments: 0,
                     timer_entries: Vec::new(),
+                    start_date: None,
+                    due_date: None,
+                    accepted_on: Vec::new(),
                 },
             ],
             notifications: vec![NotificationFacts {
@@ -532,6 +539,7 @@ mod tests {
                 warnings_as_the_rules_find_them: true,
             }],
             agents: crate::agents::AgentFacts::default(),
+            away_times: Vec::new(),
         };
         (book, facts)
     }

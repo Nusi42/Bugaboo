@@ -115,6 +115,58 @@ export interface Lost {
   readonly kept_after: number;
 }
 
+/** A move of a bar that the server kept: the dates the issue had after it. */
+export interface Moved {
+  /** The readable ID of the issue. */
+  readonly key: string;
+  /** The version the issue had after the move. */
+  readonly version: number;
+  /** Its start date after the move (`2027-01-14`). */
+  readonly start?: string;
+  /** Its due date after the move. */
+  readonly due?: string;
+}
+
+/** A plan warning that somebody kept and accepted, and the dates of its issue then. */
+export interface Accepted {
+  /** The readable ID of the issue. */
+  readonly key: string;
+  /** Its start date when the warning was accepted. */
+  readonly start?: string;
+  /** Its due date when the warning was accepted. */
+  readonly due?: string;
+}
+
+/** An away time that a person entered while others read the plan. */
+export interface AwayEntered {
+  /** The ID of the person who is away. */
+  readonly person: string;
+  /** The first day (`2027-01-14`). */
+  readonly first: string;
+  /** The last day. */
+  readonly last: string;
+  /** Whether the first answer of the plan after the away time was entered showed the days. */
+  readonly shown_on_next_read: boolean;
+}
+
+/** One issue that *Move it after* named, and the version it had before. */
+export interface NamedByMove {
+  /** The readable ID of the issue. */
+  readonly key: string;
+  /** The version it had when the preview was read. */
+  readonly version: number;
+}
+
+/** A *Move it after* that was applied while somebody changed one of the issues it moves. */
+export interface MovedAfter {
+  /** The issues the move names, with the versions the preview read. */
+  readonly named: readonly NamedByMove[];
+  /** The readable ID of the issue somebody changed meanwhile. */
+  readonly changed: string;
+  /** Whether the server kept the move. */
+  readonly kept: boolean;
+}
+
 /** Everything the people did that counts, in the order it happened to each of them. */
 export interface Book {
   /** The issues of the run. */
@@ -151,4 +203,12 @@ export interface Book {
   readonly lost?: readonly Lost[];
   /** The readable ID of every issue whose change an undo of a run named as skipped. */
   readonly skipped?: readonly string[];
+  /** The moves of bars that the server kept (architecture §11, "Ten people plan at once"). */
+  readonly moved?: readonly Moved[];
+  /** The plan warnings people accepted. */
+  readonly accepted?: readonly Accepted[];
+  /** The away times people entered while others read the plan. */
+  readonly away?: readonly AwayEntered[];
+  /** The moves after something that were applied while somebody changed an issue they move. */
+  readonly moved_after?: readonly MovedAfter[];
 }

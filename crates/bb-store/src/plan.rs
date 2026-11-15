@@ -9,7 +9,7 @@ use bb_core::plan::warning::WarningKind;
 use sea_query::{Expr, ExprTrait as _, OnConflict, Query, SelectStatement};
 
 use crate::auth::AuthStorage;
-use crate::db::{Row, StoredId, Transaction};
+use crate::db::{Database, Row, StoredId, Transaction};
 use crate::error::StoreError;
 use crate::issues::{read_day, stored_day};
 use crate::rows::to_micros;
@@ -57,6 +57,48 @@ fn stored_issues(issues: &[IssueId]) -> Vec<Vec<u8>> {
     issues.iter().map(|issue| issue.stored()).collect()
 }
 
+/// The accepted plan warnings of these issues.
+async fn accepted_of(
+    database: &Database,
+    issues: &[IssueId],
+) -> Result<Vec<AcceptedWarning>, StoreError> {
+    if issues.is_empty() {
+        return Ok(Vec::new());
+    }
+    let mut select = Query::select();
+    select
+        .columns([
+            AcceptedWarningRow::Issue,
+            AcceptedWarningRow::Kind,
+            AcceptedWarningRow::StartDate,
+            AcceptedWarningRow::DueDate,
+            AcceptedWarningRow::AcceptedBy,
+            AcceptedWarningRow::AcceptedAt,
+        ])
+        .from(AcceptedWarningRow::Table)
+        .and_where(Expr::col(AcceptedWarningRow::Issue).is_in(stored_issues(issues)));
+    database
+        .fetch_all(&select)
+        .await?
+        .iter()
+        .map(read_accepted)
+        .collect()
+}
+
+impl Database {
+    /// The accepted plan warnings of an issue: what the check after a load run reads.
+    ///
+    /// # Errors
+    /// Fails when the database fails or a row is unreadable.
+    #[cfg(any(test, feature = "testing"))]
+    pub async fn stored_accepted_warnings(
+        &self,
+        issue: IssueId,
+    ) -> Result<Vec<AcceptedWarning>, StoreError> {
+        accepted_of(self, &[issue]).await
+    }
+}
+
 impl TimelineStore for AuthStorage {
     async fn time_factor_in(
         transaction: &mut Transaction,
@@ -93,27 +135,7 @@ impl TimelineStore for AuthStorage {
         &self,
         issues: Vec<IssueId>,
     ) -> Result<Vec<AcceptedWarning>, StoreError> {
-        if issues.is_empty() {
-            return Ok(Vec::new());
-        }
-        let mut select = Query::select();
-        select
-            .columns([
-                AcceptedWarningRow::Issue,
-                AcceptedWarningRow::Kind,
-                AcceptedWarningRow::StartDate,
-                AcceptedWarningRow::DueDate,
-                AcceptedWarningRow::AcceptedBy,
-                AcceptedWarningRow::AcceptedAt,
-            ])
-            .from(AcceptedWarningRow::Table)
-            .and_where(Expr::col(AcceptedWarningRow::Issue).is_in(stored_issues(&issues)));
-        self.database()
-            .fetch_all(&select)
-            .await?
-            .iter()
-            .map(read_accepted)
-            .collect()
+        accepted_of(self.database(), &issues).await
     }
 
     async fn put_time_factor(

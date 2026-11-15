@@ -41,6 +41,23 @@ pub struct IssueFacts {
     pub attachments: usize,
     /// The person and the start of each time entry on the issue that a timer saved.
     pub timer_entries: Vec<(String, i64)>,
+    /// The start date the issue row has.
+    pub start_date: Option<String>,
+    /// The due date the issue row has.
+    pub due_date: Option<String>,
+    /// The start date and the due date each accepted plan warning of the issue was accepted on.
+    pub accepted_on: Vec<(Option<String>, Option<String>)>,
+}
+
+/// An away time the database holds for a person the book names.
+#[derive(Debug)]
+pub struct AwayFacts {
+    /// The ID of the person.
+    pub person: String,
+    /// The first day.
+    pub first: String,
+    /// The last day.
+    pub last: String,
 }
 
 /// What the database holds about one work day the people changed.
@@ -106,6 +123,8 @@ pub struct Facts {
     pub days: Vec<DayFacts>,
     /// What agents did on the issues of the book.
     pub agents: crate::agents::AgentFacts,
+    /// The away times of the people the book names.
+    pub away_times: Vec<AwayFacts>,
 }
 
 pub(crate) fn describe(what: &str, error: impl std::fmt::Display) -> Failure {
@@ -190,6 +209,24 @@ async fn work_days(database: &Database, book: &Book) -> Result<Vec<DayFacts>, Fa
     Ok(found)
 }
 
+/// The away times of the people the book names.
+async fn away_times(database: &Database, book: &Book) -> Result<Vec<AwayFacts>, Failure> {
+    let mut people: Vec<&String> = book.away.iter().map(|away| &away.person).collect();
+    people.sort();
+    people.dedup();
+    let mut found = Vec::new();
+    for holder in people {
+        let person: UserId = holder.parse().map_err(|e| describe(holder, e))?;
+        let times = database.stored_away_times(person).await?;
+        found.extend(times.into_iter().map(|time| AwayFacts {
+            person: holder.clone(),
+            first: time.first.to_string(),
+            last: time.last.to_string(),
+        }));
+    }
+    Ok(found)
+}
+
 /// Reads what the rules look at: the issues of the book, every lock row and the drafts the book
 /// names.
 ///
@@ -219,6 +256,19 @@ pub async fn gather(database: &Database, book: &Book) -> Result<Facts, Failure> 
                 .filter(|event| is_comment_on(event, &work.id))
                 .count(),
             version: row.version,
+            start_date: row.start_date.map(|day| day.to_string()),
+            due_date: row.due_date.map(|day| day.to_string()),
+            accepted_on: database
+                .stored_accepted_warnings(id)
+                .await?
+                .into_iter()
+                .map(|accepted| {
+                    (
+                        accepted.start_date.map(|day| day.to_string()),
+                        accepted.due_date.map(|day| day.to_string()),
+                    )
+                })
+                .collect(),
             description: row.description,
             title: row.title,
             status: row.status.to_string(),
@@ -246,6 +296,7 @@ pub async fn gather(database: &Database, book: &Book) -> Result<Facts, Failure> 
         }
     }
     facts.days = work_days(database, book).await?;
+    facts.away_times = away_times(database, book).await?;
     facts.agents = crate::agents::gather(database, book).await?;
     facts.locks = lock_rows(database).await?;
     for drafted in last_drafts(book) {
