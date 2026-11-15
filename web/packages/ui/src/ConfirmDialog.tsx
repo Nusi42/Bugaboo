@@ -3,6 +3,7 @@ import { Dialog, DialogTrigger, Heading, Modal, ModalOverlay } from "react-aria-
 
 import { Button } from "./Button.tsx";
 import { useLayout } from "./layout.ts";
+import { OutsidePane } from "./OutsidePane.tsx";
 import { partOf } from "./parts.ts";
 import { buttonLook, type ButtonLook } from "./props.ts";
 import { part } from "./tokens.ts";
@@ -70,12 +71,14 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
       </Button>
       <ModalOverlay {...partOf(part.overlay, { variants: [variant] })} isDismissable>
         <Modal {...partOf(part.overlayModal, { variants: [variant] })}>
-          <Question
-            {...props}
-            close={() => {
-              changeOpen(false);
-            }}
-          />
+          <OutsidePane>
+            <Question
+              {...props}
+              close={() => {
+                changeOpen(false);
+              }}
+            />
+          </OutsidePane>
         </Modal>
       </ModalOverlay>
     </DialogTrigger>
@@ -104,12 +107,14 @@ export function AskDialog({ isOpen, onOpenChange, ...question }: AskDialogProps)
       isDismissable
     >
       <Modal {...partOf(part.overlayModal, { variants: [variant] })}>
-        <Question
-          {...question}
-          close={() => {
-            onOpenChange(false);
-          }}
-        />
+        <OutsidePane>
+          <Question
+            {...question}
+            close={() => {
+              onOpenChange(false);
+            }}
+          />
+        </OutsidePane>
       </Modal>
     </ModalOverlay>
   );

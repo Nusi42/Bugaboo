@@ -14,7 +14,6 @@ import {
   PANE_HEAD,
   wheelOver,
 } from "./support/pane-head.ts";
-import { inOrder } from "./support/sequence.ts";
 import { chart, prepareLongTimeline } from "./support/timeline.ts";
 import { projectIssuesAddress } from "../src/shared/paths.ts";
 
@@ -171,6 +170,31 @@ function endsOfChart(page: Page): Promise<{ lastRowInBox: boolean; boxInWindow: 
   });
 }
 
+/** How many controls of the head a person goes back through from the chart: the tools of the timeline. */
+const HEAD_CONTROLS = 6;
+
+/** The most presses of Shift+Tab it takes to get from a bar into the head and through its controls. */
+const MOST_PRESSES = 40;
+
+/**
+ * Goes back with Shift+Tab from the focused bar until `controls` controls of the head had the focus, and says how each
+ * of those stood; the focus stays on the last, in the head.
+ */
+async function backIntoHead(
+  page: Page,
+  controls: number,
+  presses = MOST_PRESSES,
+): Promise<Readonly<Awaited<ReturnType<typeof focusInHead>>>[]> {
+  if (controls === 0 || presses === 0) {
+    return [];
+  }
+  await page.keyboard.press("Shift+Tab");
+  const step = await focusInHead(page);
+  const left = step.inside ? controls - 1 : controls;
+  const rest = await backIntoHead(page, left, presses - 1);
+  return step.inside ? [step, ...rest] : rest;
+}
+
 /** Scrolls the chart this far down and waits until it is drawn there. */
 async function chartAt(page: Page, top: number): Promise<void> {
   const box = page.locator(CHART);
@@ -200,16 +224,16 @@ test("ux_06 a control of the head reached with the keyboard from the scrolled ch
   const bars = page.locator(`${CHART} [data-part~='timeline-bar.press']`);
   const inView = await bars.evaluateAll(firstBelowMiddle);
   await bars.nth(inView).focus();
-  const seen: Readonly<Awaited<ReturnType<typeof focusInHead>>>[] = [];
-  await inOrder(
-    Array.from({ length: 30 }, () => async () => {
-      await page.keyboard.press("Shift+Tab");
-      seen.push(await focusInHead(page));
-    }),
-  );
-  const inHead = seen.filter((step) => step.inside);
+  const inHead = await backIntoHead(page, HEAD_CONTROLS);
   expect(inHead.length, "the controls of the head reached").toBeGreaterThan(5);
   expect(inHead).toEqual(inHead.map(() => ({ inside: true, onTop: true, scrolled: 0 })));
+  // While the head is whole the scale stands under it, in sight, as the head of the columns of a list does: also with
+  // the chart far down, where the scale sticks.
+  await page.locator(CHART).evaluate((node) => {
+    node.scrollTop = node.scrollHeight;
+  });
+  await expect.poll(() => scaleUnderHead(page)).toBeGreaterThanOrEqual(0);
+  expect(await scaleUnderHead(page)).toBeLessThanOrEqual(1);
 });
 
 test("ux_06 at a laptop's height the last row and the end of the chart can be scrolled into view", async ({

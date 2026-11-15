@@ -214,6 +214,9 @@ tokens {
     size "pane-head-end" "0px" run-time="true"
     // The height of the first line of the head of a pane as the browser draws it (it may wrap): the head folds to it.
     size "pane-head-line" "0px" run-time="true"
+    // How far what sticks in a box (an open item beside a list, the scale of a chart) stops above its usual place: none,
+    // except in a box under a head that folds, which sets it to the length of the fold (UX §6.5).
+    size "sticky-lift" "0px"
     size "bp-window-side" "880px"
     // Narrower than this the list has no room for Customize beside it: the panel stands under the list, as high as its
     // columns, and the list takes the rest. It is size-list-main + space-4 (the gap of list-body) + size-list, written out
@@ -6242,7 +6245,7 @@ part "theme-preview.line[variant=short]" {
     width "$size-sample-short"
 }
 
-// The theme editor (UX §5.6): the line of the readability on top, the groups of colors and the preview side by side
+// The theme editor (UX §5.6): the line of the readability on top of the groups of colors, the groups and the preview side by side
 // where both columns fit, one under the other where they do not (on a phone the preview opens from a button).
 part "theme-editor" {
     display flex
@@ -6268,7 +6271,7 @@ part "theme-editor.groups" {
 // The preview stays in sight while the groups scroll.
 part "theme-editor.aside" {
     position sticky
-    top "$space-4"
+    top "calc($space-4 + $sticky-lift)"
     display flex
     flex 1 1 "$size-theme-column"
     flex-direction column
@@ -6370,7 +6373,7 @@ part "theme-shadow.legend" {
 // refusal, in the look of an alert of danger.
 part "theme-readability" {
     position sticky
-    top 0
+    top "$sticky-lift"
     z-index "$z-raised"
     display block
     margin 0
@@ -7449,7 +7452,7 @@ part "side-panel.body::after" {
 // §6.5).
 part "list-editor side-panel" {
     position sticky
-    top "$size-page-gutter"
+    top "calc($size-page-gutter + $sticky-lift)"
     max-height "100%"
 }
 
@@ -17114,16 +17117,6 @@ part "pane[variant=folds]:has(settings-topic)" {
     --pane-head-folded-end "calc($pane-head-line + $ring-room + $space-1)"
 }
 
-// What stays in sight beside the cards of a topic (an open item, the preview of a theme) stops under the folded head:
-// it starts under the whole head, so it never moves while the head folds, and stops the length of the fold higher.
-part "pane[variant=folds] > settings-topic list-editor side-panel" {
-    top "calc($size-page-gutter - var(--pane-head-fold-length))"
-}
-
-part "pane[variant=folds] > settings-topic theme-editor.aside" {
-    top "calc($space-4 - var(--pane-head-fold-length))"
-}
-
 // The timeline under the head of its pane (UX §6.5): the chart and its side start where the whole head ends. The box of
 // the chart reaches up under the head by as much, with that room above its scale (and the room of the edge it draws on
 // paper), so its rows stand where they stood and come into view under the head as it folds; the scale stops under the
@@ -17134,6 +17127,19 @@ part "pane[variant=folds] > settings-topic theme-editor.aside" {
 // head of the pane is laid over the boxes, also over what is sticky in them.
 part "app-layout pane[variant=folds] timeline-scroll" "app-layout pane[variant=folds] timeline-tray" {
     isolation isolate
+}
+
+// A sticky part keeps its place from the edge of the content of its box, below the room of the whole head: in the
+// first box under a head that folds, what sticks (an open item beside a list, the preview of a theme, the scale of a
+// chart) starts under the whole head, so it never moves while the head folds, and stops the length of the fold higher,
+// under the folded head. While the head is held whole for the keyboard it stops under the whole head, as the head of
+// the columns of a list does.
+part "pane[variant=folds] > settings-topic" "app-layout pane[variant=folds] timeline-scroll" {
+    --sticky-lift "calc(-1 * var(--pane-head-fold-length))"
+}
+
+part "pane[variant=folds][state=whole] > settings-topic" "app-layout pane[variant=folds][state=whole] timeline-scroll" {
+    --sticky-lift inherit
 }
 
 part "app-layout pane[variant=folds] timeline-body > timeline-side" {
@@ -17160,10 +17166,9 @@ part "app-layout pane[variant=folds] timeline-side > timeline-scroll:first-child
     }
 }
 
-// A sticky part keeps its place from the edge of the content of its box, below the room of the whole head: the scale
-// stops as far above that as the head folds, under the folded head.
+// The scale stops under the folded head (`sticky-lift`) and draws the top edge of the box.
 part "app-layout pane[variant=folds] timeline-scroll:first-child timeline-head" {
-    top "calc(-1 * var(--pane-head-fold-length))"
+    top "$sticky-lift"
     box-shadow "inset 0 $border-width 0 $border"
     media "print" {
         box-shadow none

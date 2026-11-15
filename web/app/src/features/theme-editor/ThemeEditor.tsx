@@ -29,20 +29,25 @@ export function ThemeEditor({ detail, lock, notices }: ThemeEditorProps) {
   const editing = useThemeEditing(detail, lock);
   const phone = useLayout() === "phone";
   const preview = <EditorPreview theme={theme} draftShown={editing.draftShown} />;
+  const readability = (
+    <ReadabilityLine
+      read={editing.read}
+      kind={theme.kind}
+      refused={editing.refused}
+      onChange={editing.show}
+    />
+  );
   return (
     <Card heading={theme.name} level={1}>
       {notices}
       <div {...partOf(part.themeEditor)}>
-        <ReadabilityLine
-          read={editing.read}
-          kind={theme.kind}
-          refused={editing.refused}
-          onChange={editing.show}
-        />
+        {editing.mine ? null : readability}
         <KeptDraftNote kept={editing.kept} />
         <div {...partOf(part.themeEditorBody)}>
+          {/* The verdict stays on top of the groups while they scroll, beside the preview, which stays in sight too. */}
           {editing.mine ? (
             <div {...partOf(part.themeEditorGroups)}>
+              {readability}
               <ColorGroups editing={editing} startsFrom={theme.extends} />
             </div>
           ) : null}

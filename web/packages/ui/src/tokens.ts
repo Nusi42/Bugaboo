@@ -272,6 +272,7 @@ export const tokenNames = [
   "bar-ticked-height",
   "pane-head-end",
   "pane-head-line",
+  "sticky-lift",
   "bp-window-side",
   "bp-list-beside",
   "bp-window-wide",

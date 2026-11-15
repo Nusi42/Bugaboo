@@ -93,6 +93,7 @@
   --bar-ticked-height: 0px;
   --pane-head-end: 0px;
   --pane-head-line: 0px;
+  --sticky-lift: 0px;
   --bp-window-side: 880px;
   --bp-list-beside: 876px;
   --bp-window-wide: 1200px;
@@ -6320,7 +6321,7 @@ textarea,
 
 [data-part="theme-editor.aside"] {
   position: sticky;
-  top: var(--space-4);
+  top: calc(var(--space-4) + var(--sticky-lift));
   display: flex;
   flex: 1 1 var(--size-theme-column);
   flex-direction: column;
@@ -6418,7 +6419,7 @@ textarea,
 
 [data-part="theme-readability"] {
   position: sticky;
-  top: 0;
+  top: var(--sticky-lift);
   z-index: var(--z-raised);
   display: block;
   margin: 0;
@@ -7577,7 +7578,7 @@ textarea,
 
 [data-part="list-editor"] [data-part="side-panel"] {
   position: sticky;
-  top: var(--size-page-gutter);
+  top: calc(var(--size-page-gutter) + var(--sticky-lift));
   max-height: 100%;
 }
 
@@ -11233,22 +11234,21 @@ textarea,
   --pane-head-folded-end: calc(var(--pane-head-line) + var(--ring-room) + var(--space-1));
 }
 
-[data-part="pane"][data-variant~="folds"]
-  > [data-part="settings-topic"]
-  [data-part="list-editor"]
-  [data-part="side-panel"] {
-  top: calc(var(--size-page-gutter) - var(--pane-head-fold-length));
-}
-
-[data-part="pane"][data-variant~="folds"]
-  > [data-part="settings-topic"]
-  [data-part="theme-editor.aside"] {
-  top: calc(var(--space-4) - var(--pane-head-fold-length));
-}
-
 [data-part="app-layout"] [data-part="pane"][data-variant~="folds"] [data-part="timeline-scroll"],
 [data-part="app-layout"] [data-part="pane"][data-variant~="folds"] [data-part="timeline-tray"] {
   isolation: isolate;
+}
+
+[data-part="pane"][data-variant~="folds"] > [data-part="settings-topic"],
+[data-part="app-layout"] [data-part="pane"][data-variant~="folds"] [data-part="timeline-scroll"] {
+  --sticky-lift: calc(-1 * var(--pane-head-fold-length));
+}
+
+[data-part="pane"][data-variant~="folds"][data-state~="whole"] > [data-part="settings-topic"],
+[data-part="app-layout"]
+  [data-part="pane"][data-variant~="folds"][data-state~="whole"]
+  [data-part="timeline-scroll"] {
+  --sticky-lift: inherit;
 }
 
 [data-part="app-layout"]
@@ -11299,7 +11299,7 @@ textarea,
   [data-part="pane"][data-variant~="folds"]
   [data-part="timeline-scroll"]:first-child
   [data-part="timeline-head"] {
-  top: calc(-1 * var(--pane-head-fold-length));
+  top: var(--sticky-lift);
   box-shadow: inset 0 var(--border-width) 0 var(--border);
 }
 
