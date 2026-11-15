@@ -151,19 +151,9 @@ export async function leftEdgeOf(element: Locator): Promise<number> {
   return found === null ? Number.NaN : found.x;
 }
 
-/** The place and size of an element on the page; fails the test when it is not shown. */
-export async function boxOf(element: Locator): Promise<{
-  readonly x: number;
-  readonly y: number;
-  readonly width: number;
-  readonly height: number;
-}> {
-  const found = await element.boundingBox();
-  if (found === null) {
-    throw new Error("The element is not shown, so it has no place on the page.");
-  }
-  return found;
-}
+// The box of an element is measured in one place (`geometry.ts`); the specs of the search bar take it from here with the
+// rest, as their imports are at their most.
+export { boxOf } from "./geometry.ts";
 
 /**
  * What stands between the search box of a picker and its first row, and what the theme says it

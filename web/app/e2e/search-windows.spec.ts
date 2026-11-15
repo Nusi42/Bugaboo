@@ -4,12 +4,12 @@ import { createAdmin } from "./support/accounts.ts";
 import { expectGoodInEveryTheme } from "./support/checks.ts";
 import { expectRingsWhole } from "./support/rings.ts";
 import { expect, test } from "./support/fixtures.ts";
+import { boxOf } from "./support/geometry.ts";
 import { createProjectWithIssue } from "./support/issues.ts";
 import { nothing, onThisLayout } from "./support/layout.ts";
 import {
   addTitleFilter,
   box,
-  boxOf,
   leftEdgeOf,
   openBar,
   openSearch,

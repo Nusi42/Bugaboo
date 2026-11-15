@@ -9,7 +9,8 @@ import { layoutOf } from "./layout.ts";
 import { partIn } from "./parts.ts";
 import { newIssueDialog, openNewIssueDialog, titleLabel } from "./issues.ts";
 
-// The box of an element is measured in one place (`geometry.ts`); the specs of windows take it from here with the rest.
+// The box of an element is measured in one place (`geometry.ts`); the specs of windows take it from here with the rest,
+// as their imports are at their most.
 export { boxOf } from "./geometry.ts";
 
 // The windows that wait for their content are tested with the rest.
