@@ -10,7 +10,7 @@ export const messages = {
   "theme-editor.name": "Name",
   "theme-editor.draft-kept": "You left changes here that were not saved. They are back.",
   "theme-editor.readability-fix":
-    "{count, plural, one {Fix it} other {Fix them}} to share this theme with everyone.",
+    "{count, plural, one {Fix the color} other {Fix the colors}} to share this theme with everyone.",
   "theme-editor.readability-loading": "Working out the readability…",
   "theme-editor.rating.easy": "Easy",
   "theme-editor.rating.ok": "OK",
@@ -163,7 +163,7 @@ export const messages = {
     "{color} is hard to read on {count, plural, one {# background} other {# backgrounds}}.",
   "theme-editor.readability-fine": "Readability: nothing is hard to read.",
   "theme-editor.readability-hard":
-    "Readability: {count, plural, one {# color is} other {# colors are}} hard to read.",
+    "Readability: {count, plural, one {# pair is} other {# pairs are}} hard to read.",
   "theme-editor.readability-details":
     "{total} combinations of colors checked: {easy} easy, {ok} OK.",
   "theme-editor.details": "Details",

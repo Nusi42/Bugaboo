@@ -82,18 +82,22 @@ function Details({ read }: { readonly read: ThemeRead | null }) {
   );
 }
 
-/** The verdict of the readability in words. */
+/**
+ * The verdict of the readability in words. It counts the pairs that are hard to read (a text or a line
+ * on a background, glossary *Readability*): a color hard to read on four backgrounds is four pairs.
+ */
 function verdictOf(read: ThemeRead | null, kind: Schema<"ThemeKind">): string {
   if (read === null) {
     return t("theme-editor.readability-loading");
   }
-  const count = read.hard_colors.length;
+  const count = read.hard_colors.reduce((pairs, color) => pairs + color.with.length, 0);
   if (count === 0) {
     return t("theme-editor.readability-fine");
   }
   const verdict = t("theme-editor.readability-hard", { count });
+  // What to fix is the colors, named under the verdict.
   return kind === "for-everyone"
-    ? `${verdict} ${t("theme-editor.readability-fix", { count })}`
+    ? `${verdict} ${t("theme-editor.readability-fix", { count: read.hard_colors.length })}`
     : verdict;
 }
 
@@ -109,7 +113,7 @@ export interface ReadabilityLineProps {
 
 /**
  * The readability on top of the editor (UX §5.6), led by its verdict, which stays on top on a phone
- * too: nothing is hard to read (the counts on request), or how many colors are, each with the
+ * too: nothing is hard to read (the counts on request), or how many pairs are, each color with the
  * colors it is hard to read on and a way to change it (they scroll with the page), and for a theme
  * for everyone that they must be fixed to share it. A refused save brings the cursor to the verdict,
  * which then has the look of a refusal.
