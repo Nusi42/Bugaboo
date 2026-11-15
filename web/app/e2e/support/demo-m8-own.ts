@@ -73,7 +73,14 @@ export async function leaSaysAnIssueTakesHerTenDays(page: Page, server: Instance
       name: lea.name,
     }),
   );
-  // The whole page: the row stands far down the Details, which a window shows only scrolled.
+  // The whole page: the row stands far down the Details, which a window shows only scrolled. The
+  // Details are back at their top first, as the page opens: the head stands whole over them.
+  const details = page.locator("[data-part='issue-details']").first();
+  if ((await details.count()) > 0) {
+    await details.evaluate((box) => {
+      box.scrollTop = 0;
+    });
+  }
   await goodWhole(page, "04-lea-says-ten-days");
 }
 

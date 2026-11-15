@@ -68,7 +68,8 @@ test("plan_14_someone_else_sets_the_time_factor_and_the_issue_says_who", async (
   await expect(window.getByText(/8h · ×1[.,]5 = 12h/u)).toBeVisible();
   await window.getByRole("button", { name: t("issues.time-factor-save") }).click();
   await expect(window).toBeHidden();
-  await expect(factorRow(page)).toContainText(/×1[.,]5 · set by Ada Admin/u);
+  // 12 hours of Bob's days of 8 hours: two work days.
+  await expect(factorRow(page)).toContainText(/×1[.,]5 = 2 work days · set by Ada Admin/u);
 });
 
 test("plan_14_the_time_factor_goes_back_to_x1_on_screen_when_the_person_changes", async ({

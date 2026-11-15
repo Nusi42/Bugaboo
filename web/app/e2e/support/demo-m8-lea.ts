@@ -19,6 +19,7 @@ import {
 import { signIn } from "./flows.ts";
 import { layoutOf } from "./layout.ts";
 import { addDays } from "./person-day.ts";
+import { phoneItemOf } from "./timeline.ts";
 import { openWarnings } from "./timeline-people.ts";
 import { addAwayTime, idOf, openWorkTimesOf } from "./work-times.ts";
 
@@ -61,6 +62,7 @@ export async function leasAwayWeekGrowsHerBarsAndWarns(
     // On a phone the warnings are a sheet over the bars: read, it is closed, and the bars show.
     await page.keyboard.press("Escape");
     await expect(page.getByRole("dialog", { name: t("timeline.warnings-title") })).toBeHidden();
+    await phoneItemOf(page, login).scrollIntoViewIfNeeded();
   }
   await good(page, "02-lea-is-away-a-week");
   await session.dispose();
