@@ -19,3 +19,4 @@
 - [Agents work unattended](agents-work-unattended.md) — rules hand over what they find; admin may allow rules with no end; no person needed (M7 WP-14)
 - [Cheapest capable model](cheapest-capable-model.md) — Opus plans/reviews, Sonnet builds to a plan, Haiku chores; trial through M8, count fix rounds
 - [Bench only when quiet](bench-only-when-quiet.md) — no speed measurement while other folders compile/test; builders wait for the lead's go
+- [Nothing moves under the cursor](nothing-moves-under-the-cursor.md) — a change moves only what changed; checked per screen with frame samples (M8 WP-13)
