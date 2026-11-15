@@ -82,7 +82,18 @@ export function focusTargetAfterRemoval(from?: HTMLElement): HTMLElement | null 
   const after = [...(list.parentElement?.querySelectorAll<HTMLElement>(AFTER_THE_LIST) ?? [])].find(
     (each) => !list.contains(each),
   );
-  return after ?? list.closest("section, main")?.querySelector<HTMLElement>("h1, h2") ?? null;
+  return after ?? headingOf(list.closest<HTMLElement>("section, main"));
+}
+
+/**
+ * The heading of a region: the one that names it, which may stand outside it (the heading of a page of the settings
+ * stands in the head of its pane, UX §6.5), else the first inside it.
+ */
+function headingOf(region: HTMLElement | null): HTMLElement | null {
+  const named = region?.getAttribute("aria-labelledby")?.split(" ")[0];
+  const naming =
+    named === undefined ? null : document.querySelector<HTMLElement>(`#${CSS.escape(named)}`);
+  return naming ?? region?.querySelector<HTMLElement>("h1, h2") ?? null;
 }
 
 /** How many frames to wait for the row to go away before giving up. */

@@ -5,6 +5,7 @@ import { ada, createAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { onThisLayout } from "./support/layout.ts";
+import { settingsBoxOf } from "./support/pane-head.ts";
 import { ariaCurrent, partIn } from "./support/parts.ts";
 import { paths } from "../src/shared/paths.ts";
 import { viewports } from "../../tooling/viewports.ts";
@@ -28,15 +29,15 @@ function topOf(page: Page): Promise<number> {
 }
 
 async function stayingPut(page: Page): Promise<void> {
-  // A short window and a long page: the main column scrolls (the page itself never does, UX §6.5) and the
+  // A short window and a long page: the box of the page scrolls (the page itself never does, UX §6.5) and the
   // sidebar stays in the window, Sign out within its reach.
   await page.setViewportSize({ width: viewports.computer.width, height: 600 });
   await page.goto(paths.appearance);
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  // The wheel over the page, not over the sidebar: the main column scrolls, the sidebar stays at the top.
+  // The wheel over the page, not over the sidebar: the box of the page scrolls, the sidebar stays at the top.
   await page.mouse.move(viewports.computer.width - 100, 300);
   await page.mouse.wheel(0, 3000);
-  const main = page.locator("[data-part='app-layout.main']");
+  const main = page.locator(settingsBoxOf(page));
   await expect.poll(() => main.evaluate((column) => column.scrollTop)).toBeGreaterThan(0);
   expect(await page.evaluate(() => window.scrollY)).toBe(0);
   const menu = mainMenu(page);
