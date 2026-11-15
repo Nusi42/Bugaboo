@@ -162,6 +162,7 @@ export { IssueId } from "./IssueId.tsx";
 export { factJoiner, factJoinerHeld, factJoinerLeading, factMark, factSeparator } from "./facts.ts";
 export { focusFirstField, withId } from "./first-field.ts";
 export { inPlace } from "./in-place.ts";
+export { scrollBoxOf } from "./scroll-box.ts";
 export { composing, plainEnter } from "./plain-enter.ts";
 export { useHeightOnParent } from "./height-variable.ts";
 export { useTopKept } from "./top-kept.ts";

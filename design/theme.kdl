@@ -6434,12 +6434,30 @@ part "theme-shadow.legend" {
     color "$fg"
 }
 
-// The verdict of the readability; it stays on top while the groups scroll under it. After a refused save it is the
-// refusal, in the look of an alert of danger.
-part "theme-readability" {
+// The band of the verdict of the readability: it stays on top while the groups scroll under it, in the color of the
+// card, so what scrolls under it is hidden right up to it and a gap stays between it and the group under it. On a phone it
+// sticks at the very top of the main column (over its gutter, where the groups would show above it) and is as wide as
+// the card, so the verdict has the room of a line (UX §5.6: on a phone the readability line stays at the top).
+part "theme-editor.verdict" {
     position sticky
     top "$sticky-lift"
     z-index "$z-raised"
+    display flex
+    flex-direction column
+    padding-block "$space-2"
+    margin-block "calc(-1 * $space-2)"
+    background "$bg-raised"
+    media "(max-width: calc($bp-tablet - 1px))" {
+        top "calc(-1 * $size-page-gutter)"
+        margin-block-start "calc(-1 * $size-page-gutter)"
+        margin-inline "calc(-1 * $space-5)"
+        padding-block-start "$size-page-gutter"
+        padding-inline "$space-2"
+    }
+}
+
+// The verdict of the readability. After a refused save it is the refusal, in the look of an alert of danger.
+part "theme-readability" {
     display block
     margin 0
     padding "$space-3" "$space-4"

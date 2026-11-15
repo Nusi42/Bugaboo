@@ -122,15 +122,19 @@ export function ReadabilityLine({ read, kind, refused, onChange }: ReadabilityLi
   const hard = read?.hard_colors ?? [];
   return (
     <>
-      <output
-        id={READABILITY_ID}
-        tabIndex={-1}
-        {...partOf(part.themeReadability, {
-          states: [refused && "refused", !refused && hard.length > 0 && "hard"],
-        })}
-      >
-        {verdictOf(read, kind)}
-      </output>
+      {/* The band the verdict stands in stays on top while the groups scroll under it, and covers them up to the top of
+          their box, so nothing scrolled shows above it or right under it. */}
+      <div {...partOf(part.themeEditorVerdict)}>
+        <output
+          id={READABILITY_ID}
+          tabIndex={-1}
+          {...partOf(part.themeReadability, {
+            states: [refused && "refused", !refused && hard.length > 0 && "hard"],
+          })}
+        >
+          {verdictOf(read, kind)}
+        </output>
+      </div>
       {hard.length === 0 ? <Details read={read} /> : null}
       {hard.length === 0 ? null : (
         <ul {...partOf(part.themeReadabilityList)}>

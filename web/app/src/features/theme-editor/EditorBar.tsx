@@ -20,7 +20,11 @@ export interface EditorBarProps {
   readonly note: ReactNode;
 }
 
-/** The end of the bar: the note, what a phone adds, *Throw my changes away* and *Save theme*. */
+/**
+ * The end of the bar: the note, what a phone adds, *Throw my changes away* and *Save theme*. A theme
+ * for everyone whose save was refused for colors that are hard to read cannot be saved until they
+ * read well: *Save theme* is off, and the readability on top says why.
+ */
 function BarEnd({
   detail,
   editing,
@@ -47,7 +51,7 @@ function BarEnd({
       <Button
         look={buttonLook.primary}
         isPending={saving.pending}
-        isDisabled={!editing.dirty}
+        isDisabled={!editing.dirty || editing.refused}
         onPress={saving.save}
       >
         {t("theme-editor.save")}
