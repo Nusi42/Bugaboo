@@ -86,23 +86,32 @@ export async function aWarningAcceptedWhileItsBarMoves(
 ): Promise<void> {
   const sessions = await signedIn(server, [crowdPerson(1), crowdPerson(2), ada]);
   const late = await issueOf(sessionAt(sessions, 2), planIssues.late);
-  const seen = await readIssue(sessionAt(sessions, 0), planIssues.late);
-  // One accepts the warning of the delay on the version they read while the other moves the bar.
-  const [accepted] = await Promise.all([
+  const accept = (version: number) =>
     answerOf(
       sessionAt(sessions, 0).client.POST("/api/v1/timeline/accepted-warnings", {
-        body: { issue: planIssues.late, version: seen.version ?? 0, kind: "delay", timeline },
+        body: { issue: planIssues.late, version, kind: "delay", timeline },
       }),
-    ),
-    moveBar(sessionAt(sessions, 1), planIssues.late, dates(3, 6)),
-  ]);
-  // Whichever came first, the acceptance was refused as stale or holds the old dates.
-  expect(["kept", STALE]).toContain(accepted);
+    );
+  const acceptedOf = async () =>
+    (await readWarnings(sessionAt(sessions, 2))).filter(
+      (each) => each.issue === late.id && each.accepted,
+    ).length;
+  // First the acceptance, then the move: one acceptance is stored and the warning shows faded.
+  const seen = await readIssue(sessionAt(sessions, 0), planIssues.late);
+  expect(await accept(seen.version ?? 0)).toBe("kept");
+  expect(await acceptedOf()).toBe(1);
+  await moveBar(sessionAt(sessions, 1), planIssues.late, dates(3, 6));
+  // The bar moved, so the acceptance does not count: the warning is back, to be accepted again.
+  expect(await acceptedOf()).toBe(0);
+  // First the move, then the acceptance on the version read before it: refused as stale, nothing stored.
+  const before = await readIssue(sessionAt(sessions, 0), planIssues.late);
+  await moveBar(sessionAt(sessions, 1), planIssues.late, dates(3, 7));
+  expect(await accept(before.version ?? 0)).toBe(STALE);
+  expect(await acceptedOf()).toBe(0);
   const warnings = (await readWarnings(sessionAt(sessions, 2))).filter(
     (each) => each.issue === late.id,
   );
   expect(warnings.length).toBeGreaterThan(0);
-  expect(warnings.filter((each) => each.accepted)).toEqual([]);
   const page = await signedInPage(browser, server, ada, look);
   await openTimeline(page);
   const list = await openWarnings(page);
