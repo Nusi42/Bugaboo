@@ -48,10 +48,16 @@ fn accepted_warnings_come_back(book: &Book, facts: &Facts) -> Vec<String> {
     let mut found = Vec::new();
     for accepted in &book.accepted {
         let Some(issue) = issue_of(facts, &accepted.key) else {
+            found.push(format!(
+                "{}: the issue of an acceptance is not in the facts",
+                accepted.key
+            ));
             continue;
         };
         let wanted = (accepted.start.clone(), accepted.due.clone());
-        if issue.accepted_on.iter().any(|held| *held != wanted) {
+        if !issue.accepted_on.contains(&wanted)
+            || issue.accepted_on.iter().any(|held| *held != wanted)
+        {
             found.push(format!(
                 "{}: a warning was accepted on {:?}, the dates the person saw were {:?}",
                 accepted.key, issue.accepted_on, wanted
@@ -98,6 +104,10 @@ fn a_move_after_is_whole(book: &Book, facts: &Facts) -> Vec<String> {
     for moved in book.moved_after.iter().filter(|each| each.kept) {
         for named in moved.named.iter().filter(|each| each.key != moved.changed) {
             let Some(issue) = issue_of(facts, &named.key) else {
+                found.push(format!(
+                    "{}: the issue of a move after is not in the facts",
+                    named.key
+                ));
                 continue;
             };
             if !issue.event_versions.contains(&(named.version + 1)) {
@@ -200,6 +210,9 @@ mod tests {
         assert!(accepted_warnings_come_back(&book, &back).is_empty());
         let still = facts_of(vec![issue("A-1", 2, ("2027-02-01", "2027-02-03"), &seen)]);
         assert!(accepted_warnings_come_back(&book, &still).is_empty());
+        // An acceptance that was kept but is not stored is found.
+        let lost = facts_of(vec![issue("A-1", 2, ("2027-02-01", "2027-02-03"), &[])]);
+        assert_eq!(accepted_warnings_come_back(&book, &lost).len(), 1);
         // An acceptance on dates the person never saw is found.
         let moved = [("2027-02-02", "2027-02-04")];
         let wrong = facts_of(vec![issue("A-1", 3, ("2027-02-02", "2027-02-04"), &moved)]);

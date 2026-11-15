@@ -226,13 +226,7 @@ impl Database {
     /// Fails when the database fails or a row is unreadable.
     #[cfg(any(test, feature = "testing"))]
     pub async fn stored_away_times(&self, person: UserId) -> Result<Vec<AwayTime>, StoreError> {
-        away_times_between(
-            self,
-            vec![person],
-            (Date::constant(2000, 1, 1), Date::constant(9999, 12, 31)),
-            None,
-        )
-        .await
+        away_times_between(self, vec![person], (Date::MIN, Date::MAX), None).await
     }
 }
 

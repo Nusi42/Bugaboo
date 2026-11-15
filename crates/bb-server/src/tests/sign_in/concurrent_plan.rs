@@ -27,6 +27,8 @@ use super::plan_site::{
 /// Ten people, and the bars they move.
 const PEOPLE: usize = 10;
 const BARS: usize = 5;
+/// The place of the person who is away: the sixth of the ten, the fifth taken from the end.
+const AWAY_AT: usize = 5;
 /// The start and the due date each person moves a bar to.
 const DAYS: [(&str, &str); PEOPLE] = [
     ("2027-03-02", "2027-03-04"),
@@ -142,12 +144,22 @@ async fn ten_people_move_bars(
     Ok(back.into_iter().map(|(_, browser)| browser).collect())
 }
 
-/// A person accepts a warning while another moves its bar.
+/// Which of the two comes first, on purpose: the order is what the rule is about.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum First {
+    /// The acceptance is stored, then the bar moves: the acceptance holds the old dates.
+    TheAcceptance,
+    /// The bar moves, then the acceptance of the old version is refused as stale.
+    TheMove,
+}
+
+/// A person accepts a warning and another moves its bar, in the order given.
 async fn accept_while_the_bar_moves(
     site: &Site<'_>,
     ada: &mut Browser,
     shared: &Shared,
     (mut accepting, mut moving): (Browser, Browser),
+    order: First,
 ) -> Result<String, Failure> {
     let (first, then) = overlapping(site, ada).await?;
     blocks(ada, &first, &then).await?;
@@ -156,30 +168,23 @@ async fn accept_while_the_bar_moves(
     }
     let seen = issue(&mut accepting, &then).await?;
     let (start, due) = (text(&seen["start_date"]), text(&seen["due_date"]));
-    let shared_move = Arc::clone(shared);
-    let key = then.clone();
-    let mover = tokio::spawn(async move {
-        move_bar(
-            &mut moving,
-            &shared_move,
-            &key,
-            ("2027-03-02", "2027-03-06"),
-        )
-        .await
+    let accept = json!({
+        "issue": then,
+        "version": seen["version"],
+        "kind": "delay",
+        "timeline": {"zoom": "week"},
     });
-    let accepted = accepting
-        .send(
-            "POST",
-            &format!("{TIMELINE}/accepted-warnings"),
-            Some(json!({
-                "issue": then,
-                "version": seen["version"],
-                "kind": "delay",
-                "timeline": {"zoom": "week"},
-            })),
-        )
-        .await?;
-    mover.await??;
+    let path = format!("{TIMELINE}/accepted-warnings");
+    let moves = ("2027-03-02", "2027-03-06");
+    let accepted = if order == First::TheAcceptance {
+        let accepted = accepting.send("POST", &path, Some(accept)).await?;
+        move_bar(&mut moving, shared, &then, moves).await?;
+        accepted
+    } else {
+        move_bar(&mut moving, shared, &then, moves).await?;
+        accepting.send("POST", &path, Some(accept)).await?
+    };
+    assert_eq!(accepted.status.is_success(), order == First::TheAcceptance);
     if accepted.status.is_success() {
         book(shared)?.accepted.push(Accepted {
             key: then.clone(),
@@ -421,10 +426,25 @@ async fn plan_03_ten_people_plan_at_the_same_moments_and_the_rules_hold() -> Tes
         let moving = people.pop().ok_or("nobody moves")?;
         let accepting = people.pop().ok_or("nobody accepts")?;
         let away = people.pop().ok_or("nobody is away")?;
-        let then =
-            accept_while_the_bar_moves(&site, &mut ada, &shared, (accepting, moving)).await?;
-        away_while_the_plan_is_read(&site, &mut ada, &shared, (away, reader), ids[PEOPLE - 5])
-            .await?;
+        let accepting_too = people.pop().ok_or("nobody accepts")?;
+        let moving_too = people.pop().ok_or("nobody moves")?;
+        let then = accept_while_the_bar_moves(
+            &site,
+            &mut ada,
+            &shared,
+            (accepting, moving),
+            First::TheAcceptance,
+        )
+        .await?;
+        accept_while_the_bar_moves(
+            &site,
+            &mut ada,
+            &shared,
+            (accepting_too, moving_too),
+            First::TheMove,
+        )
+        .await?;
+        away_while_the_plan_is_read(&site, &mut ada, &shared, (away, reader), ids[AWAY_AT]).await?;
         move_after_while_an_issue_changes(&site, &mut ada, &shared, changing).await?;
         let book = std::mem::take(&mut *book(&shared)?);
         let afterwards = Afterwards {
