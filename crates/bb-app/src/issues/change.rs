@@ -407,6 +407,124 @@ impl<S: AuthStore> Ctx<'_, S> {
 
 /// Inside the change of an issue: a change of the type or of the status looks at the offers and the
 /// workflow again, on what is stored now, after the shared lock of the workflows; any other change
+
+/// What a planned change of one issue writes, worked out once from its plan ([`Plan::into_write`]):
+/// one change writes it on its own, a run of several writes all of them in one transaction, so a
+/// run is written whole or not at all.
+#[derive(Clone)]
+pub(crate) struct IssueWrite {
+    /// The issue as it will be stored, on the version it has now.
+    written: Issue,
+    /// The version the change is made on.
+    version: i64,
+    /// The people it will be assigned to, in order.
+    pub(crate) assigned_next: Vec<UserId>,
+    /// Their rows.
+    people: Vec<bb_core::issue::AssignedPerson>,
+    /// Whether another first person takes the time factor back to ×1.
+    resets_factor: bool,
+    /// The values of own fields that change.
+    own_writes: Vec<(bb_core::id::FieldId, Vec<bb_core::own_fields_value::Cell>)>,
+    /// The people assigned by the change: they start following it.
+    newly_assigned: Vec<UserId>,
+    /// When it is made.
+    now: jiff::Timestamp,
+}
+
+impl Plan {
+    /// What the change writes, made at `now`.
+    pub(crate) fn into_write(self, now: jiff::Timestamp) -> IssueWrite {
+        let resets_factor = self.resets_factor();
+        let Self {
+            current,
+            mut next,
+            assigned_now,
+            assigned_next,
+            own,
+            entering,
+            ..
+        } = self;
+        next.updated_at = now;
+        next.closed_at = entering.map_or(current.closed_at, |group| {
+            group.closed_after(current.closed_at, now)
+        });
+        let newly_assigned = assigned_next
+            .iter()
+            .filter(|person| !assigned_now.contains(person))
+            .copied()
+            .collect();
+        IssueWrite {
+            version: current.version,
+            people: assigned_rows(current.id, &assigned_next, now),
+            written: next,
+            assigned_next,
+            own_writes: own.writes(),
+            resets_factor,
+            newly_assigned,
+            now,
+        }
+    }
+}
+
+impl IssueWrite {
+    /// Writes the change in `transaction`, judged again on what is stored now (the issue, its new
+    /// type, its workflow); `stopped` says why it refused.
+    pub(crate) async fn write_in<S: AuthStore>(
+        &self,
+        transaction: &mut S::Transaction,
+        stopped: &Why,
+    ) -> Result<(), S::Error> {
+        let id = self.written.id;
+        let Some(stored) = S::issue_in(transaction, id).await? else {
+            return Err(stopped.stop::<S>(ErrorCode::NotFound));
+        };
+        if stored.deleted_at.is_some() {
+            return Err(stopped.stop::<S>(ErrorCode::NotFound));
+        }
+        if stored.version != self.version {
+            return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
+        }
+        ensure_type_and_status_in::<S>(transaction, &stored, &self.written, stopped).await?;
+        if !S::update_issue(transaction, &self.written, Version::new(self.version)).await? {
+            return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
+        }
+        S::replace_assigned_people(transaction, id, &self.people).await?;
+        // Another first person: the time factor of the one before goes (ADR-0030, amendment M8).
+        if self.resets_factor {
+            S::delete_time_factor(transaction, id).await?;
+        }
+        let kind = EntityKind::from(RecordKind::Issue);
+        for (field, cells) in &self.own_writes {
+            S::put_field_value(transaction, kind.clone(), id.into(), *field, cells).await?;
+        }
+        // Whoever the issue is assigned to now follows it (ISS-07).
+        let followers = started_following(id, None, &self.newly_assigned, None, self.now);
+        S::add_followers(transaction, &followers).await
+    }
+
+    /// What the person is answered when the write was refused or failed: a change somebody made
+    /// first names the issue, for *Keep theirs* or *Use mine*.
+    pub(crate) fn refused<S: AuthStore>(
+        &self,
+        why: &Why,
+        error: &S::Error,
+        editor: UserId,
+    ) -> AppError {
+        why.answer::<S>(error, ErrorCode::VersionChanged).about(
+            &entity(RecordKind::Issue, self.written.id),
+            Place::Project(self.written.project),
+            editor,
+        )
+    }
+
+    /// The issue as it is once written, on its new version.
+    pub(crate) fn after(&self) -> Issue {
+        let mut next = self.written.clone();
+        next.version = next_version(self.version);
+        next
+    }
+}
+
 /// takes no such lock.
 async fn ensure_type_and_status_in<S: AuthStore>(
     transaction: &mut S::Transaction,
@@ -569,78 +687,22 @@ pub async fn change_issue<S: AuthStore, A: ChangeAnswer>(
         };
         return A::answer(ctx, outcome).await;
     }
-    let now = ctx.now();
-    let resets_factor = plan.resets_factor();
-    let Plan {
-        current,
-        mut next,
-        assigned_now,
-        assigned_next,
-        own,
-        entering,
-        ..
-    } = plan;
-    let own_writes = own.writes();
-    next.updated_at = now;
-    next.closed_at = entering.map_or(current.closed_at, |group| {
-        group.closed_after(current.closed_at, now)
-    });
-    let id = current.id;
-    let field_changes = crate::event_members::issue_counted_up(field_changes, current.version);
-    let (record, place, editor) = (
-        entity(RecordKind::Issue, id),
-        Place::Project(current.project),
-        actor.person.id,
-    );
-    let event = ctx.event(by(actor.person.id), record.clone(), field_changes)?;
-    let people = assigned_rows(id, &assigned_next, now);
-    let version = current.version;
+    let field_changes = crate::event_members::issue_counted_up(field_changes, plan.current.version);
+    let record = entity(RecordKind::Issue, plan.current.id);
+    let event = ctx.event(by(actor.person.id), record, field_changes)?;
+    let write = plan.into_write(ctx.now());
     let why = Why::default();
-    let newly_assigned: Vec<UserId> = assigned_next
-        .iter()
-        .filter(|person| !assigned_now.contains(person))
-        .copied()
-        .collect();
-    let (stopped, written, new_people) = (why.clone(), next.clone(), people);
-    let kind = EntityKind::from(RecordKind::Issue);
+    let (stopped, written) = (why.clone(), write.clone());
     ctx.store()
         .record_change(&event, move |transaction| {
-            Box::pin(async move {
-                // Judged again on what is stored now (the issue, its new type, its workflow).
-                let Some(stored) = S::issue_in(transaction, id).await? else {
-                    return Err(stopped.stop::<S>(ErrorCode::NotFound));
-                };
-                if stored.deleted_at.is_some() {
-                    return Err(stopped.stop::<S>(ErrorCode::NotFound));
-                }
-                if stored.version != version {
-                    return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
-                }
-                ensure_type_and_status_in::<S>(transaction, &stored, &written, &stopped).await?;
-                if !S::update_issue(transaction, &written, Version::new(version)).await? {
-                    return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
-                }
-                S::replace_assigned_people(transaction, id, &new_people).await?;
-                // Another first person: the time factor of the one before goes (ADR-0030,
-                // amendment M8).
-                if resets_factor {
-                    S::delete_time_factor(transaction, id).await?;
-                }
-                for (field, cells) in &own_writes {
-                    S::put_field_value(transaction, kind.clone(), id.into(), *field, cells).await?;
-                }
-                // Whoever the issue is assigned to now follows it (ISS-07).
-                let followers = started_following(id, None, &newly_assigned, None, now);
-                S::add_followers(transaction, &followers).await
-            })
+            Box::pin(async move { written.write_in::<S>(transaction, &stopped).await })
         })
         .await
-        .map_err(|error| {
-            why.answer::<S>(&error, ErrorCode::VersionChanged)
-                .about(&record, place, editor)
-        })?;
-    next.version = next_version(version);
-    let view = ctx.issue_view(&mut views, &next, &assigned_next).await?;
+        .map_err(|error| write.refused::<S>(&why, &error, actor.person.id))?;
+    let next = write.after();
+    let view = ctx
+        .issue_view(&mut views, &next, &write.assigned_next)
+        .await?;
     let outcome = ChangeOutcome {
         actor,
         held,
