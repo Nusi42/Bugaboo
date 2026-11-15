@@ -42,13 +42,26 @@ export function inViewOf(movement: Movement): {
   return { seen, anchored: above || seen.length < movement.moved.length };
 }
 
-/** How far the one box that scrolled was scrolled down, if exactly one did: the browser keeping the view still. */
-function keptByScroll(movement: Movement): number {
+/**
+ * How far the one box that scrolled was scrolled down, if exactly one did (the browser keeping the view still), and
+ * where that box stands.
+ */
+function keptByScroll(movement: Movement): { readonly by: number; readonly box: Box | undefined } {
   const [only, ...more] = movement.scrolled;
   if (only === undefined || more.length > 0) {
-    return 0;
+    return { by: 0, box: undefined };
   }
-  return scrollDownOf(only.to) - scrollDownOf(only.from);
+  return { by: scrollDownOf(only.to) - scrollDownOf(only.from), box: only.box };
+}
+
+/** Whether one box holds another, to the half pixel. */
+function holdsBox(outer: Box, inner: Box): boolean {
+  return (
+    inner.x >= outer.x - LEAST_MOVE_PX &&
+    inner.y >= outer.y - LEAST_MOVE_PX &&
+    inner.x + inner.width <= outer.x + outer.width + LEAST_MOVE_PX &&
+    inner.y + inner.height <= outer.y + outer.height + LEAST_MOVE_PX
+  );
 }
 
 /** How far down a part is scrolled, as the recording writes its scroll (`40/0`). */
@@ -65,13 +78,20 @@ function scrollDownOf(at: string): number {
 function inTheBox(part: Moved, movement: Movement): Moved {
   const { view } = movement;
   const spans = (box: Box): boolean => view !== undefined && box.y < 0 && box.y + box.height > view;
-  const by = keptByScroll(movement);
+  const { by, box: scroller } = keptByScroll(movement);
   // The part changed by at least the scroll, the same way (it grew above the view, or shrank there), and a part in
-  // view that does not span it stood still: the scroll kept what is in view, rather than moving it.
+  // view inside the box that scrolled, not spanning the view, stood still: the scroll kept what is in view, rather than
+  // moving it. A part outside that box (a menu beside it, a head above it) stands still whatever the box does.
   const grew = part.last.height - part.from.height;
   const explains = by > 0 ? grew >= by - LEAST_MOVE_PX : grew <= by + LEAST_MOVE_PX;
   const kept = (movement.still ?? []).some(
-    (box) => view !== undefined && box.y < view && box.y + box.height > 0 && !spans(box),
+    (box) =>
+      view !== undefined &&
+      scroller !== undefined &&
+      holdsBox(scroller, box) &&
+      box.y < view &&
+      box.y + box.height > 0 &&
+      !spans(box),
   );
   if (by === 0 || !spans(part.from) || !spans(part.last) || !explains || !kept) {
     return part;

@@ -4,6 +4,7 @@ import {
   judged,
   type Movement,
   nothingWrong,
+  type Scrolled,
   scrolledOf,
   type StillExcept,
   wrongIn,
@@ -120,10 +121,31 @@ export async function movementWhile(
     ),
     shifts,
     greyShapes: frames.grey.includes(true),
-    scrolled: scrolledOf(frames.scrolls),
+    scrolled: await withBoxes(page, scrolledOf(frames.scrolls)),
     frames: frames.boxes.length,
     view: frames.view,
   };
+}
+
+/** Each part that scrolled, with where its box stands now (the page: the window). */
+function withBoxes(page: Page, scrolled: readonly Scrolled[]): Promise<readonly Scrolled[]> {
+  return page.evaluate(
+    (parts) =>
+      parts.map((each) => {
+        const found =
+          each.part === "page"
+            ? null
+            : document.querySelector(`[data-part="${each.part}"]`)?.getBoundingClientRect();
+        const box =
+          found === undefined
+            ? undefined
+            : found === null
+              ? { x: 0, y: 0, width: innerWidth, height: innerHeight }
+              : { x: found.x, y: found.y, width: found.width, height: found.height };
+        return box === undefined ? each : { ...each, box };
+      }),
+    scrolled,
+  );
 }
 
 /** The landmark of the first element that is this part. */

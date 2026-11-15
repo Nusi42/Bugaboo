@@ -179,7 +179,7 @@ describe("ux_01 the measure tells a row that left the view from one drawn afresh
 const view = 800;
 
 /** The scroll of 52 px that kept what is in view still. */
-const scroll = { part: "app-layout.main", from: "600/0", to: "652/0" };
+const scroll = { part: "app-layout.main", from: "600/0", to: "652/0", box: box(0, 0, 300, view) };
 
 /** A measure in a window, with that scroll. */
 function withScroll(parts: readonly Moved[]): Movement {
@@ -263,5 +263,26 @@ describe("ux_01 the measure sets a part spanning the view back only by a scroll 
     const tall = moved("page", box(0, -200, 300, 1400), box(0, -252, 300, 1400));
     const found = wrongIn(withScroll([tall]), {});
     expect(found).not.toEqual(nothingWrong);
+  });
+});
+
+describe("ux_01 the measure counts a part that stood still only inside the box that scrolled", () => {
+  it("fails growth below the view and a scroll of 52 px while only a part outside the box stood still", () => {
+    // The menu beside the box stands still whatever the box does: it shows nothing of the scroll.
+    const tall = moved("page", box(0, -200, 300, 1400), box(0, -252, 300, 1452));
+    const measured = { ...withScroll([tall]), still: [box(400, 300, 200, 40)] };
+    expect(wrongIn(measured, { grows: ["page"] })).not.toEqual(nothingWrong);
+  });
+
+  it("fails shrinking below the view and a scroll up of 52 px while only a part outside the box stood still", () => {
+    const tall = moved("page", box(0, -200, 300, 1452), box(0, -148, 300, 1400));
+    const up = { ...scroll, from: "652/0", to: "600/0" };
+    const measured = {
+      ...movementOf([tall]),
+      scrolled: [up],
+      view,
+      still: [box(400, 300, 200, 40)],
+    };
+    expect(wrongIn(measured, { grows: ["page"] })).not.toEqual(nothingWrong);
   });
 });

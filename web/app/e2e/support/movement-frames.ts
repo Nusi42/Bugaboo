@@ -30,6 +30,8 @@ export interface Scrolled {
   readonly part: string;
   readonly from: string;
   readonly to: string;
+  /** Where the box that scrolled stands at the end, where the measure found it (the page is the window). */
+  readonly box?: Box;
 }
 
 /** What moved, flashed or emptied while the action ran. */
