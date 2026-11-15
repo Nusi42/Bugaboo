@@ -7030,7 +7030,7 @@ textarea,
   gap: var(--space-4);
   width: var(--size-sidebar);
   height: var(--size-viewport);
-  overflow-y: auto;
+  overflow-y: hidden;
   padding: var(--space-3);
   border-right: var(--border-width) solid var(--divider);
   background: var(--bg-surface);
@@ -7094,9 +7094,15 @@ textarea,
 
 [data-part="sidebar.middle"] {
   display: flex;
-  flex: 1 0 auto;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: inherit;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+[data-part="sidebar"][data-variant~="drawer"] [data-part="sidebar.middle"] {
+  overflow-y: visible;
 }
 
 [data-part="sidebar.section"] {
