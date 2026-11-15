@@ -144,7 +144,10 @@ there. LINT-DRY (§7) catches copied blocks automatically; the rest is review.
   time on a screen are written by the shared helpers of `web/app/src/shared/` and `web/packages/`,
   from the person's *Region*: no `Intl.DateTimeFormat`, `Intl.RelativeTimeFormat`,
   `toLocaleDateString`, `toLocaleTimeString` or `toLocaleString` of a date anywhere else in `web/`
-  (tests and tools excluded: they may work out what they expect another way). Enforced by:
+  (tests and tools excluded: they may work out what they expect another way). A box for a day is a
+  text box that the same helpers read and write (`DayBox`, or `dayText`, `readDay` and `dayProblem`),
+  never the browser's own box for a day or a time (`type="date"` and its kin), which writes the day in
+  the format of the device, not the person's: not even in the helpers and packages. Enforced by:
   TXT-DATES. A length of time written by hand (`${hours}h`) is not something a check can see:
   review.
 - **No hard-coded styles:** no hex/rgb colors, pixel magic numbers, durations, weights, line

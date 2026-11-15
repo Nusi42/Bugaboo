@@ -7,6 +7,12 @@
 //! not follow the person's choices (a day first beside a clock of 12 hours, M5-F137). A finding is
 //! one of [`WRITERS`] anywhere in `web/` outside the shared helpers ([`HELPERS`]), tests and tools
 //! excluded (a test may work out what it expects another way).
+//!
+//! The browser's own box for a day or a time (`<input type="date">` and its kin) writes a day too, in
+//! the format of the device, not the person's: a *Start date* read `23.11.2026` beside a *Created*
+//! of `2026-11-13, 13:21` in the person's own format (M8 exit). Every box for a day is a text box
+//! read and written by the shared helpers, so one of [`BROWSER_BOXES`] is a finding anywhere in
+//! `web/`, the helpers and the packages included.
 
 use super::web_source::{code_of, is_app_source};
 use super::{Check, Context, Finding};
@@ -26,6 +32,12 @@ const WRITERS: [&str; 5] = [
     "toLocaleString",
 ];
 
+/// The browser's own boxes for a day or a time, as code asks for them.
+const BROWSER_BOXES: [&str; 5] = ["date", "datetime-local", "time", "month", "week"];
+
+/// The ways code names the kind of a box: a JSX attribute, with or without braces, and the DOM.
+const BOX_KINDS: [&str; 3] = ["type=\"", "type={\"", "setAttribute(\"type\", \""];
+
 pub(crate) struct TxtDates;
 
 impl Check for TxtDates {
@@ -44,20 +56,39 @@ fn message(writer: &str) -> String {
     )
 }
 
+fn box_message(kind: &str) -> String {
+    format!(
+        "A box of the browser for a `{kind}` writes the day in the format of the device, not the person's Region. Use a text box read and written by the shared helpers (`DayBox`, or `dayText`, `readDay` and `dayProblem` of web/app/src/shared/) (TXT-DATES, coding-standards §4)."
+    )
+}
+
+/// The browser's own box for a day or a time that a line of code asks for, if it asks for one.
+fn browser_box(code: &str) -> Option<&'static str> {
+    BROWSER_BOXES.into_iter().find(|kind| {
+        BOX_KINDS
+            .iter()
+            .any(|asks| code.contains(&format!("{asks}{kind}\"")))
+    })
+}
+
 fn evaluate(sources: &[Source]) -> Vec<Finding> {
     let mut findings = Vec::new();
     for (path, text) in sources {
-        let helper = HELPERS.iter().any(|folder| path.starts_with(folder));
-        if !path.starts_with(WEB) || helper || !is_app_source(path) {
+        if !path.starts_with(WEB) || !is_app_source(path) {
             continue;
         }
+        let helper = HELPERS.iter().any(|folder| path.starts_with(folder));
         for (index, line) in text.lines().enumerate() {
             let code = code_of(line);
+            let at = || format!("{path}:{}", index + 1);
+            if let Some(kind) = browser_box(code) {
+                findings.push(Finding::at(at(), box_message(kind)));
+            }
+            if helper {
+                continue;
+            }
             if let Some(writer) = WRITERS.iter().find(|writer| code.contains(*writer)) {
-                findings.push(Finding::at(
-                    format!("{path}:{}", index + 1),
-                    message(writer),
-                ));
+                findings.push(Finding::at(at(), message(writer)));
             }
         }
     }
@@ -117,6 +148,46 @@ mod tests {
                 screen,
                 "new Intl.RelativeTimeFormat(locale).format(-1, \"day\")"
             ),
+            1
+        );
+    }
+
+    #[test]
+    fn good_example_a_day_in_a_text_box_and_a_word_that_names_a_day() {
+        let screen = "web/app/src/features/issues/DateRows.tsx";
+        assert_eq!(found(screen, "<TextField label={name} value={typed} />"), 0);
+        // The kind of an operand of the search language is no box.
+        assert_eq!(found(screen, "return { type: \"date\", date, span };"), 0);
+        assert_eq!(found(screen, "if (first?.type === \"date\") {"), 0);
+        assert_eq!(
+            found(
+                "web/packages/ui/src/TextField.tsx",
+                "<Input type=\"text\" />"
+            ),
+            0
+        );
+        assert_eq!(
+            found("web/app/e2e/dates.spec.ts", "<input type=\"date\" />"),
+            0
+        );
+    }
+
+    #[test]
+    fn bad_example_the_browsers_own_box_for_a_day() {
+        let screen = "web/app/src/features/issues/DateRows.tsx";
+        assert_eq!(found(screen, "<input type=\"date\" value={day} />"), 1);
+        assert_eq!(found(screen, "<Input type={\"datetime-local\"} />"), 1);
+        assert_eq!(found(screen, "box.setAttribute(\"type\", \"time\");"), 1);
+        // In the shared helpers and the packages too: no helper may write a day the device's way.
+        assert_eq!(
+            found(
+                "web/packages/ui/src/TextField.tsx",
+                "<Input type=\"date\" />"
+            ),
+            1
+        );
+        assert_eq!(
+            found("web/app/src/shared/DayBox.tsx", "<input type=\"month\" />"),
             1
         );
     }
