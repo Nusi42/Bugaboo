@@ -205,6 +205,11 @@ describe("ux_01 the measure judges what is in view, and lets the browser keep it
     expect(wrongIn(withScroll([details]), {})).toEqual(nothingWrong);
   });
 
+  it("fails a part spanning the view that moved by 50 px", () => {
+    const tall = moved("history", box(0, -200, 300, 1400), box(0, -150, 300, 1400));
+    expect(wrongIn(withScroll([tall]), {}).moved).toEqual([tall]);
+  });
+
   it("does not count a row that came in above the view as a push of what is in view", () => {
     // A row came into the Details above the view and the scroll kept the view still; below, in view, the part that
     // changes grew by 113 px and pushed the part under it by exactly that.

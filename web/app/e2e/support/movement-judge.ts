@@ -140,8 +140,8 @@ function grewByWhatCameIn(part: Moved, appeared: Movement["appeared"]): boolean 
 }
 
 /**
- * The parts that moved where they show in view, and whether anything changed out of view only (a part, a row that
- * came in above the view). What stands outside the
+ * The parts that moved where their edges show in view, and whether anything changed out of view only (a part, a row
+ * that came in above the view). What stands outside the
  * window at the start and at the end is not in view: the browser keeps what is in view still when
  * something above it grows, by its scroll (UX §6.4).
  */
@@ -152,14 +152,23 @@ function inViewOf(movement: Movement): {
   const { view } = movement;
   const inView = (box: Box): boolean =>
     view === undefined || (box.y < view && box.y + box.height > 0);
-  // What of a part shows in the window: a part that changed only where it is out of view (grew above it, the rest
-  // kept still by the scroll) looks the same to the person.
-  const shown = (box: Box): Box => {
-    const top = Math.max(box.y, 0);
-    return { ...box, y: top, height: Math.min(box.y + box.height, view ?? Infinity) - top };
+  // A part is judged by its edges that show in the window: one that changed only where it is out of view (grew above
+  // it, its foot in view kept still by the scroll) looks the same to the person. A part with neither edge in view is
+  // judged whole.
+  const looksMoved = ({ from, last }: Moved): boolean => {
+    if (view === undefined || !inView(from) || !inView(last)) {
+      return true;
+    }
+    const topSeen = from.y >= 0 && last.y >= 0;
+    const footSeen = from.y + from.height <= view && last.y + last.height <= view;
+    if (far(from.x, last.x) || far(from.width, last.width) || (!topSeen && !footSeen)) {
+      return differs(from, last);
+    }
+    return (
+      (topSeen && far(from.y, last.y)) ||
+      (footSeen && far(from.y + from.height, last.y + last.height))
+    );
   };
-  const looksMoved = (part: Moved): boolean =>
-    !inView(part.from) || !inView(part.last) || differs(shown(part.from), shown(part.last));
   const seen = movement.moved.filter(
     (part) => (inView(part.from) || inView(part.last)) && looksMoved(part),
   );
