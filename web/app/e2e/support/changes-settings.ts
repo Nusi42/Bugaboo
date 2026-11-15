@@ -4,6 +4,7 @@ import { t } from "@bugaboo/messages";
 
 import type { ChangeInPlace } from "./change-row.ts";
 import { savedWords } from "./saved.ts";
+import { answerTo } from "./sequence.ts";
 import { pageLandmarks } from "./screen-landmarks.ts";
 import { changeColor, colorField, readabilityLine } from "./theme-editor.ts";
 import { paths } from "../../src/shared/paths.ts";
@@ -51,6 +52,9 @@ function pressed(path: string, change: string, control: (page: Page) => Locator)
 /** An accent color that reads well on the backgrounds of Dusk. */
 const READABLE = "#a49aff";
 
+/** An accent color that is hard to read on the backgrounds of Dusk: the readout of the readability says so. */
+const HARD_TO_READ = "#3a3550";
+
 /**
  * A change of a color in the editor of a new personal theme.
  */
@@ -73,8 +77,11 @@ function colorOfATheme(
       await page.waitForLoadState("networkidle");
     },
     act: async (page) => {
+      // The change is done when the preview shows it: it is drawn from the draft the editor keeps of the values.
+      const kept = answerTo(page, "PUT", "/api/v1/drafts");
       await colorField(page, t("theme-color.accent")).fill(theme.color);
       await expect(readabilityLine(page)).not.toHaveText(t("theme-editor.readability-loading"));
+      await kept;
     },
     landmarks: pageLandmarks,
   };
@@ -125,4 +132,5 @@ export const settingsChanges: readonly ChangeInPlace[] = [
     landmarks: pageLandmarks,
   },
   colorOfATheme("a color of a theme", { name: "Harbor", color: READABLE }),
+  colorOfATheme("a color of a theme that is hard to read", { name: "Quay", color: HARD_TO_READ }),
 ];
