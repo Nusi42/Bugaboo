@@ -1,4 +1,5 @@
 import type { ThemeReader } from "@bugaboo/wasm";
+import { useHoldWhileReading } from "@bugaboo/ui";
 import { useEffect, useState } from "react";
 
 /** The rating once it has been loaded, so the next editor has it at once. */
@@ -18,6 +19,9 @@ async function load(): Promise<ThemeReader> {
 export function useThemeReader(): ThemeReader | undefined {
   // A function in a state is its way of starting, so the reader is handed over inside one.
   const [reader, setReader] = useState<ThemeReader | undefined>(() => loaded);
+  const [failed, setFailed] = useState(false);
+  // The verdict of the readability stands above the groups: the editor shows with it, not before (UX §6.4).
+  useHoldWhileReading(reader === undefined && !failed);
   useEffect(() => {
     let live = true;
     if (loaded === undefined) {
@@ -29,6 +33,9 @@ export function useThemeReader(): ThemeReader | undefined {
           }
         } catch {
           // The module could not be loaded: no rating on screen, and the server judges the save.
+          if (live) {
+            setFailed(true);
+          }
         }
       })();
     }
