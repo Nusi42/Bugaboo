@@ -140,6 +140,8 @@ test("plan_13_give_it_to_someone_else_suggests_nobody", async ({ page, server })
   await expect(picker).toBeVisible();
   await expect(picker.getByText(t("issues.assigned"), { exact: true })).toHaveCount(0);
   const give = new RegExp(`^${t("timeline.give-to-name", { name: "" })}`, "u");
+  // The window opens at once and reads the people of the project then: their names are counted once they are there.
+  await expect(picker.getByRole("button", { name: give }).first()).toBeVisible();
   const names = await picker.getByRole("button", { name: give }).allInnerTexts();
   expect(names.length).toBeGreaterThan(1);
   await picker

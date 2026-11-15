@@ -42,8 +42,11 @@ interface Noted {
  */
 class FrameNotes {
   private readonly tracks = new Map<Element, Noted>();
-  /** Whether each part draws something itself, as far as it was looked at. */
-  private readonly painting = new WeakMap<Element, boolean>();
+  /** Whether each part draws something itself, with the text it had when it was looked at. */
+  private readonly painting = new WeakMap<
+    Element,
+    { readonly text: string; readonly drawn: boolean }
+  >();
   private frame = 0;
   private readonly letters: number;
 
@@ -80,19 +83,23 @@ class FrameNotes {
   }
 
   /**
-   * Whether a part draws something itself, which a person could see move: text of its own, a picture or a control, a
-   * background, a border or a shadow. A box that only holds other parts is seen by them. Looked at once per part.
+   * Whether a part draws something itself, which a person could see move: text of its own (also in children that are
+   * no parts), a picture or a control, a background, a border or a shadow. A box that only holds other parts is seen by
+   * them.
    */
   private paints(element: HTMLElement | SVGElement): boolean {
+    // What is there for screen readers only draws nothing.
+    if (element.dataset.part === "visually-hidden") {
+      return false;
+    }
+    // Its own text: text in it that is in no deeper part (a deeper part is judged on its own).
+    const text = this.textOutsideParts(element).trim();
+    // Asked again whenever the part's text changes: a count first drawn empty draws once it has its number.
     const known = this.painting.get(element);
-    if (known !== undefined) {
-      return known;
+    if (known?.text === text) {
+      return known.drawn;
     }
     const style = getComputedStyle(element);
-    let ownText = false;
-    for (const child of element.childNodes) {
-      ownText ||= child.nodeType === Node.TEXT_NODE && (child.textContent ?? "").trim() !== "";
-    }
     const borders = [
       style.borderTopWidth,
       style.borderRightWidth,
@@ -100,13 +107,29 @@ class FrameNotes {
       style.borderLeftWidth,
     ];
     const drawn =
-      ownText ||
+      text !== "" ||
       element.matches("img, svg, input, textarea, select, button, canvas, video") ||
       !/^rgba\(\d+, \d+, \d+, 0\)$|^transparent$/u.test(style.backgroundColor) ||
       borders.some((width) => width !== "0px") ||
       style.boxShadow !== "none";
-    this.painting.set(element, drawn);
+    this.painting.set(element, { text, drawn });
     return drawn;
+  }
+
+  /** The text in an element that stands in no deeper part. */
+  private textOutsideParts(element: HTMLElement | SVGElement): string {
+    let text = "";
+    for (const child of element.childNodes) {
+      if (child.nodeType === Node.TEXT_NODE) {
+        text += child.textContent ?? "";
+      } else if (
+        (child instanceof HTMLElement || child instanceof SVGElement) &&
+        child.dataset.part === undefined
+      ) {
+        text += this.textOutsideParts(child);
+      }
+    }
+    return text;
   }
 
   /** Every part noted, with its changes. */

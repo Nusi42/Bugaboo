@@ -119,9 +119,11 @@ test("ux_06 grey shapes stand in for a slow list, and the list says it is busy",
   await page.clock.install({ time: now });
   await page.clock.pauseAt(now + 1000);
   await page.goto(paths.sessions);
-  // The topic holds the list until it is read, so nothing in it moves once seen (UX §6.4), and says it is busy.
+  // The topic holds the list until it is read, so nothing in it moves once seen (UX §6.4), and tells screen readers
+  // that it is loading.
   const topic = page.locator("main");
-  await expect(partOn(topic, part.readingHold).first()).toHaveAttribute("aria-busy", "true");
+  const busy = topic.getByRole("status").filter({ hasText: t("common.loading") });
+  await expect(busy).toBeAttached();
   // Nothing grey in the first 0.3 s, so a quick answer never flashes.
   const shapes = partOn(topic, part.skeletonLine);
   await page.clock.runFor(skeletonDelayMs - 1);
@@ -131,6 +133,7 @@ test("ux_06 grey shapes stand in for a slow list, and the list says it is busy",
   await page.clock.resume();
   slow.resolve();
   await expect(places(page)).toHaveCount(2);
+  await expect(busy).toHaveCount(0);
   const region = page.getByRole("list", { name: t("sessions.list") }).locator("..");
   await expect(region).toHaveAttribute("aria-busy", "false");
   await expect(shapes).toHaveCount(0);
