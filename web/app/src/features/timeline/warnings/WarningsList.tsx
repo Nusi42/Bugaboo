@@ -45,6 +45,7 @@ function WarningItem({ warning, onMark, onShow, ...ways }: WarningItemProps) {
   const row = ways.rowOf(warning.issue);
   const sentence = warningSentence(warning, {
     key: row?.issue.readable_id ?? "",
+    title: row?.issue.title,
     project: row?.issue.project?.name ?? "",
   });
   const accepted = warning.accepted;

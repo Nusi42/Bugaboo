@@ -14087,14 +14087,33 @@ pub fn plan_warning_delay(
 #[must_use]
 pub fn plan_warning_delay_goal(
     days: i64,
-    issue: impl std::fmt::Display,
+    goal: impl std::fmt::Display,
     sub_issue: impl std::fmt::Display,
 ) -> Message {
     Message::with_arguments(
         MessageKey::new("plan-warning.delay-goal"),
         vec![
             ("days", Value::Number(days)),
-            ("issue", Value::Text(issue.to_string())),
+            ("goal", Value::Text(goal.to_string())),
+            ("sub_issue", Value::Text(sub_issue.to_string())),
+        ],
+    )
+}
+
+/// The message `plan-warning.delay-goal-away`.
+#[must_use]
+pub fn plan_warning_delay_goal_away(
+    away_days: i64,
+    goal: impl std::fmt::Display,
+    person: impl std::fmt::Display,
+    sub_issue: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("plan-warning.delay-goal-away"),
+        vec![
+            ("away_days", Value::Number(away_days)),
+            ("goal", Value::Text(goal.to_string())),
+            ("person", Value::Text(person.to_string())),
             ("sub_issue", Value::Text(sub_issue.to_string())),
         ],
     )
@@ -23271,7 +23290,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "plan-warning.delay-goal",
-        "{sub_issue} now ends {days, plural, one {# day} other {# days}} after the due date of {issue}.",
+        "{sub_issue} now ends {days, plural, one {# day} other {# days}} after the due date of {goal}.",
+    ),
+    (
+        "plan-warning.delay-goal-away",
+        "{person}'s {away_days, plural, one {away day moves} =5 {away week moves} =6 {away week moves} =7 {away week moves} other {# away days move}} {sub_issue} past the due date of {goal}.",
     ),
     (
         "plan-warning.not-enough-days",

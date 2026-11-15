@@ -1,7 +1,8 @@
 //! The plan warnings (PLAN-13, ADR-0030, decision 5 and amendment M8, ADR-0043, decisions 5 and 7),
 //! one enum.
 //! A warning names issues by their IDs and no person at all: the use case shows them as the reader
-//! may know them, and leaves a warning out when the reader may not see an issue in it. Warnings
+//! may know them (with the person and the cause of a late goal), and leaves a warning out when the
+//! reader may not see an issue in it. Warnings
 //! never move anything: every way out is a person's choice.
 
 use std::collections::{BTreeMap, HashMap};
@@ -68,6 +69,11 @@ words_in_api!(
 
 /// The sentence of *Delay* of a goal after one of its sub-issues (ADR-0043, decision 7).
 pub const DELAY_OF_GOAL: MessageKey = crate::derived_key!("plan-warning.", "delay-goal");
+
+/// The sentence of *Delay* of a goal whose sub-issue an away time of its person on the bar moves
+/// past the due date ([`away_in`]), for a reader who may know that person's away times (UX §4.7,
+/// ADR-0030 amendment M8).
+pub const DELAY_OF_GOAL_AWAY: MessageKey = crate::derived_key!("plan-warning.", "delay-goal-away");
 
 /// Why an issue has the warning *Delay*.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
@@ -256,6 +262,27 @@ pub fn days_without_work(bar: &Bar, days: &[DayMinutes]) -> Option<Warning> {
         .then_some(Warning::DaysWithoutWork { days: bar.days })
 }
 
+/// The days of a bar on which its person on the bar is away, in order.
+fn away_dates(bar: &Bar, days: &[DayMinutes]) -> Vec<Date> {
+    days.iter()
+        .filter(|day| bar.days.contains(day.date) && day.away.count() > 0)
+        .map(|day| day.date)
+        .collect()
+}
+
+/// The days of a bar that *Plan by effort* worked out around the away days of its person on the
+/// bar, from the first to the last away day inside it; none when the person is not away on any of
+/// them, or when people set both dates (the away days then move nothing: that is *Away*). A goal's *Delay* names them as its cause (*"Lea's away week moves Login
+/// screen past the due date of Mobile app 2.0"*, UX §4.7).
+#[must_use]
+pub fn away_in(bar: &Bar, days: &[DayMinutes]) -> Option<Days> {
+    if bar.worked_out == WorkedOut::Neither {
+        return None;
+    }
+    let away = away_dates(bar, days);
+    Days::new(*away.first()?, *away.last()?)
+}
+
 /// *Away*: the days of a bar whose dates people set on which its person on the bar is away. A bar
 /// that *Plan by effort* worked out has its away days as a gap, and no warning.
 #[must_use]
@@ -263,11 +290,7 @@ pub fn away(bar: &Bar, days: &[DayMinutes]) -> Option<Warning> {
     if bar.worked_out != WorkedOut::Neither {
         return None;
     }
-    let away: Vec<Date> = days
-        .iter()
-        .filter(|day| bar.days.contains(day.date) && day.away.count() > 0)
-        .map(|day| day.date)
-        .collect();
+    let away = away_dates(bar, days);
     let (first, last) = (*away.first()?, *away.last()?);
     // The away days given back after the bar, on days the person works.
     let due_needed = days

@@ -19,7 +19,7 @@ use bb_core::issue::Issue;
 use bb_core::own_fields::FieldType;
 use bb_core::people_kinds::PeopleKind;
 use bb_core::plan::Days;
-use bb_core::plan::warning::Warning;
+use bb_core::plan::warning::{DELAY_OF_GOAL_AWAY, Delay, Warning, away_in};
 use bb_core::saved_search::TimelineOptions;
 use bb_policy::{Authorized, Evaluation, PeopleContext, PersonRef, Place as Where};
 use bb_searchlang::{Expr, FieldRef, Span, Test};
@@ -28,7 +28,8 @@ use super::build::{DateTargets, Plan, PlanAsk, window_of};
 use super::person_days::hatched_of;
 use super::types::{
     AcceptedView, BarView, EffortShown, FactorShown, GoalView, HatchedDay, TimelinePage,
-    TimelinePart, TimelineQuery, TimelineRow, TimelineSearch, WarningView, WorkTimeShown,
+    TimelinePart, TimelineQuery, TimelineRow, TimelineSearch, WarningIssue, WarningView,
+    WorkTimeShown,
 };
 use crate::access::{Actor, place_of_address};
 use crate::auth::{AppError, AuthStore, Ctx, internal};
@@ -531,7 +532,7 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
                 None => None,
             };
             // The other issue is one the reader sees (only those are in the plan), named by its
-            // readable ID from the tree the search read.
+            // readable ID from the tree the search read, and by its title where they may read it.
             let other = warning
                 .other_issue()
                 .and_then(|other| plan.issues.get(&other))
@@ -541,17 +542,27 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
                             project.short_name.clone(),
                             found.code.clone(),
                         );
-                        (found.id, key.to_string())
+                        WarningIssue {
+                            id: found.id,
+                            readable_id: key.to_string(),
+                            title: plan.reads(found, Field::Title).then(|| found.title.clone()),
+                        }
                     })
                 });
+            let cause = self.away_cause(plan, warning).await?;
+            let (sentence, person, away_days) = match cause {
+                Some((who, away_days)) => (DELAY_OF_GOAL_AWAY, Some(who), Some(away_days)),
+                None => (warning.sentence(), person, None),
+            };
             views.push(WarningView {
                 issue: *id,
                 kind: warning.kind(),
-                sentence: warning.sentence(),
+                sentence,
                 days,
                 what: *warning,
                 other,
                 person,
+                away_days,
                 ways_out: warning.ways_out(),
                 move_after: warning.move_after(),
                 due_needed: warning.due_needed(),
@@ -559,6 +570,47 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
             });
         }
         Ok(views)
+    }
+
+    /// The cause of a goal's *Delay* when it is an away time: the person on the bar of the late
+    /// sub-issue and the days from their first to their last away day in its bar. Only for a reader
+    /// who would be told *Away* about that bar, who sees the person by name and may know their away
+    /// times (ADR-0030, amendment M8); any other reader gets the plain sentence.
+    async fn away_cause(
+        &self,
+        plan: &Plan,
+        warning: &Warning,
+    ) -> Result<Option<(PersonRef, u32)>, AppError> {
+        let Warning::Delay(Delay::SubIssue { sub_issue, .. }) = warning else {
+            return Ok(None);
+        };
+        let Some(sub) = plan.issues.get(sub_issue) else {
+            return Ok(None);
+        };
+        let (Some(away), Some(held)) = (
+            plan.bars
+                .get(sub_issue)
+                .and_then(|bar| away_in(bar, plan.days_of(sub))),
+            plan.held.get(&sub.project),
+        ) else {
+            return Ok(None);
+        };
+        let (person, named) = self
+            .person_for(
+                held,
+                plan.person_on_bar(*sub_issue),
+                plan.reads(sub, Field::AssignedTo),
+            )
+            .await?;
+        let as_away = Warning::Away {
+            days: away,
+            due_needed: None,
+        };
+        if !plan.tells(sub, &as_away, named) {
+            return Ok(None);
+        }
+        let days = u32::try_from(Days::between(away.first, away.last) + 1).unwrap_or(u32::MAX);
+        Ok(person.map(|person| (person, days)))
     }
 }
 

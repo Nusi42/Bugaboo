@@ -210,6 +210,17 @@ pub struct AcceptedView {
     pub at: Timestamp,
 }
 
+/// An issue a warning names besides its own, as the reader may know it.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct WarningIssue {
+    /// The issue.
+    pub id: IssueId,
+    /// Its readable ID.
+    pub readable_id: String,
+    /// Its title, when the reader may read it: the sentence of a late goal names it.
+    pub title: Option<String>,
+}
+
 /// A plan warning of an issue, with what it names as the reader may know it.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct WarningView {
@@ -223,11 +234,16 @@ pub struct WarningView {
     pub days: Days,
     /// What the warning holds.
     pub what: Warning,
-    /// The other issue it names (the one it waits for, or the sub-issue), with its readable ID.
-    pub other: Option<(IssueId, String)>,
-    /// The person on the bar it is about, for *Away* and *Too much at once*; none when the reader
-    /// may not see who it is (*"the assigned person is away"*).
+    /// The other issue it names (the one it waits for, or the sub-issue).
+    pub other: Option<WarningIssue>,
+    /// The person on the bar it is about, for *Away* and *Too much at once*, and the person whose
+    /// away time makes a goal late; none when the reader may not see who it is (*"the assigned
+    /// person is away"*).
     pub person: Option<PersonRef>,
+    /// The *Delay* of a goal that an away time of `person` causes: the days from the first to the
+    /// last away day in the bar of the sub-issue, both counted (*"Lea's away week moves …"*); none
+    /// for any other warning, and for a reader who may not know that person's away times.
+    pub away_days: Option<u32>,
     /// The ways out that fit it.
     pub ways_out: Vec<WayOut>,
     /// The day *Move it after* starts the issue after, when it is a way out.

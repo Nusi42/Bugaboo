@@ -562,7 +562,13 @@ export interface MessageArguments {
   "plan-warning.away": { days: string | number; issue: string | number; person: string | number };
   "plan-warning.days-without-work": { issue: string | number };
   "plan-warning.delay": { days: number; first: string | number; issue: string | number };
-  "plan-warning.delay-goal": { days: number; issue: string | number; sub_issue: string | number };
+  "plan-warning.delay-goal": { days: number; goal: string | number; sub_issue: string | number };
+  "plan-warning.delay-goal-away": {
+    away_days: number;
+    goal: string | number;
+    person: string | number;
+    sub_issue: string | number;
+  };
   "plan-warning.not-enough-days": { has: number; issue: string | number; needs: number };
   "plan-warning.too-much-at-once": {
     can: string | number;

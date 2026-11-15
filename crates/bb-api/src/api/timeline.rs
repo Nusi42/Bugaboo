@@ -166,6 +166,9 @@ pub(crate) struct PlanWarningIssueBody {
     id: String,
     /// The readable ID.
     readable_id: String,
+    /// Its title; `null` when the person may not read it. The sentence of a late goal names it.
+    #[schema(required = true)]
+    title: Option<String>,
 }
 
 /// Who accepted a warning and when.
@@ -188,10 +191,16 @@ pub(crate) struct PlanWarningBody {
     sentence: String,
     /// The days it is about; for *Days without work*, the days of the bar.
     days: DaysBody,
-    /// The person on the bar it is about, for *Away* and *Too much at once*; `null` when the
-    /// reader may not see who it is (*"the assigned person is away"*).
+    /// The person on the bar it is about, for *Away* and *Too much at once*, and the person whose
+    /// away time makes a goal late; `null` when the reader may not see who it is (*"the assigned
+    /// person is away"*).
     #[schema(required = true)]
     person: Option<PersonRef>,
+    /// *Delay* of a goal that an away time of `person` causes: the days from the first to the last
+    /// away day in the bar of the sub-issue, both counted; `null` for any other warning and for a
+    /// reader who may not know that person's away times.
+    #[schema(required = true)]
+    away_days: Option<u32>,
     /// The other issue it names: the one it waits for, or the sub-issue of a goal.
     #[schema(required = true)]
     other: Option<PlanWarningIssueBody>,
@@ -255,10 +264,12 @@ impl From<&WarningView> for PlanWarningBody {
             sentence: view.sentence.as_str().to_owned(),
             days: view.days.into(),
             person: view.person.clone(),
-            other: view.other.as_ref().map(|(id, key)| PlanWarningIssueBody {
-                id: id.to_string(),
-                readable_id: key.clone(),
+            other: view.other.as_ref().map(|other| PlanWarningIssueBody {
+                id: other.id.to_string(),
+                readable_id: other.readable_id.clone(),
+                title: other.title.clone(),
             }),
+            away_days: view.away_days,
             late_days,
             needs_days,
             has_days,

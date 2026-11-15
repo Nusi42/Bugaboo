@@ -9997,6 +9997,13 @@ export interface components {
       accepted: components["schemas"]["PlanAcceptedBody"] | null;
       /**
        * Format: int32
+       * @description *Delay* of a goal that an away time of `person` causes: the days from the first to the last
+       *     away day in the bar of the sub-issue, both counted; `null` for any other warning and for a
+       *     reader who may not know that person's away times.
+       */
+      away_days: number | null;
+      /**
+       * Format: int32
        * @description *Too much at once*: the minutes the person can work on that day in the project.
        */
       can_minutes: number | null;
@@ -10058,6 +10065,8 @@ export interface components {
       id: string;
       /** @description The readable ID. */
       readable_id: string;
+      /** @description Its title; `null` when the person may not read it. The sentence of a late goal names it. */
+      title: string | null;
     };
     /**
      * @description How the results of a saved search are shown. How close together the rows are is not part of

@@ -405,5 +405,10 @@ reason = "Days, not a count of things: how many days after an issue starts the o
 
 [[exempt]]
 route = "POST /api/v1/timeline"
+property = "away_days"
+reason = "Days, not a count of things: the days from the first to the last away day in the bar of a sub-issue that makes its goal late, sent only to a reader who sees the person on that bar by name and may know their away times, the reader who is told Away about that bar (PLAN-13, ADR-0030 amendment M8)."
+
+[[exempt]]
+route = "POST /api/v1/timeline"
 property = "work_days"
 reason = "Days, not a count of things: how many of the person's work days the effort of one issue the viewer sees takes, worked out from an estimate the viewer may read; only when the bars are planned by effort, so never for an access key, and like the length of the bar it never says which days are away, holidays or days off (ADR-0030 amendment M8, architecture section 12)."

@@ -12,7 +12,7 @@ use super::http::{Browser, rig_and_app};
 use super::issues_site::{Site, ok};
 use super::plan_privacy_http::{field_level, see_only_key};
 use super::plan_site::{
-    MONDAY, TIMELINE, ask, by_effort, change, id_of_key, issue, page, planned, rows_of,
+    MONDAY, TIMELINE, ask, by_effort, change, id_of_key, issue, page, planned, rows_of, under,
     warnings_on, work_times,
 };
 
@@ -465,6 +465,75 @@ async fn plan_13_who_accepted_is_not_named_once_they_are_the_person_on_the_bar()
             "{warning}"
         );
         assert!(!seen.to_string().contains("Tom Taylor"), "{seen}");
+        Ok(())
+    })
+    .await
+}
+
+/// The *Delay* of a goal on a page as `browser` reads it.
+async fn goal_delay(browser: &mut Browser, body: Value, goal: &str) -> Result<Value, Failure> {
+    let found = page(browser, body).await?;
+    Ok(warnings_on(&found, goal)
+        .first()
+        .map_or(Value::Null, |warning| (*warning).clone()))
+}
+
+#[tokio::test]
+async fn plan_13_a_goal_late_by_an_away_week_names_the_person_and_the_titles() -> TestResult {
+    each_database("plan_13_goal_late_by_away", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut lea, lea_id) = site
+            .person_called(StartingRole::TeamMember, "lea", "Lea Lang")
+            .await?;
+        // 8 hours a day at 100 %: three work days of effort, after a week away.
+        work_times(&site, &mut ada, lea_id, 480, 100).await?;
+        ok(&lea
+            .send(
+                "POST",
+                "/api/v1/me/away-times",
+                Some(json!({"first": MONDAY, "last": "2027-03-05"})),
+            )
+            .await?)?;
+        let goal = planned(
+            &site,
+            &mut ada,
+            "Mobile app 2.0",
+            json!({"due_date": "2027-03-05"}),
+        )
+        .await?;
+        let sub = planned(
+            &site,
+            &mut ada,
+            "Login screen",
+            json!({"start_date": MONDAY, "estimated_time": 1440, "assigned_to": [lea_id.to_string()]}),
+        )
+        .await?;
+        let goal_id = id_of_key(&mut ada, &goal).await?;
+        under(&mut ada, &sub, &goal_id).await?;
+        let body = by_effort(&site, MONDAY, END);
+        // Ada sees Lea and her away times: the week away is the cause, the issues by their titles.
+        let named = goal_delay(&mut ada, body.clone(), &goal_id).await?;
+        assert_eq!(named["sentence"], "plan-warning.delay-goal-away", "{named}");
+        assert_eq!(named["person"]["name"], "Lea Lang", "{named}");
+        assert_eq!(named["away_days"], 5, "{named}");
+        assert_eq!(named["other"]["title"], "Login screen", "{named}");
+        // A reader who may not see Lea by name, or may not know her away times, learns no away
+        // time from it: the plain sentence, nobody named.
+        let (mut reader, _) = site.person(StartingRole::Contributor, "reader").await?;
+        for (kind, level) in [("assigned-to", "role-only"), ("work-times", "hidden")] {
+            site.show_people(&mut ada, StartingRole::Contributor, "assigned-to", "names")
+                .await?;
+            site.show_people(&mut ada, StartingRole::Contributor, "work-times", "names")
+                .await?;
+            site.show_people(&mut ada, StartingRole::Contributor, kind, level)
+                .await?;
+            let plain = goal_delay(&mut reader, body.clone(), &goal_id).await?;
+            assert_eq!(plain["sentence"], "plan-warning.delay-goal", "{kind} {plain}");
+            assert_eq!(plain["person"], Value::Null, "{kind} {plain}");
+            assert_eq!(plain["away_days"], Value::Null, "{kind} {plain}");
+            assert_eq!(plain["other"]["title"], "Login screen", "{kind} {plain}");
+        }
         Ok(())
     })
     .await

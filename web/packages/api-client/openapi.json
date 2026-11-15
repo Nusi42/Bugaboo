@@ -29008,6 +29008,7 @@
           "sentence",
           "days",
           "person",
+          "away_days",
           "other",
           "late_days",
           "needs_days",
@@ -29031,6 +29032,12 @@
                 "type": "null"
               }
             ]
+          },
+          "away_days": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "*Delay* of a goal that an away time of `person` causes: the days from the first to the last\naway day in the bar of the sub-issue, both counted; `null` for any other warning and for a\nreader who may not know that person's away times.",
+            "minimum": 0
           },
           "can_minutes": {
             "type": ["integer", "null"],
@@ -29093,7 +29100,7 @@
             "oneOf": [
               {
                 "$ref": "#/components/schemas/PersonRef",
-                "description": "The person on the bar it is about, for *Away* and *Too much at once*; `null` when the\nreader may not see who it is (*\"the assigned person is away\"*)."
+                "description": "The person on the bar it is about, for *Away* and *Too much at once*, and the person whose\naway time makes a goal late; `null` when the reader may not see who it is (*\"the assigned\nperson is away\"*)."
               },
               {
                 "type": "null"
@@ -29127,7 +29134,7 @@
       "PlanWarningIssueBody": {
         "type": "object",
         "description": "An issue a warning names besides its own.",
-        "required": ["id", "readable_id"],
+        "required": ["id", "readable_id", "title"],
         "properties": {
           "id": {
             "type": "string",
@@ -29136,6 +29143,10 @@
           "readable_id": {
             "type": "string",
             "description": "The readable ID."
+          },
+          "title": {
+            "type": ["string", "null"],
+            "description": "Its title; `null` when the person may not read it. The sentence of a late goal names it."
           }
         }
       },

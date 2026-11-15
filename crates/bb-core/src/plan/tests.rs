@@ -6,7 +6,7 @@ use jiff::civil::{Date, date};
 
 use super::bar::{Bar, BarInput, Shortfall, WorkedOut, bar, effort_days, load, shortfall};
 use super::order::move_after;
-use super::warning::{Delay, Warning, away, delays, sub_issue_delays, too_much_at_once};
+use super::warning::{Delay, Warning, away, away_in, delays, sub_issue_delays, too_much_at_once};
 use super::{Days, TimeFactor};
 use crate::id::{IssueId, SequentialIds};
 use crate::relation::DependencyGraph;
@@ -356,6 +356,15 @@ fn plan_13_away_and_too_much_at_once() {
         ..fixed
     };
     assert_eq!(away(&worked, &days), None);
+    // Its away days are still the cause a late goal names, from the first to the last.
+    assert_eq!(
+        away_in(&worked, &days),
+        Days::new(date(2026, 11, 3), date(2026, 11, 4))
+    );
+    let not_away = person_days(MONDAY, 14, 6, 50, &[]);
+    assert_eq!(away_in(&worked, &not_away), None);
+    // Away days in a bar whose dates people set moved nothing.
+    assert_eq!(away_in(&fixed, &days), None);
     // Two issues of the person on the same Monday: 3 hours each where 3 hours fit.
     let [first, second] = ids(2).try_into().unwrap();
     let plain = person_days(MONDAY, 14, 6, 50, &[]);

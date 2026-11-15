@@ -10,8 +10,15 @@ import type { PlanWarning } from "../timeline-data.ts";
 export interface WarningPlace {
   /** The readable ID of the issue the warning is on. */
   readonly key: string;
+  /** Its title, when the reader may read it: a late goal is named by it. */
+  readonly title: string | null | undefined;
   /** The name of its project, for *Too much at once*. */
   readonly project: string;
+}
+
+/** An issue by its title, or by its readable ID when the reader may not read the title. */
+function titleOr(title: string | null | undefined, key: string): string {
+  return title ?? keepingHyphens(key);
 }
 
 /** The days of a warning: one day, or the first and the last. */
@@ -32,10 +39,13 @@ export function warningSentence(warning: PlanWarning, place: WarningPlace): stri
   const days = warning.late_days ?? 0;
   return textByKey(warning.sentence, {
     issue: keepingHyphens(place.key),
+    // A late goal and its sub-issue are named by their titles (UX §4.7).
+    goal: titleOr(place.title, place.key),
     days: warning.kind === "delay" ? days : warningDays(warning),
     person: warning.person === null ? "" : personName(warning.person),
+    away_days: warning.away_days ?? 0,
     first: other,
-    sub_issue: other,
+    sub_issue: titleOr(warning.other?.title, warning.other?.readable_id ?? ""),
     needs: warning.needs_days ?? 0,
     has: warning.has_days ?? 0,
     planned: minutesText(warning.planned_minutes ?? 0),
