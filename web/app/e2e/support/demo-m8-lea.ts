@@ -1,7 +1,6 @@
 import { t } from "@bugaboo/messages";
 import { expect, type Page } from "@playwright/test";
 
-import { keepingHyphens } from "../../src/shared/format.ts";
 import { signInThroughApi } from "./accounts.ts";
 import {
   adaOfTheSample,
@@ -46,8 +45,14 @@ export async function leasAwayWeekGrowsHerBarsAndWarns(
   const before = await barDaysOf(session, login);
   const goal = await keyOf(session, plan.goal.title);
   // Nothing of the plan is late yet: the list has no warning about the due date of the goal.
+  // A computer keeps an issue ID whole with a hyphen that does not break, a phone writes a plain one.
   const lateWords = (days: number) =>
-    keepingHyphens(t("plan-warning.delay-goal", { sub_issue: login, days, issue: goal }));
+    new RegExp(
+      t("plan-warning.delay-goal", { sub_issue: login, days, issue: goal })
+        .replaceAll(".", String.raw`\.`)
+        .replaceAll(/[-‑]/gu, "[-‑]"),
+      "u",
+    );
   const sentence = /\d+ days? after the due date/u;
   await expect((await openWarnings(page)).getByText(sentence)).toHaveCount(0);
   await openWorkTimesOf(page, lea, await idOfPerson(server, lea));
@@ -58,7 +63,9 @@ export async function leasAwayWeekGrowsHerBarsAndWarns(
   const due = plusDays(start, plan.goal.dueDay);
   const late = daysBetween({ first: due, last: (await barDaysOf(session, login)).last }) - 1;
   const list = await openWarnings(page);
-  await expect(list.getByText(lateWords(late), { exact: true })).toBeVisible();
+  // A phone has no switch for Plan by effort, so its list draws the dates and warns of the away days.
+  const onThePhone = await page.getByRole("list", { name: t("timeline.phone-list") }).isVisible();
+  await expect(list.getByText(onThePhone ? /is away/u : lateWords(late))).toHaveCount(1);
   await expect(list.getByText(lea.name).first()).toBeVisible();
   await good(page, "02-lea-is-away-a-week");
   await session.dispose();
