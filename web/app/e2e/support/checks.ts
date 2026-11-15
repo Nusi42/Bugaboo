@@ -165,12 +165,10 @@ export async function expectVisibleTextInName(page: Page): Promise<void> {
 
 /**
  * Every part of the screen that waits for its first reads has them: it shows what it holds. The room a count keeps
- * stays held for good, out of reach (`inert`), and is not waited for.
+ * (`kept`, for good) is not waited for.
  */
 export async function expectAllRead(page: Page): Promise<void> {
-  await expect(
-    page.locator('[data-part="reading-hold"][data-state="held"]:not([inert])'),
-  ).toHaveCount(0);
+  await expect(page.locator('[data-part="reading-hold"][data-state="held"]')).toHaveCount(0);
 }
 
 /**

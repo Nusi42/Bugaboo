@@ -114,6 +114,10 @@
   --timeline-start: 0;
   --timeline-length: 1;
   --timeline-done: 0;
+  --hold-top: 0;
+  --hold-left: 0;
+  --hold-width: 0;
+  --hold-height: 0;
   --size-px: 1px;
   --size-percent: 1%;
   --size-bar-least: 6px;

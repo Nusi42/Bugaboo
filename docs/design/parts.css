@@ -5056,7 +5056,8 @@ textarea,
   display: contents;
 }
 
-[data-part="reading-hold"][data-state~="held"] {
+[data-part="reading-hold"][data-state~="held"],
+[data-part="reading-hold"][data-state~="kept"] {
   visibility: hidden;
 }
 
@@ -5067,7 +5068,11 @@ textarea,
 
 [data-part="reading-hold.shapes"] {
   position: absolute;
-  width: min(100%, var(--size-main));
+  inset-block-start: calc(var(--hold-top) * var(--size-px));
+  inset-inline-start: calc(var(--hold-left) * var(--size-px));
+  width: min(calc(var(--hold-width) * var(--size-px)), var(--size-main));
+  max-height: calc(var(--hold-height) * var(--size-px));
+  overflow: hidden;
   pointer-events: none;
 }
 

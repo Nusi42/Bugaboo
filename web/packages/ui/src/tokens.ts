@@ -54,6 +54,10 @@ export const runTimeVariables = [
   "timeline-start",
   "timeline-length",
   "timeline-done",
+  "hold-top",
+  "hold-left",
+  "hold-width",
+  "hold-height",
 ] as const;
 export type RunTimeVariable = (typeof runTimeVariables)[number];
 
@@ -293,6 +297,10 @@ export const tokenNames = [
   "timeline-start",
   "timeline-length",
   "timeline-done",
+  "hold-top",
+  "hold-left",
+  "hold-width",
+  "hold-height",
   "size-px",
   "size-percent",
   "size-bar-least",
@@ -1572,7 +1580,7 @@ export const partWords = {
   "project-tree.spacer": { variant: [], state: [] },
   "project-tree.link": { variant: [], state: [] },
   "project-tree.short": { variant: [], state: [] },
-  "reading-hold": { variant: [], state: ["held"] },
+  "reading-hold": { variant: [], state: ["held", "kept"] },
   "reading-hold.shapes": { variant: [], state: [] },
   "sidebar.note": { variant: [], state: [] },
   "region-page.example": { variant: [], state: [] },

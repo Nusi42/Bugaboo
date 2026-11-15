@@ -9,9 +9,16 @@ import {
 } from "react";
 
 import { useAfterDelay } from "./after-delay.ts";
+import { useShapesOverRoom } from "./hold-shapes.ts";
 import { partOf } from "./parts.ts";
 import { Skeleton } from "./Skeleton.tsx";
-import { HoldContext, HoldWords, useHoldWhileReading, type Report } from "./reading-hold.ts";
+import {
+  HoldContext,
+  HoldWords,
+  useHeld,
+  useHoldWhileReading,
+  type Report,
+} from "./reading-hold.ts";
 import { part } from "./tokens.ts";
 
 /**
@@ -24,6 +31,10 @@ import { part } from "./tokens.ts";
  */
 export function ReadingHold({ children }: { readonly children: ReactNode }) {
   const busy = useContext(HoldWords);
+  // One voice for a screen: a hold inside one that still holds is quiet, and speaks once that one shows and it waits on.
+  const outerHolds = useHeld();
+  const shapes = useRef<HTMLDivElement>(null);
+  const room = useRef<HTMLDivElement>(null);
   const waiting = useRef(new Set<string>());
   const [shown, setShown] = useState(false);
   const report = useCallback<Report>((id, on) => {
@@ -48,15 +59,18 @@ export function ReadingHold({ children }: { readonly children: ReactNode }) {
   }, []);
   const hold = useMemo(() => ({ report, held: !shown }), [report, shown]);
   const late = useAfterDelay(!shown);
+  useShapesOverRoom(shapes, room, !shown && late);
   return (
     <HoldContext value={hold}>
-      {shown ? null : <output {...partOf(part.visuallyHidden)}>{busy}</output>}
+      {shown || outerHolds ? null : <output {...partOf(part.visuallyHidden)}>{busy}</output>}
       {shown || !late ? null : (
-        <div {...partOf(part.readingHoldShapes)} aria-hidden>
+        <div ref={shapes} {...partOf(part.readingHoldShapes)} aria-hidden>
           <Skeleton />
         </div>
       )}
-      <div {...partOf(part.readingHold, { states: [!shown && "held"] })}>{children}</div>
+      <div ref={room} {...partOf(part.readingHold, { states: [!shown && "held"] })}>
+        {children}
+      </div>
     </HoldContext>
   );
 }

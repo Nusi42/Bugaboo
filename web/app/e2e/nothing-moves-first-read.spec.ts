@@ -1,5 +1,6 @@
 import { expect, test } from "./support/fixtures.ts";
 import { firstReadOf } from "./support/first-read.ts";
+import { readSlowly, shapesOutsideTheirRoom } from "./support/hold-shapes.ts";
 import { signIn } from "./support/flows.ts";
 import { sampleAdministrator } from "./support/sample.ts";
 import { ISSUE, ISSUE_PROJECT } from "./support/showcase-sample.ts";
@@ -34,6 +35,16 @@ for (const screen of SCREENS) {
   test(`ux_01 the first read of ${screen.name} moves nothing once drawn`, async ({ page }) => {
     await signIn(page, sampleAdministrator());
     expect(await firstReadOf(page, screen.address)).toEqual([]);
+  });
+}
+
+for (const screen of SCREENS) {
+  test(`ux_01 the grey shapes of a slow first read of ${screen.name} lie over the room they stand for`, async ({
+    page,
+  }) => {
+    await signIn(page, sampleAdministrator());
+    await readSlowly(page);
+    expect(await shapesOutsideTheirRoom(page, screen.address)).toEqual([]);
   });
 }
 
