@@ -6,12 +6,20 @@ import { saveLabels } from "../../shared/save-labels.ts";
 import type { KeptDraft } from "./use-kept-draft.ts";
 
 /**
- * *Not saved yet*, a quiet note beside *Save theme* while the editor has changes that are not saved.
- * It is there, silent, before the first change too, so the head keeps its shape and a screen reader
- * hears the first change (UX §6.4).
+ * *Not saved yet*, a quiet note beside *Save theme* while the editor has changes that are not saved,
+ * and *Saved* there once a save went through, until the next change (R7: where it happened). It is
+ * there, silent, before the first change too, so the bar keeps its shape and a screen reader hears
+ * the first change (UX §6.4).
  */
-export function UnsavedNote({ dirty }: { readonly dirty: boolean }) {
-  const state: SaveState = dirty ? "not-saved" : "idle";
+export function UnsavedNote({
+  dirty,
+  saved,
+}: {
+  readonly dirty: boolean;
+  /** A save went through since the editor opened. */
+  readonly saved: boolean;
+}) {
+  const state: SaveState = dirty ? "not-saved" : saved ? "saved" : "idle";
   return <SaveStatus state={state} labels={saveLabels()} variant={keepsRoom} />;
 }
 

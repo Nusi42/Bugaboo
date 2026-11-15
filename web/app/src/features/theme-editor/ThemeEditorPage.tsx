@@ -7,7 +7,7 @@ import { paths } from "../../shared/paths.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { QueryGate, useItemTrail } from "../shell/index.ts";
 import { ThemeEditor } from "./ThemeEditor.tsx";
-import { themeTarget, useThemeDetail } from "./themes.ts";
+import { themeTarget, useSaveTheme, useThemeDetail } from "./themes.ts";
 
 /**
  * The editor of one theme under its edit lock (ADR-0019): somebody else's lock is named under the
@@ -17,6 +17,8 @@ import { themeTarget, useThemeDetail } from "./themes.ts";
 function LockedThemeEditor({ detail }: { readonly detail: Schema<"ThemeDetailBody"> }) {
   const { theme } = detail;
   const lock = useEditLock(themeTarget(theme.id));
+  // The save outlives the editor it starts again: *Saved* stays beside *Save theme* after it.
+  const put = useSaveTheme();
   useItemTrail(theme.kind === "for-everyone" ? paths.themes : paths.appearance, theme.name);
   return (
     <ReadingHold>
@@ -25,6 +27,7 @@ function LockedThemeEditor({ detail }: { readonly detail: Schema<"ThemeDetailBod
         key={theme.version}
         detail={detail}
         lock={lock}
+        put={put}
         notices={
           <EditLockNotices lock={lock} thing={editedThing.theme} lost={t("theme-editor.lost")} />
         }

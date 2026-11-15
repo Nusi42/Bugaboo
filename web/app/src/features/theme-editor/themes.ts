@@ -63,6 +63,14 @@ export function useSaveTheme() {
   return api.query.useMutation("put", "/api/v1/themes/{theme}", { onSuccess: refreshThemes });
 }
 
+/** The save of a theme (`useSaveTheme`), as the editor uses it. */
+export interface SaveTheme {
+  readonly mutate: ReturnType<typeof useSaveTheme>["mutate"];
+  readonly isPending: boolean;
+  readonly isSuccess: boolean;
+  readonly error: unknown;
+}
+
 /** *Save a copy*: keeps a theme as a new one of the same kind, saved at once. */
 export function useCopyTheme() {
   return api.query.useMutation("post", "/api/v1/themes/{theme}/copy", {

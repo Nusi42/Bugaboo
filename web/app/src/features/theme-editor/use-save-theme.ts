@@ -3,7 +3,7 @@ import { useState } from "react";
 
 import type { EditLock } from "../../shared/editing/index.ts";
 import { focusReadability } from "./focus-color.ts";
-import { useSaveTheme, valuesBody } from "./themes.ts";
+import { valuesBody, type SaveTheme } from "./themes.ts";
 import type { Editing } from "./use-theme-editing.ts";
 
 /** What the person is asked or told before a save goes to the server. */
@@ -34,10 +34,10 @@ export function useSaving(
   detail: Schema<"ThemeDetailBody">,
   editing: Editing,
   lock: EditLock,
+  put: SaveTheme,
 ): Saving {
   const { theme } = detail;
   const [question, setQuestion] = useState<SaveQuestion>(null);
-  const put = useSaveTheme();
   const send = () => {
     setQuestion(null);
     if (lock.state.phase === "mine") {

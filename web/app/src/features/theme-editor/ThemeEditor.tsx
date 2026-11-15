@@ -4,15 +4,17 @@ import type { ReactNode } from "react";
 
 import type { EditLock } from "../../shared/editing/index.ts";
 import { ColorGroups } from "./ColorGroups.tsx";
-import { EditorBar } from "./EditorBar.tsx";
+import { EditorBar, type EditorBarProps } from "./EditorBar.tsx";
 import { EditorPreview, PhonePreview } from "./EditorPreview.tsx";
 import { ReadabilityLine } from "./ReadabilityLine.tsx";
-import { KeptDraftNote, UnsavedNote } from "./EditorNotes.tsx";
+import { KeptDraftNote } from "./EditorNotes.tsx";
 import { useThemeEditing } from "./use-theme-editing.ts";
 
 export interface ThemeEditorProps {
   readonly detail: Schema<"ThemeDetailBody">;
   readonly lock: EditLock;
+  /** The save of the theme, which the page keeps while the editor starts again from what was saved. */
+  readonly put: EditorBarProps["put"];
   /** The notes about the edit lock, under the title. */
   readonly notices: ReactNode;
 }
@@ -24,7 +26,7 @@ export interface ThemeEditorProps {
  * the person's draft while they type, so nothing typed is dropped, and nobody else sees them before
  * *Save* (ADR-0019, ADR-0026 update M8). While somebody else holds the lock only the preview shows.
  */
-export function ThemeEditor({ detail, lock, notices }: ThemeEditorProps) {
+export function ThemeEditor({ detail, lock, put, notices }: ThemeEditorProps) {
   const { theme } = detail;
   const editing = useThemeEditing(detail, lock);
   // Whose the lock is decides where the readability and the groups stand: the editor shows once that is known, so the
@@ -61,8 +63,8 @@ export function ThemeEditor({ detail, lock, notices }: ThemeEditorProps) {
             detail={detail}
             editing={editing}
             lock={lock}
+            put={put}
             extra={phone ? <PhonePreview>{preview}</PhonePreview> : null}
-            note={editing.mine ? <UnsavedNote dirty={editing.dirty} /> : null}
           />
         ) : null}
       </div>
