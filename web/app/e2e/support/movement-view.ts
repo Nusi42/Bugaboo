@@ -1,4 +1,4 @@
-import { differs, far, type Movement, type Moved } from "./movement-frames.ts";
+import { differs, far, LEAST_MOVE_PX, type Movement, type Moved } from "./movement-frames.ts";
 import type { Box } from "./movement-record.ts";
 
 // What of a movement the person sees in the window (UX §6.4): the browser keeps what is in view still by its scroll
@@ -57,14 +57,17 @@ function scrollDownOf(at: string): number {
 }
 
 /**
- * A part with neither edge in view, set back by the scroll that kept the view still: it is judged where it stands in
- * its box, as the person sees what of it is in view (UX §6.4, the browser keeps what is in view still by its scroll).
+ * A part with neither edge in view that grew by at least the scroll, set back by the scroll that kept the view still:
+ * it is judged where it stands in its box, as the person sees what of it is in view (UX §6.4, the browser keeps what is
+ * in view still by its scroll). A scroll that no growth explains is not set back, so it stays wrong.
  */
 function inTheBox(part: Moved, movement: Movement): Moved {
   const { view } = movement;
   const spans = (box: Box): boolean => view !== undefined && box.y < 0 && box.y + box.height > view;
   const by = keptByScroll(movement);
-  if (by === 0 || !spans(part.from) || !spans(part.last)) {
+  // Only a part that grew by at least the scroll explains it: the growth above the view is part of its own.
+  const grew = part.last.height - part.from.height;
+  if (by === 0 || !spans(part.from) || !spans(part.last) || grew < by - LEAST_MOVE_PX) {
     return part;
   }
   return {

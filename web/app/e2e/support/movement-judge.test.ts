@@ -217,6 +217,12 @@ describe("ux_01 the measure judges a part by its edges in view", () => {
     expect(wrongIn(withScroll([page]), { grows: ["page"] })).toEqual(nothingWrong);
   });
 
+  it("fails a scroll that moved the one part in view, spanning it, with nothing grown", () => {
+    const tall = moved("page", box(0, -200, 300, 1400), box(0, -252, 300, 1400));
+    const found = wrongIn(withScroll([tall]), {});
+    expect(found).not.toEqual(nothingWrong);
+  });
+
   it("fails a part spanning the view that moved by 50 px", () => {
     const tall = moved("history", box(0, -200, 300, 1400), box(0, -150, 300, 1400));
     expect(wrongIn(withScroll([tall]), {}).moved.map((part) => part.name)).toEqual(["history"]);
