@@ -24,19 +24,20 @@ export const READABILITY_ID = "theme-readability";
 
 /**
  * Brings the readability into sight with the colors it names under it, and the cursor to it. Only the
- * box the editor scrolls in moves, to where the readability starts under the head of the pane: the
- * main column of a computer never scrolls (UX §6.5).
+ * box the editor scrolls in moves (the main column of a computer never scrolls, UX §6.5), back until
+ * what follows the band of the verdict stands under it with the gap of the groups: the band sticks on
+ * top, and never covers what it names.
  */
 export function focusReadability(): void {
   const found = document.querySelector<HTMLElement>(`#${READABILITY_ID}`);
-  // The band of the verdict sticks on top; the groups it heads start where the band and the list of
-  // the colors start in the flow.
-  const start = found?.parentElement?.parentElement ?? null;
-  const box = scrollBoxOf(start);
-  if (start !== null && box !== null) {
-    const under = Number(getComputedStyle(box).scrollPaddingTop.replace(/px$/u, "")) || 0;
-    const above = start.getBoundingClientRect().top - box.getBoundingClientRect().top - under;
-    box.scrollBy({ top: Math.min(0, above) });
+  const band = found?.parentElement ?? null;
+  const next = band?.nextElementSibling ?? null;
+  const box = scrollBoxOf(band);
+  if (band !== null && next !== null && box !== null) {
+    const gap =
+      Number(getComputedStyle(band.parentElement ?? band).rowGap.replace(/px$/u, "")) || 0;
+    const under = next.getBoundingClientRect().top - band.getBoundingClientRect().bottom - gap;
+    box.scrollBy({ top: Math.min(0, under) });
   }
   found?.focus(inPlace);
 }

@@ -5234,6 +5234,9 @@ textarea,
 }
 
 [data-part="theme-editor.bar"] {
+  position: sticky;
+  bottom: 0;
+  z-index: var(--z-raised);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -5242,14 +5245,6 @@ textarea,
   padding-block: var(--space-3);
   border-top: var(--border-width) solid var(--border-subtle);
   background: var(--bg-raised);
-}
-
-@media (max-width: calc(768px - 1px)) {
-  [data-part="theme-editor.bar"] {
-    position: sticky;
-    bottom: 0;
-    z-index: var(--z-raised);
-  }
 }
 
 [data-part="theme-editor.bar-end"] {

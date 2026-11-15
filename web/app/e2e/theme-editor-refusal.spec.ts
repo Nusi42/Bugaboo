@@ -56,17 +56,38 @@ test("thm_03_a_refused_save_keeps_what_to_fix_in_sight_and_save_off_until_it_rea
   await expect(readabilityLine(page)).toHaveAttribute("data-state", "refused");
   await expect(readabilityLine(page)).toBeInViewport();
   await expect(hardColors(page)).toBeInViewport();
+  // The band of the verdict never covers what it names under it.
+  expect(await coveredByTheVerdict(hardColors(page))).toBe(false);
   await expect(saveButton(page)).toBeDisabled();
   await typeHint(page, READABLE);
   await expect(saveButton(page)).toBeEnabled();
   await saveButton(page).click();
-  // *Saved* where the save happened, beside *Save theme*.
+  // *Saved* where the save happened, beside *Save theme*, in sight wherever the box of the groups
+  // stands: the bar stays at the foot of what is seen.
+  await scrollEverythingUp(readabilityLine(page));
   await expect(
     page.locator(`[data-part='${part.themeEditorBarEnd}']`).getByText(t("save.saved"), {
       exact: true,
     }),
-  ).toBeVisible();
+  ).toBeInViewport();
 });
+
+/** Scrolls every box of the main column back to its top, where the bar of the editor is out of its own place. */
+function scrollEverythingUp(inside: Locator): Promise<void> {
+  return inside.evaluate((node) => {
+    for (const each of node.closest("main")?.querySelectorAll("*") ?? []) {
+      each.scrollTop = 0;
+    }
+  });
+}
+
+/** Whether the band of the verdict stands over the top of what it names: it never covers its own content. */
+function coveredByTheVerdict(list: Locator): Promise<boolean> {
+  return list.evaluate((node, band) => {
+    const over = document.querySelector(`[data-part='${band}']`)?.getBoundingClientRect();
+    return over !== undefined && node.getBoundingClientRect().top < over.bottom - 1;
+  }, part.themeEditorVerdict);
+}
 
 /** Scrolls the main column on and says whether the band of the verdict covers its top, and how wide the verdict is. */
 function verdictWhenScrolled(verdict: Locator) {

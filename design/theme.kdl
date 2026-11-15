@@ -6395,8 +6395,12 @@ part "theme-editor.sample-hint" {
 }
 
 // The one bar at the foot of the editor: *Save a copy* and *Download* at the start, *Throw my changes away*, *Preview*
-// (on a phone) and *Save theme* at the end. On a phone it stays at the foot of the screen while the groups scroll.
+// (on a phone) and *Save theme* at the end. It stays at the foot of what is seen while the groups scroll, on a computer
+// as on a phone, so *Save theme* and what it says (*Not saved yet*, *Saved*) are always in sight (UX §5.6).
 part "theme-editor.bar" {
+    position sticky
+    bottom 0
+    z-index "$z-raised"
     display flex
     flex-wrap wrap
     align-items center
@@ -6405,11 +6409,6 @@ part "theme-editor.bar" {
     padding-block "$space-3"
     border-top "$border-width solid $border-subtle"
     background "$bg-raised"
-    media "(max-width: calc($bp-tablet - 1px))" {
-        position sticky
-        bottom 0
-        z-index "$z-raised"
-    }
 }
 
 // The end of the bar: *Preview* (on a phone), *Throw my changes away* and *Save theme* in one row; where they do not fit
