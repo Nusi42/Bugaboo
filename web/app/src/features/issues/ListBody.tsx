@@ -1,4 +1,4 @@
-import { DelayedSkeleton } from "@bugaboo/ui";
+import { DelayedSkeleton, useHoldWhileReading } from "@bugaboo/ui";
 
 import { linesFrom } from "../../shared/paged.ts";
 import { foundLineOf } from "./found-issues.ts";
@@ -17,6 +17,7 @@ export function PlainList() {
   const context = useListContext();
   const found = useFoundIssues(context.search, context.words);
   const lines = linesFrom(found.data?.pages, foundLineOf);
+  useHoldWhileReading(found.isLoading);
   useReportShown("all", lines);
   // While the first answer is on its way the list shows that it is loading, not an empty frame.
   if (found.isPending) {

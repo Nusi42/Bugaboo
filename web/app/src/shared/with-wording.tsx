@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, DelayedSkeleton } from "@bugaboo/ui";
+import { Alert, alertTone, Button, DelayedSkeleton, useHoldWhileReading } from "@bugaboo/ui";
 import type { Wording } from "@bugaboo/wasm";
 import type { ReactNode } from "react";
 
@@ -13,6 +13,8 @@ import { retryWording, useWording } from "./use-wording.ts";
  */
 export function WithWording({ children }: { readonly children: (wording: Wording) => ReactNode }) {
   const loaded = useWording();
+  // What needs the words waits for them with the hold it stands in.
+  useHoldWhileReading(loaded.state === "loading");
   if (loaded.state === "loading") {
     return <DelayedSkeleton />;
   }

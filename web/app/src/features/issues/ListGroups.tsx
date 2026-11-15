@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { part, partOf, DelayedSkeleton } from "@bugaboo/ui";
+import { part, partOf, DelayedSkeleton, useHoldWhileReading } from "@bugaboo/ui";
 
 import { useFoundGroups } from "./found-issues.ts";
 import { GroupSection } from "./GroupSection.tsx";
@@ -12,6 +12,7 @@ import { useReadyGroups } from "./use-ready-groups.ts";
 export function GroupedList() {
   const { search, groupBy } = useListContext();
   const found = useFoundGroups(search, groupBy);
+  useHoldWhileReading(found.isLoading);
   const ready = useReadyGroups(found.isPlaceholderData ? undefined : found.data);
   if (ready.groups === undefined) {
     return <DelayedSkeleton lines={3} />;

@@ -8,7 +8,7 @@ export { registerSearch } from "./register.tsx";
 export { SearchBar, type SearchBarProps } from "./SearchBar.tsx";
 export { ViewChoices, type ListViewControl } from "./ViewChoices.tsx";
 export { useSearchFields, type SearchFieldsAnswer } from "./search-fields.ts";
-export { useSearchLanguage } from "./search-language.ts";
+export { useSearchLanguage, useSearchLanguageRead } from "./search-language.ts";
 export { useProjectListChoice } from "./saved-searches.ts";
 export { SaveSearchButton, type SaveSearchButtonProps } from "./SaveSearchButton.tsx";
 export { withSortBy } from "../../shared/sort-by.ts";

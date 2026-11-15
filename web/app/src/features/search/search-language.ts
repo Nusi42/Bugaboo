@@ -9,10 +9,15 @@ import { queryKeys } from "../../shared/query-keys.ts";
  * after the first has it at once.
  */
 export function useSearchLanguage(): SearchLanguage | undefined {
+  return useSearchLanguageRead().data;
+}
+
+/** The read of the search language: what it gives, and whether it is still loaded for the first time. */
+export function useSearchLanguageRead() {
   return useQuery({
     queryKey: queryKeys.search.language(),
     queryFn: loadSearchLanguage,
     staleTime: Number.POSITIVE_INFINITY,
     gcTime: Number.POSITIVE_INFINITY,
-  }).data;
+  });
 }

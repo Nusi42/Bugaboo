@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, AnswerNote, alertTone, HoldWhileLoading, partOf, part } from "@bugaboo/ui";
+import { Alert, AnswerNote, alertTone, partOf, part } from "@bugaboo/ui";
 import { type QueryKey, useQueryClient } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 
@@ -71,13 +71,7 @@ export function QueryGate<Data>({
     );
   }
   if (data === undefined) {
-    // Inside a hold the page waits for this read with the rest of its first reads (UX §6.4).
-    return (
-      <>
-        <HoldWhileLoading />
-        {loading === undefined ? <p {...partOf(part.muted)}>{t("common.loading")}</p> : loading}
-      </>
-    );
+    return loading === undefined ? <p {...partOf(part.muted)}>{t("common.loading")}</p> : loading;
   }
   return children(data);
 }

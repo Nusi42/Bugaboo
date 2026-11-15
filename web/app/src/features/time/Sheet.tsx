@@ -19,8 +19,10 @@ export function OwnSheet(props: Omit<SheetProps, "person" | "changing">) {
   // A read that could not be made ends the wait: the week shows and says why (UX §6.4).
   useHoldWhileReading(!ready && failure === null);
   const row = issues.rows.find((each) => each.issue === details);
-  // The times are written in the person's region: the week waits for it, with grey shapes.
-  if (useMySettingsReading()) {
+  // The times are written in the person's region: the week waits for it, with grey shapes, and the hold with it.
+  const region = useMySettingsReading();
+  useHoldWhileReading(region);
+  if (region) {
     return <DelayedSkeleton />;
   }
   return (

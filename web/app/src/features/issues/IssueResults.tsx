@@ -1,9 +1,9 @@
 import { t } from "@bugaboo/messages";
-import { DelayedSkeleton } from "@bugaboo/ui";
+import { DelayedSkeleton, useHoldWhileReading } from "@bugaboo/ui";
 import { lazy, Suspense } from "react";
 
 import { isDrawnColumn, withKeptColumns } from "../../shared/list-columns.ts";
-import { useSearchFields, useSearchLanguage } from "../search/index.ts";
+import { useSearchFields, useSearchLanguageRead } from "../search/index.ts";
 import { LoadedResults } from "./LoadedResults.tsx";
 import type { IssueResultsProps } from "./results-props.ts";
 
@@ -21,9 +21,12 @@ const TimelineResults = lazy(async () => ({
  * the timeline instead (UX §4.7).
  */
 export function IssueResults(props: IssueResultsProps) {
-  const language = useSearchLanguage();
+  const languageRead = useSearchLanguageRead();
+  const language = languageRead.data;
   const fields = useSearchFields(props.within);
   // The search bar says why the fields could not be read; the list has nothing to show then, and does not wait.
+  // Inside the hold of the page of a search, the results wait for the fields with it.
+  useHoldWhileReading(fields.isLoading || languageRead.isLoading);
   if (fields.isError) {
     return null;
   }

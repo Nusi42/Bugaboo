@@ -1,5 +1,12 @@
 import { t } from "@bugaboo/messages";
-import { part, partOf, ShowMoreOf, DelayedSkeleton, type PagedList } from "@bugaboo/ui";
+import {
+  part,
+  partOf,
+  ShowMoreOf,
+  DelayedSkeleton,
+  useHoldWhileReading,
+  type PagedList,
+} from "@bugaboo/ui";
 
 import type { ZoomWord } from "../../shared/list-view.ts";
 import type { FirstDay } from "../../shared/region.ts";
@@ -24,7 +31,7 @@ export interface TimelineMainProps {
     readonly today: number | undefined;
   };
   /** The pages of the rows: *Show more* reads the next one. */
-  readonly pages: PagedList & { readonly isPending: boolean };
+  readonly pages: PagedList & { readonly isPending: boolean; readonly isLoading: boolean };
   readonly onToggle: (group: string) => void;
 }
 
@@ -32,6 +39,8 @@ export interface TimelineMainProps {
 export function TimelineMain(props: TimelineMainProps) {
   const { lines, chart, pages } = props;
   const groupName = useGroupNames(props);
+  // The chart and Not scheduled yet show together once the rows are read (with the hold of the timeline).
+  useHoldWhileReading(pages.isLoading);
   if (pages.isPending) {
     return <DelayedSkeleton lines={5} />;
   }
