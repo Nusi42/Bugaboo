@@ -164,6 +164,8 @@ export const messages = {
   "theme-editor.readability-fine": "Readability: nothing is hard to read.",
   "theme-editor.readability-hard":
     "Readability: {count, plural, one {# pair is} other {# pairs are}} hard to read.",
+  "theme-editor.order-upside-down":
+    "{quieter} stands out more than {louder}, so the words people need least catch the eye first. This does not stop a save.",
   "theme-editor.readability-details":
     "{total} combinations of colors checked: {easy} easy, {ok} OK.",
   "theme-editor.details": "Details",

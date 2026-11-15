@@ -701,3 +701,17 @@ fn the_squares_of_neighbouring_choices_are_told_apart() {
         messages(&findings)
     );
 }
+
+#[test]
+fn bad_example_a_built_in_hint_that_stands_out_more_than_the_quiet_text() {
+    // Readable on every background, but brighter than the quiet text on the dark card of Dusk.
+    let findings = evaluate(&with_value("fg-subtle", "dusk", "#d4d7dd"));
+    assert!(
+        messages(&findings).iter().any(|message| message
+            .contains("order of emphasis is upside down")
+            && message.contains("`fg-subtle`")
+            && message.contains("`fg-muted`")),
+        "{:#?}",
+        messages(&findings)
+    );
+}

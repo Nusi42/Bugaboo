@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 
 mod base_rules;
 mod maths;
+mod order;
 mod rating;
 mod spec;
 
@@ -16,10 +17,11 @@ pub use maths::{
     brighten, channels, chroma_of, color_difference, contrast_ratio, fade, luminance, luminance_of,
     ratio_of,
 };
+pub use order::{UpsideDown, upside_down};
 pub use rating::{Evaluation, Mode, PairResult, Problem, Rating, Rule, ThemeColors, rate};
 pub use spec::{
     ContrastSpec, Dimmed, DistinctGroup, DistinctSpec, Drawn, Exclusion, Hovered, List, MoreSpec,
-    PlainLines, Restricted, StrongerText, Text,
+    PlainLines, Restricted, StrongerText, Text, TextOrder,
 };
 
 /// The rules of a theme file: the `contrast` rule and every `distinct` rule.

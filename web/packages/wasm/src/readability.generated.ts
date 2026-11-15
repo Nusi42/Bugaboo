@@ -3,6 +3,16 @@
 /** How readable a pair is, from the easiest to the hardest (the order compares them). */
 export type Rating = "easy" | "ok" | "hard-to-read";
 
+/** Two text colors whose order of emphasis is upside down: the quieter one stands out more. */
+export interface UpsideDown {
+  /** The color that is meant to stand out more (the quiet text). */
+  readonly louder: string;
+  /** The color that is meant to stand out less but does (the hint). */
+  readonly quieter: string;
+  /** The background the two are read on. */
+  readonly on: string;
+}
+
 /** One pair of colors of an own theme and how readable it is: what the editor shows beside a color and what a save checks (THM-03). */
 export interface RatedPair {
   /** The first color: the text, the line or the state. */
@@ -87,4 +97,6 @@ export interface ThemeRead {
   readonly ratings: readonly ColorRating[];
   /** Every color the theme may set, as the page shows it, in the order of the theme file. */
   readonly colors: readonly ShownColor[];
+  /** The text colors whose order of emphasis is upside down: a warning, never a refusal. */
+  readonly upside_down: readonly UpsideDown[];
 }

@@ -6,7 +6,7 @@ use std::borrow::Cow;
 
 use super::{
     ContrastSpec, Dimmed, DistinctGroup, DistinctSpec, Drawn, Exclusion, Hovered, MoreSpec,
-    PlainLines, Restricted, Rules, StrongerText,
+    PlainLines, Restricted, Rules, StrongerText, TextOrder,
 };
 
 /// The rules of the base theme file.
@@ -199,6 +199,14 @@ static RULES: Rules = Rules {
                 Cow::Borrowed("bg-raised"),
             ]),
         },
+        order: Cow::Borrowed(&[TextOrder {
+            on: Cow::Borrowed("bg-raised"),
+            text: Cow::Borrowed(&[
+                Cow::Borrowed("fg"),
+                Cow::Borrowed("fg-muted"),
+                Cow::Borrowed("fg-subtle"),
+            ]),
+        }]),
         text: Cow::Borrowed(&[
             Cow::Borrowed("area-ink"),
             Cow::Borrowed("fg"),

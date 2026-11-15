@@ -166,6 +166,17 @@ pub struct PlainLines {
     pub faded_by: Option<Text>,
 }
 
+/// Text colors in their order of emphasis, from the loudest to the quietest, on the background they
+/// are read on: each is to stand out at least as much as every one after it (the main text, the quiet
+/// text, the hint). A theme that turns the order upside down is told so; it is no refusal.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct TextOrder {
+    /// The background the order is read on.
+    pub on: Text,
+    /// The text colors, the loudest first.
+    pub text: List<Text>,
+}
+
 /// The `contrast` rule of the theme file.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ContrastSpec {
@@ -181,6 +192,8 @@ pub struct ContrastSpec {
     pub dimmed: List<Dimmed>,
     /// The rules for more contrast.
     pub more: MoreSpec,
+    /// The orders of emphasis of the text colors.
+    pub order: List<TextOrder>,
     /// The text colors (or the one text color).
     pub text: List<Text>,
     /// The backgrounds text may be drawn on.

@@ -829,6 +829,7 @@ export interface MessageArguments {
   "theme-editor.hard-color": { color: string | number; count: number };
   "theme-editor.hide-named": { color: string | number };
   "theme-editor.list-everyone-intro": { place: string | number };
+  "theme-editor.order-upside-down": { louder: string | number; quieter: string | number };
   "theme-editor.pick": { color: string | number };
   "theme-editor.readability-details": {
     easy: string | number;

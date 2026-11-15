@@ -676,6 +676,12 @@ contrast min=4.5 {
         on "bg-canvas" "bg-surface" "bg-raised"
     }
 
+    // The order of emphasis of the text colors: what stands out more than what (UX §5.6). An own theme that turns it
+    // upside down is warned in the editor, never refused; a built-in theme keeps it (STY-CONTRAST).
+    order on="bg-raised" reason="The main text stands out more than the quiet text, and the quiet text more than a hint: a hint made brighter than the quiet text in a dark theme caught the eye first (M8 exit)." {
+        text "fg" "fg-muted" "fg-subtle"
+    }
+
     // With the device setting for more contrast.
     more min-text=7 min-line=3 reason="With the device setting for more contrast, the listed text colors reach 7:1 (WCAG AAA) on every background they are used on, and the listed lines reach 3:1 (WCAG 1.4.11) on the plain surfaces. The other text colors, the category colors, keep their AA ratio: they carry words, never meaning alone." {
         text "fg" "fg-muted" "fg-subtle" "accent-fg" "danger" "warning" "success" "st-ns" "st-ip" "st-done" "on-accent" "on-disabled"

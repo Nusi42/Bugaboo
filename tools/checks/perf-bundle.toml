@@ -32,7 +32,8 @@ budget_bytes = 250000
 # with the pairs and the colors that are hard to read and the worst rating of each color worked
 # out in `bb-core` instead of the browser (the pairs themselves no longer sent), at 165.8 KB; and
 # with days in a length typed as a person's own estimate (*Takes me 10 days*, PLAN-14): the budget
-# raised to 170 KB, approved by the maintainer on 2026-11-15 for the day unit of lengths (M8-F210).
+# raised to 170 KB, approved by the maintainer on 2026-11-15 for the day unit of lengths (M8-F210);
+# and with the order of emphasis of the text colors (a warning of the theme editor), under it.
 bb_wasm_bg = 170000
 # The search language, measured at 88.9 KB (M5 WP-02, with the Issue ID rules of bb-core) and at 90.3 KB with `contains` on its own (M5 WP-04), and at 71.5 KB since the standard library is built for size (M6-F68); ADR-0005 allows at most 100 KB.
 bb_wasm_search_bg = 73000

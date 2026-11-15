@@ -220,7 +220,9 @@ function isThemeRead(value: unknown): value is ThemeRead {
     "summary" in value &&
     typeof value.summary === "object" &&
     "colors" in value &&
-    Array.isArray(value.colors)
+    Array.isArray(value.colors) &&
+    "upside_down" in value &&
+    Array.isArray(value.upside_down)
   );
 }
 

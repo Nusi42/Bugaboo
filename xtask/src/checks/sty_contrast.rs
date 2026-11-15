@@ -6,8 +6,14 @@
 //! colors: the usual one, and the one for a device that asks for more contrast (THM-06). A color
 //! that names another is checked with the color it leads to, and a finding about a theme names the
 //! theme's file.
+//!
+//! The text colors keep their order of emphasis (the `order` rule): in a built-in theme the quiet
+//! text never stands out more than the main text, nor a hint more than the quiet text. An own theme
+//! is only warned about it in the editor (`bb_core::contrast::upside_down`).
 
-use bb_core::contrast::{Evaluation, Mode, PairResult, Problem, Rule, ThemeColors, rate};
+use bb_core::contrast::{
+    Evaluation, Mode, PairResult, Problem, Rule, ThemeColors, UpsideDown, rate, upside_down,
+};
 
 use super::{Check, Context, Finding};
 use crate::generate::theme_file::{LightOrDark, THEME_PATH, Theme, ThemeFile};
@@ -65,16 +71,22 @@ fn evaluate(file: &ThemeFile) -> Vec<Finding> {
         let colors = InTheme { file, theme };
         let Evaluation { results, problems } =
             rate(&file.contrast, &file.distinct, &theme.name, &colors);
-        let new =
-            problems
-                .iter()
-                .map(problem_finding)
-                .chain(results.iter().filter(|r| r.is_hard()).map(|result| {
-                    Finding::at(
-                        place(file, &result.place, theme),
-                        message(file, theme, result),
-                    )
-                }));
+        let order = upside_down(&file.contrast, &colors);
+        let new = problems
+            .iter()
+            .map(problem_finding)
+            .chain(results.iter().filter(|r| r.is_hard()).map(|result| {
+                Finding::at(
+                    place(file, &result.place, theme),
+                    message(file, theme, result),
+                )
+            }))
+            .chain(order.iter().map(|wrong| {
+                Finding::at(
+                    place(file, &wrong.quieter, theme),
+                    order_message(theme, wrong),
+                )
+            }));
         for finding in new {
             // A rule that names something the theme file lacks says so once, not once per theme.
             if !findings
@@ -86,6 +98,14 @@ fn evaluate(file: &ThemeFile) -> Vec<Finding> {
         }
     }
     findings
+}
+
+/// What a finding says about two text colors whose order of emphasis is upside down.
+fn order_message(theme: &Theme, wrong: &UpsideDown) -> String {
+    let (name, louder, quieter, on) = (&theme.name, &wrong.louder, &wrong.quieter, &wrong.on);
+    format!(
+        "Theme {name}: `{quieter}` stands out more than `{louder}` on `{on}`, so the order of emphasis is upside down. Give `{quieter}` less contrast than `{louder}`."
+    )
 }
 
 fn problem_finding(problem: &Problem) -> Finding {

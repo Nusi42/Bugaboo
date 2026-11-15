@@ -8,7 +8,7 @@
 use anyhow::bail;
 pub(crate) use bb_core::contrast::{
     ContrastSpec, Dimmed, DistinctGroup, DistinctSpec, Drawn, Exclusion, Hovered, MoreSpec,
-    PlainLines, Restricted, StrongerText,
+    PlainLines, Restricted, StrongerText, TextOrder,
 };
 use bb_core::contrast::{List, Text};
 
@@ -117,6 +117,7 @@ pub(crate) fn contrast(node: Node<'_>) -> anyhow::Result<ContrastSpec> {
     let mut hovered = Vec::new();
     let mut stronger = Vec::new();
     let mut dimmed = Vec::new();
+    let mut order = Vec::new();
     for child in node.children() {
         match child.name() {
             "text" | "backgrounds" => {}
@@ -168,6 +169,13 @@ pub(crate) fn contrast(node: Node<'_>) -> anyhow::Result<ContrastSpec> {
             "stronger" => stronger.push(read_stronger(child)?),
             "dimmed" => dimmed.push(read_dimmed(child)?),
             "more" => more = Some(read_more(child)?),
+            "order" => {
+                reason(child)?;
+                order.push(TextOrder {
+                    on: child.required_prop("on")?.into(),
+                    text: texts(child.words("text")?),
+                });
+            }
             other => bail!("line {}: unknown contrast rule `{other}`", child.line()),
         }
     }
@@ -178,6 +186,7 @@ pub(crate) fn contrast(node: Node<'_>) -> anyhow::Result<ContrastSpec> {
         stronger: stronger.into(),
         dimmed: dimmed.into(),
         more: more.ok_or_else(|| node.problem("needs a `more` rule"))?,
+        order: order.into(),
         text: texts(node.words("text")?),
         backgrounds: texts(node.words("backgrounds")?),
         restricted: restricted.into(),

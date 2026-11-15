@@ -6,9 +6,10 @@
 
 use serde::Serialize;
 
-use super::colors::{RatedPair, ShownColor, readability, shown_colors};
+use super::built_in_theme;
+use super::colors::{OwnColors, RatedPair, ShownColor, readability, shown_colors};
 use super::values::OwnValues;
-use crate::contrast::Rating;
+use crate::contrast::{Rating, UpsideDown, base_rules, upside_down};
 
 /// A pair of colors by its tokens: the first color, the second and the mode it is read in. The
 /// rules may rate one pair several times; it counts once, at its worst rating.
@@ -190,6 +191,8 @@ pub struct ThemeRead {
     pub ratings: Vec<ColorRating>,
     /// Every color the theme may set, as the page shows it, in the order of the theme file.
     pub colors: Vec<ShownColor>,
+    /// The text colors whose order of emphasis is upside down: a warning, never a refusal.
+    pub upside_down: Vec<UpsideDown>,
 }
 
 /// What the theme editor is told about the own theme that extends `extends` with `values`; `None`
@@ -204,5 +207,9 @@ pub fn theme_read(extends: &str, values: &OwnValues) -> Option<ThemeRead> {
         hard,
         ratings: color_ratings(&pairs),
         colors: shown_colors(extends, values)?,
+        upside_down: upside_down(
+            &base_rules().contrast,
+            &OwnColors::new(built_in_theme(extends)?, values),
+        ),
     })
 }

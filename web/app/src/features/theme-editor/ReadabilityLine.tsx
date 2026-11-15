@@ -135,6 +135,14 @@ export function ReadabilityLine({ read, kind, refused, onChange }: ReadabilityLi
           {verdictOf(read, kind)}
         </output>
       </div>
+      {(read?.upside_down ?? []).map((wrong) => (
+        <p key={[wrong.louder, wrong.quieter].join()} {...partOf(part.muted)}>
+          {t("theme-editor.order-upside-down", {
+            quieter: colorName(wrong.quieter),
+            louder: colorName(wrong.louder),
+          })}
+        </p>
+      ))}
       {hard.length === 0 ? <Details read={read} /> : null}
       {hard.length === 0 ? null : (
         <ul {...partOf(part.themeReadabilityList)}>

@@ -10,7 +10,7 @@ use std::fmt::Write as _;
 use super::theme_file::ThemeFile;
 use bb_core::contrast::{
     ContrastSpec, Dimmed, DistinctGroup, DistinctSpec, Drawn, Exclusion, Hovered, MoreSpec,
-    PlainLines, Restricted, StrongerText, Text,
+    PlainLines, Restricted, StrongerText, Text, TextOrder,
 };
 
 /// Where the rules are written.
@@ -111,6 +111,7 @@ literal_struct! {
     StrongerText { min, text, on }
     MoreSpec { min_text, min_line, text, lines, line_on }
     PlainLines { drawn, min, colors, on, faded_by }
+    TextOrder { on, text }
     ContrastSpec {
         min,
         plain_lines,
@@ -118,6 +119,7 @@ literal_struct! {
         stronger,
         dimmed,
         more,
+        order,
         text,
         backgrounds,
         restricted,
@@ -133,6 +135,6 @@ pub(super) fn rust(file: &ThemeFile, generated_by: &str) -> String {
     let mut distinct = String::new();
     file.distinct.literal(&mut distinct);
     format!(
-        "//! {generated_by}\n//!\n//! The contrast rules of the base theme file (`contrast` and `distinct`).\n\nuse std::borrow::Cow;\n\nuse super::{{\n    ContrastSpec, Dimmed, DistinctGroup, DistinctSpec, Drawn, Exclusion, Hovered, MoreSpec,\n    PlainLines, Restricted, Rules, StrongerText,\n}};\n\n/// The rules of the base theme file.\nstatic RULES: Rules = Rules {{\n    contrast: {contrast},\n    distinct: {distinct},\n}};\n\n/// The rules of the base theme file.\n#[must_use]\npub fn base_rules() -> &'static Rules {{\n    &RULES\n}}\n"
+        "//! {generated_by}\n//!\n//! The contrast rules of the base theme file (`contrast` and `distinct`).\n\nuse std::borrow::Cow;\n\nuse super::{{\n    ContrastSpec, Dimmed, DistinctGroup, DistinctSpec, Drawn, Exclusion, Hovered, MoreSpec,\n    PlainLines, Restricted, Rules, StrongerText, TextOrder,\n}};\n\n/// The rules of the base theme file.\nstatic RULES: Rules = Rules {{\n    contrast: {contrast},\n    distinct: {distinct},\n}};\n\n/// The rules of the base theme file.\n#[must_use]\npub fn base_rules() -> &'static Rules {{\n    &RULES\n}}\n"
     )
 }

@@ -297,3 +297,40 @@ fn thm_03_the_editor_is_told_the_built_in_color_for_more_contrast_only_where_the
     assert_eq!(of("fg").built_in_more, None);
     assert!(of("fg-muted").built_in_more.is_some());
 }
+
+#[test]
+fn thm_03_a_hint_that_stands_out_more_than_the_quiet_text_is_warned_and_not_refused() {
+    // The built-in themes keep the order of emphasis.
+    for theme in built_in_themes() {
+        let read = theme_read(theme.id, &OwnValues::default()).expect("a built-in theme");
+        assert!(
+            read.upside_down.is_empty(),
+            "{}: {:?}",
+            theme.id,
+            read.upside_down
+        );
+    }
+    // In Dusk a hint brighter than the quiet text stands out more on the dark card: readable, so
+    // nothing is hard to read, but the order is upside down and the two colors are named.
+    let read = theme_read("dusk", &colors(&[("fg-subtle", "#d4d7dd")])).expect("Dusk");
+    assert!(read.hard.is_empty());
+    assert_eq!(
+        read.upside_down,
+        vec![crate::contrast::UpsideDown {
+            louder: "fg-muted".to_owned(),
+            quieter: "fg-subtle".to_owned(),
+            on: "bg-raised".to_owned(),
+        }]
+    );
+    // In a light theme the same rule reads darker as louder: a hint darker than the quiet text.
+    let light = theme_read("daylight", &colors(&[("fg-subtle", "#111111")])).expect("Daylight");
+    assert!(
+        light
+            .upside_down
+            .iter()
+            .any(|wrong| wrong.quieter == "fg-subtle")
+    );
+    // A hint that keeps its place, Dusk's own, is no warning.
+    let kept = theme_read("dusk", &colors(&[("fg-subtle", "#abb1bd")])).expect("Dusk");
+    assert!(kept.upside_down.is_empty());
+}

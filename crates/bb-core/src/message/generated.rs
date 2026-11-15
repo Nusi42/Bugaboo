@@ -16788,6 +16788,21 @@ pub fn theme_editor_list_everyone_intro(place: impl std::fmt::Display) -> Messag
     )
 }
 
+/// The message `theme-editor.order-upside-down`.
+#[must_use]
+pub fn theme_editor_order_upside_down(
+    louder: impl std::fmt::Display,
+    quieter: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("theme-editor.order-upside-down"),
+        vec![
+            ("louder", Value::Text(louder.to_string())),
+            ("quieter", Value::Text(quieter.to_string())),
+        ],
+    )
+}
+
 /// The message `theme-editor.pick`.
 #[must_use]
 pub fn theme_editor_pick(color: impl std::fmt::Display) -> Message {
@@ -26039,6 +26054,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "theme-editor.not-found",
         "This theme isn't there, or you can't change it.",
+    ),
+    (
+        "theme-editor.order-upside-down",
+        "{quieter} stands out more than {louder}, so the words people need least catch the eye first. This does not stop a save.",
     ),
     ("theme-editor.personal", "Personal"),
     (
