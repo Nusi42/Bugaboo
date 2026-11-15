@@ -17,6 +17,10 @@ import { changeIssue, dayFromToday, relateBlocking } from "./timeline.ts";
 /** The bars ten people move, two each. */
 export const barCount = 5;
 
+/** The issues each of the ten people moves in one run, and the first readable number of them. */
+const RUN_ISSUES = 2;
+const FIRST_RUN_ISSUE = 24;
+
 /** The issues the scenarios work on, by their use. WEB-1 to WEB-12 are the issues of the crowd. */
 export const planIssues = {
   bars: ["WEB-13", "WEB-14", "WEB-15", "WEB-16", "WEB-17"],
@@ -26,6 +30,13 @@ export const planIssues = {
   first: "WEB-21",
   middle: "WEB-22",
   after: "WEB-23",
+  /** The issues each person of the crowd moves in one run and undoes, in the order of the crowd. */
+  runs: crowd.map((_, person) =>
+    Array.from(
+      { length: RUN_ISSUES },
+      (__, at) => `WEB-${String(FIRST_RUN_ISSUE + person * RUN_ISSUES + at)}`,
+    ),
+  ),
 } as const;
 
 /** The person whose away time is entered: the last of the crowd. */
@@ -40,6 +51,9 @@ const titles = [
   "First step",
   "Then step",
   "Step after",
+  ...crowd.flatMap((person) =>
+    Array.from({ length: RUN_ISSUES }, (_, at) => `Run of ${person.name}, part ${String(at + 1)}`),
+  ),
 ];
 
 /** Gets the crowd ready, with the issues the planning scenarios work on, dated from today. */
@@ -64,6 +78,8 @@ export async function preparePlanCrowd(server: Instance): Promise<void> {
   await changeIssue(admin, planIssues.after, dates(6, 6));
   await relateBlocking(admin, planIssues.first, planIssues.middle);
   await relateBlocking(admin, planIssues.middle, planIssues.after);
+  // The issues of the runs keep no dates until their runs move them: they wait in *Not scheduled
+  // yet*, out of the rows the other scenarios look at.
   await admin.dispose();
 }
 
