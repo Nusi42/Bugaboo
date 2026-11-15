@@ -75,11 +75,14 @@ export async function openPlan(page: Page, byEffort: boolean): Promise<void> {
   const search = encodeURIComponent(`project is ${plan.project}`);
   await page.goto(`/search?s=${search}&show=timeline`);
   // A phone shows the plan as a grouped list, whose bars the server works out the same way.
-  await expect(
-    chart(page).or(page.getByRole("list", { name: t("timeline.phone-list") })),
-  ).toBeVisible();
+  const phoneList = page.getByRole("list", { name: t("timeline.phone-list") });
+  await expect(chart(page).or(phoneList)).toBeVisible();
+  if (await phoneList.isVisible()) {
+    return;
+  }
   const toggle = page.getByRole("switch", { name: t("timeline.plan-by-effort"), exact: true });
-  if ((await toggle.count()) > 0 && (await toggle.isChecked()) !== byEffort) {
+  await expect(toggle).toBeVisible();
+  if ((await toggle.isChecked()) !== byEffort) {
     await page.getByText(t("timeline.plan-by-effort"), { exact: true }).click();
     await (byEffort ? expect(toggle).toBeChecked() : expect(toggle).not.toBeChecked());
   }

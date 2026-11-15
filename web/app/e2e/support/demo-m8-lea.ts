@@ -1,5 +1,7 @@
+import { t } from "@bugaboo/messages";
 import { expect, type Page } from "@playwright/test";
 
+import { keepingHyphens } from "../../src/shared/format.ts";
 import { signInThroughApi } from "./accounts.ts";
 import {
   adaOfTheSample,
@@ -42,13 +44,21 @@ export async function leasAwayWeekGrowsHerBarsAndWarns(
   await signIn(page, ada);
   await openPlan(page, true);
   const before = await barDaysOf(session, login);
+  const goal = await keyOf(session, plan.goal.title);
+  // Nothing of the plan is late yet: the list has no warning about the due date of the goal.
+  const lateWords = (days: number) =>
+    keepingHyphens(t("plan-warning.delay-goal", { sub_issue: login, days, issue: goal }));
+  const sentence = /\d+ days? after the due date/u;
+  await expect((await openWarnings(page)).getByText(sentence)).toHaveCount(0);
   await openWorkTimesOf(page, lea, await idOfPerson(server, lea));
   await addAwayTime(page, { from: start, to: plusDays(start, WEEK_AWAY_DAYS) });
   await openPlan(page, true);
   // Her bar is worked out around the days she is away: it ends later.
   expect((await barDaysOf(session, login)).last > before.last).toBe(true);
+  const due = plusDays(start, plan.goal.dueDay);
+  const late = daysBetween({ first: due, last: (await barDaysOf(session, login)).last }) - 1;
   const list = await openWarnings(page);
-  await expect(list.getByText(/after the due date of/u).first()).toBeVisible();
+  await expect(list.getByText(lateWords(late), { exact: true })).toBeVisible();
   await expect(list.getByText(lea.name).first()).toBeVisible();
   await good(page, "02-lea-is-away-a-week");
   await session.dispose();
