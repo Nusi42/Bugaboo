@@ -11,6 +11,7 @@ import {
   plusDays,
   startOf,
   titleOf,
+  withoutATimer,
 } from "./demo-m8-common.ts";
 import { signIn } from "./flows.ts";
 import { dragAcross } from "./hand-drag.ts";
@@ -32,6 +33,7 @@ export async function theGoalIsPlannedByDragging(page: Page, server: Instance): 
   const session = await signInThroughApi(server, ada);
   const key = await keyOf(session, titleOf(4));
   const before = await startOf(session, key);
+  await withoutATimer(server, ada);
   await signIn(page, ada);
   await openPlan(page, false);
   await expect(page.getByText(plan.goal.title).first()).toBeVisible();

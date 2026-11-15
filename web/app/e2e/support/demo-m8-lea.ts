@@ -13,6 +13,7 @@ import {
   startOf,
   plan,
   titleOf,
+  withoutATimer,
   barDaysOf,
   daysBetween,
 } from "./demo-m8-common.ts";
@@ -40,6 +41,7 @@ export async function leasAwayWeekGrowsHerBarsAndWarns(
   const session = await signInThroughApi(server, lea);
   const login = await keyOf(session, titleOf(0));
   const start = await startOf(session, login);
+  await withoutATimer(server, ada);
   await signIn(page, ada);
   await openPlan(page, true);
   const before = await barDaysOf(session, login);
@@ -63,9 +65,7 @@ export async function leasAwayWeekGrowsHerBarsAndWarns(
   const due = plusDays(start, plan.goal.dueDay);
   const late = daysBetween({ first: due, last: (await barDaysOf(session, login)).last }) - 1;
   const list = await openWarnings(page);
-  // A phone has no switch for Plan by effort, so its list draws the dates and warns of the away days.
-  const onThePhone = await page.getByRole("list", { name: t("timeline.phone-list") }).isVisible();
-  await expect(list.getByText(onThePhone ? /is away/u : lateWords(late))).toHaveCount(1);
+  await expect(list.getByText(lateWords(late))).toHaveCount(1);
   await expect(list.getByText(lea.name).first()).toBeVisible();
   await good(page, "02-lea-is-away-a-week");
   await session.dispose();
@@ -76,6 +76,7 @@ export async function aShareOfHalfDoublesLeasBars(page: Page, server: Instance):
   const [ada, lea] = [adaOfTheSample(), leaOfTheSample()];
   const session = await signInThroughApi(server, lea);
   const login = await keyOf(session, titleOf(0));
+  await withoutATimer(server, ada);
   await signIn(page, ada);
   await openPlan(page, true);
   const before = await barDaysOf(session, login);

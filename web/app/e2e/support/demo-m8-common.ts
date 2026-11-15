@@ -74,12 +74,10 @@ export async function idOfPerson(server: Instance, person: SamplePerson): Promis
 export async function openPlan(page: Page, byEffort: boolean): Promise<void> {
   const search = encodeURIComponent(`project is ${plan.project}`);
   await page.goto(`/search?s=${search}&show=timeline`);
-  // A phone shows the plan as a grouped list, whose bars the server works out the same way.
-  const phoneList = page.getByRole("list", { name: t("timeline.phone-list") });
-  await expect(chart(page).or(phoneList)).toBeVisible();
-  if (await phoneList.isVisible()) {
-    return;
-  }
+  // A phone shows the plan as a grouped list; it has the switch of Plan by effort as well.
+  await expect(
+    chart(page).or(page.getByRole("list", { name: t("timeline.phone-list") })),
+  ).toBeVisible();
   const toggle = page.getByRole("switch", { name: t("timeline.plan-by-effort"), exact: true });
   await expect(toggle).toBeVisible();
   if ((await toggle.isChecked()) !== byEffort) {
@@ -133,4 +131,17 @@ export async function barDaysOf(
 /** How many days a bar spans, both ends included. */
 export function daysBetween(days: { readonly first: string; readonly last: string }): number {
   return (Date.parse(days.last) - Date.parse(days.first)) / MS_PER_DAY + 1;
+}
+
+/**
+ * Puts the timer a person of the sample left running away, as they would: its toast and chip
+ * ("has run longer than a work day") are not what the demo is about, and covers what it shows.
+ */
+export async function withoutATimer(server: Instance, person: SamplePerson): Promise<void> {
+  const session = await signInThroughApi(server, person);
+  const timer = dataOf(await session.client.GET("/api/v1/me/timer"));
+  if (timer.running !== null && timer.running !== undefined) {
+    await session.client.POST("/api/v1/me/timer/throw-away", { body: { version: timer.version } });
+  }
+  await session.dispose();
 }

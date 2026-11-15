@@ -11,6 +11,7 @@ import {
   leaOfTheSample,
   plan,
   titleOf,
+  withoutATimer,
 } from "./demo-m8-common.ts";
 import { signIn } from "./flows.ts";
 import type { Instance } from "./server.ts";
@@ -49,6 +50,7 @@ async function leasIssue(server: Instance): Promise<string> {
 /** Step 4: as Lea, an issue takes ten days and shows as her own estimate. */
 export async function leaSaysAnIssueTakesHerTenDays(page: Page, server: Instance): Promise<void> {
   const lea = leaOfTheSample();
+  await withoutATimer(server, lea);
   await signIn(page, lea);
   await openIssue(page, await leasIssue(server));
   await factorRow(page)
@@ -62,6 +64,7 @@ export async function leaSaysAnIssueTakesHerTenDays(page: Page, server: Instance
   await window.getByRole("button", { name: t("issues.time-factor-save") }).click();
   await expect(window).toBeHidden();
   await expect(factorRow(page)).toContainText(/own estimate/u);
+  await factorRow(page).scrollIntoViewIfNeeded();
   await good(page, "04-lea-says-ten-days");
 }
 
@@ -71,6 +74,7 @@ export async function givenToSomeoneElseTheFactorGoesBack(
   server: Instance,
 ): Promise<void> {
   const [lea, colleague] = [leaOfTheSample(), colleagueOfTheSample()];
+  await withoutATimer(server, lea);
   await signIn(page, lea);
   await openIssue(page, await leasIssue(server));
   await expect(factorRow(page)).not.toContainText(t("issues.time-factor-as-estimated"));
@@ -85,6 +89,7 @@ export async function givenToSomeoneElseTheFactorGoesBack(
   await page.getByRole("button", { name: t("issues.unassign-name", { name: lea.name }) }).click();
   await page.getByRole("button", { name: t("common.done"), exact: true }).click();
   await expect(factorRow(page)).toContainText(t("issues.time-factor-as-estimated"));
+  await factorRow(page).scrollIntoViewIfNeeded();
   await good(page, "05-given-to-someone-else");
 }
 
