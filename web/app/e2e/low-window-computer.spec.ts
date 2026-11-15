@@ -113,7 +113,8 @@ test("ux_06 in a low window the open issue and Customize beside the list stay bo
 }) => {
   await page.goto(`${projectIssuesAddress("WEB")}?open=WEB-1`);
   const panel = page.locator("[data-part~='side-panel']");
-  await expect(panel).toBeVisible();
+  // The sections of the issue come with their reads, held until all are there: the issue is whole with its History.
+  await expect(panel.locator("[data-part='history.entry']").first()).toBeVisible();
   const open = await besideList(panel, "side-panel.body");
   expect(open.high).toBeLessThanOrEqual(open.line);
   expect(open.holds).toBeGreaterThan(open.high);

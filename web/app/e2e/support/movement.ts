@@ -52,7 +52,7 @@ const API_PATH = "/api/";
  * left and none starts in the two frames after: what the action made the page read again is on the
  * screen then.
  */
-function readsOnTheirWay(page: Page): { readonly settled: () => Promise<void> } {
+export function readsOnTheirWay(page: Page): { readonly settled: () => Promise<void> } {
   // Only requests seen from now on count: one that began before cannot end the wait early.
   const open = new Set<Readonly<Request>>();
   const started = (request: Readonly<Request>): void => {

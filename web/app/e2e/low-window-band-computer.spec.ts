@@ -84,7 +84,10 @@ test("ux_06 in the band of a low window the open issue beside the list ends with
   const body = panel.locator("[data-part~='side-panel.body']");
   await expect(body).toBeVisible();
   await expect.poll(() => bottomsApart(panel, page)).toBeLessThanOrEqual(2);
-  expect(await body.evaluate((node) => node.scrollHeight > node.clientHeight)).toBe(true);
+  // The sections of the issue come with their reads: once they are there the body holds more than it shows.
+  await expect
+    .poll(() => body.evaluate((node) => node.scrollHeight > node.clientHeight))
+    .toBe(true);
 });
 
 test("ux_06 in the band of a low window Customize beside the list ends with the rows", async ({
@@ -176,14 +179,16 @@ for (const [place, size] of WIDTHS) {
     page,
   }) => {
     await page.setViewportSize(size);
+    const withRows = await heightOf(await openCustomize(page, projectIssuesAddress("WEB")));
     const release = await holdBackRows(page);
-    const panel = await openCustomize(page, projectIssuesAddress("WEB"));
-    await expect(page.locator("[data-part~='list-scroll']")).toHaveCount(0);
-    const before = await heightOf(panel);
-    expect(before).toBeGreaterThan(FOLDED);
+    await page.goto(projectIssuesAddress("WEB"));
+    // While its first rows are read the list, with Customize, is held unseen: it comes with its rows (UX §6.4).
+    const customize = page.getByRole("button", { name: t("issues.customize"), exact: true });
+    await expect(page.locator("[data-part~='search-bar']").first()).toBeVisible();
+    await expect(customize).toBeHidden();
     release();
-    await expect(page.locator("[data-part~='list-scroll']")).toBeVisible();
-    expect(await heightOf(panel)).toBe(before);
+    const panel = await openCustomize(page, projectIssuesAddress("WEB"));
+    expect(await heightOf(panel)).toBe(withRows);
     await ENDS_WITH_ROWS[place](panel, page);
   });
 }

@@ -92,8 +92,9 @@ test("ux_4_4 a thin line, in from both sides, stands between the sections of the
 }) => {
   await signIn(page, ada);
   await openIssueWithDetails(page, "WEB-1");
+  // The sections under the description stand in the hold of their first reads, which is no box of its own.
   const sections = partIn(page, "issue-main").locator(
-    ":scope > [data-part='issue-main.section']:visible",
+    ":scope > [data-part='issue-main.section']:visible, :scope > [data-part='reading-hold'] > [data-part='issue-main.section']:visible",
   );
   // The description, the sub-issues, the related issues, the files and the history.
   await expect(sections).toHaveCount(5);
