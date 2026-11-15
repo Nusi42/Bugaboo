@@ -212,3 +212,24 @@ export function variableOf(element: Locator, name: string): Promise<string> {
 export function themeRow(page: Page, name: string): Locator {
   return page.locator(`[data-part='${part.themeListItem}']`).filter({ hasText: name });
 }
+
+/** A hint text that can hardly be told from the backgrounds of Dusk, and one that reads well. */
+export const UNREADABLE = "#3a3d45";
+export const READABLE = "#d4d7dd";
+
+/** Makes a theme from Dusk with *Create a theme* on the page that is open; the editor opens. */
+export async function createFromDusk(page: Page, name: string): Promise<void> {
+  await page.getByLabel(t("theme-editor.create-name")).fill(name);
+  await page.getByLabel(t("theme-editor.create-from")).selectOption({ label: t("theme.dusk") });
+  await page.getByRole("button", { name: t("theme-editor.create"), exact: true }).click();
+  await expect(readabilityLine(page)).not.toHaveText(t("theme-editor.readability-loading"));
+}
+
+/** Gives the hint text of the theme in the editor a color. */
+export async function typeHint(page: Page, color: string): Promise<void> {
+  const hint = t("theme-color.fg-subtle");
+  if (!(await colorField(page, hint).isVisible())) {
+    await changeColor(page, t("theme-editor.group.text"), hint);
+  }
+  await colorField(page, hint).fill(color);
+}

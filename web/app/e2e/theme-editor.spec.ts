@@ -9,10 +9,14 @@ import { expectLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import {
+  READABLE,
+  UNREADABLE,
   changeColor,
   colorField,
+  createFromDusk,
   deleteThemesOf,
   groupNamed,
+  typeHint,
   onlyThemeOf,
   prepareThemes,
   hardColors,
@@ -28,30 +32,9 @@ import { pageAttributes } from "../../packages/ui/src/tokens.ts";
 
 test.use({ preparation: { run: prepareThemes } });
 
-/** A hint text that can hardly be told from the backgrounds of Dusk, and one that reads well. */
-const UNREADABLE = "#3a3d45";
-const READABLE = "#d4d7dd";
-
 test.beforeEach(async ({ server }) => {
   await Promise.all([ada, bob].map((person) => deleteThemesOf(server, person)));
 });
-
-/** Makes a theme from Dusk with *Create a theme* on the page that is open; the editor opens. */
-async function createFromDusk(page: import("@playwright/test").Page, name: string): Promise<void> {
-  await page.getByLabel(t("theme-editor.create-name")).fill(name);
-  await page.getByLabel(t("theme-editor.create-from")).selectOption({ label: t("theme.dusk") });
-  await page.getByRole("button", { name: t("theme-editor.create"), exact: true }).click();
-  await expect(readabilityLine(page)).not.toHaveText(t("theme-editor.readability-loading"));
-}
-
-/** Gives the hint text of the theme in the editor a color. */
-async function typeHint(page: import("@playwright/test").Page, color: string): Promise<void> {
-  const hint = t("theme-color.fg-subtle");
-  if (!(await colorField(page, hint).isVisible())) {
-    await changeColor(page, t("theme-editor.group.text"), hint);
-  }
-  await colorField(page, hint).fill(color);
-}
 
 test("thm_03_a_theme_for_everyone_that_is_hard_to_read_cannot_be_saved_until_fixed", async ({
   page,
