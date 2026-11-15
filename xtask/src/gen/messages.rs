@@ -79,7 +79,7 @@ macro_rules! part {
 
 /// Every part, in the order of the files: `shared` and one per feature folder. A test compares the
 /// list with the folders, so a new feature cannot be left out.
-const PARTS: [Part; 39] = [
+const PARTS: [Part; 40] = [
     part!("access"),
     part!("account"),
     part!("admin"),
@@ -98,6 +98,7 @@ const PARTS: [Part; 39] = [
     part!("issues"),
     part!("labels"),
     part!("layouts"),
+    part!("list-editor"),
     part!("many-changes"),
     part!("my-settings"),
     part!("notifications"),
@@ -507,7 +508,10 @@ fn generate_from(
     let made: Vec<&str> = made.iter().map(|made| made.key.as_str()).collect();
     let part_of = parts_of(messages.iter().map(|(key, _)| key.as_str()), sources, &made);
     let mut generated = vec![
-        Generated::new(TYPES_OUTPUT, types_file(&messages)?),
+        Generated::new(
+            TYPES_OUTPUT,
+            types_file(&messages, &filled_parts(&part_of))?,
+        ),
         Generated::new(ALL_OUTPUT, all_file()),
         Generated::new(
             messages_rust::OUTPUT,
@@ -589,11 +593,19 @@ fn all_file() -> String {
     out
 }
 
-/// The types of all keys, from the parts: `MessageKey` and the values each message needs.
-fn types_file(messages: &[(String, String)]) -> anyhow::Result<String> {
+/// The parts that hold a message of their own: a part whose texts are all shared has no keys to add to `MessageKey`.
+fn filled_parts(part_of: &BTreeMap<&str, &'static str>) -> Vec<&'static Part> {
+    PARTS
+        .iter()
+        .filter(|part| part_of.values().any(|name| *name == part.name))
+        .collect()
+}
+
+/// The types of all keys, from the parts that hold any: `MessageKey` and the values each message needs.
+fn types_file(messages: &[(String, String)], parts: &[&Part]) -> anyhow::Result<String> {
     let mut out = String::from(TS_HEADER);
     out.push('\n');
-    for part in &PARTS {
+    for part in parts {
         let _ = writeln!(
             out,
             "import type {{ messages as {} }} from \"./{}.ts\";",
@@ -602,8 +614,8 @@ fn types_file(messages: &[(String, String)]) -> anyhow::Result<String> {
         );
     }
     out.push_str("\nexport type MessageKey =\n");
-    for (index, part) in PARTS.iter().enumerate() {
-        let end = if index + 1 == PARTS.len() { ";" } else { "" };
+    for (index, part) in parts.iter().enumerate() {
+        let end = if index + 1 == parts.len() { ";" } else { "" };
         let _ = writeln!(out, "  | keyof typeof {}{end}", identifier(part.name));
     }
     out.push('\n');

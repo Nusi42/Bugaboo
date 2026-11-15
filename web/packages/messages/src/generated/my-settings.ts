@@ -13,6 +13,22 @@ export const messages = {
     "Match my device uses one theme when your device is light and one when it is dark. Choose both here.",
   "appearance.device-settings":
     "Your device may already ask for less motion or more contrast. Bugaboo follows both. Your choices are kept with you, so they follow you to every browser you sign in from.",
+  "shortcuts.intro": "Choose the keys you like. Open a shortcut to change its keys.",
+  "shortcuts.search": "Search the shortcuts",
+  "shortcuts.nothing": "No shortcut matches your search.",
+  "shortcuts.now": "Keys now",
+  "shortcuts.usual": "Usual keys",
+  "shortcuts.new-keys": "New keys",
+  "shortcuts.new-keys-help":
+    "Click the box and press the keys you want. For two keys in a row, press one and then the other.",
+  "shortcuts.use": "Use these keys",
+  "shortcuts.reset": "Use the usual keys",
+  "shortcuts.saved": "The keys are saved.",
+  "shortcuts.reset-done": "The usual keys are back.",
+  "shortcuts.conflict": "{keys} is already used for: {action}. Choose other keys.",
+  "shortcuts.reserved":
+    "Your browser uses these keys for copying, pasting and undoing. Choose other keys.",
+  "shortcuts.invalid": "These keys cannot be used. Press one key, or two in a row.",
   "access-keys.title": "Access keys",
   "access-keys.intro":
     "An access key lets a script or an app work as you. It can do at most what you can do, and it always runs out. You see a key once, when you create it.",

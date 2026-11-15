@@ -2,11 +2,10 @@ import { createRoute, lazyRouteComponent, useNavigate, useSearch } from "@tansta
 
 import { HomePage } from "../features/home/index.ts";
 import { paths } from "../shared/paths.ts";
-import { shortcutIdOf, type ShortcutId } from "../shared/shortcuts.ts";
 import { appRoute, mySettingsRoute, organizationSettingsRoute } from "./layouts.tsx";
 import { OnlyWith } from "./OnlyWith.tsx";
 import { loadsScreen } from "./preload.ts";
-import { ShortcutsRoute, StartPageRoute } from "./settings-routes.tsx";
+import { StartPageRoute } from "./settings-routes.tsx";
 import { StartScreen } from "./start-screen.ts";
 
 // The pages that are not the first one are loaded when they are first opened, so the first page
@@ -71,15 +70,6 @@ export const startPageRoute = createRoute({
   path: paths.startPage,
   loader: loadsScreen(StartScreen),
   component: StartPageRoute,
-});
-
-export const shortcutsRoute = createRoute({
-  getParentRoute: () => mySettingsRoute,
-  path: paths.shortcuts,
-  validateSearch: (
-    search: Readonly<Record<string, unknown>>,
-  ): { edit?: ShortcutId | undefined } => ({ edit: shortcutIdOf(search["edit"]) }),
-  component: ShortcutsRoute,
 });
 
 export const securityRoute = createRoute({

@@ -2,8 +2,8 @@ import { t } from "@bugaboo/messages";
 import { useEffect, useId, useLayoutEffect, useRef } from "react";
 import { partOf, part } from "@bugaboo/ui";
 
-import { chordOf, sequenceMs } from "../../shared/shortcuts-engine.ts";
-import { describeKeys } from "./key-words.ts";
+import { chordOf, sequenceMs } from "../../../shared/shortcuts-engine.ts";
+import { describeKeys } from "../../shell/index.ts";
 
 export interface KeyCaptureFieldProps {
   /** The keys recorded so far, written as in the registry; empty before the first key. */

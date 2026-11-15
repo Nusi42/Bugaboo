@@ -39,22 +39,6 @@ export const messages = {
   "focus.hide-list": "Hide list",
   "focus.show-list": "Show list",
   "panel.close": "Close the panel",
-  "shortcuts.intro": "Choose the keys you like. Open a shortcut to change its keys.",
-  "shortcuts.search": "Search the shortcuts",
-  "shortcuts.nothing": "No shortcut matches your search.",
-  "shortcuts.now": "Keys now",
-  "shortcuts.usual": "Usual keys",
-  "shortcuts.new-keys": "New keys",
-  "shortcuts.new-keys-help":
-    "Click the box and press the keys you want. For two keys in a row, press one and then the other.",
-  "shortcuts.use": "Use these keys",
-  "shortcuts.reset": "Use the usual keys",
-  "shortcuts.saved": "The keys are saved.",
-  "shortcuts.reset-done": "The usual keys are back.",
-  "shortcuts.conflict": "{keys} is already used for: {action}. Choose other keys.",
-  "shortcuts.reserved":
-    "Your browser uses these keys for copying, pasting and undoing. Choose other keys.",
-  "shortcuts.invalid": "These keys cannot be used. Press one key, or two in a row.",
 } as const;
 
 register(messages);

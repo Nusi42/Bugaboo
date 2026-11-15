@@ -11,11 +11,11 @@ import {
   keysOf,
   type ShortcutId,
   type ShortcutOverrides,
-} from "../../shared/shortcuts.ts";
-import { setShortcutKeys } from "../../shared/use-shortcuts.ts";
-import { describeKeys } from "./key-words.ts";
+} from "../../../shared/shortcuts.ts";
+import { setShortcutKeys } from "../../../shared/use-shortcuts.ts";
+import { describeKeys } from "../../shell/index.ts";
 import { KeyCaptureField } from "./KeyCaptureField.tsx";
-import { Keys } from "./Keys.tsx";
+import { Keys } from "../../shell/index.ts";
 
 export interface ShortcutEditorProps {
   readonly id: ShortcutId;

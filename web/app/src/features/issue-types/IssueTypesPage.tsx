@@ -3,7 +3,7 @@ import { Alert, alertTone, Card, IssueTypeIcon, partOf, part, ShowMoreOf } from 
 
 import { messageOf } from "../../shared/errors.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
-import { ListEditor, type ListRow } from "../shell/index.ts";
+import { ListEditor, type ListRow } from "../list-editor/index.ts";
 import { EditIssueType } from "./EditIssueType.tsx";
 import { IssueTypeOffers } from "./IssueTypeOffers.tsx";
 import { issueTypeLinesOf, useIssueTypes, type IssueTypeLine } from "./issue-types.ts";

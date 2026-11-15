@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { Card, partOf, part } from "@bugaboo/ui";
 
-import { ListEditor, type ListRow } from "../shell/index.ts";
+import { ListEditor, type ListRow } from "../list-editor/index.ts";
 import { EditGroup } from "./EditGroup.tsx";
 import type { LabelGroup } from "./labels.ts";
 import { CreateLabelGroupForm } from "./CreateLabelGroupForm.tsx";

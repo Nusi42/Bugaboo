@@ -3,7 +3,7 @@ import { Alert, alertTone, Card, partOf, part, ShowMoreOf } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
-import { ListEditor, type ListRow } from "../shell/index.ts";
+import { ListEditor, type ListRow } from "../list-editor/index.ts";
 import { EditRelationKind } from "./EditRelationKind.tsx";
 import { CreateRelationKindForm } from "./CreateRelationKindForm.tsx";
 import { relationKindLinesOf, useRelationKinds, type RelationKindLine } from "./relation-kinds.ts";

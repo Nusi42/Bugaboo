@@ -60,7 +60,6 @@ import {
   projectsRoute,
   securityRoute,
   sessionsRoute,
-  shortcutsRoute,
   signInRulesRoute,
   workingHoursRoute,
   startPageRoute,
@@ -71,6 +70,7 @@ import {
   workTimesRoute,
   themeRoute,
 } from "./app-pages.tsx";
+import { shortcutsRoute } from "./shortcuts-pages.tsx";
 import { invitationRoute, signUpRoute } from "./guest-pages.tsx";
 import { projectRoute, projectSettingsRoute } from "./project-pages.tsx";
 import {

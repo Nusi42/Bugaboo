@@ -5,7 +5,7 @@ import { Button } from "react-aria-components";
 
 import { foundByName } from "../../shared/found-by-name.ts";
 import { ItemScreen } from "./item-screen.tsx";
-import { SidePanel } from "./SidePanel.tsx";
+import { SidePanel } from "../shell/index.ts";
 
 /** One row of the list. */
 export interface ListRow {

@@ -4,9 +4,7 @@ import { useEffect, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 import { doNothing } from "../../shared/do-nothing.ts";
-import { CONTENT_ID } from "./content-id.ts";
-import { useItemTrail } from "./page-trail.ts";
-import { useEscape } from "./use-escape.ts";
+import { CONTENT_ID, useEscape, useItemTrail } from "../shell/index.ts";
 
 export interface ItemScreenProps {
   /** The name of the item: the title in the bar of the screen. */

@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { Card, partOf, part, ShowMoreOf, useHoldWhileReading } from "@bugaboo/ui";
 
-import { ListEditor, type ListRow } from "../shell/index.ts";
+import { ListEditor, type ListRow } from "../list-editor/index.ts";
 import { EditTag } from "./EditTag.tsx";
 import { tagLinesOf, useTags, type TagLine } from "./labels.ts";
 import type { OpenProps } from "./OpenProps.ts";

@@ -1,11 +1,11 @@
 import { t } from "@bugaboo/messages";
 import { Card, partOf, part } from "@bugaboo/ui";
 
-import { keysOf, shortcutDefinitions, type ShortcutId } from "../../shared/shortcuts.ts";
-import { usePageTitle } from "../../shared/use-page.ts";
-import { useShortcutOverrides } from "../../shared/use-shortcuts.ts";
-import { Keys } from "./Keys.tsx";
-import { ListEditor, type ListRow } from "./ListEditor.tsx";
+import { keysOf, shortcutDefinitions, type ShortcutId } from "../../../shared/shortcuts.ts";
+import { usePageTitle } from "../../../shared/use-page.ts";
+import { useShortcutOverrides } from "../../../shared/use-shortcuts.ts";
+import { Keys } from "../../shell/index.ts";
+import { ListEditor, type ListRow } from "../../list-editor/index.ts";
 import { ShortcutEditor } from "./ShortcutEditor.tsx";
 
 export interface ShortcutsPageProps {

@@ -18,6 +18,7 @@ export { messages as issueTypes } from "./issue-types.ts";
 export { messages as issues } from "./issues.ts";
 export { messages as labels } from "./labels.ts";
 export { messages as layouts } from "./layouts.ts";
+export { messages as listEditor } from "./list-editor.ts";
 export { messages as manyChanges } from "./many-changes.ts";
 export { messages as mySettings } from "./my-settings.ts";
 export { messages as notifications } from "./notifications.ts";
