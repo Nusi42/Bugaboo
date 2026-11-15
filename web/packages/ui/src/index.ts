@@ -165,6 +165,7 @@ export { inPlace } from "./in-place.ts";
 export { composing, plainEnter } from "./plain-enter.ts";
 export { useHeightOnParent } from "./height-variable.ts";
 export { useTopKept } from "./top-kept.ts";
+export { LEAST_MOVE_PX } from "./least-move.ts";
 export { PaneWithHead, type PaneWithHeadProps } from "./PaneWithHead.tsx";
 export { OutsidePane } from "./OutsidePane.tsx";
 export {

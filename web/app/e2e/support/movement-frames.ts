@@ -1,3 +1,4 @@
+import { LEAST_MOVE_PX } from "../../../packages/ui/src/least-move.ts";
 import type { Box, Frames, Shift } from "./movement-record.ts";
 
 // What the frames the measure of movement recorded say (`movement.ts`): which landmarks moved, came
@@ -47,11 +48,7 @@ export interface Movement {
   readonly view?: number;
 }
 
-/**
- * A difference of more than half a pixel is a move (UX §6.4: not even 1 px). Less is the subpixel
- * layout of the browser, which nobody sees.
- */
-export const LEAST_MOVE_PX = 0.5;
+export { LEAST_MOVE_PX } from "../../../packages/ui/src/least-move.ts";
 
 /** Whether two values of a box are more than half a pixel apart. */
 export function far(one: number, other: number): boolean {
