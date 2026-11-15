@@ -46,6 +46,8 @@ export interface Movement {
   readonly frames: number;
   /** The height of the window, when it was recorded: what stands outside it is not in view. */
   readonly view?: number;
+  /** Where each landmark stood that never moved: what shows that a scroll kept the view still. */
+  readonly still?: readonly Box[];
 }
 
 export { LEAST_MOVE_PX } from "../../../packages/ui/src/least-move.ts";
@@ -97,8 +99,17 @@ export function judged(names: readonly (readonly [string, boolean])[], frames: F
   const moved: Moved[] = [];
   const appeared: Appeared[] = [];
   const vanished: string[] = [];
+  const still: Box[] = [];
   for (const [index, [name, findsAgain]] of names.entries()) {
     const column = frames.boxes.map((frame) => frame[index] ?? null);
+    const [start] = column;
+    if (
+      start !== null &&
+      start !== undefined &&
+      column.every((box) => box !== null && !differs(start, box))
+    ) {
+      still.push(start);
+    }
     const [first] = column;
     const last = column.at(-1) ?? null;
     // A part that can be found again (a row of a list, by its key) and is gone with nothing in its
@@ -115,7 +126,7 @@ export function judged(names: readonly (readonly [string, boolean])[], frames: F
       moved.push(found);
     }
   }
-  return { moved, appeared, vanished };
+  return { moved, appeared, vanished, still };
 }
 
 /** The scroll of each part in one frame, as the recording writes it (`page:0 list-scroll:40/0`). */

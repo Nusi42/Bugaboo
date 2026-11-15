@@ -211,18 +211,6 @@ describe("ux_01 the measure judges a part by its edges in view", () => {
     expect(wrongIn(withScroll([details]), {})).toEqual(nothingWrong);
   });
 
-  it("passes a part spanning the view that grew above it, by what the scroll kept still", () => {
-    // Something inside it grew by 52 px above the view, and the scroll of 52 px kept what is in view still.
-    const page = moved("page", box(0, -461, 300, 1427), box(0, -513, 300, 1479));
-    expect(wrongIn(withScroll([page]), { grows: ["page"] })).toEqual(nothingWrong);
-  });
-
-  it("fails a scroll that moved the one part in view, spanning it, with nothing grown", () => {
-    const tall = moved("page", box(0, -200, 300, 1400), box(0, -252, 300, 1400));
-    const found = wrongIn(withScroll([tall]), {});
-    expect(found).not.toEqual(nothingWrong);
-  });
-
   it("fails a part spanning the view that moved by 50 px", () => {
     const tall = moved("history", box(0, -200, 300, 1400), box(0, -150, 300, 1400));
     expect(wrongIn(withScroll([tall]), {}).moved.map((part) => part.name)).toEqual(["history"]);
@@ -241,5 +229,39 @@ describe("ux_01 the measure judges a part by its edges in view", () => {
       { grows: ["sub-issues"], follows: ["next"] },
     );
     expect(found).toEqual(nothingWrong);
+  });
+});
+
+describe("ux_01 the measure sets a part spanning the view back only by a scroll that kept the view", () => {
+  it("passes a part spanning the view that grew above it, by what the scroll kept still", () => {
+    // Something inside it grew by 52 px above the view, and the scroll of 52 px kept what is in view still.
+    // A row in view, not spanning it, stood still: the scroll kept the view.
+    const page = moved("page", box(0, -461, 300, 1427), box(0, -513, 300, 1479));
+    const measured = { ...withScroll([page]), still: [box(0, 300, 300, 40)] };
+    expect(wrongIn(measured, { grows: ["page"] })).toEqual(nothingWrong);
+  });
+
+  it("fails a part spanning the view that grew when nothing in view stood still to show the scroll kept it", () => {
+    const page = moved("page", box(0, -461, 300, 1427), box(0, -513, 300, 1479));
+    expect(wrongIn(withScroll([page]), { grows: ["page"] })).not.toEqual(nothingWrong);
+  });
+
+  it("fails a scroll up of 52 px with nothing grown", () => {
+    const tall = moved("page", box(0, -200, 300, 1400), box(0, -148, 300, 1400));
+    const up = { part: "app-layout.main", from: "652/0", to: "600/0" };
+    const measured = { ...movementOf([tall]), scrolled: [up], view, still: [] };
+    expect(wrongIn(measured, {})).not.toEqual(nothingWrong);
+  });
+
+  it("fails 52 px of growth below the view with a scroll of 52 px that nothing above explains", () => {
+    // The part grew at its foot below the view, and the app scrolled the box down by as much: all in view moved.
+    const tall = moved("page", box(0, -200, 300, 1400), box(0, -252, 300, 1452));
+    expect(wrongIn(withScroll([tall]), { grows: ["page"] })).not.toEqual(nothingWrong);
+  });
+
+  it("fails a scroll that moved the one part in view, spanning it, with nothing grown", () => {
+    const tall = moved("page", box(0, -200, 300, 1400), box(0, -252, 300, 1400));
+    const found = wrongIn(withScroll([tall]), {});
+    expect(found).not.toEqual(nothingWrong);
   });
 });

@@ -59,15 +59,21 @@ function scrollDownOf(at: string): number {
 /**
  * A part with neither edge in view that grew by at least the scroll, set back by the scroll that kept the view still:
  * it is judged where it stands in its box, as the person sees what of it is in view (UX §6.4, the browser keeps what is
- * in view still by its scroll). A scroll that no growth explains is not set back, so it stays wrong.
+ * in view still by its scroll). Only a scroll its growth explains, while a part in view stood still, is set back; any
+ * other stays wrong.
  */
 function inTheBox(part: Moved, movement: Movement): Moved {
   const { view } = movement;
   const spans = (box: Box): boolean => view !== undefined && box.y < 0 && box.y + box.height > view;
   const by = keptByScroll(movement);
-  // Only a part that grew by at least the scroll explains it: the growth above the view is part of its own.
+  // The part changed by at least the scroll, the same way (it grew above the view, or shrank there), and a part in
+  // view that does not span it stood still: the scroll kept what is in view, rather than moving it.
   const grew = part.last.height - part.from.height;
-  if (by === 0 || !spans(part.from) || !spans(part.last) || grew < by - LEAST_MOVE_PX) {
+  const explains = by > 0 ? grew >= by - LEAST_MOVE_PX : grew <= by + LEAST_MOVE_PX;
+  const kept = (movement.still ?? []).some(
+    (box) => view !== undefined && box.y < view && box.y + box.height > 0 && !spans(box),
+  );
+  if (by === 0 || !spans(part.from) || !spans(part.last) || !explains || !kept) {
     return part;
   }
   return {
