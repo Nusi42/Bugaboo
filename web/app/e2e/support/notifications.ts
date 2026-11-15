@@ -19,9 +19,12 @@ export function menuEntry(page: Page): Locator {
     .getByRole("link", { name: new RegExp(`^${t("nav.notifications")}`, "u") });
 }
 
-/** The number on the menu entry; 0 when it shows none. */
+/**
+ * The number on the menu entry; 0 when it shows none. The entry then keeps the room of one, unseen, so only the text
+ * that is drawn counts (`innerText`).
+ */
 export async function unreadCount(page: Page): Promise<number> {
-  const text = (await menuEntry(page).textContent()) ?? "";
+  const text = await menuEntry(page).innerText();
   return Number(/\d+/u.exec(text)?.[0] ?? 0);
 }
 

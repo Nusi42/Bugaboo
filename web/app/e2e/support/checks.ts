@@ -163,8 +163,22 @@ export async function expectVisibleTextInName(page: Page): Promise<void> {
   expect(mismatches).toEqual([]);
 }
 
-/** The open screen is accessible, does not scroll sideways, has nothing over anything and names what it shows. */
+/**
+ * Every part of the screen that waits for its first reads has them: it shows what it holds. The room a count keeps
+ * stays held for good, out of reach (`inert`), and is not waited for.
+ */
+export async function expectAllRead(page: Page): Promise<void> {
+  await expect(
+    page.locator('[data-part="reading-hold"][data-state="held"]:not([inert])'),
+  ).toHaveCount(0);
+}
+
+/**
+ * The open screen, once read, is accessible, does not scroll sideways, has nothing over anything and names what it
+ * shows.
+ */
 async function expectGoodScreen(page: Page): Promise<void> {
+  await expectAllRead(page);
   await expectNoViolations(page);
   await expectNoSidewaysScroll(page);
   await expectNoOverlap(page);
