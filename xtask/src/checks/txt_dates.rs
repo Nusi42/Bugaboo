@@ -35,8 +35,16 @@ const WRITERS: [&str; 5] = [
 /// The browser's own boxes for a day or a time, as code asks for them.
 const BROWSER_BOXES: [&str; 5] = ["date", "datetime-local", "time", "month", "week"];
 
-/// The ways code names the kind of a box: a JSX attribute, with or without braces, and the DOM.
-const BOX_KINDS: [&str; 3] = ["type=\"", "type={\"", "setAttribute(\"type\", \""];
+/// The ways code names the kind of a box: a JSX attribute, with or without braces, spread from an
+/// object, and the DOM (by its attribute or its property).
+const BOX_KINDS: [&str; 6] = [
+    "type=\"",
+    "type={\"",
+    "{...{ type: \"",
+    "setAttribute(\"type\", \"",
+    ".type = \"",
+    ".type=\"",
+];
 
 pub(crate) struct TxtDates;
 
@@ -178,6 +186,8 @@ mod tests {
         assert_eq!(found(screen, "<input type=\"date\" value={day} />"), 1);
         assert_eq!(found(screen, "<Input type={\"datetime-local\"} />"), 1);
         assert_eq!(found(screen, "box.setAttribute(\"type\", \"time\");"), 1);
+        assert_eq!(found(screen, "box.type = \"date\";"), 1);
+        assert_eq!(found(screen, "<input {...{ type: \"week\" }} />"), 1);
         // In the shared helpers and the packages too: no helper may write a day the device's way.
         assert_eq!(
             found(
