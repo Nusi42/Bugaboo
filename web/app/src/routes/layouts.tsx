@@ -12,6 +12,7 @@ import { rememberReturn } from "../shared/return-to.ts";
 import { loadMySettings } from "../shared/my-settings.ts";
 import { currentPerson, type Person } from "../shared/session.ts";
 import { OnlyWith } from "./OnlyWith.tsx";
+import { loadsScreen } from "./preload.ts";
 import { Root } from "./Root.tsx";
 import { loadStatus, startPath } from "./start.ts";
 
@@ -203,16 +204,11 @@ const SettingsFrame = lazyRouteComponent(
   "SettingsFrame",
 );
 
-/** Loads the frame with its route, so it never waits (and shows nothing) while it is drawn. */
-async function loadSettingsFrame(): Promise<void> {
-  await SettingsFrame.preload?.();
-}
-
 /** The frame of *My settings*: the menu of its topics next to the topic that is open. */
 export const mySettingsRoute = createRoute({
   getParentRoute: () => appRoute,
   id: "my-settings",
-  loader: loadSettingsFrame,
+  loader: loadsScreen(SettingsFrame),
   component: function MySettings() {
     return <SettingsFrame parent={paths.mySettings} />;
   },
@@ -222,7 +218,7 @@ export const mySettingsRoute = createRoute({
 export const organizationSettingsRoute = createRoute({
   getParentRoute: () => appRoute,
   id: "organization-settings",
-  loader: loadSettingsFrame,
+  loader: loadsScreen(SettingsFrame),
   component: function OrganizationSettings() {
     return (
       <OnlyWith path={paths.organizationSettings}>
