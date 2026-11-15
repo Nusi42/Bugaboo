@@ -13,7 +13,7 @@ export interface Scrolling {
 }
 
 /** A window as low as a phone held sideways, or a phone with the browser's bars: the pages before sign-in still fit it. */
-const LOW_WINDOW_HEIGHT = 360;
+export const LOW_WINDOW_HEIGHT = 360;
 
 /** Makes the window low, keeping its width. */
 export async function lowWindow(page: Page): Promise<void> {

@@ -5867,6 +5867,7 @@ textarea,
 [data-part="sidebar"][data-variant~="short"] {
   gap: var(--space-1);
   padding-block: var(--space-2);
+  overflow-y: auto;
 }
 
 [data-part="sidebar"][data-variant~="narrow"] {
@@ -5919,6 +5920,11 @@ textarea,
 }
 
 [data-part="sidebar"][data-variant~="drawer"] [data-part="sidebar.middle"] {
+  overflow-y: visible;
+}
+
+[data-part="sidebar"][data-variant~="short"] [data-part="sidebar.middle"] {
+  flex: 1 0 auto;
   overflow-y: visible;
 }
 

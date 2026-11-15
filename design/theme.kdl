@@ -7009,6 +7009,7 @@ part "sidebar" {
 part "sidebar[variant=short]" {
     gap "$space-1"
     padding-block "$space-2"
+    overflow-y auto
 }
 
 part "sidebar[variant=narrow]" {
@@ -7062,6 +7063,13 @@ part "sidebar.middle" {
 
 // In the drawer the menu is as long as it is, and the drawer scrolls it: its sections take no box that scrolls.
 part "sidebar[variant=drawer] sidebar.middle" {
+    overflow-y visible
+}
+
+// In a window too low for the whole menu its top, its bottom group and the person may not fit beside a box of sections:
+// there the menu scrolls as one box (`sidebar[variant=short]`), as high as it is, so Sign out stays in reach (UX §6.5).
+part "sidebar[variant=short] sidebar.middle" {
+    flex "1 0 auto"
     overflow-y visible
 }
 

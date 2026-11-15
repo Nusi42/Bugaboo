@@ -7,6 +7,7 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareManyWeb, prepareWeb } from "./support/issues.ts";
 import { tickIssue } from "./support/list-look.ts";
+import { LOW_WINDOW_HEIGHT } from "./support/scrolling.ts";
 import { openTimeline } from "./support/timeline.ts";
 import { issueAddress, projectIssuesAddress } from "../src/shared/paths.ts";
 
@@ -147,3 +148,21 @@ test.describe("a long list in a low window", () => {
     expect(box.holds).toBeGreaterThan(box.high);
   });
 });
+
+for (const height of [LOW_WINDOW.height, LOW_WINDOW_HEIGHT]) {
+  test(`ux_06 in a low window of ${String(height)} px the menu keeps Sign out in reach`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: LOW_WINDOW.width, height });
+    await page.goto(projectIssuesAddress("WEB"));
+    const menu = page.getByRole("navigation", { name: t("shell.menu"), exact: true });
+    // A menu too high for the window scrolls as one box: Sign out comes into the window whole, nothing clips it.
+    const signOut = menu.getByRole("button", { name: t("nav.sign-out"), exact: true });
+    // As a person scrolls: with the wheel over the menu (a box that clips does not scroll for it).
+    await menu.hover();
+    await page.mouse.wheel(0, WHEEL);
+    await expect(signOut).toBeInViewport({ ratio: 1 });
+    await signOut.click();
+    await expect(page.getByRole("heading", { level: 1, name: t("sign-in.title") })).toBeVisible();
+  });
+}
