@@ -221,10 +221,10 @@ fn plan_14_the_time_factor_is_a_share_of_the_estimate() {
     assert_eq!(TimeFactor::of_length(Minutes::new(0), hours(8)), None);
     assert_eq!(TimeFactor::of_length(hours(1), hours(100)), None);
     assert_eq!(TimeFactor::default(), TimeFactor::ONE);
-    // In work days of 8 hours: 10; of 6 hours, 13 and a part, so 14; no day of no minutes.
+    // In work days of 8 hours: 10; of 6 hours, 13 and a third, so 13; no day of no minutes.
     let quarter_more = TimeFactor::new(125).unwrap();
     assert_eq!(quarter_more.work_days(hours(64), 480), Some(10));
-    assert_eq!(quarter_more.work_days(hours(64), 360), Some(14));
+    assert_eq!(quarter_more.work_days(hours(64), 360), Some(13));
     assert_eq!(quarter_more.work_days(hours(64), 0), None);
     // Rounded up to the minute: a factor never makes work disappear.
     assert_eq!(
@@ -527,5 +527,27 @@ fn plan_04_the_done_part_is_the_estimate_less_the_time_left() {
             expected,
             "{estimate:?} {left:?} {done}"
         );
+    }
+}
+
+#[test]
+fn plan_14_a_length_typed_in_days_reads_back_as_the_same_work_days() {
+    // *Takes me N days* is kept as a factor in whole percents of the estimate; the work days it
+    // comes to are those N days again, for estimates that are no whole days, and for a day that is
+    // the average of the usual days (5 hours 36 minutes).
+    for day in [336, 360, 433, 480] {
+        for estimate in (1..=12_000).step_by(37) {
+            for days in 1..=60 {
+                let takes = Minutes::new(day * days);
+                let Some(factor) = TimeFactor::of_length(Minutes::new(estimate), takes) else {
+                    continue;
+                };
+                assert_eq!(
+                    factor.work_days(Minutes::new(estimate), day),
+                    Some(days),
+                    "{days} days of {day} minutes on an estimate of {estimate}"
+                );
+            }
+        }
     }
 }

@@ -62,11 +62,14 @@ impl TimeFactor {
         Minutes::new(u32::try_from(minutes).unwrap_or(u32::MAX))
     }
 
-    /// How many work days of `day_minutes` the effort of an issue with this estimate takes, rounded
-    /// up (*"Estimate 8 days · ×1.25 = 10 work days"*, UX §4.4): a day in the person's own work
-    /// hours, without their share or their days off; `None` for a day of no minutes.
+    /// How many work days of `day_minutes` the effort of an issue with this estimate takes, to the
+    /// nearest day (*"Estimate 8 days · ×1.25 = 10 work days"*, UX §4.4): a day in the person's own
+    /// work hours, without their share or their days off; `None` for a day of no minutes. To the
+    /// nearest, not up: a factor is kept in whole percents and its effort rounded up to the minute,
+    /// so *Takes me 10 days* comes to a few minutes more than ten days, and still reads as ten.
     #[must_use]
     pub fn work_days(self, estimate: Minutes, day_minutes: u32) -> Option<u32> {
-        (day_minutes > 0).then(|| self.effort(estimate).get().div_ceil(day_minutes))
+        (day_minutes > 0)
+            .then(|| self.effort(estimate).get().saturating_add(day_minutes / 2) / day_minutes)
     }
 }
