@@ -8,6 +8,7 @@ import {
   partOf,
   part,
   keepsRoom,
+  useHoldWhileReading,
 } from "@bugaboo/ui";
 import { useQuery } from "@tanstack/react-query";
 
@@ -20,6 +21,8 @@ import { saveLabels } from "../../../shared/save-labels.ts";
 /** *Your access keys*: each with what it may do and where, and a way to delete it. */
 export function KeyList() {
   const keys = useQuery(keysOptions());
+  // The topic waits for the first read of the list with the hold it stands in (UX §6.4).
+  useHoldWhileReading(keys.isLoading);
   const remove = useDeleteKey();
   const items: readonly AccessKey[] = keys.data?.items ?? [];
   return (

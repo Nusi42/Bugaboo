@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { DelayedSkeleton, useHoldWhileReading } from "@bugaboo/ui";
+import { DelayedSkeleton, HoldWhileLoading, useHoldWhileReading } from "@bugaboo/ui";
 import { lazy, Suspense } from "react";
 
 import { isDrawnColumn, withKeptColumns } from "../../shared/list-columns.ts";
@@ -36,7 +36,14 @@ export function IssueResults(props: IssueResultsProps) {
   const { view, defaults } = props;
   if (view.kind === "timeline") {
     return (
-      <Suspense fallback={<DelayedSkeleton lines={3} />}>
+      <Suspense
+        fallback={
+          <>
+            <HoldWhileLoading />
+            <DelayedSkeleton lines={3} />
+          </>
+        }
+      >
         <TimelineResults
           text={props.text}
           within={props.within}

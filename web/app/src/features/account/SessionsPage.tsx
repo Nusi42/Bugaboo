@@ -8,6 +8,7 @@ import {
   partOf,
   part,
   keepsRoom,
+  useHoldWhileReading,
 } from "@bugaboo/ui";
 import { useQuery } from "@tanstack/react-query";
 
@@ -23,6 +24,8 @@ import { saveLabels } from "../../shared/save-labels.ts";
 export function SessionsPage() {
   usePageTitle(t("sessions.title"));
   const sessions = useQuery(sessionsOptions());
+  // The topic waits for the first read of the list with the hold it stands in (UX §6.4).
+  useHoldWhileReading(sessions.isLoading);
   const end = useEndSession();
   return (
     <Card

@@ -8,6 +8,7 @@ import {
   partOf,
   part,
   keepsRoom,
+  useHoldWhileReading,
 } from "@bugaboo/ui";
 import { useQuery } from "@tanstack/react-query";
 
@@ -49,6 +50,8 @@ function Head() {
 /** *Your connected apps*: a table with each app, what it may do and where, and a way to take it back. */
 export function AppList() {
   const apps = useQuery(appsOptions());
+  // The topic waits for the first read of the list with the hold it stands in (UX §6.4).
+  useHoldWhileReading(apps.isLoading);
   const takeBack = useTakeBack();
   const items: readonly ConnectedApp[] = apps.data?.items ?? [];
   return (

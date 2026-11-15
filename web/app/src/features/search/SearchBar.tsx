@@ -1,10 +1,18 @@
-import { Alert, alertTone, DelayedSkeleton, useLayout, part, partOf } from "@bugaboo/ui";
+import {
+  Alert,
+  alertTone,
+  DelayedSkeleton,
+  useHoldWhileReading,
+  useLayout,
+  part,
+  partOf,
+} from "@bugaboo/ui";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
 
 import { useSearchFields } from "./search-fields.ts";
-import { useSearchLanguage } from "./search-language.ts";
+import { useSearchLanguageRead } from "./search-language.ts";
 import { PhoneFilters } from "./PhoneFilters.tsx";
 import { SearchBarBody } from "./SearchBarBody.tsx";
 import type { ListViewControl } from "./ViewChoices.tsx";
@@ -45,8 +53,11 @@ export function SearchBar({
   phoneStart,
   waiting = false,
 }: SearchBarProps) {
-  const language = useSearchLanguage();
+  const languageRead = useSearchLanguageRead();
+  const language = languageRead.data;
   const fields = useSearchFields(within);
+  // Inside a hold the bar waits for its first reads with the rest (UX §6.4); a read that failed ends the wait.
+  useHoldWhileReading(waiting || languageRead.isLoading || fields.isLoading);
   const phone = useLayout() === "phone";
   const failed = fields.isError ? (
     <Alert tone={alertTone.danger}>{messageOf(fields.error)}</Alert>

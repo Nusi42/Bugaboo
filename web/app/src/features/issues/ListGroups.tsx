@@ -12,8 +12,10 @@ import { useReadyGroups } from "./use-ready-groups.ts";
 export function GroupedList() {
   const { search, groupBy } = useListContext();
   const found = useFoundGroups(search, groupBy);
-  useHoldWhileReading(found.isLoading);
   const ready = useReadyGroups(found.isPlaceholderData ? undefined : found.data);
+  // The groups wait for their first answer, and then for the first rows of the groups at the top, which end even when
+  // they cannot be read: a list held with them shows heads and rows together (UX §6.4).
+  useHoldWhileReading(found.isLoading || (ready.groups === undefined && found.data !== undefined));
   if (ready.groups === undefined) {
     return <DelayedSkeleton lines={3} />;
   }
