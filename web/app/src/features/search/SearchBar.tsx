@@ -11,7 +11,7 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
 
-import { useSearchFields } from "./search-fields.ts";
+import { useSearchFields, type SearchFieldsAnswer } from "./search-fields.ts";
 import { useSearchLanguageRead } from "./search-language.ts";
 import { PhoneFilters } from "./PhoneFilters.tsx";
 import { SearchBarBody } from "./SearchBarBody.tsx";
@@ -69,8 +69,7 @@ export function SearchBar({
   ) : (
     <LoadedBar
       language={language}
-      fields={fields.data.fields}
-      names={fields.data.names}
+      answer={fields.data}
       text={text}
       onText={onText}
       onStale={onStale}
@@ -97,11 +96,13 @@ export function SearchBar({
 type LoadedProps = Omit<SearchBarProps, "within" | "onStale" | "listView" | "phoneStart"> & {
   readonly onStale: ((stale: boolean) => void) | undefined;
   readonly listView: ListViewControl | undefined;
-  readonly names: Readonly<Record<string, string>>;
-} & Required<Pick<Parameters<typeof useSearchBar>[0], "language" | "fields">>;
+  /** The fields the person may read, their names and the ones a timeline groups by. */
+  readonly answer: SearchFieldsAnswer;
+} & Required<Pick<Parameters<typeof useSearchBar>[0], "language">>;
 
 function LoadedBar(props: LoadedProps) {
-  const { language, fields, names, text, onText, onStale, actions, listView } = props;
+  const { language, answer, text, onText, onStale, actions, listView } = props;
+  const { fields, names, timelineGroups } = answer;
   const bar = useSearchBar({ language, fields, text, onText });
   const stale = bar.answer.mistakes.length > 0;
   useEffect(() => {
@@ -136,7 +137,7 @@ function LoadedBar(props: LoadedProps) {
       mistakes={bar.answer.mistakes.length}
       open={open}
       onOpenChange={setOpen}
-      fields={{ names }}
+      fields={{ names, timelineGroups }}
       listView={listView}
       footer={actions}
     >

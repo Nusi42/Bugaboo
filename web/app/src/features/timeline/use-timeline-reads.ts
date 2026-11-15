@@ -2,8 +2,7 @@ import type { SearchLanguage } from "@bugaboo/wasm-search";
 
 import type { ListView } from "../../shared/list-view.ts";
 import { useOwnColumns } from "../issues/index.ts";
-import type { SearchFieldsAnswer } from "../search/index.ts";
-import { timelineGroupable } from "./group-words.ts";
+import { timelineGroupable, type SearchFieldsAnswer } from "../search/index.ts";
 import { readOf, useNotScheduled, useTimelineRows } from "./timeline-data.ts";
 import { useChartSpan } from "./use-chart-span.ts";
 

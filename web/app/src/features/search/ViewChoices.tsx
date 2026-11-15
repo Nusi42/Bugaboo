@@ -9,7 +9,7 @@ import {
   type ListView,
   type ShownAs,
 } from "../../shared/list-view.ts";
-import type { SearchFieldsAnswer } from "./search-fields.ts";
+import { timelineGroupable, type SearchFieldsAnswer } from "./search-fields.ts";
 
 /** How the results of a search are shown, and the way to change it. */
 export interface ListViewControl {
@@ -18,18 +18,21 @@ export interface ListViewControl {
 }
 
 export interface ViewChoicesProps extends ListViewControl {
-  readonly fields: Pick<SearchFieldsAnswer, "names">;
+  readonly fields: Pick<SearchFieldsAnswer, "names" | "timelineGroups">;
   /** What stands after *Group by* (the button *Customize* on a computer). */
   readonly end?: ReactNode;
   /** How *Group by* looks: quiet words above a list on a computer, a box in the *Filters* sheet. */
   readonly look?: SelectLook;
-  /** The fields the results can be grouped by, by their words: every one a list may, without it. */
-  readonly groupable?: (word: string) => boolean;
 }
 
 /** A list can be grouped by every field the person may read but a long text and the Issue ID. */
 function listGroupable(word: string): boolean {
   return !notGroupable.has(word);
+}
+
+/** The fields the results of a view of this kind can be grouped by, by their words. */
+function groupableOf(kind: ShownAs, fields: Pick<SearchFieldsAnswer, "timelineGroups">) {
+  return kind === "timeline" ? timelineGroupable(fields) : listGroupable;
 }
 
 /** The fields the results can be grouped by. */
@@ -60,8 +63,8 @@ export function ViewChoices({
   onView,
   end,
   look = selectLook.box,
-  groupable = listGroupable,
 }: ViewChoicesProps) {
+  const groupable = groupableOf(view.kind, fields);
   const groups = groupChoicesOf(fields, groupable);
   const grouped =
     view.groupBy !== null && Object.hasOwn(fields.names, view.groupBy) && groupable(view.groupBy);

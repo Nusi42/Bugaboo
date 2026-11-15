@@ -13,8 +13,8 @@ export interface PhoneFiltersProps {
   readonly mistakes: number;
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
-  /** The names of the fields the person reads, for *Group by*. */
-  readonly fields: Pick<SearchFieldsAnswer, "names">;
+  /** The names of the fields the person reads and the ones a timeline groups by, for *Group by*. */
+  readonly fields: Pick<SearchFieldsAnswer, "names" | "timelineGroups">;
   readonly listView: ListViewControl | undefined;
   /** What is done with the search (*Save search*, *Share*), next to the button that is done. */
   readonly footer?: ReactNode;

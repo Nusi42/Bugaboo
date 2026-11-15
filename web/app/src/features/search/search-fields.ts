@@ -98,6 +98,14 @@ export interface SearchFieldsAnswer {
 }
 
 /**
+ * What a timeline groups by (UX §4.7) is the server's to say: the readable fields mark each field it
+ * can group by (`timeline_group`, from `plan::timeline_groups_by`), and a page refuses any other.
+ */
+export function timelineGroupable(fields: Pick<SearchFieldsAnswer, "timelineGroups">) {
+  return (word: string): boolean => fields.timelineGroups.includes(word);
+}
+
+/**
  * The fields the person may search by, the same the checker of the server gets (QRY-05), for a
  * search that looks in a project (`within`) or everywhere.
  */

@@ -63,6 +63,6 @@ The list ends with "Away times show only as Away. Bugaboo never suggests whom to
 
 ## On a phone
 
-On a phone the timeline is a list grouped like the rows of the chart, and folded the same way. Each issue shows its status icon, Issue ID and title, its dates, its person, and a short bar over seven weeks with today marked, in the same colors as on a computer. **Not scheduled yet** is the last group.
+On a phone the timeline is a list grouped like the rows of the chart, and folded the same way. Each issue shows its status icon, Issue ID and title, its dates, its person, and a short bar over seven weeks with today marked, in the same colors as on a computer. **Not scheduled yet** is the last group. Above the list stand **Dates from**, **Plan by effort** and **Warnings**; **Show as** and **Group by** are in **Filters**, as for a list.
 
 Nothing is dragged on a phone. Tap an issue to open its card from the bottom, with **Set dates…**, **Add dependency…** and **Open**. **Warnings** opens the list of plan warnings the same way; pressing a warning closes the list and opens the card of its issue. A bar that goes on before or after the seven weeks says **Earlier** or **Later** at that end.

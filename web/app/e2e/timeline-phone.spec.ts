@@ -65,6 +65,29 @@ test("ux_02_the_phone_timeline_is_a_grouped_list_with_dates_person_and_a_seven_w
   await expect(page.getByRole("dialog")).toHaveCount(1);
 });
 
+test("ux_02_the_tools_of_the_phone_leave_the_list_the_room_and_group_by_is_in_the_filters", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await openPhoneTimeline(page);
+  // Above the list stand only *Dates from*, *Plan by effort* and *Warnings*: the list starts in the
+  // upper half of the screen, so more than three issues show (UX §4.7, §6.5).
+  const fromTop = await phoneList(page).evaluate(
+    (list) => list.getBoundingClientRect().top / window.innerHeight,
+  );
+  expect(fromTop).toBeLessThan(1 / 2);
+  await expect(page.getByLabel(t("timeline.show-as"), { exact: true })).toHaveCount(0);
+  await expect(page.getByText(t("timeline.dates-from"), { exact: true })).toBeVisible();
+  // *Show as* and *Group by* are in the sheet of the filters, as for a list (UX §4.2), and *Group by*
+  // offers what a timeline groups by: the goal, never the status group of a list.
+  await page.getByRole("button", { name: t("search.bar.filters-count", { count: 1 }) }).click();
+  const sheet = page.getByRole("dialog", { name: t("search.bar.filters") });
+  const groupBy = sheet.getByLabel(t("issues.group-by"), { exact: true });
+  await expect(groupBy).toHaveValue("parent");
+  await expect(groupBy.locator('option[value="status group"]')).toHaveCount(0);
+  await expect(sheet.getByLabel(t("timeline.show-as"), { exact: true })).toHaveValue("timeline");
+});
+
 test("ux_02_on_a_phone_set_dates_changes_the_dates_and_nothing_is_dragged", async ({
   page,
   server,

@@ -16,7 +16,6 @@ import { zoomWords, type ListView, type ZoomWord } from "../../shared/list-view.
 import type { OwnColumns } from "../issues/index.ts";
 import { ViewChoices, type SearchFieldsAnswer } from "../search/index.ts";
 import { DatesFrom } from "./DatesFrom.tsx";
-import { timelineGroupable } from "./group-words.ts";
 
 export interface TimelineToolsProps {
   readonly view: ListView;
@@ -73,20 +72,18 @@ function TimeSteps({ onStep, onToday }: Pick<TimelineToolsProps, "onStep" | "onT
 /**
  * The tools over the timeline (UX §4.7): *Show as* and *Group by*, which date fields the bars use
  * (*Dates from*), *Plan by effort*, the zoom, and the steps through time with *Today*. Every choice
- * is part of the view, kept in the address and saved with the search.
+ * is part of the view, kept in the address and saved with the search. A phone has no zoom and no
+ * steps, and its *Show as* and *Group by* are in the sheet of the filters, so the list has the room.
  */
 export function TimelineTools(props: TimelineToolsProps) {
   const { view, onView, fields, own, onStep, onToday, phone, warnings } = props;
   const { timeline } = view;
   return (
     <div {...partOf(part.timelineTools)}>
-      <ViewChoices
-        view={view}
-        fields={fields}
-        onView={onView}
-        look={selectLook.inline}
-        groupable={timelineGroupable(fields)}
-      />
+      {/* On a phone *Show as* and *Group by* are in the sheet of the filters, as for a list (UX §4.2). */}
+      {phone ? null : (
+        <ViewChoices view={view} fields={fields} onView={onView} look={selectLook.inline} />
+      )}
       <DatesFrom view={view} onView={onView} names={fields.names} own={own} />
       <Switch
         label={t("timeline.plan-by-effort")}
