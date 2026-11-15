@@ -7,7 +7,8 @@
 
 use super::{Check, Context, Finding};
 use crate::bench_budgets::{
-    AGENT_SCENARIOS_PATH, BUDGETS_PATH, Budgets, SCENARIOS_PATH, problems, scenarios,
+    AGENT_SCENARIOS_PATH, BUDGETS_PATH, Budgets, SCENARIOS_PATH, TIMELINE_SCENARIOS_PATH, problems,
+    scenarios,
 };
 use crate::source::read_text;
 
@@ -23,9 +24,10 @@ impl Check for PerfBench {
         evaluate(
             &read_text(repo, BUDGETS_PATH)?,
             &format!(
-                "{}\n{}",
+                "{}\n{}\n{}",
                 read_text(repo, SCENARIOS_PATH)?,
-                read_text(repo, AGENT_SCENARIOS_PATH)?
+                read_text(repo, AGENT_SCENARIOS_PATH)?,
+                read_text(repo, TIMELINE_SCENARIOS_PATH)?
             ),
         )
     }

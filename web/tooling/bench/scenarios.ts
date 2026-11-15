@@ -8,6 +8,7 @@ import { NOTIFICATIONS_PAGE } from "../../app/e2e/support/perf-work.ts";
 import { timed } from "../../app/e2e/support/perf.ts";
 import { agentScenarios } from "./agent-scenarios.ts";
 import { type BudgetName } from "./budgets.generated.ts";
+import { timelineScenarios } from "./timeline-scenarios.ts";
 
 // The scenarios of the benchmarks (PERF-01, architecture §11, "Large dataset"): registered here and
 // nowhere else, so the packages that add a search or a list add their scenario to this list. Every
@@ -147,6 +148,7 @@ const COMPLEX = "statusGroup is not Done and priority is high";
 
 export const scenarios: readonly Scenario[] = [
   ...agentScenarios,
+  ...timelineScenarios,
   {
     name: "issue-page",
     budget: "page",

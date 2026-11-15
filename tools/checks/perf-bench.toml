@@ -16,6 +16,12 @@ p95_ms = 100
 [budgets.search]
 p95_ms = 300
 
+# The timeline of the biggest project, a page of rows with their bars, dependencies and warnings,
+# with and without *Plan by effort* (PLAN-01, PERF-01, M8). Measured by hand on a quiet computer at
+# the exit of the milestone.
+[budgets.timeline]
+p95_ms = 300
+
 # The preview of a change to the most issues one change names, 5,000 (M3-F133): it judges every issue
 # of the selection, so it takes seconds and has a budget of its own. Set from the measurement on the
 # large dataset with a margin (the numbers are in architecture section 11); it is held down by the

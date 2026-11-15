@@ -18,6 +18,8 @@ pub(crate) const BUDGETS_PATH: &str = "tools/checks/perf-bench.toml";
 pub(crate) const SCENARIOS_PATH: &str = "web/tooling/bench/scenarios.ts";
 /// Where the scenarios of the agents are registered; `scenarios.ts` spreads them into its list.
 pub(crate) const AGENT_SCENARIOS_PATH: &str = "web/tooling/bench/agent-scenarios.ts";
+/// Where the scenarios of the timeline are registered; `scenarios.ts` spreads them into its list.
+pub(crate) const TIMELINE_SCENARIOS_PATH: &str = "web/tooling/bench/timeline-scenarios.ts";
 /// The TypeScript the budgets are written to.
 pub(crate) const OUTPUT: &str = "web/tooling/bench/budgets.generated.ts";
 

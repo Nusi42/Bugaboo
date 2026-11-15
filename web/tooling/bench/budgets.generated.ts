@@ -5,6 +5,7 @@ export const budgets = {
   page: { p95Ms: 100 },
   preview: { p95Ms: 8000 },
   search: { p95Ms: 300 },
+  timeline: { p95Ms: 300 },
 } as const;
 
 /** The name of a budget. */
