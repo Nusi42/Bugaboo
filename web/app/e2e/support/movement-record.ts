@@ -32,6 +32,11 @@ export interface Frames {
   readonly grey: readonly boolean[];
   /** The height of the window: what is in view (UX §6.4 judges what is in view). */
   readonly view: number;
+  /**
+   * For each landmark: whether the browser holds it in place (it or a box around it is sticky or fixed), so that it
+   * stands still whatever scrolls under it. Unknown is not held.
+   */
+  readonly pinned?: readonly boolean[];
 }
 
 /** The part of grey shapes (`Skeleton`). */
@@ -171,6 +176,28 @@ export function recordFrames(
         requestAnimationFrame(note);
       }),
     [selectors, GREY_SHAPE, DONE_MARK] as const,
+  );
+}
+
+/**
+ * For each landmark: whether the browser holds it in place, as it or a box around it is sticky or fixed (`Frames`).
+ */
+export function recordPinned(
+  page: Page,
+  selectors: readonly string[],
+): Promise<readonly boolean[]> {
+  return page.evaluate(
+    (chosen) =>
+      chosen.map((selector) => {
+        for (let at = document.querySelector(selector); at !== null; at = at.parentElement) {
+          const { position } = getComputedStyle(at);
+          if (position === "sticky" || position === "fixed") {
+            return true;
+          }
+        }
+        return false;
+      }),
+    selectors,
   );
 }
 

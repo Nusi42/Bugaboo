@@ -1,4 +1,11 @@
-import { differs, far, LEAST_MOVE_PX, type Movement, type Moved } from "./movement-frames.ts";
+import {
+  differs,
+  far,
+  holds,
+  LEAST_MOVE_PX,
+  type Movement,
+  type Moved,
+} from "./movement-frames.ts";
 import type { Box } from "./movement-record.ts";
 
 // What of a movement the person sees in the window (UX §6.4): the browser keeps what is in view still by its scroll
@@ -54,16 +61,6 @@ function keptByScroll(movement: Movement): { readonly by: number; readonly box: 
   return { by: scrollDownOf(only.to) - scrollDownOf(only.from), box: only.box };
 }
 
-/** Whether one box holds another, to the half pixel. */
-function holdsBox(outer: Box, inner: Box): boolean {
-  return (
-    inner.x >= outer.x - LEAST_MOVE_PX &&
-    inner.y >= outer.y - LEAST_MOVE_PX &&
-    inner.x + inner.width <= outer.x + outer.width + LEAST_MOVE_PX &&
-    inner.y + inner.height <= outer.y + outer.height + LEAST_MOVE_PX
-  );
-}
-
 /** How far down a part is scrolled, as the recording writes its scroll (`40/0`). */
 function scrollDownOf(at: string): number {
   return Number(at.split("/")[0]);
@@ -88,7 +85,7 @@ function inTheBox(part: Moved, movement: Movement): Moved {
     (box) =>
       view !== undefined &&
       scroller !== undefined &&
-      holdsBox(scroller, box) &&
+      holds(scroller, box) &&
       box.y < view &&
       box.y + box.height > 0 &&
       !spans(box),

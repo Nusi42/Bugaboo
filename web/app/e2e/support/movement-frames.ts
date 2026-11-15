@@ -48,7 +48,10 @@ export interface Movement {
   readonly frames: number;
   /** The height of the window, when it was recorded: what stands outside it is not in view. */
   readonly view?: number;
-  /** Where each landmark stood that never moved: what shows that a scroll kept the view still. */
+  /**
+   * Where each landmark stood that never moved, and that the browser does not hold in place (sticky or fixed): what
+   * shows that a scroll kept the view still.
+   */
   readonly still?: readonly Box[];
 }
 
@@ -62,6 +65,16 @@ export function far(one: number, other: number): boolean {
 /** Whether a box stands somewhere else, or has another width: its height growing is not that. */
 function standsElsewhere(first: Box, later: Box): boolean {
   return far(first.x, later.x) || far(first.y, later.y) || far(first.width, later.width);
+}
+
+/** Whether one box holds another, to the half pixel. */
+export function holds(outer: Box, inner: Box): boolean {
+  return (
+    inner.x >= outer.x - LEAST_MOVE_PX &&
+    inner.y >= outer.y - LEAST_MOVE_PX &&
+    inner.x + inner.width <= outer.x + outer.width + LEAST_MOVE_PX &&
+    inner.y + inner.height <= outer.y + outer.height + LEAST_MOVE_PX
+  );
 }
 
 /** Whether a box stands somewhere else or has another size. */
@@ -108,6 +121,7 @@ export function judged(names: readonly (readonly [string, boolean])[], frames: F
     if (
       start !== null &&
       start !== undefined &&
+      frames.pinned?.[index] !== true &&
       column.every((box) => box !== null && !differs(start, box))
     ) {
       still.push(start);

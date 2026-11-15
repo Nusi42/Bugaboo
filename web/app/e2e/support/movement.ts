@@ -12,6 +12,7 @@ import {
 import {
   DONE_MARK,
   recordFrames,
+  recordPinned,
   recordShifts,
   stampLandmarks,
   SHIFTS_DONE,
@@ -114,10 +115,14 @@ export async function movementWhile(
   );
   const frames = await recording;
   const shifts = await shifting;
+  const pinned = await recordPinned(
+    page,
+    landmarks.map((landmark) => landmark.selector),
+  );
   return {
     ...judged(
       landmarks.map((landmark) => [landmark.name, landmark.again !== undefined] as const),
-      frames,
+      { ...frames, pinned },
     ),
     shifts,
     greyShapes: frames.grey.includes(true),

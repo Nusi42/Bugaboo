@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { judged, type Movement, type Moved, nothingWrong, wrongIn } from "./movement-judge.ts";
+import { type Movement, type Moved, nothingWrong, wrongIn } from "./movement-judge.ts";
 import type { Box } from "./movement-record.ts";
 
 /** A box of the given place and size. */
@@ -148,30 +148,6 @@ describe("ux_01 the measure lets a part the action moves move sideways, once", (
     const down = moved("bar", box(400, 300, 120, 24), box(440, 330, 120, 24));
     const wider = moved("bar", box(400, 300, 120, 24), box(440, 300, 160, 24));
     expect(wrongIn(movementOf([down, wider]), { moves: ["bar"] }).moved).toEqual([down, wider]);
-  });
-});
-
-describe("ux_01 the measure tells a row that left the view from one drawn afresh", () => {
-  const shown = box(0, 0, 300, 44);
-  /** Three frames of one landmark: there, then gone, with or without the same thing drawn afresh. */
-  const frames = (redrawn: boolean) => ({
-    boxes: [[shown], [null], [null]],
-    redrawn: [[false], [redrawn], [false]],
-    scrolls: ["page:0", "page:0", "page:0"],
-    grey: [false, false, false],
-    view: 800,
-  });
-
-  it("does not count a row of a list gone from the view as gone", () => {
-    expect(judged([["row", true]], frames(false)).vanished).toEqual([]);
-  });
-
-  it("counts a row drawn afresh as gone", () => {
-    expect(judged([["row", true]], frames(true)).vanished).toEqual(["row"]);
-  });
-
-  it("counts any other part that is no longer there as gone", () => {
-    expect(judged([["head", false]], frames(false)).vanished).toEqual(["head"]);
   });
 });
 

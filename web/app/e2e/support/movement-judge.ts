@@ -1,4 +1,11 @@
-import { far, LEAST_MOVE_PX, type Movement, type Moved, type Scrolled } from "./movement-frames.ts";
+import {
+  far,
+  holds,
+  LEAST_MOVE_PX,
+  type Movement,
+  type Moved,
+  type Scrolled,
+} from "./movement-frames.ts";
 import type { Box, Shift } from "./movement-record.ts";
 import { inTheBoxes, inViewOf } from "./movement-view.ts";
 
@@ -38,16 +45,6 @@ interface Growth {
 /** Whether two boxes share some of their width (stand in one column). */
 function sideBySide(one: Box, other: Box): boolean {
   return one.x < other.x + other.width && other.x < one.x + one.width;
-}
-
-/** Whether one box holds the other. */
-function holds(outer: Box, inner: Box): boolean {
-  return (
-    inner.x >= outer.x - LEAST_MOVE_PX &&
-    inner.y >= outer.y - LEAST_MOVE_PX &&
-    inner.x + inner.width <= outer.x + outer.width + LEAST_MOVE_PX &&
-    inner.y + inner.height <= outer.y + outer.height + LEAST_MOVE_PX
-  );
 }
 
 /**
