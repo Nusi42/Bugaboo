@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Card, cardLook, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, Card, cardLook, partOf, part, useHoldWhileReading } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
@@ -20,6 +20,8 @@ export type LabelsPageProps = OpenProps;
 export function LabelsPage(props: LabelsPageProps) {
   usePageTitle(t("nav.labels"));
   const labels = useLabels();
+  // The lists of the page wait for every page of the groups and the labels, so a later page does not push them.
+  useHoldWhileReading(labels.reading);
   return (
     <div {...partOf(part.stack)}>
       <Card heading={t("nav.labels")} level={1} look={cardLook.pageHead} intro={t("labels.intro")}>

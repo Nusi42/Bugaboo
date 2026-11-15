@@ -65,6 +65,8 @@ export function useIssues(
 ): {
   readonly issues: IssuesProps;
   readonly ready: boolean;
+  /** Why the entries or the booked week could not be read, if one could not. */
+  readonly failure: unknown;
 } {
   const entries = useWeekEntries(first);
   const starters = useStarters();
@@ -88,6 +90,7 @@ export function useIssues(
   );
   return {
     ready: entries.complete && booked.data !== undefined,
+    failure: entries.error ?? booked.error ?? null,
     issues: {
       rows,
       activityName: nameOr(activity, starters.activity, t("time.sheet.activity")),

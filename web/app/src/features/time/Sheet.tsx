@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 import { Alert, alertTone, DelayedSkeleton, useHoldWhileReading } from "@bugaboo/ui";
 import { useState } from "react";
 
+import { messageOf } from "../../shared/errors.ts";
 import { useMySettingsReading } from "../../shared/my-settings.ts";
 import { WithWording } from "../../shared/with-wording.tsx";
 import { EntryDetails } from "./EntryDetails.tsx";
@@ -14,8 +15,9 @@ export type SheetProps = Omit<WeekProps, "issues" | "wording">;
 /** One's own week: the work-day rows, the time on issues and the footer. */
 export function OwnSheet(props: Omit<SheetProps, "person" | "changing">) {
   const [details, setDetails] = useState<string | undefined>();
-  const { issues, ready } = useIssues(props.first, setDetails);
-  useHoldWhileReading(!ready);
+  const { issues, ready, failure } = useIssues(props.first, setDetails);
+  // A read that could not be made ends the wait: the week shows and says why (UX §6.4).
+  useHoldWhileReading(!ready && failure === null);
   const row = issues.rows.find((each) => each.issue === details);
   // The times are written in the person's region: the week waits for it, with grey shapes.
   if (useMySettingsReading()) {
@@ -40,7 +42,10 @@ export function OwnSheet(props: Omit<SheetProps, "person" | "changing">) {
           </>
         )}
       </WithWording>
-      {ready ? null : <Alert tone={alertTone.info}>{t("common.loading")}</Alert>}
+      {failure === null ? null : <Alert tone={alertTone.danger}>{messageOf(failure)}</Alert>}
+      {ready || failure !== null ? null : (
+        <Alert tone={alertTone.info}>{t("common.loading")}</Alert>
+      )}
     </>
   );
 }

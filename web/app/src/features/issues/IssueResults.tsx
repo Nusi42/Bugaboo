@@ -23,6 +23,10 @@ const TimelineResults = lazy(async () => ({
 export function IssueResults(props: IssueResultsProps) {
   const language = useSearchLanguage();
   const fields = useSearchFields(props.within);
+  // The search bar says why the fields could not be read; the list has nothing to show then, and does not wait.
+  if (fields.isError) {
+    return null;
+  }
   if (language === undefined || fields.data === undefined) {
     return <DelayedSkeleton lines={3} />;
   }
