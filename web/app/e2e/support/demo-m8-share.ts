@@ -2,6 +2,7 @@ import { expect, type Page } from "@playwright/test";
 
 import { unbroken } from "../../src/shared/format.ts";
 import { percentText } from "../../src/shared/number.ts";
+import { hoursText } from "../../src/shared/own-value-text.ts";
 import { signInThroughApi, type Instance } from "./accounts.ts";
 import {
   adaOfTheSample,
@@ -42,8 +43,9 @@ export async function aShareOfHalfDoublesLeasBars(page: Page, server: Instance):
   const after = await barDaysOf(session, login);
   expect(Math.abs(after.workDays - 2 * before.days.workDays)).toBeLessThanOrEqual(WITHIN_A_DAY);
   await grewOnScreen(page, session, login, before);
-  // Her card says the share beside her bars.
+  // Her card says her hours and the share beside her bars.
   await showCardOf(page, login);
+  await expect(page.getByText(unbroken(hoursText(plan.usualMinutes))).first()).toBeVisible();
   await expect(page.getByText(unbroken(percentText(HALF_A_SHARE))).first()).toBeVisible();
   await good(page, "03-lea-works-half-of-her-time");
   await session.dispose();
