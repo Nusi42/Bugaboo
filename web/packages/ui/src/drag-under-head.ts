@@ -1,6 +1,7 @@
 import { useEffect, type RefObject } from "react";
 
 import { doNothing } from "./do-nothing.ts";
+import { scrollStepOf, stillHeld } from "./drag-speed.ts";
 import { scrollBoxOf } from "./scroll-box.ts";
 
 /** A point of the pointer in the window. */
@@ -30,50 +31,98 @@ interface DragOver {
   readonly target: unknown;
 }
 
+/** A drag that left a part: where it went, nothing when it left the window. */
+interface DragLeave {
+  readonly relatedTarget: unknown;
+}
+
+/** How deep the point is in the head: 0 at its lower edge, 1 at its top. */
+function depthIn(head: HTMLElement, point: Point): number {
+  const place = head.getBoundingClientRect();
+  return place.height > 0 ? (place.bottom - point.y) / place.height : 0;
+}
+
 /**
- * Scrolls the box under the pointer while a drag is held over `head`, until it leaves the head or ends; gives back what
- * stops listening.
+ * Scrolls the box under the pointer while a drag is held over the head, until it leaves the head, leaves the window or
+ * ends, or the browser stops telling of it.
  */
-function scrollWhileHeldOver(head: HTMLElement, pane: HTMLElement): () => void {
-  let held: Point | null = null;
-  let frame = 0;
-  const scroll = (): void => {
-    if (held === null) {
-      frame = 0;
+class HeldOverHead {
+  private held: Point | null = null;
+  private toldAt = 0;
+  private frame = 0;
+  private last = 0;
+  /** The part of a pixel not scrolled yet: the box scrolls by whole pixels. */
+  private owed = 0;
+
+  private readonly head: HTMLElement;
+  private readonly pane: HTMLElement;
+
+  constructor(head: HTMLElement, pane: HTMLElement) {
+    this.head = head;
+    this.pane = pane;
+  }
+
+  /** A drag is over the head, at this point. */
+  readonly over = (event: DragOver): void => {
+    this.held = { x: event.clientX, y: event.clientY };
+    this.toldAt = performance.now();
+    if (this.frame === 0) {
+      document.addEventListener("dragover", this.elsewhere, true);
+      document.addEventListener("dragleave", this.left, true);
+      document.addEventListener("drop", this.stop, true);
+      document.addEventListener("dragend", this.stop, true);
+      this.frame = requestAnimationFrame(this.scroll);
+    }
+  };
+
+  readonly stop = (): void => {
+    this.held = null;
+    cancelAnimationFrame(this.frame);
+    [this.frame, this.last, this.owed] = [0, 0, 0];
+    document.removeEventListener("dragover", this.elsewhere, true);
+    document.removeEventListener("dragleave", this.left, true);
+    document.removeEventListener("drop", this.stop, true);
+    document.removeEventListener("dragend", this.stop, true);
+  };
+
+  private readonly scroll = (now: number): void => {
+    const { held } = this;
+    if (held === null || !stillHeld(this.toldAt, now)) {
+      this.stop();
       return;
     }
-    const box = boxUnder(pane, head, held);
-    if (box !== null) {
-      box.scrollTop -= Math.max(1, head.getBoundingClientRect().bottom - held.y);
+    this.owed += scrollStepOf(depthIn(this.head, held), this.last === 0 ? 0 : now - this.last);
+    this.last = now;
+    const whole = Math.floor(this.owed);
+    this.owed -= whole;
+    const box = boxUnder(this.pane, this.head, held);
+    if (box !== null && whole > 0) {
+      box.scrollTop -= whole;
     }
-    frame = requestAnimationFrame(scroll);
+    this.frame = requestAnimationFrame(this.scroll);
   };
-  const stop = (): void => {
-    held = null;
-    cancelAnimationFrame(frame);
-    frame = 0;
-    document.removeEventListener("dragover", elsewhere, true);
-    document.removeEventListener("drop", stop, true);
-    document.removeEventListener("dragend", stop, true);
-  };
-  function elsewhere(event: DragOver): void {
-    if (!(event.target instanceof Node) || !head.contains(event.target)) {
-      stop();
-    }
-  }
-  const onHead = (event: DragOver): void => {
-    held = { x: event.clientX, y: event.clientY };
-    if (frame === 0) {
-      document.addEventListener("dragover", elsewhere, true);
-      document.addEventListener("drop", stop, true);
-      document.addEventListener("dragend", stop, true);
-      frame = requestAnimationFrame(scroll);
+
+  private readonly elsewhere = (event: DragOver): void => {
+    this.toldAt = performance.now();
+    if (!(event.target instanceof Node) || !this.head.contains(event.target)) {
+      this.stop();
     }
   };
-  head.addEventListener("dragover", onHead);
+
+  private readonly left = (event: DragLeave): void => {
+    if (event.relatedTarget === null) {
+      this.stop();
+    }
+  };
+}
+
+/** Scrolls the box under the pointer while a drag is held over `head`; gives back what stops listening. */
+function scrollWhileHeldOver(head: HTMLElement, pane: HTMLElement): () => void {
+  const held = new HeldOverHead(head, pane);
+  head.addEventListener("dragover", held.over);
   return () => {
-    stop();
-    head.removeEventListener("dragover", onHead);
+    held.stop();
+    head.removeEventListener("dragover", held.over);
   };
 }
 
@@ -81,7 +130,8 @@ function scrollWhileHeldOver(head: HTMLElement, pane: HTMLElement): () => void {
  * While a dragged thing is held over the head of a pane that is laid over its boxes, the box under the pointer scrolls
  * up, as a box scrolls when a drag comes near its top edge: the head stands where that edge is, and the browser does
  * not scroll a box for a pointer over another part (UX §6.5). The deeper the pointer is in the head, the faster the box
- * scrolls; the drag leaving the head, a drop or the end of the drag stops it.
+ * scrolls (`drag-speed.ts`); the drag leaving the head or the window, a drop, the end of the drag or the browser no
+ * longer telling of it stops it.
  */
 export function useScrollUnderHead(
   head: Readonly<RefObject<HTMLElement | null>>,

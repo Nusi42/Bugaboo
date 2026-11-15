@@ -1,6 +1,8 @@
 import type { Locator, Page } from "@playwright/test";
 
+import { part } from "../../../packages/ui/src/tokens.ts";
 import { expect } from "./fixtures.ts";
+import { gapUnder } from "./geometry.ts";
 import { layoutOf } from "./layout.ts";
 import { inOrder } from "./sequence.ts";
 
@@ -14,7 +16,12 @@ export const LOW_WINDOW = { width: 1280, height: 520 } as const;
 const STEP = 30;
 
 /** The head of a pane. */
-export const PANE_HEAD = "[data-part='pane-head']";
+export const PANE_HEAD = `[data-part='${part.paneHead}']`;
+
+/** How far the top of what the locator shows is below the foot of the head of the pane: less than nothing under it. */
+export function gapUnderHead(shown: Locator): Promise<number> {
+  return gapUnder(shown, part.paneHead);
+}
 
 /** The boxes of an issue open on a computer, side by side under its head. */
 export const SPLIT_ISSUE = "[data-part='issue-body'][data-variant~='split']";
