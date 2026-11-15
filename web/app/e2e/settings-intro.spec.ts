@@ -9,7 +9,8 @@ import { sampleAdministrator } from "./support/sample.ts";
 import { inOrder } from "./support/sequence.ts";
 
 // M5 exit, the final pass (L3): every settings page, of the organization, of a project and My settings, opens with
-// the same introduction: the small muted sentence under the heading, as wide as the column. Before, some pages had
+// the same introduction: the small muted sentence under the heading, as wide as the column (its card, or the head of
+// the page above the cards, UX §6.5). Before, some pages had
 // it muted and small and others in the size of reading text.
 
 test.use({ sample: true });
@@ -62,7 +63,18 @@ interface IntroLook {
 function lookOf(intro: Locator): Promise<IntroLook> {
   return intro.evaluate((node) => {
     const style = getComputedStyle(node);
-    const room = node.parentElement?.getBoundingClientRect().width ?? 0;
+    // The column it stands in: its card, or the head of the page above the cards (a slot there is no box of its own).
+    let column = node.parentElement;
+    while (column !== null && getComputedStyle(column).display === "contents") {
+      column = column.parentElement;
+    }
+    const inner = column === null ? null : getComputedStyle(column);
+    const room =
+      column === null || inner === null
+        ? 0
+        : column.clientWidth -
+          Number(inner.paddingLeft.replace("px", "")) -
+          Number(inner.paddingRight.replace("px", ""));
     return {
       color: style.color,
       size: style.fontSize,

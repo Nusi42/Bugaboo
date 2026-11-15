@@ -1,6 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
 
 import { expect } from "./fixtures.ts";
+import { layoutOf } from "./layout.ts";
 import { inOrder } from "./sequence.ts";
 
 // The head of a pane that folds as its boxes scroll (UX §6.5): how the browser tests scroll a box as a person does and
@@ -17,6 +18,24 @@ export const PANE_HEAD = "[data-part='pane-head']";
 
 /** The boxes of an issue open on a computer, side by side under its head. */
 export const SPLIT_ISSUE = "[data-part='issue-body'][data-variant~='split']";
+
+/** The box of a topic of the settings, under its head. */
+export const SETTINGS_TOPIC = "[data-part~='settings-topic']";
+
+/** The main column of the app. */
+export const MAIN_COLUMN = "[data-part~='app-layout.main']";
+
+/**
+ * The box that scrolls a page of the settings: on a computer the topic under the head that folds over it, elsewhere the
+ * main column (UX §6.5).
+ */
+export function settingsBoxOf(page: Page): string {
+  return layoutOf(page) === "computer" ? SETTINGS_TOPIC : MAIN_COLUMN;
+}
+
+/** The lines of the head: its own, and those that deeper parts put into its slots, which are no boxes of their own. */
+const HEAD_LINES =
+  "[data-part='pane-head.content'] > :not([data-part='pane-head.slot']), [data-part='pane-head.slot'] > *";
 
 /** The head of the pane on the screen. */
 function headOf(page: Page): Locator {
@@ -57,13 +76,10 @@ function scrollBy(box: Locator, by: number): Promise<{ scrolled: number; moved: 
  * how far the head itself is scrolled (never: it is cut, not scrolled).
  */
 function foldedOf(page: Page): Promise<{ first: boolean; second: boolean; scrolled: number }> {
-  return headOf(page).evaluate((node) => {
+  return headOf(page).evaluate((node, selector) => {
     const box = node.getBoundingClientRect();
-    // The lines of the head, and those that deeper parts put into its slots, which are no boxes of their own.
     const lines: DOMRect[] = [];
-    for (const line of node.querySelectorAll(
-      "[data-part='pane-head.content'] > :not([data-part='pane-head.slot']), [data-part='pane-head.slot'] > *",
-    )) {
+    for (const line of node.querySelectorAll(selector)) {
       const place = line.getBoundingClientRect();
       if (place.height > 0) {
         lines.push(place);
@@ -75,7 +91,7 @@ function foldedOf(page: Page): Promise<{ first: boolean; second: boolean; scroll
       second: second !== undefined && second.top < box.bottom,
       scrolled: node.scrollTop,
     };
-  });
+  }, HEAD_LINES);
 }
 
 /** The head folds as `box` scrolls, the box moves only by the scroll, and the head opens again at the top. */
@@ -129,11 +145,15 @@ export async function wheelOver(page: Page, box: Locator): Promise<void> {
   await inOrder(turns(-STEP, TURNS * STEP));
 }
 
-/** Where the focus stands after a press of a key: whether it is in the box, and how its top stands to what covers it. */
+/**
+ * Where the focus stands after a press of a key: whether it is in the box, how its top stands to what covers it, and
+ * whether what the browser draws at its middle is the cover or the head of the pane rather than the focus.
+ */
 export interface FocusStep {
   readonly inside: boolean;
   readonly top: number;
   readonly covered: number;
+  readonly underCover: boolean;
 }
 
 /**
@@ -153,7 +173,7 @@ export async function keyThrough(
       await page.keyboard.press(key);
       steps.push(
         await page.evaluate(
-          async ([inBox, over]) => {
+          async ([inBox, over, head]) => {
             // What the press scrolled is drawn in the next frames.
             await new Promise<void>((done) => {
               requestAnimationFrame(() => {
@@ -163,13 +183,25 @@ export async function keyThrough(
               });
             });
             const active = document.activeElement;
+            const place = active?.getBoundingClientRect();
+            const hit =
+              place === undefined
+                ? null
+                : document.elementFromPoint(
+                    place.left + place.width / 2,
+                    place.top + place.height / 2,
+                  );
             return {
               inside: active?.closest(inBox) !== null && active !== null,
-              top: active?.getBoundingClientRect().top ?? 0,
+              top: place?.top ?? 0,
               covered: document.querySelector(over)?.getBoundingClientRect().bottom ?? 0,
+              underCover:
+                hit !== null &&
+                active?.contains(hit) !== true &&
+                hit.closest(`${over}, ${head}`) !== null,
             };
           },
-          [box, cover] as const,
+          [box, cover, PANE_HEAD] as const,
         ),
       );
     }),
@@ -177,9 +209,9 @@ export async function keyThrough(
   return steps;
 }
 
-/** The steps of `keyThrough` inside the box where the focus stood under what covers it. */
+/** The steps of `keyThrough` inside the box where the focus stood under what covers it, or under anything else. */
 export function coveredSteps(steps: readonly FocusStep[]): readonly FocusStep[] {
-  return steps.filter((step) => step.inside && step.top < step.covered - 0.5);
+  return steps.filter((step) => step.inside && (step.top < step.covered - 0.5 || step.underCover));
 }
 
 /**
@@ -217,10 +249,33 @@ export function firstRowGap(page: Page): Promise<number> {
   });
 }
 
-/** The background of the head of the pane and of the card that holds it. */
-export function coverColors(page: Page): Promise<{ head: string; card: string }> {
-  return headOf(page).evaluate((head) => ({
-    head: getComputedStyle(head).backgroundColor,
-    card: getComputedStyle(head.closest("[data-part~='card']") ?? head).backgroundColor,
-  }));
+/** The background of the head of the pane and of what holds the pane: the nearest box around it with a background. */
+export function coverColors(page: Page): Promise<{ head: string; holder: string }> {
+  return headOf(page).evaluate((head) => {
+    const clear = "rgba(0, 0, 0, 0)";
+    let holder = head.parentElement?.parentElement ?? null;
+    while (holder !== null && getComputedStyle(holder).backgroundColor === clear) {
+      holder = holder.parentElement;
+    }
+    return {
+      head: getComputedStyle(head).backgroundColor,
+      holder: holder === null ? clear : getComputedStyle(holder).backgroundColor,
+    };
+  });
+}
+
+/** How far the first part of `box` stands below the last line of the head of the pane. */
+export function headGap(page: Page, box: string): Promise<number> {
+  return headOf(page).evaluate(
+    (head, [selector, lines]) => {
+      let end = -Infinity;
+      for (const line of head.querySelectorAll(lines)) {
+        const place = line.getBoundingClientRect();
+        end = place.height > 0 ? Math.max(end, place.bottom) : end;
+      }
+      const first = document.querySelector(selector)?.firstElementChild;
+      return (first?.getBoundingClientRect().top ?? 0) - end;
+    },
+    [box, HEAD_LINES] as const,
+  );
 }

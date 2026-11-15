@@ -168,6 +168,7 @@ export { InPaneHead, PaneWithHead, type PaneWithHeadProps } from "./PaneWithHead
 export {
   paneHeadSlot,
   paneLook,
+  useInPane,
   usePaneHeadAbove,
   type PaneHeadSlot,
   type PaneLook,

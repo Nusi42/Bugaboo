@@ -1,10 +1,11 @@
 import { createContext, useContext, useSyncExternalStore } from "react";
 
 /**
- * The places in the head of a pane that parts deeper in the pane put their lines into, in the order they stand there,
- * after what the head holds itself: the search, then how the results are shown (the options and the counts of a list).
+ * The places in the head of a pane that parts deeper in the pane put their lines into, in the order they stand there:
+ * the heading and the introduction of the page (a topic of the settings) before what the head holds itself, then the
+ * search, then how the results are shown (the options and the counts of a list, the tools of the timeline).
  */
-export const paneHeadSlot = { search: "search", view: "view" } as const;
+export const paneHeadSlot = { title: "title", search: "search", view: "view" } as const;
 export type PaneHeadSlot = (typeof paneHeadSlot)[keyof typeof paneHeadSlot];
 
 /** Whether the head of a pane folds over its boxes as they scroll (a computer), or stands in the page above them. */
@@ -20,6 +21,11 @@ export interface PaneHead {
 
 /** Outside a pane: no head to put anything into, and no room to keep above a box. */
 export const PaneHeadContext = createContext<PaneHead>({ slots: undefined, above: 0 });
+
+/** Whether a part stands in a pane, so what belongs above its boxes goes into the head of the pane. */
+export function useInPane(): boolean {
+  return useContext(PaneHeadContext).slots !== undefined;
+}
 
 /**
  * How far down the pane the whole head ends, as the browser draws it: the room a box of the pane keeps above what it

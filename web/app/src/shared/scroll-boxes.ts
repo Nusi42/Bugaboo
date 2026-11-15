@@ -9,6 +9,8 @@ export const scrollBox = {
   issueSections: "issue-sections",
   /** The Details of an open issue, where they scroll beside its sections. */
   issueDetails: "issue-details",
+  /** The box of a page of settings on a computer, under the heading and introduction that fold over it. */
+  topic: "topic",
   /** The slim list beside an issue in the focus view: it keeps its place when another issue opens. */
   focusList: "focus-list",
 } as const;
@@ -21,12 +23,13 @@ export function keptScroll(name: ScrollBox) {
 }
 
 /**
- * The boxes a new page starts at the top: the main column, and the sections and the Details of an
- * issue, so the next issue (j, k, a related issue) opens at its start. The slim list of the focus
+ * The boxes a new page starts at the top: the main column, the box of a page of settings, and the sections and the
+ * Details of an issue, so the next issue (j, k, a related issue) opens at its start. The slim list of the focus
  * view keeps its place, so the row of the issue stays where it was.
  */
 export const boxesToTop: readonly string[] = [
   scrollBox.content,
+  scrollBox.topic,
   scrollBox.issueSections,
   scrollBox.issueDetails,
 ].map((name) => `[data-scroll-restoration-id="${name}"]`);

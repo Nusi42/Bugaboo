@@ -1,6 +1,8 @@
 import { useId, type ReactNode } from "react";
 import { Link } from "./Link.tsx";
 import { useLayout } from "./layout.ts";
+import { paneHeadSlot, useInPane } from "./pane-head.ts";
+import { InPaneHead } from "./PaneWithHead.tsx";
 import { partOf } from "./parts.ts";
 import type { CardLook } from "./props.ts";
 import { useTitleInBar } from "./title-bar.ts";
@@ -34,50 +36,85 @@ function BackLink({ href, label }: { readonly href: string; readonly label: stri
   );
 }
 
+/** Whether a card has nothing of its own to hold. */
+function isEmpty(children: ReactNode): boolean {
+  return children === null || children === undefined || children === false;
+}
+
+interface CardTopProps {
+  readonly id: string;
+  readonly heading: string;
+  readonly level: 1 | 2;
+  /** The heading is for screen readers only. */
+  readonly hidden: boolean;
+  readonly actions: ReactNode;
+}
+
+/** The heading of a card, with what can be done with the whole card at the end of its row. */
+function CardTop({ id, heading, level, hidden, actions }: CardTopProps) {
+  const Heading = level === 1 ? "h1" : "h2";
+  // The heading that is for screen readers only takes no room: there is no slot for it above the first line.
+  if (hidden && actions === undefined) {
+    return (
+      <Heading id={id} {...partOf(part.visuallyHidden)} tabIndex={-1}>
+        {heading}
+      </Heading>
+    );
+  }
+  return (
+    <div {...partOf(part.cardHeader)}>
+      <Heading id={id} {...partOf(hidden ? part.visuallyHidden : part.cardHeading)} tabIndex={-1}>
+        {heading}
+      </Heading>
+      {actions === undefined ? null : <div {...partOf(part.cardActions)}>{actions}</div>}
+    </div>
+  );
+}
+
 /** A region of a page with a heading: a form, a list, a group of settings. */
 export function Card({ heading, level = 2, look, actions, intro, back, children }: CardProps) {
   const headingId = useId();
   const phone = useLayout() === "phone";
   const titleInBar = useTitleInBar();
+  const inPane = useInPane() && level === 1;
   // The one card that is the whole page (level 1) has its heading for screen readers only on a phone where a top bar
   // carries the title, and a screen has one title (UX §7.3); a page without a top bar (the sign-in) shows its heading.
   const hidden = level === 1 && phone && titleInBar;
-  const Heading = level === 1 ? "h1" : "h2";
   // A card with nothing to show is not drawn: where its heading is for screen readers only and nothing is in it, only the heading stays.
   const backLink = back === undefined || phone ? null : <BackLink {...back} />;
-  const nothing =
-    (children === null || children === undefined || children === false) &&
-    backLink === null &&
-    intro === undefined;
-  if (hidden && nothing && actions === undefined) {
+  const top = (
+    <CardTop id={headingId} heading={heading} level={level} hidden={hidden} actions={actions} />
+  );
+  const introLine = intro === undefined ? null : <p {...partOf(part.cardIntro)}>{intro}</p>;
+  const empty = isEmpty(children) && backLink === null;
+  if (hidden && empty && intro === undefined && actions === undefined) {
+    return top;
+  }
+  if (inPane) {
+    // The one card of a page in a pane: its heading and introduction are the head of the pane, on the page above the
+    // rest of it, which stands in the box with what follows (UX §6.5); a card that holds nothing more is not drawn.
     return (
-      <Heading id={headingId} {...partOf(part.visuallyHidden)} tabIndex={-1}>
-        {heading}
-      </Heading>
+      <>
+        <InPaneHead slot={paneHeadSlot.title}>
+          {top}
+          {introLine}
+        </InPaneHead>
+        {empty ? null : (
+          <section {...partOf(part.card, { variants: [look] })} aria-labelledby={headingId}>
+            <div {...partOf(part.stack)}>
+              {children}
+              {backLink}
+            </div>
+          </section>
+        )}
+      </>
     );
   }
-  // The heading that is for screen readers only takes no room: there is no slot for it above the first line.
-  const bare = hidden && actions === undefined;
   return (
     <section {...partOf(part.card, { variants: [look] })} aria-labelledby={headingId}>
-      {bare ? (
-        <Heading id={headingId} {...partOf(part.visuallyHidden)} tabIndex={-1}>
-          {heading}
-        </Heading>
-      ) : (
-        <div {...partOf(part.cardHeader)}>
-          <Heading
-            id={headingId}
-            {...partOf(hidden ? part.visuallyHidden : part.cardHeading)}
-            tabIndex={-1}
-          >
-            {heading}
-          </Heading>
-          {actions === undefined ? null : <div {...partOf(part.cardActions)}>{actions}</div>}
-        </div>
-      )}
+      {top}
       <div {...partOf(part.stack)}>
-        {intro === undefined ? null : <p {...partOf(part.cardIntro)}>{intro}</p>}
+        {introLine}
         {children}
         {backLink}
       </div>

@@ -23,7 +23,10 @@ import { partOf } from "./parts.ts";
 import { part } from "./tokens.ts";
 
 export interface PaneWithHeadProps {
-  /** What stands above the boxes of the pane: the title, the toolbar, notices. Its first line is what it folds to. */
+  /**
+   * What stands above the boxes of the pane: the title, the toolbar, notices (none where the parts of the page put all of
+   * it into the slots of the head). Its first line is what it folds to.
+   */
   readonly head: ReactNode;
   /** Whether the head folds over the boxes (a computer) or stands in the page above them. */
   readonly look: PaneLook;
@@ -84,15 +87,25 @@ function endOf(content: HTMLElement, pane: HTMLElement): number {
   return content.getBoundingClientRect().bottom - pane.getBoundingClientRect().top;
 }
 
-/** How high the first line of the head is: its first part that the browser draws. */
+/**
+ * How high the first line of the head is: its first part that the browser draws, also one that a deeper part put into a
+ * slot (a slot is no box of its own).
+ */
 function firstLineOf(content: HTMLElement): number {
   for (const child of content.children) {
-    if (child instanceof HTMLElement && child.offsetHeight > 0) {
-      return child.offsetHeight;
+    if (!(child instanceof HTMLElement)) {
+      continue;
+    }
+    const line = child.matches(SLOT) ? firstLineOf(child) : child.offsetHeight;
+    if (line > 0) {
+      return line;
     }
   }
   return 0;
 }
+
+/** A slot of the head, in which deeper parts put their lines. */
+const SLOT = `[data-part='${part.paneHeadSlot}']`;
 
 /** The two sizes of the head the theme folds it by, measured once for the theme and the code. */
 const headSizes: readonly RunTimeSize[] = [
@@ -109,6 +122,7 @@ const headSizes: readonly RunTimeSize[] = [
 export function PaneWithHead({ head, look, children }: PaneWithHeadProps) {
   const pane = useRef<HTMLDivElement>(null);
   const whole = useRef<HTMLDivElement>(null);
+  const [title, setTitle] = useState<HTMLElement | null>(null);
   const [search, setSearch] = useState<HTMLElement | null>(null);
   const [view, setView] = useState<HTMLElement | null>(null);
   const [end, setEnd] = useState(0);
@@ -121,13 +135,17 @@ export function PaneWithHead({ head, look, children }: PaneWithHeadProps) {
   }, []);
   useSizesOn(whole, holder, headSizes, onSizes);
   const above = look === paneLook.folds && !onPaper ? end : 0;
-  const known = useMemo(() => ({ slots: { search, view }, above }), [search, view, above]);
+  const known = useMemo(
+    () => ({ slots: { title, search, view }, above }),
+    [title, search, view, above],
+  );
   return (
     <PaneHeadContext value={known}>
       <div ref={pane} {...partOf(part.pane, { variants: [look], states: [held && "whole"] })}>
         <div ref={top} {...partOf(part.paneHead)}>
           <div {...partOf(part.paneHeadFold)}>
             <div ref={whole} {...partOf(part.paneHeadContent)}>
+              <div ref={setTitle} {...partOf(part.paneHeadSlot)} />
               {head}
               <div ref={setSearch} {...partOf(part.paneHeadSlot)} />
               <div ref={setView} {...partOf(part.paneHeadSlot)} />

@@ -17051,6 +17051,58 @@ part "app-layout pane[variant=folds] list-panel" "app-layout pane[variant=folds]
     }
 }
 
+// A topic of the settings on a computer is a pane (UX §6.5): the heading and the introduction of its page are the head,
+// and the rest of the topic is its box, which folds the head as it scrolls. The topic fits the main column, which does
+// not scroll, and the menu of the topics beside it is a box of its own.
+part "app-layout:not(app-layout[variant=phone]) app-layout.main:has(pane[variant=folds] > settings-topic)" {
+    overflow-y hidden
+    media "print" {
+        overflow visible
+    }
+}
+
+part "app-layout:not(app-layout[variant=phone]) app-layout.inner:has(pane[variant=folds] > settings-topic)" "settings-frame > shell.content:has(pane[variant=folds] > settings-topic)" {
+    use "fills-pane-scrolls"
+}
+
+part "settings-frame:has(pane[variant=folds] > settings-topic)" {
+    flex "1 1 0"
+    align-items stretch
+    min-height 0
+    media "print" {
+        use "free-on-paper"
+    }
+}
+
+part "settings-frame:has(pane[variant=folds] > settings-topic) settings-frame.menu" {
+    use "pane-scroll-box"
+    use "ring-room-flush-start"
+}
+
+// What a topic holds under its heading and introduction: its cards, one under the other.
+part "settings-topic" {
+    display flex
+    flex-direction column
+    gap "$space-4"
+    min-width 0
+}
+
+// The rest of the topic scrolls under its head, with the room for the ring under the whole head, and what the keyboard
+// brings into view stops under the folded head. The hidden parts (the box of a switch, a choice) are placed in it, so
+// they scroll with it and never scroll the main column.
+part "pane[variant=folds] > settings-topic" {
+    use "pane-scroll-box"
+    position relative
+    flex "1 1 0"
+    min-height 0
+    scroll-timeline "--pane-first block"
+    padding-block-start "var(--pane-head-whole)"
+    scroll-padding-block-start "var(--pane-head-folded)"
+    media "print" {
+        padding-block-start "$ring-room"
+    }
+}
+
 // ───────────── Timesheet (TIME-04, UX §4.9) ─────────────
 //
 // The week as one table: the names of the rows, one column for each day and the total. A cell is a box that is typed

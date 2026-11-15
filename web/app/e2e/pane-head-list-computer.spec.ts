@@ -99,7 +99,7 @@ for (const scheme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme: scheme });
     await openList(page, LAPTOP);
     const colors = await coverColors(page);
-    expect(colors.head).toBe(colors.card);
+    expect(colors.head).toBe(colors.holder);
   });
 }
 

@@ -4,21 +4,19 @@ import { t } from "@bugaboo/messages";
 
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
+import { settingsBoxOf } from "./support/pane-head.ts";
 import { inOrder } from "./support/sequence.ts";
 import { sampleAdministrator, samplePeople } from "./support/sample.ts";
 import { paths } from "../src/shared/paths.ts";
 
 // A virtualized list in a page scrolls with its pane (UX §6.5): the list of people has no scroll box
-// of its own, the main column scrolls it with the cards under it, and the list draws the rows that
-// come into the window.
+// of its own, the box of the page (the topic under its folding head on a computer, the main column
+// elsewhere) scrolls it with the cards under it, and the list draws the rows that come into the window.
 
 test.use({ sample: true });
 
-/** The main column that scrolls the list. */
-const mainColumn = "[data-part~='app-layout.main']";
-
-/** Whether the focused row of the list stands whole inside the main column. */
-function focusedRowInColumn(list: Locator): Promise<boolean> {
+/** Whether the focused row of the list stands whole inside the box that scrolls it. */
+function focusedRowInColumn(list: Locator, scroller: string): Promise<boolean> {
   return list.evaluate((box, column) => {
     const row = box.querySelector("[role='option']:focus, [role='option'][data-focused]");
     const view = box.closest(column);
@@ -27,11 +25,11 @@ function focusedRowInColumn(list: Locator): Promise<boolean> {
     }
     const [place, room] = [row.getBoundingClientRect(), view.getBoundingClientRect()];
     return place.top >= room.top - 1 && place.bottom <= room.bottom + 1;
-  }, mainColumn);
+  }, scroller);
 }
 
-/** Scrolls the main column so the middle of the list stands in its middle, and counts the rows in view. */
-function rowsInViewOfTheMiddle(list: Locator): Promise<number> {
+/** Scrolls the box of the page so the middle of the list stands in its middle, and counts the rows in view. */
+function rowsInViewOfTheMiddle(list: Locator, scroller: string): Promise<number> {
   return list.evaluate((box, selector) => {
     const column = box.closest(selector);
     if (column === null) {
@@ -45,7 +43,7 @@ function rowsInViewOfTheMiddle(list: Locator): Promise<number> {
       seen += place.bottom > view.top && place.top < view.bottom ? 1 : 0;
     }
     return seen;
-  }, mainColumn);
+  }, scroller);
 }
 
 test("ux_06 the list of people scrolls with its page and draws the rows that come into view", async ({
@@ -60,7 +58,7 @@ test("ux_06 the list of people scrolls with its page and draws the rows that com
   const first = await list.getByRole("option").first().textContent();
   // The main column brings the middle of the list into view (again while the rows drawn change the
   // height the list guessed), and the rows there are drawn.
-  await expect.poll(() => rowsInViewOfTheMiddle(list)).toBeGreaterThan(0);
+  await expect.poll(() => rowsInViewOfTheMiddle(list, settingsBoxOf(page))).toBeGreaterThan(0);
   await expect(
     list
       .getByRole("option")
@@ -72,7 +70,7 @@ test("ux_06 the list of people scrolls with its page and draws the rows that com
   expect(await list.getByRole("option").count()).toBeLessThan(people / 2);
 });
 
-test("ux_06 the arrow keys bring the focused person into view in the main column", async ({
+test("ux_06 the arrow keys bring the focused person into view in the box of the page", async ({
   page,
 }) => {
   await signIn(page, sampleAdministrator());
@@ -83,8 +81,10 @@ test("ux_06 the arrow keys bring the focused person into view in the main column
   // Further down than the rows drawn at the start: the column scrolls with the focus.
   const steps = (await list.getByRole("option").count()) + 5;
   await inOrder(Array.from({ length: steps }, () => () => page.keyboard.press("ArrowDown")));
-  await expect.poll(() => focusedRowInColumn(list)).toBe(true);
-  // The main column scrolled to it; the list itself did not.
+  await expect.poll(() => focusedRowInColumn(list, settingsBoxOf(page))).toBe(true);
+  // The box of the page scrolled to it; the list itself did not.
   expect(await list.evaluate((box) => box.scrollTop)).toBe(0);
-  expect(await page.locator(mainColumn).evaluate((column) => column.scrollTop)).toBeGreaterThan(0);
+  expect(
+    await page.locator(settingsBoxOf(page)).evaluate((column) => column.scrollTop),
+  ).toBeGreaterThan(0);
 });

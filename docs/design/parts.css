@@ -9903,6 +9903,137 @@ textarea,
   }
 }
 
+[data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+  [data-part="app-layout.main"]:has(
+    [data-part="pane"][data-variant~="folds"] > [data-part="settings-topic"]
+  ) {
+  overflow-y: hidden;
+}
+
+@media print {
+  [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+    [data-part="app-layout.main"]:has(
+      [data-part="pane"][data-variant~="folds"] > [data-part="settings-topic"]
+    ) {
+    overflow: visible;
+  }
+}
+
+[data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+  [data-part="app-layout.inner"]:has(
+    [data-part="pane"][data-variant~="folds"] > [data-part="settings-topic"]
+  ),
+[data-part="settings-frame"]
+  > [data-part="shell.content"]:has(
+    [data-part="pane"][data-variant~="folds"] > [data-part="settings-topic"]
+  ) {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+@media print {
+  [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+    [data-part="app-layout.inner"]:has(
+      [data-part="pane"][data-variant~="folds"] > [data-part="settings-topic"]
+    ),
+  [data-part="settings-frame"]
+    > [data-part="shell.content"]:has(
+      [data-part="pane"][data-variant~="folds"] > [data-part="settings-topic"]
+    ) {
+    flex: none;
+    height: auto;
+    min-height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+[data-part="settings-frame"]:has(
+  [data-part="pane"][data-variant~="folds"] > [data-part="settings-topic"]
+) {
+  flex: 1 1 0;
+  align-items: stretch;
+  min-height: 0;
+}
+
+@media print {
+  [data-part="settings-frame"]:has(
+    [data-part="pane"][data-variant~="folds"] > [data-part="settings-topic"]
+  ) {
+    flex: none;
+    height: auto;
+    min-height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+[data-part="settings-frame"]:has(
+    [data-part="pane"][data-variant~="folds"] > [data-part="settings-topic"]
+  )
+  [data-part="settings-frame.menu"] {
+  scroll-padding: var(--ring-room);
+  margin-block: 0;
+  padding: var(--ring-room);
+  margin-inline: calc(var(--ring-room) * -1);
+  overflow-y: auto;
+  margin-block-start: calc(var(--ring-room) * -1);
+}
+
+@media print {
+  [data-part="settings-frame"]:has(
+      [data-part="pane"][data-variant~="folds"] > [data-part="settings-topic"]
+    )
+    [data-part="settings-frame.menu"] {
+    flex: none;
+    height: auto;
+    min-height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+[data-part="settings-topic"] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+[data-part="pane"][data-variant~="folds"] > [data-part="settings-topic"] {
+  scroll-padding: var(--ring-room);
+  margin-block: 0;
+  padding: var(--ring-room);
+  margin-inline: calc(var(--ring-room) * -1);
+  overflow-y: auto;
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  scroll-timeline: --pane-first block;
+  padding-block-start: var(--pane-head-whole);
+  scroll-padding-block-start: var(--pane-head-folded);
+}
+
+@media print {
+  [data-part="pane"][data-variant~="folds"] > [data-part="settings-topic"] {
+    flex: none;
+    height: auto;
+    min-height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+@media print {
+  [data-part="pane"][data-variant~="folds"] > [data-part="settings-topic"] {
+    padding-block-start: var(--ring-room);
+  }
+}
+
 [data-part="sheet"] {
   display: flex;
   flex-direction: column;

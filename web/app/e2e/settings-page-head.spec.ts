@@ -9,7 +9,7 @@ import { inOrder } from "./support/sequence.ts";
 
 // M5 exit, the final pass (L3): a settings page whose sections are cards of their own (Sign-in and security, Labels and
 // tags) has its heading and introduction on the page, above the sections, not in a card of their own that holds
-// nothing else.
+// nothing else. On a computer and a tablet every page of the settings has them in the head of the page (UX §6.5).
 
 test.use({ sample: true });
 
@@ -25,11 +25,19 @@ test("ux_5 the heading and introduction of a page of sections stand on the page,
       await page.goto(address);
       const intro = partIn(page, "card.intro").first();
       await expect(intro, address).toBeVisible();
-      const head = partIn(page, "card")
-        .filter({ has: partIn(page, "card.intro") })
-        .first();
-      await expect(head, address).toHaveCSS("border-top-width", "0px");
-      await expect(head, address).toHaveCSS("padding-top", "0px");
+      // In a card without a frame, or in the head of the page above the cards (UX §6.5).
+      const frames = await intro
+        .locator("xpath=ancestor::*[@data-part='card']")
+        .evaluateAll((cards: readonly HTMLElement[]) =>
+          cards.map(
+            (card) =>
+              `${getComputedStyle(card).borderTopWidth} ${getComputedStyle(card).paddingTop}`,
+          ),
+        );
+      expect(
+        frames.filter((frame) => frame !== "0px 0px"),
+        address,
+      ).toEqual([]);
     }),
   );
 });

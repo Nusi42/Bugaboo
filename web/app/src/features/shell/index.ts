@@ -14,13 +14,8 @@ export {
 export { addQuickAction, type QuickAction } from "./quick-search-actions.ts";
 export { mayOpen } from "../../shared/places.ts";
 export { useQuickResults } from "./use-quick-results.ts";
-export {
-  SettingsFrame,
-  SettingsScreens,
-  TopicList,
-  type SettingsScreensProps,
-  type TopicListProps,
-} from "./SettingsFrame.tsx";
+export { SettingsFrame, TopicList, type TopicListProps } from "./SettingsFrame.tsx";
+export { SettingsScreens, type SettingsScreensProps } from "./SettingsScreens.tsx";
 export { NavLink, type NavLinkProps } from "./NavItem.tsx";
 export { useItemTrail, usePageTrail, type TrailStep } from "./page-trail.ts";
 export { SectionFrame, type SectionFrameProps } from "./SectionFrame.tsx";
