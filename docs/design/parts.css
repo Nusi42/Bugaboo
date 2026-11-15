@@ -3132,6 +3132,11 @@ textarea,
   padding-block-start: var(--pad-line-in-control);
 }
 
+[data-part="length-box"] [data-part="field.input"]::placeholder {
+  font-family: var(--font-ui);
+  font-weight: var(--weight-regular);
+}
+
 [data-part="followers-line"] {
   display: flex;
   flex-wrap: wrap;

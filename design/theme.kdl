@@ -4336,6 +4336,13 @@ part "name-value.words" {
     padding-block-start "$pad-line-in-control"
 }
 
+// The hint of an empty box for a length is words, in the face of the text; what is typed is a time value, in the
+// code face (UX §7.3).
+part "length-box field.input::placeholder" {
+    font-family "$font-ui"
+    font-weight "$weight-regular"
+}
+
 // The value of the *Followers* row is one line on a computer and on a phone: the count (or the words *You
 // follow it* where there is no count) and the button for turning it round (the review of M4: *Stop
 // following* dropped under the words). Where even the longest count ("20 or more followers") and the button do
