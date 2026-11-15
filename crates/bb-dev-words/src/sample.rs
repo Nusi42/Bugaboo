@@ -187,8 +187,9 @@ pub struct PlannedIssue {
     pub person: String,
     /// Its start date, in days from the first Monday after the end of the sample.
     pub start_day: i64,
-    /// Its due date, in days from the same Monday.
-    pub due_day: i64,
+    /// Its due date, in days from the same Monday; none for an issue whose end the plan works out.
+    #[serde(default)]
+    pub due_day: Option<i64>,
     /// Its estimate, in minutes.
     pub estimate: u32,
 }

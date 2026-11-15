@@ -29,7 +29,7 @@ use crate::generate::Sample;
 #[derive(Debug, Default, Serialize)]
 struct DumpGoal {
     title: String,
-    /// The issues under it that have both dates.
+    /// The issues under it that have a start date.
     sub_issues: u64,
 }
 
@@ -40,7 +40,8 @@ struct DumpPlanned {
     /// The first person it is assigned to.
     person: String,
     starts_before_due: i64,
-    ends_before_due: i64,
+    /// None for an issue without a due date: its end is worked out by the plan.
+    ends_before_due: Option<i64>,
     estimate: u64,
 }
 
@@ -98,7 +99,7 @@ impl Sample {
             let Some(sub) = issues.iter().find(|issue| issue.id == parent.child) else {
                 continue;
             };
-            let (Some(start), Some(end)) = (sub.start_date, sub.due_date) else {
+            let Some(start) = sub.start_date else {
                 continue;
             };
             let first = self
@@ -113,7 +114,7 @@ impl Sample {
                 title: sub.title.clone(),
                 person: first.map(|person| self.name_of(person)).unwrap_or_default(),
                 starts_before_due: days_between(start, due),
-                ends_before_due: days_between(end, due),
+                ends_before_due: sub.due_date.map(|end| days_between(end, due)),
                 estimate: sub
                     .estimated_time
                     .map_or(0, |minutes| u64::from(minutes.get())),

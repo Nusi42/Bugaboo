@@ -283,7 +283,7 @@
         }
       },
       "timeline": {
-        "$comment": "The plan of the goal Mobile app 2.0 (M8, part 7): Lea Fischer and two colleagues plan in Mobile app. Days are counted from the first Monday after the end of the sample (day 0 is that Monday). 'estimate' is in minutes; 'person' is the first (and only) person an issue is assigned to; 'blocks' names the issue that has to finish first and the one that waits for it. Lea works Monday to Friday with 6 hours a day, at a share of 100 percent, with the public holidays of one German state and no away time yet; one issue carries her own estimate ('takes me').",
+        "$comment": "The plan of the goal Mobile app 2.0 (M8, part 7): Lea Fischer and two colleagues plan in Mobile app. Days are counted from the first Monday after the end of the sample (day 0 is that Monday). 'estimate' is in minutes; an issue of Lea has a start date and no due date, so with Plan by effort its end is worked out from her work times; 'person' is the first (and only) person an issue is assigned to; 'blocks' names the issue that has to finish first and the one that waits for it. Lea works Monday to Friday with 6 hours a day, at a share of 100 percent, with the public holidays of one German state and no away time yet; one issue carries her own estimate ('takes me').",
         "project": "APP",
         "goal": { "title": "Mobile app 2.0", "dueDay": 8 },
         "person": "Lea Fischer",
@@ -297,21 +297,18 @@
             "title": "Login screen",
             "person": "Lea Fischer",
             "startDay": 0,
-            "dueDay": 2,
             "estimate": 1080
           },
           {
             "title": "Profile page",
             "person": "Lea Fischer",
             "startDay": 3,
-            "dueDay": 4,
             "estimate": 720
           },
           {
             "title": "Biometric sign-in",
             "person": "Lea Fischer",
             "startDay": 7,
-            "dueDay": 8,
             "estimate": 720
           },
           {

@@ -64,13 +64,17 @@ impl TimelinePlan {
                 ));
             }
             for (what, found, day) in [
-                ("starts", &made["starts_before_due"], planned.start_day),
+                (
+                    "starts",
+                    &made["starts_before_due"],
+                    Some(planned.start_day),
+                ),
                 ("ends", &made["ends_before_due"], planned.due_day),
             ] {
-                let planned_days = self.goal.due_day - day;
-                if found.as_i64() != Some(planned_days) {
+                let planned_days = day.map(|day| self.goal.due_day - day);
+                if found.as_i64() != planned_days {
                     judge.problem(&format!(
-                        "{} {what} {found} days before the due date of the goal, the plan says {planned_days}",
+                        "{} {what} {found} days before the due date of the goal, the plan says {planned_days:?}",
                         planned.title
                     ));
                 }
@@ -150,5 +154,55 @@ impl TimelinePlan {
                 ));
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::{Value, json};
+
+    use crate::sample::Layout;
+    use crate::sample_issues::tests::made;
+
+    fn ok() -> (crate::sample::IssuePlan, u32, Value) {
+        let plan = Layout::bundled().unwrap().issues;
+        let asked = plan.small_total;
+        let dump = made(&plan, asked);
+        (plan, asked, dump)
+    }
+
+    #[test]
+    fn the_goal_with_people_is_accepted() {
+        let (plan, asked, dump) = ok();
+        assert_eq!(plan.problems(asked, "run", &dump), Vec::<String>::new());
+    }
+
+    #[test]
+    fn plan_12_what_breaks_the_plan_of_the_goal_is_named() {
+        let (plan, asked, dump) = ok();
+        let named = |dump: &Value, word: &str| {
+            plan.problems(asked, "run", dump)
+                .iter()
+                .any(|problem| problem.contains(word))
+        };
+        // An issue of the plan that was not made.
+        let mut missing = dump.clone();
+        missing["issues"]["work"]["timeline"]["issues"]
+            .as_array_mut()
+            .unwrap()
+            .remove(0);
+        assert!(named(&missing, "Login screen"));
+        // A dependency that was not made.
+        let mut alone = dump.clone();
+        alone["issues"]["work"]["timeline"]["blocks"] = json!([]);
+        assert!(named(&alone, "dependencies"));
+        // An away time that the plan does not have yet.
+        let mut away = dump.clone();
+        away["issues"]["work"]["timeline"]["person"]["away_times"] = json!(1);
+        assert!(named(&away, "away times"));
+        // An own estimate set by somebody else.
+        let mut other = dump;
+        other["issues"]["work"]["timeline"]["own_estimates"][0]["set_by_the_person"] = json!(false);
+        assert!(named(&other, "own estimate"));
     }
 }

@@ -360,7 +360,7 @@ pub(crate) mod tests {
                 "title": issue.title,
                 "person": issue.person,
                 "starts_before_due": plan.goal.due_day - issue.start_day,
-                "ends_before_due": plan.goal.due_day - issue.due_day,
+                "ends_before_due": issue.due_day.map(|day| plan.goal.due_day - day),
                 "estimate": issue.estimate,
             })).collect::<Vec<_>>(),
             "blocks": plan.blocks,

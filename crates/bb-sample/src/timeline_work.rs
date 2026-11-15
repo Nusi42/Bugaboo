@@ -198,7 +198,7 @@ impl Maker<'_, '_> {
             (
                 &planned.title,
                 Some(day_of(monday, planned.start_day)?),
-                Some(day_of(monday, planned.due_day)?),
+                planned.due_day.map(|day| day_of(monday, day)).transpose()?,
             ),
             Some((person, Minutes::new(planned.estimate), goal)),
         )
