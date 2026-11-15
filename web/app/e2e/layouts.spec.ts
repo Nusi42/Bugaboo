@@ -18,7 +18,7 @@ import {
   saveSectionInAnotherWindow,
 } from "./support/layouts.ts";
 import { titleLabel } from "./support/issues.ts";
-import { handleIn, onThisLayout, slotsIn } from "./support/layout.ts";
+import { handleIn, inSightUnderHead, onThisLayout, slotsIn } from "./support/layout.ts";
 
 // Layouts and role-based forms (CFG-01, ISS-02, ISS-17, M3 WP-09): a project lead opens
 // *Customize this form* from the new-issue dialog, moves *Review deadline* into a section (by dragging on a
@@ -81,9 +81,10 @@ async function moveDueDateIntoSection(page: Page): Promise<void> {
         name: t("layouts.section", { number: "1" }),
         exact: true,
       });
-      await handleIn(available, t("layouts.field-drag", { name: dueDate })).dragTo(
-        slotsIn(section).last(),
-      );
+      const slot = slotsIn(section).last();
+      // Where the head of the page, folded over the topic, does not cover it.
+      await inSightUnderHead(slot);
+      await handleIn(available, t("layouts.field-drag", { name: dueDate })).dragTo(slot);
     },
     tablet: async () => {
       await addTo.selectOption({ index: 1 });

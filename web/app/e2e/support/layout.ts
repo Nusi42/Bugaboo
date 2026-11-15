@@ -84,3 +84,15 @@ export async function passDetailsButton(page: Page, issue: string): Promise<void
   await expect(details).toBeFocused();
   await page.keyboard.press("Tab");
 }
+
+/**
+ * Scrolls the box so that `target` stands right under the folded head of its pane, where nothing covers it, as a person
+ * scrolls to what they mean to drop something on; what is dragged to it from further down then stands in sight too.
+ * Playwright moves the pointer to the middle of a target that is only on screen, also where the head of the pane is laid
+ * over it, and a drop there lands on the head.
+ */
+export async function inSightUnderHead(target: Locator): Promise<void> {
+  await target.evaluate((node) => {
+    node.scrollIntoView({ block: "start" });
+  });
+}
