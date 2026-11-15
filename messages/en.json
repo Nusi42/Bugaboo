@@ -3701,6 +3701,8 @@
   "timeline.later": "Later",
   "timeline.start-field": "Bars start at",
   "timeline.end-field": "Bars end at",
+  "timeline.dates-from": "Dates from",
+  "timeline.dates-to": "to",
   "timeline.plan-by-effort": "Plan by effort",
   "timeline.chart": "Timeline",
   "timeline.names": "Issue",

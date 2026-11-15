@@ -8611,6 +8611,12 @@ pub const TIMELINE_CHANGE_DUE: MessageKey = MessageKey::new("timeline.change-due
 /// The message `timeline.chart`.
 pub const TIMELINE_CHART: MessageKey = MessageKey::new("timeline.chart");
 
+/// The message `timeline.dates-from`.
+pub const TIMELINE_DATES_FROM: MessageKey = MessageKey::new("timeline.dates-from");
+
+/// The message `timeline.dates-to`.
+pub const TIMELINE_DATES_TO: MessageKey = MessageKey::new("timeline.dates-to");
+
 /// The message `timeline.day-off`.
 pub const TIMELINE_DAY_OFF: MessageKey = MessageKey::new("timeline.day-off");
 
@@ -26408,6 +26414,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("timeline.change-due", "Change the due date"),
     ("timeline.chart", "Timeline"),
     ("timeline.dates-changed", "{key} now runs {dates}"),
+    ("timeline.dates-from", "Dates from"),
+    ("timeline.dates-to", "to"),
     ("timeline.day-off", "Not a work day"),
     ("timeline.days", "{first} to {last}"),
     (

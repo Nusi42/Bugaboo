@@ -7,7 +7,7 @@ The timeline shows the issues of a search as bars over the days they run, so you
 Open a search, a saved search or the list of a project. Above the list, set **Show as** to **Timeline**. The tools above the chart set how it looks:
 
 - **Group by** puts the rows into groups you can fold: by goal (the start), project, person, status, priority, or an own field with choices. Press the head of a group to fold it or open it again. Issues without a value are in a group of their own: **No goal**, **No person**, or **No** and the name of the field. The head of a goal shows its Issue ID and its title.
-- **Bars start at** and **Bars end at** choose the two date fields the bars use: *Start date* and *Due date*, or two own date fields of your organization.
+- **Dates from** chooses the two date fields the bars use, the one they start at and the one they end at: *Start date* to *Due date*, or two own date fields of your organization.
 - **Plan by effort** lets the timeline work out the other end of a bar from its estimate when an issue has only one date. The days that are worked out are shown, never saved.
 - **Zoom** sets how many days one column holds: **Days**, **Weeks**, **Months** or **Quarters**.
 - **Earlier** and **Later** step through time; **Today** goes back to today.
