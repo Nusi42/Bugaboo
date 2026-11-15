@@ -2,11 +2,13 @@ import { t } from "@bugaboo/messages";
 import { expect, type Page } from "@playwright/test";
 
 import { paths } from "../../src/shared/paths.ts";
-import { signInThroughApi } from "./accounts.ts";
+import { AS_ESTIMATED, factorText } from "../../src/shared/time-factor-text.ts";
+import { signInThroughApi, type Instance } from "./accounts.ts";
 import {
   adaOfTheSample,
   colleagueOfTheSample,
   good,
+  goodWhole,
   keyOf,
   leaOfTheSample,
   plan,
@@ -14,7 +16,7 @@ import {
   withoutATimer,
 } from "./demo-m8-common.ts";
 import { signIn } from "./flows.ts";
-import type { Instance } from "./server.ts";
+import { detailRow } from "./issues.ts";
 import { factorRow, openIssue } from "./time-factor.ts";
 import {
   READABLE,
@@ -36,6 +38,10 @@ const TAKES_DAYS = 10;
 const MINUTES_PER_HOUR = 60;
 /** How long the issue takes Lea, as she types it: ten of her work days, in hours. */
 const TAKES_ME = `${String((plan.usualMinutes * TAKES_DAYS) / MINUTES_PER_HOUR)}h`;
+/** The time factor that makes of the estimate of the issue (the second of Lea's) ten of her work days, in percent. */
+const TAKES_PERCENT = Math.round(
+  (plan.usualMinutes * TAKES_DAYS * AS_ESTIMATED) / (plan.issues[1]?.estimate ?? 1),
+);
 /** The name of the theme for everyone. */
 const THEME_NAME = "Harbor";
 
@@ -63,7 +69,9 @@ export async function leaSaysAnIssueTakesHerTenDays(page: Page, server: Instance
   await length.press("Tab");
   await window.getByRole("button", { name: t("issues.time-factor-save") }).click();
   await expect(window).toBeHidden();
-  await expect(factorRow(page)).toContainText(/own estimate/u);
+  await expect(factorRow(page)).toContainText(
+    t("issues.time-factor-own", { factor: factorText(TAKES_PERCENT), name: lea.name }),
+  );
   await factorRow(page).scrollIntoViewIfNeeded();
   await good(page, "04-lea-says-ten-days");
 }
@@ -89,8 +97,9 @@ export async function givenToSomeoneElseTheFactorGoesBack(
   await page.getByRole("button", { name: t("issues.unassign-name", { name: lea.name }) }).click();
   await page.getByRole("button", { name: t("common.done"), exact: true }).click();
   await expect(factorRow(page)).toContainText(t("issues.time-factor-as-estimated"));
-  await factorRow(page).scrollIntoViewIfNeeded();
-  await good(page, "05-given-to-someone-else");
+  // The picture shows whom it was given to and the factor of ×1: the whole page, both rows of the Details.
+  await expect(detailRow(page, t("issue-field.assigned-to"))).toContainText(colleague.name);
+  await goodWhole(page, "05-given-to-someone-else");
 }
 
 /** Step 6: a theme for everyone that is hard to read is refused until it is fixed, then saved. */

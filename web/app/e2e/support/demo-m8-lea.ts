@@ -1,36 +1,31 @@
 import { t } from "@bugaboo/messages";
 import { expect, type Page } from "@playwright/test";
 
-import { signInThroughApi } from "./accounts.ts";
+import { signInThroughApi, type Instance } from "./accounts.ts";
 import {
   adaOfTheSample,
+  barDaysOf,
   good,
-  idOfPerson,
+  grewOnScreen,
   keyOf,
   leaOfTheSample,
+  measured,
   openPlan,
-  plusDays,
-  startOf,
   plan,
+  startOf,
   titleOf,
   withoutATimer,
-  barDaysOf,
-  daysBetween,
 } from "./demo-m8-common.ts";
 import { signIn } from "./flows.ts";
-import type { Instance } from "./server.ts";
+import { addDays } from "./person-day.ts";
 import { openWarnings } from "./timeline-people.ts";
-import { addAwayTime, openWorkTimesOf, setShareOf } from "./work-times.ts";
+import { addAwayTime, idOf, openWorkTimesOf } from "./work-times.ts";
 
-// Steps 2 and 3 of the exit demo of M8 (`m8-exit-demo.spec.ts`): a week away of Lea grows her bars
-// and warns about the due date of the goal, and a share of 50 percent doubles them.
+// Step 2 of the exit demo of M8 (`m8-exit-demo.spec.ts`): a week away of Lea grows her bars and warns
+// about the due date of the goal.
 
-/** The days of a week away. */
+/** The days of a week away after its first: Monday to Friday. */
 const WEEK_AWAY_DAYS = 4;
-/** A share of Lea that makes her bars twice as long. */
-const HALF_A_SHARE = 50;
-/** The work days a share of half adds to a bar of three: its work takes twice the work days. */
-const WORK_DAYS_ADDED = 3;
 
 /** Step 2: a week away of Lea grows her bars around it and warns about the due date of the goal. */
 export async function leasAwayWeekGrowsHerBarsAndWarns(
@@ -44,47 +39,23 @@ export async function leasAwayWeekGrowsHerBarsAndWarns(
   await withoutATimer(server, ada);
   await signIn(page, ada);
   await openPlan(page, true);
-  const before = await barDaysOf(session, login);
-  const goal = await keyOf(session, plan.goal.title);
-  // Nothing of the plan is late yet: the list has no warning about the due date of the goal.
-  // A computer keeps an issue ID whole with a hyphen that does not break, a phone writes a plain one.
-  const lateWords = (days: number) =>
-    new RegExp(
-      t("plan-warning.delay-goal", { sub_issue: login, days, issue: goal })
-        .replaceAll(".", String.raw`\.`)
-        .replaceAll(/[-‑]/gu, "[-‑]"),
-      "u",
-    );
-  const sentence = /\d+ days? after the due date/u;
-  await expect((await openWarnings(page)).getByText(sentence)).toHaveCount(0);
-  await openWorkTimesOf(page, lea, await idOfPerson(server, lea));
-  await addAwayTime(page, { from: start, to: plusDays(start, WEEK_AWAY_DAYS) });
+  const before = await measured(page, session, login);
+  // The sentence of the warning names the cause and the person, and the issues by their titles.
+  const late = t("plan-warning.delay-goal-away", {
+    person: lea.name,
+    away_days: WEEK_AWAY_DAYS + 1,
+    sub_issue: titleOf(0),
+    goal: plan.goal.title,
+  });
+  // Nothing of the plan is late yet.
+  await expect((await openWarnings(page)).getByText(late)).toHaveCount(0);
+  await openWorkTimesOf(page, lea, await idOf(server, lea));
+  await addAwayTime(page, { from: start, to: addDays(start, WEEK_AWAY_DAYS) });
   await openPlan(page, true);
-  // Her bar is worked out around the days she is away: it ends later.
-  expect((await barDaysOf(session, login)).last > before.last).toBe(true);
-  const due = plusDays(start, plan.goal.dueDay);
-  const late = daysBetween({ first: due, last: (await barDaysOf(session, login)).last }) - 1;
-  const list = await openWarnings(page);
-  await expect(list.getByText(lateWords(late))).toHaveCount(1);
-  await expect(list.getByText(lea.name).first()).toBeVisible();
+  // Her bar is worked out around the days she is away: it ends later, on the server and on the screen.
+  expect((await barDaysOf(session, login)).last > before.days.last).toBe(true);
+  await grewOnScreen(page, session, login, before);
+  await expect((await openWarnings(page)).getByText(late)).toHaveCount(1);
   await good(page, "02-lea-is-away-a-week");
-  await session.dispose();
-}
-
-/** Step 3: a share of 50 percent doubles the bars of Lea. */
-export async function aShareOfHalfDoublesLeasBars(page: Page, server: Instance): Promise<void> {
-  const [ada, lea] = [adaOfTheSample(), leaOfTheSample()];
-  const session = await signInThroughApi(server, lea);
-  const login = await keyOf(session, titleOf(0));
-  await withoutATimer(server, ada);
-  await signIn(page, ada);
-  await openPlan(page, true);
-  const before = await barDaysOf(session, login);
-  await setShareOf(server, ada, plan.project, await idOfPerson(server, lea), HALF_A_SHARE);
-  await openPlan(page, true);
-  // Half of her hours in the project: the same work takes twice the work days.
-  const after = await barDaysOf(session, login);
-  expect(daysBetween(after) - daysBetween(before)).toBeGreaterThanOrEqual(WORK_DAYS_ADDED);
-  await good(page, "03-lea-works-half-of-her-time");
   await session.dispose();
 }

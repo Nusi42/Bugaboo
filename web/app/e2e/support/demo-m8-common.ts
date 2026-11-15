@@ -3,12 +3,12 @@ import { t } from "@bugaboo/messages";
 import { expect, type Page } from "@playwright/test";
 
 import layout from "../../../../tools/dev/sample.json" with { type: "json" };
-import { ownId, signInThroughApi } from "./accounts.ts";
-import type { ApiSession } from "./api.ts";
-import { goodWindowInFourThemes } from "./demo.ts";
+import { signInThroughApi, type ApiSession, type Instance } from "./accounts.ts";
+import { goodInFourThemes, goodWindowInFourThemes } from "./demo.ts";
+import { layoutOf } from "./layout.ts";
+import { dayFromToday, daysBetween } from "./person-day.ts";
 import { sampleNamed, type SamplePerson } from "./sample.ts";
-import type { Instance } from "./server.ts";
-import { chart } from "./timeline.ts";
+import { barOf, chart, dayPixelsOf, phoneItemOf, phoneList, pressOf } from "./timeline.ts";
 
 // What the steps of the exit demo of M8 share (`m8-exit-demo.spec.ts`): the pictures, the people
 // and the issues of the plan of *Mobile app 2.0* that part 7 of the sample makes.
@@ -22,9 +22,14 @@ const DEMO_M8 = "M8/exit-demo";
 /** The plan of the goal in the sample (`issues.work.timeline` of `tools/dev/sample.json`). */
 export const plan = layout.issues.work.timeline;
 
-/** The screen is good in the four themes and is in the pictures of this demo. */
+/** The screen is good in the four themes and is in the pictures of this demo, as the window shows it. */
 export function good(page: Page, step: string): Promise<void> {
   return goodWindowInFourThemes(page, step, DEMO_M8);
+}
+
+/** The same, with the pictures of the whole page grown into the window: rows far apart stand in one picture. */
+export function goodWhole(page: Page, step: string): Promise<void> {
+  return goodInFourThemes(page, step, DEMO_M8);
 }
 
 /** Ada Brandt, the first Administrator of the sample. */
@@ -62,22 +67,15 @@ export async function keyOf(session: ApiSession, title: string): Promise<string>
   throw new RangeError(`The sample has no issue ${title} in ${plan.project}.`);
 }
 
-/** The ID of a person of the sample, as they read it themselves. */
-export async function idOfPerson(server: Instance, person: SamplePerson): Promise<string> {
-  const session = await signInThroughApi(server, person);
-  const id = await ownId(session);
-  await session.dispose();
-  return id;
-}
+/** The part of the address of a timeline grouped by the person on the bar: each person has their own rows. */
+export const BY_PERSON = `&group=${encodeURIComponent("assigned to")}`;
 
-/** Opens the timeline of the project of the plan, with or without *Plan by effort*. */
-export async function openPlan(page: Page, byEffort: boolean): Promise<void> {
+/** Opens the timeline of the project of the plan, with or without *Plan by effort*, with these more parts of the address. */
+export async function openPlan(page: Page, byEffort: boolean, more = ""): Promise<void> {
   const search = encodeURIComponent(`project is ${plan.project}`);
-  await page.goto(`/search?s=${search}&show=timeline`);
+  await page.goto(`/search?s=${search}&show=timeline${more}`);
   // A phone shows the plan as a grouped list; it has the switch of Plan by effort as well.
-  await expect(
-    chart(page).or(page.getByRole("list", { name: t("timeline.phone-list") })),
-  ).toBeVisible();
+  await expect(chart(page).or(phoneList(page))).toBeVisible();
   const toggle = page.getByRole("switch", { name: t("timeline.plan-by-effort"), exact: true });
   await expect(toggle).toBeVisible();
   if ((await toggle.isChecked()) !== byEffort) {
@@ -86,51 +84,57 @@ export async function openPlan(page: Page, byEffort: boolean): Promise<void> {
   }
 }
 
-const MS_PER_DAY = 86_400_000;
 /** How far around today the plan of a step looks. */
 const MONTH_DAYS = 30;
 const TWO_MONTHS_DAYS = 60;
 
-/** The day `days` after a day written `2027-03-01`. */
-export function plusDays(day: string, days: number): string {
-  return new Date(Date.parse(`${day}T00:00:00Z`) + days * MS_PER_DAY).toISOString().slice(0, 10);
+/** The start date and the due date of an issue, as a person reads them; `""` for one it has not. */
+export async function datesOf(
+  session: ApiSession,
+  key: string,
+): Promise<{ readonly start: string; readonly due: string }> {
+  const read = dataOf(
+    await session.client.GET("/api/v1/issues/{issue}", { params: { path: { issue: key } } }),
+  );
+  return { start: read.issue.start_date ?? "", due: read.issue.due_date ?? "" };
 }
 
 /** The start date of an issue, as a person reads it. */
 export async function startOf(session: ApiSession, key: string): Promise<string> {
-  const read = dataOf(
-    await session.client.GET("/api/v1/issues/{issue}", { params: { path: { issue: key } } }),
-  );
-  return read.issue.start_date ?? "";
+  return (await datesOf(session, key)).start;
 }
 
-/** The first and last day of the bar of an issue, as the plan by effort of the server draws it. */
+/** The bar of an issue as the plan by effort of the server draws it: its first and last day, and its work days. */
 export async function barDaysOf(
   session: ApiSession,
   key: string,
-): Promise<{ readonly first: string; readonly last: string }> {
+): Promise<{ readonly first: string; readonly last: string; readonly workDays: number }> {
   const page = dataOf(
     await session.client.POST("/api/v1/timeline", {
       body: {
         search_text: "",
         project: plan.project,
         timeline: { start_field: null, end_field: null, plan_by_effort: true, zoom: "week" },
-        first: plusDays(new Date().toISOString().slice(0, 10), -MONTH_DAYS),
-        last: plusDays(new Date().toISOString().slice(0, 10), TWO_MONTHS_DAYS),
+        first: dayFromToday(-MONTH_DAYS),
+        last: dayFromToday(TWO_MONTHS_DAYS),
       },
     }),
   );
   for (const row of page.rows) {
     if (row.issue.readable_id === key && row.bar !== null && row.bar !== undefined) {
-      return { first: row.bar.days.first, last: row.bar.days.last };
+      return {
+        first: row.bar.days.first,
+        last: row.bar.days.last,
+        workDays: row.bar.effort?.work_days ?? 0,
+      };
     }
   }
   throw new RangeError(`The plan has no bar for ${key}.`);
 }
 
 /** How many days a bar spans, both ends included. */
-export function daysBetween(days: { readonly first: string; readonly last: string }): number {
-  return (Date.parse(days.last) - Date.parse(days.first)) / MS_PER_DAY + 1;
+export function daysSpanned(days: { readonly first: string; readonly last: string }): number {
+  return daysBetween(days.first, days.last) + 1;
 }
 
 /**
@@ -144,4 +148,50 @@ export async function withoutATimer(server: Instance, person: SamplePerson): Pro
     await session.client.POST("/api/v1/me/timer/throw-away", { body: { version: timer.version } });
   }
   await session.dispose();
+}
+
+/** How many pixels wide the bar of an issue is drawn on the chart of a computer; 0 on a phone. */
+async function barWidth(page: Page, key: string): Promise<number> {
+  return layoutOf(page) === "computer" ? ((await barOf(page, key).boundingBox())?.width ?? 0) : 0;
+}
+
+/** The bar of an issue as the server plans it by effort, and its width on the screen. */
+export interface Measured {
+  readonly days: Awaited<ReturnType<typeof barDaysOf>>;
+  readonly width: number;
+}
+
+/** Measures the bar of an issue on the server and on the screen. */
+export async function measured(page: Page, session: ApiSession, key: string): Promise<Measured> {
+  return { days: await barDaysOf(session, key), width: await barWidth(page, key) };
+}
+
+/**
+ * On a computer, the bar of an issue is drawn longer by as many days as it grew on the server since it was `before`,
+ * at the width the page draws a day of its zoom.
+ */
+export async function grewOnScreen(
+  page: Page,
+  session: ApiSession,
+  key: string,
+  before: Measured,
+): Promise<void> {
+  const grown = daysBetween(before.days.last, (await barDaysOf(session, key)).last);
+  expect(grown).toBeGreaterThan(0);
+  if (layoutOf(page) === "computer") {
+    const days = async () =>
+      Math.round(((await barWidth(page, key)) - before.width) / (await dayPixelsOf(page)));
+    await expect.poll(days).toBe(grown);
+  }
+}
+
+/** Shows the card of the bar of an issue: its person's time, with the share, beside the bars. */
+export async function showCardOf(page: Page, key: string): Promise<void> {
+  if (layoutOf(page) === "computer") {
+    await pressOf(page, key).click();
+    await expect(page.getByRole("region", { name: t("timeline.card", { key }) })).toBeVisible();
+  } else {
+    await phoneItemOf(page, key).click();
+    await expect(page.getByRole("dialog", { name: t("timeline.phone-sheet") })).toBeVisible();
+  }
 }

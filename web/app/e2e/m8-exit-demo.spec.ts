@@ -1,14 +1,12 @@
 import { STEP_TIMEOUT_MS } from "./support/demo-m8-common.ts";
-import {
-  aShareOfHalfDoublesLeasBars,
-  leasAwayWeekGrowsHerBarsAndWarns,
-} from "./support/demo-m8-lea.ts";
+import { leasAwayWeekGrowsHerBarsAndWarns } from "./support/demo-m8-lea.ts";
 import {
   anOwnThemeThatIsHardToReadIsFixed,
   givenToSomeoneElseTheFactorGoesBack,
   leaSaysAnIssueTakesHerTenDays,
 } from "./support/demo-m8-own.ts";
 import { theGoalIsPlannedByDragging } from "./support/demo-m8-plan.ts";
+import { aShareOfHalfDoublesLeasBars } from "./support/demo-m8-share.ts";
 import { test } from "./support/fixtures.ts";
 
 // The exit demo of M8 (docs/04-milestones.md, with M8-Q3) on the sample organization, as the
