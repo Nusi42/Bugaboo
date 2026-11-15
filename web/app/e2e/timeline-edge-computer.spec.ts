@@ -5,6 +5,7 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { inOrder } from "./support/sequence.ts";
 import {
+  barOf,
   changeIssue,
   chart,
   cutByTheEdge,
@@ -67,4 +68,19 @@ test("plan_01_a_short_bar_near_the_end_of_the_days_on_screen_keeps_its_label_who
     }),
   );
   await admin.dispose();
+});
+
+test("plan_03_a_bar_of_no_priority_is_closed_by_its_edge_on_every_side", async ({ page }) => {
+  await signIn(page, ada);
+  await openPlan(page);
+  // The edge of a control on all four sides, so a bar of Not started is seen on the dark days of the
+  // dark themes too; only Critical and High draw their wide edge at the start (R5).
+  const edges = await barOf(page, planned.waits).evaluate((bar) => {
+    const look = getComputedStyle(bar);
+    return {
+      start: [look.borderInlineStartColor, look.borderInlineStartWidth],
+      end: [look.borderInlineEndColor, look.borderInlineEndWidth],
+    };
+  });
+  expect(edges.start).toEqual(edges.end);
 });

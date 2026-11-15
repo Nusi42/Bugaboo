@@ -2739,8 +2739,9 @@ part "list-row[state=priority-high]" "issue-row[state=priority-high]" "quick-sea
 
 // Forced colors give every border the color of the system, so the transparent edge that keeps the titles in
 // one column (and the one of the head of the list) would be drawn as a bar like the edge of a priority; the row
-// and the bar of the timeline say `Canvas` for it. There the edge is told by its pattern (R5, M5 exit A15): Critical a double bar, High a single bar, every other row
-// and the head of the list none (the color of the canvas, so the width stays).
+// says `Canvas` for it. There the edge is told by its pattern (R5, M5 exit A15): Critical a double bar, High a single bar, every other row
+// and the head of the list none (the color of the canvas, so the width stays); a bar of the timeline has a thin edge
+// like its other sides.
 part "list-row[state=priority-critical]" "issue-row[state=priority-critical]" "quick-search.item[state=priority-critical]" "timeline-bar[state=priority-critical]" {
     forced {
         border-inline-start-style double
@@ -3044,9 +3045,9 @@ part "list-group" {
     font-weight "$weight-regular"
 }
 
-// Under forced colors the transparent start edge of a row, of the head of a group and of a bar of the timeline is drawn
-// in the color of the canvas: only Critical and High carry a bar (R5; a group head had High's bar, M5 exit F-A8).
-part "list-row" "list-group" "timeline-bar" {
+// Under forced colors the transparent start edge of a row and of the head of a group is drawn in the color of the
+// canvas: only Critical and High carry a bar (R5; a group head had High's bar, M5 exit F-A8).
+part "list-row" "list-group" {
     forced {
         border-inline-start-color Canvas
     }
@@ -3680,10 +3681,11 @@ part "timeline-bar" {
     box-sizing border-box
     width "calc($timeline-length * $timeline-day * $size-px)"
     min-width "$size-bar-least"
-    // The edge of a bar is the edge of a control: 3:1 against its tint, the rows and the weekends in every theme
-    // (the `lines` rules of the contrast check), so a bar of *Not started* is seen in the dark themes too.
+    // The edge of a bar is the edge of a control on all four sides: 3:1 against its tint, the rows and the weekends in
+    // every theme (the `lines` rules of the contrast check), so a bar of *Not started* is seen in the dark themes too,
+    // where its tint is near the dark days. A bar keeps no empty edge at its start as a row of the list does (no title
+    // stands in it to line up): only Critical and High draw their wide edge there (R5).
     border "$border-width solid $border-control"
-    border-inline-start "$size-edge solid transparent"
     border-radius "$r-ctl"
     background "$bg-raised"
     color "$fg"

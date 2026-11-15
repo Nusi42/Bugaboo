@@ -3041,8 +3041,7 @@ textarea,
 
 @media (forced-colors: active) {
   [data-part="list-row"],
-  [data-part="list-group"],
-  [data-part="timeline-bar"] {
+  [data-part="list-group"] {
     border-inline-start-color: Canvas;
   }
 }
@@ -3669,7 +3668,6 @@ textarea,
   width: calc(var(--timeline-length) * var(--timeline-day) * var(--size-px));
   min-width: var(--size-bar-least);
   border: var(--border-width) solid var(--border-control);
-  border-inline-start: var(--size-edge) solid transparent;
   border-radius: var(--r-ctl);
   background: var(--bg-raised);
   color: var(--fg);
