@@ -34,12 +34,25 @@ export interface TimeCellProps<Value> {
   readonly readOnly?: boolean;
 }
 
+/** Whether two texts of a cell mean the same: both empty, or both the same value (`2.5` and `2:30`). */
+function sameReading<Value>(one: CellRead<Value>, other: CellRead<Value>): boolean {
+  if ("empty" in one || "empty" in other) {
+    return "empty" in one && "empty" in other;
+  }
+  return (
+    "value" in one && "value" in other && JSON.stringify(one.value) === JSON.stringify(other.value)
+  );
+}
+
 /** What is typed in a cell (`CellDraft` says what it may take of the saved text). */
-function useDraft(text: string) {
+function useDraft<Value>(text: string, read: (typed: string) => CellRead<Value>) {
   const [draft] = useState(() => new CellDraft(text));
   const [typed, setTyped] = useState(text);
   const shown = useRef(text);
   const takes = useRef(false);
+  useEffect(() => {
+    draft.compareWith((one, other) => sameReading(read(one), read(other)));
+  }, [draft, read]);
   useEffect(() => {
     shown.current = text;
     takes.current = draft.sync(text);
@@ -79,7 +92,7 @@ function useDraft(text: string) {
 /** What a cell remembers while it is typed in: the draft, the sentence of a problem, and whether it saves. */
 function useTyping<Value>(props: TimeCellProps<Value>) {
   const { text, read, commit } = props;
-  const draft = useDraft(text);
+  const draft = useDraft(text, read);
   const { typed, type } = draft;
   const [problem, setProblem] = useState<string | undefined>();
   const [saving, setSaving] = useState(false);

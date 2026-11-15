@@ -4,8 +4,9 @@
  * last, or when nothing newer was typed and the cell is not the one the person is in. So a text
  * that was read before the last save came back never replaces what was typed after it, and a
  * refused save leaves the draft where it was. When saves overlap, a text that came while they were
- * on their way may be older than the last of them, so it is never taken when they are done: only a
- * text read after that (or the value sent last) can replace what was typed.
+ * on their way may be older than the last of them, so it is taken when they are done only when it
+ * means the value sent last (`same`: `2:30` for `2.5`); else only a text read after that can
+ * replace what was typed. The read of the last save may well be drawn before that save answers.
  */
 export class CellDraft {
   private latest: string;
@@ -15,9 +16,16 @@ export class CellDraft {
   private overlapped = false;
   private focused = false;
 
+  private same: (one: string, other: string) => boolean = (one, other) => one === other;
+
   constructor(text: string) {
     this.latest = text;
     this.synced = text;
+  }
+
+  /** Says whether two texts mean the same value; until it is given, only equal texts do. */
+  compareWith(same: (one: string, other: string) => boolean): void {
+    this.same = same;
   }
 
   /** The person typed `value`. */
@@ -64,11 +72,12 @@ export class CellDraft {
     }
     const overlapped = this.overlapped;
     this.overlapped = false;
-    return (!overlapped || text === this.sent) && this.sync(text);
+    return (!overlapped || this.isSent(text)) && this.sync(text);
   }
 
   /** Takes the saved `text` into the box when it may (see above); says whether it did. */
   sync(text: string): boolean {
+    // Only the very text sent: the server's way of writing it waits until the person is out of the cell.
     const own = text === this.sent;
     const untouched = this.latest === this.synced;
     if (this.waiting > 0 || !(own || (untouched && !this.focused))) {
@@ -80,5 +89,10 @@ export class CellDraft {
     }
     this.latest = text;
     return true;
+  }
+
+  /** Whether `text` is the value sent last, maybe in the server's way of writing it. */
+  private isSent(text: string): boolean {
+    return this.sent !== null && this.same(text, this.sent);
   }
 }

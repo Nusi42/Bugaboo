@@ -2,6 +2,19 @@ import { describe, expect, it } from "vitest";
 
 import { CellDraft } from "./cell-draft.ts";
 
+/** The minutes of a length written `2.5` or `2:30`; enough for these tests. */
+function minutesOf(text: string): number {
+  const [hours = "", rest] = text.split(":");
+  return rest === undefined ? Number(hours) * 60 : Number(hours) * 60 + Number(rest);
+}
+
+/** A draft of a length that knows `2.5` and `2:30` are the same. */
+function lengthDraft(): CellDraft {
+  const draft = new CellDraft("");
+  draft.compareWith((one, other) => minutesOf(one) === minutesOf(other));
+  return draft;
+}
+
 /** A draft with the text `from` that the person typed `value` into and left. */
 function typedAndSent(from: string, value: string) {
   const draft = new CellDraft(from);
@@ -61,7 +74,39 @@ describe("CellDraft and the server's way of writing", () => {
     expect(draft.syncHeld("1:30")).toBe(true);
   });
 
-  it("keeps the typed 2.5 until the cell is left when saves overlapped (M6-F180)", () => {
+  it("takes the server's way of writing a value after the save came back", () => {
+    const { draft, done } = typedAndSent("", "1.5");
+    done(true);
+    expect(draft.sync("1:30")).toBe(true);
+  });
+});
+
+describe("CellDraft when saves of one cell overlapped (M6-F180)", () => {
+  it("takes the server's 2:30 for the typed 2.5 when saves overlapped, as it means what was sent last", () => {
+    const draft = lengthDraft();
+    draft.type("1:00");
+    const first = draft.saving("1:00");
+    draft.type("2.5");
+    const second = draft.saving("2.5");
+    first(true);
+    second(true);
+    // The week read after the last save was drawn before that save answered.
+    expect(draft.syncHeld("2:30")).toBe(true);
+  });
+
+  it("still drops a held text of an earlier save when saves overlapped", () => {
+    const draft = lengthDraft();
+    draft.type("1.5");
+    const first = draft.saving("1.5");
+    draft.type("2.5");
+    const second = draft.saving("2.5");
+    first(true);
+    second(true);
+    expect(draft.syncHeld("1:30")).toBe(false);
+    expect(draft.sync("2:30")).toBe(true);
+  });
+
+  it("without a way to compare, keeps the typed 2.5 when saves overlapped", () => {
     const draft = new CellDraft("");
     draft.type("1:00");
     const first = draft.saving("1:00");
@@ -69,16 +114,8 @@ describe("CellDraft and the server's way of writing", () => {
     const second = draft.saving("2.5");
     first(true);
     second(true);
-    // The server wrote 2:30 for 2.5 while the saves ran, so the held text is dropped: the box says
-    // 2.5, and it says 2:30 once a read after the saves arrives.
     expect(draft.syncHeld("2:30")).toBe(false);
     expect(draft.sync("2:30")).toBe(true);
-  });
-
-  it("takes the server's way of writing a value after the save came back", () => {
-    const { draft, done } = typedAndSent("", "1.5");
-    done(true);
-    expect(draft.sync("1:30")).toBe(true);
   });
 });
 
@@ -104,6 +141,15 @@ describe("CellDraft after a refusal, giving up, and focus", () => {
     expect(draft.sync("0:45")).toBe(false);
     draft.leave();
     expect(draft.sync("0:45")).toBe(false);
+  });
+
+  it("does not write the server's way of a value into the cell the person is typing in", () => {
+    const draft = lengthDraft();
+    draft.type("1.5");
+    const done = draft.saving("1.5");
+    done(true);
+    draft.enter();
+    expect(draft.sync("1:30")).toBe(false);
   });
 
   it("does not take another text into a focused cell that was not touched", () => {
