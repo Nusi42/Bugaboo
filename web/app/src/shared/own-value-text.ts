@@ -27,6 +27,18 @@ export function minutesText(minutes: number): string {
   return durationText(minutes * secondsPerMinute);
 }
 
+/** The tenths of an hour a length in hours is written to. */
+const TENTHS = 10;
+
+/**
+ * A length in whole minutes as hours in a sentence, to a tenth: "9 hours", "3.6 hours" (UX §4.7,
+ * *Too much at once*), with the person's numbers.
+ */
+export function hoursText(minutes: number): string {
+  const tenths = Math.round((minutes * TENTHS * secondsPerMinute) / secondsPerHour);
+  return t("time.length.hours", { hours: tenths / TENTHS });
+}
+
 function textOf(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
 }

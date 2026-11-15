@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { keepingHyphens } from "../../../shared/format.ts";
+import { formatNumber, keepingHyphens } from "../../../shared/format.ts";
 import type { PlanWarning } from "../timeline-data.ts";
 import { warningSentence } from "./warning-words.ts";
 
@@ -66,5 +66,20 @@ describe("the sentences of plan warnings (UX §4.7, PLAN-13)", () => {
     expect(hidden).toBe(
       `${keepingHyphens("WEB-281")} now ends 3 days after the due date of ${keepingHyphens("WEB-280")}.`,
     );
+  });
+
+  it("plan_13_too_much_at_once_writes_its_hours_as_hours", () => {
+    const much = warning({
+      kind: "too-much-at-once",
+      sentence: "plan-warning.too-much-at-once",
+      person: lea,
+      worst_day: "2027-03-02",
+      planned_minutes: 540,
+      // 6 hours a day at 60 %.
+      can_minutes: 216,
+    });
+    const said = warningSentence(much, goal);
+    expect(said).toContain("Lea has 9 hours planned on");
+    expect(said).toContain(`in Mobile app; the share there is ${formatNumber(3.6)} hours.`);
   });
 });

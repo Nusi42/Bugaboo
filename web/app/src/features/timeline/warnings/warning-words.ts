@@ -1,7 +1,7 @@
 import { textByKey } from "@bugaboo/messages";
 
 import { formatCalendarDay, keepingHyphens } from "../../../shared/format.ts";
-import { minutesText } from "../../../shared/own-value-text.ts";
+import { hoursText } from "../../../shared/own-value-text.ts";
 import { personName } from "../../../shared/person.ts";
 import { daysText } from "../dates.ts";
 import type { PlanWarning } from "../timeline-data.ts";
@@ -48,8 +48,8 @@ export function warningSentence(warning: PlanWarning, place: WarningPlace): stri
     sub_issue: titleOr(warning.other?.title, warning.other?.readable_id ?? ""),
     needs: warning.needs_days ?? 0,
     has: warning.has_days ?? 0,
-    planned: minutesText(warning.planned_minutes ?? 0),
-    can: minutesText(warning.can_minutes ?? 0),
+    planned: hoursText(warning.planned_minutes ?? 0),
+    can: hoursText(warning.can_minutes ?? 0),
     day: warning.worst_day === null ? "" : formatCalendarDay(warning.worst_day),
     project: place.project,
   });
