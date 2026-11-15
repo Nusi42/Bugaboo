@@ -7038,14 +7038,13 @@ part "sidebar.bottom" {
 }
 
 // The sections and the time of the menu, which come with reads of their own: a box of its own that takes the room the
-// menu has and scrolls, so the menu above it and its bottom group stand still when they come (UX §6.4).
+// menu has, so the bottom group stands still when they come (UX §6.4). It never scrolls itself: the menu is the one box
+// that scrolls.
 part "sidebar.middle" {
     display flex
-    flex "1 1 auto"
+    flex "1 0 auto"
     flex-direction column
     gap inherit
-    min-height 0
-    overflow-y auto
 }
 
 part "sidebar.section" {

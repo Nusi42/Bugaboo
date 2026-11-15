@@ -5906,11 +5906,9 @@ textarea,
 
 [data-part="sidebar.middle"] {
   display: flex;
-  flex: 1 1 auto;
+  flex: 1 0 auto;
   flex-direction: column;
   gap: inherit;
-  min-height: 0;
-  overflow-y: auto;
 }
 
 [data-part="sidebar.section"] {
