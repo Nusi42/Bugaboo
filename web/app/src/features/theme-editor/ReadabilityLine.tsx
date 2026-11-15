@@ -51,23 +51,31 @@ function HardColorRow({
   );
 }
 
-/** The counts behind a verdict that nothing is hard to read, in plain words, shown on request. */
-function Details({ read }: { readonly read: ThemeRead }) {
+/**
+ * The counts behind a verdict that nothing is hard to read, in plain words, shown on request. While the rating is
+ * being loaded the button already stands in its place, switched off, so nothing under it moves when the rating comes.
+ */
+function Details({ read }: { readonly read: ThemeRead | null }) {
   const [open, setOpen] = useState(false);
-  const { easy, ok, hard_to_read: hard } = read.summary;
+  const summary = read?.summary;
   return (
     <div>
       <Button
         look={buttonLook.quiet}
+        isDisabled={summary === undefined}
         onPress={() => {
           setOpen(!open);
         }}
       >
         {t(open ? "theme-editor.details-hide" : "theme-editor.details")}
       </Button>
-      {open ? (
+      {open && summary !== undefined ? (
         <p {...partOf(part.muted)}>
-          {t("theme-editor.readability-details", { total: easy + ok + hard, easy, ok })}
+          {t("theme-editor.readability-details", {
+            total: summary.easy + summary.ok + summary.hard_to_read,
+            easy: summary.easy,
+            ok: summary.ok,
+          })}
         </p>
       ) : null}
     </div>
@@ -119,7 +127,7 @@ export function ReadabilityLine({ read, kind, refused, onChange }: ReadabilityLi
       >
         {verdictOf(read, kind)}
       </output>
-      {read !== null && hard.length === 0 ? <Details read={read} /> : null}
+      {hard.length === 0 ? <Details read={read} /> : null}
       {hard.length === 0 ? null : (
         <ul {...partOf(part.themeReadabilityList)}>
           {hard.map((color) => (

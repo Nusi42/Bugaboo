@@ -138,8 +138,9 @@ test("ux_06 the preview of a theme sticks under the folded head, beside the verd
   await signIn(page, sampleAdministrator());
   await page.goto(editorAddress(theme));
   await expect(page.locator(PREVIEW)).toBeVisible();
-  // Every group open, so the groups are longer than the window.
+  // Every group open, so the groups are longer than the window: once the groups are there, which come after the preview.
   const groups = page.locator("[data-part~='theme-group'] summary");
+  await expect(groups.first()).toBeVisible();
   await inOrder(
     (await groups.all()).map((group) => async () => {
       await group.click();
