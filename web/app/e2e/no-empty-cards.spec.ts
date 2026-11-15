@@ -1,6 +1,7 @@
 import { paths } from "../src/shared/paths.ts";
 import { ada, bob, createAdmin, createPerson } from "./support/accounts.ts";
 import { emptyCardsOf } from "./support/cards.ts";
+import { expectAllRead } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { inOrder } from "./support/sequence.ts";
@@ -36,6 +37,8 @@ test("ux_6_1 no page draws a card with nothing in it, for somebody who may not d
     pages.map((address) => async () => {
       await page.goto(address);
       await expect(page.getByRole("heading", { level: 1 })).toBeAttached();
+      // The heading stands before the reads are in: a card is looked at once it shows what it holds.
+      await expectAllRead(page);
       expect(await emptyCardsOf(page), address).toBe(0);
     }),
   );
@@ -47,6 +50,8 @@ test("ux_6_1 the same for the administrator", async ({ page }) => {
     [...pages, paths.projects, paths.themes].map((address) => async () => {
       await page.goto(address);
       await expect(page.getByRole("heading", { level: 1 })).toBeAttached();
+      // The heading stands before the reads are in: a card is looked at once it shows what it holds.
+      await expectAllRead(page);
       expect(await emptyCardsOf(page), address).toBe(0);
     }),
   );

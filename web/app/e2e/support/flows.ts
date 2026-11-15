@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 import { type Browser, expect, type Page, type Response } from "@playwright/test";
 
 import { type Person } from "./accounts.ts";
+import { expectAllRead } from "./checks.ts";
 import { itemArea, layoutOf } from "./layout.ts";
 import { type Instance } from "./server.ts";
 import { type CodeApp, codeApp } from "./totp.ts";
@@ -63,11 +64,12 @@ export async function sendSecondStepCode(page: Page, code: string): Promise<void
   await page.getByRole("button", { name: t("second-step.submit") }).click();
 }
 
-/** The start page of the person is open. */
+/** The start page is open and read (WebKit cuts short an address opened before by loading it again). */
 export async function expectHome(page: Page, person: Person): Promise<void> {
   await expect(
     page.getByRole("heading", { level: 1, name: t("home.title", { name: person.name }) }),
   ).toBeVisible();
+  await expectAllRead(page);
 }
 
 /** Signs in with a password, for a person who has no second step. */

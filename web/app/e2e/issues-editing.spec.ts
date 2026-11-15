@@ -71,8 +71,9 @@ test("iss_17 Ana types, Ben sees who is editing and uses Edit anyway, Ana's text
   await descriptionBox(page).fill("Ben's text");
   await page.getByRole("button", { name: t("common.save"), exact: true }).click();
   await expect(page.getByText("Ben's text")).toBeVisible();
-  // Ana saves: her time is over, her text is still in her box, and she can compare and save.
-  await ana.getByRole("button", { name: t("common.save"), exact: true }).click();
+  // Ana saves: her time is over, her text is still in her box, and she can compare and save. Her page may have heard of
+  // it already (a slow computer), and then its Save is off and it says so itself: the press changes nothing then.
+  await ana.getByRole("button", { name: t("common.save"), exact: true }).click({ force: true });
   await expect(ana.getByText(/^Not saved yet/u).first()).toBeVisible();
   await expect(descriptionBox(ana)).toHaveValue("Ana's text about the passkey");
   await ana.getByRole("button", { name: t("issues.compare-and-save"), exact: true }).click();
