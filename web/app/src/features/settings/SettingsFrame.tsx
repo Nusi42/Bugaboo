@@ -5,8 +5,7 @@ import { useId } from "react";
 
 import { deepestAround } from "../../shared/paths-within.ts";
 import { usePermissions } from "../../shared/use-me.ts";
-import { NavLink } from "./NavItem.tsx";
-import { startOf } from "./screen-start.ts";
+import { NavLink, startOf } from "../shell/index.ts";
 import { SettingsScreens } from "./SettingsScreens.tsx";
 import { placeAt, topicGroups, type Place, type TopicGroup } from "../../shared/places.ts";
 

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Modal, ModalOverlay } from "react-aria-components";
 
+import { OutsidePane } from "./OutsidePane.tsx";
 import { partOf } from "./parts.ts";
 import type { OverlayEdge } from "./props.ts";
 import { part } from "./tokens.ts";
@@ -56,7 +57,7 @@ export function OverlayLayer({
           states: [...states, waiting && "loading", phase === windowPhase.quiet && "quiet"],
         })}
       >
-        {children}
+        <OutsidePane>{children}</OutsidePane>
       </Modal>
     </ModalOverlay>
   );

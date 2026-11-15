@@ -3,7 +3,7 @@ import { partOf, part } from "@bugaboo/ui";
 import { useLocation } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
-import { SettingsScreens, TopicList } from "../shell/index.ts";
+import { SettingsScreens, TopicList } from "../settings/index.ts";
 import { projectTopics } from "./settings-tabs.ts";
 import { hasSettingsMenu, useShowsSettingsMenu } from "./use-settings-menu.ts";
 import type { OneProject } from "./use-projects.ts";

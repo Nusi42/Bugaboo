@@ -1,8 +1,7 @@
 import { useId, type ReactNode } from "react";
 import { Link } from "./Link.tsx";
 import { useLayout } from "./layout.ts";
-import { paneHeadSlot, useInPane } from "./pane-head.ts";
-import { InPaneHead } from "./PaneWithHead.tsx";
+import { InPaneHead, paneHeadSlot, useInPane } from "./pane-head.ts";
 import { partOf } from "./parts.ts";
 import type { CardLook } from "./props.ts";
 import { useTitleInBar } from "./title-bar.ts";
@@ -76,7 +75,8 @@ export function Card({ heading, level = 2, look, actions, intro, back, children 
   const headingId = useId();
   const phone = useLayout() === "phone";
   const titleInBar = useTitleInBar();
-  const inPane = useInPane() && level === 1;
+  // A phone keeps the heading and the introduction in the card: its top bar carries the title.
+  const inPane = useInPane() && level === 1 && !phone;
   // The one card that is the whole page (level 1) has its heading for screen readers only on a phone where a top bar
   // carries the title, and a screen has one title (UX §7.3); a page without a top bar (the sign-in) shows its heading.
   const hidden = level === 1 && phone && titleInBar;
@@ -90,34 +90,27 @@ export function Card({ heading, level = 2, look, actions, intro, back, children 
   if (hidden && empty && intro === undefined && actions === undefined) {
     return top;
   }
-  if (inPane) {
-    // The one card of a page in a pane: its heading and introduction are the head of the pane, on the page above the
-    // rest of it, which stands in the box with what follows (UX §6.5); a card that holds nothing more is not drawn.
-    return (
-      <>
+  // The one card of a page in a pane on a computer or a tablet: its heading and introduction are the head of the pane,
+  // on the page above the rest of it, which stands in the box with what follows (UX §6.5); a card that holds nothing
+  // more is not drawn. Both ways are one tree, so what is typed in the card stays when the layout changes.
+  return (
+    <>
+      {inPane ? (
         <InPaneHead slot={paneHeadSlot.title}>
           {top}
           {introLine}
         </InPaneHead>
-        {empty ? null : (
-          <section {...partOf(part.card, { variants: [look] })} aria-labelledby={headingId}>
-            <div {...partOf(part.stack)}>
-              {children}
-              {backLink}
-            </div>
-          </section>
-        )}
-      </>
-    );
-  }
-  return (
-    <section {...partOf(part.card, { variants: [look] })} aria-labelledby={headingId}>
-      {top}
-      <div {...partOf(part.stack)}>
-        {introLine}
-        {children}
-        {backLink}
-      </div>
-    </section>
+      ) : null}
+      {inPane && empty ? null : (
+        <section {...partOf(part.card, { variants: [look] })} aria-labelledby={headingId}>
+          {inPane ? null : top}
+          <div {...partOf(part.stack)}>
+            {inPane ? null : introLine}
+            {children}
+            {backLink}
+          </div>
+        </section>
+      )}
+    </>
   );
 }

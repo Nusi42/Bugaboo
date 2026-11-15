@@ -1,6 +1,5 @@
 import {
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -8,17 +7,10 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import { createPortal } from "react-dom";
 
 import { doNothing } from "./do-nothing.ts";
 import { useSizesOn, type RunTimeSize } from "./height-variable.ts";
-import {
-  PaneHeadContext,
-  paneLook,
-  useOnPaper,
-  type PaneHeadSlot,
-  type PaneLook,
-} from "./pane-head.ts";
+import { PaneHeadContext, paneLook, useOnPaper, type PaneLook } from "./pane-head.ts";
 import { partOf } from "./parts.ts";
 import { part } from "./tokens.ts";
 
@@ -32,26 +24,6 @@ export interface PaneWithHeadProps {
   readonly look: PaneLook;
   /** The boxes of the pane: each starts under the whole head, and the first two fold it as they scroll. */
   readonly children: ReactNode;
-}
-
-/**
- * Puts what a part deeper in the pane draws above its box (the search bar, the options of a list) into its slot of the
- * head of the pane, so it folds with the head (UX §6.5). Outside a pane it stands where it is; in a pane it waits for
- * its slot, so it is drawn once, in its place.
- */
-export function InPaneHead({
-  slot,
-  children,
-}: {
-  readonly slot: PaneHeadSlot;
-  readonly children: ReactNode;
-}) {
-  const { slots } = useContext(PaneHeadContext);
-  if (slots === undefined) {
-    return children;
-  }
-  const into = slots[slot];
-  return into === null ? null : createPortal(children, into);
 }
 
 /** The focus that the keyboard shows: a control reached with the keyboard, not one pressed with the pointer. */

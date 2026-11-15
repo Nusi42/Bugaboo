@@ -1,4 +1,4 @@
-import { createRootRoute, createRoute, redirect } from "@tanstack/react-router";
+import { createRootRoute, createRoute, lazyRouteComponent, redirect } from "@tanstack/react-router";
 
 import {
   AppLayout,
@@ -6,7 +6,6 @@ import {
   GuestLayout,
   UnknownAddressPage,
   PendingPage,
-  SettingsFrame,
 } from "../features/shell/index.ts";
 import { paths } from "../shared/paths.ts";
 import { rememberReturn } from "../shared/return-to.ts";
@@ -198,10 +197,22 @@ export const setUpRoute = createRoute({
   component: GuestLayout,
 });
 
+/** The frame of the settings screens, in the feature of the settings: not on the first page (PERF-04). */
+const SettingsFrame = lazyRouteComponent(
+  () => import("../features/settings/index.ts"),
+  "SettingsFrame",
+);
+
+/** Loads the frame with its route, so it never waits (and shows nothing) while it is drawn. */
+async function loadSettingsFrame(): Promise<void> {
+  await SettingsFrame.preload?.();
+}
+
 /** The frame of *My settings*: the menu of its topics next to the topic that is open. */
 export const mySettingsRoute = createRoute({
   getParentRoute: () => appRoute,
   id: "my-settings",
+  loader: loadSettingsFrame,
   component: function MySettings() {
     return <SettingsFrame parent={paths.mySettings} />;
   },
@@ -211,6 +222,7 @@ export const mySettingsRoute = createRoute({
 export const organizationSettingsRoute = createRoute({
   getParentRoute: () => appRoute,
   id: "organization-settings",
+  loader: loadSettingsFrame,
   component: function OrganizationSettings() {
     return (
       <OnlyWith path={paths.organizationSettings}>

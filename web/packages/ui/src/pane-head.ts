@@ -1,4 +1,5 @@
-import { createContext, useContext, useSyncExternalStore } from "react";
+import { createContext, useContext, useSyncExternalStore, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 /**
  * The places in the head of a pane that parts deeper in the pane put their lines into, in the order they stand there:
@@ -20,7 +21,9 @@ export interface PaneHead {
 }
 
 /** Outside a pane: no head to put anything into, and no room to keep above a box. */
-export const PaneHeadContext = createContext<PaneHead>({ slots: undefined, above: 0 });
+export const OUTSIDE_PANE: PaneHead = { slots: undefined, above: 0 };
+
+export const PaneHeadContext = createContext<PaneHead>(OUTSIDE_PANE);
 
 /** Whether a part stands in a pane, so what belongs above its boxes goes into the head of the pane. */
 export function useInPane(): boolean {
@@ -58,4 +61,24 @@ function serverPaper(): boolean {
 /** Whether the page is being drawn for paper: what code lays out follows the rules of the theme for print. */
 export function useOnPaper(): boolean {
   return useSyncExternalStore(subscribePaper, readPaper, serverPaper);
+}
+
+/**
+ * Puts what a part deeper in the pane draws above its box (the search bar, the options of a list) into its slot of the
+ * head of the pane, so it folds with the head (UX §6.5). Outside a pane it stands where it is; in a pane it waits for
+ * its slot, so it is drawn once, in its place.
+ */
+export function InPaneHead({
+  slot,
+  children,
+}: {
+  readonly slot: PaneHeadSlot;
+  readonly children: ReactNode;
+}): ReactNode {
+  const { slots } = useContext(PaneHeadContext);
+  if (slots === undefined) {
+    return children;
+  }
+  const into = slots[slot];
+  return into === null ? null : createPortal(children, into);
 }

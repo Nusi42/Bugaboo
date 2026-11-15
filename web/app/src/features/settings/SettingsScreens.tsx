@@ -45,11 +45,9 @@ export function SettingsScreens({ heading, label, menu, onMenu, children }: Sett
   if (onMenu) {
     return <MenuScreen heading={heading} label={label ?? heading} menu={menu} />;
   }
-  if (layout === "phone") {
-    return children;
-  }
   // The heading and the introduction of the topic stand above the rest of it, and on a computer fold over it as it
-  // scrolls (UX §6.5); a tablet keeps the same parts in the same places, so nothing typed is lost.
+  // scrolls (UX §6.5). A tablet and a phone keep the same tree, so nothing typed is lost when the layout changes; a
+  // phone keeps them in the card.
   const topic = (
     <PaneWithHead look={layout === "computer" ? paneLook.folds : paneLook.still} head={null}>
       <div {...partOf(part.settingsTopic)} {...keptScroll(scrollBox.topic)}>
@@ -57,7 +55,7 @@ export function SettingsScreens({ heading, label, menu, onMenu, children }: Sett
       </div>
     </PaneWithHead>
   );
-  if (menu === undefined) {
+  if (layout === "phone" || menu === undefined) {
     return topic;
   }
   return (
