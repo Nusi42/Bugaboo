@@ -102,14 +102,13 @@ function datesOfAll(session: ApiSession, keys: readonly string[]) {
 }
 
 /**
- * The issues each person's run moves: the third person's run shares its first issue with the
- * second's. First, so a run refused for it writes nothing: a run refused at a later issue keeps what
- * it wrote before, as a run that failed, which the person has no *Undo* for (M8-F235).
+ * The issues each person's run moves: the third person's run ends with the issue the second
+ * person's run ends with, so a run refused for it is refused after another issue of it was judged.
  */
 function keysOfRun(at: number): readonly string[] {
-  const [shared = ""] = planIssues.runs[1] ?? [];
+  const [, shared = ""] = planIssues.runs[1] ?? [];
   const own = planIssues.runs[at] ?? [];
-  return at === 2 ? [shared, own[1] ?? ""] : own;
+  return at === 2 ? [own[0] ?? "", shared] : own;
 }
 
 /**
@@ -149,7 +148,7 @@ export async function tenPeopleUndoTheirRuns(server: Instance): Promise<void> {
   // The run that moved the common issue first finds it changed after it: its two dates stay.
   expect(skipped).toEqual(skipped.map((_, at) => (at + 1 === first ? 2 : 0)));
   // Every other issue of the nine runs is back; the common one has the dates of the run before.
-  const [shared = ""] = keysOfRun(1);
+  const [, shared = ""] = keysOfRun(1);
   const others = touched.filter((key) => key !== shared && !keysOfRun(0).includes(key));
   expect(await datesOfAll(reader, others)).toEqual(
     others.map((key) => before[touched.indexOf(key)]),
