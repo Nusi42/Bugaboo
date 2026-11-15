@@ -5060,6 +5060,11 @@ textarea,
   visibility: hidden;
 }
 
+[data-part="reading-hold"][data-state~="held"] [data-part="card.heading"][data-variant~="page"],
+[data-part="reading-hold"][data-state~="held"] [data-part="visually-hidden"][data-variant~="page"] {
+  visibility: visible;
+}
+
 [data-part="reading-hold.shapes"] {
   position: absolute;
   width: min(100%, var(--size-main));
@@ -5795,7 +5800,8 @@ textarea,
   max-width: none;
 }
 
-[data-part="card"]:has([data-part="sheet"]) {
+[data-part="card"]:has([data-part="sheet"]),
+[data-part="sheet-page"] > [data-part="reading-hold"] > [data-part="card"] {
   padding-inline: var(--space-3);
 }
 
@@ -5936,6 +5942,10 @@ textarea,
   gap: var(--space-2);
   box-sizing: border-box;
   width: 100%;
+}
+
+[data-part="time-part"][data-variant~="home"] {
+  min-height: var(--size-control);
 }
 
 [data-part="time-part"][data-variant~="bar"] {

@@ -52,17 +52,23 @@ interface CardTopProps {
 /** The heading of a card, with what can be done with the whole card at the end of its row. */
 function CardTop({ id, heading, level, hidden, actions }: CardTopProps) {
   const Heading = level === 1 ? "h1" : "h2";
+  // The heading of the page (level 1) is never held with what its page waits for (UX §6.4): it says so.
+  const page = level === 1 && "page";
   // The heading that is for screen readers only takes no room: there is no slot for it above the first line.
   if (hidden && actions === undefined) {
     return (
-      <Heading id={id} {...partOf(part.visuallyHidden)} tabIndex={-1}>
+      <Heading id={id} {...partOf(part.visuallyHidden, { variants: [page] })} tabIndex={-1}>
         {heading}
       </Heading>
     );
   }
   return (
     <div {...partOf(part.cardHeader)}>
-      <Heading id={id} {...partOf(hidden ? part.visuallyHidden : part.cardHeading)} tabIndex={-1}>
+      <Heading
+        id={id}
+        {...partOf(hidden ? part.visuallyHidden : part.cardHeading, { variants: [page] })}
+        tabIndex={-1}
+      >
         {heading}
       </Heading>
       {actions === undefined ? null : <div {...partOf(part.cardActions)}>{actions}</div>}

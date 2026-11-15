@@ -23,19 +23,20 @@ export function HomePage() {
   usePageTitle(title);
   // The sidebar of a computer has the timer already; a phone and a tablet have it at the top of Home.
   const computer = useLayout() === "computer";
-  // The timer and the work day stand above the greeting, and the notifications under it, each with reads of their
-  // own: the greeting shows with the timer, and the notifications come under it once they and their words are read, so
-  // nothing pushes what stands under it (UX §6.4).
+  // The greeting is never held. The timer and the work day stand above it, in the room they keep from the start, and
+  // the notifications under it, each held until its own reads are in, so nothing pushes what stands under it (UX §6.4).
   return (
     <>
-      <ReadingHold>
-        {computer ? null : <TimeSlot place={timePlace.home} />}
-        <Card heading={title} level={1}>
-          {mayOpen(paths.organizationSettings, permissions) ? (
-            <p {...partOf(part.text)}>{t("home.admin")}</p>
-          ) : null}
-        </Card>
-      </ReadingHold>
+      {computer ? null : (
+        <ReadingHold>
+          <TimeSlot place={timePlace.home} />
+        </ReadingHold>
+      )}
+      <Card heading={title} level={1}>
+        {mayOpen(paths.organizationSettings, permissions) ? (
+          <p {...partOf(part.text)}>{t("home.admin")}</p>
+        ) : null}
+      </Card>
       <ReadingHold>
         <Suspense fallback={<HoldWhileLoading />}>
           <NotificationsBlock />

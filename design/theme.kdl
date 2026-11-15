@@ -6200,6 +6200,11 @@ part "reading-hold[state=held]" {
     visibility hidden
 }
 
+// The heading of a page is never held: it shows, and is read out, while what the page waits for is held (UX §6.4).
+part "reading-hold[state=held] card.heading[variant=page]" "reading-hold[state=held] visually-hidden[variant=page]" {
+    visibility visible
+}
+
 // The grey shapes a hold draws while it still waits after the wait of the shapes (UX §6.1): where the room it keeps starts,
 // over it, taking no room, so nothing moves when they go.
 part "reading-hold.shapes" {
@@ -6933,7 +6938,8 @@ part "app-layout.inner:has(sheet)" "app-layout.inner:has(sheet-page)" {
 }
 
 // The card of the timesheet has less room at its sides, so the week and its total fit a window of 1280 (M6-F203).
-part "card:has(sheet)" {
+// The page of one's own week says so before its grid is read, so the heading stands where it stays.
+part "card:has(sheet)" "sheet-page > reading-hold > card" {
     padding-inline "$space-3"
 }
 
@@ -7074,6 +7080,12 @@ part "time-part" {
     gap "$space-2"
     box-sizing border-box
     width "100%"
+}
+
+// At the top of the start page of a phone it keeps the room of its work day from the start, while that is read, so the
+// greeting under it stands where it stays (UX §6.4).
+part "time-part[variant=home]" {
+    min-height "$size-control"
 }
 
 part "time-part[variant=bar]" {

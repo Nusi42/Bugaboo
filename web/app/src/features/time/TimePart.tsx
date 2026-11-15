@@ -41,7 +41,9 @@ export function TimePart({ place = "sidebar", narrow = false }: TimePartProps) {
   return (
     <section
       aria-label={t("time.timer.region")}
-      {...partOf(part.timePart, { variants: [place === "bar" && "bar"] })}
+      {...partOf(part.timePart, {
+        variants: [place === "bar" && "bar", place === "home" && "home"],
+      })}
     >
       {place === "bar" ? null : <WorkDayPart narrow={narrow} place={place} />}
       {running === undefined || reading === undefined ? null : (

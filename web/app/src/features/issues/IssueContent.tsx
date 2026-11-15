@@ -1,4 +1,4 @@
-import { PaneWithHead, paneLook, partOf, part, ReadingHold } from "@bugaboo/ui";
+import { PaneWithHead, paneLook, partOf, part } from "@bugaboo/ui";
 import { useState, type ReactNode } from "react";
 
 import { DetailsToggle } from "./DetailsToggle.tsx";
@@ -29,12 +29,7 @@ export interface IssueContentProps {
  */
 export function IssueContent({ detail, address, changes, blocks, split, head }: IssueContentProps) {
   const [open, setOpen] = useState(false);
-  // The rows of the Details come with reads of their own: shown once all are read, none pushes another (UX §6.4).
-  const details = (
-    <ReadingHold>
-      <DetailsPanel blocks={blocks} changes={changes} stacked={!split} />
-    </ReadingHold>
-  );
+  const details = <DetailsPanel blocks={blocks} changes={changes} stacked={!split} />;
   const top = (
     <>
       {head}

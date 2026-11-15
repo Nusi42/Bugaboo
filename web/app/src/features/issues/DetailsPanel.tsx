@@ -1,5 +1,12 @@
 import { t } from "@bugaboo/messages";
-import { DelayedSkeleton, NameValueList, partOf, part, useHoldWhileReading } from "@bugaboo/ui";
+import {
+  DelayedSkeleton,
+  NameValueList,
+  partOf,
+  part,
+  ReadingHold,
+  useHoldWhileReading,
+} from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
 import { keptScroll, scrollBox } from "../../shared/scroll-boxes.ts";
@@ -89,8 +96,8 @@ function groupsOf({ blocks, changes }: Pick<DetailsPanelProps, "blocks" | "chang
  * they stand once in the order of the layout and never move when it arrives (CFG-01, M3-F102).
  */
 export function DetailsPanel({ blocks, changes, stacked }: DetailsPanelProps) {
-  // The rows come once the layout is read: the page is held with them.
-  useHoldWhileReading(!blocks.form.ready);
+  // The landmark and its heading stand at once and say they are busy; the rows, which come with reads of their own, are
+  // held in it until all are read, so none pushes another (UX §6.4).
   return (
     <aside
       aria-busy={!blocks.form.ready}
@@ -100,18 +107,31 @@ export function DetailsPanel({ blocks, changes, stacked }: DetailsPanelProps) {
     >
       <div {...partOf(part.issueDetailsCard)}>
         <h2 {...partOf(part.issueDetailsHeading)}>{t("issues.details")}</h2>
-        {blocks.form.ready ? (
-          <NameValueList>
-            {inLayoutOrder(
-              blocks.form.sections.flatMap((section) => section.fields),
-              groupsOf({ blocks, changes }),
-            )}
-          </NameValueList>
-        ) : (
-          <DelayedSkeleton />
-        )}
-        <SlotBlocks slot={issueSlots.detailSections} blocks={blocks} />
+        <ReadingHold>
+          <DetailsRows blocks={blocks} changes={changes} />
+        </ReadingHold>
       </div>
     </aside>
+  );
+}
+
+/** The rows of the Details, once the layout is read, and what cannot be a row. */
+function DetailsRows({ blocks, changes }: Pick<DetailsPanelProps, "blocks" | "changes">) {
+  // The rows come once the layout is read: the hold waits for it.
+  useHoldWhileReading(!blocks.form.ready);
+  return (
+    <>
+      {blocks.form.ready ? (
+        <NameValueList>
+          {inLayoutOrder(
+            blocks.form.sections.flatMap((section) => section.fields),
+            groupsOf({ blocks, changes }),
+          )}
+        </NameValueList>
+      ) : (
+        <DelayedSkeleton />
+      )}
+      <SlotBlocks slot={issueSlots.detailSections} blocks={blocks} />
+    </>
   );
 }

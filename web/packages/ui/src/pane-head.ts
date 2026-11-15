@@ -87,7 +87,8 @@ export function InPaneHead({
   readonly children: ReactNode;
 }): ReactNode {
   const { slots, remeasure } = useContext(PaneHeadContext);
-  const heldHere = useHeld();
+  // The title of the page goes into the head at once: the heading of a page is never held.
+  const heldHere = useHeld() && slot !== paneHeadSlot.title;
   const into = slots?.[slot] ?? null;
   const inHead = into !== null && !heldHere;
   // When the lines go into the head (a hold shows them), the room the boxes keep for the head is measured in the same
