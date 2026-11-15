@@ -98,9 +98,9 @@ fn away_times_show_at_once(book: &Book, facts: &Facts) -> Vec<String> {
 
 /// A *Move it after* that was kept moved every issue it names: each, but the one somebody changed
 /// meanwhile, has the event of the version after the preview. One that was refused wrote nothing:
-/// a change it left behind would be an event no person kept, which the rule of the versions finds.
+/// no issue it names has an event of the version after the preview that no kept move accounts for.
 fn a_move_after_is_whole(book: &Book, facts: &Facts) -> Vec<String> {
-    let mut found = Vec::new();
+    let mut found = refused_moves_wrote_nothing(book, facts);
     for moved in book.moved_after.iter().filter(|each| each.kept) {
         for named in moved.named.iter().filter(|each| each.key != moved.changed) {
             let Some(issue) = issue_of(facts, &named.key) else {
@@ -114,6 +114,40 @@ fn a_move_after_is_whole(book: &Book, facts: &Facts) -> Vec<String> {
                 found.push(format!(
                     "{}: a move after that was kept left no event after version {}, so it was not kept whole",
                     named.key, named.version
+                ));
+            }
+        }
+    }
+    found
+}
+
+/// A refused *Move it after* left no change: an event of the version after the preview of an issue
+/// it names is somebody's kept move, never its own half.
+fn refused_moves_wrote_nothing(book: &Book, facts: &Facts) -> Vec<String> {
+    let mut found = Vec::new();
+    for refused in book.moved_after.iter().filter(|each| !each.kept) {
+        for named in refused
+            .named
+            .iter()
+            .filter(|each| each.key != refused.changed)
+        {
+            let next = named.version + 1;
+            let kept_by_one =
+                book.moved
+                    .iter()
+                    .any(|each| each.key == named.key && each.version == next)
+                    || book.moved_after.iter().any(|each| {
+                        each.kept
+                            && each.named.iter().any(|other| {
+                                other.key == named.key && other.version == named.version
+                            })
+                    });
+            let written = issue_of(facts, &named.key)
+                .is_some_and(|issue| issue.event_versions.contains(&next));
+            if written && !kept_by_one {
+                found.push(format!(
+                    "{}: a move after that was refused left the event of version {next}, so it was not refused whole",
+                    named.key
                 ));
             }
         }
@@ -271,7 +305,7 @@ mod tests {
         let mut half = issue("A-1", 2, ("2027-02-01", "2027-02-03"), &[]);
         half.event_versions = vec![2];
         assert_eq!(a_move_after_is_whole(&book, &facts_of(vec![half])).len(), 1);
-        // A move that was refused names nothing to check here.
+        // A move that was refused wrote nothing: no event after the version it named.
         let refused = Book {
             moved_after: vec![MovedAfter {
                 kept: false,
@@ -280,5 +314,24 @@ mod tests {
             ..Book::default()
         };
         assert!(a_move_after_is_whole(&refused, &Facts::default()).is_empty());
+        let mut untouched = issue("A-1", 2, ("2027-02-01", "2027-02-03"), &[]);
+        untouched.event_versions = vec![2];
+        assert!(a_move_after_is_whole(&refused, &facts_of(vec![untouched])).is_empty());
+        // Half written: A-1 has the event of the refused move, which nobody kept.
+        let partly = || {
+            let mut half = issue("A-1", 3, ("2027-02-01", "2027-02-03"), &[]);
+            half.event_versions = vec![2, 3];
+            half
+        };
+        assert_eq!(
+            a_move_after_is_whole(&refused, &facts_of(vec![partly()])).len(),
+            1
+        );
+        // The same event is somebody's kept move of A-1: no finding.
+        let kept_by_another = Book {
+            moved: vec![moved("A-1", 3, ("2027-02-01", "2027-02-03"))],
+            ..refused
+        };
+        assert!(a_move_after_is_whole(&kept_by_another, &facts_of(vec![partly()])).is_empty());
     }
 }
