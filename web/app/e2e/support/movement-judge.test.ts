@@ -52,6 +52,16 @@ describe("ux_01 the measure ties every push to what grew above it", () => {
     expect(found.moved.map((part) => part.name)).toEqual(["labels"]);
   });
 
+  it("counts once what grew when two names stand for one part", () => {
+    const section = (name: string) => moved(name, box(404, 300, 496, 371), box(404, 300, 496, 72));
+    const under = moved("under", box(404, 695, 496, 134), box(404, 396, 496, 134));
+    const found = wrongIn(movementOf([section("changed"), section("part 1"), under]), {
+      grows: ["changed", "part 1"],
+      follows: ["under"],
+    });
+    expect(found).toEqual(nothingWrong);
+  });
+
   it("does not count what grew in another column", () => {
     const beside = moved("main", box(400, 900, 480, 300), box(400, 940, 480, 300));
     const found = wrongIn(movementOf([tags, beside]), { grows: ["tags"], follows: ["main"] });
@@ -187,5 +197,26 @@ describe("ux_01 the measure judges what is in view, and lets the browser keep it
 
   it("fails a scroll when nothing above the view changed", () => {
     expect(wrongIn(withScroll([]), {}).scrolled).toEqual([scroll]);
+  });
+
+  it("passes a part that grew where it is out of view, the rest of it still in view", () => {
+    // The Details grew by a row above the view; their foot is in view and stays, by the scroll.
+    const details = moved("details", box(0, -1213, 300, 1340), box(0, -1265, 300, 1392));
+    expect(wrongIn(withScroll([details]), {})).toEqual(nothingWrong);
+  });
+
+  it("does not count a row that came in above the view as a push of what is in view", () => {
+    // A row came into the Details above the view and the scroll kept the view still; below, in view, the part that
+    // changes grew by 113 px and pushed the part under it by exactly that.
+    const changed = moved("sub-issues", box(0, 251, 300, 279), box(0, 251, 300, 392));
+    const under = moved("next", box(0, 553, 300, 142), box(0, 666, 300, 142));
+    const found = wrongIn(
+      {
+        ...withScroll([changed, under]),
+        appeared: [{ name: "a new row", last: box(0, -300, 300, 52) }],
+      },
+      { grows: ["sub-issues"], follows: ["next"] },
+    );
+    expect(found).toEqual(nothingWrong);
   });
 });

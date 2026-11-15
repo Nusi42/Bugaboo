@@ -63,7 +63,8 @@ function standsElsewhere(first: Box, later: Box): boolean {
   return far(first.x, later.x) || far(first.y, later.y) || far(first.width, later.width);
 }
 
-function differs(first: Box, later: Box): boolean {
+/** Whether a box stands somewhere else or has another size. */
+export function differs(first: Box, later: Box): boolean {
   return standsElsewhere(first, later) || far(first.height, later.height);
 }
 

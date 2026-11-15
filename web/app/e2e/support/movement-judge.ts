@@ -1,4 +1,11 @@
-import { far, LEAST_MOVE_PX, type Movement, type Moved, type Scrolled } from "./movement-frames.ts";
+import {
+  differs,
+  far,
+  LEAST_MOVE_PX,
+  type Movement,
+  type Moved,
+  type Scrolled,
+} from "./movement-frames.ts";
 import type { Box, Shift } from "./movement-record.ts";
 
 export { judged, scrolledOf } from "./movement-frames.ts";
@@ -52,11 +59,20 @@ function holds(outer: Box, inner: Box): boolean {
 /**
  * How far the parts that grew above `part`, in its column, push it down. A part that holds another
  * part that grew (the list of the Details around the row of *Tags*) grew by that one, so it is not
- * counted again.
+ * counted again; a part that grew wholly above the view is not counted at all (UX §6.4).
  */
-function pushOf(part: Moved, growths: readonly Growth[]): number {
+function pushOf(part: Moved, growths: readonly Growth[], view: number | undefined): number {
+  // What grew wholly above the view pushes nothing in it: the browser keeps what is in view still by its scroll.
+  // Two names of one part (the part that changes and the part of the column it is) count as one: the first.
   const innermost = growths.filter(
-    (growth) => !growths.some((other) => other !== growth && holds(growth.box, other.box)),
+    (growth, index) =>
+      !growths.some(
+        (other, at) =>
+          other !== growth &&
+          holds(growth.box, other.box) &&
+          (!holds(other.box, growth.box) || at < index),
+      ) &&
+      (view === undefined || growth.box.y + growth.box.height > 0),
   );
   return innermost
     .filter(
@@ -124,7 +140,8 @@ function grewByWhatCameIn(part: Moved, appeared: Movement["appeared"]): boolean 
 }
 
 /**
- * The parts that moved in view, and whether any moved out of view only. What stands outside the
+ * The parts that moved where they show in view, and whether anything changed out of view only (a part, a row that
+ * came in above the view). What stands outside the
  * window at the start and at the end is not in view: the browser keeps what is in view still when
  * something above it grows, by its scroll (UX §6.4).
  */
@@ -135,8 +152,20 @@ function inViewOf(movement: Movement): {
   const { view } = movement;
   const inView = (box: Box): boolean =>
     view === undefined || (box.y < view && box.y + box.height > 0);
-  const seen = movement.moved.filter((part) => inView(part.from) || inView(part.last));
-  return { seen, anchored: seen.length < movement.moved.length };
+  // What of a part shows in the window: a part that changed only where it is out of view (grew above it, the rest
+  // kept still by the scroll) looks the same to the person.
+  const shown = (box: Box): Box => {
+    const top = Math.max(box.y, 0);
+    return { ...box, y: top, height: Math.min(box.y + box.height, view ?? Infinity) - top };
+  };
+  const looksMoved = (part: Moved): boolean =>
+    !inView(part.from) || !inView(part.last) || differs(shown(part.from), shown(part.last));
+  const seen = movement.moved.filter(
+    (part) => (inView(part.from) || inView(part.last)) && looksMoved(part),
+  );
+  // Something changed out of view: a part, or a row that came in above it.
+  const above = movement.appeared.some((part) => part.last.y + part.last.height <= 0);
+  return { seen, anchored: above || seen.length < movement.moved.length };
 }
 
 /** What broke the rule of a still screen; all empty when it held. */
@@ -181,7 +210,7 @@ export function wrongIn(movement: Movement, except: StillExcept): Wrong {
     shift.sources.every((source) => source.within.some((name) => may.has(name)));
   const { seen, anchored } = inViewOf(movement);
   const moved = seen.filter((part) => {
-    const pushed = pushOf(part, growths);
+    const pushed = pushOf(part, growths, movement.view);
     if (moves.includes(part.name)) {
       return !movedAlong(part);
     }
