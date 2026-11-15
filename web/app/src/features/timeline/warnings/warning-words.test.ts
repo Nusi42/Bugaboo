@@ -19,6 +19,7 @@ function warning(more: Partial<PlanWarning>): PlanWarning {
     days: { first: "2027-03-01", last: "2027-03-05" },
     person: null,
     away_days: null,
+    away_weeks: null,
     other: null,
     late_days: null,
     needs_days: null,
@@ -37,19 +38,28 @@ function warning(more: Partial<PlanWarning>): PlanWarning {
 const goal = { key: "WEB-280", title: "Mobile app 2.0", project: "Mobile app" };
 const login = { id: "s", readable_id: "WEB-281", title: "Login screen" };
 
+/** A goal late by Lea's away week. */
+const awayWeek = warning({
+  sentence: "plan-warning.delay-goal-away-weeks",
+  person: lea,
+  away_days: 5,
+  away_weeks: 1,
+  other: login,
+  late_days: 3,
+});
+
 describe("the sentences of plan warnings (UX §4.7, PLAN-13)", () => {
   it("plan_13_a_goal_late_by_an_away_week_names_the_person_and_the_titles", () => {
-    const away = warning({
-      sentence: "plan-warning.delay-goal-away",
-      person: lea,
-      away_days: 5,
-      other: login,
-      late_days: 3,
-    });
-    expect(warningSentence(away, goal)).toBe(
+    expect(warningSentence(awayWeek, goal)).toBe(
       "Lea's away week moves Login screen past the due date of Mobile app 2.0.",
     );
-    expect(warningSentence({ ...away, away_days: 2 }, goal)).toBe(
+    const days = {
+      ...awayWeek,
+      sentence: "plan-warning.delay-goal-away",
+      away_days: 2,
+      away_weeks: null,
+    };
+    expect(warningSentence(days, goal)).toBe(
       "Lea's 2 away days move Login screen past the due date of Mobile app 2.0.",
     );
   });

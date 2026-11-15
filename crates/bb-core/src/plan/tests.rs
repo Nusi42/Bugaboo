@@ -6,7 +6,9 @@ use jiff::civil::{Date, date};
 
 use super::bar::{Bar, BarInput, Shortfall, WorkedOut, bar, effort_days, load, shortfall};
 use super::order::move_after;
-use super::warning::{Delay, Warning, away, away_in, delays, sub_issue_delays, too_much_at_once};
+use super::warning::{
+    AwayCount, Delay, Warning, away, away_in, delays, sub_issue_delays, too_much_at_once,
+};
 use super::{Days, TimeFactor};
 use crate::id::{IssueId, SequentialIds};
 use crate::relation::DependencyGraph;
@@ -361,15 +363,35 @@ fn plan_13_away_and_too_much_at_once() {
         ..fixed
     };
     assert_eq!(away(&worked, &days), None);
-    // Its away days are still the cause a late goal names, from the first to the last.
+    // Its away days are still the cause a late goal names: two days, no whole week.
     assert_eq!(
         away_in(&worked, &days),
-        Days::new(date(2026, 11, 3), date(2026, 11, 4))
+        Some(AwayCount { days: 2, weeks: 0 })
     );
     let not_away = person_days(MONDAY, 14, 6, 50, &[]);
     assert_eq!(away_in(&worked, &not_away), None);
     // Away days in a bar whose dates people set moved nothing.
     assert_eq!(away_in(&fixed, &days), None);
+    // A whole week, Monday to Friday, is a week; Thursday to Monday is three work days, and two
+    // days apart are two days, never a week.
+    let long = Bar {
+        days: Days::new(MONDAY, date(2026, 11, 13)).unwrap(),
+        worked_out: WorkedOut::Due,
+    };
+    let away_on = |dates: &[Date]| away_in(&long, &person_days(MONDAY, 14, 6, 50, dates));
+    let week: Vec<Date> = (2..=6).map(|day| date(2026, 11, day)).collect();
+    assert_eq!(away_on(&week), Some(AwayCount { days: 5, weeks: 1 }));
+    let thursday_to_monday: Vec<Date> = (5..=9).map(|day| date(2026, 11, day)).collect();
+    assert_eq!(
+        away_on(&thursday_to_monday),
+        Some(AwayCount { days: 3, weeks: 0 })
+    );
+    assert_eq!(
+        away_on(&[date(2026, 11, 2), date(2026, 11, 11)]),
+        Some(AwayCount { days: 2, weeks: 0 })
+    );
+    let two_weeks: Vec<Date> = (2..=13).map(|day| date(2026, 11, day)).collect();
+    assert_eq!(away_on(&two_weeks), Some(AwayCount { days: 10, weeks: 2 }));
     // Two issues of the person on the same Monday: 3 hours each where 3 hours fit.
     let [first, second] = ids(2).try_into().unwrap();
     let plain = person_days(MONDAY, 14, 6, 50, &[]);

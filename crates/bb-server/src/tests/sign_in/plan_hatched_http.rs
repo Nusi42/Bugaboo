@@ -514,9 +514,10 @@ async fn plan_13_a_goal_late_by_an_away_week_names_the_person_and_the_titles() -
         let body = by_effort(&site, MONDAY, END);
         // Ada sees Lea and her away times: the week away is the cause, the issues by their titles.
         let named = goal_delay(&mut ada, body.clone(), &goal_id).await?;
-        assert_eq!(named["sentence"], "plan-warning.delay-goal-away", "{named}");
+        assert_eq!(named["sentence"], "plan-warning.delay-goal-away-weeks", "{named}");
         assert_eq!(named["person"]["name"], "Lea Lang", "{named}");
         assert_eq!(named["away_days"], 5, "{named}");
+        assert_eq!(named["away_weeks"], 1, "{named}");
         assert_eq!(named["other"]["title"], "Login screen", "{named}");
         // A reader who may not see Lea by name, or may not know her away times, learns no away
         // time from it: the plain sentence, nobody named.
@@ -532,6 +533,7 @@ async fn plan_13_a_goal_late_by_an_away_week_names_the_person_and_the_titles() -
             assert_eq!(plain["sentence"], "plan-warning.delay-goal", "{kind} {plain}");
             assert_eq!(plain["person"], Value::Null, "{kind} {plain}");
             assert_eq!(plain["away_days"], Value::Null, "{kind} {plain}");
+            assert_eq!(plain["away_weeks"], Value::Null, "{kind} {plain}");
             assert_eq!(plain["other"]["title"], "Login screen", "{kind} {plain}");
         }
         Ok(())

@@ -196,11 +196,15 @@ pub(crate) struct PlanWarningBody {
     /// person is away"*).
     #[schema(required = true)]
     person: Option<PersonRef>,
-    /// *Delay* of a goal that an away time of `person` causes: the days from the first to the last
-    /// away day in the bar of the sub-issue, both counted; `null` for any other warning and for a
-    /// reader who may not know that person's away times.
+    /// *Delay* of a goal that an away time of `person` causes: the away work days (Monday to
+    /// Friday) in the bar of the sub-issue; `null` for any other warning and for a reader who may
+    /// not know that person's away times.
     #[schema(required = true)]
     away_days: Option<u32>,
+    /// The same away days as whole weeks, Monday to Friday, when they are whole weeks only; `null`
+    /// otherwise.
+    #[schema(required = true)]
+    away_weeks: Option<u32>,
     /// The other issue it names: the one it waits for, or the sub-issue of a goal.
     #[schema(required = true)]
     other: Option<PlanWarningIssueBody>,
@@ -270,6 +274,7 @@ impl From<&WarningView> for PlanWarningBody {
                 title: other.title.clone(),
             }),
             away_days: view.away_days,
+            away_weeks: view.away_weeks,
             late_days,
             needs_days,
             has_days,

@@ -406,7 +406,7 @@ reason = "Days, not a count of things: how many days after an issue starts the o
 [[exempt]]
 route = "POST /api/v1/timeline"
 property = "away_days"
-reason = "Days, not a count of things: the days from the first to the last away day in the bar of a sub-issue that makes its goal late, sent only to a reader who sees the person on that bar by name and may know their away times, the reader who is told Away about that bar (PLAN-13, ADR-0030 amendment M8)."
+reason = "Days, not a count of things: the away work days in the bar of a sub-issue that makes its goal late, sent only to a reader who reads Assigned to, sees the person on that bar by name and may know their away times, the reader who is told Away about that bar (PLAN-13, ADR-0030 amendment M8)."
 
 [[exempt]]
 route = "POST /api/v1/timeline"
@@ -427,3 +427,8 @@ reason = "Days, not a count of things: how many work days of the person on the b
 route = "PUT /api/v1/issues/{issue}/time-factor"
 property = "work_days"
 reason = "Days, not a count of things: how many work days of the person on the bar the estimate times the time factor of one issue the viewer sees takes, in their own work hours; only for a viewer who reads Assigned to, is shown that person by name, may know their work times, may read the estimate and may see the factor, the rule of the person's time on a bar (PLAN-14, ADR-0030 amendment M8)."
+
+[[exempt]]
+route = "POST /api/v1/timeline"
+property = "away_weeks"
+reason = "Weeks, not a count of things: the same away work days as whole weeks, Monday to Friday, sent only with away_days, so only to a viewer who may see Away about that bar: who reads Assigned to, sees the person by name and may know their away times (PLAN-13, ADR-0030 amendment M8)."

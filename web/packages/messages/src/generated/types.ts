@@ -570,6 +570,12 @@ export interface MessageArguments {
     person: string | number;
     sub_issue: string | number;
   };
+  "plan-warning.delay-goal-away-weeks": {
+    away_weeks: number;
+    goal: string | number;
+    person: string | number;
+    sub_issue: string | number;
+  };
   "plan-warning.not-enough-days": { has: number; issue: string | number; needs: number };
   "plan-warning.too-much-at-once": {
     can: string | number;

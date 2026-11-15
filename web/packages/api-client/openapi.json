@@ -29009,6 +29009,7 @@
           "days",
           "person",
           "away_days",
+          "away_weeks",
           "other",
           "late_days",
           "needs_days",
@@ -29036,7 +29037,13 @@
           "away_days": {
             "type": ["integer", "null"],
             "format": "int32",
-            "description": "*Delay* of a goal that an away time of `person` causes: the days from the first to the last\naway day in the bar of the sub-issue, both counted; `null` for any other warning and for a\nreader who may not know that person's away times.",
+            "description": "*Delay* of a goal that an away time of `person` causes: the away work days (Monday to\nFriday) in the bar of the sub-issue; `null` for any other warning and for a reader who may\nnot know that person's away times.",
+            "minimum": 0
+          },
+          "away_weeks": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "The same away days as whole weeks, Monday to Friday, when they are whole weeks only; `null`\notherwise.",
             "minimum": 0
           },
           "can_minutes": {

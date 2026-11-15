@@ -15,7 +15,9 @@ use bb_core::message::MessageKey;
 use bb_core::notification::NotificationKind;
 use bb_core::own_fields::{ChoiceColor, FieldFor, FieldType, Look};
 use bb_core::people_kinds::PeopleKind;
-use bb_core::plan::warning::{DELAY_OF_GOAL, DELAY_OF_GOAL_AWAY, WarningKind, WayOut};
+use bb_core::plan::warning::{
+    DELAY_OF_GOAL, DELAY_OF_GOAL_AWAY, DELAY_OF_GOAL_AWAY_WEEKS, WarningKind, WayOut,
+};
 use bb_core::readable_id::IdMode;
 use bb_core::time::entry::StarterField;
 use bb_core::working_time::Preset;
@@ -47,14 +49,14 @@ fn holiday_keys() -> Vec<Made> {
     regions.chain(days).collect()
 }
 
-/// The messages of the plan of the timeline: the sentence of each kind of warning, the two sentences
+/// The messages of the plan of the timeline: the sentence of each kind of warning, the three sentences
 /// of a late goal, and the ways out.
 fn plan_keys() -> Vec<Made> {
     let kinds = WarningKind::ALL.iter().map(|kind| Made {
         key: kind.sentence(),
         word: format!("the plan warning `{}`", kind.code()),
     });
-    let others = [DELAY_OF_GOAL, DELAY_OF_GOAL_AWAY]
+    let others = [DELAY_OF_GOAL, DELAY_OF_GOAL_AWAY, DELAY_OF_GOAL_AWAY_WEEKS]
         .into_iter()
         .map(|key| Made {
             key,

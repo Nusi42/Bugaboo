@@ -19,7 +19,7 @@ use bb_core::issue::Issue;
 use bb_core::own_fields::FieldType;
 use bb_core::people_kinds::PeopleKind;
 use bb_core::plan::Days;
-use bb_core::plan::warning::{DELAY_OF_GOAL_AWAY, Delay, Warning, away_in};
+use bb_core::plan::warning::{AwayCount, Delay, Warning, away_in};
 use bb_core::saved_search::TimelineOptions;
 use bb_policy::{Authorized, Evaluation, PeopleContext, PersonRef, Place as Where};
 use bb_searchlang::{Expr, FieldRef, Span, Test};
@@ -550,8 +550,8 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
                     })
                 });
             let cause = self.away_cause(plan, warning).await?;
-            let (sentence, person, away_days) = match cause {
-                Some((who, away_days)) => (DELAY_OF_GOAL_AWAY, Some(who), Some(away_days)),
+            let (sentence, person, away) = match cause {
+                Some((who, away)) => (away.sentence(), Some(who), Some(away)),
                 None => (warning.sentence(), person, None),
             };
             views.push(WarningView {
@@ -562,7 +562,8 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
                 what: *warning,
                 other,
                 person,
-                away_days,
+                away_days: away.map(|away| away.days),
+                away_weeks: away.map(|away| away.weeks).filter(|weeks| *weeks > 0),
                 ways_out: warning.ways_out(),
                 move_after: warning.move_after(),
                 due_needed: warning.due_needed(),
@@ -573,26 +574,25 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
     }
 
     /// The cause of a goal's *Delay* when it is an away time: the person on the bar of the late
-    /// sub-issue and the days from their first to their last away day in its bar. Only for a reader
+    /// sub-issue and their away days in its bar, counted. Only for a reader
     /// who would be told *Away* about that bar, who sees the person by name and may know their away
     /// times (ADR-0030, amendment M8); any other reader gets the plain sentence.
     async fn away_cause(
         &self,
         plan: &Plan,
         warning: &Warning,
-    ) -> Result<Option<(PersonRef, u32)>, AppError> {
+    ) -> Result<Option<(PersonRef, AwayCount)>, AppError> {
         let Warning::Delay(Delay::SubIssue { sub_issue, .. }) = warning else {
             return Ok(None);
         };
         let Some(sub) = plan.issues.get(sub_issue) else {
             return Ok(None);
         };
-        let (Some(away), Some(held)) = (
-            plan.bars
-                .get(sub_issue)
-                .and_then(|bar| away_in(bar, plan.days_of(sub))),
-            plan.held.get(&sub.project),
-        ) else {
+        let (Some(bar), Some(held)) = (plan.bars.get(sub_issue), plan.held.get(&sub.project))
+        else {
+            return Ok(None);
+        };
+        let Some(away) = away_in(bar, plan.days_of(sub)) else {
             return Ok(None);
         };
         let (person, named) = self
@@ -603,14 +603,13 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
             )
             .await?;
         let as_away = Warning::Away {
-            days: away,
+            days: bar.days,
             due_needed: None,
         };
         if !plan.tells(sub, &as_away, named) {
             return Ok(None);
         }
-        let days = u32::try_from(Days::between(away.first, away.last) + 1).unwrap_or(u32::MAX);
-        Ok(person.map(|person| (person, days)))
+        Ok(person.map(|person| (person, away)))
     }
 }
 

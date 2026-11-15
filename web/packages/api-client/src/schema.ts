@@ -9997,11 +9997,17 @@ export interface components {
       accepted: components["schemas"]["PlanAcceptedBody"] | null;
       /**
        * Format: int32
-       * @description *Delay* of a goal that an away time of `person` causes: the days from the first to the last
-       *     away day in the bar of the sub-issue, both counted; `null` for any other warning and for a
-       *     reader who may not know that person's away times.
+       * @description *Delay* of a goal that an away time of `person` causes: the away work days (Monday to
+       *     Friday) in the bar of the sub-issue; `null` for any other warning and for a reader who may
+       *     not know that person's away times.
        */
       away_days: number | null;
+      /**
+       * Format: int32
+       * @description The same away days as whole weeks, Monday to Friday, when they are whole weeks only; `null`
+       *     otherwise.
+       */
+      away_weeks: number | null;
       /**
        * Format: int32
        * @description *Too much at once*: the minutes the person can work on that day in the project.

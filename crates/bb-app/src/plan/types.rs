@@ -240,10 +240,13 @@ pub struct WarningView {
     /// away time makes a goal late; none when the reader may not see who it is (*"the assigned
     /// person is away"*).
     pub person: Option<PersonRef>,
-    /// The *Delay* of a goal that an away time of `person` causes: the days from the first to the
-    /// last away day in the bar of the sub-issue, both counted (*"Lea's away week moves …"*); none
-    /// for any other warning, and for a reader who may not know that person's away times.
+    /// The *Delay* of a goal that an away time of `person` causes: the away work days in the bar of
+    /// the sub-issue (*"Lea's 3 away days move …"*); none for any other warning, and for a reader
+    /// who may not know that person's away times.
     pub away_days: Option<u32>,
+    /// The same away days as whole weeks, when they are whole weeks only (*"Lea's away week moves
+    /// …"*); none otherwise.
+    pub away_weeks: Option<u32>,
     /// The ways out that fit it.
     pub ways_out: Vec<WayOut>,
     /// The day *Move it after* starts the issue after, when it is a way out.

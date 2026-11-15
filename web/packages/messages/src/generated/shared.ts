@@ -870,7 +870,9 @@ export const messages = {
   "plan-warning.delay-goal":
     "{sub_issue} now ends {days, plural, one {# day} other {# days}} after the due date of {goal}.",
   "plan-warning.delay-goal-away":
-    "{person}'s {away_days, plural, one {away day moves} =5 {away week moves} =6 {away week moves} =7 {away week moves} other {# away days move}} {sub_issue} past the due date of {goal}.",
+    "{person}'s {away_days, plural, one {away day moves} other {# away days move}} {sub_issue} past the due date of {goal}.",
+  "plan-warning.delay-goal-away-weeks":
+    "{person}'s {away_weeks, plural, one {away week moves} other {# away weeks move}} {sub_issue} past the due date of {goal}.",
   "plan-warning.too-much-at-once":
     "{person} has {planned} planned on {day} in {project}; the share there is {can}.",
   "plan-way-out.move-it-after": "Move it after",

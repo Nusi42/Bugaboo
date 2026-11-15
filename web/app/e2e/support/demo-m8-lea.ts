@@ -43,9 +43,9 @@ export async function leasAwayWeekGrowsHerBarsAndWarns(
   await openPlan(page, true);
   const before = await measured(page, session, login);
   // The sentence of the warning names the cause and the person, and the issues by their titles.
-  const late = t("plan-warning.delay-goal-away", {
+  const late = t("plan-warning.delay-goal-away-weeks", {
     person: lea.name,
-    away_days: WEEK_AWAY_DAYS + 1,
+    away_weeks: 1,
     sub_issue: titleOf(0),
     goal: plan.goal.title,
   });

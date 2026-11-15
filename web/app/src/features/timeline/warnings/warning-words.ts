@@ -44,6 +44,7 @@ export function warningSentence(warning: PlanWarning, place: WarningPlace): stri
     days: warning.kind === "delay" ? days : warningDays(warning),
     person: warning.person === null ? "" : personName(warning.person),
     away_days: warning.away_days ?? 0,
+    away_weeks: warning.away_weeks ?? 0,
     first: other,
     sub_issue: titleOr(warning.other?.title, warning.other?.readable_id ?? ""),
     needs: warning.needs_days ?? 0,

@@ -75,6 +75,10 @@ pub const DELAY_OF_GOAL: MessageKey = crate::derived_key!("plan-warning.", "dela
 /// ADR-0030 amendment M8).
 pub const DELAY_OF_GOAL_AWAY: MessageKey = crate::derived_key!("plan-warning.", "delay-goal-away");
 
+/// The same sentence for away days that are whole weeks (*"Lea's away week moves …"*).
+pub const DELAY_OF_GOAL_AWAY_WEEKS: MessageKey =
+    crate::derived_key!("plan-warning.", "delay-goal-away-weeks");
+
 /// Why an issue has the warning *Delay*.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(tag = "cause", rename_all = "kebab-case")]
@@ -251,14 +255,7 @@ pub fn days_without_work(bar: &Bar, days: &[DayMinutes]) -> Option<Warning> {
         return None;
     }
     days.iter()
-        .any(|day| {
-            bar.days.contains(day.date)
-                && !matches!(
-                    day.date.weekday(),
-                    jiff::civil::Weekday::Saturday | jiff::civil::Weekday::Sunday
-                )
-                && day.minutes == 0
-        })
+        .any(|day| bar.days.contains(day.date) && !is_weekend(day.date) && day.minutes == 0)
         .then_some(Warning::DaysWithoutWork { days: bar.days })
 }
 
@@ -270,17 +267,73 @@ fn away_dates(bar: &Bar, days: &[DayMinutes]) -> Vec<Date> {
         .collect()
 }
 
-/// The days of a bar that *Plan by effort* worked out around the away days of its person on the
-/// bar, from the first to the last away day inside it; none when the person is not away on any of
-/// them, or when people set both dates (the away days then move nothing: that is *Away*). A goal's *Delay* names them as its cause (*"Lea's away week moves Login
-/// screen past the due date of Mobile app 2.0"*, UX §4.7).
+/// The away time that made a goal late, as its sentence counts it (*"Lea's away week moves …"*):
+/// how many work days of the week (Monday to Friday, by the calendar) the person is away inside the
+/// bar, and how many whole weeks those are when they are only whole weeks.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct AwayCount {
+    /// The away days from Monday to Friday inside the bar.
+    pub days: u32,
+    /// The whole weeks, Monday to Friday, the away days make; 0 unless they are whole weeks only.
+    pub weeks: u32,
+}
+
+impl AwayCount {
+    /// The sentence of the late goal it causes: in weeks when the away days are whole weeks.
+    #[must_use]
+    pub const fn sentence(self) -> MessageKey {
+        if self.weeks > 0 {
+            DELAY_OF_GOAL_AWAY_WEEKS
+        } else {
+            DELAY_OF_GOAL_AWAY
+        }
+    }
+}
+
+/// The days of the week a work week counts, Monday to Friday by the calendar.
+const WORK_WEEK_DAYS: u32 = 5;
+
+/// The away days of a bar that *Plan by effort* worked out around them, counted ([`AwayCount`]);
+/// none when its person on the bar is away on no work day of the week inside it, or when people set
+/// both dates (the away days then move nothing: that is *Away*).
 #[must_use]
-pub fn away_in(bar: &Bar, days: &[DayMinutes]) -> Option<Days> {
+pub fn away_in(bar: &Bar, days: &[DayMinutes]) -> Option<AwayCount> {
     if bar.worked_out == WorkedOut::Neither {
         return None;
     }
-    let away = away_dates(bar, days);
-    Days::new(*away.first()?, *away.last()?)
+    let weekdays: Vec<Date> = away_dates(bar, days)
+        .into_iter()
+        .filter(|date| !is_weekend(*date))
+        .collect();
+    let count = u32::try_from(weekdays.len())
+        .ok()
+        .filter(|count| *count > 0)?;
+    // Whole weeks: every Monday of them has all five days of its week away.
+    let mondays: Vec<&Date> = weekdays
+        .iter()
+        .filter(|date| date.weekday() == jiff::civil::Weekday::Monday)
+        .collect();
+    let whole = count % WORK_WEEK_DAYS == 0
+        && u32::try_from(mondays.len()).is_ok_and(|weeks| weeks * WORK_WEEK_DAYS == count)
+        && mondays.iter().all(|monday| {
+            (1..i64::from(WORK_WEEK_DAYS)).all(|ahead| {
+                monday
+                    .checked_add(jiff::Span::new().days(ahead))
+                    .is_ok_and(|day| weekdays.contains(&day))
+            })
+        });
+    Some(AwayCount {
+        days: count,
+        weeks: if whole { count / WORK_WEEK_DAYS } else { 0 },
+    })
+}
+
+/// Saturday or Sunday.
+fn is_weekend(date: Date) -> bool {
+    matches!(
+        date.weekday(),
+        jiff::civil::Weekday::Saturday | jiff::civil::Weekday::Sunday
+    )
 }
 
 /// *Away*: the days of a bar whose dates people set on which its person on the bar is away. A bar
