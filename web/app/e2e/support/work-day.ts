@@ -2,24 +2,19 @@ import { dataOf } from "@bugaboo/api-client";
 import { setTimeout as sleep } from "node:timers/promises";
 
 import type { ApiSession } from "./api.ts";
+import { dayFromToday } from "./person-day.ts";
 
 /** Today and the week before, as the days of the person are read for the part of the work day. */
 const WEEK = 7;
-const DAY_MS = 86_400_000;
 
 /** A little over a second: the server takes one change of the work day a second from a person. */
 const CHANGE_PAUSE_MS = 1100;
-
-/** A day as a date field writes it (`2027-01-14`), `daysBack` days before now in UTC. */
-function dayBack(daysBack: number): string {
-  return new Date(Date.now() - daysBack * DAY_MS).toISOString().slice(0, "2027-01-14".length);
-}
 
 /** The work days that run, as the server shows them (at most one). */
 export async function runningDays(session: ApiSession) {
   const days = dataOf(
     await session.client.GET("/api/v1/me/work-days", {
-      params: { query: { from: dayBack(WEEK), to: dayBack(-1) } },
+      params: { query: { from: dayFromToday(-WEEK), to: dayFromToday(1) } },
     }),
   );
   const running = [];
@@ -45,11 +40,6 @@ export async function endWorkDayIfRunning(session: ApiSession): Promise<void> {
       await session.client.POST("/api/v1/me/work-days/end", { body: { version: day.version } }),
     );
   }
-}
-
-/** The date of a day `daysBack` days ago, as the days of the week are named. */
-export function dateDaysAgo(daysBack: number): string {
-  return dayBack(daysBack);
 }
 
 /** Leaves a work day of an earlier date open, as a person who forgot to end it did. */

@@ -4,7 +4,7 @@ import type { Page } from "@playwright/test";
 import { ada, bob } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { dayFromToday, goalTitle, planned } from "./support/timeline.ts";
+import { dayFromToday, goalTitle, phoneItemOf, phoneList, planned } from "./support/timeline.ts";
 import { datesAs } from "./support/timeline-api.ts";
 import { people, prepareTimelinePeople, warningsButton } from "./support/timeline-people.ts";
 
@@ -14,22 +14,10 @@ import { people, prepareTimelinePeople, warningsButton } from "./support/timelin
 
 test.use({ preparation: { run: prepareTimelinePeople } });
 
-/** The list of the timeline on a phone. */
-function phoneList(page: Page) {
-  return page.getByRole("list", { name: t("timeline.phone-list"), exact: true });
-}
-
 /** Opens the search of WEB as a timeline on the phone. */
 async function openPhoneTimeline(page: Page): Promise<void> {
   await page.goto(`/search?s=${encodeURIComponent("project is WEB")}&show=timeline&group=parent`);
   await expect(phoneList(page)).toBeVisible();
-}
-
-/** The item of the list of the issue with this readable ID. */
-function itemOf(page: Page, key: string) {
-  return phoneList(page)
-    .locator('[data-part="timeline-phone.item"]')
-    .filter({ has: page.getByText(key, { exact: true }) });
 }
 
 test("ux_02_the_phone_timeline_is_a_grouped_list_with_dates_person_and_a_seven_week_bar", async ({
@@ -43,7 +31,7 @@ test("ux_02_the_phone_timeline_is_a_grouped_list_with_dates_person_and_a_seven_w
   });
   await expect(goal.getByRole("button")).toHaveAttribute("aria-expanded", "true");
   // Each issue: its title, its dates, its person, and the short bar with today marked.
-  const shared = itemOf(page, people.shared);
+  const shared = phoneItemOf(page, people.shared);
   await expect(shared).toContainText(`${bob.name} +1`);
   await expect(
     shared.locator('[data-part="timeline-phone.lane"] [data-part="timeline-bar"]'),
@@ -98,7 +86,7 @@ test("ux_02_on_a_phone_set_dates_changes_the_dates_and_nothing_is_dragged", asyn
   await expect(page.locator('[data-part="timeline-bar.press"]')).toHaveCount(0);
   await expect(page.locator('[data-part="draggable.handle"]')).toHaveCount(0);
   // Tapping an issue opens its card as a sheet, with *Set dates…*.
-  await itemOf(page, planned.keys).click();
+  await phoneItemOf(page, planned.keys).click();
   const sheet = page.getByRole("dialog", { name: t("timeline.phone-sheet") });
   await sheet.getByRole("button", { name: t("timeline.set-dates"), exact: true }).click();
   const window = page.getByRole("dialog", {

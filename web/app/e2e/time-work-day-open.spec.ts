@@ -6,7 +6,8 @@ import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareWeb } from "./support/issues.ts";
-import { dateDaysAgo, endWorkDayIfRunning, leaveDayOpen, workDayRuns } from "./support/work-day.ts";
+import { dayFromToday } from "./support/person-day.ts";
+import { endWorkDayIfRunning, leaveDayOpen, workDayRuns } from "./support/work-day.ts";
 
 // A work day of an earlier date that was never ended (TIME-08). A file of its own: such a day runs
 // until now, so it cannot stand beside the days that other tests make today.
@@ -16,7 +17,7 @@ test.use({ preparation: { run: prepareWeb } });
 test("time_08 a work day left open asks when it ended", async ({ page, server }) => {
   const admin = await signedInAdmin(server);
   await endWorkDayIfRunning(admin);
-  const date = dateDaysAgo(2);
+  const date = dayFromToday(-2);
   await leaveDayOpen(admin, date);
   await signIn(page, ada);
   await page.goto("/");

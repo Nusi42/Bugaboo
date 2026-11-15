@@ -5,10 +5,21 @@ import { momentOfClock, personToday, zoneOfNewDay } from "../../src/shared/clock
 import { addDays } from "../../src/shared/format.ts";
 import { regionOf } from "../../src/shared/region.ts";
 
-// The days of a person as the server keeps them (TIME-08): a day lies on its own date in its zone, and the date and the
-// zone are the person's (their *Region*, else the device's). The tests read them the way the app does, from the
-// person's settings, never from the clock of the computer of the test alone: near midnight the zone of the computer and
-// the zone of the person show different dates.
+// The days of a person as the server keeps them (TIME-08), and the one module of days of the tests: a day lies on its own
+// date in its zone, and the date and the zone are the person's (their *Region*, else the device's). The tests read them
+// the way the app does, from the person's settings, never from the clock of the computer of the test alone: near
+// midnight the zone of the computer and the zone of the person show different dates.
+
+export { addDays } from "../../src/shared/format.ts";
+export { daysBetween } from "../../src/shared/clock.ts";
+
+/**
+ * The day `days` after today (`2027-03-01`), as a person of the tests counts it who keeps the *Region* of the settings,
+ * as every person of the tests does: today in the zone of their new days.
+ */
+export function dayFromToday(days: number): string {
+  return addDays(personToday(regionOf(), Date.now()), days);
+}
 
 /** A minute: a day starts one minute after the midnight of its date at the earliest. */
 const FIRST_MINUTE = 1;

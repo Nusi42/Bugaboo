@@ -4,11 +4,14 @@ import { expect, type Locator, type Page } from "@playwright/test";
 
 import { doNothing } from "../../src/shared/do-nothing.ts";
 import { personWorkTimesAddress, paths } from "../../src/shared/paths.ts";
-import { ada, cleo, ownId, signInThroughApi, type Person } from "./accounts.ts";
+import { ada, cleo, signInThroughApi, type Instance, type Person } from "./accounts.ts";
 import { createPeopleWithRoles, projectIdOf, roleName } from "./access.ts";
 import { prepareWeb } from "./issues.ts";
+import { dayFromToday } from "./person-day.ts";
 import { createProject } from "./projects.ts";
-import { type Instance } from "./server.ts";
+
+export { idOf } from "./accounts.ts";
+export { dayFromToday } from "./person-day.ts";
 
 // The scene of the tests of work times (PLAN-11, PLAN-15): the project WEB of the tests of issues,
 // with Bob as a Team member, Lea as a Guest and Cleo as its Project lead, and a second project, OTHER,
@@ -23,21 +26,6 @@ export async function prepareWorkTimes(server: Instance): Promise<void> {
     { person: cleo, role: roleName.projectLead, project: "WEB" },
   ]);
   await admin.dispose();
-}
-
-/** A day on the calendar `days` after today (`2027-01-14`): the page lists the coming year. */
-export function dayFromToday(days: number): string {
-  const day = new Date();
-  day.setUTCDate(day.getUTCDate() + days);
-  return day.toISOString().slice(0, "yyyy-mm-dd".length);
-}
-
-/** The ID of a person, through the API as the administrator sees it. */
-export async function idOf(server: Instance, person: Person): Promise<string> {
-  const session = await signInThroughApi(server, person);
-  const id = await ownId(session);
-  await session.dispose();
-  return id;
 }
 
 /** Opens the work times of a person as the administrator, from the person's page. */

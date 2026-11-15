@@ -5,6 +5,11 @@ import { type CodeApp, codeApp } from "./totp.ts";
 import { type Instance } from "./server.ts";
 import { inOrder } from "./sequence.ts";
 
+// The session and the server every caller of these helpers holds, from here, so a module of a scene needs no import of
+// its own for them.
+export type { ApiSession } from "./api.ts";
+export type { Instance } from "./server.ts";
+
 /** Somebody who has, or is going to have, an account. */
 export interface Person {
   readonly name: string;
@@ -143,6 +148,14 @@ export async function addCodeApp(session: ApiSession, password: string): Promise
 /** The ID of the person behind a session. */
 export async function ownId(session: ApiSession): Promise<string> {
   return dataOf(await session.client.GET("/api/v1/auth/me")).id;
+}
+
+/** The ID of a person, read by signing them in through the API. */
+export async function idOf(server: Instance, person: Person): Promise<string> {
+  const session = await signInThroughApi(server, person);
+  const id = await ownId(session);
+  await session.dispose();
+  return id;
 }
 
 /** Sets who may sign up on their own, through the API. */

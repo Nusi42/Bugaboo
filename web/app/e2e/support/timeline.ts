@@ -3,25 +3,17 @@ import { t } from "@bugaboo/messages";
 import { expect, type Locator, type Page } from "@playwright/test";
 
 import { savedSearchAddress } from "../../src/shared/paths.ts";
-import { ada, signInThroughApi } from "./accounts.ts";
-import type { ApiSession } from "./api.ts";
+import { ada, signInThroughApi, type ApiSession, type Instance } from "./accounts.ts";
 import { createIssue, issueOf, prepareManyWeb, prepareWeb, versionOf } from "./issues.ts";
+import { dayFromToday } from "./person-day.ts";
 import { BLOCKS } from "./relate.ts";
 import { inOrder } from "./sequence.ts";
-import type { Instance } from "./server.ts";
 
 // The scene of the tests of the timeline (PLAN-01 … PLAN-04, UX §4.7): the project WEB of the tests
 // of issues, its issues given dates around today, a goal over two of them, one that must finish
 // before the other, and issues without dates for *Not scheduled yet*.
 
-/** The day `days` after today on this computer, as the calendar writes it (`2027-03-01`). */
-export function dayFromToday(days: number): string {
-  const day = new Date();
-  day.setDate(day.getDate() + days);
-  const month = String(day.getMonth() + 1).padStart(2, "0");
-  const date = String(day.getDate()).padStart(2, "0");
-  return `${String(day.getFullYear())}-${month}-${date}`;
-}
+export { dayFromToday } from "./person-day.ts";
 
 /** The issues of the scene by what they are for. WEB-1 to WEB-3 are the issues of `prepareWeb`. */
 export const planned = {
@@ -216,6 +208,33 @@ export async function openTimeline(page: Page, more = ""): Promise<void> {
 /** The rows of the chart. */
 export function chart(page: Page): Locator {
   return page.getByRole("list", { name: t("timeline.chart"), exact: true });
+}
+
+/** The CSS variable the chart gives the width of one of its days at its zoom (`timeline-day` of the theme file). */
+const DAY_VARIABLE = "--timeline-day";
+
+/**
+ * The width of one day of the chart in pixels, as the page draws it at its zoom (the theme file's `size-day-<zoom>`):
+ * a bar dragged so many days is dragged so many of these.
+ */
+export async function dayPixelsOf(page: Page): Promise<number> {
+  const width = await page
+    .locator('[data-part="timeline-bar"]')
+    .first()
+    .evaluate((bar, name) => getComputedStyle(bar).getPropertyValue(name), DAY_VARIABLE);
+  return Number(width);
+}
+
+/** The list of the timeline on a phone. */
+export function phoneList(page: Page): Locator {
+  return page.getByRole("list", { name: t("timeline.phone-list"), exact: true });
+}
+
+/** The item of the list on a phone of the issue with this readable ID. */
+export function phoneItemOf(page: Page, key: string): Locator {
+  return phoneList(page)
+    .locator('[data-part="timeline-phone.item"]')
+    .filter({ has: page.getByText(key, { exact: true }) });
 }
 
 /** The bar of the issue with this readable ID. */

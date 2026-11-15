@@ -11,6 +11,7 @@ import {
   barOf,
   chart,
   dayFromToday,
+  dayPixelsOf,
   goalTitle,
   movedLater,
   openPlan,
@@ -33,9 +34,6 @@ import {
 // timeline, its bars, arrows, goals and tray, dragged with Undo and moved by keys and typed ways.
 
 test.use({ preparation: { run: prepareTimeline } });
-
-/** The width of one day at the zoom of weeks, as the theme file draws it (`size-day-week`). */
-const weekDayPixels = 16;
 
 /** The head of the group of the goal. */
 function goalHead(page: Parameters<typeof chart>[0]) {
@@ -131,7 +129,7 @@ test("plan_03_dragging_a_bar_moves_its_dates_and_undo_takes_it_back", async ({ p
   const before = await datesAs(server, ada, planned.dragged);
   await signIn(page, ada);
   await openTimeline(page);
-  await dragAcross(page, pressOf(page, planned.dragged), weekDayPixels * 7);
+  await dragAcross(page, pressOf(page, planned.dragged), (await dayPixelsOf(page)) * 7);
   const said = movedLater(planned.dragged, t("timeline.amount-weeks", { count: 1 }));
   await expect(page.getByText(said)).toBeVisible();
   await expect
@@ -153,7 +151,7 @@ test("plan_03_an_issue_the_person_may_not_change_cannot_be_dragged_and_says_why"
   const why = t("timeline.locked", { key: planned.keys });
   await expect(bar).toHaveAttribute("title", why);
   // A drag starts nothing: the bar does not move.
-  await dragAcross(page, bar, weekDayPixels * 3);
+  await dragAcross(page, bar, (await dayPixelsOf(page)) * 3);
   await expect(barOf(page, planned.keys)).not.toHaveAttribute("data-state", /dragging/u);
   // A key that would move it says why it does not.
   await bar.focus();
