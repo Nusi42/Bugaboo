@@ -44,6 +44,11 @@ const FIXED: [(&str, &str, StartingRole); 4] = [
     ("Hana", "Weiss", StartingRole::Hr),
 ];
 
+/// The Team members who plan *Mobile app 2.0* with Ben, the same whatever the seed. They take the
+/// place of two people the seed made, after everything else was drawn, so the rest of the sample
+/// does not change with them.
+const PLANNERS: [(&str, &str); 2] = [("Lea", "Fischer"), ("Noah", "Weber")];
+
 /// Who gets a code app for the tests of the second step, by role: a few people, never the people
 /// the demos name.
 const CODE_APPS: [(StartingRole, usize); 4] = [
@@ -212,7 +217,28 @@ pub fn sample_people(seed: u64, names: &NameList) -> Result<Vec<SamplePerson>, S
             first_day: choice_of(&mut random, REGION_FIRST_DAY.definition()),
         };
     }
+    name_the_planners(&mut people);
     Ok(people)
+}
+
+/// Gives the planners the place of the first Team members who have no code app and no access key.
+fn name_the_planners(people: &mut [SamplePerson]) {
+    let places: Vec<usize> = people
+        .iter()
+        .enumerate()
+        .filter(|(_, person)| {
+            !person.fixed
+                && person.role == StartingRole::TeamMember
+                && !person.code_app
+                && person.access_key.is_none()
+        })
+        .map(|(at, _)| at)
+        .collect();
+    for ((first, last), at) in PLANNERS.into_iter().zip(places) {
+        let mut planner = SamplePerson::new(first, last, StartingRole::TeamMember, false);
+        planner.region = people[at].region.clone();
+        people[at] = planner;
+    }
 }
 
 /// A choice of a setting that is not "whatever my device says".
@@ -266,6 +292,8 @@ mod tests {
             assert_eq!(find("Ana Moreno").role, StartingRole::Contributor);
             assert_eq!(find("Ana Moreno").email, "ana.moreno@bugaboo.example");
             assert_eq!(find("Ben Hale").role, StartingRole::TeamMember);
+            assert_eq!(find("Lea Fischer").role, StartingRole::TeamMember);
+            assert_eq!(find("Noah Weber").role, StartingRole::TeamMember);
             assert!(!find("Ana Moreno").code_app && !people[0].code_app);
         }
     }

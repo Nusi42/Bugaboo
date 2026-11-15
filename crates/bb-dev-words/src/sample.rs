@@ -133,6 +133,74 @@ pub struct WorkPlan {
     pub time: TimePlan,
     /// AI, agents and what they did (M7, WP-13).
     pub ai: AiPlan,
+    /// The plan of the goal *Mobile app 2.0* (M8, part 7).
+    pub timeline: TimelinePlan,
+}
+
+/// The plan of a goal with people in the sample (M8 part 7): its issues with dates, estimates and
+/// dependencies, and the work times of the person who plans. Days are counted from the first
+/// Monday after the end of the sample.
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TimelinePlan {
+    /// The short name of the project the goal is in.
+    pub project: String,
+    /// The goal.
+    pub goal: GoalPlan,
+    /// The name of the person who plans.
+    pub person: String,
+    /// The names of the colleagues who work on the goal.
+    pub colleagues: Vec<String>,
+    /// The public holidays of the organization: a choice of the setting *Holidays*.
+    pub holidays: String,
+    /// The seven usual work days of the person, Monday first.
+    pub usual_days: Vec<bool>,
+    /// The work hours of a usual work day, in minutes.
+    pub usual_minutes: u16,
+    /// The share of the person in the project, in percent.
+    pub share_percent: u8,
+    /// The issues of the goal.
+    pub issues: Vec<PlannedIssue>,
+    /// The dependencies: the title of the issue that must finish first, and of the one that waits.
+    pub blocks: Vec<[String; 2]>,
+    /// The issue the person gave their own estimate for.
+    pub own_estimate: OwnEstimatePlan,
+}
+
+/// The goal of the plan.
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GoalPlan {
+    /// What the goal is called.
+    pub title: String,
+    /// Its due date, in days from the first Monday after the end of the sample.
+    pub due_day: i64,
+}
+
+/// An issue of the goal.
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PlannedIssue {
+    /// What it is called.
+    pub title: String,
+    /// The person it is assigned to.
+    pub person: String,
+    /// Its start date, in days from the first Monday after the end of the sample.
+    pub start_day: i64,
+    /// Its due date, in days from the same Monday.
+    pub due_day: i64,
+    /// Its estimate, in minutes.
+    pub estimate: u32,
+}
+
+/// An own estimate (*Takes me ...*) of the person who plans.
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OwnEstimatePlan {
+    /// The title of the issue.
+    pub issue: String,
+    /// How long it takes the person, in minutes.
+    pub takes_minutes: u32,
 }
 
 /// AI and agents in the sample (M7 part 6): how AI is set up, which agents one person has and what

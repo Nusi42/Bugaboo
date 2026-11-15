@@ -142,10 +142,18 @@ impl IssuePlan {
                 .find(|project| project["short_name"] == short_name)
                 .map_or(0, |project| number(&project["total"]))
         };
+        let timeline = &self.work.timeline;
         let per_project: Vec<u64> = self
             .projects
             .iter()
-            .map(|project| scaled(project.issues, full, asked))
+            .map(|project| {
+                scaled(project.issues, full, asked)
+                    + if project.short_name == timeline.project {
+                        timeline.made_issues()
+                    } else {
+                        0
+                    }
+            })
             .collect();
         let mut by_type = vec![0_u64; self.types.len()];
         for (project, planned) in self.projects.iter().zip(per_project) {
@@ -163,13 +171,23 @@ impl IssuePlan {
                 judge.near(
                     &format!("the number of issues in {}", place.short_name),
                     total_of(&place.short_name),
-                    planned * u64::from(place.percent) / 100,
+                    planned * u64::from(place.percent) / 100
+                        + if place.short_name == timeline.project {
+                            timeline.made_issues()
+                        } else {
+                            0
+                        },
                 );
             }
             for share in self.types_of(project) {
                 if let Some(at) = self.types.iter().position(|known| known.name == share.name) {
                     by_type[at] += planned * u64::from(share.percent) / 100;
                 }
+            }
+        }
+        for (name, count) in timeline.made_types() {
+            if let Some(at) = self.types.iter().position(|known| known.name == name) {
+                by_type[at] += count;
             }
         }
         for (share, planned) in self.types.iter().zip(by_type) {
@@ -197,9 +215,14 @@ pub(crate) mod tests {
         for project in &plan.projects {
             let planned = scaled(project.issues, full, asked);
             for place in &project.places {
+                let own = if place.short_name == plan.work.timeline.project {
+                    plan.work.timeline.made_issues()
+                } else {
+                    0
+                };
                 projects.push(json!({
                     "short_name": place.short_name,
-                    "total": planned * u64::from(place.percent) / 100,
+                    "total": planned * u64::from(place.percent) / 100 + own,
                 }));
             }
             for share in plan.types_of(project) {
@@ -207,6 +230,10 @@ pub(crate) mod tests {
                 *entry =
                     json!(entry.as_u64().unwrap_or(0) + planned * u64::from(share.percent) / 100);
             }
+        }
+        for (name, count) in plan.work.timeline.made_types() {
+            let entry = by_type.entry(name).or_insert(json!(0));
+            *entry = json!(entry.as_u64().unwrap_or(0) + count);
         }
         let relations = scaled(plan.relations, full, asked);
         json!({ "issues": {
@@ -271,6 +298,7 @@ pub(crate) mod tests {
             "follows": { "viewer": counts.viewer_follows },
             "time": made_time(work, asked, full),
             "ai": made_ai(&work.ai),
+            "timeline": made_timeline(&work.timeline),
         })
     }
 
@@ -320,6 +348,32 @@ pub(crate) mod tests {
             "rules_never_run_out": false,
             "apps": 1,
             "marks": { "agent": 4, "matching_events": 4 },
+        })
+    }
+
+    /// The part `timeline` of a dump that has what the plan says.
+    fn made_timeline(plan: &crate::sample::TimelinePlan) -> Value {
+        json!({
+            "holidays": plan.holidays,
+            "goal": { "title": plan.goal.title, "sub_issues": plan.issues.len() },
+            "issues": plan.issues.iter().map(|issue| json!({
+                "title": issue.title,
+                "person": issue.person,
+                "starts_before_due": plan.goal.due_day - issue.start_day,
+                "ends_before_due": plan.goal.due_day - issue.due_day,
+                "estimate": issue.estimate,
+            })).collect::<Vec<_>>(),
+            "blocks": plan.blocks,
+            "person": {
+                "name": plan.person,
+                "usual_days": plan.usual_days.iter()
+                    .map(|works| json!([works, plan.usual_minutes]))
+                    .collect::<Vec<_>>(),
+                "share_percent": plan.share_percent,
+                "away_times": 0,
+            },
+            "people_on_the_goal": 1 + plan.colleagues.len(),
+            "own_estimates": [{ "issue": plan.own_estimate.issue, "set_by_the_person": true }],
         })
     }
 

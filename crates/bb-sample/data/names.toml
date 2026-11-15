@@ -1,7 +1,7 @@
 # Written for Bugaboo, from nothing but our own choice of common given names and family names
 # from many places. No third-party name data (TEST-SAMPLE-DATA). Plain letters only, so every name
 # can be part of an e-mail address. The fixed people of the demos are Ada Brandt, Ana Moreno,
-# Ben Hale and Hana Weiss.
+# Ben Hale and Hana Weiss; Lea Fischer and Noah Weber plan with Ben.
 
 first = [
   "Ada",
@@ -42,6 +42,7 @@ first = [
   "Kofi",
   "Lars",
   "Layla",
+  "Lea",
   "Leon",
   "Lucia",
   "Mateo",
@@ -50,6 +51,7 @@ first = [
   "Mira",
   "Nadia",
   "Niko",
+  "Noah",
   "Nora",
   "Olga",
   "Omar",

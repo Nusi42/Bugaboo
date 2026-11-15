@@ -132,6 +132,7 @@ impl WorkPlan {
         );
         self.time.judge(judge, &work["time"], asked, full);
         self.ai.judge(judge, &work["ai"]);
+        self.timeline.judge(judge, &work["timeline"]);
     }
 
     /// The starter workflows, and the one workflow of a project with its rule *Ask for*.

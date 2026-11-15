@@ -29,7 +29,7 @@ use crate::relations::{PlannedRelation, plan_relations};
 /// The name the starting issue type with this icon has, as the sample's plan writes it (`Bug`):
 /// the bug has steps to reproduce, the one with sparkles is the feature, the one with a flag is the
 /// goal whose issues take sub-issues.
-fn starting_name(icon: IssueIcon) -> String {
+pub(crate) fn starting_name(icon: IssueIcon) -> String {
     STARTING_ISSUE_TYPES
         .iter()
         .find(|starting| starting.icon == icon)
@@ -157,7 +157,7 @@ pub(crate) fn scaled(count: u32, full: u32, wanted: u32) -> usize {
 }
 
 /// The place of a type in the plan, by its name.
-fn kind_of(types: &[TypeShare], name: &str) -> Option<usize> {
+pub(crate) fn kind_of(types: &[TypeShare], name: &str) -> Option<usize> {
     types.iter().position(|share| share.name == name)
 }
 

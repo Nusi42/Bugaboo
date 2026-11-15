@@ -50,6 +50,10 @@ pub const DEFAULT_SEED: u64 = 42;
 /// out of idle time while the sample is made (30 minutes by default).
 pub const STEP_SECONDS: i64 = 20;
 
+/// The place of the administrator who makes the organization: the first person, made with the setup
+/// code.
+pub(crate) const ADMINISTRATOR: usize = 0;
+
 /// Seconds reserved before the start moment for what follows the people: one change every second.
 /// The sample is made in less than this; its end is always before the start moment.
 pub const LATER_SECONDS: i64 = 3600;

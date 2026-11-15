@@ -130,6 +130,7 @@ impl Later for Everything {
         let full: u32 = names.projects.iter().map(|project| project.issues).sum();
         maker.work_together(self.issues, full).await?;
         let ai = names.work.ai.clone();
+        maker.plan_the_goal(&names.work.timeline).await?;
         maker.set_up_ai(&ai).await?;
         maker.let_an_app_in(&ai.app).await?;
         let (agent_keys, unchangeable) = maker.give_agents_work(&ai).await?;

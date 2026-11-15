@@ -18,6 +18,7 @@ mod ai;
 mod issues;
 mod searches;
 mod time;
+mod timeline;
 mod work;
 
 use crate::{

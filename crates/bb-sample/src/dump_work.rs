@@ -85,6 +85,8 @@ pub(crate) struct DumpWork {
     time: crate::dump_time::DumpTime,
     /// AI and agents.
     ai: crate::dump_ai::DumpAi,
+    /// The plan of the goal with people.
+    timeline: crate::dump_timeline::DumpTimeline,
 }
 
 /// The role as the dump counts it: Administrators and Team members do the work of the team.
@@ -119,6 +121,7 @@ impl Sample {
         self.count_roles(&mut work, &roles, events);
         work.time = self.time_of(&roles, events, issues).await?;
         work.ai = self.ai_of(events).await?;
+        work.timeline = self.timeline_of(issues).await?;
         Ok(work)
     }
 
