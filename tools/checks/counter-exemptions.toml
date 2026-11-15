@@ -416,14 +416,14 @@ reason = "Days, not a count of things: how many of the person's work days the ef
 [[exempt]]
 route = "PATCH /api/v1/issues/{issue}"
 property = "work_days"
-reason = "Days, not a count of things: how many work days of the person on the bar the estimate times the time factor of one issue the viewer sees takes, in their own work hours; only for a viewer who may know that person's work times, may read the estimate and may see the factor (PLAN-14, ADR-0030 amendment M8)."
+reason = "Days, not a count of things: how many work days of the person on the bar the estimate times the time factor of one issue the viewer sees takes, in their own work hours; only for a viewer who reads Assigned to, is shown that person by name, may know their work times, may read the estimate and may see the factor, the rule of the person's time on a bar (PLAN-14, ADR-0030 amendment M8)."
 
 [[exempt]]
 route = "GET /api/v1/issues/{issue}/time-factor"
 property = "work_days"
-reason = "Days, not a count of things: how many work days of the person on the bar the estimate times the time factor of one issue the viewer sees takes, in their own work hours; only for a viewer who may know that person's work times, may read the estimate and may see the factor (PLAN-14, ADR-0030 amendment M8)."
+reason = "Days, not a count of things: how many work days of the person on the bar the estimate times the time factor of one issue the viewer sees takes, in their own work hours; only for a viewer who reads Assigned to, is shown that person by name, may know their work times, may read the estimate and may see the factor, the rule of the person's time on a bar (PLAN-14, ADR-0030 amendment M8)."
 
 [[exempt]]
 route = "PUT /api/v1/issues/{issue}/time-factor"
 property = "work_days"
-reason = "Days, not a count of things: how many work days of the person on the bar the estimate times the time factor of one issue the viewer sees takes, in their own work hours; only for a viewer who may know that person's work times, may read the estimate and may see the factor (PLAN-14, ADR-0030 amendment M8)."
+reason = "Days, not a count of things: how many work days of the person on the bar the estimate times the time factor of one issue the viewer sees takes, in their own work hours; only for a viewer who reads Assigned to, is shown that person by name, may know their work times, may read the estimate and may see the factor, the rule of the person's time on a bar (PLAN-14, ADR-0030 amendment M8)."

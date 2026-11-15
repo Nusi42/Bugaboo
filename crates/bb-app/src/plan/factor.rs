@@ -84,7 +84,8 @@ pub struct TimeFactorView {
     /// Whether the reader may set the time factor ([`may_set_time_factor`]).
     pub may_change: bool,
     /// The minutes of one work day of the person on the bar, the average of their usual work days
-    /// (*Takes me 10 days* counts in them); only for a reader who may know their work times.
+    /// (*Takes me 10 days* counts in them); only for a reader who reads *Assigned to*, sees the
+    /// person by name and may know their work times.
     pub day_minutes: Option<u32>,
     /// How many of those work days the estimate times the factor takes; only where `day_minutes`
     /// is told and the reader may read the estimate.
@@ -233,7 +234,13 @@ impl<S: AuthStore> Ctx<'_, S> {
             ),
             None => None,
         };
-        let day_minutes = self.day_minutes_of(actor, first).await?;
+        // The person's day tells their work hours: only to a reader who reads *Assigned to* and is
+        // shown the person by name, the rule of the person's time on a bar (ADR-0030, amendment M8).
+        let day_minutes = if named && reads_assigned {
+            self.day_minutes_of(actor, first).await?
+        } else {
+            None
+        };
         // Only with a factor the reader may see (the field, or their own estimate) and an estimate
         // they may read.
         let mask = held.field_mask_for(Some(issue.issue_type));
@@ -264,7 +271,8 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// The minutes of one work day of `person` ([`UsualDays::day_minutes`]), when the reader may
-    /// know their work times by the one rule of work times; none for nobody.
+    /// know their work times by the one rule of work times; none for nobody. The caller asks only
+    /// for a person the reader sees by name in *Assigned to*.
     async fn day_minutes_of(
         &self,
         actor: &Actor,

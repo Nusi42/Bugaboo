@@ -383,13 +383,40 @@ async fn plan_14_the_time_factor_counts_work_days_in_the_persons_own_hours() -> 
         let set = ok(&set_factor(&mut lea, &key, json!({"takes_minutes": 3600})).await?)?.clone();
         assert_eq!(set["percent"], 500, "{set}");
         assert_eq!(set["work_days"], 10, "{set}");
-        // A reader who may not know Lea's work times is told neither.
+        // A reader who sees Lea by name and may know her work times is told both.
         let (mut reader, _) = site.person(StartingRole::Contributor, "reader").await?;
-        site.show_people(&mut ada, StartingRole::Contributor, "work-times", "hidden")
+        site.show_people(&mut ada, StartingRole::Contributor, "work-times", "names")
             .await?;
-        let hidden = ok(&reader.send("GET", &factor_of(&key), None).await?)?.clone();
-        assert_eq!(hidden["day_minutes"], Value::Null, "{hidden}");
-        assert_eq!(hidden["work_days"], Value::Null, "{hidden}");
+        let told = ok(&reader.send("GET", &factor_of(&key), None).await?)?.clone();
+        assert_eq!(told["day_minutes"], 360, "{told}");
+        assert_eq!(told["work_days"], 10, "{told}");
+        // A reader who may not know her work times, or does not see her by name, is told neither:
+        // her day would tell the work hours of a person they may not name (ADR-0030, amendment M8).
+        for (kind, level) in [("work-times", "hidden"), ("assigned-to", "role-only")] {
+            site.show_people(&mut ada, StartingRole::Contributor, "assigned-to", "names")
+                .await?;
+            site.show_people(&mut ada, StartingRole::Contributor, "work-times", "names")
+                .await?;
+            site.show_people(&mut ada, StartingRole::Contributor, kind, level)
+                .await?;
+            let hidden = ok(&reader.send("GET", &factor_of(&key), None).await?)?.clone();
+            assert_eq!(hidden["day_minutes"], Value::Null, "{kind} {hidden}");
+            assert_eq!(hidden["work_days"], Value::Null, "{kind} {hidden}");
+        }
+        // Nor one whose field level hides *Assigned to*.
+        site.show_people(&mut ada, StartingRole::Contributor, "assigned-to", "names")
+            .await?;
+        field_level(
+            &site,
+            &mut ada,
+            StartingRole::Contributor,
+            "assigned-to",
+            "hidden",
+        )
+        .await?;
+        let unread = ok(&reader.send("GET", &factor_of(&key), None).await?)?.clone();
+        assert_eq!(unread["day_minutes"], Value::Null, "{unread}");
+        assert_eq!(unread["work_days"], Value::Null, "{unread}");
         Ok(())
     })
     .await

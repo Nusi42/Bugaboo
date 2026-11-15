@@ -54,7 +54,8 @@ pub(crate) struct TimeFactorBody {
     #[masked(open)]
     may_change: bool,
     /// The minutes of one work day of the person on the bar, the average of their usual work days:
-    /// *Takes me 10 days* counts ten of them. `null` for a reader who may not know their work times.
+    /// *Takes me 10 days* counts ten of them. `null` for a reader who may not read *Assigned to*, is
+    /// not shown the person by name, or may not know their work times.
     #[masked(open)]
     #[schema(required = true)]
     day_minutes: Option<u32>,

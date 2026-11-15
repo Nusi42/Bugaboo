@@ -12104,7 +12104,8 @@ export interface components {
       /**
        * Format: int32
        * @description The minutes of one work day of the person on the bar, the average of their usual work days:
-       *     *Takes me 10 days* counts ten of them. `null` for a reader who may not know their work times.
+       *     *Takes me 10 days* counts ten of them. `null` for a reader who may not read *Assigned to*, is
+       *     not shown the person by name, or may not know their work times.
        */
       day_minutes: number | null;
       /** @description The internal ID of the issue. */
