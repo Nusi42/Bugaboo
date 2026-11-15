@@ -14,6 +14,7 @@ import {
   LOW_WINDOW,
   MAIN_COLUMN,
   PANE_HEAD,
+  SETTINGS_MENU,
   SETTINGS_TOPIC,
   wheelOver,
 } from "./support/pane-head.ts";
@@ -83,7 +84,7 @@ test("ux_06 the menu of the topics scrolls in a box of its own beside the topic"
   page,
 }) => {
   await openTopic(page, paths.labels);
-  const menu = page.locator("[data-part~='settings-frame.menu']");
+  const menu = page.locator(SETTINGS_MENU);
   await expect
     .poll(() => menu.evaluate((node) => node.scrollHeight - node.clientHeight))
     .toBeGreaterThan(0);

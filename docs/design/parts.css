@@ -9486,6 +9486,12 @@ textarea,
   padding: var(--ring-room) var(--ring-room) var(--space-4);
 }
 
+@media print {
+  [data-part="pane"][data-variant~="folds"] [data-part="pane-head.content"] {
+    padding-inline: 0;
+  }
+}
+
 [data-part="pane-head.slot"] {
   display: contents;
 }
@@ -9501,9 +9507,9 @@ textarea,
   [data-part="issue-body"][data-variant~="split"]
   [data-part="issue-main"] {
   scroll-timeline: --pane-first block;
-  margin-block-start: 0;
   padding-block-start: var(--pane-head-whole);
   scroll-padding-block-start: var(--pane-head-folded);
+  margin-block-start: 0;
 }
 
 @media print {
@@ -10016,12 +10022,12 @@ textarea,
   padding: var(--ring-room);
   margin-inline: calc(var(--ring-room) * -1);
   overflow-y: auto;
-  position: relative;
-  flex: 1 1 0;
-  min-height: 0;
   scroll-timeline: --pane-first block;
   padding-block-start: var(--pane-head-whole);
   scroll-padding-block-start: var(--pane-head-folded);
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
 }
 
 @media print {
@@ -10038,6 +10044,28 @@ textarea,
   [data-part="pane"][data-variant~="folds"] > [data-part="settings-topic"] {
     padding-block-start: var(--ring-room);
   }
+}
+
+[data-part="pane"][data-variant~="folds"]:has([data-part="settings-topic"]) {
+  --pane-head-folded-end: calc(var(--pane-head-line) + var(--ring-room) + var(--space-1));
+}
+
+[data-part="pane"][data-variant~="folds"]
+  > [data-part="settings-topic"]
+  [data-part="list-editor"]
+  [data-part="side-panel"] {
+  top: calc(var(--size-page-gutter) - var(--pane-head-fold-length));
+}
+
+[data-part="pane"][data-variant~="folds"]
+  > [data-part="settings-topic"]
+  [data-part="theme-editor.aside"] {
+  top: calc(var(--space-4) - var(--pane-head-fold-length));
+}
+
+[data-part="app-layout"] [data-part="pane"][data-variant~="folds"] [data-part="timeline-scroll"],
+[data-part="app-layout"] [data-part="pane"][data-variant~="folds"] [data-part="timeline-tray"] {
+  isolation: isolate;
 }
 
 [data-part="app-layout"]
@@ -10063,7 +10091,6 @@ textarea,
   scroll-timeline: --pane-first block;
   margin-block-start: calc(-1 * var(--pane-head-end));
   padding-block-start: calc(var(--pane-head-end) + var(--border-width));
-  min-height: calc(var(--size-list-scroll-least) + var(--pane-head-end) + var(--border-width));
   scroll-padding-block-start: calc(
     var(--pane-head-folded-end) + var(--size-timeline-head) + var(--border-width) * 2
   );

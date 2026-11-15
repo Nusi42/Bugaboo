@@ -22,6 +22,9 @@ export const SPLIT_ISSUE = "[data-part='issue-body'][data-variant~='split']";
 /** The box of a topic of the settings, under its head. */
 export const SETTINGS_TOPIC = "[data-part~='settings-topic']";
 
+/** The menu of the topics beside a topic of the settings, a box of its own on a computer. */
+export const SETTINGS_MENU = "[data-part~='settings-frame.menu']";
+
 /** The main column of the app. */
 export const MAIN_COLUMN = "[data-part~='app-layout.main']";
 
@@ -231,7 +234,9 @@ export function focusInHead(
         : document.elementFromPoint(place.left + place.width / 2, place.top + place.height / 2);
     return {
       inside: place !== undefined && place.top >= box.top && place.bottom <= box.bottom,
-      onTop: hit !== null && focused !== null && focused.contains(hit),
+      // A control drawn by its label (the box of a switch) is on top where its label is.
+      onTop:
+        hit !== null && focused !== null && (focused.closest("label") ?? focused).contains(hit),
       scrolled: head.scrollTop,
     };
   });

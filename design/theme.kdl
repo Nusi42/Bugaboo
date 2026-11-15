@@ -1392,6 +1392,18 @@ keyframes "pane-head-fold" {
     }
 }
 
+// The first box under the head of a pane that folds (UX §6.5): it starts at the top of the pane, with the room of the
+// whole head and of the focus ring of its first control at its start, drives the fold as it scrolls, and what the
+// keyboard brings into view stops under the folded head with the room of its ring. On paper the head stands above it.
+mixin "pane-first-box" {
+    scroll-timeline "--pane-first block"
+    padding-block-start "var(--pane-head-whole)"
+    scroll-padding-block-start "var(--pane-head-folded)"
+    media "print" {
+        padding-block-start "$ring-room"
+    }
+}
+
 // A layer of the head of a pane that folds with the scroll of one box: from the start of the box until the head is one
 // line.
 mixin "pane-head-folds" {
@@ -16798,6 +16810,10 @@ part "pane[variant=folds] pane-head.content" {
     flex-direction column
     gap "$space-4"
     padding "$ring-room $ring-room $space-4"
+    // On paper the head stands in the page, not reaching out over its edges: its text starts at the edge of the page.
+    media "print" {
+        padding-inline 0
+    }
 }
 
 // What deeper parts of the pane put into its head stands in the line of what the head holds, in the order of the slots.
@@ -16817,13 +16833,8 @@ part "list-editor.list pane[variant=folds] pane-head.content" {
 // stands the room above its own height.
 // What the keyboard brings into view stops under the folded head, with the room for its ring.
 part "pane[variant=folds] issue-body[variant=split] issue-main" {
-    scroll-timeline "--pane-first block"
+    use "pane-first-box"
     margin-block-start 0
-    padding-block-start "var(--pane-head-whole)"
-    scroll-padding-block-start "var(--pane-head-folded)"
-    media "print" {
-        padding-block-start "$ring-room"
-    }
 }
 
 part "pane[variant=folds] issue-body[variant=split] issue-details" {
@@ -17092,15 +17103,25 @@ part "settings-topic" {
 // they scroll with it and never scroll the main column.
 part "pane[variant=folds] > settings-topic" {
     use "pane-scroll-box"
+    use "pane-first-box"
     position relative
     flex "1 1 0"
     min-height 0
-    scroll-timeline "--pane-first block"
-    padding-block-start "var(--pane-head-whole)"
-    scroll-padding-block-start "var(--pane-head-folded)"
-    media "print" {
-        padding-block-start "$ring-room"
-    }
+}
+
+// The heading of a topic folds with room under its letters, as the line of a list does under its buttons.
+part "pane[variant=folds]:has(settings-topic)" {
+    --pane-head-folded-end "calc($pane-head-line + $ring-room + $space-1)"
+}
+
+// What stays in sight beside the cards of a topic (an open item, the preview of a theme) stops under the folded head:
+// it starts under the whole head, so it never moves while the head folds, and stops the length of the fold higher.
+part "pane[variant=folds] > settings-topic list-editor side-panel" {
+    top "calc($size-page-gutter - var(--pane-head-fold-length))"
+}
+
+part "pane[variant=folds] > settings-topic theme-editor.aside" {
+    top "calc($space-4 - var(--pane-head-fold-length))"
 }
 
 // The timeline under the head of its pane (UX §6.5): the chart and its side start where the whole head ends. The box of
@@ -17109,6 +17130,12 @@ part "pane[variant=folds] > settings-topic" {
 // folded head and draws the top edge of the box, whose own edge the head covers. *Not scheduled yet* folds the head too
 // as it scrolls; the side keeps the room of the whole head above it, as the box of an issue beside the one that scrolls
 // does.
+// What stands on the chart and in the tray (the scale, the names of the rows, the Today line) stays in its box: the
+// head of the pane is laid over the boxes, also over what is sticky in them.
+part "app-layout pane[variant=folds] timeline-scroll" "app-layout pane[variant=folds] timeline-tray" {
+    isolation isolate
+}
+
 part "app-layout pane[variant=folds] timeline-body > timeline-side" {
     padding-block-start "$pane-head-end"
     media "print" {
@@ -17120,7 +17147,6 @@ part "app-layout pane[variant=folds] timeline-side > timeline-scroll:first-child
     scroll-timeline "--pane-first block"
     margin-block-start "calc(-1 * $pane-head-end)"
     padding-block-start "calc($pane-head-end + $border-width)"
-    min-height "calc($size-list-scroll-least + $pane-head-end + $border-width)"
     scroll-padding-block-start "calc(var(--pane-head-folded-end) + $size-timeline-head + $border-width * 2)"
     border-block-start-width 0
     border-start-start-radius 0

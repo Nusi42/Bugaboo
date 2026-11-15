@@ -6,12 +6,15 @@ import { signIn } from "./support/flows.ts";
 import { expectStill, movementWhile, partLandmark } from "./support/movement.ts";
 import {
   coveredSteps,
+  focusInHead,
   foldsWith,
   headGap,
   keyThrough,
+  MAIN_COLUMN,
   PANE_HEAD,
   wheelOver,
 } from "./support/pane-head.ts";
+import { inOrder } from "./support/sequence.ts";
 import { chart, prepareLongTimeline } from "./support/timeline.ts";
 import { projectIssuesAddress } from "../src/shared/paths.ts";
 
@@ -25,7 +28,7 @@ const UNDATED = 20;
 
 test.use({ preparation: { run: (server) => prepareLongTimeline(server, DATED, UNDATED) } });
 
-/** A window as high as a laptop's, above the low window: the main column fits it and does not scroll. */
+/** A window as high as a laptop's, above the low window: the chart and its side fit the room the main column leaves. */
 const LAPTOP = { width: 1280, height: 720 } as const;
 
 /** The box of the chart. */
@@ -129,4 +132,99 @@ test("ux_06 on paper the chart stands under the Legend as on the screen", async 
   const onScreen = await gap();
   await page.emulateMedia({ media: "print" });
   await expect.poll(gap).toBeCloseTo(onScreen, 0);
+});
+
+/** Whether the folded head is what the browser draws at its middle, at twelve places across the chart. */
+function headOverChart(page: Page): Promise<boolean[]> {
+  return page.evaluate(
+    ([head, chartBox]) => {
+      const folded = document.querySelector(head)?.getBoundingClientRect() ?? new DOMRect();
+      const across = document.querySelector(chartBox)?.getBoundingClientRect() ?? new DOMRect();
+      const middle = (folded.top + folded.bottom) / 2;
+      return Array.from(
+        { length: 12 },
+        (_, step) =>
+          document
+            .elementFromPoint(across.left + ((step + 0.5) * across.width) / 12, middle)
+            ?.closest(head) instanceof HTMLElement,
+      );
+    },
+    [PANE_HEAD, CHART] as const,
+  );
+}
+
+/** The index of the first bar below the middle of the window. */
+function firstBelowMiddle(bars: readonly HTMLElement[]): number {
+  return bars.findIndex((bar) => bar.getBoundingClientRect().top > innerHeight / 2);
+}
+
+/** With the chart at its end: whether its last row stands in the box, and the box in the window. */
+function endsOfChart(page: Page): Promise<{ lastRowInBox: boolean; boxInWindow: boolean }> {
+  return page.locator(CHART).evaluate((node) => {
+    const last = [...node.querySelectorAll("[data-part~='timeline-row']")].at(-1);
+    const place = node.getBoundingClientRect();
+    const end = place.top + node.clientTop + node.clientHeight + 0.5;
+    return {
+      lastRowInBox: (last?.getBoundingClientRect().bottom ?? Infinity) <= end,
+      boxInWindow: place.bottom <= innerHeight,
+    };
+  });
+}
+
+/** Scrolls the chart this far down and waits until it is drawn there. */
+async function chartAt(page: Page, top: number): Promise<void> {
+  const box = page.locator(CHART);
+  await box.evaluate((node, to) => {
+    node.scrollTop = to;
+  }, top);
+  await expect.poll(() => scaleUnderHead(page)).toBeLessThanOrEqual(1);
+}
+
+test("ux_06 the folded head stands over the chart, its scale, the names of the rows and the Today line", async ({
+  page,
+}) => {
+  await openTimeline(page);
+  await chartAt(page, 400);
+  // Across the whole width of the chart, at the middle of the folded head, the head is what the browser draws.
+  const covered = await headOverChart(page);
+  expect(covered).toEqual(covered.map(() => true));
+});
+
+test("ux_06 a control of the head reached with the keyboard from the scrolled chart shows whole, over the scale", async ({
+  page,
+}) => {
+  await openTimeline(page);
+  await chartAt(page, 400);
+  // From a bar in view, back up through the chart into the head, which stays whole while one of its controls has the
+  // focus.
+  const bars = page.locator(`${CHART} [data-part~='timeline-bar.press']`);
+  const inView = await bars.evaluateAll(firstBelowMiddle);
+  await bars.nth(inView).focus();
+  const seen: Readonly<Awaited<ReturnType<typeof focusInHead>>>[] = [];
+  await inOrder(
+    Array.from({ length: 30 }, () => async () => {
+      await page.keyboard.press("Shift+Tab");
+      seen.push(await focusInHead(page));
+    }),
+  );
+  const inHead = seen.filter((step) => step.inside);
+  expect(inHead.length, "the controls of the head reached").toBeGreaterThan(5);
+  expect(inHead).toEqual(inHead.map(() => ({ inside: true, onTop: true, scrolled: 0 })));
+});
+
+test("ux_06 at a laptop's height the last row and the end of the chart can be scrolled into view", async ({
+  page,
+}) => {
+  await openTimeline(page);
+  const box = page.locator(CHART);
+  await box.evaluate((node) => {
+    node.scrollTop = node.scrollHeight;
+  });
+  const ends = await endsOfChart(page);
+  expect(ends).toEqual({ lastRowInBox: true, boxInWindow: true });
+  // The main column holds no more than it shows: nothing of the page is out of reach below it.
+  const main = page.locator(MAIN_COLUMN);
+  expect(await main.evaluate((node) => node.scrollHeight - node.clientHeight)).toBeLessThanOrEqual(
+    0,
+  );
 });
