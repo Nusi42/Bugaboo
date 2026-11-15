@@ -8,10 +8,11 @@ export const DRAG_SCROLL_LEAST = 120;
 const LONGEST_FRAME_MS = 100;
 
 /**
- * How long a drag counts as held without a word from the browser, which tells of a drag over a part several times a
- * second while it is held there: past this the drag left the window or its source went away.
+ * How long a drag counts as held without a word from the browser. The HTML standard has the browser fire `dragover`
+ * every 350 ms, give or take 200 ms, while the pointer rests (Firefox and WebKit keep to it; Chromium tells more
+ * often), so up to 550 ms between two is a drag still held; past this it left the window or its source went away.
  */
-const HELD_WITHOUT_WORD_MS = 300;
+const HELD_WITHOUT_WORD_MS = 700;
 
 const MS_A_SECOND = 1000;
 

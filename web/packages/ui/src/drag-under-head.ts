@@ -31,9 +31,20 @@ interface DragOver {
   readonly target: unknown;
 }
 
-/** A drag that left a part: where it went, nothing when it left the window. */
+/** A drag that left a part: where it went (nothing when it left the window), and where the pointer is. */
 interface DragLeave {
   readonly relatedTarget: unknown;
+  readonly clientX: number;
+  readonly clientY: number;
+}
+
+/**
+ * Whether a drag left the window: it went to no part, and the pointer is at or past an edge of the window (WebKit tells
+ * of no part on every leave, also inside the window).
+ */
+function leftTheWindow(event: DragLeave): boolean {
+  const { clientX: x, clientY: y } = event;
+  return event.relatedTarget === null && (x <= 0 || y <= 0 || x >= innerWidth || y >= innerHeight);
 }
 
 /** How deep the point is in the head: 0 at its lower edge, 1 at its top. */
@@ -110,7 +121,7 @@ class HeldOverHead {
   };
 
   private readonly left = (event: DragLeave): void => {
-    if (event.relatedTarget === null) {
+    if (leftTheWindow(event)) {
       this.stop();
     }
   };

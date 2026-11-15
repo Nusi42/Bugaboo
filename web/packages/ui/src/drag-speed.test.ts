@@ -27,6 +27,8 @@ describe("ux_06 a drag over the folded head scrolls the box at a speed of its ow
 
   it("counts a drag as held only while the browser keeps telling of it", () => {
     expect(stillHeld(1000, 1100)).toBe(true);
+    // The HTML standard has a drag tell of itself every 350 ms, give or take 200 ms.
+    expect(stillHeld(1000, 1550)).toBe(true);
     expect(stillHeld(1000, 2000)).toBe(false);
   });
 });
