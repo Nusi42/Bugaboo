@@ -1,12 +1,6 @@
-import {
-  differs,
-  far,
-  LEAST_MOVE_PX,
-  type Movement,
-  type Moved,
-  type Scrolled,
-} from "./movement-frames.ts";
+import { far, LEAST_MOVE_PX, type Movement, type Moved, type Scrolled } from "./movement-frames.ts";
 import type { Box, Shift } from "./movement-record.ts";
+import { inTheBoxes, inViewOf } from "./movement-view.ts";
 
 export { judged, scrolledOf } from "./movement-frames.ts";
 export type { Appeared, Movement, Moved, Scrolled } from "./movement-frames.ts";
@@ -139,42 +133,24 @@ function grewByWhatCameIn(part: Moved, appeared: Movement["appeared"]): boolean 
   );
 }
 
-/**
- * The parts that moved where their edges show in view, and whether anything changed out of view only (a part, a row
- * that came in above the view). What stands outside the
- * window at the start and at the end is not in view: the browser keeps what is in view still when
- * something above it grows, by its scroll (UX §6.4).
- */
-function inViewOf(movement: Movement): {
-  readonly seen: readonly Moved[];
-  readonly anchored: boolean;
-} {
-  const { view } = movement;
-  const inView = (box: Box): boolean =>
-    view === undefined || (box.y < view && box.y + box.height > 0);
-  // A part is judged by its edges that show in the window: one that changed only where it is out of view (grew above
-  // it, its foot in view kept still by the scroll) looks the same to the person. A part with neither edge in view is
-  // judged whole.
-  const looksMoved = ({ from, last }: Moved): boolean => {
-    if (view === undefined || !inView(from) || !inView(last)) {
-      return true;
-    }
-    const topSeen = from.y >= 0 && last.y >= 0;
-    const footSeen = from.y + from.height <= view && last.y + last.height <= view;
-    if (far(from.x, last.x) || far(from.width, last.width) || (!topSeen && !footSeen)) {
-      return differs(from, last);
-    }
-    return (
-      (topSeen && far(from.y, last.y)) ||
-      (footSeen && far(from.y + from.height, last.y + last.height))
-    );
-  };
-  const seen = movement.moved.filter(
-    (part) => (inView(part.from) || inView(part.last)) && looksMoved(part),
-  );
-  // Something changed out of view: a part, or a row that came in above it.
-  const above = movement.appeared.some((part) => part.last.y + part.last.height <= 0);
-  return { seen, anchored: above || seen.length < movement.moved.length };
+/** What grew: the parts the action changes, and those that came in. */
+function growthsOf(movement: Movement, grows: readonly string[]): readonly Growth[] {
+  return [
+    ...movement.moved
+      .filter((part) => grows.includes(part.name))
+      .map((part) => ({
+        name: part.name,
+        box: part.from,
+        by: part.last.height - part.from.height,
+        cameIn: false,
+      })),
+    ...movement.appeared.map((part) => ({
+      name: part.name,
+      box: part.last,
+      by: part.last.height,
+      cameIn: true,
+    })),
+  ];
 }
 
 /** What broke the rule of a still screen; all empty when it held. */
@@ -192,25 +168,11 @@ export interface Wrong {
  * shift above nothing outside those parts, before or after an input; a part that went away; grey
  * shapes; a scroll that the action is not meant to make.
  */
-export function wrongIn(movement: Movement, except: StillExcept): Wrong {
+export function wrongIn(measured: Movement, except: StillExcept): Wrong {
+  const { movement, setBack } = inTheBoxes(measured);
   const grows = except.grows ?? [];
   const follows = except.follows ?? [];
-  const growths: Growth[] = [
-    ...movement.moved
-      .filter((part) => grows.includes(part.name))
-      .map((part) => ({
-        name: part.name,
-        box: part.from,
-        by: part.last.height - part.from.height,
-        cameIn: false,
-      })),
-    ...movement.appeared.map((part) => ({
-      name: part.name,
-      box: part.last,
-      by: part.last.height,
-      cameIn: true,
-    })),
-  ];
+  const growths = growthsOf(movement, grows);
   const moves = except.moves ?? [];
   const scrolls = except.scrolls ?? [];
   const may = new Set([...grows, ...follows, ...moves]);
@@ -233,7 +195,7 @@ export function wrongIn(movement: Movement, except: StillExcept): Wrong {
   });
   // A scroll that kept what is in view still while something above it changed is the browser's
   // own anchoring: allowed. Any other change of the scroll is wrong.
-  const keptStill = anchored && moved.length === 0;
+  const keptStill = (anchored || setBack) && moved.length === 0;
   return {
     moved,
     shifts: movement.shifts.filter((shift) => shift.value > 0 && !theirs(shift)),

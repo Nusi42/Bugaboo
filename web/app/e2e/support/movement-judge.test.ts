@@ -175,16 +175,20 @@ describe("ux_01 the measure tells a row that left the view from one drawn afresh
   });
 });
 
+/** The height of the window of the tests of what is in view. */
+const view = 800;
+
+/** The scroll of 52 px that kept what is in view still. */
+const scroll = { part: "app-layout.main", from: "600/0", to: "652/0" };
+
+/** A measure in a window, with that scroll. */
+function withScroll(parts: readonly Moved[]): Movement {
+  return { ...movementOf(parts), scrolled: [scroll], view };
+}
+
 describe("ux_01 the measure judges what is in view, and lets the browser keep it still", () => {
-  const view = 800;
   /** Something above the view grew by 52 px, and the scroll of the page kept what is in view still. */
   const above = moved("head", box(0, -300, 300, 100), box(0, -352, 300, 100));
-  const scroll = { part: "app-layout.main", from: "600/0", to: "652/0" };
-  const withScroll = (parts: readonly Moved[]): Movement => ({
-    ...movementOf(parts),
-    scrolled: [scroll],
-    view,
-  });
 
   it("passes a scroll that kept what is in view still while something above it grew", () => {
     expect(wrongIn(withScroll([above]), {})).toEqual(nothingWrong);
@@ -198,16 +202,24 @@ describe("ux_01 the measure judges what is in view, and lets the browser keep it
   it("fails a scroll when nothing above the view changed", () => {
     expect(wrongIn(withScroll([]), {}).scrolled).toEqual([scroll]);
   });
+});
 
+describe("ux_01 the measure judges a part by its edges in view", () => {
   it("passes a part that grew where it is out of view, the rest of it still in view", () => {
     // The Details grew by a row above the view; their foot is in view and stays, by the scroll.
     const details = moved("details", box(0, -1213, 300, 1340), box(0, -1265, 300, 1392));
     expect(wrongIn(withScroll([details]), {})).toEqual(nothingWrong);
   });
 
+  it("passes a part spanning the view that grew above it, by what the scroll kept still", () => {
+    // Something inside it grew by 52 px above the view, and the scroll of 52 px kept what is in view still.
+    const page = moved("page", box(0, -461, 300, 1427), box(0, -513, 300, 1479));
+    expect(wrongIn(withScroll([page]), { grows: ["page"] })).toEqual(nothingWrong);
+  });
+
   it("fails a part spanning the view that moved by 50 px", () => {
     const tall = moved("history", box(0, -200, 300, 1400), box(0, -150, 300, 1400));
-    expect(wrongIn(withScroll([tall]), {}).moved).toEqual([tall]);
+    expect(wrongIn(withScroll([tall]), {}).moved.map((part) => part.name)).toEqual(["history"]);
   });
 
   it("does not count a row that came in above the view as a push of what is in view", () => {

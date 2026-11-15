@@ -1,0 +1,86 @@
+import { differs, far, type Movement, type Moved } from "./movement-frames.ts";
+import type { Box } from "./movement-record.ts";
+
+// What of a movement the person sees in the window (UX §6.4): the browser keeps what is in view still by its scroll
+// when something above it changes, so the measure of movement (`movement-judge.ts`) judges what is in view.
+
+/**
+ * The parts that moved where their edges show in view, and whether anything changed out of view only (a part, a row
+ * that came in above the view). What stands outside the
+ * window at the start and at the end is not in view: the browser keeps what is in view still when
+ * something above it grows, by its scroll (UX §6.4).
+ */
+export function inViewOf(movement: Movement): {
+  readonly seen: readonly Moved[];
+  readonly anchored: boolean;
+} {
+  const { view } = movement;
+  const inView = (box: Box): boolean =>
+    view === undefined || (box.y < view && box.y + box.height > 0);
+  // A part is judged by its edges that show in the window: one that changed only where it is out of view (grew above
+  // it, its foot in view kept still by the scroll) looks the same to the person. A part with neither edge in view is
+  // judged whole.
+  const looksMoved = ({ from, last }: Moved): boolean => {
+    if (view === undefined || !inView(from) || !inView(last)) {
+      return true;
+    }
+    const topSeen = from.y >= 0 && last.y >= 0;
+    const footSeen = from.y + from.height <= view && last.y + last.height <= view;
+    if (far(from.x, last.x) || far(from.width, last.width) || (!topSeen && !footSeen)) {
+      return differs(from, last);
+    }
+    return (
+      (topSeen && far(from.y, last.y)) ||
+      (footSeen && far(from.y + from.height, last.y + last.height))
+    );
+  };
+  const seen = movement.moved.filter(
+    (part) => (inView(part.from) || inView(part.last)) && looksMoved(part),
+  );
+  // Something changed out of view: a part, or a row that came in above it.
+  const above = movement.appeared.some((part) => part.last.y + part.last.height <= 0);
+  return { seen, anchored: above || seen.length < movement.moved.length };
+}
+
+/** How far the one box that scrolled was scrolled down, if exactly one did: the browser keeping the view still. */
+function keptByScroll(movement: Movement): number {
+  const [only, ...more] = movement.scrolled;
+  if (only === undefined || more.length > 0) {
+    return 0;
+  }
+  return scrollDownOf(only.to) - scrollDownOf(only.from);
+}
+
+/** How far down a part is scrolled, as the recording writes its scroll (`40/0`). */
+function scrollDownOf(at: string): number {
+  return Number(at.split("/")[0]);
+}
+
+/**
+ * A part with neither edge in view, set back by the scroll that kept the view still: it is judged where it stands in
+ * its box, as the person sees what of it is in view (UX §6.4, the browser keeps what is in view still by its scroll).
+ */
+function inTheBox(part: Moved, movement: Movement): Moved {
+  const { view } = movement;
+  const spans = (box: Box): boolean => view !== undefined && box.y < 0 && box.y + box.height > view;
+  const by = keptByScroll(movement);
+  if (by === 0 || !spans(part.from) || !spans(part.last)) {
+    return part;
+  }
+  return {
+    ...part,
+    to: { ...part.to, y: part.to.y + by },
+    last: { ...part.last, y: part.last.y + by },
+  };
+}
+
+/** The measure with each part that spans the view set back by the scroll, and whether any was. */
+export function inTheBoxes(measured: Movement): {
+  readonly movement: Movement;
+  readonly setBack: boolean;
+} {
+  const moved = measured.moved.map((part) => inTheBox(part, measured));
+  // A part set back by the scroll changed out of view: the scroll kept what is in view still.
+  const setBack = moved.some((part, index) => part !== measured.moved[index]);
+  return { movement: { ...measured, moved }, setBack };
+}
