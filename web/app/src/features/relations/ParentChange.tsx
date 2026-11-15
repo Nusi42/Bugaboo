@@ -4,6 +4,7 @@ import {
   alertTone,
   Button,
   buttonLook,
+  doNothing,
   Form,
   SubmitButton,
   TextField,
@@ -28,10 +29,18 @@ function useParentChange() {
     (put: { readonly child: string; readonly parent: string | null }) =>
       setParentOf(put.child, put.parent),
   );
-  /** Says whether the change was made. */
-  const put = async (child: string, parent: string | null): Promise<boolean> => {
+  /**
+   * Says whether the change was made; `made` changes the screen with the sentence, in the same turn, so both show in
+   * one frame.
+   */
+  const put = async (
+    child: string,
+    parent: string | null,
+    made: () => void = doNothing,
+  ): Promise<boolean> => {
     try {
       await change.mutateAsync({ child, parent });
+      made();
       setAdded(parent === null ? null : child);
       return true;
     } catch {
@@ -92,12 +101,12 @@ export function AddSubIssue({ readableId }: { readonly readableId: string }) {
       {open ? (
         <AddSubIssueForm
           pending={pending}
-          onAdd={async (child) => {
+          onAdd={(child) => {
             // The form stays until the issue stands in the list: it goes in the same frame as
             // the sentence comes, so the section changes once (UX §6.4).
-            const made = await put(child, readableId);
-            setOpen(!made);
-            return made;
+            return put(child, readableId, () => {
+              setOpen(false);
+            });
           }}
           onCancel={() => {
             setOpen(false);

@@ -5,8 +5,10 @@ import { t } from "@bugaboo/messages";
 import { bob } from "./accounts.ts";
 import { type ChangeInPlace, detailChange, ISSUE, issuePage } from "./change-row.ts";
 import { issuePageLandmarks } from "./landmarks.ts";
+import { descriptionBox, saveDescriptionButton } from "./description.ts";
 import { detailRow } from "./parts.ts";
 import { BLOCKS } from "./relate.ts";
+import { answerTo } from "./sequence.ts";
 import { issueAddress } from "../../src/shared/paths.ts";
 
 // More changes in place of the issue page, for the table of changes (`changes-in-place.ts`): the
@@ -21,6 +23,12 @@ export const OWN = {
 
 /** The issue the relations of the table point to: one that is in no plan of the preparation. */
 const OTHER = "WEB-3";
+
+/** The issue the preparation makes to become a part of the issue of the table. */
+export const PART = { key: "WEB-17", title: "A part in place" } as const;
+
+/** The words of the description the table writes. */
+const DESCRIPTION = "A description written in place";
 
 /** The region of a section of the main column, by its heading. */
 function section(page: Page, heading: string) {
@@ -90,6 +98,40 @@ export const moreIssuePageChanges: readonly ChangeInPlace[] = [
       await page.getByRole("button", { name: t("related-issues.add-it"), exact: true }).click();
       await expect(
         page.getByText(t("related-issues.added", { key: ISSUE, name: BLOCKS, other: OTHER })),
+      ).toBeVisible();
+    },
+  }),
+  sectionChange(t("sub-issues.title"), "sub-issue", {
+    before: async (page) => {
+      const parts = section(page, t("sub-issues.title"));
+      await parts.getByRole("button", { name: t("sub-issues.add"), exact: true }).click();
+      await parts.getByLabel(t("common.issue-id")).fill(PART.key);
+      await parts
+        .getByRole("button", { name: t("sub-issues.add-it"), exact: true })
+        .scrollIntoViewIfNeeded();
+    },
+    act: async (page) => {
+      await section(page, t("sub-issues.title"))
+        .getByRole("button", { name: t("sub-issues.add-it"), exact: true })
+        .click();
+      await expect(page.getByText(t("sub-issues.added", { key: PART.key }))).toBeVisible();
+    },
+  }),
+  sectionChange(t("issue-field.description"), "description", {
+    // Opening the editor and writing are the person's own; the person scrolls to *Save* and presses it.
+    before: async (page) => {
+      // The editor opens whole once the person's draft is looked for.
+      const looked = answerTo(page, "GET", "/api/v1/drafts");
+      await page.getByRole("button", { name: t("issues.description.edit"), exact: true }).click();
+      await looked;
+      await descriptionBox(page).fill(DESCRIPTION);
+      await saveDescriptionButton(page).scrollIntoViewIfNeeded();
+    },
+    act: async (page) => {
+      await saveDescriptionButton(page).click();
+      await expect(descriptionBox(page)).toHaveCount(0);
+      await expect(
+        section(page, t("issue-field.description")).getByText(DESCRIPTION),
       ).toBeVisible();
     },
   }),

@@ -164,6 +164,7 @@ export { focusFirstField, withId } from "./first-field.ts";
 export { inPlace } from "./in-place.ts";
 export { composing, plainEnter } from "./plain-enter.ts";
 export { useHeightOnParent } from "./height-variable.ts";
+export { useTopKept } from "./top-kept.ts";
 export { PaneWithHead, type PaneWithHeadProps } from "./PaneWithHead.tsx";
 export { OutsidePane } from "./OutsidePane.tsx";
 export {

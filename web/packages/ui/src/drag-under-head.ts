@@ -1,19 +1,12 @@
 import { useEffect, type RefObject } from "react";
 
 import { doNothing } from "./do-nothing.ts";
+import { scrollBoxOf } from "./scroll-box.ts";
 
 /** A point of the pointer in the window. */
 interface Point {
   readonly x: number;
   readonly y: number;
-}
-
-/** Whether the element scrolls up and down by itself: a scroll box that holds more than it shows. */
-function scrollsDown(element: HTMLElement): boolean {
-  const { overflowY } = getComputedStyle(element);
-  return (
-    (overflowY === "auto" || overflowY === "scroll") && element.scrollHeight > element.clientHeight
-  );
 }
 
 /** The scroll box of the pane that the head is laid over at the point: the one whose content shows under it there. */
@@ -22,14 +15,9 @@ function boxUnder(pane: HTMLElement, head: HTMLElement, point: Point): HTMLEleme
     if (!pane.contains(found) || head.contains(found)) {
       continue;
     }
-    for (
-      let element = found instanceof HTMLElement ? found : found.parentElement;
-      element !== null && element !== pane;
-    ) {
-      if (scrollsDown(element)) {
-        return element;
-      }
-      element = element.parentElement;
+    const box = scrollBoxOf(found instanceof HTMLElement ? found : found.parentElement, pane);
+    if (box !== null) {
+      return box;
     }
   }
   return null;

@@ -1,6 +1,6 @@
 import { signedInAdmin } from "./access.ts";
 import { ISSUE_TITLE } from "./change-row.ts";
-import { OWN } from "./changes-issue-more.ts";
+import { OWN, PART } from "./changes-issue-more.ts";
 import { LABEL } from "./changes-issue-page.ts";
 import { createOwnField } from "./fields.ts";
 import { createIssue } from "./issues.ts";
@@ -11,13 +11,14 @@ import { prepareTimeline } from "./timeline.ts";
 
 /**
  * Gets a server ready for the table: the project WEB with the scene of the timeline, the issue the
- * changes of the issue page are made on, the label of
+ * changes of the issue page are made on and the issue that becomes its part, the label of
  * the change of labels, and the own fields of the changes of own fields.
  */
 export async function prepareChanges(server: Instance): Promise<void> {
   await prepareTimeline(server);
   const admin = await signedInAdmin(server);
   await createIssue(admin, "WEB", ISSUE_TITLE);
+  await createIssue(admin, "WEB", PART.title);
   await createLabel(admin, LABEL);
   await inOrder([
     () => createOwnField(admin, OWN.one.name, "pick-one", OWN.one.choices),

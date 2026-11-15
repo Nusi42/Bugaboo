@@ -1,6 +1,6 @@
 import { descriptionEditPart, type SafeHtml } from "@bugaboo/api-client";
-import { partOf, part } from "@bugaboo/ui";
-import { useState } from "react";
+import { partOf, part, useTopKept } from "@bugaboo/ui";
+import { useRef, useState, type ReactNode } from "react";
 
 import { CompareAndSave } from "./CompareAndSave.tsx";
 import { DescriptionEditor, DescriptionReading } from "./DescriptionEditor.tsx";
@@ -40,10 +40,10 @@ export function LongTextBlock({
   canChange,
   words,
 }: LongTextBlockProps) {
-  const [comparing, setComparing] = useState(false);
-  const showCompare = comparing && description.phase.kind !== "reading";
+  const reading = description.phase.kind === "reading";
+  const compare = useComparing(description);
   return (
-    <section {...partOf(part.issueSection)} aria-labelledby={sectionId(issue, which)}>
+    <LongTextSection titleId={sectionId(issue, which)} reading={reading}>
       <DescriptionHead
         description={description}
         titleId={sectionId(issue, which)}
@@ -54,30 +54,60 @@ export function LongTextBlock({
         description={description}
         issue={issue}
         which={which}
-        comparing={showCompare}
-        onCompare={() => {
-          setComparing(true);
-          description.reread();
-        }}
+        comparing={compare.shown}
+        onCompare={compare.open}
       />
-      {showCompare ? (
+      {compare.shown ? (
         <CompareAndSave
           mine={description.text}
           theirs={description.saved}
-          onSave={(text) => {
-            setComparing(false);
-            description.resolve(text);
-          }}
-          onClose={() => {
-            setComparing(false);
-          }}
+          onSave={compare.save}
+          onClose={compare.close}
         />
       ) : null}
-      {description.phase.kind === "reading" ? (
+      {reading ? (
         <DescriptionReading html={html} filled={filled} empty={words.empty} />
       ) : (
         <DescriptionEditor description={description} words={words} />
       )}
+    </LongTextSection>
+  );
+}
+
+/** *Compare and save* beside a long text: whether it is shown, and what opens, saves and closes it. */
+function useComparing(description: Description) {
+  const [comparing, setComparing] = useState(false);
+  return {
+    shown: comparing && description.phase.kind !== "reading",
+    open: () => {
+      setComparing(true);
+      description.reread();
+    },
+    save: (text: string) => {
+      setComparing(false);
+      description.resolve(text);
+    },
+    close: () => {
+      setComparing(false);
+    },
+  };
+}
+
+/** The section of a long text: the editor closing onto the saved text, or opening, leaves its top where it stands. */
+function LongTextSection({
+  titleId,
+  reading,
+  children,
+}: {
+  readonly titleId: string;
+  readonly reading: boolean;
+  readonly children: ReactNode;
+}) {
+  const block = useRef<HTMLElement>(null);
+  useTopKept(block, reading ? "reading" : "editing");
+  return (
+    <section ref={block} {...partOf(part.issueSection)} aria-labelledby={titleId}>
+      {children}
     </section>
   );
 }

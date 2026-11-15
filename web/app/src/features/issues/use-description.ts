@@ -33,7 +33,7 @@ export interface IssueLongTextOptions {
 
 /**
  * A long text of the issue that is edited under a lock (ISS-17, CF-01): the description, or a long
- * text own field. The page reads the issue again after a save.
+ * text own field. A save is done once the page has read the issue again.
  */
 export function useIssueLongText(
   issue: IssueView,
@@ -43,17 +43,20 @@ export function useIssueLongText(
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const id = issue.id ?? address;
   const { save: saveText } = which;
-  const save = useCallback<SaveLongText>(
-    async (input) => {
-      await saveText(input);
-      setSavedAt(new Date().toISOString());
-      void queryClient.invalidateQueries({ queryKey: queryKeys.issues.lists() });
-    },
-    [saveText],
-  );
   const refresh = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: queryKeys.issues.one(address) });
   }, [address]);
+  // The box stays open until the issue is read again, so it closes onto the saved text with *Saved* above it in one
+  // frame, rather than onto the text from before and then the new one (UX §6.4).
+  const save = useCallback<SaveLongText>(
+    async (input) => {
+      await saveText(input);
+      await refresh();
+      setSavedAt(new Date().toISOString());
+      void queryClient.invalidateQueries({ queryKey: queryKeys.issues.lists() });
+    },
+    [saveText, refresh],
+  );
   const text = useLongText({
     kind: "issue",
     id,
