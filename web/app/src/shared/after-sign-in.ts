@@ -38,12 +38,8 @@ export function useAfterSignIn(): (answer: SignedIn) => void {
         router.history.push(waiting);
         return;
       }
-      // The page of a signed-in person may be open already (the sign-in page sends them home): a
-      // second visit of the same address would only cut short the next move the person makes.
       void loadStartPage().then((start) => {
-        if (router.state.location.href !== start) {
-          router.history.push(start);
-        }
+        router.history.push(start);
       });
     }
   };
