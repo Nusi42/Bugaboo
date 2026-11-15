@@ -1,11 +1,14 @@
 //! Moving the dates of several issues in one step (PLAN-03, ADR-0043, decision 6): the move that
 //! *Move it after* of the plan makes, and a drag of several bars.
 //!
-//! Every issue is changed by the use case of a single change, so each has its own change, its own
-//! event and the same rules: the field levels of the two dates, the version it was read at, the
-//! order of start and due date. All of them are judged first, so one refusal stops the whole move
-//! before anything is written. The changes then carry one run (`change_run`), so *Undo* puts every
-//! date back in one step, as it does for any other run.
+//! Every issue is planned and written as a single change is ([`super::change::IssueWrite`]), so each
+//! has its own change, its own event and the same rules: the field levels of the two dates, the
+//! version it was read at, the order of start and due date. All of them are judged first, then
+//! written in one transaction: an issue refused there (somebody changed it in the instant between)
+//! refuses the whole move, which writes nothing and records no event. The changes carry one run
+//! (`change_run`), so *Undo* puts every date back in one step, as it does for any other run.
+
+use std::sync::{Arc, Mutex};
 
 use bb_core::ErrorCode;
 use bb_core::given::SetTo;
@@ -16,11 +19,11 @@ use bb_policy::{Authorized, Masked, Place};
 use jiff::civil::Date;
 use serde::Serialize;
 
-use super::change::change_issue;
+use super::change::IssueWrite;
 use super::types::ChangeIssue;
-use super::types::IssueView;
 use crate::access::Actor;
-use crate::auth::{AppError, AuthStore, Ctx};
+use crate::auth::{AppError, AuthStore, Ctx, by, entity};
+use crate::projects::Why;
 use crate::relations::LineMaker;
 use crate::runs::{RunStore, RunsOf};
 
@@ -70,6 +73,29 @@ pub struct DatesMoved {
     pub issues: Vec<MovedIssue>,
 }
 
+/// The events and the writes of the changes of a move; an issue whose dates the move leaves as they
+/// are has neither.
+fn written_of<S: AuthStore>(
+    ctx: &Ctx<'_, S>,
+    actor: &Actor,
+    plans: Vec<super::change::Plan>,
+) -> Result<(Vec<bb_core::event::DomainEvent>, Vec<IssueWrite>), AppError> {
+    let now = ctx.now();
+    let mut events = Vec::new();
+    let mut writes = Vec::new();
+    for plan in plans {
+        let changes = plan.field_changes();
+        if changes.is_empty() {
+            continue;
+        }
+        let changes = crate::event_members::issue_counted_up(changes, plan.current.version);
+        let record = entity(bb_core::event::RecordKind::Issue, plan.current.id);
+        events.push(ctx.event(by(actor.person.id), record, changes)?);
+        writes.push(plan.into_write(now));
+    }
+    Ok((events, writes))
+}
+
 /// The change of one issue that a move makes.
 fn change_of(token: &str, each: &DatesOf) -> ChangeIssue {
     ChangeIssue {
@@ -104,9 +130,9 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 }
 
-/// Moves the dates of several issues in one run. Nothing is written when any of the changes is
-/// refused; a change that fails after the others were written (somebody changed an issue in the
-/// instant between) ends the run as failed and leaves what was written, which *Undo* takes back.
+/// Moves the dates of several issues in one run, written whole or not at all: nothing is written
+/// and no event recorded when any of the changes is refused, also when somebody changed an issue in
+/// the instant between the judging and the writing.
 ///
 /// # Errors
 /// `request.invalid` for no issue, more than a change to many issues takes, an issue twice or a
@@ -128,9 +154,9 @@ pub async fn move_dates<S: AuthStore>(
     let held = ctx.evaluation_of(&actor, Place::Organization).await?;
     // Judged first, so a refusal of any one issue stops the move before a date is written.
     // An issue named twice, by its readable ID and by its internal ID, is the same issue: a second
-    // change would be made on a version the first one has counted up, after part of the move was
-    // written.
+    // change would be made on a version the first one has counted up.
     let mut seen = std::collections::BTreeSet::new();
+    let mut plans = Vec::with_capacity(input.issues.len());
     for each in &input.issues {
         let (_, plan) = ctx
             .plan_issue_change(&actor, &change_of(&input.session_token, each))
@@ -138,36 +164,53 @@ pub async fn move_dates<S: AuthStore>(
         if !seen.insert(plan.current.id) {
             return Err(ErrorCode::InvalidRequest.into());
         }
+        plans.push(plan);
     }
     let run =
         RunId::generate(&mut ctx.ids()).map_err(|error| AppError::Internal(error.to_string()))?;
+    // The events carry the run, so *Undo the run* finds them.
+    ctx.set_run(Some(run));
+    let prepared = written_of(ctx, &actor, plans);
+    ctx.set_run(None);
+    let (events, writes) = prepared?;
+    // One transaction for every issue: written whole, or refused whole.
+    let (why, failed) = (Why::default(), Arc::new(Mutex::new(None)));
+    let (stopped, stopped_at, all) = (why.clone(), Arc::clone(&failed), writes.clone());
+    ctx.store()
+        .record_changes(&events, move |transaction| {
+            Box::pin(async move {
+                for (at, write) in all.iter().enumerate() {
+                    if let Err(error) = write.write_in::<S>(transaction, &stopped).await {
+                        *stopped_at
+                            .lock()
+                            .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(at);
+                        return Err(error);
+                    }
+                }
+                Ok(())
+            })
+        })
+        .await
+        .map_err(|error| {
+            let at = failed
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .unwrap_or_default();
+            writes.get(at).map_or_else(
+                || why.answer::<S>(&error, ErrorCode::VersionChanged),
+                |write| write.refused::<S>(&why, &error, actor.person.id),
+            )
+        })?;
+    // The run is kept once its changes are: a refused move leaves no run behind.
     let runs = RunsOf::new(ctx, &actor, &input.session_token);
-    let by = RunActor {
+    let by_actor = RunActor {
         person: actor.person.id,
         app: None,
         agent: actor.agent(),
     };
-    runs.open_run(run, RunKind::ManyChanges, &by, ctx.now())
+    runs.open_run(run, RunKind::ManyChanges, &by_actor, ctx.now())
         .await?;
-    ctx.set_run(Some(run));
-    let mut written = Ok(());
-    for each in &input.issues {
-        let change = change_of(&input.session_token, each);
-        if let Err(error) = change_issue::<_, IssueView>(ctx, change).await {
-            written = Err(error);
-            break;
-        }
-    }
-    ctx.set_run(None);
-    let ended = if written.is_ok() {
-        RunEnd::Done
-    } else {
-        RunEnd::Failed
-    };
-    let closed = runs.close_run(run, ended, ctx.now()).await;
-    // The refusal of the change comes first: it is why the run failed.
-    written?;
-    closed?;
+    runs.close_run(run, RunEnd::Done, ctx.now()).await?;
     let issues = ctx.moved_issues(&actor, &input).await?;
     Ok(held.authorize(DatesMoved { run, issues }))
 }
