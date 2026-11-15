@@ -4,7 +4,7 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { partIn } from "./support/parts.ts";
 import { sampleAdministrator } from "./support/sample.ts";
-import { boxOf } from "./support/windows.ts";
+import { boxOf } from "./support/geometry.ts";
 import { paths } from "../src/shared/paths.ts";
 
 // M5 exit, package O: the example of what a kind of field holds is the hint of the Name box, under its label and above

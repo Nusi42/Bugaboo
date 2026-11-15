@@ -7,7 +7,8 @@ import { signIn } from "./support/flows.ts";
 import { webIssues } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
 import { prepareLook, rowOf } from "./support/list-look.ts";
-import { boxOf, roomUnderContent, shadowsOf } from "./support/windows.ts";
+import { boxOf } from "./support/geometry.ts";
+import { roomUnderContent, shadowsOf } from "./support/windows.ts";
 
 // *Customize* (UX §4.2): the panel stands beside the list where there is room for both, and under
 // it where there is not.

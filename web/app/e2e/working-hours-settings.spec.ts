@@ -7,7 +7,7 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareWeb } from "./support/issues.ts";
 import { press } from "./support/working-hours-scene.ts";
-import { boxOf as boxOnPage } from "./support/windows.ts";
+import { boxOf as boxOnPage } from "./support/geometry.ts";
 import { partIn } from "./support/parts.ts";
 
 /** The years the rules of Germany ask work days to be kept at least. */

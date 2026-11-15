@@ -5,7 +5,8 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { layoutOf } from "./support/layout.ts";
 import { sampleAdministrator } from "./support/sample.ts";
-import { boxOf, inDock, minimizeADraft, pageColumn, windowDock } from "./support/windows.ts";
+import { boxOf } from "./support/geometry.ts";
+import { inDock, minimizeADraft, pageColumn, windowDock } from "./support/windows.ts";
 import { projectIssuesAddress } from "../src/shared/paths.ts";
 import { viewports } from "../../tooling/viewports.ts";
 

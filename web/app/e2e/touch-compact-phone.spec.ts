@@ -5,7 +5,7 @@ import { chooseSpacing, listFrame, prepareLook } from "./support/list-look.ts";
 import { partIn } from "./support/parts.ts";
 import { inOrder } from "./support/sequence.ts";
 import { touchTarget } from "./support/touch-targets.ts";
-import { boxOf } from "./support/windows.ts";
+import { boxOf } from "./support/geometry.ts";
 import { projectIssuesAddress } from "../src/shared/paths.ts";
 import { viewports } from "../../tooling/viewports.ts";
 

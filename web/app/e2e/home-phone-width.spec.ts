@@ -5,7 +5,7 @@ import { signIn } from "./support/flows.ts";
 import { layoutOf } from "./support/layout.ts";
 import { partIn } from "./support/parts.ts";
 import { sampleAdministrator } from "./support/sample.ts";
-import { boxOf } from "./support/windows.ts";
+import { boxOf } from "./support/geometry.ts";
 import { paths } from "../src/shared/paths.ts";
 
 // M5 exit, package O: on a phone the words of a notification on the start page have most of the width of the screen: the

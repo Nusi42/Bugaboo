@@ -2,7 +2,8 @@ import { t } from "@bugaboo/messages";
 import { expect, type Locator, type Page } from "@playwright/test";
 
 import { themes, type Theme } from "./checks.ts";
-import { boxOf, shadowsOf } from "./windows.ts";
+import { boxOf } from "./geometry.ts";
+import { shadowsOf } from "./windows.ts";
 
 // The checks of the issue page on a phone (UX §4.4, M5 exit L1): its bar of actions, its colors and its shadow.
 

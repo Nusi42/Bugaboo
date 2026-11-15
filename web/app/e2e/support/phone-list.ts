@@ -1,6 +1,6 @@
 import { type Locator, type Page } from "@playwright/test";
 
-import { boxOf } from "./windows.ts";
+import { boxOf } from "./geometry.ts";
 
 /** The parts of the page that scroll now (their own scroll bar), by their parts: a phone list has one. */
 export function scrollersOf(page: Page): Promise<string[]> {

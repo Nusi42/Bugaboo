@@ -7,7 +7,7 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { itemArea } from "./support/layout.ts";
 import { partIn } from "./support/parts.ts";
-import { boxOf } from "./support/windows.ts";
+import { boxOf } from "./support/geometry.ts";
 
 // The editor of a shortcut (the final check of M4): the keys of *Keys now* and of *Usual keys* start
 // on one edge, so the two rows read as one table.

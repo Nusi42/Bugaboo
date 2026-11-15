@@ -5,7 +5,8 @@ import { openNewIssueDialog } from "./support/issues.ts";
 import { openList, prepareLook } from "./support/list-look.ts";
 import { partIn } from "./support/parts.ts";
 import { resolved } from "./support/styles.ts";
-import { boxOf, shadowsOf } from "./support/windows.ts";
+import { boxOf } from "./support/geometry.ts";
+import { shadowsOf } from "./support/windows.ts";
 
 // M5 exit, package O (O13): on a phone the fixed footer of New issue holds the hint and the main button only;
 // the other answers and the note stand at the end of the scrolling form, and the bar of the screen is the bar

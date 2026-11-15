@@ -7,7 +7,7 @@ import { test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { layoutOf } from "./support/layout.ts";
 import { partIn } from "./support/parts.ts";
-import { boxOf } from "./support/windows.ts";
+import { boxOf } from "./support/geometry.ts";
 
 // M5 exit, the final pass: on a phone the answers of *Check access* have most of the width of the screen. The page,
 // the card of the answer and each answer were three boxes inside each other and left the words about 0.6 of it; the

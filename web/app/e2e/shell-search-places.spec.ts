@@ -6,7 +6,7 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { layoutOf } from "./support/layout.ts";
 import { ariaCurrent } from "./support/parts.ts";
-import { boxOf } from "./support/windows.ts";
+import { boxOf } from "./support/geometry.ts";
 import { paths } from "../src/shared/paths.ts";
 
 // M5 exit, final pass, package A: the places of search in the shell. On a phone the Search tab of the bar is current on

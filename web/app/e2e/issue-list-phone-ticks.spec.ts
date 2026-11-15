@@ -7,7 +7,7 @@ import { signIn } from "./support/flows.ts";
 import { webIssues } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
 import { prepareLook, rowOf, tickIssue } from "./support/list-look.ts";
-import { boxOf } from "./support/windows.ts";
+import { boxOf } from "./support/geometry.ts";
 
 // Ticking on a phone (UX §4.2, §7.4; M5 exit): the bar of the ticked issues stands above the
 // bottom navigation. That the tick box keeps 44 px in Compact is `touch-compact-phone.spec.ts` (UX-02).

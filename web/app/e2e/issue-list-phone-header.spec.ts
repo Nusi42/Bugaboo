@@ -8,7 +8,7 @@ import { webIssues } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
 import { prepareLook, rowOf } from "./support/list-look.ts";
 import { openBar } from "./support/search-bar.ts";
-import { boxOf } from "./support/windows.ts";
+import { boxOf } from "./support/geometry.ts";
 
 // The top of a phone list (UX §4.2, M5 exit decision D2 and finding R3): the page shows New issue
 // and Filters; Group by is in the Filters sheet; the colors are behind a Key button. The title is

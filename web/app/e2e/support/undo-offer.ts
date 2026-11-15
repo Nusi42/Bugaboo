@@ -2,7 +2,7 @@ import { expect, type Locator, type Page } from "@playwright/test";
 
 import { partIn } from "./parts.ts";
 import { inOrder } from "./sequence.ts";
-import { boxOf } from "./windows.ts";
+import { boxOf } from "./geometry.ts";
 
 type Box = Readonly<Awaited<ReturnType<typeof boxOf>>>;
 

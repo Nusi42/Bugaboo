@@ -6,7 +6,8 @@ import { expect, type Locator, type Page, type Request } from "@playwright/test"
 
 import { nothing, onThisLayout } from "./layout.ts";
 import { partIn } from "./parts.ts";
-import { boxOf, textStartOf } from "./windows.ts";
+import { boxOf } from "./geometry.ts";
+import { textStartOf } from "./windows.ts";
 
 /** How long a preview may take: the job runs every two seconds, and a picture is made at once. */
 export const PREVIEW_WAIT_MS = 30_000;

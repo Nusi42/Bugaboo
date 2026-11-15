@@ -6,7 +6,7 @@ import { layoutOf } from "./support/layout.ts";
 import { tickIssues } from "./support/many-changes-pages.ts";
 import { openList, prepareLook } from "./support/list-look.ts";
 import { partIn } from "./support/parts.ts";
-import { boxOf } from "./support/windows.ts";
+import { boxOf } from "./support/geometry.ts";
 
 // Ticking issues (UX §4.2, M5 exit L4 to L7): the bar of the ticked issues stands under the list, so
 // ticking moves nothing above it; its buttons carry the count and Delete is the danger button; the

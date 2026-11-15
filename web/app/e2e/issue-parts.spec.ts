@@ -6,7 +6,7 @@ import { expect, test } from "./support/fixtures.ts";
 import { openIssueWithDetails, serverKeptFollow, signIn } from "./support/flows.ts";
 import { pageOfFollowers, withManyFollowers } from "./support/followers.ts";
 import { detailRow, prepareWeb, savedNote } from "./support/issues.ts";
-import { boxOf } from "./support/windows.ts";
+import { boxOf } from "./support/geometry.ts";
 import { addRelation, addSubIssue } from "./support/relate.ts";
 import { issueAddress } from "../src/shared/paths.ts";
 

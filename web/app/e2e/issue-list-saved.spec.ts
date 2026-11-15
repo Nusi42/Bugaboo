@@ -8,7 +8,7 @@ import { layoutOf } from "./support/layout.ts";
 import { columnButton, grid, openList, prepareLook } from "./support/list-look.ts";
 import { setBox } from "./support/list-keys.ts";
 import { savedColumns } from "./support/saved-columns.ts";
-import { boxOf } from "./support/windows.ts";
+import { boxOf } from "./support/geometry.ts";
 
 // The columns of the list in a saved search (CFG-02, QRY-06, M5 WP-08): chosen in Customize, kept
 // with the search, and opened again at the address of the saved search.

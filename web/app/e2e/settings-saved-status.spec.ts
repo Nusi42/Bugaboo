@@ -8,7 +8,7 @@ import { signIn } from "./support/flows.ts";
 import { prepareWeb } from "./support/issues.ts";
 import { savedWords } from "./support/saved.ts";
 import { inOrder } from "./support/sequence.ts";
-import { boxOf } from "./support/windows.ts";
+import { boxOf } from "./support/geometry.ts";
 import { addressInProject, paths } from "../src/shared/paths.ts";
 
 // *Saving…* and *Saved* where the change was made (UX §6.4, M8 WP-13): every place that says them

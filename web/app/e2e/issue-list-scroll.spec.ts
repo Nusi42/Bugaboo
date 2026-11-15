@@ -5,7 +5,7 @@ import { signIn } from "./support/flows.ts";
 import { webIssues } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
 import { listFrame, prepareLook, rowOf } from "./support/list-look.ts";
-import { boxOf } from "./support/windows.ts";
+import { boxOf } from "./support/geometry.ts";
 
 // The list that is wider than its box (UX §4.2): the head scrolls with the rows. That Compact keeps a
 // target a finger can press on touch is `touch-compact-phone.spec.ts` (UX-02).

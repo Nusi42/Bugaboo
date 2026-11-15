@@ -2,10 +2,10 @@ import { t } from "@bugaboo/messages";
 
 import { ada } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
+import { dragAcross } from "./support/hand-drag.ts";
 import { signIn } from "./support/flows.ts";
 import {
   dayFromToday,
-  dragAcross,
   movedLater,
   openTimeline,
   planned,

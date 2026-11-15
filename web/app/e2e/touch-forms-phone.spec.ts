@@ -7,7 +7,7 @@ import { newIssueDialog, openNewIssueDialog } from "./support/issues.ts";
 import { prepareLook } from "./support/list-look.ts";
 import { partIn } from "./support/parts.ts";
 import { pixelsOf } from "./support/tokens.ts";
-import { boxOf } from "./support/windows.ts";
+import { boxOf } from "./support/geometry.ts";
 import { projectIssuesAddress } from "../src/shared/paths.ts";
 
 // The footer of a form on a phone keeps its gaps and its one start edge (UX-02, M6-F121, R1, R2): the buttons that a

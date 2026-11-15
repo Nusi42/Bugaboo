@@ -5,7 +5,7 @@ import { partIn } from "./support/parts.ts";
 import { cutWords, linesOfEach } from "./support/phone-list.ts";
 import { sampleAdministrator } from "./support/sample.ts";
 import { inOrder } from "./support/sequence.ts";
-import { boxOf } from "./support/windows.ts";
+import { boxOf } from "./support/geometry.ts";
 import { paths, projectIssuesAddress } from "../src/shared/paths.ts";
 
 // M5 exit, package O: a row of a list on a phone that has only its name (an issue type with its icon before the name, a

@@ -8,7 +8,7 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { layoutOf, onThisLayout } from "./support/layout.ts";
 import { ariaCurrent, partIn } from "./support/parts.ts";
-import { boxOf } from "./support/windows.ts";
+import { boxOf } from "./support/geometry.ts";
 
 // M5 exit, the final pass (L2): on a computer *Who sees people* has the chooser of a role for its preview, and the
 // column of the chosen role is scrolled into view in the matrix and marked; before, the matrix showed the first roles

@@ -243,20 +243,6 @@ export function trayHandle(scope: Locator, key: string): Locator {
   );
 }
 
-/** Drags the middle of `what` across by `pixels`, with the pointer. */
-export async function dragAcross(page: Page, what: Locator, pixels: number): Promise<void> {
-  const box = await what.boundingBox();
-  if (box === null) {
-    throw new TypeError("Nothing to drag.");
-  }
-  const [x, y] = [box.x + box.width / 2, box.y + box.height / 2];
-  await page.mouse.move(x, y);
-  await page.mouse.down();
-  await page.mouse.move(x + pixels / 2, y, { steps: 4 });
-  await page.mouse.move(x + pixels, y, { steps: 4 });
-  await page.mouse.up();
-}
-
 /** What a move says, up to the dates it names: "WEB-5 moved 1 week later, now". */
 export function movedLater(key: string, amount: string): string {
   return t("timeline.moved-later", { key, amount, dates: "" }).trim();

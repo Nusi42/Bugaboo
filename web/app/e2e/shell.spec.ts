@@ -7,7 +7,7 @@ import { expect, test } from "./support/fixtures.ts";
 import { ariaCurrent } from "./support/parts.ts";
 import { addressEndingAt, holdOnly, openFromMenu, openMenu, signIn } from "./support/flows.ts";
 import { onThisLayout } from "./support/layout.ts";
-import { boxOf } from "./support/windows.ts";
+import { boxOf } from "./support/geometry.ts";
 import { paths } from "../src/shared/paths.ts";
 
 test.use({

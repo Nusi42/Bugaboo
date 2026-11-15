@@ -7,7 +7,7 @@ import { signIn } from "./support/flows.ts";
 import { layoutOf } from "./support/layout.ts";
 import { preparePanel } from "./support/list-panel.ts";
 import { partIn } from "./support/parts.ts";
-import { boxOf } from "./support/windows.ts";
+import { boxOf } from "./support/geometry.ts";
 
 // The parts of the issue in the side panel (UX §4.2, §4.4; M5 exit L2, L3): the head stays on one
 // row, and the comment box is quiet.

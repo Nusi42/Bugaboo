@@ -3,7 +3,7 @@ import { expect, type Locator, type Page } from "@playwright/test";
 
 import { partIn } from "./parts.ts";
 import { inOrder } from "./sequence.ts";
-import { boxOf } from "./windows.ts";
+import { boxOf } from "./geometry.ts";
 
 /** The way a finger moves over a row: towards the start edge (to the left) or towards the end edge. */
 export type Towards = "start" | "end";

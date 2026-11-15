@@ -7,7 +7,7 @@ import { tickBox, webIssues } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
 import { idsCut } from "./support/list-ids.ts";
 import { ariaCurrent, partIn } from "./support/parts.ts";
-import { boxOf } from "./support/windows.ts";
+import { boxOf } from "./support/geometry.ts";
 import {
   grid,
   openList,

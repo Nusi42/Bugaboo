@@ -5,7 +5,7 @@ import { signIn } from "./support/flows.ts";
 import { nothing, onThisLayout } from "./support/layout.ts";
 import { sampleAdministrator } from "./support/sample.ts";
 import { inOrder } from "./support/sequence.ts";
-import { boxOf } from "./support/windows.ts";
+import { boxOf } from "./support/geometry.ts";
 import { addressInProject, paths } from "../src/shared/paths.ts";
 
 // M5 exit, package O (O4): one way to save on the page of the settings of a project: the Save button is the

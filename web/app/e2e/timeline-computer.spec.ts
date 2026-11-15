@@ -3,6 +3,7 @@ import { t } from "@bugaboo/messages";
 import { ana } from "./support/access.ts";
 import { ada } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
+import { dragAcross } from "./support/hand-drag.ts";
 import { signIn } from "./support/flows.ts";
 import { inOrder } from "./support/sequence.ts";
 import {
@@ -10,7 +11,6 @@ import {
   barOf,
   chart,
   dayFromToday,
-  dragAcross,
   goalTitle,
   movedLater,
   openPlan,

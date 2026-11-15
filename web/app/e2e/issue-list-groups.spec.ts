@@ -8,7 +8,7 @@ import { webIssues } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
 import { prepareLook, rowOf } from "./support/list-look.ts";
 import { partIn } from "./support/parts.ts";
-import { boxOf } from "./support/windows.ts";
+import { boxOf } from "./support/geometry.ts";
 
 // Group headers and an empty list (UX §4.2; M5 exit L20, L25): the header stands on the columns of
 // the rows, and a list with nothing in it has no head and says so in the middle.

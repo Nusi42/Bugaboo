@@ -6,7 +6,7 @@ import { openFromMenu, signIn } from "./support/flows.ts";
 import { prepareWeb } from "./support/issues.ts";
 import { onThisLayout } from "./support/layout.ts";
 import { settingsBoxOf } from "./support/pane-head.ts";
-import { boxOf } from "./support/windows.ts";
+import { boxOf } from "./support/geometry.ts";
 import { paths } from "../src/shared/paths.ts";
 
 // The box of a page scrolls, not the window (UX §6.5): the topic of the settings under its folding head on a computer,

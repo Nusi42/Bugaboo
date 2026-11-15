@@ -7,7 +7,8 @@ import { signIn } from "./support/flows.ts";
 import { layoutOf } from "./support/layout.ts";
 import { partIn } from "./support/parts.ts";
 import { mostLevelsBetween } from "./support/png.ts";
-import { boxOf, shadowsOf } from "./support/windows.ts";
+import { boxOf } from "./support/geometry.ts";
+import { shadowsOf } from "./support/windows.ts";
 
 // M5 exit, the final pass: Who sees people opens scrolled to the chosen role (Guest, the last), so roles are hidden at
 // the start of the matrix. The shadow that says so falls beside the names of the rows, which stay at the start, and not

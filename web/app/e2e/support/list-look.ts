@@ -15,7 +15,7 @@ import {
   webIssues,
 } from "./issues.ts";
 import { type Instance } from "./server.ts";
-import { boxOf } from "./windows.ts";
+import { boxOf } from "./geometry.ts";
 export { inViewChoices } from "./search-bar.ts";
 
 /** The sample of the project WEB: one issue in progress and critical, one done and high, one plain. */

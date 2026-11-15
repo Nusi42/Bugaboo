@@ -1,12 +1,19 @@
 import { type Locator } from "@playwright/test";
 
-/** How far the top of what the locator shows is from the top of the page, in whole pixels. */
-export async function topOf(shown: Locator): Promise<number> {
+/** Where what the locator shows stands and how big it is, as the browser lays it out; it must be on the screen. */
+export async function boxOf(
+  shown: Locator,
+): Promise<{ x: number; y: number; width: number; height: number }> {
   const box = await shown.boundingBox();
   if (box === null) {
     throw new TypeError("The element is not on the screen.");
   }
-  return Math.round(box.y);
+  return box;
+}
+
+/** How far the top of what the locator shows is from the top of the page, in whole pixels. */
+export async function topOf(shown: Locator): Promise<number> {
+  return Math.round((await boxOf(shown)).y);
 }
 
 /** The tops of every element the locator shows, in whole pixels. */
@@ -27,18 +34,11 @@ export function gapUnder(shown: Locator, above: string): Promise<number> {
 
 /** How wide what the locator shows is, in whole pixels. */
 export async function widthOf(shown: Locator): Promise<number> {
-  const box = await shown.boundingBox();
-  if (box === null) {
-    throw new TypeError("The element is not on the screen.");
-  }
-  return Math.round(box.width);
+  return Math.round((await boxOf(shown)).width);
 }
 
 /** The middle of what the locator shows, where a pointer takes it. */
 export async function middleOf(shown: Locator): Promise<{ x: number; y: number }> {
-  const box = await shown.boundingBox();
-  if (box === null) {
-    throw new TypeError("The element is not on the screen.");
-  }
+  const box = await boxOf(shown);
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
 }

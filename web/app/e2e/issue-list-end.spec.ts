@@ -8,7 +8,7 @@ import { prepareManyWeb } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
 import { setBox } from "./support/list-keys.ts";
 import { lastRowEndAndBarTop, roomUnderLastRow, scrollRowsToTheEnd } from "./support/rows-end.ts";
-import { boxOf } from "./support/windows.ts";
+import { boxOf } from "./support/geometry.ts";
 
 // The end of a long list (UX §4.2; M5 exit R2): room under the last row.
 

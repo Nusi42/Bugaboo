@@ -11,7 +11,7 @@ import {
   swipeStrip,
 } from "./support/swipe.ts";
 import { firstRow, prepareAgent, swipedLists, unswipedLists } from "./support/swipe-lists.ts";
-import { boxOf } from "./support/windows.ts";
+import { boxOf } from "./support/geometry.ts";
 import { projectIssuesAddress } from "../src/shared/paths.ts";
 import { viewports } from "../../tooling/viewports.ts";
 

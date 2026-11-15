@@ -4,9 +4,13 @@ import { expect, type Locator, type Page } from "@playwright/test";
 import { part } from "../../../packages/ui/src/tokens.ts";
 import { keyboardStep, menuStep, windowEdges } from "../../../packages/ui/src/window-size.ts";
 import { descriptionBox } from "./description.ts";
+import { boxOf, middleOf } from "./geometry.ts";
 import { layoutOf } from "./layout.ts";
 import { partIn } from "./parts.ts";
 import { newIssueDialog, openNewIssueDialog, titleLabel } from "./issues.ts";
+
+// The box of an element is measured in one place (`geometry.ts`); the specs of windows take it from here with the rest.
+export { boxOf } from "./geometry.ts";
 
 // The windows that wait for their content are tested with the rest.
 export {
@@ -106,17 +110,6 @@ export function textStartOf(element: Locator): Promise<number> {
   });
 }
 
-/** Where an element is on the page; it must be there. */
-export async function boxOf(
-  element: Locator,
-): Promise<{ x: number; y: number; width: number; height: number }> {
-  const box = await element.boundingBox();
-  if (box === null) {
-    throw new TypeError("The element is not on the page.");
-  }
-  return box;
-}
-
 /** The text column and the column of the fields of the form, and the window, as boxes on the page. */
 export async function columns(page: Page) {
   return {
@@ -149,8 +142,7 @@ export async function dragWindowEdge(
   edge: (typeof windowEdges)[number],
   by: { readonly x: number; readonly y: number },
 ): Promise<void> {
-  const box = await boxOf(partIn(page, "window.handle", edge));
-  const [x, y] = [box.x + box.width / 2, box.y + box.height / 2];
+  const { x, y } = await middleOf(partIn(page, "window.handle", edge));
   await page.mouse.move(x, y);
   await page.mouse.down();
   await page.mouse.move(x + by.x, y + by.y, { steps: 6 });

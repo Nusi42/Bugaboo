@@ -6,7 +6,7 @@ import { signIn } from "./support/flows.ts";
 import { layoutOf } from "./support/layout.ts";
 import { inOrder } from "./support/sequence.ts";
 import { partIn } from "./support/parts.ts";
-import { boxOf } from "./support/windows.ts";
+import { boxOf } from "./support/geometry.ts";
 
 // One title for each screen of a phone (UX §7.3; M5 exit R3): the top bar is the title, and the
 // heading of the one card that is the whole page is for screen readers only. Checked over the

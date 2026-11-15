@@ -7,7 +7,7 @@ import { signIn } from "./support/flows.ts";
 import { webIssues } from "./support/issues.ts";
 import { onThisLayout } from "./support/layout.ts";
 import { prepareLook, rowOf } from "./support/list-look.ts";
-import { boxOf } from "./support/windows.ts";
+import { boxOf } from "./support/geometry.ts";
 
 // The Legend goes on every page that lists issues (UX §4.2; M5 exit): the Search page has it as the
 // project's list has it, beside the toolbar on a computer, and on a phone as a button in the row of

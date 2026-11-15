@@ -7,7 +7,7 @@ import { signIn } from "./support/flows.ts";
 import { layoutOf } from "./support/layout.ts";
 import { partIn } from "./support/parts.ts";
 import { fillCreate } from "./support/projects.ts";
-import { boxOf } from "./support/windows.ts";
+import { boxOf } from "./support/geometry.ts";
 
 // A row of the list of projects (UX §5.1; M5 exit A13): the name and the short name on one line,
 // where the project sits muted under them, and a chevron that says the row opens.

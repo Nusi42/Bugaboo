@@ -7,7 +7,7 @@ import { layoutOf } from "./support/layout.ts";
 import { openList, prepareLook } from "./support/list-look.ts";
 import { partIn } from "./support/parts.ts";
 import { pixelsOf } from "./support/tokens.ts";
-import { boxOf } from "./support/windows.ts";
+import { boxOf } from "./support/geometry.ts";
 
 // The text column is at most as wide as the theme file says (UX §4.4). One start edge (R1, M3 WP-17 review): a button that holds text pulls itself back by its own
 // padding, so the text of the title and of the quiet buttons stands where the other text starts.

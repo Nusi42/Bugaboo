@@ -5,7 +5,7 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareWeb } from "./support/issues.ts";
 import { partIn } from "./support/parts.ts";
-import { boxOf } from "./support/windows.ts";
+import { boxOf } from "./support/geometry.ts";
 import { issueAddress } from "../src/shared/paths.ts";
 
 // The buttons under an own comment (ISS-05, M5 exit): Upload files while it is edited, and Edit and Delete on one row,

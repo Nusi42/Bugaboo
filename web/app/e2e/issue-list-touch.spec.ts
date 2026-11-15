@@ -7,7 +7,7 @@ import { signIn } from "./support/flows.ts";
 import { webIssues } from "./support/issues.ts";
 import { cutHeadNames, prepareLook, rowOf } from "./support/list-look.ts";
 import { listInFourThemes, screenshotFolder } from "./support/list-pictures.ts";
-import { boxOf } from "./support/windows.ts";
+import { boxOf } from "./support/geometry.ts";
 
 // A tablet with a finger (UX §7.4; M5 exit L14, L16): the pointer is coarse, rows are 64 px, and the
 // boxes and arrows of Customize are 44 px; the Up arrow of the first column is disabled.
