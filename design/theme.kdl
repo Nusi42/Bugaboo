@@ -17042,9 +17042,9 @@ part "app-layout pane[variant=folds][state=whole] list-main list-head" {
     animation none
 }
 
-// What does not fold the head stands under the whole head: Customize beside the list, the grey shapes while the list is
-// read, the timeline.
-part "app-layout pane[variant=folds] list-panel" "app-layout pane[variant=folds] > column" "app-layout pane[variant=folds] > timeline" {
+// What does not fold the head stands under the whole head: Customize beside the list, the grey shapes while the list or
+// the timeline is read.
+part "app-layout pane[variant=folds] list-panel" "app-layout pane[variant=folds] > column" "app-layout pane[variant=folds] timeline-body > column" {
     margin-block-start "$pane-head-end"
     media "print" {
         margin-block-start 0
@@ -17101,6 +17101,51 @@ part "pane[variant=folds] > settings-topic" {
     media "print" {
         padding-block-start "$ring-room"
     }
+}
+
+// The timeline under the head of its pane (UX §6.5): the chart and its side start where the whole head ends. The box of
+// the chart reaches up under the head by as much, with that room above its scale (and the room of the edge it draws on
+// paper), so its rows stand where they stood and come into view under the head as it folds; the scale stops under the
+// folded head and draws the top edge of the box, whose own edge the head covers. *Not scheduled yet* folds the head too
+// as it scrolls; the side keeps the room of the whole head above it, as the box of an issue beside the one that scrolls
+// does.
+part "app-layout pane[variant=folds] timeline-body > timeline-side" {
+    padding-block-start "$pane-head-end"
+    media "print" {
+        padding-block-start 0
+    }
+}
+
+part "app-layout pane[variant=folds] timeline-side > timeline-scroll:first-child" {
+    scroll-timeline "--pane-first block"
+    margin-block-start "calc(-1 * $pane-head-end)"
+    padding-block-start "calc($pane-head-end + $border-width)"
+    min-height "calc($size-list-scroll-least + $pane-head-end + $border-width)"
+    scroll-padding-block-start "calc(var(--pane-head-folded-end) + $size-timeline-head + $border-width * 2)"
+    border-block-start-width 0
+    border-start-start-radius 0
+    border-start-end-radius 0
+    media "print" {
+        margin-block-start 0
+        padding-block-start 0
+        border-block-start-width "$border-width"
+        border-start-start-radius "$r-card"
+        border-start-end-radius "$r-card"
+    }
+}
+
+// A sticky part keeps its place from the edge of the content of its box, below the room of the whole head: the scale
+// stops as far above that as the head folds, under the folded head.
+part "app-layout pane[variant=folds] timeline-scroll:first-child timeline-head" {
+    top "calc(-1 * var(--pane-head-fold-length))"
+    box-shadow "inset 0 $border-width 0 $border"
+    media "print" {
+        box-shadow none
+    }
+}
+
+part "app-layout pane[variant=folds] timeline-tray" {
+    scroll-timeline "--pane-second block"
 }
 
 // ───────────── Timesheet (TIME-04, UX §4.9) ─────────────

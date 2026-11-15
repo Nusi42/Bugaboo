@@ -98,7 +98,7 @@ test("ux_06 on paper the topic stands under the introduction as on the screen", 
   page,
 }) => {
   await openTopic(page, paths.appearance, { width: 1280, height: 620 });
-  const gap = () => headGap(page, SETTINGS_TOPIC);
+  const gap = () => headGap(page, `${SETTINGS_TOPIC} > :first-child`);
   const onScreen = await gap();
   await page.emulateMedia({ media: "print" });
   await expect.poll(gap).toBeCloseTo(onScreen, 0);

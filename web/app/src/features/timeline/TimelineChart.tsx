@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { part, partOf, pixelsOf } from "@bugaboo/ui";
+import { part, partOf, pixelsOf, usePaneHeadAbove } from "@bugaboo/ui";
 import { useId, useMemo } from "react";
 
 import { ChartBackdrop, type ChartBackdropProps } from "./ChartBackdrop.tsx";
@@ -21,7 +21,9 @@ export interface TimelineChartProps extends ChartBackdropProps {
  */
 export function TimelineChart({ lines, groupName, onToggle, ...backdrop }: TimelineChartProps) {
   const { canvas, drop, rowPixels, dayPixels, zoom } = useCanvas(lines.length);
-  const { box, visible } = useVisibleRows(lines.length, rowPixels, pixelsOf("size-timeline-head"));
+  // Under the head of a pane the chart keeps the room of the whole head above its scale (UX §6.5).
+  const above = usePaneHeadAbove() + pixelsOf("size-timeline-head");
+  const { box, visible } = useVisibleRows(lines.length, rowPixels, above);
   const todayPixels = backdrop.today === undefined ? undefined : backdrop.today * dayPixels;
   useDayInView(box, todayPixels);
   const view = useMemo(

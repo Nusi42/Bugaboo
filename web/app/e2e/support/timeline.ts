@@ -5,7 +5,7 @@ import { expect, type Locator, type Page } from "@playwright/test";
 import { savedSearchAddress } from "../../src/shared/paths.ts";
 import { ada, signInThroughApi } from "./accounts.ts";
 import type { ApiSession } from "./api.ts";
-import { createIssue, issueOf, prepareWeb, versionOf } from "./issues.ts";
+import { createIssue, issueOf, prepareManyWeb, prepareWeb, versionOf } from "./issues.ts";
 import { BLOCKS } from "./relate.ts";
 import { inOrder } from "./sequence.ts";
 import type { Instance } from "./server.ts";
@@ -174,6 +174,30 @@ export async function prepareTimeline(server: Instance): Promise<void> {
     }),
   );
   planSearch = saved.id ?? "";
+  await admin.dispose();
+}
+
+/** The issues `prepareWeb` makes before any other: WEB-1 to WEB-3. */
+const FIRST_ISSUES = 3;
+
+/**
+ * Gets the server ready for a timeline longer than its window: WEB with `dated` more issues that have dates, a few days
+ * apart, and `undated` more without, for *Not scheduled yet* (with the three of `prepareWeb`).
+ */
+export async function prepareLongTimeline(
+  server: Instance,
+  dated: number,
+  undated: number,
+): Promise<void> {
+  await prepareManyWeb(server, dated + undated);
+  const admin = await signInThroughApi(server, ada);
+  await inOrder(
+    Array.from(
+      { length: dated },
+      (_, at) => () =>
+        giveDates(admin, `WEB-${String(FIRST_ISSUES + at + 1)}`, at % 7, (at % 7) + 2),
+    ),
+  );
   await admin.dispose();
 }
 

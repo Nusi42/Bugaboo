@@ -264,8 +264,8 @@ export function coverColors(page: Page): Promise<{ head: string; holder: string 
   });
 }
 
-/** How far the first part of `box` stands below the last line of the head of the pane. */
-export function headGap(page: Page, box: string): Promise<number> {
+/** How far the top of `below` stands below the last line of the head of the pane. */
+export function headGap(page: Page, below: string): Promise<number> {
   return headOf(page).evaluate(
     (head, [selector, lines]) => {
       let end = -Infinity;
@@ -273,9 +273,8 @@ export function headGap(page: Page, box: string): Promise<number> {
         const place = line.getBoundingClientRect();
         end = place.height > 0 ? Math.max(end, place.bottom) : end;
       }
-      const first = document.querySelector(selector)?.firstElementChild;
-      return (first?.getBoundingClientRect().top ?? 0) - end;
+      return (document.querySelector(selector)?.getBoundingClientRect().top ?? 0) - end;
     },
-    [box, HEAD_LINES] as const,
+    [below, HEAD_LINES] as const,
   );
 }
