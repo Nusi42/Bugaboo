@@ -3740,16 +3740,35 @@ part "timeline-bar[state=group-done] timeline-bar.done" {
     background "$st-done"
 }
 
+// The room of the label of a bar: the whole width of the chart. The label stands after the bar in it and sticks to the
+// end of the days on screen, so where it has no room after the bar nor before it, it stays in sight over its bar (and
+// over the Today line, which passes behind its pad) instead of being cut by the edge of the chart (UX §4.7). What stands
+// before the label is the days before the bar, the width of the bar and a gap (its edges taken off: the room starts
+// inside the edge at the start of the bar); near the end of the chart it gives way, so the label ends with the chart.
+part "timeline-bar.label-room" {
+    position absolute
+    inset-block 0
+    inset-inline-start "calc(-1 * $timeline-start * $timeline-day * $size-px)"
+    z-index "$z-raised"
+    display flex
+    align-items center
+    width "calc($timeline-days * $timeline-day * $size-px - $size-edge)"
+    pointer-events none
+}
+
+part "timeline-bar.label-room::before" {
+    content "\"\""
+    flex "0 1 calc($timeline-start * $timeline-day * $size-px + max($timeline-length * $timeline-day * $size-px, $size-bar-least) - $border-width * 2 + $space-2)"
+}
+
 // The label after a bar: the sign of a plan warning, its Issue ID and the person on the bar (UX §4.7), on one line.
 part "timeline-bar.label" {
-    position absolute
-    top "50%"
-    inset-inline-start "calc(100% + $space-2)"
-    z-index "$z-raised"
+    position sticky
+    inset-inline-end "$space-1"
     display inline-flex
+    flex none
     align-items center
     gap "$space-1"
-    translate "0 -50%"
     // A pad of the chart's color: the Today line and the weekends pass behind the words, never through them.
     padding-inline "$space-1"
     border-radius "$r-ctl"
@@ -3816,14 +3835,20 @@ part "timeline-bar.hatch[variant=no-work]" {
 }
 
 // A selected bar has its dot after its end: the ID moves on past it.
-part "timeline-bar[state=selected] timeline-bar.label" {
-    inset-inline-start "calc(100% + $size-target-least + $space-1)"
+part "timeline-bar[state=selected] timeline-bar.label-room::before" {
+    flex-basis "calc($timeline-start * $timeline-day * $size-px + max($timeline-length * $timeline-day * $size-px, $size-bar-least) - $border-width * 2 + $size-target-least + $space-1)"
 }
 
-// A bar near the end of the chart has its ID before it, where there is room.
-part "timeline-bar[state=label-before] timeline-bar.label" {
+// A bar near the end of the chart has its ID before it, where there is room: the room is then just the label, ending a
+// gap before the bar.
+part "timeline-bar[state=label-before] timeline-bar.label-room" {
     inset-inline-start auto
     inset-inline-end "calc(100% + $space-2)"
+    width auto
+}
+
+part "timeline-bar[state=label-before] timeline-bar.label-room::before" {
+    display none
 }
 
 // The handles of a selected bar change one of its dates; the dot after its end makes a dependency.

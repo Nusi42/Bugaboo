@@ -18,7 +18,8 @@ export interface BarLabelProps {
 /**
  * What stands after the end of a bar (UX §4.7): the sign of a plan warning, the Issue ID, and the
  * person on the bar as *Who sees people* shows them, with "+2" for the others assigned. The bar's
- * name says the same in words.
+ * name says the same in words. Where it has no room after the bar nor before it, it stays at the end of
+ * the days on screen, over its bar, so the edge of the chart never cuts it.
  */
 export function BarLabel({ row, issueKey, warnings, onWidth }: BarLabelProps) {
   const person = personOnBarText(row);
@@ -39,15 +40,19 @@ export function BarLabel({ row, issueKey, warnings, onWidth }: BarLabelProps) {
       sizes.disconnect();
     };
   }, [onWidth]);
+  // The label stands in a room as wide as the chart, which keeps it in sight at the end of the days
+  // on screen when it has no room after its bar nor before it (UX §4.7).
   return (
-    <span ref={ref} {...partOf(part.timelineBarLabel)}>
-      {warnings > 0 ? (
-        <span {...partOf(part.timelineBarSign)}>
-          <Icon name={iconName.warning} size={iconSize.small} />
-        </span>
-      ) : null}
-      <IssueId id={issueKey} />
-      {person === undefined ? null : <span {...partOf(part.timelineBarPerson)}>{person}</span>}
+    <span {...partOf(part.timelineBarLabelRoom)}>
+      <span ref={ref} {...partOf(part.timelineBarLabel)}>
+        {warnings > 0 ? (
+          <span {...partOf(part.timelineBarSign)}>
+            <Icon name={iconName.warning} size={iconSize.small} />
+          </span>
+        ) : null}
+        <IssueId id={issueKey} />
+        {person === undefined ? null : <span {...partOf(part.timelineBarPerson)}>{person}</span>}
+      </span>
     </span>
   );
 }

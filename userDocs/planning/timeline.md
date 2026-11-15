@@ -19,7 +19,7 @@ Everything you set is part of the view. **Save search** keeps it with the search
 - On the left, each row has the status icon, the Issue ID and the title of its issue.
 - The scale at the top names the days, weeks, months or quarters. Weekends are shaded at the zoom of days and of weeks.
 - **Today** is a line in the accent color.
-- A **bar** runs from its first day to its last day. It has the tint of its status group and the mark of its priority at its start, like a row of the list, and a darker part shows how much of it is done. Its Issue ID stands after its end.
+- A **bar** runs from its first day to its last day. It has the tint of its status group and the mark of its priority at its start, like a row of the list, and a darker part shows how much of it is done. Its Issue ID stands after its end, or before it where there is more room; where there is room on neither side, it stays in sight at the end of the days the chart shows, over its bar.
 - An issue with one date is a bar of one day, unless *Plan by effort* works out the other date.
 - An **arrow** goes from an issue that must finish first to the one that waits for it. These are the relations of the kind your organization gave the date effect *Must finish first* (at the start, *blocks*).
 - A **goal** shows a bracket over the days of its sub-issues, in the head of its group, and a **diamond** on its *Due date*.

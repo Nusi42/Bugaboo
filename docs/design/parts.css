@@ -2544,15 +2544,34 @@ textarea,
   background: var(--st-done);
 }
 
-[data-part="timeline-bar.label"] {
+[data-part="timeline-bar.label-room"] {
   position: absolute;
-  top: 50%;
-  inset-inline-start: calc(100% + var(--space-2));
+  inset-block: 0;
+  inset-inline-start: calc(-1 * var(--timeline-start) * var(--timeline-day) * var(--size-px));
   z-index: var(--z-raised);
+  display: flex;
+  align-items: center;
+  width: calc(var(--timeline-days) * var(--timeline-day) * var(--size-px) - var(--size-edge));
+  pointer-events: none;
+}
+
+[data-part="timeline-bar.label-room"]::before {
+  content: "";
+  flex: 0 1
+    calc(
+      var(--timeline-start) * var(--timeline-day) * var(--size-px) +
+        max(var(--timeline-length) * var(--timeline-day) * var(--size-px), var(--size-bar-least)) -
+        var(--border-width) * 2 + var(--space-2)
+    );
+}
+
+[data-part="timeline-bar.label"] {
+  position: sticky;
+  inset-inline-end: var(--space-1);
   display: inline-flex;
+  flex: none;
   align-items: center;
   gap: var(--space-1);
-  translate: 0 -50%;
   padding-inline: var(--space-1);
   border-radius: var(--r-ctl);
   background: var(--bg-raised);
@@ -2641,13 +2660,23 @@ textarea,
     );
 }
 
-[data-part="timeline-bar"][data-state~="selected"] [data-part="timeline-bar.label"] {
-  inset-inline-start: calc(100% + var(--size-target-least) + var(--space-1));
+[data-part="timeline-bar"][data-state~="selected"] [data-part="timeline-bar.label-room"]::before {
+  flex-basis: calc(
+    var(--timeline-start) * var(--timeline-day) * var(--size-px) +
+      max(var(--timeline-length) * var(--timeline-day) * var(--size-px), var(--size-bar-least)) -
+      var(--border-width) * 2 + var(--size-target-least) + var(--space-1)
+  );
 }
 
-[data-part="timeline-bar"][data-state~="label-before"] [data-part="timeline-bar.label"] {
+[data-part="timeline-bar"][data-state~="label-before"] [data-part="timeline-bar.label-room"] {
   inset-inline-start: auto;
   inset-inline-end: calc(100% + var(--space-2));
+  width: auto;
+}
+
+[data-part="timeline-bar"][data-state~="label-before"]
+  [data-part="timeline-bar.label-room"]::before {
+  display: none;
 }
 
 [data-part="timeline-bar.handle"] {
