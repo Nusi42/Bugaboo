@@ -6,6 +6,7 @@ import { focusRestored } from "../../shared/focus.ts";
 import { undoStore, type UndoOffer } from "../../shared/optimistic-undo.ts";
 import { useUndoOffers } from "../../shared/use-optimistic.ts";
 import { useShortcuts } from "../../shared/use-shortcuts.ts";
+import { AskedConflict } from "./AskedConflict.tsx";
 import { CONTENT_ID } from "./content-id.ts";
 import { useHold } from "./use-hold.ts";
 
@@ -50,7 +51,7 @@ function Offer({ offer }: { readonly offer: UndoOffer }) {
 
 /**
  * Where *Undo* shows (UX §6): every reversible action offers to be taken back for 10 seconds, here,
- * instead of asking "Are you sure?". The region always exists, so screen readers announce a new
+ * instead of asking "Are you sure?". A clash that a screen asks about over the page stands here too. The region always exists, so screen readers announce a new
  * offer when it appears. The shortcut takes back the latest one. On a computer and a tablet it is
  * the last thing in the column of the page (`ShellColumn`), so the offers follow the column.
  */
@@ -89,6 +90,7 @@ export function UndoHost({
         .map((offer) => (
           <Offer key={offer.id} offer={offer} />
         ))}
+      <AskedConflict />
     </div>
   );
 }

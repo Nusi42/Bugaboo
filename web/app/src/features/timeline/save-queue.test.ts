@@ -37,7 +37,7 @@ function queue() {
   const sent: KeptDates[] = [];
   // What the server holds, as the page reads it again after each answer.
   let held: KeptDates = first;
-  const answers: ((refused: string | null) => void)[] = [];
+  const answers: ((refused: { readonly reason: string } | null) => void)[] = [];
   const saving = saveQueue(changeBook(), {
     idOf: (each: Row) => each.id,
     send: (_row, dates) => {
@@ -54,7 +54,7 @@ function queue() {
   /** The server answers the oldest change it has not answered. */
   const answer = async (refused: string | null = null): Promise<void> => {
     const answered = sent[sent.length - answers.length];
-    answers.shift()?.(refused);
+    answers.shift()?.(refused === null ? null : { reason: refused });
     if (refused === null && answered !== undefined) {
       held = answered;
     }

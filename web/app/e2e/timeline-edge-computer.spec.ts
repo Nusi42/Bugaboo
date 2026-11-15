@@ -4,11 +4,11 @@ import { ada, signInThroughApi } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { inOrder } from "./support/sequence.ts";
+import { cutByTheEdge } from "./support/timeline-edge.ts";
 import {
   barOf,
   changeIssue,
   chart,
-  cutByTheEdge,
   dayFromToday,
   openPlan,
   planned,

@@ -1,7 +1,7 @@
 import { Alert, alertTone, SaveStatus, partOf, part } from "@bugaboo/ui";
 
 import { saveLabels } from "../../shared/save-labels.ts";
-import { ConflictNote } from "./ConflictNote.tsx";
+import { ConflictNote } from "../../shared/editing/index.ts";
 import type { IssueChanges } from "./use-issue-changes.ts";
 
 /**

@@ -1,6 +1,6 @@
 import { t } from "@bugaboo/messages";
 
-import { messageOf } from "../../shared/errors.ts";
+import { refusedOf, type Refused } from "../../shared/refused.ts";
 import { formatCalendarDay } from "../../shared/format.ts";
 import { inOrder } from "../../shared/in-order.ts";
 import { undoStore } from "../../shared/optimistic-undo.ts";
@@ -62,6 +62,14 @@ function movedText(key: string, days: number, dates: KeptDates): string {
 /** The newest version of each issue that a save of this screen made. */
 const savedVersions = new Map<string, number>();
 
+/**
+ * The version somebody else's change made: *Use mine* of a clash saves the person's dates on it
+ * (UX §4.7, as on the issue page).
+ */
+export function takeVersion(row: TimelineRow, version: number): void {
+  savedVersions.set(idOf(row), Math.max(versionNow(row), version));
+}
+
 /** The version a change is made on: what the page read, or what the last save made, whichever is newer. */
 function versionNow(row: TimelineRow): number {
   const id = idOf(row);
@@ -70,9 +78,10 @@ function versionNow(row: TimelineRow): number {
 
 /**
  * Saves new dates for the issue of a row, after every save of it asked for before, on the version
- * the one before made. A refusal comes back as the server's reason, in words.
+ * the one before made. A refusal comes back as the server's reason, in words, or as the change that
+ * somebody made first, with the version it made.
  */
-function save(row: TimelineRow, fields: DateFields, dates: KeptDates): Promise<string | null> {
+function save(row: TimelineRow, fields: DateFields, dates: KeptDates): Promise<Refused | null> {
   const id = idOf(row);
   return inOrder(`timeline:${id}`, async () => {
     try {
@@ -87,7 +96,7 @@ function save(row: TimelineRow, fields: DateFields, dates: KeptDates): Promise<s
       }
       return null;
     } catch (error) {
-      return messageOf(error);
+      return refusedOf(error);
     }
   });
 }
@@ -135,7 +144,7 @@ export async function changeDates(
   row: TimelineRow,
   fields: DateFields,
   dates: KeptDates,
-): Promise<string | null> {
+): Promise<Refused | null> {
   const refused = await save(row, fields, dates);
   await refreshTimeline();
   return refused;

@@ -1,25 +1,69 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
+import { askAboutConflict, conflictPromptOf } from "../../shared/editing/index.ts";
+import type { Refused } from "../../shared/refused.ts";
 import { undoStore } from "../../shared/optimistic-undo.ts";
 import { useChangeBook } from "./change-book.ts";
-import { keptDates, type DateFields } from "./date-fields.ts";
-import { changeDates, changedText } from "./dates.ts";
+import { keptDates, type DateFields, type KeptDates } from "./date-fields.ts";
+import { changeDates, changedText, takeVersion } from "./dates.ts";
 import type { BarDays } from "./lines.ts";
-import { saveQueue } from "./save-queue.ts";
-import { idOf } from "./timeline-data.ts";
+import { saveQueue, setTo, type Refusal, type SaveQueue } from "./save-queue.ts";
+import { idOf, type TimelineRow } from "./timeline-data.ts";
+
+/**
+ * A change that somebody else's change came before (UX §4.7, as on the issue page): the bar stays
+ * where the person put it while the screen asks *Keep Ben's change*, which shows the dates read
+ * again, or *Use mine*, which saves the person's dates again on the version the other change made,
+ * as a change of its own with *Undo*.
+ */
+function askAbout(
+  refused: Refused,
+  change: { readonly row: TimelineRow; readonly dates: KeptDates },
+  queue: () => SaveQueue<TimelineRow>,
+): Refusal {
+  if ("reason" in refused) {
+    return refused;
+  }
+  const { row, dates } = change;
+  void conflictPromptOf(refused.conflict, {
+    keepTheirs: () => {
+      askAboutConflict(null);
+      queue().show(idOf(row));
+    },
+    useMine: () => {
+      askAboutConflict(null);
+      takeVersion(row, refused.conflict.version ?? 0);
+      const now = queue().standing(row);
+      const step = now === undefined ? undefined : setTo(now, dates);
+      if (step !== undefined) {
+        queue().save(row, step, { move: "set" });
+      }
+    },
+  }).then(askAboutConflict);
+  return { asked: true };
+}
 
 /**
  * The changes of dates of this screen (PLAN-03), saved through the queue of `save-queue.ts`, and
  * the days each bar shows while its changes are on their way. Without the two date fields of the
- * view no issue stands anywhere, so nothing is changed.
+ * view no issue stands anywhere, so nothing is changed. A clash asks over the page until it is
+ * answered, or until the screen goes.
  */
 export function useSaving(fields: DateFields | undefined) {
   const [shown, setShown] = useState<Readonly<Record<string, BarDays>>>({});
   const book = useChangeBook();
-  const queue = saveQueue(book, {
+  useEffect(
+    () => () => {
+      askAboutConflict(null);
+    },
+    [],
+  );
+  const queue: SaveQueue<TimelineRow> = saveQueue(book, {
     idOf,
-    send: (row, dates) =>
-      fields === undefined ? Promise.resolve(null) : changeDates(row, fields, dates),
+    send: async (row, dates) => {
+      const refused = fields === undefined ? null : await changeDates(row, fields, dates);
+      return refused === null ? null : askAbout(refused, { row, dates }, () => queue);
+    },
     text: changedText,
     show: (id, days) => {
       setShown(({ [id]: _before, ...others }) =>

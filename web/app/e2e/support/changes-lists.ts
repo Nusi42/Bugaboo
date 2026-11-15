@@ -8,7 +8,15 @@ import { listLandmarks, ROWS_BOX } from "./landmarks.ts";
 import { columnButton, grid, groupOf, inViewChoices, rowOf, tickIssue } from "./list-look.ts";
 import { listViewLandmarks, timelineLandmarks } from "./screen-landmarks.ts";
 import { openBar } from "./search-bar.ts";
-import { barOf, movedLater, openTimeline, planned, pressOf } from "./timeline.ts";
+import {
+  barOf,
+  changeBehindThePage,
+  dayFromToday,
+  movedLater,
+  openTimeline,
+  planned,
+  pressOf,
+} from "./timeline.ts";
 import { projectIssuesAddress } from "../../src/shared/paths.ts";
 
 // The changes in place of a list of issues and of the timeline, for the table of changes
@@ -115,7 +123,7 @@ export const listChanges: readonly ChangeInPlace[] = [
   },
 ];
 
-/** The changes in place of the timeline: moving a bar by a key. */
+/** The changes in place of the timeline: moving a bar by a key, and the prompt of a clash. */
 export const timelineChanges: readonly ChangeInPlace[] = [
   {
     screen: "/search?show=timeline",
@@ -134,6 +142,29 @@ export const timelineChanges: readonly ChangeInPlace[] = [
       await page.keyboard.press("ArrowRight");
       const said = movedLater(planned.pressed, t("timeline.amount-days", { count: 1 }));
       await expect(page.getByText(said)).toHaveCount(1);
+    },
+    landmarks: (page, part) => timelineLandmarks(page, part),
+  },
+  {
+    screen: "/search?show=timeline",
+    change: "ask about a clash: Keep their change or Use mine",
+    onlyOn: "computer",
+    open: async (page) => {
+      await openTimeline(page);
+      await page.waitForLoadState("networkidle");
+    },
+    part: (page) => barOf(page, planned.twice),
+    before: async (page) => {
+      // The issue changes behind the page, which still holds the version before.
+      await changeBehindThePage(page, planned.twice, { due_date: dayFromToday(5) });
+      await pressOf(page, planned.twice).focus();
+    },
+    act: async (page) => {
+      await page.keyboard.press("ArrowRight");
+      await pressOf(page, planned.twice).blur();
+      await expect(
+        page.getByRole("button", { name: t("issues.use-mine"), exact: true }),
+      ).toBeVisible();
     },
     landmarks: (page, part) => timelineLandmarks(page, part),
   },

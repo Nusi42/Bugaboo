@@ -1,4 +1,12 @@
 export { changedByName, conflictSentence, conflictSentenceWhenLoaded } from "./conflict-text.ts";
+export {
+  askAboutConflict,
+  conflictPromptOf,
+  conflictWordsOf,
+  useAskedConflict,
+  type ConflictPrompt,
+} from "./conflict-prompt.ts";
+export { ConflictNote } from "./ConflictNote.tsx";
 export { forgetBrowserDrafts } from "./browser-drafts.ts";
 export { useLongText, type LongText, type LongTextOptions } from "./use-long-text.ts";
 export { lockCanBeRetaken, lostReasonOf, retakingLockHelps } from "./long-text-model.ts";

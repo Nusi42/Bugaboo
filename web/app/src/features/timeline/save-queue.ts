@@ -48,11 +48,17 @@ export function placeOn(before: Before, day: string): Step {
   };
 }
 
+/**
+ * Why the server did not save a change: its reason in words, said where the offers to undo stand; or
+ * somebody changed the issue first, which a prompt asks about (`asked`), so nothing more is said.
+ */
+export type Refusal = { readonly reason: string } | { readonly asked: true };
+
 /** What the queue needs of the screen: the issue of a row, the server, the words, the bars. */
 export interface QueueWays<Row> {
   readonly idOf: (row: Row) => string;
-  /** Saves the dates; answers the server's reason when it refused. */
-  readonly send: (row: Row, dates: KeptDates) => Promise<string | null>;
+  /** Saves the dates; answers why when the server refused. */
+  readonly send: (row: Row, dates: KeptDates) => Promise<Refusal | null>;
   readonly text: (row: Row, said: Said, dates: KeptDates) => string;
   /** Shows days on the bar of an issue; none shows the server's again. */
   readonly show: (id: string, days?: BarDays) => void;
@@ -80,7 +86,23 @@ interface Answered<Row> {
   readonly step: Step;
   readonly said: Said;
   readonly newest: number;
-  readonly refused: string | null;
+  readonly refused: Refusal | null;
+}
+
+/**
+ * Says why the server refused a change, where the offers stand. A clash has its own prompt, and while
+ * it is asked about the bar stays where the person put it (UX §6.4): the answer moves it.
+ */
+function sayRefused<Row>(ways: QueueWays<Row>, change: Answered<Row>): void {
+  const { refused } = change;
+  if (refused === null) {
+    return;
+  }
+  if ("reason" in refused) {
+    ways.offers.offer({ message: refused.reason });
+  } else {
+    ways.show(ways.idOf(change.row), change.step.days);
+  }
 }
 
 /** Withdraws the *Undo* on offer for an issue: a newer change of it starts. */
@@ -127,9 +149,7 @@ export function saveQueue<Row>(book: ChangeBook, ways: QueueWays<Row>) {
     const id = ways.idOf(change.row);
     const now = book.get(id);
     const back = now?.saved ?? { dates: change.step.before, days: change.step.from };
-    if (change.refused !== null) {
-      ways.offers.offer({ message: change.refused });
-    } else if (now !== undefined) {
+    if (change.refused === null && now !== undefined) {
       book.put(id, { ...now, saved: { dates: change.step.dates, days: change.step.days } });
       if (now.newest === change.newest && !book.holds(id)) {
         const message = ways.text(change.row, change.said, change.step.dates);
@@ -140,6 +160,9 @@ export function saveQueue<Row>(book: ChangeBook, ways: QueueWays<Row>) {
       }
     }
     ended(book, ways, id);
+    if (change.refused !== null) {
+      sayRefused(ways, change);
+    }
   };
   function save(row: Row, step: Step, said: Said): void {
     const id = ways.idOf(row);

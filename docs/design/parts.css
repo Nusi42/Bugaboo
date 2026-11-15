@@ -6680,6 +6680,15 @@ textarea,
   pointer-events: auto;
 }
 
+[data-part="undo-host.prompt"] {
+  max-width: 100%;
+  pointer-events: auto;
+}
+
+[data-part="undo-host"][data-variant~="in-flow"] [data-part="undo-host.prompt"] {
+  margin: var(--space-2) var(--space-4) 0;
+}
+
 [data-part="undo-host"][data-variant~="in-flow"] {
   position: static;
   z-index: auto;

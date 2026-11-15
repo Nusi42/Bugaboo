@@ -7777,6 +7777,17 @@ part "undo-host.offer" {
     pointer-events auto
 }
 
+// A clash asked about over the page (the timeline, UX §4.7) stands with the offers until it is answered; its
+// buttons take the pointer, the room around it does not.
+part "undo-host.prompt" {
+    max-width "100%"
+    pointer-events auto
+}
+
+part "undo-host[variant=in-flow] undo-host.prompt" {
+    margin "$space-2 $space-4 0"
+}
+
 // On a phone the offers are not drawn over the page: they stand in the column of the app between the
 // page and the bars at the bottom, so they cover neither the page nor a bar, and the page above
 // them is a little shorter while there is one.

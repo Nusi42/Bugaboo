@@ -1,8 +1,7 @@
 import { conflictOf, type Conflict } from "@bugaboo/api-client";
-import { t } from "@bugaboo/messages";
 import { useState } from "react";
 
-import { changedByName, conflictSentenceWhenLoaded } from "../../shared/editing/index.ts";
+import { conflictWordsOf, type ConflictPrompt } from "../../shared/editing/index.ts";
 import { undoStore, type UndoOffer } from "../../shared/optimistic-undo.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
 import {
@@ -25,27 +24,11 @@ import type { IssueDetail } from "./slots.ts";
 
 export type { IssueEdit, IssueValues } from "./issue-values.ts";
 
-/** A change that somebody else's change came before, with the sentence that says so. */
+/** A change that somebody else's change came before, with the words of the prompt that ask about it. */
 interface Held {
   readonly edit: IssueEdit;
   readonly conflict: Conflict;
-  readonly sentence: string;
-}
-
-/** Somebody changed it first: the sentence, and the two answers. */
-export interface IssueConflict {
-  readonly sentence: string;
-  /** The words of *Keep Ben's change*. */
-  readonly theirs: string;
-  readonly keepTheirs: () => void;
-  readonly useMine: () => void;
-}
-
-/** *Keep Ben's change*; for a person who is not shown by name, *Keep their change*. */
-function keepTheirsText(conflict: Conflict): string {
-  return conflict.changed_by?.shown === "name"
-    ? t("issues.keep-theirs", { name: changedByName(conflict) })
-    : t("issues.keep-theirs-unnamed");
+  readonly words: Pick<ConflictPrompt, "sentence" | "theirs">;
 }
 
 /** What a send tells the page: a change that came second, and the time of a save. */
@@ -65,11 +48,7 @@ function sendAndNote(id: string, notes: Notes): (edit: IssueEdit) => Promise<voi
     } catch (error) {
       const conflict = conflictOf(error);
       if (conflict !== undefined) {
-        notes.held({
-          edit,
-          conflict,
-          sentence: await conflictSentenceWhenLoaded(conflict, Date.now()),
-        });
+        notes.held({ edit, conflict, words: await conflictWordsOf(conflict) });
       }
       throw error;
     }
@@ -113,10 +92,9 @@ interface ConflictWays {
 }
 
 /** The two answers to a change that somebody else made first: *Keep Ben's* and *Use mine*. */
-function conflictAnswers(held: Held, ways: ConflictWays): IssueConflict {
+function conflictAnswers(held: Held, ways: ConflictWays): ConflictPrompt {
   return {
-    sentence: held.sentence,
-    theirs: keepTheirsText(held.conflict),
+    ...held.words,
     keepTheirs: ways.drop,
     useMine: () => {
       ways.again(held.edit.values, held.conflict.version);
@@ -189,7 +167,7 @@ export interface IssueChanges {
   readonly savedAt: string | null;
   /** The plain message when the server refused for another reason than a change made first. */
   readonly problem: string | null;
-  readonly conflict: IssueConflict | null;
+  readonly conflict: ConflictPrompt | null;
 }
 
 /**

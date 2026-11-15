@@ -33,7 +33,7 @@ Issues you may not see are not on the timeline at all: no bar, no arrow, and the
 - **Change one date:** select the bar, then drag the handle at its start (its start date) or at its end (its end date: *Due date*, or the own date field the view ends at).
 - **Add a dependency:** select the bar, then drag the dot after its end onto another bar. The bar you start from must finish first; the other one waits for it. You may do this when you may change one of the two issues; when you may not, Bugaboo says why.
 
-While you drag, only the bar moves and nothing is saved. When you let go, the dates are saved, and Bugaboo says what happened and which dates the issue now has, for example "WEB-280 moved 1 week later, now from 10 Nov 2026 to 14 Nov 2026", with **Undo**. **Undo** puts the dates back as they were. When Bugaboo cannot save a change, it says why.
+While you drag, only the bar moves and nothing is saved. When you let go, the dates are saved, and Bugaboo says what happened and which dates the issue now has, for example "WEB-280 moved 1 week later, now from 10 Nov 2026 to 14 Nov 2026", with **Undo**. **Undo** puts the dates back as they were. When Bugaboo cannot save a change, it says why. When somebody else changed the issue after your page showed it, your dates are not saved and Bugaboo asks, as on the page of an issue: **Keep Ben's change** shows their dates, **Use mine** saves yours.
 
 When *Plan by effort* worked out one end of a bar and you move that end, the day the bar showed there becomes a date of the issue; the sentence names both dates.
 
