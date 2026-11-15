@@ -3,7 +3,7 @@ import { t } from "@bugaboo/messages";
 import { expect, type Locator, type Page } from "@playwright/test";
 
 import { doNothing } from "../../src/shared/do-nothing.ts";
-import { personWorkTimesAddress, paths } from "../../src/shared/paths.ts";
+import { personWorkTimesAddress } from "../../src/shared/paths.ts";
 import { ada, cleo, signInThroughApi, type Instance, type Person } from "./accounts.ts";
 import { createPeopleWithRoles, projectIdOf, roleName } from "./access.ts";
 import { prepareWeb } from "./issues.ts";
@@ -28,9 +28,8 @@ export async function prepareWorkTimes(server: Instance): Promise<void> {
   await admin.dispose();
 }
 
-/** Opens the work times of a person as the administrator, from the person's page. */
+/** Opens the work times of a person as the administrator, at their address. */
 export async function openWorkTimesOf(page: Page, person: Person, id: string): Promise<void> {
-  await page.goto(paths.people);
   await page.goto(personWorkTimesAddress(id));
   await expect(
     page.getByRole("heading", {

@@ -44,6 +44,7 @@ const webkitPhoneFiles = [
   "**/issues-new-once.spec.ts",
   "**/nothing-moves-changes.spec.ts",
   "**/concurrent/locks.spec.ts",
+  "**/m8-exit-demo.spec.ts",
 ];
 
 export default defineConfig({
@@ -83,7 +84,8 @@ export default defineConfig({
       use: { ...chromium, viewport: viewports.phone, hasTouch: true },
     },
     // A phone in a browser that is not Chromium (M2-F12): only what a phone is used for most, the
-    // issue page, the new-issue dialog and the edit locks. The same files, the same servers.
+    // issue page, the new-issue dialog and the edit locks, and the exit demo of M8 as a person
+    // shows it on their own phone. The same files, the same servers.
     {
       name: "webkit-phone",
       testMatch: webkitPhoneFiles,
