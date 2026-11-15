@@ -35,12 +35,13 @@ use crate::issues_setup::json;
 const BLOCKS: usize = 0;
 /// The days of a week.
 const WEEK_DAYS: usize = 7;
+/// The same, to count dates with.
+const DAYS_IN_WEEK: i64 = 7;
 
 /// The first Monday after the end of the sample: the day the plan counts its days from.
 fn first_monday_after(end: Timestamp) -> Result<Date, SampleError> {
     let today = end.to_zoned(TimeZone::UTC).date();
-    let ahead =
-        i64::try_from(WEEK_DAYS).unwrap_or(7) - i64::from(today.weekday().to_monday_zero_offset());
+    let ahead = DAYS_IN_WEEK - i64::from(today.weekday().to_monday_zero_offset());
     today
         .checked_add(Span::new().days(ahead))
         .map_err(|_| SampleError::Start(ahead))
@@ -298,7 +299,9 @@ impl Maker<'_, '_> {
             SetTimeFactor {
                 session_token: token.to_owned(),
                 issue: issue_id.to_string(),
-                version: current["issue"]["version"].as_i64().unwrap_or(1),
+                version: current["issue"]["version"]
+                    .as_i64()
+                    .ok_or_else(|| SampleError::NotMade(issue_id.to_string()))?,
                 given: FactorGiven::Takes(Minutes::new(minutes)),
             },
         )
