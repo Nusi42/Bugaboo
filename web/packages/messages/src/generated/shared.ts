@@ -573,6 +573,7 @@ export const messages = {
   "choice-color.cat12": "Sand",
   "fields.unit-hour": "h",
   "fields.unit-minute": "m",
+  "fields.unit-day-words": "days day d",
   "issues.title": "Issues",
   "issues.page-title": "Issues in {project}",
   "conflict.sentence": "Not saved: {who} changed {changes}{timed, select, true { {ago}} other {}}.",

@@ -2,6 +2,8 @@
 //! this code through `bb-wasm`): `1:30`, `1.5` hours with the decimal mark of the person's *Number
 //! format* (`1,5` in Germany), `90m`, `1h 30m` and `2h` are all 90 or 120 minutes. A bare number is
 //! hours, like `1.5`. One entry is at most a day of 24 hours; anything else is a plain mistake.
+//! Where a length is somebody's own estimate (*Takes me 10 days*, PLAN-14), days count too, each one
+//! work day in that person's own work hours.
 //!
 //! The units are the short words of the catalog (`fields.unit-hour`, `fields.unit-minute`), the
 //! ones a length of an own field is written with. The search language keeps its own words
@@ -194,12 +196,17 @@ struct Typed {
 }
 
 impl Typed {
+    /// The minutes of this many units of `per_unit` minutes, rounded half up to a whole minute.
+    fn in_minutes(self, per_unit: u32) -> Option<u64> {
+        let per_unit = u64::from(per_unit);
+        let scale = TEN.checked_pow(self.places)?;
+        let part = (self.decimals * per_unit * 2 + scale) / (scale * 2);
+        self.whole.checked_mul(per_unit)?.checked_add(part)
+    }
+
     /// The minutes of this many hours, rounded half up to a whole minute.
     fn hours_in_minutes(self) -> Option<u64> {
-        let per_hour = u64::from(MINUTES_PER_HOUR);
-        let scale = TEN.checked_pow(self.places)?;
-        let part = (self.decimals * per_hour * 2 + scale) / (scale * 2);
-        self.whole.checked_mul(per_hour)?.checked_add(part)
+        self.in_minutes(MINUTES_PER_HOUR)
     }
 }
 
@@ -258,6 +265,10 @@ pub struct LengthWords<'a> {
     pub hour: &'a str,
     /// The short word of a minute: `m`.
     pub minute: &'a str,
+    /// The words a day may be typed with, separated by spaces (`days day d`, `fields.unit-day-words`).
+    pub day: &'a str,
+    /// The minutes of one work day of the person the length is for; 0 where a length counts no days.
+    pub day_minutes: u32,
 }
 
 impl LengthWords<'static> {
@@ -268,6 +279,8 @@ impl LengthWords<'static> {
             mark,
             hour: message::FIELDS_UNIT_HOUR.template(),
             minute: message::FIELDS_UNIT_MINUTE.template(),
+            day: "",
+            day_minutes: 0,
         }
     }
 }
@@ -303,6 +316,15 @@ fn in_units(text: &str, words: &LengthWords<'_>) -> Option<u64> {
     let (first, rest) = number(text, mark)?;
     if rest.trim().is_empty() {
         return first.hours_in_minutes();
+    }
+    let rest_of_day = rest.trim_start();
+    if words.day_minutes > 0
+        && words
+            .day
+            .split_whitespace()
+            .any(|day| after_word(rest_of_day, day).is_some_and(|after| after.trim().is_empty()))
+    {
+        return first.in_minutes(words.day_minutes);
     }
     let (hours, rest) = unit(rest, words)?;
     if !hours {

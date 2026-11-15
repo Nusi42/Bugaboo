@@ -357,3 +357,40 @@ async fn plan_14_the_time_factor_is_hidden_by_the_levels_of_the_type_of_the_issu
     })
     .await
 }
+
+#[tokio::test]
+async fn plan_14_the_time_factor_counts_work_days_in_the_persons_own_hours() -> TestResult {
+    each_database("plan_14_work_days", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut lea, lea_id) = site
+            .person_called(StartingRole::TeamMember, "lea", "Lea Lang")
+            .await?;
+        // Lea works 6 hours a day at a share of 50 %: her days count 6 hours, whatever her share.
+        work_times(&site, &mut ada, lea_id, 360, 50).await?;
+        let key = planned(
+            &site,
+            &mut ada,
+            "Profile page",
+            json!({"start_date": MONDAY, "estimated_time": 720, "assigned_to": [lea_id.to_string()]}),
+        )
+        .await?;
+        // Before any factor: the day of the person, so *Takes me 10 days* can be read.
+        let before = ok(&lea.send("GET", &factor_of(&key), None).await?)?.clone();
+        assert_eq!(before["day_minutes"], 360, "{before}");
+        assert_eq!(before["work_days"], 2, "{before}");
+        // *Takes me 10 days*: ten of her days, ×5 of the estimate, ten work days.
+        let set = ok(&set_factor(&mut lea, &key, json!({"takes_minutes": 3600})).await?)?.clone();
+        assert_eq!(set["percent"], 500, "{set}");
+        assert_eq!(set["work_days"], 10, "{set}");
+        // A reader who may not know Lea's work times is told neither.
+        let (mut reader, _) = site.person(StartingRole::Contributor, "reader").await?;
+        site.show_people(&mut ada, StartingRole::Contributor, "work-times", "hidden")
+            .await?;
+        let hidden = ok(&reader.send("GET", &factor_of(&key), None).await?)?.clone();
+        assert_eq!(hidden["day_minutes"], Value::Null, "{hidden}");
+        assert_eq!(hidden["work_days"], Value::Null, "{hidden}");
+        Ok(())
+    })
+    .await
+}

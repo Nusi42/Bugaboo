@@ -33,7 +33,7 @@ export interface TimeFactorWindowProps {
 
 /**
  * *How long will it take you?* (PLAN-14, UX §4.4): the person on the bar, or somebody who may change
- * the field, gives the time factor as a length (*Takes me 10h*), which the server works out against
+ * the field, gives the time factor as a length (*Takes me 10 days*, in the work hours of the person on the bar, or *Takes me 60h*), which the server works out against
  * *Estimated time*, or as a factor (×1.25), and sees the sum as it is typed. For somebody else the
  * window asks *How long will it take Lea?* and says that Lea will be told. The server decides whether
  * the factor may be set and what it comes to.
@@ -78,7 +78,12 @@ export function TimeFactorWindow(props: TimeFactorWindowProps) {
           <p {...partOf(part.text)}>{t("issues.time-factor-told", { name: otherName })}</p>
         )}
         {draft.problem === null ? null : <Alert tone={alertTone.danger}>{draft.problem}</Alert>}
-        <TimeFactorFields draft={draft} estimate={estimate} otherName={otherName} />
+        <TimeFactorFields
+          draft={draft}
+          estimate={estimate}
+          otherName={otherName}
+          dayMinutes={factor.day_minutes}
+        />
       </Form>
     </Window>
   );

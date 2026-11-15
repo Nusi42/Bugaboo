@@ -103,12 +103,19 @@ export function isOwnFactor(factor: TimeFactor): boolean {
   return factor.own_percent !== null;
 }
 
-/** The row's words: "×1.25 · Lea's own estimate", "×1.5 · set by Ada Brandt" or "×1 (as estimated)". */
+/**
+ * The row's words: "×1.25 = 10 work days · Lea's own estimate", "×1.5 · set by Ada Brandt" or "×1 (as
+ * estimated)". The work days, in the person's own work hours, as the server counts them when the
+ * reader may know them (UX §4.4, §4.7).
+ */
 export function factorWords(factor: TimeFactor, percent: number): string {
   if (percent === AS_ESTIMATED) {
     return t("issues.time-factor-as-estimated");
   }
-  const factorSaid = factorText(percent);
+  const factorSaid =
+    factor.work_days === null
+      ? factorText(percent)
+      : t("issues.time-factor-days", { factor: factorText(percent), days: factor.work_days });
   // Who set it is part of the field: a person on the bar whose role does not see the field gets
   // their own factor without it.
   const setBy = Object.hasOwn(factor, "set_by") ? factor.set_by : null;

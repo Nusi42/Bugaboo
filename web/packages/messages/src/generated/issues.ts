@@ -145,6 +145,7 @@ export const messages = {
   "layouts.customize-form": "Customize this form",
   "issues.time-factor-as-estimated": "×1 (as estimated)",
   "issues.time-factor-nobody": "Nobody is assigned yet",
+  "issues.time-factor-days": "{factor} = {days, plural, one {# work day} other {# work days}}",
   "issues.time-factor-set-by": "{factor} · set by {name}",
   "issues.time-factor-change": "Change",
   "issues.time-factor-change-name": "Change the time factor",

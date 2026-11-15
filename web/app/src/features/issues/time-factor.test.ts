@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { queryClient } from "../../shared/query-client.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
 import { sendChange } from "./issue-requests.ts";
-import { keepTimeFactor, timeFactorQuery, type TimeFactor } from "./time-factor.ts";
+import { factorWords, keepTimeFactor, timeFactorQuery, type TimeFactor } from "./time-factor.ts";
 
 /**
  * What the server of these tests answers: a change with `answer`; a read of the time factor with
@@ -48,6 +48,8 @@ function factorAt(version: number, percent: number): TimeFactor {
     own_percent: null,
     person: null,
     may_change: true,
+    day_minutes: null,
+    work_days: null,
   };
 }
 
@@ -100,5 +102,15 @@ describe("plan_14 the time factor shows with a change of the people", () => {
     server.factor = factorAt(5, 150);
     await queryClient.query({ ...timeFactorQuery(address), staleTime: 0 });
     expect(queryClient.getQueryData(factorKey)).toEqual(factorAt(6, 100));
+  });
+});
+
+describe("plan_14 the row of the time factor", () => {
+  it("says the work days in the person's own hours with their own estimate", () => {
+    const lea = { shown: "name", id: "l", name: "Lea" } as const;
+    const own = { ...factorAt(1, 500), own_estimate: true, person: lea, work_days: 10 };
+    expect(factorWords(own, 500)).toBe("×5 = 10 work days · Lea's own estimate");
+    expect(factorWords({ ...own, work_days: null }, 500)).toBe("×5 · Lea's own estimate");
+    expect(factorWords({ ...own, work_days: 2 }, 100)).toBe("×1 (as estimated)");
   });
 });

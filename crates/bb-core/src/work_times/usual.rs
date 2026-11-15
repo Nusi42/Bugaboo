@@ -59,6 +59,23 @@ impl UsualDays {
         self.0[usize::from(weekday.to_monday_zero_offset().unsigned_abs())]
     }
 
+    /// The minutes of one work day of the person, as a length counts days in their own work hours
+    /// (*Takes me 10 days*, PLAN-14): the average of their usual work days, to the minute; none for a
+    /// person who usually works on no day.
+    #[must_use]
+    pub fn day_minutes(&self) -> Option<u32> {
+        let worked: Vec<u32> = self
+            .0
+            .iter()
+            .filter(|day| day.works)
+            .map(|day| u32::from(day.minutes))
+            .collect();
+        let count = u32::try_from(worked.len())
+            .ok()
+            .filter(|count| *count > 0)?;
+        Some((worked.iter().sum::<u32>() + count / 2) / count)
+    }
+
     /// The minutes a person works on this weekday: nothing on a day they do not usually work.
     #[must_use]
     pub fn minutes_on(&self, weekday: Weekday) -> u32 {

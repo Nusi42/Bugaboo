@@ -2795,6 +2795,9 @@ pub const FIELDS_TIME_DEFAULTS_PROJECT_INTRO: MessageKey =
 /// The message `fields.time-of-day`.
 pub const FIELDS_TIME_OF_DAY: MessageKey = MessageKey::new("fields.time-of-day");
 
+/// The message `fields.unit-day-words`.
+pub const FIELDS_UNIT_DAY_WORDS: MessageKey = MessageKey::new("fields.unit-day-words");
+
 /// The message `fields.unit-hour`.
 pub const FIELDS_UNIT_HOUR: MessageKey = MessageKey::new("fields.unit-hour");
 
@@ -12640,6 +12643,18 @@ pub fn issues_time_factor_ask_other(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `issues.time-factor-days`.
+#[must_use]
+pub fn issues_time_factor_days(days: i64, factor: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.time-factor-days"),
+        vec![
+            ("days", Value::Number(days)),
+            ("factor", Value::Text(factor.to_string())),
+        ],
+    )
+}
+
 /// The message `issues.time-factor-estimate`.
 #[must_use]
 pub fn issues_time_factor_estimate(estimate: impl std::fmt::Display) -> Message {
@@ -21406,6 +21421,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Time booked on an issue of this project starts with these values, unless the issue has its own. Sub-projects use them too.",
     ),
     ("fields.time-of-day", "Time (hours and minutes, like 14:30)"),
+    ("fields.unit-day-words", "days day d"),
     ("fields.unit-hour", "h"),
     ("fields.unit-minute", "m"),
     ("fields.unknown-choice", "A choice that is gone"),
@@ -22090,6 +22106,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.time-factor-ask-own", "How long will it take you?"),
     ("issues.time-factor-change", "Change"),
     ("issues.time-factor-change-name", "Change the time factor"),
+    (
+        "issues.time-factor-days",
+        "{factor} = {days, plural, one {# work day} other {# work days}}",
+    ),
     ("issues.time-factor-estimate", "Estimate {estimate}"),
     (
         "issues.time-factor-factor",

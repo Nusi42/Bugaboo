@@ -20,6 +20,7 @@ use bb_core::plan::TimeFactor;
 use bb_core::plan::record::IssueTimeFactor;
 use bb_core::time::Minutes;
 use bb_core::version::{Version, next as next_version};
+use bb_core::work_times::UsualDays;
 use bb_policy::{Authorized, Evaluation, Masked, PeopleContext, PersonRef, Place};
 use serde::Serialize;
 use serde_json::json;
@@ -82,6 +83,12 @@ pub struct TimeFactorView {
     pub person: Option<PersonRef>,
     /// Whether the reader may set the time factor ([`may_set_time_factor`]).
     pub may_change: bool,
+    /// The minutes of one work day of the person on the bar, the average of their usual work days
+    /// (*Takes me 10 days* counts in them); only for a reader who may know their work times.
+    pub day_minutes: Option<u32>,
+    /// How many of those work days the estimate times the factor takes; only where `day_minutes`
+    /// is told and the reader may read the estimate.
+    pub work_days: Option<u32>,
 }
 
 impl Masked for TimeFactorView {}
@@ -226,6 +233,19 @@ impl<S: AuthStore> Ctx<'_, S> {
             ),
             None => None,
         };
+        let day_minutes = self.day_minutes_of(actor, first).await?;
+        // Only with a factor the reader may see (the field, or their own estimate) and an estimate
+        // they may read.
+        let mask = held.field_mask_for(Some(issue.issue_type));
+        let sees_factor = mask.can_see(Field::TimeFactor) || held.person() == first;
+        let estimate = issue
+            .estimated_time
+            .filter(|_| sees_factor && mask.can_see(Field::EstimatedTime));
+        let work_days = day_minutes.zip(estimate).and_then(|(day, estimate)| {
+            factor
+                .map_or(TimeFactor::ONE, |kept| kept.factor)
+                .work_days(estimate, day)
+        });
         Ok(TimeFactorView {
             issue: issue.id,
             version,
@@ -238,7 +258,36 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .map(|_| percent),
             person,
             may_change: may_set_time_factor(actor, held, issue, first),
+            day_minutes,
+            work_days,
         })
+    }
+
+    /// The minutes of one work day of `person` ([`UsualDays::day_minutes`]), when the reader may
+    /// know their work times by the one rule of work times; none for nobody.
+    async fn day_minutes_of(
+        &self,
+        actor: &Actor,
+        person: Option<UserId>,
+    ) -> Result<Option<u32>, AppError> {
+        let Some(person) = person else {
+            return Ok(None);
+        };
+        if !self
+            .work_times_known(actor, &[person])
+            .await?
+            .contains(&person)
+        {
+            return Ok(None);
+        }
+        let stored = self
+            .store()
+            .usual_days(person)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        Ok(stored
+            .map_or_else(UsualDays::start, |stored| stored.days)
+            .day_minutes())
     }
 }
 

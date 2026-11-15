@@ -221,6 +221,11 @@ fn plan_14_the_time_factor_is_a_share_of_the_estimate() {
     assert_eq!(TimeFactor::of_length(Minutes::new(0), hours(8)), None);
     assert_eq!(TimeFactor::of_length(hours(1), hours(100)), None);
     assert_eq!(TimeFactor::default(), TimeFactor::ONE);
+    // In work days of 8 hours: 10; of 6 hours, 13 and a part, so 14; no day of no minutes.
+    let quarter_more = TimeFactor::new(125).unwrap();
+    assert_eq!(quarter_more.work_days(hours(64), 480), Some(10));
+    assert_eq!(quarter_more.work_days(hours(64), 360), Some(14));
+    assert_eq!(quarter_more.work_days(hours(64), 0), None);
     // Rounded up to the minute: a factor never makes work disappear.
     assert_eq!(
         TimeFactor::new(150).unwrap().effort(Minutes::new(1)).get(),

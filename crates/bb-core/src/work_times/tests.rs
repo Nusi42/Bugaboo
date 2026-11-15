@@ -166,6 +166,21 @@ fn a_week() -> UsualDays {
     .unwrap()
 }
 
+#[test]
+fn plan_14_a_work_day_of_a_person_is_the_average_of_their_usual_work_days() {
+    // Four days of 6 hours and one of 4: a day of 5 hours 36 minutes.
+    assert_eq!(a_week().day_minutes(), Some(336));
+    assert_eq!(UsualDays::start().day_minutes(), Some(480));
+    let none = UsualDays::new(
+        [UsualDay {
+            works: false,
+            minutes: 480,
+        }; 7],
+    )
+    .unwrap();
+    assert_eq!(none.day_minutes(), None);
+}
+
 // The port of the plan reads these minutes, so the table is the contract (ADR-0030, decision 3):
 // work hours of the day, times the share, minus away times and holidays.
 #[test]

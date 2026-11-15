@@ -32936,9 +32936,17 @@
           "own_estimate",
           "own_percent",
           "person",
-          "may_change"
+          "may_change",
+          "day_minutes",
+          "work_days"
         ],
         "properties": {
+          "day_minutes": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "The minutes of one work day of the person on the bar, the average of their usual work days:\n*Takes me 10 days* counts ten of them. `null` for a reader who may not know their work times.",
+            "minimum": 0
+          },
           "issue": {
             "type": "string",
             "description": "The internal ID of the issue."
@@ -32989,6 +32997,12 @@
             "type": "integer",
             "format": "int64",
             "description": "The version of the issue now: a change is made on the version that was looked at."
+          },
+          "work_days": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "How many of those work days the estimate times the factor takes (*= 10 work days*); `null`\nwithout `day_minutes`, an estimate the reader may read, or a factor they may see.",
+            "minimum": 0
           }
         }
       },

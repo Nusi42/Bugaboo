@@ -412,3 +412,18 @@ reason = "Days, not a count of things: the days from the first to the last away 
 route = "POST /api/v1/timeline"
 property = "work_days"
 reason = "Days, not a count of things: how many of the person's work days the effort of one issue the viewer sees takes, worked out from an estimate the viewer may read; only when the bars are planned by effort, so never for an access key, and like the length of the bar it never says which days are away, holidays or days off (ADR-0030 amendment M8, architecture section 12)."
+
+[[exempt]]
+route = "PATCH /api/v1/issues/{issue}"
+property = "work_days"
+reason = "Days, not a count of things: how many work days of the person on the bar the estimate times the time factor of one issue the viewer sees takes, in their own work hours; only for a viewer who may know that person's work times, may read the estimate and may see the factor (PLAN-14, ADR-0030 amendment M8)."
+
+[[exempt]]
+route = "GET /api/v1/issues/{issue}/time-factor"
+property = "work_days"
+reason = "Days, not a count of things: how many work days of the person on the bar the estimate times the time factor of one issue the viewer sees takes, in their own work hours; only for a viewer who may know that person's work times, may read the estimate and may see the factor (PLAN-14, ADR-0030 amendment M8)."
+
+[[exempt]]
+route = "PUT /api/v1/issues/{issue}/time-factor"
+property = "work_days"
+reason = "Days, not a count of things: how many work days of the person on the bar the estimate times the time factor of one issue the viewer sees takes, in their own work hours; only for a viewer who may know that person's work times, may read the estimate and may see the factor (PLAN-14, ADR-0030 amendment M8)."

@@ -26,14 +26,15 @@ use crate::issue::Priority;
 use crate::message::{self, Message, MessageKey};
 use crate::notification::NotificationKind;
 use crate::own_fields::FieldType;
-use crate::time::length::{self, DecimalMark, LengthWords};
 use crate::time::{MINUTES_PER_HOUR, Minutes};
 use crate::workflow::starter::STARTERS;
 
 pub mod region;
+mod typed_length;
 pub mod vectors;
 
 pub use region::{Choices, Region};
+pub use typed_length::{length_read, time_entry_read};
 
 /// Some words: a text, a count, words that follow each other, or a message of the catalog with the
 /// words for its placeholders. In JSON a text is a string, a count a number, words that follow each
@@ -746,51 +747,22 @@ pub struct LengthTyped {
     pub hour_unit: String,
     /// The text of `fields.unit-minute`.
     pub minute_unit: String,
+    /// The text of `fields.unit-day-words`, where days count; empty where they do not.
+    #[serde(default)]
+    pub day_units: String,
+    /// The minutes of one work day of the person the length is for; 0 where days do not count.
+    #[serde(default)]
+    pub day_minutes: u32,
 }
 
-/// What the reader of lengths made of a typed text ([`length::read`]): the minutes, or the
-/// sentence that says what is wrong and how to write it.
+/// What the reader of lengths made of a typed text ([`crate::time::length::read`]): the minutes,
+/// or the sentence that says what is wrong and how to write it.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct LengthRead {
     /// The whole minutes, when the text is a length of one entry.
     pub minutes: Option<u32>,
     /// What is wrong with the text, when it is none.
     pub mistake: Option<Said>,
-}
-
-/// Reads a typed length of time without a bound (an own field), for the browser.
-#[must_use]
-pub fn length_read(typed: &LengthTyped) -> LengthRead {
-    read_typed(typed, length::read)
-}
-
-/// Reads a typed length of one time entry, with its bound, for the browser.
-#[must_use]
-pub fn time_entry_read(typed: &LengthTyped) -> LengthRead {
-    read_typed(typed, length::read_time_entry)
-}
-
-/// What a reader of [`length`] makes of a typed length, with the sentence of a mistake.
-fn read_typed(
-    typed: &LengthTyped,
-    read: fn(&str, &LengthWords<'_>) -> Result<Minutes, length::LengthMistake>,
-) -> LengthRead {
-    let mark = DecimalMark::of_number_format(Some(&typed.number_format));
-    let words = LengthWords {
-        mark,
-        hour: &typed.hour_unit,
-        minute: &typed.minute_unit,
-    };
-    match read(&typed.text, &words) {
-        Ok(minutes) => LengthRead {
-            minutes: Some(minutes.get()),
-            mistake: None,
-        },
-        Err(mistake) => LengthRead {
-            minutes: None,
-            mistake: Some(mistake.said(mark)),
-        },
-    }
 }
 
 #[cfg(test)]

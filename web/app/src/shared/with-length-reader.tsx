@@ -13,13 +13,18 @@ export type { LengthReader } from "./length.ts";
  */
 export function WithLengthReader({
   children,
+  dayMinutes,
 }: {
   readonly children: (readLength: LengthReader, wording: Wording) => ReactNode;
+  /** The minutes of a work day of the person the length is for: days count in them. */
+  readonly dayMinutes?: number | undefined;
 }) {
   return (
     <>
       <WordingNotice />
-      <WithWording>{(wording) => children(lengthReaderOf(wording), wording)}</WithWording>
+      <WithWording>
+        {(wording) => children(lengthReaderOf(wording, dayMinutes), wording)}
+      </WithWording>
     </>
   );
 }

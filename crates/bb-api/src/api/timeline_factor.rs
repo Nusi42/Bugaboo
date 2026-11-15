@@ -53,6 +53,16 @@ pub(crate) struct TimeFactorBody {
     /// things, or somebody who may change the issue and the field; never an agent.
     #[masked(open)]
     may_change: bool,
+    /// The minutes of one work day of the person on the bar, the average of their usual work days:
+    /// *Takes me 10 days* counts ten of them. `null` for a reader who may not know their work times.
+    #[masked(open)]
+    #[schema(required = true)]
+    day_minutes: Option<u32>,
+    /// How many of those work days the estimate times the factor takes (*= 10 work days*); `null`
+    /// without `day_minutes`, an estimate the reader may read, or a factor they may see.
+    #[masked(open)]
+    #[schema(required = true)]
+    work_days: Option<u32>,
 }
 
 impl From<TimeFactorView> for TimeFactorBody {
@@ -66,6 +76,8 @@ impl From<TimeFactorView> for TimeFactorBody {
             own_percent: view.own_percent,
             person: view.person,
             may_change: view.may_change,
+            day_minutes: view.day_minutes,
+            work_days: view.work_days,
         }
     }
 }

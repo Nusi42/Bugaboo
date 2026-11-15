@@ -15,13 +15,16 @@ export interface TimeFactorFieldsProps {
   readonly estimate: number | undefined;
   /** The person on the bar by name when they are somebody else; none for one's own factor. */
   readonly otherName: string | undefined;
+  /** The minutes of a work day of the person on the bar, when the reader may know them. */
+  readonly dayMinutes: number | null;
 }
 
 /**
  * The boxes of the time factor: the choice between a length (*Takes me …*) and a factor, where the
  * estimate can be read, then the box of the one chosen and the sum as it is typed.
  */
-export function TimeFactorFields({ draft, estimate, otherName }: TimeFactorFieldsProps) {
+export function TimeFactorFields(props: TimeFactorFieldsProps) {
+  const { draft, estimate, otherName, dayMinutes } = props;
   return (
     <>
       {estimate === undefined ? null : (
@@ -46,6 +49,7 @@ export function TimeFactorFields({ draft, estimate, otherName }: TimeFactorField
           name={t("issues.time-factor-length")}
           minutes={draft.minutes ?? undefined}
           inRow={false}
+          dayMinutes={dayMinutes ?? undefined}
           onCommit={draft.setMinutes}
         />
       ) : (

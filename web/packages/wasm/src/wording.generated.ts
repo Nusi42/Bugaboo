@@ -148,9 +148,13 @@ export interface LengthTyped {
   readonly hour_unit: string;
   /** The text of `fields.unit-minute`. */
   readonly minute_unit: string;
+  /** The text of `fields.unit-day-words`, where days count; empty where they do not. */
+  readonly day_units?: string;
+  /** The minutes of one work day of the person the length is for; 0 where days do not count. */
+  readonly day_minutes?: number;
 }
 
-/** What the reader of lengths made of a typed text ([`length::read`]): the minutes, or the sentence that says what is wrong and how to write it. */
+/** What the reader of lengths made of a typed text ([`crate::time::length::read`]): the minutes, or the sentence that says what is wrong and how to write it. */
 export interface LengthRead {
   /** The whole minutes, when the text is a length of one entry. */
   readonly minutes: number | null;

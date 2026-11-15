@@ -12101,6 +12101,12 @@ export interface components {
      *     whose field level hides it gets the issue, its version and the person on the bar only.
      */
     TimeFactorBody: {
+      /**
+       * Format: int32
+       * @description The minutes of one work day of the person on the bar, the average of their usual work days:
+       *     *Takes me 10 days* counts ten of them. `null` for a reader who may not know their work times.
+       */
+      day_minutes: number | null;
       /** @description The internal ID of the issue. */
       issue: string;
       /**
@@ -12131,6 +12137,12 @@ export interface components {
        * @description The version of the issue now: a change is made on the version that was looked at.
        */
       version: number;
+      /**
+       * Format: int32
+       * @description How many of those work days the estimate times the factor takes (*= 10 work days*); `null`
+       *     without `day_minutes`, an estimate the reader may read, or a factor they may see.
+       */
+      work_days: number | null;
     };
     /**
      * @description *Time left* of an issue: the minutes, and whether nobody typed them and they are worked out from

@@ -441,6 +441,7 @@ export interface MessageArguments {
   "issues.tick-all": { count: number };
   "issues.tick-narrow": { limit: number };
   "issues.time-factor-ask-other": { name: string | number };
+  "issues.time-factor-days": { days: number; factor: string | number };
   "issues.time-factor-estimate": { estimate: string | number };
   "issues.time-factor-not-a-factor": { example: string | number };
   "issues.time-factor-own": { factor: string | number; name: string | number };

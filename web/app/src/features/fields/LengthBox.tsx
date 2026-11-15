@@ -24,6 +24,8 @@ export interface LengthBoxProps {
   readonly problem?: string | undefined;
   /** Told when the text typed is no length, for a form that must not send it until it is mended. */
   readonly onMistake?: () => void;
+  /** The minutes of a work day of the person the length is for: days may be typed (*10 days*). */
+  readonly dayMinutes?: number | undefined;
 }
 
 /**
@@ -55,10 +57,11 @@ export function LengthBox({
   inRow = true,
   problem,
   onMistake,
+  dayMinutes,
 }: LengthBoxProps) {
   return (
     <span {...partOf(part.lengthBox)}>
-      <WithLengthReader>
+      <WithLengthReader dayMinutes={dayMinutes}>
         {(readLength, wording) => (
           <TextEditor
             field={fieldOf(name, inRow, wording)}

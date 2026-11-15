@@ -61,4 +61,12 @@ impl TimeFactor {
         let minutes = (u64::from(estimate.get()) * u64::from(self.0)).div_ceil(100);
         Minutes::new(u32::try_from(minutes).unwrap_or(u32::MAX))
     }
+
+    /// How many work days of `day_minutes` the effort of an issue with this estimate takes, rounded
+    /// up (*"Estimate 8 days · ×1.25 = 10 work days"*, UX §4.4): a day in the person's own work
+    /// hours, without their share or their days off; `None` for a day of no minutes.
+    #[must_use]
+    pub fn work_days(self, estimate: Minutes, day_minutes: u32) -> Option<u32> {
+        (day_minutes > 0).then(|| self.effort(estimate).get().div_ceil(day_minutes))
+    }
 }

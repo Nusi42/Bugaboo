@@ -36,6 +36,40 @@ fn time_04_a_typed_length_reads_the_same_in_every_form_and_respects_the_decimal_
     assert_eq!(minutes("1.5", germany), Err(LengthMistake::NotALength));
 }
 
+/// A length typed for a person with work days of `day_minutes`, the day in the words of the catalog.
+fn in_days(text: &str, day_minutes: u32) -> Result<u32, LengthMistake> {
+    let words = LengthWords {
+        day: message::FIELDS_UNIT_DAY_WORDS.template(),
+        day_minutes,
+        ..LengthWords::of_catalog(DecimalMark::Point)
+    };
+    read(text, &words).map(Minutes::get)
+}
+
+#[test]
+fn plan_14_days_count_in_the_work_hours_of_the_person() {
+    // *Takes me 10 days*, for a person who works 6 hours a day.
+    for text in ["10 days", "10days", "10 Days", "1 day", "10d"] {
+        let days: u32 = text
+            .chars()
+            .take_while(char::is_ascii_digit)
+            .collect::<String>()
+            .parse()
+            .unwrap_or_default();
+        assert_eq!(in_days(text, 360), Ok(days * 360), "{text}");
+    }
+    assert_eq!(in_days("1.5 days", 360), Ok(540));
+    assert_eq!(in_days("2h", 360), Ok(120));
+    // Without the work hours of a person, a day is no length; nor is a day with more after it.
+    assert_eq!(in_days("10 days", 0), Err(LengthMistake::NotALength));
+    assert_eq!(
+        minutes("10 days", DecimalMark::Point),
+        Err(LengthMistake::NotALength)
+    );
+    assert_eq!(in_days("1 day 2h", 360), Err(LengthMistake::NotALength));
+    assert_eq!(in_days("10 dayz", 360), Err(LengthMistake::NotALength));
+}
+
 #[test]
 fn time_04_decimals_of_an_hour_round_to_the_nearest_minute() {
     assert_eq!(minutes("0.33", DecimalMark::Point), Ok(20));
