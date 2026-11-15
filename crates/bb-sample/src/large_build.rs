@@ -329,6 +329,13 @@ impl Maker<'_> {
         let ladder = &bank.ladders[facts.place_at][facts.type_at];
         let (title, description) = self.title_and_text(place, facts.type_at, &mut facts.random);
         let code = self.code(facts.place_at, place.random_codes, &mut facts.random);
+        let dates = crate::large_dates::planned_dates(
+            self.bank,
+            self.seed,
+            self.end,
+            facts.index,
+            facts.place_at,
+        );
         let (first_status, _) = ladder
             .steps
             .first()
@@ -343,9 +350,9 @@ impl Maker<'_> {
             description,
             status: first_status,
             priority: priority(facts.type_at == 0, &mut facts.random),
-            start_date: None,
-            due_date: None,
-            estimated_time: None,
+            start_date: dates.map(|(start, _, _)| start),
+            due_date: dates.map(|(_, due, _)| due),
+            estimated_time: dates.map(|(_, _, estimate)| estimate),
             time_left: None,
             reported_by: facts.reporter,
             created_at: facts.created_at,

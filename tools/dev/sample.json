@@ -379,6 +379,9 @@
     "longDayPercent": 5,
     "batch": 2000,
     "bigProjectsShare": 60,
+    "datedPercent": 30,
+    "datedDays": 90,
+    "datedLongestDays": 10,
     "agents": {
       "agents": 3,
       "workPercent": 1,

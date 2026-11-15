@@ -84,6 +84,13 @@ pub struct LargePlan {
     pub batch: u32,
     /// How many of 100 issues are in the biggest tenth of the projects.
     pub big_projects_share: u32,
+    /// How many of 100 issues of the biggest project (the first of the sample, with its
+    /// sub-projects) have a start date, a due date and an estimate, for the timeline (M8, PERF-01).
+    pub dated_percent: u32,
+    /// The dates of those issues start within this many days after the end of the dataset.
+    pub dated_days: u32,
+    /// The most days one of those issues lasts (from its start date to its due date).
+    pub dated_longest_days: u32,
     /// The agents and their work (M7 WP-13, PERF-01: *changes since*, the search of agent states and
     /// *My agents*).
     pub agents: LargeAgents,
@@ -156,6 +163,7 @@ impl LargePlan {
             ("notifiedPercent", self.notified_percent),
             ("checkNotifiedPercent", self.check_notified_percent),
             ("bigProjectsShare", self.big_projects_share),
+            ("datedPercent", self.dated_percent),
             ("agents.workPercent", self.agents.work_percent),
             ("agents.readyPercent", self.agents.ready_percent),
         ];
@@ -171,6 +179,8 @@ impl LargePlan {
             ("projects", self.projects),
             ("months", self.months),
             ("batch", self.batch),
+            ("datedDays", self.dated_days),
+            ("datedLongestDays", self.dated_longest_days),
             ("agents.agents", self.agents.agents),
         ];
         if let Some((name, _)) = positive.iter().find(|(_, value)| *value == 0) {
