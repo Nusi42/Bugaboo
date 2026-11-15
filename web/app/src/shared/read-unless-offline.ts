@@ -16,9 +16,11 @@ export function readUnlessOffline(read: () => Promise<void>): Promise<void> {
         done();
       }
     });
-    void read().finally(() => {
+    const finish = (): void => {
       stop();
       done();
-    });
+    };
+    // A failed read ends the wait as an answer does: what waits goes on, and nothing is left unhandled.
+    read().then(finish, finish);
   });
 }

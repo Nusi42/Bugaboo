@@ -103,6 +103,8 @@ describe("iss_17 nothing is lost when the save is refused", () => {
     await w.editor.save();
     w.editor.setSource({ saved: "Ben's words", version: 4 });
     await w.editor.resolve("Mine and Ben's");
+    // The save goes on once the lock is taken again; the box closes once the record is read again.
+    await settle();
     expect(w.saves.at(-1)).toEqual({ text: "Mine and Ben's", version: 4, lockToken: "t1" });
     expect(w.editor.snapshot().phase.kind).toBe("reading");
   });

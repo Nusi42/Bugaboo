@@ -23,6 +23,12 @@ describe("iss_17 a read again after a save does not hold the editor while offlin
     expect(order).toEqual(["read"]);
   });
 
+  it("stops waiting when the read fails, and leaves no failure behind", async () => {
+    await expect(
+      readUnlessOffline(() => Promise.reject(new Error("no connection"))),
+    ).resolves.toBeUndefined();
+  });
+
   it("does not wait when the browser is offline", async () => {
     onlineManager.setOnline(false);
     await expect(readUnlessOffline(paused)).resolves.toBeUndefined();

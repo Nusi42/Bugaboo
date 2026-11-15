@@ -16,6 +16,23 @@ export type * from "./long-text-model.ts";
  */
 
 /** The controller of one long text of one record. */
+/**
+ * How long a saved long text waits for its record to be read again before its box closes all the same: a slow read
+ * then shows the new text when it answers.
+ */
+export const READ_AGAIN_MOST_MS = 4000;
+
+/** Waits for `work`, at most `ms`. */
+function atMost(work: Readonly<PromiseLike<void>>, ms: number): Promise<void> {
+  return new Promise<void>((done) => {
+    const timer = setTimeout(done, ms);
+    work.then(() => {
+      clearTimeout(timer);
+      done();
+    }, ignore);
+  });
+}
+
 export class LongTextEditor extends WatchingEditor {
   private baseVersion: number;
   private saveWhenLocked = false;
@@ -150,7 +167,7 @@ export class LongTextEditor extends WatchingEditor {
     }
     // The record is read again before the box closes, so it closes onto the saved text in one frame (UX §6.4); a read
     // that fails leaves the text saved, and the box closes all the same.
-    await this.deps.refresh().catch(ignore);
+    await atMost(this.deps.refresh().catch(ignore), READ_AGAIN_MOST_MS);
     this.finish();
   };
 

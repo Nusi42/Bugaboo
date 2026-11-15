@@ -1,5 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { doNothing } from "@bugaboo/ui";
+import { describe, expect, it, vi } from "vitest";
 
+import { READ_AGAIN_MOST_MS } from "./long-text.ts";
 import { heldBy, settle, world } from "./long-text-testing.ts";
 
 describe("iss_17 the lock starts on the first key, not before", () => {
@@ -150,5 +152,25 @@ describe("iss_17 the box closes onto the text read again", () => {
     await settle();
     await w.editor.save();
     expect(w.editor.snapshot().phase.kind).toBe("reading");
+  });
+});
+
+describe("iss_17 a read again that does not answer does not hold the box", () => {
+  it("closes the box once the time for the read again is over", async () => {
+    vi.useFakeTimers();
+    try {
+      const w = world({ refresh: () => new Promise<void>(doNothing) });
+      w.editor.open();
+      w.editor.type("New words");
+      await vi.advanceTimersByTimeAsync(0);
+      const saving = w.editor.save();
+      await vi.advanceTimersByTimeAsync(READ_AGAIN_MOST_MS - 1);
+      expect(w.editor.snapshot().phase.kind).toBe("saving");
+      await vi.advanceTimersByTimeAsync(1);
+      await saving;
+      expect(w.editor.snapshot().phase.kind).toBe("reading");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
