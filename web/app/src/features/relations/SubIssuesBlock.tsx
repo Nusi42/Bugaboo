@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { ListGrid, partOf, part, ShowMoreOf } from "@bugaboo/ui";
+import { ListGrid, partOf, part, ShowMoreOf, useHoldWhileReading } from "@bugaboo/ui";
 import { useId } from "react";
 
 import { AddSubIssue, PartOf, TakeOut } from "./ParentChange.tsx";
@@ -64,6 +64,7 @@ export function SubIssuesBlock({ readableId }: BlockProps) {
   const heading = useId();
   const header = useIssueRelations(readableId);
   const list = useSubIssues(readableId);
+  useHoldWhileReading(header.isLoading || list.isLoading);
   const shown = useHeldWhileChanging(header.data);
   const pages = useHeldWhileChanging(list.data?.pages);
   const above = shown?.part_of;

@@ -1,5 +1,14 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, RowChevron, SearchField, partOf, part, ShowMoreOf } from "@bugaboo/ui";
+import {
+  Alert,
+  alertTone,
+  RowChevron,
+  SearchField,
+  partOf,
+  part,
+  ShowMoreOf,
+  useHoldWhileReading,
+} from "@bugaboo/ui";
 import { useState } from "react";
 import {
   Collection,
@@ -76,6 +85,7 @@ function Rows({ lines, onLoadMore }: RowsProps) {
 export function PeopleList() {
   const [query, setQuery] = useState("");
   const people = usePeople(query.trim());
+  useHoldWhileReading(people.isLoading);
   const lines = linesOf(people.data?.pages);
   const more = (): void => {
     if (people.hasNextPage && !people.isFetchingNextPage) {

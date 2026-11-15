@@ -1,4 +1,4 @@
-import { InPaneHead, paneHeadSlot, part, partOf, useLayout } from "@bugaboo/ui";
+import { InPaneHead, paneHeadSlot, part, partOf, ReadingHold, useLayout } from "@bugaboo/ui";
 import { useState } from "react";
 
 import type { ListView } from "../../shared/list-view.ts";
@@ -92,37 +92,41 @@ export function TimelineResults(props: TimelineResultsProps) {
   const model = useTimelineModel({ ...props, phone }, props.fields.names, warningsOpen);
   return (
     <TimelineContext.Provider value={model.context}>
-      <div {...partOf(part.timeline)}>
-        {/* In the list of a project the tools and the Legend stand in the head of its pane, which the chart and Not
+      {/* The chart and Not scheduled yet come with reads of their own: they show once both are read, so the tray does
+          not stand alone first and then move aside for the chart (UX §6.4). */}
+      <ReadingHold>
+        <div {...partOf(part.timeline)}>
+          {/* In the list of a project the tools and the Legend stand in the head of its pane, which the chart and Not
             scheduled yet fold as they scroll (UX §6.5); on the page of a search they stand above the chart. */}
-        <InPaneHead slot={paneHeadSlot.view}>
-          <TimelineTools
-            view={props.view}
-            onView={props.onView}
-            fields={props.fields}
-            own={model.own}
-            onStep={model.chart.onStep}
-            onToday={model.chart.onToday}
+          <InPaneHead slot={paneHeadSlot.view}>
+            <TimelineTools
+              view={props.view}
+              onView={props.onView}
+              fields={props.fields}
+              own={model.own}
+              onStep={model.chart.onStep}
+              onToday={model.chart.onToday}
+              phone={phone}
+              warnings={{
+                count: model.openWarnings,
+                open: warningsOpen,
+                onToggle: () => {
+                  setWarningsOpen((before) => !before);
+                },
+              }}
+            />
+            {phone ? null : <TimelineLegend rows={model.read.rows} />}
+          </InPaneHead>
+          <TimelineBody
+            props={props}
+            model={model}
             phone={phone}
-            warnings={{
-              count: model.openWarnings,
-              open: warningsOpen,
-              onToggle: () => {
-                setWarningsOpen((before) => !before);
-              },
+            onCloseWarnings={() => {
+              setWarningsOpen(false);
             }}
           />
-          {phone ? null : <TimelineLegend rows={model.read.rows} />}
-        </InPaneHead>
-        <TimelineBody
-          props={props}
-          model={model}
-          phone={phone}
-          onCloseWarnings={() => {
-            setWarningsOpen(false);
-          }}
-        />
-      </div>
+        </div>
+      </ReadingHold>
     </TimelineContext.Provider>
   );
 }

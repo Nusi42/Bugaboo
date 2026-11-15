@@ -3446,7 +3446,10 @@ textarea,
   gap: var(--space-3);
   box-sizing: border-box;
   min-height: var(--size-bar);
-  padding: calc(var(--space-2) + env(safe-area-inset-top)) var(--space-4) var(--space-2);
+  padding: calc(
+      (var(--size-bar) - var(--size-control)) / 2 - var(--border-width) + env(safe-area-inset-top)
+    )
+    var(--space-4) calc((var(--size-bar) - var(--size-control)) / 2 - var(--border-width));
   background: var(--bg-canvas);
   border-radius: 0;
 }
@@ -4167,6 +4170,7 @@ textarea,
 }
 
 [data-part="skeleton.line"] {
+  visibility: visible;
   display: block;
   height: var(--space-4);
   border-radius: var(--r-ctl);
@@ -5052,6 +5056,19 @@ textarea,
   color: var(--accent-fg);
 }
 
+[data-part="reading-hold"] {
+  display: contents;
+}
+
+[data-part="reading-hold"][data-state~="held"] {
+  visibility: hidden;
+}
+
+[data-part="kept-room"] {
+  display: contents;
+  visibility: hidden;
+}
+
 [data-part="sidebar.note"] {
   margin: 0;
   padding: 0 var(--space-3);
@@ -5772,7 +5789,12 @@ textarea,
   gap: var(--size-page-gutter);
 }
 
-[data-part="app-layout.inner"]:has([data-part="sheet"]) {
+[data-part="sheet-page"] {
+  display: contents;
+}
+
+[data-part="app-layout.inner"]:has([data-part="sheet"]),
+[data-part="app-layout.inner"]:has([data-part="sheet-page"]) {
   max-width: none;
 }
 
@@ -6282,7 +6304,10 @@ textarea,
   gap: var(--space-3);
   box-sizing: border-box;
   min-height: var(--size-bar);
-  padding: calc(var(--space-2) + env(safe-area-inset-top)) var(--space-4) var(--space-2);
+  padding: calc(
+      (var(--size-bar) - var(--size-control)) / 2 - var(--border-width) + env(safe-area-inset-top)
+    )
+    var(--space-4) calc((var(--size-bar) - var(--size-control)) / 2 - var(--border-width));
   background: var(--bg-canvas);
   border-bottom: var(--border-width) solid var(--divider);
 }
@@ -6833,7 +6858,11 @@ textarea,
   display: none;
 }
 
-[data-part="issue-main.section"] ~ [data-part="issue-main.section"]::before {
+[data-part="issue-main.section"] ~ [data-part="issue-main.section"]::before,
+[data-part="issue-main"]
+  > [data-part="issue-main.section"]
+  ~ [data-part="reading-hold"]
+  > [data-part="issue-main.section"]::before {
   content: "";
   display: block;
   margin-inline: var(--inset-section-line);
@@ -6881,6 +6910,11 @@ textarea,
     max-height: none;
     overflow: visible;
   }
+}
+
+[data-part="issue-body"][data-variant~="split"] [data-part="issue-main"],
+[data-part="issue-body"][data-variant~="split"] [data-part="issue-details"] {
+  scrollbar-gutter: stable;
 }
 
 [data-part="focus-view"]:has([data-part="issue-body"][data-variant~="split"])

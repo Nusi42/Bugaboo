@@ -1,4 +1,5 @@
 import { settingKeys, type Schema, type SettingKey } from "@bugaboo/api-client";
+import { useQuery } from "@tanstack/react-query";
 
 import { api } from "./api.ts";
 import { queryClient } from "./query-client.ts";
@@ -60,4 +61,13 @@ export function isSettingKey(key: string): key is SettingKey {
 /** One setting by its key. */
 export function settingOf(settings: MySettings | undefined, key: SettingKey): Setting | undefined {
   return settings?.settings.find((setting) => setting.key === key);
+}
+
+/**
+ * Whether the person's settings are being read because the app has none yet: a part that writes times and dates in the
+ * person's *Region* waits for them, so it writes them once in it, not first in the device's way (M8-F221). The app
+ * reads the settings before the first page; when that read had no answer, the part asks again.
+ */
+export function useMySettingsReading(): boolean {
+  return useQuery({ ...mySettingsOptions(), enabled: currentMySettings() === undefined }).isLoading;
 }

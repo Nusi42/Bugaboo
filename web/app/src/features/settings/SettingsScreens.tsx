@@ -1,4 +1,4 @@
-import { Card, PaneWithHead, paneLook, useLayout, partOf, part } from "@bugaboo/ui";
+import { Card, PaneWithHead, paneLook, ReadingHold, useLayout, partOf, part } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
 import { keptScroll, scrollBox } from "../../shared/scroll-boxes.ts";
@@ -47,12 +47,15 @@ export function SettingsScreens({ heading, label, menu, onMenu, children }: Sett
   }
   // The heading and the introduction of the topic stand above the rest of it, and on a computer fold over it as it
   // scrolls (UX §6.5); a phone keeps them in the card.
+  // What the topic reads first, it shows once read, so no part of it pushes another (UX §6.4).
   const topic = (
-    <PaneWithHead look={layout === "computer" ? paneLook.folds : paneLook.still} head={null}>
-      <div {...partOf(part.settingsTopic)} {...keptScroll(scrollBox.topic)}>
-        {children}
-      </div>
-    </PaneWithHead>
+    <ReadingHold>
+      <PaneWithHead look={layout === "computer" ? paneLook.folds : paneLook.still} head={null}>
+        <div {...partOf(part.settingsTopic)} {...keptScroll(scrollBox.topic)}>
+          {children}
+        </div>
+      </PaneWithHead>
+    </ReadingHold>
   );
   if (menu === undefined) {
     return topic;

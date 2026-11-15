@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { NameValueRow } from "@bugaboo/ui";
+import { NameValueRow, useHoldWhileReading } from "@bugaboo/ui";
 
 import { IssueReadProblem } from "../../shared/IssueReadProblem.tsx";
 import type { IssueBlockProps } from "../issues/index.ts";
@@ -25,6 +25,7 @@ function Unread({ name, error }: { readonly name: string; readonly error: unknow
  */
 export function IssueTagsBlock({ issue, readableId, form }: IssueBlockProps) {
   const labelsAndTags = useIssueLabelsAndTags(readableId);
+  useHoldWhileReading(labelsAndTags.isLoading);
   const changes = useLabelChanges(readableId, issue.project?.short_name ?? "");
   const body = labelsAndTags.data;
   if (!form.shows("tags")) {
@@ -49,6 +50,7 @@ export function IssueTagsBlock({ issue, readableId, form }: IssueBlockProps) {
 /** *Labels* as a name-and-value row of the Details (TAG-02): as `IssueTagsBlock`, for the labels. */
 export function IssueLabelsBlock({ issue, readableId, form }: IssueBlockProps) {
   const labelsAndTags = useIssueLabelsAndTags(readableId);
+  useHoldWhileReading(labelsAndTags.isLoading);
   const changes = useLabelChanges(readableId, issue.project?.short_name ?? "");
   const body = labelsAndTags.data;
   if (!form.shows("labels")) {

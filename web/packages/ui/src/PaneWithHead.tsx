@@ -106,13 +106,13 @@ export function PaneWithHead({ head, look, children }: PaneWithHeadProps) {
   const onSizes = useCallback((sizes: readonly number[]) => {
     setEnd(sizes[0] ?? 0);
   }, []);
-  useSizesOn(whole, holder, headSizes, onSizes);
+  const remeasure = useSizesOn(whole, holder, headSizes, onSizes);
   const folds = look === paneLook.folds && !onPaper;
   useScrollUnderHead(top, pane, folds);
   const above = folds ? end : 0;
   const known = useMemo(
-    () => ({ slots: { title, search, view }, above }),
-    [title, search, view, above],
+    () => ({ slots: { title, search, view }, above, remeasure }),
+    [title, search, view, above, remeasure],
   );
   return (
     <PaneHeadContext value={known}>

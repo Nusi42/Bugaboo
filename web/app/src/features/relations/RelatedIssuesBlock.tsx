@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Button, ListGrid, partOf, part, ShowMoreOf } from "@bugaboo/ui";
+import { Button, ListGrid, partOf, part, ShowMoreOf, useHoldWhileReading } from "@bugaboo/ui";
 import { useId, useState } from "react";
 
 import { IssueReadProblem } from "../../shared/IssueReadProblem.tsx";
@@ -43,6 +43,7 @@ export function RelatedIssuesBlock({ readableId }: BlockProps) {
   const heading = useId();
   const header = useIssueRelations(readableId);
   const list = useRelatedIssues(readableId);
+  useHoldWhileReading(header.isLoading || list.isLoading);
   const related = itemsOf(useHeldWhileChanging(list.data?.pages));
   const mayChange = useHeldWhileChanging(header.data)?.may_change === true;
   return (

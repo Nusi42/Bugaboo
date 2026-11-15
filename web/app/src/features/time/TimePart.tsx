@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { partOf, part, useShortWindow } from "@bugaboo/ui";
+import { partOf, part, useHoldWhileReading, useShortWindow } from "@bugaboo/ui";
 import { useLocation } from "@tanstack/react-router";
 
 import type { TimePlace } from "../shell/index.ts";
@@ -23,7 +23,9 @@ export interface TimePartProps {
  * the sidebar and the bar show the timer, with what it tells.
  */
 export function TimePart({ place = "sidebar", narrow = false }: TimePartProps) {
-  const reading = useTimer().data;
+  const timer = useTimer();
+  const reading = timer.data;
+  useHoldWhileReading(timer.isLoading);
   const notice = useTimeNotice();
   const running = reading?.timer.running ?? undefined;
   const short = useShortWindow();

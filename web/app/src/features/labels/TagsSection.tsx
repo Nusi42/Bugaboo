@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Card, partOf, part, ShowMoreOf } from "@bugaboo/ui";
+import { Card, partOf, part, ShowMoreOf, useHoldWhileReading } from "@bugaboo/ui";
 
 import { ListEditor, type ListRow } from "../shell/index.ts";
 import { EditTag } from "./EditTag.tsx";
@@ -25,6 +25,7 @@ function rowOf(tag: TagLine, tags: readonly TagLine[]): ListRow {
 /** The tags, a page at a time, as a list that opens next to it. */
 export function TagsSection({ open, onOpen, onClose }: OpenProps) {
   const tags = useTags();
+  useHoldWhileReading(tags.isLoading);
   const lines = tagLinesOf(tags.data?.pages);
   return (
     <Card heading={t("labels.tags-title")}>

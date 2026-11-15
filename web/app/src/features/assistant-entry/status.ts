@@ -13,7 +13,12 @@ export type EntryStatus = Schema<"AssistantStatusBody">;
  * person may not see, or one kept from AI), nothing of the assistant is shown.
  */
 export function useAssistantStatus(project: string | undefined): EntryStatus | undefined {
-  const query = useQuery({
+  return useAssistantStatusRead(project).data;
+}
+
+/** The read of whether the assistant is there at the place: its answer, and whether it is read for the first time. */
+export function useAssistantStatusRead(project: string | undefined) {
+  return useQuery({
     ...api.query.queryOptions("get", "/api/v1/assistant", {
       params: { query: project === undefined ? {} : { project } },
     }),
@@ -21,5 +26,4 @@ export function useAssistantStatus(project: string | undefined): EntryStatus | u
     // The new place is asked while the one before is still shown, so the state of a place that is not known yet is never taken for off.
     placeholderData: keepPreviousData,
   });
-  return query.data;
 }

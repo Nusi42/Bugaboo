@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { FileDrop, usePastedFiles, partOf, part } from "@bugaboo/ui";
+import { FileDrop, usePastedFiles, partOf, part, useHoldWhileReading } from "@bugaboo/ui";
 import { useId } from "react";
 
 import { IssueReadProblem } from "../../shared/IssueReadProblem.tsx";
@@ -18,6 +18,7 @@ export function FilesBlock({ readableId }: { readonly readableId: string }) {
   const heading = useId();
   const rules = useFileRules(readableId);
   const list = useIssueFiles(readableId);
+  useHoldWhileReading(rules.isLoading || list.isLoading);
   const sending = useTransfers({ issue: readableId, comment: null });
   const mayAdd = rules.data?.may_add === true;
   const add = useAddFiles(readableId, null);

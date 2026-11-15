@@ -1,5 +1,5 @@
 import type { Schema } from "@bugaboo/api-client";
-import { Card, partOf, part, useLayout } from "@bugaboo/ui";
+import { Card, partOf, part, useHoldWhileReading, useLayout } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
 import type { EditLock } from "../../shared/editing/index.ts";
@@ -27,6 +27,9 @@ export interface ThemeEditorProps {
 export function ThemeEditor({ detail, lock, notices }: ThemeEditorProps) {
   const { theme } = detail;
   const editing = useThemeEditing(detail, lock);
+  // Whose the lock is decides where the readability and the groups stand: the editor shows once that is known, so the
+  // preview does not move up when the groups come (UX §6.4).
+  useHoldWhileReading(lock.state.phase === "taking");
   const phone = useLayout() === "phone";
   const preview = <EditorPreview theme={theme} draftShown={editing.draftShown} />;
   const readability = (

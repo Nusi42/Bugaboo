@@ -1,5 +1,6 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
+import { ReadingHold } from "@bugaboo/ui";
 
 import { EditLockNotices, editedThing, useEditLock } from "../../shared/editing/index.ts";
 import { paths } from "../../shared/paths.ts";
@@ -18,15 +19,17 @@ function LockedThemeEditor({ detail }: { readonly detail: Schema<"ThemeDetailBod
   const lock = useEditLock(themeTarget(theme.id));
   useItemTrail(theme.kind === "for-everyone" ? paths.themes : paths.appearance, theme.name);
   return (
-    // A save makes a new version: the editor starts again from what was saved.
-    <ThemeEditor
-      key={theme.version}
-      detail={detail}
-      lock={lock}
-      notices={
-        <EditLockNotices lock={lock} thing={editedThing.theme} lost={t("theme-editor.lost")} />
-      }
-    />
+    <ReadingHold>
+      {/* A save makes a new version: the editor starts again from what was saved. */}
+      <ThemeEditor
+        key={theme.version}
+        detail={detail}
+        lock={lock}
+        notices={
+          <EditLockNotices lock={lock} thing={editedThing.theme} lost={t("theme-editor.lost")} />
+        }
+      />
+    </ReadingHold>
   );
 }
 

@@ -26,6 +26,8 @@ export interface SearchBarProps {
   readonly listView?: ListViewControl;
   /** What a phone shows in the row of its one button, before it: *New issue* and *Legend* of a list. */
   readonly phoneStart?: ReactNode;
+  /** What the bar searches is still read (the text of a project's own list): it waits, as for its language. */
+  readonly waiting?: boolean;
 }
 
 /**
@@ -41,6 +43,7 @@ export function SearchBar({
   actions,
   listView,
   phoneStart,
+  waiting = false,
 }: SearchBarProps) {
   const language = useSearchLanguage();
   const fields = useSearchFields(within);
@@ -48,7 +51,9 @@ export function SearchBar({
   const failed = fields.isError ? (
     <Alert tone={alertTone.danger}>{messageOf(fields.error)}</Alert>
   ) : null;
-  const bar = fields.isError ? null : language === undefined || fields.data === undefined ? (
+  const bar = fields.isError ? null : waiting ||
+    language === undefined ||
+    fields.data === undefined ? (
     <DelayedSkeleton lines={1} />
   ) : (
     <LoadedBar

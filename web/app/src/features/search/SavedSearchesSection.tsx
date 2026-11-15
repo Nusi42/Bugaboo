@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { iconName, part, partOf, useShortWindow } from "@bugaboo/ui";
+import { iconName, part, partOf, useHoldWhileReading, useShortWindow } from "@bugaboo/ui";
 import { useLocation } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
@@ -80,6 +80,7 @@ export function SavedSearchesSection({ view }: SavedSearchesSectionProps) {
   const sharedList = useSavedList(savedSet.shared, shown);
   const mine = itemsOf(mineList.data?.pages);
   const shared = itemsOf(sharedList.data?.pages);
+  useHoldWhileReading(mineList.isLoading || sharedList.isLoading);
   const framed = (children: ReactNode) => (
     <SectionFrame heading={savedHeading} view={view}>
       {children}

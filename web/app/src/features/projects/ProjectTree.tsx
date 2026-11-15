@@ -9,6 +9,7 @@ import {
   part,
   ShowMoreOf,
   ariaCurrent,
+  useHoldWhileReading,
 } from "@bugaboo/ui";
 import { useLocation } from "@tanstack/react-router";
 import { Button as TreeButton, Link } from "react-aria-components";
@@ -78,6 +79,7 @@ interface BranchProps {
 function Branch({ inside, pathname, onNavigate }: BranchProps) {
   const list = useProjectList(inside === undefined ? {} : { inside });
   const projects = linesOf(list.data?.pages);
+  useHoldWhileReading(list.isLoading);
   if (list.isError) {
     return <Alert tone={alertTone.danger}>{messageOf(list.error)}</Alert>;
   }

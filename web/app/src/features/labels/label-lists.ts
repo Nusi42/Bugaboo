@@ -1,4 +1,5 @@
 import { type Schema } from "@bugaboo/api-client";
+import { useHoldWhileReading } from "@bugaboo/ui";
 
 import { api } from "../../shared/api.ts";
 import { fieldList, linesFrom, pageSize, useAllPages, usePaged } from "../../shared/paged.ts";
@@ -8,6 +9,17 @@ import { queryKeys } from "../../shared/query-keys.ts";
 export type LabelGroup = Schema<"LabelGroupBody">;
 /** A label of the organization's list. */
 export type Label = Schema<"LabelBody">;
+
+/**
+ * Whether a list read page by page still reads: what lists it is held (with its `ReadingHold`) until every page is
+ * read, as a later page would push what stands under the list (UX §6.4).
+ */
+function stillReading(read: {
+  readonly isLoading: boolean;
+  readonly hasNextPage: boolean;
+}): boolean {
+  return read.isLoading || read.hasNextPage;
+}
 
 /**
  * The labels of the organization with their groups: anybody who is signed in may read them. With a
@@ -50,6 +62,7 @@ export function useLabels(project?: string) {
   // The groups and the labels are choices in forms: every page is read, not the first.
   useAllPages(groupsRead);
   useAllPages(labelsRead);
+  useHoldWhileReading(stillReading(groupsRead) || stillReading(labelsRead));
   return {
     groups: linesFrom(groupsRead.data?.pages, groupOf),
     labels: linesFrom(labelsRead.data?.pages, labelOf),

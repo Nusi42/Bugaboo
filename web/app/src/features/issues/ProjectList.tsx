@@ -36,25 +36,40 @@ export interface ProjectListProps {
  * in, and under it the list. The project's own list, the saved search that a project lead chose
  * (ADR-0034 decision 6), gives the text and the columns where the address says none.
  */
-export function ProjectList({ project, state, onState, openIn, selection }: ProjectListProps) {
-  const [stale, setStale] = useState(false);
-  const chosen = useProjectListChoice(project.shortName).data?.search ?? undefined;
+/**
+ * The search of a project's list: its own list (the saved search a project lead chose) gives the text and the columns
+ * where the address says none, and whether that is still read. A list saved before D3 holds the old spelling: it is the
+ * usual text once written as today.
+ */
+function useProjectSearch(
+  project: ListedProject,
+  state: SearchState,
+  onState: ProjectListProps["onState"],
+) {
+  const choice = useProjectListChoice(project.shortName);
+  const chosen = choice.data?.search ?? undefined;
   const forms = useCanonicalForms(project.id);
   const list = useListView(state, onState, {
     everywhere: false,
     presentation: chosen?.presentation,
     word: forms?.word,
   });
-  // A list saved before D3 holds the old spelling: it is the usual text once written as today.
   const stored = chosen?.search_text ?? "";
   const usual = forms === undefined ? stored : forms.text(stored);
-  const text = textShown(state, usual);
   const onText = (canonical: string, step: HistoryStep): void => {
     onState(withText(state, canonical, usual), step);
   };
+  return { list, text: textShown(state, usual), onText, reading: choice.isLoading };
+}
+
+export function ProjectList({ project, state, onState, openIn, selection }: ProjectListProps) {
+  const [stale, setStale] = useState(false);
+  const { list, text, onText, reading } = useProjectSearch(project, state, onState);
   const save = (
     <ProjectSave text={text} shortName={project.shortName} view={list.view} hasMistake={stale} />
   );
+  // The bar and the list wait for the text of the project's own list, so the bar is not drawn empty and then filled
+  // with its filters, pushing *Add filter* aside (UX §6.4).
   return (
     <>
       <InPaneHead slot={paneHeadSlot.search}>
@@ -66,21 +81,24 @@ export function ProjectList({ project, state, onState, openIn, selection }: Proj
           listView={{ view: list.view, onView: list.onView }}
           phoneStart={<PhoneActions shortName={project.shortName} />}
           actions={save}
+          waiting={reading}
         />
       </InPaneHead>
-      <IssueResults
-        {...list}
-        text={text}
-        onText={onText}
-        stale={stale}
-        within={project.id}
-        scopeName={project.name}
-        project={project.shortName}
-        openIn={openIn}
-        state={state}
-        open={state.open}
-        selection={selection}
-      />
+      {reading ? null : (
+        <IssueResults
+          {...list}
+          text={text}
+          onText={onText}
+          stale={stale}
+          within={project.id}
+          scopeName={project.name}
+          project={project.shortName}
+          openIn={openIn}
+          state={state}
+          open={state.open}
+          selection={selection}
+        />
+      )}
     </>
   );
 }

@@ -13,6 +13,7 @@ import {
   TextField,
   partOf,
   part,
+  useHoldWhileReading,
 } from "@bugaboo/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -91,6 +92,7 @@ function PolicyForm({ policy }: { readonly policy: Schema<"SignUpPolicyBody"> })
 /** *Signing up without an invitation*: who may make their own account. */
 export function SignUpPolicySection() {
   const policy = useQuery(policyOptions());
+  useHoldWhileReading(policy.isLoading);
   return (
     <Card heading={t("sign-up-policy.title")} intro={t("sign-up-policy.intro")}>
       {policy.isError ? <Alert tone={alertTone.danger}>{messageOf(policy.error)}</Alert> : null}

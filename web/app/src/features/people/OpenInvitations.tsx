@@ -1,6 +1,15 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, buttonLook, ConfirmDialog, partOf, part, ShowMoreOf } from "@bugaboo/ui";
+import {
+  Alert,
+  alertTone,
+  buttonLook,
+  ConfirmDialog,
+  partOf,
+  part,
+  ShowMoreOf,
+  useHoldWhileReading,
+} from "@bugaboo/ui";
 import { useState } from "react";
 
 import { api } from "../../shared/api.ts";
@@ -63,6 +72,7 @@ function InvitationRow({ invitation, onTakenBack }: InvitationRowProps) {
 /** The invitations that nobody has used yet and that have not run out. */
 export function OpenInvitations() {
   const invitations = useOpenInvitations();
+  useHoldWhileReading(invitations.isLoading);
   const [takenBack, setTakenBack] = useState(false);
   const items = linesFrom(invitations.data?.pages, (item) => item);
   if (invitations.isError) {

@@ -1,6 +1,7 @@
 import { t } from "@bugaboo/messages";
-import { Card, partOf, part, useLayout } from "@bugaboo/ui";
+import { Card, HoldWhileLoading, partOf, part, ReadingHold, useLayout } from "@bugaboo/ui";
 import { lazyRouteComponent } from "@tanstack/react-router";
+import { Suspense } from "react";
 
 import { paths } from "../../shared/paths.ts";
 import { useMe, usePermissions } from "../../shared/use-me.ts";
@@ -22,15 +23,24 @@ export function HomePage() {
   usePageTitle(title);
   // The sidebar of a computer has the timer already; a phone and a tablet have it at the top of Home.
   const computer = useLayout() === "computer";
+  // The timer and the work day stand above the greeting, and the notifications under it, each with reads of their
+  // own: the greeting shows with the timer, and the notifications come under it once they and their words are read, so
+  // nothing pushes what stands under it (UX §6.4).
   return (
     <>
-      {computer ? null : <TimeSlot place={timePlace.home} />}
-      <Card heading={title} level={1}>
-        {mayOpen(paths.organizationSettings, permissions) ? (
-          <p {...partOf(part.text)}>{t("home.admin")}</p>
-        ) : null}
-      </Card>
-      <NotificationsBlock />
+      <ReadingHold>
+        {computer ? null : <TimeSlot place={timePlace.home} />}
+        <Card heading={title} level={1}>
+          {mayOpen(paths.organizationSettings, permissions) ? (
+            <p {...partOf(part.text)}>{t("home.admin")}</p>
+          ) : null}
+        </Card>
+      </ReadingHold>
+      <ReadingHold>
+        <Suspense fallback={<HoldWhileLoading />}>
+          <NotificationsBlock />
+        </Suspense>
+      </ReadingHold>
     </>
   );
 }

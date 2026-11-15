@@ -3,23 +3,13 @@ import { useLocation } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect, useState } from "react";
 
 import { projectOf } from "../../shared/assistant-place.ts";
-import {
-  addQuickAction,
-  addTopBarAction,
-  openAssistantPanel,
-  useAssistantPanelOpen,
-  type TopBarAction,
-} from "../shell/index.ts";
-import { AssistantButton } from "./AssistantButton.tsx";
+import { addQuickAction, openAssistantPanel, useAssistantPanelOpen } from "../shell/index.ts";
 import { useAssistantStatus, type EntryStatus } from "./status.ts";
 
 /** The panel and its texts are loaded when it is first opened, so the first page does not grow beyond the button (ADR-0028). */
 const AssistantPanel = lazy(async () => ({
   default: (await import("../assistant/index.ts")).AssistantPanel,
 }));
-
-/** The button at the end of the top bar. */
-const topBarButton: TopBarAction = { id: "assistant", render: () => <AssistantButton /> };
 
 /** The entry of quick search that opens the panel. */
 const quickAsk = {
@@ -48,7 +38,7 @@ export function AssistantHost() {
     setKept(status);
   }
   useEffect(() => {
-    const gone = available ? [addTopBarAction(topBarButton), addQuickAction(quickAsk)] : [];
+    const gone = available ? [addQuickAction(quickAsk)] : [];
     return () => {
       for (const take of gone) {
         take();

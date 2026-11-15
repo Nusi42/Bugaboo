@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { partOf, part } from "@bugaboo/ui";
+import { partOf, part, useHoldWhileReading } from "@bugaboo/ui";
 
 import { LengthBox } from "../fields/index.ts";
 import type { ChangeableRowsProps } from "./ChangeableRows.tsx";
@@ -100,7 +100,10 @@ export function LeftRow({ blocks, changes }: ChangeableRowsProps) {
  * *Time spent*.
  */
 export function SpentRows({ blocks }: Pick<ChangeableRowsProps, "blocks">) {
-  const spent = useIssueTime(blocks.readableId).data?.time_spent ?? undefined;
+  const time = useIssueTime(blocks.readableId);
+  // The rows of time come with the page, held with it until they are read (UX §6.4).
+  useHoldWhileReading(time.isLoading);
+  const spent = time.data?.time_spent ?? undefined;
   return spent === undefined || !blocks.form.shows("time-spent") ? null : (
     <SpentRow blocks={blocks} minutes={spent} />
   );

@@ -5,6 +5,7 @@ import {
   watchSeconds,
 } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
+import { useHoldWhileReading } from "@bugaboo/ui";
 import { useQuery } from "@tanstack/react-query";
 
 import { api } from "./api.ts";
@@ -28,9 +29,14 @@ export function unreadOptions() {
   );
 }
 
-/** How many notifications the person has not read; nothing until the server has answered. */
+/**
+ * How many notifications the person has not read; nothing until the server has answered. What shows the number is held
+ * until then (with its `ReadingHold`): the number would narrow or push what stands beside it (UX §6.4).
+ */
 export function useUnreadNotifications(): number | undefined {
-  return useQuery(unreadOptions()).data?.unread;
+  const read = useQuery(unreadOptions());
+  useHoldWhileReading(read.isLoading);
+  return read.data?.unread;
 }
 
 /**

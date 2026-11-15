@@ -1291,14 +1291,15 @@ mixin "quiet-column" {
 }
 
 // The bar at the top of a phone screen, the same for a page and for a window that is a screen (M5 exit, O13): the height
-// of the bar, the room for the notch above it, the canvas behind it, its parts level.
+// of the bar, the room for the notch above it, the canvas behind it, its parts level. A control (Back, Assistant) fits
+// in the height of the bar with its border, so the bar is as high with one as without (UX §6.4).
 mixin "phone-bar" {
     display flex
     align-items center
     gap "$space-3"
     box-sizing border-box
     min-height "$size-bar"
-    padding "calc($space-2 + env(safe-area-inset-top)) $space-4 $space-2"
+    padding "calc(($size-bar - $size-control) / 2 - $border-width + env(safe-area-inset-top)) $space-4 calc(($size-bar - $size-control) / 2 - $border-width)"
     background "$bg-canvas"
 }
 
@@ -5376,7 +5377,9 @@ part "app-layout[variant=phone] stack > row > row.end > button[variant=primary]"
     width "100%"
 }
 
+// Grey shapes show also where a hold keeps the rest hidden (reading-hold): they stand in for what is still read (§6.1).
 part "skeleton.line" {
+    visibility visible
     display block
     height "$space-4"
     border-radius "$r-ctl"
@@ -6185,6 +6188,23 @@ part "project-tree.link[current] project-tree.short" {
     color "$accent-fg"
 }
 
+// What waits for the first reads of its parts is laid out but hidden until they all answered, then shown at once, so
+// nothing in it moves once seen (UX §6.4, the first read). It is no box of its own.
+part "reading-hold" {
+    display contents
+}
+
+part "reading-hold[state=held]" {
+    visibility hidden
+}
+
+// The room of a part whose first answer is on its way, kept unseen so it comes in without narrowing what stands beside it
+// (UX §6.4).
+part "kept-room" {
+    display contents
+    visibility hidden
+}
+
 // The one line of a section of the sidebar (or of the sheet More) with nothing in it yet: the projects and the saved
 // searches alike, under their heading (UX §3.1).
 part "sidebar.note" {
@@ -6900,7 +6920,12 @@ part "item-screen" {
 }
 
 // The timesheet is a wide page: its column takes what the window leaves, so seven days, the names and the total fit.
-part "app-layout.inner:has(sheet)" {
+// The page says so from its first frame (`sheet-page`), so the column does not widen when the week is read (UX §6.4).
+part "sheet-page" {
+    display contents
+}
+
+part "app-layout.inner:has(sheet)" "app-layout.inner:has(sheet-page)" {
     use "page-column-wide"
 }
 
@@ -7882,8 +7907,9 @@ part "issue-main.section:empty" {
 }
 
 // A thin line between two sections, inset from both sides, so the column reads as sections and not as one block
-// (UX §4.4). The Details have none: they are one panel of their own.
-part "issue-main.section ~ issue-main.section::before" {
+// (UX §4.4). The Details have none: they are one panel of their own. The sections under the description stand in the hold
+// of their first reads (reading-hold), which is no box of its own.
+part "issue-main.section ~ issue-main.section::before" "issue-main > issue-main.section ~ reading-hold > issue-main.section::before" {
     content "\"\""
     display block
     margin-inline "$inset-section-line"
@@ -7917,6 +7943,12 @@ part "issue-body[variant=split] issue-main" "focus-view:has(issue-body[variant=s
     // The first section starts level with the top of the Details, with the room for the ring above it too.
     use "ring-room-flush-start"
     position relative
+}
+
+// The sections and the Details keep the room of their scroll bar from the start: the sections that come with their reads
+// would otherwise narrow what is drawn when the bar comes (UX §6.4).
+part "issue-body[variant=split] issue-main" "issue-body[variant=split] issue-details" {
+    scrollbar-gutter stable
 }
 
 // The room for the ring at both sides comes on top of the width of the slim list, so its rows keep their width.

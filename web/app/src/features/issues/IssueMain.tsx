@@ -1,12 +1,12 @@
 import { t } from "@bugaboo/messages";
-import { partOf, part } from "@bugaboo/ui";
+import { partOf, part, ReadingHold } from "@bugaboo/ui";
 
 import { keptScroll, scrollBox } from "../../shared/scroll-boxes.ts";
 import { WrittenBy } from "../../shared/WrittenBy.tsx";
 import { FormNotice } from "../layouts/index.ts";
 import { DescriptionBlock } from "./DescriptionBlock.tsx";
 import { historyId } from "./history-id.ts";
-import { SlotBlocks } from "./SlotBlocks.tsx";
+import { IssueBlockOf, SlotBlocks } from "./SlotBlocks.tsx";
 import {
   issueBlocks,
   issueSlots,
@@ -36,7 +36,7 @@ function SectionBlocks({
 }) {
   return issueBlocks(slot).map((entry) => (
     <div key={entry.id} {...partOf(part.issueMainSection)}>
-      <entry.component {...blocks} />
+      <IssueBlockOf entry={entry} blocks={blocks} />
     </div>
   ));
 }
@@ -57,14 +57,18 @@ export function IssueMain({ detail, address, blocks }: IssueMainProps) {
           <WrittenBy mark={detail.description_written_by} />
         </div>
       ) : null}
-      <SectionBlocks slot={issueSlots.agentWork} blocks={blocks} />
-      <SectionBlocks slot={issueSlots.ownFieldSections} blocks={blocks} />
-      <SectionBlocks slot={issueSlots.subIssues} blocks={blocks} />
-      <SectionBlocks slot={issueSlots.relatedIssues} blocks={blocks} />
-      <SectionBlocks slot={issueSlots.files} blocks={blocks} />
-      <section id={historyId} aria-label={t("history.title")} {...partOf(part.issueMainSection)}>
-        <SlotBlocks slot={issueSlots.history} blocks={blocks} />
-      </section>
+      {/* The description comes with the issue; the sections under it come with reads of their own, and show once all
+          are read, so none pushes another (UX §6.4). */}
+      <ReadingHold>
+        <SectionBlocks slot={issueSlots.agentWork} blocks={blocks} />
+        <SectionBlocks slot={issueSlots.ownFieldSections} blocks={blocks} />
+        <SectionBlocks slot={issueSlots.subIssues} blocks={blocks} />
+        <SectionBlocks slot={issueSlots.relatedIssues} blocks={blocks} />
+        <SectionBlocks slot={issueSlots.files} blocks={blocks} />
+        <section id={historyId} aria-label={t("history.title")} {...partOf(part.issueMainSection)}>
+          <SlotBlocks slot={issueSlots.history} blocks={blocks} />
+        </section>
+      </ReadingHold>
     </div>
   );
 }

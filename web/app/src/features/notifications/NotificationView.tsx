@@ -8,6 +8,7 @@ import {
   longestNameIn,
   SentenceWithName,
   DelayedSkeleton,
+  useHoldWhileReading,
 } from "@bugaboo/ui";
 import { useNavigate } from "@tanstack/react-router";
 import { Suspense, useState } from "react";
@@ -155,6 +156,8 @@ function Sentences({
  */
 export function NotificationView({ row, onRead, isReading }: NotificationViewProps) {
   const loaded = useWording();
+  // Where the notification is held with the rest of its page, it shows with its words, not before them.
+  useHoldWhileReading(loaded.state === "loading");
   const sentences = loaded.state === "ready" ? sentencesOf(loaded.wording, row) : [];
   const what = sentences.length === 0 ? t("notifications.new") : listText(sentences);
   return (

@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { partOf, part, useShortWindow } from "@bugaboo/ui";
+import { partOf, part, ReadingHold, useShortWindow } from "@bugaboo/ui";
 
 import { Sections } from "./Sections.tsx";
 import { timePlace } from "./time-parts.ts";
@@ -47,16 +47,19 @@ export function Sidebar({
       <span {...partOf(part.sidebarBrand, { variants: [narrow && "narrow"] })}>
         {t("app.name")}
       </span>
-      <Top narrow={narrow} onNavigate={onNavigate} folded={folded} />
-      <Sections narrow={narrow} onNavigate={onNavigate} />
-      <TimeSlot place={timePlace.sidebar} narrow={narrow} />
-      <Bottom
-        narrow={narrow}
-        inDrawer={inDrawer || locked}
-        organizationSettings={organizationSettings}
-        onNavigate={onNavigate}
-      />
-      <Person narrow={narrow} name={name} onSignOut={onSignOut} signingOut={signingOut} />
+      {/* The menu, the sections and the time come with reads of their own: shown once all are read, nothing moves. */}
+      <ReadingHold>
+        <Top narrow={narrow} onNavigate={onNavigate} folded={folded} />
+        <Sections narrow={narrow} onNavigate={onNavigate} />
+        <TimeSlot place={timePlace.sidebar} narrow={narrow} />
+        <Bottom
+          narrow={narrow}
+          inDrawer={inDrawer || locked}
+          organizationSettings={organizationSettings}
+          onNavigate={onNavigate}
+        />
+        <Person narrow={narrow} name={name} onSignOut={onSignOut} signingOut={signingOut} />
+      </ReadingHold>
     </nav>
   );
 }

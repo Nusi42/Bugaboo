@@ -1,6 +1,6 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t, type MessageKey } from "@bugaboo/messages";
-import { Alert, alertTone, partOf, part, ShowMoreOf } from "@bugaboo/ui";
+import { Alert, alertTone, partOf, part, ShowMoreOf, useHoldWhileReading } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
 import { itemsOf } from "../../shared/paged.ts";
@@ -31,6 +31,7 @@ export function NotificationEntries({ filter, newest, nothing }: NotificationEnt
   const list = useNotificationList(filter, newest);
   const read = useReadNotifications();
   const rows = rowsOf(itemsOf(list.data?.pages));
+  useHoldWhileReading(list.isLoading);
   return (
     <div {...partOf(part.stack)}>
       {list.isError ? <Alert tone={alertTone.danger}>{messageOf(list.error)}</Alert> : null}

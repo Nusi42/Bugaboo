@@ -1,5 +1,14 @@
-import { createContext, useContext, useSyncExternalStore, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useLayoutEffect,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
 import { createPortal } from "react-dom";
+
+import { doNothing } from "./do-nothing.ts";
+import { useHeld } from "./reading-hold.ts";
 
 /**
  * The places in the head of a pane that parts deeper in the pane put their lines into, in the order they stand there:
@@ -18,10 +27,12 @@ export interface PaneHead {
   /** The element of each slot once it is drawn; none outside a pane. */
   readonly slots: Readonly<Record<PaneHeadSlot, HTMLElement | null>> | undefined;
   readonly above: number;
+  /** Measures the head again at once, after a part put its lines into it. */
+  readonly remeasure: () => void;
 }
 
 /** Outside a pane: no head to put anything into, and no room to keep above a box. */
-export const OUTSIDE_PANE: PaneHead = { slots: undefined, above: 0 };
+export const OUTSIDE_PANE: PaneHead = { slots: undefined, above: 0, remeasure: doNothing };
 
 export const PaneHeadContext = createContext<PaneHead>(OUTSIDE_PANE);
 
@@ -75,10 +86,21 @@ export function InPaneHead({
   readonly slot: PaneHeadSlot;
   readonly children: ReactNode;
 }): ReactNode {
-  const { slots } = useContext(PaneHeadContext);
-  if (slots === undefined) {
+  const { slots, remeasure } = useContext(PaneHeadContext);
+  const heldHere = useHeld();
+  const into = slots?.[slot] ?? null;
+  const inHead = into !== null && !heldHere;
+  // When the lines go into the head (a hold shows them), the room the boxes keep for the head is measured in the same
+  // commit, so the boxes stand where they stay in the frame the lines are drawn in.
+  useLayoutEffect(() => {
+    if (inHead) {
+      remeasure();
+    }
+  }, [inHead, remeasure]);
+  // Outside a pane, and while the hold it stands in holds, it stands where it is: hidden there with the rest, its parts
+  // read and say when they are read; the hold puts it into the head when it shows the rest.
+  if (slots === undefined || heldHere) {
     return children;
   }
-  const into = slots[slot];
   return into === null ? null : createPortal(children, into);
 }

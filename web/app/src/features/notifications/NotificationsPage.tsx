@@ -1,6 +1,6 @@
 import { notificationTabWords, type Schema } from "@bugaboo/api-client";
 import { t, type MessageKey } from "@bugaboo/messages";
-import { Button, buttonLook, Card, Tabs } from "@bugaboo/ui";
+import { Button, buttonLook, Card, ReadingHold, Tabs } from "@bugaboo/ui";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
@@ -30,42 +30,45 @@ export function NotificationsPage() {
   const readAll = useReadNotifications();
   // *Mark all as read* goes up to the one made last on the screen: one made after it stays unread.
   const newest = useNewestNotification();
+  // The button *Mark all as read* and the notifications come with reads of their own: the page shows once all are read.
   return (
-    <Card
-      heading={t("notifications.title")}
-      level={1}
-      actions={
-        <>
-          {unread === 0 || newest === undefined ? null : (
+    <ReadingHold>
+      <Card
+        heading={t("notifications.title")}
+        level={1}
+        actions={
+          <>
+            {unread === 0 || newest === undefined ? null : (
+              <Button
+                look={buttonLook.quiet}
+                isPending={readAll.isPending}
+                onPress={() => {
+                  readAll.mutate({ body: { up_to: newest } });
+                }}
+              >
+                {t("notifications.mark-all-read")}
+              </Button>
+            )}
             <Button
               look={buttonLook.quiet}
-              isPending={readAll.isPending}
               onPress={() => {
-                readAll.mutate({ body: { up_to: newest } });
+                void navigate({ href: paths.notificationSettings });
               }}
             >
-              {t("notifications.mark-all-read")}
+              {t("notifications.customize")}
             </Button>
-          )}
-          <Button
-            look={buttonLook.quiet}
-            onPress={() => {
-              void navigate({ href: paths.notificationSettings });
-            }}
-          >
-            {t("notifications.customize")}
-          </Button>
-        </>
-      }
-    >
-      <Tabs
-        label={t("notifications.filters")}
-        tabs={notificationTabWords.map((each) => ({ id: each, label: t(filterName[each]) }))}
-        selected={filter}
-        onSelect={setFilter}
+          </>
+        }
       >
-        {(each) => <NotificationEntries filter={each} />}
-      </Tabs>
-    </Card>
+        <Tabs
+          label={t("notifications.filters")}
+          tabs={notificationTabWords.map((each) => ({ id: each, label: t(filterName[each]) }))}
+          selected={filter}
+          onSelect={setFilter}
+        >
+          {(each) => <NotificationEntries filter={each} />}
+        </Tabs>
+      </Card>
+    </ReadingHold>
   );
 }

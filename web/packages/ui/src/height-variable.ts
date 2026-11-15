@@ -1,4 +1,5 @@
-import { useLayoutEffect, useMemo, type RefObject } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, type RefObject } from "react";
+import { flushSync } from "react-dom";
 
 import type { RunTimeVariable } from "./tokens.ts";
 import { doNothing } from "./do-nothing.ts";
@@ -14,14 +15,17 @@ export interface RunTimeSize {
  * Gives `holder` sizes of an element, as the browser draws it, in run-time variables (THEME-ONLY: only a size the theme
  * file marks `run-time="true"`), measured again whenever the element changes its size: the rules of the theme keep that
  * much room for it inside the holder. `onSizes` hears the same sizes, in their order, for what lays itself out in code
- * (a list drawn only where it is on screen), so the theme and the code read one measure. `sizes` does not change.
+ * (a list drawn only where it is on screen), so the theme and the code read one measure. `sizes` does not change. Gives
+ * the way to measure again at once, for a part that changes the element in a commit (a layout effect), so the sizes
+ * hold in the frame the change is drawn in.
  */
 export function useSizesOn(
   ref: Readonly<RefObject<HTMLElement | null>>,
   holder: (element: HTMLElement) => HTMLElement | null,
   sizes: readonly RunTimeSize[],
   onSizes: (sizes: readonly number[]) => void = doNothing,
-): void {
+): () => void {
+  const measure = useRef<() => void>(doNothing);
   useLayoutEffect(() => {
     const element = ref.current;
     const target = element === null ? null : holder(element);
@@ -36,15 +40,23 @@ export function useSizesOn(
       onSizes(measured);
     };
     note();
-    const watch = new ResizeObserver(note);
+    measure.current = note;
+    // What lays itself out in code by the sizes draws them in the frame they change in, not one frame later.
+    const watch = new ResizeObserver(() => {
+      flushSync(note);
+    });
     watch.observe(element);
     return () => {
+      measure.current = doNothing;
       watch.disconnect();
       for (const size of sizes) {
         target.style.setProperty(variableOf(size.name), "0px");
       }
     };
   }, [ref, holder, sizes, onSizes]);
+  return useCallback(() => {
+    measure.current();
+  }, []);
 }
 
 /** The parent of an element. */

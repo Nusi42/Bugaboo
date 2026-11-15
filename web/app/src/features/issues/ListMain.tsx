@@ -1,4 +1,4 @@
-import { InPaneHead, paneHeadSlot, part, partOf } from "@bugaboo/ui";
+import { InPaneHead, paneHeadSlot, part, partOf, ReadingHold } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
 import { ListColumn } from "./ListColumn.tsx";
@@ -37,34 +37,38 @@ export function ListMain({
 }: ListMainProps) {
   const { view, fields, onView } = props;
   const rows = useRowKeys();
+  // The count lines and the rows come with reads of their own: they show once all are read, so the lines do not push
+  // the rows (UX §6.4).
   return (
-    <div ref={rows} {...partOf(part.listMain)}>
-      <InPaneHead slot={paneHeadSlot.view}>
-        <ListOptions
-          view={view}
-          fields={fields}
-          customizing={customizing}
-          onView={onView}
-          onCustomize={onCustomize}
-        />
-        <ListInfo
-          scopeName={props.scopeName}
-          shown={shown}
-          stale={props.stale}
-          customizing={customizing}
-        />
-      </InPaneHead>
-      <div {...partOf(part.listBody)}>
-        <ListColumn
-          props={props}
-          dragged={dragged}
-          shown={shown}
-          keyChars={keyChars}
-          onDragged={onDragged}
-          onRoom={onRoom}
-        />
-        {aside}
+    <ReadingHold>
+      <div ref={rows} {...partOf(part.listMain)}>
+        <InPaneHead slot={paneHeadSlot.view}>
+          <ListOptions
+            view={view}
+            fields={fields}
+            customizing={customizing}
+            onView={onView}
+            onCustomize={onCustomize}
+          />
+          <ListInfo
+            scopeName={props.scopeName}
+            shown={shown}
+            stale={props.stale}
+            customizing={customizing}
+          />
+        </InPaneHead>
+        <div {...partOf(part.listBody)}>
+          <ListColumn
+            props={props}
+            dragged={dragged}
+            shown={shown}
+            keyChars={keyChars}
+            onDragged={onDragged}
+            onRoom={onRoom}
+          />
+          {aside}
+        </div>
       </div>
-    </div>
+    </ReadingHold>
   );
 }

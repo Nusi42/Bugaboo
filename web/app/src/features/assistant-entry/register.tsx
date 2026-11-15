@@ -1,4 +1,5 @@
-import { addOverlayHost } from "../shell/index.ts";
+import { addOverlayHost, addTopBarAction } from "../shell/index.ts";
+import { AssistantTopBarButton } from "./AssistantButton.tsx";
 import { AssistantHost } from "./AssistantHost.tsx";
 
 let registered = false;
@@ -14,4 +15,6 @@ export function registerAssistant(): void {
   }
   registered = true;
   addOverlayHost({ id: "assistant", render: () => <AssistantHost /> });
+  // The place of the button is there from the start: the top bar waits for the answer whether AI counts here.
+  addTopBarAction({ id: "assistant", render: () => <AssistantTopBarButton /> });
 }

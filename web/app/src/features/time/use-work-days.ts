@@ -36,12 +36,22 @@ export function workDaysQuery(today: string) {
  * again when the page gets the focus and every minute. `now` is what a day left
  * open or no day at all comes to.
  */
-export function useWorkDayNow(): { readonly now: WorkDayNow | undefined; readonly today: string } {
+export function useWorkDayNow(): {
+  readonly now: WorkDayNow | undefined;
+  readonly today: string;
+  /** Whether the work days are read for the first time. */
+  readonly reading: boolean;
+} {
   const today = personToday(useRegion(), useNow());
-  const days = useQuery({
+  const read = useQuery({
     ...workDaysQuery(today),
     refetchOnWindowFocus: true,
     refetchInterval: REREAD_MS,
-  }).data;
-  return { now: days === undefined ? undefined : workDayNow(days.days, today), today };
+  });
+  const days = read.data;
+  return {
+    now: days === undefined ? undefined : workDayNow(days.days, today),
+    today,
+    reading: read.isLoading,
+  };
 }

@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { partOf, part } from "@bugaboo/ui";
+import { partOf, part, useHoldWhileReading } from "@bugaboo/ui";
 
 import type { ChangeableRowsProps } from "./ChangeableRows.tsx";
 import { DetailRow } from "./DetailRow.tsx";
@@ -15,7 +15,9 @@ import { TimeFactorChange } from "./TimeFactorChange.tsx";
  * keeps its place when somebody is assigned, so nothing under it moves (UX §6.4).
  */
 export function TimeFactorRow({ blocks }: Pick<ChangeableRowsProps, "blocks">) {
-  const factor = useTimeFactor(blocks.readableId).data;
+  const read = useTimeFactor(blocks.readableId);
+  useHoldWhileReading(read.isLoading);
+  const factor = read.data;
   const percent = factor === undefined ? undefined : shownPercent(factor);
   if (factor === undefined || percent === undefined) {
     return null;

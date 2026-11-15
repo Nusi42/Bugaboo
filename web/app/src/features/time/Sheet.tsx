@@ -1,7 +1,8 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone } from "@bugaboo/ui";
+import { Alert, alertTone, DelayedSkeleton, useHoldWhileReading } from "@bugaboo/ui";
 import { useState } from "react";
 
+import { useMySettingsReading } from "../../shared/my-settings.ts";
 import { WithWording } from "../../shared/with-wording.tsx";
 import { EntryDetails } from "./EntryDetails.tsx";
 import { useIssues } from "./use-issues.ts";
@@ -14,7 +15,12 @@ export type SheetProps = Omit<WeekProps, "issues" | "wording">;
 export function OwnSheet(props: Omit<SheetProps, "person" | "changing">) {
   const [details, setDetails] = useState<string | undefined>();
   const { issues, ready } = useIssues(props.first, setDetails);
+  useHoldWhileReading(!ready);
   const row = issues.rows.find((each) => each.issue === details);
+  // The times are written in the person's region: the week waits for it, with grey shapes.
+  if (useMySettingsReading()) {
+    return <DelayedSkeleton />;
+  }
   return (
     <>
       <WithWording>

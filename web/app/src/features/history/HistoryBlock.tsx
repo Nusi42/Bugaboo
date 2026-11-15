@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Tabs, partOf, part, ShowMoreOf } from "@bugaboo/ui";
+import { Tabs, partOf, part, ShowMoreOf, useHoldWhileReading } from "@bugaboo/ui";
 import { useId, useState } from "react";
 
 import { IssueReadProblem } from "../../shared/IssueReadProblem.tsx";
@@ -24,6 +24,7 @@ const tabLabel = {
 /** The entries of one tab, newest first, with *Show earlier* under them. */
 function Entries({ issue, tab }: { readonly issue: string; readonly tab: HistoryTabName }) {
   const list = useHistory(issue, tab);
+  useHoldWhileReading(list.isLoading);
   const groups = groupByEvent(itemsOf(list.data?.pages));
   // *Open* of a notification: the entry it names is marked, and earlier pages are read until it is found.
   const found = useOpenedEntry(groups, tab, {

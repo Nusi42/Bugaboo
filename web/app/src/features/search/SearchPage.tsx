@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Card, cardLook } from "@bugaboo/ui";
+import { Card, cardLook, ReadingHold } from "@bugaboo/ui";
 import { useState, type ReactNode } from "react";
 
 import { presentationOf } from "../../shared/list-view.ts";
@@ -40,21 +40,24 @@ export function SearchPage({ state, onState, results, phoneStart }: SearchPagePr
   };
   return (
     <Card heading={t("search.page.title")} level={1} look={cardLook.openOnPhone}>
-      <SearchBar
-        text={state.text}
-        onText={onText}
-        onStale={setStale}
-        listView={{ view, onView }}
-        phoneStart={phoneStart}
-        actions={
-          <SaveSearchButton
-            text={state.text}
-            presentation={presentationOf(view)}
-            hasMistake={stale}
-          />
-        }
-      />
-      {results({ text: state.text, onText, view, defaults, onView, stale })}
+      {/* The bar and the results come with reads of their own: they show once all are read (UX §6.4). */}
+      <ReadingHold>
+        <SearchBar
+          text={state.text}
+          onText={onText}
+          onStale={setStale}
+          listView={{ view, onView }}
+          phoneStart={phoneStart}
+          actions={
+            <SaveSearchButton
+              text={state.text}
+              presentation={presentationOf(view)}
+              hasMistake={stale}
+            />
+          }
+        />
+        {results({ text: state.text, onText, view, defaults, onView, stale })}
+      </ReadingHold>
     </Card>
   );
 }

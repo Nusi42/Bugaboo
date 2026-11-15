@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { partOf, part } from "@bugaboo/ui";
+import { partOf, part, useHoldWhileReading } from "@bugaboo/ui";
 
 import { formatTime } from "../../shared/format.ts";
 import { minutesText } from "../../shared/own-value-text.ts";
@@ -52,7 +52,8 @@ export function WorkDayPart({
   readonly narrow: boolean;
   readonly place: TimePlace;
 }) {
-  const { now } = useWorkDayNow();
+  const { now, reading } = useWorkDayNow();
+  useHoldWhileReading(reading);
   if (now === undefined) {
     return null;
   }

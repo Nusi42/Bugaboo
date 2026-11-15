@@ -88,9 +88,11 @@ export function TopBar({ layout, children }: TopBarProps) {
           {t("shell.back")}
         </Button>
       ) : null}
+      {/* Until the page says where it is, the title of a phone stands empty in its place, which keeps the actions at the
+          end: the title comes in where it stays (UX §6.4). */}
       {phone ? (
         <span {...partOf(part.topBarTitle)}>
-          {last === undefined ? t("app.name") : <StepLabel step={last} />}
+          {last === undefined ? null : <StepLabel step={last} />}
         </span>
       ) : (
         <Trail steps={steps} />

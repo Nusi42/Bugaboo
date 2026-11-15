@@ -1,5 +1,14 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Announce, Button, buttonLook, part, partOf } from "@bugaboo/ui";
+import {
+  Alert,
+  alertTone,
+  Announce,
+  Button,
+  buttonLook,
+  part,
+  partOf,
+  useHoldWhileReading,
+} from "@bugaboo/ui";
 
 import { showSearchSheet } from "../../shared/search-sheet.ts";
 import { countLine } from "./count-line.ts";
@@ -25,6 +34,8 @@ export interface ListInfoProps {
 export function ListInfo({ scopeName, shown, stale, customizing }: ListInfoProps) {
   const { search, failure, phone, hidden } = useListContext();
   const count = useFoundCount(search);
+  // The count line stands above the rows: the list is held until it is read, so it does not push them (UX §6.4).
+  useHoldWhileReading(count.isLoading);
   // With no earlier list (the address itself has the mistake) the error says it all.
   const note = stale && failure === null;
   if (count.data === undefined) {

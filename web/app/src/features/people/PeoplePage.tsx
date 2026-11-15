@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Card, partOf, part } from "@bugaboo/ui";
+import { Card, partOf, part, ReadingHold } from "@bugaboo/ui";
 
 import { usePermissions } from "../../shared/use-me.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
@@ -31,13 +31,17 @@ export function PeoplePage() {
   usePageTitle(t("nav.people"));
   const permissions = usePermissions();
   const mayList = permissions.includes("manage-people");
+  // The people, the invitations and the rule of signing up come with reads of their own: the page shows once all are
+  // read, so none pushes the cards under it (UX §6.4).
   return (
-    <div {...partOf(part.stack)}>
-      <Card heading={t("nav.people")} level={1} intro={t("people.intro")}>
-        {mayList ? <PeopleList /> : <p {...partOf(part.muted)}>{t("people.list-ask")}</p>}
-      </Card>
-      {permissions.includes("manage-invitations") ? <Invitations /> : null}
-      {permissions.includes("change-organization-settings") ? <SignUpPolicySection /> : null}
-    </div>
+    <ReadingHold>
+      <div {...partOf(part.stack)}>
+        <Card heading={t("nav.people")} level={1} intro={t("people.intro")}>
+          {mayList ? <PeopleList /> : <p {...partOf(part.muted)}>{t("people.list-ask")}</p>}
+        </Card>
+        {permissions.includes("manage-invitations") ? <Invitations /> : null}
+        {permissions.includes("change-organization-settings") ? <SignUpPolicySection /> : null}
+      </div>
+    </ReadingHold>
   );
 }

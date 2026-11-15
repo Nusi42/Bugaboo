@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { partOf, part } from "@bugaboo/ui";
+import { partOf, part, useHoldWhileReading } from "@bugaboo/ui";
 import { useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
@@ -22,6 +22,7 @@ export function ProjectTime({ project }: { readonly project: string }) {
         })
       ).data,
   });
+  useHoldWhileReading(totals.isLoading);
   return totals.data === undefined || !hasTotals(totals.data) ? null : (
     <p {...partOf(part.muted)}>
       {/* One run of text: the line of the list may lay out its children side by side. */}
