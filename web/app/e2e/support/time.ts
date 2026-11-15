@@ -6,6 +6,7 @@ import type { ApiSession } from "./api.ts";
 import { createIssue, versionOf, type MadeIssue } from "./issues.ts";
 import { choiceBody } from "./fields.ts";
 import type { Instance } from "./server.ts";
+import { runningDays } from "./work-day.ts";
 
 /** The key of the own field a starter field of time entries is (`activity`, `cost-center`), as the timer says. */
 export async function starterField(session: ApiSession, mark: string): Promise<string> {
@@ -105,28 +106,6 @@ export async function startTimerOn(session: ApiSession, issue: MadeIssue): Promi
   dataOf(await session.client.POST("/api/v1/me/timer", { body: { issue: issue.key } }));
 }
 
-/** A day in seconds. */
-const DAY_SECONDS = 86_400;
-
-/**
- * The moment `seconds` ago, but not before one minute past the start of today, both in UTC (the zone
- * of the people of the test server) and on the computer of the test (the zone of the browser): a work
- * day must start on its own date, so a test in the first hour after midnight starts it as early as that
- * date allows. A start more than a day back (a timer that runs long on purpose) is not held.
- */
-export function earlierToday(seconds: number): string {
-  const now = Date.now();
-  if (seconds > DAY_SECONDS) {
-    return new Date(now - seconds * 1000).toISOString();
-  }
-  const local = new Date(now);
-  local.setHours(0, 1, 0, 0);
-  const utc = new Date(now);
-  utc.setUTCHours(0, 1, 0, 0);
-  const earliest = Math.max(local.getTime(), utc.getTime());
-  return new Date(Math.min(now, Math.max(now - seconds * 1000, earliest))).toISOString();
-}
-
 /** Moves the start of the running timer of the session to the moment `started`. */
 async function startedAt(session: ApiSession, started: string): Promise<void> {
   const timer = dataOf(await session.client.GET("/api/v1/me/timer"));
@@ -146,14 +125,19 @@ export async function startedMinutesAgo(session: ApiSession, minutes: number): P
 }
 
 /**
- * The same, but not before the start of the work day `earlierToday` gives: for a timer whose time must
- * lie in a work day that started on that date.
+ * The same, but not before the work day of the person that runs started: for a timer whose time must lie inside the
+ * work day (the day starts on its own date, so near midnight the timer runs a little shorter).
  */
-export async function startedMinutesAgoWithinToday(
+export async function startedMinutesAgoWithinTheDay(
   session: ApiSession,
   minutes: number,
 ): Promise<void> {
-  await startedAt(session, earlierToday(minutes * 60 + SECONDS));
+  const [day] = await runningDays(session);
+  const now = Date.now();
+  const wanted = now - (minutes * 60 + SECONDS) * 1000;
+  const first = day?.periods[0]?.start;
+  const earliest = first === undefined ? wanted : Date.parse(first);
+  await startedAt(session, new Date(Math.min(now, Math.max(wanted, earliest))).toISOString());
 }
 
 /** Whether the server has marked the person's timer as running longer than a work day (its job does, a little after). */

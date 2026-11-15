@@ -3,8 +3,9 @@ import { t } from "@bugaboo/messages";
 import { expect, type Page } from "@playwright/test";
 
 import { ownId, signInThroughApi } from "./accounts.ts";
-import { ana, days, good } from "./demo-m6-common.ts";
+import { ana, good } from "./demo-m6-common.ts";
 import { signIn } from "./flows.ts";
+import { daysOf } from "./person-day.ts";
 import { sampleAdministrator, sampleNamed } from "./sample.ts";
 import { type Instance } from "./server.ts";
 import { weekOf } from "./timesheet.ts";
@@ -17,9 +18,10 @@ import { weekOf } from "./timesheet.ts";
 export async function benCannotSeeThem(page: Page, server: Instance): Promise<void> {
   const session = await signInThroughApi(server, ana());
   const anaId = await ownId(session);
+  const { yesterday } = await daysOf(session);
   await session.dispose();
   await signIn(page, sampleNamed("Ben Hale"));
-  await page.goto(`/time/people/${anaId}?week=${weekOf(days().yesterday)}`);
+  await page.goto(`/time/people/${anaId}?week=${weekOf(yesterday)}`);
   await expect(page.getByRole("heading", { name: t("page.not-found.title") })).toBeVisible();
   await expect(page.getByRole("link", { name: t("time.others.title") })).toHaveCount(0);
   await good(page, "05-ben-is-told-there-is-no-such-page");
@@ -39,8 +41,9 @@ async function totalsOnly(server: Instance, on: boolean): Promise<void> {
 export async function hanaSeesThem(page: Page, server: Instance): Promise<void> {
   const session = await signInThroughApi(server, ana());
   const anaId = await ownId(session);
+  const { yesterday } = await daysOf(session);
   await session.dispose();
-  const address = `/time/people/${anaId}?week=${weekOf(days().yesterday)}`;
+  const address = `/time/people/${anaId}?week=${weekOf(yesterday)}`;
   await signIn(page, sampleNamed("Hana Weiss"));
   await page.goto(address);
   await expect(page.getByRole("textbox").first()).toBeVisible();

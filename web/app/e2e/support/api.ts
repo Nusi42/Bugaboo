@@ -8,6 +8,7 @@ import {
 } from "@bugaboo/api-client";
 import { type APIRequestContext } from "@playwright/test";
 
+import { deviceTimeZone } from "../../src/shared/region.ts";
 import { type Answered, CookieJar, exchange } from "./session-transport.ts";
 
 /**
@@ -16,6 +17,12 @@ import { type Answered, CookieJar, exchange } from "./session-transport.ts";
  * typed by the API description, the token is sent the way the app sends it and a refusal is an
  * `ApiError`. What the tests are about is still done through the screens.
  */
+/**
+ * The zone of the computer of the tests, which the browser sends when it starts or changes a work day: the helpers send
+ * it too, so all the days of a person who chose no zone lie in one zone, whichever made them.
+ */
+export const thisDevice = { device_zone: deviceTimeZone() } as const;
+
 export interface ApiSession {
   /** The client of the app, over the cookies of this session. */
   readonly client: Readonly<Api["client"]>;

@@ -1,11 +1,11 @@
 import { t } from "@bugaboo/messages";
 import { expect, type Page } from "@playwright/test";
 
-import { addDays } from "../../src/shared/format.ts";
 import { signInThroughApi } from "./accounts.ts";
-import { ana, days, good } from "./demo-m6-common.ts";
+import { ana, good } from "./demo-m6-common.ts";
 import { signIn } from "./flows.ts";
 import { layoutOf } from "./layout.ts";
+import { daysOf } from "./person-day.ts";
 import { type Instance } from "./server.ts";
 import { phoneCell } from "./timesheet-phone.ts";
 import {
@@ -31,7 +31,7 @@ const LONG_DAY_BACK = 120;
 export async function aLongDayShowsItsWarning(page: Page, server: Instance): Promise<void> {
   const session = await signInThroughApi(server, ana());
   await chooseUtc(session);
-  const long = weekOf(addDays(days().today, -LONG_DAY_BACK));
+  const long = weekOf((await daysOf(session, LONG_DAY_BACK)).before);
   await workedOn(session, long, "06:00", "19:00");
   await session.dispose();
   await signIn(page, ana());
@@ -45,9 +45,9 @@ export async function aLongDayShowsItsWarning(page: Page, server: Instance): Pro
 
 /** Step 4: Ana changes the end of yesterday and gives her reason; the day shows *Changed*. */
 export async function anaChangesYesterdayWithAReason(page: Page, server: Instance): Promise<void> {
-  const { yesterday } = days();
   const session = await signInThroughApi(server, ana());
   await chooseUtc(session);
+  const { yesterday } = await daysOf(session);
   await workedOn(session, yesterday, "08:00", "17:00");
   await session.dispose();
   await signIn(page, ana());

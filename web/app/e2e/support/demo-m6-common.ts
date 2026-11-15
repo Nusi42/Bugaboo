@@ -1,8 +1,5 @@
 import { type Page } from "@playwright/test";
 
-import { personToday } from "../../src/shared/clock.ts";
-import { addDays } from "../../src/shared/format.ts";
-import { deviceRegion } from "../../src/shared/region.ts";
 import { goodWindowInFourThemes } from "./demo.ts";
 import { sampleNamed, type SamplePerson } from "./sample.ts";
 
@@ -21,10 +18,4 @@ export function good(page: Page, step: string): Promise<void> {
 /** Ana Moreno, a Contributor in Website through the group External. */
 export function ana(): SamplePerson {
   return sampleNamed("Ana Moreno");
-}
-
-/** The day today and yesterday as the person counts them (`personToday`), on the computer of the test. */
-export function days(): { readonly today: string; readonly yesterday: string } {
-  const today = personToday(deviceRegion, Date.now());
-  return { today, yesterday: addDays(today, -1) };
 }

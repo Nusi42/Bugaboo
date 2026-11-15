@@ -1,8 +1,9 @@
 import { dataOf } from "@bugaboo/api-client";
 
 import { signInThroughApi } from "./accounts.ts";
-import { ana, days } from "./demo-m6-common.ts";
+import { ana } from "./demo-m6-common.ts";
 import { createIssue } from "./issues.ts";
+import { daysOf } from "./person-day.ts";
 import { sampleAdministrator, type SamplePerson } from "./sample.ts";
 import { type Instance } from "./server.ts";
 import { clearTimer, giveDefaults } from "./time.ts";
@@ -25,9 +26,10 @@ export async function bookedByAna(server: Instance): Promise<string> {
   await giveDefaults(admin, issue);
   await admin.dispose();
   const session = await signInThroughApi(server, ana());
+  const { today } = await daysOf(session);
   dataOf(
     await session.client.POST("/api/v1/me/time-entries", {
-      body: { issue: issue.key, date: days().today, minutes: 45 },
+      body: { issue: issue.key, date: today, minutes: 45 },
     }),
   );
   await session.dispose();

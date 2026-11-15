@@ -16,7 +16,7 @@ function dayBack(daysBack: number): string {
 }
 
 /** The work days that run, as the server shows them (at most one). */
-async function runningDays(session: ApiSession) {
+export async function runningDays(session: ApiSession) {
   const days = dataOf(
     await session.client.GET("/api/v1/me/work-days", {
       params: { query: { from: dayBack(WEEK), to: dayBack(-1) } },

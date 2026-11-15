@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 import { expect, type Page } from "@playwright/test";
 
 import { signedInAdmin } from "./access.ts";
+import { thisDevice } from "./api.ts";
 import { createIssue } from "./issues.ts";
 import {
   clearTimer,
@@ -28,7 +29,7 @@ export async function scene(server: Parameters<typeof signedInAdmin>[0]) {
   await endWorkDayIfRunning(admin);
   await startTimerOn(admin, issue);
   await startedMinutesAgo(admin, 42);
-  await admin.client.POST("/api/v1/me/work-days/start", { body: {} });
+  await admin.client.POST("/api/v1/me/work-days/start", { body: thisDevice });
   return { admin, issue };
 }
 

@@ -5,7 +5,7 @@ import { expect, type Locator, type Page } from "@playwright/test";
 import { weekDaysOf, weekdayName, weekFirstOf } from "../../src/shared/clock.ts";
 import { addDays } from "../../src/shared/format.ts";
 import { paths } from "../../src/shared/paths.ts";
-import { type ApiSession } from "./api.ts";
+import { type ApiSession, thisDevice } from "./api.ts";
 import { type MadeIssue } from "./issues.ts";
 import { layoutOf, passDetailsButton } from "./layout.ts";
 import { inOrder } from "./sequence.ts";
@@ -144,6 +144,7 @@ export async function changeWorkDay(
         version: known.days[0]?.version ?? 0,
         periods: [...periods],
         breaks: [],
+        ...thisDevice,
         ...(reason === undefined ? {} : { reason }),
       },
     });
