@@ -16,7 +16,7 @@ export { ProjectPicker as ProjectLimitPicker } from "./access-keys/Pickers.tsx";
 // What agent keys share with access keys: the form parts, the key shown once and the day it runs out.
 export { ShownOnce } from "./access-keys/ShownOnce.tsx";
 export { useDraft as useKeyDraft, type Draft as KeyDraft } from "./access-keys/draft.ts";
-export { Expiry as KeyExpiry } from "./access-keys/FormParts.tsx";
+export { Expiry as KeyExpiry } from "./access-keys/Expiry.tsx";
 export { keyEndOf } from "./access-keys/expiry-day.ts";
 export { rulesOptions as keyRulesOptions } from "./access-keys/access-keys.ts";
 export { KeyFacts, LastUsed } from "./access-keys/KeyFacts.tsx";

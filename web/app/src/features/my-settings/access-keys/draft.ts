@@ -70,3 +70,8 @@ export function bodyOf(
     expires_at: expiresAt,
   };
 }
+
+/** What every part of the form of a new key gets: the draft it changes. */
+export interface PartProps {
+  readonly draft: Draft;
+}

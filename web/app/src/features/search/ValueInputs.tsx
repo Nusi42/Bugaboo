@@ -1,33 +1,14 @@
 import { t } from "@bugaboo/messages";
-import { SelectField, TextField } from "@bugaboo/ui";
-import type { Operand, TimeWord } from "@bugaboo/wasm-search";
+import { TextField } from "@bugaboo/ui";
+import type { Operand } from "@bugaboo/wasm-search";
 import { useState } from "react";
 
-import {
-  dayOf,
-  decimalOf,
-  nothingPicked,
-  numberTyped,
-  textOperand,
-  type ValueInputProps,
-} from "./filter-draft.ts";
-import { dayText, timeWordText } from "./filter-text.ts";
+import { decimalOf, numberTyped, textOperand, type ValueInputProps } from "./filter-draft.ts";
 import { IssueChoice } from "./IssueChoice.tsx";
+import { DateValue } from "./DateValue.tsx";
 import { ChoiceBoxes, ChoiceSelect, NamedValue } from "./PickedInputs.tsx";
-import { CALENDAR, unbroken } from "../../shared/format.ts";
+import { unbroken } from "../../shared/format.ts";
 import { nowhere } from "../../shared/search-tree.ts";
-
-const timeWords: readonly TimeWord[] = [
-  "today",
-  "yesterday",
-  "this_week",
-  "last_week",
-  "this_month",
-];
-
-function timeOperand(word: TimeWord): Operand {
-  return { type: "time", word, span: nowhere };
-}
 
 /** A text or a number, typed: the value is only kept while it is one the field takes. */
 function TypedValue({ field, values, onValues }: ValueInputProps) {
@@ -100,46 +81,6 @@ function DurationValue({ language, values, onValues }: ValueInputProps) {
         onValues(found === null ? [] : [found]);
       }}
     />
-  );
-}
-
-/** A day typed, or a time word (*today*, *this week*). */
-function DateValue({ values, onValues }: ValueInputProps) {
-  const [first] = values;
-  const word = first?.type === "time" ? first.word : undefined;
-  const [typed, setTyped] = useState(first?.type === "date" ? dayText(first.date) : "");
-  return (
-    <>
-      <SelectField
-        label={t("search.bar.when")}
-        choices={[
-          { value: nothingPicked, label: t("search.bar.a-day") },
-          ...timeWords.map((each) => ({
-            value: each,
-            label: timeWordText(each),
-          })),
-        ]}
-        value={word ?? nothingPicked}
-        onChange={(next) => {
-          const picked = timeWords.find((each) => each === next);
-          const day = dayOf(typed);
-          onValues(picked === undefined ? (day === null ? [] : [day]) : [timeOperand(picked)]);
-        }}
-      />
-      {word === undefined ? (
-        <TextField
-          label={t("search.bar.day")}
-          description={t("search.bar.day-format")}
-          value={typed}
-          date={CALENDAR}
-          onChange={(day) => {
-            setTyped(day);
-            const operand = dayOf(day);
-            onValues(operand === null ? [] : [operand]);
-          }}
-        />
-      ) : null}
-    </>
   );
 }
 

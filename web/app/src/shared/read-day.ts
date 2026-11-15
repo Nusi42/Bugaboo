@@ -1,4 +1,6 @@
-import { isCalendarDay } from "./format.ts";
+import { t } from "@bugaboo/messages";
+
+import { dayText, isCalendarDay } from "./format.ts";
 import { currentRegion, type Region } from "./region.ts";
 
 const TWO_DIGITS = 2;
@@ -27,4 +29,11 @@ export function readDay(text: string, region: Region = currentRegion()): string 
         : [third, first, second];
   const day = `${year.padStart(YEAR_DIGITS, "0")}-${month.padStart(TWO_DIGITS, "0")}-${date.padStart(TWO_DIGITS, "0")}`;
   return year.length <= YEAR_DIGITS && isCalendarDay(day) ? day : undefined;
+}
+
+/** What is wrong with what was typed into a box for a day: nothing for an empty box or a day, else how to type one. */
+export function dayProblem(typed: string, region: Region): string | undefined {
+  return typed.trim() === "" || readDay(typed, region) !== undefined
+    ? undefined
+    : t("time.entry.not-a-date", { example: dayText("2027-12-31", region) });
 }

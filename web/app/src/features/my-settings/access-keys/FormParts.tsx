@@ -1,4 +1,3 @@
-import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import {
   Alert,
@@ -13,15 +12,10 @@ import {
   part,
 } from "@bugaboo/ui";
 
-import { formatCalendarDay } from "../../../shared/format.ts";
-import { useNow } from "../../../shared/use-now.ts";
 import { choiceHelp, choiceName, plainChoices } from "./choice.ts";
-import type { Draft } from "./draft.ts";
-import { defaultDaysOf, earliestDay, latestDay, presetDay } from "./expiry-day.ts";
+import type { PartProps } from "./draft.ts";
 
-export interface PartProps {
-  readonly draft: Draft;
-}
+export { Expiry } from "./Expiry.tsx";
 
 /** The name, and what the key may do. */
 export function Basics({ draft }: PartProps) {
@@ -45,33 +39,6 @@ export function Basics({ draft }: PartProps) {
       <p {...partOf(part.muted)}>{t(choiceHelp(draft.single ? "permissions" : draft.choice))}</p>
       <p {...partOf(part.muted)}>{t("access-keys.never")}</p>
     </>
-  );
-}
-
-export interface ExpiryProps extends PartProps {
-  readonly rules: Schema<"AccessKeyRulesBody">;
-  /** The day that was filled in is no day: the field says so. */
-  readonly wrongDay: boolean;
-}
-
-/** The day the key runs out: the default, or a day of the person's own, up to the longest time. */
-export function Expiry({ draft, rules, wrongDay }: ExpiryProps) {
-  // The days below are counted from `now`, which moves with the clock: the form follows it, so one left open past midnight
-  // shows the day the key would run out on now, which is the day the server counts from.
-  const now = useNow();
-  return (
-    <TextField
-      label={t("access-keys.expires")}
-      description={t("access-keys.expires-help", {
-        days: defaultDaysOf(rules),
-        latest: formatCalendarDay(latestDay(rules, undefined, now)),
-      })}
-      requiredMessage={t("error.field.required")}
-      errorMessage={wrongDay ? t("error.field.wrong-value") : undefined}
-      date={{ min: earliestDay(undefined, now), max: latestDay(rules, undefined, now) }}
-      value={draft.day ?? presetDay(rules, undefined, now)}
-      onChange={draft.setDay}
-    />
   );
 }
 

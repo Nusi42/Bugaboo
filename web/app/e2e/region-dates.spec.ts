@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
-import { type Browser, type Locator, type Page } from "@playwright/test";
+import { type Browser, type Locator, type Page, type Response } from "@playwright/test";
 
-import { projectIssuesAddress } from "../src/shared/paths.ts";
+import { issueAddress, projectIssuesAddress } from "../src/shared/paths.ts";
 import { ada } from "./support/accounts.ts";
 import { createOwnField, setOwnValue } from "./support/fields.ts";
 import { expect, test } from "./support/fixtures.ts";
@@ -91,4 +91,33 @@ test("ux_07_a_date_and_a_time_of_day_are_written_one_way_for_a_person_everywhere
   const said = page.getByText(/Starts/u).first();
   await expect(said).toBeVisible();
   expect(plain(await said.textContent())).toContain(WRITTEN);
+});
+
+/** Whether an answer of the server is the one to a change of an issue. */
+function isAChangeOfAnIssue(answer: Response): boolean {
+  return answer.request().method() === "PATCH" && answer.url().includes("/api/v1/issues/");
+}
+
+test("ux_07_the_box_of_a_day_writes_and_reads_it_as_the_region_does_not_as_the_device", async ({
+  page,
+}) => {
+  test.skip(
+    test.info().project.name !== "desktop",
+    "the Details of an issue are the same on a phone",
+  );
+  await signIn(page, ada);
+  await chooseBerlinDayFirstOn12Hours(page);
+  await page.goto(issueAddress("WEB-1"));
+  // The box of *Start date* is a box of text, not the browser's own date box: a day typed day first
+  // is read day first, and written day first, as *Created* is, never the device's way.
+  const start = page.getByLabel(t("issue-field.start-date"), { exact: true });
+  await expect(start).toHaveAttribute("type", "text");
+  await start.fill("23.11.2026");
+  const saved = page.waitForResponse(isAChangeOfAnIssue);
+  await start.blur();
+  expect((await saved).ok()).toBe(true);
+  await page.reload();
+  await expect(page.getByLabel(t("issue-field.start-date"), { exact: true })).toHaveValue(
+    "23.11.2026",
+  );
 });

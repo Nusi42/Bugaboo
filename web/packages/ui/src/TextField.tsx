@@ -14,7 +14,7 @@ import { fieldKind, fieldShape, type FieldKind } from "./props.ts";
 import { part } from "./tokens.ts";
 
 /** Words of the HTML standard, not text for people. */
-const inputTypes = { text: "text", password: "password", date: "date" } as const;
+const inputTypes = { text: "text", password: "password" } as const;
 const inputModes = { text: "text", email: "email" } as const;
 
 /** The name of the slot of the help text, in the words of React Aria Components. */
@@ -54,8 +54,6 @@ export interface TextFieldProps {
    * lists). Plain `text` is the default.
    */
   readonly kind?: FieldKind;
-  /** A day: the browser offers its own calendar. `min` and `max` are days as `2027-03-01`. */
-  readonly date?: { readonly min: string; readonly max: string };
   /** What an empty box says quietly inside itself, in words (*Add a length*): for a box in a row of the Details. */
   readonly placeholder?: string;
   readonly name?: string;
@@ -67,11 +65,12 @@ export interface TextFieldProps {
   readonly autoComplete?: AutoComplete;
 }
 
-/** The kind of input the browser draws: a day, hidden characters, or plain text. */
-function typeOf(kind: FieldKind, day: boolean): (typeof inputTypes)[keyof typeof inputTypes] {
-  if (day) {
-    return inputTypes.date;
-  }
+/**
+ * The kind of input the browser draws: hidden characters, or plain text. Never the browser's own box
+ * for a day, which writes the day in the format of the device, not the person's *Region*: a day is
+ * typed as text in the person's date format (TXT-DATES).
+ */
+function typeOf(kind: FieldKind): (typeof inputTypes)[keyof typeof inputTypes] {
   return kind === fieldKind.password ? inputTypes.password : inputTypes.text;
 }
 
@@ -100,15 +99,9 @@ function problemOf(
   return null;
 }
 
-/** What the box takes besides its text: the first and last day of a day box, and what an empty box says. */
-function inputAttributes(
-  date: TextFieldProps["date"],
-  placeholder: string | undefined,
-): Readonly<{ min?: string; max?: string; placeholder?: string }> {
-  return {
-    ...(date === undefined ? {} : { min: date.min, max: date.max }),
-    ...(placeholder === undefined ? {} : { placeholder }),
-  };
+/** What the box takes besides its text: what an empty box says. */
+function inputAttributes(placeholder: string | undefined): Readonly<{ placeholder?: string }> {
+  return placeholder === undefined ? {} : { placeholder };
 }
 
 /** The box with the words of what it counts beside it; the box alone when it counts nothing. */
@@ -144,7 +137,6 @@ export function TextField({
   errorMessage,
   hideLabel = false,
   kind = fieldKind.text,
-  date,
   placeholder,
   name = "",
   value,
@@ -159,7 +151,7 @@ export function TextField({
       name={name}
       value={value}
       onChange={onChange}
-      type={typeOf(kind, date !== undefined)}
+      type={typeOf(kind)}
       inputMode={kind === fieldKind.email ? inputModes.email : inputModes.text}
       autoComplete={fill}
       // Only a problem is passed on: `isInvalid={false}` would switch off the checks of the field.
@@ -173,7 +165,7 @@ export function TextField({
         <TextArea {...partOf(part.fieldInput, { variants: [fieldShape.multiline] })} rows={4} />
       ) : (
         <InputWithUnit unit={unit} unitId={unitId}>
-          <Input {...partOf(part.fieldInput)} {...inputAttributes(date, placeholder)} />
+          <Input {...partOf(part.fieldInput)} {...inputAttributes(placeholder)} />
         </InputWithUnit>
       )}
       {/* The help stands under the box, so the boxes of a row start on one line however long the help is. */}

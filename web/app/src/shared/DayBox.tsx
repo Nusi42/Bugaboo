@@ -1,9 +1,8 @@
-import { t } from "@bugaboo/messages";
 import { TextField } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { dayText } from "./format.ts";
-import { readDay } from "./read-day.ts";
+import { dayProblem, readDay } from "./read-day.ts";
 import { useRegion } from "./region.ts";
 
 export interface DayBoxProps {
@@ -16,12 +15,12 @@ export interface DayBoxProps {
 /**
  * A box for a day, written and read in the person's date format (*Region*), where the browser's own
  * date field would use the format of the device. `onChange` gets the calendar day, or an empty text
- * while what is typed is no day.
+ * while what is typed is no day. Every box for a day is one of these or reads and writes its text the
+ * same way (`dayText`, `readDay`, `dayProblem`): no box of the browser writes a day (TXT-DATES).
  */
 export function DayBox({ label, value, onChange }: DayBoxProps) {
   const region = useRegion();
   const [typed, setTyped] = useState(() => (value === "" ? "" : dayText(value, region)));
-  const read = readDay(typed, region);
   return (
     <TextField
       label={label}
@@ -30,11 +29,7 @@ export function DayBox({ label, value, onChange }: DayBoxProps) {
         setTyped(text);
         onChange(readDay(text, region) ?? "");
       }}
-      errorMessage={
-        typed.trim() === "" || read !== undefined
-          ? undefined
-          : t("time.entry.not-a-date", { example: dayText("2027-12-31", region) })
-      }
+      errorMessage={dayProblem(typed, region)}
     />
   );
 }

@@ -6,7 +6,7 @@ import { messageOf } from "../../shared/errors.ts";
 import { WithLengthReader, type LengthReader } from "../../shared/with-length-reader.tsx";
 import { QueryGate } from "../shell/index.ts";
 import { useFieldTypes, type OwnField } from "./fields.ts";
-import { boxOf, countOf, dayRange, storedOf } from "./rule-values.ts";
+import { boxOf, countOf, storedOf } from "./rule-values.ts";
 import { fieldChange, useChangeField } from "./use-change-field.ts";
 import { bound } from "./value-text.ts";
 
@@ -17,8 +17,6 @@ interface Shape {
   readonly counted: boolean;
   /** The kind has a pattern. */
   readonly pattern: boolean;
-  /** The bounds are days. */
-  readonly dated: boolean;
 }
 
 /** *Rules* of the field page (CF-03): the allowed range, length and pattern, for the kinds that have them. */
@@ -31,7 +29,7 @@ export function RulesSection({ field }: { readonly field: OwnField }) {
         const ranged = traits.includes("range");
         const pattern = traits.includes("text");
         const counted = pattern || traits.includes("many");
-        const shape = { ranged, counted, pattern, dated: traits.includes("dated") };
+        const shape = { ranged, counted, pattern };
         if (!ranged && !counted) {
           return null;
         }
@@ -100,12 +98,10 @@ interface BoxesProps {
 }
 
 /** The lowest and highest value. */
-function RangeBoxes({ boxes, onChange, dated }: BoxesProps & { readonly dated: boolean }) {
-  const day = dated ? dayRange : {};
+function RangeBoxes({ boxes, onChange }: BoxesProps) {
   return (
     <>
       <TextField
-        {...day}
         label={t("fields.rule-min")}
         value={boxes.min}
         onChange={(min) => {
@@ -113,7 +109,6 @@ function RangeBoxes({ boxes, onChange, dated }: BoxesProps & { readonly dated: b
         }}
       />
       <TextField
-        {...day}
         label={t("fields.rule-max")}
         value={boxes.max}
         onChange={(max) => {
@@ -150,7 +145,7 @@ function CountBoxes({ boxes, onChange }: BoxesProps) {
 function RuleBoxes({ shape, ...rest }: BoxesProps & { readonly shape: Shape }) {
   return (
     <>
-      {shape.ranged ? <RangeBoxes {...rest} dated={shape.dated} /> : null}
+      {shape.ranged ? <RangeBoxes {...rest} /> : null}
       {shape.counted ? <CountBoxes {...rest} /> : null}
       {shape.pattern ? (
         <TextField

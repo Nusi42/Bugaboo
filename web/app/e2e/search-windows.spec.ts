@@ -159,8 +159,9 @@ test("qry_01 a day picked in the date editor comes back in it, and Advanced sear
   await page.getByRole("button", { name: t("search.bar.filter-by", { field: "Created" }) }).click();
   const window = page.getByRole("alertdialog", { name: "Created" });
   const day = window.getByLabel(t("search.bar.day"));
-  // The browser's own date box (a calendar, in the person's own format); the main button says what it waits for.
-  await expect(day).toHaveAttribute("type", "date");
+  // A text box for the day in the person's date format, never the browser's own date box, which
+  // writes the device's format (TXT-DATES); the main button says what it waits for.
+  await expect(day).toHaveAttribute("type", "text");
   await expect(window.getByText(t("search.bar.need-day"))).toBeVisible();
   await expect(
     window.getByRole("button", { name: t("search.bar.add-filter-confirm") }),

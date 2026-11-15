@@ -15,7 +15,8 @@ import {
   durationStored,
   millionthsToDecimal,
 } from "./value-text.ts";
-import { CALENDAR } from "../../shared/format.ts";
+import { dayText } from "../../shared/format.ts";
+import { readDay } from "../../shared/read-day.ts";
 
 /** Whether the bounds of the field are days (a *Date* or a *Date and time*). */
 function isDated(field: OwnField): boolean {
@@ -27,8 +28,9 @@ export function boxOf(field: OwnField, stored: number | null | undefined): strin
   if (stored === undefined || stored === null) {
     return "";
   }
+  // A day is written in the person's date format, as in every box for a day (TXT-DATES).
   if (isDated(field)) {
-    return boundDay(field.kind, stored);
+    return dayText(boundDay(field.kind, stored));
   }
   if (field.kind === "decimal") {
     return millionthsToDecimal(stored);
@@ -48,7 +50,8 @@ export function storedOf(
     return null;
   }
   if (isDated(field)) {
-    return dayBound(field.kind, trimmed, end);
+    const day = readDay(trimmed);
+    return day === undefined ? undefined : dayBound(field.kind, day, end);
   }
   if (field.kind === "decimal") {
     return decimalToMillionths(trimmed);
@@ -67,6 +70,3 @@ export function countOf(text: string): number | null | undefined {
   }
   return /^\d+$/u.test(trimmed) ? Number(trimmed) : undefined;
 }
-
-/** The whole calendar, for the boxes of a range of days. */
-export const dayRange = { date: CALENDAR } as const;
