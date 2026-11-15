@@ -1,4 +1,4 @@
-import { partOf, part, ReadingHold } from "@bugaboo/ui";
+import { partOf, part } from "@bugaboo/ui";
 
 import { useAppBarHidden } from "./app-bar.ts";
 import { BottomBar } from "./BottomBar.tsx";
@@ -15,12 +15,7 @@ export function PhoneBars({ onSlot }: { readonly onSlot: (slot: HTMLElement | nu
     <>
       <UndoHost inFlow />
       <div ref={onSlot} {...partOf(part.appLayoutBarSlot)} />
-      {hidden ? null : (
-        // The bar shows the number of unread notifications: it is drawn once that is read.
-        <ReadingHold>
-          <BottomBar />
-        </ReadingHold>
-      )}
+      {hidden ? null : <BottomBar />}
     </>
   );
 }

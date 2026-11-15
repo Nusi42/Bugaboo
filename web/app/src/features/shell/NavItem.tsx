@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Button, Link, Tooltip, TooltipTrigger } from "react-aria-components";
 
 import { areaAt } from "../../shared/places.ts";
+import { Count } from "./Count.tsx";
 
 /** Words of React Aria Components, not text for people. */
 const tooltipSide = { end: "end" } as const;
@@ -50,7 +51,7 @@ function Content({
           )}
         </span>
       )}
-      {count === undefined ? null : <span {...partOf(part.navItemCount)}>{count}</span>}
+      <Count count={count} look={partOf(part.navItemCount)} />
       {narrow === true ? null : hint}
       {opens ? <RowChevron /> : null}
     </>

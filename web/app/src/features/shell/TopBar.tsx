@@ -11,9 +11,10 @@ import {
   part,
   ariaCurrent,
 } from "@bugaboo/ui";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link } from "react-aria-components";
-import { useLocation } from "@tanstack/react-router";
+import { useIsFetching } from "@tanstack/react-query";
+import { useLocation, useRouterState } from "@tanstack/react-router";
 
 import { areaAt } from "../../shared/places.ts";
 
@@ -61,6 +62,26 @@ export interface TopBarProps {
   readonly children?: ReactNode;
 }
 
+/** Whether the router has loaded the page it goes to. */
+function isIdle(state: { readonly status: string }): boolean {
+  return state.status === "idle";
+}
+
+/**
+ * Whether the page at `pathname` has said that it has no place in the trail: it is loaded, it set none, and no read is
+ * on its way any more (a page that sets its place once its first read is in has set it by then). Once said, it holds
+ * until the page changes, so a read in the background does not take the title away.
+ */
+function useNoPlaceSaid(pathname: string, none: boolean): boolean {
+  const loaded = useRouterState({ select: isIdle });
+  const quiet = useIsFetching() === 0;
+  const [said, setSaid] = useState<string | null>(null);
+  if (none && loaded && quiet && said !== pathname) {
+    setSaid(pathname);
+  }
+  return none && said === pathname;
+}
+
 /**
  * The bar at the top of the content (UX §3): where you are, and what a tablet or a phone needs
  * instead of a sidebar: the *Menu* button, *Search*, or *Back*.
@@ -70,6 +91,7 @@ export function TopBar({ layout, children }: TopBarProps) {
   const phone = layout === "phone";
   const last = steps.at(-1);
   const { pathname } = useLocation();
+  const loaded = useNoPlaceSaid(pathname, last === undefined);
   return (
     <header {...partOf(part.topBar, { variants: [areaAt(pathname)] })}>
       {layout === "tablet" ? (
@@ -89,10 +111,11 @@ export function TopBar({ layout, children }: TopBarProps) {
         </Button>
       ) : null}
       {/* Until the page says where it is, the title of a phone stands empty in its place, which keeps the actions at the
-          end: the title comes in where it stays (UX §6.4). */}
+          end: the title comes in where it stays (UX §6.4). A page that has loaded and says nothing has the name of the
+          app. */}
       {phone ? (
         <span {...partOf(part.topBarTitle)}>
-          {last === undefined ? null : <StepLabel step={last} />}
+          {last === undefined ? loaded ? t("app.name") : null : <StepLabel step={last} />}
         </span>
       ) : (
         <Trail steps={steps} />

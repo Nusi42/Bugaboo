@@ -279,6 +279,9 @@ tokens {
     size "size-sidebar-narrow" "72px"
     size "size-panel" "420px"
     size "size-bar" "56px"
+    // The room above and under the parts of a bar at the top of a phone screen: as much as the density gives, at most so
+    // much that a control and the bar's border fit in the height of the bar, so the bar is as high with one as without.
+    size "pad-bar-block" "min($space-2, calc(($size-bar - $size-control) / 2 - $border-width))"
     size "size-viewport" "100dvh"
     // A question is a small fixed dialog, 440 wide (R10); the palette of quick search is wider.
     size "size-dialog" "440px"
@@ -1299,7 +1302,7 @@ mixin "phone-bar" {
     gap "$space-3"
     box-sizing border-box
     min-height "$size-bar"
-    padding "calc(($size-bar - $size-control) / 2 - $border-width + env(safe-area-inset-top)) $space-4 calc(($size-bar - $size-control) / 2 - $border-width)"
+    padding "calc($pad-bar-block + env(safe-area-inset-top)) $space-4 $pad-bar-block"
     background "$bg-canvas"
 }
 
@@ -5377,9 +5380,7 @@ part "app-layout[variant=phone] stack > row > row.end > button[variant=primary]"
     width "100%"
 }
 
-// Grey shapes show also where a hold keeps the rest hidden (reading-hold): they stand in for what is still read (§6.1).
 part "skeleton.line" {
-    visibility visible
     display block
     height "$space-4"
     border-radius "$r-ctl"
@@ -6189,7 +6190,8 @@ part "project-tree.link[current] project-tree.short" {
 }
 
 // What waits for the first reads of its parts is laid out but hidden until they all answered, then shown at once, so
-// nothing in it moves once seen (UX §6.4, the first read). It is no box of its own.
+// nothing in it moves once seen (UX §6.4, the first read); the room of a count whose answer is on its way is the same,
+// always held (KeptRoom). It is no box of its own.
 part "reading-hold" {
     display contents
 }
@@ -6198,11 +6200,12 @@ part "reading-hold[state=held]" {
     visibility hidden
 }
 
-// The room of a part whose first answer is on its way, kept unseen so it comes in without narrowing what stands beside it
-// (UX §6.4).
-part "kept-room" {
-    display contents
-    visibility hidden
+// The grey shapes a hold draws while it still waits after the wait of the shapes (UX §6.1): where the room it keeps starts,
+// over it, taking no room, so nothing moves when they go.
+part "reading-hold.shapes" {
+    position absolute
+    width "min(100%, $size-main)"
+    pointer-events none
 }
 
 // The one line of a section of the sidebar (or of the sheet More) with nothing in it yet: the projects and the saved
@@ -7026,6 +7029,17 @@ part "sidebar.list" "sidebar.bottom" {
 
 part "sidebar.bottom" {
     margin-top auto
+}
+
+// The sections and the time of the menu, which come with reads of their own: a box of its own that takes the room the
+// menu has and scrolls, so the menu above it and its bottom group stand still when they come (UX §6.4).
+part "sidebar.middle" {
+    display flex
+    flex "1 1 auto"
+    flex-direction column
+    gap inherit
+    min-height 0
+    overflow-y auto
 }
 
 part "sidebar.section" {

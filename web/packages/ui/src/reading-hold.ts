@@ -13,6 +13,9 @@ export interface Hold {
 
 export const HoldContext = createContext<Hold | null>(null);
 
+/** What a screen reader hears while a hold waits (the app gives its words for *Loading…* at its root). */
+export const HoldWords = createContext("");
+
 /**
  * Whether the hold around a part holds now: a part that draws what it holds somewhere else (into the head of its pane)
  * hides it there too, the same way. Outside a hold it never holds.

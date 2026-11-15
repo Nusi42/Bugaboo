@@ -1,6 +1,8 @@
 import { Icon, type IconName, partOf, part } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
+import { Count } from "./Count.tsx";
+
 export interface BarPlaceProps {
   readonly icon: IconName;
   /** A number after the icon, such as the notifications not read yet. */
@@ -20,7 +22,7 @@ export function BarPlace({ icon, count, children }: BarPlaceProps) {
       <span {...partOf(part.bottomBarLabel)}>{children}</span>
       <span {...partOf(part.bottomBarIcon)}>
         <Icon name={icon} />
-        {count === undefined ? null : <span {...partOf(part.bottomBarCount)}>{count}</span>}
+        <Count count={count} look={partOf(part.bottomBarCount)} />
       </span>
     </>
   );

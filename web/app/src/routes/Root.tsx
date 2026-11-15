@@ -1,3 +1,5 @@
+import { t } from "@bugaboo/messages";
+import { HoldWords } from "@bugaboo/ui";
 import { Outlet, useRouter } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { RouterProvider as LinkRouter } from "react-aria-components";
@@ -21,7 +23,10 @@ export function Root() {
       }}
       useHref={(to) => router.history.createHref(to)}
     >
-      <Outlet />
+      {/* What a screen reader hears while a screen waits for its first reads (UX §6.4). */}
+      <HoldWords value={t("common.loading")}>
+        <Outlet />
+      </HoldWords>
     </LinkRouter>
   );
 }

@@ -1,17 +1,29 @@
-import { useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useContext,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
+import { useAfterDelay } from "./after-delay.ts";
 import { partOf } from "./parts.ts";
-import { HoldContext, useHoldWhileReading, type Report } from "./reading-hold.ts";
+import { Skeleton } from "./Skeleton.tsx";
+import { HoldContext, HoldWords, useHoldWhileReading, type Report } from "./reading-hold.ts";
 import { part } from "./tokens.ts";
 
 /**
  * Holds what it holds hidden, though laid out, until the first reads of the parts in it have answered (each says so
  * with `useHoldWhileReading`), and shows it once, so nothing in it moves after it is seen: parts that come in one after
- * the other would push what stands under them (UX §6.4, the first read). The grey shapes of the parts that still wait
- * show through it after their own wait (UX §6.1). Once shown it stays shown; a read again later does not hide it. It is
- * no box of its own.
+ * the other would push what stands under them (UX §6.4, the first read). After the wait of the grey shapes it draws its
+ * own where the room it keeps starts, taking none (UX §6.1), and while it holds it tells screen readers `busy`. Once
+ * shown it stays shown; a read again later does not hide it. A hold is per mount: a new screen (another project, another
+ * route) builds a new one. It is no box of its own. What a screen reader hears while it waits comes from `HoldWords`.
  */
 export function ReadingHold({ children }: { readonly children: ReactNode }) {
+  const busy = useContext(HoldWords);
   const waiting = useRef(new Set<string>());
   const [shown, setShown] = useState(false);
   const report = useCallback<Report>((id, on) => {
@@ -35,11 +47,16 @@ export function ReadingHold({ children }: { readonly children: ReactNode }) {
     }
   }, []);
   const hold = useMemo(() => ({ report, held: !shown }), [report, shown]);
+  const late = useAfterDelay(!shown);
   return (
     <HoldContext value={hold}>
-      <div {...partOf(part.readingHold, { states: [!shown && "held"] })} aria-busy={!shown}>
-        {children}
-      </div>
+      {shown ? null : <output {...partOf(part.visuallyHidden)}>{busy}</output>}
+      {shown || !late ? null : (
+        <div {...partOf(part.readingHoldShapes)} aria-hidden>
+          <Skeleton />
+        </div>
+      )}
+      <div {...partOf(part.readingHold, { states: [!shown && "held"] })}>{children}</div>
     </HoldContext>
   );
 }

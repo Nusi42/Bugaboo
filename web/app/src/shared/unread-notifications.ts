@@ -5,7 +5,6 @@ import {
   watchSeconds,
 } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { useHoldWhileReading } from "@bugaboo/ui";
 import { useQuery } from "@tanstack/react-query";
 
 import { api } from "./api.ts";
@@ -29,26 +28,28 @@ export function unreadOptions() {
   );
 }
 
-/**
- * How many notifications the person has not read; nothing until the server has answered. What shows the number is held
- * until then (with its `ReadingHold`): the number would narrow or push what stands beside it (UX §6.4).
- */
-export function useUnreadNotifications(): number | undefined {
+/** How many notifications the person has not read (nothing until the server has answered), and whether it is read. */
+export function useUnreadNotifications(): {
+  readonly count: number | undefined;
+  readonly reading: boolean;
+} {
   const read = useQuery(unreadOptions());
-  useHoldWhileReading(read.isLoading);
-  return read.data?.unread;
+  return { count: read.data?.unread, reading: read.isLoading };
 }
 
 /**
- * The number on the menu entry, as text: nothing while there is none (or the server has not
- * answered), and the cap with a plus when the server stopped counting.
+ * The number on the menu entry, as text: empty while there is none (or the server has not answered), so the entry
+ * keeps the room of the number, and the cap with a plus when the server stopped counting.
  */
-export function useUnreadCountText(): string | undefined {
-  const unread = useUnreadNotifications();
+export function useUnreadCountText(): string {
+  const unread = useUnreadNotifications().count;
   if (unread === undefined || unread === 0) {
-    return undefined;
+    return "";
   }
-  return unread >= notificationsAtOnceMax
-    ? t("notifications.count-capped", { max: notificationsAtOnceMax })
-    : String(unread);
+  return unread >= notificationsAtOnceMax ? widestCount() : String(unread);
+}
+
+/** The widest number the menu shows: the cap with a plus, when the server stopped counting. */
+export function widestCount(): string {
+  return t("notifications.count-capped", { max: notificationsAtOnceMax });
 }

@@ -3446,10 +3446,7 @@ textarea,
   gap: var(--space-3);
   box-sizing: border-box;
   min-height: var(--size-bar);
-  padding: calc(
-      (var(--size-bar) - var(--size-control)) / 2 - var(--border-width) + env(safe-area-inset-top)
-    )
-    var(--space-4) calc((var(--size-bar) - var(--size-control)) / 2 - var(--border-width));
+  padding: calc(var(--pad-bar-block) + env(safe-area-inset-top)) var(--space-4) var(--pad-bar-block);
   background: var(--bg-canvas);
   border-radius: 0;
 }
@@ -4170,7 +4167,6 @@ textarea,
 }
 
 [data-part="skeleton.line"] {
-  visibility: visible;
   display: block;
   height: var(--space-4);
   border-radius: var(--r-ctl);
@@ -5064,9 +5060,10 @@ textarea,
   visibility: hidden;
 }
 
-[data-part="kept-room"] {
-  display: contents;
-  visibility: hidden;
+[data-part="reading-hold.shapes"] {
+  position: absolute;
+  width: min(100%, var(--size-main));
+  pointer-events: none;
 }
 
 [data-part="sidebar.note"] {
@@ -5901,6 +5898,15 @@ textarea,
   margin-top: auto;
 }
 
+[data-part="sidebar.middle"] {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: inherit;
+  min-height: 0;
+  overflow-y: auto;
+}
+
 [data-part="sidebar.section"] {
   display: flex;
   flex-direction: column;
@@ -6304,10 +6310,7 @@ textarea,
   gap: var(--space-3);
   box-sizing: border-box;
   min-height: var(--size-bar);
-  padding: calc(
-      (var(--size-bar) - var(--size-control)) / 2 - var(--border-width) + env(safe-area-inset-top)
-    )
-    var(--space-4) calc((var(--size-bar) - var(--size-control)) / 2 - var(--border-width));
+  padding: calc(var(--pad-bar-block) + env(safe-area-inset-top)) var(--space-4) var(--pad-bar-block);
   background: var(--bg-canvas);
   border-bottom: var(--border-width) solid var(--divider);
 }

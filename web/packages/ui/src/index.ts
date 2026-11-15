@@ -167,7 +167,7 @@ export { useHeightOnParent } from "./height-variable.ts";
 export { useTopKept } from "./top-kept.ts";
 export { KeptRoom } from "./KeptRoom.tsx";
 export { HoldWhileLoading, ReadingHold } from "./ReadingHold.tsx";
-export { useHoldWhileReading } from "./reading-hold.ts";
+export { HoldWords, useHoldWhileReading } from "./reading-hold.ts";
 export { LEAST_MOVE_PX } from "./least-move.ts";
 export { PaneWithHead, type PaneWithHeadProps } from "./PaneWithHead.tsx";
 export { OutsidePane } from "./OutsidePane.tsx";

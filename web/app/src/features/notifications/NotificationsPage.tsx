@@ -1,6 +1,6 @@
 import { notificationTabWords, type Schema } from "@bugaboo/api-client";
 import { t, type MessageKey } from "@bugaboo/messages";
-import { Button, buttonLook, Card, ReadingHold, Tabs } from "@bugaboo/ui";
+import { Button, buttonLook, Card, Tabs, useHoldWhileReading, ReadingHold } from "@bugaboo/ui";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
@@ -17,6 +17,26 @@ const filterName = {
   mentions: "notifications.filter.mentions",
 } as const satisfies Record<Schema<"NotificationTab">, MessageKey>;
 
+/** *Mark all as read*, while there are unread notifications; the page waits for their number. */
+function MarkAllRead() {
+  const unread = useUnreadNotifications();
+  useHoldWhileReading(unread.reading);
+  const readAll = useReadNotifications();
+  // *Mark all as read* goes up to the one made last on the screen: one made after it stays unread.
+  const newest = useNewestNotification();
+  return (unread.count ?? 0) === 0 || newest === undefined ? null : (
+    <Button
+      look={buttonLook.quiet}
+      isPending={readAll.isPending}
+      onPress={() => {
+        readAll.mutate({ body: { up_to: newest } });
+      }}
+    >
+      {t("notifications.mark-all-read")}
+    </Button>
+  );
+}
+
 /**
  * *Notifications* (UX §4.11, NTF-01): what happened on the issues the person follows and where they
  * are named, grouped by issue, newest first, with the filters *All*, *Unread* and *Mentions*, and
@@ -26,10 +46,6 @@ export function NotificationsPage() {
   usePageTitle(t("notifications.title"));
   const navigate = useNavigate();
   const [filter, setFilter] = useState<Schema<"NotificationTab">>("all");
-  const unread = useUnreadNotifications() ?? 0;
-  const readAll = useReadNotifications();
-  // *Mark all as read* goes up to the one made last on the screen: one made after it stays unread.
-  const newest = useNewestNotification();
   // The button *Mark all as read* and the notifications come with reads of their own: the page shows once all are read.
   return (
     <ReadingHold>
@@ -38,17 +54,7 @@ export function NotificationsPage() {
         level={1}
         actions={
           <>
-            {unread === 0 || newest === undefined ? null : (
-              <Button
-                look={buttonLook.quiet}
-                isPending={readAll.isPending}
-                onPress={() => {
-                  readAll.mutate({ body: { up_to: newest } });
-                }}
-              >
-                {t("notifications.mark-all-read")}
-              </Button>
-            )}
+            <MarkAllRead />
             <Button
               look={buttonLook.quiet}
               onPress={() => {

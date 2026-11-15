@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useLayoutEffect, useMemo } from "react";
 
 import { stepsOfScreens } from "./steps-of-screens.ts";
 
@@ -33,7 +33,8 @@ export const pageTrails = trails;
  * its trail in again and again.
  */
 export function usePageTrail(steps: readonly TrailStep[] | undefined): void {
-  useEffect(() => {
+  // Before the page is painted, so the bar shows the place with the page, not a frame after it.
+  useLayoutEffect(() => {
     const remove = steps === undefined ? undefined : trails.add({ steps });
     return () => {
       remove?.();

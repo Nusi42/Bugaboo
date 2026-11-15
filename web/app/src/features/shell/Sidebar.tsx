@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { partOf, part, ReadingHold, useShortWindow } from "@bugaboo/ui";
+import { partOf, part, useShortWindow, ReadingHold } from "@bugaboo/ui";
 
 import { Sections } from "./Sections.tsx";
 import { timePlace } from "./time-parts.ts";
@@ -47,19 +47,23 @@ export function Sidebar({
       <span {...partOf(part.sidebarBrand, { variants: [narrow && "narrow"] })}>
         {t("app.name")}
       </span>
-      {/* The menu, the sections and the time come with reads of their own: shown once all are read, nothing moves. */}
-      <ReadingHold>
-        <Top narrow={narrow} onNavigate={onNavigate} folded={folded} />
-        <Sections narrow={narrow} onNavigate={onNavigate} />
-        <TimeSlot place={timePlace.sidebar} narrow={narrow} />
-        <Bottom
-          narrow={narrow}
-          inDrawer={inDrawer || locked}
-          organizationSettings={organizationSettings}
-          onNavigate={onNavigate}
-        />
-        <Person narrow={narrow} name={name} onSignOut={onSignOut} signingOut={signingOut} />
-      </ReadingHold>
+      <Top narrow={narrow} onNavigate={onNavigate} folded={folded} />
+      {/* The sections and the time come with reads of their own: they show once all are read, in a box of their own
+          between the menu and its bottom group, so nothing of the menu moves when they come and its links can be
+          used at once (UX §6.4). */}
+      <div {...partOf(part.sidebarMiddle)}>
+        <ReadingHold>
+          <Sections narrow={narrow} onNavigate={onNavigate} />
+          <TimeSlot place={timePlace.sidebar} narrow={narrow} />
+        </ReadingHold>
+      </div>
+      <Bottom
+        narrow={narrow}
+        inDrawer={inDrawer || locked}
+        organizationSettings={organizationSettings}
+        onNavigate={onNavigate}
+      />
+      <Person narrow={narrow} name={name} onSignOut={onSignOut} signingOut={signingOut} />
     </nav>
   );
 }

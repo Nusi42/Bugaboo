@@ -69,7 +69,8 @@ export function ProjectList({ project, state, onState, openIn, selection }: Proj
     <ProjectSave text={text} shortName={project.shortName} view={list.view} hasMistake={stale} />
   );
   // The bar and the list wait for the text of the project's own list, so the bar is not drawn empty and then filled
-  // with its filters, pushing *Add filter* aside (UX §6.4).
+  // with its filters, pushing *Add filter* aside (UX §6.4). The bar waits with its own grey shapes rather than in the
+  // hold of the list: on a phone it holds *New issue*, which stands from the start and stays the same element.
   return (
     <>
       <InPaneHead slot={paneHeadSlot.search}>
