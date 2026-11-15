@@ -65,6 +65,10 @@ export async function theGoalIsPlannedByDragging(page: Page, server: Instance): 
   await expect
     .poll(() => datesOf(session, key))
     .toEqual({ start: addDays(before.start, MOVED_DAYS), due: addDays(before.due, MOVED_DAYS) });
+  if (layoutOf(page) !== "computer") {
+    // On a phone the note of the change covers the list: the plan read again shows the new dates.
+    await openPlan(page, false);
+  }
   await good(page, "01-the-goal-is-planned");
   await session.dispose();
 }

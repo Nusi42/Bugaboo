@@ -4,7 +4,6 @@ import { unbroken } from "../../src/shared/format.ts";
 import { percentText } from "../../src/shared/number.ts";
 import { signInThroughApi, type Instance } from "./accounts.ts";
 import {
-  BY_PERSON,
   adaOfTheSample,
   barDaysOf,
   good,
@@ -35,11 +34,10 @@ export async function aShareOfHalfDoublesLeasBars(page: Page, server: Instance):
   const login = await keyOf(session, titleOf(0));
   await withoutATimer(server, ada);
   await signIn(page, ada);
-  // Lea's own rows: the plan grouped by the person on the bar.
-  await openPlan(page, true, BY_PERSON);
+  await openPlan(page, true);
   const before = await measured(page, session, login);
   await setShareOf(server, ada, plan.project, await idOf(server, lea), HALF_A_SHARE);
-  await openPlan(page, true, BY_PERSON);
+  await openPlan(page, true);
   // Half of her hours in the project: the same work takes twice the work days.
   const after = await barDaysOf(session, login);
   expect(Math.abs(after.workDays - 2 * before.days.workDays)).toBeLessThanOrEqual(WITHIN_A_DAY);

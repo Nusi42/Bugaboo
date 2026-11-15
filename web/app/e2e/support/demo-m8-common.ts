@@ -67,13 +67,13 @@ export async function keyOf(session: ApiSession, title: string): Promise<string>
   throw new RangeError(`The sample has no issue ${title} in ${plan.project}.`);
 }
 
-/** The part of the address of a timeline grouped by the person on the bar: each person has their own rows. */
-export const BY_PERSON = `&group=${encodeURIComponent("assigned to")}`;
+/** The part of the address of a timeline grouped by goal: the goal heads its issues (UX §4.7, M8-Q12). */
+const BY_GOAL = "&group=parent";
 
-/** Opens the timeline of the project of the plan, with or without *Plan by effort*, with these more parts of the address. */
-export async function openPlan(page: Page, byEffort: boolean, more = ""): Promise<void> {
+/** Opens the timeline of the project of the plan grouped by goal, with or without *Plan by effort*. */
+export async function openPlan(page: Page, byEffort: boolean): Promise<void> {
   const search = encodeURIComponent(`project is ${plan.project}`);
-  await page.goto(`/search?s=${search}&show=timeline${more}`);
+  await page.goto(`/search?s=${search}&show=timeline${BY_GOAL}`);
   // A phone shows the plan as a grouped list; it has the switch of Plan by effort as well.
   await expect(chart(page).or(phoneList(page))).toBeVisible();
   const toggle = page.getByRole("switch", { name: t("timeline.plan-by-effort"), exact: true });

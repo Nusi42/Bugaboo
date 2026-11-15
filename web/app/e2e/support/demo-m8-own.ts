@@ -33,11 +33,9 @@ import {
 // the issue is given to someone else and its time factor goes back to ×1, and a theme for everyone
 // that is hard to read is fixed and saved.
 
-/** The work days the issue takes Lea, and the minutes in an hour. */
+/** The work days the issue takes Lea, as she types it: *Takes me 10 days*, in her own work hours. */
 const TAKES_DAYS = 10;
-const MINUTES_PER_HOUR = 60;
-/** How long the issue takes Lea, as she types it: ten of her work days, in hours. */
-const TAKES_ME = `${String((plan.usualMinutes * TAKES_DAYS) / MINUTES_PER_HOUR)}h`;
+const TAKES_ME = `${String(TAKES_DAYS)} days`;
 /** The time factor that makes of the estimate of the issue (the second of Lea's) ten of her work days, in percent. */
 const TAKES_PERCENT = Math.round(
   (plan.usualMinutes * TAKES_DAYS * AS_ESTIMATED) / (plan.issues[1]?.estimate ?? 1),
@@ -70,10 +68,13 @@ export async function leaSaysAnIssueTakesHerTenDays(page: Page, server: Instance
   await window.getByRole("button", { name: t("issues.time-factor-save") }).click();
   await expect(window).toBeHidden();
   await expect(factorRow(page)).toContainText(
-    t("issues.time-factor-own", { factor: factorText(TAKES_PERCENT), name: lea.name }),
+    t("issues.time-factor-own", {
+      factor: t("issues.time-factor-days", { factor: factorText(TAKES_PERCENT), days: TAKES_DAYS }),
+      name: lea.name,
+    }),
   );
-  await factorRow(page).scrollIntoViewIfNeeded();
-  await good(page, "04-lea-says-ten-days");
+  // The whole page: the row stands far down the Details, which a window shows only scrolled.
+  await goodWhole(page, "04-lea-says-ten-days");
 }
 
 /** Step 5: given to someone else, the time factor of the issue goes back to ×1. */
@@ -119,7 +120,7 @@ export async function anOwnThemeThatIsHardToReadIsFixed(
   await expect(readabilityLine(page)).toHaveAttribute("data-state", "refused");
   await expect(hardColors(page)).toContainText(t("theme-color.fg-subtle"));
   expect((await onlyThemeOf(server, ada)).theme.saved).toBe(false);
-  await good(page, "06-a-a-hard-to-read-theme-is-refused");
+  await good(page, "06-a-hard-to-read-theme-is-refused");
   await hardColors(page)
     .getByRole("button", {
       name: t("theme-editor.change-named", { name: t("theme-color.fg-subtle") }),

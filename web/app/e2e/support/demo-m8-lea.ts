@@ -17,6 +17,7 @@ import {
   withoutATimer,
 } from "./demo-m8-common.ts";
 import { signIn } from "./flows.ts";
+import { layoutOf } from "./layout.ts";
 import { addDays } from "./person-day.ts";
 import { openWarnings } from "./timeline-people.ts";
 import { addAwayTime, idOf, openWorkTimesOf } from "./work-times.ts";
@@ -56,6 +57,11 @@ export async function leasAwayWeekGrowsHerBarsAndWarns(
   expect((await barDaysOf(session, login)).last > before.days.last).toBe(true);
   await grewOnScreen(page, session, login, before);
   await expect((await openWarnings(page)).getByText(late)).toHaveCount(1);
+  if (layoutOf(page) !== "computer") {
+    // On a phone the warnings are a sheet over the bars: read, it is closed, and the bars show.
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog", { name: t("timeline.warnings-title") })).toBeHidden();
+  }
   await good(page, "02-lea-is-away-a-week");
   await session.dispose();
 }
