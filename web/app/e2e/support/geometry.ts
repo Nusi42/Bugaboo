@@ -33,3 +33,12 @@ export async function widthOf(shown: Locator): Promise<number> {
   }
   return Math.round(box.width);
 }
+
+/** The middle of what the locator shows, where a pointer takes it. */
+export async function middleOf(shown: Locator): Promise<{ x: number; y: number }> {
+  const box = await shown.boundingBox();
+  if (box === null) {
+    throw new TypeError("The element is not on the screen.");
+  }
+  return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+}

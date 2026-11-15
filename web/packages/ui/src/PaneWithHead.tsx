@@ -9,6 +9,7 @@ import {
 } from "react";
 
 import { doNothing } from "./do-nothing.ts";
+import { useScrollUnderHead } from "./drag-under-head.ts";
 import { useSizesOn, type RunTimeSize } from "./height-variable.ts";
 import { PaneHeadContext, paneLook, useOnPaper, type PaneLook } from "./pane-head.ts";
 import { partOf } from "./parts.ts";
@@ -106,7 +107,9 @@ export function PaneWithHead({ head, look, children }: PaneWithHeadProps) {
     setEnd(sizes[0] ?? 0);
   }, []);
   useSizesOn(whole, holder, headSizes, onSizes);
-  const above = look === paneLook.folds && !onPaper ? end : 0;
+  const folds = look === paneLook.folds && !onPaper;
+  useScrollUnderHead(top, pane, folds);
+  const above = folds ? end : 0;
   const known = useMemo(
     () => ({ slots: { title, search, view }, above }),
     [title, search, view, above],
