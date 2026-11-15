@@ -38,8 +38,12 @@ export function useAfterSignIn(): (answer: SignedIn) => void {
         router.history.push(waiting);
         return;
       }
+      // A person who went elsewhere while the start page was read stays there: it opens only on the page that signed in.
+      const signedInAt = router.history.location.href;
       void loadStartPage().then((start) => {
-        router.history.push(start);
+        if (router.history.location.href === signedInAt) {
+          router.history.push(start);
+        }
       });
     }
   };

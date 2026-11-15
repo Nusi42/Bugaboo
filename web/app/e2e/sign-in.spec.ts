@@ -5,6 +5,7 @@ import { expect, test } from "./support/fixtures.ts";
 import {
   addressEndingAt,
   expectHome,
+  fillSignIn,
   openMenu,
   sendPassword,
   signIn,
@@ -72,4 +73,34 @@ test("auth_01 a person who is signed in does not see the sign-in page again", as
   await signIn(page, ada);
   await page.goto(paths.signIn);
   await expect(page).toHaveURL(addressEndingAt(paths.home));
+});
+
+test("auth_01 a person who moves on before the start page is read stays where they went", async ({
+  page,
+}) => {
+  await page.goto(paths.signIn);
+  await expect(page.getByRole("heading", { level: 1, name: t("sign-in.title") })).toBeVisible();
+  // The history has a page after this one, as after going Back to sign in.
+  await page.evaluate((next) => {
+    history.pushState(null, "", next);
+    history.back();
+  }, paths.projects);
+  await expect(page).toHaveURL(addressEndingAt(paths.signIn));
+  // From now on the read of the person's settings, which names the start page, answers late.
+  const late = Promise.withResolvers<void>();
+  await page.route("**/api/v1/me/settings", async (route) => {
+    await late.promise;
+    await route.continue();
+  });
+  const answered = page.waitForResponse("**/api/v1/auth/sign-in");
+  await fillSignIn(page, ada);
+  await answered;
+  // Signed in, the person goes Forward before the start page is known; the page opens once the settings are read.
+  await page.goForward({ waitUntil: "commit" });
+  await expect(page).toHaveURL(addressEndingAt(paths.projects));
+  late.resolve();
+  await page.waitForLoadState("networkidle");
+  // The start page that came late does not take the person back.
+  await expect(page).toHaveURL(addressEndingAt(paths.projects));
+  await expect(page.getByRole("heading", { level: 1, name: t("projects.title") })).toBeVisible();
 });
