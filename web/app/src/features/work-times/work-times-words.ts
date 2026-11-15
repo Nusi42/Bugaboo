@@ -3,7 +3,7 @@ import { t } from "@bugaboo/messages";
 import { weekDaysOf, weekdayName, weekFirstOf } from "../../shared/clock.ts";
 import { formatCalendarDay } from "../../shared/format.ts";
 import { listText } from "../../shared/list-text.ts";
-import { minutesText } from "../../shared/own-value-text.ts";
+import { hoursText } from "../../shared/own-value-text.ts";
 import { type FirstDay } from "../../shared/region.ts";
 import type { Away, UsualDay, WorkTimes } from "./work-times.ts";
 
@@ -67,10 +67,10 @@ export function usualSummary(week: readonly Weekday[], usual: readonly UsualDay[
   }
   const days = runsOf(week, usual);
   return worked.every((day) => day.minutes === first.minutes)
-    ? t("work-times.usual-a-day", { days, length: minutesText(first.minutes) })
+    ? t("work-times.usual-a-day", { days, length: hoursText(first.minutes) })
     : t("work-times.usual-a-week", {
         days,
-        length: minutesText(worked.reduce((sum, day) => sum + day.minutes, 0)),
+        length: hoursText(worked.reduce((sum, day) => sum + day.minutes, 0)),
       });
 }
 

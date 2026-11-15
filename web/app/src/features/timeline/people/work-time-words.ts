@@ -11,7 +11,7 @@ import type { TimelineRow } from "../timeline-data.ts";
 type Bar = NonNullable<TimelineRow["bar"]>;
 
 /**
- * The person's time on a bar: "Mon–Fri, 8h a day · 100 % in Mobile app", as far as the reader may
+ * The person's time on a bar: "Mon–Fri, 8 hours a day · 100 % in Mobile app", as far as the reader may
  * know it. The line breaks only between its two parts.
  */
 export function workTimeText(bar: Bar, project: string, firstDay: FirstDay): string | undefined {

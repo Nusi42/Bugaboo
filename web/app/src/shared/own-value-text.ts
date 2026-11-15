@@ -31,8 +31,8 @@ export function minutesText(minutes: number): string {
 const TENTHS = 10;
 
 /**
- * A length in whole minutes as hours in a sentence, to a tenth: "9 hours", "3.6 hours" (UX §4.7,
- * *Too much at once*), with the person's numbers.
+ * A length in whole minutes as hours in a sentence, to a tenth: "9 hours", "3.6 hours" (UX §4.7, *Too
+ * much at once*; "Mon–Fri, 8 hours a day"), with the person's numbers.
  */
 export function hoursText(minutes: number): string {
   const tenths = Math.round((minutes * TENTHS * secondsPerMinute) / secondsPerHour);

@@ -40,9 +40,11 @@ describe("plan_11 the words of work times", () => {
   it("sums up the usual days in runs, a day or a week", () => {
     const monday = weekOf("monday");
     expect(usualSummary(monday, week([0, 1, 2, 3, 4]))).toMatch(/a day$/u);
-    expect(usualSummary(monday, week([0, 1, 2, 3], [360, 360, 360, 360]))).toContain("6h");
+    expect(usualSummary(monday, week([0, 1, 2, 3], [360, 360, 360, 360]))).toContain(
+      "6 hours a day",
+    );
     // Different hours are summed for the week.
-    expect(usualSummary(monday, week([0, 2], [480, 480, 240]))).toContain("12h");
+    expect(usualSummary(monday, week([0, 2], [480, 480, 240]))).toContain("12 hours a week");
     expect(usualSummary(monday, week([]))).toBe(t("work-times.usual-none"));
   });
 
