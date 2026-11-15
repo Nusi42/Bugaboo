@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 import {
   Button,
   buttonLook,
+  doNothing,
   Icon,
   iconName,
   iconSize,
@@ -11,12 +12,12 @@ import {
   part,
   ariaCurrent,
 } from "@bugaboo/ui";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-aria-components";
-import { useIsFetching } from "@tanstack/react-query";
 import { useLocation, useRouterState } from "@tanstack/react-router";
 
 import { areaAt } from "../../shared/places.ts";
+import { queryClient } from "../../shared/query-client.ts";
 
 import { openOverlay } from "./overlay-state.ts";
 import type { TrailStep } from "./page-trail.ts";
@@ -70,16 +71,43 @@ function isIdle(state: { readonly status: string }): boolean {
 /**
  * Whether the page at `pathname` has said that it has no place in the trail: it is loaded, it set none, and no read is
  * on its way any more (a page that sets its place once its first read is in has set it by then). Once said, it holds
- * until the page changes, so a read in the background does not take the title away.
+ * until the page changes, so a read in the background does not take the title away. The reads are looked at in a task
+ * of their own after each change of them, never in the same turn: a part that is drawn again and again while it waits
+ * for its code makes a change of the reads each time, and drawing the title in the same turn would never let it end.
  */
-function useNoPlaceSaid(pathname: string, none: boolean): boolean {
+function useNoPlaceSaid(pathname: string): boolean {
   const loaded = useRouterState({ select: isIdle });
-  const quiet = useIsFetching() === 0;
   const [said, setSaid] = useState<string | null>(null);
-  if (none && loaded && quiet && said !== pathname) {
-    setSaid(pathname);
-  }
-  return none && said === pathname;
+  useEffect(() => {
+    if (!loaded || said === pathname) {
+      return doNothing;
+    }
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const look = (): void => {
+      timer = undefined;
+      if (queryClient.isFetching() === 0) {
+        setSaid(pathname);
+      }
+    };
+    const later = (): void => {
+      timer ??= setTimeout(look, 0);
+    };
+    const stop = queryClient.getQueryCache().subscribe(later);
+    later();
+    return () => {
+      stop();
+      clearTimeout(timer);
+    };
+  }, [loaded, said, pathname]);
+  return said === pathname;
+}
+
+/**
+ * The name of the app as the title of a phone, once the page at `pathname` has said it has no place. A part of its own:
+ * it is drawn again whenever a read starts or ends, and nothing under it reads.
+ */
+function AppNameOnceSaid({ pathname }: { readonly pathname: string }) {
+  return useNoPlaceSaid(pathname) ? t("app.name") : null;
 }
 
 /**
@@ -91,7 +119,6 @@ export function TopBar({ layout, children }: TopBarProps) {
   const phone = layout === "phone";
   const last = steps.at(-1);
   const { pathname } = useLocation();
-  const loaded = useNoPlaceSaid(pathname, last === undefined);
   return (
     <header {...partOf(part.topBar, { variants: [areaAt(pathname)] })}>
       {layout === "tablet" ? (
@@ -115,7 +142,7 @@ export function TopBar({ layout, children }: TopBarProps) {
           app. */}
       {phone ? (
         <span {...partOf(part.topBarTitle)}>
-          {last === undefined ? loaded ? t("app.name") : null : <StepLabel step={last} />}
+          {last === undefined ? <AppNameOnceSaid pathname={pathname} /> : <StepLabel step={last} />}
         </span>
       ) : (
         <Trail steps={steps} />
