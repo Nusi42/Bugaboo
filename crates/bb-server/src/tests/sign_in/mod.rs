@@ -32,6 +32,7 @@ mod check_access_types_http;
 mod comments_http;
 mod concurrent;
 mod concurrent_agents;
+mod concurrent_plan;
 mod conflict_http;
 mod editing;
 mod exit_editing;

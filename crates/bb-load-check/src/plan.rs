@@ -7,8 +7,8 @@
 //!   an acceptance only while the dates of its issue are the ones it holds.
 //! - An away time that was entered is stored once, and the first answer of the plan after it showed
 //!   the days.
-//! - A *Move it after* is kept whole or refused whole: when it was refused, no issue it names was
-//!   changed by it, and when it was kept, every issue it names was.
+//! - A *Move it after* that was kept moved every issue it names. One that was refused changed none:
+//!   a change it left behind would have no person who kept it, which the rule of the versions finds.
 //!
 //! The versions of the moves are judged with the others (every kept change has its event and the
 //! versions run up one by one); these rules look only at what is special about dates.
@@ -90,34 +90,20 @@ fn away_times_show_at_once(book: &Book, facts: &Facts) -> Vec<String> {
     found
 }
 
-/// A *Move it after* is kept whole or refused whole.
+/// A *Move it after* that was kept moved every issue it names: each, but the one somebody changed
+/// meanwhile, has the event of the version after the preview. One that was refused wrote nothing:
+/// a change it left behind would be an event no person kept, which the rule of the versions finds.
 fn a_move_after_is_whole(book: &Book, facts: &Facts) -> Vec<String> {
     let mut found = Vec::new();
-    for moved in &book.moved_after {
-        for named in &moved.named {
+    for moved in book.moved_after.iter().filter(|each| each.kept) {
+        for named in moved.named.iter().filter(|each| each.key != moved.changed) {
             let Some(issue) = issue_of(facts, &named.key) else {
                 continue;
             };
-            let changed_meanwhile = named.key == moved.changed;
-            // The issue somebody changed meanwhile is at least one version on; the others are on
-            // the version of the preview when the move was refused, and one version on when it was
-            // kept.
-            let expected = named.version + i64::from(moved.kept && !changed_meanwhile);
-            let at_least = changed_meanwhile && !moved.kept;
-            let wrong = if at_least {
-                issue.version <= named.version
-            } else if changed_meanwhile {
-                false
-            } else {
-                issue.version != expected
-            };
-            if wrong {
+            if !issue.event_versions.contains(&(named.version + 1)) {
                 found.push(format!(
-                    "{}: a move after that was {} left it at version {}, the preview read {}",
-                    named.key,
-                    if moved.kept { "kept" } else { "refused whole" },
-                    issue.version,
-                    named.version
+                    "{}: a move after that was kept left no event after version {}, so it was not kept whole",
+                    named.key, named.version
                 ));
             }
         }
@@ -251,33 +237,35 @@ mod tests {
     }
 
     #[test]
-    fn plan_13_a_move_after_is_kept_whole_or_refused_whole() {
+    fn plan_13_a_move_after_is_kept_whole() {
         let named = |key: &str| NamedByMove {
             key: key.to_owned(),
             version: 2,
         };
-        let book = |kept| Book {
+        let book = Book {
             moved_after: vec![MovedAfter {
                 named: vec![named("A-1"), named("A-2")],
                 changed: "A-2".to_owned(),
-                kept,
+                kept: true,
             }],
             ..Book::default()
         };
-        // Refused: A-1 is where the preview read it, A-2 is on because somebody changed it.
-        let refused = facts_of(vec![
-            issue("A-1", 2, ("2027-02-01", "2027-02-03"), &[]),
-            issue("A-2", 3, ("2027-02-01", "2027-02-03"), &[]),
-        ]);
-        assert!(a_move_after_is_whole(&book(false), &refused).is_empty());
-        // Half of it was kept although it was refused.
-        let half = facts_of(vec![
-            issue("A-1", 3, ("2027-02-01", "2027-02-03"), &[]),
-            issue("A-2", 3, ("2027-02-01", "2027-02-03"), &[]),
-        ]);
-        assert_eq!(a_move_after_is_whole(&book(false), &half).len(), 1);
-        // Kept: the issue nobody else changed moved once.
-        assert!(a_move_after_is_whole(&book(true), &half).is_empty());
-        assert_eq!(a_move_after_is_whole(&book(true), &refused).len(), 1);
+        // A-1 moved once; A-2 is the issue somebody changed meanwhile.
+        let mut whole = issue("A-1", 3, ("2027-02-01", "2027-02-03"), &[]);
+        whole.event_versions = vec![2, 3];
+        assert!(a_move_after_is_whole(&book, &facts_of(vec![whole])).is_empty());
+        // A-1 has no event of the move: the move was not kept whole.
+        let mut half = issue("A-1", 2, ("2027-02-01", "2027-02-03"), &[]);
+        half.event_versions = vec![2];
+        assert_eq!(a_move_after_is_whole(&book, &facts_of(vec![half])).len(), 1);
+        // A move that was refused names nothing to check here.
+        let refused = Book {
+            moved_after: vec![MovedAfter {
+                kept: false,
+                ..book.moved_after[0].clone()
+            }],
+            ..Book::default()
+        };
+        assert!(a_move_after_is_whole(&refused, &Facts::default()).is_empty());
     }
 }
