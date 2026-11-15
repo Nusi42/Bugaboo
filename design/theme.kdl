@@ -4408,8 +4408,11 @@ part "name-value.reason" {
 // *Saved* and *Undo* where the change happened (R7).
 // *Saving…* and *Saved* with *Undo* take the same height, the height of the button, so the row does not
 // change its height again when the answer comes (UX §6: nothing under it moves back and forth).
+// It stands after the last line of the value, where its *Change* is: beside it where there is room, under it where
+// there is not, the same on a computer and a phone.
 part "name-value.saved" {
     display inline-flex
+    align-self flex-end
     align-items center
     gap "$space-1"
     min-block-size "$size-control"
