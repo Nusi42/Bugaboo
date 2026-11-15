@@ -5,29 +5,10 @@
 //! SQLite and PostgreSQL and read the canonical dump.
 
 use bb_dev_words::sample::Layout;
-use bb_testing::{Failure, TestResult, each_database};
-use jiff::Timestamp;
-use serde_json::Value;
+use bb_testing::{TestResult, each_database};
 
-use crate::{DEFAULT_SEED, Everything, Options, Sample, Target, create};
-
-const START: i64 = bb_dev_words::accounts::CLOCK_START;
-/// Few enough to be quick, enough for every kind of work to be there.
-const ISSUES: u32 = 150;
-
-/// The dump of the sample.
-async fn made(target: &Target, folder: &std::path::Path) -> Result<Value, Failure> {
-    let options = Options {
-        seed: DEFAULT_SEED,
-        start: Timestamp::from_second(START)?,
-    };
-    let mut everything = Everything::new(ISSUES)?;
-    let sample: Sample = Box::pin(create(&options, folder, target, &mut everything)).await?;
-    sample.verify_security_log().await?;
-    let text = sample.dump().await?.to_json()?;
-    sample.close().await;
-    Ok(serde_json::from_str(&text)?)
-}
+use super::work::{ISSUES_ASKED as ISSUES, dump_of};
+use crate::Target;
 
 #[tokio::test]
 async fn plan_12_the_sample_plans_mobile_app_2_0_with_lea() -> TestResult {
@@ -35,7 +16,11 @@ async fn plan_12_the_sample_plans_mobile_app_2_0_with_lea() -> TestResult {
         "plan_12_the_sample_plans_mobile_app_2_0_with_lea",
         async |db| {
             let folder = tempfile::tempdir()?;
-            let dump = Box::pin(made(&Target::Address(db.url().to_owned()), folder.path())).await?;
+            let dump = Box::pin(dump_of(
+                &Target::Address(db.url().to_owned()),
+                folder.path(),
+            ))
+            .await?;
             // TEST-SAMPLE-DATA: the plan judges the part of the dump on the goal.
             let plan = Layout::bundled()?.issues;
             let problems = plan.problems(ISSUES, "sample", &dump);

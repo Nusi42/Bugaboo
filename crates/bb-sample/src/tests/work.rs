@@ -16,7 +16,9 @@ const START: i64 = bb_dev_words::accounts::CLOCK_START;
 /// Few enough to be quick, enough for every kind of work to be there.
 const ISSUES: u32 = 150;
 
-async fn dump_of(target: &Target, folder: &std::path::Path) -> Result<Value, Failure> {
+pub(super) const ISSUES_ASKED: u32 = ISSUES;
+
+pub(super) async fn dump_of(target: &Target, folder: &std::path::Path) -> Result<Value, Failure> {
     let options = Options {
         seed: DEFAULT_SEED,
         start: Timestamp::from_second(START)?,
