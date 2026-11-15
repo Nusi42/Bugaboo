@@ -178,7 +178,7 @@ pub fn sample_people(seed: u64, names: &NameList) -> Result<Vec<SamplePerson>, S
         let first = &names.first()[random.below(names.first().len())];
         let last = &names.last()[random.below(names.last().len())];
         let person = SamplePerson::new(first, last, role, false);
-        if people.iter().all(|known| known.email != person.email) {
+        if people.iter().all(|known| known.email != person.email) && !is_a_planner(&person.email) {
             roles.pop();
             people.push(person);
         }
@@ -219,6 +219,14 @@ pub fn sample_people(seed: u64, names: &NameList) -> Result<Vec<SamplePerson>, S
     }
     name_the_planners(&mut people);
     Ok(people)
+}
+
+/// Whether this address is one of the planners': nobody drawn from the names may have it, or two
+/// people would share an address once the planners take their places.
+fn is_a_planner(email: &str) -> bool {
+    PLANNERS.iter().any(|(first, last)| {
+        SamplePerson::new(first, last, StartingRole::TeamMember, false).email == email
+    })
 }
 
 /// Gives the planners the place of the first Team members who have no code app and no access key.
@@ -295,6 +303,16 @@ mod tests {
             assert_eq!(find("Lea Fischer").role, StartingRole::TeamMember);
             assert_eq!(find("Noah Weber").role, StartingRole::TeamMember);
             assert!(!find("Ana Moreno").code_app && !people[0].code_app);
+        }
+    }
+
+    #[test]
+    fn the_planners_never_share_an_address_with_anybody_whatever_the_seed() {
+        for seed in 1..300 {
+            let people = sample_people(seed, &names()).unwrap();
+            let emails: BTreeSet<&String> = people.iter().map(|person| &person.email).collect();
+            assert_eq!(emails.len(), PEOPLE, "seed {seed}");
+            assert!(people.iter().any(|person| person.name == "Lea Fischer"));
         }
     }
 
