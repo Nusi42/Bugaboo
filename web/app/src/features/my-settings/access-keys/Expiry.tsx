@@ -1,11 +1,10 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { TextField } from "@bugaboo/ui";
-import { useState } from "react";
 
-import { dayText, formatCalendarDay } from "../../../shared/format.ts";
-import { dayProblem, readDay } from "../../../shared/read-day.ts";
+import { formatCalendarDay } from "../../../shared/format.ts";
 import { useRegion } from "../../../shared/region.ts";
+import { useTypedDay } from "../../../shared/typed-day.ts";
 import { useNow } from "../../../shared/use-now.ts";
 import { defaultDaysOf, earliestDay, latestDay, presetDay } from "./expiry-day.ts";
 import type { PartProps } from "./draft.ts";
@@ -27,10 +26,9 @@ export function Expiry({ draft, rules, wrongDay }: ExpiryProps) {
   const now = useNow();
   const region = useRegion();
   const [first, last] = [earliestDay(region, now), latestDay(rules, region, now)];
-  const [typed, setTyped] = useState<string | null>(null);
-  const shown = typed ?? dayText(draft.day ?? presetDay(rules, region, now), region);
-  const read = readDay(shown, region);
-  const outside = read !== undefined && (read < first || read > last);
+  // An untouched box follows the day the key would run out on now; a typed one keeps what is typed.
+  const day = useTypedDay(presetDay(rules, region, now));
+  const outside = day.day !== undefined && day.day !== "" && (day.day < first || day.day > last);
   return (
     <TextField
       label={t("access-keys.expires")}
@@ -39,11 +37,11 @@ export function Expiry({ draft, rules, wrongDay }: ExpiryProps) {
         latest: formatCalendarDay(last),
       })}
       requiredMessage={t("error.field.required")}
-      errorMessage={wrongDay || outside ? t("error.field.wrong-value") : dayProblem(shown, region)}
-      value={shown}
+      errorMessage={wrongDay || outside ? t("error.field.wrong-value") : day.problem}
+      value={day.typed}
       onChange={(text) => {
-        setTyped(text);
-        draft.setDay(readDay(text, region) ?? text);
+        day.setTyped(text);
+        draft.setDay(day.read(text) ?? text);
       }}
     />
   );

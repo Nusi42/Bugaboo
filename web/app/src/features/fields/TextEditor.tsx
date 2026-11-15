@@ -5,7 +5,7 @@ import { WithLengthReader, type LengthReader } from "../../shared/with-length-re
 import { boxWords } from "./box-words.ts";
 import type { BoxField, Sent } from "./fields.ts";
 import { SaveForm } from "./SaveForm.tsx";
-import { useSynced } from "./use-synced.ts";
+import { useSynced } from "../../shared/use-synced.ts";
 import type { ValueEditorProps } from "./ValueEditor.tsx";
 import { readBox, textOf, type Kept } from "./value-text.ts";
 

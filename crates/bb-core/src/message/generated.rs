@@ -3760,6 +3760,9 @@ pub const ISSUES_UPDATED: MessageKey = MessageKey::new("issues.updated");
 /// The message `issues.use-mine`.
 pub const ISSUES_USE_MINE: MessageKey = MessageKey::new("issues.use-mine");
 
+/// The message `issues.value-wrong`.
+pub const ISSUES_VALUE_WRONG: MessageKey = MessageKey::new("issues.value-wrong");
+
 /// The message `issues.with-sub-issues`.
 pub const ISSUES_WITH_SUB_ISSUES: MessageKey = MessageKey::new("issues.with-sub-issues");
 
@@ -22183,6 +22186,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.unassign-name", "Take {name} away"),
     ("issues.updated", "Last changed"),
     ("issues.use-mine", "Use mine"),
+    (
+        "issues.value-wrong",
+        "A box of the form holds something it cannot take yet, such as a date half typed. Mend it, then you can create the issue.",
+    ),
     ("issues.with-sub-issues", "With sub-issues"),
     (
         "keys.database-placeholder",

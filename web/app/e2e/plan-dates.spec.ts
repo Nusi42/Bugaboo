@@ -52,3 +52,21 @@ test("plan_01 a start after the due date is refused and says so", async ({ page 
   await form.getByRole("button", { name: t("issues.create"), exact: true }).click();
   await expect(form.getByText(t("error.issue.start-after-due"))).toBeVisible();
 });
+
+test("plan_01 a day half typed on the new issue form holds the form back until it is a day", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await page.goto(projectIssuesAddress("WEB"));
+  await openNewIssueDialog(page);
+  const form = newIssueDialog(page);
+  await form.getByLabel(titleLabel(), { exact: true }).fill("Half a day");
+  const start = form.getByLabel(t("issue-field.start-date"), { exact: true });
+  // Half a day is no day: the form is not sent with an empty date, it says what to mend.
+  await start.fill("2026-11");
+  const create = form.getByRole("button", { name: t("issues.create"), exact: true });
+  await expect(create).toBeDisabled();
+  await expect(form.getByText(t("issues.value-wrong"))).toBeVisible();
+  await start.fill("2026-11-03");
+  await expect(create).toBeEnabled();
+});

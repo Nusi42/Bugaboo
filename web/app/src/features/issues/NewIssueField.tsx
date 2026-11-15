@@ -8,7 +8,7 @@ import { LengthBox, OwnFieldInput } from "../fields/index.ts";
 import { priorityChoices } from "./issue-choices.ts";
 import { NewIssueAssignedField } from "./NewIssueAssignedField.tsx";
 import { NewIssueDayField } from "./NewIssueDayField.tsx";
-import type { NewIssueValues } from "./new-issue-form.ts";
+import { withMistake, type NewIssueValues } from "./new-issue-form.ts";
 
 export interface NewIssueFieldProps {
   /** The key of the field: the word of a built-in field, or the ID of an own field. */
@@ -34,10 +34,10 @@ function EstimateField({
       inRow={false}
       problem={problem}
       onCommit={(estimatedTime) => {
-        onChange({ ...values, estimatedTime, estimateWrong: false });
+        onChange({ ...withMistake(values, "estimated-time", false), estimatedTime });
       }}
       onMistake={() => {
-        onChange({ ...values, estimateWrong: true });
+        onChange(withMistake(values, "estimated-time", true));
       }}
     />
   );
@@ -92,10 +92,11 @@ export function NewIssueField(props: NewIssueFieldProps) {
           value={values.fields[field]}
           problem={problem}
           onChange={(value) => {
-            onChange({
-              ...values,
-              fields: { ...values.fields, [field]: value },
-            });
+            const mended = withMistake(values, field, false);
+            onChange({ ...mended, fields: { ...values.fields, [field]: value } });
+          }}
+          onMistake={() => {
+            onChange(withMistake(values, field, true));
           }}
         />
       );

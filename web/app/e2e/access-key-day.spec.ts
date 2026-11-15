@@ -169,3 +169,27 @@ test.describe("in Europe/Berlin, with the clock of the page", () => {
     await expect(box).toHaveValue(addDays(opened, 1));
   });
 });
+
+test("auth_07 the box of the day a key runs out on writes and reads the day as the region does", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  // Day first under *Region*: the box writes the preset day first, never the device's way.
+  await chooseTimeZone(page, "Europe/Berlin");
+  const dayFirst = page.getByRole("radio", {
+    name: t("setting.region.date-format.day-month-year"),
+    exact: true,
+  });
+  await dayFirst.click();
+  await expect(dayFirst).toBeChecked();
+  await openFromMenu(page, t("nav.access-keys"));
+  await page.getByRole("button", { name: t("access-keys.create"), exact: true }).click();
+  const form = page.getByRole("region", { name: t("access-keys.create"), exact: true });
+  const box = form.getByLabel(t("access-keys.expires"), { exact: true });
+  await expect(box).toHaveValue(/^\d{2}\.\d{2}\.\d{4}$/u);
+  // A day typed day first is read as that day: the box says nothing is wrong with it.
+  await box.fill(await box.inputValue());
+  await expect(form.getByText(t("error.field.wrong-value"))).toHaveCount(0);
+  await box.fill("31.02.2027");
+  await expect(form.getByText(t("time.entry.not-a-date", { example: "31.12.2027" }))).toBeVisible();
+});

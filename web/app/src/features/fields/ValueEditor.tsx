@@ -31,6 +31,11 @@ export interface ValueEditorProps {
    */
   readonly live?: boolean;
   /**
+   * In a form sent as a whole: the text in the box is no value (a day half typed), so the form holds
+   * back until it is mended; the box says why.
+   */
+  readonly onMistake?: () => void;
+  /**
    * The editor sits in a name-and-value row of the Details: the name is the row's, there is no
    * *Save*, and what is typed is kept when the person leaves the box or presses Enter (R7).
    */

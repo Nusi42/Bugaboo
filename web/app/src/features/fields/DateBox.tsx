@@ -14,6 +14,8 @@ export interface DateBoxProps {
   readonly inRow?: boolean;
   /** What the server said was wrong with the day, in words: shown at the box. */
   readonly problem?: string | undefined;
+  /** In a form sent as a whole: the text is no day yet, so the form holds back (the box says why). */
+  readonly onMistake?: () => void;
 }
 
 /**
@@ -21,7 +23,7 @@ export interface DateBoxProps {
  * words as the value of an own field of the kind *Date*, so a day is typed and written one way
  * everywhere.
  */
-export function DateBox({ name, day, onCommit, inRow = true, problem }: DateBoxProps) {
+export function DateBox({ name, day, onCommit, inRow = true, problem, onMistake }: DateBoxProps) {
   return (
     <MomentEditor
       field={{ name, kind: "date", rules: { required: false } }}
@@ -29,6 +31,7 @@ export function DateBox({ name, day, onCommit, inRow = true, problem }: DateBoxP
       inRow={inRow}
       live={!inRow}
       problem={problem}
+      {...(onMistake === undefined ? {} : { onMistake })}
       onCommit={(sent) => {
         onCommit(typeof sent === "string" ? sent : null);
       }}

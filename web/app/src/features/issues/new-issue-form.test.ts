@@ -11,6 +11,7 @@ import {
   offersNoType,
   withType,
   type NewIssueValues,
+  withMistake,
 } from "./new-issue-form.ts";
 
 const filled: NewIssueValues = {
@@ -22,7 +23,7 @@ const filled: NewIssueValues = {
   startDate: "2026-11-03",
   dueDate: "2026-11-14",
   estimatedTime: 90,
-  estimateWrong: false,
+  mistakes: [],
   fields: { f1: "Acme" },
 };
 
@@ -127,8 +128,10 @@ describe("iss_11 what the form of a new issue sends", () => {
 
 describe("time_03 the estimate on the form of a new issue", () => {
   it("is not sent while the box holds no length", () => {
-    expect(canCreate({ ...filled, estimateWrong: true })).toBe(false);
-    expect(canCreate({ ...filled, estimateWrong: false })).toBe(true);
+    expect(canCreate(withMistake(filled, "estimated-time", true))).toBe(false);
+    expect(
+      canCreate(withMistake(withMistake(filled, "estimated-time", true), "estimated-time", false)),
+    ).toBe(true);
   });
 
   it("is a minute count in a draft, and nothing for anything else", () => {
@@ -140,14 +143,21 @@ describe("time_03 the estimate on the form of a new issue", () => {
     expect(draft("1:30")).toBeNull();
     expect(draft(null)).toBeNull();
     // A wrong box is not kept: the draft comes back with the last length that was good.
-    expect(decodeDraft(encodeDraft({ ...filled, estimateWrong: true }))?.estimateWrong).toBe(false);
+    expect(decodeDraft(encodeDraft(withMistake(filled, "estimated-time", true)))?.mistakes).toEqual(
+      [],
+    );
   });
 
   it("is put back to nothing when the layout does not show it", () => {
     const short = forForm(filled, (field) => field !== "estimated-time");
     expect(short.estimatedTime).toBeNull();
-    expect(short.estimateWrong).toBe(false);
-    expect(forForm({ ...filled, estimateWrong: true }, () => true).estimateWrong).toBe(true);
+    expect(
+      forForm(withMistake(filled, "estimated-time", true), (field) => field !== "estimated-time")
+        .mistakes,
+    ).toEqual([]);
+    expect(forForm(withMistake(filled, "estimated-time", true), () => true).mistakes).toEqual([
+      "estimated-time",
+    ]);
   });
 });
 
@@ -201,5 +211,17 @@ describe("plan_01 the dates on the form of a new issue", () => {
     expect(draftDue("2026-11-14")).toBe("2026-11-14");
     expect(draftDue(5)).toBe("");
     expect(draftDue(null)).toBe("");
+  });
+});
+
+describe("ux_07 a day half typed on the form of a new issue", () => {
+  it("holds the form back until it is a day, and each box counts on its own", () => {
+    const wrongStart = withMistake(filled, "start date", true);
+    expect(canCreate(wrongStart)).toBe(false);
+    const bothWrong = withMistake(wrongStart, "due date", true);
+    expect(canCreate(withMistake(bothWrong, "start date", false))).toBe(false);
+    expect(
+      canCreate(withMistake(withMistake(bothWrong, "start date", false), "due date", false)),
+    ).toBe(true);
   });
 });

@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 
 import { dateField, dateFieldName, type DateField } from "../../shared/date-fields.ts";
 import { DateBox } from "../fields/index.ts";
-import type { NewIssueValues } from "./new-issue-form.ts";
+import { withMistake, type NewIssueValues } from "./new-issue-form.ts";
 
 export interface NewIssueDayFieldProps {
   readonly field: DateField;
@@ -22,7 +22,11 @@ export function NewIssueDayField({ field, values, problem, onChange }: NewIssueD
       inRow={false}
       problem={problem}
       onCommit={(day) => {
-        onChange(start ? { ...values, startDate: day ?? "" } : { ...values, dueDate: day ?? "" });
+        const mended = withMistake(values, field, false);
+        onChange(start ? { ...mended, startDate: day ?? "" } : { ...mended, dueDate: day ?? "" });
+      }}
+      onMistake={() => {
+        onChange(withMistake(values, field, true));
       }}
     />
   );

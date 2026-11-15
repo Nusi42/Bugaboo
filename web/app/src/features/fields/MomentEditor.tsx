@@ -1,12 +1,10 @@
 import { t } from "@bugaboo/messages";
 import { TextField, fieldKind } from "@bugaboo/ui";
 
-import { dayText } from "../../shared/format.ts";
-import { dayProblem, readDay } from "../../shared/read-day.ts";
-import { useRegion, type Region } from "../../shared/region.ts";
+import { useTypedDay } from "../../shared/typed-day.ts";
 import { boxWords } from "./box-words.ts";
 import { SaveForm } from "./SaveForm.tsx";
-import { useSynced } from "./use-synced.ts";
+import { useSynced } from "../../shared/use-synced.ts";
 import type { BoxField } from "./fields.ts";
 import type { Sent, ValueEditorProps } from "./ValueEditor.tsx";
 
@@ -48,37 +46,36 @@ function TimeBox({
   );
 }
 
-/** The day typed into the box, as the calendar writes it: empty for an empty box, none for text that is no day. */
-function typedDay(typed: string, region: Region): string | undefined {
-  return typed.trim() === "" ? "" : readDay(typed, region);
-}
-
 /**
  * The day and the time of day a moment holds, each as typed so far and as saved, and what a live
- * form does as each changes: it sends the moment at once. The day is written and read in the person's
- * date format (*Region*), as every box for a day is, never by the browser's own date box (TXT-DATES).
+ * form does as each changes: it sends the moment at once, or says that the text of the day is no day,
+ * so the form holds back until it is mended (`onMistake`). The day is typed as every box for a day is
+ * (`useTypedDay`).
  */
-function useMomentParts({ value, field, live, onCommit }: MomentEditorProps) {
-  const region = useRegion();
+function useMomentParts({ value, field, live, onCommit, onMistake }: MomentEditorProps) {
   const withTime = field.kind === "date-time";
   const [savedDay, savedTime] = partsOf(value, withTime);
-  const [typed, setTyped] = useSynced(savedDay === "" ? "" : dayText(savedDay, region));
+  const typed = useTypedDay(savedDay);
   const [time, setTime] = useSynced(savedTime);
-  const day = typedDay(typed, region);
   const sendLive = (nextTyped: string, nextTime: string) => {
-    if (live === true) {
-      onCommit(momentOf(withTime, typedDay(nextTyped, region) ?? "", nextTime));
+    if (live !== true) {
+      return;
+    }
+    const day = typed.read(nextTyped);
+    if (day === undefined) {
+      onMistake?.();
+    } else {
+      onCommit(momentOf(withTime, day, nextTime));
     }
   };
-  const problem = dayProblem(typed, region);
-  return { withTime, savedDay, savedTime, typed, setTyped, day, time, setTime, sendLive, problem };
+  return { withTime, savedDay, savedTime, typed, time, setTime, sendLive };
 }
 
 /** A day, and for a day and time also the time of day. */
 export function MomentEditor(props: MomentEditorProps) {
   const { field, onCommit, problem, isPending = false, live = false, inRow = false } = props;
-  const moment = useMomentParts(props);
-  const { withTime, savedDay, savedTime, typed, day, time, setTime, sendLive } = moment;
+  const { withTime, savedDay, savedTime, typed, time, setTime, sendLive } = useMomentParts(props);
+  const { day } = typed;
   return (
     <SaveForm
       name={field.name}
@@ -93,11 +90,11 @@ export function MomentEditor(props: MomentEditorProps) {
       }}
     >
       <TextField
-        {...boxWords(field, problem ?? moment.problem, inRow)}
+        {...boxWords(field, problem ?? typed.problem, inRow)}
         kind={fieldKind.text}
-        value={typed}
+        value={typed.typed}
         onChange={(next) => {
-          moment.setTyped(next);
+          typed.setTyped(next);
           sendLive(next, time);
         }}
       />
@@ -107,7 +104,7 @@ export function MomentEditor(props: MomentEditorProps) {
           value={time}
           onChange={(next) => {
             setTime(next);
-            sendLive(typed, next);
+            sendLive(typed.typed, next);
           }}
         />
       ) : null}

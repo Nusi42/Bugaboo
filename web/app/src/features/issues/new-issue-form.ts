@@ -20,8 +20,11 @@ export interface NewIssueValues {
   readonly dueDate: string;
   /** *Estimated time* in whole minutes; none until one is typed. */
   readonly estimatedTime: number | null;
-  /** The text in the box of the estimate is no length: the form is not sent until it is mended. */
-  readonly estimateWrong: boolean;
+  /**
+   * The fields whose box holds text that is no value (a length or a day half typed), by their words:
+   * the form is not sent until they are mended.
+   */
+  readonly mistakes: readonly string[];
   /** The values of own fields as the API takes them, by the key of the field. */
   readonly fields: Readonly<Record<string, unknown>>;
 }
@@ -36,7 +39,7 @@ export const emptyForm: NewIssueValues = {
   startDate: "",
   dueDate: "",
   estimatedTime: null,
-  estimateWrong: false,
+  mistakes: [],
   fields: {},
 };
 
@@ -114,7 +117,7 @@ export function decodeDraft(text: string): NewIssueValues | undefined {
           startDate: dayOf(read("startDate")),
           dueDate: dayOf(read("dueDate")),
           estimatedTime: estimateOf(read("estimatedTime")),
-          estimateWrong: false,
+          mistakes: [],
           fields: fieldsOf(read("fields")),
         }
       : undefined;
@@ -144,9 +147,15 @@ export function offersNoType(read: boolean, types: readonly unknown[]): boolean 
   return read && types.length === 0;
 }
 
-/** Whether the form can be sent: it has a title and a type. */
+/** Whether the form can be sent: it has a title and a type, and no box holds text that is no value. */
 export function canCreate(values: NewIssueValues): boolean {
-  return values.title.trim() !== "" && values.issueType !== "" && !values.estimateWrong;
+  return values.title.trim() !== "" && values.issueType !== "" && values.mistakes.length === 0;
+}
+
+/** The values with the box of `field` holding text that is no value (`wrong`), or a value again. */
+export function withMistake(values: NewIssueValues, field: string, wrong: boolean): NewIssueValues {
+  const others = values.mistakes.filter((each) => each !== field);
+  return { ...values, mistakes: wrong ? [...others, field] : others };
 }
 
 /** The values of own fields for which `keep` says yes. */
@@ -174,7 +183,7 @@ export function forForm(values: NewIssueValues, shows: (field: string) => boolea
     startDate: shows(dateField.start) ? values.startDate : emptyForm.startDate,
     dueDate: shows(dateField.due) ? values.dueDate : emptyForm.dueDate,
     estimatedTime: shows("estimated-time") ? values.estimatedTime : emptyForm.estimatedTime,
-    estimateWrong: shows("estimated-time") ? values.estimateWrong : emptyForm.estimateWrong,
+    mistakes: values.mistakes.filter((field) => shows(field)),
     fields: fieldsWhere(values.fields, (key) => shows(key)),
   };
 }

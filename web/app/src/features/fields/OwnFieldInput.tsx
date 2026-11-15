@@ -13,6 +13,8 @@ export interface OwnFieldInputProps {
   readonly onChange: (value: Sent) => void;
   /** What the server said was wrong with this field, in words: shown at the field. */
   readonly problem?: string | undefined;
+  /** The text in the box is no value: the form holds back until it is mended. */
+  readonly onMistake?: () => void;
 }
 
 /**
@@ -27,6 +29,7 @@ export function OwnFieldInput({
   value,
   onChange,
   problem,
+  onMistake,
 }: OwnFieldInputProps) {
   const found = useFields({ project }).data?.fields.find((each) => each.id === field);
   return found === undefined ? null : (
@@ -38,6 +41,7 @@ export function OwnFieldInput({
       live
       problem={problem}
       onCommit={onChange}
+      {...(onMistake === undefined ? {} : { onMistake })}
     />
   );
 }

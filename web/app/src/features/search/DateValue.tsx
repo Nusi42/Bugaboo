@@ -1,14 +1,11 @@
 import { t } from "@bugaboo/messages";
 import { SelectField, TextField } from "@bugaboo/ui";
 import type { Operand, TimeWord } from "@bugaboo/wasm-search";
-import { useState } from "react";
 
 import { dayOf, nothingPicked, type ValueInputProps } from "./filter-draft.ts";
 import { dayText, timeWordText } from "./filter-text.ts";
-import { dayText as writtenDay } from "../../shared/format.ts";
-import { dayProblem, readDay } from "../../shared/read-day.ts";
-import { useRegion } from "../../shared/region.ts";
 import { nowhere } from "../../shared/search-tree.ts";
+import { useTypedDay } from "../../shared/typed-day.ts";
 
 const timeWords: readonly TimeWord[] = [
   "today",
@@ -26,12 +23,9 @@ function timeOperand(word: TimeWord): Operand {
 export function DateValue({ values, onValues }: ValueInputProps) {
   const [first] = values;
   const word = first?.type === "time" ? first.word : undefined;
-  const region = useRegion();
-  // The day is typed in the person's date format, as in every box for a day (TXT-DATES).
-  const [typed, setTyped] = useState(
-    first?.type === "date" ? writtenDay(dayText(first.date), region) : "",
-  );
-  const dayIn = (text: string) => dayOf(readDay(text, region) ?? "");
+  // The day is typed as in every box for a day (TXT-DATES).
+  const typed = useTypedDay(first?.type === "date" ? dayText(first.date) : "");
+  const dayIn = (text: string) => dayOf(typed.read(text) ?? "");
   return (
     <>
       <SelectField
@@ -46,7 +40,7 @@ export function DateValue({ values, onValues }: ValueInputProps) {
         value={word ?? nothingPicked}
         onChange={(next) => {
           const picked = timeWords.find((each) => each === next);
-          const day = dayIn(typed);
+          const day = dayIn(typed.typed);
           onValues(picked === undefined ? (day === null ? [] : [day]) : [timeOperand(picked)]);
         }}
       />
@@ -54,10 +48,10 @@ export function DateValue({ values, onValues }: ValueInputProps) {
         <TextField
           label={t("search.bar.day")}
           description={t("search.bar.day-format")}
-          value={typed}
-          errorMessage={dayProblem(typed, region)}
+          value={typed.typed}
+          errorMessage={typed.problem}
           onChange={(text) => {
-            setTyped(text);
+            typed.setTyped(text);
             const operand = dayIn(text);
             onValues(operand === null ? [] : [operand]);
           }}
