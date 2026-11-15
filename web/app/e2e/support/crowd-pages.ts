@@ -71,6 +71,11 @@ export function conflictNote(page: Page) {
   return page.getByRole("button", { name: t("issues.use-mine"), exact: true });
 }
 
+/** The other answer of that note: *Keep Ben's change*, named by whoever changed it first. */
+export function keepTheirs(page: Page, name: string) {
+  return page.getByRole("button", { name: t("issues.keep-theirs", { name }), exact: true });
+}
+
 /**
  * Waits until the change of the page is kept, the way a person does: they look at the page, and if
  * it says somebody changed the issue first they press *Use mine* and look again. Nothing is

@@ -3,7 +3,7 @@ import { t } from "@bugaboo/messages";
 import { type Browser, expect } from "@playwright/test";
 
 import { ada, signInThroughApi, type ApiSession, type Instance } from "./accounts.ts";
-import { signedInPage, type ScreenLook } from "./crowd-pages.ts";
+import { conflictNote, keepTheirs, signedInPage, type ScreenLook } from "./crowd-pages.ts";
 import {
   crowdOfTen,
   crowdPerson,
@@ -117,10 +117,8 @@ export async function aStaleSaveOffersKeepTheirsOrUseMine(
   const mine = dates(21, 24).start_date;
   await start.fill(mine);
   await start.blur();
-  await expect(
-    page.getByRole("button", { name: t("issues.keep-theirs", { name: ben.name }), exact: true }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: t("issues.use-mine"), exact: true }).click();
+  await expect(keepTheirs(page, ben.name)).toBeVisible();
+  await conflictNote(page).click();
   await expect(savedNote(page)).toBeVisible();
   // Ada's start on Ben's move: no date is lost.
   const read = await readIssue(benSession, key);
