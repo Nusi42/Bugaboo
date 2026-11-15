@@ -1,8 +1,11 @@
 import type { Page } from "@playwright/test";
 
+import { t } from "@bugaboo/messages";
+
 import { ada } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
+import { inOrder } from "./support/sequence.ts";
 import { prepareWeb } from "./support/issues.ts";
 import { expectStill, landmarkOf, movementWhile, partLandmark } from "./support/movement.ts";
 import {
@@ -25,6 +28,9 @@ import { paths } from "../src/shared/paths.ts";
 // moves.
 
 test.use({ preparation: { run: prepareWeb } });
+
+/** What a person typed before the window changed. */
+const TYPED = "kept while typing";
 
 /** A topic with cards of its own after its first (*My themes*), and one whose sections are all cards. */
 const TOPICS = [paths.appearance, paths.labels] as const;
@@ -113,5 +119,34 @@ for (const scheme of ["light", "dark"] as const) {
     await openTopic(page, paths.appearance);
     const colors = await coverColors(page);
     expect(colors.head).toBe(colors.holder);
+  });
+}
+
+/** The windows a person may pass through: a computer, a phone, a tablet, and back. */
+const LAYOUTS = [
+  { width: 400, height: 860 },
+  { width: 1280, height: 720 },
+  { width: 900, height: 1000 },
+  { width: 400, height: 860 },
+  { width: 900, height: 1000 },
+  { width: 1280, height: 720 },
+] as const;
+
+for (const [address, field] of [
+  [paths.labels, t("labels.field-group-name")],
+  [paths.handle, t("handle.label")],
+] as const) {
+  test(`ux_06 what is typed on a page of settings stays when the window changes its layout (${address})`, async ({
+    page,
+  }) => {
+    await openTopic(page, address, { width: 1280, height: 720 });
+    const box = page.getByRole("textbox", { name: field, exact: true }).first();
+    await box.fill(TYPED);
+    await inOrder(
+      LAYOUTS.map((size) => async () => {
+        await page.setViewportSize(size);
+        await expect(box, `${String(size.width)} px`).toHaveValue(TYPED);
+      }),
+    );
   });
 }
