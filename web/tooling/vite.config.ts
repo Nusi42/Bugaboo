@@ -4,6 +4,7 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
 import { catalogWords } from "./catalog-words.ts";
+import { firstLook } from "./first-look.ts";
 import { readPorts, repoRoot } from "./ports.ts";
 import { serverPathPattern } from "./server-paths.ts";
 
@@ -11,7 +12,7 @@ const ports = readPorts();
 const host = "127.0.0.1";
 
 export default defineConfig({
-  plugins: [react(), catalogWords()],
+  plugins: [react(), catalogWords(), ...firstLook()],
   root: resolve(import.meta.dirname, "../app"),
   cacheDir: resolve(repoRoot, "node_modules/.vite"),
   server: {

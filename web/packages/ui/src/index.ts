@@ -26,7 +26,6 @@ export {
   type AppearanceSource,
   type DarkThemeId,
   type LightThemeId,
-  type PageAttributes,
   type SpacingChoice,
 } from "./appearance.ts";
 export { Button, type ButtonProps } from "./Button.tsx";
@@ -250,6 +249,7 @@ export {
   themeChoices,
   type DeviceThemes,
   type OwnLook,
+  type PageAttributes,
   type ThemeChoice,
 } from "./theme.ts";
 export { partOf, type PartAttributes, type PartChoices } from "./parts.ts";

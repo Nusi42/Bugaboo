@@ -6,6 +6,7 @@ export const storageKey = {
   appearance: "bugaboo.appearance",
   drafts: "bugaboo.drafts",
   firstFrame: "bugaboo.first-frame",
+  firstLook: "bugaboo.first-look",
   projectTree: "bugaboo.project-tree",
   recentChoices: "bugaboo.recent-choices",
   shortcutKeys: "bugaboo.shortcut-keys",

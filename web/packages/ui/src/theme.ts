@@ -52,11 +52,27 @@ export interface OwnLook {
   readonly sheet: string;
 }
 
+/** The page the choices are put on: the attributes the generated CSS reacts to. */
+export interface PageAttributes {
+  readonly setAttribute: (name: string, value: string) => void;
+  readonly removeAttribute: (name: string) => void;
+}
+
+/** The ID of the link of an own theme's sheet that the script of the first look puts in the head. */
+export const firstLookSheetId = "first-look-sheet";
+
+/** The link of the sheet the first look put in the head, if any: the app takes it over. */
+function firstLookSheet(): HTMLLinkElement | null {
+  const link = document.querySelector(`link#${firstLookSheetId}`);
+  return link instanceof HTMLLinkElement ? link : null;
+}
+
 /** The link element of the sheet of an own theme, while one is on the page. */
 let ownSheet: HTMLLinkElement | null = null;
 
 /** Links the sheet of an own theme, or takes the link away when there is none. */
 function linkOwnSheet(own: OwnLook | null): void {
+  ownSheet ??= firstLookSheet();
   if (own === null) {
     ownSheet?.remove();
     ownSheet = null;
@@ -77,9 +93,13 @@ function linkOwnSheet(own: OwnLook | null): void {
  * frame, and an own theme's sheet sets its values on top of it under `data-own-theme`.
  */
 export function applyTheme(theme: ThemeId, own: OwnLook | null = null): void {
-  const page = document.documentElement;
-  page.setAttribute(pageAttributes.look, theme);
+  markTheme(document.documentElement, theme, own);
   linkOwnSheet(own);
+}
+
+/** Puts the attributes of a theme and of an own theme on a page frame (the page itself, or a record of it). */
+export function markTheme(page: PageAttributes, theme: ThemeId, own: OwnLook | null): void {
+  page.setAttribute(pageAttributes.look, theme);
   if (own === null) {
     page.removeAttribute(pageAttributes.ownTheme);
   } else {

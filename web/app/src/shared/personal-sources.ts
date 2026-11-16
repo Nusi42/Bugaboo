@@ -59,9 +59,13 @@ function tellUnsentWatchers(): void {
   }
 }
 
-/** Forgets what this browser kept of the person's choices: the copy for the first frame. */
+/**
+ * Forgets what this browser kept of the person's choices: the copy for the first frame, and the
+ * look the page frame carries from its first paint (the page keeps the device's look there again).
+ */
 export function forgetPersonalChoices(): void {
   forgetStored(storageKey.firstFrame);
+  forgetStored(storageKey.firstLook);
   unsent.look = null;
   unsent.keys = null;
 }

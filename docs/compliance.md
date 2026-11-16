@@ -220,7 +220,7 @@ reading anything on a person's device needs consent, unless it is strictly neces
 security), no tracking, no outside scripts or fonts. So no consent banner is needed
 (PRIV-01, COMP-13).
 
-The browser also keeps four interface choices on the device. Together they are all it keeps
+The browser also keeps five interface choices on the device. Together they are all it keeps
 besides the two cookies. They hold no more than what the person chose about how the service looks
 and works, and each is strictly necessary for the service the person asked for (a page that looks
 and works the way they set it), so none needs consent: TDDDG section 25 (2) no. 2.
@@ -228,6 +228,7 @@ and works the way they set it), so none needs consent: TDDDG section 25 (2) no. 
 | Key | What it holds | When it is there | Basis |
 |-----|---------------|------------------|-------|
 | `bugaboo.first-frame` | A copy of the signed-in person's look, so the first frame is drawn in it before the server has answered (M0-F05) | From the moment the person's settings arrive until sign-out, or until nobody is signed in; sign-out removes it | The person's own choice, kept to show the service as they set it (Art. 6(1)(b) GDPR, contract); strictly necessary, TDDDG section 25 (2) no. 2. Not kept for the next person at the device |
+| `bugaboo.first-look` | The attributes of the look the page shows, for a light and for a dark device (the theme, an own theme and the address of its style sheet, spacing, text size, motion), so the very first paint of a page, before the app runs, is in that look and a dark theme never flashes light | While a look is shown: the signed-in person's while they are signed in, the device's choice while nobody is; sign-out removes it, and the page keeps the device's look there again | The same as `bugaboo.first-frame` while somebody is signed in, and as `bugaboo.appearance` while nobody is; strictly necessary, TDDDG section 25 (2) no. 2. Not kept for the next person at the device |
 | `bugaboo.appearance` | The look chosen at the bottom of the pages before sign-in (theme, spacing, text size, motion) | Only while nobody is signed in; the app clears it at sign-in | A choice of the device, not of a person; strictly necessary for the same reason |
 | `bugaboo.shortcut-keys` | Own keyboard shortcuts chosen while nobody is signed in | Only while nobody is signed in; the app clears it at sign-in | A choice of the device; strictly necessary for the same reason |
 | `bugaboo.sidebar-narrow` | Whether the menu is narrowed to icons | Until the person widens it | A choice of the device, not of a person; it holds no personal data; strictly necessary for the same reason |

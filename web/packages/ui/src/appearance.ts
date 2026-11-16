@@ -6,10 +6,13 @@ import {
 } from "@bugaboo/api-client";
 
 import { Listeners } from "./listeners.ts";
+import type { FirstLook, FramePage } from "./first-look.ts";
 import {
   applyTheme,
   defaultThemeChoice,
+  markTheme,
   type OwnLook,
+  type PageAttributes,
   deviceDarkQuery,
   isThemeChoice,
   resolveTheme,
@@ -137,12 +140,6 @@ export function ownThemeOf(appearance: Appearance, deviceIsDark: boolean): Chose
   return shown === appearance.dark ? appearance.darkOwn : null;
 }
 
-/** The page the choices are put on: the attributes the generated CSS reacts to. */
-export interface PageAttributes {
-  readonly setAttribute: (name: string, value: string) => void;
-  readonly removeAttribute: (name: string) => void;
-}
-
 interface Choice {
   readonly attribute: string;
   readonly value: string;
@@ -163,10 +160,33 @@ export function applyChoices(appearance: Appearance, page: PageAttributes): void
   switchOn(page, appearance.lessMotion, variants["less-motion"]);
 }
 
-/** Everything of the appearance, on the page. */
+/** What the page frame carries for this appearance on a device that is light or dark. */
+export function framePageOf(appearance: Appearance, deviceIsDark: boolean): FramePage {
+  const attributes = new Map<string, string>();
+  const record: PageAttributes = {
+    setAttribute: (name, value) => {
+      attributes.set(name, value);
+    },
+    removeAttribute: (name) => {
+      attributes.delete(name);
+    },
+  };
+  const own = ownThemeOf(appearance, deviceIsDark);
+  markTheme(record, themeOf(appearance, deviceIsDark), own);
+  applyChoices(appearance, record);
+  return { attributes: Object.fromEntries(attributes), sheet: own?.sheet ?? null };
+}
+
+/** The first look of this appearance: what the page frame carries on a light and on a dark device. */
+export function firstLookOf(appearance: Appearance): FirstLook {
+  return { light: framePageOf(appearance, false), dark: framePageOf(appearance, true) };
+}
+
+/** Everything of the appearance, on the page, and kept for the first frame of the next load. */
 export function applyAppearance(appearance: Appearance, deviceIsDark: boolean): void {
   applyTheme(themeOf(appearance, deviceIsDark), ownThemeOf(appearance, deviceIsDark));
   applyChoices(appearance, document.documentElement);
+  writeStored(storageKey.firstLook, JSON.stringify(firstLookOf(appearance)));
 }
 
 /**
