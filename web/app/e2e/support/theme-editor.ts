@@ -11,11 +11,12 @@ import {
   createAdmin,
   createPerson,
   ownId,
+  type Instance,
   type Person,
   signInThroughApi,
 } from "./accounts.ts";
 import { giveRole, roleName } from "./access.ts";
-import { type Instance } from "./server.ts";
+import { expectAllRead } from "./checks.ts";
 import { inOrder } from "./sequence.ts";
 
 // The theme editor in the browser (THM-03, THM-04, UX §5.6): who is there, the themes they start
@@ -234,6 +235,8 @@ export function upsideDownLine(page: Page): Locator {
 
 /** Makes a theme from Dusk with *Create a theme* on the page that is open; the editor opens. */
 export async function createFromDusk(page: Page, name: string): Promise<void> {
+  // The page has its first reads first: in WebKit they come slowly, and a press before them is lost.
+  await expectAllRead(page);
   await page.getByLabel(t("theme-editor.create-name")).fill(name);
   await page.getByLabel(t("theme-editor.create-from")).selectOption({ label: t("theme.dusk") });
   await page.getByRole("button", { name: t("theme-editor.create"), exact: true }).click();
