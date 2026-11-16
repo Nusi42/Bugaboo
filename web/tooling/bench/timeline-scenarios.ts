@@ -2,7 +2,7 @@ import { dataOf, pageSizeDefault } from "@bugaboo/api-client";
 
 import layout from "../../../tools/dev/sample.json" with { type: "json" };
 import { timed } from "../../app/e2e/support/perf.ts";
-import { dayFromToday } from "../../app/e2e/support/timeline.ts";
+import { dayFromToday } from "./reads.ts";
 import { type Context, type Scenario } from "./scenarios.ts";
 
 // The scenarios of the timeline on the large dataset (M8 WP-12, PLAN-01, PLAN-12, PERF-01),

@@ -76,6 +76,16 @@ function addDays(day: string, days: number): string {
   return new Date(Date.parse(day) + days * msPerDay).toISOString().slice(0, day.length);
 }
 
+/** Today in UTC (`2027-01-14`), the day the driver counts from. */
+function todayUtc(): string {
+  return new Date().toISOString().slice(0, "2027-01-14".length);
+}
+
+/** The date `days` days after today, in UTC: the day helper of the driver, which cannot load the screens' code. */
+export function dayFromToday(days: number): string {
+  return addDays(todayUtc(), days);
+}
+
 /** How far back the last work day of the person is looked for, in days (the most one read takes). */
 const LOOK_BACK_DAYS = 61;
 /** The days of a week. */
@@ -83,7 +93,7 @@ const WEEK_DAYS = 7;
 
 /** The last week the person worked: the seven days that end with their newest work day. */
 export async function lastWeek(session: ApiSession): Promise<Context["week"]> {
-  const today = new Date().toISOString().slice(0, "2027-01-14".length);
+  const today = todayUtc();
   const read = dataOf(
     await session.client.GET("/api/v1/me/work-days", {
       params: { query: { from: addDays(today, -LOOK_BACK_DAYS), to: today } },

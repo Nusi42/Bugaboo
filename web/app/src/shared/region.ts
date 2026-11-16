@@ -57,10 +57,7 @@ export function isKnownTimeZone(name: string): boolean {
   }
 }
 
-/** The time zone of this device, by its name. */
-export function deviceTimeZone(): string {
-  return new Intl.DateTimeFormat().resolvedOptions().timeZone;
-}
+export { deviceTimeZone } from "./device-zone.ts";
 
 /** The region the settings describe. */
 export function regionOf(settings?: MySettings): Region {

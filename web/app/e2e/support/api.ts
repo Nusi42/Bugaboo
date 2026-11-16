@@ -8,7 +8,7 @@ import {
 } from "@bugaboo/api-client";
 import { type APIRequestContext } from "@playwright/test";
 
-import { deviceTimeZone } from "../../src/shared/region.ts";
+import { deviceTimeZone } from "../../src/shared/device-zone.ts";
 import { type Answered, CookieJar, exchange } from "./session-transport.ts";
 
 /**
