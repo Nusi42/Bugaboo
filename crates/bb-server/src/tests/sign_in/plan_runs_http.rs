@@ -11,10 +11,7 @@ use tokio::task::JoinSet;
 
 use super::http::{Browser, rig_and_app};
 use super::issues_site::{ISSUES, Site, ok};
-use super::plan_site::{
-    MONDAY, TIMELINE, ask, blocks, change, id_of_key, issue, overlapping, page, planned,
-    warnings_on,
-};
+use super::plan_site::{MONDAY, change, id_of_key, issue, moves_of, planned, previewed_move_after};
 
 /// The route that moves the dates of several issues in one run.
 const MOVE_DATES: &str = "/api/v1/issues/move-dates";
@@ -106,39 +103,8 @@ async fn plan_13_move_it_after_with_an_issue_changed_meanwhile_writes_nothing() 
     each_database("plan_13_move_after_refused_whole", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let (first, then) = overlapping(&site, &mut ada).await?;
-        let after = planned(
-            &site,
-            &mut ada,
-            "Tests",
-            json!({"start_date": "2027-03-06", "due_date": "2027-03-06"}),
-        )
-        .await?;
-        blocks(&mut ada, &first, &then).await?;
-        blocks(&mut ada, &then, &after).await?;
-        let found = page(&mut ada, ask(&site, MONDAY, "2027-03-31", json!({}))).await?;
-        let then_id = id_of_key(&mut ada, &then).await?;
-        let move_after = warnings_on(&found, &then_id)[0]["move_after"].clone();
-        let preview = ada
-            .send(
-                "POST",
-                &format!("{TIMELINE}/move-after"),
-                Some(json!({"issue": then, "after": move_after, "timeline": {"zoom": "week"}})),
-            )
-            .await?;
-        let moves: Vec<Value> = ok(&preview)?["issues"]
-            .as_array()
-            .ok_or("no issues")?
-            .iter()
-            .map(|each| {
-                json!({
-                    "issue": each["id"],
-                    "version": each["version"],
-                    "start_date": each["start_date"],
-                    "due_date": each["due_date"],
-                })
-            })
-            .collect();
+        let (then, after, preview) = previewed_move_after(&site, &mut ada).await?;
+        let moves = moves_of(&preview);
         // Somebody changes the last issue the move moves, after the preview.
         let (mut ben, _) = site.person(StartingRole::TeamMember, "ben").await?;
         ok(&change(&mut ben, &after, json!({"due_date": "2027-03-20"})).await?)?;

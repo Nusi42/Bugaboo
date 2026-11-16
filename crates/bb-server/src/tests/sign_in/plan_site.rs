@@ -234,3 +234,53 @@ pub(super) fn goal_of<'a>(page: &'a Value, id: &str) -> Option<&'a Value> {
         .iter()
         .find(|goal| goal["id"] == id)
 }
+
+/// A chain of three issues of ACME, *API*, *UI* and *Tests*, each blocking the next, where *UI*
+/// starts before *API* ends: the readable IDs of *UI* and *Tests*, and the preview of *Move it
+/// after* of *UI*, which moves both. Nothing is saved yet.
+pub(super) async fn previewed_move_after(
+    site: &Site<'_>,
+    ada: &mut Browser,
+) -> Result<(String, String, Value), Failure> {
+    let (first, then) = overlapping(site, ada).await?;
+    let after = planned(
+        site,
+        ada,
+        "Tests",
+        json!({"start_date": "2027-03-06", "due_date": "2027-03-06"}),
+    )
+    .await?;
+    blocks(ada, &first, &then).await?;
+    blocks(ada, &then, &after).await?;
+    let found = page(ada, ask(site, MONDAY, "2027-03-31", json!({}))).await?;
+    let then_id = id_of_key(ada, &then).await?;
+    let move_after = warnings_on(&found, &then_id)[0]["move_after"].clone();
+    let preview = ada
+        .send(
+            "POST",
+            &format!("{TIMELINE}/move-after"),
+            Some(json!({"issue": then, "after": move_after, "timeline": {"zoom": "week"}})),
+        )
+        .await?;
+    let moves = ok(&preview)?["issues"].clone();
+    Ok((then, after, moves))
+}
+
+/// The issues of a preview of *Move it after*, as the move sends them.
+pub(super) fn moves_of(preview: &Value) -> Vec<Value> {
+    preview
+        .as_array()
+        .map(|all| {
+            all.iter()
+                .map(|each| {
+                    json!({
+                        "issue": each["id"],
+                        "version": each["version"],
+                        "start_date": each["start_date"],
+                        "due_date": each["due_date"],
+                    })
+                })
+                .collect()
+        })
+        .unwrap_or_default()
+}

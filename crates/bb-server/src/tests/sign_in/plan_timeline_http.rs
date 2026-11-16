@@ -10,8 +10,8 @@ use serde_json::{Value, json};
 use super::http::rig_and_app;
 use super::issues_site::{ISSUES, PROJECTS, Site, key_of, ok};
 use super::plan_site::{
-    MONDAY, TIMELINE, ask, bar_of, blocks, by_effort, change, id_of_key, issue, overlapping, page,
-    planned, rows_of, warnings_on, work_times,
+    MONDAY, TIMELINE, ask, bar_of, blocks, by_effort, change, id_of_key, issue, moves_of,
+    overlapping, page, planned, previewed_move_after, rows_of, warnings_on, work_times,
 };
 
 #[tokio::test]
@@ -452,29 +452,9 @@ async fn plan_13_move_it_after_previews_then_moves_as_one_run() -> TestResult {
     each_database("plan_13_move_after", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let (first, then) = overlapping(&site, &mut ada).await?;
-        let after = planned(
-            &site,
-            &mut ada,
-            "Tests",
-            json!({"start_date": "2027-03-06", "due_date": "2027-03-06"}),
-        )
-        .await?;
-        blocks(&mut ada, &first, &then).await?;
-        blocks(&mut ada, &then, &after).await?;
+        let (then, after, moves) = previewed_move_after(&site, &mut ada).await?;
         let body = ask(&site, MONDAY, "2027-03-31", json!({}));
-        let found = page(&mut ada, body.clone()).await?;
         let then_id = id_of_key(&mut ada, &then).await?;
-        let move_after = warnings_on(&found, &then_id)[0]["move_after"].clone();
-        // The preview names every issue that moves and its new dates; nothing is saved.
-        let preview = ada
-            .send(
-                "POST",
-                &format!("{TIMELINE}/move-after"),
-                Some(json!({"issue": then, "after": move_after, "timeline": {"zoom": "week"}})),
-            )
-            .await?;
-        let moves = ok(&preview)?["issues"].clone();
         assert_eq!(
             named_moves(&moves),
             [
@@ -485,19 +465,7 @@ async fn plan_13_move_it_after_previews_then_moves_as_one_run() -> TestResult {
         );
         assert_eq!(issue(&mut ada, &then).await?["start_date"], "2027-03-03");
         // The move is one run of the dates.
-        let issues: Vec<Value> = moves
-            .as_array()
-            .ok_or("no issues")?
-            .iter()
-            .map(|each| {
-                json!({
-                    "issue": each["id"],
-                    "version": each["version"],
-                    "start_date": each["start_date"],
-                    "due_date": each["due_date"],
-                })
-            })
-            .collect();
+        let issues = moves_of(&moves);
         let run_answer = ada
             .send(
                 "POST",
