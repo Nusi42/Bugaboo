@@ -106,9 +106,11 @@ export async function givenToSomeoneElseTheFactorGoesBack(
   await page.getByRole("button", { name: t("issues.unassign-name", { name: lea.name }) }).click();
   await page.getByRole("button", { name: t("common.done"), exact: true }).click();
   await expect(factorRow(page)).toContainText(t("issues.time-factor-as-estimated"));
-  // The picture shows whom it was given to and the factor of ×1: the whole page, both rows of the Details.
+  // The picture shows whom it was given to and the factor of ×1, as the window shows them: the Details scrolled in
+  // their own box until the row of the factor is in view, the sections and the list beside them where they are.
   await expect(detailRow(page, t("issue-field.assigned-to"))).toContainText(colleague.name);
-  await goodWhole(page, "05-given-to-someone-else");
+  await factorRow(page).scrollIntoViewIfNeeded();
+  await good(page, "05-given-to-someone-else");
 }
 
 /** Step 6: a theme for everyone that is hard to read is refused until it is fixed, then saved. */
