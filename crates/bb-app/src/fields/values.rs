@@ -48,6 +48,20 @@ impl ItemValues {
         self.values.contains_key(&item)
     }
 
+    /// The values of `items` alone, with the same definitions, when every one of them was read;
+    /// `None` when one was not. A request that read many items ahead hands out the few it works on
+    /// next without copying the rest, so its cost does not grow with the selection for each item.
+    pub(crate) fn only(&self, items: &[EntityId]) -> Option<Self> {
+        let values = items
+            .iter()
+            .map(|item| Some((*item, self.values.get(item)?.clone())))
+            .collect::<Option<_>>()?;
+        Some(Self {
+            definitions: Arc::clone(&self.definitions),
+            values,
+        })
+    }
+
     /// Whether every own field the item has a value in is offered in a project whose projects from
     /// the top down are `chain`, for an issue of this type: whether the item can live on there
     /// without losing a value.
@@ -487,10 +501,11 @@ impl<S: AuthStore> Ctx<'_, S> {
         items: &[EntityId],
     ) -> Result<ItemValues, AppError> {
         if kind == RecordKind::Issue
-            && let Some(ahead) = locked(&self.known.ahead).as_ref()
-            && items.iter().all(|item| ahead.values.has(*item))
+            && let Some(read) = locked(&self.known.ahead)
+                .as_ref()
+                .and_then(|ahead| ahead.values.only(items))
         {
-            return Ok(ahead.values.clone());
+            return Ok(read);
         }
         let definitions = self.field_catalogue().await?;
         let mut values: HashMap<EntityId, BTreeMap<FieldId, FieldValue>> =
@@ -746,5 +761,38 @@ impl<S: AuthStore> Ctx<'_, S> {
             });
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use bb_core::id::IssueId;
+
+    use super::*;
+    use crate::context::SystemIds;
+
+    fn new_item() -> EntityId {
+        IssueId::generate(&mut SystemIds)
+            .expect("the system makes IDs")
+            .into()
+    }
+
+    /// Values read for `items`, each with no value in any field.
+    fn read_for(items: &[EntityId]) -> ItemValues {
+        ItemValues {
+            definitions: Arc::default(),
+            values: items.iter().map(|item| (*item, BTreeMap::new())).collect(),
+        }
+    }
+
+    #[test]
+    fn perf_05_values_read_ahead_give_only_the_items_asked_for() {
+        let items: Vec<EntityId> = (0..3).map(|_| new_item()).collect();
+        let ahead = read_for(&items);
+        let taken = ahead.only(&items[..1]);
+        assert!(taken.as_ref().is_some_and(|taken| taken.has(items[0])));
+        assert!(taken.as_ref().is_some_and(|taken| !taken.has(items[1])));
+        let missing = new_item();
+        assert!(ahead.only(&[items[0], missing]).is_none());
     }
 }
