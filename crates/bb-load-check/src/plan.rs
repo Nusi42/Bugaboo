@@ -122,7 +122,7 @@ fn a_move_after_is_whole(book: &Book, facts: &Facts) -> Vec<String> {
 }
 
 /// A refused *Move it after* left no change: an event of the version after the preview of an issue
-/// it names is somebody's kept move, never its own half.
+/// it names is a change somebody kept, never its own half.
 fn refused_moves_wrote_nothing(book: &Book, facts: &Facts) -> Vec<String> {
     let mut found = Vec::new();
     for refused in book.moved_after.iter().filter(|each| !each.kept) {
@@ -132,16 +132,11 @@ fn refused_moves_wrote_nothing(book: &Book, facts: &Facts) -> Vec<String> {
             .filter(|each| each.key != refused.changed)
         {
             let next = named.version + 1;
-            let kept_by_one =
-                book.moved
-                    .iter()
-                    .any(|each| each.key == named.key && each.version == next)
-                    || book.moved_after.iter().any(|each| {
-                        each.kept
-                            && each.named.iter().any(|other| {
-                                other.key == named.key && other.version == named.version
-                            })
-                    });
+            // Any change somebody kept of that version accounts for it, a move or another change.
+            let kept_by_one = book
+                .kept
+                .iter()
+                .any(|each| each.key == named.key && each.version == next);
             let written = issue_of(facts, &named.key)
                 .is_some_and(|issue| issue.event_versions.contains(&next));
             if written && !kept_by_one {
@@ -167,7 +162,7 @@ pub(crate) fn plans_hold_the_rules(book: &Book, facts: &Facts) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::book::{Accepted, AwayEntered, Moved, MovedAfter, NamedByMove};
+    use crate::book::{Accepted, AwayEntered, Kept, Moved, MovedAfter, NamedByMove};
     use crate::facts::AwayFacts;
 
     fn issue(
@@ -327,9 +322,13 @@ mod tests {
             a_move_after_is_whole(&refused, &facts_of(vec![partly()])).len(),
             1
         );
-        // The same event is somebody's kept move of A-1: no finding.
+        // The same event is a change of A-1 somebody kept (a move, or any other): no finding.
         let kept_by_another = Book {
-            moved: vec![moved("A-1", 3, ("2027-02-01", "2027-02-03"))],
+            kept: vec![Kept {
+                key: "A-1".to_owned(),
+                version: 3,
+                ..Kept::default()
+            }],
             ..refused
         };
         assert!(a_move_after_is_whole(&kept_by_another, &facts_of(vec![partly()])).is_empty());
