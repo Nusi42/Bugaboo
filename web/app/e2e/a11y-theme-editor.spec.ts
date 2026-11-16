@@ -6,6 +6,7 @@ import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import {
+  UNREADABLE,
   changeColor,
   colorField,
   deleteThemesOf,
@@ -22,7 +23,6 @@ import {
 test.use({ preparation: { run: prepareThemes } });
 
 /** A hint text that can hardly be told from the backgrounds of Dusk. */
-const UNREADABLE = "#3a3d45";
 
 test.beforeEach(async ({ server }) => {
   await Promise.all([ada, bob].map((person) => deleteThemesOf(server, person)));

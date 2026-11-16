@@ -213,9 +213,24 @@ export function themeRow(page: Page, name: string): Locator {
   return page.locator(`[data-part='${part.themeListItem}']`).filter({ hasText: name });
 }
 
-/** A hint text that can hardly be told from the backgrounds of Dusk, and one that reads well. */
+/**
+ * A hint text that can hardly be told from the backgrounds of Dusk; one that reads well and stays
+ * quieter than the quiet text; and one that reads well but stands out more than the quiet text.
+ */
 export const UNREADABLE = "#3a3d45";
-export const READABLE = "#d4d7dd";
+export const READABLE = "#abb1bd";
+export const UPSIDE_DOWN = "#d4d7dd";
+
+/** The gentle line that says the hint stands out more than the quiet text. */
+export function upsideDownLine(page: Page): Locator {
+  return page.getByText(
+    t("theme-editor.order-upside-down", {
+      quieter: t("theme-color.fg-subtle"),
+      louder: t("theme-color.fg-muted"),
+    }),
+    { exact: true },
+  );
+}
 
 /** Makes a theme from Dusk with *Create a theme* on the page that is open; the editor opens. */
 export async function createFromDusk(page: Page, name: string): Promise<void> {

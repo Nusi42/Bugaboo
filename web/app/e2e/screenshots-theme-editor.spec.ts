@@ -8,6 +8,7 @@ import { signIn } from "./support/flows.ts";
 import { layoutOf } from "./support/layout.ts";
 import { screenshotFolder } from "./support/screenshots.ts";
 import {
+  UNREADABLE,
   changeColor,
   colorField,
   deleteThemesOf,
@@ -32,7 +33,6 @@ test.use({ preparation: { run: prepareThemes } });
 const FOLDER = "M8/theme-editor";
 
 /** A hint text that can hardly be told from the backgrounds of Dusk. */
-const UNREADABLE = "#3a3d45";
 
 /** The theme for everyone of the pictures: Dusk with an accent and a quiet text of its own. */
 const harbor = {

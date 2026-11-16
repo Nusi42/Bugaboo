@@ -27,6 +27,7 @@ import {
   onlyThemeOf,
   readabilityLine,
   typeHint,
+  upsideDownLine,
 } from "./theme-editor.ts";
 
 // Steps 4 to 6 of the exit demo of M8 (`m8-exit-demo.spec.ts`): Lea says an issue takes her ten days,
@@ -135,6 +136,8 @@ export async function anOwnThemeThatIsHardToReadIsFixed(
     .click();
   await expect(colorField(page, t("theme-color.fg-subtle"))).toBeFocused();
   await typeHint(page, READABLE);
+  // Readable and in the order of emphasis: no warning of any kind.
+  await expect(upsideDownLine(page)).toHaveCount(0);
   await expect(readabilityLine(page)).not.toHaveAttribute("data-state");
   await page.getByRole("button", { name: t("theme-editor.save"), exact: true }).click();
   await expect.poll(async () => (await onlyThemeOf(server, ada)).theme.saved).toBe(true);
