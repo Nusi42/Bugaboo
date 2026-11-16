@@ -285,20 +285,18 @@ mod tests {
     fn the_planners_change_none_of_the_people_the_seed_draws() {
         // The list as it was before the planners came: without their given names.
         let planners: Vec<&str> = PLANNERS.iter().map(|(first, _)| *first).collect();
-        let before: String = include_str!("../data/names.toml")
+        let before = include_str!("../data/names.toml")
             .lines()
             .filter(|line| {
                 !planners
                     .iter()
                     .any(|first| line.trim() == format!("\"{first}\","))
             })
-            .map(|line| {
-                format!(
-                    "{line}
-"
-                )
-            })
-            .collect();
+            .fold(String::new(), |mut text, line| {
+                text.push_str(line);
+                text.push('\n');
+                text
+            });
         let before = NameList::parse(&before).unwrap();
         for seed in [7, 42, 2026] {
             let now = sample_people(seed, &names()).unwrap();
