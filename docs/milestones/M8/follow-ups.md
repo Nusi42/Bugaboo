@@ -178,6 +178,7 @@ WP-02 brought a full run from five failing browser tests to one (2026-11-11): Ch
 | M8-F205 | The speed test of the timeline names the same two people who accepted warnings on the page of five and on the page of forty, so reading their names once is not proven; and the page runs 98 or 99 statements against a ceiling of 100, because the role labels of who accepted are a read of their own | The count is the same for five and forty rows, which is what PERF-N1 asks | WP-12: more people who accept than five rows hold, and one read of role labels for the page |
 | M8-F206 | The test of the preview walks past issue IDs that do not exist, not real issues in a project the reader cannot see, and has no visible issue reached only through a hidden one; the test of the rights kept for a request has no person who sees some projects but not others | The behaviour is right in the code | WP-12 |
 | M8-F207 | `cached_evaluation` of `bb-app/src/access/mod.rs` is `pub(crate)` only for one test, so other code of the crate could read the cache without `require` | Nothing reads it today | The next package that changes access |
+| M8-F236 | `agent-work` ai_34 (an answer to work that changed meanwhile) failed on a computer in three landing runs of the exit package (2026-11-16) and passed every time alone (8 of 8); `issue-list-view` cfg_02 failed once the same way. Find what the full run adds. | Open, watch | Lead |
 
 ## From the outside test pass of the MCP server
 
