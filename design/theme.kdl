@@ -264,8 +264,9 @@ tokens {
     // are used, so a number set on a bar is never read at the root.
     size "size-px" "1px"
     size "size-percent" "1%"
-    // The least width of a bar, so a short bar at the zoom of quarters is still seen and pressed.
-    size "size-bar-least" "6px"
+    // The least width of a bar, so a short bar at the zoom of quarters is still seen and pressed; for a finger the
+    // 44 of a target (UX §7.4), so a bar of one day on a tablet is pressed and dragged like any control.
+    size "size-bar-least" "6px" touch="44px"
 
     // Focus ring
     size "ring-width" "2px"
