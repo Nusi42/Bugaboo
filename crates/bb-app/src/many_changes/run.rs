@@ -259,14 +259,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         who: EventActor,
     ) -> Result<(), AppError> {
         let now = self.now();
-        let event = self.event(
-            who,
-            entity(RecordKind::ChangeRun, id),
-            vec![set_to(
-                member::run::STATUS,
-                serde_json::json!(status.code()),
-            )],
-        )?;
+        let event = self.run_end_event(id, status, who)?;
         self.store()
             .record_change(&event, move |transaction| {
                 Box::pin(async move {
@@ -277,6 +270,24 @@ impl<S: AuthStore> Ctx<'_, S> {
             })
             .await
             .map_err(|error| internal::<S>(&error))
+    }
+
+    /// The event of a run that ends with `status`: what [`Self::end_many_changes_run`] records on
+    /// its own, and what a run written in one transaction with its changes records with them.
+    pub(crate) fn run_end_event(
+        &self,
+        id: RunId,
+        status: ManyChangeStatus,
+        who: EventActor,
+    ) -> Result<bb_core::event::DomainEvent, AppError> {
+        self.event(
+            who,
+            entity(RecordKind::ChangeRun, id),
+            vec![set_to(
+                member::run::STATUS,
+                serde_json::json!(status.code()),
+            )],
+        )
     }
 
     /// Queues the next step of a run.

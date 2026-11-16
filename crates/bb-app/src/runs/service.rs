@@ -243,16 +243,16 @@ impl Plan {
     }
 }
 
-impl<S: AuthStore> RunStore for RunsOf<'_, '_, S> {
-    type Error = AppError;
-
-    async fn open_run(
+impl<S: AuthStore> RunsOf<'_, '_, S> {
+    /// The record of a run that starts and its event: what [`RunStore::open_run`] writes on its own,
+    /// and what a run written in one transaction with its changes writes with them.
+    pub(crate) fn opening(
         &self,
         run: RunId,
         kind: RunKind,
         actor: &RunActor,
         at: Timestamp,
-    ) -> Result<(), AppError> {
+    ) -> Result<(ManyChangeRun, bb_core::event::DomainEvent), AppError> {
         let stored = ManyChangeRun {
             id: run,
             kind,
@@ -276,6 +276,21 @@ impl<S: AuthStore> RunStore for RunsOf<'_, '_, S> {
                 set_to("status", json!(ManyChangeStatus::Running.code())),
             ],
         )?;
+        Ok((stored, event))
+    }
+}
+
+impl<S: AuthStore> RunStore for RunsOf<'_, '_, S> {
+    type Error = AppError;
+
+    async fn open_run(
+        &self,
+        run: RunId,
+        kind: RunKind,
+        actor: &RunActor,
+        at: Timestamp,
+    ) -> Result<(), AppError> {
+        let (stored, event) = self.opening(run, kind, actor, at)?;
         self.ctx
             .store()
             .record_change(&event, move |transaction| {
