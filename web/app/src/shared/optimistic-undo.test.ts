@@ -134,3 +134,20 @@ describe("plan_03 an undo that a newer change made wrong", () => {
     expect(undone).toBe(0);
   });
 });
+
+describe("ux_06_01 offers held while a prompt stands with them", () => {
+  it("runs none out while held, and goes on counting with the time that was left after", () => {
+    const clock = manualClock();
+    const store = createUndoStore(clock.schedule, clock.now);
+    store.offer({ message: "Moved", undo: doNothing });
+    clock.advance(undoWindowMs - 1000);
+    const release = store.holdAll();
+    clock.advance(undoWindowMs * 3);
+    expect(store.list().map((offer) => offer.message)).toEqual(["Moved"]);
+    release();
+    clock.advance(999);
+    expect(store.list()).toHaveLength(1);
+    clock.advance(1);
+    expect(store.list()).toEqual([]);
+  });
+});

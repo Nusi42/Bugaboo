@@ -44,6 +44,11 @@ export interface UndoStore {
   readonly take: (id: number) => boolean;
   /** Withdraws an offer without taking anything back: a newer change made it wrong. */
   readonly withdraw: (id: number) => void;
+  /**
+   * Stops every offer on show from counting down until the returned function is called: while a
+   * prompt stands with the offers (a clash), none of them runs out and moves it under a finger.
+   */
+  readonly holdAll: () => () => void;
   readonly list: () => readonly UndoOffer[];
   readonly subscribe: (listener: () => void) => () => void;
 }
@@ -135,6 +140,17 @@ export function createUndoStore(
       return true;
     },
     withdraw: drop,
+    holdAll: () => {
+      const held = offers.snapshot().map((offer) => offer.id);
+      for (const id of held) {
+        countdowns.pause(id);
+      }
+      return () => {
+        for (const id of held) {
+          countdowns.resume(id);
+        }
+      };
+    },
     list: offers.snapshot,
     subscribe: offers.subscribe,
   };
