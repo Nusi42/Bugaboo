@@ -405,9 +405,6 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 }
 
-/// Inside the change of an issue: a change of the type or of the status looks at the offers and the
-/// workflow again, on what is stored now, after the shared lock of the workflows; any other change
-
 /// What a planned change of one issue writes, worked out once from its plan ([`Plan::into_write`]):
 /// one change writes it on its own, a run of several writes all of them in one transaction, so a
 /// run is written whole or not at all.
@@ -530,6 +527,8 @@ impl IssueWrite {
     }
 }
 
+/// Inside the change of an issue: a change of the type or of the status looks at the offers and the
+/// workflow again, on what is stored now, after the shared lock of the workflows; any other change
 /// takes no such lock.
 async fn ensure_type_and_status_in<S: AuthStore>(
     transaction: &mut S::Transaction,
