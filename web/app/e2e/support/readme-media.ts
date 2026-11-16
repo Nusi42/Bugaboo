@@ -1,7 +1,7 @@
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 
-import { type Browser, expect, type Page } from "@playwright/test";
+import { type Browser, type BrowserContext, expect, type Page } from "@playwright/test";
 
 import { expectLook } from "./checks.ts";
 import { signIn } from "./flows.ts";
@@ -10,6 +10,9 @@ import { Recording } from "./recording.ts";
 import { pointerAway } from "./screenshots.ts";
 import { type Instance } from "./server.ts";
 import { deviceContext, type DeviceOptions } from "./showcase.ts";
+
+/** Someone who signs in for a picture. */
+type Person = Parameters<typeof signIn>[1];
 
 /** The folder of the pictures and recordings of the front page, from `BB_README_MEDIA_DIR`. */
 export const mediaFolder = process.env["BB_README_MEDIA_DIR"];
@@ -54,6 +57,13 @@ export async function expectHeading(page: Page): Promise<void> {
   await page.waitForLoadState("networkidle");
 }
 
+/** A new page in this window, signed in as this person. */
+async function signedInPage(context: BrowserContext, person: Person): Promise<Page> {
+  const page = await context.newPage();
+  await signIn(page, person);
+  return page;
+}
+
 /** The window of Marta, the administrator of the workshop, on a computer or on a phone, signed in. */
 export async function administratorPage(
   browser: Browser,
@@ -63,9 +73,20 @@ export async function administratorPage(
 ): Promise<Page> {
   const context = await deviceContext(browser, server, device, windowOf(scale));
   await context.clock.setFixedTime(Date.now() + A_DAY_LATER_MS);
-  const page = await context.newPage();
-  await signIn(page, accountOf("marta"));
-  return page;
+  return signedInPage(context, accountOf("marta"));
+}
+
+/**
+ * The window of a person of the sample on a computer, signed in, at today's clock: the plan of the sample is laid out
+ * around today.
+ */
+export async function samplePage(
+  browser: Browser,
+  server: Instance,
+  person: Person,
+): Promise<Page> {
+  const context = await deviceContext(browser, server, "computer", windowOf(SHARP.pictures));
+  return signedInPage(context, person);
 }
 
 /** Takes what the window shows, in the theme of the pictures (`readmeTheme`), as `<name>.png`. */

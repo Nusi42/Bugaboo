@@ -19,7 +19,7 @@
   <img src="docs/media/issue-list-themes.gif" alt="The list of issues of Quillmoor Cycle Works, a made-up bicycle workshop, grouped by status, shown one after the other in the four themes Daylight, Paper, Dusk and Midnight" width="100%">
 </p>
 
-<sub>All pictures on this page show **Quillmoor Cycle Works, a made-up bicycle workshop**, with made-up people. Its repairs, frames, orders and open day are only the example. The top picture shows its list in the four themes of the app.</sub>
+<sub>The pictures on this page show **Quillmoor Cycle Works, a made-up bicycle workshop**, with made-up people. Its repairs, frames, orders and open day are only the example. The top picture shows its list in the four themes of the app. The picture of the timeline shows the plan of a mobile app in the sample organization that comes with Bugaboo, also made up.</sub>
 
 > **Before version 1.0.** What you see below works and is tested, but Bugaboo is not released yet. The timeline and the theme editor are the part being built next. Do not use it for real work yet.
 
@@ -57,6 +57,14 @@ An issue holds its description, its status, the person it is assigned to, labels
 
 <p align="center">
   <img src="docs/media/report-an-issue.gif" alt="A recording: in the list of the repairs, the window for a new issue opens, a title is typed, and the new issue opens" width="100%">
+</p>
+
+### Plan on a timeline
+
+Any list can be shown as a timeline: its issues as bars over the days, weeks or months, grouped by the goal they belong to, with the dependencies between them as arrows. With *Plan by effort* the bars are worked out from the estimates and from the working hours and days away of each person, and plan warnings say when a plan does not fit, such as a goal that ends after its due date. The timeline is being finished in milestone M8.
+
+<p align="center">
+  <img src="docs/media/timeline.png" alt="The timeline of the goal Mobile app 2.0 in weeks: its six issues as bars after today, joined by arrows where one waits for another, each with its person, the goal's bar over them ending at its due date, and Not scheduled yet beside the chart" width="100%">
 </p>
 
 ### Your own way of working

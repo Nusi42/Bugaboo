@@ -8,7 +8,8 @@ import { repoRoot } from "./ports.ts";
 // empty server (`web/app/e2e/support/readme-organization-data.ts`). Run it after a change of the
 // look of a screen that README.md shows. It needs the browsers of `cargo xtask setup`, the program
 // (`cargo build -p bb-server`) and the browser app (`npm run build`). The script of the pictures
-// and recordings is `web/app/e2e/readme-media.spec.ts`; `BB_README_MEDIA_DIR` names another folder.
+// and recordings is `web/app/e2e/readme-media.spec.ts`, and of the timeline, which shows the plan of
+// the sample, `web/app/e2e/readme-media-timeline.spec.ts`; `BB_README_MEDIA_DIR` names another folder.
 
 /** The folder the pictures and recordings are written to, relative to the repository. */
 const MEDIA = process.env["BB_README_MEDIA_DIR"] ?? "docs/media";
@@ -33,7 +34,7 @@ run(
     "test",
     "--config",
     "web/tooling/playwright.config.ts",
-    "readme-media.spec",
+    "readme-media",
     "--project=desktop",
     "--workers=1",
   ],

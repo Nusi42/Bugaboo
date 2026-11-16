@@ -35,15 +35,15 @@ export const readmeRepairs = projects.repairs.shortName;
  */
 export const readmeTheme: SettingChoice<"appearanceLightTheme"> = pictureLightTheme;
 
-/** Marta sees the app always light, in the theme of the pictures (*My settings › Appearance*). */
-async function showReadmeTheme(admin: ApiSession): Promise<void> {
+/** A person sees the app always light, in the theme of the pictures (*My settings › Appearance*). */
+export async function showReadmeTheme(session: ApiSession): Promise<void> {
   const choices = [
     [settingKeys.appearanceMode, "light" satisfies SettingChoice<"appearanceMode">],
     [settingKeys.appearanceLightTheme, readmeTheme],
   ] as const;
   await inOrder(
     choices.map(([key, value]) => async () => {
-      const answer = await admin.client.PUT("/api/v1/me/settings/{key}", {
+      const answer = await session.client.PUT("/api/v1/me/settings/{key}", {
         params: { path: { key } },
         body: { value },
       });
