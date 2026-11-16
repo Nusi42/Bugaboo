@@ -2,6 +2,7 @@ import { readPorts } from "../ports.ts";
 import { startServer } from "../../app/e2e/support/server.ts";
 import { DATABASE_URL_VARIABLE, type LoadOptions, parseOptions } from "./options.ts";
 import { run } from "./run.ts";
+import { runDriver } from "../driver.ts";
 
 // `cargo xtask load --people 10` (architecture §11, TEST-CONCURRENT): starts the server of the
 // load test on the database of the run and lets the people work. It writes the book of the run to
@@ -40,9 +41,4 @@ async function main(): Promise<void> {
   }
 }
 
-await main().catch((error: unknown) => {
-  process.stderr.write(
-    `${error instanceof Error ? (error.stack ?? error.message) : String(error)}\n`,
-  );
-  process.exitCode = 1;
-});
+await runDriver(main);

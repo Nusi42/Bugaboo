@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { startServer } from "../../app/e2e/support/server.ts";
 import { readPorts } from "../ports.ts";
 import { run } from "./run.ts";
+import { runDriver } from "../driver.ts";
 
 // `cargo xtask bench` (PERF-BENCH): starts a release server on the large dataset of one database,
 // warms up, runs every scenario of `scenarios.ts` a fixed number of times and writes p50, p95 and
@@ -44,9 +45,4 @@ async function main(): Promise<void> {
   }
 }
 
-await main().catch((error: unknown) => {
-  process.stderr.write(
-    `${error instanceof Error ? (error.stack ?? error.message) : String(error)}\n`,
-  );
-  process.exitCode = 1;
-});
+await runDriver(main);
