@@ -46,6 +46,6 @@ follow_up = "M6-F186"
 reason = "the totals of the biggest project sum the minutes spent with one probe of the entries by issue for each of its about 260,000 issues, and work out the time left of the about 73,000 of them with an estimate; one statement reads each issue once (numbers and cause: architecture section 11, M6-F186)"
 
 [known_gaps.project-time-totals.postgres]
-p95_ms_at_most = 600
+p95_ms_at_most = 650
 follow_up = "M6-F186"
-reason = "the same cause as on SQLite: one probe of the entries by issue for each issue of the biggest project, and the time left of those with an estimate (numbers and cause: architecture section 11, M6-F186)"
+reason = "the same cause as on SQLite: one probe of the entries by issue for each issue of the biggest project, and the time left of those with an estimate; the maintainer said yes to 650 ms on 2026-11-16, since the one statement leaves no room under 600 (numbers and cause: architecture section 11, M6-F186)"
