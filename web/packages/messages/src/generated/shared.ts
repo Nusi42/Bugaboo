@@ -129,6 +129,8 @@ export const messages = {
   "data-folder.not-a-data-folder":
     "The folder {path} has other files in it and does not look like a Bugaboo data folder. Installing the service would change who owns them. Choose an empty folder or a Bugaboo data folder as the data folder in your settings.",
   "common.close": "Close",
+  "common.value-wrong":
+    "A box holds something it cannot take yet, such as a date half typed. Mend it, then you can save.",
   "common.undo": "Undo",
   "common.row-more": "More: {what}",
   "common.swipe-shown": "Actions: {actions}",

@@ -191,6 +191,30 @@ test("plan_03_set_dates_does_what_a_drag_does", async ({ page, server }) => {
     .toEqual({ start: dayFromToday(3), due: dayFromToday(4) });
 });
 
+test("plan_03_set_dates_holds_save_while_a_day_is_half_typed_and_never_takes_the_date_away", async ({
+  page,
+  server,
+}) => {
+  const before = await datesAs(server, ada, planned.keys);
+  await signIn(page, ada);
+  await openTimeline(page);
+  await pressOf(page, planned.keys).click();
+  const card = page.getByRole("region", { name: t("timeline.card", { key: planned.keys }) });
+  await card.getByRole("button", { name: t("timeline.set-dates"), exact: true }).click();
+  const window = page.getByRole("dialog", {
+    name: t("timeline.set-dates-title", { key: planned.keys }),
+  });
+  const save = window.getByRole("button", { name: t("timeline.save-dates"), exact: true });
+  await window.getByLabel(t("issue-field.start-date")).fill("2027-01");
+  await expect(save).toBeDisabled();
+  await expect(window.getByText(t("common.value-wrong"))).toBeVisible();
+  // Enter in the box does not send it either: the date is kept.
+  await window.getByLabel(t("issue-field.start-date")).press("Enter");
+  expect(await datesAs(server, ada, planned.keys)).toEqual(before);
+  await window.getByLabel(t("issue-field.start-date")).fill(dayFromToday(10));
+  await expect(save).toBeEnabled();
+});
+
 test("plan_04_rows_group_fold_and_zoom_from_day_to_quarter", async ({ page }) => {
   await signIn(page, ada);
   await openPlan(page);

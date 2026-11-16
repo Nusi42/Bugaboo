@@ -15,6 +15,8 @@ import { useId, useState } from "react";
 import { useWindowProps } from "../../shared/use-window-props.ts";
 import { windowForms } from "../../shared/window-forms.ts";
 import { useAwayDraft } from "./away-draft.ts";
+import { MistakeNote } from "../../shared/MistakeNote.tsx";
+import { useMistakes } from "../../shared/mistakes.ts";
 import { AwayFields } from "./AwayFields.tsx";
 import type { Away, AwayDays } from "./work-times.ts";
 
@@ -39,6 +41,7 @@ export function AwayWindow({ changing, otherName, onSave, onClose }: AwayWindowP
   const formId = useId();
   const windowProps = useWindowProps(windowForms.awayTime);
   const draft = useAwayDraft(changing);
+  const mistakes = useMistakes();
   const [problem, setProblem] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const own = otherName === undefined;
@@ -66,17 +69,18 @@ export function AwayWindow({ changing, otherName, onSave, onClose }: AwayWindowP
           <Button look={buttonLook.quiet} onPress={onClose}>
             {t("common.cancel")}
           </Button>
-          <SubmitButton form={formId} isPending={saving}>
+          <SubmitButton form={formId} isPending={saving} isDisabled={mistakes.held}>
             {t(changing === undefined ? "work-times.save-add" : "work-times.save-change")}
           </SubmitButton>
         </div>
       }
     >
-      <Form id={formId} onSubmit={() => void save()}>
+      <Form id={formId} onSubmit={() => void (mistakes.held ? undefined : save())}>
         <p {...partOf(part.muted)}>{t("work-times.no-reason")}</p>
         {own ? null : <p {...partOf(part.text)}>{t("work-times.told", { name: otherName })}</p>}
         {problem === null ? null : <Alert tone={alertTone.danger}>{problem}</Alert>}
-        <AwayFields draft={draft} withNote={own} />
+        <AwayFields draft={draft} withNote={own} mark={mistakes.mark} />
+        <MistakeNote mistakes={mistakes.list} />
       </Form>
     </Window>
   );

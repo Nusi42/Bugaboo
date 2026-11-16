@@ -67,6 +67,27 @@ test("time_02 add time refuses a length that is none and says why", async ({ pag
   ).toBeDisabled();
 });
 
+test("time_02 add time holds Save while the date is half typed, and never books it as no date", async ({
+  page,
+  server,
+}) => {
+  const admin = await signedInAdmin(server);
+  const issue = await createIssue(admin, "WEB", "Fan is loud");
+  await admin.dispose();
+  await signIn(page, ada);
+  await openIssueWithDetails(page, issue.key);
+  await page.getByRole("button", { name: t("time.add.button"), exact: true }).click();
+  const window = page.getByRole("dialog");
+  const save = window.getByRole("button", { name: t("time.add.save"), exact: true });
+  await window.getByLabel(t("time.entry.length"), { exact: true }).fill("1:30");
+  await window.getByLabel(t("time.entry.date"), { exact: true }).fill("2027-01");
+  await expect(save).toBeDisabled();
+  await expect(window.getByText(t("common.value-wrong"))).toBeVisible();
+  await window.getByLabel(t("time.entry.date"), { exact: true }).fill("2027-01-14");
+  await expect(save).toBeEnabled();
+  await expect(window.getByText(t("common.value-wrong"))).toHaveCount(0);
+});
+
 test("time_02 the history says the fields of booked time in the sentence of the time", async ({
   page,
   server,

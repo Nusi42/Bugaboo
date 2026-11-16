@@ -1774,6 +1774,9 @@ pub const COMMON_TRY_AGAIN: MessageKey = MessageKey::new("common.try-again");
 /// The message `common.undo`.
 pub const COMMON_UNDO: MessageKey = MessageKey::new("common.undo");
 
+/// The message `common.value-wrong`.
+pub const COMMON_VALUE_WRONG: MessageKey = MessageKey::new("common.value-wrong");
+
 /// The message `common.words-failed`.
 pub const COMMON_WORDS_FAILED: MessageKey = MessageKey::new("common.words-failed");
 
@@ -3759,9 +3762,6 @@ pub const ISSUES_UPDATED: MessageKey = MessageKey::new("issues.updated");
 
 /// The message `issues.use-mine`.
 pub const ISSUES_USE_MINE: MessageKey = MessageKey::new("issues.use-mine");
-
-/// The message `issues.value-wrong`.
-pub const ISSUES_VALUE_WRONG: MessageKey = MessageKey::new("issues.value-wrong");
 
 /// The message `issues.with-sub-issues`.
 pub const ISSUES_WITH_SUB_ISSUES: MessageKey = MessageKey::new("issues.with-sub-issues");
@@ -20445,6 +20445,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("common.time-pm", "{hour}:{minute} PM"),
     ("common.try-again", "Try again"),
     ("common.undo", "Undo"),
+    (
+        "common.value-wrong",
+        "A box holds something it cannot take yet, such as a date half typed. Mend it, then you can save.",
+    ),
     ("common.weekday-date", "{weekday}, {date}"),
     (
         "common.words-failed",
@@ -22186,10 +22190,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.unassign-name", "Take {name} away"),
     ("issues.updated", "Last changed"),
     ("issues.use-mine", "Use mine"),
-    (
-        "issues.value-wrong",
-        "A box of the form holds something it cannot take yet, such as a date half typed. Mend it, then you can create the issue.",
-    ),
     ("issues.with-sub-issues", "With sub-issues"),
     (
         "keys.database-placeholder",

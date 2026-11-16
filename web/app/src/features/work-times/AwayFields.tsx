@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 import { ChoiceGroup, TextField } from "@bugaboo/ui";
 
 import { DayBox } from "../../shared/DayBox.tsx";
+import type { FormMistakes } from "../../shared/mistakes.ts";
 import type { AwayDraft, HalfChoice } from "./away-draft.ts";
 
 /** A day of the form: its box, and whether it is whole or half. */
@@ -9,6 +10,7 @@ function DayWithHalf({
   label,
   day,
   onDay,
+  onMistake,
   legend,
   half,
   halfLabel,
@@ -17,6 +19,8 @@ function DayWithHalf({
   readonly label: string;
   readonly day: string;
   readonly onDay: (day: string) => void;
+  /** The text of the box is no day, or a day again. */
+  readonly onMistake: (wrong: boolean) => void;
   readonly legend: string;
   readonly half: HalfChoice;
   readonly halfLabel: string;
@@ -24,7 +28,7 @@ function DayWithHalf({
 }) {
   return (
     <>
-      <DayBox label={label} value={day} onChange={onDay} />
+      <DayBox label={label} value={day} onChange={onDay} onMistake={onMistake} />
       <ChoiceGroup
         legend={legend}
         choices={[
@@ -45,9 +49,12 @@ function DayWithHalf({
 export function AwayFields({
   draft,
   withNote,
+  mark,
 }: {
   readonly draft: AwayDraft;
   readonly withNote: boolean;
+  /** What a box for a day tells the form: its text is no day, or a day again (`useMistakes`). */
+  readonly mark: FormMistakes["mark"];
 }) {
   return (
     <>
@@ -55,6 +62,7 @@ export function AwayFields({
         label={t("work-times.from")}
         day={draft.first}
         onDay={draft.setFirst}
+        onMistake={mark("first")}
         legend={t("work-times.first-day")}
         half={draft.firstHalf}
         halfLabel={t("work-times.afternoon-only")}
@@ -64,6 +72,7 @@ export function AwayFields({
         label={t("work-times.to")}
         day={draft.last}
         onDay={draft.setLast}
+        onMistake={mark("last")}
         legend={t("work-times.last-day")}
         half={draft.lastHalf}
         halfLabel={t("work-times.morning-only")}

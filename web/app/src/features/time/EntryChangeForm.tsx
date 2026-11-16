@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 import { Alert, alertTone, Form } from "@bugaboo/ui";
 import { useState } from "react";
 
+import { useMistakes } from "../../shared/mistakes.ts";
 import { LengthBox } from "../fields/index.ts";
 import type { TimeEntry } from "./edits.ts";
 import { EntryForm, type EntryFormProps } from "./EntryForm.tsx";
@@ -34,11 +35,14 @@ export function EntryChangeForm({
 }: EntryChangeFormProps) {
   const [minutes, setMinutes] = useState<number>(entry.minutes);
   const [values, setValues] = useState<EntryFormProps["values"]>(() => valuesOfEntry(entry));
+  const mistakes = useMistakes();
   return (
     <Form
       id={id}
       onSubmit={() => {
-        onSubmit(minutes, values);
+        if (!mistakes.held) {
+          onSubmit(minutes, values);
+        }
       }}
     >
       {problem !== undefined && problem.field === undefined ? (
@@ -58,6 +62,7 @@ export function EntryChangeForm({
         values={values}
         onChange={setValues}
         problems={problem?.field === undefined ? {} : { [problem.field]: problem.text }}
+        mistakes={mistakes}
       />
     </Form>
   );

@@ -35,6 +35,7 @@ export function StopTimerWindow({ reading, issue, defaults, switchingTo }: StopT
       footer={
         <StopFooter
           isPending={stop.isPending}
+          held={stop.mistakes.held}
           onSave={() => {
             void stop.save();
           }}
@@ -48,6 +49,7 @@ export function StopTimerWindow({ reading, issue, defaults, switchingTo }: StopT
         values={stop.values}
         onChange={stop.setValues}
         problem={stop.problem}
+        mistakes={stop.mistakes}
       />
     </EntryWindow>
   );

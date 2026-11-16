@@ -13,6 +13,8 @@ import {
 import { useId } from "react";
 
 import { DayBox } from "../../shared/DayBox.tsx";
+import { MistakeNote } from "../../shared/MistakeNote.tsx";
+import { useMistakes } from "../../shared/mistakes.ts";
 import { EntryWindow } from "./EntryWindow.tsx";
 import { changeStartTitle } from "./time-ask-titles.ts";
 import { closeTimeAsk } from "./time-asks.ts";
@@ -26,6 +28,7 @@ import { useChangeStart } from "./use-change-start.ts";
 export function ChangeStartWindow() {
   const formId = useId();
   const start = useChangeStart();
+  const mistakes = useMistakes();
   if (start === undefined) {
     return null;
   }
@@ -40,19 +43,29 @@ export function ChangeStartWindow() {
           <Button look={buttonLook.quiet} onPress={closeTimeAsk}>
             {t("common.cancel")}
           </Button>
-          <SubmitButton form={formId}>{t("time.start-time.save")}</SubmitButton>
+          <SubmitButton form={formId} isDisabled={mistakes.held}>
+            {t("time.start-time.save")}
+          </SubmitButton>
         </div>
       }
     >
       <Form
         id={formId}
         onSubmit={() => {
-          void save();
+          if (!mistakes.held) {
+            void save();
+          }
         }}
       >
         {problem === undefined ? null : <Alert tone={alertTone.danger}>{problem}</Alert>}
-        <DayBox label={t("time.start-time.day")} value={day} onChange={setDay} />
+        <DayBox
+          label={t("time.start-time.day")}
+          value={day}
+          onChange={setDay}
+          onMistake={mistakes.mark("day")}
+        />
         <TextField label={t("time.start-time.time")} value={time} onChange={setTime} />
+        <MistakeNote mistakes={mistakes.list} />
       </Form>
     </EntryWindow>
   );

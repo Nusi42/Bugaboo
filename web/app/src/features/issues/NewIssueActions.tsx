@@ -55,7 +55,7 @@ function missingForCreate(form: NewIssue) {
     return "issues.estimate-wrong";
   }
   if (form.values.mistakes.length > 0) {
-    return "issues.value-wrong";
+    return "common.value-wrong";
   }
   // A project that offers no type says so by the type; the footer does not ask for one as well.
   return form.noType || canCreate(form.values) ? undefined : "issues.missing-type";

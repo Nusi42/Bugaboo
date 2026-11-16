@@ -1,5 +1,7 @@
 import { useState } from "react";
 
+import { useMistakes } from "../../shared/mistakes.ts";
+
 import { entryDetails, startingValues, type EntryValues } from "./entry-values.ts";
 import { closeTimeAsk } from "./time-asks.ts";
 import { minutesRun } from "./timer-clock.ts";
@@ -30,7 +32,12 @@ export function useStopTimer(reading: TimerReading, options: StopTimerOptions) {
   );
   const [problem, setProblem] = useState<EntryProblem | undefined>();
   const [isPending, setPending] = useState(false);
+  // A box of a field that holds no value yet holds *Save time* (the form is sent as a whole).
+  const mistakes = useMistakes();
   const save = async (): Promise<void> => {
+    if (mistakes.held) {
+      return;
+    }
     setPending(true);
     setProblem(undefined);
     try {
@@ -48,5 +55,5 @@ export function useStopTimer(reading: TimerReading, options: StopTimerOptions) {
       setPending(false);
     }
   };
-  return { values, setValues, minutes, save, problem, isPending };
+  return { values, setValues, minutes, save, problem, isPending, mistakes };
 }

@@ -1,6 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { Alert, alertTone, Button, buttonLook, partOf, part } from "@bugaboo/ui";
 
+import type { FormMistakes } from "../../shared/mistakes.ts";
 import type { EntryIssue } from "./entry-issue.ts";
 import type { EntryValues } from "./entry-values.ts";
 import { EntryForm } from "./EntryForm.tsx";
@@ -17,6 +18,8 @@ export interface StopTimerBodyProps {
   readonly values: EntryValues;
   readonly onChange: (values: EntryValues) => void;
   readonly problem: EntryProblem | undefined;
+  /** The boxes that hold no value yet: the window holds *Save time* while there are any. */
+  readonly mistakes: FormMistakes;
 }
 
 /** A timer that ran longer than one entry can be: the server's sentence, and the way to change the start. */
@@ -46,6 +49,7 @@ export function StopTimerBody({
   values,
   onChange,
   problem,
+  mistakes,
 }: StopTimerBodyProps) {
   return (
     <div {...partOf(part.stack)}>
@@ -57,6 +61,7 @@ export function StopTimerBody({
         values={values}
         onChange={onChange}
         problems={problem?.field === undefined ? {} : { [problem.field]: problem.text }}
+        mistakes={mistakes}
       />
     </div>
   );

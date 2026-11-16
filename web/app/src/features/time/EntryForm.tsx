@@ -1,6 +1,8 @@
 import { t } from "@bugaboo/messages";
 import { fieldKind, Switch, TextField, partOf, part } from "@bugaboo/ui";
 
+import { MistakeNote } from "../../shared/MistakeNote.tsx";
+import type { FormMistakes } from "../../shared/mistakes.ts";
 import { OwnFieldInput } from "../fields/index.ts";
 import type { EntryValues } from "./entry-values.ts";
 import { useEntryFields } from "./use-entry-fields.ts";
@@ -14,10 +16,45 @@ export interface EntryFormProps {
   readonly onChange: (values: EntryValues) => void;
   /** What the server said was wrong, by the ID of the field, or `note`: shown at that box. */
   readonly problems?: Readonly<Record<string, string>>;
+  /**
+   * The boxes of the whole form that hold no value yet (`useMistakes`): a box of a field tells it
+   * here, and the form says why it is held at its end.
+   */
+  readonly mistakes: FormMistakes;
 }
 
 /** No problem at any box. */
 const noProblems: Readonly<Record<string, string>> = {};
+
+/** One own field of time entries in the form, which tells the form when its box holds no value yet. */
+function EntryField({
+  field,
+  form,
+}: {
+  readonly field: string;
+  readonly form: Pick<EntryFormProps, "issue" | "values" | "onChange"> & {
+    readonly problems: Readonly<Record<string, string>>;
+    readonly mark: FormMistakes["mark"];
+  };
+}) {
+  const { issue, values, problems, onChange, mark } = form;
+  return (
+    <OwnFieldInput
+      field={field}
+      project={issue.project}
+      issueType={issue.issueType}
+      value={values.fields[field]}
+      problem={problems[field]}
+      onChange={(value) => {
+        mark(field)(false);
+        onChange({ ...values, fields: { ...values.fields, [field]: value } });
+      }}
+      onMistake={() => {
+        mark(field)(true);
+      }}
+    />
+  );
+}
 
 /**
  * The boxes of a time entry that are the same wherever time is booked (TIME-01, TIME-02, TIME-13):
@@ -32,22 +69,18 @@ export function EntryForm({
   values,
   onChange,
   problems = noProblems,
+  mistakes,
 }: EntryFormProps) {
+  const { mark } = mistakes;
   const fields = useEntryFields(issue.project, issue.issueType);
   return (
     <div {...partOf(part.stack)}>
       {fields.length === 0 ? null : <p {...partOf(part.muted)}>{t("time.entry.from-issue")}</p>}
       {fields.map((field) => (
-        <OwnFieldInput
+        <EntryField
           key={field.id}
           field={field.id}
-          project={issue.project}
-          issueType={issue.issueType}
-          value={values.fields[field.id]}
-          problem={problems[field.id]}
-          onChange={(value) => {
-            onChange({ ...values, fields: { ...values.fields, [field.id]: value } });
-          }}
+          form={{ issue, values, problems, onChange, mark }}
         />
       ))}
       <TextField
@@ -68,6 +101,7 @@ export function EntryForm({
           }}
         />
       ) : null}
+      <MistakeNote mistakes={mistakes.list} />
     </div>
   );
 }

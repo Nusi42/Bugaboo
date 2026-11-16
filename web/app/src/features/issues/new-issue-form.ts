@@ -4,6 +4,7 @@ import { newIssuePriority, priorityWords } from "@bugaboo/api-client";
 import { dateField } from "../../shared/date-fields.ts";
 import type { NamedPerson } from "../../shared/person.ts";
 import { forApi } from "../../shared/reference.ts";
+import { withMistake as withBoxMistake, type Mistakes } from "../../shared/mistakes.ts";
 
 /** What a person has filled in on the form of a new issue. */
 export interface NewIssueValues {
@@ -24,7 +25,7 @@ export interface NewIssueValues {
    * The fields whose box holds text that is no value (a length or a day half typed), by their words:
    * the form is not sent until they are mended.
    */
-  readonly mistakes: readonly string[];
+  readonly mistakes: Mistakes;
   /** The values of own fields as the API takes them, by the key of the field. */
   readonly fields: Readonly<Record<string, unknown>>;
 }
@@ -154,8 +155,7 @@ export function canCreate(values: NewIssueValues): boolean {
 
 /** The values with the box of `field` holding text that is no value (`wrong`), or a value again. */
 export function withMistake(values: NewIssueValues, field: string, wrong: boolean): NewIssueValues {
-  const others = values.mistakes.filter((each) => each !== field);
-  return { ...values, mistakes: wrong ? [...others, field] : others };
+  return { ...values, mistakes: withBoxMistake(values.mistakes, field, wrong) };
 }
 
 /** The values of own fields for which `keep` says yes. */

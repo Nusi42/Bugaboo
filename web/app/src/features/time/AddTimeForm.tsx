@@ -20,13 +20,20 @@ export interface AddTimeFormProps {
 }
 
 /** The boxes of *Add time*: the date, the length, and the form every time entry has. */
-export function AddTimeForm({ id, issue, defaults, state, problem, onSubmit }: AddTimeFormProps) {
+export function AddTimeForm(props: AddTimeFormProps) {
+  const { id, issue, defaults, state, problem, onSubmit } = props;
+  const { mistakes } = state;
   return (
     <Form id={id} onSubmit={onSubmit}>
       {problem !== undefined && problem.field === undefined ? (
         <Alert tone={alertTone.danger}>{problem.text}</Alert>
       ) : null}
-      <DayBox label={t("time.entry.date")} value={state.date} onChange={state.setDate} />
+      <DayBox
+        label={t("time.entry.date")}
+        value={state.date}
+        onChange={state.setDate}
+        onMistake={mistakes.mark("date")}
+      />
       <LengthBox
         name={t("time.entry.length")}
         minutes={state.minutes ?? undefined}
@@ -39,6 +46,7 @@ export function AddTimeForm({ id, issue, defaults, state, problem, onSubmit }: A
         values={state.values}
         onChange={state.setValues}
         problems={problem?.field === undefined ? {} : { [problem.field]: problem.text }}
+        mistakes={mistakes}
       />
     </Form>
   );

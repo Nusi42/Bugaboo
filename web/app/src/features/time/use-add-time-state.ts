@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { personToday } from "../../shared/clock.ts";
+import { useMistakes, type FormMistakes } from "../../shared/mistakes.ts";
 import { useRegion } from "../../shared/region.ts";
 import { startingValues, type EntryValues } from "./entry-values.ts";
 import type { EntryDefaults } from "./use-entry-defaults.ts";
@@ -15,7 +16,9 @@ export interface AddTimeState {
   readonly setMinutes: (minutes: number | null) => void;
   readonly values: EntryValues;
   readonly setValues: (values: EntryValues) => void;
-  /** Whether there is a date and a length to book. */
+  /** The boxes that hold no value yet (a day or a value half typed). */
+  readonly mistakes: FormMistakes;
+  /** Whether there is a date and a length to book, and no box holds text that is no value. */
   readonly ready: boolean;
 }
 
@@ -25,6 +28,7 @@ export function useAddTimeState(defaults: EntryDefaults): AddTimeState {
   const [date, setDate] = useState(() => personToday(region, Date.now()));
   const [minutes, setMinutes] = useState<number | null>(null);
   const [values, setValues] = useState<EntryValues>(() => startingValues(defaults));
+  const mistakes = useMistakes();
   return {
     date,
     setDate,
@@ -32,6 +36,7 @@ export function useAddTimeState(defaults: EntryDefaults): AddTimeState {
     setMinutes,
     values,
     setValues,
-    ready: minutes !== null && minutes > 0 && date !== "",
+    mistakes,
+    ready: minutes !== null && minutes > 0 && date !== "" && !mistakes.held,
   };
 }

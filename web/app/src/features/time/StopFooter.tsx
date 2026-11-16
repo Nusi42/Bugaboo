@@ -6,10 +6,12 @@ import { askTime } from "./time-asks.ts";
 export interface StopFooterProps {
   readonly onSave: () => void;
   readonly isPending: boolean;
+  /** A box holds no value yet: *Save time* is off until it is mended. */
+  readonly held: boolean;
 }
 
 /** *Throw away* and *Save time*, the buttons of the window that stops the timer; the main one stands at the right (R6). */
-export function StopFooter({ onSave, isPending }: StopFooterProps) {
+export function StopFooter({ onSave, isPending, held }: StopFooterProps) {
   return (
     <div {...partOf(part.windowFooterActions)}>
       <Button
@@ -20,7 +22,7 @@ export function StopFooter({ onSave, isPending }: StopFooterProps) {
       >
         {t("time.timer.throw-away")}
       </Button>
-      <Button look={buttonLook.primary} isPending={isPending} onPress={onSave}>
+      <Button look={buttonLook.primary} isPending={isPending} isDisabled={held} onPress={onSave}>
         {t("time.stop.save")}
       </Button>
     </div>

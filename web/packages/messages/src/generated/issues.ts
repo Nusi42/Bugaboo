@@ -28,8 +28,6 @@ export const messages = {
     "Choose a project first, then you can create the issue and start another.",
   "issues.estimate-wrong":
     "Write the estimated time as a length first, like 1:30, then you can create the issue and start another.",
-  "issues.value-wrong":
-    "A box of the form holds something it cannot take yet, such as a date half typed. Mend it, then you can create the issue.",
   "issues.ready-to-create": "Nothing is missing: you can create the issue.",
   "issues.refused-at-field": "{field}: {reason}",
   "issues.created": "{key} was created.",

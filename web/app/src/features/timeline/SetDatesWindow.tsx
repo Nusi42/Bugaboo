@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 import { useState } from "react";
 
 import { DayBox } from "../../shared/DayBox.tsx";
+import { useMistakes } from "../../shared/mistakes.ts";
 import { windowForms } from "../../shared/window-forms.ts";
 import type { KeptDates } from "./date-fields.ts";
 import { TimelineWindow } from "./TimelineWindow.tsx";
@@ -24,6 +25,8 @@ export interface SetDatesWindowProps {
 export function SetDatesWindow({ readableId, names, kept, onSave, onClose }: SetDatesWindowProps) {
   const [start, setStart] = useState(kept.start ?? "");
   const [end, setEnd] = useState(kept.end ?? "");
+  // A day half typed holds *Save*: it is never sent as no date, which would take the date away.
+  const mistakes = useMistakes();
   return (
     <TimelineWindow
       form={windowForms.setDates}
@@ -33,9 +36,15 @@ export function SetDatesWindow({ readableId, names, kept, onSave, onClose }: Set
         onSave({ start: start === "" ? null : start, end: end === "" ? null : end });
       }}
       onClose={onClose}
+      mistakes={mistakes.list}
     >
-      <DayBox label={names.start} value={start} onChange={setStart} />
-      <DayBox label={names.end} value={end} onChange={setEnd} />
+      <DayBox
+        label={names.start}
+        value={start}
+        onChange={setStart}
+        onMistake={mistakes.mark("start")}
+      />
+      <DayBox label={names.end} value={end} onChange={setEnd} onMistake={mistakes.mark("end")} />
     </TimelineWindow>
   );
 }

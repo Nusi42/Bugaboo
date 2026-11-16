@@ -66,7 +66,7 @@ test("plan_01 a day half typed on the new issue form holds the form back until i
   await start.fill("2026-11");
   const create = form.getByRole("button", { name: t("issues.create"), exact: true });
   await expect(create).toBeDisabled();
-  await expect(form.getByText(t("issues.value-wrong"))).toBeVisible();
+  await expect(form.getByText(t("common.value-wrong"))).toBeVisible();
   await start.fill("2026-11-03");
   await expect(create).toBeEnabled();
 });
