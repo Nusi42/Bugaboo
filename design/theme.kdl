@@ -3464,9 +3464,10 @@ part "timeline-body" {
     }
 }
 
+// The chart takes all the room its column has, also below its last row: the box ends where the side ends (UX §6.5).
 part "timeline-scroll" {
     position relative
-    flex "0 1 auto"
+    flex "1 1 auto"
     min-height "$size-list-scroll-least"
     overflow auto
     border "$border-width solid $border"
@@ -3953,6 +3954,16 @@ part "timeline-side" {
     min-width 0
 }
 
+// The side of the chart on a computer shares its room evenly among what it shows (the list of plan warnings, the card,
+// *Not scheduled yet*): each is as high as what it holds and never higher than its share, and one that needs less gives
+// the rest to the others, as the rows of the body do (UX §6.5). What holds more scrolls in its own box.
+part "timeline-side:has(timeline-tray)" {
+    display grid
+    grid-template-columns "minmax(0, 1fr)"
+    grid-auto-rows auto
+    align-content start
+}
+
 part "timeline-card" "timeline-tray" {
     display flex
     flex-direction column
@@ -4018,11 +4029,15 @@ part "timeline-card.line" {
 }
 
 // The list of plan warnings at the side (UX §4.7, PLAN-13): each warning with its sign, its sentence and its ways out;
-// an accepted one faded at the end.
+// an accepted one faded at the end. A long list is a box that scrolls on its own and shares the side with *Not
+// scheduled yet*, so it never reaches past the window (UX §6.5).
 part "timeline-warnings" {
     display flex
     flex-direction column
     gap "$space-2"
+    min-height 0
+    overflow-y auto
+    overscroll-behavior contain
     padding "$space-3"
     border "$border-width solid $border"
     border-radius "$r-card"
@@ -4118,6 +4133,12 @@ part "timeline-card.actions" {
 part "bottom-sheet timeline-card.actions" {
     display grid
     grid-template-columns "minmax(0, 1fr)"
+}
+
+// The card of a long issue scrolls in its share too.
+part "timeline-side:has(timeline-tray) > timeline-card" {
+    min-height 0
+    overflow-y auto
 }
 
 part "timeline-tray" {
@@ -17038,8 +17059,9 @@ part "issue-body[variant=split]" {
     }
 }
 
-// *Not scheduled yet* keeps its least height where the window is low; otherwise it shares the room with the chart.
-part "timeline-tray" {
+// *Not scheduled yet* and the list of plan warnings keep their least height where the window is low; otherwise they
+// share the room of the side.
+part "timeline-tray" "app-layout:not(app-layout[variant=phone]) timeline-warnings" {
     media "screen and (max-height: $size-low-window)" {
         min-height "$size-list-scroll-least"
     }

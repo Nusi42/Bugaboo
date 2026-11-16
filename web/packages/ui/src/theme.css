@@ -3445,7 +3445,7 @@ textarea,
 
 [data-part="timeline-scroll"] {
   position: relative;
-  flex: 0 1 auto;
+  flex: 1 1 auto;
   min-height: var(--size-list-scroll-least);
   overflow: auto;
   border: var(--border-width) solid var(--border);
@@ -3959,6 +3959,13 @@ textarea,
   min-width: 0;
 }
 
+[data-part="timeline-side"]:has([data-part="timeline-tray"]) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-auto-rows: auto;
+  align-content: start;
+}
+
 [data-part="timeline-card"],
 [data-part="timeline-tray"] {
   display: flex;
@@ -4024,6 +4031,9 @@ textarea,
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: var(--space-3);
   border: var(--border-width) solid var(--border);
   border-radius: var(--r-card);
@@ -4121,6 +4131,11 @@ textarea,
 [data-part="bottom-sheet"] [data-part="timeline-card.actions"] {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+}
+
+[data-part="timeline-side"]:has([data-part="timeline-tray"]) > [data-part="timeline-card"] {
+  min-height: 0;
+  overflow-y: auto;
 }
 
 [data-part="timeline-tray"] {
@@ -10916,7 +10931,9 @@ textarea,
 }
 
 @media screen and (max-height: 680px) {
-  [data-part="timeline-tray"] {
+  [data-part="timeline-tray"],
+  [data-part="app-layout"]:not([data-part="app-layout"][data-variant~="phone"])
+    [data-part="timeline-warnings"] {
     min-height: var(--size-list-scroll-least);
   }
 }
