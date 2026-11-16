@@ -10,6 +10,7 @@ import {
   prepareWeb,
   readIssue,
   setStatusAndPriority,
+  conflictNote,
   versionOf,
 } from "./support/issues.ts";
 
@@ -39,6 +40,6 @@ test("adr_0019 Undo does not overwrite what somebody changed after the person's 
   await row.getByRole("button", { name: t("common.undo"), exact: true }).click();
   // The person is told who changed it first, and the other value stays.
   await expect(page.getByText(/^Not saved: .+ changed Priority to Critical/u)).toBeVisible();
-  await expect(page.getByRole("button", { name: t("issues.use-mine"), exact: true })).toBeVisible();
+  await expect(conflictNote(page)).toBeVisible();
   expect((await readIssue(admin, issue)).issue.priority).toBe("critical");
 });

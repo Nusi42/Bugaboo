@@ -3,7 +3,7 @@ import { t } from "@bugaboo/messages";
 import { type Browser, expect } from "@playwright/test";
 
 import { ada, signInThroughApi, type ApiSession, type Instance } from "./accounts.ts";
-import { conflictNote, keepTheirs, signedInPage, type ScreenLook } from "./crowd-pages.ts";
+import { signedInPage, type ScreenLook } from "./crowd-pages.ts";
 import {
   crowdOfTen,
   crowdPerson,
@@ -17,7 +17,7 @@ import {
   signedIn,
 } from "./crowd-plan.ts";
 import { openIssueWithDetails } from "./flows.ts";
-import { savedNote } from "./issues.ts";
+import { keepTheirs, savedNote, conflictNote } from "./issues.ts";
 
 // Two more scenarios of ten people planning at the same time (architecture §11): a date saved on
 // the issue page on a version somebody moved since gets *Keep Ben's change* or *Use mine*, and the

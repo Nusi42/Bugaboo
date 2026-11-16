@@ -5,7 +5,7 @@ import { expectGoodInEveryLook, expectGoodInEveryTheme } from "./support/checks.
 import { expect, test } from "./support/fixtures.ts";
 import { descriptionBox, openEditing, startEditing } from "./support/description.ts";
 import { anotherBrowser, openIssueWithDetails, signIn } from "./support/flows.ts";
-import { issueOf, prepareWeb, versionOf, savedNote } from "./support/issues.ts";
+import { issueOf, prepareWeb, savedNote, conflictNote, versionOf } from "./support/issues.ts";
 import { holdBackLocks } from "./support/slow.ts";
 import { issueAddress } from "../src/shared/paths.ts";
 
@@ -152,7 +152,7 @@ test("adr_0019 a short value that somebody changed first shows Keep their value 
   // The note says first that nothing was saved.
   await expect(page.getByText(/^Not saved: .+ changed Priority to Critical/u)).toBeVisible();
   await expectGoodInEveryLook(page);
-  await page.getByRole("button", { name: t("issues.use-mine"), exact: true }).click();
+  await conflictNote(page).click();
   await expect(savedNote(page)).toBeVisible();
   await openIssueWithDetails(page, "WEB-1");
   await expect(page.getByLabel(t("issue-field.priority"), { exact: true })).toHaveValue("low");

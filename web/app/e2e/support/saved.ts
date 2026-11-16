@@ -27,3 +27,16 @@ export function rowSaved(page: Page, name: string) {
 export function savedNote(page: Page) {
   return page.getByText(savedWords).first();
 }
+
+/**
+ * *Use mine* of the note of a change that came second (*Ben changed Priority to Critical …*), on the
+ * issue page and on the timeline alike, where the one prompt asks it.
+ */
+export function conflictNote(page: Page) {
+  return page.getByRole("button", { name: t("issues.use-mine"), exact: true });
+}
+
+/** The other answer of that note: *Keep Ben's change*, named by whoever changed it first. */
+export function keepTheirs(page: Page, name: string) {
+  return page.getByRole("button", { name: t("issues.keep-theirs", { name }), exact: true });
+}

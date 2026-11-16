@@ -20,7 +20,7 @@ import { inOrder } from "./sequence.ts";
 // The notes and rows of the issue page are found by helpers of their own; they are named here too,
 // so a test asks one place for everything of the issue page.
 export { detailRow } from "./parts.ts";
-export { issueNote, rowSaved, savedNote } from "./saved.ts";
+export { issueNote, keepTheirs, rowSaved, savedNote, conflictNote } from "./saved.ts";
 
 /** An issue that was made through the API. */
 export interface MadeIssue {

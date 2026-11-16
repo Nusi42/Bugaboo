@@ -5,6 +5,7 @@ import { ada, bob, signInThroughApi } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { dragAcross } from "./support/hand-drag.ts";
 import { signIn } from "./support/flows.ts";
+import { keepTheirs, conflictNote } from "./support/issues.ts";
 import type { Instance } from "./support/server.ts";
 import {
   changeIssue,
@@ -74,11 +75,9 @@ test("plan_03_a_clash_offers_use_mine_which_saves_her_dates_on_the_new_version",
   server,
 }) => {
   await aClash(page, server);
-  const mine = page.getByRole("button", { name: t("issues.use-mine"), exact: true });
+  const mine = conflictNote(page);
   await expect(mine).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: t("issues.keep-theirs", { name: bob.name }) }),
-  ).toBeVisible();
+  await expect(keepTheirs(page, bob.name)).toBeVisible();
   await mine.click();
   await expect(mine).toBeHidden();
   await expect
@@ -88,7 +87,7 @@ test("plan_03_a_clash_offers_use_mine_which_saves_her_dates_on_the_new_version",
 
 test("plan_03_a_clash_offers_keep_theirs_which_keeps_his_dates", async ({ page, server }) => {
   await aClash(page, server);
-  const theirs = page.getByRole("button", { name: t("issues.keep-theirs", { name: bob.name }) });
+  const theirs = keepTheirs(page, bob.name);
   await theirs.click();
   await expect(theirs).toBeHidden();
   expect(await datesAs(server, ada, planned.dragged)).toEqual({

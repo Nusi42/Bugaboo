@@ -6,7 +6,7 @@ import { ada } from "./support/accounts.ts";
 import { signedInAdmin } from "./support/access.ts";
 import { expect, refusal, test } from "./support/fixtures.ts";
 import { openIssueWithDetails, signIn } from "./support/flows.ts";
-import { issueOf, prepareWeb, versionOf } from "./support/issues.ts";
+import { issueOf, prepareWeb, conflictNote, versionOf } from "./support/issues.ts";
 import { partIn } from "./support/parts.ts";
 
 // A title changed in place that the server refuses (ISS-03, UX §6.4): the refused text goes, the
@@ -72,6 +72,6 @@ test("iss_03 a title on a version somebody changed first goes, the old one shows
   });
   const refused = "A title on an old version";
   const before = await typeTitle(page, refused);
-  await expect(page.getByRole("button", { name: t("issues.use-mine"), exact: true })).toBeVisible();
+  await expect(conflictNote(page)).toBeVisible();
   await expectTitleBack(page, before, refused);
 });

@@ -3,7 +3,7 @@ import { expect, type Page } from "@playwright/test";
 import { t } from "@bugaboo/messages";
 
 import { type ChangeInPlace, ISSUE } from "./change-row.ts";
-import { webIssues } from "./issues.ts";
+import { conflictNote, webIssues } from "./issues.ts";
 import { listLandmarks, ROWS_BOX } from "./landmarks.ts";
 import { columnButton, grid, groupOf, inViewChoices, rowOf, tickIssue } from "./list-look.ts";
 import { listViewLandmarks, timelineLandmarks } from "./screen-landmarks.ts";
@@ -162,9 +162,7 @@ export const timelineChanges: readonly ChangeInPlace[] = [
     act: async (page) => {
       await page.keyboard.press("ArrowRight");
       await pressOf(page, planned.twice).blur();
-      await expect(
-        page.getByRole("button", { name: t("issues.use-mine"), exact: true }),
-      ).toBeVisible();
+      await expect(conflictNote(page)).toBeVisible();
     },
     landmarks: (page, part) => timelineLandmarks(page, part),
   },
