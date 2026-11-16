@@ -8161,7 +8161,9 @@ part "edit-held.actions" {
     }
 }
 
-part "issue-note" {
+// A note with its buttons on one line where they fit: a note of the issue page, and the prompt of a clash on any
+// screen (`conflict-note`, the issue page and the timeline ask with it).
+part "issue-note" "conflict-note" {
     display flex
     flex-wrap wrap
     align-items center

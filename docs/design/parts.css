@@ -7091,7 +7091,8 @@ textarea,
   }
 }
 
-[data-part="issue-note"] {
+[data-part="issue-note"],
+[data-part="conflict-note"] {
   display: flex;
   flex-wrap: wrap;
   align-items: center;

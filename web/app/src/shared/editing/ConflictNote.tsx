@@ -12,7 +12,7 @@ import type { ConflictPrompt } from "./conflict-prompt.ts";
 export function ConflictNote({ conflict }: { readonly conflict: ConflictPrompt }) {
   return (
     <Alert tone={alertTone.warning}>
-      <div {...partOf(part.issueNote)}>
+      <div {...partOf(part.conflictNote)}>
         <span>{conflict.sentence}</span>
         <Button onPress={conflict.keepTheirs}>{conflict.theirs}</Button>
         <Button onPress={conflict.useMine}>{t("issues.use-mine")}</Button>
