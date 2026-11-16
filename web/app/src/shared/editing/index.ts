@@ -1,6 +1,8 @@
 export { changedByName, conflictSentence, conflictSentenceWhenLoaded } from "./conflict-text.ts";
 export {
   askAboutConflict,
+  conflictAsker,
+  type ConflictAsker,
   conflictPromptOf,
   conflictWordsOf,
   useAskedConflict,

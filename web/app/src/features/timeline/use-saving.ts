@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 
-import { askAboutConflict, conflictPromptOf } from "../../shared/editing/index.ts";
+import {
+  askAboutConflict,
+  conflictAsker,
+  conflictPromptOf,
+  type ConflictAsker,
+} from "../../shared/editing/index.ts";
 import type { Refused } from "../../shared/refused.ts";
 import { undoStore } from "../../shared/optimistic-undo.ts";
 import { useChangeBook } from "./change-book.ts";
@@ -19,8 +24,9 @@ import { idOf, type TimelineRow } from "./timeline-data.ts";
 function askAbout(
   refused: Refused,
   change: { readonly row: TimelineRow; readonly dates: KeptDates },
-  queue: () => SaveQueue<TimelineRow>,
+  screen: { readonly queue: () => SaveQueue<TimelineRow>; readonly asker: ConflictAsker },
 ): Refusal {
+  const { queue } = screen;
   if ("reason" in refused) {
     return refused;
   }
@@ -39,7 +45,7 @@ function askAbout(
         queue().save(row, step, { move: "set" });
       }
     },
-  }).then(askAboutConflict);
+  }).then(screen.asker.ask);
   return { asked: true };
 }
 
@@ -52,17 +58,19 @@ function askAbout(
 export function useSaving(fields: DateFields | undefined) {
   const [shown, setShown] = useState<Readonly<Record<string, BarDays>>>({});
   const book = useChangeBook();
-  useEffect(
-    () => () => {
-      askAboutConflict(null);
-    },
-    [],
-  );
+  // What the screen asks goes with it; words that are ready after it went are not shown.
+  const [asker] = useState(conflictAsker);
+  useEffect(() => {
+    asker.stay();
+    return asker.leave;
+  }, [asker]);
   const queue: SaveQueue<TimelineRow> = saveQueue(book, {
     idOf,
     send: async (row, dates) => {
       const refused = fields === undefined ? null : await changeDates(row, fields, dates);
-      return refused === null ? null : askAbout(refused, { row, dates }, () => queue);
+      return refused === null
+        ? null
+        : askAbout(refused, { row, dates }, { queue: () => queue, asker });
     },
     text: changedText,
     show: (id, days) => {
