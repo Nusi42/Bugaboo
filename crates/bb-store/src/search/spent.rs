@@ -6,18 +6,18 @@
 //! The worked-out *Time left* ([`time_left`]) is built on it: the second place of the rule of
 //! `bb_core::time::left`, the approved pair of coding-standards §1, held to it by the vectors of
 //! `tools/testdata/time-left.json` and the test `time_03_the_compiled_time_left_matches_the_vectors`.
-//! The totals of the lengths of a search ([`lengths_statement`]) sum the estimate and the time left.
+//! The totals of the lengths of a search ([`lengths_statement`]) sum the estimate, the time left and
+//! the time spent, reading each issue once.
 
-use bb_app::search::{FieldTarget, LengthTotals, SearchFailure, SearchRequest};
+use bb_app::search::{FieldTarget, LengthTotals, SearchRequest};
 use bb_core::fields::Field;
 use bb_core::time::Minutes;
 use sea_query::{CaseStatement, Expr, ExprTrait as _, Func, Iden, Query};
 
 use super::order::bigint;
 use super::source::Subject;
-use super::statements::{Built, finish, found, read_spent, spent_statement};
-use super::{CompileError, Compiler, SEARCH_TIME, failed, scalar, stopped};
-use crate::auth::AuthStorage;
+use super::statements::{Built, finish, found};
+use super::{CompileError, Compiler, scalar};
 use crate::db::{Dialect, Row};
 use crate::error::StoreError;
 use crate::schema::{IssueRow, TimeEntryRow};
@@ -52,16 +52,19 @@ pub(crate) fn minutes_spent() -> Expr {
 
 /// *Time left* of the issue of the statement, in whole minutes: the typed value while there is one,
 /// else the estimate minus the minutes spent and never below zero, `NULL` without either. The rule
-/// of `bb_core::time::left`, as one expression.
+/// of `bb_core::time::left`, as one expression. The minutes spent are read once for an issue, as
+/// the larger of the difference and zero, not once to compare and again to subtract: the totals of
+/// a big project work it out for every issue that has an estimate.
 pub(crate) fn time_left() -> Expr {
     let typed = Expr::col((IssueRow::Table, IssueRow::TimeLeft));
     let estimated = Expr::col((IssueRow::Table, IssueRow::EstimatedTime));
-    let spent = minutes_spent();
     CaseStatement::new()
         .case(typed.clone().is_not_null(), typed)
         .case(estimated.clone().is_null(), Expr::null())
-        .case(estimated.clone().gt(spent.clone()), estimated.sub(spent))
-        .finally(Expr::val(0_i64))
+        .finally(Func::greatest([
+            estimated.sub(minutes_spent()),
+            Expr::val(0_i64).into(),
+        ]))
         .into()
 }
 
@@ -71,6 +74,7 @@ enum Total {
     Found,
     Estimated,
     Left,
+    Spent,
 }
 
 impl Iden for Total {
@@ -79,6 +83,7 @@ impl Iden for Total {
             Self::Found => "found",
             Self::Estimated => "estimated",
             Self::Left => "time_left",
+            Self::Spent => "time_spent",
         }
     }
 }
@@ -88,19 +93,23 @@ impl Compiler<'_> {
     /// field that is not among the readable ones, which is never summed.
     fn summed(&self, field: Field) -> Expr {
         match self.target(&field.search_word()) {
-            Ok(target @ (FieldTarget::EstimatedTime | FieldTarget::TimeLeft)) => {
-                match self.subject_of(target).0 {
-                    Subject::Column(value) => bigint(Func::sum(value).into()),
-                    Subject::Linked(..) => Expr::null(),
-                }
-            }
+            Ok(
+                target @ (FieldTarget::EstimatedTime
+                | FieldTarget::TimeLeft
+                | FieldTarget::TimeSpent),
+            ) => match self.subject_of(target).0 {
+                Subject::Column(value) => bigint(Func::sum(value).into()),
+                Subject::Linked(..) => Expr::null(),
+            },
             _ => Expr::null(),
         }
     }
 }
 
-/// Whether the search finds any issue, and the sums of *Estimated time* and *Time left* of the
-/// issues it finds: one statement, from the same sight and filter as the page.
+/// Whether the search finds any issue, and the sums of *Estimated time*, *Time left* and *Time
+/// spent* of the issues it finds: one statement, from the same sight and filter as the page. The
+/// minutes spent are summed with the time left from the same row, so the totals of a big project
+/// read each of its issues once, not once for the lengths and again for the time entries.
 pub(crate) fn lengths_statement(
     request: &SearchRequest,
     dialect: Dialect,
@@ -114,6 +123,7 @@ pub(crate) fn lengths_statement(
         )
         .expr_as(compiler.summed(Field::EstimatedTime), Total::Estimated)
         .expr_as(compiler.summed(Field::TimeLeft), Total::Left)
+        .expr_as(compiler.summed(Field::TimeSpent), Total::Spent)
         .from(IssueRow::Table)
         .cond_where(found(&compiler)?);
     Ok(finish(&compiler, select))
@@ -130,26 +140,6 @@ pub(crate) fn read_lengths(row: &Row) -> Result<LengthTotals, StoreError> {
         found_any: row.get::<i64>(Total::Found)? > 0,
         estimated: minutes(Total::Estimated)?,
         time_left: minutes(Total::Left)?,
+        time_spent: minutes(Total::Spent)?,
     })
-}
-
-impl AuthStorage {
-    /// The minutes booked on the issues a search finds, in one statement with the reader's sight
-    /// and fields in it (the port's `spent_on_search`).
-    pub(crate) async fn spent_on_search_in(
-        &self,
-        request: &SearchRequest,
-    ) -> Result<Minutes, SearchFailure> {
-        let built = spent_statement(request, self.database().dialect()).map_err(failed)?;
-        let rows = self
-            .database()
-            .fetch_all_within(&built, SEARCH_TIME)
-            .await
-            .map_err(stopped)?;
-        rows.first()
-            .map(read_spent)
-            .transpose()
-            .map_err(failed)
-            .map(Option::unwrap_or_default)
-    }
 }

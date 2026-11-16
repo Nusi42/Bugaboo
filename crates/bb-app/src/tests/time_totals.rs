@@ -40,8 +40,8 @@ async fn estimate(world: &World, issue: IssueId, estimated: u32) -> Result<(), S
 }
 
 /// A project with an issue estimated at 4 hours with 80 minutes spent, and below it what the
-/// compiled search finds: one sub-issue with 100 minutes spent, 10 hours estimated and 5 hours
-/// left in total.
+/// compiled search finds: one sub-issue, 10 hours estimated, 5 hours left and 100 minutes spent in
+/// total.
 async fn an_issue_with_sub_issues(world: &World) -> Result<IssueId, String> {
     let project = a_project(world, "ACME").await?;
     let issue = issue_of(world, project).await?;
@@ -60,6 +60,7 @@ async fn an_issue_with_sub_issues(world: &World) -> Result<IssueId, String> {
         found_any: true,
         estimated: Some(minutes(600)),
         time_left: Some(minutes(300)),
+        time_spent: Some(minutes(100)),
     };
     shared.searches.clear();
     Ok(issue.id)
@@ -89,10 +90,10 @@ async fn time_03_an_issue_shows_its_own_numbers_and_the_totals_with_its_sub_issu
     assert_eq!(with.time_left, Some(minutes(460)));
     assert_eq!(with.time_spent, Some(minutes(180)));
     // The totals are the compiled search of the sub-issues, with the reader's sight in it: one
-    // statement for the projects they are in, one for the lengths and one through the port of
-    // time spent.
+    // statement for the projects they are in and one for the three lengths, which reads each
+    // issue once.
     let searches = world.store.lock().searches.clone();
-    assert_eq!(searches.len(), 3);
+    assert_eq!(searches.len(), 2);
     assert!(searches.iter().all(|request| !request.sight.all.is_empty()));
     Ok(())
 }
@@ -143,7 +144,8 @@ async fn priv_13_a_total_of_a_field_the_reader_may_not_read_is_not_shown() -> Ou
         "{shown}"
     );
     assert_eq!(shown["with_sub_issues"]["estimated_time"], json!(840));
-    // The time spent of the issues below was never read: only the projects and the lengths.
+    // Only the projects and the lengths were read, and the total of a field the reader may not
+    // read is not shown, whatever the store summed.
     assert_eq!(world.store.lock().searches.len(), 2);
     Ok(())
 }

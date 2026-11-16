@@ -11,7 +11,6 @@ use jiff::{SignedDuration, Timestamp};
 
 use super::fake::{FakeError, FakeStore, State, Tx, fake_page};
 use crate::history::opaque_id;
-use crate::search::{SearchFailure, SearchRequest};
 use crate::time::spent::TimeSpentStore;
 use crate::time::{DayKey, EntryCursor, TimeStore};
 
@@ -41,17 +40,6 @@ impl TimeSpentStore for FakeStore {
                 .iter()
                 .map(|issue| (*issue, spent_on(state, *issue)))
                 .collect()
-        }))
-    }
-
-    async fn spent_on_search(&self, request: &SearchRequest) -> Result<Minutes, SearchFailure> {
-        // The fake does not search: it sums the issues a test put among the hits.
-        let mut shared = self.lock();
-        shared.searches.push(request.clone());
-        let hits: Vec<IssueId> = shared.search_hits.iter().map(|hit| hit.issue.id).collect();
-        Ok(hits.iter().fold(Minutes::default(), |sum, issue| {
-            sum.checked_add(spent_on(&shared.state, *issue))
-                .unwrap_or(sum)
         }))
     }
 

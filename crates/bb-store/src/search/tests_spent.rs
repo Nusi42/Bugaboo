@@ -1,9 +1,11 @@
 //! Time spent through the one expression of the compiler, on both databases (ADR-0035 decision 4,
 //! ARCH-DB-PARITY): the minutes of each issue of a list, the sum over the issues a search finds with
-//! the reader's sight in it, a person's minutes for each date, and one timer row for each person.
+//! the reader's sight in it (a total of its lengths), a person's minutes for each date, and one
+//! timer row for each person.
 
 use bb_app::issues::IssueStore as _;
 use bb_app::ports::ChangeStore;
+use bb_app::search::{SearchRequest, SearchStore as _};
 use bb_app::time::TimeStore as _;
 use bb_app::time::spent::TimeSpentStore as _;
 use bb_core::id::{IssueId, TimeEntryId, UserId};
@@ -13,9 +15,21 @@ use bb_core::version::{FIRST_VERSION, Version};
 use bb_testing::{TestResult, each_database};
 use jiff::civil::date;
 
-use super::tests::{request, seed};
+use super::tests::{request_with, seed};
+use super::tests_time_spent::lengths;
 use crate::AuthStorage;
 use crate::test_support::{at, event, fixture};
+
+/// The minutes spent on the issues a search finds, from the totals of its lengths; none when it
+/// finds none.
+async fn spent_found(storage: &AuthStorage, request: &SearchRequest) -> Option<Minutes> {
+    storage.search_lengths(request).await.ok()?.time_spent
+}
+
+/// A search of everything the request of the tests sees, with the lengths among its fields.
+fn of_everything(data: &super::tests::Data) -> SearchRequest {
+    request_with(data, "", None, 1, lengths(), Vec::new())
+}
 
 /// An entry of `person` on `issue`.
 fn entry(
@@ -84,20 +98,18 @@ async fn arch_db_parity_time_spent_is_the_same_sum_through_the_list_the_search_a
                 (second, Minutes::new(15)),
             ]
         );
-        // The sum over a search counts only the issues the sight lets it find.
-        let everything = request(&data, "", None, 1);
+        // The sum over a search counts only the issues the sight lets it find; a search that
+        // finds none has no sum.
+        let everything = of_everything(&data);
         assert_eq!(
-            storage.spent_on_search(&everything).await.ok(),
+            spent_found(storage, &everything).await,
             Some(Minutes::new(135))
         );
-        let mut own = request(&data, "", None, 1);
+        let mut own = of_everything(&data);
         own.sight.all.clear();
         own.sight.own = vec![data.project];
         own.sight.person = stranger;
-        assert_eq!(
-            storage.spent_on_search(&own).await.ok(),
-            Some(Minutes::default())
-        );
+        assert_eq!(spent_found(storage, &own).await, None);
         // A person's minutes for each date, the dates without entries left out.
         assert_eq!(
             storage
@@ -134,9 +146,9 @@ async fn arch_db_parity_the_sum_of_a_search_leaves_out_the_entries_of_an_issue_i
             })
         })
         .await?;
-        let everything = request(&data, "", None, 1);
+        let everything = of_everything(&data);
         assert_eq!(
-            storage.spent_on_search(&everything).await.ok(),
+            spent_found(storage, &everything).await,
             Some(Minutes::new(105))
         );
         // Into the trash: its entries stay, but no search finds the issue, so its minutes are not summed.
@@ -148,7 +160,7 @@ async fn arch_db_parity_the_sum_of_a_search_leaves_out_the_entries_of_an_issue_i
         })
         .await?;
         assert_eq!(
-            storage.spent_on_search(&everything).await.ok(),
+            spent_found(storage, &everything).await,
             Some(Minutes::new(60))
         );
         // The port still tells the minutes booked on the issue itself.

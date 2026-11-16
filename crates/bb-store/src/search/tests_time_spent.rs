@@ -6,7 +6,6 @@
 use bb_app::ports::ChangeStore;
 use bb_app::search::{FieldTarget, GroupKey, SearchStore as _, Searchable};
 use bb_app::time::TimeStore as _;
-use bb_app::time::spent::TimeSpentStore as _;
 use bb_core::id::{IssueId, TimeEntryId};
 use bb_core::time::Minutes;
 use bb_core::time::entry::TimeEntry;
@@ -24,7 +23,7 @@ use crate::schema::{IssueRow, TimeEntryRow};
 use crate::test_support::{at, event};
 
 /// The three lengths of an issue, for a person who may read them all.
-fn lengths() -> Vec<Searchable> {
+pub(super) fn lengths() -> Vec<Searchable> {
     [
         ("estimated time", FieldTarget::EstimatedTime),
         ("time left", FieldTarget::TimeLeft),
@@ -210,11 +209,7 @@ async fn time_03_the_totals_add_the_time_left_and_the_time_spent_of_every_level(
             .map_err(|e| format!("{e:?}"))?;
         assert_eq!(lengths_below.estimated, Some(Minutes::new(840)));
         assert_eq!(lengths_below.time_left, Some(Minutes::new(240 + 500)));
-        let spent = storage
-            .spent_on_search(&below)
-            .await
-            .map_err(|e| format!("{e:?}"))?;
-        assert_eq!(spent, Minutes::new(100));
+        assert_eq!(lengths_below.time_spent, Some(Minutes::new(100)));
         // The hidden issue and what sits under it count for nobody who cannot see them.
         let hidden = request_with(&data, "under ACME-1", None, 1, lengths(), Vec::new());
         assert!(
@@ -224,20 +219,14 @@ async fn time_03_the_totals_add_the_time_left_and_the_time_spent_of_every_level(
                 .map_err(|e| format!("{e:?}"))?
                 .found_any
         );
-        assert_eq!(
-            storage
-                .spent_on_search(&hidden)
-                .await
-                .map_err(|e| format!("{e:?}"))?,
-            Minutes::new(0)
-        );
         let project = request_with(&data, "", None, 1, lengths(), Vec::new());
         assert_eq!(
             storage
-                .spent_on_search(&project)
+                .search_lengths(&project)
                 .await
-                .map_err(|e| format!("{e:?}"))?,
-            Minutes::new(150)
+                .map_err(|e| format!("{e:?}"))?
+                .time_spent,
+            Some(Minutes::new(150))
         );
         Ok(())
     })

@@ -10,7 +10,6 @@ mod timer;
 
 use std::collections::HashMap;
 
-use bb_app::search::{SearchFailure, SearchRequest};
 use bb_app::time::spent::TimeSpentStore;
 use bb_core::id::{IssueId, UserId};
 use bb_core::own_fields_value::{date_of, day_of};
@@ -78,10 +77,6 @@ impl TimeSpentStore for AuthStorage {
             .iter()
             .map(|issue| (*issue, found.get(issue).copied().unwrap_or_default()))
             .collect())
-    }
-
-    async fn spent_on_search(&self, request: &SearchRequest) -> Result<Minutes, SearchFailure> {
-        self.spent_on_search_in(request).await
     }
 
     async fn booked_per_date(

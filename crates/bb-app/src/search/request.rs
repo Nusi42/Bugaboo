@@ -271,10 +271,10 @@ pub trait SearchStore: IssueStore + 'static {
         by: &str,
     ) -> impl Future<Output = Result<Vec<GroupCount>, SearchFailure>> + Send;
 
-    /// The totals of *Estimated time* and *Time left* of the issues the search finds, in one
-    /// statement (ADR-0035, decision 4): only of the fields among the readable ones of the request,
-    /// like a filter. *Time spent* is read through the port of time spent. Like `search_count`, it
-    /// ignores `after` and `limit`.
+    /// The totals of *Estimated time*, *Time left* and *Time spent* of the issues the search finds,
+    /// in one statement that reads each issue once (ADR-0035, decision 4, amendment M8): only of the
+    /// fields among the readable ones of the request, like a filter. Like `search_count`, it ignores
+    /// `after` and `limit`.
     fn search_lengths(
         &self,
         request: &SearchRequest,
@@ -292,4 +292,6 @@ pub struct LengthTotals {
     pub estimated: Option<Minutes>,
     /// The sum of *Time left*, each issue's typed or worked out.
     pub time_left: Option<Minutes>,
+    /// The sum of *Time spent*: the minutes booked on the issues found, 0 for none.
+    pub time_spent: Option<Minutes>,
 }

@@ -6,9 +6,9 @@
 //! compiled search of the list (`under WEB-142` over every project the reader sees for an issue,
 //! the list of the project for a project), with the reader's sight and readable fields in it, so a
 //! hidden issue and a hidden field change nothing in it (ADR-0004). A field the reader may not read
-//! where the issues are is no total at all, never a total of no values. The sums of the estimate
-//! and the time left are one statement of that search; the time spent is read through the port of
-//! time spent, which reuses the same search. No total walks the tree in Rust.
+//! where the issues are is no total at all, never a total of no values. The sums of the estimate,
+//! the time left and the time spent are one statement of that search, which reads each issue once
+//! (ADR-0035, amendment M8). No total walks the tree in Rust.
 
 use bb_core::ErrorCode;
 use bb_core::fields::Field;
@@ -177,20 +177,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         if !lengths.found_any {
             return Ok(None);
         }
-        let spent = if readable(request, Field::TimeSpent) {
-            Summed::Sum(Some(
-                self.store()
-                    .spent_on_search(request)
-                    .await
-                    .map_err(stopped)?,
-            ))
-        } else {
-            Summed::Unreadable
-        };
         Ok(Some(Found {
             estimated: Summed::of(request, Field::EstimatedTime, lengths.estimated),
             left: Summed::of(request, Field::TimeLeft, lengths.time_left),
-            spent,
+            spent: Summed::of(request, Field::TimeSpent, lengths.time_spent),
         }))
     }
 
