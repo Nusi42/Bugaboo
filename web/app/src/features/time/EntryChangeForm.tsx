@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { Alert, alertTone, Form } from "@bugaboo/ui";
 import { useState } from "react";
 
-import { useMistakes } from "../../shared/mistakes.ts";
+import type { FormMistakes } from "../../shared/mistakes.ts";
 import { LengthBox } from "../fields/index.ts";
 import type { TimeEntry } from "./edits.ts";
 import { EntryForm, type EntryFormProps } from "./EntryForm.tsx";
@@ -18,6 +18,8 @@ export interface EntryChangeFormProps {
   readonly problem: EntryProblem | undefined;
   /** Asked to save: the length and the values the boxes hold. */
   readonly onSubmit: (minutes: number, values: EntryFormProps["values"]) => void;
+  /** The boxes that hold no value yet: the window that owns the footer holds *Save* while there are any. */
+  readonly mistakes: FormMistakes;
 }
 
 /**
@@ -31,11 +33,11 @@ export function EntryChangeForm({
   issue,
   defaults,
   problem,
+  mistakes,
   onSubmit,
 }: EntryChangeFormProps) {
   const [minutes, setMinutes] = useState<number>(entry.minutes);
   const [values, setValues] = useState<EntryFormProps["values"]>(() => valuesOfEntry(entry));
-  const mistakes = useMistakes();
   return (
     <Form
       id={id}

@@ -281,3 +281,16 @@ export async function prepareManyWeb(server: Instance, count: number): Promise<v
   );
   await admin.dispose();
 }
+
+/**
+ * Makes a field of time entries that must be filled in, a day, through the API (as an administrator):
+ * the form of every entry shows its box. Answers its ID.
+ */
+export async function requiredEntryDay(admin: ApiSession, name: string): Promise<string> {
+  const made = dataOf(
+    await admin.client.POST("/api/v1/fields", {
+      body: { name, kind: "date", applies_to: "time-entries", rules: { required: true } },
+    }),
+  );
+  return made.id;
+}

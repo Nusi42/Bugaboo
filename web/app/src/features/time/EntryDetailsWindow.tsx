@@ -1,13 +1,13 @@
 import { t } from "@bugaboo/messages";
 import { Button, buttonLook, SubmitButton, partOf, part } from "@bugaboo/ui";
-import { useId, useState } from "react";
+import { useId } from "react";
 
 import type { TimeEntry } from "./edits.ts";
 import type { EntryIssue } from "./entry-issue.ts";
 import { EntryChangeForm, type EntryChangeFormProps } from "./EntryChangeForm.tsx";
 import { EntryList, type EntryListProps } from "./EntryList.tsx";
 import { EntryWindow } from "./EntryWindow.tsx";
-import { useChangeEntry } from "./use-change-entry.ts";
+import { usePickedEntry } from "./use-picked-entry.ts";
 import { useDetailsTitle } from "./details-title.ts";
 
 export interface EntryDetailsWindowProps {
@@ -24,12 +24,15 @@ function DetailsFooter({
   formId,
   picked,
   isPending,
+  held,
   onClose,
   onBack,
 }: {
   readonly formId: string;
   readonly picked: boolean;
   readonly isPending: boolean;
+  /** A box of the form holds no value yet: *Save* is off until it is mended. */
+  readonly held: boolean;
   readonly onClose: () => void;
   readonly onBack: () => void;
 }) {
@@ -39,7 +42,7 @@ function DetailsFooter({
         {picked ? t("time.details.back") : t("common.close")}
       </Button>
       {picked ? (
-        <SubmitButton form={formId} isPending={isPending}>
+        <SubmitButton form={formId} isPending={isPending} isDisabled={held}>
           {t("time.details.save")}
         </SubmitButton>
       ) : null}
@@ -61,10 +64,7 @@ export function EntryDetailsWindow({
   onClose,
 }: EntryDetailsWindowProps) {
   const formId = useId();
-  const [picked, setPicked] = useState<TimeEntry | undefined>();
-  const { change, problem, isPending } = useChangeEntry(() => {
-    setPicked(undefined);
-  });
+  const { picked, setPicked, mistakes, change, problem, isPending } = usePickedEntry();
   const title = useDetailsTitle(formId, issue.key, picked);
   return (
     <EntryWindow
@@ -76,6 +76,7 @@ export function EntryDetailsWindow({
           formId={formId}
           picked={picked !== undefined}
           isPending={isPending}
+          held={mistakes.held}
           onClose={onClose}
           onBack={() => {
             setPicked(undefined);
@@ -94,6 +95,7 @@ export function EntryDetailsWindow({
             issue={issue}
             defaults={defaults}
             problem={problem}
+            mistakes={mistakes}
             onSubmit={(minutes, values) => {
               void change({ entry: picked, minutes, values, defaults });
             }}

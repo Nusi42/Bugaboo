@@ -7,7 +7,7 @@ import { bob, signInThroughApi } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { partIn } from "./support/parts.ts";
-import { createIssue, prepareWeb } from "./support/issues.ts";
+import { createIssue, prepareWeb, requiredEntryDay } from "./support/issues.ts";
 import {
   bookOn,
   cellOf,
@@ -117,4 +117,37 @@ test("time_04 the focus goes into the form of an entry and back to its button", 
   await expect(window.getByRole("textbox", { name: t("time.entry.length") })).toBeFocused();
   await window.getByRole("button", { name: t("time.details.back"), exact: true }).click();
   await expect(change).toBeFocused();
+});
+
+test("time_04 the details of a row hold Save while a day of an entry is half typed", async ({
+  page,
+  server,
+}) => {
+  const admin = await signedInAdmin(server);
+  const issue = await createIssue(admin, "WEB", "Shipped late");
+  // A field of time entries that must be filled in: the form of every entry shows its box for a day.
+  const field = await requiredEntryDay(admin, "Shipped on");
+  await admin.dispose();
+  const week = addDays(weekOf(today()), -21);
+  const worker = await signInThroughApi(server, bob);
+  await bookOn(worker, issue, week, 30, { [field]: week });
+  await worker.dispose();
+  await signIn(page, bob);
+  await openWeek(page, week);
+  await page
+    .getByRole("button", { name: t("time.sheet.details-of", { issue: issue.key }) })
+    .click();
+  const window = page.getByRole("dialog");
+  await window
+    .getByRole("button", { name: /^Change the time of/u })
+    .first()
+    .click();
+  const save = window.getByRole("button", { name: t("time.details.save"), exact: true });
+  const day = window.getByLabel(t("fields.label-required", { field: "Shipped on" }));
+  // Half a day: *Save* in the footer is off and the form says why, until it is a day again.
+  await day.fill("2027-01");
+  await expect(save).toBeDisabled();
+  await expect(window.getByText(t("common.value-wrong"))).toBeVisible();
+  await day.fill(week);
+  await expect(save).toBeEnabled();
 });

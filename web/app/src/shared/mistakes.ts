@@ -21,6 +21,8 @@ export interface FormMistakes {
   readonly held: boolean;
   /** What the box `box` tells: its text is no value (`true`), or a value again. */
   readonly mark: (box: string) => (wrong: boolean) => void;
+  /** Forgets every mistake: the form went, or another one takes its place in the same window. */
+  readonly clear: () => void;
 }
 
 /** The mistakes of one form sent as a whole. */
@@ -31,6 +33,9 @@ export function useMistakes(): FormMistakes {
     held: list.length > 0,
     mark: (box) => (wrong) => {
       setList((before) => withMistake(before, box, wrong));
+    },
+    clear: () => {
+      setList([]);
     },
   };
 }
