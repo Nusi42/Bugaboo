@@ -172,7 +172,10 @@ pub async fn move_dates<S: AuthStore>(
     ctx.set_run(Some(run));
     let prepared = written_of(ctx, &actor, plans);
     ctx.set_run(None);
-    let (events, writes) = prepared?;
+    let (events, mut writes) = prepared?;
+    // In the order of their IDs, whatever the order of the request: two moves of the same issues
+    // take their rows in one order, and never wait for each other in a circle.
+    writes.sort_by_key(IssueWrite::issue);
     // One transaction for every issue: written whole, or refused whole.
     let (why, failed) = (Why::default(), Arc::new(Mutex::new(None)));
     let (stopped, stopped_at, all) = (why.clone(), Arc::clone(&failed), writes.clone());

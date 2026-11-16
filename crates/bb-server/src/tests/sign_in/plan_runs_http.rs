@@ -155,18 +155,26 @@ async fn plan_03_runs_sent_at_the_same_moments_are_each_written_whole_or_not_at_
             sending.spawn(async move {
                 let run = run_of(&issues, ("2027-03-08", "2027-03-10"));
                 let reply = browser.send("POST", MOVE_DATES, Some(run)).await?;
-                Ok::<bool, Failure>(reply.status.is_success())
+                let refused = (!reply.status.is_success())
+                    .then(|| format!("{} {} {}", reply.status, reply.code(), reply.body));
+                Ok::<Option<String>, Failure>(refused)
             });
         }
         let mut kept: i64 = 0;
         while let Some(done) = sending.join_next().await {
-            if done?? {
-                kept += 1;
+            match done?? {
+                None => kept += 1,
+                // Every other run is refused as one that came second, never by a failure: two runs
+                // of the same issues in other orders do not wait for each other.
+                Some(refused) => assert!(
+                    refused.starts_with("409") && refused.contains("edit.version-changed"),
+                    "{refused}"
+                ),
             }
         }
-        // All on version 1: at most one is kept, whole; the others wrote nothing, so every issue
-        // has exactly one change more for each run kept.
-        assert!(kept <= 1, "{kept} runs kept");
+        // All on version 1: exactly one is kept, whole; the others wrote nothing, so every issue
+        // has exactly one change more.
+        assert_eq!(kept, 1, "{kept} runs kept");
         for key in &keys {
             let read = issue(&mut ada, key).await?;
             assert_eq!(read["version"], 1 + kept, "{key}: {read}");

@@ -517,6 +517,11 @@ impl IssueWrite {
         )
     }
 
+    /// The issue the change is of.
+    pub(crate) const fn issue(&self) -> IssueId {
+        self.written.id
+    }
+
     /// The issue as it is once written, on its new version.
     pub(crate) fn after(&self) -> Issue {
         let mut next = self.written.clone();
