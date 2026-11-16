@@ -169,13 +169,20 @@ pub fn sample_people(seed: u64, names: &NameList) -> Result<Vec<SamplePerson>, S
         .iter()
         .map(|(first, last, role)| SamplePerson::new(first, last, *role, true))
         .collect();
+    // The given names of the planners stand in the list but are never drawn: the people the seed
+    // draws stay the ones they were before the planners came.
+    let drawn_first: Vec<&String> = names
+        .first()
+        .iter()
+        .filter(|name| !PLANNERS.iter().any(|(first, _)| first == name))
+        .collect();
     let mut tries = 0_usize;
     while people.len() < PEOPLE {
         tries += 1;
         let (Some(role), true) = (roles.last().copied(), tries < PEOPLE * 1000) else {
             return Err(SampleError::TooFewNames);
         };
-        let first = &names.first()[random.below(names.first().len())];
+        let first = drawn_first[random.below(drawn_first.len())];
         let last = &names.last()[random.below(names.last().len())];
         let person = SamplePerson::new(first, last, role, false);
         if people.iter().all(|known| known.email != person.email) && !is_a_planner(&person.email) {
@@ -272,6 +279,35 @@ mod tests {
 
     fn names() -> NameList {
         NameList::bundled().unwrap()
+    }
+
+    #[test]
+    fn the_planners_change_none_of_the_people_the_seed_draws() {
+        // The list as it was before the planners came: without their given names.
+        let planners: Vec<&str> = PLANNERS.iter().map(|(first, _)| *first).collect();
+        let before: String = include_str!("../data/names.toml")
+            .lines()
+            .filter(|line| {
+                !planners
+                    .iter()
+                    .any(|first| line.trim() == format!("\"{first}\","))
+            })
+            .map(|line| {
+                format!(
+                    "{line}
+"
+                )
+            })
+            .collect();
+        let before = NameList::parse(&before).unwrap();
+        for seed in [7, 42, 2026] {
+            let now = sample_people(seed, &names()).unwrap();
+            let then = sample_people(seed, &before).unwrap();
+            let names_of = |people: &[SamplePerson]| -> Vec<String> {
+                people.iter().map(|person| person.name.clone()).collect()
+            };
+            assert_eq!(names_of(&now), names_of(&then), "{seed}");
+        }
     }
 
     #[test]
