@@ -6,8 +6,8 @@
 //! hundreds of thousands of issues of a big project whole from the table: 650 ms on SQLite, more
 //! than twice the budget of the page (the benchmark `timeline-biggest-project`). The index of
 //! migration 36 (the project, deleted at, the estimate and the time left, for the sums of the
-//! totals) is made again with the dates after them, so both the count and the sums read the index
-//! alone, and an issue keeps one index of this kind to write. The columns of migration 36 stay first
+//! totals) is made again with the dates after them, so the count reads the index alone (the sums of
+//! time left and time spent still read the table for the ID), and an issue keeps one index of this kind to write. The columns of migration 36 stay first
 //! and in their order, so the sums read what they read before. Like that index it holds no ID: with
 //! the ID in it SQLite chose the index for the text searches too, which then took seconds (measured
 //! again at the exit of M8: all three text searches stopped at the limit of a search). The statistics

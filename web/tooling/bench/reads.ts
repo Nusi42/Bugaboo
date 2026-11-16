@@ -82,7 +82,7 @@ function todayUtc(): string {
 }
 
 /** The date `days` days after today, in UTC: the day helper of the driver, which cannot load the screens' code. */
-export function dayFromToday(days: number): string {
+export function utcDayFromToday(days: number): string {
   return addDays(todayUtc(), days);
 }
 

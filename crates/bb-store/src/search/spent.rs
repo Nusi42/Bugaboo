@@ -1,7 +1,6 @@
 //! Time spent in SQL (ADR-0035, decision 4): the minutes booked on an issue, the sum of the lengths
-//! of its time entries, written once. The port of time spent reads it for a list of issues and for
-//! the issues a search finds, and the field *Time spent* of the search language and the totals
-//! build on the same expression; a second sum of time entries anywhere in the store is a finding.
+//! of its time entries, written once. The port of time spent reads it for a list of issues, and the
+//! field *Time spent* of the search language and the totals build on the same expression; a second sum of time entries anywhere in the store is a finding.
 //!
 //! The worked-out *Time left* ([`time_left`]) is built on it: the second place of the rule of
 //! `bb_core::time::left`, the approved pair of coding-standards §1, held to it by the vectors of
@@ -63,7 +62,7 @@ pub(crate) fn time_left() -> Expr {
         .case(estimated.clone().is_null(), Expr::null())
         .finally(Func::greatest([
             estimated.sub(minutes_spent()),
-            Expr::val(0_i64).into(),
+            Expr::val(0_i64),
         ]))
         .into()
 }
