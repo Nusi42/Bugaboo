@@ -81,6 +81,7 @@ mod m0049_dates_and_date_effect;
 mod m0050_work_times;
 mod m0051_own_themes;
 mod m0052_time_factor_and_accepted_warnings;
+mod m0053_issue_dates_index;
 #[cfg(test)]
 mod old_rows;
 
@@ -438,6 +439,11 @@ const ALL: &[Definition] = &[
         version: 52,
         name: "time_factor_and_accepted_warnings",
         steps: || Ok(m0052_time_factor_and_accepted_warnings::steps()),
+    },
+    Definition {
+        version: 53,
+        name: "issue_dates_index",
+        steps: || Ok(m0053_issue_dates_index::steps()),
     },
 ];
 
