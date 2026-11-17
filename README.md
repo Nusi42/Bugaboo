@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0--or--later-5b3fd9" alt="License: AGPL-3.0-or-later"></a>
-  <a href="docs/adr/0040-version-numbers.md"><img src="https://img.shields.io/badge/version-0.5.0-5b3fd9" alt="Version 0.5.0"></a>
+  <a href="docs/adr/0040-version-numbers.md"><img src="https://img.shields.io/badge/version-0.5.1-5b3fd9" alt="Version 0.5.1"></a>
   <a href="#where-it-stands"><img src="https://img.shields.io/badge/status-pre--1.0-orange" alt="Status: before version 1.0"></a>
   <a href="web/packages/api-client/LICENSE"><img src="https://img.shields.io/badge/API%20client-MIT-2ea44f" alt="The API client is under the MIT license"></a>
 </p>
@@ -21,7 +21,7 @@
 
 <sub>The pictures on this page show **Quillmoor Cycle Works, a made-up bicycle workshop**, with made-up people. Its repairs, frames, orders and open day are only the example. The top picture shows its list in the four themes of the app. The picture of the timeline shows the plan of a mobile app in the sample organization that comes with Bugaboo, also made up.</sub>
 
-> **Before version 1.0.** What you see below works and is tested, but Bugaboo is not released yet. The timeline and the theme editor are the part being built next. Do not use it for real work yet.
+> **Before version 1.0.** What you see below works and is tested, but Bugaboo is not released yet. The privacy tools and what a first release needs are the part being built next. Do not use it for real work yet.
 
 ## Who it is for
 
@@ -30,7 +30,7 @@ Bugaboo is for a team that wants to keep track of its work in one place it owns:
 - **One program to install.** The server and the app in the browser are one program, with its database built in. No cloud account, no outside service.
 - **Plain words for everyone.** The screens are written for people who are not experts, with the same words everywhere ([glossary](docs/glossary.md)). It works with a keyboard and a screen reader, and on phones, tablets and computers alike.
 - **Privacy by design.** No tracking, no outside scripts or fonts, only the cookies it needs. It is built for teams in Germany and elsewhere in the EU, with the GDPR in mind ([more below](#privacy)).
-- **Project management, step by step.** Built today: projects and sub-projects, each with its own roles, fields and workflows; lists that you filter, group by status, person or any field, and keep as saved searches to share; and time on issues with a timer or by hand, with the working hours of each day as German law asks; and the assistant, AI apps and agents. Planned: the timeline with Gantt charts and dependencies, boards, calendars and dashboards ([what comes next](#what-comes-next)).
+- **Project management, step by step.** Built today: projects and sub-projects, each with its own roles, fields and workflows; lists that you filter, group by status, person or any field, and keep as saved searches to share; and time on issues with a timer or by hand, with the working hours of each day as German law asks; the assistant, AI apps and agents; and the timeline with Gantt charts, dependencies, work times and plan warnings. Planned: boards, calendars and dashboards ([what comes next](#what-comes-next)).
 - **One team of people and AI agents.** Everything about a piece of work stays on its issue, so whoever picks it up next, a person or an agent, starts from what the last one knew. Agents and AI apps work on issues through MCP, with at most the rights of their person ([more below](#ai-agents-and-bugaboo-as-shared-memory)).
 
 ## A short tour
@@ -134,19 +134,18 @@ The details are in the [decision record about agents](docs/adr/0029-ai-agents.md
 
 In the order of the [roadmap](docs/04-milestones.md):
 
-1. **The timeline:** issues as bars on **Gantt charts**, with dependencies (*must finish first*), dates worked out from estimates and work days, and warnings when a plan does not fit. A theme editor comes with it.
-2. **The privacy tools and what a first release needs:** export and removal of personal data, backups and updates.
-3. **Then:** boards, calendars, a map of how issues relate, dashboards, documents, connections to other tools, and live updates.
+1. **The privacy tools and what a first release needs:** export and removal of personal data, backups and updates.
+2. **Then:** boards, calendars, a map of how issues relate, dashboards, documents, connections to other tools, and live updates.
 
 Every planned feature is in the [feature list](docs/01-feature-list.md).
 
 ## Where it stands
 
 <p align="center">
-  <img src="docs/media/roadmap.svg" alt="The 16 milestones M0 to M15 as tiles with their number of features: M0 to M7 are done, M8 (the timeline and theme editor) is next" width="100%">
+  <img src="docs/media/roadmap.svg" alt="The 16 milestones M0 to M15 as tiles with their number of features: M0 to M8 are done, M9 (privacy, operations and the first release) is next" width="100%">
 </p>
 
-Eight of the 16 milestones are done, and M8 is being built. The version number counts toward the plan ([how](docs/adr/0040-version-numbers.md)): today it is **0.5.0**, **0.9.0** will mean that every planned feature is built, and **1.0.0** comes after the last milestone.
+Nine of the 16 milestones are done. The version number counts toward the plan ([how](docs/adr/0040-version-numbers.md)): today it is **0.5.1**, **0.9.0** will mean that every planned feature is built, and **1.0.0** comes after the last milestone.
 
 ## Try it
 
