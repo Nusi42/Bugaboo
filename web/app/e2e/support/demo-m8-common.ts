@@ -70,10 +70,21 @@ export async function keyOf(session: ApiSession, title: string): Promise<string>
 /** The part of the address of a timeline grouped by goal: the goal heads its issues (UX §4.7, M8-Q12). */
 const BY_GOAL = "&group=parent";
 
+/** The search of the issues of the project of the plan, as a person types it. */
+export const planSearch = `project is ${plan.project}`;
+
 /** Opens the timeline of the project of the plan grouped by goal, with or without *Plan by effort*. */
-export async function openPlan(page: Page, byEffort: boolean): Promise<void> {
-  const search = encodeURIComponent(`project is ${plan.project}`);
-  await page.goto(`/search?s=${search}&show=timeline${BY_GOAL}`);
+export function openPlan(page: Page, byEffort: boolean): Promise<void> {
+  return openPlanAt(page, `/search?s=${encodeURIComponent(planSearch)}`, byEffort);
+}
+
+/**
+ * Opens a page of the search of the plan (the page of a search, or a saved search of it) as its timeline grouped by
+ * goal, with or without *Plan by effort*.
+ */
+export async function openPlanAt(page: Page, address: string, byEffort: boolean): Promise<void> {
+  const more = address.includes("?") ? "&" : "?";
+  await page.goto(`${address}${more}show=timeline${BY_GOAL}`);
   // A phone shows the plan as a grouped list; it has the switch of Plan by effort as well.
   await expect(chart(page).or(phoneList(page))).toBeVisible();
   const toggle = page.getByRole("switch", { name: t("timeline.plan-by-effort"), exact: true });
