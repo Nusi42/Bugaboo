@@ -120,6 +120,16 @@ describe("ux_01 the script of the first look", () => {
     replayFirstLook(firstLookPlaces);
     expect(Object.fromEntries(fake.attributes)).toEqual({ [pageAttributes.look]: "dusk" });
     expect(fake.links).toEqual([]);
+    // An address that only starts like a sheet of the server is not linked either: the paint would wait for it.
+    for (const sheet of [
+      "/themes/../api/v1/me",
+      "/themes/%2e%2e/api/v1/me.css",
+      "//elsewhere.test/themes/x.css",
+    ]) {
+      const sneaky = prepare(JSON.stringify({ dark: { attributes: {}, sheet } }), true);
+      replayFirstLook(firstLookPlaces);
+      expect.soft(sneaky.links).toEqual([]);
+    }
   });
 });
 

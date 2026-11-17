@@ -103,6 +103,8 @@ describe("thm_04 an own theme as the light or dark choice", () => {
     // A stored address that is not one of the server's sheets is never linked.
     const elsewhere = { ...appearance, darkOwn: { ...own, sheet: "https://elsewhere.test/x.css" } };
     expect(parseAppearance(JSON.stringify(elsewhere)).darkOwn).toBeNull();
+    const climbing = { ...appearance, darkOwn: { ...own, sheet: "/themes/../api/v1/me.css" } };
+    expect(parseAppearance(JSON.stringify(climbing)).darkOwn).toBeNull();
   });
 });
 

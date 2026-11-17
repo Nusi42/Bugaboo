@@ -1,11 +1,7 @@
-import {
-  ownThemeSheets,
-  settingChoices,
-  settingDefaults,
-  type SettingChoice,
-} from "@bugaboo/api-client";
+import { settingChoices, settingDefaults, type SettingChoice } from "@bugaboo/api-client";
 
 import { Listeners } from "./listeners.ts";
+import { isOwnSheet } from "./own-sheet.ts";
 import type { FirstLook, FramePage } from "./first-look.ts";
 import {
   applyTheme,
@@ -86,7 +82,7 @@ function isChosenOwn(value: unknown): value is ChosenOwn {
   return (
     typeof text("id") === "string" &&
     typeof sheet === "string" &&
-    sheet.startsWith(ownThemeSheets) &&
+    isOwnSheet(sheet) &&
     typeof text("choice") === "string"
   );
 }

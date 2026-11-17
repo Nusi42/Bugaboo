@@ -1,5 +1,4 @@
-import { ownThemeSheets } from "@bugaboo/api-client";
-
+import { ownSheetPattern } from "./own-sheet.ts";
 import { storageKey } from "./storage.ts";
 import { deviceDarkQuery, firstLookSheetId } from "./theme.ts";
 import { pageAttributes, variants } from "./tokens.ts";
@@ -32,8 +31,8 @@ export interface FirstLookPlaces {
   readonly attributes: readonly string[];
   /** The ID of the link of the sheet of an own theme, which the app takes over. */
   readonly sheetId: string;
-  /** Where the server's sheets of own themes start: any other address is never linked. */
-  readonly sheetStart: string;
+  /** The pattern of the server's sheets of own themes (`ownSheetPattern`): any other address is never linked. */
+  readonly sheetPattern: string;
 }
 
 export const firstLookPlaces: FirstLookPlaces = {
@@ -45,7 +44,7 @@ export const firstLookPlaces: FirstLookPlaces = {
     ...Object.values(variants).map((variant) => variant.attribute),
   ],
   sheetId: firstLookSheetId,
-  sheetStart: ownThemeSheets,
+  sheetPattern: ownSheetPattern,
 };
 
 /**
@@ -75,7 +74,7 @@ export function replayFirstLook(places: FirstLookPlaces): void {
       }
     }
     const sheet: unknown = Reflect.get(shown, "sheet");
-    if (typeof sheet === "string" && sheet.startsWith(places.sheetStart)) {
+    if (typeof sheet === "string" && new RegExp(places.sheetPattern, "u").test(sheet)) {
       // The page waits for the sheet before it draws, so an own theme shows from the first frame too.
       const link = document.createElement("link");
       link.id = places.sheetId;
