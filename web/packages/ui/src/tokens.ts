@@ -199,6 +199,7 @@ export const tokenNames = [
   "fs-md",
   "fs-lg",
   "fs-xl",
+  "tracking-brand-narrow",
   "fs-ui",
   "space-1",
   "space-2",

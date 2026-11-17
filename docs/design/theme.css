@@ -16,6 +16,7 @@
   --fs-md: calc(16px * var(--text-scale));
   --fs-lg: calc(20px * var(--text-scale));
   --fs-xl: calc(24px * var(--text-scale));
+  --tracking-brand-narrow: -0.02em;
   --fs-ui: calc(14px * var(--text-scale));
   --space-1: calc(4px * var(--density));
   --space-2: calc(8px * var(--density));

@@ -68,6 +68,8 @@ tokens {
     size "fs-md" "calc(16px * $text-scale)"
     size "fs-lg" "calc(20px * $text-scale)"
     size "fs-xl" "calc(24px * $text-scale)"
+    // The name of the app in the narrow menu is set a little closer, so it fits the room between the paddings.
+    size "tracking-brand-narrow" "-0.02em"
     // The text of rows, fields and buttons: 14 on a computer, 16 on a phone (UX §7.3).
     size "fs-ui" "calc(14px * $text-scale)" phone="calc(16px * $text-scale)"
 
@@ -7125,9 +7127,14 @@ part "sidebar.brand" {
     font-weight "$weight-regular"
 }
 
+// The name is the widest thing in the narrow menu: it has to fit the room between the paddings of the menu, or its box
+// holds more across than it shows and the menu scrolls sideways. A larger text breaks it inside that room.
 part "sidebar.brand[variant=narrow]" {
+    max-width "100%"
     padding "$space-2 0"
-    font-size "$fs-base"
+    font-size "$fs-xs"
+    letter-spacing "$tracking-brand-narrow"
+    overflow-wrap anywhere
 }
 
 part "sidebar.list" "sidebar.bottom" {
