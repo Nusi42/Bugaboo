@@ -42,15 +42,19 @@ export function groupIdOf(key: GroupKey): string {
 
 /**
  * The lines of the rows: grouped where the rows have groups, each group where its first row is, a
- * folded group with its head only. Rows without a group stand alone, without a head.
+ * folded group with its head only. Rows without a group stand alone, without a head. An issue that heads a group
+ * (a goal) has no row of its own.
  */
 export function linesOf(
   rows: readonly TimelineRow[],
   folded: readonly string[],
   goalOf: (id: string) => TimelineGoal | undefined,
 ): readonly Line[] {
+  const heads = new Set(
+    rows.flatMap((row) => (row.group?.type === "issue" ? [row.group.value] : [])),
+  );
   const groups = new Map<string, { key: GroupKey | null; rows: TimelineRow[] }>();
-  for (const row of rows) {
+  for (const row of rows.filter((each) => !heads.has(idOf(each)))) {
     const key = row.group;
     const id = key === null ? "" : groupIdOf(key);
     const group = groups.get(id) ?? { key, rows: [] };
