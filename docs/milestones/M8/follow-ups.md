@@ -179,6 +179,7 @@ WP-02 brought a full run from five failing browser tests to one (2026-11-11): Ch
 | M8-F206 | The test of the preview walks past issue IDs that do not exist, not real issues in a project the reader cannot see, and has no visible issue reached only through a hidden one; the test of the rights kept for a request has no person who sees some projects but not others | The behaviour is right in the code | WP-12 |
 | M8-F207 | `cached_evaluation` of `bb-app/src/access/mod.rs` is `pub(crate)` only for one test, so other code of the crate could read the cache without `require` | Nothing reads it today | The next package that changes access |
 | M8-F236 | `agent-work` ai_34 (an answer to work that changed meanwhile) failed on a computer in three landing runs of the exit package (2026-11-16) and passed every time alone (8 of 8); `issue-list-view` cfg_02 failed once the same way. Find what the full run adds. | Open, watch | Lead |
+| M8-F237 | On a project's own issue list shown as a timeline grouped by *Part of*, the goal's group head reads *Other* instead of the goal: the answer of `/api/v1/search/issues/groups` there leaves that goal's group out, so `groupName` falls back. The search page and saved searches name it right | Open | Lead |
 
 ## From the outside test pass of the MCP server
 
