@@ -4,7 +4,7 @@ import { ada, signInThroughApi } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { inOrder } from "./support/sequence.ts";
-import { cutByTheEdge } from "./support/timeline-edge.ts";
+import { cutByTheEdge, scrollAUnitInPartUnderTheNames } from "./support/timeline-edge.ts";
 import {
   barOf,
   changeIssue,
@@ -18,7 +18,8 @@ import {
 // The edge of the chart (UX §4.7): the label after a bar and the name of a unit of the scale show
 // whole wherever the chart opens. A label that has no room after its bar nor before it stays in
 // sight at the end of the days on screen, over its bar, and the chart opens at the start of a unit,
-// so its first name is not cut by the names of the rows.
+// so its first name is not cut by the names of the rows; scrolled sideways, the name of a unit seen in part moves
+// along into what is left of it.
 
 test.use({ preparation: { run: prepareTimeline } });
 
@@ -83,4 +84,14 @@ test("plan_03_a_bar_of_no_priority_is_closed_by_its_edge_on_every_side", async (
     };
   });
   expect(edges.start).toEqual(edges.end);
+});
+
+test("plan_01_a_unit_scrolled_in_part_under_the_names_keeps_its_name_in_sight", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await openPlan(page);
+  // As a person leaves the chart after scrolling sideways: the name moves along into what is left of its unit.
+  await scrollAUnitInPartUnderTheNames(page);
+  await expect.poll(() => cutByTheEdge(page)).toEqual([]);
 });

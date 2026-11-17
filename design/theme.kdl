@@ -3527,11 +3527,19 @@ part "day-scale.cell" {
     box-sizing border-box
     width "calc($timeline-length * $timeline-day * $size-px)"
     padding-inline "$space-1"
-    overflow hidden
+    // Cut, not a box of its own: the name in it sticks to the box of the chart (below).
+    overflow clip
     border-inline-start "$border-width solid $border-subtle"
     color "$fg-muted"
     font-size "$fs-xs"
     white-space nowrap
+}
+
+// The name of a unit scrolled in part under the names of the rows moves along into what is left of it, so it is not
+// cut by them while there is room for it (UX §4.7).
+part "timeline-head day-scale.name" {
+    position sticky
+    inset-inline-start "calc($size-timeline-names + $space-1)"
 }
 
 // A weekend: the column is shaded from the scale down, behind the bars.

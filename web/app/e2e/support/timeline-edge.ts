@@ -45,3 +45,21 @@ export function cutByTheEdge(page: Page): Promise<readonly string[]> {
     return cut;
   });
 }
+
+/** How far the first unit after the names of the rows goes under them: a little, so its name still has room. */
+const UNDER_THE_NAMES_PX = 12;
+
+/** Scrolls the chart sideways so that the first unit of the scale after the names of the rows goes a little under them. */
+export async function scrollAUnitInPartUnderTheNames(page: Page): Promise<void> {
+  await page.locator('[data-part="timeline-scroll"]').evaluate((box, under) => {
+    const names =
+      box.querySelector('[data-part="timeline-head.corner"]')?.getBoundingClientRect().right ?? 0;
+    for (const cell of box.querySelectorAll('[data-part="day-scale.cell"]')) {
+      const place = cell.getBoundingClientRect();
+      if (place.left > names) {
+        box.scrollBy({ left: place.left - names + under });
+        return;
+      }
+    }
+  }, UNDER_THE_NAMES_PX);
+}

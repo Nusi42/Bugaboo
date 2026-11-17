@@ -17,7 +17,7 @@ function ScaleCell({ unit }: { readonly unit: ScaleUnit }) {
   usePlace(ref, { "timeline-start": unit.start, "timeline-length": unit.length });
   return (
     <div ref={ref} {...partOf(part.dayScaleCell)}>
-      {unit.label}
+      <span {...partOf(part.dayScaleName)}>{unit.label}</span>
     </div>
   );
 }
