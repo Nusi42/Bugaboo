@@ -8,6 +8,7 @@ import { themes, expectLook, chooseTheme, type Theme } from "./support/checks.ts
 import { openAppearance } from "./support/appearance.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { inOrder } from "./support/sequence.ts";
+import { uploadedTheme, wearTheme } from "./support/theme-editor.ts";
 import { paths } from "../src/shared/paths.ts";
 
 // No flash of light while a page loads (UX §6.4): from its first paint the page is drawn in the person's theme, before
@@ -43,20 +44,27 @@ function midnight(): Theme {
 }
 
 /**
- * From the start of every page, before any script of the page runs, writes down the background the page is drawn
- * with in each frame (the body's, or the page frame's before there is a body): the browser calls back before it
- * paints each frame, so the first is the first paint.
+ * From the start of every page, before any script of the page runs, writes down in each frame what the page is drawn
+ * with: the background (the body's, or the page frame's before there is a body), or the value of a token of the page
+ * frame (`--accent`). The browser calls back before it paints each frame, so the first is the first paint.
  */
-async function recordBackgrounds(page: Page): Promise<void> {
-  await page.addInitScript((key) => {
-    const seen: string[] = [];
-    Reflect.set(globalThis, key, seen);
-    const note = (): void => {
-      seen.push(getComputedStyle(document.body ?? document.documentElement).backgroundColor);
+async function recordFrames(page: Page, what: "background" | `--${string}`): Promise<void> {
+  await page.addInitScript(
+    ([key, read]) => {
+      const seen: string[] = [];
+      Reflect.set(globalThis, key, seen);
+      const note = (): void => {
+        seen.push(
+          read === "background"
+            ? getComputedStyle(document.body ?? document.documentElement).backgroundColor
+            : getComputedStyle(document.documentElement).getPropertyValue(read).trim(),
+        );
+        requestAnimationFrame(note);
+      };
       requestAnimationFrame(note);
-    };
-    requestAnimationFrame(note);
-  }, FRAMES_KEY);
+    },
+    [FRAMES_KEY, what] as const,
+  );
 }
 
 /** How light a color of CSS (`rgb(…)` or `rgba(…)`) is, from 0 to 1; a background with no color counts as light. */
@@ -68,8 +76,8 @@ function lightness(color: string): number {
 }
 
 /**
- * Reloads the page with the app's script held back, until `ready` shows, and gives the background of every frame the
- * new page drew, from its first paint on.
+ * Reloads the page with the app's script held back, until `ready` shows, and gives what `recordFrames` wrote down in
+ * every frame the new page drew, from its first paint on.
  */
 async function framesOfAReload(page: Page, ready: Locator): Promise<string[]> {
   const script = /\/assets\/index-[^/]*\.js$/u;
@@ -102,7 +110,7 @@ test("ux_01 the sign-in page reloads in Midnight from its first paint, with no l
   const heading = page.getByRole("heading", { level: 1, name: t("sign-in.title") });
   await expect(heading).toBeVisible();
   await chooseTheme(page, midnight());
-  await recordBackgrounds(page);
+  await recordFrames(page, "background");
   expectAllDark(await framesOfAReload(page, heading));
   await expectLook(page, "midnight");
 });
@@ -130,7 +138,39 @@ test("ux_01 a signed-in page reloads in the person's Midnight from its first pai
   await openAppearance(page);
   await expectLook(page, "midnight");
   const heading = page.getByRole("heading", { level: 1, name: t("appearance.title") });
-  await recordBackgrounds(page);
+  await recordFrames(page, "background");
   expectAllDark(await framesOfAReload(page, heading));
   await expectLook(page, "midnight");
+});
+
+/** The accent of the own theme of the test: not the accent of Midnight, which it extends. */
+const OWN_ACCENT = "#c7bdff";
+
+test("ux_01 a page reloads in the person's own theme from its first paint", async ({
+  page,
+  server,
+  browserName,
+}) => {
+  // WebKit (and Firefox) do not wait for a sheet marked `blocking="render"`: there the own theme may come a frame late.
+  test.skip(browserName === "webkit", "WebKit draws before the sheet of an own theme is there");
+  const theme = await uploadedTheme(server, ada, "for-everyone", {
+    name: "Harbor",
+    extends: "midnight",
+    values: { colors: { accent: { value: OWN_ACCENT } } },
+  });
+  await wearTheme(server, ada, theme.choice);
+  await openAppearance(page);
+  await expectLook(page, "midnight");
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        getComputedStyle(document.documentElement).getPropertyValue("--accent").trim(),
+      ),
+    )
+    .toBe(OWN_ACCENT);
+  const heading = page.getByRole("heading", { level: 1, name: t("appearance.title") });
+  await recordFrames(page, "--accent");
+  const frames = await framesOfAReload(page, heading);
+  expect(frames.length).toBeGreaterThan(0);
+  expect(frames.filter((accent) => accent !== OWN_ACCENT)).toEqual([]);
 });
