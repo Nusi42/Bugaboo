@@ -1,5 +1,6 @@
-//! The two generated pages: the architecture (chapters, decision records, check table) and the
-//! milestones.
+//! The three generated pages: the architecture (chapters, check table, and the list of decision
+//! records), the decision records themselves, and the milestones. Each page is its own file so
+//! that none grows past the size limit of GIT-FILES.
 
 use std::fmt::Write as _;
 
@@ -15,6 +16,7 @@ use crate::source::read_text;
 
 pub(super) const ARCHITECTURE_PATH: &str = "docs/03-architecture.html";
 pub(super) const MILESTONES_PATH: &str = "docs/04-milestones.html";
+pub(super) const DECISIONS_PATH: &str = "docs/13-decisions.html";
 
 const CHECKS_CHAPTER_PREFIX: &str = "10-";
 
@@ -65,10 +67,11 @@ pub(super) fn architecture(repo: &Repo, catalog: &Catalog) -> anyhow::Result<Str
     let chapters = read_chapters(repo)?;
     let adrs = read_adrs(repo)?;
     let links = Links {
-        page: String::new(),
+        chapters_page: String::new(),
+        adrs_page: file_name(DECISIONS_PATH),
         chapters: chapters.iter().map(|(path, _)| file_name(path)).collect(),
     };
-    let date = status_date(&read_text(repo, ARCHITECTURE_README)?, ARCHITECTURE_README)?;
+    let date = readme_date(repo)?;
 
     let mut body = String::new();
     for (index, (path, md)) in chapters.iter().enumerate() {
@@ -94,18 +97,11 @@ pub(super) fn architecture(repo: &Repo, catalog: &Catalog) -> anyhow::Result<Str
     let adr_chapter = chapters.len() + 1;
     let _ = write!(
         body,
-        "<h2 id=\"s{adr_chapter}\">{}Decision records</h2>\n<p>Each record explains one decision: the situation, what we decided, what follows from it, what else we considered, and which checks enforce it.</p>\n",
-        section_badge(&adr_chapter.to_string())
+        "<h2 id=\"s{adr_chapter}\">{}Decision records</h2>\n<p>Each record explains one decision: the situation, what we decided, what follows from it, what else we considered, and which checks enforce it. The records are on their own page, <a href=\"{}\">Decision records</a>.</p>\n{}",
+        section_badge(&adr_chapter.to_string()),
+        file_name(DECISIONS_PATH),
+        adr_link_list(&adrs)
     );
-    for (index, (path, md)) in adrs.iter().enumerate() {
-        let file = file_name(path);
-        let number = &file[..4];
-        let mut seen_title = false;
-        let html = markdown::render(md, &links, |level| {
-            adr_heading(level, number, adr_chapter, index + 1, &mut seen_title)
-        });
-        let _ = writeln!(body, "<!-- {file} -->\n{html}");
-    }
 
     Ok(render_page(&Page {
         title: "Bugaboo architecture",
@@ -147,26 +143,89 @@ fn chapter_heading(level: u8, chapter: usize, sub: &mut usize, seen_title: &mut 
     }
 }
 
-/// Decision-record headings move two levels down; the title is numbered.
-fn adr_heading(
-    level: u8,
-    number: &str,
-    adr_chapter: usize,
-    position: usize,
-    seen_title: &mut bool,
-) -> Heading {
+/// The date of the architecture sources, which the decision records share.
+fn readme_date(repo: &Repo) -> anyhow::Result<String> {
+    status_date(&read_text(repo, ARCHITECTURE_README)?, ARCHITECTURE_README)
+}
+
+/// The first heading of a decision record without its `# ` (`ADR-0001: Modular monolith`).
+fn adr_title(md: &str) -> &str {
+    md.lines()
+        .find_map(|line| line.strip_prefix("# "))
+        .unwrap_or("")
+        .trim()
+}
+
+/// The status word of a decision record: the bold text of the `Status:` line (`Accepted`).
+fn adr_status(md: &str) -> &str {
+    md.lines()
+        .find_map(|line| line.strip_prefix("Status:"))
+        .and_then(|rest| rest.trim_start().strip_prefix("**"))
+        .and_then(|rest| rest.split_once("**"))
+        .map_or("", |(word, _)| word)
+}
+
+/// One list item per record: title and status, linked to the record on the decisions page.
+fn adr_link_list(adrs: &[(String, String)]) -> String {
+    let mut list = String::from("<ul>\n");
+    for (path, md) in adrs {
+        let file = file_name(path);
+        let _ = writeln!(
+            list,
+            "<li><a href=\"{}#adr-{}\">{}</a> ({})</li>",
+            file_name(DECISIONS_PATH),
+            &file[..4],
+            escape_text(adr_title(md)),
+            escape_text(adr_status(md))
+        );
+    }
+    list.push_str("</ul>\n");
+    list
+}
+
+/// Decision-record headings move one level down; the title is numbered by its position.
+fn adr_heading(level: u8, number: &str, position: usize, seen_title: &mut bool) -> Heading {
     if level == 1 && !*seen_title {
         *seen_title = true;
         return (
             format!(
-                "<h3 id=\"adr-{number}\">{}",
-                section_badge(&format!("{adr_chapter}.{position}"))
+                "<h2 id=\"adr-{number}\">{}",
+                section_badge(&position.to_string())
             ),
-            "</h3>".to_owned(),
+            "</h2>".to_owned(),
         );
     }
-    let shifted = (level + 2).min(6);
+    let shifted = (level + 1).min(6);
     (format!("<h{shifted}>"), format!("</h{shifted}>"))
+}
+
+pub(super) fn decisions(repo: &Repo) -> anyhow::Result<String> {
+    let adrs = read_adrs(repo)?;
+    let links = Links {
+        chapters_page: file_name(ARCHITECTURE_PATH),
+        adrs_page: String::new(),
+        chapters: chapter_files(repo)?,
+    };
+    let mut body = String::new();
+    for (index, (path, md)) in adrs.iter().enumerate() {
+        let file = file_name(path);
+        let number = &file[..4];
+        let mut seen_title = false;
+        let html = markdown::render(md, &links, |level| {
+            adr_heading(level, number, index + 1, &mut seen_title)
+        });
+        let _ = writeln!(body, "<!-- {file} -->\n{html}");
+    }
+    Ok(render_page(&Page {
+        title: "Decision records",
+        small: "Decisions",
+        status: "<span class=\"pill st-done\">Accepted</span>",
+        phase: "Phase 3 of 5",
+        lede: "Each record explains one decision of the architecture: the situation, what we decided, what follows from it, what else we considered, and which checks enforce it.",
+        example: "§7",
+        date: &readme_date(repo)?,
+        body: &body,
+    }))
 }
 
 pub(super) fn milestones(repo: &Repo) -> anyhow::Result<String> {
@@ -174,7 +233,8 @@ pub(super) fn milestones(repo: &Repo) -> anyhow::Result<String> {
     let date = status_date(&source, MILESTONES)?;
     let md = strip_title_and_status(&source);
     let links = Links {
-        page: file_name(ARCHITECTURE_PATH),
+        chapters_page: file_name(ARCHITECTURE_PATH),
+        adrs_page: file_name(DECISIONS_PATH),
         chapters: chapter_files(repo)?,
     };
     let lede = format!(
@@ -356,5 +416,64 @@ status = "active"
         assert!(html.contains("<code>A-1</code></td><td>Fish &amp; chips</td>"));
         assert!(html.contains("edit · ci"));
         assert!(html.contains("<p>1 checks, generated from"));
+    }
+
+    fn adr(title: &str, status: &str) -> String {
+        format!("# {title}\n\nStatus: **{status}** · 2026-10-04\n\n## Context\nBody text.\n")
+    }
+
+    #[test]
+    fn decision_list_has_links_and_no_body() {
+        let adrs = vec![(
+            "docs/adr/0007-x.md".to_owned(),
+            adr("ADR-0007: Fish & chips", "Proposed"),
+        )];
+        let html = adr_link_list(&adrs);
+        assert!(html.contains(
+            "<li><a href=\"13-decisions.html#adr-0007\">ADR-0007: Fish &amp; chips</a> (Proposed)</li>"
+        ));
+        assert!(!html.contains("Body text."));
+    }
+
+    #[test]
+    fn decision_headings_carry_the_anchor() {
+        let mut seen = false;
+        let (open, close) = adr_heading(1, "0007", 3, &mut seen);
+        assert!(open.starts_with("<h2 id=\"adr-0007\">") && open.contains("§3<"));
+        assert_eq!(close, "</h2>");
+        assert_eq!(adr_heading(2, "0007", 3, &mut seen).0, "<h3>");
+        assert_eq!(adr_heading(1, "0007", 3, &mut seen).0, "<h2>");
+    }
+
+    #[test]
+    fn architecture_page_links_the_records_and_holds_none() {
+        let repo = Repo::discover().unwrap();
+        let catalog = Catalog::load(&repo).unwrap();
+        let page = architecture(&repo, &catalog).unwrap();
+        let decisions = decisions(&repo).unwrap();
+        for (path, _) in read_adrs(&repo).unwrap() {
+            let file = file_name(&path);
+            let number = &file[..4];
+            assert!(page.contains(&format!("href=\"13-decisions.html#adr-{number}\"")));
+            assert!(!page.contains(&format!("id=\"adr-{number}\"")));
+            assert!(!page.contains(&format!("<!-- {file} -->")));
+            assert!(decisions.contains(&format!("id=\"adr-{number}\"")));
+            assert!(decisions.contains(&format!("<!-- {file} -->")));
+        }
+        assert!(!page.contains("href=\"#adr-"));
+    }
+
+    #[test]
+    fn every_page_stays_under_the_file_size_limit() {
+        let repo = Repo::discover().unwrap();
+        let catalog = Catalog::load(&repo).unwrap();
+        let limit = usize::try_from(crate::checks::git_files::MAX_BYTES).unwrap();
+        for (name, page) in [
+            ("architecture", architecture(&repo, &catalog).unwrap()),
+            ("decisions", decisions(&repo).unwrap()),
+            ("milestones", milestones(&repo).unwrap()),
+        ] {
+            assert!(page.len() <= limit, "{name} page is {} bytes", page.len());
+        }
     }
 }

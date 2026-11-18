@@ -7,9 +7,11 @@ use super::text::{escape_attribute, escape_text};
 
 /// Where links to other Markdown files point on the page being built.
 pub(crate) struct Links {
-    /// Prefix for in-page anchors: empty on the architecture page, the architecture page's file
-    /// name on other pages.
-    pub(crate) page: String,
+    /// Prefix for links to the chapters: empty on the architecture page, its file name elsewhere.
+    pub(crate) chapters_page: String,
+    /// Prefix for links to the decision records: empty on the decisions page, its file name
+    /// elsewhere.
+    pub(crate) adrs_page: String,
     /// The file names of the architecture chapters (`04-building-blocks.md`).
     pub(crate) chapters: Vec<String>,
 }
@@ -39,10 +41,16 @@ impl Links {
     /// The opening tag for a link, and the tag that closes it.
     fn open(&self, href: &str) -> (String, &'static str) {
         if let Some(number) = self.chapter_number(href) {
-            return (format!("<a href=\"{}#s{number}\">", self.page), "</a>");
+            return (
+                format!("<a href=\"{}#s{number}\">", self.chapters_page),
+                "</a>",
+            );
         }
         if let Some(number) = Self::adr_number(href) {
-            return (format!("<a href=\"{}#adr-{number}\">", self.page), "</a>");
+            return (
+                format!("<a href=\"{}#adr-{number}\">", self.adrs_page),
+                "</a>",
+            );
         }
         if href.starts_with("http://") || href.starts_with("https://") {
             return (
@@ -184,7 +192,8 @@ mod tests {
 
     fn links() -> Links {
         Links {
-            page: String::new(),
+            chapters_page: String::new(),
+            adrs_page: String::new(),
             chapters: vec!["04-building-blocks.md".to_owned()],
         }
     }
@@ -229,11 +238,17 @@ mod tests {
     #[test]
     fn other_pages_link_into_the_architecture_page() {
         let links = Links {
-            page: "03-architecture.html".to_owned(),
+            chapters_page: "03-architecture.html".to_owned(),
+            adrs_page: "13-decisions.html".to_owned(),
             chapters: vec!["11-testing.md".to_owned()],
         };
-        let html = render("[t](architecture/11-testing.md)", &links, plain);
+        let html = render(
+            "[t](architecture/11-testing.md) [r](adr/0020-x.md)",
+            &links,
+            plain,
+        );
         assert!(html.contains("<a href=\"03-architecture.html#s11\">t</a>"));
+        assert!(html.contains("<a href=\"13-decisions.html#adr-0020\">r</a>"));
     }
 
     #[test]

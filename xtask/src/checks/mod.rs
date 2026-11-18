@@ -48,7 +48,7 @@ mod fmt_rust;
 mod fmt_toml;
 mod fmt_ts;
 pub(crate) mod git_commit_msg;
-mod git_files;
+pub(crate) mod git_files;
 mod git_linear;
 mod lint_api_types;
 mod lint_css;

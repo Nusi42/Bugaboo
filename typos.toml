@@ -4,6 +4,7 @@
 extend-exclude = [
   "docs/03-architecture.html",
   "docs/04-milestones.html",
+  "docs/13-decisions.html",
   "crates/bb-auth/data/breached-passwords.txt",
   # German sentences for the full-text search on the large dataset (architecture section 11).
   "crates/bb-sample/data/large.toml",

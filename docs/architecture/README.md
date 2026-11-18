@@ -19,4 +19,4 @@ The structure follows the arc42 template (shortened) with C4-style diagrams as M
 | 11 | [Testing, sample data and local ports](11-testing.md) |
 | 12 | [Security: threat model and personal-data flows](12-security.md) |
 
-The commentable HTML version (`../03-architecture.html`) is **generated** from these files and the ADRs by `cargo xtask docs` — edit the Markdown, never the HTML.
+The commentable HTML versions (`../03-architecture.html`, and the decision records in `../13-decisions.html`) are **generated** from these files and the ADRs by `cargo xtask docs` — edit the Markdown, never the HTML.

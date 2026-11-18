@@ -9,7 +9,7 @@ use super::{Check, Context, Finding};
 use crate::repo::Repo;
 
 /// The largest file that may be committed, in bytes.
-const MAX_BYTES: u64 = 1024 * 1024;
+pub(crate) const MAX_BYTES: u64 = 1024 * 1024;
 
 /// The ceiling of the description of the API, in bytes (2 MiB).
 const OPENAPI_MAX_BYTES: u64 = 2 * 1024 * 1024;
