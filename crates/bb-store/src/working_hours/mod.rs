@@ -2,9 +2,9 @@
 //! with their periods and breaks (TIME-08), and the deletion of the days older than the keep period
 //! with everything that tells about them (ADR-0035, decision 7).
 
-mod old;
+pub(crate) mod old;
 
-use bb_app::working_hours::{OldDays, WorkingHoursStore};
+use bb_app::working_hours::WorkingHoursStore;
 use bb_core::DomainEvent;
 use bb_core::event::RecordKind;
 use bb_core::id::{UserId, WorkDayId};
@@ -340,10 +340,6 @@ impl WorkingHoursStore for AuthStorage {
             .collect()
     }
 
-    async fn old_work_days(&self, before: Date) -> Result<Vec<OldDays>, StoreError> {
-        old::count(&mut self.database(), before, None).await
-    }
-
     async fn lock_work_days_of(
         transaction: &mut Transaction,
         person: UserId,
@@ -425,13 +421,5 @@ impl WorkingHoursStore for AuthStorage {
             .values([(WorkDayRow::Warnings, Expr::val(warnings_text(warnings)?))])
             .and_where(Expr::col(WorkDayRow::Id).eq(id.stored()));
         transaction.execute(&update).await.map(|_| ())
-    }
-
-    async fn delete_old_work_days(
-        transaction: &mut Transaction,
-        before: Date,
-        person: Option<UserId>,
-    ) -> Result<Vec<OldDays>, StoreError> {
-        old::delete(transaction, before, person).await
     }
 }

@@ -259,6 +259,26 @@ property = "deleted"
 reason = "How many work days the holder of Change organization settings just deleted, all of which they may see counted on the settings page before (ADR-0035, decision 7)."
 
 [[exempt]]
+route = "GET /api/v1/admin/keep-rules"
+property = "count"
+reason = "The length of a keep period (7 days, 10 years), not a count of records, so it holds nothing the viewer may not see (ADR-0045, decision 2)."
+
+[[exempt]]
+route = "GET /api/v1/admin/keep-rules/{kind}/past"
+property = "count"
+reason = "How many records of a kind an administrator deletes are past the keep period, for each person, and the length of the period, for a holder of Change organization settings, who may see and delete every one of them: the page of the rules shows them so that deleting them is one step (ADR-0045, decision 6). No record is named."
+
+[[exempt]]
+route = "GET /api/v1/admin/keep-rules/{kind}/past"
+property = "total"
+reason = "How many records of a kind an administrator deletes are past the keep period in total, for a holder of Change organization settings, who may see and delete every one of them (ADR-0045, decision 6). No record is named."
+
+[[exempt]]
+route = "POST /api/v1/admin/keep-rules/{kind}/delete-past"
+property = "deleted"
+reason = "How many records past their keep period the holder of Change organization settings just deleted, all of which they may see counted before (ADR-0045, decision 6)."
+
+[[exempt]]
 route = "GET /api/v1/issues/{issue}"
 property = "time_spent"
 reason = "Minutes, not a count of things: the time booked on one issue the viewer sees, only in a list that asks for it (one issue reads it through /time), shown only to a reader of Time spent (the field level). It names no person and no time entry, and a person's own entries are not told apart from others' (ADR-0035, decision 4)."

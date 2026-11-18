@@ -240,6 +240,11 @@ pub(crate) mod time_entry {
     pub(crate) const TIMER_ISSUE: &str = "timer_issue";
     pub(crate) const TIMER_STARTED_AT: &str = "timer_started_at";
     pub(crate) const TIMER_VERSION: &str = "timer_version";
+    /// How many time entries of a person past their keep period were deleted (an event about the
+    /// person).
+    pub(crate) const OLD_DELETED: &str = "time_entries_deleted";
+    /// The entries with a day before this one were past the keep period.
+    pub(crate) const OLD_BEFORE: &str = "time_entries_before";
 }
 
 /// The members of the timer of a person (TIME-01).

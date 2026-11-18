@@ -119,6 +119,10 @@ words! {
         /// person whose days they were, and the event of the deletion holds how many (PRIV-09,
         /// ADR-0035, decision 7).
         WorkDaysDeleted => "work_days.deleted",
+        /// An administrator deleted time entries past their keep period: the entry names the
+        /// person whose entries they were, and the event of the deletion holds how many (ADR-0045,
+        /// decision 6).
+        TimeEntriesDeleted => "time_entries.deleted",
         /// An administrator locked a setting that touches security.
         SettingLocked => "setting.locked",
         /// An administrator unlocked a setting that touches security.

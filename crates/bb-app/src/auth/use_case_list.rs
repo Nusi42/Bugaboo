@@ -378,10 +378,12 @@ macro_rules! each_use_case {
             booked_week(BookedWeekQuery) -> Authorized<BookedWeek>;
             /// The people whose working hours the reader may open, to choose one from.
             people_of_hours(PeopleOfHoursQuery) -> Authorized<ChoicePage>;
-            /// How many work days are older than the keep period.
-            old_work_days(OldWorkDaysQuery) -> Authorized<OldWorkDays>;
-            /// Deletes the work days older than the keep period.
-            delete_old_work_days(DeleteOldWorkDays) -> Authorized<DeletedWorkDays>;
+            /// The rules of keeping and deleting, with the periods in force.
+            keep_rules(KeepRulesQuery) -> Authorized<KeepRules>;
+            /// How many records of a kind an administrator deletes are past their keep period.
+            old_records(OldRecordsQuery) -> Authorized<OldRecords>;
+            /// Deletes the records of a kind an administrator deletes that are past their keep period.
+            delete_old_records(DeleteOldRecords) -> Authorized<DeletedRecords>;
             /// Lists the saved searches a person made, or the ones shared with them.
             saved_searches(SearchesQuery) -> Authorized<SavedSearchPage>;
             /// Opens one saved search.

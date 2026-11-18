@@ -1,49 +1,22 @@
 //! The routes of the work days older than the keep period, below `/api/v1/work-days/old`: how many
 //! there are, and *Delete them*, for everybody or for one person. Both need *Change organization
 //! settings*, which no access key holds; nothing deletes a work day by itself (ADR-0035,
-//! decision 7).
+//! decision 7). They are the routes of the keep rules (`keep_rules`) for the kind of work days,
+//! kept at their addresses for the page *Working hours*.
 
 use axum::extract::State;
 use axum::response::Response;
-use bb_app::working_hours::{DeleteOldWorkDays, DeletedWorkDays, OldWorkDaysQuery};
-use bb_core::id::UserId;
-use bb_policy::Masked;
-use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
+use bb_app::keeping::{DeleteOldRecords, OldRecordsQuery};
+use bb_core::keeping::KeepKind;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
 use super::super::auth::{
     AuthHandle, ForbiddenAnswer, Info, InvalidAnswer, NotSignedInAnswer, Session, answer_authorized,
 };
-use super::super::body_id;
+use super::super::keep_rules::{DeletedBody, WhoseParams, whose_person};
 use super::OldWorkDaysBody;
 use crate::errors::{ApiError, ApiQuery};
-
-/// Whose old work days to delete.
-#[derive(Deserialize, utoipa::IntoParams)]
-#[into_params(parameter_in = Query)]
-pub(crate) struct WhoseParams {
-    /// One person, by ID; everybody's when left out.
-    person: Option<String>,
-}
-
-/// How many work days were deleted.
-#[derive(Serialize, ToSchema)]
-pub(crate) struct DeletedBody {
-    /// The count.
-    deleted: u64,
-}
-
-impl Masked for DeletedBody {}
-
-impl From<&DeletedWorkDays> for DeletedBody {
-    fn from(deleted: &DeletedWorkDays) -> Self {
-        Self {
-            deleted: deleted.deleted,
-        }
-    }
-}
 
 /// How many work days are older than the keep period, for each person and in total, counted now.
 #[utoipa::path(
@@ -64,7 +37,13 @@ async fn count_old_work_days(
 ) -> Result<Response, ApiError> {
     let old = auth
         .api()?
-        .old_work_days(info, OldWorkDaysQuery { session_token })
+        .old_records(
+            info,
+            OldRecordsQuery {
+                session_token,
+                kind: KeepKind::WorkDays,
+            },
+        )
         .await?;
     answer_authorized(&old.map(|old| OldWorkDaysBody::from(&old)))
 }
@@ -90,15 +69,16 @@ async fn delete_old_work_days(
     Session(session_token): Session,
     whose: Result<ApiQuery<WhoseParams>, ApiError>,
 ) -> Result<Response, ApiError> {
-    let read = whose
-        .and_then(|ApiQuery(whose)| whose.person.as_deref().map(body_id::<UserId>).transpose());
-    let person = auth.after_who_asks(&info, &session_token, read).await?;
+    let person = auth
+        .after_who_asks(&info, &session_token, whose_person(whose))
+        .await?;
     let deleted = auth
         .api()?
-        .delete_old_work_days(
+        .delete_old_records(
             info,
-            DeleteOldWorkDays {
+            DeleteOldRecords {
                 session_token,
+                kind: KeepKind::WorkDays,
                 person,
             },
         )

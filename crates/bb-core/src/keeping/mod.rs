@@ -302,3 +302,13 @@ impl Step {
         }
     }
 }
+
+words_in_api!(
+    KeepKind,
+    "A kind of data that is deleted after its keep period (Keep and delete rules)."
+);
+words_in_api!(
+    KeepGroup,
+    "Who deletes a kind of data after its keep period: Bugaboo by itself, or an administrator."
+);
+words_in_api!(LengthUnit, "What a keep period counts in.");

@@ -386,14 +386,14 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
                 .replace("{theme}", &theme_id)
                 .replace("{export}", &export_id)
                 .replace("{date}", "2027-01-14")
+                .replace("{kind}", "time-entries")
                 .replace("{project}", project);
             let filled = with_query(template, &filled, (project, &project_id), &app_query);
-            let filled = if template.ends_with("/status-changes") {
+            let path = &if template.ends_with("/status-changes") {
                 format!("{filled}?person={person_id}")
             } else {
                 filled
             };
-            let path = &filled;
             assert!(
                 !path.contains('{'),
                 "{path} has a part to fill in: add an example address to this test"

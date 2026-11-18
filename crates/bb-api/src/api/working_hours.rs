@@ -9,9 +9,9 @@ mod old;
 mod others;
 mod own;
 
+use bb_app::keeping::OldRecords;
 use bb_app::working_hours::{
-    BookedWeek, ChangedWorkDay, OldWorkDays, WorkDayChange, WorkDayHistory, WorkDayView,
-    WorkDaysPage, read_span,
+    BookedWeek, ChangedWorkDay, WorkDayChange, WorkDayHistory, WorkDayView, WorkDaysPage, read_span,
 };
 use bb_core::working_time::{Span, Times, Totals, Warning};
 use bb_policy::{Masked, PersonRef};
@@ -329,19 +329,6 @@ impl From<&BookedWeek> for BookedWeekBody {
     }
 }
 
-/// The work days of one person that are older than the keep period.
-#[derive(Serialize, ToSchema)]
-pub(crate) struct OldOfPersonBody {
-    /// The person, as the reader sees people in the settings of the organization.
-    person: PersonRef,
-    /// The ID of the person, for *Delete them* of one person; left out when the reader does not
-    /// see the person by name.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    id: Option<String>,
-    /// How many of their days.
-    count: u64,
-}
-
 /// The work days older than the keep period.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct OldWorkDaysBody {
@@ -352,28 +339,21 @@ pub(crate) struct OldWorkDaysBody {
     /// How many there are.
     total: u64,
     /// How many of each person, in the order of their names, at most `OLD_PEOPLE_MAX`.
-    people: Vec<OldOfPersonBody>,
+    people: Vec<super::keep_rules::OldOfPersonBody>,
     /// Whether more people have old days than the list names.
     truncated: bool,
 }
 
 impl Masked for OldWorkDaysBody {}
 
-impl From<&OldWorkDays> for OldWorkDaysBody {
-    fn from(old: &OldWorkDays) -> Self {
+impl From<&OldRecords> for OldWorkDaysBody {
+    fn from(old: &OldRecords) -> Self {
         Self {
-            keep_years: old.keep_years,
+            // Work days are kept for whole years (`bb_core::keeping`, the row of work days).
+            keep_years: old.length.count,
             before: old.before.to_string(),
             total: old.total,
-            people: old
-                .people
-                .iter()
-                .map(|person| OldOfPersonBody {
-                    person: person.person.clone(),
-                    id: person.id.map(|id| id.to_string()),
-                    count: person.count,
-                })
-                .collect(),
+            people: super::keep_rules::people_bodies(&old.people),
             truncated: old.truncated,
         }
     }

@@ -319,3 +319,7 @@ reason = "A backup is made new: a new file and its record, with nothing yet that
 [[exempt]]
 routes = ["POST /api/v1/me/data-export", "POST /api/v1/people/{person}/data-export"]
 reason = "Each asks for a new file of a person's data, a new record that nobody could have read before; a second one while one waits is refused (ADR-0044, Limits)."
+
+[[exempt]]
+routes = ["POST /api/v1/admin/keep-rules/{kind}/delete-past"]
+reason = "*Delete them* deletes what is past its keep period at the moment it is asked, of a kind that only an administrator deletes (ADR-0045, decision 6): it holds no text to overwrite, and asking twice deletes nothing more, as the deletion of old work days at DELETE /api/v1/work-days/old."

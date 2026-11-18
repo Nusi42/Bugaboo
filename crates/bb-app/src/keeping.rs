@@ -13,6 +13,15 @@
 //! - `server-log.rotate`: a new file of the log of a server that runs as a service; it keeps a
 //!   number of files, not a period, so it has no row.
 
+mod old_records;
+mod rules;
+
+pub use old_records::{
+    DeleteOldRecords, DeletedRecords, OLD_PEOPLE_MAX, OldCount, OldOfPerson, OldRecordStore,
+    OldRecords, OldRecordsQuery, delete_old_records, old_records,
+};
+pub use rules::{KeepRuleView, KeepRules, KeepRulesQuery, keep_rules};
+
 use bb_core::event::{Actor as EventActor, RecordKind};
 use bb_core::id::JobId;
 use bb_core::keeping::{KeepKind, Step, rule};

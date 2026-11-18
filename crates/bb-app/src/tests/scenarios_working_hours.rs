@@ -9,9 +9,10 @@ use jiff::civil::Date;
 use super::scenarios::{Added, measured, text, token};
 use super::world::World;
 use crate::auth::AppError;
+use crate::keeping::{DeleteOldRecords, delete_old_records};
 use crate::working_hours::{
-    ChangeWorkDay, ChangedWorkDay, DeleteOldWorkDays, StartWorkDay, Tap, TapWorkDay,
-    change_work_day, delete_old_work_days, start_work_day, tap_work_day,
+    ChangeWorkDay, ChangedWorkDay, StartWorkDay, Tap, TapWorkDay, change_work_day, start_work_day,
+    tap_work_day,
 };
 
 /// The administrator starts their work day; the clock moves on first, past the limit of one
@@ -90,15 +91,16 @@ pub(crate) async fn change_work_day_scenario(world: &World) -> Added {
     measured(&world.store, typed(world, date)).await
 }
 
-pub(crate) async fn delete_old_work_days_scenario(world: &World) -> Added {
+pub(crate) async fn delete_old_records_scenario(world: &World) -> Added {
     let old = Date::new(2020, 3, 2).map_err(text)?;
     typed(world, old).await.map_err(text)?;
     measured(
         &world.store,
-        delete_old_work_days(
+        delete_old_records(
             &world.ctx(),
-            DeleteOldWorkDays {
+            DeleteOldRecords {
                 session_token: token(world),
+                kind: bb_core::keeping::KeepKind::WorkDays,
                 person: None,
             },
         ),

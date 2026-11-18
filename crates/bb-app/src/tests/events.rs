@@ -235,7 +235,7 @@ table! {
     "start_work_day" => swh::start_work_day_scenario,
     "tap_work_day" => swh::tap_work_day_scenario,
     "change_work_day" => swh::change_work_day_scenario,
-    "delete_old_work_days" => swh::delete_old_work_days_scenario,
+    "delete_old_records" => swh::delete_old_records_scenario,
     "change_usual_days" => swt::change_usual_days_scenario,
     "enter_away_time" => swt::enter_away_time_scenario,
     "change_away_time" => swt::change_away_time_scenario,

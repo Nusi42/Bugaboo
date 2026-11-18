@@ -620,36 +620,6 @@ pub const ROUTES: &[Route] = &[
         Declared::Permission(Permission::ManageFields),
         Answer::Ordinary,
     ),
-    route(
-        "getFieldPermissions",
-        Declared::Permission(Permission::DecideWhatRolesSee),
-        Answer::NeverStored,
-    ),
-    route(
-        "changeFieldPermission",
-        Declared::Permission(Permission::DecideWhatRolesSee),
-        Answer::Ordinary,
-    ),
-    route(
-        "getPeopleVisibility",
-        Declared::Permission(Permission::DecideWhatRolesSee),
-        Answer::NeverStored,
-    ),
-    route(
-        "changePeopleVisibility",
-        Declared::Permission(Permission::DecideWhatRolesSee),
-        Answer::Ordinary,
-    ),
-    route(
-        "checkAccess",
-        Declared::Permission(Permission::CheckAccess),
-        Answer::NeverStored,
-    ),
-    route(
-        "listPeopleToCheck",
-        Declared::Permission(Permission::CheckAccess),
-        Answer::NeverStored,
-    ),
 ];
 
 /// The routes that save long text, by operation ID: each takes the token of an edit lock besides the
@@ -667,6 +637,7 @@ mod backups;
 mod comments;
 mod data_exports;
 mod files;
+mod keep_rules;
 mod lookup;
 mod mail;
 mod oauth;
@@ -678,6 +649,7 @@ mod tests;
 mod themes;
 mod time;
 mod timeline;
+mod what_roles_see;
 mod work_times;
 mod working_hours;
 

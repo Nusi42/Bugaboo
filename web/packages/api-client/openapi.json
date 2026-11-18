@@ -590,6 +590,168 @@
         "x-permission": "download-someones-data"
       }
     },
+    "/api/v1/admin/keep-rules": {
+      "get": {
+        "tags": ["privacy"],
+        "summary": "Every rule of keeping and deleting, with the period in force.",
+        "operationId": "listKeepRules",
+        "responses": {
+          "200": {
+            "description": "The rules.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeepRulesBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "change-organization-settings"
+      }
+    },
+    "/api/v1/admin/keep-rules/{kind}/delete-past": {
+      "post": {
+        "tags": ["privacy"],
+        "summary": "*Delete them*: deletes the records of a kind an administrator deletes that are past the keep\nperiod, of everybody or of one person, with everything that tells about them. Every deletion is\nin the security log.",
+        "operationId": "deletePastKeepPeriod",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "description": "The kind of records, like time-entries.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "person",
+            "in": "query",
+            "description": "One person, by ID; everybody's when left out.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "How many were deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletedBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "change-organization-settings"
+      }
+    },
+    "/api/v1/admin/keep-rules/{kind}/past": {
+      "get": {
+        "tags": ["privacy"],
+        "summary": "How many records of a kind an administrator deletes are past the keep period, for each person\nand in total, counted now.",
+        "operationId": "countPastKeepPeriod",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "description": "The kind of records, like time-entries.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The count.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OldRecordsBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "change-organization-settings"
+      }
+    },
     "/api/v1/admin/status": {
       "get": {
         "tags": ["admin"],
@@ -23345,7 +23507,7 @@
       },
       "DeletedBody": {
         "type": "object",
-        "description": "How many work days were deleted.",
+        "description": "How many records were deleted.",
         "required": ["deleted"],
         "properties": {
           "deleted": {
@@ -25845,6 +26007,73 @@
           }
         }
       },
+      "KeepGroup": {
+        "type": "string",
+        "description": "Who deletes a kind of data after its keep period: Bugaboo by itself, or an administrator.",
+        "enum": ["by-itself", "by-an-administrator"]
+      },
+      "KeepKind": {
+        "type": "string",
+        "description": "A kind of data that is deleted after its keep period (Keep and delete rules).",
+        "enum": [
+          "ip-addresses",
+          "sessions",
+          "sign-up-links",
+          "drafts",
+          "notifications",
+          "trash",
+          "uploads",
+          "dead-jobs",
+          "app-grants",
+          "tool-calls",
+          "away-times",
+          "security-log",
+          "work-days",
+          "time-entries"
+        ]
+      },
+      "KeepRuleBody": {
+        "type": "object",
+        "description": "One row of the rules.",
+        "required": ["kind", "group", "period"],
+        "properties": {
+          "floor": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "The shortest period the setting allows; left out for a fixed period."
+          },
+          "group": {
+            "$ref": "#/components/schemas/KeepGroup",
+            "description": "Who deletes it after its period."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/KeepKind",
+            "description": "The kind of data."
+          },
+          "period": {
+            "$ref": "#/components/schemas/LengthBody",
+            "description": "The period in force."
+          },
+          "setting": {
+            "type": ["string", "null"],
+            "description": "The key of the setting that changes the period; left out for a fixed period."
+          }
+        }
+      },
+      "KeepRulesBody": {
+        "type": "object",
+        "description": "The rules, in the order of the page.",
+        "required": ["rules"],
+        "properties": {
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KeepRuleBody"
+            },
+            "description": "The rows."
+          }
+        }
+      },
       "KeyChoice": {
         "type": "string",
         "description": "What the key may do: see only, see and change, everything its owner can do, or single permissions.",
@@ -26143,6 +26372,27 @@
         "type": "string",
         "description": "What a layout is for: the issue page or the new-issue form.",
         "enum": ["new-issue", "issue-page"]
+      },
+      "LengthBody": {
+        "type": "object",
+        "description": "How long a kind of data is kept.",
+        "required": ["count", "unit"],
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How many."
+          },
+          "unit": {
+            "$ref": "#/components/schemas/LengthUnit",
+            "description": "Of what."
+          }
+        }
+      },
+      "LengthUnit": {
+        "type": "string",
+        "description": "What a keep period counts in.",
+        "enum": ["hours", "days", "years"]
       },
       "LetGoBody": {
         "type": "object",
@@ -28345,13 +28595,13 @@
       },
       "OldOfPersonBody": {
         "type": "object",
-        "description": "The work days of one person that are older than the keep period.",
+        "description": "The records of one person that are past the keep period.",
         "required": ["person", "count"],
         "properties": {
           "count": {
             "type": "integer",
             "format": "int64",
-            "description": "How many of their days.",
+            "description": "How many of their records.",
             "minimum": 0
           },
           "id": {
@@ -28361,6 +28611,42 @@
           "person": {
             "$ref": "#/components/schemas/PersonRef",
             "description": "The person, as the reader sees people in the settings of the organization."
+          }
+        }
+      },
+      "OldRecordsBody": {
+        "type": "object",
+        "description": "The records of a kind past the keep period.",
+        "required": ["kind", "period", "before", "total", "people", "truncated"],
+        "properties": {
+          "before": {
+            "type": "string",
+            "description": "The records with a date before this one are past it."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/KeepKind",
+            "description": "The kind of records."
+          },
+          "people": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OldOfPersonBody"
+            },
+            "description": "How many of each person, in the order of their names, at most `OLD_PEOPLE_MAX`."
+          },
+          "period": {
+            "$ref": "#/components/schemas/LengthBody",
+            "description": "The keep period in force."
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How many there are.",
+            "minimum": 0
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "Whether more people have old records than the list names."
           }
         }
       },

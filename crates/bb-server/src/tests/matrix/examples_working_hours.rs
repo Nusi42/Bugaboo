@@ -15,6 +15,7 @@ use super::routes::Fixture;
 
 const MINE: &str = "/api/v1/me/work-days";
 const OLD: &str = "/api/v1/work-days/old";
+const KEEP_RULES: &str = "/api/v1/admin/keep-rules";
 
 /// A date of its own for each call: one day further from the first of 2026 every time.
 fn a_date(fixture: &Fixture<'_>) -> Result<String, Failure> {
@@ -34,7 +35,7 @@ fn a_change(date: &str) -> Value {
     })
 }
 
-/// The request of a route of working hours, if the operation is one.
+/// The request of a route of working hours or of the keep rules, if the operation is one.
 pub(super) fn working_hours_request(
     fixture: &Fixture<'_>,
     operation: &str,
@@ -57,6 +58,14 @@ pub(super) fn working_hours_request(
         "getWorkDayHistoryOfPerson" => ("GET", format!("{others}/{date}/history"), None),
         "countOldWorkDays" => ("GET", OLD.into(), None),
         "deleteOldWorkDays" => ("DELETE", OLD.into(), None),
+        // The keep rules, whose kinds an administrator deletes are work days and time entries.
+        "listKeepRules" => ("GET", KEEP_RULES.into(), None),
+        "countPastKeepPeriod" => ("GET", format!("{KEEP_RULES}/time-entries/past"), None),
+        "deletePastKeepPeriod" => (
+            "POST",
+            format!("{KEEP_RULES}/time-entries/delete-past"),
+            None,
+        ),
         _ => return Ok(None),
     }))
 }

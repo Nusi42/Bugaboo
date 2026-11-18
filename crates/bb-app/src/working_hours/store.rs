@@ -19,15 +19,6 @@ use crate::settings::SettingsStore;
 use crate::store_macros::{queries, reads, writes};
 use crate::time::spent::TimeSpentStore;
 
-/// How many work days of one person are older than a date.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct OldDays {
-    /// The person.
-    pub person: UserId,
-    /// How many of their days.
-    pub count: u64,
-}
-
 /// What the use cases of working hours need from storage. The time booked on issues is read only
 /// through [`TimeSpentStore`], never from the tables of time entries (ADR-0035, decision 4).
 pub trait WorkingHoursStore: SettingsStore + TimeSpentStore + 'static {
@@ -55,9 +46,6 @@ pub trait WorkingHoursStore: SettingsStore + TimeSpentStore + 'static {
         /// Which of these work days have a change with a reason: the days that show *Changed*.
         /// One grouped read for the whole week, never one read for each day.
         fn work_days_with_reasons(ids: Vec<WorkDayId>) -> Vec<WorkDayId>;
-        /// How many work days each person has with a date before `before`, by person; a person
-        /// without such days is left out. Counted when asked: no job counts them.
-        fn old_work_days(before: Date) -> Vec<OldDays>;
     }
 
     writes! {
@@ -72,9 +60,5 @@ pub trait WorkingHoursStore: SettingsStore + TimeSpentStore + 'static {
         /// Writes the warnings of a day that did not change itself: the day after a changed one,
         /// whose rest the change moved.
         fn set_work_day_warnings(id: WorkDayId, warnings: &[Warning]) -> ();
-        /// Deletes the work days with a date before `before`, of one person or of everybody, with
-        /// their periods, breaks, the events of their changes and the notifications about them;
-        /// how many of whose were deleted.
-        fn delete_old_work_days(before: Date, person: Option<UserId>) -> Vec<OldDays>;
     }
 }

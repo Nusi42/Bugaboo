@@ -140,20 +140,6 @@ pub struct PeopleOfHoursQuery {
     pub limit: u32,
 }
 
-/// How many work days are older than the keep period, for each person and in total.
-pub struct OldWorkDaysQuery {
-    /// The secret of the session of the request.
-    pub session_token: String,
-}
-
-/// *Delete them*: the work days older than the keep period, of everybody or of one person.
-pub struct DeleteOldWorkDays {
-    /// The secret of the session of the request.
-    pub session_token: String,
-    /// One person; `None` for everybody.
-    pub person: Option<UserId>,
-}
-
 /// A work day as its reader sees it.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct WorkDayView {
@@ -273,41 +259,3 @@ pub struct BookedTotals {
 }
 
 impl Masked for BookedWeek {}
-
-/// The work days of one person that are older than the keep period.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct OldOfPerson {
-    /// The person, as the reader sees people in the settings of the organization.
-    pub person: PersonRef,
-    /// The ID of the person, for *Delete them* of one person; none when the reader does not see
-    /// the person by name.
-    pub id: Option<UserId>,
-    /// How many of their days.
-    pub count: u64,
-}
-
-/// The work days older than the keep period.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct OldWorkDays {
-    /// The keep period in force, in whole years.
-    pub keep_years: i64,
-    /// The days with a date before this one are older than it.
-    pub before: Date,
-    /// How many there are.
-    pub total: u64,
-    /// How many of each person, in the order of their names, at most [`super::OLD_PEOPLE_MAX`].
-    pub people: Vec<OldOfPerson>,
-    /// Whether more people have old days than the list names.
-    pub truncated: bool,
-}
-
-impl Masked for OldWorkDays {}
-
-/// How many work days were deleted.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct DeletedWorkDays {
-    /// The count.
-    pub deleted: u64,
-}
-
-impl Masked for DeletedWorkDays {}

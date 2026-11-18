@@ -13,30 +13,104 @@ use jiff::Timestamp;
 use jiff::civil::Date;
 
 use super::fake::{FakeError, FakeStore, Tx};
-use crate::working_hours::{OldDays, WorkingHoursStore};
+use bb_core::keeping::KeepKind;
+
+use crate::keeping::{OldCount, OldRecordStore};
+use crate::working_hours::WorkingHoursStore;
 
 /// The days of a person in a state, by date.
 fn days_of(days: &[StoredDay], person: UserId) -> impl Iterator<Item = &StoredDay> {
     days.iter().filter(move |day| day.day.person == person)
 }
 
-/// How many days older than `before` each person has.
-fn counted(days: &[StoredDay], before: Date, person: Option<UserId>) -> Vec<OldDays> {
-    let mut found: Vec<OldDays> = Vec::new();
-    for day in days
-        .iter()
-        .filter(|day| day.day.date < before && person.is_none_or(|one| day.day.person == one))
-    {
-        match found.iter_mut().find(|old| old.person == day.day.person) {
-            Some(old) => old.count += 1,
-            None => found.push(OldDays {
-                person: day.day.person,
-                count: 1,
-            }),
+/// How many records each person has, of the ones `old` holds for, by person.
+fn counted<T>(rows: &[T], whose: impl Fn(&T) -> UserId, old: impl Fn(&T) -> bool) -> Vec<OldCount> {
+    let mut found: Vec<OldCount> = Vec::new();
+    for row in rows.iter().filter(|row| old(row)) {
+        let person = whose(row);
+        match found.iter_mut().find(|known| known.person == person) {
+            Some(known) => known.count += 1,
+            None => found.push(OldCount { person, count: 1 }),
         }
     }
-    found.sort_by_key(|old| old.person);
+    found.sort_by_key(|known| known.person);
     found
+}
+
+/// Whether a day is older than `before` and of `person`, or of anybody.
+fn old_day(day: &StoredDay, before: Date, person: Option<UserId>) -> bool {
+    day.day.date < before && person.is_none_or(|one| day.day.person == one)
+}
+
+/// Whether a time entry is older than `before` and of `person`, or of anybody.
+fn old_entry(entry: &TimeEntry, before: Date, person: Option<UserId>) -> bool {
+    entry.date < before && person.is_none_or(|one| entry.person == one)
+}
+
+impl OldRecordStore for FakeStore {
+    async fn old_records(&self, kind: KeepKind, before: Date) -> Result<Vec<OldCount>, FakeError> {
+        Ok(self.read(|state| match kind {
+            KeepKind::WorkDays => counted(
+                &state.work_days,
+                |day| day.day.person,
+                |day| old_day(day, before, None),
+            ),
+            KeepKind::TimeEntries => counted(
+                &state.time_entries,
+                |entry| entry.person,
+                |entry| old_entry(entry, before, None),
+            ),
+            _ => Vec::new(),
+        }))
+    }
+
+    async fn delete_old_records(
+        tx: &mut Tx,
+        kind: KeepKind,
+        before: Date,
+        person: Option<UserId>,
+    ) -> Result<Vec<OldCount>, FakeError> {
+        let state = &mut tx.state;
+        let (found, doomed): (Vec<OldCount>, Vec<EntityId>) = match kind {
+            KeepKind::WorkDays => (
+                counted(
+                    &state.work_days,
+                    |day| day.day.person,
+                    |day| old_day(day, before, person),
+                ),
+                state
+                    .work_days
+                    .iter()
+                    .filter(|day| old_day(day, before, person))
+                    .map(|day| day.day.id.into())
+                    .collect(),
+            ),
+            KeepKind::TimeEntries => (
+                counted(
+                    &state.time_entries,
+                    |entry| entry.person,
+                    |entry| old_entry(entry, before, person),
+                ),
+                state
+                    .time_entries
+                    .iter()
+                    .filter(|entry| old_entry(entry, before, person))
+                    .map(|entry| entry.id.into())
+                    .collect(),
+            ),
+            _ => (Vec::new(), Vec::new()),
+        };
+        state
+            .work_days
+            .retain(|day| !doomed.contains(&day.day.id.into()));
+        state
+            .time_entries
+            .retain(|entry| !doomed.contains(&entry.id.into()));
+        state
+            .notifications
+            .retain(|row| row.record.is_none_or(|record| !doomed.contains(&record)));
+        Ok(found)
+    }
 }
 
 /// Whether an event is about one of these days.
@@ -145,10 +219,6 @@ impl WorkingHoursStore for FakeStore {
         Ok(all[all.len().saturating_sub(keep)..].to_vec())
     }
 
-    async fn old_work_days(&self, before: Date) -> Result<Vec<OldDays>, FakeError> {
-        Ok(self.read(|state| counted(&state.work_days, before, None)))
-    }
-
     async fn lock_work_days_of(_tx: &mut Tx, _person: UserId) -> Result<(), FakeError> {
         Ok(())
     }
@@ -192,28 +262,6 @@ impl WorkingHoursStore for FakeStore {
             known.day.warnings = warnings.to_vec();
         }
         Ok(())
-    }
-
-    async fn delete_old_work_days(
-        tx: &mut Tx,
-        before: Date,
-        person: Option<UserId>,
-    ) -> Result<Vec<OldDays>, FakeError> {
-        let found = counted(&tx.state.work_days, before, person);
-        let doomed: Vec<EntityId> = tx
-            .state
-            .work_days
-            .iter()
-            .filter(|day| day.day.date < before && person.is_none_or(|one| day.day.person == one))
-            .map(|day| day.day.id.into())
-            .collect();
-        tx.state
-            .work_days
-            .retain(|day| !doomed.contains(&day.day.id.into()));
-        tx.state
-            .notifications
-            .retain(|row| row.record.is_none_or(|record| !doomed.contains(&record)));
-        Ok(found)
     }
 }
 

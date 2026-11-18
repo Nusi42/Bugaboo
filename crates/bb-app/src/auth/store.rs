@@ -370,6 +370,7 @@ pub trait AuthStore:
     + SearchStore
     + TimeStore
     + WorkingHoursStore
+    + crate::keeping::OldRecordStore
     + WorkTimesStore
     + crate::plan::TimelineStore
     + AiStore

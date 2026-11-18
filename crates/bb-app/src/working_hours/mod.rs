@@ -11,8 +11,9 @@
 //! - `history.rs`: the changes of one day, who and why.
 //! - `booked.rs`: one's own week compared with the time booked on issues.
 //! - `people.rs`: the people to choose from on *Working hours of others*, by name.
-//! - `old.rs`: the days older than the keep period, counted and deleted only when an administrator
-//!   says so.
+//!
+//! The days older than the keep period are counted and deleted only when an administrator says so,
+//! through the one use case of old records (`crate::keeping::old_records`).
 //!
 //! Who may see another person's days is one rule (`whose.rs`): the person themselves, and a holder
 //! of *See working hours of others*; everybody else is answered as if the person did not exist.
@@ -21,7 +22,6 @@ mod booked;
 mod change;
 mod day;
 mod history;
-mod old;
 mod people;
 mod read;
 mod store;
@@ -31,10 +31,9 @@ mod whose;
 pub use booked::booked_week;
 pub use change::{change_work_day, start_work_day, tap_work_day};
 pub use history::work_day_history;
-pub use old::{delete_old_work_days, old_work_days};
 pub use people::people_of_hours;
 pub use read::work_days;
-pub use store::{OldDays, WorkingHoursStore};
+pub use store::WorkingHoursStore;
 pub use types::*;
 
 /// The longest a work day lasts, from its first start to its last end (ADR-0035, decision 5).
@@ -53,9 +52,6 @@ pub const CHANGES_PER_SECOND: i64 = 1;
 /// The most changes the history of one day shows: the newest ones, and the answer says that older
 /// ones were left out.
 pub const HISTORY_CHANGES_MAX: usize = 200;
-
-/// The most people the count of old work days names: the answer says when more have old days.
-pub const OLD_PEOPLE_MAX: usize = 500;
 
 /// How far after now a typed moment may lie, in seconds: the clock of a device that is a little
 /// ahead. A moment later than that has not happened, so a day cannot record it.

@@ -12,8 +12,9 @@ use sea_query::{Expr, ExprTrait as _, Order, Query, SelectStatement};
 
 use crate::db::{Reader, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
+use crate::keeping::delete_events;
 use crate::schema::{
-    AwayTimeRow, Computed, Event, NotificationRow, Outbox, ProjectShareRow, UsualWorkDayRow,
+    AwayTimeRow, Computed, Event, NotificationRow, ProjectShareRow, UsualWorkDayRow,
 };
 
 /// The IDs of at most `limit` of the away times whose last day is before `before`: one step of
@@ -48,23 +49,6 @@ fn events_where(kind: RecordKind, condition: sea_query::SimpleExpr) -> SelectSta
         .and_where(Expr::col(Event::EntityKind).eq(kind.code()))
         .and_where(condition);
     select
-}
-
-/// Deletes the events that `events` finds, with their entries in the outbox.
-async fn delete_events(
-    transaction: &mut Transaction,
-    events: &SelectStatement,
-) -> Result<(), StoreError> {
-    let mut outbox = Query::delete();
-    outbox
-        .from_table(Outbox::Table)
-        .and_where(Expr::col(Outbox::EventId).in_subquery(events.clone()));
-    transaction.execute(&outbox).await?;
-    let mut delete = Query::delete();
-    delete
-        .from_table(Event::Table)
-        .and_where(Expr::col(Event::Id).in_subquery(events.clone()));
-    transaction.execute(&delete).await.map(|_| ())
 }
 
 /// Deletes the notifications of changed work times that `condition` holds for.

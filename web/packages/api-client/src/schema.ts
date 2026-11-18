@@ -169,6 +169,64 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/admin/keep-rules": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Every rule of keeping and deleting, with the period in force. */
+    get: operations["listKeepRules"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/keep-rules/{kind}/delete-past": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * *Delete them*: deletes the records of a kind an administrator deletes that are past the keep
+     *     period, of everybody or of one person, with everything that tells about them. Every deletion is
+     *     in the security log.
+     */
+    post: operations["deletePastKeepPeriod"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/keep-rules/{kind}/past": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * How many records of a kind an administrator deletes are past the keep period, for each person
+     *     and in total, counted now.
+     */
+    get: operations["countPastKeepPeriod"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/admin/status": {
     parameters: {
       query?: never;
@@ -7115,7 +7173,7 @@ export interface components {
       /** @description What the person allows: `see-only` or `see-and-change`, at most what the app asked. */
       scope: components["schemas"]["KeyChoice"];
     };
-    /** @description How many work days were deleted. */
+    /** @description How many records were deleted. */
     DeletedBody: {
       /**
        * Format: int64
@@ -8403,6 +8461,51 @@ export interface components {
       retired: boolean;
     };
     /**
+     * @description Who deletes a kind of data after its keep period: Bugaboo by itself, or an administrator.
+     * @enum {string}
+     */
+    KeepGroup: "by-itself" | "by-an-administrator";
+    /**
+     * @description A kind of data that is deleted after its keep period (Keep and delete rules).
+     * @enum {string}
+     */
+    KeepKind:
+      | "ip-addresses"
+      | "sessions"
+      | "sign-up-links"
+      | "drafts"
+      | "notifications"
+      | "trash"
+      | "uploads"
+      | "dead-jobs"
+      | "app-grants"
+      | "tool-calls"
+      | "away-times"
+      | "security-log"
+      | "work-days"
+      | "time-entries";
+    /** @description One row of the rules. */
+    KeepRuleBody: {
+      /**
+       * Format: int64
+       * @description The shortest period the setting allows; left out for a fixed period.
+       */
+      floor?: number | null;
+      /** @description Who deletes it after its period. */
+      group: components["schemas"]["KeepGroup"];
+      /** @description The kind of data. */
+      kind: components["schemas"]["KeepKind"];
+      /** @description The period in force. */
+      period: components["schemas"]["LengthBody"];
+      /** @description The key of the setting that changes the period; left out for a fixed period. */
+      setting?: string | null;
+    };
+    /** @description The rules, in the order of the page. */
+    KeepRulesBody: {
+      /** @description The rows. */
+      rules: components["schemas"]["KeepRuleBody"][];
+    };
+    /**
      * @description What the key may do: see only, see and change, everything its owner can do, or single permissions.
      * @enum {string}
      */
@@ -8561,6 +8664,21 @@ export interface components {
      * @enum {string}
      */
     LayoutKind: "new-issue" | "issue-page";
+    /** @description How long a kind of data is kept. */
+    LengthBody: {
+      /**
+       * Format: int64
+       * @description How many.
+       */
+      count: number;
+      /** @description Of what. */
+      unit: components["schemas"]["LengthUnit"];
+    };
+    /**
+     * @description What a keep period counts in.
+     * @enum {string}
+     */
+    LengthUnit: "hours" | "days" | "years";
     /** @description Which lock to let go of, and the token it was taken with. */
     LetGoBody: {
       /** @description The lock token the lock was taken with. */
@@ -9616,11 +9734,11 @@ export interface components {
        */
       version: number;
     };
-    /** @description The work days of one person that are older than the keep period. */
+    /** @description The records of one person that are past the keep period. */
     OldOfPersonBody: {
       /**
        * Format: int64
-       * @description How many of their days.
+       * @description How many of their records.
        */
       count: number;
       /**
@@ -9630,6 +9748,24 @@ export interface components {
       id?: string | null;
       /** @description The person, as the reader sees people in the settings of the organization. */
       person: components["schemas"]["PersonRef"];
+    };
+    /** @description The records of a kind past the keep period. */
+    OldRecordsBody: {
+      /** @description The records with a date before this one are past it. */
+      before: string;
+      /** @description The kind of records. */
+      kind: components["schemas"]["KeepKind"];
+      /** @description How many of each person, in the order of their names, at most `OLD_PEOPLE_MAX`. */
+      people: components["schemas"]["OldOfPersonBody"][];
+      /** @description The keep period in force. */
+      period: components["schemas"]["LengthBody"];
+      /**
+       * Format: int64
+       * @description How many there are.
+       */
+      total: number;
+      /** @description Whether more people have old records than the list names. */
+      truncated: boolean;
     };
     /** @description The work days older than the keep period. */
     OldWorkDaysBody: {
@@ -13753,6 +13889,97 @@ export interface operations {
       400: components["responses"]["BadListRequest"];
       401: components["responses"]["NotSignedIn"];
       403: components["responses"]["Forbidden"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  listKeepRules: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The rules. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["KeepRulesBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  deletePastKeepPeriod: {
+    parameters: {
+      query?: {
+        /** @description One person, by ID; everybody's when left out. */
+        person?: string;
+      };
+      header?: never;
+      path: {
+        /** @description The kind of records, like time-entries. */
+        kind: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description How many were deleted. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DeletedBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  countPastKeepPeriod: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The kind of records, like time-entries. */
+        kind: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The count. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["OldRecordsBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];

@@ -479,3 +479,14 @@ route = "GET /api/v1/admin/backups"
 property = "runs"
 whole_value = true
 reason = "The newest `LISTED_RUNS` (50) records of backups made and restored: a number fixed by the code, not a list that grows with data (ADR-0046, decision 3; M9-F15)."
+
+[[exempt]]
+route = "GET /api/v1/admin/keep-rules"
+property = "rules"
+whole_value = true
+reason = "One row for each kind of data of `KEEP_KINDS` (`bb_core::keeping`): a list fixed by the code, not one that grows with data, and the page of the rules shows all of them at once (PRIV-05, ADR-0045, decision 2; M9-F32)."
+
+[[exempt]]
+route = "GET /api/v1/admin/keep-rules/{kind}/past"
+property = "people"
+reason = "The people who have records of the kind past its keep period, at most `OLD_PEOPLE_MAX` (`bb_app::keeping`); the answer says when more have them (PRIV-05, ADR-0045, decision 6; M9-F32)."

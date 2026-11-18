@@ -73,6 +73,7 @@ mod issue_dates;
 mod issue_item;
 mod issue_types;
 mod issues;
+mod keep_rules;
 mod layouts;
 mod many_changes;
 mod my_agent_work;
@@ -218,6 +219,7 @@ where
         .merge(themes::routes())
         .merge(data_exports::routes())
         .merge(working_hours::routes())
+        .merge(keep_rules::routes())
         .merge(work_times::routes())
         .merge(notifications::routes())
         .merge(ai_setup::routes())

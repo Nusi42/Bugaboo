@@ -6,6 +6,7 @@
 //! Time spent is read through the one expression of the search compiler (`search::spent`).
 
 mod entries;
+pub(crate) mod old;
 mod timer;
 
 use std::collections::HashMap;

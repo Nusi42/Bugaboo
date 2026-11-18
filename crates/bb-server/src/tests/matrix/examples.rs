@@ -661,6 +661,9 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("setShare", &[Quirk::SessionOnly]),
     Example::route("countOldWorkDays"),
     Example::route("deleteOldWorkDays"),
+    Example::route("listKeepRules"),
+    Example::route("countPastKeepPeriod"),
+    Example::route("deletePastKeepPeriod"),
     Example::with("getTimeEntryDefaults", &[Quirk::AnIssueOfTheTarget]),
     Example::with("getIssueTime", &[Quirk::AnIssueOfTheTarget]),
     // A page of the timeline lets in whoever is signed in and shows what they read, like a search.

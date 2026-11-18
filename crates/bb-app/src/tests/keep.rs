@@ -333,3 +333,59 @@ async fn priv_05_every_purge_is_safe_to_run_again() -> Outcome {
     }
     Ok(())
 }
+
+#[tokio::test]
+async fn priv_05_no_purge_takes_a_business_record() -> Outcome {
+    let world = World::new().await?;
+    let person = world.admin.person.id;
+    // Far older than the ten years of the start: past its keep period now.
+    let long_ago = jiff::civil::Date::new(2000, 1, 3)?;
+    world.store.book(person, long_ago, 30);
+    let deleting: Vec<_> = JobKind::daily()
+        .filter(|kind| !kind.keeps().is_empty())
+        .collect();
+    for kind in deleting {
+        world.ctx().keep_step(kind).await?;
+    }
+    assert_eq!(
+        world.store.lock().state.time_entries.len(),
+        1,
+        "a time entry is deleted only by an administrator"
+    );
+    // Neither can the use case of old records be pointed at a kind Bugaboo deletes by itself.
+    let refused = crate::keeping::old_records(
+        &world.ctx(),
+        crate::keeping::OldRecordsQuery {
+            session_token: token(&world),
+            kind: bb_core::keeping::KeepKind::Notifications,
+        },
+    )
+    .await;
+    assert!(matches!(
+        refused,
+        Err(crate::auth::AppError::Refused(bb_core::ErrorCode::NotFound))
+    ));
+    let old = crate::keeping::old_records(
+        &world.ctx(),
+        crate::keeping::OldRecordsQuery {
+            session_token: token(&world),
+            kind: bb_core::keeping::KeepKind::TimeEntries,
+        },
+    )
+    .await?
+    .into_value();
+    assert_eq!(old.total, 1);
+    let deleted = crate::keeping::delete_old_records(
+        &world.ctx(),
+        crate::keeping::DeleteOldRecords {
+            session_token: token(&world),
+            kind: bb_core::keeping::KeepKind::TimeEntries,
+            person: None,
+        },
+    )
+    .await?
+    .into_value();
+    assert_eq!(deleted.deleted, 1);
+    assert!(world.store.lock().state.time_entries.is_empty());
+    Ok(())
+}
