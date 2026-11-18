@@ -47,11 +47,11 @@ Each file records one decision: context, decision, consequences, alternatives. N
 | [0041](0041-linear-history.md) | Branches are rebased, never merged: `main` is a straight line |
 | [0042](0042-mcp-server-and-how-ai-apps-sign-in.md) | The MCP server and how AI apps sign in: OAuth 2.1 with PKCE inside Bugaboo, scopes that only narrow, the consent step |
 | [0043](0043-dates-and-dependencies.md) | Dates and dependencies: *Start date* and *Due date*, the date effect of a kind of relation, a warning instead of a push |
-| [0044](0044-download-my-data-and-remove-a-person.md) | *Download my data* and *Remove a person*: one walk of a person's data, *Switch off* before removal, the tombstone with one legal-hold name, the replay list (proposed) |
-| [0045](0045-keep-and-delete-rules.md) | Keep and delete rules: what Bugaboo deletes by itself and what only an administrator deletes, one list, deleting in steps (proposed) |
-| [0046](0046-backups-restore-and-upgrades.md) | Backups, restore and upgrades: one file without keys, copies while people work, a new anchor after a restore, a backup before migrating (proposed) |
-| [0047](0047-releases-signatures-parts-list-and-support.md) | Releases: signatures with our own key, the parts list from the lockfiles, the support period, vulnerability handling (proposed) |
-| [0048](0048-support-access-with-the-customers-approval.md) | Support access with the customer's approval: nothing by default, a time-limited account, every request in the security log (proposed) |
+| [0044](0044-download-my-data-and-remove-a-person.md) | *Download my data* and *Remove a person*: one walk of a person's data, *Switch off* before removal, the tombstone with one legal-hold name, the replay list (accepted) |
+| [0045](0045-keep-and-delete-rules.md) | Keep and delete rules: what Bugaboo deletes by itself and what only an administrator deletes, one list, deleting in steps (accepted) |
+| [0046](0046-backups-restore-and-upgrades.md) | Backups, restore and upgrades: one file without keys, copies while people work, a new anchor after a restore, a backup before migrating (accepted) |
+| [0047](0047-releases-signatures-parts-list-and-support.md) | Releases: signatures with our own key, the parts list from the lockfiles, the support period, vulnerability handling (accepted) |
+| [0048](0048-support-access-with-the-customers-approval.md) | Support access with the customer's approval: nothing by default, a time-limited account, every request in the security log (accepted in part: decision 1 now, the rest in M14) |
 
 ## Template
 

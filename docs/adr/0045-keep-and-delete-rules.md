@@ -1,6 +1,6 @@
 # ADR-0045: Keep and delete rules
 
-Status: **Proposed** · 2026-11-18 · refines PRIV-05, [ADR-0017](0017-background-jobs.md) and [ADR-0035](0035-time-on-issues-and-working-hours.md) decision 7; open questions M9-Q1 and M9-Q2 of [the M9 plan](../milestones/M9/README.md)
+Status: **Accepted** · 2026-11-18 · refines PRIV-05, [ADR-0017](0017-background-jobs.md) and [ADR-0035](0035-time-on-issues-and-working-hours.md) decision 7; the answers to M9-Q1 and M9-Q2 of [the M9 plan](../milestones/M9/README.md)
 
 ## Context
 
@@ -12,8 +12,8 @@ The maintainer's rule is that a keep period is a minimum: as long as data is rel
 
 ## Decision
 
-1. **Two kinds of rule** (M9-Q1, recommendation). Every kind of data has one row in one list, `keeping::KEEP_KINDS` in `bb-core`, and each row is one of:
-   - **Deleted by itself** after its period: data with no business purpose of its own. IP addresses in logs (7 days), sessions and sign-in history (90 days after they end), sign-up links, drafts, notifications (90 days), the trash (30 days, which finishes a deletion a person already made; an issue whose time entries are still inside their keep period stays in the trash, hidden, until the last of them leaves it, so the purge never takes a business record along, M9-Q1), data exports (7 days), the payload of dead jobs (30 days), away times (1 year after their last day, ADR-0030), the security log (1 year, in whole blocks, ADR-0007), backups (by their schedule, ADR-0046), and the record of an ended support access (with the security log's period, ADR-0048).
+1. **Two kinds of rule** (M9-Q1). Every kind of data has one row in one list, `keeping::KEEP_KINDS` in `bb-core`, and each row is one of:
+   - **Deleted by itself** after its period: data with no business purpose of its own. IP addresses in logs (7 days), sessions and sign-in history (90 days after they end), sign-up links, drafts, notifications (90 days), the trash (30 days, which finishes a deletion a person already made; an issue whose time entries are still inside their keep period stays in the trash, hidden, until the last of them leaves it, so the purge never takes a business record along, M9-Q1), data exports (7 days), the payload of dead jobs (30 days), away times (1 year after their last day, ADR-0030), the security log (1 year, in whole blocks, ADR-0007), backups (by their schedule, ADR-0046), and, from M14, the record of an ended support access (with the security log's period, ADR-0048).
    - **Deleted by an administrator** after its period: business records. Work days with their breaks and reasons (at least 2 years with the preset *Germany*, ADR-0035) and time entries (10 years at the start, M9-Q2: German law keeps receipts 8 years since 2025 and the books 10, and Bugaboo cannot tell which entries are which). Bugaboo shows how many are past the period and offers *Delete them*, as it does for work days today.
 
    Enforced by: ARCH-SETTINGS (each period is a setting of the registry), review (a new kind of business record joins the second group; a job that deletes one is a finding).
