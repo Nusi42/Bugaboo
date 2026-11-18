@@ -30,7 +30,7 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * One file of the build: the parts list as CycloneDX (`cyclonedx`) or SPDX (`spdx`) JSON, or the
+     * One file of the build: the parts list as `CycloneDX` (`cyclonedx`) or SPDX (`spdx`) JSON, or the
      *     third-party notices (`notices`). Needs a signed-in person, nothing more.
      */
     get: operations["downloadAboutFile"];
