@@ -15,6 +15,7 @@ pub mod agent_records;
 pub mod agent_work;
 pub mod ai;
 pub mod app_paths;
+pub mod backup;
 pub mod comment;
 pub mod contrast;
 pub mod edit;
