@@ -162,6 +162,8 @@ pub(crate) struct State {
     pub(crate) work: super::fake_agent_work::FakeAgentWork,
     pub(crate) saved_searches: Vec<bb_core::saved_search::SavedSearch>,
     pub(crate) own_themes: Vec<bb_core::theme::OwnTheme>,
+    /// The records of backups (OPS-07).
+    pub(crate) backup_runs: Vec<bb_core::backup::run::BackupRun>,
     pub(crate) search_columns: Vec<bb_core::saved_search::SearchColumn>,
     pub(crate) search_shares: Vec<bb_core::saved_search::SearchShare>,
     pub(crate) default_lists: Vec<bb_core::saved_search::ProjectDefaultList>,

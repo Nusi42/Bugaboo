@@ -14,6 +14,8 @@ use serde::{Deserialize, Serialize};
 use crate::message::MessageKey;
 
 pub mod ai;
+pub mod backups;
+pub use backups::{BACKUPS_DAILY, BACKUPS_FOLDER, BACKUPS_KEEP_DAILY, BACKUPS_KEEP_WEEKLY};
 mod catalog;
 mod format;
 mod layers;
@@ -659,6 +661,7 @@ pub fn registry() -> impl Iterator<Item = &'static SettingDefinition> {
         .chain(assistant::ALL)
         .chain(agent_notices::ALL)
         .chain(agents::ALL)
+        .chain(backups::ALL)
         .copied()
         .chain(extra.iter().copied())
 }

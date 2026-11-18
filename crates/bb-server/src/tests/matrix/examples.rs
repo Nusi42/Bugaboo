@@ -123,6 +123,8 @@ const CHANGES_A_THEME_FOR_EVERYONE: &[Quirk] = &[
 /// Every route of the API description, in the order of the description.
 pub(super) const EXAMPLES: &[Example] = &[
     Example::route("getServerStatus"),
+    Example::with("listBackups", &[Quirk::SessionOnly]),
+    Example::with("createBackup", &[Quirk::SessionOnly]),
     Example::route("acceptInvitation"),
     Example::route("lookUpInvitation"),
     Example::route("listInvitations"),

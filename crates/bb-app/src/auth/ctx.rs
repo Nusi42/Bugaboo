@@ -23,6 +23,7 @@ use super::store::{AuthSettings, AuthStore, SecurityEvent};
 use crate::access::Actor as ActingPerson;
 use crate::agents::{AgentReach, Hold};
 use crate::ai::{AiProvider, NoAiProvider};
+use crate::backups::{BackupFiles, NoBackupFiles};
 use crate::context::{Clock, SystemIds};
 use crate::editing::{EditableRecords, NoRecords};
 use crate::files::{FileStore, NoFileStore};
@@ -66,6 +67,8 @@ pub struct AuthServices<S> {
     pub(crate) records: Arc<dyn EditableRecords>,
     /// The bytes of files (ADR-0032).
     pub(crate) files: Arc<dyn FileStore>,
+    /// The backup files (OPS-07, ADR-0046).
+    pub(crate) backups: Arc<dyn BackupFiles>,
     /// The key the links of downloads are signed under (ATT-07).
     pub(crate) links: LinkKey,
     pub(crate) mailer: Arc<dyn Mailer>,
@@ -115,6 +118,7 @@ impl<S> AuthServices<S> {
             setup_code_file: None,
             records: Arc::new(NoRecords),
             files: Arc::new(NoFileStore),
+            backups: Arc::new(NoBackupFiles),
             links,
             mailer: Arc::new(NoMailer),
             ai: Arc::new(NoAiProvider),
@@ -134,6 +138,13 @@ impl<S> AuthServices<S> {
     #[must_use]
     pub fn with_files(mut self, files: Arc<dyn FileStore>) -> Self {
         self.files = files;
+        self
+    }
+
+    /// The backup files (OPS-07, ADR-0046). Without them, listing and creating backups fails.
+    #[must_use]
+    pub fn with_backups(mut self, backups: Arc<dyn BackupFiles>) -> Self {
+        self.backups = backups;
         self
     }
 

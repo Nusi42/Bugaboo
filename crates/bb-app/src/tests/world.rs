@@ -54,6 +54,8 @@ pub(crate) struct World {
     /// What the server would have sent by e-mail.
     pub(crate) mailer: FakeMailer,
     pub(crate) ai: FakeAiProvider,
+    /// The backup files, in memory.
+    pub(crate) backups: Arc<super::fake_backups::MemoryBackups>,
     pub(crate) admin: Started,
 }
 
@@ -73,6 +75,7 @@ impl World {
         let files = FakeFiles::default();
         let mailer = FakeMailer::default();
         let ai = FakeAiProvider::default();
+        let backups = Arc::new(super::fake_backups::MemoryBackups::default());
         let services = AuthServices::new(
             store.clone(),
             clock.clone(),
@@ -85,6 +88,7 @@ impl World {
         .with_files(Arc::new(files.clone()))
         .with_mailer(Arc::new(mailer.clone()))
         .with_ai_provider(Arc::new(ai.clone()))
+        .with_backups(backups.clone())
         .with_public_url(PUBLIC_URL);
         Ok(Self {
             store,
@@ -93,6 +97,7 @@ impl World {
             files,
             mailer,
             ai,
+            backups,
             // Replaced by `new`; a bare world has nobody.
             admin: Started {
                 session_token: String::new(),

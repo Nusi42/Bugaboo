@@ -55,6 +55,24 @@ impl<S: AuthStore> Ctx<'_, S> {
         })
     }
 
+    /// The daily round of `backups.daily` (OPS-07).
+    pub(super) async fn backups_daily(&self, job: &Job) -> Result<(), JobFailure> {
+        Box::pin(self.run_daily(JobKind::BackupsDaily, async {
+            self.backup_round().await.map(|round| {
+                tracing::info!(
+                    created = round.created,
+                    deleted = round.deleted,
+                    "the backups of the schedule were looked at"
+                );
+            })
+        }))
+        .await
+        .map_err(|error| {
+            tracing::warn!(cause = %error, "the backup of the day could not be created");
+            JobFailure::of(&error, FAILED, job)
+        })
+    }
+
     /// The daily round of `server-log.rotate`.
     pub(super) async fn rotate_server_log_daily(&self, job: &Job) -> Result<(), JobFailure> {
         Box::pin(self.run_daily(JobKind::RotateServerLog, async {

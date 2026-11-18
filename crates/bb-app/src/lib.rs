@@ -7,6 +7,7 @@ pub mod agent_work;
 pub mod agents;
 pub mod ai;
 pub mod auth;
+pub mod backups;
 pub mod comments;
 pub mod context;
 pub mod editing;

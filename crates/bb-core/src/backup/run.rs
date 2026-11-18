@@ -96,17 +96,10 @@ impl BackupRun {
         }
     }
 
-    /// The domain event of the record (ADR-0007): who made it, and its name, size, checksum and
-    /// the lost range of a restore.
-    ///
-    /// # Errors
-    /// Never: the kind is a plain word (by the tests).
-    pub fn domain_event(
-        &self,
-        id: EventId,
-        actor: Actor,
-        channel: Channel,
-    ) -> Result<DomainEvent, InvalidKind> {
+    /// What the event of the record says: what happened, its name, size, checksum, who or what
+    /// made it, and the lost range of a restore.
+    #[must_use]
+    pub fn changes(&self) -> Vec<FieldChange> {
         let change = |field: &str, after: serde_json::Value| FieldChange {
             field: field.to_owned(),
             before: None,
@@ -126,13 +119,27 @@ impl BackupRun {
             changes.push(change("lost_from", from.into()));
             changes.push(change("lost_to", to.into()));
         }
+        changes
+    }
+
+    /// The domain event of the record (ADR-0007), for what writes it outside a request: the
+    /// command line and the restore.
+    ///
+    /// # Errors
+    /// Never: the kind is a plain word (by the tests).
+    pub fn domain_event(
+        &self,
+        id: EventId,
+        actor: Actor,
+        channel: Channel,
+    ) -> Result<DomainEvent, InvalidKind> {
         Ok(DomainEvent {
             id,
             time: self.at,
             actor,
             channel,
             entity: self.entity()?,
-            changes,
+            changes: self.changes(),
             reason: None,
             run: None,
         })

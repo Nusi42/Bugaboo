@@ -55,7 +55,7 @@ pub(crate) struct RestoreArgs {
 }
 
 /// Where the backups of an installation go and what they copy besides the database.
-fn places(data: &DataFolder, folder: PathBuf) -> BackupPlaces {
+pub(crate) fn places(data: &DataFolder, folder: PathBuf) -> BackupPlaces {
     BackupPlaces {
         folder,
         files: data.files(),
@@ -66,7 +66,7 @@ fn places(data: &DataFolder, folder: PathBuf) -> BackupPlaces {
 
 /// The folder of the backups: the one given, made for its owner only and refused when others can
 /// open it, or the backups folder of the data folder.
-fn backup_folder(data: &DataFolder, to: Option<&Path>) -> anyhow::Result<PathBuf> {
+pub(crate) fn backup_folder(data: &DataFolder, to: Option<&Path>) -> anyhow::Result<PathBuf> {
     let Some(folder) = to else {
         return Ok(data.backups());
     };

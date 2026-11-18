@@ -55,6 +55,7 @@ mod auth;
 mod auth_factors;
 mod auth_people;
 mod auth_sign_in;
+mod backups;
 mod bodies;
 mod check_access;
 mod comments;
@@ -188,6 +189,7 @@ where
         .merge(agents::routes())
         .merge(second_step_gap::routes())
         .merge(admin::routes())
+        .merge(backups::routes())
         .merge(settings::routes())
         .merge(projects::routes())
         .merge(fields::routes())

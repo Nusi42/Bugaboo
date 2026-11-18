@@ -436,6 +436,83 @@
         "x-permission": "own-account"
       }
     },
+    "/api/v1/admin/backups": {
+      "get": {
+        "tags": ["admin"],
+        "summary": "The backups and their records. Needs *Change organization settings*, from a session.",
+        "operationId": "listBackups",
+        "responses": {
+          "200": {
+            "description": "The backups.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupsBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "change-organization-settings"
+      },
+      "post": {
+        "tags": ["admin"],
+        "summary": "Creates a backup now, while people go on working. Needs *Change organization settings*, from a\nsession.",
+        "operationId": "createBackup",
+        "responses": {
+          "200": {
+            "description": "The backup that was created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupFileBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "change-organization-settings"
+      }
+    },
     "/api/v1/admin/status": {
       "get": {
         "tags": ["admin"],
@@ -20826,6 +20903,103 @@
               "type": "string"
             },
             "description": "The codes. They are not stored in this form and cannot be shown again."
+          }
+        }
+      },
+      "BackupFileBody": {
+        "type": "object",
+        "description": "A backup file in the folder of the backups.",
+        "required": ["name", "moment", "version", "before_restore", "size"],
+        "properties": {
+          "before_restore": {
+            "type": "boolean",
+            "description": "Whether a restore created it of what was there before (kept for the keep period of the\nsecurity log)."
+          },
+          "moment": {
+            "type": "string",
+            "description": "The moment of the copy: every change saved before it is in the backup."
+          },
+          "name": {
+            "type": "string",
+            "description": "The name of the file, such as `bugaboo-20261118T031500Z-0.6.0.backup`."
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The size in bytes.",
+            "minimum": 0
+          },
+          "version": {
+            "type": "string",
+            "description": "The version of Bugaboo that created it."
+          }
+        }
+      },
+      "BackupRunBody": {
+        "type": "object",
+        "description": "The record of a backup created or restored.",
+        "required": ["event", "name", "size", "checksum", "maker", "at"],
+        "properties": {
+          "at": {
+            "type": "string",
+            "description": "When it happened.",
+            "format": "date-time"
+          },
+          "checksum": {
+            "type": "string",
+            "description": "Its SHA-256, as 64 hex digits."
+          },
+          "event": {
+            "type": "string",
+            "description": "`made` or `restored`."
+          },
+          "lost_from": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "For a restore: the first entry of the security log that is gone."
+          },
+          "lost_to": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "For a restore: the last entry of the security log that is gone."
+          },
+          "maker": {
+            "type": "string",
+            "description": "`schedule`, `command-line` or `person`."
+          },
+          "name": {
+            "type": "string",
+            "description": "The name of the backup."
+          },
+          "person": {
+            "type": ["string", "null"],
+            "description": "The person who pressed *Create a backup now*."
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Its size in bytes."
+          }
+        }
+      },
+      "BackupsBody": {
+        "type": "object",
+        "description": "The backups and the newest records.",
+        "required": ["files", "runs"],
+        "properties": {
+          "files": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BackupFileBody"
+            },
+            "description": "The backup files, newest first."
+          },
+          "runs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BackupRunBody"
+            },
+            "description": "The newest records of backups created and restored, newest first."
           }
         }
       },

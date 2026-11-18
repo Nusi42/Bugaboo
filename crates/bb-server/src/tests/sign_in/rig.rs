@@ -296,6 +296,14 @@ impl Rig {
             folder.path().join(bb_files::FILES_FOLDER),
             PreviewCommand::in_process(),
         )));
+        // Backups go into the backups folder of the rig's own data folder (OPS-07).
+        let data = crate::data_folder::DataFolder::existing(folder.path())
+            .ok_or("the folder of the rig is gone")?;
+        std::fs::create_dir_all(data.backups())?;
+        let services = services.with_backups(Arc::new(crate::wiring::ServerBackups::new(
+            database.clone(),
+            data,
+        )));
         let services = match records {
             Some(records) => services.with_records(records),
             None => services,

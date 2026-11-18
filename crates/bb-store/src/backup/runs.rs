@@ -10,6 +10,7 @@ use bb_core::technical::TechnicalName;
 use sea_query::{Expr, Order, Query};
 
 use crate::anchor::LogSeal;
+use crate::auth::AuthStorage;
 use crate::db::{Database, Row, StoredId as _, Transaction, to_micros};
 use crate::error::StoreError;
 use crate::schema::BackupRunRow as Columns;
@@ -113,5 +114,18 @@ impl Database {
             .order_by(Columns::At, Order::Desc)
             .limit(limit);
         self.fetch_all(&select).await?.iter().map(read).collect()
+    }
+}
+
+impl bb_app::backups::BackupStore for AuthStorage {
+    async fn backup_runs(&self, limit: u64) -> Result<Vec<BackupRun>, StoreError> {
+        self.database().backup_runs(limit).await
+    }
+
+    async fn insert_backup_run(
+        transaction: &mut Transaction,
+        run: &BackupRun,
+    ) -> Result<(), StoreError> {
+        insert(transaction, run).await
     }
 }

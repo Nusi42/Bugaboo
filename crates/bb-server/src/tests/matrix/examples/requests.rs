@@ -290,6 +290,8 @@ pub(super) async fn organization_request(
             Some(json!({"enabled": false, "domains": [], "version": 0})),
         ),
         "getServerStatus" => ("GET", "/api/v1/admin/status".into(), None),
+        "listBackups" => ("GET", "/api/v1/admin/backups".into(), None),
+        "createBackup" => ("POST", "/api/v1/admin/backups".into(), None),
         // How many people with a role still have to set up a second step.
         "getSecondStepGap" => (
             "GET",

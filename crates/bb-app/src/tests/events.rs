@@ -129,6 +129,7 @@ table! {
     "exchange_token" => super::oauth_scenarios::exchange_token_scenario,
     "take_back" => super::oauth_scenarios::take_back_scenario,
     "add_web_address" => super::oauth_scenarios::add_web_address_scenario,
+    "create_backup" => super::backups::create_backup_scenario,
     "remove_web_address" => super::oauth_scenarios::remove_web_address_scenario,
     "clean_old_grants" => super::oauth_scenarios::clean_old_grants_scenario,
     "create_access_key" => s::create_access_key_scenario,

@@ -114,8 +114,32 @@ pub fn backups_in(folder: &Path) -> Result<Vec<(BackupName, PathBuf, u64)>, Stor
     Ok(found)
 }
 
+/// How many seconds back a name is looked for when backups follow each other within a second.
+const NAME_TRIES: i64 = 60;
+
+/// The first name that is free in `folder`, at `now` or a few seconds before: an earlier moment
+/// keeps the promise of the name (every change saved before it is in the backup), a later one
+/// would not.
+fn free_name(
+    folder: &Path,
+    purpose: Purpose,
+    now: Timestamp,
+) -> Result<(BackupName, PathBuf), StoreError> {
+    for back in 0..NAME_TRIES {
+        let moment = now
+            .checked_sub(jiff::SignedDuration::from_secs(back))
+            .map_err(|_| StoreError::Corrupt("the moment of a backup"))?;
+        let name = BackupName::new(purpose, moment, VERSION);
+        let target = folder.join(name.to_string());
+        if !target.exists() {
+            return Ok((name, target));
+        }
+    }
+    Err(io(std::io::ErrorKind::AlreadyExists.into()))
+}
+
 impl Database {
-    /// Makes a backup into `places.folder` while people go on working (ADR-0046, decisions 1 and
+    /// Creates a backup in `places.folder` while people go on working (ADR-0046, decisions 1 and
     /// 2): the copy of the database, then the files it points to (a file uploaded after the copy
     /// is not in it, so nothing in the backup points to a missing file), and a copy of the replay
     /// list. No key goes in. The file appears whole or not at all.
@@ -129,11 +153,7 @@ impl Database {
         purpose: Purpose,
         now: Timestamp,
     ) -> Result<CreatedBackup, StoreError> {
-        let name = BackupName::new(purpose, now, VERSION);
-        let target = places.folder.join(name.to_string());
-        if target.exists() {
-            return Err(io(std::io::ErrorKind::AlreadyExists.into()));
-        }
+        let (name, target) = free_name(&places.folder, purpose, now)?;
         let work = work_folder(&places.folder, "backup")?;
         let made = self.create_in(&work, places, &name, &target).await;
         let _ = std::fs::remove_dir_all(&work);

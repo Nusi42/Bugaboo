@@ -6857,6 +6857,34 @@ pub const SETTING_AUTH_SIGN_UP_ENABLED_HELP: MessageKey =
 pub const SETTING_AUTH_SIGN_UP_ENABLED_NAME: MessageKey =
     MessageKey::new("setting.auth.sign-up-enabled.name");
 
+/// The message `setting.backups.daily.help`.
+pub const SETTING_BACKUPS_DAILY_HELP: MessageKey = MessageKey::new("setting.backups.daily.help");
+
+/// The message `setting.backups.daily.name`.
+pub const SETTING_BACKUPS_DAILY_NAME: MessageKey = MessageKey::new("setting.backups.daily.name");
+
+/// The message `setting.backups.folder.help`.
+pub const SETTING_BACKUPS_FOLDER_HELP: MessageKey = MessageKey::new("setting.backups.folder.help");
+
+/// The message `setting.backups.folder.name`.
+pub const SETTING_BACKUPS_FOLDER_NAME: MessageKey = MessageKey::new("setting.backups.folder.name");
+
+/// The message `setting.backups.keep-daily.help`.
+pub const SETTING_BACKUPS_KEEP_DAILY_HELP: MessageKey =
+    MessageKey::new("setting.backups.keep-daily.help");
+
+/// The message `setting.backups.keep-daily.name`.
+pub const SETTING_BACKUPS_KEEP_DAILY_NAME: MessageKey =
+    MessageKey::new("setting.backups.keep-daily.name");
+
+/// The message `setting.backups.keep-weekly.help`.
+pub const SETTING_BACKUPS_KEEP_WEEKLY_HELP: MessageKey =
+    MessageKey::new("setting.backups.keep-weekly.help");
+
+/// The message `setting.backups.keep-weekly.name`.
+pub const SETTING_BACKUPS_KEEP_WEEKLY_NAME: MessageKey =
+    MessageKey::new("setting.backups.keep-weekly.name");
+
 /// The message `setting.content.image-hosts.help`.
 pub const SETTING_CONTENT_IMAGE_HOSTS_HELP: MessageKey =
     MessageKey::new("setting.content.image-hosts.help");
@@ -25509,6 +25537,26 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "setting.auth.sign-up-enabled.name",
         "Sign up without an invitation",
     ),
+    (
+        "setting.backups.daily.help",
+        "Bugaboo creates a backup at the quiet hour of the organization, in the night. Backups hold all the organization's data and its files, but no keys.",
+    ),
+    ("setting.backups.daily.name", "Create a backup every day"),
+    (
+        "setting.backups.folder.help",
+        "The folder on the computer of the server that backups go into. Leave it empty for the backups folder of the data folder. Only the account that runs Bugaboo may be able to open it.",
+    ),
+    ("setting.backups.folder.name", "Folder of the backups"),
+    (
+        "setting.backups.keep-daily.help",
+        "How many days keep their newest backup. Older ones are deleted by the same schedule.",
+    ),
+    ("setting.backups.keep-daily.name", "Daily backups to keep"),
+    (
+        "setting.backups.keep-weekly.help",
+        "How many weeks keep their newest backup, besides the daily ones.",
+    ),
+    ("setting.backups.keep-weekly.name", "Weekly backups to keep"),
     (
         "setting.content.image-hosts.help",
         "The hosts that may show images in descriptions and comments, as a list separated by commas, like images.example.com. Write only the host name, without https:// and without a path. Leave the list empty to show no image from other hosts.",

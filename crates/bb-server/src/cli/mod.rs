@@ -12,7 +12,7 @@
 //!
 //! Every text a person reads, the help of each option included, comes from the message catalog.
 
-mod backup;
+pub(crate) mod backup;
 mod preview;
 mod renewal;
 mod search_index;

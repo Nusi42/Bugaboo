@@ -361,6 +361,7 @@ pub trait AuthStore:
     + SettingsStore
     + SavedSearchStore
     + crate::themes::ThemeStore
+    + crate::backups::BackupStore
     + SearchStore
     + TimeStore
     + WorkingHoursStore

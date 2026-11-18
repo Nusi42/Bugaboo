@@ -151,6 +151,10 @@ use super::{
     themes, upload_theme,
 };
 
+use crate::backups::{
+    BackupItem, Backups, CreateBackup, ListBackupsQuery, create_backup, list_backups,
+};
+
 use_cases! {
     /// Whether setup is open and whether people may sign up.
     status(StatusQuery) -> AuthStatus;
@@ -789,4 +793,8 @@ use_cases! {
     issue_time(IssueTimeQuery) -> Authorized<IssueTime>;
     /// Shows the totals of the time of a project.
     project_time(ProjectTimeQuery) -> Authorized<TimeTotals>;
+    /// Lists the backups and their records.
+    list_backups(ListBackupsQuery) -> Authorized<Backups>;
+    /// Creates a backup now.
+    create_backup(CreateBackup) -> Authorized<BackupItem>;
 }

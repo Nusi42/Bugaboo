@@ -131,6 +131,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/admin/backups": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The backups and their records. Needs *Change organization settings*, from a session. */
+    get: operations["listBackups"];
+    put?: never;
+    /**
+     * Creates a backup now, while people go on working. Needs *Change organization settings*, from a
+     *     session.
+     */
+    post: operations["createBackup"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/admin/status": {
     parameters: {
       query?: never;
@@ -5921,6 +5942,65 @@ export interface components {
     BackupCodesBody: {
       /** @description The codes. They are not stored in this form and cannot be shown again. */
       codes: string[];
+    };
+    /** @description A backup file in the folder of the backups. */
+    BackupFileBody: {
+      /**
+       * @description Whether a restore created it of what was there before (kept for the keep period of the
+       *     security log).
+       */
+      before_restore: boolean;
+      /** @description The moment of the copy: every change saved before it is in the backup. */
+      moment: string;
+      /** @description The name of the file, such as `bugaboo-20261118T031500Z-0.6.0.backup`. */
+      name: string;
+      /**
+       * Format: int64
+       * @description The size in bytes.
+       */
+      size: number;
+      /** @description The version of Bugaboo that created it. */
+      version: string;
+    };
+    /** @description The record of a backup created or restored. */
+    BackupRunBody: {
+      /**
+       * Format: date-time
+       * @description When it happened.
+       */
+      at: string;
+      /** @description Its SHA-256, as 64 hex digits. */
+      checksum: string;
+      /** @description `made` or `restored`. */
+      event: string;
+      /**
+       * Format: int64
+       * @description For a restore: the first entry of the security log that is gone.
+       */
+      lost_from?: number | null;
+      /**
+       * Format: int64
+       * @description For a restore: the last entry of the security log that is gone.
+       */
+      lost_to?: number | null;
+      /** @description `schedule`, `command-line` or `person`. */
+      maker: string;
+      /** @description The name of the backup. */
+      name: string;
+      /** @description The person who pressed *Create a backup now*. */
+      person?: string | null;
+      /**
+       * Format: int64
+       * @description Its size in bytes.
+       */
+      size: number;
+    };
+    /** @description The backups and the newest records. */
+    BackupsBody: {
+      /** @description The backup files, newest first. */
+      files: components["schemas"]["BackupFileBody"][];
+      /** @description The newest records of backups created and restored, newest first. */
+      runs: components["schemas"]["BackupRunBody"][];
     };
     /** @description The bar of a row. */
     BarBody: {
@@ -13413,6 +13493,58 @@ export interface operations {
       401: components["responses"]["NotSignedIn"];
       403: components["responses"]["Forbidden"];
       404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  listBackups: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The backups. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BackupsBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  createBackup: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The backup that was created. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BackupFileBody"];
+        };
+      };
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];

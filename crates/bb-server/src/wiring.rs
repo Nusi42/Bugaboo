@@ -24,6 +24,12 @@ use bb_files::{DiskFiles, PreviewCommand};
 use bb_notify::SmtpMailer;
 use bb_store::{AuthStorage, Database, LogSeal};
 
+use bb_app::backups::{BackupFile, BackupFiles, CreatedFile};
+use bb_app::ports::BoxFuture;
+use bb_core::backup::name::{BackupName, Purpose};
+use bb_store::backup::backups_in;
+
+use crate::cli::backup::{backup_folder, places};
 use crate::config::Settings;
 use crate::data_folder::{DataFolder, protect_key_files};
 use crate::probe::{Probe, database_kind};
@@ -68,6 +74,67 @@ impl SetupCodeFile for SetupCodeOnDisk {
 
 fn database_failed(error: &impl std::fmt::Display) -> anyhow::Error {
     anyhow!(message::server_database_failed(error).render())
+}
+
+/// The backup files of the running server (OPS-07): created into the folder the setting names,
+/// or the backups folder of the data folder.
+pub(crate) struct ServerBackups {
+    database: Database,
+    data: DataFolder,
+}
+
+impl ServerBackups {
+    /// The backups of the installation in `data`, with its database.
+    pub(crate) const fn new(database: Database, data: DataFolder) -> Self {
+        Self { database, data }
+    }
+
+    fn folder(&self, named: Option<String>) -> std::io::Result<PathBuf> {
+        backup_folder(&self.data, named.as_deref().map(std::path::Path::new))
+            .map_err(|error| std::io::Error::other(error.to_string()))
+    }
+}
+
+impl BackupFiles for ServerBackups {
+    fn create(
+        &self,
+        folder: Option<String>,
+        purpose: Purpose,
+        now: jiff::Timestamp,
+    ) -> BoxFuture<'_, std::io::Result<CreatedFile>> {
+        Box::pin(async move {
+            let places = places(&self.data, self.folder(folder)?);
+            let created = self
+                .database
+                .create_backup(&places, purpose, now)
+                .await
+                .map_err(|error| std::io::Error::other(error.to_string()))?;
+            Ok(CreatedFile {
+                name: created.name,
+                size: created.size,
+                checksum: created.checksum,
+            })
+        })
+    }
+
+    fn list(&self, folder: Option<String>) -> BoxFuture<'_, std::io::Result<Vec<BackupFile>>> {
+        Box::pin(async move {
+            let found = backups_in(&self.folder(folder)?)
+                .map_err(|error| std::io::Error::other(error.to_string()))?;
+            Ok(found
+                .into_iter()
+                .map(|(name, _, size)| BackupFile { name, size })
+                .collect())
+        })
+    }
+
+    fn delete(
+        &self,
+        folder: Option<String>,
+        name: BackupName,
+    ) -> BoxFuture<'_, std::io::Result<()>> {
+        Box::pin(async move { std::fs::remove_file(self.folder(folder)?.join(name.to_string())) })
+    }
 }
 
 /// The stored data of an installation that exists, opened by the commands that look after it
@@ -165,6 +232,11 @@ pub(crate) async fn wire(
         PreviewCommand::of_this_program(PREVIEW_COMMAND)
             .map_err(|error| anyhow!(error.to_string()))?,
     )))
+    .with_backups(Arc::new(ServerBackups {
+        database: database.clone(),
+        data: DataFolder::existing(data.root())
+            .ok_or_else(|| anyhow!(message::cli_no_data(data.root().display()).render()))?,
+    }))
     .with_mailer(Arc::new(SmtpMailer))
     .with_ai_provider(Arc::new(HttpAiProvider))
     .with_public_url(settings.public_url.clone())

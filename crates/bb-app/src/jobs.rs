@@ -90,6 +90,9 @@ bb_core::words! {
         /// *Allow rules that never run out* off (ADR-0029, amendment M7, WP-14): queued in the same
         /// change as the setting; it does nothing when the setting is on again by then.
         RulesGetAnEnd => "agents.rules-get-an-end",
+        /// Creating the backup of the day and deleting the ones the schedule no longer keeps
+        /// (OPS-07, ADR-0046 decision 3): `backups::schedule`.
+        BackupsDaily => "backups.daily",
     }
 }
 
@@ -108,6 +111,7 @@ impl JobKind {
             | Self::PruneSecurityLog
             | Self::PurgeSessions
             | Self::DeleteOldAwayTimes
+            | Self::BackupsDaily
             | Self::RotateServerLog => true,
             Self::ManyChangesStep
             | Self::RenewIds
@@ -128,7 +132,8 @@ impl JobKind {
         match self {
             // Its first round on a large database holds SQLite's write lock for seconds, so it is
             // kept away from the start, when people sign in again (M5-F168).
-            Self::RefreshStatistics => Rhythm::QuietHour,
+            // A backup copies the whole database, so it waits for the night too (ADR-0046).
+            Self::RefreshStatistics | Self::BackupsDaily => Rhythm::QuietHour,
             Self::CatchUpHistory
             | Self::CleanUpFiles
             | Self::CleanOldGrants
@@ -435,7 +440,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             | JobKind::RotateServerLog
             | JobKind::CleanUpFiles
             | JobKind::CleanOldGrants
-            | JobKind::RefreshStatistics => Err(misrouted(job, kind)),
+            | JobKind::RefreshStatistics
+            | JobKind::BackupsDaily => Err(misrouted(job, kind)),
         }
     }
 
@@ -517,6 +523,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             }),
             JobKind::CleanOldGrants => self.clean_old_grants_daily(job).await,
             JobKind::RefreshStatistics => self.refresh_statistics_daily(job).await,
+            JobKind::BackupsDaily => self.backups_daily(job).await,
             // The other kinds go to `do_one_off_job`; listed so that a new kind has to be placed.
             JobKind::ManyChangesStep
             | JobKind::RenewIds
@@ -556,7 +563,8 @@ impl<S: AuthStore> Ctx<'_, S> {
                 | JobKind::RotateServerLog
                 | JobKind::CleanUpFiles
                 | JobKind::CleanOldGrants
-                | JobKind::RefreshStatistics),
+                | JobKind::RefreshStatistics
+                | JobKind::BackupsDaily),
             ) => {
                 debug_assert!(kind.is_daily(), "the job kind {kind:?} is not a daily one");
                 Ok(())
@@ -729,11 +737,11 @@ mod tests {
     }
 
     #[test]
-    fn adr_0017_only_the_statistics_wait_after_the_start() {
+    fn adr_0017_only_the_statistics_and_the_backups_wait_after_the_start() {
         let now = at("2026-01-10T12:00:00Z");
         for kind in JobKind::daily() {
             let first = kind.rhythm().first_round(now).unwrap();
-            if kind == JobKind::RefreshStatistics {
+            if matches!(kind, JobKind::RefreshStatistics | JobKind::BackupsDaily) {
                 assert_eq!(first, now.checked_add(QUIET_KIND_AFTER_START).unwrap());
             } else {
                 assert_eq!(first, now, "{}", kind.code());
