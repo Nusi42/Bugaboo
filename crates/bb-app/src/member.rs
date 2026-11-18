@@ -110,8 +110,9 @@ pub(crate) mod edit_lock {
     pub(crate) const ASKED_TO_FINISH: &str = "asked_to_finish";
     /// The part whose editing somebody took over.
     pub(crate) const TAKEN_OVER: &str = "taken_over";
-    /// The person who holds the lock and is told.
-    pub(crate) const PERSON: &str = "person";
+    /// The person who holds the lock and is told, inside the value of [`FIELD`], which
+    /// `bb_core::whose::IN_CHANGES` declares for the events of issues, projects and comments.
+    pub(crate) const PERSON: &str = bb_core::whose::members::PERSON;
 }
 
 /// The member of the event of a run of many changes that says where the run is.

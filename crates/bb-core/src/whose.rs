@@ -239,6 +239,13 @@ mod tests {
             link_in_changes("work_day", members::PERSON),
             Some(Link::Subject)
         );
+        // The notes of an edit lock hold the person who holds it, under `members::PERSON` inside.
+        for kind in ["issue", "project", "comment"] {
+            assert_eq!(
+                link_in_changes(kind, members::EDIT_LOCK),
+                Some(Link::Holder)
+            );
+        }
         assert_eq!(link_in_changes("issue", "title"), None);
         assert_eq!(link_in_changes("project", members::PERSON), None);
     }
