@@ -112,9 +112,19 @@ fn plain_name(cell: &str) -> String {
     }
 }
 
+/// The columns the rows are read by, as the header of a table names them (in lower case).
+const VERSION: &[&str] = &["version"];
+const LICENSE: &[&str] = &["license"];
+const PURPOSE: &[&str] = &["purpose", "why accepted"];
+const SHIPS: &[&str] = &["ships?"];
+const JUSTIFICATION: &[&str] = &["vex justification"];
+
 pub(crate) fn parse_register(markdown: &str) -> Rows {
     let mut rows = Rows::default();
     let mut section: Option<Table> = None;
+    // The header cells of the table being read, in lower case: columns are found by name, so a
+    // table with its columns in another order reads the same.
+    let mut header: Vec<String> = Vec::new();
     for line in markdown.lines().map(str::trim) {
         if !line.starts_with('|') {
             section = None;
@@ -126,57 +136,43 @@ pub(crate) fn parse_register(markdown: &str) -> Rows {
             .map(|cell| cell.trim().to_owned())
             .collect();
         let first = plain_name(cells.first().map_or("", String::as_str));
-        let cell = |at: usize| {
-            cells
-                .get(at)
+        let started = match first.as_str() {
+            "Crate" => Some(Table::Rust),
+            "Package" => Some(Table::Npm),
+            "Data" => Some(Table::Data),
+            "Advisory" => Some(Table::Risks),
+            _ => None,
+        };
+        if let Some(table) = started {
+            section = Some(table);
+            header = cells.iter().map(|cell| cell.to_lowercase()).collect();
+            continue;
+        }
+        if first.is_empty() || first.starts_with("---") || first.starts_with(":-") {
+            continue;
+        }
+        let Some(table) = section else { continue };
+        let named = |names: &[&str]| {
+            header
+                .iter()
+                .position(|column| names.contains(&column.as_str()))
+                .and_then(|at| cells.get(at))
                 .map_or_else(String::new, |text| text.trim_matches('`').to_owned())
         };
         let row = Row {
-            version: if matches!(section, Some(Table::Rust | Table::Npm)) {
-                cell(1)
-            } else {
-                String::new()
-            },
-            license: cell(2),
-            purpose: cell(if matches!(section, Some(Table::Risks)) {
-                3
-            } else {
-                4
-            }),
-            ships: if matches!(section, Some(Table::Risks)) {
-                String::new()
-            } else {
-                cell(3)
-            },
-            justification: if matches!(section, Some(Table::Risks)) {
-                cell(5)
-            } else {
-                String::new()
-            },
+            version: named(VERSION),
+            license: named(LICENSE),
+            purpose: named(PURPOSE),
+            ships: named(SHIPS),
+            justification: named(JUSTIFICATION),
             cells: cells.clone(),
         };
-        match first.as_str() {
-            "Crate" => section = Some(Table::Rust),
-            "Package" => section = Some(Table::Npm),
-            "Data" => section = Some(Table::Data),
-            "Advisory" => section = Some(Table::Risks),
-            name if name.is_empty() || name.starts_with("---") || name.starts_with(":-") => {}
-            name => match section {
-                Some(Table::Rust) => {
-                    rows.rust.insert(name.to_owned(), row);
-                }
-                Some(Table::Npm) => {
-                    rows.npm.insert(name.to_owned(), row);
-                }
-                Some(Table::Data) => {
-                    rows.data.insert(name.to_owned(), row);
-                }
-                Some(Table::Risks) => {
-                    rows.risks.insert(name.to_owned(), row);
-                }
-                None => {}
-            },
-        }
+        match table {
+            Table::Rust => rows.rust.insert(first, row),
+            Table::Npm => rows.npm.insert(first, row),
+            Table::Data => rows.data.insert(first, row),
+            Table::Risks => rows.risks.insert(first, row),
+        };
     }
     rows
 }
@@ -331,6 +327,30 @@ mod tests {
 
     fn set(names: &[&str]) -> BTreeSet<String> {
         names.iter().map(|n| (*n).to_owned()).collect()
+    }
+
+    #[test]
+    fn columns_are_read_by_their_header_not_their_place() {
+        let reordered = "\
+| Crate | Purpose | Ships? | License | Version |
+|---|---|---|---|---|
+| serde | Reads things | yes (bb-core) | MIT | 1.0.2 |
+
+| Advisory | VEX justification | Why accepted | Package |
+|---|---|---|---|
+| [A-1](https://example.test) | code_not_present | Only tools. | picomatch |
+";
+        let rows = parse_register(reordered);
+        let serde = &rows.rust["serde"];
+        assert_eq!(serde.version, "1.0.2");
+        assert_eq!(serde.license, "MIT");
+        assert_eq!(serde.purpose, "Reads things");
+        assert_eq!(serde.ships, "yes (bb-core)");
+        let risk = &rows.risks["A-1"];
+        assert_eq!(risk.purpose, "Only tools.");
+        assert_eq!(risk.justification, "code_not_present");
+        // A column the table does not have reads as empty, not as another column.
+        assert_eq!(risk.ships, "");
     }
 
     #[test]
