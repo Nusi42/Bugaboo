@@ -1,6 +1,6 @@
 # WP-12 — *Support access* with the customer's approval
 
-**Wave 3 · Folder / branch:** `bugaboo.win5` / `WIN5` · **Model:** Opus · moves to M14 if the cut of M9-Q20 is taken (DIST-03 then becomes a V1 feature; the "nothing by default" test stays in WP-08)
+**Moved to M14 (2026-11-18, M9-Q20).** DIST-03 is a V1 feature of M14 now, beside the served model. This file stays as the draft M14 starts from; M14 checks it against the served model and the control plane before it is built, and gives it a folder, a model and a migration number then. "Nothing by default" (ADR-0048, decision 1) is a line of WP-08's test of secure defaults in M9.
 **Features:** DIST-03 (server and screen). [ADR-0048](../../adr/0048-support-access-with-the-customers-approval.md); ADR-0012; architecture §12, boundary 4.
 
 ## Goal

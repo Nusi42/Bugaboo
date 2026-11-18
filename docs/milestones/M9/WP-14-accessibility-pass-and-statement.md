@@ -17,7 +17,7 @@ The grown TEST-A11Y in `web/app/e2e/a11y*.spec.ts` and `xtask/src/checks/test_a1
 - **What a machine cannot tell** is checked by reading: names and roles of the timeline and the windows, the words of errors (3.3.1, 3.3.3), the status messages announced (4.1.3), the help in the same place (3.2.6), redundant entry (3.3.7), accessible sign-in without a test of memory (3.3.8: passkeys and paste allowed). Each criterion's result goes into the report with its evidence (a test name or a reason).
 - **The report** follows EN 301 549 V3.2.1 clause by clause for software and web content (clauses 5, 9, 11 and 12): *Supports*, *Partly supports* with what is missing, *Not applicable* with why. Hardware and real-time text clauses are *Not applicable*.
 - **The statement template**: the parts the EU model statement asks for (what conforms, what does not and why, how to give feedback, the date of the review), with gaps marked where the organization fills in its own contact and enforcement body.
-- **The screen-reader pass** (M9-Q18 as answered): the checklist lists the tasks (sign in, the issue list, an issue and its comments, *New issue*, the timeline with its typed ways, a settings page, *My data*); the maintainer runs it with NVDA or Narrator, about an hour; until it ran, the report says *Partly supports* where only a screen reader can tell.
+- **The screen-reader pass** (M9-Q18): the checklist lists the tasks (sign in, the issue list, an issue and its comments, *New issue*, the timeline with its typed ways, a settings page, *My data*); the maintainer runs it with NVDA or Narrator, about an hour; until it ran, the report says *Partly supports* where only a screen reader can tell.
 
 ## Tasks
 

@@ -51,4 +51,4 @@ Code review with the SSOT/DRY/ODR gate: the general *Delete them* from the old-w
 
 ## Depends on
 
-WP-03, WP-04 and WP-06 merged; WP-09 merged before it lands (both touch `PersonPage.tsx`). Runs beside WP-11, WP-12 and WP-13.
+WP-03, WP-04 and WP-06 merged; WP-09 merged before it lands (both touch `PersonPage.tsx`). Runs beside WP-11 and WP-13.

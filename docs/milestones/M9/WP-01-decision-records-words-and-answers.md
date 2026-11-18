@@ -1,7 +1,22 @@
 # WP-01 — Decision records, words, the UX gaps, the maintainer's answers
 
-**Wave 0 · Folder / branch:** `bugaboo.win1` / `WIN1` · **Model:** Opus (the lead)
-**Features:** PRIV-03, PRIV-04, PRIV-05, PRIV-06, OPS-04, OPS-06, OPS-07, SEC-18, COMP-01, COMP-03, COMP-04, COMP-15, DIST-03, DIST-07 (as docs). Docs only, like WP-01 of M8.
+**Wave 0 · Folder / branch:** `bugaboo.win1` / `WIN1` (written in `bugaboo.win2`) · **Model:** Opus (the lead) · **Done (2026-11-18)**
+**Features:** PRIV-03, PRIV-04, PRIV-05, PRIV-06, OPS-04, OPS-06, OPS-07, SEC-18, COMP-01, COMP-03, COMP-04, COMP-15, DIST-07 (as docs; DIST-03 moved to M14). Docs only, like WP-01 of M8.
+
+## Done (2026-11-18)
+
+The maintainer took every recommendation of M9-Q1 to Q21, including the three cuts of M9-Q20. Written:
+
+- ADR-0044 to ADR-0047 accepted; ADR-0048 accepted in part (decision 1, nothing by default, now; decisions 2 to 6 planned for M14); the index of the records and the generated page of decisions.
+- `docs/04-milestones.md`: DIST-03 moved from M9 to M14 (13 and 16 features; the 225 features behind ADR-0040 are unchanged, so M9 done still makes 0.6.0), the outline of M9 and M14, the decision of 2026-11-18.
+- `docs/01-feature-list.md`: DIST-03 is V1; PRIV-05, OPS-07 and DIST-07 reworded.
+- UX design §5.7: the keep table in its two groups, time on issues deleted only by an administrator, *Switch off* before removal.
+- The glossary: *Support access* marked for M14.
+- The M4 follow-ups M4-F61, M4-F63 and M4-F128: retargeted to an operations package after the first release.
+- The README of M9 and the package files: the answers, the cut wave plan, restore from the command line only, WP-12 marked moved.
+- `docs/STATUS.md`: the packages of M9 and the open questions.
+
+**Handed to the packages, not written here:** the M9 parts of the architecture chapters (§6, §7, §10, §11, §12) and the amendments of older records (ADR-0012, ADR-0015, ADR-0017, ADR-0022, ADR-0025, ADR-0035, ADR-0037) are written by the package whose code changes them, in the same change, as "Definition of done" asks; each package file names the chapter parts and checks it touches. The frames of the remaining screens (*My data*, *Profile*, *Data exports*, *Backups*, *About*) follow the mocks the maintainer answered on and are drawn by the screen packages with their pictures.
 
 ## Goal
 
