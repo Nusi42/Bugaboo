@@ -4,11 +4,6 @@
 # A file that a tool writes is listed under `generated` and needs no follow-up.
 
 [[exempt]]
-path = "crates/bb-api/src/permissions.rs"
-lines = 825
-reason = "The table of the permissions and what each route needs; it grew with the routes of M4. Split by area in M4-F130."
-
-[[exempt]]
 path = "crates/bb-app/src/tests/notifications.rs"
 lines = 948
 reason = "The tests of the notifications reader; they move with the reader in WP-12. Split by feature in M4-F130."
