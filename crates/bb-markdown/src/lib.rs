@@ -25,6 +25,15 @@ mod urls;
 pub use render::render;
 pub use tokens::{Token, TokenKind};
 
+/// A plain text made safe to stand in HTML, as text or as the value of an attribute: the one
+/// escaping of this crate, for the words a page of Bugaboo writes around rendered texts.
+#[must_use]
+pub fn escape_text(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    html::escape(text, &mut out);
+    out
+}
+
 /// The most bytes of text that are rendered. A longer text is cut (at a character) and
 /// [`Rendered::truncated`] says so. The routes that store text refuse a longer text before it
 /// gets here; this is the second line of defence for a renderer that must never be slow.

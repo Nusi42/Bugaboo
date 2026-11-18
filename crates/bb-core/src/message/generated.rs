@@ -2389,6 +2389,72 @@ pub const ERROR_WORKING_HOURS_REASON_NEEDED: MessageKey =
 pub const ERROR_WORKING_HOURS_WEEK_TOTALS_ONLY: MessageKey =
     MessageKey::new("error.working-hours.week-totals-only");
 
+/// The message `export.page.all-kinds`.
+pub const EXPORT_PAGE_ALL_KINDS: MessageKey = MessageKey::new("export.page.all-kinds");
+
+/// The message `export.page.intro`.
+pub const EXPORT_PAGE_INTRO: MessageKey = MessageKey::new("export.page.intro");
+
+/// The message `export.page.kinds`.
+pub const EXPORT_PAGE_KINDS: MessageKey = MessageKey::new("export.page.kinds");
+
+/// The message `export.page.no`.
+pub const EXPORT_PAGE_NO: MessageKey = MessageKey::new("export.page.no");
+
+/// The message `export.page.rows`.
+pub const EXPORT_PAGE_ROWS: MessageKey = MessageKey::new("export.page.rows");
+
+/// The message `export.page.someone`.
+pub const EXPORT_PAGE_SOMEONE: MessageKey = MessageKey::new("export.page.someone");
+
+/// The message `export.page.title`.
+pub const EXPORT_PAGE_TITLE: MessageKey = MessageKey::new("export.page.title");
+
+/// The message `export.page.what-you-are`.
+pub const EXPORT_PAGE_WHAT_YOU_ARE: MessageKey = MessageKey::new("export.page.what-you-are");
+
+/// The message `export.page.yes`.
+pub const EXPORT_PAGE_YES: MessageKey = MessageKey::new("export.page.yes");
+
+/// The message `export.readme.basis`.
+pub const EXPORT_README_BASIS: MessageKey = MessageKey::new("export.readme.basis");
+
+/// The message `export.readme.fields`.
+pub const EXPORT_README_FIELDS: MessageKey = MessageKey::new("export.readme.fields");
+
+/// The message `export.readme.files`.
+pub const EXPORT_README_FILES: MessageKey = MessageKey::new("export.readme.files");
+
+/// The message `export.readme.intro`.
+pub const EXPORT_README_INTRO: MessageKey = MessageKey::new("export.readme.intro");
+
+/// The message `export.readme.kept`.
+pub const EXPORT_README_KEPT: MessageKey = MessageKey::new("export.readme.kept");
+
+/// The message `export.readme.kept-while-needed`.
+pub const EXPORT_README_KEPT_WHILE_NEEDED: MessageKey =
+    MessageKey::new("export.readme.kept-while-needed");
+
+/// The message `export.readme.not-personal`.
+pub const EXPORT_README_NOT_PERSONAL: MessageKey = MessageKey::new("export.readme.not-personal");
+
+/// The message `export.readme.purpose`.
+pub const EXPORT_README_PURPOSE: MessageKey = MessageKey::new("export.readme.purpose");
+
+/// The message `export.readme.recipient-mail`.
+pub const EXPORT_README_RECIPIENT_MAIL: MessageKey =
+    MessageKey::new("export.readme.recipient-mail");
+
+/// The message `export.readme.recipient-people`.
+pub const EXPORT_README_RECIPIENT_PEOPLE: MessageKey =
+    MessageKey::new("export.readme.recipient-people");
+
+/// The message `export.readme.recipients`.
+pub const EXPORT_README_RECIPIENTS: MessageKey = MessageKey::new("export.readme.recipients");
+
+/// The message `export.readme.title`.
+pub const EXPORT_README_TITLE: MessageKey = MessageKey::new("export.readme.title");
+
 /// The message `field-example.date`.
 pub const FIELD_EXAMPLE_DATE: MessageKey = MessageKey::new("field-example.date");
 
@@ -4103,6 +4169,26 @@ pub const LAYOUTS_USE_INHERITED_TEXT: MessageKey = MessageKey::new("layouts.use-
 /// The message `layouts.use-inherited-title`.
 pub const LAYOUTS_USE_INHERITED_TITLE: MessageKey = MessageKey::new("layouts.use-inherited-title");
 
+/// The message `legal-basis.consent`.
+pub const LEGAL_BASIS_CONSENT: MessageKey = MessageKey::new("legal-basis.consent");
+
+/// The message `legal-basis.contract`.
+pub const LEGAL_BASIS_CONTRACT: MessageKey = MessageKey::new("legal-basis.contract");
+
+/// The message `legal-basis.legal-obligation`.
+pub const LEGAL_BASIS_LEGAL_OBLIGATION: MessageKey =
+    MessageKey::new("legal-basis.legal-obligation");
+
+/// The message `legal-basis.legitimate-interests`.
+pub const LEGAL_BASIS_LEGITIMATE_INTERESTS: MessageKey =
+    MessageKey::new("legal-basis.legitimate-interests");
+
+/// The message `legal-basis.public-task`.
+pub const LEGAL_BASIS_PUBLIC_TASK: MessageKey = MessageKey::new("legal-basis.public-task");
+
+/// The message `legal-basis.vital-interests`.
+pub const LEGAL_BASIS_VITAL_INTERESTS: MessageKey = MessageKey::new("legal-basis.vital-interests");
+
 /// The message `list.next`.
 pub const LIST_NEXT: MessageKey = MessageKey::new("list.next");
 
@@ -5036,6 +5122,21 @@ pub const PERMISSION_SEE_WORKING_HOURS_OF_OTHERS: MessageKey =
 /// The message `permission.share-searches`.
 pub const PERMISSION_SHARE_SEARCHES: MessageKey = MessageKey::new("permission.share-searches");
 
+/// The message `person-link.actor`.
+pub const PERSON_LINK_ACTOR: MessageKey = MessageKey::new("person-link.actor");
+
+/// The message `person-link.author`.
+pub const PERSON_LINK_AUTHOR: MessageKey = MessageKey::new("person-link.author");
+
+/// The message `person-link.holder`.
+pub const PERSON_LINK_HOLDER: MessageKey = MessageKey::new("person-link.holder");
+
+/// The message `person-link.recipient`.
+pub const PERSON_LINK_RECIPIENT: MessageKey = MessageKey::new("person-link.recipient");
+
+/// The message `person-link.subject`.
+pub const PERSON_LINK_SUBJECT: MessageKey = MessageKey::new("person-link.subject");
+
 /// The message `person.back`.
 pub const PERSON_BACK: MessageKey = MessageKey::new("person.back");
 
@@ -5062,6 +5163,30 @@ pub const PERSON_SOMEONE: MessageKey = MessageKey::new("person.someone");
 
 /// The message `person.someone-inside`.
 pub const PERSON_SOMEONE_INSIDE: MessageKey = MessageKey::new("person.someone-inside");
+
+/// The message `personal-purpose.activity`.
+pub const PERSONAL_PURPOSE_ACTIVITY: MessageKey = MessageKey::new("personal-purpose.activity");
+
+/// The message `personal-purpose.content`.
+pub const PERSONAL_PURPOSE_CONTENT: MessageKey = MessageKey::new("personal-purpose.content");
+
+/// The message `personal-purpose.credentials`.
+pub const PERSONAL_PURPOSE_CREDENTIALS: MessageKey =
+    MessageKey::new("personal-purpose.credentials");
+
+/// The message `personal-purpose.employee-time`.
+pub const PERSONAL_PURPOSE_EMPLOYEE_TIME: MessageKey =
+    MessageKey::new("personal-purpose.employee-time");
+
+/// The message `personal-purpose.identity`.
+pub const PERSONAL_PURPOSE_IDENTITY: MessageKey = MessageKey::new("personal-purpose.identity");
+
+/// The message `personal-purpose.organization`.
+pub const PERSONAL_PURPOSE_ORGANIZATION: MessageKey =
+    MessageKey::new("personal-purpose.organization");
+
+/// The message `personal-purpose.technical`.
+pub const PERSONAL_PURPOSE_TECHNICAL: MessageKey = MessageKey::new("personal-purpose.technical");
 
 /// The message `plan-way-out.give-to-someone-else`.
 pub const PLAN_WAY_OUT_GIVE_TO_SOMEONE_ELSE: MessageKey =
@@ -11391,6 +11516,48 @@ pub fn error_working_hours_keep_years_too_short(years: i64) -> Message {
     Message::with_arguments(
         MessageKey::new("error.working-hours.keep-years-too-short"),
         vec![("years", Value::Number(years))],
+    )
+}
+
+/// The message `export.page.former`.
+#[must_use]
+pub fn export_page_former(code: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("export.page.former"),
+        vec![("code", Value::Text(code.to_string()))],
+    )
+}
+
+/// The message `export.page.role`.
+#[must_use]
+pub fn export_page_role(role: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("export.page.role"),
+        vec![("role", Value::Text(role.to_string()))],
+    )
+}
+
+/// The message `export.readme.kept-for-days`.
+#[must_use]
+pub fn export_readme_kept_for_days(days: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("export.readme.kept-for-days"),
+        vec![("days", Value::Text(days.to_string()))],
+    )
+}
+
+/// The message `export.readme.recipient-ai`.
+#[must_use]
+pub fn export_readme_recipient_ai(
+    country: impl std::fmt::Display,
+    provider: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("export.readme.recipient-ai"),
+        vec![
+            ("country", Value::Text(country.to_string())),
+            ("provider", Value::Text(provider.to_string())),
+        ],
     )
 }
 
@@ -21632,6 +21799,61 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "error.working-hours.week-totals-only",
         "Only the week totals of other people are shown, so their work days cannot be changed. An administrator can turn Totals only off.",
     ),
+    ("export.page.all-kinds", "All kinds of records"),
+    ("export.page.former", "Former user {code}"),
+    (
+        "export.page.intro",
+        "This file holds everything Bugaboo stores about you: one page for each kind of record, the same rows as JSON in the folder data, the files you uploaded in the folder files, and README.txt, which says what each field means, why it is kept, on which legal basis, for how long and who receives it. Other people appear as you may see them in Bugaboo.",
+    ),
+    ("export.page.kinds", "Kinds of records"),
+    ("export.page.no", "No"),
+    ("export.page.role", "Someone ({role})"),
+    ("export.page.rows", "Rows"),
+    ("export.page.someone", "Someone"),
+    ("export.page.title", "Your data in Bugaboo"),
+    ("export.page.what-you-are", "What you are to it"),
+    ("export.page.yes", "Yes"),
+    ("export.readme.basis", "Legal basis"),
+    ("export.readme.fields", "Fields"),
+    (
+        "export.readme.files",
+        "files: the files you uploaded, named by their ID; their names are in data/attachment.json.",
+    ),
+    (
+        "export.readme.intro",
+        "For each kind of record: its file in the folder data, why it is kept, on which legal basis, how long it is kept, who receives it, and what each field means (GDPR Art. 15(1)).",
+    ),
+    ("export.readme.kept", "How long it is kept"),
+    (
+        "export.readme.kept-for-days",
+        "{days} days, then it is deleted.",
+    ),
+    (
+        "export.readme.kept-while-needed",
+        "As long as the organization needs it for its purpose; the keep and delete rules of the organization say more.",
+    ),
+    (
+        "export.readme.not-personal",
+        "Holds no personal data of its own; it is in this file because it names you.",
+    ),
+    ("export.readme.purpose", "Why it is kept"),
+    (
+        "export.readme.recipient-ai",
+        "The AI provider {provider} ({country}), for what is sent to the assistant.",
+    ),
+    (
+        "export.readme.recipient-mail",
+        "The mail server of the organization, for the e-mails Bugaboo sends.",
+    ),
+    (
+        "export.readme.recipient-people",
+        "The people of your organization, as far as their rights in Bugaboo allow.",
+    ),
+    ("export.readme.recipients", "Who receives it"),
+    (
+        "export.readme.title",
+        "Your data in Bugaboo: what the file holds",
+    ),
     ("field-example.date", "For example: Promised by"),
     ("field-example.date-time", "For example: Seen at"),
     ("field-example.decimal", "For example: Budget"),
@@ -22948,6 +23170,27 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The layout of this place is taken away. The place then goes back to the layout that counts here without a layout of its own. This cannot be undone.",
     ),
     ("layouts.use-inherited-title", "Reset to default?"),
+    ("legal-basis.consent", "You allowed it (GDPR Art. 6(1)(a))"),
+    (
+        "legal-basis.contract",
+        "A contract with you (GDPR Art. 6(1)(b))",
+    ),
+    (
+        "legal-basis.legal-obligation",
+        "A legal obligation (GDPR Art. 6(1)(c))",
+    ),
+    (
+        "legal-basis.legitimate-interests",
+        "A legitimate interest of the organization (GDPR Art. 6(1)(f))",
+    ),
+    (
+        "legal-basis.public-task",
+        "A task in the public interest (GDPR Art. 6(1)(e))",
+    ),
+    (
+        "legal-basis.vital-interests",
+        "The protection of someone's life (GDPR Art. 6(1)(d))",
+    ),
     ("list.many", "{start}, and {last}"),
     ("list.next", "Next"),
     ("list.previous", "Previous"),
@@ -23776,6 +24019,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "permission.share-searches",
         "Share saved searches with the project, or with a group they are in",
     ),
+    ("person-link.actor", "You did it"),
+    ("person-link.author", "You wrote or created it"),
+    ("person-link.holder", "You hold it"),
+    ("person-link.recipient", "It is addressed to you"),
+    ("person-link.subject", "It is about you"),
     ("person.agent-of", "{agent}, agent of {person}"),
     ("person.back", "All people"),
     ("person.bugaboo", "Bugaboo"),
@@ -23802,6 +24050,34 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "person.work-times-intro",
         "The usual work days, work hours and away times of {name}. When you change them, {name} is told.",
+    ),
+    (
+        "personal-purpose.activity",
+        "To show who did what and when, so the people who work with you can follow the work.",
+    ),
+    (
+        "personal-purpose.content",
+        "To keep what you wrote with the work it belongs to.",
+    ),
+    (
+        "personal-purpose.credentials",
+        "To check that it is you when you sign in. Never part of this file.",
+    ),
+    (
+        "personal-purpose.employee-time",
+        "To record your working time and the time you spent on work, as the law and the organization ask.",
+    ),
+    (
+        "personal-purpose.identity",
+        "To know who you are, show your name to the people who work with you and reach you by e-mail.",
+    ),
+    (
+        "personal-purpose.organization",
+        "To know where you work and which rights you have there.",
+    ),
+    (
+        "personal-purpose.technical",
+        "To keep your sign-in safe and to find misuse.",
     ),
     (
         "plan-warning.away",

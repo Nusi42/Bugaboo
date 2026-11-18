@@ -362,6 +362,17 @@ impl syn::parse::Parse for WordsEnum {
                 body.parse::<syn::Token![,]>()?;
             }
         }
+        // The messages the words make (`messages name = "prefix."`) follow the enum; they name no
+        // word, so they are read past.
+        while !input.is_empty() {
+            input.parse::<syn::Ident>()?;
+            input.parse::<syn::Ident>()?;
+            input.parse::<syn::Token![=]>()?;
+            input.parse::<syn::LitStr>()?;
+            if !input.is_empty() {
+                input.parse::<syn::Token![;]>()?;
+            }
+        }
         Ok(Self {
             name: name.to_string(),
             words,
@@ -635,7 +646,9 @@ words! { pub enum Category {
 words! { pub enum Basis {
     /// A contract.
     Contract => "contract",
-} }
+}
+    messages name = "legal-basis."
+}
 "#;
 
     #[test]

@@ -29,6 +29,7 @@ words! {
         /// The person holds or owns it: a session, a lock, an access key, an agent.
         Holder => "holder",
     }
+    messages name = "person-link."
 }
 
 /// A type that holds the ID of a person, so a stored field of this type needs a link that says

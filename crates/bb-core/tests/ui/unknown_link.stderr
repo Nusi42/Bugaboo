@@ -17,6 +17,7 @@ note: inside `bb_core::personal::Link::from_code_const`
   | |     /// `#[person_email(…)]` and `#[person_for(link = …)]`.
   | |     pub enum Link {
 ... |
+  | |     messages name = "person-link."
   | | }
   | |_- in this macro invocation
   = note: this error originates in the macro `$crate::panic::panic_2021` which comes from the expansion of the macro `words` (in Nightly builds, run with -Z macro-backtrace for more info)

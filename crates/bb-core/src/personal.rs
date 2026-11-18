@@ -40,6 +40,7 @@ words! {
         /// What identifies a device or connection: network address, browser, session.
         Technical => "technical",
     }
+    messages purpose = "personal-purpose."
 }
 
 words! {
@@ -59,6 +60,7 @@ words! {
         /// The organization has a good reason that does not override the person's rights (Art. 6(1)(f)).
         LegitimateInterests => "legitimate_interests",
     }
+    messages name = "legal-basis."
 }
 
 /// A type that cannot hold personal data, so a field of this type may be marked `#[not_personal]`.

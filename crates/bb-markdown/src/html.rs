@@ -197,7 +197,7 @@ fn attribute(markup: &mut String, name: &str, value: &str) {
 }
 
 /// Escapes the characters that could end a text or an attribute value.
-fn escape(text: &str, out: &mut String) {
+pub(crate) fn escape(text: &str, out: &mut String) {
     for c in text.chars() {
         match c {
             '&' => out.push_str("&amp;"),

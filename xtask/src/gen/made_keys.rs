@@ -15,6 +15,7 @@ use bb_core::message::MessageKey;
 use bb_core::notification::NotificationKind;
 use bb_core::own_fields::{ChoiceColor, FieldFor, FieldType, Look};
 use bb_core::people_kinds::PeopleKind;
+use bb_core::personal::{Basis, Category, Link};
 use bb_core::plan::warning::{
     DELAY_OF_GOAL, DELAY_OF_GOAL_AWAY, DELAY_OF_GOAL_AWAY_WEEKS, WarningKind, WayOut,
 };
@@ -47,6 +48,24 @@ fn holiday_keys() -> Vec<Made> {
         word: format!("the public holiday `{}`", holiday.code()),
     });
     regions.chain(days).collect()
+}
+
+/// The messages of the personal-data marks and links that *Download my data* writes: the purpose
+/// of each category, the name of each legal basis and what the person is to a row.
+fn privacy_keys() -> Vec<Made> {
+    let purposes = Category::ALL.iter().map(|category| Made {
+        key: category.purpose(),
+        word: format!("the category of personal data `{}`", category.code()),
+    });
+    let bases = Basis::ALL.iter().map(|basis| Made {
+        key: basis.name(),
+        word: format!("the legal basis `{}`", basis.code()),
+    });
+    let links = Link::ALL.iter().map(|link| Made {
+        key: link.name(),
+        word: format!("the link of a person `{}`", link.code()),
+    });
+    purposes.chain(bases).chain(links).collect()
 }
 
 /// The messages of the plan of the timeline: the sentence of each kind of warning, the three sentences
@@ -117,7 +136,7 @@ pub(crate) fn made_keys() -> Vec<Made> {
     for field in Field::ALL {
         keys.push(made("the field", field.code(), field.name()));
     }
-    keys.extend(agent_work_keys());
+    keys.extend(agent_work_keys().into_iter().chain(privacy_keys()));
     for group in StatusGroup::ALL {
         keys.push(made("the status group", group.code(), group.name()));
     }

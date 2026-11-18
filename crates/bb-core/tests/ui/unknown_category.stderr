@@ -17,6 +17,7 @@ note: inside `Category::from_code_const`
   | |     /// `#[personal(category = …)]`.
   | |     pub enum Category {
 ... |
+  | |     messages purpose = "personal-purpose."
   | | }
   | |_- in this macro invocation
   = note: this error originates in the macro `$crate::panic::panic_2021` which comes from the expansion of the macro `words` (in Nightly builds, run with -Z macro-backtrace for more info)

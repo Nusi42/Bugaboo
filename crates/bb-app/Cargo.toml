@@ -30,6 +30,7 @@ sha2 = { workspace = true }
 tracing = { workspace = true }
 utoipa = { workspace = true }
 zeroize = { workspace = true }
+zip = { workspace = true }
 
 [dev-dependencies]
 base64ct = { workspace = true }
