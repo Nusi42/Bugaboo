@@ -204,7 +204,13 @@ pub async fn passkey_sign_in<S: AuthStore>(
         .record_change(&event, move |transaction| {
             Box::pin(async move {
                 S::use_passkey(transaction, used_id, data.as_deref(), now).await?;
-                super::session::purge::<S>(transaction, &purge_settings, now).await?;
+                super::session::purge::<S>(
+                    transaction,
+                    &purge_settings,
+                    now,
+                    crate::keeping::KEEP_STEP_ROWS,
+                )
+                .await?;
                 if let Some(old) = old {
                     S::delete_session(transaction, old).await?;
                 }

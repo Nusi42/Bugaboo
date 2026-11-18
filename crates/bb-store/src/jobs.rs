@@ -12,12 +12,13 @@ use bb_core::id::JobId;
 use bb_core::job::{FailureKind, FailureOutcome, Job, JobState};
 use bb_core::technical::TechnicalName;
 use jiff::{SignedDuration, Timestamp};
-use sea_query::{Expr, ExprTrait as _, LockBehavior, LockType, Order, Query};
+use sea_query::{Condition, Expr, ExprTrait as _, LockBehavior, LockType, Order, Query};
 use serde_json::Value;
 
 use crate::auth::AuthStorage;
 use crate::db::{Database, Dialect, Row, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
+use crate::keeping::delete_limited;
 use crate::schema::{Computed, Job as Columns};
 
 /// The failure code of a job whose last lease ran out without an answer.
@@ -274,20 +275,21 @@ impl Database {
         Ok(self.execute(&update).await? > 0)
     }
 
-    /// Empties the payload of the jobs on the dead-letter list whose last start was before
-    /// `before`. Returns how many were emptied.
+    /// Deletes at most `limit` of the jobs on the dead-letter list whose last start was before
+    /// `before`, with their payload. Returns how many went.
     ///
     /// # Errors
     /// Fails when the database fails.
-    pub async fn clear_dead_job_payloads(&self, before: Timestamp) -> Result<u64, StoreError> {
-        let mut update = Query::update();
-        update
-            .table(Columns::Table)
-            .value(Columns::Payload, "null")
-            .and_where(Expr::col(Columns::State).eq(JobState::Dead.code()))
-            .and_where(Expr::col(Columns::RunAt).lt(to_micros(before)))
-            .and_where(Expr::col(Columns::Payload).ne("null"));
-        self.execute(&update).await
+    pub async fn purge_dead_jobs(&self, before: Timestamp, limit: u64) -> Result<u64, StoreError> {
+        let delete = delete_limited(
+            Columns::Table,
+            &[Columns::Id],
+            Condition::all()
+                .add(Expr::col(Columns::State).eq(JobState::Dead.code()))
+                .add(Expr::col(Columns::RunAt).lt(to_micros(before))),
+            limit,
+        );
+        self.execute(&delete).await
     }
 
     /// Whether a job of this kind waits in the queue (not dead) for a time after `after`.
@@ -462,8 +464,8 @@ impl JobStore for AuthStorage {
         self.database().later_job_waits(kind, after).await
     }
 
-    async fn clear_dead_job_payloads(&self, before: Timestamp) -> Result<u64, StoreError> {
-        self.database().clear_dead_job_payloads(before).await
+    async fn purge_dead_jobs(&self, before: Timestamp, limit: u64) -> Result<u64, StoreError> {
+        self.database().purge_dead_jobs(before, limit).await
     }
 
     async fn queue_job(

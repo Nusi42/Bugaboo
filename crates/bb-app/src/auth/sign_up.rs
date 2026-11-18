@@ -17,6 +17,7 @@ use bb_core::ErrorCode;
 use bb_core::app_paths;
 use bb_core::event::{Actor as EventActor, RecordKind};
 use bb_core::id::{InvitationId, JobId};
+use bb_core::keeping::Step;
 use bb_core::message::{self, Message};
 use bb_core::security_log::Digest;
 use bb_core::sign_in::SecurityAction;
@@ -32,6 +33,7 @@ use super::events::{changed, entity};
 use super::store::AuthStore;
 use super::types::{Done, SignUp};
 use crate::jobs::JobKind;
+use crate::keeping::KEEP_STEP_ROWS;
 use crate::mailer::MailMessage;
 use crate::notifications::{MailJob, send_failure_for_job};
 use crate::ports::ChangeStore;
@@ -57,12 +59,12 @@ pub trait SignUpStore: ChangeStore + 'static {
         ) -> bool;
         /// Stores a link, replacing the one with the same ID.
         fn put_sign_up_invitation(invitation: &SignUpInvitation) -> ();
-        /// Deletes the links that were made before `before` and are used up or have run out;
-        /// returns how many.
-        fn delete_old_sign_up_invitations(before: Timestamp, now: Timestamp) -> u64;
-        /// Forgets the e-mails that went before `before`; returns how many. The memory of an
-        /// e-mail is needed only for `MAIL_MEMORY` (GDPR: nothing kept without a use).
-        fn forget_old_sign_up_mail(before: Timestamp) -> u64;
+        /// Deletes at most `limit` of the links that were made before `before` and are used up or
+        /// have run out; returns how many.
+        fn delete_old_sign_up_invitations(before: Timestamp, now: Timestamp, limit: u64) -> u64;
+        /// Forgets at most `limit` of the e-mails that went before `before`; returns how many. The
+        /// memory of an e-mail is needed only for `MAIL_MEMORY` (GDPR: nothing kept without a use).
+        fn forget_old_sign_up_mail(before: Timestamp, limit: u64) -> u64;
     }
 }
 
@@ -168,7 +170,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .record_change(&event, move |transaction| {
                 Box::pin(async move {
                     // What is no use any more goes with the next e-mail, not only with the daily job.
-                    S::forget_old_sign_up_mail(transaction, forget_before).await?;
+                    S::forget_old_sign_up_mail(transaction, forget_before, KEEP_STEP_ROWS).await?;
                     S::claim_sign_up_mail(transaction, &digest, invitation, since, now).await
                 })
             })
@@ -268,7 +270,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 
     /// Deletes the links of sign-ups that were used or ran out a day ago, and the memory of the
     /// e-mails that went longer ago than they are needed. Returns how many links went.
-    pub(crate) async fn delete_old_sign_up_links(&self) -> Result<u64, AppError> {
+    pub(crate) async fn delete_old_sign_up_links(&self) -> Result<Step, AppError> {
         let now = self.now();
         let before = now
             .checked_sub(SignedDuration::from_hours(KEEP_HOURS))
@@ -288,8 +290,12 @@ impl<S: AuthStore> Ctx<'_, S> {
             .store()
             .record_change(&event, move |transaction| {
                 Box::pin(async move {
-                    S::forget_old_sign_up_mail(transaction, resent).await?;
-                    S::delete_old_sign_up_invitations(transaction, before, now).await
+                    let mail =
+                        S::forget_old_sign_up_mail(transaction, resent, KEEP_STEP_ROWS).await?;
+                    let links =
+                        S::delete_old_sign_up_invitations(transaction, before, now, KEEP_STEP_ROWS)
+                            .await?;
+                    Ok(Step::of(mail, KEEP_STEP_ROWS).and(Step::of(links, KEEP_STEP_ROWS)))
                 })
             })
             .await

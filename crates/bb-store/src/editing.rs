@@ -11,6 +11,7 @@ use bb_app::editing::EditStore;
 use bb_core::edit::{Draft, DraftTarget, EditLock, EditNotice, EditWhat, Hold, NoticeKind, Taking};
 use bb_core::event::{DomainEvent, EntityKind, EntityRef};
 use bb_core::id::{EditorId, EntityId, LockToken, UserId};
+use bb_core::keeping::Step;
 use bb_core::technical::TechnicalName;
 use bb_core::version::Version;
 use jiff::Timestamp;
@@ -19,6 +20,7 @@ use sea_query::{Condition, Expr, ExprTrait as _, OnConflict, Order, Query};
 use crate::auth::AuthStorage;
 use crate::db::{Database, Reader, Row, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
+use crate::keeping::delete_limited;
 use crate::schema::{EditDraftRow as Drafts, EditLockRow as Locks, EditNoticeRow as Notices};
 
 /// How often a take starts over when another writer was faster; then the caller may try again.
@@ -360,26 +362,43 @@ impl EditStore for AuthStorage {
         Ok(deleted)
     }
 
-    async fn purge_drafts(&self, before: Timestamp, now: Timestamp) -> Result<u64, StoreError> {
+    async fn purge_drafts(
+        &self,
+        before: Timestamp,
+        now: Timestamp,
+        limit: u64,
+    ) -> Result<Step, StoreError> {
         let mut transaction = self.database().begin().await?;
-        let mut drafts = Query::delete();
-        drafts
-            .from_table(Drafts::Table)
-            .and_where(Expr::col(Drafts::SavedAt).lt(to_micros(before)));
-        let gone = transaction.execute(&drafts).await?;
-        let mut notices = Query::delete();
-        notices
-            .from_table(Notices::Table)
-            .and_where(Expr::col(Notices::At).lt(to_micros(before)));
-        transaction.execute(&notices).await?;
+        let drafts = delete_limited(
+            Drafts::Table,
+            &[Drafts::Author, Drafts::Target],
+            Condition::all().add(Expr::col(Drafts::SavedAt).lt(to_micros(before))),
+            limit,
+        );
+        let drafts = Step::of(transaction.execute(&drafts).await?, limit);
+        let notices = delete_limited(
+            Notices::Table,
+            &[
+                Notices::Recipient,
+                Notices::RecordKind,
+                Notices::RecordId,
+                Notices::Part,
+                Notices::Kind,
+            ],
+            Condition::all().add(Expr::col(Notices::At).lt(to_micros(before))),
+            limit,
+        );
+        let notices = Step::of(transaction.execute(&notices).await?, limit);
         // A lock row that ran out is no lock; it stays only until somebody takes the thing again.
-        let mut locks = Query::delete();
-        locks
-            .from_table(Locks::Table)
-            .and_where(Expr::col(Locks::ExpiresAt).lt(to_micros(now)));
-        transaction.execute(&locks).await?;
+        let locks = delete_limited(
+            Locks::Table,
+            &[Locks::RecordKind, Locks::RecordId, Locks::Part],
+            Condition::all().add(Expr::col(Locks::ExpiresAt).lt(to_micros(now))),
+            limit,
+        );
+        let locks = Step::of(transaction.execute(&locks).await?, limit);
         transaction.commit().await?;
-        Ok(gone)
+        Ok(drafts.and(notices).and(locks))
     }
 
     async fn latest_version_event_about(

@@ -64,10 +64,10 @@ pub trait WorkTimesStore: SettingsStore + 'static {
         fn update_away_time(time: &AwayTime, version: i64) -> bool;
         /// Deletes an away time if it is still at `version`, and says whether it was.
         fn delete_away_time(id: AwayTimeId, version: i64) -> bool;
-        /// Deletes the away times with a last day before `before`, with the events of their
-        /// changes, the outbox entries of those and the notifications about them; the people who
-        /// lost some, with how many.
-        fn delete_old_away_times(before: Date) -> Vec<(UserId, u64)>;
+        /// Deletes at most `limit` of the away times with a last day before `before`, with the
+        /// events of their changes, the outbox entries of those and the notifications about them:
+        /// one step of the purge. The people who lost some, with how many.
+        fn delete_old_away_times(before: Date, limit: u64) -> Vec<(UserId, u64)>;
         /// Deletes everything of work times that belongs to a person: usual work days, shares and
         /// away times with their events, the outbox entries and the notifications about them. The
         /// person's choice of *Holidays* is a setting and goes through the registry; `setting_record`

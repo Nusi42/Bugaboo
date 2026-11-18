@@ -170,9 +170,10 @@ impl AuthStore for AuthStorage {
         &self,
         before: Timestamp,
         now: Timestamp,
+        limit: u64,
     ) -> Result<u64, StoreError> {
         self.database
-            .prune_security_log(&self.seal, before, now)
+            .prune_security_log(&self.seal, before, now, limit)
             .await
     }
 

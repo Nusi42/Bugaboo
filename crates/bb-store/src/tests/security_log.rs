@@ -312,6 +312,40 @@ async fn bad_example_a_removed_entry_leaves_a_gap_and_a_missing_start_is_found()
 }
 
 #[tokio::test]
+async fn priv_05_the_security_log_is_pruned_in_steps_of_whole_blocks() -> TestResult {
+    each_database("priv_05_prune_steps", async |db| {
+        let database = open(db).await?;
+        let (_folder, seal) = new_seal();
+        append_many(&database, &seal, 8).await?;
+        // A step of 4 entries takes one block of 3; the next step takes the next block.
+        assert_eq!(
+            database
+                .prune_in_blocks(&seal, at(8), at(100), 3, 4)
+                .await?,
+            3
+        );
+        assert_eq!(
+            database
+                .prune_in_blocks(&seal, at(8), at(100), 3, 4)
+                .await?,
+            3
+        );
+        assert_eq!(
+            database
+                .prune_in_blocks(&seal, at(8), at(100), 3, 4)
+                .await?,
+            0
+        );
+        assert!(matches!(
+            database.verify_security_log(&seal).await?,
+            Verification::Valid { entries: 2, .. }
+        ));
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn sec_15_old_blocks_are_deleted_and_the_rest_still_verifies() -> TestResult {
     each_database("sec_15_prune_blocks", async |db| {
         let database = open(db).await?;
@@ -319,9 +353,19 @@ async fn sec_15_old_blocks_are_deleted_and_the_rest_still_verifies() -> TestResu
         append_many(&database, &seal, 8).await?;
 
         // Nothing is older than the cut-off: nothing is deleted.
-        assert_eq!(database.prune_in_blocks(&seal, at(0), at(100), 3).await?, 0);
+        assert_eq!(
+            database
+                .prune_in_blocks(&seal, at(0), at(100), 3, u64::MAX)
+                .await?,
+            0
+        );
         // Entries 1..=7 are older; blocks 1-3 and 4-6 are whole, block 7-9 is not.
-        assert_eq!(database.prune_in_blocks(&seal, at(8), at(100), 3).await?, 6);
+        assert_eq!(
+            database
+                .prune_in_blocks(&seal, at(8), at(100), 3, u64::MAX)
+                .await?,
+            6
+        );
         let left = database.security_log_entries(0, 10).await?;
         assert_eq!(
             left.iter().map(|entry| entry.seq).collect::<Vec<_>>(),
@@ -354,7 +398,7 @@ async fn sec_15_old_blocks_are_deleted_and_the_rest_still_verifies() -> TestResu
         // The newest entry always stays, even when its block is whole and old.
         assert_eq!(
             database
-                .prune_in_blocks(&seal, at(1000), at(100), 3)
+                .prune_in_blocks(&seal, at(1000), at(100), 3, u64::MAX)
                 .await?,
             3
         );
@@ -383,13 +427,21 @@ async fn bad_example_prune_refuses_to_delete_blocks_that_do_not_verify() -> Test
 
         // A changed entry inside a block that would be deleted.
         update_entry(&database, 2, Columns::Action, "sign_in.failed".into()).await;
-        tampered(database.prune_in_blocks(&seal, at(8), at(100), 3).await);
+        tampered(
+            database
+                .prune_in_blocks(&seal, at(8), at(100), 3, u64::MAX)
+                .await,
+        );
         assert_eq!(database.security_log_entries(0, 10).await?.len(), 8);
 
         // A first kept entry that does not point to the last deleted one.
         update_entry(&database, 2, Columns::Action, "sign_in.ok".into()).await;
         update_entry(&database, 7, Columns::PreviousHash, vec![1_u8; 32].into()).await;
-        tampered(database.prune_in_blocks(&seal, at(8), at(100), 3).await);
+        tampered(
+            database
+                .prune_in_blocks(&seal, at(8), at(100), 3, u64::MAX)
+                .await,
+        );
         Ok(())
     })
     .await
@@ -401,7 +453,9 @@ async fn bad_example_a_forged_or_removed_checkpoint_is_found() -> TestResult {
         let database = open(db).await?;
         let (_folder, seal) = new_seal();
         append_many(&database, &seal, 8).await?;
-        database.prune_in_blocks(&seal, at(8), at(100), 3).await?;
+        database
+            .prune_in_blocks(&seal, at(8), at(100), 3, u64::MAX)
+            .await?;
 
         // Another installation's key cannot vouch for this one.
         let (_other_folder, other) = new_seal();
@@ -411,7 +465,7 @@ async fn bad_example_a_forged_or_removed_checkpoint_is_found() -> TestResult {
         );
         assert!(
             database
-                .prune_in_blocks(&other, at(1000), at(100), 3)
+                .prune_in_blocks(&other, at(1000), at(100), 3, u64::MAX)
                 .await
                 .is_err()
         );
@@ -589,7 +643,9 @@ async fn ops_08_a_known_head_before_the_checkpoint_makes_a_full_check() -> TestR
         let (_folder, seal) = new_seal();
         append_many(&database, &seal, 8).await?;
         let head = head_of(&database).await?;
-        database.prune_in_blocks(&seal, at(8), at(100), 3).await?;
+        database
+            .prune_in_blocks(&seal, at(8), at(100), 3, u64::MAX)
+            .await?;
         // A head from before the deleted entries cannot be followed: the answer is the one
         // of the full check.
         let early = (2, Digest::new([7; 32]));

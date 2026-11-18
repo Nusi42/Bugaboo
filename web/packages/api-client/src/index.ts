@@ -61,7 +61,6 @@ export { appPaths } from "./app-paths.generated.ts";
 export {
   handleChangeEveryDays,
   handleMax,
-  notificationKeepDays,
   notificationsAtOnceMax,
   notificationSettings,
   signUpLinkHours,

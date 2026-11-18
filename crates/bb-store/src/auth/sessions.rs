@@ -6,10 +6,11 @@ use bb_core::network::NetworkPrefix;
 use bb_core::security_log::Digest;
 use bb_core::sign_in::{SessionStage, SignInSession};
 use jiff::Timestamp;
-use sea_query::{Expr, ExprTrait as _, Order, Query};
+use sea_query::{Condition, Expr, ExprTrait as _, Order, Query};
 
 use crate::db::{StoredId, Transaction, to_micros};
 use crate::error::StoreError;
+use crate::keeping::{delete_limited, limited_rows};
 use crate::schema::SignInSession as SessionColumns;
 
 use std::collections::HashSet;
@@ -212,6 +213,7 @@ impl SessionStore for AuthStorage {
         idle_before: Timestamp,
         absolute_before: Timestamp,
         pending_before: Timestamp,
+        limit: u64,
     ) -> Result<u64, StoreError> {
         let active = Expr::col(SessionColumns::Stage)
             .eq(SessionStage::Active.code())
@@ -223,10 +225,32 @@ impl SessionStore for AuthStorage {
         let pending = Expr::col(SessionColumns::Stage)
             .eq(SessionStage::SecondStepPending.code())
             .and(Expr::col(SessionColumns::CreatedAt).lt(to_micros(pending_before)));
-        let mut delete = Query::delete();
-        delete
-            .from_table(SessionColumns::Table)
-            .and_where(active.or(pending));
+        let delete = delete_limited(
+            SessionColumns::Table,
+            &[SessionColumns::Id],
+            Condition::all().add(active.or(pending)),
+            limit,
+        );
         transaction.execute(&delete).await
+    }
+
+    async fn forget_old_networks(
+        transaction: &mut Transaction,
+        before: Timestamp,
+        limit: u64,
+    ) -> Result<u64, StoreError> {
+        let mut update = Query::update();
+        update
+            .table(SessionColumns::Table)
+            .value(SessionColumns::Network, Option::<String>::None)
+            .and_where(limited_rows(
+                SessionColumns::Table,
+                &[SessionColumns::Id],
+                Condition::all()
+                    .add(Expr::col(SessionColumns::CreatedAt).lt(to_micros(before)))
+                    .add(Expr::col(SessionColumns::Network).is_not_null()),
+                limit,
+            ));
+        transaction.execute(&update).await
     }
 }

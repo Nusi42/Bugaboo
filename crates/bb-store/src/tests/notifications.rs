@@ -8,7 +8,6 @@ use bb_app::notifications::NotificationStore;
 use bb_app::ports::ChangeStore;
 use bb_core::event::FieldChange;
 use bb_core::id::{EventId, IssueId, JobId, NotificationId, SequentialIds, UserId};
-use bb_core::job::JobState;
 use bb_core::mail::PASSWORD_SECRET;
 use bb_core::notification::{MailState, Notification, NotificationFilter, NotificationKind, Once};
 use bb_core::technical::TechnicalName;
@@ -399,9 +398,9 @@ async fn priv_05_notifications_before_the_cutoff_are_deleted_and_the_rest_stay()
         storage
             .store_notifications(&[old, new.clone()], &[], 0, at(201))
             .await?;
-        assert_eq!(storage.purge_notifications(at(150)).await?, 1);
+        assert_eq!(storage.purge_notifications(at(150), 10).await?, 1);
         assert_eq!(
-            storage.purge_notifications(at(150)).await?,
+            storage.purge_notifications(at(150), 10).await?,
             0,
             "safe to run again"
         );
@@ -417,8 +416,7 @@ async fn priv_05_notifications_before_the_cutoff_are_deleted_and_the_rest_stay()
 }
 
 #[tokio::test]
-async fn priv_05_the_payload_of_a_dead_job_is_emptied_after_its_keep_period_and_the_job_stays()
--> TestResult {
+async fn priv_05_a_dead_job_loses_its_payload_after_its_period() -> TestResult {
     each_database("priv_05_dead_payload", async |db| {
         let fixture = fixture(db).await?;
         let storage = fixture.storage.clone();
@@ -444,20 +442,21 @@ async fn priv_05_the_payload_of_a_dead_job_is_emptied_after_its_keep_period_and_
             )
             .await?;
         assert_eq!(
-            storage.clear_dead_job_payloads(at(50)).await?,
+            storage.purge_dead_jobs(at(50), 10).await?,
             0,
             "not old enough"
         );
-        assert_eq!(storage.clear_dead_job_payloads(at(1000)).await?, 1);
+        assert_eq!(storage.database().dead_jobs(10).await?.len(), 1);
+        assert_eq!(storage.purge_dead_jobs(at(1000), 10).await?, 1);
         assert_eq!(
-            storage.clear_dead_job_payloads(at(1000)).await?,
+            storage.purge_dead_jobs(at(1000), 10).await?,
             0,
             "safe to run again"
         );
-        let dead = storage.database().dead_jobs(10).await?;
-        assert_eq!(dead.len(), 1);
-        assert_eq!(dead[0].state, JobState::Dead);
-        assert!(dead[0].payload.is_null());
+        assert!(
+            storage.database().dead_jobs(10).await?.is_empty(),
+            "the job went with its payload"
+        );
         Ok(())
     })
     .await

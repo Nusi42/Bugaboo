@@ -129,7 +129,7 @@ async fn sec_12_only_sessions_nobody_can_use_are_purged() -> TestResult {
         .await?;
         let purged = change(&storage, &mut source, |tx| {
             Box::pin(
-                async move { AuthStorage::purge_sessions(tx, at(500), at(200), at(500)).await },
+                async move { AuthStorage::purge_sessions(tx, at(500), at(200), at(500), 10).await },
             )
         })
         .await?;

@@ -96,7 +96,7 @@ async fn ai_05_the_log_of_tool_calls_keeps_newest_first_and_prunes_by_time() -> 
         storage.append_tool_call(&old).await?;
         storage.append_tool_call(&new).await?;
         assert_eq!(storage.tool_calls(10).await?, vec![new.clone(), old]);
-        assert_eq!(storage.prune_tool_calls(at(50)).await?, 1);
+        assert_eq!(storage.prune_tool_calls(at(50), 10).await?, 1);
         assert_eq!(storage.tool_calls(10).await?, vec![new]);
         Ok(())
     })

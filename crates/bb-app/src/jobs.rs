@@ -19,7 +19,6 @@ use jiff::{SignedDuration, Timestamp};
 use serde_json::Value;
 
 use crate::auth::{AppError, AuthStore, Ctx, internal};
-use crate::editing::{PurgeDraftsQuery, purge_drafts};
 use crate::ports::ChangeStore;
 use crate::store_macros::{reads, writes};
 
@@ -45,9 +44,11 @@ bb_core::words! {
         /// One e-mail (`notifications`): the payload names the kind of e-mail, who gets it and
         /// about what. Queued by the reader of notifications and by signing up.
         MailSend => "mail.send",
-        /// Deleting the notifications that outlived their keep period, and the payloads of the
-        /// jobs that died before theirs ran out (PRIV-05, M1-F21).
+        /// Deleting the notifications that outlived their keep period (PRIV-05).
         PurgeNotifications => "notifications.purge",
+        /// Deleting the jobs that gave up longer ago than their keep period, with their payload
+        /// (M1-F21, ADR-0045).
+        PurgeDeadJobs => "jobs.purge-dead",
         /// Deleting the oldest blocks of the security log that outlived its keep period (M1-F21).
         PruneSecurityLog => "security-log.prune",
         /// Deleting the away times whose last day is more than a year ago, with their notes and
@@ -116,6 +117,7 @@ impl JobKind {
             | Self::RefreshStatistics
             | Self::PurgeDrafts
             | Self::PurgeNotifications
+            | Self::PurgeDeadJobs
             | Self::PruneSecurityLog
             | Self::PurgeSessions
             | Self::DeleteOldAwayTimes
@@ -141,15 +143,18 @@ impl JobKind {
     const fn rhythm(self) -> Rhythm {
         match self {
             // Its first round on a large database holds SQLite's write lock for seconds, so it is
-            // kept away from the start, when people sign in again (M5-F168).
-            // A backup copies the whole database, so it waits for the night too (ADR-0046).
-            Self::RefreshStatistics | Self::BackupsDaily => Rhythm::QuietHour,
+            // kept away from the start, when people sign in again (M5-F168). A backup copies the whole
+            // database, so it waits for the night too (ADR-0046), and so do the large purges
+            // (ADR-0045, decision 5).
+            Self::RefreshStatistics
+            | Self::BackupsDaily
+            | Self::PruneSecurityLog
+            | Self::PurgeDeadJobs => Rhythm::QuietHour,
             Self::CatchUpHistory
             | Self::CleanUpFiles
             | Self::CleanOldGrants
             | Self::PurgeDrafts
             | Self::PurgeNotifications
-            | Self::PruneSecurityLog
             | Self::PurgeSessions
             | Self::DeleteOldAwayTimes
             | Self::RotateServerLog
@@ -166,6 +171,12 @@ impl JobKind {
             | Self::DataExport
             | Self::DeleteOldExports => Rhythm::FromTheStart,
         }
+    }
+
+    /// Whether the rounds of the kind keep to the quiet hour of the organization.
+    #[must_use]
+    pub const fn keeps_to_the_quiet_hour(self) -> bool {
+        matches!(self.rhythm(), Rhythm::QuietHour)
     }
 
     /// The kinds that come back every day.
@@ -303,10 +314,10 @@ pub trait JobStore: ChangeStore + 'static {
         ) -> Option<FailureOutcome>;
         /// Whether a job of this kind waits in the queue (not dead) for a time after `after`.
         fn later_job_waits(kind: &TechnicalName, after: Timestamp) -> bool;
-        /// Empties the payload of the jobs on the dead-letter list whose last start was before
-        /// `before` (their keep period, M1-F21): it can hold the address and the text of a person.
-        /// The job stays on the list. Returns how many were emptied.
-        fn clear_dead_job_payloads(before: Timestamp) -> u64;
+        /// Deletes at most `limit` of the jobs on the dead-letter list whose last start was before
+        /// `before` (their keep period, M1-F21), with their payload, which can hold the address
+        /// and the text of a person: one step of the purge. Returns how many went.
+        fn purge_dead_jobs(before: Timestamp, limit: u64) -> u64;
         /// Puts a job in the queue on its own: for the rest of a piece of work that a job did a
         /// step of (the step is bookkeeping of a run that is stored already, not a domain change).
         fn queue_job(
@@ -456,6 +467,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             | JobKind::DeleteOldExports
             | JobKind::CatchUpHistory
             | JobKind::PurgeNotifications
+            | JobKind::PurgeDeadJobs
             | JobKind::PruneSecurityLog
             | JobKind::PurgeSessions
             | JobKind::DeleteOldAwayTimes
@@ -467,21 +479,20 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
     }
 
-    /// The daily jobs (the kinds for which [`JobKind::is_daily`] is true): old drafts, the history
-    /// catching up, old notifications, the security log, sessions, the server log, old files and
-    /// the statistics of the database. Each queues its next round first (`run_daily`).
+    /// The daily jobs (the kinds for which [`JobKind::is_daily`] is true): the jobs that delete what
+    /// outlived its keep period, all through the one shape of `keeping`, the history catching up,
+    /// the server log and the statistics of the database. Each queues its next round first
+    /// (`run_daily`).
     async fn do_daily_job(&self, job: &Job, kind: JobKind) -> Result<(), JobFailure> {
         match kind {
-            JobKind::PurgeDrafts => Box::pin(self.run_daily(JobKind::PurgeDrafts, async {
-                purge_drafts(self, PurgeDraftsQuery).await.map(|drafts| {
-                    tracing::info!(drafts, "old drafts were cleared");
-                })
-            }))
-            .await
-            .map_err(|error| {
-                tracing::warn!(cause = %error, "old drafts could not be cleared");
-                JobFailure::of(&error, FAILED, job)
-            }),
+            JobKind::PurgeDrafts
+            | JobKind::PurgeNotifications
+            | JobKind::PurgeDeadJobs
+            | JobKind::PruneSecurityLog
+            | JobKind::PurgeSessions
+            | JobKind::DeleteOldAwayTimes
+            | JobKind::CleanUpFiles
+            | JobKind::CleanOldGrants => self.keep_daily(job, kind).await,
             JobKind::CatchUpHistory => Box::pin(self.run_daily(JobKind::CatchUpHistory, async {
                 self.catch_up_history().await.map(|events| {
                     tracing::info!(events, "the history caught up with the events");
@@ -492,58 +503,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 tracing::warn!(cause = %error, "the history could not catch up");
                 JobFailure::of(&error, FAILED, job)
             }),
-            JobKind::PurgeNotifications => {
-                Box::pin(self.run_daily(JobKind::PurgeNotifications, async {
-                    self.purge_old_notifications().await.map(|purged| {
-                        tracing::info!(
-                            notifications = purged.notifications,
-                            payloads = purged.payloads,
-                            "old notifications and the payloads of dead jobs were deleted"
-                        );
-                    })
-                }))
-                .await
-                .map_err(|error| {
-                    tracing::warn!(cause = %error, "old notifications could not be deleted");
-                    JobFailure::of(&error, FAILED, job)
-                })
-            }
-            JobKind::PruneSecurityLog => {
-                Box::pin(self.run_daily(JobKind::PruneSecurityLog, async {
-                    async {
-                        let entries = self.prune_old_security_log().await?;
-                        // The log of tool calls is pruned with the security log (ADR-0013).
-                        let tool_calls = self.prune_old_tool_calls().await?;
-                        tracing::info!(entries, tool_calls, "old entries of the logs were deleted");
-                        Ok(())
-                    }
-                    .await
-                }))
-                .await
-                .map_err(|error| {
-                    tracing::warn!(cause = %error, "the security log could not be pruned");
-                    JobFailure::of(&error, FAILED, job)
-                })
-            }
-            JobKind::PurgeSessions => self.purge_sessions_daily(job).await,
-            JobKind::DeleteOldAwayTimes => self.delete_old_away_times_daily(job).await,
             JobKind::RotateServerLog => self.rotate_server_log_daily(job).await,
-            JobKind::CleanUpFiles => Box::pin(self.run_daily(JobKind::CleanUpFiles, async {
-                self.clean_up_files().await.map(|cleaned| {
-                    tracing::info!(
-                        uploads = cleaned.uploads,
-                        attachments = cleaned.attachments,
-                        files = cleaned.files,
-                        "old files were cleared"
-                    );
-                })
-            }))
-            .await
-            .map_err(|error| {
-                tracing::warn!(cause = %error, "old files could not be cleared");
-                JobFailure::of(&error, FAILED, job)
-            }),
-            JobKind::CleanOldGrants => self.clean_old_grants_daily(job).await,
             JobKind::RefreshStatistics => self.refresh_statistics_daily(job).await,
             JobKind::BackupsDaily => self.backups_daily(job).await,
             JobKind::DeleteOldExports => self.delete_old_exports_daily(job).await,
@@ -582,6 +542,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 kind @ (JobKind::PurgeDrafts
                 | JobKind::CatchUpHistory
                 | JobKind::PurgeNotifications
+                | JobKind::PurgeDeadJobs
                 | JobKind::PruneSecurityLog
                 | JobKind::PurgeSessions
                 | JobKind::DeleteOldAwayTimes
@@ -763,11 +724,17 @@ mod tests {
     }
 
     #[test]
-    fn adr_0017_only_the_statistics_and_the_backups_wait_after_the_start() {
+    fn adr_0017_only_the_statistics_the_backups_and_the_large_purges_wait_after_the_start() {
         let now = at("2026-01-10T12:00:00Z");
+        let quiet = [
+            JobKind::RefreshStatistics,
+            JobKind::BackupsDaily,
+            JobKind::PruneSecurityLog,
+            JobKind::PurgeDeadJobs,
+        ];
         for kind in JobKind::daily() {
             let first = kind.rhythm().first_round(now).unwrap();
-            if matches!(kind, JobKind::RefreshStatistics | JobKind::BackupsDaily) {
+            if quiet.contains(&kind) {
                 assert_eq!(first, now.checked_add(QUIET_KIND_AFTER_START).unwrap());
             } else {
                 assert_eq!(first, now, "{}", kind.code());

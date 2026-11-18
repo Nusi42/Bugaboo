@@ -4,12 +4,14 @@
 
 use std::future::Future;
 
-use bb_core::ai::{TOOL_CALL_KEEP_DAYS, Tool, ToolCall, ToolCaller, ToolEffect, ToolOutcome};
+use bb_core::ai::{Tool, ToolCall, ToolCaller, ToolEffect, ToolOutcome};
 use bb_core::id::{ToolCallId, UserId};
+use bb_core::keeping::KeepKind;
 use jiff::Timestamp;
 
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::fields::FieldStore;
+use crate::keeping::KEEP_STEP_ROWS;
 use crate::store_macros::reads;
 
 /// What the log of tool calls needs from storage.
@@ -17,8 +19,9 @@ pub trait ToolCallStore: FieldStore + 'static {
     reads! {
         /// Adds a row to the log.
         fn append_tool_call(call: &ToolCall) -> ();
-        /// Deletes the rows made before `before`. Returns how many went.
-        fn prune_tool_calls(before: Timestamp) -> u64;
+        /// Deletes at most `limit` of the rows made before `before`: one step of the purge.
+        /// Returns how many went.
+        fn prune_tool_calls(before: Timestamp, limit: u64) -> u64;
         /// The newest rows, newest first.
         fn tool_calls(limit: u64) -> Vec<ToolCall>;
     }
@@ -72,15 +75,12 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
     }
 
-    /// Deletes the rows of the log older than its keep period ([`TOOL_CALL_KEEP_DAYS`]). Returns
-    /// how many went.
+    /// Deletes the rows of the log older than its keep period: one step of the shape of deleting
+    /// (`keeping`). Returns how many went.
     pub(crate) async fn prune_old_tool_calls(&self) -> Result<u64, AppError> {
-        let before = self
-            .now()
-            .checked_sub(bb_core::time::days(TOOL_CALL_KEEP_DAYS))
-            .map_err(|error| AppError::Internal(error.to_string()))?;
+        let before = self.keep_cutoff(KeepKind::ToolCalls).await?;
         self.store()
-            .prune_tool_calls(before)
+            .prune_tool_calls(before, KEEP_STEP_ROWS)
             .await
             .map_err(|error| internal::<S>(&error))
     }

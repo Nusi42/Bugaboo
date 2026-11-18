@@ -270,3 +270,33 @@ const _: () = {
 pub const fn rule(kind: KeepKind) -> &'static KeepRule {
     &KEEP_KINDS[kind as usize]
 }
+
+/// What one step of deleting did (ADR-0045, decision 5): how many rows went, and whether more may be
+/// left, because a part of the step deleted as many rows as it was allowed to.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Step {
+    /// The rows deleted.
+    pub rows: u64,
+    /// Whether a part of the step reached its limit, so another step is needed.
+    pub more: bool,
+}
+
+impl Step {
+    /// One part of a step that deleted `rows` and was allowed `limit`.
+    #[must_use]
+    pub const fn of(rows: u64, limit: u64) -> Self {
+        Self {
+            rows,
+            more: rows >= limit,
+        }
+    }
+
+    /// This step and another part of it.
+    #[must_use]
+    pub const fn and(self, other: Self) -> Self {
+        Self {
+            rows: self.rows.saturating_add(other.rows),
+            more: self.more || other.more,
+        }
+    }
+}

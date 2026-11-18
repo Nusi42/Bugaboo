@@ -255,6 +255,8 @@ impl OAuthStore for FakeStore {
         now: Timestamp,
         ended_before: Timestamp,
         registered_before: Timestamp,
+        // The fake holds a handful of rows: a step takes them all.
+        _limit: u64,
     ) -> Result<OAuthCleaned, FakeError> {
         let count = |before: usize, after: usize| u64::try_from(before - after).unwrap_or(0);
         let oauth = &mut tx.state.oauth;

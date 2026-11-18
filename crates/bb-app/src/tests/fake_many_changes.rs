@@ -7,7 +7,7 @@ use bb_core::technical::TechnicalName;
 use jiff::{SignedDuration, Timestamp};
 use serde_json::Value;
 
-use super::fake::{FakeError, FakeStore, Tx};
+use super::fake::{FakeError, FakeStore, Tx, remove_at_most};
 use crate::jobs::{JOB_ATTEMPTS_MAX, JobStore};
 use crate::many_changes::ManyChangeStore;
 
@@ -142,15 +142,10 @@ impl JobStore for FakeStore {
             .any(|job| job.kind == *kind && job.state == JobState::Queued && job.run_at > after))
     }
 
-    async fn clear_dead_job_payloads(&self, before: Timestamp) -> Result<u64, FakeError> {
-        let mut emptied = 0;
-        for job in &mut self.lock().state.jobs {
-            if job.state == JobState::Dead && job.run_at < before && !job.payload.is_null() {
-                job.payload = Value::Null;
-                emptied += 1;
-            }
-        }
-        Ok(emptied)
+    async fn purge_dead_jobs(&self, before: Timestamp, limit: u64) -> Result<u64, FakeError> {
+        Ok(remove_at_most(&mut self.lock().state.jobs, limit, |job| {
+            job.state == JobState::Dead && job.run_at < before
+        }))
     }
 
     async fn queue_job(

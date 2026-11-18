@@ -21,7 +21,7 @@ pub mod history;
 mod input;
 pub mod issues;
 pub mod jobs;
-mod keeping;
+pub mod keeping;
 pub mod layouts;
 pub mod mailer;
 pub mod many_changes;

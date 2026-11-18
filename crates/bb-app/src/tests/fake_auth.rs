@@ -180,18 +180,33 @@ impl SessionStore for FakeStore {
         idle_before: Timestamp,
         absolute_before: Timestamp,
         pending_before: Timestamp,
+        limit: u64,
     ) -> Result<u64, FakeError> {
-        let before = tx.state.sessions.len();
-        tx.state.sessions.retain(|session| {
-            let stale = match session.stage {
+        Ok(remove_at_most(
+            &mut tx.state.sessions,
+            limit,
+            |session| match session.stage {
                 SessionStage::Active => {
                     session.last_seen_at < idle_before || session.created_at < absolute_before
                 }
                 SessionStage::SecondStepPending => session.created_at < pending_before,
-            };
-            !stale
-        });
-        Ok(u64::try_from(before - tx.state.sessions.len()).unwrap_or(0))
+            },
+        ))
+    }
+
+    async fn forget_old_networks(
+        tx: &mut Tx,
+        before: Timestamp,
+        limit: u64,
+    ) -> Result<u64, FakeError> {
+        let mut forgotten = 0;
+        for session in &mut tx.state.sessions {
+            if forgotten < limit && session.created_at < before && session.network.is_some() {
+                session.network = None;
+                forgotten += 1;
+            }
+        }
+        Ok(forgotten)
     }
 }
 

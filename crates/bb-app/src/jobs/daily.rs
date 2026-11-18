@@ -3,54 +3,22 @@
 use super::{AuthStore, Ctx, FAILED, Job, JobFailure, JobKind};
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// The daily round of `oauth.clean-old-grants` (in a function of its own, so `do_daily_job`
-    /// stays short).
-    pub(super) async fn clean_old_grants_daily(&self, job: &Job) -> Result<(), JobFailure> {
-        Box::pin(self.run_daily(JobKind::CleanOldGrants, async {
-            crate::auth::clean_old_grants(self).await.map(|cleaned| {
+    /// The daily round, or a further step, of a job that deletes what outlived its keep period:
+    /// the one shape of deleting by itself (`Ctx::keep_step`, ADR-0045, decision 5).
+    pub(super) async fn keep_daily(&self, job: &Job, kind: JobKind) -> Result<(), JobFailure> {
+        Box::pin(self.run_daily(kind, async {
+            self.keep_step(kind).await.map(|step| {
                 tracing::info!(
-                    secrets = cleaned.secrets,
-                    grants = cleaned.grants,
-                    clients = cleaned.clients,
-                    "old grants of AI apps were cleared"
+                    kind = kind.code(),
+                    rows = step.rows,
+                    more = step.more,
+                    "data past its keep period was deleted"
                 );
             })
         }))
         .await
         .map_err(|error| {
-            tracing::warn!(cause = %error, "old grants of AI apps could not be cleared");
-            JobFailure::of(&error, FAILED, job)
-        })
-    }
-
-    /// The daily round of `sessions.purge` (in a function of its own, so `do_daily_job` stays
-    /// short).
-    pub(super) async fn purge_sessions_daily(&self, job: &Job) -> Result<(), JobFailure> {
-        Box::pin(self.run_daily(JobKind::PurgeSessions, async {
-            self.purge_dead_sessions().await.map(|()| {
-                tracing::info!("sessions nobody can use were deleted");
-            })
-        }))
-        .await
-        .map_err(|error| {
-            tracing::warn!(cause = %error, "old sessions could not be deleted");
-            JobFailure::of(&error, FAILED, job)
-        })
-    }
-
-    /// The daily round of `work-times.delete-old-away-times` (in a function of its own, so
-    /// `do_daily_job` stays short).
-    pub(super) async fn delete_old_away_times_daily(&self, job: &Job) -> Result<(), JobFailure> {
-        Box::pin(self.run_daily(JobKind::DeleteOldAwayTimes, async {
-            crate::work_times::delete_old_away_times(self)
-                .await
-                .map(|deleted| {
-                    tracing::info!(deleted, "away times older than a year were deleted");
-                })
-        }))
-        .await
-        .map_err(|error| {
-            tracing::warn!(cause = %error, "old away times could not be deleted");
+            tracing::warn!(cause = %error, kind = kind.code(), "data past its keep period could not be deleted");
             JobFailure::of(&error, FAILED, job)
         })
     }

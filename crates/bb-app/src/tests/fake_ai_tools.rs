@@ -3,7 +3,7 @@
 use bb_core::ai::{NeverSentMark, ToolCall};
 use jiff::Timestamp;
 
-use super::fake::{FakeError, FakeStore, Tx};
+use super::fake::{FakeError, FakeStore, Tx, remove_at_most};
 use crate::ai::NeverSentStore;
 use crate::ai::tools::ToolCallStore;
 
@@ -36,11 +36,10 @@ impl ToolCallStore for FakeStore {
         Ok(())
     }
 
-    async fn prune_tool_calls(&self, before: Timestamp) -> Result<u64, FakeError> {
-        let mut shared = self.lock();
-        let kept = shared.tool_calls.len();
-        shared.tool_calls.retain(|call| call.at >= before);
-        Ok(u64::try_from(kept - shared.tool_calls.len()).unwrap_or(u64::MAX))
+    async fn prune_tool_calls(&self, before: Timestamp, limit: u64) -> Result<u64, FakeError> {
+        Ok(remove_at_most(&mut self.lock().tool_calls, limit, |call| {
+            call.at < before
+        }))
     }
 
     async fn tool_calls(&self, limit: u64) -> Result<Vec<ToolCall>, FakeError> {

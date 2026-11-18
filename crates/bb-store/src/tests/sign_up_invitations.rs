@@ -194,7 +194,7 @@ async fn gdpr_the_memory_of_an_e_mail_is_forgotten_after_the_time_it_is_needed()
         assert_eq!(storage.sign_up_mail_since(at(0)).await?, 2);
         let change = event(&mut source, 9);
         let gone = ChangeStore::record_change(&storage, &change, move |tx| {
-            Box::pin(async move { AuthStorage::forget_old_sign_up_mail(tx, at(150)).await })
+            Box::pin(async move { AuthStorage::forget_old_sign_up_mail(tx, at(150), 10).await })
         })
         .await?;
         assert_eq!(gone, 1);
@@ -225,7 +225,7 @@ async fn auth_old_finished_links_are_deleted_and_open_ones_stay() -> TestResult 
         let change = event(&mut source, 7);
         let gone = ChangeStore::record_change(&storage, &change, move |tx| {
             Box::pin(async move {
-                AuthStorage::delete_old_sign_up_invitations(tx, at(300), at(500)).await
+                AuthStorage::delete_old_sign_up_invitations(tx, at(300), at(500), 10).await
             })
         })
         .await?;

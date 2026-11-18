@@ -37,6 +37,21 @@ thread_local! {
     pub(super) static CLASH_ONCE: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
 }
 
+/// Removes at most `limit` of the rows that are `old`, the first ones in the list, as one step of a
+/// purge of the database does (`KEEP_STEP_ROWS`); returns how many went.
+pub(crate) fn remove_at_most<T>(rows: &mut Vec<T>, limit: u64, old: impl Fn(&T) -> bool) -> u64 {
+    let mut removed = 0;
+    rows.retain(|row| {
+        if removed < limit && old(row) {
+            removed += 1;
+            false
+        } else {
+            true
+        }
+    });
+    removed
+}
+
 /// The next access key that is stored is refused once, as if its public prefix were taken.
 pub(crate) fn clash_the_next_key_prefix() {
     CLASH_ONCE.set(true);

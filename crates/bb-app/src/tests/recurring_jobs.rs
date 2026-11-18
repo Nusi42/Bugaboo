@@ -45,8 +45,12 @@ fn kinds_waiting(world: &World) -> Vec<String> {
     kinds
 }
 
-/// The kinds that keep to the quiet hour: the refresh of the statistics and the backup of the day.
-const QUIET_KINDS: usize = 2;
+/// How many daily kinds keep to the quiet hour: they do not run in the round of a start.
+fn quiet() -> usize {
+    JobKind::daily()
+        .filter(|kind| kind.keeps_to_the_quiet_hour())
+        .count()
+}
 
 /// The rounds of `statistics.refresh` that wait in the queue, by when they are due.
 fn statistics_rounds(world: &World) -> Vec<jiff::Timestamp> {
@@ -70,12 +74,9 @@ async fn m3_f30_the_daily_jobs_run_at_the_start_and_come_back_every_day() -> Out
     let world = World::new().await?;
     world.ctx().start_daily_jobs().await?;
     assert_eq!(kinds_waiting(&world), every_day());
-    // At the start every kind runs but the statistics and the backup, and each leaves its next
-    // round behind, a day away.
-    assert_eq!(
-        run_all(&world).await?,
-        JobKind::daily().count() - QUIET_KINDS
-    );
+    // At the start every kind runs but the ones of the quiet hour, and each leaves its next round
+    // behind, a day away.
+    assert_eq!(run_all(&world).await?, JobKind::daily().count() - quiet());
     assert_eq!(kinds_waiting(&world), every_day());
     assert_eq!(run_all(&world).await?, 0, "the next round is not due yet");
     world.clock.advance(DAILY.as_secs() + 1);
@@ -95,14 +96,10 @@ async fn m3_f30_a_start_while_the_next_round_waits_does_not_add_a_second_chain()
     run_all(&world).await?;
     // The server starts again within the day: it runs once more at once, and the chain stays one.
     world.ctx().start_daily_jobs().await?;
-    assert_eq!(
-        run_all(&world).await?,
-        JobKind::daily().count() - QUIET_KINDS
-    );
-    // The statistics and the backup of both starts run a few minutes later, and leave one next
-    // round each.
+    assert_eq!(run_all(&world).await?, JobKind::daily().count() - quiet());
+    // The quiet kinds of both starts run a few minutes later, and leave one next round each.
     world.clock.advance(QUIET_KIND_AFTER_START.as_secs());
-    assert_eq!(run_all(&world).await?, 2 * QUIET_KINDS);
+    assert_eq!(run_all(&world).await?, 2 * quiet());
     assert_eq!(kinds_waiting(&world).len(), JobKind::daily().count());
     Ok(())
 }
@@ -125,8 +122,8 @@ async fn adr_0017_the_start_round_queues_no_statistics_refresh() -> Outcome {
     world.clock.advance(QUIET_KIND_AFTER_START.as_secs());
     assert_eq!(
         run_all(&world).await?,
-        QUIET_KINDS,
-        "a few minutes later it runs, with the backup"
+        quiet(),
+        "a few minutes later it runs, with the other quiet kinds"
     );
     let next = statistics_rounds(&world);
     let [next] = next.as_slice() else {
@@ -182,14 +179,15 @@ async fn m3_f71_the_history_job_reads_the_events_that_wait() -> Outcome {
 }
 
 #[test]
-fn m3_f30_every_job_kind_is_a_technical_name_and_twelve_come_back_every_day() {
+fn m3_f30_every_job_kind_is_a_technical_name_and_thirteen_come_back_every_day() {
     for kind in JobKind::ALL {
         assert!(kind.name().is_ok(), "{}", kind.code());
     }
     let daily: Vec<&str> = JobKind::daily().map(JobKind::code).collect();
-    assert_eq!(daily.len(), 12, "{daily:?}");
+    assert_eq!(daily.len(), 13, "{daily:?}");
     assert!(daily.contains(&"backups.daily"));
     assert!(daily.contains(&"privacy.delete-old-exports"));
+    assert!(daily.contains(&"jobs.purge-dead"));
     assert!(daily.contains(&"work-times.delete-old-away-times"));
     assert!(daily.contains(&"files.clean-up"));
     assert!(daily.contains(&"oauth.clean-old-grants"));

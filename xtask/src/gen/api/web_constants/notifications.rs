@@ -209,9 +209,6 @@ pub(crate) fn notifications(sources: &[Source], spec: &str) -> anyhow::Result<St
 export const notificationSettings = {{
 {table}}} as const;
 
-/** How many days a notification is kept before it is deleted. */
-export const notificationKeepDays = {keep};
-
 /** The most unread notifications the server counts: a count of this many means this many or more. */
 export const notificationsAtOnceMax = {at_once};
 
@@ -231,7 +228,6 @@ export const handleChangeEveryDays = {handle_days};
 export const handleMax = {handle_max};
 ",
         table = settings_table(sources, spec)?,
-        keep = number(NOTIFICATION_SOURCE, "KEEP_DAYS")?,
         at_once = number(NOTIFICATION_SOURCE, "AT_ONCE_MAX")?,
         link_hours = number(SIGN_UP_SOURCE, "HOURS")?,
         resend = number(SIGN_UP_SOURCE, "RESEND_AFTER_MINUTES")?,

@@ -66,9 +66,9 @@ pub trait NotificationStore: FollowStore + CommentStore + 'static {
         fn put_mail_password(secret: &[u8], at: Timestamp) -> ();
         /// Deletes the password of the mail server.
         fn delete_mail_password() -> ();
-        /// Deletes the notifications that happened before `before` (the keep period, PRIV-05).
-        /// Returns how many went.
-        fn purge_notifications(before: Timestamp) -> u64;
+        /// Deletes at most `limit` of the notifications that happened before `before` (the keep
+        /// period, PRIV-05): one step of the purge. Returns how many went.
+        fn purge_notifications(before: Timestamp, limit: u64) -> u64;
     }
 
     writes! {

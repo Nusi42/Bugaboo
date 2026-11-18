@@ -4,11 +4,12 @@
 use bb_core::edit::{Draft, DraftTarget, EditLock, EditNotice, EditWhat, Hold, Taking};
 use bb_core::event::{DomainEvent, EntityRef};
 use bb_core::id::UserId;
+use bb_core::keeping::Step;
 use bb_core::version::Version;
 use jiff::Timestamp;
 use std::sync::atomic::Ordering;
 
-use super::fake::{FakeError, FakeStore, State, Tx};
+use super::fake::{FakeError, FakeStore, State, Tx, remove_at_most};
 use crate::editing::EditStore;
 
 fn lock_on<'a>(state: &'a State, what: &EditWhat) -> Option<&'a EditLock> {
@@ -102,13 +103,20 @@ impl EditStore for FakeStore {
         Ok(remove_draft(&mut self.lock().state, author, target))
     }
 
-    async fn purge_drafts(&self, before: Timestamp, now: Timestamp) -> Result<u64, FakeError> {
+    async fn purge_drafts(
+        &self,
+        before: Timestamp,
+        now: Timestamp,
+        limit: u64,
+    ) -> Result<Step, FakeError> {
         let mut shared = self.lock();
-        shared.state.locks.retain(|lock| !lock.has_expired(now));
-        let drafts = shared.state.drafts.len();
-        shared.state.drafts.retain(|draft| draft.saved_at >= before);
-        shared.state.notices.retain(|notice| notice.at >= before);
-        Ok(u64::try_from(drafts - shared.state.drafts.len()).unwrap_or(u64::MAX))
+        let state = &mut shared.state;
+        let locks = remove_at_most(&mut state.locks, limit, |lock| lock.has_expired(now));
+        let drafts = remove_at_most(&mut state.drafts, limit, |draft| draft.saved_at < before);
+        let notices = remove_at_most(&mut state.notices, limit, |notice| notice.at < before);
+        Ok(Step::of(drafts, limit)
+            .and(Step::of(notices, limit))
+            .and(Step::of(locks, limit)))
     }
 
     async fn latest_version_event_about(

@@ -449,8 +449,9 @@ impl WorkTimesStore for AuthStorage {
     async fn delete_old_away_times(
         transaction: &mut Transaction,
         before: Date,
+        limit: u64,
     ) -> Result<Vec<(UserId, u64)>, StoreError> {
-        old::delete(transaction, before).await
+        old::delete(transaction, before, limit).await
     }
 
     async fn delete_work_times_of(

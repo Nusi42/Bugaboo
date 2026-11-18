@@ -87,14 +87,13 @@ impl AuthStore for FakeStore {
         &self,
         before: Timestamp,
         _now: Timestamp,
+        limit: u64,
     ) -> Result<u64, FakeError> {
         let mut shared = self.lock();
         let newest = shared.log.last().map(|event| event.time);
-        let kept = shared.log.len();
-        shared
-            .log
-            .retain(|event| event.time >= before || Some(event.time) == newest);
-        Ok(u64::try_from(kept - shared.log.len()).unwrap_or(u64::MAX))
+        Ok(remove_at_most(&mut shared.log, limit, |event| {
+            event.time < before && Some(event.time) != newest
+        }))
     }
 
     /// The fake keeps no statistics.

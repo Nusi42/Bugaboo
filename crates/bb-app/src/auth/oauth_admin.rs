@@ -154,8 +154,9 @@ pub async fn remove_web_address<S: AuthStore>(
     Ok(Done)
 }
 
-/// The daily clean-up (`oauth.clean-old-grants`): codes and tokens that ran out, grants that ended
-/// or ran out long ago, and apps that registered and were never allowed. While AI apps are off
+/// One step of the daily clean-up (`oauth.clean-old-grants`, the shape of `keeping`): codes and
+/// tokens that ran out, grants that ended or ran out long ago, and apps that registered and were
+/// never allowed. While AI apps are off
 /// nothing is deleted and the days without use do not count, as ADR-0042 says.
 ///
 /// # Errors
@@ -185,7 +186,14 @@ pub async fn clean_old_grants<S: AuthStore>(
         .record_change(&event, move |transaction| {
             Box::pin(async move {
                 if apps_on {
-                    S::clean_oauth(transaction, now, ended_before, registered_before).await
+                    S::clean_oauth(
+                        transaction,
+                        now,
+                        ended_before,
+                        registered_before,
+                        crate::keeping::KEEP_STEP_ROWS,
+                    )
+                    .await
                 } else {
                     S::pause_unused_tokens(transaction, now)
                         .await

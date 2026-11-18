@@ -12,6 +12,7 @@ use sea_query::{Condition, Expr, ExprTrait as _, Order, Query};
 use crate::auth::AuthStorage;
 use crate::db::{Row, StoredId as _, Transaction, to_micros};
 use crate::error::StoreError;
+use crate::keeping::delete_limited;
 use crate::schema::{NeverSentRow, ToolCallRow};
 
 const MARK_COLUMNS: [NeverSentRow; 4] = [
@@ -159,11 +160,13 @@ impl ToolCallStore for AuthStorage {
         self.database().execute(&insert).await.map(|_| ())
     }
 
-    async fn prune_tool_calls(&self, before: Timestamp) -> Result<u64, StoreError> {
-        let mut delete = Query::delete();
-        delete
-            .from_table(ToolCallRow::Table)
-            .and_where(Expr::col(ToolCallRow::At).lt(to_micros(before)));
+    async fn prune_tool_calls(&self, before: Timestamp, limit: u64) -> Result<u64, StoreError> {
+        let delete = delete_limited(
+            ToolCallRow::Table,
+            &[ToolCallRow::Id],
+            Condition::all().add(Expr::col(ToolCallRow::At).lt(to_micros(before))),
+            limit,
+        );
         self.database().execute(&delete).await
     }
 

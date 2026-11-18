@@ -18,6 +18,7 @@ use sea_query::{Cond, Expr, ExprTrait as _, Func, Order, Query};
 use crate::auth::AuthStorage;
 use crate::db::{Row, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
+use crate::keeping::delete_limited;
 use crate::schema::{
     Computed, OAuthClientRow, OAuthCodeRow, OAuthGrantProjectRow, OAuthGrantRow, OAuthTokenRow,
     OAuthWebAddressRow,
@@ -597,6 +598,7 @@ impl OAuthStore for AuthStorage {
         now: Timestamp,
         ended_before: Timestamp,
         registered_before: Timestamp,
+        limit: u64,
     ) -> Result<OAuthCleaned, StoreError> {
         // Apps are on: what waited has stopped waiting.
         let mut resume = Query::update();
@@ -605,14 +607,18 @@ impl OAuthStore for AuthStorage {
             .value(OAuthTokenRow::PausedAt, Option::<i64>::None)
             .and_where(Expr::col(OAuthTokenRow::PausedAt).is_not_null());
         transaction.execute(&resume).await?;
-        let mut codes = Query::delete();
-        codes
-            .from_table(OAuthCodeRow::Table)
-            .and_where(Expr::col(OAuthCodeRow::ExpiresAt).lte(to_micros(now)));
-        let mut tokens = Query::delete();
-        tokens
-            .from_table(OAuthTokenRow::Table)
-            .and_where(Expr::col(OAuthTokenRow::ExpiresAt).lte(to_micros(now)));
+        let codes = delete_limited(
+            OAuthCodeRow::Table,
+            &[OAuthCodeRow::SecretHash],
+            Cond::all().add(Expr::col(OAuthCodeRow::ExpiresAt).lte(to_micros(now))),
+            limit,
+        );
+        let tokens = delete_limited(
+            OAuthTokenRow::Table,
+            &[OAuthTokenRow::SecretHash],
+            Cond::all().add(Expr::col(OAuthTokenRow::ExpiresAt).lte(to_micros(now))),
+            limit,
+        );
         let secrets = transaction.execute(&codes).await? + transaction.execute(&tokens).await?;
         // The projects, codes and tokens of a grant that is deleted go first.
         let mut old = Query::select();
@@ -622,7 +628,9 @@ impl OAuthStore for AuthStorage {
                 Cond::any()
                     .add(Expr::col(OAuthGrantRow::EndedAt).lte(to_micros(ended_before)))
                     .add(Expr::col(OAuthGrantRow::EndsAt).lte(to_micros(ended_before))),
-            );
+            )
+            .order_by(OAuthGrantRow::Id, Order::Asc)
+            .limit(limit);
         let mut gone = Vec::new();
         for row in transaction.fetch_all(&old).await? {
             gone.push(row.id::<GrantId>(OAuthGrantRow::Id)?.stored());
@@ -644,11 +652,14 @@ impl OAuthStore for AuthStorage {
         let mut held = Query::select();
         held.column(OAuthGrantRow::Client)
             .from(OAuthGrantRow::Table);
-        let mut unused = Query::delete();
-        unused
-            .from_table(OAuthClientRow::Table)
-            .and_where(Expr::col(OAuthClientRow::RegisteredAt).lte(to_micros(registered_before)))
-            .and_where(Expr::col(OAuthClientRow::Id).not_in_subquery(held));
+        let unused = delete_limited(
+            OAuthClientRow::Table,
+            &[OAuthClientRow::Id],
+            Cond::all()
+                .add(Expr::col(OAuthClientRow::RegisteredAt).lte(to_micros(registered_before)))
+                .add(Expr::col(OAuthClientRow::Id).not_in_subquery(held)),
+            limit,
+        );
         let clients = transaction.execute(&unused).await?;
         Ok(OAuthCleaned {
             secrets,

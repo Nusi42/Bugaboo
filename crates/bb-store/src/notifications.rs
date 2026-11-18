@@ -17,7 +17,7 @@ use bb_core::notification::{
 };
 use bb_core::technical::TechnicalName;
 use jiff::Timestamp;
-use sea_query::{Expr, ExprTrait as _, OnConflict, Order, Query, SubQueryStatement};
+use sea_query::{Condition, Expr, ExprTrait as _, OnConflict, Order, Query, SubQueryStatement};
 use zeroize::Zeroizing;
 
 use crate::auth::AuthStorage;
@@ -25,6 +25,7 @@ use crate::db::{Database, Row, StoredId, Transaction, to_micros};
 use crate::error::{SecretProblem, StoreError};
 use crate::events::{consumer_name, outbox_move};
 use crate::jobs::{NewJob, enqueue};
+use crate::keeping::delete_limited;
 use crate::schema::NotificationRow;
 
 fn password_name() -> Result<TechnicalName, StoreError> {
@@ -326,11 +327,13 @@ impl NotificationStore for AuthStorage {
             .map(|_| ())
     }
 
-    async fn purge_notifications(&self, before: Timestamp) -> Result<u64, StoreError> {
-        let mut delete = Query::delete();
-        delete
-            .from_table(NotificationRow::Table)
-            .and_where(Expr::col(NotificationRow::At).lt(to_micros(before)));
+    async fn purge_notifications(&self, before: Timestamp, limit: u64) -> Result<u64, StoreError> {
+        let delete = delete_limited(
+            NotificationRow::Table,
+            &[NotificationRow::Id],
+            Condition::all().add(Expr::col(NotificationRow::At).lt(to_micros(before))),
+            limit,
+        );
         self.database().execute(&delete).await
     }
 

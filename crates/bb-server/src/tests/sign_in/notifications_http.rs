@@ -9,7 +9,7 @@ use bb_app::access::StartingRole;
 use bb_app::auth::RequestInfo;
 use bb_app::notifications::NotificationStore as _;
 use bb_core::job::JobState;
-use bb_core::notification::KEEP_DAYS;
+use bb_core::settings::keeping::KEEPING_NOTIFICATION_DAYS;
 use bb_core::time::SECONDS_PER_DAY;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
@@ -433,7 +433,14 @@ async fn priv_05_notifications_go_after_90_days() -> TestResult {
             1,
             "it is not old yet"
         );
-        rig.clock.advance((KEEP_DAYS + 1) * SECONDS_PER_DAY);
+        rig.clock.advance(
+            (KEEPING_NOTIFICATION_DAYS
+                .definition()
+                .default_integer()
+                .unwrap_or_default()
+                + 1)
+                * SECONDS_PER_DAY,
+        );
         // A session lasts a day at most: sign in again.
         let mut ada = Browser::signed_in_as(&app, super::http::ADA_EMAIL).await?;
         rig.run_jobs().await?;
@@ -452,10 +459,14 @@ async fn adr_0017_every_keep_and_delete_job_runs_again_with_nothing_more_to_dele
             .await
             .map_err(|error| error.to_string())?;
         let first = rig.run_jobs().await?;
-        // Every kind but the statistics and the backup, which run a few minutes after the start.
-        assert_eq!(first, bb_app::jobs::JobKind::daily().count() - 2);
+        // Every kind but the ones of the quiet hour (the statistics, the backup and the large
+        // purges), which run a few minutes after the start.
+        let quiet = bb_app::jobs::JobKind::daily()
+            .filter(|kind| kind.keeps_to_the_quiet_hour())
+            .count();
+        assert_eq!(first, bb_app::jobs::JobKind::daily().count() - quiet);
         // A day later every kind runs (once more), and none of them fails or leaves a dead job.
-        // The statistics and the backup run here for the first time; their second round is held by
+        // The quiet kinds run here for the first time; the second round of the statistics is held by
         // `adr_0017_the_statistics_job_writes_no_event_and_its_next_round_does_nothing`.
         rig.clock.advance(SECONDS_PER_DAY + 1);
         assert_eq!(

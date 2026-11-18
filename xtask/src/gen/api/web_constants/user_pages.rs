@@ -118,7 +118,17 @@ fn notification_numbers(sources: &[Source]) -> anyhow::Result<String> {
     let rows = vec![
         vec![
             "A notification is kept".to_owned(),
-            counted(of(NOTIFICATION_SOURCE, "KEEP_DAYS")?, "day", "days"),
+            // The keep period is a setting (ADR-0045); the page names its starting value.
+            counted(
+                u128::try_from(
+                    bb_core::settings::keeping::KEEPING_NOTIFICATION_DAYS
+                        .definition()
+                        .default_integer()
+                        .unwrap_or_default(),
+                )?,
+                "day",
+                "days",
+            ),
         ],
         vec![
             "The number on the menu counts up to".to_owned(),
@@ -494,7 +504,6 @@ mod tests {
             file(
                 NOTIFICATION_SOURCE,
                 &[
-                    ("KEEP_DAYS", 90),
                     ("AT_ONCE_MAX", 100),
                     ("MAIL_BATCH_SECONDS", 300),
                     ("MAIL_BATCH_SECONDS_MAX", 24 * 60 * 60),

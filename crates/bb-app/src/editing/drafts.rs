@@ -11,6 +11,7 @@ use std::sync::Arc;
 use bb_core::ErrorCode;
 use bb_core::edit::{DRAFT_TEXT_MAX, DRAFTS_PER_AUTHOR_MAX, Draft, DraftTarget, draft_cutoff};
 use bb_core::id::UserId;
+use bb_core::keeping::Step;
 use bb_policy::{Authorized, Evaluation, Place};
 use jiff::Timestamp;
 
@@ -21,6 +22,7 @@ use super::types::{
 };
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, Done, internal};
+use crate::keeping::KEEP_STEP_ROWS;
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// The moment before which a draft is too old to be read or kept.
@@ -148,18 +150,18 @@ pub async fn throw_away_draft<S: AuthStore>(
     Ok(Done)
 }
 
-/// Deletes the drafts, the notes for people who were editing, and the lock rows that ran out.
-/// What the background job of the kind `editing.purge-drafts` does (ADR-0017); safe to run again.
-/// Returns how many drafts went.
+/// One step of deleting the drafts, the notes for people who were editing, and the lock rows that
+/// ran out: what the background job of the kind `editing.purge-drafts` does (ADR-0017, ADR-0045);
+/// safe to run again.
 ///
 /// # Errors
 /// The error of the store.
 pub async fn purge_drafts<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     _input: PurgeDraftsQuery,
-) -> Result<u64, AppError> {
+) -> Result<Step, AppError> {
     ctx.store()
-        .purge_drafts(ctx.draft_not_before()?, ctx.now())
+        .purge_drafts(ctx.draft_not_before()?, ctx.now(), KEEP_STEP_ROWS)
         .await
         .map_err(|error| internal::<S>(&error))
 }

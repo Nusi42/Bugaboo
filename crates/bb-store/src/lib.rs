@@ -31,6 +31,7 @@ mod handles;
 mod history;
 mod issues;
 mod jobs;
+mod keeping;
 mod keys;
 mod layout;
 mod layouts;

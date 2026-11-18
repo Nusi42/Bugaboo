@@ -153,20 +153,22 @@ fn before(now: Timestamp, seconds: i64) -> Timestamp {
     Timestamp::from_second(now.as_second().saturating_sub(seconds)).unwrap_or(now)
 }
 
-/// Removes the sessions nobody can use any more, inside a change that is happening anyway.
+/// Removes at most `limit` of the sessions nobody can use any more, inside a change that is
+/// happening anyway. Returns how many went.
 pub(crate) async fn purge<S: AuthStore>(
     transaction: &mut S::Transaction,
     settings: &super::store::AuthSettings,
     now: Timestamp,
-) -> Result<(), S::Error> {
+    limit: u64,
+) -> Result<u64, S::Error> {
     S::purge_sessions(
         transaction,
         before(now, settings.session_idle_minutes.saturating_mul(60)),
         before(now, settings.session_absolute_hours.saturating_mul(3600)),
         before(now, super::request_session::PENDING_SECONDS),
+        limit,
     )
     .await
-    .map(|_| ())
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -267,7 +269,13 @@ pub async fn sign_in<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignIn) -> Result<St
     store
         .record_change(&event, move |transaction| {
             Box::pin(async move {
-                purge::<S>(transaction, &purge_settings, now).await?;
+                purge::<S>(
+                    transaction,
+                    &purge_settings,
+                    now,
+                    crate::keeping::KEEP_STEP_ROWS,
+                )
+                .await?;
                 if let Some(old) = old {
                     S::delete_session(transaction, old).await?;
                 }

@@ -15,14 +15,16 @@ use bb_core::work_times::away_cutoff;
 use serde_json::json;
 
 use crate::auth::{AppError, AuthStore, Ctx, Stops, change_failed, fixed_entity, set_to};
+use crate::keeping::KEEP_STEP_ROWS;
 use crate::member::work_times as member;
 
 /// The name of the one record the events of this job are about: a record of its own, with no
 /// person in it.
 const JOB_RECORD: &str = "away-times-job";
 
-/// Deletes the away times whose last day is more than one year before today, and returns how many
-/// went. Idempotent: a second run on the same day finds nothing.
+/// Deletes the away times whose last day is more than one year before today, one step of at most
+/// `KEEP_STEP_ROWS` (the shape of `keeping`), and returns how many went. Idempotent: a run that
+/// deleted the last of them leaves nothing for the next.
 ///
 /// # Errors
 /// An internal error when the store fails.
@@ -38,7 +40,7 @@ pub async fn delete_old_away_times<S: AuthStore>(ctx: &Ctx<'_, S>) -> Result<u64
         .store()
         .record_changes(&[], move |transaction| {
             Box::pin(async move {
-                let deleted = S::delete_old_away_times(transaction, before).await?;
+                let deleted = S::delete_old_away_times(transaction, before, KEEP_STEP_ROWS).await?;
                 let total: u64 = deleted.iter().map(|(_, count)| *count).sum();
                 if total > 0 {
                     let event = maker

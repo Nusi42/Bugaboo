@@ -8,13 +8,13 @@
 
 use jiff::{SignedDuration, Timestamp};
 
-use crate::settings::{AGENTS_HAND_OVER_DAYS, AGENTS_RULE_DAYS, DefaultValue, SettingDefinition};
+use crate::settings::{AGENTS_HAND_OVER_DAYS, AGENTS_RULE_DAYS, SettingDefinition};
 
 /// The default of a whole-number setting, or 0 for a setting that is none.
 const fn default_days(definition: &SettingDefinition) -> i64 {
-    match definition.default() {
-        DefaultValue::Integer(days) => days,
-        _ => 0,
+    match definition.default_integer() {
+        Some(days) => days,
+        None => 0,
     }
 }
 

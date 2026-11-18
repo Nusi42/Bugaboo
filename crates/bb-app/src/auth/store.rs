@@ -204,13 +204,18 @@ pub trait SessionStore: ChangeStore + 'static {
         fn delete_session(id: SessionId) -> bool;
         /// Removes all sessions of a person, except one if given. Returns how many went.
         fn delete_sessions_of(person: UserId, except: Option<SessionId>) -> u64;
-        /// Removes sessions nobody can use any more: active ones idle since before `idle_before`
-        /// or started before `absolute_before`, and pending ones started before `pending_before`.
+        /// Removes at most `limit` of the sessions nobody can use any more: active ones idle since
+        /// before `idle_before` or started before `absolute_before`, and pending ones started
+        /// before `pending_before`. One step of the purge; returns how many went.
         fn purge_sessions(
             idle_before: Timestamp,
             absolute_before: Timestamp,
-            pending_before: Timestamp
+            pending_before: Timestamp,
+            limit: u64
         ) -> u64;
+        /// Forgets the shortened network address of at most `limit` of the sessions started before
+        /// `before` (the keep period of IP addresses, ADR-0045). One step; returns how many.
+        fn forget_old_networks(before: Timestamp, limit: u64) -> u64;
     }
 }
 
@@ -412,8 +417,9 @@ pub trait AuthStore:
         /// Adds an entry to the security log.
         fn append_security_log(event: &SecurityEvent) -> ();
         /// Deletes the oldest whole blocks of the security log whose entries are all older than
-        /// `before`, and signs the checkpoint they leave (M1-F21). Returns how many entries went.
-        fn prune_security_log(before: Timestamp, now: Timestamp) -> u64;
+        /// `before`, as many as fit in `limit` entries but at least one, and signs the checkpoint
+        /// they leave (M1-F21): one step of the purge. Returns how many entries went.
+        fn prune_security_log(before: Timestamp, now: Timestamp, limit: u64) -> u64;
         /// Makes the statistics the database chooses its indexes by again, from every row, for each
         /// table that is out of date. Returns whether it analysed a table.
         fn refresh_statistics() -> bool;

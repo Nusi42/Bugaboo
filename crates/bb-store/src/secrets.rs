@@ -609,7 +609,9 @@ mod tests {
                     )
                     .await?;
             }
-            database.prune_in_blocks(&seal, at(100), at(100), 3).await?;
+            database
+                .prune_in_blocks(&seal, at(100), at(100), 3, u64::MAX)
+                .await?;
 
             assert_eq!(database.rotate_master_key(&ring, at(5)).await?, 3);
             assert_eq!(ring.ids()?, [name("k2")], "k1 is not used any more");

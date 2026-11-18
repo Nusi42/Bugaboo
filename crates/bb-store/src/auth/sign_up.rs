@@ -14,6 +14,7 @@ use super::AuthStorage;
 use super::digest;
 use crate::db::{Row, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
+use crate::keeping::delete_limited;
 use crate::schema::SignUpInvitationRow as Columns;
 use crate::schema::SignUpMailRow as Mail;
 
@@ -163,26 +164,33 @@ impl SignUpStore for AuthStorage {
         transaction: &mut Transaction,
         before: Timestamp,
         now: Timestamp,
+        limit: u64,
     ) -> Result<u64, StoreError> {
         let finished = Cond::any()
             .add(Expr::col(Columns::UsedAt).is_not_null())
             .add(Expr::col(Columns::ExpiresAt).lte(to_micros(now)));
-        let mut delete = Query::delete();
-        delete
-            .from_table(Columns::Table)
-            .and_where(Expr::col(Columns::CreatedAt).lt(to_micros(before)))
-            .cond_where(finished);
+        let delete = delete_limited(
+            Columns::Table,
+            &[Columns::Id],
+            Cond::all()
+                .add(Expr::col(Columns::CreatedAt).lt(to_micros(before)))
+                .add(finished),
+            limit,
+        );
         transaction.execute(&delete).await
     }
 
     async fn forget_old_sign_up_mail(
         transaction: &mut Transaction,
         before: Timestamp,
+        limit: u64,
     ) -> Result<u64, StoreError> {
-        let mut forget = Query::delete();
-        forget
-            .from_table(Mail::Table)
-            .and_where(Expr::col(Mail::SentAt).lt(to_micros(before)));
+        let forget = delete_limited(
+            Mail::Table,
+            &[Mail::Address],
+            Cond::all().add(Expr::col(Mail::SentAt).lt(to_micros(before))),
+            limit,
+        );
         transaction.execute(&forget).await
     }
 }

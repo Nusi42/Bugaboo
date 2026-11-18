@@ -273,6 +273,16 @@ impl SettingDefinition {
             .join(",")
     }
 
+    /// The default of a whole-number setting, or `None` for another type: for the constants that
+    /// name a default once, here.
+    #[must_use]
+    pub const fn default_integer(&self) -> Option<i64> {
+        match self.default {
+            DefaultValue::Integer(value) => Some(value),
+            DefaultValue::Bool(_) | DefaultValue::Text(_) => None,
+        }
+    }
+
     /// The smallest and the largest value a whole-number setting may have, if it is bounded. A
     /// value outside is refused when it is stored, and cut to the bounds when it is read (a
     /// session that lasts a second, or a year, is a mistake).

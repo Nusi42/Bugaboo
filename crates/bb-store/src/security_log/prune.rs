@@ -16,10 +16,11 @@ use super::checkpoint::{
 use super::rows::{PAGE, last_entry, read_page};
 
 impl Database {
-    /// Deletes the oldest whole blocks whose entries are all older than `before`, and signs a
-    /// checkpoint for what was deleted. At least one newer entry always stays. The blocks to be
-    /// deleted and the link to the first entry kept are verified first, in the same transaction.
-    /// Returns how many entries were deleted.
+    /// Deletes the oldest whole blocks whose entries are all older than `before`, as many as fit
+    /// in `limit` entries but always one when one is old (one step of the purge, ADR-0045), and
+    /// signs a checkpoint for what was deleted. At least one newer entry always stays. The blocks
+    /// to be deleted and the link to the first entry kept are verified first, in the same
+    /// transaction. Returns how many entries were deleted.
     ///
     /// # Errors
     /// Fails with [`SecretProblem::Tampered`] when the existing checkpoint, the blocks or the
@@ -29,8 +30,10 @@ impl Database {
         seal: &LogSeal,
         before: Timestamp,
         now: Timestamp,
+        limit: u64,
     ) -> Result<u64, StoreError> {
-        self.prune_in_blocks(seal, before, now, BLOCK_SIZE).await
+        self.prune_in_blocks(seal, before, now, BLOCK_SIZE, limit)
+            .await
     }
 
     /// [`Self::prune_security_log`] with a block size; the tests use a small one. The size must
@@ -41,6 +44,7 @@ impl Database {
         before: Timestamp,
         now: Timestamp,
         block_size: i64,
+        limit: u64,
     ) -> Result<u64, StoreError> {
         let tampered = || StoreError::Secret(SecretProblem::Tampered);
         let mut transaction = self.begin().await?;
@@ -56,6 +60,8 @@ impl Database {
         let mut next_first = checkpoint
             .as_ref()
             .map_or(1, |checkpoint| checkpoint.seq + 1);
+        let step_first = next_first;
+        let most = i64::try_from(limit).unwrap_or(i64::MAX);
 
         let block = Expr::col(Columns::Seq).sub(1_i64).div(block_size);
         let mut blocks = Query::select();
@@ -74,6 +80,10 @@ impl Database {
             let newest: i64 = row.get(Computed::Newest)?;
             let whole = first == next_first && last - first + 1 == block_size;
             if !(whole && last < head && newest < to_micros(before)) {
+                break;
+            }
+            // A step deletes whole blocks up to its limit, and always the first old one.
+            if delete_up_to.is_some() && last - step_first + 1 > most {
                 break;
             }
             delete_up_to = Some(last);

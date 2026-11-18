@@ -190,9 +190,12 @@ impl WorkTimesStore for FakeStore {
     async fn delete_old_away_times(
         tx: &mut Tx,
         before: Date,
+        limit: u64,
     ) -> Result<Vec<(UserId, u64)>, FakeError> {
         let mut found: Vec<(UserId, u64)> = Vec::new();
-        for time in tx.state.away_times.iter().filter(|time| time.last < before) {
+        let step = usize::try_from(limit).unwrap_or(usize::MAX);
+        let old = |time: &&AwayTime| time.last < before;
+        for time in tx.state.away_times.iter().filter(old).take(step) {
             match found.iter_mut().find(|(person, _)| *person == time.person) {
                 Some((_, count)) => *count += 1,
                 None => found.push((time.person, 1)),
@@ -203,10 +206,13 @@ impl WorkTimesStore for FakeStore {
             .state
             .away_times
             .iter()
-            .filter(|time| time.last < before)
+            .filter(old)
+            .take(step)
             .map(|time| time.id.into())
             .collect();
-        tx.state.away_times.retain(|time| time.last >= before);
+        tx.state
+            .away_times
+            .retain(|time| !doomed.contains(&time.id.into()));
         tx.state.notifications.retain(|row| {
             row.kind != NotificationKind::WorkTimesChanged
                 || row.record.is_none_or(|record| !doomed.contains(&record))

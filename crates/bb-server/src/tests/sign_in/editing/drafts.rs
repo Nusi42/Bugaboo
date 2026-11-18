@@ -132,10 +132,10 @@ async fn iss_11_a_draft_goes_after_save_and_after_its_keep_period() -> TestResul
         // The job deletes it, and a second run finds nothing to do.
         let ctx = stage.rig().services.ctx(Rig::info());
         let gone = bb_app::editing::purge_drafts(&ctx, bb_app::editing::PurgeDraftsQuery).await?;
-        assert_eq!(gone, 1);
+        assert_eq!(gone.rows, 1);
         assert!(stored(stage.cleo.id).await?.is_none());
         let again = bb_app::editing::purge_drafts(&ctx, bb_app::editing::PurgeDraftsQuery).await?;
-        assert_eq!(again, 0);
+        assert_eq!(again.rows, 0);
         Ok(())
     })
     .await

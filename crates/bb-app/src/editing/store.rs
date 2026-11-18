@@ -13,6 +13,7 @@ use std::future::Future;
 use bb_core::edit::{Draft, DraftTarget, EditLock, EditNotice, EditWhat, Hold, Taking};
 use bb_core::event::{DomainEvent, EntityRef};
 use bb_core::id::UserId;
+use bb_core::keeping::Step;
 use bb_core::version::Version;
 use jiff::Timestamp;
 
@@ -56,10 +57,10 @@ pub trait EditStore: ChangeStore + 'static {
         fn save_draft(draft: &Draft, keep: u64) -> ();
         /// Deletes the draft of a person for a target; `false` when there was none.
         fn delete_draft(author: UserId, target: &DraftTarget) -> bool;
-        /// Deletes the drafts last changed before `before`, the notes of the same age, and the
-        /// lock rows that ran out at `now`, so nothing outlives its keep period. Returns how many
-        /// drafts went.
-        fn purge_drafts(before: Timestamp, now: Timestamp) -> u64;
+        /// Deletes at most `limit` each of the drafts last changed before `before`, the notes of
+        /// the same age, and the lock rows that ran out at `now`, so nothing outlives its keep
+        /// period: one step of the purge.
+        fn purge_drafts(before: Timestamp, now: Timestamp, limit: u64) -> Step;
         /// The newest event about a record that counted its version up (`DomainEvent::
         /// counted_version`), however far back it is: where the conflict finds who changed the
         /// record last, when, and what.

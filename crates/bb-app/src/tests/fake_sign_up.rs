@@ -6,7 +6,7 @@ use bb_core::sign_in::Invitation;
 use bb_core::sign_up_invitation::{SignUpInvitation, SignUpMail};
 use jiff::Timestamp;
 
-use super::fake::{FakeError, FakeStore, Tx};
+use super::fake::{FakeError, FakeStore, Tx, remove_at_most};
 use crate::auth::SignUpStore;
 
 impl FakeStore {
@@ -78,19 +78,24 @@ impl SignUpStore for FakeStore {
         tx: &mut Tx,
         before: Timestamp,
         now: Timestamp,
+        limit: u64,
     ) -> Result<u64, FakeError> {
-        let count = tx.state.sign_up_invitations.len();
-        tx.state.sign_up_invitations.retain(|known| {
-            !(known.created_at < before && (known.used_at.is_some() || known.expires_at <= now))
-        });
-        Ok(u64::try_from(count - tx.state.sign_up_invitations.len()).unwrap_or(u64::MAX))
+        Ok(remove_at_most(
+            &mut tx.state.sign_up_invitations,
+            limit,
+            |known| {
+                known.created_at < before && (known.used_at.is_some() || known.expires_at <= now)
+            },
+        ))
     }
 
-    async fn forget_old_sign_up_mail(tx: &mut Tx, before: Timestamp) -> Result<u64, FakeError> {
-        let count = tx.state.sign_up_mail.len();
-        tx.state
-            .sign_up_mail
-            .retain(|known| known.sent_at >= before);
-        Ok(u64::try_from(count - tx.state.sign_up_mail.len()).unwrap_or(u64::MAX))
+    async fn forget_old_sign_up_mail(
+        tx: &mut Tx,
+        before: Timestamp,
+        limit: u64,
+    ) -> Result<u64, FakeError> {
+        Ok(remove_at_most(&mut tx.state.sign_up_mail, limit, |known| {
+            known.sent_at < before
+        }))
     }
 }

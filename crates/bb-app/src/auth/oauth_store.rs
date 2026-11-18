@@ -91,12 +91,14 @@ pub trait OAuthStore: ChangeStore + 'static {
         /// (the first pause only marks the moment), so the days an app was not used while AI apps
         /// were off do not count (ADR-0042). Says how many moved.
         fn pause_unused_tokens(now: Timestamp) -> u64;
-        /// Deletes what ran out: codes and tokens past their time, grants that ended or ran out
-        /// `ended_before` or earlier, and apps registered before `registered_before` that no grant belongs to.
+        /// Deletes what ran out, at most `limit` rows of each: codes and tokens past their time,
+        /// grants that ended or ran out `ended_before` or earlier, and apps registered before
+        /// `registered_before` that no grant belongs to. One step of the purge (ADR-0045).
         fn clean_oauth(
             now: Timestamp,
             ended_before: Timestamp,
-            registered_before: Timestamp
+            registered_before: Timestamp,
+            limit: u64
         ) -> OAuthCleaned;
     }
 }

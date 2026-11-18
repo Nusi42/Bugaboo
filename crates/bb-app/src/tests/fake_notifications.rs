@@ -6,7 +6,7 @@ use bb_core::notification::{MailState, Notification, NotificationFilter, Notific
 use jiff::Timestamp;
 use zeroize::Zeroizing;
 
-use super::fake::{FakeError, FakeStore, Tx};
+use super::fake::{FakeError, FakeStore, Tx, remove_at_most};
 use super::fake_many_changes::job;
 use crate::jobs::QueuedJob;
 use crate::notifications::NotificationStore;
@@ -188,11 +188,12 @@ impl NotificationStore for FakeStore {
         Ok(())
     }
 
-    async fn purge_notifications(&self, before: Timestamp) -> Result<u64, FakeError> {
-        let mut shared = self.lock();
-        let kept = shared.state.notifications.len();
-        shared.state.notifications.retain(|row| row.at >= before);
-        Ok(u64::try_from(kept - shared.state.notifications.len()).unwrap_or(u64::MAX))
+    async fn purge_notifications(&self, before: Timestamp, limit: u64) -> Result<u64, FakeError> {
+        Ok(remove_at_most(
+            &mut self.lock().state.notifications,
+            limit,
+            |row| row.at < before,
+        ))
     }
 
     async fn mark_notifications_read(

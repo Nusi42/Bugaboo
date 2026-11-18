@@ -16,13 +16,16 @@ use crate::schema::{
     AwayTimeRow, Computed, Event, NotificationRow, Outbox, ProjectShareRow, UsualWorkDayRow,
 };
 
-/// The IDs of the away times whose last day is before `before`.
-fn doomed(before: Date) -> SelectStatement {
+/// The IDs of at most `limit` of the away times whose last day is before `before`: one step of
+/// the purge (ADR-0045, decision 5), always the same ones within a change.
+fn doomed(before: Date, limit: u64) -> SelectStatement {
     let mut select = Query::select();
     select
         .column(AwayTimeRow::Id)
         .from(AwayTimeRow::Table)
-        .and_where(Expr::col(AwayTimeRow::Last).lt(before.to_string()));
+        .and_where(Expr::col(AwayTimeRow::Last).lt(before.to_string()))
+        .order_by(AwayTimeRow::Id, Order::Asc)
+        .limit(limit);
     select
 }
 
@@ -77,14 +80,18 @@ async fn delete_notifications(
     transaction.execute(&delete).await.map(|_| ())
 }
 
-/// How many away times older than `before` each person has, by person.
-async fn count(reader: &mut impl Reader, before: Date) -> Result<Vec<(UserId, u64)>, StoreError> {
+/// How many of the away times of one step ([`doomed`]) each person has, by person.
+async fn count(
+    reader: &mut impl Reader,
+    before: Date,
+    limit: u64,
+) -> Result<Vec<(UserId, u64)>, StoreError> {
     let mut select = Query::select();
     select
         .column(AwayTimeRow::Person)
         .expr_as(Expr::col(AwayTimeRow::Id).count(), Computed::Total)
         .from(AwayTimeRow::Table)
-        .and_where(Expr::col(AwayTimeRow::Last).lt(before.to_string()))
+        .and_where(Expr::col(AwayTimeRow::Id).in_subquery(doomed(before, limit)))
         .group_by_col(AwayTimeRow::Person)
         .order_by(AwayTimeRow::Person, Order::Asc);
     reader
@@ -101,33 +108,34 @@ async fn count(reader: &mut impl Reader, before: Date) -> Result<Vec<(UserId, u6
         .collect()
 }
 
-/// Deletes the away times whose last day is before `before`, with everything that tells about
-/// them, and the events of the away times that were removed earlier and are older than `before`
-/// too (a removed away time keeps its event for a year, no longer). The people who lost away
-/// times, with how many.
+/// Deletes at most `limit` of the away times whose last day is before `before`, with everything
+/// that tells about them, and at most `limit` events of the away times that were removed earlier
+/// and are older than `before` too (a removed away time keeps its event for a year, no longer).
+/// The people who lost away times, with how many.
 pub(super) async fn delete(
     transaction: &mut Transaction,
     before: Date,
+    limit: u64,
 ) -> Result<Vec<(UserId, u64)>, StoreError> {
-    let counted = count(transaction, before).await?;
+    let counted = count(transaction, before, limit).await?;
     if !counted.is_empty() {
         delete_notifications(
             transaction,
-            Expr::col(NotificationRow::Record).in_subquery(doomed(before)),
+            Expr::col(NotificationRow::Record).in_subquery(doomed(before, limit)),
         )
         .await?;
         delete_events(
             transaction,
             &events_where(
                 RecordKind::AwayTime,
-                Expr::col(Event::EntityId).in_subquery(doomed(before)),
+                Expr::col(Event::EntityId).in_subquery(doomed(before, limit)),
             ),
         )
         .await?;
         let mut delete = Query::delete();
         delete
             .from_table(AwayTimeRow::Table)
-            .and_where(Expr::col(AwayTimeRow::Last).lt(before.to_string()));
+            .and_where(Expr::col(AwayTimeRow::Id).in_subquery(doomed(before, limit)));
         transaction.execute(&delete).await?;
     }
     // An away time that is gone has an event only for the year after it was removed.
@@ -137,16 +145,14 @@ pub(super) async fn delete(
         .map_err(|_| StoreError::Corrupt("a date"))?;
     let mut still_there = Query::select();
     still_there.column(AwayTimeRow::Id).from(AwayTimeRow::Table);
-    delete_events(
-        transaction,
-        &events_where(
-            RecordKind::AwayTime,
-            Expr::col(Event::EntityId)
-                .not_in_subquery(still_there)
-                .and(Expr::col(Event::Time).lt(to_micros(midnight.timestamp()))),
-        ),
-    )
-    .await?;
+    let mut removed_earlier = events_where(
+        RecordKind::AwayTime,
+        Expr::col(Event::EntityId)
+            .not_in_subquery(still_there)
+            .and(Expr::col(Event::Time).lt(to_micros(midnight.timestamp()))),
+    );
+    removed_earlier.order_by(Event::Id, Order::Asc).limit(limit);
+    delete_events(transaction, &removed_earlier).await?;
     Ok(counted)
 }
 

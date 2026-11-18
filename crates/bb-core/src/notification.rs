@@ -4,8 +4,8 @@
 //! `notifications`. The row keeps the facts and the fields that the person could see when it was
 //! built; what is shown, and what is put in an e-mail, is decided again when it is read or sent.
 //!
-//! Every number of the mechanism (the keep period, the 5 minutes of an e-mail, the size of a round)
-//! is a named constant here, written once.
+//! Every number of the mechanism (the 5 minutes of an e-mail, the size of a round; the keep period is
+//! a setting, `keeping.notification-days`) is a named constant here, written once.
 
 use jiff::Timestamp;
 
@@ -13,14 +13,10 @@ use crate::event::FieldChange;
 use crate::id::{CommentId, EntityId, EventId, IssueId, NotificationId, UserId};
 use crate::personal::Entity;
 use crate::settings::{self, Bool, Setting};
-use crate::time::days;
 
 /// The name of the outbox consumer that builds the notifications (ADR-0007): its place in the
 /// outbox is kept under this name.
 pub const CONSUMER: &str = "notifications";
-
-/// How long a notification is kept, in days (PRIV-05, ADR-0033 §5).
-pub const KEEP_DAYS: i64 = 90;
 
 /// How long changes to one issue wait for each other before one e-mail goes, in seconds
 /// (M4-Q6): the first change starts the wait, everything that comes within it is in the same
@@ -46,18 +42,6 @@ pub const MAIL_ENTRIES_MAX: usize = 20;
 /// shows never more, so what a person cannot see any more costs a bounded amount of reading and no
 /// total ever includes it (ARCH-NO-COUNTERS); one *Mark as read* names this many at most.
 pub const AT_ONCE_MAX: usize = 100;
-
-/// How long a notification is kept.
-#[must_use]
-pub const fn keep() -> jiff::SignedDuration {
-    days(KEEP_DAYS)
-}
-
-/// The moment before which a notification is too old to keep, at `now`.
-#[must_use]
-pub fn cutoff(now: Timestamp) -> Option<Timestamp> {
-    now.checked_sub(keep()).ok()
-}
 
 /// How long changes to one issue are collected into one e-mail.
 #[must_use]
@@ -388,12 +372,6 @@ mod tests {
         }
         assert_eq!(Once::of_key("mention:nothing"), None);
         assert_eq!(Once::of_key(""), None);
-    }
-
-    #[test]
-    fn priv_05_a_notification_is_kept_for_ninety_days() {
-        let now: Timestamp = "2027-04-01T00:00:00Z".parse().unwrap();
-        assert_eq!(cutoff(now), Some("2027-01-01T00:00:00Z".parse().unwrap()));
     }
 
     #[test]
