@@ -1,0 +1,43 @@
+# ADR-0046: Backups, restore and upgrades
+
+Status: **Proposed** · 2026-11-18 · refines OPS-06, OPS-07, [ADR-0003](0003-databases.md) and the upgrade line of [architecture §6](../architecture/06-deployment.md); open questions M9-Q7 and M9-Q8 of [the M9 plan](../milestones/M9/README.md)
+
+## Context
+
+OPS-07 asks for online backup and restore, from the command line and from the screens, with scheduled backups and retention. OPS-06 asks that an upgrade migrates the database by itself, makes a backup first, and has a clear way back. Architecture §6 already promises it: "on start, Bugaboo makes a backup, then runs migrations; if a migration fails, it restores the backup and stops with a plain explanation". None of it is built: the data folder has an empty `backups/`, and migrations run at start with no copy made.
+
+A backup of Bugaboo is more than the database: the files of attachments live in `files/`, the master key and the log key in `keys/`, and the security log is anchored in `logs/security-head.log`, outside the database. A restore of an older database leaves the anchor ahead of it, and the status page then stays at "problem" with no way out (M2-F09). A restore of a backup older than a *Remove a person* would bring the person back (ADR-0044).
+
+Bugaboo runs on SQLite (the start) and PostgreSQL. Both have to be backed up while people work.
+
+## Decision
+
+1. **One backup is one file** (M9-Q7, recommendation): `bugaboo-<moment>-<version>.backup` in `backups/` (or a folder the administrator names), a tar archive with a manifest (`manifest.json`: the version of Bugaboo, the last migration, the database kind, the moment, the head of the security log, and the SHA-256 of every member), the database, and the files of attachments that the database points to. A backup holds **no keys**: whoever restores it on another computer brings the keys with `bugaboo keys export` and `keys import`, and a restore checks that the master key opens the stored secrets before it goes on. Enforced by: review (the manifest is the one description of a backup), DATA-LOGS.
+2. **The database is copied while people work.** SQLite: `VACUUM INTO` a file of the backup's temporary folder, which reads one consistent state without stopping writers for longer than one step of a page. PostgreSQL: Bugaboo's own copy, table by table in one transaction at `REPEATABLE READ`, written in the order of the migrations, so no outside program (`pg_dump`) and no fixed path is needed (coding-standards §2). A restore goes into the same kind of database. Enforced by: ARCH-DB-PARITY (the backup and restore tests on both databases), LINT-PATHS.
+3. **Making a backup.** `bugaboo backup` (to the folder of the settings, or `--to <folder>`), the button *Make a backup now* in *Organization settings › System › Backups* (with *Change organization settings*), and the schedule: daily at the quiet hour (`backups.daily`, on at the start), keeping the newest 7 daily and 4 weekly backups (`backups.keep-daily`, `backups.keep-weekly`). Every backup writes one line to the security log with its name and checksum. A backup that fails is an alert on the status page and a notification to administrators. Enforced by: ARCH-PERMS, ARCH-SETTINGS, SEC-MATRIX, ARCH-EVENTS.
+4. **Restoring** (M9-Q8, recommendation). `bugaboo restore <file>` runs with the server stopped. *Restore this backup* on the screen is allowed too: it asks for the administrator's password and second step again, signs everybody out, answers every other request with the page *Bugaboo is being restored*, restores, and opens again. Either way a restore:
+   - checks every checksum of the manifest and refuses a backup of a newer version or a damaged one, changing nothing;
+   - makes a backup of what is there now first, so a restore can itself be undone;
+   - puts the database and the files back, runs the migrations of a backup from an older version (decision 5), and runs every removal of `privacy/removed.list` that is newer than the backup (ADR-0044, decision 8);
+   - verifies the restored security log, writes the head it reached to the anchor file as a new start with the lost range named, and writes a security-log entry that says what was restored and which entries after the backup's head are gone (M2-F09).
+
+   Enforced by: SEC-MATRIX (the restore route for every starting role), ARCH-DB-PARITY, ARCH-EVENTS.
+5. **Upgrades back up first.** When the server starts and the database's last migration is older than the program's, the server makes a backup (decision 1) before the first migration, named `before-<version>`, and keeps it outside the rotation of decision 3 until the next upgrade. If a migration fails, the server restores that backup, stops, and says in plain words what failed, where the backup is, and that the previous program works with it. A database newer than the program is refused, as today. The migrations of a release can only be checked against a real older database, so every release is tested by upgrading a database made by the previous milestone's program (the upgrade test, WP-07). Enforced by: DATA-MIGRATIONS, ARCH-DB-PARITY, review (the upgrade test runs before a release).
+6. **Where the files go.** Backups are as private as the data folder (owner only, at every start, M1-F65). Backups are not encrypted in the MVP; encryption with the master key is SEC-20 (V1). The page *Backups* says where they are and that they hold all the organization's data. Enforced by: review (the data-folder tests of `sec_16_…` cover `backups/`).
+
+## Consequences
+
+- Keys are backed up apart from data, on purpose: a stolen backup does not carry the key that opens its secrets.
+- A restore is an event in the security log, and the chain explains the gap instead of breaking.
+- Every release costs one more test: a database made by the program of the previous milestone, upgraded.
+
+## Alternatives considered
+
+- **`pg_dump` and `sqlite3` as outside programs:** extra installs, versions that must match the server, and a path to find. Rejected.
+- **The keys inside the backup:** one file restores everything, but whoever holds the file holds every secret. Rejected until backups are encrypted (SEC-20, V1).
+- **Restore from the command line only:** simpler, but OPS-07 asks for the screen as well, and many administrators never open a console on the server. Kept as the fallback answer of M9-Q8.
+- **A folder per backup instead of one file:** easier to read, harder to move and to check whole. Rejected.
+
+## Enforced by
+
+ARCH-DB-PARITY, DATA-MIGRATIONS, ARCH-PERMS, ARCH-SETTINGS, ARCH-EVENTS, SEC-MATRIX, LINT-PATHS, DATA-LOGS; review (the manifest, and the upgrade test before each release).
