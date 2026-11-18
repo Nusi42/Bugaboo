@@ -5,13 +5,13 @@
 use axum::Router;
 use axum::http::StatusCode;
 use bb_core::event::{EntityKind, RecordKind};
-use bb_core::files::TRASH_KEPT;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::Value;
 
 use super::files_http::{ATTACHMENTS, DAY, run_jobs, upload};
 use super::http::{Browser, rig_and_app};
 use super::issues_site::{ISSUES, Site, id_in, key_of, ok};
+use super::keep_trash_http::trash_kept;
 use super::rig::Rig;
 
 /// What the file rows of the history say, newest first: the event and the name.
@@ -76,7 +76,7 @@ async fn file_gone_for_good(rig: &Rig, app: &Router) -> Result<(Browser, String)
         .await?;
     assert_eq!(gone.status, StatusCode::NO_CONTENT);
     // The days of the trash pass and the clean-up removes the file for good.
-    rig.clock.advance(TRASH_KEPT.as_secs() + DAY);
+    rig.clock.advance(trash_kept().as_secs() + DAY);
     run_jobs(rig).await?;
     let ada = Browser::signed_in_as(app, super::http::ADA_EMAIL).await?;
     Ok((ada, issue))

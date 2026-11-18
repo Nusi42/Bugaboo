@@ -11,19 +11,25 @@ use bb_app::files::AttachmentStore as _;
 use bb_app::history::HistoryStore as _;
 use bb_app::issues::IssueStore as _;
 use bb_core::event::{EntityKind, RecordKind};
-use bb_core::files::TRASH_KEPT;
 use bb_core::id::{AttachmentId, CommentId, EntityId, IssueId};
 use bb_core::time::SECONDS_PER_DAY;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::json;
 
-use super::files_http::{on_disk, run_jobs, upload};
+use super::files_http::{run_jobs, upload};
 use super::http::{ADA_EMAIL, Browser, rig_and_app};
 use super::issues_site::{ISSUES, Site, id_in, id_of, key_in, ok, version_of};
 use super::keep_rules_http::delete_counted;
 use super::relations_http::{kinds, put_under};
 use super::rig::Rig;
 use super::time_http::MY_ENTRIES;
+
+/// How long the trash keeps what was deleted at the start: the starting period of its keep rule.
+pub(super) fn trash_kept() -> jiff::SignedDuration {
+    let period = bb_core::keeping::rule(bb_core::keeping::KeepKind::Trash)
+        .length(&bb_core::settings::Layers::default());
+    bb_core::time::days(period.count)
+}
 
 /// The kinds of record whose events name an issue of the trash or a record under it.
 const KINDS: [RecordKind; 4] = [
@@ -123,7 +129,7 @@ async fn priv_05_the_trash_is_deleted_after_its_period_with_its_files_and_events
         assert!(events_about(&rig, &records).await? > 0);
 
         // A day before the end of its period the issue is still in the trash.
-        let period = TRASH_KEPT.as_secs() / SECONDS_PER_DAY;
+        let period = trash_kept().as_secs() / SECONDS_PER_DAY;
         a_day_later(&rig, period - 1).await?;
         assert!(rig.storage.issue(doomed_id).await?.is_some());
         // Two days later it is gone for good, with what belonged to it.
@@ -131,7 +137,7 @@ async fn priv_05_the_trash_is_deleted_after_its_period_with_its_files_and_events
         assert!(rig.storage.issue(doomed_id).await?.is_none());
         assert!(rig.storage.comment(comment).await?.is_none());
         assert!(rig.storage.attachment(attachment).await?.is_none());
-        assert!(on_disk(&rig, "content").is_empty(), "the file went");
+        assert!(rig.files_on_disk("content").is_empty(), "the file went");
         assert_eq!(events_about(&rig, &records).await?, 0);
         // The other issue stays, without the relation and without its parent.
         let mut ada = Browser::signed_in_as(&app, ADA_EMAIL).await?;
@@ -175,7 +181,7 @@ async fn priv_05_an_issue_in_the_trash_stays_while_its_time_entries_are_kept() -
         ok(&entry)?;
         into_the_trash(&mut ada, &booked).await?;
         // Long past the period of the trash, the issue stays there for its time entry.
-        a_day_later(&rig, 2 * TRASH_KEPT.as_secs() / SECONDS_PER_DAY).await?;
+        a_day_later(&rig, 2 * trash_kept().as_secs() / SECONDS_PER_DAY).await?;
         let stored = rig
             .storage
             .issue(booked_id)

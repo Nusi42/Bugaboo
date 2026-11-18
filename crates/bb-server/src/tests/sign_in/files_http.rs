@@ -12,7 +12,7 @@ use bb_app::access::StartingRole;
 use bb_app::auth::RequestInfo;
 use bb_app::files::AttachmentStore as _;
 use bb_app::roles::RemoveAssignment;
-use bb_core::files::{BIGGEST_FILE_BYTES, MEGABYTE, PART_BYTES, TRASH_KEPT, UNFINISHED_KEPT};
+use bb_core::files::{BIGGEST_FILE_BYTES, MEGABYTE, PART_BYTES, UNFINISHED_KEPT};
 use bb_core::id::{AssignmentId, ProjectId, RoleId, UserId};
 use bb_core::settings::{FILES_BLOCKED_TYPES, FILES_MAX_MEGABYTES};
 use bb_files::fixtures::{Format, PDF, picture, pretending_png};
@@ -21,6 +21,7 @@ use serde_json::{Value, json};
 
 use super::http::{Browser, RawReply, Reply, rig_and_app};
 use super::issues_site::{ISSUES, Site, id_in, key_of, ok};
+use super::keep_trash_http::trash_kept;
 use super::policy_rig::Member;
 use super::rig::Rig;
 
@@ -130,28 +131,6 @@ fn named<'a>(items: &'a [Value], name: &str) -> Result<&'a Value, Failure> {
         .ok_or_else(|| format!("no file {name}").into())
 }
 
-/// Every file below a folder of the files, as the disk has them.
-pub(super) fn on_disk(rig: &Rig, folder: &str) -> Vec<std::path::PathBuf> {
-    fn walk(folder: &std::path::Path, found: &mut Vec<std::path::PathBuf>) {
-        let Ok(entries) = std::fs::read_dir(folder) else {
-            return;
-        };
-        for entry in entries.flatten() {
-            if entry.path().is_dir() {
-                walk(&entry.path(), found);
-            } else {
-                found.push(entry.path());
-            }
-        }
-    }
-    let mut found = Vec::new();
-    walk(
-        &rig.folder.path().join(bb_files::FILES_FOLDER).join(folder),
-        &mut found,
-    );
-    found
-}
-
 /// Runs the jobs that are due: the previews, and the daily clean-up.
 pub(super) async fn run_jobs(rig: &Rig) -> Result<(), Failure> {
     let ctx = rig.services.ctx(RequestInfo::default());
@@ -256,12 +235,12 @@ async fn att_02_a_file_is_stored_once_by_its_content_and_deleted_when_nothing_po
         let one = upload(&mut ada, &first, "jam.txt", &bytes).await?;
         let two = upload(&mut ada, &second, "copy of jam.txt", &bytes).await?;
         assert_eq!(
-            on_disk(&rig, "content").len(),
+            rig.files_on_disk("content").len(),
             1,
             "the same content is one file"
         );
         assert!(
-            on_disk(&rig, "uploads").is_empty(),
+            rig.files_on_disk("uploads").is_empty(),
             "a finished upload leaves nothing"
         );
 
@@ -286,13 +265,13 @@ async fn att_02_a_file_is_stored_once_by_its_content_and_deleted_when_nothing_po
         // The first has been in the trash for its days: it is gone, and the file stays for the second.
         rig.clock.advance(11 * DAY);
         run_jobs(&rig).await?;
-        assert_eq!(on_disk(&rig, "content").len(), 1);
+        assert_eq!(rig.files_on_disk("content").len(), 1);
         assert!(rig.storage.unreferenced_files(10).await?.is_empty());
 
         // When the second has been in the trash for its days, nothing points to the file, and it goes.
-        rig.clock.advance(TRASH_KEPT.as_secs() - 10 * DAY);
+        rig.clock.advance(trash_kept().as_secs() - 10 * DAY);
         run_jobs(&rig).await?;
-        assert!(on_disk(&rig, "content").is_empty());
+        assert!(rig.files_on_disk("content").is_empty());
         assert!(rig.storage.unreferenced_files(10).await?.is_empty());
         Ok(())
     })
@@ -370,13 +349,13 @@ async fn att_01_an_unfinished_upload_is_deleted_after_a_day_and_only_a_part_has_
         let started = start(&mut ada, &issue, "half.bin", 100, None).await?;
         let upload = id_in(&started.body)?;
         send_part(&mut ada, &upload, 0, &[7; 50]).await?;
-        assert_eq!(on_disk(&rig, "uploads").len(), 1);
+        assert_eq!(rig.files_on_disk("uploads").len(), 1);
         rig.clock.advance(UNFINISHED_KEPT.as_secs() - 60);
         run_jobs(&rig).await?;
-        assert_eq!(on_disk(&rig, "uploads").len(), 1, "not a day yet");
+        assert_eq!(rig.files_on_disk("uploads").len(), 1, "not a day yet");
         rig.clock.advance(120);
         run_jobs(&rig).await?;
-        assert!(on_disk(&rig, "uploads").is_empty());
+        assert!(rig.files_on_disk("uploads").is_empty());
         let mut ada = Browser::signed_in_as(&app, super::http::ADA_EMAIL).await?;
         let gone = ada
             .send("GET", &format!("{UPLOADS}/{upload}"), None)
@@ -494,7 +473,7 @@ async fn att_03_a_file_over_the_limit_is_refused_before_it_is_stored() -> TestRe
         assert_eq!(rules.body["limit_bytes"], 2 * MEGABYTE);
 
         // Nothing was stored for any of the refused ones; the two that started are only on their way.
-        assert!(on_disk(&rig, "content").is_empty());
+        assert!(rig.files_on_disk("content").is_empty());
         // A part cannot go past the size the upload started with.
         let started = start(&mut ada, &issue, "two.bin", 10, None).await?;
         let too_many = send_part(&mut ada, &id_in(&started.body)?, 0, &[0; 11]).await?;
@@ -526,10 +505,10 @@ async fn att_03_a_blocked_type_is_refused() -> TestResult {
             (StatusCode::UNSUPPORTED_MEDIA_TYPE, "file.type-blocked")
         );
         assert!(
-            on_disk(&rig, "uploads").is_empty(),
+            rig.files_on_disk("uploads").is_empty(),
             "the refused upload is gone"
         );
-        assert!(on_disk(&rig, "content").is_empty());
+        assert!(rig.files_on_disk("content").is_empty());
         // The same bytes are no problem where the type is not blocked.
         rig.set_organization_text(FILES_BLOCKED_TYPES.definition().key(), "")
             .await?;
@@ -1032,7 +1011,7 @@ async fn att_04_finishing_a_file_that_somebody_else_stored_answers_like_a_new_on
         run_jobs(&rig).await?;
         let listed = files(&mut mia, &miras).await?;
         assert_eq!(listed[0]["preview"], "ready");
-        assert_eq!(on_disk(&rig, "content").len(), 1);
+        assert_eq!(rig.files_on_disk("content").len(), 1);
         Ok(())
     })
     .await
@@ -1106,7 +1085,7 @@ async fn sec_06_an_upload_ends_when_the_person_loses_access_in_the_middle_of_it(
             send_part(&mut bob, &upload, 0, b"first").await?.status,
             StatusCode::OK
         );
-        assert_eq!(on_disk(&rig, "uploads").len(), 1);
+        assert_eq!(rig.files_on_disk("uploads").len(), 1);
 
         // Bob loses his role. The next part is refused as for something that is not there, and
         // the upload ends: its bytes and its row are gone, also if the role comes back.
@@ -1116,7 +1095,7 @@ async fn sec_06_an_upload_ends_when_the_person_loses_access_in_the_middle_of_it(
             (refused.status, refused.code()),
             (StatusCode::NOT_FOUND, "resource.not-found")
         );
-        assert!(on_disk(&rig, "uploads").is_empty());
+        assert!(rig.files_on_disk("uploads").is_empty());
         bob.take_the_role(&site, StartingRole::TeamMember).await?;
         let again = bob
             .send("GET", &format!("{UPLOADS}/{upload}"), None)

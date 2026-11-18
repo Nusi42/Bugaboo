@@ -53,19 +53,6 @@ pub const UNFINISHED_KEPT: SignedDuration = SignedDuration::from_hours(24);
 /// once and a full issue answers with a clear refusal (`limit.reached`).
 pub const ATTACHMENTS_PER_ISSUE_MAX: usize = 200;
 
-/// How long a deleted attachment can still be taken out of the trash at the start (ADR-0032 §5): the
-/// default of `keeping.trash-days`, which the purge reads (ADR-0045). After that it is gone for
-/// good, and its file with it when nothing else points to it.
-pub const TRASH_KEPT: SignedDuration = crate::time::days(
-    match crate::settings::keeping::KEEPING_TRASH_DAYS
-        .definition()
-        .default_integer()
-    {
-        Some(days) => days,
-        None => 0,
-    },
-);
-
 /// How long a signed link works (ADR-0032, ATT-07).
 pub const LINK_LIFETIME: SignedDuration = SignedDuration::from_mins(5);
 

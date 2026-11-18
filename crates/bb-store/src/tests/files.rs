@@ -5,8 +5,8 @@
 use bb_app::files::AttachmentStore as _;
 use bb_app::ports::{BoxFuture, ChangeStore};
 use bb_core::files::{
-    ATTACHMENTS_PER_ISSUE_MAX, Attachment, MediaType, PreviewStatus, StoredFile, TRASH_KEPT,
-    UNFINISHED_KEPT, Upload,
+    ATTACHMENTS_PER_ISSUE_MAX, Attachment, MediaType, PreviewStatus, StoredFile, UNFINISHED_KEPT,
+    Upload,
 };
 use bb_core::id::{AttachmentId, IdSource, IssueId, UploadId};
 use bb_core::security_log::Digest;
@@ -15,6 +15,13 @@ use bb_testing::{TestResult, each_database};
 
 use super::*;
 use crate::test_support::{World, at, event, fixture, ids, world};
+
+/// How long the trash keeps what was deleted at the start: the starting period of its keep rule.
+fn trash_kept() -> jiff::SignedDuration {
+    let period = bb_core::keeping::rule(bb_core::keeping::KeepKind::Trash)
+        .length(&bb_core::settings::Layers::default());
+    bb_core::time::days(period.count)
+}
 
 async fn changed<T: Send>(
     storage: &AuthStorage,
@@ -135,14 +142,14 @@ async fn att_02_the_store_keeps_one_row_for_a_file_and_deletes_it_only_when_noth
         // Both go into the trash; only an attachment that stayed there for its days is purged.
         assert!(trash(storage, &mut source, first.id, Some(at(10))).await?);
         assert!(trash(storage, &mut source, second.id, Some(at(10_000_000))).await?);
-        let enough = at(10).checked_add(TRASH_KEPT)?;
+        let enough = at(10).checked_add(trash_kept())?;
         assert_eq!(storage.purge_trashed_attachments(enough, 10).await?, 1);
         assert!(storage.attachment(first.id).await?.is_none());
         assert!(
             storage.unreferenced_files(10).await?.is_empty(),
             "the second still points"
         );
-        let later = at(10_000_000).checked_add(TRASH_KEPT)?;
+        let later = at(10_000_000).checked_add(trash_kept())?;
         assert_eq!(storage.purge_trashed_attachments(later, 10).await?, 1);
 
         // Now nothing points to the file.

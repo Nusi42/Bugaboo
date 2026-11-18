@@ -5,7 +5,7 @@
 use bb_core::ErrorCode;
 use bb_core::files::{
     ATTACHMENTS_PER_ISSUE_MAX, Attachment, BIGGEST_FILE_BYTES, MEGABYTE, OPEN_UPLOADS_BYTES_MAX,
-    OPEN_UPLOADS_MAX, PreviewStatus, TRASH_KEPT,
+    OPEN_UPLOADS_MAX, PreviewStatus,
 };
 use bb_core::id::{AttachmentId, IssueId, UploadId};
 use bb_core::security_log::Digest;
@@ -24,6 +24,13 @@ use crate::files::{
 };
 use crate::jobs::JobKind;
 use crate::settings::{ChangeSetting, SettingsScope, change_setting};
+
+/// How long the trash keeps what was deleted at the start: the starting period of its keep rule.
+fn trash_kept() -> jiff::SignedDuration {
+    let period = bb_core::keeping::rule(bb_core::keeping::KeepKind::Trash)
+        .length(&bb_core::settings::Layers::default());
+    bb_core::time::days(period.count)
+}
 
 const DAY: i64 = bb_core::time::SECONDS_PER_DAY;
 
@@ -133,7 +140,7 @@ async fn att_02_the_clean_up_deletes_a_file_when_nothing_points_to_it() -> Outco
     assert_eq!((cleaned.attachments, cleaned.files), (0, 0));
 
     // After the trash's days the attachment is gone, and the file stays: another one points to it.
-    world.clock.advance(TRASH_KEPT.as_secs() + 1);
+    world.clock.advance(trash_kept().as_secs() + 1);
     let cleaned = world.ctx().clean_up_files().await?;
     assert_eq!((cleaned.attachments, cleaned.files), (1, 0));
     assert_eq!(world.files.file_count(), 1);
@@ -474,13 +481,13 @@ async fn att_02_the_clean_up_does_not_take_the_bytes_of_a_file_that_is_being_add
     remove(&world, first).await?;
     // It went into the trash long ago (a session does not last that long, so the day is written
     // into the row), and the trash was emptied.
-    let long_ago = world.ctx().now() - TRASH_KEPT - jiff::SignedDuration::from_secs(1);
+    let long_ago = world.ctx().now() - trash_kept() - jiff::SignedDuration::from_secs(1);
     for attachment in &mut world.store.lock().state.attachments {
         attachment.deleted_at = Some(long_ago);
     }
     let purged = world
         .store
-        .purge_trashed_attachments(world.ctx().now() - TRASH_KEPT, 10)
+        .purge_trashed_attachments(world.ctx().now() - trash_kept(), 10)
         .await
         .map_err(text)?;
     assert_eq!(purged, 1);

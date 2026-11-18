@@ -136,6 +136,30 @@ impl Shape {
 }
 
 impl Rig {
+    /// Every file below a folder of the files, as the disk has them.
+    pub(super) fn files_on_disk(&self, folder: &str) -> Vec<std::path::PathBuf> {
+        fn walk(folder: &std::path::Path, found: &mut Vec<std::path::PathBuf>) {
+            let Ok(entries) = std::fs::read_dir(folder) else {
+                return;
+            };
+            for entry in entries.flatten() {
+                if entry.path().is_dir() {
+                    walk(&entry.path(), found);
+                } else {
+                    found.push(entry.path());
+                }
+            }
+        }
+        let mut found = Vec::new();
+        walk(
+            &self.folder.path().join(bb_files::FILES_FOLDER).join(folder),
+            &mut found,
+        );
+        found
+    }
+}
+
+impl Rig {
     /// Waits until every mark that a use left on a session is made. The marks are made on their
     /// own, so a test that moves the clock far right after a request waits for them first: the
     /// mark belongs to the moment of the use.

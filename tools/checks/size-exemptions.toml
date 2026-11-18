@@ -10,7 +10,7 @@ reason = "The tests of the notifications reader; they move with the reader in WP
 
 [[exempt]]
 path = "crates/bb-server/src/tests/sign_in/files_http.rs"
-lines = 1128
+lines = 1107
 reason = "The tests of uploads, downloads and previews over HTTP, one flow after the other; a flow shares its helpers. Split into uploads, links and previews in M4-F130."
 
 [[generated]]
