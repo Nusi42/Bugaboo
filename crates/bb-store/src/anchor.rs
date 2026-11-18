@@ -15,6 +15,12 @@
 //! only half written (a crash while writing) is ignored; any other line without a valid
 //! signature is a forgery. Somebody who can change the data folder can delete the file; the
 //! verification then reports the log as not anchored.
+//!
+//! A restore of an older backup puts back a log that ends before the anchor does (M2-F09). The
+//! restore then writes a *new start*: one line `restart <seq> <hash> <lost-from> <lost-to>
+//! <signature>` with the head of the restored log and the range of entries that are gone, signed
+//! under a domain of its own. Lines before the newest new start no longer count, so the anchor
+//! vouches for the restored log from there on, and the line keeps saying what was lost.
 
 use std::fs;
 use std::io::Write as _;
@@ -27,6 +33,10 @@ use crate::error::StoreError;
 use crate::keys::{KeyRing, SigningKey};
 
 const ANCHOR_DOMAIN: &[u8] = b"bugaboo.security-log.anchor.v1";
+/// The domain of a new start after a restore: a line of one kind can never pass for the other.
+const RESTART_DOMAIN: &[u8] = b"bugaboo.security-log.anchor.restart.v1";
+/// The first word of a new start.
+const RESTART: &str = "restart";
 
 /// What the anchor file knows.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -77,6 +87,32 @@ impl LogSeal {
             hex::encode(hash.as_bytes()),
             hex::encode(&signature)
         );
+        self.append_line(&line)
+    }
+
+    /// Writes down a new start after a restore: the log now ends at `head` (`None` for an empty
+    /// log), and the entries `lost.0` to `lost.1` that the anchor knew are gone. Lines before it
+    /// no longer count.
+    pub(crate) fn restart(
+        &self,
+        head: Option<(i64, Digest)>,
+        lost: (i64, i64),
+    ) -> Result<(), StoreError> {
+        let (seq, hash) = head.unwrap_or((0, Digest::new([0; Digest::LENGTH])));
+        let parts = restart_parts(seq, &hash, lost);
+        let signature = self.key.sign(&parts.each_ref().map(Vec::as_slice))?;
+        let line = format!(
+            "{RESTART} {seq} {} {} {} {}
+",
+            hex::encode(hash.as_bytes()),
+            lost.0,
+            lost.1,
+            hex::encode(&signature)
+        );
+        self.append_line(&line)
+    }
+
+    fn append_line(&self, line: &str) -> Result<(), StoreError> {
         let mut file = open_append(&self.file).map_err(StoreError::AnchorFile)?;
         // One write call per line keeps lines whole when two appends finish together.
         file.write_all(line.as_bytes())
@@ -100,6 +136,17 @@ impl LogSeal {
             .rposition(|byte| *byte == b'\n')
             .map_or(&text[..0], |end| &text[..=end]);
         for line in String::from_utf8_lossy(whole).lines() {
+            if let Some(rest) = line
+                .strip_prefix(RESTART)
+                .and_then(|rest| rest.strip_prefix(' '))
+            {
+                let Some((seq, hash)) = self.read_restart(rest) else {
+                    return Ok(Anchored::Forged);
+                };
+                // A new start: what came before belongs to a log that was replaced.
+                newest = (seq > 0).then_some((seq, hash));
+                continue;
+            }
             let Some((seq, hash)) = self.read_line(line) else {
                 return Ok(Anchored::Forged);
             };
@@ -122,6 +169,32 @@ impl LogSeal {
             .verify(&[ANCHOR_DOMAIN, &seq.to_be_bytes(), &hash], &signature)
             .then(|| (seq, Digest::new(hash)))
     }
+
+    fn read_restart(&self, rest: &str) -> Option<(i64, Digest)> {
+        let mut parts = rest.split(' ');
+        let seq: i64 = parts.next()?.parse().ok()?;
+        let hash = Digest::new(hex::decode(parts.next()?)?);
+        let lost: (i64, i64) = (parts.next()?.parse().ok()?, parts.next()?.parse().ok()?);
+        let signature: [u8; 32] = hex::decode(parts.next()?)?;
+        if parts.next().is_some() {
+            return None;
+        }
+        let parts = restart_parts(seq, &hash, lost);
+        self.key
+            .verify(&parts.each_ref().map(Vec::as_slice), &signature)
+            .then_some((seq, hash))
+    }
+}
+
+/// What the signature of a new start covers.
+fn restart_parts(seq: i64, hash: &Digest, lost: (i64, i64)) -> [Vec<u8>; 5] {
+    [
+        RESTART_DOMAIN.to_vec(),
+        seq.to_be_bytes().to_vec(),
+        hash.as_bytes().to_vec(),
+        lost.0.to_be_bytes().to_vec(),
+        lost.1.to_be_bytes().to_vec(),
+    ]
 }
 
 #[cfg(unix)]
@@ -174,6 +247,30 @@ mod tests {
         seal.record(1, &digest(1)).unwrap();
         let other = LogSeal::with_key(SigningKey::generate().unwrap(), seal.file.clone());
         other.record(2, &digest(2)).unwrap();
+        assert_eq!(seal.latest().unwrap(), Anchored::Forged);
+    }
+
+    #[test]
+    fn sec_15_a_new_start_after_a_restore_replaces_what_came_before() {
+        let (_folder, seal) = seal();
+        seal.record(1, &digest(1)).unwrap();
+        seal.record(5, &digest(5)).unwrap();
+        // The restored log ends at 3: the anchor follows it, and lines after count again.
+        seal.restart(Some((3, digest(3))), (4, 5)).unwrap();
+        assert_eq!(seal.latest().unwrap(), Anchored::At(3, digest(3)));
+        seal.record(4, &digest(14)).unwrap();
+        assert_eq!(seal.latest().unwrap(), Anchored::At(4, digest(14)));
+        // A restored log with no entries.
+        seal.restart(None, (1, 4)).unwrap();
+        assert_eq!(seal.latest().unwrap(), Anchored::Nothing);
+    }
+
+    #[test]
+    fn bad_example_a_new_start_signed_by_another_key_is_a_forgery() {
+        let (_folder, seal) = seal();
+        seal.record(5, &digest(5)).unwrap();
+        let other = LogSeal::with_key(SigningKey::generate().unwrap(), seal.file.clone());
+        other.restart(Some((1, digest(1))), (2, 5)).unwrap();
         assert_eq!(seal.latest().unwrap(), Anchored::Forged);
     }
 
