@@ -7,6 +7,8 @@
 
 #[macro_use]
 mod use_cases_macro;
+#[macro_use]
+mod use_case_list;
 
 mod access_keys;
 mod account;
