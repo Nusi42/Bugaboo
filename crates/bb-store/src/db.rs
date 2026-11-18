@@ -196,6 +196,38 @@ impl Database {
         })
     }
 
+    /// Opens the copy of a SQLite database that a backup holds, only to read it: nothing is
+    /// written into the file, not even the switch to WAL mode (ADR-0046).
+    pub(crate) async fn open_copy(file: &std::path::Path) -> Result<Self, StoreError> {
+        Ok(Self {
+            pool: Pool::Sqlite(sqlite_open::open_sqlite_copy(file).await?),
+            statements: Arc::default(),
+            upkeep: Arc::default(),
+            writers: WriterGate::default(),
+        })
+    }
+
+    /// Copies the SQLite database into the new file `file` with `VACUUM INTO`, which reads one
+    /// consistent state while writers go on, and then folds the write-ahead log, which grew
+    /// meanwhile, back into the database (ADR-0046, decision 2). `false` on PostgreSQL, whose
+    /// copy is made table by table.
+    pub(crate) async fn vacuum_into(&self, file: &std::path::Path) -> Result<bool, StoreError> {
+        let Pool::Sqlite(pool) = &self.pool else {
+            return Ok(false);
+        };
+        let target = file
+            .to_str()
+            .ok_or(StoreError::Corrupt("the path of a copy"))?;
+        sqlx::query("VACUUM INTO ?")
+            .bind(target)
+            .execute(pool)
+            .await?;
+        sqlx::query("PRAGMA wal_checkpoint(PASSIVE)")
+            .execute(pool)
+            .await?;
+        Ok(true)
+    }
+
     /// Which database this is.
     #[must_use]
     pub const fn dialect(&self) -> Dialect {

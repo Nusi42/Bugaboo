@@ -30,6 +30,7 @@ crate::entities! {
     crate::access::StartingRoleDue,
     crate::access::StartingRolesMade,
     crate::access_key::AccessKey,
+    crate::backup::run::BackupRun,
     crate::ai::NeverSentMark,
     crate::ai::ToolCall,
     crate::ai::UsedReference,

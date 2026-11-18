@@ -3,8 +3,8 @@
 
 use bb_core::id::{
     AccessKeyId, AgentId, AgentNoteId, AgentWorkId, AssignmentId, AttachmentId, AttemptId,
-    AwayTimeId, ChoiceId, CommentId, EditorId, EntityId, EventId, FieldId, GrantId, GroupId,
-    HandOverId, IdError, InvitationId, IssueId, IssueTypeId, JobId, LabelGroupId, LabelId,
+    AwayTimeId, BackupId, ChoiceId, CommentId, EditorId, EntityId, EventId, FieldId, GrantId,
+    GroupId, HandOverId, IdError, InvitationId, IssueId, IssueTypeId, JobId, LabelGroupId, LabelId,
     LayoutId, LockToken, NotificationId, OAuthClientId, PasskeyId, ProjectId, RelationId,
     RelationKindId, RoleId, RunId, SavedSearchId, SessionId, StandingRuleId, TagId, ThemeId,
     TimeEntryId, ToolCallId, UploadId, UserId, WorkDayId, WorkflowId,
@@ -155,6 +155,7 @@ stored_ids!(
     RoleId => "a role ID",
     SavedSearchId => "a saved search ID",
     ThemeId => "an own theme ID",
+    BackupId => "a backup ID",
     WorkDayId => "a work day ID",
     AwayTimeId => "an away time ID",
     SessionId => "a session ID",

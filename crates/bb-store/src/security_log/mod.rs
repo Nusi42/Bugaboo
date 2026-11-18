@@ -157,6 +157,20 @@ impl Database {
     }
 }
 
+/// The newest place and hash of the log in a transaction: its last entry, or the checkpoint when
+/// every entry was pruned, or `None` for a log that never had one. A backup names it in its
+/// manifest, and a restore starts the anchor again from it (ADR-0046, decision 4).
+pub(crate) async fn head_in(
+    transaction: &mut crate::db::Transaction,
+) -> Result<Option<(i64, bb_core::security_log::Digest)>, StoreError> {
+    Ok(match last_entry(transaction).await? {
+        Some(head) => Some(head),
+        None => read_checkpoint(transaction)
+            .await?
+            .map(|checkpoint| (checkpoint.seq, checkpoint.hash)),
+    })
+}
+
 /// The action to show for a stored one, when it is a former code.
 fn shown_action(stored: &TechnicalName) -> Option<TechnicalName> {
     let shown = bb_core::sign_in::shown_code(stored.as_str());

@@ -146,7 +146,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn ops_07_a_name_that_leaves_the_folder_is_refused() {
+    fn a_member_name_that_leaves_the_folder_is_refused() {
         let cases: &[(&str, EntryKind, Result<(), NameProblem>)] = &[
             (MANIFEST, EntryKind::File, Ok(())),
             (DATABASE_SQLITE, EntryKind::File, Ok(())),

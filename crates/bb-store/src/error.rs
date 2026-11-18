@@ -56,6 +56,15 @@ pub enum StoreError {
     AnchorFile(std::io::Error),
     /// The master key file could not be read or written.
     KeyFile(std::io::Error),
+    /// A file of a backup, or a file it copies or puts back, could not be read or written.
+    Backup(std::io::Error),
+    /// A backup was refused before anything changed: it is damaged, of a newer Bugaboo, of
+    /// another kind of database, or holds a name that leaves its folder (ADR-0046, decision 4).
+    BackupRefused(bb_core::backup::manifest::BackupProblem),
+    /// The master key of this installation does not open the stored secrets of a backup, so the
+    /// backup was not restored (ADR-0046, decision 1): the key files of its installation are
+    /// needed (`bugaboo keys import`).
+    KeysDoNotOpen,
 }
 
 /// Why a setting value was refused.
@@ -126,6 +135,13 @@ impl fmt::Display for StoreError {
             Self::Contended => formatter.write_str("too many writers at once; try again"),
             Self::Busy => formatter.write_str("the database stayed busy; nothing was written"),
             Self::KeyFile(error) => write!(formatter, "a key file failed: {error}"),
+            Self::Backup(error) => write!(formatter, "a file of a backup failed: {error}"),
+            Self::BackupRefused(problem) => {
+                write!(formatter, "the backup was refused: {problem:?}")
+            }
+            Self::KeysDoNotOpen => {
+                formatter.write_str("the master key does not open the secrets of the backup")
+            }
             Self::AnchorFile(error) => {
                 write!(formatter, "the security log anchor file failed: {error}")
             }
@@ -137,7 +153,7 @@ impl std::error::Error for StoreError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::Database(error) => Some(error),
-            Self::KeyFile(error) | Self::AnchorFile(error) => Some(error),
+            Self::KeyFile(error) | Self::AnchorFile(error) | Self::Backup(error) => Some(error),
             _ => None,
         }
     }

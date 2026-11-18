@@ -173,6 +173,11 @@ words! {
         OAuthRefused => "oauth.refused",
         /// An administrator allowed or took away a web address for AI apps.
         OAuthAddressChanged => "oauth_address.changed",
+        /// A backup was made; the entry points to its record, with its name and checksum (OPS-07).
+        BackupMade => "backup.made",
+        /// A backup was restored; the entry points to its record, which names the backup and the
+        /// entries of this log that are gone (OPS-07, M2-F09).
+        BackupRestored => "backup.restored",
     }
 }
 

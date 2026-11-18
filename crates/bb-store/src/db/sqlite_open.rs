@@ -76,3 +76,16 @@ pub(super) fn create_private_file(file: &std::path::Path) -> Result<(), StoreErr
         _ => Ok(()),
     }
 }
+
+/// Opens the copy of a database inside a backup to read it only: no WAL mode, no lock, nothing
+/// written into the file.
+pub(super) async fn open_sqlite_copy(file: &std::path::Path) -> Result<SqlitePool, StoreError> {
+    let options = SqliteConnectOptions::new()
+        .filename(file)
+        .read_only(true)
+        .immutable(true);
+    Ok(SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect_with(options)
+        .await?)
+}

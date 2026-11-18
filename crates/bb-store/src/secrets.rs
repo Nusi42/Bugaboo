@@ -87,7 +87,27 @@ fn unwrap_key(
         .map_err(|_| tampered())
 }
 
+/// Whether `keys` opens every secret of `secrets`: what a restore checks before it replaces
+/// anything (ADR-0046, decision 1), since a backup holds no keys.
+pub(crate) fn keys_open(keys: &KeyRing, secrets: &[StoredSecret]) -> bool {
+    secrets
+        .iter()
+        .all(|secret| unwrap_key(keys, secret).is_ok())
+}
+
 impl Database {
+    /// Every stored secret, as stored (still encrypted): for the check of a backup's copy before a
+    /// restore.
+    pub(crate) async fn stored_secrets(&self) -> Result<Vec<StoredSecret>, StoreError> {
+        let mut select = Query::select();
+        select.columns(all_columns()).from(Columns::Table);
+        self.fetch_all(&select)
+            .await?
+            .iter()
+            .map(read_secret)
+            .collect()
+    }
+
     /// Opens the key files in `folder` (the `keys/` folder of the data folder). The files are
     /// made only on the very first start, when the database holds nothing that needs them. If the
     /// database has secrets or a security log and a key file is missing, this refuses, because
@@ -398,7 +418,7 @@ async fn rewrap_one(
     Ok(transaction.execute(&update).await? == 1)
 }
 
-fn all_columns() -> [Columns; 7] {
+pub(crate) fn all_columns() -> [Columns; 7] {
     [
         Columns::Name,
         Columns::KeyId,

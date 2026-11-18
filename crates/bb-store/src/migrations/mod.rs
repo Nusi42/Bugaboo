@@ -82,6 +82,7 @@ mod m0050_work_times;
 mod m0051_own_themes;
 mod m0052_time_factor_and_accepted_warnings;
 mod m0053_issue_dates_index;
+mod m0054_backup_runs;
 #[cfg(test)]
 mod old_rows;
 
@@ -445,7 +446,23 @@ const ALL: &[Definition] = &[
         name: "issue_dates_index",
         steps: || Ok(m0053_issue_dates_index::steps()),
     },
+    Definition {
+        version: 54,
+        name: "backup_runs",
+        steps: || Ok(m0054_backup_runs::steps()),
+    },
 ];
+
+/// Every migration this program knows, with its name and checksum: what the migrations of a backup
+/// are held against before it is restored (ADR-0046, decision 4).
+///
+/// # Errors
+/// [`StoreError::Corrupt`] when a migration cannot be built (never, by the tests).
+pub fn known_migrations() -> Result<Vec<(i64, &'static str, Digest)>, StoreError> {
+    ALL.iter()
+        .map(|definition| Ok((definition.version, definition.name, definition.checksum()?)))
+        .collect()
+}
 
 /// The number of the newest migration this program knows.
 #[must_use]
@@ -561,7 +578,7 @@ impl Database {
     ///
     /// # Errors
     /// The same as [`Database::migrate`].
-    #[cfg(feature = "testing")]
+    #[cfg(any(test, feature = "testing"))]
     pub async fn migrate_up_to(&self, last: i64, now: Timestamp) -> Result<Vec<i64>, StoreError> {
         self.migrate_until(last, now).await
     }
@@ -593,7 +610,27 @@ impl Database {
         Ok(())
     }
 
+    /// Applies exactly the migrations `versions` and no other: the schema of the database a
+    /// backup was made from, which the rows of its copy are put back into before the migrations it
+    /// lacks run (ADR-0046, decision 4).
+    pub(crate) async fn migrate_only(
+        &self,
+        versions: &[i64],
+        now: Timestamp,
+    ) -> Result<Vec<i64>, StoreError> {
+        self.migrate_where(|version| versions.contains(&version), now)
+            .await
+    }
+
     async fn migrate_until(&self, last: i64, now: Timestamp) -> Result<Vec<i64>, StoreError> {
+        self.migrate_where(|version| version <= last, now).await
+    }
+
+    async fn migrate_where(
+        &self,
+        wanted: impl Fn(i64) -> bool,
+        now: Timestamp,
+    ) -> Result<Vec<i64>, StoreError> {
         let mut done = Vec::new();
         loop {
             let mut transaction = self.begin().await?;
@@ -604,7 +641,7 @@ impl Database {
             let Some(next) = ALL
                 .iter()
                 .filter(|definition| {
-                    definition.version <= last
+                    wanted(definition.version)
                         && !applied
                             .iter()
                             .any(|record| record.version == definition.version)
@@ -666,7 +703,9 @@ fn applied_query() -> sea_query::SelectStatement {
     select
 }
 
-async fn read_applied(transaction: &mut Transaction) -> Result<Vec<MigrationRecord>, StoreError> {
+pub(crate) async fn read_applied(
+    transaction: &mut Transaction,
+) -> Result<Vec<MigrationRecord>, StoreError> {
     transaction
         .fetch_all(&applied_query())
         .await?

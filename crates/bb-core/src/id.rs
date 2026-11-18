@@ -385,6 +385,11 @@ define_ordered_id! {
     NotificationId
 }
 
+define_ordered_id! {
+    /// The ID of the record of one backup made or restored (OPS-07).
+    BackupId
+}
+
 define_random_id! {
     /// The ID of a sign-in session as people see it in *Where you're signed in*. It is not the
     /// secret in the cookie and opens nothing.
@@ -544,7 +549,8 @@ into_entity_id!(
     StandingRuleId,
     AgentWorkId,
     AttemptId,
-    AgentNoteId
+    AgentNoteId,
+    BackupId
 );
 
 #[cfg(test)]

@@ -11,7 +11,9 @@
 pub mod manifest;
 pub mod member;
 pub mod name;
+pub mod replay;
 pub mod rotation;
+pub mod run;
 
 use serde::{Deserialize, Serialize};
 
