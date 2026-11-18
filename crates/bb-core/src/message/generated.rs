@@ -3882,6 +3882,9 @@ pub const KEEP_KIND_NAME_APP_GRANTS: MessageKey = MessageKey::new("keep-kind.nam
 /// The message `keep-kind.name.away-times`.
 pub const KEEP_KIND_NAME_AWAY_TIMES: MessageKey = MessageKey::new("keep-kind.name.away-times");
 
+/// The message `keep-kind.name.backups`.
+pub const KEEP_KIND_NAME_BACKUPS: MessageKey = MessageKey::new("keep-kind.name.backups");
+
 /// The message `keep-kind.name.dead-jobs`.
 pub const KEEP_KIND_NAME_DEAD_JOBS: MessageKey = MessageKey::new("keep-kind.name.dead-jobs");
 
@@ -3925,6 +3928,9 @@ pub const KEEP_KIND_WHY_APP_GRANTS: MessageKey = MessageKey::new("keep-kind.why.
 
 /// The message `keep-kind.why.away-times`.
 pub const KEEP_KIND_WHY_AWAY_TIMES: MessageKey = MessageKey::new("keep-kind.why.away-times");
+
+/// The message `keep-kind.why.backups`.
+pub const KEEP_KIND_WHY_BACKUPS: MessageKey = MessageKey::new("keep-kind.why.backups");
 
 /// The message `keep-kind.why.dead-jobs`.
 pub const KEEP_KIND_WHY_DEAD_JOBS: MessageKey = MessageKey::new("keep-kind.why.dead-jobs");
@@ -13301,6 +13307,15 @@ pub fn keep_length_years(count: i64) -> Message {
     Message::with_arguments(
         MessageKey::new("keep-length.years"),
         vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `keep-rules.no-fixed-end`.
+#[must_use]
+pub fn keep_rules_no_fixed_end(length: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keep-rules.no-fixed-end"),
+        vec![("length", Value::Text(length.to_string()))],
     )
 }
 
@@ -23114,6 +23129,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("keep-kind.name.app-grants", "Ended access of AI apps"),
     ("keep-kind.name.away-times", "Away times"),
+    ("keep-kind.name.backups", "Backups"),
     ("keep-kind.name.dead-jobs", "Background work that failed"),
     ("keep-kind.name.drafts", "Drafts"),
     ("keep-kind.name.ip-addresses", "IP addresses of sign-ins"),
@@ -23133,6 +23149,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "keep-kind.why.away-times",
         "Planning; nobody needs them longer",
+    ),
+    (
+        "keep-kind.why.backups",
+        "Getting everything back after a loss; the newest backups of the days and weeks the settings of backups say are kept whatever their age, and a backup created before a restore is kept as long as the security log",
     ),
     ("keep-kind.why.dead-jobs", "Seeing why it failed"),
     ("keep-kind.why.drafts", "Not losing text that was not saved"),
@@ -23178,6 +23198,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "keep-length.years",
         "{count, plural, one {# year} other {# years}}",
+    ),
+    (
+        "keep-rules.no-fixed-end",
+        "No fixed end; about {length} while a backup is created every day",
     ),
     (
         "keys.database-placeholder",

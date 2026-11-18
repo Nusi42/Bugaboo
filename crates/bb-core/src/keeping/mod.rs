@@ -23,7 +23,8 @@ use crate::settings::keeping::{
 };
 use crate::settings::working_hours::WORKING_HOURS_KEEP_YEARS;
 use crate::settings::{
-    Integer, Layers, SECURITY_LOG_KEEP_DAYS, SECURITY_SESSION_ABSOLUTE_HOURS, Setting,
+    BACKUPS_KEEP_DAILY, BACKUPS_KEEP_WEEKLY, Integer, Layers, SECURITY_LOG_KEEP_DAYS,
+    SECURITY_SESSION_ABSOLUTE_HOURS, Setting,
 };
 use crate::work_times::AWAY_TIME_KEPT_FOR_YEARS;
 
@@ -54,6 +55,8 @@ words! {
         AwayTimes => "away-times",
         /// The security log, in whole blocks.
         SecurityLog => "security-log",
+        /// The backups of the schedule and those made by hand (ADR-0046).
+        Backups => "backups",
         /// Work days with their breaks and the reasons of their changes (ADR-0035, decision 7).
         WorkDays => "work-days",
         /// Time entries on issues (M9-Q2).
@@ -88,6 +91,26 @@ pub enum Period {
     },
     /// A length of the code, which no setting changes: the row only shows it.
     Fixed(Length),
+    /// The rotation of backups (ADR-0046, decision 3): it keeps the newest backup of each of the
+    /// days and weeks the settings say, counted among the days and weeks that have a backup, and
+    /// deletes nothing by its age. The length is how far back they reach while a backup is made
+    /// every day; a record has no fixed last day ([`KeptUntil::NoFixedEnd`]).
+    Rotation {
+        /// The setting that changes the period; its lower bound is the floor of the row.
+        setting: &'static Setting<Integer>,
+        /// The length the stored values give while a backup is made every day.
+        length: fn(&Layers) -> Length,
+    },
+}
+
+/// The last day a record of a kind is kept: the answer of the port `KeepPeriods`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum KeptUntil {
+    /// Through this day; on the day after it, the record is past its period.
+    Day(Date),
+    /// No day can be named: the kind is not deleted by its age (the rotation of backups keeps the
+    /// newest whatever their age), or the day lies past the end of the calendar.
+    NoFixedEnd,
 }
 
 /// One row of [`KEEP_KINDS`].
@@ -106,7 +129,7 @@ impl KeepRule {
     #[must_use]
     pub fn length(&self, layers: &Layers) -> Length {
         match self.period {
-            Period::Setting { length, .. } => length(layers),
+            Period::Setting { length, .. } | Period::Rotation { length, .. } => length(layers),
             Period::Fixed(length) => length,
         }
     }
@@ -115,7 +138,7 @@ impl KeepRule {
     #[must_use]
     pub const fn setting(&self) -> Option<&'static Setting<Integer>> {
         match self.period {
-            Period::Setting { setting, .. } => Some(setting),
+            Period::Setting { setting, .. } | Period::Rotation { setting, .. } => Some(setting),
             Period::Fixed(_) => None,
         }
     }
@@ -145,16 +168,29 @@ impl KeepRule {
     }
 
     /// The last day a record of the kind dated `date` is kept: the answer of the port
-    /// `KeepPeriods`. The opposite of [`Self::kept_from`].
+    /// `KeepPeriods`. The opposite of [`Self::kept_from`]; none for the rotation of backups.
     #[must_use]
-    pub fn kept_until(&self, layers: &Layers, date: Date) -> Option<Date> {
-        self.length(layers).last_kept(date)
+    pub fn kept_until(&self, layers: &Layers, date: Date) -> KeptUntil {
+        if !self.fixed_end() {
+            return KeptUntil::NoFixedEnd;
+        }
+        self.length(layers)
+            .last_kept(date)
+            .map_or(KeptUntil::NoFixedEnd, KeptUntil::Day)
+    }
+
+    /// Whether a record of the kind goes when its period is over: not with the rotation of backups,
+    /// which keeps the newest whatever their age. The one source of the port, the page of the rules
+    /// and the table of the user docs.
+    #[must_use]
+    pub const fn fixed_end(&self) -> bool {
+        !matches!(self.period, Period::Rotation { .. })
     }
 }
 
 /// Every kind of data that is deleted after a time, in the order of the page of the rules: first
 /// what Bugaboo deletes by itself, then what an administrator deletes (ADR-0045, decision 1). The
-/// rows of data exports and backups join when their records do.
+/// row of data exports joins when its records do.
 pub const KEEP_KINDS: &[KeepRule] = &[
     KeepRule {
         kind: KeepKind::IpAddresses,
@@ -232,6 +268,21 @@ pub const KEEP_KINDS: &[KeepRule] = &[
         period: Period::Setting {
             setting: &SECURITY_LOG_KEEP_DAYS,
             length: |layers| Length::days(layers.number(&SECURITY_LOG_KEEP_DAYS)),
+        },
+    },
+    KeepRule {
+        kind: KeepKind::Backups,
+        group: KeepGroup::ByItself,
+        period: Period::Rotation {
+            setting: &BACKUPS_KEEP_DAILY,
+            // The rotation keeps the newest backup of each of the days and of each of the weeks the
+            // settings say (ADR-0046, decision 3): while a backup is made every day, the oldest it
+            // keeps is the longer of the two.
+            length: |layers| {
+                let week = i64::try_from(crate::time::day::DAYS_PER_WEEK).unwrap_or(i64::MAX);
+                let weeks = layers.number(&BACKUPS_KEEP_WEEKLY).saturating_mul(week);
+                Length::days(layers.number(&BACKUPS_KEEP_DAILY).max(weeks))
+            },
         },
     },
     KeepRule {

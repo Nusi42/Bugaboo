@@ -44,6 +44,10 @@ pub(crate) struct KeepRuleBody {
     group: KeepGroup,
     /// The period in force.
     period: LengthBody,
+    /// Whether a record goes when the period is over; false for backups, which the rotation keeps
+    /// whatever their age, so the period is only how far back they reach while a backup is
+    /// created every day.
+    fixed_end: bool,
     /// The key of the setting that changes the period; left out for a fixed period.
     #[serde(skip_serializing_if = "Option::is_none")]
     setting: Option<&'static str>,
@@ -74,6 +78,7 @@ impl From<&KeepRules> for KeepRulesBody {
                         count: row.length.count,
                         unit: row.length.unit,
                     },
+                    fixed_end: row.fixed_end,
                     setting: row.setting,
                     floor: row.floor,
                 })

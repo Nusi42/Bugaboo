@@ -186,3 +186,38 @@ async fn ops_07_the_backup_before_a_restore_stays_for_the_keep_period_of_the_sec
     assert!(!before_restore(&world), "it goes after the keep period");
     Ok(())
 }
+
+#[tokio::test]
+async fn ops_07_a_rotation_that_deletes_many_backups_queues_no_backup() -> Outcome {
+    use crate::jobs::JobKind;
+    use crate::keeping::KEEP_STEP_ROWS;
+
+    let world = World::new().await?;
+    let start = world.ctx().now().as_second();
+    // More old backups than a step of the other purges may delete, each on a day of its own.
+    let many = KEEP_STEP_ROWS + 50;
+    {
+        let mut files = world
+            .backups
+            .files
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        for day in 0..many {
+            files.push(BackupFile {
+                name: BackupName::new(
+                    Purpose::Regular,
+                    Timestamp::from_second(start - i64::try_from(day)? * DAY - DAY)?,
+                    "0.6.0",
+                ),
+                size: 1,
+            });
+        }
+    }
+    let jobs = world.store.lock().state.jobs.len();
+    let step = world.ctx().keep_step(JobKind::BackupsDaily).await?;
+    // All it no longer keeps goes at once, and no further step is queued: one would make a backup.
+    assert!(step.rows > KEEP_STEP_ROWS, "{step:?}");
+    assert!(!step.more);
+    assert_eq!(world.store.lock().state.jobs.len(), jobs);
+    Ok(())
+}

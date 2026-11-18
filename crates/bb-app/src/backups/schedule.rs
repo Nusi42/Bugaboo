@@ -33,6 +33,18 @@ impl<S: AuthStore> Ctx<'_, S> {
             self.record_run(&created).await?;
             round.created = true;
         }
+        // What the rotation no longer keeps goes through the one shape of deleting (ADR-0045).
+        let step = self.keep_step(crate::jobs::JobKind::BackupsDaily).await?;
+        round.deleted = usize::try_from(step.rows).unwrap_or(usize::MAX);
+        Ok(round)
+    }
+
+    /// Deletes the backups the rotation no longer keeps, and says how many: the row *Backups* of
+    /// the keep rules (ADR-0045), which the job of the schedule deletes through the one shape of
+    /// deleting (`Ctx::keep_step`), as [`Self::backup_round`] does. Safe to run again.
+    pub(crate) async fn prune_backups(&self) -> Result<usize, AppError> {
+        let layers = self.setting_layers_of(None).await?;
+        let mut deleted = 0;
         let keep = Keep {
             daily: usize::try_from(layers.number(&BACKUPS_KEEP_DAILY)).unwrap_or(1),
             weekly: usize::try_from(layers.number(&BACKUPS_KEEP_WEEKLY)).unwrap_or(0),
@@ -54,9 +66,9 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .delete(folder.clone(), name.clone())
                 .await
                 .map_err(|error| io(&error))?;
-            round.deleted += 1;
+            deleted += 1;
         }
-        Ok(round)
+        Ok(deleted)
     }
 }
 

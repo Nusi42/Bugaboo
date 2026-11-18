@@ -8483,10 +8483,17 @@ export interface components {
       | "tool-calls"
       | "away-times"
       | "security-log"
+      | "backups"
       | "work-days"
       | "time-entries";
     /** @description One row of the rules. */
     KeepRuleBody: {
+      /**
+       * @description Whether a record goes when the period is over; false for backups, which the rotation keeps
+       *     whatever their age, so the period is only how far back they reach while a backup is
+       *     created every day.
+       */
+      fixed_end: boolean;
       /**
        * Format: int64
        * @description The shortest period the setting allows; left out for a fixed period.

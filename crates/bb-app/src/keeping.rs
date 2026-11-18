@@ -24,7 +24,7 @@ pub use rules::{KeepRuleView, KeepRules, KeepRulesQuery, keep_rules};
 
 use bb_core::event::{Actor as EventActor, RecordKind};
 use bb_core::id::JobId;
-use bb_core::keeping::{KeepKind, Step, rule};
+use bb_core::keeping::{KeepKind, KeptUntil, Step, rule};
 use bb_core::settings::{LOGS_SERVER_LOG_FILES, LOGS_SERVER_LOG_MEGABYTES, Layers};
 use bb_core::wording::Region;
 use jiff::Timestamp;
@@ -62,8 +62,8 @@ impl JobKind {
             Self::CleanOldGrants => &[KeepKind::AppGrants],
             Self::PruneSecurityLog => &[KeepKind::SecurityLog, KeepKind::ToolCalls],
             Self::DeleteOldAwayTimes => &[KeepKind::AwayTimes],
+            Self::BackupsDaily => &[KeepKind::Backups],
             Self::CatchUpHistory
-            | Self::BackupsDaily
             | Self::RefreshStatistics
             | Self::RotateServerLog
             | Self::ManyChangesStep
@@ -84,7 +84,7 @@ impl JobKind {
 
 /// The stored settings answer the port: each kind's period is its row of `KEEP_KINDS`.
 impl KeepPeriods for Layers {
-    fn kept_until(&self, kind: KeepKind, date: jiff::civil::Date) -> Option<jiff::civil::Date> {
+    fn kept_until(&self, kind: KeepKind, date: jiff::civil::Date) -> KeptUntil {
         rule(kind).kept_until(self, date)
     }
 }
@@ -133,8 +133,14 @@ impl<S: AuthStore> Ctx<'_, S> {
             JobKind::DeleteOldAwayTimes => {
                 rows(crate::work_times::delete_old_away_times(self).await?)
             }
+            // The job of the schedule makes the backup of the day, then deletes through this step.
+            // The rotation deletes all it no longer keeps at once, so it never asks for another
+            // step: a queued `backups.daily` would make another backup.
+            JobKind::BackupsDaily => Step {
+                rows: u64::try_from(self.prune_backups().await?).unwrap_or(u64::MAX),
+                more: false,
+            },
             JobKind::CatchUpHistory
-            | JobKind::BackupsDaily
             | JobKind::RefreshStatistics
             | JobKind::RotateServerLog
             | JobKind::ManyChangesStep

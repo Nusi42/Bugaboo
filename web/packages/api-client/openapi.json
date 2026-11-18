@@ -26067,6 +26067,7 @@
           "tool-calls",
           "away-times",
           "security-log",
+          "backups",
           "work-days",
           "time-entries"
         ]
@@ -26074,8 +26075,12 @@
       "KeepRuleBody": {
         "type": "object",
         "description": "One row of the rules.",
-        "required": ["kind", "group", "period"],
+        "required": ["kind", "group", "period", "fixed_end"],
         "properties": {
+          "fixed_end": {
+            "type": "boolean",
+            "description": "Whether a record goes when the period is over; false for backups, which the rotation keeps\nwhatever their age, so the period is only how far back they reach while a backup is\ncreated every day."
+          },
           "floor": {
             "type": ["integer", "null"],
             "format": "int64",

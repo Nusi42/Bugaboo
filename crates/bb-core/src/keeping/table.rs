@@ -5,8 +5,8 @@
 
 use std::fmt::Write as _;
 
-use super::{KEEP_KINDS, KeepGroup, Length};
-use crate::message::{Message, Value};
+use super::{KEEP_KINDS, KeepGroup, KeepRule, Length};
+use crate::message::{Message, Value, keep_rules_no_fixed_end};
 use crate::settings::Layers;
 
 impl Length {
@@ -14,6 +14,19 @@ impl Length {
     #[must_use]
     pub fn words(self) -> Message {
         Message::with_arguments(self.unit.name(), vec![("count", Value::Number(self.count))])
+    }
+}
+
+impl KeepRule {
+    /// How long the kind is kept, in words: its period, or that it has no fixed end and how far back
+    /// the period reaches ([`Self::fixed_end`]).
+    #[must_use]
+    pub fn kept_for(&self, layers: &Layers) -> Message {
+        let length = self.length(layers).words();
+        if self.fixed_end() {
+            return length;
+        }
+        keep_rules_no_fixed_end(length.render())
     }
 }
 
@@ -41,7 +54,7 @@ pub fn keep_table() -> String {
                 page,
                 "| {} | {} | {} |",
                 Message::from(row.kind.name()).render(),
-                row.length(&layers).words().render(),
+                row.kept_for(&layers).render(),
                 Message::from(row.kind.why()).render()
             );
         }

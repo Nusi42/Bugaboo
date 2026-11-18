@@ -231,7 +231,7 @@ fn priv_05_every_kind_of_data_has_one_row_and_one_group() {
             }
         }
     }
-    // A daily job without a row deletes nothing past a keep period: these only.
+    // A daily job without a row deletes nothing past a keep period: these three only.
     let without_rows: BTreeSet<_> = JobKind::daily()
         .filter(|kind| kind.keeps().is_empty())
         .collect();
@@ -239,7 +239,6 @@ fn priv_05_every_kind_of_data_has_one_row_and_one_group() {
         without_rows,
         BTreeSet::from([
             JobKind::CatchUpHistory,
-            JobKind::BackupsDaily,
             JobKind::RefreshStatistics,
             JobKind::RotateServerLog,
             // The daily round of *Download my data* deletes old exports with its own call until
@@ -470,7 +469,7 @@ async fn priv_05_no_purge_takes_a_business_record() -> Outcome {
 
 #[tokio::test]
 async fn priv_05_the_port_of_keep_periods_answers_with_the_organizations_settings() -> Outcome {
-    use bb_core::keeping::KeepKind;
+    use bb_core::keeping::{KeepKind, KeptUntil};
     use jiff::civil::date;
 
     use crate::ports::KeepPeriods as _;
@@ -481,11 +480,11 @@ async fn priv_05_the_port_of_keep_periods_answers_with_the_organizations_setting
     // The starting periods: ten years for time entries, a month for the trash.
     assert_eq!(
         periods.kept_until(KeepKind::TimeEntries, recorded),
-        Some(date(2036, 3, 11))
+        KeptUntil::Day(date(2036, 3, 11))
     );
     assert_eq!(
         periods.kept_until(KeepKind::Trash, recorded),
-        Some(date(2026, 4, 10))
+        KeptUntil::Day(date(2026, 4, 10))
     );
     // The organization keeps time entries for eight years: the port follows the setting.
     change_setting(
@@ -505,7 +504,58 @@ async fn priv_05_the_port_of_keep_periods_answers_with_the_organizations_setting
     let periods = world.ctx().keep_periods().await?;
     assert_eq!(
         periods.kept_until(KeepKind::TimeEntries, recorded),
-        Some(date(2034, 3, 11))
+        KeptUntil::Day(date(2034, 3, 11))
     );
+    Ok(())
+}
+
+#[tokio::test]
+async fn priv_05_the_table_the_rules_and_the_port_agree_on_how_long_each_kind_is_kept() -> Outcome {
+    use bb_core::keeping::{KEEP_KINDS, KeptUntil, keep_table};
+    use bb_core::message::Message;
+    use jiff::civil::date;
+
+    use crate::keeping::{KeepRulesQuery, keep_rules};
+    use crate::ports::KeepPeriods as _;
+
+    let world = World::new().await?;
+    let rules = keep_rules(
+        &world.ctx(),
+        KeepRulesQuery {
+            session_token: token(&world),
+        },
+    )
+    .await?
+    .into_value();
+    let periods = world.ctx().keep_periods().await?;
+    let layers = bb_core::settings::Layers::default();
+    let table = keep_table();
+    for (row, view) in KEEP_KINDS.iter().zip(&rules.rules) {
+        assert_eq!(view.kind, row.kind);
+        // The page of the rules and the port answer from the one source.
+        assert_eq!(view.fixed_end, row.fixed_end(), "{}", row.kind.code());
+        let until = periods.kept_until(row.kind, date(2026, 3, 10));
+        assert_eq!(
+            matches!(until, KeptUntil::Day(_)),
+            view.fixed_end,
+            "{}",
+            row.kind.code()
+        );
+        // The table of the user docs says the same.
+        let line = format!(
+            "| {} | {} |",
+            Message::from(row.kind.name()).render(),
+            row.kept_for(&layers).render()
+        );
+        assert!(table.contains(&line), "{line}");
+        let plain = row.length(&layers).words().render();
+        assert_eq!(
+            row.kept_for(&layers).render() == plain,
+            row.fixed_end(),
+            "{}",
+            row.kind.code()
+        );
+    }
+    assert!(!bb_core::keeping::rule(bb_core::keeping::KeepKind::Backups).fixed_end());
     Ok(())
 }

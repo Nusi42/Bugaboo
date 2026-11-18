@@ -23,6 +23,9 @@ pub struct KeepRuleView {
     pub group: KeepGroup,
     /// The period in force.
     pub length: Length,
+    /// Whether a record goes when the period is over; not for backups, which the rotation keeps
+    /// whatever their age.
+    pub fixed_end: bool,
     /// The key of the setting that changes the period; none for a fixed period.
     pub setting: Option<&'static str>,
     /// The shortest period the setting allows; none for a fixed period.
@@ -54,6 +57,7 @@ pub async fn keep_rules<S: AuthStore>(
             kind: row.kind,
             group: row.group,
             length: row.length(&layers),
+            fixed_end: row.fixed_end(),
             setting: row.setting().map(|setting| setting.definition().key()),
             floor: row.floor(),
         })

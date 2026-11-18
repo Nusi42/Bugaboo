@@ -5,7 +5,7 @@ use std::future::Future;
 use std::pin::Pin;
 
 use bb_core::event::DomainEvent;
-use bb_core::keeping::KeepKind;
+use bb_core::keeping::{KeepKind, KeptUntil};
 use jiff::civil::Date;
 
 /// A future that can move between threads: what a change hands back to the store, so the
@@ -113,7 +113,7 @@ pub trait PersonData: ChangeStore {
 /// record's date and the organization's keep periods. The window of *Remove a person* and the trash
 /// read it; `crate::keeping` answers it from the settings, so no period is counted twice.
 pub trait KeepPeriods {
-    /// The last day a record of `kind` dated `date` is kept; `None` when the day cannot be counted
-    /// (past the end of the calendar).
-    fn kept_until(&self, kind: KeepKind, date: Date) -> Option<Date>;
+    /// The last day a record of `kind` dated `date` is kept, or no fixed end: backups, which the
+    /// rotation keeps whatever their age, and a day past the end of the calendar.
+    fn kept_until(&self, kind: KeepKind, date: Date) -> KeptUntil;
 }

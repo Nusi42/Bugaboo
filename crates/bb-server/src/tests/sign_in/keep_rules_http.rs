@@ -61,6 +61,13 @@ async fn priv_05_the_rules_list_every_kind_with_its_period_and_group() -> TestRe
         assert_eq!(time["group"], "by-an-administrator");
         assert_eq!(time["period"], json!({"count": 10, "unit": "years"}));
         assert_eq!(time["setting"], "keeping.time-entry-years");
+        assert_eq!(time["fixed_end"], true);
+        // Backups have no fixed end: the rotation keeps the newest whatever their age.
+        let backups = rows
+            .iter()
+            .find(|row| row["kind"] == "backups")
+            .ok_or("no row of backups")?;
+        assert_eq!(backups["fixed_end"], false);
         // A kind Bugaboo deletes by itself has no count of what is past its period.
         let unknown = ada
             .send("GET", &format!("{RULES}/trash/past"), None)

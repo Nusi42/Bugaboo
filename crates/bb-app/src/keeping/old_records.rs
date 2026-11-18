@@ -159,7 +159,8 @@ fn deleted_by_an_administrator(kind: KeepKind) -> Result<(&'static KeepRule, Wri
         | KeepKind::AppGrants
         | KeepKind::ToolCalls
         | KeepKind::AwayTimes
-        | KeepKind::SecurityLog => return Err(ErrorCode::NotFound.into()),
+        | KeepKind::SecurityLog
+        | KeepKind::Backups => return Err(ErrorCode::NotFound.into()),
     };
     let row = rule(kind);
     debug_assert_eq!(row.group, KeepGroup::ByAnAdministrator);

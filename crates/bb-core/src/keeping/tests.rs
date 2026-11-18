@@ -100,6 +100,27 @@ fn priv_05_each_period_follows_its_setting() {
 }
 
 #[test]
+fn priv_05_backups_are_kept_as_long_as_their_rotation_keeps_one() {
+    use crate::settings::{BACKUPS_KEEP_DAILY, BACKUPS_KEEP_WEEKLY};
+
+    let row = rule(KeepKind::Backups);
+    assert_eq!(row.group, KeepGroup::ByItself);
+    // The setting of the row is the one of the daily backups; its floor is a day.
+    assert_eq!(row.floor(), Some(1));
+    let mut layers = with(&BACKUPS_KEEP_DAILY, 3);
+    layers.organization.insert(
+        BACKUPS_KEEP_WEEKLY.definition().key().to_owned(),
+        OrganizationValue {
+            value: SettingValue::Integer(0),
+            locked: false,
+        },
+    );
+    assert_eq!(row.length(&layers), Length::days(3), "no weekly backups");
+    let weeks = with(&BACKUPS_KEEP_WEEKLY, 10);
+    assert_eq!(row.length(&weeks), Length::days(70), "ten weeks");
+}
+
+#[test]
 fn priv_05_the_periods_start_as_decided() {
     let layers = Layers::default();
     let length = |kind| rule(kind).length(&layers);
@@ -109,6 +130,8 @@ fn priv_05_the_periods_start_as_decided() {
     assert_eq!(length(KeepKind::DeadJobs), Length::days(30));
     assert_eq!(length(KeepKind::AwayTimes), Length::years(1));
     assert_eq!(length(KeepKind::SecurityLog), Length::days(365));
+    // The newest backup of each of four weeks outlives the seven daily ones.
+    assert_eq!(length(KeepKind::Backups), Length::days(28));
     assert_eq!(length(KeepKind::WorkDays), Length::years(2));
     assert_eq!(length(KeepKind::TimeEntries), Length::years(10));
 }
@@ -129,7 +152,7 @@ fn priv_05_kept_until_follows_the_period_of_the_kind() {
         let row = rule(kind);
         assert_eq!(
             row.kept_until(&layers, recorded),
-            Some(last),
+            KeptUntil::Day(last),
             "{}",
             kind.code()
         );
@@ -138,6 +161,16 @@ fn priv_05_kept_until_follows_the_period_of_the_kind() {
         let next = last.tomorrow().unwrap();
         assert!(row.kept_from(&layers, next).unwrap() > recorded);
     }
+    // The rotation keeps the newest backups whatever their age: a backup has no fixed last day.
+    assert_eq!(
+        rule(KeepKind::Backups).kept_until(&layers, date(2026, 3, 10)),
+        KeptUntil::NoFixedEnd
+    );
+    // A day past the end of the calendar cannot be named either.
+    assert_eq!(
+        rule(KeepKind::TimeEntries).kept_until(&layers, date(9995, 1, 1)),
+        KeptUntil::NoFixedEnd
+    );
 }
 
 #[test]
