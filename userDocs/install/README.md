@@ -10,6 +10,8 @@ Choose the page that fits your computer:
 
 When Bugaboo runs, create your own account: [Your first sign-in](../sign-in/first-sign-in.md).
 
+Bugaboo backs itself up every night. How backups work and how to restore one: [Backups and restore](backups.md).
+
 ## What the questions are about
 
 The command `bugaboo setup` asks these questions. Press Enter to accept the answer in brackets.
