@@ -500,6 +500,16 @@
           "403": {
             "$ref": "#/components/responses/Forbidden"
           },
+          "409": {
+            "description": "A backup is being created already (backup.running).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictProblem"
+                }
+              }
+            }
+          },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
@@ -23208,6 +23218,7 @@
           "role.in-use",
           "assignment.conflict",
           "setting.locked",
+          "backup.running",
           "setting.hosts-not-bare",
           "setting.unknown-time-zone",
           "project.move-lifts-no-access",

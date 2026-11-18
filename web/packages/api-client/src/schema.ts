@@ -7155,6 +7155,7 @@ export interface components {
       | "role.in-use"
       | "assignment.conflict"
       | "setting.locked"
+      | "backup.running"
       | "setting.hosts-not-bare"
       | "setting.unknown-time-zone"
       | "project.move-lifts-no-access"
@@ -13545,6 +13546,15 @@ export interface operations {
       };
       401: components["responses"]["NotSignedIn"];
       403: components["responses"]["Forbidden"];
+      /** @description A backup is being created already (backup.running). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ConflictProblem"];
+        };
+      };
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];

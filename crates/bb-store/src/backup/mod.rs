@@ -136,6 +136,26 @@ fn free_name(
     Err(io(std::io::ErrorKind::AlreadyExists.into()))
 }
 
+/// Puts the finished archive `staged` at `target`, which must not be there: a link, which fails
+/// when the name is taken, so two backups can never take one name, even made at the same moment
+/// by the server and the command line. A drive without links gets a copy into a file that is made
+/// new under the name, which fails the same way.
+fn place_new(staged: &Path, target: &Path) -> std::io::Result<()> {
+    match std::fs::hard_link(staged, target) {
+        Err(error) if error.kind() != std::io::ErrorKind::AlreadyExists => {
+            let mut copy = archive::create_private(target)?;
+            let copied = std::io::copy(&mut std::fs::File::open(staged)?, &mut copy)
+                .and_then(|_| copy.sync_all());
+            if copied.is_err() {
+                drop(copy);
+                let _ = std::fs::remove_file(target);
+            }
+            copied
+        }
+        other => other,
+    }
+}
+
 impl Database {
     /// Creates a backup in `places.folder` while people go on working (ADR-0046, decisions 1 and
     /// 2): the copy of the database, then the files it points to (a file uploaded after the copy
@@ -224,10 +244,7 @@ impl Database {
         };
         let partial = work.join(format!("archive{EXTENSION}"));
         let (size, checksum) = archive::write(&partial, &mut manifest, &sources)?;
-        if target.exists() {
-            return Err(io(std::io::ErrorKind::AlreadyExists.into()));
-        }
-        std::fs::rename(&partial, target).map_err(io)?;
+        place_new(&partial, target).map_err(io)?;
         Ok(CreatedBackup {
             file: CreatedFile {
                 name: name.clone(),

@@ -2092,6 +2092,9 @@ pub const ERROR_AUTH_WRONG_SECOND_STEP_CODE: MessageKey =
 /// The message `error.auth.wrong-setup-code`.
 pub const ERROR_AUTH_WRONG_SETUP_CODE: MessageKey = MessageKey::new("error.auth.wrong-setup-code");
 
+/// The message `error.backup.running`.
+pub const ERROR_BACKUP_RUNNING: MessageKey = MessageKey::new("error.backup.running");
+
 /// The message `error.choice.number-taken`.
 pub const ERROR_CHOICE_NUMBER_TAKEN: MessageKey = MessageKey::new("error.choice.number-taken");
 
@@ -21236,6 +21239,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "error.auth.wrong-setup-code",
         "That setup code is not right. Copy it again from the window where Bugaboo is running.",
+    ),
+    (
+        "error.backup.running",
+        "A backup is being created right now. Wait until it is done, then try again.",
     ),
     (
         "error.choice.number-taken",

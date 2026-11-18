@@ -138,3 +138,20 @@ fn ops_07_a_name_that_leaves_the_folder_is_refused() {
         assert!(!folder.path().join("escaped").exists());
     }
 }
+
+#[test]
+fn ops_07_a_finished_backup_never_takes_the_name_of_another()
+-> Result<(), Box<dyn std::error::Error>> {
+    let folder = tempfile::tempdir()?;
+    let staged = folder.path().join("staged");
+    let target = folder.path().join("taken.backup");
+    std::fs::write(&staged, b"new")?;
+    std::fs::write(&target, b"there first")?;
+    let error = super::super::place_new(&staged, &target).expect_err("the name is taken");
+    assert_eq!(error.kind(), std::io::ErrorKind::AlreadyExists);
+    assert_eq!(std::fs::read(&target)?, b"there first");
+    let free = folder.path().join("free.backup");
+    super::super::place_new(&staged, &free)?;
+    assert_eq!(std::fs::read(&free)?, b"new");
+    Ok(())
+}

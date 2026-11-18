@@ -102,6 +102,8 @@ error_codes! {
     AssignmentConflict => ("assignment.conflict", 409),
     /// An administrator locked the setting, so nobody lower down may change it (CFG-06).
     SettingLocked => ("setting.locked", 409),
+    /// A backup is being created already; one is created at a time (OPS-07).
+    BackupRunning => ("backup.running", 409),
     /// A list of hosts has an address or a path in it, not only host names (SEC-13).
     SettingHostsNotBare => ("setting.hosts-not-bare", 400),
     /// A time zone that is not on the list of zones the server carries (M2-F72).

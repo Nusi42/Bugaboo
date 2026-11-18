@@ -10,8 +10,11 @@
 mod ports;
 mod schedule;
 
+use std::sync::atomic::{AtomicBool, Ordering};
+
 use bb_core::backup::name::{BackupName, Purpose};
 use bb_core::backup::run::{BackupEvent, BackupMaker, BackupRun};
+use bb_core::error_code::ErrorCode;
 use bb_core::event::{Actor as EventActor, DomainEvent};
 use bb_core::id::{BackupId, UserId};
 use bb_core::network::NetworkPrefix;
@@ -122,6 +125,25 @@ pub async fn create_backup<S: AuthStore>(
     Ok(access.authorize(created.item))
 }
 
+/// The mark that a backup of this server is being made, taken back when it is dropped.
+struct OneAtATime<'a>(&'a AtomicBool);
+
+impl<'a> OneAtATime<'a> {
+    /// The mark, or `None` while another backup holds it.
+    fn take(running: &'a AtomicBool) -> Option<Self> {
+        running
+            .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+            .ok()
+            .map(|_| Self(running))
+    }
+}
+
+impl Drop for OneAtATime<'_> {
+    fn drop(&mut self) {
+        self.0.store(false, Ordering::Release);
+    }
+}
+
 /// A backup that was created, with its record and the event that records it.
 pub(crate) struct Created {
     pub(crate) item: BackupItem,
@@ -175,12 +197,15 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok((!folder.trim().is_empty()).then(|| folder.trim().to_owned()))
     }
 
-    /// Creates a backup, and the record and event that the caller writes with `record_change`.
+    /// Creates a backup, and the record and event that the caller writes with `record_run`. One
+    /// backup is made at a time: while one is made, the button and the schedule are turned away.
     pub(crate) async fn created_backup(
         &self,
         maker: BackupMaker,
         person: Option<UserId>,
     ) -> Result<Created, AppError> {
+        let _running = OneAtATime::take(&self.services.backup_running)
+            .ok_or(AppError::Refused(ErrorCode::BackupRunning))?;
         let folder = self.backups_folder().await?;
         let now = self.now();
         let created = self

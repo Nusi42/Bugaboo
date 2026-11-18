@@ -141,6 +141,7 @@ async fn list_backups(
     tag = "admin",
     responses(
         (status = 200, description = "The backup that was created.", body = BackupFileBody),
+        (status = 409, description = "A backup is being created already (backup.running).", body = bb_core::Problem, content_type = "application/problem+json"),
         NotSignedInAnswer,
         ForbiddenAnswer
     )

@@ -3,6 +3,7 @@
 
 use bb_core::backup::name::{BackupName, Purpose};
 use bb_core::backup::run::{BackupEvent, BackupMaker};
+use bb_core::error_code::ErrorCode;
 use bb_core::settings::{BACKUPS_DAILY, SettingValue};
 use bb_core::sign_in::SecurityAction;
 use jiff::Timestamp;
@@ -10,6 +11,7 @@ use jiff::Timestamp;
 use super::fake_backups::MemoryBackups;
 use super::scenarios::{Added, measured, token};
 use super::world::{Outcome, World};
+use crate::auth::AppError;
 use crate::backups::{BackupFile, CreateBackup, ListBackupsQuery, create_backup, list_backups};
 use crate::settings::{ChangeSetting, SettingsScope, change_setting};
 
@@ -70,6 +72,39 @@ async fn ops_07_a_backup_now_is_recorded_with_its_line_in_the_security_log() -> 
         .iter()
         .any(|entry| entry.action == SecurityAction::BackupMade);
     assert!(logged, "the backup has its line in the security log");
+    Ok(())
+}
+
+#[tokio::test]
+async fn ops_07_one_backup_is_made_at_a_time() -> Outcome {
+    let world = World::new().await?;
+    let ctx = world.ctx();
+    let ask = || {
+        create_backup(
+            &ctx,
+            CreateBackup {
+                session_token: token(&world),
+            },
+        )
+    };
+    // While a backup is being made, another is turned away with its code and nothing is made.
+    world
+        .services
+        .backup_running
+        .store(true, std::sync::atomic::Ordering::SeqCst);
+    assert!(matches!(
+        ask().await,
+        Err(AppError::Refused(ErrorCode::BackupRunning))
+    ));
+    assert!(world.store.lock().state.backup_runs.is_empty());
+    world
+        .services
+        .backup_running
+        .store(false, std::sync::atomic::Ordering::SeqCst);
+    // Once it is done, the next one goes ahead, and lets the mark go again after it.
+    ask().await?;
+    ask().await?;
+    assert_eq!(world.store.lock().state.backup_runs.len(), 2);
     Ok(())
 }
 

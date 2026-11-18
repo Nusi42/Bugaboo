@@ -222,6 +222,8 @@ export const messages = {
   "error.setting.hosts-not-bare":
     "Write only the host names, like images.example.com, without https:// and without a path.",
   "error.setting.locked": "An administrator locked this setting, so it cannot be changed here.",
+  "error.backup.running":
+    "A backup is being created right now. Wait until it is done, then try again.",
   "error.assignment.conflict":
     "This person or group already has a role here, so it cannot also have No access here, and the other way round. Take the other row away first.",
   "files.drop": "Drop files here, paste a screenshot, or use Upload.",

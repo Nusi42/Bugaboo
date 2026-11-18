@@ -69,6 +69,8 @@ pub struct AuthServices<S> {
     pub(crate) files: Arc<dyn FileStore>,
     /// The backup files (OPS-07, ADR-0046).
     pub(crate) backups: Arc<dyn BackupFiles>,
+    /// Whether a backup of this server is being made: one is made at a time.
+    pub(crate) backup_running: Arc<AtomicBool>,
     /// The key the links of downloads are signed under (ATT-07).
     pub(crate) links: LinkKey,
     pub(crate) mailer: Arc<dyn Mailer>,
@@ -119,6 +121,7 @@ impl<S> AuthServices<S> {
             records: Arc::new(NoRecords),
             files: Arc::new(NoFileStore),
             backups: Arc::new(NoBackupFiles),
+            backup_running: Arc::default(),
             links,
             mailer: Arc::new(NoMailer),
             ai: Arc::new(NoAiProvider),
