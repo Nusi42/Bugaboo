@@ -164,6 +164,11 @@ error_codes! {
     /// never `request.invalid`. The count includes what the person may not see, as it is a limit of
     /// storage, so the answer names no issue.
     LimitReached => ("limit.reached", 409),
+    /// A file of *Download my data* is being written for the person already: one at a time
+    /// (ADR-0044, *Limits*).
+    ExportWaiting => ("data-export.waiting", 409),
+    /// An administrator's export of somebody else's data needs a reason (ADR-0044, decision 4).
+    ExportReasonNeeded => ("data-export.reason-needed", 400),
     /// A timer runs already for the person (maybe started on another device).
     TimerRunning => ("timer.running", 409),
     /// The person's timer does not run (it was stopped meanwhile, maybe on another device).

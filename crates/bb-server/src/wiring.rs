@@ -242,6 +242,7 @@ pub(crate) async fn wire(
         name,
     )
     .with_setup_code_file(Arc::new(SetupCodeOnDisk(data.setup_code_file())))
+    .with_exports(Arc::new(bb_files::DiskExports::new(data.exports())))
     .with_files(Arc::new(DiskFiles::new(
         data.files(),
         PreviewCommand::of_this_program(PREVIEW_COMMAND)

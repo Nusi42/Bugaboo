@@ -160,7 +160,7 @@ fn read_through(path: &std::path::Path) -> io::Result<(Digest, u64, Vec<u8>)> {
     Ok((Digest::new(hasher.finalize().into()), size, head))
 }
 
-struct DiskReader(tokio::fs::File);
+pub(crate) struct DiskReader(pub(crate) tokio::fs::File);
 
 impl ChunkReader for DiskReader {
     fn next_chunk(&mut self) -> BoxFuture<'_, io::Result<Option<Vec<u8>>>> {

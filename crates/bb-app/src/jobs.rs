@@ -93,6 +93,13 @@ bb_core::words! {
         /// Creating the backup of the day and deleting the ones the schedule no longer keeps
         /// (OPS-07, ADR-0046 decision 3): `backups::schedule`.
         BackupsDaily => "backups.daily",
+        /// Writing the file of *Download my data* (ADR-0044, decision 2): queued in the change that
+        /// asks for it; the payload names the export, and one that waits no more leaves it nothing
+        /// to do.
+        DataExport => "privacy.export",
+        /// Deleting the files of *Download my data* and their records 7 days after they were asked
+        /// for (ADR-0044, decision 2): `delete_old_exports`.
+        DeleteOldExports => "privacy.delete-old-exports",
     }
 }
 
@@ -112,6 +119,7 @@ impl JobKind {
             | Self::PurgeSessions
             | Self::DeleteOldAwayTimes
             | Self::BackupsDaily
+            | Self::DeleteOldExports
             | Self::RotateServerLog => true,
             Self::ManyChangesStep
             | Self::RenewIds
@@ -122,7 +130,8 @@ impl JobKind {
             | Self::RuleRunsOut
             | Self::RuleAboutToRunOut
             | Self::RuleMatches
-            | Self::RulesGetAnEnd => false,
+            | Self::RulesGetAnEnd
+            | Self::DataExport => false,
         }
     }
 
@@ -152,7 +161,9 @@ impl JobKind {
             | Self::RuleRunsOut
             | Self::RuleAboutToRunOut
             | Self::RuleMatches
-            | Self::RulesGetAnEnd => Rhythm::FromTheStart,
+            | Self::RulesGetAnEnd
+            | Self::DataExport
+            | Self::DeleteOldExports => Rhythm::FromTheStart,
         }
     }
 
@@ -430,8 +441,15 @@ impl<S: AuthStore> Ctx<'_, S> {
                     tracing::warn!(cause = %error, "a long timer could not be told");
                     JobFailure::of(&error, FAILED, job)
                 }),
+            JobKind::DataExport => Box::pin(self.run_export(&job.payload))
+                .await
+                .map_err(|error| {
+                    tracing::warn!(cause = %error, "a file of a person's data could not be written");
+                    JobFailure::of(&error, FAILED, job)
+                }),
             // The daily kinds go to `do_daily_job`; listed so that a new kind has to be placed.
             JobKind::PurgeDrafts
+            | JobKind::DeleteOldExports
             | JobKind::CatchUpHistory
             | JobKind::PurgeNotifications
             | JobKind::PruneSecurityLog
@@ -524,6 +542,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             JobKind::CleanOldGrants => self.clean_old_grants_daily(job).await,
             JobKind::RefreshStatistics => self.refresh_statistics_daily(job).await,
             JobKind::BackupsDaily => self.backups_daily(job).await,
+            JobKind::DeleteOldExports => self.delete_old_exports_daily(job).await,
             // The other kinds go to `do_one_off_job`; listed so that a new kind has to be placed.
             JobKind::ManyChangesStep
             | JobKind::RenewIds
@@ -534,7 +553,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             | JobKind::RuleRunsOut
             | JobKind::RuleAboutToRunOut
             | JobKind::RuleMatches
-            | JobKind::RulesGetAnEnd => Err(misrouted(job, kind)),
+            | JobKind::RulesGetAnEnd
+            | JobKind::DataExport => Err(misrouted(job, kind)),
         }
     }
 
@@ -551,6 +571,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             }
             Some(JobKind::MailSend) => self.mail_job_gave_up(&job.payload).await,
             Some(JobKind::PreviewFile) => self.preview_gave_up(&job.payload).await,
+            Some(JobKind::DataExport) => self.export_gave_up(&job.payload).await,
             // The daily kinds come back by themselves and leave no work that people can see; a
             // new kind has to be placed in one of these arms.
             Some(
@@ -564,7 +585,8 @@ impl<S: AuthStore> Ctx<'_, S> {
                 | JobKind::CleanUpFiles
                 | JobKind::CleanOldGrants
                 | JobKind::RefreshStatistics
-                | JobKind::BackupsDaily),
+                | JobKind::BackupsDaily
+                | JobKind::DeleteOldExports),
             ) => {
                 debug_assert!(kind.is_daily(), "the job kind {kind:?} is not a daily one");
                 Ok(())

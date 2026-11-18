@@ -83,10 +83,7 @@ pub trait SetupCodeFile: Send + Sync {
 /// The walk of a person's data (ADR-0044, decision 1): the one way to find the rows that name a
 /// person, read by *Download my data*, *Remove a person* and the removal plan. The store answers it
 /// from the links of the entities; nothing else searches rows by person.
-pub trait PersonData: Send + Sync {
-    /// What a failed read reports.
-    type Error: Send;
-
+pub trait PersonData: ChangeStore {
     /// The kinds of record that name `person`, each with how many of its rows do; a kind with no
     /// such row is left out.
     ///
@@ -102,7 +99,7 @@ pub trait PersonData: Send + Sync {
     ///
     /// # Errors
     /// The error of the store; a kind that is not a table is no error but an empty page.
-    fn rows_of(
+    fn person_rows(
         &self,
         person: bb_core::id::UserId,
         kind: &str,

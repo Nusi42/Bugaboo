@@ -378,6 +378,7 @@ mod tests {
                 "prepare /var/lib/bugaboo",
                 "chown -h bugaboo:bugaboo /var/lib/bugaboo",
                 "chown -h -R -P bugaboo:bugaboo /var/lib/bugaboo/files",
+                "chown -h -R -P bugaboo:bugaboo /var/lib/bugaboo/exports",
                 "chown -h -R -P bugaboo:bugaboo /var/lib/bugaboo/keys",
                 "chown -h -R -P bugaboo:bugaboo /var/lib/bugaboo/backups",
                 "chown -h -R -P bugaboo:bugaboo /var/lib/bugaboo/tls",
@@ -422,7 +423,7 @@ mod tests {
                 .iter()
                 .filter(|line| line.contains("-R"))
                 .all(|line| {
-                    ["files", "keys", "backups", "tls", "logs"]
+                    ["files", "exports", "keys", "backups", "tls", "logs"]
                         .iter()
                         .any(|name| line.ends_with(&format!("/var/lib/bugaboo/{name}")))
                 })

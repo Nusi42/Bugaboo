@@ -370,6 +370,8 @@ pub trait AuthStore:
     + AiStore
     + NeverSentStore
     + ToolCallStore
+    + crate::privacy::export::ExportStore
+    + crate::ports::PersonData
     + 'static
 {
     /// Whether the error is a unique key that was used twice (for example the e-mail address of

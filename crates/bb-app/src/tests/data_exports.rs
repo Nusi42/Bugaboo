@@ -1,0 +1,376 @@
+//! *Download my data* (PRIV-03, ADR-0044, decisions 2 to 4), run against the in-memory store: one
+//! export at a time, the administrator's export with its permission, reason and security-log
+//! entry, the signed link that is for one person and runs out, and other people in the file only as
+//! the person may see them.
+
+use std::io::{Cursor, Read as _};
+
+use bb_core::ErrorCode;
+use bb_core::access::PeopleLevel;
+use bb_core::comment::Comment;
+use bb_core::data_export::ExportState;
+use bb_core::files::LINK_LIFETIME;
+use bb_core::id::{DataExportId, UserId};
+use bb_core::people_kinds::PeopleKind;
+use bb_core::personal::{Entity as _, Link};
+use bb_core::sign_in::SecurityAction;
+use zip::ZipArchive;
+
+use super::fake_exports::WalkedRow;
+use super::notifications::Crew;
+use super::scenarios::{Added, measured, text, token};
+use super::world::{Outcome, World};
+use crate::auth::AppError;
+use crate::privacy::export::{
+    AskMyData, AskSomeonesData, DownloadExportQuery, ExportLinkQuery, ExportView,
+    MyDataExportQuery, ask_for_my_data, ask_for_someones_data, download_export, export_link,
+    my_data_export,
+};
+use crate::privacy::walk::{Cell, FoundRow, Value};
+use crate::roles::{SetPeopleLevel, set_level};
+
+async fn run_jobs(world: &World) -> Result<(), String> {
+    while world.ctx().run_due_jobs().await.map_err(text)? > 0 {}
+    Ok(())
+}
+
+async fn ask_mine(world: &World, session: &str) -> Result<ExportView, AppError> {
+    ask_for_my_data(
+        &world.ctx(),
+        AskMyData {
+            session_token: session.to_owned(),
+        },
+    )
+    .await
+    .map(crate::access::Authorized::into_value)
+}
+
+async fn ask_for(
+    world: &World,
+    session: &str,
+    person: UserId,
+    reason: &str,
+) -> Result<ExportView, AppError> {
+    ask_for_someones_data(
+        &world.ctx(),
+        AskSomeonesData {
+            session_token: session.to_owned(),
+            person,
+            reason: reason.to_owned(),
+        },
+    )
+    .await
+    .map(crate::access::Authorized::into_value)
+}
+
+async fn state_of(world: &World, session: &str) -> Result<Option<ExportState>, String> {
+    Ok(my_data_export(
+        &world.ctx(),
+        MyDataExportQuery {
+            session_token: session.to_owned(),
+        },
+    )
+    .await
+    .map_err(text)?
+    .into_value()
+    .map(|view| view.export.state))
+}
+
+async fn link(world: &World, session: &str, export: DataExportId) -> Result<String, AppError> {
+    export_link(
+        &world.ctx(),
+        ExportLinkQuery {
+            session_token: session.to_owned(),
+            export,
+        },
+    )
+    .await
+    .map(|link| link.into_value().token)
+}
+
+async fn download(world: &World, session: &str, link: &str) -> Result<Vec<u8>, AppError> {
+    let mut file = download_export(
+        &world.ctx(),
+        DownloadExportQuery {
+            session_token: session.to_owned(),
+            link: link.to_owned(),
+        },
+    )
+    .await?;
+    let mut bytes = Vec::new();
+    while let Some(chunk) = file
+        .body
+        .reader
+        .next_chunk()
+        .await
+        .map_err(|error| AppError::Internal(error.to_string()))?
+    {
+        bytes.extend(chunk);
+    }
+    Ok(bytes)
+}
+
+/// The text of one file inside the ZIP of an export.
+fn entry(zip: &[u8], name: &str) -> Result<String, String> {
+    let mut archive = ZipArchive::new(Cursor::new(zip)).map_err(text)?;
+    let mut found = archive.by_name(name).map_err(text)?;
+    let mut read = String::new();
+    found.read_to_string(&mut read).map_err(text)?;
+    Ok(read)
+}
+
+fn refused(result: &Result<ExportView, AppError>) -> Option<ErrorCode> {
+    match result {
+        Err(AppError::Refused(code)) => Some(*code),
+        _ => None,
+    }
+}
+
+pub(crate) async fn ask_for_my_data_scenario(world: &World) -> Added {
+    measured(&world.store, ask_mine(world, &token(world))).await
+}
+
+pub(crate) async fn ask_for_someones_data_scenario(world: &World) -> Added {
+    let bob = world.person("bob@example.test").await.map_err(text)?;
+    measured(
+        &world.store,
+        ask_for(world, &token(world), bob.person.id, "Bob asked by letter"),
+    )
+    .await
+}
+
+#[tokio::test]
+async fn priv_03_one_export_at_a_time_per_person() -> Outcome {
+    let crew = Crew::new().await?;
+    let (world, bob) = (&crew.world, crew.bob.session_token.as_str());
+    let first = ask_mine(world, bob).await?;
+    assert_eq!(first.export.state, ExportState::Waiting);
+    assert_eq!(
+        refused(&ask_mine(world, bob).await),
+        Some(ErrorCode::ExportWaiting)
+    );
+    // An administrator cannot start a second one beside it either.
+    assert_eq!(
+        refused(&ask_for(world, &token(world), crew.bob.person.id, "asked by mail").await),
+        Some(ErrorCode::ExportWaiting)
+    );
+    // Somebody else's export does not wait for Bob's.
+    ask_mine(world, &crew.carol.session_token).await?;
+    run_jobs(world).await?;
+    assert_eq!(state_of(world, bob).await?, Some(ExportState::Ready));
+    assert!(world.exports.bytes(first.export.id).is_some());
+    // Once it is ready, Bob may ask again.
+    ask_mine(world, bob).await?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn priv_03_an_administrator_needs_download_someones_data_and_the_person_is_told() -> Outcome {
+    let crew = Crew::new().await?;
+    let world = &crew.world;
+    let carol = crew.carol.person.id;
+    // Bob holds no *Download someone's data*.
+    assert_eq!(
+        refused(&ask_for(world, &crew.bob.session_token, carol, "curious").await),
+        Some(ErrorCode::Forbidden)
+    );
+    // Ada does, but never without a reason.
+    assert_eq!(
+        refused(&ask_for(world, &token(world), carol, "  ").await),
+        Some(ErrorCode::ExportReasonNeeded)
+    );
+    let made = ask_for(world, &token(world), carol, "Carol asked by letter").await?;
+    assert_eq!(made.export.person, carol);
+    assert_eq!(made.export.reason.as_deref(), Some("Carol asked by letter"));
+    run_jobs(world).await?;
+    // The file is Ada's to download, not Carol's.
+    let ada_link = link(world, &token(world), made.export.id).await?;
+    assert!(!download(world, &token(world), &ada_link).await?.is_empty());
+    assert!(matches!(
+        link(world, &crew.carol.session_token, made.export.id).await,
+        Err(AppError::Refused(ErrorCode::NotFound))
+    ));
+    Ok(())
+}
+
+#[tokio::test]
+async fn priv_03_the_administrators_export_is_in_the_security_log_with_its_reason() -> Outcome {
+    let crew = Crew::new().await?;
+    let world = &crew.world;
+    let made = ask_for(
+        world,
+        &token(world),
+        crew.carol.person.id,
+        "Carol asked by letter",
+    )
+    .await?;
+    let ada = world.admin.person.id;
+    let noted = |action: SecurityAction| {
+        world
+            .store
+            .lock()
+            .log
+            .iter()
+            .filter(|entry| {
+                entry.action == action
+                    && entry.person == Some(ada)
+                    && entry.subject.as_ref().is_some_and(|subject| {
+                        subject.id == bb_core::id::EntityId::from(made.export.id)
+                    })
+            })
+            .count()
+    };
+    assert_eq!(noted(SecurityAction::DataExportForSomebodyElse), 1);
+    // The entry names the export, and the export holds for whom and why.
+    let stored = world
+        .store
+        .lock()
+        .state
+        .data_exports
+        .iter()
+        .find(|export| export.id == made.export.id)
+        .cloned()
+        .ok_or("the export is stored")?;
+    assert_eq!(stored.person, crew.carol.person.id);
+    assert_eq!(stored.reason.as_deref(), Some("Carol asked by letter"));
+    // Every download is written down too.
+    run_jobs(world).await?;
+    let link = link(world, &token(world), made.export.id).await?;
+    download(world, &token(world), &link).await?;
+    assert_eq!(noted(SecurityAction::DataExportDownloaded), 1);
+    // A person's own export is no administrator's export.
+    ask_mine(world, &crew.bob.session_token).await?;
+    assert_eq!(noted(SecurityAction::DataExportForSomebodyElse), 1);
+    Ok(())
+}
+
+#[tokio::test]
+async fn priv_03_the_download_link_is_for_the_person_and_runs_out() -> Outcome {
+    let crew = Crew::new().await?;
+    let (world, bob) = (&crew.world, crew.bob.session_token.as_str());
+    let made = ask_mine(world, bob).await?;
+    // No link before the file is ready.
+    assert!(link(world, bob, made.export.id).await.is_err());
+    run_jobs(world).await?;
+    let token_of_bob = link(world, bob, made.export.id).await?;
+    let zip = download(world, bob, &token_of_bob).await?;
+    assert!(entry(&zip, "README.txt")?.contains("GDPR"));
+    // Carol cannot use Bob's link, nor ask for one.
+    assert!(matches!(
+        download(world, &crew.carol.session_token, &token_of_bob).await,
+        Err(AppError::Refused(ErrorCode::NotFound))
+    ));
+    assert!(
+        link(world, &crew.carol.session_token, made.export.id)
+            .await
+            .is_err()
+    );
+    // Five minutes later the link opens nothing.
+    world.clock.advance(LINK_LIFETIME.as_secs());
+    assert!(matches!(
+        download(world, bob, &token_of_bob).await,
+        Err(AppError::Refused(ErrorCode::NotFound))
+    ));
+    Ok(())
+}
+
+#[tokio::test]
+async fn priv_03_an_export_is_deleted_with_its_file_after_seven_days() -> Outcome {
+    let crew = Crew::new().await?;
+    let (world, bob) = (&crew.world, crew.bob.session_token.as_str());
+    ask_mine(world, bob).await?;
+    run_jobs(world).await?;
+    assert_eq!(world.exports.count(), 1);
+    world
+        .clock
+        .advance(bb_core::data_export::EXPORT_KEPT.as_secs() - 1);
+    assert_eq!(world.ctx().delete_old_exports().await?, 0);
+    world.clock.advance(2);
+    assert_eq!(world.ctx().delete_old_exports().await?, 1);
+    assert_eq!(world.exports.count(), 0);
+    assert!(world.store.lock().state.data_exports.is_empty());
+    // A second round finds nothing more.
+    assert_eq!(world.ctx().delete_old_exports().await?, 0);
+    Ok(())
+}
+
+/// A comment Carol wrote that names Bob, as the walk of Bob's data hands it over.
+fn carols_comment(bob: UserId, carol: UserId) -> WalkedRow {
+    WalkedRow {
+        person: bob,
+        kind: "comment".to_owned(),
+        marks: Comment::MARKS,
+        row: FoundRow {
+            links: vec![Link::Subject],
+            cells: vec![
+                Cell {
+                    column: "author".to_owned(),
+                    field: "author",
+                    value: Value::Person(carol),
+                },
+                Cell {
+                    column: "text".to_owned(),
+                    field: "text",
+                    value: Value::Text("Thanks, @bob".to_owned()),
+                },
+            ],
+        },
+    }
+}
+
+/// Sets how the role of Bob and Carol sees people of `kind`.
+async fn see(crew: &Crew, kind: PeopleKind, level: PeopleLevel) -> Result<(), String> {
+    set_level(
+        &crew.world.ctx(),
+        SetPeopleLevel {
+            session_token: token(&crew.world),
+            role: crew.role,
+            project: None,
+            kind,
+            level: Some(level),
+        },
+    )
+    .await
+    .map(|_| ())
+    .map_err(text)
+}
+
+/// The JSON of the comments in Bob's file, when every kind but `strict` is seen by names.
+async fn bobs_comments(strict: Option<PeopleLevel>) -> Result<String, String> {
+    let crew = Crew::new().await?;
+    for kind in PeopleKind::ALL {
+        see(&crew, *kind, PeopleLevel::Names).await?;
+    }
+    if let Some(level) = strict {
+        see(&crew, PeopleKind::Followers, level).await?;
+    }
+    let (world, bob) = (&crew.world, crew.bob.session_token.as_str());
+    world
+        .store
+        .lock()
+        .state
+        .walk
+        .push(carols_comment(crew.bob.person.id, crew.carol.person.id));
+    let made = ask_mine(world, bob).await.map_err(text)?;
+    run_jobs(world).await?;
+    let zip = world
+        .exports
+        .bytes(made.export.id)
+        .ok_or("the file is written")?;
+    entry(&zip, "data/comment.json")
+}
+
+#[tokio::test]
+async fn priv_03_others_appear_only_as_the_person_may_see_them() -> Outcome {
+    let names = bobs_comments(None).await?;
+    assert!(names.contains("Carol Crane"), "{names}");
+    // Carol's text is not copied, only that her comment names Bob.
+    assert!(!names.contains("Thanks"), "{names}");
+    // One kind of people information seen by role only, or not at all, and the file names nobody.
+    for level in [PeopleLevel::RoleOnly, PeopleLevel::Hidden] {
+        let hidden = bobs_comments(Some(level)).await?;
+        assert!(!hidden.contains("Carol"), "{level:?}: {hidden}");
+        assert!(!hidden.contains(&"Crane".to_owned()), "{level:?}: {hidden}");
+    }
+    Ok(())
+}

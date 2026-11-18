@@ -7180,6 +7180,8 @@ export interface components {
       | "relation-kind.no-direction"
       | "relation-kind.date-effect-most"
       | "limit.reached"
+      | "data-export.waiting"
+      | "data-export.reason-needed"
       | "timer.running"
       | "timer.not-running"
       | "timer.start-in-the-future"

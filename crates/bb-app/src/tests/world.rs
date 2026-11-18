@@ -51,6 +51,8 @@ pub(crate) struct World {
     pub(crate) clock: Arc<TestClock>,
     /// The bytes of files.
     pub(crate) files: FakeFiles,
+    /// The files of *Download my data*.
+    pub(crate) exports: super::fake_exports::FakeExports,
     /// What the server would have sent by e-mail.
     pub(crate) mailer: FakeMailer,
     pub(crate) ai: FakeAiProvider,
@@ -73,6 +75,7 @@ impl World {
         let clock = Arc::new(TestClock(AtomicI64::new(START)));
         let party = RelyingParty::from_public_url(PUBLIC_URL, "Bugaboo").map_err(text)?;
         let files = FakeFiles::default();
+        let exports = super::fake_exports::FakeExports::default();
         let mailer = FakeMailer::default();
         let ai = FakeAiProvider::default();
         let backups = Arc::new(super::fake_backups::MemoryBackups::default());
@@ -86,6 +89,7 @@ impl World {
             "Bugaboo".to_owned(),
         )
         .with_files(Arc::new(files.clone()))
+        .with_exports(Arc::new(exports.clone()))
         .with_mailer(Arc::new(mailer.clone()))
         .with_ai_provider(Arc::new(ai.clone()))
         .with_backups(backups.clone())
@@ -95,6 +99,7 @@ impl World {
             services,
             clock,
             files,
+            exports,
             mailer,
             ai,
             backups,

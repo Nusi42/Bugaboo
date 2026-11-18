@@ -2098,6 +2098,13 @@ pub const ERROR_BACKUP_RUNNING: MessageKey = MessageKey::new("error.backup.runni
 /// The message `error.choice.number-taken`.
 pub const ERROR_CHOICE_NUMBER_TAKEN: MessageKey = MessageKey::new("error.choice.number-taken");
 
+/// The message `error.data-export.reason-needed`.
+pub const ERROR_DATA_EXPORT_REASON_NEEDED: MessageKey =
+    MessageKey::new("error.data-export.reason-needed");
+
+/// The message `error.data-export.waiting`.
+pub const ERROR_DATA_EXPORT_WAITING: MessageKey = MessageKey::new("error.data-export.waiting");
+
 /// The message `error.edit.in-progress`.
 pub const ERROR_EDIT_IN_PROGRESS: MessageKey = MessageKey::new("error.edit.in-progress");
 
@@ -21433,6 +21440,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "error.choice.number-taken",
         "Another choice of this field has that number. Choose another one.",
+    ),
+    (
+        "error.data-export.reason-needed",
+        "Say in a few words why you download this person's data. They are told.",
+    ),
+    (
+        "error.data-export.waiting",
+        "A file of your data is being created already. Wait until it is ready, then ask again.",
     ),
     (
         "error.edit.in-progress",

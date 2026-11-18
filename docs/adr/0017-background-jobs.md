@@ -68,3 +68,9 @@ review; every job type has an idempotency test (part of ARCH-EVENTS test harness
   - A person who leaves the organization loses all their work times in the step that ends their membership, not in a job: one function of the module of work times, which *Remove a person* calls (M9). In M8 it is built and tested on its own.
 - **No job deletes shares.** The share of a person who no longer has a role in a project counts as nothing and is kept until the person leaves (ADR-0030, amendment M8): business data is deleted only explicitly.
 - **Nothing else of M8 is a job.** The plan is worked out when it is asked for (ADR-0030, amendment M8), and the public holidays are computed, never fetched.
+
+## Amendment (M9, *Download my data*)
+
+- **Kinds of M9** ([ADR-0044](0044-download-my-data-and-remove-a-person.md), decision 2), each idempotent:
+  - `privacy.export` is not daily: it is queued in the change that asks for an export and writes its file through the walk of the person's data. An export that waits no more leaves it nothing to do; a try that fails leaves the export waiting, and the next try replaces the half-written file. When the job gives up, the export becomes *Failed*, so the person may ask again, and what was written of its file is deleted.
+  - `privacy.delete-old-exports` is daily (`FromTheStart`): it deletes each export asked for more than 7 days ago (`EXPORT_KEPT`), the file first, then its record with an event; a file that is gone already is no error. The keep and delete rules (ADR-0045) take this round over when they land.

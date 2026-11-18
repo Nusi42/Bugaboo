@@ -20,8 +20,6 @@ use crate::like;
 use crate::schema::{Computed, StoredTable, tables};
 
 impl PersonData for AuthStorage {
-    type Error = StoreError;
-
     async fn kinds_of(&self, person: UserId) -> Result<Vec<KindOfRows>, StoreError> {
         let all = tables();
         let mut kinds = Vec::new();
@@ -49,7 +47,12 @@ impl PersonData for AuthStorage {
         Ok(kinds)
     }
 
-    async fn rows_of(&self, person: UserId, kind: &str, from: u64) -> Result<RowsPage, StoreError> {
+    async fn person_rows(
+        &self,
+        person: UserId,
+        kind: &str,
+        from: u64,
+    ) -> Result<RowsPage, StoreError> {
         let all = tables();
         let Some(table) = all.iter().find(|table| table.name == kind) else {
             return Ok(RowsPage {

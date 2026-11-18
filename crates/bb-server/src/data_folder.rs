@@ -36,6 +36,7 @@ pub(crate) const TAKE_OVER_FLAG: &str = "--take-over-data-folder";
 
 const DATABASE_FILE: &str = bb_store::DATABASE_FILE;
 const FILES: &str = bb_files::FILES_FOLDER;
+const EXPORTS: &str = bb_files::EXPORTS_FOLDER;
 const KEYS: &str = bb_store::KEYS_FOLDER;
 const BACKUPS: &str = "backups";
 const TLS: &str = "tls";
@@ -48,7 +49,7 @@ const PRIVACY: &str = "privacy";
 const REPLAY_LIST: &str = "replay.list";
 const SERVER_LOCK: &str = "server.lock";
 /// The folders `prepare` makes inside the data folder.
-pub(crate) const SUB_FOLDERS: [&str; 5] = [FILES, KEYS, BACKUPS, TLS, LOGS];
+pub(crate) const SUB_FOLDERS: [&str; 6] = [FILES, EXPORTS, KEYS, BACKUPS, TLS, LOGS];
 /// What the built-in database (SQLite) keeps next to its file.
 const DATABASE_COMPANIONS: [&str; 3] = ["-wal", "-shm", "-journal"];
 
@@ -115,7 +116,8 @@ impl DataFolder {
         for name in SUB_FOLDERS {
             create_private(&root.join(name))?;
         }
-        for name in [KEYS, TLS, LOGS] {
+        // The exports hold everything about a person, so they are kept as private as the keys.
+        for name in [KEYS, EXPORTS, TLS, LOGS] {
             let path = root.join(name);
             ensure_private(&path).map_err(|reason| DataFolderError::Protect { path, reason })?;
         }
@@ -148,6 +150,11 @@ impl DataFolder {
     /// Where the bytes of files and their previews are kept (ADR-0032).
     pub(crate) fn files(&self) -> PathBuf {
         self.root.join(FILES)
+    }
+
+    /// Where the files of *Download my data* wait for their download (ADR-0044, decision 2).
+    pub(crate) fn exports(&self) -> PathBuf {
+        self.root.join(EXPORTS)
     }
 
     /// Where the security log writes down its end (SEC-15).

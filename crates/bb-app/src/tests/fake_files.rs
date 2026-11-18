@@ -363,7 +363,7 @@ impl FakeFiles {
     }
 }
 
-struct InMemory(Option<Vec<u8>>);
+pub(crate) struct InMemory(pub(crate) Option<Vec<u8>>);
 
 impl ChunkReader for InMemory {
     fn next_chunk(&mut self) -> BoxFuture<'_, io::Result<Option<Vec<u8>>>> {

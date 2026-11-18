@@ -425,6 +425,10 @@ export const messages = {
   "error.issue.parent-too-deep":
     "That chain of sub-issues would be too long. Choose another issue.",
   "error.limit.reached": "There is no room for more of these. Take some away first.",
+  "error.data-export.waiting":
+    "A file of your data is being created already. Wait until it is ready, then ask again.",
+  "error.data-export.reason-needed":
+    "Say in a few words why you download this person's data. They are told.",
   "error.timer.running": "Your timer is already running, maybe on another device. Stop it first.",
   "error.timer.not-running":
     "Your timer is not running any more, maybe it was stopped on another device.",

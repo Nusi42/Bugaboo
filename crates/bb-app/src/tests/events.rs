@@ -11,6 +11,7 @@
 use std::future::Future;
 use std::pin::Pin;
 
+use super::data_exports as sde;
 use super::runs as sru;
 use super::scenarios::{self as s, Added};
 use super::scenarios_ai as sai;
@@ -202,6 +203,8 @@ table! {
     "create_layout" => sl::create_layout_scenario,
     "save_layout" => sl::save_layout_scenario,
     "delete_layout" => sl::delete_layout_scenario,
+    "ask_for_my_data" => sde::ask_for_my_data_scenario,
+    "ask_for_someones_data" => sde::ask_for_someones_data_scenario,
     "create_theme" => sth::create_theme_scenario,
     "save_theme" => sth::save_theme_scenario,
     "copy_theme" => sth::copy_theme_scenario,

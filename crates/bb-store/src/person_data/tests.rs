@@ -223,7 +223,7 @@ fn priv_03_a_link_to_a_field_that_is_not_stored_is_an_error_not_a_miss() {
 async fn rows_say_what_she_is(storage: &AuthStorage, lea: UserId) -> Result<(), StoreError> {
     use bb_app::privacy::walk::Value;
     use bb_core::personal::Link;
-    let days = storage.rows_of(lea, "work_day", 0).await?;
+    let days = storage.person_rows(lea, "work_day", 0).await?;
     assert_eq!(days.next, None);
     let day = &days.rows[0];
     assert_eq!(day.links, [Link::Subject]);
@@ -236,7 +236,7 @@ async fn rows_say_what_she_is(storage: &AuthStorage, lea: UserId) -> Result<(), 
     assert_eq!(cell("person"), Some(Value::Person(lea)));
     assert_eq!(cell("updated_at"), Some(Value::Moment(at(10))));
     assert_eq!(cell("zone"), Some(Value::Text("Europe/Berlin".to_owned())));
-    let events = storage.rows_of(lea, "event", 0).await?;
+    let events = storage.person_rows(lea, "event", 0).await?;
     let links: Vec<Vec<Link>> = events.rows.iter().map(|row| row.links.clone()).collect();
     assert_eq!(events.rows.len(), 4, "{links:?}");
     assert!(
@@ -250,7 +250,7 @@ async fn rows_say_what_she_is(storage: &AuthStorage, lea: UserId) -> Result<(), 
     // The changes name her, and what she is to them comes from the members, not from the link.
     assert!(links.iter().any(Vec::is_empty), "{links:?}");
     assert_eq!(
-        storage.rows_of(lea, "no_such_table", 0).await?.rows,
+        storage.person_rows(lea, "no_such_table", 0).await?.rows,
         Vec::new()
     );
     Ok(())

@@ -101,4 +101,19 @@ impl<S: AuthStore> Ctx<'_, S> {
             JobFailure::of(&error, FAILED, job)
         })
     }
+
+    /// The daily round of `privacy.delete-old-exports` (in a function of its own, so
+    /// `do_daily_job` stays short).
+    pub(super) async fn delete_old_exports_daily(&self, job: &Job) -> Result<(), JobFailure> {
+        Box::pin(self.run_daily(JobKind::DeleteOldExports, async {
+            self.delete_old_exports().await.map(|deleted| {
+                tracing::info!(deleted, "old files of people's data were deleted");
+            })
+        }))
+        .await
+        .map_err(|error| {
+            tracing::warn!(cause = %error, "old files of people's data could not be deleted");
+            JobFailure::of(&error, FAILED, job)
+        })
+    }
 }

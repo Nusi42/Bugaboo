@@ -45,6 +45,14 @@ pub(crate) mod theme {
     pub(crate) const VALUES: &str = "values";
 }
 
+/// The members of the events of a file of *Download my data* (PRIV-03).
+pub(crate) mod data_export {
+    /// Where the export stands now.
+    pub(crate) const STATE: &str = "state";
+    /// Why an administrator asked for somebody else's data.
+    pub(crate) const REASON: &str = "reason";
+}
+
 /// The members of a workflow.
 pub(crate) mod workflow {
     pub(crate) const NAME: &str = "name";

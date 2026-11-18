@@ -178,6 +178,11 @@ words! {
         /// A backup was restored; the entry points to its record, which names the backup and the
         /// entries of this log that are gone (OPS-07, M2-F09).
         BackupRestored => "backup.restored",
+        /// An administrator asked for the file of *Download my data* of somebody else; the export
+        /// it names holds for whom and why (ADR-0044, decision 4).
+        DataExportForSomebodyElse => "data_export.for_somebody_else",
+        /// The file of an export was downloaded.
+        DataExportDownloaded => "data_export.downloaded",
     }
 }
 

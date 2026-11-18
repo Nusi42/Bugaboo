@@ -647,6 +647,18 @@ macro_rules! each_use_case {
             list_backups(ListBackupsQuery) -> Authorized<Backups>;
             /// Creates a backup now.
             create_backup(CreateBackup) -> Authorized<BackupItem>;
+            /// Asks for the file of the person's own data (*Download my data*).
+            ask_for_my_data(AskMyData) -> Authorized<ExportView>;
+            /// Asks for the file of somebody else's data, with a reason (*Download someone's data*).
+            ask_for_someones_data(AskSomeonesData) -> Authorized<ExportView>;
+            /// Shows where the newest file of the person's own data stands.
+            my_data_export(MyDataExportQuery) -> Authorized<Option<ExportView>>;
+            /// Lists every file of people's data, newest first.
+            data_exports(DataExportsQuery) -> Authorized<ExportPage>;
+            /// Gives the signed link of the download of a ready file.
+            export_link(ExportLinkQuery) -> Authorized<ExportLinkView>;
+            /// Sends the file of an export through its signed link.
+            download_export(DownloadExportQuery) -> FileDownload;
         }
     };
 }

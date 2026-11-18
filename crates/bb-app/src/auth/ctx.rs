@@ -71,6 +71,8 @@ pub struct AuthServices<S> {
     pub(crate) backups: Arc<dyn BackupFiles>,
     /// Whether a backup of this server is being made: one is made at a time.
     pub(crate) backup_running: Arc<AtomicBool>,
+    /// The files of *Download my data* (ADR-0044, decision 2).
+    pub(crate) exports: Arc<dyn crate::privacy::export::ExportFiles>,
     /// The key the links of downloads are signed under (ATT-07).
     pub(crate) links: LinkKey,
     pub(crate) mailer: Arc<dyn Mailer>,
@@ -122,6 +124,7 @@ impl<S> AuthServices<S> {
             files: Arc::new(NoFileStore),
             backups: Arc::new(NoBackupFiles),
             backup_running: Arc::default(),
+            exports: Arc::new(crate::privacy::export::NoExportFiles),
             links,
             mailer: Arc::new(NoMailer),
             ai: Arc::new(NoAiProvider),
@@ -148,6 +151,13 @@ impl<S> AuthServices<S> {
     #[must_use]
     pub fn with_backups(mut self, backups: Arc<dyn BackupFiles>) -> Self {
         self.backups = backups;
+        self
+    }
+
+    /// Where the files of *Download my data* are kept. Without it, every export fails.
+    #[must_use]
+    pub fn with_exports(mut self, exports: Arc<dyn crate::privacy::export::ExportFiles>) -> Self {
+        self.exports = exports;
         self
     }
 
@@ -515,6 +525,10 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// The store of the bytes of files.
     pub(crate) fn files(&self) -> &dyn FileStore {
         self.services.files.as_ref()
+    }
+
+    pub(crate) fn exports(&self) -> &dyn crate::privacy::export::ExportFiles {
+        self.services.exports.as_ref()
     }
 
     pub(crate) fn now(&self) -> Timestamp {

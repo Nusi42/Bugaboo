@@ -638,6 +638,15 @@ Enforced by: ARCH-SETTINGS, and the tests <code>ai_02_ai_is_off_at_the_start_and
 <li><strong>No job deletes shares.</strong> The share of a person who no longer has a role in a project counts as nothing and is kept until the person leaves (ADR-0030, amendment M8): business data is deleted only explicitly.</li>
 <li><strong>Nothing else of M8 is a job.</strong> The plan is worked out when it is asked for (ADR-0030, amendment M8), and the public holidays are computed, never fetched.</li>
 </ul>
+<h3>Amendment (M9, <em>Download my data</em>)</h3>
+<ul>
+<li><strong>Kinds of M9</strong> (<a href="#adr-0044">ADR-0044</a>, decision 2), each idempotent:
+<ul>
+<li><code>privacy.export</code> is not daily: it is queued in the change that asks for an export and writes its file through the walk of the person's data. An export that waits no more leaves it nothing to do; a try that fails leaves the export waiting, and the next try replaces the half-written file. When the job gives up, the export becomes <em>Failed</em>, so the person may ask again, and what was written of its file is deleted.</li>
+<li><code>privacy.delete-old-exports</code> is daily (<code>FromTheStart</code>): it deletes each export asked for more than 7 days ago (<code>EXPORT_KEPT</code>), the file first, then its record with an event; a file that is gone already is no error. The keep and delete rules (ADR-0045) take this round over when they land.</li>
+</ul>
+</li>
+</ul>
 
 <!-- 0018-settings-registry.md -->
 <h2 id="adr-0018"><button class="sec" data-sec>§18</button>ADR-0018: One settings registry drives storage, API and dialogs</h2>

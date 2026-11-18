@@ -144,6 +144,12 @@ use crate::plan::{
     move_after_preview, set_time_factor, time_factor, timeline,
 };
 
+use crate::privacy::export::{
+    AskMyData, AskSomeonesData, DataExportsQuery, DownloadExportQuery, ExportLinkQuery,
+    ExportLinkView, ExportPage, ExportView, MyDataExportQuery, ask_for_my_data,
+    ask_for_someones_data, data_exports, download_export, export_link, my_data_export,
+};
+
 use super::{
     CopyTheme, CreateTheme, DeleteTheme, SaveTheme, ThemeDetail, ThemeExport, ThemeList,
     ThemeQuery, ThemeSheet, ThemeSheetQuery, ThemeView, ThemesQuery, UploadTheme, copy_theme,

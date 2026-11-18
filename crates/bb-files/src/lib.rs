@@ -10,15 +10,22 @@
 #![forbid(unsafe_code)]
 
 mod disk;
+mod exports;
 #[cfg(any(test, feature = "testing"))]
 pub mod fixtures;
 pub mod preview;
 mod sniff;
 
 pub use disk::{DiskFiles, stored_paths};
+pub use exports::DiskExports;
 pub use preview::{PreviewCommand, PreviewRefusal};
 pub use sniff::sniff;
 
 /// The folder of the data folder in which the files live. The server never serves it directly: a
 /// file is only sent through a signed link (ADR-0032, ATT-02).
 pub const FILES_FOLDER: &str = "files";
+
+/// The folder of the data folder in which the files of *Download my data* wait for their download
+/// (ADR-0044, decision 2): only the account of the server may open it, and a file is only sent
+/// through a signed link.
+pub const EXPORTS_FOLDER: &str = "exports";
