@@ -221,6 +221,7 @@ pub struct Attachment {
     pub name: String,
     /// Who added it.
     #[personal(category = "activity", basis = "contract")]
+    #[person(author)]
     pub added_by: UserId,
     /// When it was added.
     #[not_personal]
@@ -252,6 +253,7 @@ pub struct Upload {
     pub comment: Option<CommentId>,
     /// Who sends it.
     #[personal(category = "activity", basis = "contract")]
+    #[person(author)]
     pub person: UserId,
     /// The name of the file. Free text that could name a person.
     #[personal(category = "content", basis = "contract")]

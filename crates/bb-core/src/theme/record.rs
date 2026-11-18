@@ -73,6 +73,7 @@ pub struct OwnTheme {
     pub kind: ThemeKind,
     /// The person of a personal theme, or who made a theme for everyone.
     #[personal(category = "identity", basis = "contract")]
+    #[person(author)]
     pub maker: UserId,
     /// What the theme is called.
     #[not_personal]

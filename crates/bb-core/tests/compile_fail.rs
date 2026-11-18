@@ -32,6 +32,7 @@ fn priv_02_the_derive_writes_every_mark_into_the_constant() {
     };
     assert_eq!(marked.id + marked.worked_minutes, 91);
     let marks = <Marked as Entity>::MARKS;
+    assert_eq!(marks.person_links().links(), []);
     assert_eq!(marks.name(), "Marked");
     assert_eq!(
         marks.fields(),
@@ -47,9 +48,10 @@ fn priv_02_the_derive_writes_every_mark_into_the_constant() {
 }
 
 #[test]
-fn priv_02_unmarked_or_wrongly_marked_fields_do_not_compile() {
+fn priv_02_unmarked_or_wrongly_marked_fields_do_not_compile_and_links_are_written() {
     let cases = trybuild::TestCases::new();
     cases.pass("tests/ui/marked.rs");
+    cases.pass("tests/ui/linked.rs");
     cases.compile_fail("tests/ui/unmarked_field.rs");
     cases.compile_fail("tests/ui/two_marks.rs");
     cases.compile_fail("tests/ui/kind_twice.rs");
@@ -60,4 +62,7 @@ fn priv_02_unmarked_or_wrongly_marked_fields_do_not_compile() {
     cases.compile_fail("tests/ui/generic_struct.rs");
     cases.compile_fail("tests/ui/not_personal_person.rs");
     cases.compile_fail("tests/ui/not_personal_text.rs");
+    cases.compile_fail("tests/ui/link_on_text.rs");
+    cases.compile_fail("tests/ui/unknown_link.rs");
+    cases.compile_fail("tests/ui/two_links.rs");
 }

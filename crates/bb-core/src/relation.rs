@@ -182,6 +182,7 @@ pub struct Relation {
     pub to: IssueId,
     /// Who added it.
     #[personal(category = "activity", basis = "contract")]
+    #[person(actor)]
     pub added_by: UserId,
     /// When it was added.
     #[not_personal]
@@ -343,6 +344,7 @@ pub struct IssueParent {
     pub parent: IssueId,
     /// Who put it there.
     #[personal(category = "activity", basis = "contract")]
+    #[person(actor)]
     pub set_by: UserId,
     /// When.
     #[not_personal]

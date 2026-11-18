@@ -36,13 +36,25 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
     let entity = &input.ident;
     let name = entity.to_string();
     let mut marks = Vec::new();
+    let mut links = Vec::new();
     let mut assertions = Vec::new();
+    let mut person_assertions = Vec::new();
     let mut errors: Option<syn::Error> = None;
     for field in &fields.named {
-        match field_mark(entity, field) {
-            Ok((mark, assertion)) => {
+        let read = field_mark(entity, field).and_then(|marked| {
+            let name = field
+                .ident
+                .as_ref()
+                .map(ToString::to_string)
+                .unwrap_or_default();
+            crate::links::read(field, &name).map(|linked| (marked, linked))
+        });
+        match read {
+            Ok(((mark, assertion), linked)) => {
                 marks.push(mark);
                 assertions.extend(assertion);
+                links.extend(linked.links);
+                person_assertions.extend(linked.assertion);
             }
             Err(error) => match &mut errors {
                 Some(all) => all.combine(error),
@@ -56,13 +68,20 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
     Ok(quote! {
         impl ::bb_core::personal::Entity for #entity {
             const MARKS: ::bb_core::personal::EntityMarks =
-                ::bb_core::personal::EntityMarks::new(#name, &[#(#marks),*]);
+                ::bb_core::personal::EntityMarks::new(#name, &[#(#marks),*])
+                    .with_links(&[#(#links),*]);
         }
 
         // A field marked `#[not_personal]` must have a type that cannot hold personal data.
         const _: fn() = || {
             fn not_personal<T: ?Sized + ::bb_core::personal::NotPersonal>() {}
             #(#assertions)*
+        };
+
+        // A field with `#[person(...)]` must have a type that holds the ID of a person.
+        const _: fn() = || {
+            fn names_a_person<T: ?Sized + ::bb_core::personal::NamesAPerson>() {}
+            #(#person_assertions)*
         };
     })
 }

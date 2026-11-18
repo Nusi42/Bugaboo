@@ -37,6 +37,8 @@ A plan warning somebody accepted (*Keep and accept*, ADR-0030, amendment M8): it
 
 Defined in `crates/bb-core/src/plan/record.rs`.
 
+A person in its rows: `accepted_by` is the actor.
+
 | Field         | Personal data | Category   | Legal basis | What it holds                                       |
 | ------------- | ------------- | ---------- | ----------- | --------------------------------------------------- |
 | `issue`       | No            | –          | –           | The issue.                                          |
@@ -51,6 +53,8 @@ Defined in `crates/bb-core/src/plan/record.rs`.
 An access key. The person who owns it uses it as themselves, with at most what they may do at that moment.
 
 Defined in `crates/bb-core/src/access_key.rs`.
+
+A person in its rows: `owner` is the holder.
 
 | Field          | Personal data | Category      | Legal basis | What it holds                                                                                                                                                            |
 | -------------- | ------------- | ------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -93,6 +97,8 @@ An agent. Every field carries its personal-data mark (ADR-0015).
 
 Defined in `crates/bb-core/src/agent.rs`.
 
+A person in its rows: `person` is the holder; `offered_to` is the recipient; `made_by` is the author.
+
 | Field                   | Personal data | Category   | Legal basis | What it holds                                                                                                              |
 | ----------------------- | ------------- | ---------- | ----------- | -------------------------------------------------------------------------------------------------------------------------- |
 | `id`                    | No            | –          | –           | The ID of the agent.                                                                                                       |
@@ -114,6 +120,8 @@ The confirmation that a data processing agreement with the provider is in place:
 
 Defined in `crates/bb-core/src/ai/mod.rs`.
 
+A person in its rows: `confirmed_by` is the actor.
+
 | Field          | Personal data | Category   | Legal basis | What it holds                                       |
 | -------------- | ------------- | ---------- | ----------- | --------------------------------------------------- |
 | `destination`  | No            | –          | –           | The destination the administrator confirmed it for. |
@@ -125,6 +133,8 @@ Defined in `crates/bb-core/src/ai/mod.rs`.
 One person an issue is assigned to; an issue can be assigned to several people.
 
 Defined in `crates/bb-core/src/issue.rs`.
+
+A person in its rows: `person` is the subject.
 
 | Field      | Personal data | Category   | Legal basis | What it holds                                                                                                                                                    |
 | ---------- | ------------- | ---------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -138,6 +148,8 @@ Defined in `crates/bb-core/src/issue.rs`.
 One row of *Who has which role*: a person or a group, a role or *No access*, and where it counts (ADR-0025, decision 2).
 
 Defined in `crates/bb-core/src/access.rs`.
+
+A person in its rows: `person` is the holder.
 
 | Field        | Personal data | Category       | Legal basis | What it holds                                                    |
 | ------------ | ------------- | -------------- | ----------- | ---------------------------------------------------------------- |
@@ -154,6 +166,8 @@ Defined in `crates/bb-core/src/access.rs`.
 A file added to an issue, or to a comment under it (ATT-01).
 
 Defined in `crates/bb-core/src/files.rs`.
+
+A person in its rows: `added_by` is the author.
 
 | Field        | Personal data | Category   | Legal basis | What it holds                                                                                                                                                                                                                                    |
 | ------------ | ------------- | ---------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -208,6 +222,8 @@ One away time of a person: a first and a last day, a half day at either end (*Af
 
 Defined in `crates/bb-core/src/work_times/record.rs`.
 
+A person in its rows: `person` is the subject; `entered_by` is the actor.
+
 | Field                  | Personal data | Category        | Legal basis | What it holds                                                                                                                         |
 | ---------------------- | ------------- | --------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | `id`                   | No            | –               | –           | The ID of the away time.                                                                                                              |
@@ -226,6 +242,8 @@ One backup code, kept as a hash.
 
 Defined in `crates/bb-core/src/sign_in.rs`.
 
+A person in its rows: `person` is the holder.
+
 | Field       | Personal data | Category      | Legal basis | What it holds                                    |
 | ----------- | ------------- | ------------- | ----------- | ------------------------------------------------ |
 | `person`    | Yes           | `identity`    | `contract`  | Whose it is.                                     |
@@ -237,6 +255,8 @@ Defined in `crates/bb-core/src/sign_in.rs`.
 A comment under an issue (ISS-05).
 
 Defined in `crates/bb-core/src/comment.rs`.
+
+A person in its rows: `author` is the author.
 
 | Field        | Personal data | Category   | Legal basis | What it holds                                                                           |
 | ------------ | ------------- | ---------- | ----------- | --------------------------------------------------------------------------------------- |
@@ -268,6 +288,8 @@ What happened, to whom, by whom, and why (ADR-0007).
 
 Defined in `crates/bb-core/src/event.rs`.
 
+A person in its rows: `actor` is the actor; `entity` is the subject in the rows about a `person`; `entity` is the subject in the rows about a `timer`; `entity` is the subject in the rows about a `work_times`; `entity` is the subject in the rows about a `share`.
+
 | Field                                 | Personal data | Category        | Legal basis            | What it holds                                                                                                                                                                                                                                                                             |
 | ------------------------------------- | ------------- | --------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `id`                                  | No            | –               | –                      | The ID of the event.                                                                                                                                                                                                                                                                      |
@@ -292,6 +314,8 @@ A text a person wrote and has not saved (*Draft*, ISS-11): private to its author
 
 Defined in `crates/bb-core/src/edit.rs`.
 
+A person in its rows: `author` is the author.
+
 | Field          | Personal data | Category   | Legal basis            | What it holds                                                                                                                  |
 | -------------- | ------------- | ---------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | `author`       | Yes           | `identity` | `legitimate_interests` | Whose draft it is. Nobody else can read it.                                                                                    |
@@ -305,6 +329,8 @@ Defined in `crates/bb-core/src/edit.rs`.
 The lease on one thing being edited: who holds it, in which editor, until when (ADR-0019). A row lives only while the lease runs; an expired row is deleted, not kept.
 
 Defined in `crates/bb-core/src/edit.rs`.
+
+A person in its rows: `holder` is the holder.
 
 | Field        | Personal data | Category   | Legal basis            | What it holds                                     |
 | ------------ | ------------- | ---------- | ---------------------- | ------------------------------------------------- |
@@ -321,6 +347,8 @@ Defined in `crates/bb-core/src/edit.rs`.
 A note for the person who was editing, shown at their next heartbeat (M3-Q3).
 
 Defined in `crates/bb-core/src/edit.rs`.
+
+A person in its rows: `recipient` is the recipient; `from` is the actor.
 
 | Field       | Personal data | Category   | Legal basis            | What it holds                     |
 | ----------- | ------------- | ---------- | ---------------------- | --------------------------------- |
@@ -376,6 +404,8 @@ A person who follows an issue.
 
 Defined in `crates/bb-core/src/follow.rs`.
 
+A person in its rows: `person` is the subject.
+
 | Field    | Personal data | Category   | Legal basis            | What it holds   |
 | -------- | ------------- | ---------- | ---------------------- | --------------- |
 | `issue`  | No            | –          | –                      | The issue.      |
@@ -401,6 +431,8 @@ A person in a group.
 
 Defined in `crates/bb-core/src/access.rs`.
 
+A person in its rows: `person` is the subject.
+
 | Field      | Personal data | Category       | Legal basis | What it holds                           |
 | ---------- | ------------- | -------------- | ----------- | --------------------------------------- |
 | `group`    | No            | –              | –           | The group.                              |
@@ -412,6 +444,8 @@ Defined in `crates/bb-core/src/access.rs`.
 One or several issues given to one agent (AI-31).
 
 Defined in `crates/bb-core/src/agent_records.rs`.
+
+A person in its rows: `person` is the actor.
 
 | Field                 | Personal data | Category   | Legal basis | What it holds                                                                  |
 | --------------------- | ------------- | ---------- | ----------- | ------------------------------------------------------------------------------ |
@@ -436,6 +470,8 @@ Defined in `crates/bb-core/src/agent_records.rs`.
 One row of the history of an issue.
 
 Defined in `crates/bb-core/src/history.rs`.
+
+A person in its rows: `by` is the actor.
 
 | Field                                 | Personal data | Category        | Legal basis            | What it holds                                                                                                                      |
 | ------------------------------------- | ------------- | --------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
@@ -476,6 +512,8 @@ An invitation to make an account (AUTH-06).
 
 Defined in `crates/bb-core/src/sign_in.rs`.
 
+A person in its rows: `invited_by` is the author.
+
 | Field        | Personal data | Category      | Legal basis | What it holds                                                                       |
 | ------------ | ------------- | ------------- | ----------- | ----------------------------------------------------------------------------------- |
 | `id`         | No            | –             | –           | The ID of the invitation.                                                           |
@@ -491,6 +529,8 @@ Defined in `crates/bb-core/src/sign_in.rs`.
 An issue (ISS-01): a bug, a task, an idea, anything that is tracked.
 
 Defined in `crates/bb-core/src/issue.rs`.
+
+A person in its rows: `reported_by` is the author.
 
 | Field            | Personal data | Category   | Legal basis | What it holds                                                                                                             |
 | ---------------- | ------------- | ---------- | ----------- | ------------------------------------------------------------------------------------------------------------------------- |
@@ -543,6 +583,8 @@ A label on an issue.
 
 Defined in `crates/bb-core/src/tags.rs`.
 
+A person in its rows: `added_by` is the actor.
+
 | Field      | Personal data | Category   | Legal basis | What it holds     |
 | ---------- | ------------- | ---------- | ----------- | ----------------- |
 | `issue`    | No            | –          | –           | The issue.        |
@@ -555,6 +597,8 @@ Defined in `crates/bb-core/src/tags.rs`.
 An issue that sits under another one (ISS-03).
 
 Defined in `crates/bb-core/src/relation.rs`.
+
+A person in its rows: `set_by` is the actor.
 
 | Field    | Personal data | Category   | Legal basis | What it holds               |
 | -------- | ------------- | ---------- | ----------- | --------------------------- |
@@ -569,6 +613,8 @@ A tag on an issue.
 
 Defined in `crates/bb-core/src/tags.rs`.
 
+A person in its rows: `added_by` is the actor.
+
 | Field      | Personal data | Category   | Legal basis | What it holds     |
 | ---------- | ------------- | ---------- | ----------- | ----------------- |
 | `issue`    | No            | –          | –           | The issue.        |
@@ -581,6 +627,8 @@ Defined in `crates/bb-core/src/tags.rs`.
 The time factor of an issue, kept only while it is not ×1 (ADR-0030, decision 4 and amendment M8). It is the estimate of the person on the bar it was set for, and goes away in the change that gives the issue another first assigned person.
 
 Defined in `crates/bb-core/src/plan/record.rs`.
+
+A person in its rows: `person` is the subject; `set_by` is the actor.
 
 | Field    | Personal data | Category        | Legal basis | What it holds                                                                                    |
 | -------- | ------------- | --------------- | ----------- | ------------------------------------------------------------------------------------------------ |
@@ -610,6 +658,8 @@ Defined in `crates/bb-core/src/issue.rs`.
 The agent work on one issue of a hand-over (AI-33).
 
 Defined in `crates/bb-core/src/agent_records.rs`.
+
+A person in its rows: `person` is the holder.
 
 | Field                | Personal data | Category   | Legal basis | What it holds                                                                                                                                           |
 | -------------------- | ------------- | ---------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -749,6 +799,8 @@ A person who was an administrator in M1 (the flag is gone). The migration to M2 
 
 Defined in `crates/bb-core/src/access.rs`.
 
+A person in its rows: `person` is the subject.
+
 | Field    | Personal data | Category       | Legal basis | What it holds |
 | -------- | ------------- | -------------- | ----------- | ------------- |
 | `person` | Yes           | `organization` | `contract`  | The person.   |
@@ -758,6 +810,8 @@ Defined in `crates/bb-core/src/access.rs`.
 A change to many issues that runs in the background.
 
 Defined in `crates/bb-core/src/many_changes.rs`.
+
+A person in its rows: `person` is the actor.
 
 | Field         | Personal data | Category   | Legal basis            | What it holds                                                                                                                                    |
 | ------------- | ------------- | ---------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -780,6 +834,8 @@ Defined in `crates/bb-core/src/many_changes.rs`.
 A comment that puts someone into a person's *Mentions* (M3-Q7): the person was named, or a group they are in, or a role they have where the issue is. One row for each comment and person.
 
 Defined in `crates/bb-core/src/comment.rs`.
+
+A person in its rows: `recipient` is the recipient.
 
 | Field       | Personal data | Category   | Legal basis            | What it holds                               |
 | ----------- | ------------- | ---------- | ---------------------- | ------------------------------------------- |
@@ -817,6 +873,8 @@ Defined in `crates/bb-core/src/ai/tools.rs`.
 A notification for one person (NTF-01).
 
 Defined in `crates/bb-core/src/notification.rs`.
+
+A person in its rows: `recipient` is the recipient; `by` is the actor.
 
 | Field       | Personal data | Category   | Legal basis            | What it holds                                                                                                                                |
 | ----------- | ------------- | ---------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -868,6 +926,8 @@ What a person allowed an app: one grant, until it is taken back or runs out.
 
 Defined in `crates/bb-core/src/oauth.rs`.
 
+A person in its rows: `person` is the holder.
+
 | Field          | Personal data | Category   | Legal basis | What it holds                                                                          |
 | -------------- | ------------- | ---------- | ----------- | -------------------------------------------------------------------------------------- |
 | `id`           | No            | –          | –           | The ID of the grant: what the list shows and what taking back names. It opens nothing. |
@@ -912,6 +972,8 @@ Defined in `crates/bb-core/src/oauth.rs`.
 A web address an administrator allowed apps to come back to (M7-Q4).
 
 Defined in `crates/bb-core/src/oauth.rs`.
+
+A person in its rows: `added_by` is the actor.
 
 | Field      | Personal data | Category   | Legal basis            | What it holds                                  |
 | ---------- | ------------- | ---------- | ---------------------- | ---------------------------------------------- |
@@ -982,6 +1044,8 @@ An own theme (THM-04).
 
 Defined in `crates/bb-core/src/theme/record.rs`.
 
+A person in its rows: `maker` is the author.
+
 | Field        | Personal data | Category   | Legal basis | What it holds                                                                                                                                                          |
 | ------------ | ------------- | ---------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `id`         | No            | –          | –           | The ID of the theme, in the address of its style sheet.                                                                                                                |
@@ -1001,6 +1065,8 @@ The password of a person, as a PHC string (Argon2id with its parameters and salt
 
 Defined in `crates/bb-core/src/sign_in.rs`.
 
+A person in its rows: `person` is the holder.
+
 | Field        | Personal data | Category      | Legal basis | What it holds                                           |
 | ------------ | ------------- | ------------- | ----------- | ------------------------------------------------------- |
 | `person`     | Yes           | `identity`    | `contract`  | Whose password it is.                                   |
@@ -1012,6 +1078,8 @@ Defined in `crates/bb-core/src/sign_in.rs`.
 A person who can sign in to Bugaboo.
 
 Defined in `crates/bb-core/src/person.rs`.
+
+A person in its rows: `id` is the subject.
 
 | Field          | Personal data | Category   | Legal basis            | What it holds                                                                                                                                                                                            |
 | -------------- | ------------- | ---------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1026,6 +1094,8 @@ A handle of a person (ADR-0033 §6): the one they have now, or one they had befo
 
 Defined in `crates/bb-core/src/handle.rs`.
 
+A person in its rows: `person` is the subject.
+
 | Field        | Personal data | Category   | Legal basis | What it holds                                                                                                                                                |
 | ------------ | ------------- | ---------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `person`     | Yes           | `identity` | `contract`  | The person.                                                                                                                                                  |
@@ -1038,6 +1108,8 @@ Defined in `crates/bb-core/src/handle.rs`.
 The counter that gives the versions of one person's own settings: every write of one of their values takes the next number, so a version never goes back, not even after a reset takes the value away and it is set again (M5-F97, ADR-0018). A person without a row has counted nothing.
 
 Defined in `crates/bb-core/src/settings/mod.rs`.
+
+A person in its rows: `person` is the subject.
 
 | Field     | Personal data | Category   | Legal basis | What it holds                                                |
 | --------- | ------------- | ---------- | ----------- | ------------------------------------------------------------ |
@@ -1124,6 +1196,8 @@ The share of a person in a project, in percent. A person with no row has 100 per
 
 Defined in `crates/bb-core/src/work_times/record.rs`.
 
+A person in its rows: `person` is the subject.
+
 | Field     | Personal data | Category        | Legal basis | What it holds                   |
 | --------- | ------------- | --------------- | ----------- | ------------------------------- |
 | `person`  | Yes           | `employee_time` | `contract`  | The person.                     |
@@ -1150,6 +1224,8 @@ A change a standing rule proposes; nothing changes until a person applies it (AI
 
 Defined in `crates/bb-core/src/agent_records.rs`.
 
+A person in its rows: `decided_by` is the actor.
+
 | Field        | Personal data | Category   | Legal basis | What it holds                          |
 | ------------ | ------------- | ---------- | ----------- | -------------------------------------- |
 | `id`         | No            | –          | –           | The ID of the proposal.                |
@@ -1169,6 +1245,8 @@ A question of an agent and its answer (AI-34).
 
 Defined in `crates/bb-core/src/agent_records.rs`.
 
+A person in its rows: `answered_by` is the author.
+
 | Field         | Personal data | Category   | Legal basis | What it holds                      |
 | ------------- | ------------- | ---------- | ----------- | ---------------------------------- |
 | `id`          | No            | –          | –           | The ID of the question.            |
@@ -1184,6 +1262,8 @@ Defined in `crates/bb-core/src/agent_records.rs`.
 One connection between two issues (ISS-04). Stored once; both issues show it.
 
 Defined in `crates/bb-core/src/relation.rs`.
+
+A person in its rows: `added_by` is the actor.
 
 | Field      | Personal data | Category   | Legal basis | What it holds                                             |
 | ---------- | ------------- | ---------- | ----------- | --------------------------------------------------------- |
@@ -1215,6 +1295,8 @@ Defined in `crates/bb-core/src/relation.rs`.
 The review that ends an attempt's work (AI-35).
 
 Defined in `crates/bb-core/src/agent_records.rs`.
+
+A person in its rows: `by` is the author.
 
 | Field    | Personal data | Category   | Legal basis | What it holds                                                    |
 | -------- | ------------- | ---------- | ----------- | ---------------------------------------------------------------- |
@@ -1306,6 +1388,8 @@ A saved search (QRY-06).
 
 Defined in `crates/bb-core/src/saved_search.rs`.
 
+A person in its rows: `maker` is the author.
+
 | Field        | Personal data | Category   | Legal basis            | What it holds                                                                                                                             |
 | ------------ | ------------- | ---------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | `id`         | No            | –          | –                      | The ID of the search, in its address `/s/<id>`.                                                                                           |
@@ -1364,6 +1448,8 @@ One entry of the security log. The person and the shortened network address are 
 
 Defined in `crates/bb-core/src/security_log.rs`.
 
+A person in its rows: `person` is the actor; `subject` is the subject in the rows about a `person`.
+
 | Field           | Personal data | Category    | Legal basis            | What it holds                                                                                   |
 | --------------- | ------------- | ----------- | ---------------------- | ----------------------------------------------------------------------------------------------- |
 | `seq`           | No            | –           | –                      | The place in the chain, counting from 1 without gaps.                                           |
@@ -1391,6 +1477,8 @@ Defined in `crates/bb-core/src/sign_in.rs`.
 One place where a person is signed in (or on the way to being signed in).
 
 Defined in `crates/bb-core/src/sign_in.rs`.
+
+A person in its rows: `person` is the holder.
 
 | Field          | Personal data | Category      | Legal basis | What it holds                                                                    |
 | -------------- | ------------- | ------------- | ----------- | -------------------------------------------------------------------------------- |
@@ -1435,6 +1523,8 @@ Defined in `crates/bb-core/src/sign_up_invitation.rs`.
 A saved search an agent works on (AI-32): by proposals, or by a hand-over of each issue it finds.
 
 Defined in `crates/bb-core/src/agent_records.rs`.
+
+A person in its rows: `person` is the author.
 
 | Field              | Personal data | Category   | Legal basis | What it holds                                                                                                                  |
 | ------------------ | ------------- | ---------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------ |
@@ -1536,6 +1626,8 @@ A passkey a person registered.
 
 Defined in `crates/bb-core/src/sign_in.rs`.
 
+A person in its rows: `person` is the holder.
+
 | Field           | Personal data | Category      | Legal basis | What it holds                                                      |
 | --------------- | ------------- | ------------- | ----------- | ------------------------------------------------------------------ |
 | `id`            | No            | –             | –           | The ID of the passkey in Bugaboo.                                  |
@@ -1551,6 +1643,8 @@ Defined in `crates/bb-core/src/sign_in.rs`.
 One value of a setting that a person chose for themselves in *My settings* (CFG-04). It is the person's own data: it goes with them when they download their data and is gone when they are removed. The key must be one of the registry ([`find`]); `bb-store` is the only place that reads or writes these (ARCH-SETTINGS).
 
 Defined in `crates/bb-core/src/settings/mod.rs`.
+
+A person in its rows: `person` is the subject.
 
 | Field        | Personal data | Category   | Legal basis | What it holds                                                                           |
 | ------------ | ------------- | ---------- | ----------- | --------------------------------------------------------------------------------------- |
@@ -1651,6 +1745,8 @@ One time entry: what a person spent time on, for accounting (TIME-01, TIME-02).
 
 Defined in `crates/bb-core/src/time/entry.rs`.
 
+A person in its rows: `person` is the subject.
+
 | Field        | Personal data | Category        | Legal basis | What it holds                                                                           |
 | ------------ | ------------- | --------------- | ----------- | --------------------------------------------------------------------------------------- |
 | `id`         | No            | –               | –           | The ID of the entry.                                                                    |
@@ -1687,6 +1783,8 @@ The timer of a person (TIME-01): one row for each person who ever started one, r
 
 Defined in `crates/bb-core/src/time/entry.rs`.
 
+A person in its rows: `person` is the subject.
+
 | Field        | Personal data | Category        | Legal basis | What it holds                                                                               |
 | ------------ | ------------- | --------------- | ----------- | ------------------------------------------------------------------------------------------- |
 | `person`     | Yes           | `identity`      | `contract`  | Whose timer it is.                                                                          |
@@ -1699,6 +1797,8 @@ Defined in `crates/bb-core/src/time/entry.rs`.
 One call of one tool. Never the content, only its size.
 
 Defined in `crates/bb-core/src/ai/tools.rs`.
+
+A person in its rows: `person` is the subject.
 
 | Field       | Personal data | Category   | Legal basis            | What it holds                                                                          |
 | ----------- | ------------- | ---------- | ---------------------- | -------------------------------------------------------------------------------------- |
@@ -1719,6 +1819,8 @@ The two-step sign-in with a code app (TOTP) of a person. The shared secret is a 
 
 Defined in `crates/bb-core/src/sign_in.rs`.
 
+A person in its rows: `person` is the holder.
+
 | Field        | Personal data | Category      | Legal basis | What it holds                                                                      |
 | ------------ | ------------- | ------------- | ----------- | ---------------------------------------------------------------------------------- |
 | `person`     | Yes           | `identity`    | `contract`  | Whose it is.                                                                       |
@@ -1731,6 +1833,8 @@ Defined in `crates/bb-core/src/sign_in.rs`.
 A file on its way: started with its name and size, sent in parts, then finished (ADR-0032).
 
 Defined in `crates/bb-core/src/files.rs`.
+
+A person in its rows: `person` is the author.
 
 | Field        | Personal data | Category   | Legal basis | What it holds                                                                                                      |
 | ------------ | ------------- | ---------- | ----------- | ------------------------------------------------------------------------------------------------------------------ |
@@ -1760,6 +1864,8 @@ One weekday of the usual work days of a person: whether they work on it and for 
 
 Defined in `crates/bb-core/src/work_times/record.rs`.
 
+A person in its rows: `person` is the subject.
+
 | Field     | Personal data | Category        | Legal basis | What it holds                                                              |
 | --------- | ------------- | --------------- | ----------- | -------------------------------------------------------------------------- |
 | `person`  | Yes           | `employee_time` | `contract`  | The person.                                                                |
@@ -1785,6 +1891,8 @@ Defined in `crates/bb-core/src/working_time/record.rs`.
 One work day of a person: at most one for a person and a date.
 
 Defined in `crates/bb-core/src/working_time/record.rs`.
+
+A person in its rows: `person` is the subject.
 
 | Field        | Personal data | Category        | Legal basis        | What it holds                                                                                                       |
 | ------------ | ------------- | --------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------- |

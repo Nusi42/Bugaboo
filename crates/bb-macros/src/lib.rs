@@ -7,6 +7,7 @@
 #![forbid(unsafe_code)]
 
 mod entity;
+mod links;
 mod masked;
 
 use proc_macro::TokenStream;
@@ -25,8 +26,19 @@ use syn::{DeriveInput, parse_macro_input};
 /// each kind. The kind is a word of `bb_core::event::RecordKind`.
 ///
 /// A field without a mark, a mark with a missing or unknown part, or two marks on one field are
-/// compile errors. The macro implements `bb_core::personal::Entity`.
-#[proc_macro_derive(Entity, attributes(personal, not_personal, personal_for))]
+/// compile errors.
+///
+/// A field that names a person also says what the person is to the row (ADR-0044):
+/// `#[person(author)]`, with one of the words of `bb_core::personal::Link`, on a field whose type
+/// holds the ID of a person (`bb_core::personal::NamesAPerson`), or, on a reference to a record
+/// that is a person in the rows about some kinds of record,
+/// `#[person_for(kind = "person", link = "subject")]`, once for each kind. The links are the
+/// list the walk of a person's data reads; DATA-MARKS fails a field that names a person without
+/// one. The macro implements `bb_core::personal::Entity`.
+#[proc_macro_derive(
+    Entity,
+    attributes(personal, not_personal, personal_for, person, person_for)
+)]
 pub fn derive_entity(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     entity::expand(&input)

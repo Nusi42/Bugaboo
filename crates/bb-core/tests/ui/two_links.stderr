@@ -1,0 +1,5 @@
+error: field `author` has more than one `#[person(...)]`; keep exactly one link
+ --> tests/ui/two_links.rs:8:5
+  |
+8 |     #[person(holder)]
+  |     ^

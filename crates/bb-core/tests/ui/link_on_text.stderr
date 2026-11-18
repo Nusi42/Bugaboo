@@ -1,0 +1,29 @@
+error[E0277]: `String` does not hold the ID of a person, so it cannot carry `#[person(...)]`
+ --> tests/ui/link_on_text.rs:7:15
+  |
+7 |     pub text: String,
+  |               ^^^^^^ the trait `NamesAPerson` is not implemented for `String`
+  |
+  = note: a link says what a person is to the row; only a field that names a person has one (ADR-0044)
+help: the following other types implement trait `NamesAPerson`
+ --> src/personal.rs
+  |
+  |     ($($ty:ty),+ $(,)?) => { $(impl NamesAPerson for $ty {})+ };
+  |                                ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |                                |
+  |                                `UserId`
+  |                                `bb_core::event::Actor`
+...
+  | names_a_person!(crate::id::UserId, crate::event::Actor);
+  | ------------------------------------------------------- in this macro invocation
+  |
+  | impl<T: NamesAPerson> NamesAPerson for Option<T> {}
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `std::option::Option<T>`
+  | impl<T: NamesAPerson> NamesAPerson for Vec<T> {}
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Vec<T>`
+note: required by a bound in `names_a_person`
+ --> tests/ui/link_on_text.rs:3:10
+  |
+3 | #[derive(Entity)]
+  |          ^^^^^^ required by this bound in `names_a_person`
+  = note: this error originates in the macro `names_a_person` which comes from the expansion of the derive macro `Entity` (in Nightly builds, run with -Z macro-backtrace for more info)

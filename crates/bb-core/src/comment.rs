@@ -120,6 +120,7 @@ pub struct Comment {
     pub issue: IssueId,
     /// Who wrote it.
     #[personal(category = "activity", basis = "contract")]
+    #[person(author)]
     pub author: UserId,
     /// The text, in Markdown. Free text that could name a person.
     #[personal(category = "content", basis = "contract")]
@@ -165,6 +166,7 @@ pub struct Mention {
     pub comment: CommentId,
     /// Who is mentioned.
     #[personal(category = "activity", basis = "legitimate_interests")]
+    #[person(recipient)]
     pub recipient: UserId,
     /// What the comment named to reach the person.
     #[not_personal]

@@ -12,6 +12,7 @@ pub struct Person {
     /// pseudonym for the person; after the person is removed it is kept only as the link to the
     /// "Former user …" tombstone.
     #[personal(category = "identity", basis = "legitimate_interests")]
+    #[person(subject)]
     pub id: UserId,
     /// The name others see, as far as *Who sees people* allows (ADR-0022).
     #[personal(category = "identity", basis = "contract")]

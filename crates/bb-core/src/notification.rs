@@ -269,6 +269,7 @@ pub struct Notification {
     pub id: NotificationId,
     /// Who it is for.
     #[personal(category = "activity", basis = "legitimate_interests")]
+    #[person(recipient)]
     pub recipient: UserId,
     /// What it is about.
     #[not_personal]
@@ -287,6 +288,7 @@ pub struct Notification {
     pub record: Option<EntityId>,
     /// Who did it; nobody when Bugaboo did.
     #[personal(category = "activity", basis = "legitimate_interests")]
+    #[person(actor)]
     pub by: Option<UserId>,
     /// When it happened.
     #[not_personal]

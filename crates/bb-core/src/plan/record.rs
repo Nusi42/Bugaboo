@@ -22,10 +22,12 @@ pub struct IssueTimeFactor {
     pub factor: TimeFactor,
     /// The person on the bar it was set for: the first assigned person when it was set.
     #[personal(category = "employee_time", basis = "contract")]
+    #[person(subject)]
     pub person: UserId,
     /// Who set it: the person on the bar (*Lea's own estimate*) or somebody else (*set by Ada
     /// Brandt*).
     #[personal(category = "employee_time", basis = "contract")]
+    #[person(actor)]
     pub set_by: UserId,
 }
 
@@ -48,6 +50,7 @@ pub struct AcceptedWarning {
     pub due_date: Option<Date>,
     /// Who accepted it.
     #[personal(category = "identity", basis = "contract")]
+    #[person(actor)]
     pub accepted_by: UserId,
     /// When.
     #[not_personal]

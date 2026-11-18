@@ -387,6 +387,7 @@ Consumers are idempotent and resume from their last position after a restart.
 
 - Every stored field is **marked** in the entity definition: personal data or not, category (contact, employee time, content, technical), and the legal basis note. Unmarked fields fail the build.
 - The marks generate: *Download my data*, the *Remove a person* plan, keep-and-delete jobs, the record of processing, and the data-flow map.
+- **Person links:** every field that names a person also says what the person is to the row (`author`, `recipient`, `subject`, `actor`, `holder`; `#[person(…)]` beside the mark, ADR-0044 and the amendment M9 of ADR-0015), so one walk finds every row of a person. Enforced by: DATA-MARKS.
 - **Logs** hold IDs, never names or e-mail addresses; IP addresses are kept 7 days by default.
 - **Former users:** a removed person becomes a tombstone (`Former user K7Q2`); references stay valid, personal data is gone.
 - **Legal holds:** work days, with their breaks and the reasons of their changes, stay at least for the keep period, even after a person is removed, and keep the person's name for the people who may see working hours; after it, an administrator deletes them (ADR-0035, decision 7). Time entries are not held by law in M6; their keep rule comes with *Keep and delete rules* (M9).

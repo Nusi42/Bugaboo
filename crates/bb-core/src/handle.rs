@@ -62,6 +62,7 @@ pub fn is_handle(text: &str) -> bool {
 pub struct PersonHandle {
     /// The person.
     #[personal(category = "identity", basis = "contract")]
+    #[person(subject)]
     pub person: UserId,
     /// The handle, unique among all handles, former ones included. Made from the name, so it can
     /// hold the name.

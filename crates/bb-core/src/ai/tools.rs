@@ -237,6 +237,7 @@ pub struct ToolCall {
     pub id: ToolCallId,
     /// The person the call acted for.
     #[personal(category = "identity", basis = "legitimate_interests")]
+    #[person(subject)]
     pub person: UserId,
     /// How the tool was called.
     #[not_personal]

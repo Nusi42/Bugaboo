@@ -174,6 +174,7 @@ pub struct Agreement {
     pub destination: Destination,
     /// The administrator who confirmed it.
     #[personal(category = "activity", basis = "contract")]
+    #[person(actor)]
     pub confirmed_by: UserId,
     /// When it was confirmed.
     #[personal(category = "activity", basis = "contract")]

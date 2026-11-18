@@ -151,6 +151,7 @@ pub struct Agent {
     pub id: AgentId,
     /// The person responsible for it.
     #[personal(category = "identity", basis = "contract")]
+    #[person(holder)]
     pub person: UserId,
     /// Its name, unique among the agents of its person.
     #[personal(category = "content", basis = "contract")]
@@ -174,9 +175,11 @@ pub struct Agent {
     /// The person it is handed to, who has not accepted yet (the hand-over of an agent needs the
     /// acceptance of the other person).
     #[personal(category = "identity", basis = "contract")]
+    #[person(recipient)]
     pub offered_to: Option<UserId>,
     /// Who made it.
     #[personal(category = "identity", basis = "contract")]
+    #[person(author)]
     pub made_by: UserId,
     /// When it was made.
     #[personal(category = "activity", basis = "contract")]

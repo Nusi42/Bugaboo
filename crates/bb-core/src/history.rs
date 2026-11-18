@@ -101,6 +101,7 @@ pub struct HistoryEntry {
     pub at: Timestamp,
     /// Who did it; nobody for Bugaboo itself.
     #[personal(category = "activity", basis = "legitimate_interests")]
+    #[person(actor)]
     pub by: Option<UserId>,
     /// The agent that did it, when an agent did: `by` is then the person responsible for it.
     #[not_personal]

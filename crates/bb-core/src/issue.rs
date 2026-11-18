@@ -257,6 +257,7 @@ pub struct Issue {
     pub time_left: Option<Minutes>,
     /// Who made it.
     #[personal(category = "activity", basis = "contract")]
+    #[person(author)]
     pub reported_by: UserId,
     /// When it was made.
     #[not_personal]
@@ -283,6 +284,7 @@ pub struct AssignedPerson {
     pub issue: IssueId,
     /// Who works on it.
     #[personal(category = "activity", basis = "contract")]
+    #[person(subject)]
     pub person: UserId,
     /// When the person was assigned.
     #[not_personal]

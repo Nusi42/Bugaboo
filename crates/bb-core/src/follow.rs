@@ -33,6 +33,7 @@ pub struct Follower {
     pub issue: IssueId,
     /// Who follows it.
     #[personal(category = "activity", basis = "legitimate_interests")]
+    #[person(subject)]
     pub person: UserId,
     /// Why.
     #[not_personal]

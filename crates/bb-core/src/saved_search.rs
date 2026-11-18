@@ -225,6 +225,7 @@ pub struct SavedSearch {
     /// The person who made it. After *Remove a person* the ID stays as the link to *Former
     /// user …*; a private search goes with the person.
     #[personal(category = "activity", basis = "legitimate_interests")]
+    #[person(author)]
     pub maker: UserId,
     /// The kind of view.
     #[not_personal]

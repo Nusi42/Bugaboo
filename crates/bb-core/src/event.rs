@@ -277,12 +277,17 @@ pub struct DomainEvent {
     pub time: Timestamp,
     /// Who did it.
     #[personal(category = "activity", basis = "legitimate_interests")]
+    #[person(actor)]
     pub actor: Actor,
     /// Where the change came from.
     #[not_personal]
     pub channel: Channel,
     /// The record it is about.
     #[not_personal]
+    #[person_for(kind = "person", link = "subject")]
+    #[person_for(kind = "timer", link = "subject")]
+    #[person_for(kind = "work_times", link = "subject")]
+    #[person_for(kind = "share", link = "subject")]
     pub entity: EntityRef,
     /// The fields that changed. They can hold anything a person typed, but never credentials,
     /// password hashes or secrets: use cases leave those fields out of the changes (review).

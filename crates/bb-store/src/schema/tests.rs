@@ -37,3 +37,38 @@ fn every_table_has_its_own_name_and_every_column_a_marked_field() {
         }
     }
 }
+
+/// The walk of a person's data finds a row by the columns of a linked field (ADR-0044): one column
+/// with the person's ID, or a kind and an ID (an actor, a reference to a record), in that order.
+#[test]
+fn priv_02_every_field_that_names_a_person_has_a_link_on_a_stored_column() {
+    let tables = tables();
+    for table in &tables {
+        for link in table.marks.person_links().links() {
+            let columns = table
+                .columns
+                .iter()
+                .filter(|(_, field)| *field == link.field())
+                .count();
+            let expected = if link.kind().is_some() { 2..=2 } else { 1..=2 };
+            assert!(
+                expected.contains(&columns),
+                "{}.{} is stored in {columns} columns",
+                table.name,
+                link.field()
+            );
+        }
+    }
+    // Every entity that names a person is stored in a table, so the walk reaches its rows.
+    for marks in bb_core::entities::ALL {
+        if !marks.person_links().links().is_empty() {
+            assert!(
+                tables
+                    .iter()
+                    .any(|table| table.marks.name() == marks.name()),
+                "{} names a person but is stored in no table",
+                marks.name()
+            );
+        }
+    }
+}

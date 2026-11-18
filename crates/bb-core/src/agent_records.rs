@@ -70,6 +70,7 @@ pub struct HandOver {
     pub agent: AgentId,
     /// The person who handed over.
     #[personal(category = "identity", basis = "contract")]
+    #[person(actor)]
     pub person: UserId,
     /// The note of the brief.
     #[personal(category = "content", basis = "contract")]
@@ -120,6 +121,7 @@ pub struct StandingRule {
     pub agent: AgentId,
     /// The person who made the rule.
     #[personal(category = "identity", basis = "contract")]
+    #[person(author)]
     pub person: UserId,
     /// The saved search.
     #[not_personal]
@@ -180,6 +182,7 @@ pub struct IssueWork {
     pub agent: AgentId,
     /// The person responsible for the agent, when the work was given.
     #[personal(category = "identity", basis = "contract")]
+    #[person(holder)]
     pub person: UserId,
     /// Where the work is. Not the issue's status.
     #[not_personal]
@@ -307,6 +310,7 @@ pub struct Question {
     pub answer: Option<String>,
     /// Who answered.
     #[personal(category = "identity", basis = "contract")]
+    #[person(author)]
     pub answered_by: Option<UserId>,
     /// When it was answered.
     #[not_personal]
@@ -333,6 +337,7 @@ pub struct Review {
     pub note: Option<String>,
     /// Who reviewed, or nobody when the attempt was accepted by itself.
     #[personal(category = "identity", basis = "contract")]
+    #[person(author)]
     pub by: Option<UserId>,
     /// When.
     #[not_personal]
@@ -368,6 +373,7 @@ pub struct Proposal {
     pub state: ProposalState,
     /// Who decided.
     #[personal(category = "identity", basis = "contract")]
+    #[person(actor)]
     pub decided_by: Option<UserId>,
     /// When it was made.
     #[not_personal]

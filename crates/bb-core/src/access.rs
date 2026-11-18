@@ -92,6 +92,7 @@ pub struct GroupMember {
     pub group: GroupId,
     /// Who is in it.
     #[personal(category = "organization", basis = "contract")]
+    #[person(subject)]
     pub person: UserId,
     /// When the person was put into the group.
     #[personal(category = "activity", basis = "contract")]
@@ -144,6 +145,7 @@ pub struct Assignment {
     pub id: AssignmentId,
     /// The person, when the row is for a person.
     #[personal(category = "organization", basis = "contract")]
+    #[person(holder)]
     pub person: Option<UserId>,
     /// The group, when the row is for a group.
     #[not_personal]
@@ -270,6 +272,7 @@ pub struct ProjectPeopleLevel {
 pub struct LegacyAdministrator {
     /// The person.
     #[personal(category = "organization", basis = "contract")]
+    #[person(subject)]
     pub person: UserId,
 }
 

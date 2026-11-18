@@ -67,12 +67,14 @@ pub struct SecurityLogEntry {
     pub time: Timestamp,
     /// Who did it, or `None` when nobody was signed in (for example a failed sign-in).
     #[personal(category = "identity", basis = "legitimate_interests")]
+    #[person(actor)]
     pub person: Option<UserId>,
     /// What happened, like `sign_in.failed`.
     #[not_personal]
     pub action: TechnicalName,
     /// What it was about, if one record. It can be a person's account, so it counts as personal.
     #[personal(category = "identity", basis = "legitimate_interests")]
+    #[person_for(kind = "person", link = "subject")]
     pub subject: Option<EntityRef>,
     /// Where it came from, shortened (IPv4 `/24`, IPv6 `/48`).
     #[personal(category = "technical", basis = "legitimate_interests")]

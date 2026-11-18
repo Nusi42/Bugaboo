@@ -17,6 +17,7 @@ pub struct AwayTime {
     pub id: AwayTimeId,
     /// The person who is away.
     #[personal(category = "identity", basis = "contract")]
+    #[person(subject)]
     pub person: UserId,
     /// The first day.
     #[personal(category = "employee_time", basis = "contract")]
@@ -36,6 +37,7 @@ pub struct AwayTime {
     pub note: Option<String>,
     /// Who entered it: the person, or somebody with *Enter work times for others*.
     #[personal(category = "identity", basis = "contract")]
+    #[person(actor)]
     pub entered_by: UserId,
     /// Counts up with every change, for the check that nobody changed it meanwhile (ADR-0019).
     #[not_personal]
@@ -47,6 +49,7 @@ pub struct AwayTime {
 pub struct UsualWorkDay {
     /// The person.
     #[personal(category = "employee_time", basis = "contract")]
+    #[person(subject)]
     pub person: UserId,
     /// The weekday, 1 for Monday to 7 for Sunday.
     #[personal(category = "employee_time", basis = "contract")]
@@ -68,6 +71,7 @@ pub struct UsualWorkDay {
 pub struct ProjectShare {
     /// The person.
     #[personal(category = "employee_time", basis = "contract")]
+    #[person(subject)]
     pub person: UserId,
     /// The project.
     #[personal(category = "employee_time", basis = "contract")]

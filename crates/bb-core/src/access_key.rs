@@ -62,6 +62,7 @@ pub struct AccessKey {
     pub id: AccessKeyId,
     /// Whose key it is.
     #[personal(category = "identity", basis = "contract")]
+    #[person(holder)]
     pub owner: UserId,
     /// What the person called it, like "Nightly report".
     #[personal(category = "content", basis = "contract")]

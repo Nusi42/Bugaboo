@@ -977,6 +977,7 @@ Place  = "organization" | ProjectRef | "hidden"                                 
 <ul>
 <li>Every stored field is <strong>marked</strong> in the entity definition: personal data or not, category (contact, employee time, content, technical), and the legal basis note. Unmarked fields fail the build.</li>
 <li>The marks generate: <em>Download my data</em>, the <em>Remove a person</em> plan, keep-and-delete jobs, the record of processing, and the data-flow map.</li>
+<li><strong>Person links:</strong> every field that names a person also says what the person is to the row (<code>author</code>, <code>recipient</code>, <code>subject</code>, <code>actor</code>, <code>holder</code>; <code>#[person(…)]</code> beside the mark, ADR-0044 and the amendment M9 of ADR-0015), so one walk finds every row of a person. Enforced by: DATA-MARKS.</li>
 <li><strong>Logs</strong> hold IDs, never names or e-mail addresses; IP addresses are kept 7 days by default.</li>
 <li><strong>Former users:</strong> a removed person becomes a tombstone (<code>Former user K7Q2</code>); references stay valid, personal data is gone.</li>
 <li><strong>Legal holds:</strong> work days, with their breaks and the reasons of their changes, stay at least for the keep period, even after a person is removed, and keep the person's name for the people who may see working hours; after it, an administrator deletes them (ADR-0035, decision 7). Time entries are not held by law in M6; their keep rule comes with <em>Keep and delete rules</em> (M9).</li>

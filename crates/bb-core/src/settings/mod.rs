@@ -602,6 +602,7 @@ pub struct PolicyVersion {
 pub struct PersonSettingCounter {
     /// The person the counter belongs to.
     #[personal(category = "identity", basis = "contract")]
+    #[person(subject)]
     pub person: crate::id::UserId,
     /// The version of the last write of any of the person's values.
     #[not_personal]
@@ -616,6 +617,7 @@ pub struct PersonSettingCounter {
 pub struct StoredPersonSetting {
     /// The person the value belongs to.
     #[personal(category = "identity", basis = "contract")]
+    #[person(subject)]
     pub person: crate::id::UserId,
     /// The key of the setting, as declared in the registry.
     #[not_personal]

@@ -207,6 +207,7 @@ pub fn shown_code(stored: &str) -> &str {
 pub struct PasswordLogin {
     /// Whose password it is.
     #[personal(category = "identity", basis = "contract")]
+    #[person(holder)]
     pub person: UserId,
     /// The password hash. The password itself is never stored.
     #[personal(category = "credentials", basis = "contract")]
@@ -224,6 +225,7 @@ pub struct SignInSession {
     pub id: SessionId,
     /// Whose session it is.
     #[personal(category = "identity", basis = "contract")]
+    #[person(holder)]
     pub person: UserId,
     /// The hash of the 256-bit secret in the cookie. The secret itself is never stored.
     #[personal(category = "credentials", basis = "contract")]
@@ -272,6 +274,7 @@ impl TotpStep {
 pub struct TwoStep {
     /// Whose it is.
     #[personal(category = "identity", basis = "contract")]
+    #[person(holder)]
     pub person: UserId,
     /// Whether the person proved they can make codes. Until then it is not asked for.
     #[not_personal]
@@ -289,6 +292,7 @@ pub struct TwoStep {
 pub struct BackupCode {
     /// Whose it is.
     #[personal(category = "identity", basis = "contract")]
+    #[person(holder)]
     pub person: UserId,
     /// The hash of the code.
     #[personal(category = "credentials", basis = "contract")]
@@ -306,6 +310,7 @@ pub struct StoredPasskey {
     pub id: PasskeyId,
     /// Whose it is.
     #[personal(category = "identity", basis = "contract")]
+    #[person(holder)]
     pub person: UserId,
     /// The ID the device gave the passkey.
     #[personal(category = "credentials", basis = "contract")]
@@ -338,6 +343,7 @@ pub struct Invitation {
     pub email: String,
     /// The administrator who made it; nobody for the invitation a sign-up makes.
     #[personal(category = "identity", basis = "contract")]
+    #[person(author)]
     pub invited_by: Option<UserId>,
     /// When it was made.
     #[personal(category = "activity", basis = "contract")]

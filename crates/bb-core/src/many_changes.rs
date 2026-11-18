@@ -140,6 +140,7 @@ pub struct ManyChangeRun {
     pub kind: crate::run::RunKind,
     /// Who asked for it: the changes are made as this person.
     #[personal(category = "activity", basis = "contract")]
+    #[person(actor)]
     pub person: UserId,
     /// The name an AI app gave itself, for a session of an app.
     #[personal(category = "activity", basis = "legitimate_interests")]

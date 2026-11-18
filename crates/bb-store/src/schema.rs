@@ -28,6 +28,10 @@ pub struct StoredTable {
 /// is the table's enum in this file, and the names before the other arrows are its variants, so
 /// a column that does not exist does not compile; DATA-MARKS requires that every variant has a
 /// line and that the field exists in the entity.
+///
+/// A field that names a person (ADR-0044) is stored in one column that holds the person's ID, or in
+/// two: a kind and then an ID (the actor of an event, a reference to a record); the walk of a
+/// person's data reads the ID from the last of them.
 /// The names of the columns, of the table's own enum or of the enum named in brackets whose
 /// columns the table shares.
 macro_rules! column_names {

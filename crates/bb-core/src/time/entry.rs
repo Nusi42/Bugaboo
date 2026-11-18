@@ -21,6 +21,7 @@ pub struct TimeEntry {
     pub id: TimeEntryId,
     /// Whose time it is.
     #[personal(category = "identity", basis = "contract")]
+    #[person(subject)]
     pub person: UserId,
     /// The issue the time was spent on.
     #[personal(category = "employee_time", basis = "contract")]
@@ -85,6 +86,7 @@ pub struct TimeEntryValue {
 pub struct Timer {
     /// Whose timer it is.
     #[personal(category = "identity", basis = "contract")]
+    #[person(subject)]
     pub person: UserId,
     /// What it runs on, and since when; none while it stands still.
     #[personal(category = "employee_time", basis = "contract")]

@@ -176,6 +176,7 @@ pub struct OAuthGrant {
     pub client: OAuthClientId,
     /// The person who allowed it, and whom the app acts for.
     #[personal(category = "identity", basis = "contract")]
+    #[person(holder)]
     pub person: UserId,
 
     /// What the app may do: *See only* or *See and change*.
@@ -275,6 +276,7 @@ pub struct OAuthWebAddress {
     pub address: String,
     /// The administrator who allowed it.
     #[personal(category = "activity", basis = "legitimate_interests")]
+    #[person(actor)]
     pub added_by: UserId,
     /// When.
     #[not_personal]

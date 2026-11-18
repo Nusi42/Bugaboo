@@ -10,9 +10,13 @@ use std::fmt::Write as _;
 use anyhow::{Context as _, bail};
 use syn::{Attribute, Expr, Fields, Item, Lit, Meta};
 
+mod links;
+
 use super::Generated;
 use crate::repo::Repo;
 use crate::source::{Kind, Source, read_sources};
+
+pub(crate) use links::LinkMark;
 
 /// The generated page, relative to the repository root.
 pub(crate) const OUTPUT: &str = "docs/privacy/personal-data.md";
@@ -38,6 +42,11 @@ pub(crate) struct Field {
     /// The marks of the field in the rows of some kinds of record (`#[personal_for(…)]`): the
     /// kind, and the mark there or what is wrong with it.
     pub(crate) by_kind: Vec<(String, Result<Mark, String>)>,
+    /// The links of a person written on the field (`#[person(…)]`, `#[person_for(…)]`), each one or
+    /// what is wrong with it.
+    pub(crate) links: Vec<Result<LinkMark, String>>,
+    /// The names of the types the field's type is made of, to tell whether it names a person.
+    pub(crate) type_names: Vec<String>,
     pub(crate) doc: String,
 }
 
@@ -61,6 +70,8 @@ pub(crate) struct Word {
 pub(crate) struct Vocabulary {
     pub(crate) categories: Vec<Word>,
     pub(crate) bases: Vec<Word>,
+    /// The words `#[person(…)]` accepts (ADR-0044).
+    pub(crate) links: Vec<Word>,
 }
 
 /// Everything read from the source.
@@ -69,6 +80,8 @@ pub(crate) struct Model {
     /// The names in the `entities!` list.
     pub(crate) listed: Vec<String>,
     pub(crate) vocabulary: Vocabulary,
+    /// The types that hold the ID of a person (`names_a_person!`).
+    pub(crate) person_types: Vec<String>,
 }
 
 pub(crate) fn generate(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
@@ -82,6 +95,7 @@ pub(crate) fn read_model(sources: &[Source]) -> anyhow::Result<Model> {
     let mut entities = Vec::new();
     let mut listed = Vec::new();
     let mut vocabulary = Vocabulary::default();
+    let mut person_types = Vec::new();
     for (path, text) in sources {
         // Only a file that names `Entity` can derive it, and the two files of the words and the
         // list are always read: parsing the other files cannot change the model.
@@ -92,6 +106,7 @@ pub(crate) fn read_model(sources: &[Source]) -> anyhow::Result<Model> {
         visit(&file.items, path, &mut entities);
         if path == VOCABULARY_PATH {
             vocabulary = read_vocabulary(&file.items);
+            person_types = links::read_person_types(&file.items);
         }
         if path == LIST_PATH {
             listed = read_list(&file.items);
@@ -102,6 +117,7 @@ pub(crate) fn read_model(sources: &[Source]) -> anyhow::Result<Model> {
         entities,
         listed,
         vocabulary,
+        person_types,
     })
 }
 
@@ -188,6 +204,8 @@ fn read_field(field: &syn::Field) -> Field {
         name,
         mark,
         by_kind,
+        links: links::read_links(field),
+        type_names: links::type_names(&field.ty),
         doc: doc(&field.attrs),
     }
 }
@@ -298,6 +316,7 @@ fn read_vocabulary(items: &[Item]) -> Vocabulary {
             match parsed.name.as_str() {
                 "Category" => vocabulary.categories = parsed.words,
                 "Basis" => vocabulary.bases = parsed.words,
+                "Link" => vocabulary.links = parsed.words,
                 _ => {}
             }
         }
@@ -390,6 +409,9 @@ pub(crate) fn render(model: &Model) -> String {
             let _ = writeln!(out, "{}\n", entity.doc);
         }
         let _ = writeln!(out, "Defined in `{}`.\n", entity.path);
+        if let Some(line) = links_line(entity) {
+            let _ = writeln!(out, "{line}\n");
+        }
         let rows: Vec<Vec<String>> = entity
             .fields
             .iter()
@@ -408,6 +430,28 @@ pub(crate) fn render(model: &Model) -> String {
     }
     out.push_str(LIMITS);
     out
+}
+
+/// The sentence that names the fields of an entity that name a person and what the person is to
+/// the row; none when no field does.
+fn links_line(entity: &EntityDef) -> Option<String> {
+    let links: Vec<String> = entity
+        .fields
+        .iter()
+        .flat_map(|field| {
+            field.links.iter().filter_map(move |link| {
+                let link = link.as_ref().ok()?;
+                Some(match &link.kind {
+                    Some(kind) => format!(
+                        "`{}` is the {} in the rows about a `{kind}`",
+                        field.name, link.word
+                    ),
+                    None => format!("`{}` is the {}", field.name, link.word),
+                })
+            })
+        })
+        .collect();
+    (!links.is_empty()).then(|| format!("A person in its rows: {}.", links.join("; ")))
 }
 
 fn word_row(word: &Word) -> Vec<String> {
@@ -443,6 +487,8 @@ fn kind_rows(field: &Field) -> Vec<Vec<String>> {
                 name: field.name.clone(),
                 mark: mark.clone(),
                 by_kind: Vec::new(),
+                links: Vec::new(),
+                type_names: Vec::new(),
                 doc: String::new(),
             });
             vec![

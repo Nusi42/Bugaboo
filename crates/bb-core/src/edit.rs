@@ -172,6 +172,7 @@ pub struct EditLock {
     pub part: TechnicalName,
     /// Who holds the lock.
     #[personal(category = "activity", basis = "legitimate_interests")]
+    #[person(holder)]
     pub holder: UserId,
     /// The open editor (a tab) that holds it.
     #[not_personal]
@@ -260,6 +261,7 @@ impl Taking {
 pub struct Draft {
     /// Whose draft it is. Nobody else can read it.
     #[personal(category = "identity", basis = "legitimate_interests")]
+    #[person(author)]
     pub author: UserId,
     /// What it is a draft of.
     #[not_personal]
@@ -281,6 +283,7 @@ pub struct Draft {
 pub struct EditNotice {
     /// Who the note is for.
     #[personal(category = "activity", basis = "legitimate_interests")]
+    #[person(recipient)]
     pub recipient: UserId,
     /// The record that was being edited.
     #[not_personal]
@@ -293,6 +296,7 @@ pub struct EditNotice {
     pub kind: NoticeKind,
     /// Who did it.
     #[personal(category = "activity", basis = "legitimate_interests")]
+    #[person(actor)]
     pub from: UserId,
     /// When.
     #[not_personal]

@@ -103,6 +103,7 @@ pub struct IssueTag {
     pub tag: TagId,
     /// Who put it there.
     #[personal(category = "activity", basis = "contract")]
+    #[person(actor)]
     pub added_by: UserId,
     /// When.
     #[not_personal]
@@ -173,6 +174,7 @@ pub struct IssueLabel {
     pub label: LabelId,
     /// Who put it there.
     #[personal(category = "activity", basis = "contract")]
+    #[person(actor)]
     pub added_by: UserId,
     /// When.
     #[not_personal]

@@ -21,6 +21,7 @@ pub struct WorkDay {
     /// The person whose day it is. A removed person's days keep the link and the name (ADR-0035,
     /// decision 7).
     #[personal(category = "identity", basis = "legal_obligation")]
+    #[person(subject)]
     pub person: UserId,
     /// The person's day of its first start.
     #[personal(category = "employee_time", basis = "legal_obligation")]
