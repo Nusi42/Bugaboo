@@ -14,7 +14,7 @@ use crate::output;
 /// The workspace folder of the browser app, relative to the repository root.
 pub(crate) const WEB_APP: &str = "web/app";
 /// The name of the server program that `cargo build` makes (`[[bin]]` of bb-server).
-const SERVER_BINARY: &str = "bugaboo";
+pub(crate) const SERVER_BINARY: &str = "bugaboo";
 /// The name of the sample program that `cargo build` makes (`[[bin]]` of bb-sample).
 const SAMPLE_BINARY: &str = "bb-sample";
 /// The name of the program that judges a load run (`[[bin]]` of bb-load-check).

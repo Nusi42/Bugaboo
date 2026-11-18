@@ -31,9 +31,7 @@ impl Check for DepRegister {
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         let root = context.repo.root();
-        let register = fs::read_to_string(root.join(REGISTER))
-            .with_context(|| format!("could not read {REGISTER}"))?;
-        let rows = parse_register(&register);
+        let rows = read_register(root)?;
         let rust = rust_dependencies(&metadata::load(root)?);
         let files = context.repo.all_files()?;
         let npm = npm_dependencies(root, &files)?;
@@ -47,12 +45,30 @@ impl Check for DepRegister {
     }
 }
 
-/// The names in the register tables, split by the kind of table (`Crate` or `Package` column).
+/// One row of a register table: the cells after the first, as written (backticks and links
+/// removed from the first cell only).
+#[derive(Default, Debug, PartialEq, Eq, Clone)]
+pub(crate) struct Row {
+    /// The text of the Version column (empty in the tables of bundled data).
+    pub(crate) version: String,
+    /// The text of the License column.
+    pub(crate) license: String,
+    /// The text of the Purpose column.
+    pub(crate) purpose: String,
+    /// The cells in the order of the table, the first included.
+    pub(crate) cells: Vec<String>,
+}
+
+/// The names in the register tables, split by the kind of table (`Crate`, `Package`, `Data` or
+/// `Advisory` in the first column). Each maps a name to its row.
 #[derive(Default, Debug, PartialEq, Eq)]
-struct Rows {
-    /// Name -> the text of the Version column.
-    rust: BTreeMap<String, String>,
-    npm: BTreeMap<String, String>,
+pub(crate) struct Rows {
+    pub(crate) rust: BTreeMap<String, Row>,
+    pub(crate) npm: BTreeMap<String, Row>,
+    /// Bundled data files, by path.
+    pub(crate) data: BTreeMap<String, Row>,
+    /// Accepted risks, by advisory ID.
+    pub(crate) risks: BTreeMap<String, Row>,
 }
 
 /// Name -> the versions the lockfiles pin for direct dependencies (Rust: only what workspace
@@ -64,37 +80,85 @@ struct Locked {
     npm: Versions,
 }
 
-fn parse_register(markdown: &str) -> Rows {
+/// Reads the register of `root`.
+///
+/// # Errors
+/// When the file cannot be read.
+pub(crate) fn read_register(root: &Path) -> anyhow::Result<Rows> {
+    let register = fs::read_to_string(root.join(REGISTER))
+        .with_context(|| format!("could not read {REGISTER}"))?;
+    Ok(parse_register(&register))
+}
+
+/// Which table a row belongs to, by the name of the first column.
+#[derive(Clone, Copy)]
+enum Table {
+    Rust,
+    Npm,
+    Data,
+    Risks,
+}
+
+/// The name in a first cell: without backticks, and for a link `[text](address)` its text.
+fn plain_name(cell: &str) -> String {
+    let cell = cell.trim().trim_matches('`');
+    match (cell.strip_prefix('['), cell.find("](")) {
+        (Some(inner), Some(end)) => inner[..end - 1].to_owned(),
+        _ => cell.to_owned(),
+    }
+}
+
+pub(crate) fn parse_register(markdown: &str) -> Rows {
     let mut rows = Rows::default();
-    let mut section: Option<bool> = None; // Some(true) = Rust table, Some(false) = npm table
+    let mut section: Option<Table> = None;
     for line in markdown.lines().map(str::trim) {
         if !line.starts_with('|') {
             section = None;
             continue;
         }
-        let cells: Vec<&str> = line.trim_matches('|').split('|').map(str::trim).collect();
-        let first = cells
-            .first()
-            .copied()
-            .unwrap_or("")
-            .trim_matches('`')
-            .to_owned();
-        let version = cells
-            .get(1)
-            .copied()
-            .unwrap_or("")
-            .trim_matches('`')
-            .to_owned();
+        let cells: Vec<String> = line
+            .trim_matches('|')
+            .split('|')
+            .map(|cell| cell.trim().to_owned())
+            .collect();
+        let first = plain_name(cells.first().map_or("", String::as_str));
+        let cell = |at: usize| {
+            cells
+                .get(at)
+                .map_or_else(String::new, |text| text.trim_matches('`').to_owned())
+        };
+        let row = Row {
+            version: if matches!(section, Some(Table::Rust | Table::Npm)) {
+                cell(1)
+            } else {
+                String::new()
+            },
+            license: cell(2),
+            purpose: cell(if matches!(section, Some(Table::Risks)) {
+                3
+            } else {
+                4
+            }),
+            cells: cells.clone(),
+        };
         match first.as_str() {
-            "Crate" => section = Some(true),
-            "Package" => section = Some(false),
+            "Crate" => section = Some(Table::Rust),
+            "Package" => section = Some(Table::Npm),
+            "Data" => section = Some(Table::Data),
+            "Advisory" => section = Some(Table::Risks),
             name if name.is_empty() || name.starts_with("---") || name.starts_with(":-") => {}
             name => match section {
-                Some(true) => {
-                    rows.rust.insert(name.to_owned(), version);
+                Some(Table::Rust) => {
+                    rows.rust.insert(name.to_owned(), row);
                 }
-                Some(false) => {
-                    rows.npm.insert(name.to_owned(), version);
+                Some(Table::Npm) => {
+                    rows.npm.insert(name.to_owned(), row);
+                }
+                Some(Table::Data) => {
+                    rows.data.insert(name.to_owned(), row);
+                }
+                Some(Table::Risks) => {
+                    rows.risks.insert(name.to_owned(), row);
                 }
                 None => {}
             },
@@ -179,7 +243,8 @@ fn compare_versions(rows: &Rows, locked: &Locked) -> Vec<Finding> {
         ("Rust crate", &rows.rust, &locked.rust),
         ("npm package", &rows.npm, &locked.npm),
     ] {
-        for (name, version) in in_register {
+        for (name, row) in in_register {
+            let version = &row.version;
             let Some(have) = in_lock.get(name) else {
                 continue; // not locked: the name comparison reports it if it matters
             };
@@ -261,8 +326,8 @@ mod tests {
             rows.rust.keys().cloned().collect::<BTreeSet<_>>(),
             set(&["anyhow", "serde"])
         );
-        assert_eq!(rows.rust["anyhow"], "1.0.104");
-        assert_eq!(rows.npm["marked"], "18.0.14");
+        assert_eq!(rows.rust["anyhow"].version, "1.0.104");
+        assert_eq!(rows.npm["marked"].version, "18.0.14");
     }
 
     #[test]

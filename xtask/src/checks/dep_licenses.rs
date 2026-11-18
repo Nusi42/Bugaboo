@@ -155,7 +155,7 @@ fn npm_licenses(root: &Path, lockfiles: &[String]) -> anyhow::Result<Vec<Finding
 }
 
 /// The `license` field of a `package.json`, or its legacy `licenses` list, as text.
-fn declared_license(json: &Value) -> Option<String> {
+pub(crate) fn declared_license(json: &Value) -> Option<String> {
     json.get("license")
         .or_else(|| json.get("licenses"))
         .and_then(license_text)
@@ -192,7 +192,7 @@ fn is_gpl_family(id: &str) -> bool {
 }
 
 /// Whether an SPDX expression can be met by identifiers for which `is_allowed` holds.
-fn satisfied_by(expression: &str, is_allowed: &dyn Fn(&str) -> bool) -> bool {
+pub(crate) fn satisfied_by(expression: &str, is_allowed: &dyn Fn(&str) -> bool) -> bool {
     let spaced = expression.replace('(', " ( ").replace(')', " ) ");
     let tokens: Vec<&str> = spaced.split_whitespace().collect();
     let mut position = 0;

@@ -21,6 +21,7 @@ flate2 = "1.1.10"
 getrandom = { workspace = true }
 globset = { workspace = true }
 jiff = { workspace = true }
+jsonschema = { version = "0.61.2", default-features = false }
 kdl = { workspace = true }
 pulldown-cmark = { workspace = true, features = ["html"] }
 serde = { workspace = true }

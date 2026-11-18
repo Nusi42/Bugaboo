@@ -1,5 +1,6 @@
 Fonts embedded by hayro-interpret 0.8.0 (the Foxit standard fonts, taken from PDFium)
 License: BSD-3-Clause
+SPDX-License-Identifier: BSD-3-Clause
 Shipped in: the bugaboo binary (the preview of a PDF, ADR-0032)
 Source: assets/LICENSE_FOXIT of the crate hayro-interpret
 

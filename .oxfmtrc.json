@@ -5,6 +5,7 @@
     "dist",
     "target",
     "package-lock.json",
-    "tools/checks/api-frozen.json"
+    "tools/checks/api-frozen.json",
+    "tools/testdata/sbom"
   ]
 }

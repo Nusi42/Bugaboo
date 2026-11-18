@@ -32,6 +32,7 @@ mod nightly;
 mod output;
 mod ports;
 mod publish;
+mod release;
 mod repo;
 mod runner;
 mod rust_registry;
@@ -83,6 +84,13 @@ enum Command {
         /// Build for another system, such as x86_64-unknown-linux-musl (DIST-01).
         #[arg(long)]
         target: Option<String>,
+    },
+    /// Write the parts list (CycloneDX and SPDX) and the third-party notices from the lockfiles
+    /// (COMP-01, COMP-02), into the folder given, else into `parts-list/` of the build folder.
+    PartsList {
+        /// Where to write the three files.
+        #[arg(long)]
+        out: Option<PathBuf>,
     },
     /// Build the WebAssembly modules of the browser (`bb-wasm` and `bb-wasm-search`, with `wasm-bindgen` and `wasm-opt`).
     Wasm,
@@ -363,6 +371,34 @@ fn run() -> anyhow::Result<ExitCode> {
             repo.root(),
             target.as_deref(),
         )?)),
+        Command::PartsList { out } => {
+            let files = release::compose(repo.root())?;
+            let folder = match out {
+                Some(folder) => folder,
+                None => release::work_folder(repo.root())?,
+            };
+            let invalid = release::schema_errors(&files)?;
+            if !invalid.is_empty() {
+                anyhow::bail!(
+                    "the parts list does not fit its schema:
+{}",
+                    invalid.join(
+                        "
+"
+                    )
+                );
+            }
+            for name in &files.notices.without_text {
+                output::info(&format!("no license file in the package of {name}"));
+            }
+            release::write(&files, &folder)?;
+            output::info(&format!(
+                "wrote the parts list ({} parts) and the notices to {}",
+                files.list.parts.len(),
+                folder.display()
+            ));
+            Ok(ExitCode::SUCCESS)
+        }
         Command::Wasm => Ok(steps::exit_code(wasm::run(repo.root())?)),
         Command::Ci => {
             let _lock = nightly::FullRun::take(&repo)?;

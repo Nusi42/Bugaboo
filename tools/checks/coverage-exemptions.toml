@@ -109,3 +109,7 @@ reason = "Requests and answers of the providers as they were recorded; the adapt
 [[exempt]]
 path = "crates/bb-core/src/holidays/official_2026_2030.txt"
 reason = "Test data, not code: the public holidays of Germany and its 16 states for 2026 to 2030 as the official lists give them, written out by hand so that a mistake in the rules cannot hide in the data too; the test in crates/bb-core/src/holidays/tests.rs holds the rules to it (PLAN-11)."
+
+[[exempt]]
+path = "tools/testdata/sbom/LICENSE-*.txt"
+reason = "The official license texts of the published schemas next to them (tools/testdata/sbom/README.md); copied word for word and never edited."

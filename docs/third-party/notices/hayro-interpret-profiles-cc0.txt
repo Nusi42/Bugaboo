@@ -1,5 +1,6 @@
 Color profiles embedded by hayro-interpret 0.8.0 (CGATS001Compat-v2-micro.icc, LAB.icc)
 License: CC0 1.0 Universal (public domain dedication)
+SPDX-License-Identifier: CC0-1.0
 Shipped in: the bugaboo binary (the preview of a PDF, ADR-0032)
 Source: assets/CGATS_LICENSE.txt of the crate hayro-interpret
 
