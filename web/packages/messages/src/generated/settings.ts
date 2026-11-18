@@ -214,7 +214,7 @@ export const messages = {
     "Bugaboo creates a backup at the quiet hour of the organization, in the night. Backups hold all the organization's data and its files, but no keys.",
   "setting.backups.keep-daily.name": "Daily backups to keep",
   "setting.backups.keep-daily.help":
-    "How many days keep their newest backup. Older ones are deleted by the same schedule.",
+    "How many days keep their newest backup. Older ones are deleted when the next backup is created.",
   "setting.backups.keep-weekly.name": "Weekly backups to keep",
   "setting.backups.keep-weekly.help":
     "How many weeks keep their newest backup, besides the daily ones.",

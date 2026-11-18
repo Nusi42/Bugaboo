@@ -25549,7 +25549,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("setting.backups.folder.name", "Folder of the backups"),
     (
         "setting.backups.keep-daily.help",
-        "How many days keep their newest backup. Older ones are deleted by the same schedule.",
+        "How many days keep their newest backup. Older ones are deleted when the next backup is created.",
     ),
     ("setting.backups.keep-daily.name", "Daily backups to keep"),
     (
