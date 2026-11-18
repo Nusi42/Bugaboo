@@ -38,7 +38,7 @@ serde_json = { workspace = true }
 sha2 = { workspace = true }
 sqlx = { workspace = true, features = ["postgres", "runtime-tokio", "sqlite", "tls-rustls"] }
 # The backup file (ADR-0046); the extended attributes of files are not kept.
-tar = { version = "0.4.46", default-features = false }
+tar.workspace = true
 tokio = { workspace = true, features = ["rt", "time", "sync"] }
 tracing = { workspace = true }
 zeroize = { workspace = true }
