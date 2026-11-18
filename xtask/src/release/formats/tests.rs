@@ -106,7 +106,7 @@ fn comp_01_two_runs_of_one_commit_write_the_same_bytes() {
 fn the_files_are_named_for_the_version() {
     assert_eq!(cyclonedx_name("0.6.0"), "bugaboo-0.6.0.cdx.json");
     assert_eq!(spdx_name("0.6.0"), "bugaboo-0.6.0.spdx.json");
-    assert_eq!(notices_name("0.6.0"), "bugaboo-0.6.0-notices.txt");
+    assert_eq!(vex_name("0.6.0"), "bugaboo-0.6.0.vex.json");
 }
 
 #[test]
@@ -122,11 +122,10 @@ fn the_program_carries_the_files_of_its_build() {
         .map(|entry| entry.file_name().to_string_lossy().into_owned())
         .collect();
     names.sort();
-    let version = &files.list.program.version;
     let mut wanted = vec![
-        cyclonedx_name(version),
-        notices_name(version),
-        spdx_name(version),
+        about::embedded_name(about::CYCLONEDX_END),
+        about::embedded_name(about::NOTICES_END),
+        about::embedded_name(about::SPDX_END),
     ];
     wanted.sort();
     assert_eq!(names, wanted, "the file of an older version is gone");

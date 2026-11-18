@@ -65,6 +65,44 @@ pub(crate) fn accepted(root: &Path) -> anyhow::Result<Vec<Accepted>> {
     Ok(all)
 }
 
+/// The reasons CycloneDX knows for *not affected* (`vulnerability.analysis.justification`).
+const JUSTIFICATIONS: [&str; 9] = [
+    "code_not_present",
+    "code_not_reachable",
+    "requires_configuration",
+    "requires_dependency",
+    "requires_environment",
+    "protected_by_compiler",
+    "protected_at_runtime",
+    "protected_at_perimeter",
+    "protected_by_mitigating_control",
+];
+
+/// What stops an accepted advisory from having a full statement: `(ID, what is wrong)`. Every one
+/// needs its row in the register's *Accepted risks*, where the reason and the justification are
+/// written once.
+pub(crate) fn problems(accepted: &[Accepted], register: &Rows) -> Vec<(String, String)> {
+    let mut found = Vec::new();
+    for entry in accepted {
+        let message = match register.risks.get(&entry.id) {
+            None => {
+                Some("has no row in the register's Accepted risks, so its statement has no reason.")
+            }
+            Some(row) if row.purpose.is_empty() => {
+                Some("has an empty Why accepted in the register.")
+            }
+            Some(row) if !JUSTIFICATIONS.contains(&row.justification.as_str()) => Some(
+                "has no VEX justification in the register's Accepted risks that CycloneDX knows (for example code_not_present, code_not_reachable or requires_environment).",
+            ),
+            Some(_) => None,
+        };
+        if let Some(message) = message {
+            found.push((entry.id.clone(), message.to_owned()));
+        }
+    }
+    found
+}
+
 /// Where an advisory is published.
 fn source(id: &str) -> Value {
     let (name, url) = if id.starts_with("RUSTSEC-") {
@@ -103,10 +141,15 @@ pub(crate) fn vex(list: &PartsList, accepted: &[Accepted], register: &Rows) -> V
                 "analysis": {"state": "not_affected", "detail": detail},
                 "affects": [{"ref": program.reference()}],
             });
-            if let (Some(row), Some(map)) = (row, statement.as_object_mut())
-                && let Some(package) = row.cells.get(1)
-            {
-                map.insert("description".into(), json!(package));
+            if let (Some(row), Some(map)) = (row, statement.as_object_mut()) {
+                if let Some(package) = row.cells.get(1) {
+                    map.insert("description".into(), json!(package));
+                }
+                if let Some(analysis) = map.get_mut("analysis").and_then(Value::as_object_mut)
+                    && !row.justification.is_empty()
+                {
+                    analysis.insert("justification".into(), json!(row.justification));
+                }
             }
             statement
         })
@@ -115,14 +158,7 @@ pub(crate) fn vex(list: &PartsList, accepted: &[Accepted], register: &Rows) -> V
         "$schema": "http://cyclonedx.org/schema/bom-1.6.schema.json",
         "bomFormat": "CycloneDX",
         "specVersion": "1.6",
-        "serialNumber": format!(
-            "urn:uuid:{}-{}-4{}-a{}-{}",
-            &digest[0..8],
-            &digest[8..12],
-            &digest[13..16],
-            &digest[17..20],
-            &digest[20..32]
-        ),
+        "serialNumber": super::formats::serial_number(&digest),
         "version": 1,
         "metadata": {
             "timestamp": list.created,

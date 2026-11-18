@@ -95,7 +95,7 @@ Wave 0 first, because the answers decide what is kept, what is deleted and how a
 
 **Shared files, one entry each; rebase conflicts expected:** the packages of a wave each add their entries to `crates/bb-core/src/settings/catalog.rs`, `crates/bb-store/src/migrations/mod.rs`, `crates/bb-api/src/router.rs`, `crates/bb-policy/src/catalogue.rs`, `bb_app::jobs::JobKind`, `messages/en.json`, `crates/bb-server/src/cli/mod.rs`, `web/app/src/shared/paths.ts` and `web/app/src/features/settings/SettingsScreens.tsx`, and nothing else in those files; `web/app/src/features/people/PersonPage.tsx` is shared by WP-09 and WP-10 (WP-10 lands later and rebases). The one who lands later rebases and keeps both. **Migrations given out:** 54 (WP-02), 55 (WP-03), 56 (WP-04), 57 (WP-06), 58 (WP-09); none depends on another (architecture §7, *Storage types*). Migration 59 is not used in M9.
 
-**New dependencies, each with its register row in its package:** `tar` joins the shipped program (WP-02; already in the lockfile for xtask); a JSON Schema validator, test-only in xtask (WP-05); `minisign-verify` in the program and `minisign` in xtask (WP-08).
+**New dependencies, each with its register row in its package:** `tar` joins the shipped program (WP-02; already in the lockfile for xtask); a JSON Schema validator used only by xtask's checks and never shipped (WP-05); `minisign-verify` in the program and `minisign` in xtask (WP-08).
 
 ## Follow-ups handled in M9
 

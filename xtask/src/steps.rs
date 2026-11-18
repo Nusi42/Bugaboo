@@ -13,6 +13,8 @@ use crate::output;
 
 /// The workspace folder of the browser app, relative to the repository root.
 pub(crate) const WEB_APP: &str = "web/app";
+/// The build output of the browser app inside `web/app`.
+pub(crate) const WEB_DIST: &str = "dist";
 /// The name of the server program that `cargo build` makes (`[[bin]]` of bb-server).
 pub(crate) const SERVER_BINARY: &str = "bugaboo";
 /// The name of the sample program that `cargo build` makes (`[[bin]]` of bb-sample).

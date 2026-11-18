@@ -19,9 +19,9 @@ accepted = [
 const REGISTER: &str = "\
 ## Accepted risks
 
-| Advisory | Package | Severity | Why accepted | Re-check |
-|----------|---------|----------|--------------|----------|
-| [RUSTSEC-2023-0001](https://rustsec.org/advisories/RUSTSEC-2023-0001) | foo 1.0 | low | Only public keys are used. | later |
+| Advisory | Package | Severity | Why accepted | Re-check | VEX justification |
+|----------|---------|----------|--------------|----------|-------------------|
+| [RUSTSEC-2023-0001](https://rustsec.org/advisories/RUSTSEC-2023-0001) | foo 1.0 | low | Only public keys are used. | later | code_not_reachable |
 ";
 
 #[test]
@@ -49,6 +49,7 @@ fn a_statement_says_not_affected_with_the_reason_written_in_the_register() {
     assert_eq!(found[0]["analysis"]["state"], "not_affected");
     assert_eq!(found[0]["analysis"]["detail"], "Only public keys are used.");
     assert_eq!(found[0]["description"], "foo 1.0");
+    assert_eq!(found[0]["analysis"]["justification"], "code_not_reachable");
     assert_eq!(
         found[0]["source"]["url"],
         "https://rustsec.org/advisories/RUSTSEC-2023-0001"
@@ -81,6 +82,7 @@ fn comp_03_every_accepted_advisory_has_a_vex_statement_with_its_reason() {
             .find(|statement| statement["id"] == entry.id.as_str())
             .unwrap_or_else(|| panic!("{} has no VEX statement", entry.id));
         assert_eq!(statement["analysis"]["state"], "not_affected");
+        assert!(statement["analysis"]["justification"].is_string());
         let detail = statement["analysis"]["detail"].as_str().unwrap();
         assert!(!detail.is_empty(), "{} has no reason", entry.id);
         // The reason is the register's, written once, when the register describes the risk.

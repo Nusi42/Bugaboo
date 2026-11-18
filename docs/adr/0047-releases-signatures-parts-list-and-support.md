@@ -31,6 +31,14 @@ Today the repository has lockfiles, the register of direct dependencies, the lic
 - A person on Windows sees a warning about an unknown publisher until a code-signing certificate is bought (M9-Q12).
 - The parts list is checked in every full run, not only at release time, so a release never finds a gap late.
 
+## Amendment (M9, the parts list)
+
+- **The schema validator is a normal dependency of xtask, not a development-only one.** Decision 3 said "test-only". The check DEP-SBOM runs inside the xtask program in every full run and must validate both files, so the validator (`jsonschema`, built without its network code) is compiled into xtask. It is never part of the program that ships, and its register row says so. Enforced by: DEP-REGISTER.
+- **The crate list is what `cargo tree -e normal` says each program compiles in.** `cargo metadata` joins the features of every member of the workspace, so it names crates that a program does not compile in; it still gives the licenses and the edges. DEP-SBOM holds the list to `cargo tree` in both directions, and the npm packages to the lockfile's own marks (not `dev`, not `devOptional`). Enforced by: DEP-SBOM.
+- **A crate without a license file** gets the standard text of its declared license in the notices (decision 3), with the authors named in the package as the copyright holders.
+- **The VEX reason is the register's.** A statement takes its reason and its CycloneDX justification from the row of the register's *Accepted risks*; an accepted advisory without a row, or with a justification CycloneDX does not know, fails DEP-SBOM. Enforced by: DEP-SBOM.
+- **The files are the same bytes only for the same lockfiles and the same installed packages:** the license texts are read from the installed crates and packages.
+
 ## Alternatives considered
 
 - **Sigstore (cosign keyless):** needs a hosted build identity and the network at signing time; ADR-0037 has no hosted build. Not now.

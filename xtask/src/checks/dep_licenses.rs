@@ -191,10 +191,29 @@ fn is_gpl_family(id: &str) -> bool {
     })
 }
 
+/// The words of an SPDX expression, each parenthesis a word of its own: the one tokenizer of
+/// license expressions (the parts list reads the same words).
+pub(crate) fn spdx_words(expression: &str) -> Vec<String> {
+    expression
+        .replace('(', " ( ")
+        .replace(')', " ) ")
+        .split_whitespace()
+        .map(str::to_owned)
+        .collect()
+}
+
+/// A Cargo license written with a slash (`MIT/Apache-2.0`) as the SPDX expression it means.
+pub(crate) fn with_or_for_slash(text: &str) -> String {
+    text.split('/')
+        .map(str::trim)
+        .collect::<Vec<_>>()
+        .join(" OR ")
+}
+
 /// Whether an SPDX expression can be met by identifiers for which `is_allowed` holds.
 pub(crate) fn satisfied_by(expression: &str, is_allowed: &dyn Fn(&str) -> bool) -> bool {
-    let spaced = expression.replace('(', " ( ").replace(')', " ) ");
-    let tokens: Vec<&str> = spaced.split_whitespace().collect();
+    let words = spdx_words(expression);
+    let tokens: Vec<&str> = words.iter().map(String::as_str).collect();
     let mut position = 0;
     let result = parse_or(&tokens, &mut position, is_allowed);
     result.is_some_and(|ok| ok) && position == tokens.len()

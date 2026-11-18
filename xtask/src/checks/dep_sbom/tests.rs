@@ -2,23 +2,23 @@ use std::path::PathBuf;
 
 use super::*;
 use crate::checks::dep_register::parse_register;
-use crate::release::parts_list::{Algorithm, Checksum, Part, Program, lock_checksums};
+use crate::release::parts_list::{Algorithm, Checksum, Part, Program, parse_tree};
 use crate::release::{repository_root, this_repository};
 
+/// What `cargo tree` says (the file `tree.txt`) and what the written parts list names.
 fn fixture(kind: &str) -> (Names, Names) {
     let folder: PathBuf = repository_root()
         .join("tools/checks/fixtures/DEP-SBOM")
         .join(kind);
-    let lock = fs::read_to_string(folder.join("lockfile.toml")).unwrap();
-    let expected: Names = lock_checksums(&lock).unwrap().into_keys().collect();
+    let tree = fs::read_to_string(folder.join("tree.txt")).unwrap();
     let document: Value =
         serde_json::from_str(&fs::read_to_string(folder.join("parts-list.cdx.json")).unwrap())
             .unwrap();
-    (expected, cyclonedx_names(&document))
+    (parse_tree(&tree), cyclonedx_names(&document))
 }
 
 #[test]
-fn bad_example_a_lockfile_with_a_crate_the_list_leaves_out() {
+fn bad_example_a_crate_the_program_compiles_in_and_the_list_leaves_out() {
     let (expected, actual) = fixture("bad");
     let findings = findings_of("CycloneDX file", &expected, &actual);
     assert_eq!(findings.len(), 1);
@@ -27,7 +27,7 @@ fn bad_example_a_lockfile_with_a_crate_the_list_leaves_out() {
 }
 
 #[test]
-fn good_example_a_list_that_matches_the_lockfile() {
+fn good_example_a_list_that_matches_what_the_program_compiles_in() {
     let (expected, actual) = fixture("good");
     assert!(findings_of("CycloneDX file", &expected, &actual).is_empty());
 }
@@ -38,7 +38,7 @@ fn bad_example_an_entry_without_a_package_is_found() {
     actual.insert(("ghost".to_owned(), "9.9.9".to_owned()));
     let findings = findings_of("SPDX file", &expected, &actual);
     assert_eq!(findings.len(), 1);
-    assert!(findings[0].message.contains("names no package"));
+    assert!(findings[0].message.contains("names no package that ships"));
 }
 
 fn part(license: Option<&str>, checksum: bool) -> Part {
@@ -123,12 +123,15 @@ fn comp_01_no_font_or_icon_set_ships_without_an_entry() {
     let register = read_register(&root).unwrap();
     let files = crate::repo::Repo::at(root.clone()).all_files().unwrap();
     let list = &this_repository().list;
-    let found = shipped_without_entry(&root, &files, &register, list).unwrap();
+    let lock = read_lock(&root).unwrap();
+    let found = shipped_without_entry(&root, &files, &register, list, &lock);
     assert!(
         found.is_empty(),
         "{:?}",
         found.iter().map(|f| &f.message).collect::<Vec<_>>()
     );
+    // The set the browser app asks for is read from the lockfile, and has the icon set in it.
+    assert!(workspace_dependencies(&lock).contains("lucide-react"));
     let lucide = list
         .parts
         .iter()
@@ -138,10 +141,45 @@ fn comp_01_no_font_or_icon_set_ships_without_an_entry() {
 }
 
 #[test]
+fn bad_example_an_accepted_advisory_without_its_register_row_or_justification() {
+    let accepted = |id: &str| vex::Accepted {
+        id: id.to_owned(),
+        reason: "a reason".to_owned(),
+    };
+    let register = parse_register(
+        "| Advisory | Package | Severity | Why accepted | Re-check | VEX justification |\n|---|---|---|---|---|---|\n| [A-1](x) | p | low | Because. | later | code_not_present |\n| [A-2](x) | p | low | Because. | later | whatever |\n",
+    );
+    let found = vex::problems(
+        &[accepted("A-1"), accepted("A-2"), accepted("A-3")],
+        &register,
+    );
+    let ids: Vec<&str> = found.iter().map(|(id, _)| id.as_str()).collect();
+    assert_eq!(ids, ["A-2", "A-3"]);
+}
+
+#[test]
 fn the_repository_passes() {
+    let root = repository_root();
     let files = this_repository();
     let formats_ok = release::schema_errors(files).unwrap();
     assert!(formats_ok.is_empty(), "{formats_ok:?}");
     assert!(unfinished_parts(&files.list).is_empty());
-    assert!(compare(&files.list, &files.cyclonedx, &files.spdx).is_empty());
+    let mut expected = tree_union(&root).unwrap();
+    expected.extend(locked_not_dev(&read_lock(&root).unwrap()));
+    expected.extend(
+        files
+            .list
+            .parts
+            .iter()
+            .filter(|part| part.kind == Kind::File)
+            .map(|part| (part.name.clone(), part.version.clone())),
+    );
+    let found = compare(&expected, &files.cyclonedx, &files.spdx);
+    assert!(
+        found.is_empty(),
+        "{:?}",
+        found.iter().map(|f| &f.message).collect::<Vec<_>>()
+    );
+    let register = read_register(&root).unwrap();
+    assert!(vex::problems(&vex::accepted(&root).unwrap(), &register).is_empty());
 }

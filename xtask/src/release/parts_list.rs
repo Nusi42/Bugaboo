@@ -13,11 +13,10 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{Context as _, bail};
 use serde::Deserialize;
-use serde_json::Value;
 use sha2::{Digest as _, Sha256};
 
 use super::hex;
-use crate::checks::dep_licenses::declared_license;
+use crate::checks::dep_licenses::with_or_for_slash;
 use crate::checks::dep_register::{Rows, read_register};
 use crate::wasm;
 
@@ -26,8 +25,6 @@ pub(crate) const RELEASE_TARGETS: [&str; 2] =
     ["x86_64-pc-windows-msvc", "x86_64-unknown-linux-musl"];
 /// The crate that is the program.
 const PROGRAM_CRATE: &str = "bb-server";
-/// The browser app, as its folder is named in `package-lock.json`.
-const WEB_APP_KEY: &str = "web/app";
 /// The notices of code and data inside crates (COMP-02).
 pub(crate) const NOTICES_FOLDER: &str = "docs/third-party/notices";
 /// The line of a notice file that names its license.
@@ -188,8 +185,14 @@ pub(crate) struct Closure {
 
 /// The crates that the workspace members named in `roots` compile in, from the text of
 /// `cargo metadata --format-version 1 --filter-platform <target>`: the normal dependencies only,
-/// so crates for build scripts and for tests are not in it.
-pub(crate) fn rust_closure(metadata: &str, roots: &[&str]) -> anyhow::Result<Closure> {
+/// so crates for build scripts and for tests are not in it. With `only`, a crate that is not in it
+/// is left out with everything below it: `cargo metadata` unifies the features of the whole
+/// workspace, so it names crates that the program does not compile in (see [`tree_crates`]).
+pub(crate) fn rust_closure(
+    metadata: &str,
+    roots: &[&str],
+    only: Option<&BTreeSet<(String, String)>>,
+) -> anyhow::Result<Closure> {
     let metadata: Metadata = serde_json::from_str(metadata).context("unreadable cargo metadata")?;
     let packages: BTreeMap<&str, &MetaPackage> = metadata
         .packages
@@ -240,13 +243,16 @@ pub(crate) fn rust_closure(metadata: &str, roots: &[&str]) -> anyhow::Result<Clo
                 continue;
             }
             let key = (child.name.clone(), child.version.clone());
+            if only.is_some_and(|only| !only.contains(&key)) {
+                continue;
+            }
             if ours {
                 closure.direct.insert(key.clone());
             }
             closure.crates.entry(key).or_insert_with(|| Crate {
                 name: child.name.clone(),
                 version: child.version.clone(),
-                license: child.license.clone().map(|text| normalize_license(&text)),
+                license: child.license.clone().map(|text| with_or_for_slash(&text)),
                 authors: child.authors.clone(),
                 folder: child
                     .manifest_path
@@ -266,14 +272,6 @@ pub(crate) fn rust_closure(metadata: &str, roots: &[&str]) -> anyhow::Result<Clo
         }
     }
     Ok(closure)
-}
-
-/// A Cargo license written with a slash (`MIT/Apache-2.0`) as the SPDX expression it means.
-pub(crate) fn normalize_license(text: &str) -> String {
-    text.split('/')
-        .map(str::trim)
-        .collect::<Vec<_>>()
-        .join(" OR ")
 }
 
 /// `(name, version)` -> the SHA-256 that `Cargo.lock` records for a crate of a registry.
@@ -319,20 +317,87 @@ fn cargo_metadata(root: &Path, target: &str) -> anyhow::Result<String> {
     Ok(String::from_utf8_lossy(&out.stdout).into_owned())
 }
 
+/// Each program of the release as `(system, crate)`, and each WebAssembly module of the browser
+/// app: what the parts list covers.
+pub(crate) fn programs() -> Vec<(&'static str, &'static str)> {
+    RELEASE_TARGETS
+        .iter()
+        .map(|target| (*target, PROGRAM_CRATE))
+        .chain(
+            wasm::MODULES
+                .iter()
+                .map(|module| (wasm::TARGET, module.crate_name)),
+        )
+        .collect()
+}
+
+/// The crates that `cargo tree -e normal` says `package` compiles in for `target`, as
+/// `(name, version)`: cargo's own answer for one program with its own features, the one the parts
+/// list is held to. Our own crates are not in it.
+pub(crate) fn tree_crates(
+    root: &Path,
+    target: &str,
+    package: &str,
+) -> anyhow::Result<BTreeSet<(String, String)>> {
+    let out = crate::tools::command("cargo")
+        .args([
+            "tree", "--locked", "-p", package, "--target", target, "-e", "normal", "--prefix",
+            "none", "-f", "{p}",
+        ])
+        .current_dir(root)
+        .output()
+        .context("could not run cargo; is Rust installed?")?;
+    if !out.status.success() {
+        bail!(
+            "cargo tree failed: {}",
+            String::from_utf8_lossy(&out.stderr).trim()
+        );
+    }
+    Ok(parse_tree(&String::from_utf8_lossy(&out.stdout)))
+}
+
+/// The crates in the text of `cargo tree --prefix none -f "{p}"`, as `(name, version)`.
+pub(crate) fn parse_tree(text: &str) -> BTreeSet<(String, String)> {
+    let mut crates = BTreeSet::new();
+    for line in text.lines() {
+        let words: Vec<&str> = line.split_whitespace().collect();
+        let [name, version, rest @ ..] = words.as_slice() else {
+            continue;
+        };
+        // A crate of ours has its folder in brackets; a procedural macro says so in brackets too.
+        if rest
+            .iter()
+            .any(|word| word.starts_with('(') && *word != "(proc-macro)" && *word != "(*)")
+        {
+            continue;
+        }
+        crates.insert((
+            (*name).to_owned(),
+            version.trim_start_matches('v').to_owned(),
+        ));
+    }
+    crates
+}
+
+/// Every crate of every program of [`programs`], by `cargo tree`.
+pub(crate) fn tree_union(root: &Path) -> anyhow::Result<BTreeSet<(String, String)>> {
+    let mut all = BTreeSet::new();
+    for (target, package) in programs() {
+        all.extend(tree_crates(root, target, package)?);
+    }
+    Ok(all)
+}
+
 /// The crates in each program of the release and in the WebAssembly modules of the browser app.
 fn compiled_crates(root: &Path) -> anyhow::Result<Closure> {
-    let modules: Vec<&str> = wasm::MODULES
-        .iter()
-        .map(|module| module.crate_name)
-        .collect();
     let mut all = Closure::default();
-    let walks: Vec<(&str, Vec<&str>)> = RELEASE_TARGETS
-        .iter()
-        .map(|target| (*target, vec![PROGRAM_CRATE]))
-        .chain([(wasm::TARGET, modules)])
-        .collect();
-    for (target, roots) in walks {
-        let part = rust_closure(&cargo_metadata(root, target)?, &roots)?;
+    let mut metadata: BTreeMap<&str, String> = BTreeMap::new();
+    for (target, package) in programs() {
+        if !metadata.contains_key(target) {
+            metadata.insert(target, cargo_metadata(root, target)?);
+        }
+        let only = tree_crates(root, target, package)?;
+        let part = rust_closure(&metadata[target], &[package], Some(&only))?;
         if all.program.is_none() {
             all.program = part.program;
         }
@@ -345,189 +410,6 @@ fn compiled_crates(root: &Path) -> anyhow::Result<Closure> {
         }
     }
     Ok(all)
-}
-
-// ---- npm packages -----------------------------------------------------------------------------
-
-/// The npm packages that the browser app bundles, from the parsed `package-lock.json`: what the
-/// app and its own packages depend on (not what only their tools depend on), found the way node
-/// finds them, each with the checksum of the lockfile. `installed` gives the text of the
-/// `package.json` that is installed at a key, for a package whose lock entry names no license.
-pub(crate) fn npm_closure(
-    lock: &Value,
-    installed: &dyn Fn(&str) -> Option<Value>,
-) -> anyhow::Result<(Vec<Part>, BTreeSet<String>)> {
-    let packages = lock
-        .get("packages")
-        .and_then(Value::as_object)
-        .context("package-lock.json has no packages")?;
-    let mut found: BTreeMap<String, Part> = BTreeMap::new();
-    let mut direct = BTreeSet::new();
-    let mut seen = BTreeSet::new();
-    let mut waiting = vec![WEB_APP_KEY.to_owned()];
-    // Keys of the parts, so that their dependencies can be turned into references afterwards.
-    let mut edges: Vec<(String, String)> = Vec::new();
-    while let Some(key) = waiting.pop() {
-        if !seen.insert(key.clone()) {
-            continue;
-        }
-        let Some(entry) = packages.get(&key) else {
-            bail!("package-lock.json has no entry {key}");
-        };
-        let ours = !key.contains("node_modules/");
-        for name in dependency_names(entry) {
-            let Some(child) = resolve(packages, &key, &name) else {
-                continue; // an optional package that is not installed on this system
-            };
-            let child_key = child;
-            if packages[&child_key].get("link").and_then(Value::as_bool) == Some(true) {
-                // One of our own packages: its dependencies are the program's.
-                let target = packages[&child_key]
-                    .get("resolved")
-                    .and_then(Value::as_str)
-                    .context("a link without a target")?;
-                waiting.push(target.to_owned());
-                continue;
-            }
-            if ours {
-                direct.insert(child_key.clone());
-            } else {
-                edges.push((key.clone(), child_key.clone()));
-            }
-            found
-                .entry(child_key.clone())
-                .or_insert_with(|| npm_part(&child_key, &packages[&child_key], installed));
-            waiting.push(child_key);
-        }
-    }
-    let reference = |key: &str| found[key].reference();
-    let direct_refs: BTreeSet<String> = direct.iter().map(|key| reference(key)).collect();
-    let mut parts: Vec<Part> = found.values().cloned().collect();
-    for (from, to) in &edges {
-        if let Some(part) = parts
-            .iter_mut()
-            .find(|part| part.reference() == reference(from))
-        {
-            part.depends_on.insert(reference(to));
-        }
-    }
-    Ok((parts, direct_refs))
-}
-
-/// The names a package asks for: its dependencies, optional ones, and the peers it does not mark
-/// optional.
-fn dependency_names(entry: &Value) -> BTreeSet<String> {
-    let names = |section: &str| -> BTreeSet<String> {
-        entry
-            .get(section)
-            .and_then(Value::as_object)
-            .map(|map| map.keys().cloned().collect())
-            .unwrap_or_default()
-    };
-    let mut all = names("dependencies");
-    all.extend(names("optionalDependencies"));
-    let optional_peers: BTreeSet<String> = entry
-        .get("peerDependenciesMeta")
-        .and_then(Value::as_object)
-        .map(|map| {
-            map.iter()
-                .filter(|(_, meta)| meta.get("optional").and_then(Value::as_bool) == Some(true))
-                .map(|(name, _)| name.clone())
-                .collect()
-        })
-        .unwrap_or_default();
-    all.extend(
-        names("peerDependencies")
-            .difference(&optional_peers)
-            .cloned(),
-    );
-    all
-}
-
-/// The key of the package `name` that the package at `from` gets: the nearest `node_modules`
-/// folder that has it, going up (the way node looks).
-fn resolve(packages: &serde_json::Map<String, Value>, from: &str, name: &str) -> Option<String> {
-    let mut base = from.to_owned();
-    loop {
-        let candidate = if base.is_empty() {
-            format!("node_modules/{name}")
-        } else {
-            format!("{base}/node_modules/{name}")
-        };
-        if packages.contains_key(&candidate) {
-            return Some(candidate);
-        }
-        if base.is_empty() {
-            return None;
-        }
-        base = match base.rfind("node_modules/") {
-            Some(at) => base[..at].trim_end_matches('/').to_owned(),
-            None => String::new(),
-        };
-    }
-}
-
-fn npm_part(key: &str, entry: &Value, installed: &dyn Fn(&str) -> Option<Value>) -> Part {
-    let name = key.rsplit("node_modules/").next().unwrap_or(key).to_owned();
-    let license = declared_license(entry)
-        .or_else(|| installed(key).as_ref().and_then(declared_license))
-        .map(|text| text.trim().to_owned());
-    Part {
-        kind: Kind::Npm,
-        name,
-        version: entry
-            .get("version")
-            .and_then(Value::as_str)
-            .unwrap_or_default()
-            .to_owned(),
-        license,
-        checksum: entry
-            .get("integrity")
-            .and_then(Value::as_str)
-            .and_then(integrity_checksum),
-        purpose: None,
-        authors: Vec::new(),
-        depends_on: BTreeSet::new(),
-        folder: Some(PathBuf::from(key)),
-    }
-}
-
-/// An `integrity` value of the lockfile (`sha512-<base64>`) as a checksum.
-fn integrity_checksum(integrity: &str) -> Option<Checksum> {
-    let (algorithm, encoded) = integrity.split_whitespace().next()?.split_once('-')?;
-    let algorithm = match algorithm {
-        "sha512" => Algorithm::Sha512,
-        "sha256" => Algorithm::Sha256,
-        _ => return None,
-    };
-    Some(Checksum {
-        algorithm,
-        hex: hex(&base64_decode(encoded)?),
-    })
-}
-
-/// Standard Base64, with or without padding.
-fn base64_decode(text: &str) -> Option<Vec<u8>> {
-    let mut bytes = Vec::new();
-    let mut bits = 0_u32;
-    let mut count = 0;
-    for character in text.trim_end_matches('=').bytes() {
-        let value = match character {
-            b'A'..=b'Z' => character - b'A',
-            b'a'..=b'z' => character - b'a' + 26,
-            b'0'..=b'9' => character - b'0' + 52,
-            b'+' => 62,
-            b'/' => 63,
-            _ => return None,
-        };
-        bits = (bits << 6) | u32::from(value);
-        count += 6;
-        if count >= 8 {
-            count -= 8;
-            bytes.push(u8::try_from((bits >> count) & 0xff).ok()?);
-        }
-    }
-    Some(bytes)
 }
 
 // ---- Files that ship --------------------------------------------------------------------------
@@ -543,7 +425,7 @@ fn sha256_of(bytes: &[u8]) -> Checksum {
 fn file_parts(root: &Path, register: &Rows) -> anyhow::Result<Vec<Part>> {
     let mut parts = Vec::new();
     for (path, row) in &register.data {
-        let ships = row.cells.get(3).is_some_and(|cell| cell.starts_with("yes"));
+        let ships = row.ships.starts_with("yes");
         if !ships {
             continue;
         }
@@ -664,11 +546,7 @@ pub(crate) fn collect(root: &Path, created: &str) -> anyhow::Result<PartsList> {
         .iter()
         .map(|(name, version)| reference(name, version))
         .collect();
-    let lock: Value = serde_json::from_str(
-        &fs::read_to_string(root.join("package-lock.json"))
-            .context("could not read package-lock.json")?,
-    )
-    .context("package-lock.json is not valid JSON")?;
+    let lock = read_lock(root)?;
     let (mut npm, npm_direct) = npm_closure(&lock, &|key| {
         fs::read_to_string(root.join(key).join("package.json"))
             .ok()
@@ -717,6 +595,13 @@ pub(crate) fn commit_time(root: &Path) -> String {
         |time| time.to_string(),
     )
 }
+
+mod npm;
+#[cfg(test)]
+use npm::{base64_decode, integrity_checksum};
+pub(crate) use npm::{locked_not_dev, npm_closure, read_lock, workspace_dependencies};
+#[cfg(test)]
+use serde_json::Value;
 
 #[cfg(test)]
 mod tests;

@@ -4,6 +4,7 @@
 
 use std::collections::BTreeSet;
 
+use bb_api_words::about;
 use jsonschema::{Retrieve, Uri, Validator};
 use serde_json::{Value, json};
 use sha2::{Digest as _, Sha256};
@@ -26,19 +27,28 @@ const SPDX_SCHEMA: &str = include_str!("../../../tools/testdata/sbom/spdx-2.3.sc
 
 /// The names of the files of a release for a version (WP-08 signs these).
 pub(crate) fn cyclonedx_name(version: &str) -> String {
-    format!("bugaboo-{version}.cdx.json")
+    about::release_name(version, about::CYCLONEDX_END)
 }
 
 pub(crate) fn spdx_name(version: &str) -> String {
-    format!("bugaboo-{version}.spdx.json")
+    about::release_name(version, about::SPDX_END)
 }
 
 pub(crate) fn vex_name(version: &str) -> String {
-    format!("bugaboo-{version}.vex.json")
+    about::release_name(version, about::VEX_END)
 }
 
-pub(crate) fn notices_name(version: &str) -> String {
-    format!("bugaboo-{version}-notices.txt")
+/// The `serialNumber` of a document made from `digest` (a hash in hexadecimal): a version 4 UUID
+/// shape, so that two different lists never share one and two runs on one list do.
+pub(crate) fn serial_number(digest: &str) -> String {
+    format!(
+        "urn:uuid:{}-{}-4{}-a{}-{}",
+        &digest[0..8],
+        &digest[8..12],
+        &digest[13..16],
+        &digest[17..20],
+        &digest[20..32]
+    )
 }
 
 /// A name for the document that two different lists never share: the hash of what the parts say.
@@ -130,14 +140,7 @@ pub(crate) fn cyclonedx(list: &PartsList) -> Value {
     let known = known_licenses();
     let program = &list.program;
     let digest = content_hash(list);
-    let serial = format!(
-        "urn:uuid:{}-{}-4{}-a{}-{}",
-        &digest[0..8],
-        &digest[8..12],
-        &digest[13..16],
-        &digest[17..20],
-        &digest[20..32]
-    );
+    let serial = serial_number(&digest);
     let mut dependencies = vec![json!({
         "ref": program.reference(),
         "dependsOn": list.direct.iter().collect::<Vec<_>>(),

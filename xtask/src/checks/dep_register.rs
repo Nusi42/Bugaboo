@@ -53,8 +53,12 @@ pub(crate) struct Row {
     pub(crate) version: String,
     /// The text of the License column.
     pub(crate) license: String,
-    /// The text of the Purpose column.
+    /// The text of the Purpose column (in *Accepted risks*: *Why accepted*).
     pub(crate) purpose: String,
+    /// The text of the *Ships?* column (empty in *Accepted risks*).
+    pub(crate) ships: String,
+    /// The text of the *VEX justification* column (only in *Accepted risks*).
+    pub(crate) justification: String,
     /// The cells in the order of the table, the first included.
     pub(crate) cells: Vec<String>,
 }
@@ -139,6 +143,16 @@ pub(crate) fn parse_register(markdown: &str) -> Rows {
             } else {
                 4
             }),
+            ships: if matches!(section, Some(Table::Risks)) {
+                String::new()
+            } else {
+                cell(3)
+            },
+            justification: if matches!(section, Some(Table::Risks)) {
+                cell(5)
+            } else {
+                String::new()
+            },
             cells: cells.clone(),
         };
         match first.as_str() {

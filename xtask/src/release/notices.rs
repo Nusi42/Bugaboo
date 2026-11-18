@@ -11,6 +11,7 @@ use sha2::{Digest as _, Sha256};
 
 use super::hex;
 use super::parts_list::{Kind, Part, PartsList};
+use crate::checks::dep_licenses::{spdx_words, with_or_for_slash};
 use crate::checks::dep_register::Rows;
 
 /// The start of the name of a file that holds a license or a notice, in lower case.
@@ -51,10 +52,11 @@ const STANDARD_TEXTS: [(&str, &str); 6] = [
 /// one that has a text (the expression lists them in the order the package prefers), for `A AND B`
 /// all of them, none when one has no text.
 pub(crate) fn standard_licenses(expression: &str) -> Vec<&'static str> {
-    let spaced = expression.replace(['(', ')'], " ").replace('/', " OR ");
-    let ids: Vec<&str> = spaced
-        .split_whitespace()
-        .filter(|word| !matches!(*word, "OR" | "AND" | "WITH"))
+    let words = spdx_words(&with_or_for_slash(expression));
+    let ids: Vec<&str> = words
+        .iter()
+        .map(String::as_str)
+        .filter(|word| !matches!(*word, "OR" | "AND" | "WITH" | "(" | ")"))
         .collect();
     let known = |id: &str| {
         STANDARD_TEXTS
@@ -62,7 +64,7 @@ pub(crate) fn standard_licenses(expression: &str) -> Vec<&'static str> {
             .find(|(name, _)| *name == id)
             .map(|(name, _)| *name)
     };
-    if spaced.split_whitespace().any(|word| word == "AND") {
+    if words.iter().any(|word| word == "AND") {
         let all: Vec<&'static str> = ids.iter().filter_map(|id| known(id)).collect();
         return if all.len() == ids.len() {
             all

@@ -39,7 +39,7 @@ fn names(closure: &Closure) -> Vec<String> {
 
 #[test]
 fn only_normal_dependencies_are_compiled_in() {
-    let closure = rust_closure(METADATA, &["app"]).unwrap();
+    let closure = rust_closure(METADATA, &["app"], None).unwrap();
     assert_eq!(names(&closure), ["serde", "serde_derive"]);
     assert_eq!(closure.program.unwrap().license, "AGPL-3.0-or-later");
     let direct: Vec<_> = closure
@@ -52,7 +52,7 @@ fn only_normal_dependencies_are_compiled_in() {
 
 #[test]
 fn a_slash_in_a_cargo_license_becomes_or() {
-    let closure = rust_closure(METADATA, &["app"]).unwrap();
+    let closure = rust_closure(METADATA, &["app"], None).unwrap();
     let serde = &closure.crates[&("serde".to_owned(), "1.0.2".to_owned())];
     assert_eq!(serde.license.as_deref(), Some("MIT OR Apache-2.0"));
     assert!(
@@ -64,7 +64,7 @@ fn a_slash_in_a_cargo_license_becomes_or() {
 
 #[test]
 fn a_root_that_is_not_in_the_workspace_is_an_error() {
-    assert!(rust_closure(METADATA, &["missing"]).is_err());
+    assert!(rust_closure(METADATA, &["missing"], None).is_err());
 }
 
 #[test]
@@ -129,10 +129,22 @@ fn the_browser_app_bundles_what_it_depends_on_and_not_its_tools() {
 }
 
 #[test]
+fn a_crate_that_cargo_tree_does_not_name_is_left_out_with_what_is_below_it() {
+    let only: BTreeSet<(String, String)> = [("serde".to_owned(), "1.0.2".to_owned())].into();
+    let closure = rust_closure(METADATA, &["app"], Some(&only)).unwrap();
+    assert_eq!(names(&closure), ["serde"]);
+    assert!(
+        closure
+            .crates
+            .values()
+            .all(|found| found.depends_on.is_empty())
+    );
+}
+
+#[test]
 fn comp_01_the_parts_list_names_every_crate_the_program_compiles_in() {
-    // `cargo tree` resolves the features of one program by itself, so it is a second opinion
-    // next to the `cargo metadata` the list is made from.
-    let root = repository_root();
+    // `cargo tree` resolves the features of one program by itself; the list is held to it in both
+    // directions: no crate it names is missing, and none is listed that it does not name.
     let listed: BTreeSet<(String, String)> = this_repository()
         .list
         .parts
@@ -140,52 +152,15 @@ fn comp_01_the_parts_list_names_every_crate_the_program_compiles_in() {
         .filter(|part| part.kind == Kind::Crate)
         .map(|part| (part.name.clone(), part.version.clone()))
         .collect();
-    let ours: BTreeSet<String> = crate::metadata::load(&root)
-        .unwrap()
-        .into_iter()
-        .map(|package| package.name)
-        .collect();
-    let walks: Vec<(&str, &str)> = RELEASE_TARGETS
-        .iter()
-        .map(|target| (*target, PROGRAM_CRATE))
-        .chain(
-            wasm::MODULES
-                .iter()
-                .map(|module| (wasm::TARGET, module.crate_name)),
-        )
-        .collect();
-    for (target, package) in walks {
-        let out = crate::tools::command("cargo")
-            .args([
-                "tree", "--locked", "-p", package, "--target", target, "-e", "normal", "--prefix",
-                "none", "-f", "{p}",
-            ])
-            .current_dir(&root)
-            .output()
-            .unwrap();
-        assert!(out.status.success(), "cargo tree {package} for {target}");
-        let text = String::from_utf8_lossy(&out.stdout);
-        let mut count = 0;
-        for line in text.lines() {
-            let mut words = line.split_whitespace();
-            let (Some(name), Some(version)) = (words.next(), words.next()) else {
-                continue;
-            };
-            if ours.contains(name) {
-                continue;
-            }
-            count += 1;
-            let version = version.trim_start_matches('v').to_owned();
-            assert!(
-                listed.contains(&(name.to_owned(), version.clone())),
-                "{name} {version} is compiled into {package} for {target} and is not in the parts list"
-            );
-        }
-        assert!(
-            count > 20,
-            "cargo tree for {package} listed only {count} crates"
-        );
-    }
+    let compiled = tree_union(&repository_root()).unwrap();
+    assert!(compiled.len() > 300, "only {} crates", compiled.len());
+    let missing: Vec<_> = compiled.difference(&listed).collect();
+    let extra: Vec<_> = listed.difference(&compiled).collect();
+    assert!(
+        missing.is_empty(),
+        "compiled in and not listed: {missing:?}"
+    );
+    assert!(extra.is_empty(), "listed and not compiled in: {extra:?}");
 }
 
 #[test]
@@ -193,35 +168,16 @@ fn comp_01_the_parts_list_names_every_npm_package_the_browser_app_bundles() {
     let root = repository_root();
     let lock: Value =
         serde_json::from_str(&fs::read_to_string(root.join("package-lock.json")).unwrap()).unwrap();
-    let bundled: BTreeSet<String> = lock["packages"]
-        .as_object()
-        .unwrap()
-        .iter()
-        .filter(|(key, entry)| {
-            key.contains("node_modules/")
-                && ["dev", "devOptional"]
-                    .iter()
-                    .all(|flag| entry.get(flag).and_then(Value::as_bool) != Some(true))
-                && entry.get("link").and_then(Value::as_bool) != Some(true)
-        })
-        .map(|(key, entry)| format!("{key}@{}", entry["version"].as_str().unwrap()))
-        .collect();
-    let listed: BTreeSet<String> = this_repository()
+    let listed: BTreeSet<(String, String)> = this_repository()
         .list
         .parts
         .iter()
         .filter(|part| part.kind == Kind::Npm)
-        .map(|part| {
-            let key = part.folder.as_ref().unwrap().strip_prefix(&root).unwrap();
-            format!(
-                "{}@{}",
-                key.to_string_lossy().replace('\\', "/"),
-                part.version
-            )
-        })
+        .map(|part| (part.name.clone(), part.version.clone()))
         .collect();
     assert_eq!(
-        listed, bundled,
+        listed,
+        locked_not_dev(&lock),
         "the packages the lockfile does not mark dev (or dev and optional) are the ones the app bundles"
     );
 }

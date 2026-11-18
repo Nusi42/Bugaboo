@@ -1,0 +1,4 @@
+serde v1.0.2
+itoa v1.0.0
+serde_derive v1.0.2 (proc-macro)
+serde v1.0.2 (*)

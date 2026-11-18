@@ -9,6 +9,7 @@ use std::fs;
 use std::path::Path;
 
 use anyhow::Context as _;
+use bb_api_words::about;
 
 pub(crate) mod formats;
 pub(crate) mod notices;
@@ -60,17 +61,27 @@ pub(crate) fn compose(root: &Path) -> anyhow::Result<Files> {
     })
 }
 
+/// Writes the parts list in both formats and the notices into `folder`, each file named by
+/// `name` from its ending.
+fn write_about_files(
+    files: &Files,
+    folder: &Path,
+    name: impl Fn(&str) -> String,
+) -> anyhow::Result<()> {
+    write_file(
+        folder,
+        &name(about::CYCLONEDX_END),
+        &to_text(&files.cyclonedx),
+    )?;
+    write_file(folder, &name(about::SPDX_END), &to_text(&files.spdx))?;
+    write_file(folder, &name(about::NOTICES_END), &files.notices.text)
+}
+
 /// Writes the four files into `folder` under their release names, and nothing else.
 pub(crate) fn write(files: &Files, folder: &Path) -> anyhow::Result<()> {
     let version = &files.list.program.version;
-    write_file(
-        folder,
-        &formats::cyclonedx_name(version),
-        &to_text(&files.cyclonedx),
-    )?;
-    write_file(folder, &formats::spdx_name(version), &to_text(&files.spdx))?;
-    write_file(folder, &formats::vex_name(version), &to_text(&files.vex))?;
-    write_file(folder, &formats::notices_name(version), &files.notices.text)
+    write_about_files(files, folder, |end| about::release_name(version, end))?;
+    write_file(folder, &formats::vex_name(version), &to_text(&files.vex))
 }
 
 /// Where `cargo xtask parts-list` and the check DEP-SBOM write the files: in the build folder.
@@ -120,12 +131,5 @@ pub(crate) fn write_embedded(files: &Files, folder: &Path) -> anyhow::Result<()>
         fs::remove_dir_all(folder)
             .with_context(|| format!("could not clear {}", folder.display()))?;
     }
-    let version = &files.list.program.version;
-    write_file(
-        folder,
-        &formats::cyclonedx_name(version),
-        &to_text(&files.cyclonedx),
-    )?;
-    write_file(folder, &formats::spdx_name(version), &to_text(&files.spdx))?;
-    write_file(folder, &formats::notices_name(version), &files.notices.text)
+    write_about_files(files, folder, about::embedded_name)
 }
