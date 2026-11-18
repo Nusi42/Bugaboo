@@ -45,7 +45,9 @@ const SAVE_TEXT: &str = "save_text";
 /// The call of the runs that opens a run with its event (`runs/service.rs`), through `record_change`.
 const OPEN_RUN: &str = "open_run";
 /// The call that records a backup with its event and its line in the security log
-/// (`backups/mod.rs`), through `record_change`.
+/// (`backups/mod.rs`), through `record_change`. Like the other allowed calls it is matched by its
+/// name only, so a future method of that name that does not call `record_change` would pass: keep
+/// the name for this one recorder.
 const RECORD_RUN: &str = "record_run";
 /// The call of the registry and the mode that runs the use case of a tool that changes something.
 const APPLY_CALL: &str = "call_tool(";
@@ -228,7 +230,7 @@ mod tests {
     }
 
     /// The table of the test, as far as these examples need it.
-    const TABLE: &str = "table! { \"change_status\" => s::change_status_scenario, \"save_field_text\" => s::save_scenario, }";
+    const TABLE: &str = "table! { \"change_status\" => s::change_status_scenario, \"save_field_text\" => s::save_scenario, \"create_backup\" => s::create_backup_scenario, }";
 
     #[test]
     fn good_example_a_command_that_writes_through_the_port() {
