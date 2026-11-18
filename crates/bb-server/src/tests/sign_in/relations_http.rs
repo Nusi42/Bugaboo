@@ -32,7 +32,7 @@ fn keys(list: &Reply) -> Vec<String> {
 }
 
 /// Puts `child` under `parent`; the answer.
-async fn put_under(
+pub(super) async fn put_under(
     browser: &mut Browser,
     child: &str,
     version: i64,
@@ -48,7 +48,7 @@ async fn put_under(
 }
 
 /// The ID of the first kind of relation (*blocks*), and of the last (*related to*).
-async fn kinds(browser: &mut Browser) -> Result<(String, String), Failure> {
+pub(super) async fn kinds(browser: &mut Browser) -> Result<(String, String), Failure> {
     let list = browser.send("GET", "/api/v1/relation-kinds", None).await?;
     let items = list.body["items"].as_array().ok_or("no kinds")?;
     let id = |item: Option<&Value>| -> Result<String, Failure> {

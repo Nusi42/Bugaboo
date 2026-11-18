@@ -64,6 +64,7 @@ mod issues_site;
 mod issues_time;
 mod jobs_loop;
 mod keep_rules_http;
+mod keep_trash_http;
 mod layouts_http;
 mod layouts_off;
 mod layouts_review;

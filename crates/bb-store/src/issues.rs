@@ -404,6 +404,10 @@ impl IssueStore for AuthStorage {
             .transpose()
     }
 
+    async fn purge_trashed_issues(&self, before: Timestamp, limit: u64) -> Result<u64, StoreError> {
+        crate::keeping::trash::purge(self.database(), before, limit).await
+    }
+
     async fn assigned_people_of(
         &self,
         issues: &[IssueId],

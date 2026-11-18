@@ -67,6 +67,11 @@ pub trait IssueStore: ProjectStore + 'static {
         fn issue_type(id: IssueTypeId) -> Option<IssueType>;
         /// The people the issues are assigned to, for a page of issues at once.
         fn assigned_people_of(issues: &[IssueId]) -> Vec<AssignedPerson>;
+        /// Deletes for good at most `limit` issues that went into the trash before `before` (they
+        /// cannot be taken out of it any more), each in one change with everything that belongs to
+        /// it and the events about it, and says how many went. An issue with a time entry or a
+        /// running timer stays: the purge never deletes a time entry (ADR-0045, M9-Q1).
+        fn purge_trashed_issues(before: Timestamp, limit: u64) -> u64;
     }
 
     writes! {

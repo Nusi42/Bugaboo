@@ -14,7 +14,7 @@ use super::time_http::MY_ENTRIES;
 
 const RULES: &str = "/api/v1/admin/keep-rules";
 const PAST: &str = "/api/v1/admin/keep-rules/time-entries/past";
-const DELETE_PAST: &str = "/api/v1/admin/keep-rules/time-entries/delete-past";
+pub(super) const DELETE_PAST: &str = "/api/v1/admin/keep-rules/time-entries/delete-past";
 
 /// A note a time entry carries, to find in the events.
 const NOTE: &str = "Call with the customer about the invoice";

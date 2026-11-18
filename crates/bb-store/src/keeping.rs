@@ -4,6 +4,7 @@
 //! [`delete_limited`] the one way it deletes them.
 
 mod old_records;
+pub(crate) mod trash;
 
 use bb_core::event::RecordKind;
 use sea_query::{

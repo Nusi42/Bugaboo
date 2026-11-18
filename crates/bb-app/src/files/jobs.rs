@@ -26,9 +26,15 @@ fn attachment_of(payload: &Value) -> Result<AttachmentId, AppError> {
         .ok_or(AppError::Refused(bb_core::ErrorCode::InvalidRequest))
 }
 
+/// The most issues one step of the clean-up deletes for good: each takes its comments, files,
+/// history and events along, so a step takes fewer issues than rows to stay one short write.
+pub(crate) const TRASH_STEP_ISSUES: u64 = KEEP_STEP_ROWS / 10;
+
 /// What a clean-up removed, for the log.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub(crate) struct Cleaned {
+    /// Issues that were in the trash for good.
+    pub(crate) issues: u64,
     /// Unfinished uploads that were thrown away.
     pub(crate) uploads: usize,
     /// Attachments that were in the trash for good.
@@ -44,6 +50,7 @@ impl Cleaned {
         let rows =
             |count: usize| Step::of(u64::try_from(count).unwrap_or(u64::MAX), KEEP_STEP_ROWS);
         rows(self.uploads)
+            .and(Step::of(self.issues, TRASH_STEP_ISSUES))
             .and(Step::of(self.attachments, KEEP_STEP_ROWS))
             .and(rows(self.files))
     }
@@ -132,12 +139,13 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(())
     }
 
-    /// One step of the daily clean-up: unfinished uploads a day after their last part, attachments
-    /// that stayed in the trash past its keep period with their events, and the files that no
-    /// attachment points to, at most [`KEEP_STEP_ROWS`] of each. The rows of the history are made
-    /// from the events first, so a deleted file keeps its rows, without its name (M4-F93). The row
-    /// of a file goes first, in one statement that looks for an attachment again, so a file that
-    /// somebody added at the same moment is kept; the bytes go after it.
+    /// One step of the daily clean-up: unfinished uploads a day after their last part, issues and
+    /// attachments that stayed in the trash past its keep period with their events (at most
+    /// [`TRASH_STEP_ISSUES`] issues), and the files that no attachment points to, at most
+    /// [`KEEP_STEP_ROWS`] of the others. The rows of the history are made from the events first, so
+    /// a deleted file keeps its rows, without its name (M4-F93). The row of a file goes first, in one
+    /// statement that looks for an attachment again, so a file that somebody added at the same
+    /// moment is kept; the bytes go after it.
     pub(crate) async fn clean_up_files(&self) -> Result<Cleaned, AppError> {
         let mut cleaned = Cleaned::default();
         self.catch_up_history().await?;
@@ -155,6 +163,11 @@ impl<S: AuthStore> Ctx<'_, S> {
             self.drop_upload(upload.id).await;
         }
         cleaned.uploads = stale.len();
+        cleaned.issues = self
+            .store()
+            .purge_trashed_issues(trashed_before, TRASH_STEP_ISSUES)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
         cleaned.attachments = self
             .store()
             .purge_trashed_attachments(trashed_before, KEEP_STEP_ROWS)

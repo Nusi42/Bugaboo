@@ -131,7 +131,7 @@ fn named<'a>(items: &'a [Value], name: &str) -> Result<&'a Value, Failure> {
 }
 
 /// Every file below a folder of the files, as the disk has them.
-fn on_disk(rig: &Rig, folder: &str) -> Vec<std::path::PathBuf> {
+pub(super) fn on_disk(rig: &Rig, folder: &str) -> Vec<std::path::PathBuf> {
     fn walk(folder: &std::path::Path, found: &mut Vec<std::path::PathBuf>) {
         let Ok(entries) = std::fs::read_dir(folder) else {
             return;

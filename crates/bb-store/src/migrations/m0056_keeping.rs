@@ -30,7 +30,7 @@ pub(super) fn steps() -> Vec<Step> {
                 .col(SignUpMailRow::SentAt)
                 .to_owned(),
         ),
-        // The issues and the attachments of the trash (`trash.purge`, `files.clean-up`).
+        // The issues and the attachments of the trash (`files.clean-up`).
         Step::Index(
             Index::create()
                 .name("issue_by_deletion")

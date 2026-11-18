@@ -123,6 +123,57 @@ impl IssueStore for FakeStore {
         Ok(self.read(|state| assigned_people_of(state, issues)))
     }
 
+    async fn purge_trashed_issues(&self, before: Timestamp, limit: u64) -> Result<u64, FakeError> {
+        let mut shared = self.lock();
+        let state = &mut shared.state;
+        let doomed: Vec<IssueId> = state
+            .issues
+            .iter()
+            .filter(|issue| issue.deleted_at.is_some_and(|at| at < before))
+            .map(|issue| issue.id)
+            .filter(|id| !state.time_entries.iter().any(|entry| entry.issue == *id))
+            .filter(|id| {
+                !state
+                    .timers
+                    .iter()
+                    .any(|timer| timer.running.as_ref().is_some_and(|run| run.issue == *id))
+            })
+            .take(usize::try_from(limit).unwrap_or(usize::MAX))
+            .collect();
+        let gone = |issue: &IssueId| doomed.contains(issue);
+        state.comments.retain(|comment| !gone(&comment.issue));
+        state
+            .attachments
+            .retain(|attachment| !gone(&attachment.issue));
+        state.uploads.retain(|upload| !gone(&upload.issue));
+        state
+            .relations
+            .retain(|relation| !gone(&relation.from) && !gone(&relation.to));
+        state
+            .parents
+            .retain(|parent| !gone(&parent.child) && !gone(&parent.parent));
+        state.followers.retain(|follower| !gone(&follower.issue));
+        state.history.retain(|row| !gone(&row.issue));
+        state
+            .notifications
+            .retain(|row| row.issue.is_none_or(|issue| !gone(&issue)));
+        state.issue_tags.retain(|tag| !gone(&tag.issue));
+        state.issue_labels.retain(|label| !gone(&label.issue));
+        state
+            .assigned_people
+            .retain(|assigned| !gone(&assigned.issue));
+        state.issue_aliases.retain(|alias| !gone(&alias.issue));
+        state
+            .field_values
+            .retain(|value| !doomed.iter().any(|issue| value.entity == (*issue).into()));
+        state.issues.retain(|issue| !gone(&issue.id));
+        let events: Vec<_> = doomed.iter().map(|issue| (*issue).into()).collect();
+        shared
+            .events
+            .retain(|event| !events.contains(&event.entity.id));
+        Ok(u64::try_from(doomed.len()).unwrap_or(u64::MAX))
+    }
+
     async fn insert_issue_type(tx: &mut Tx, issue_type: &IssueType) -> Result<(), FakeError> {
         tx.state.issue_types.push(issue_type.clone());
         Ok(())
