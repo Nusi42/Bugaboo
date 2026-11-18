@@ -84,6 +84,19 @@ pub mod comment {
     pub(crate) const DELETED_AT: &str = crate::issues::member::DELETED_AT;
 }
 
+/// The member of the event of a row of *Who has which role* that is taken away: the whole row.
+pub(crate) mod assignment {
+    pub(crate) const ROW: &str = "assignment";
+}
+
+/// The members of an agent.
+pub(crate) mod agent {
+    /// The person it is offered to, who has not accepted yet.
+    pub(crate) const OFFERED_TO: &str = "offered_to";
+    /// The person responsible for it, before and after it was handed over.
+    pub(crate) const PERSON: &str = "person";
+}
+
 /// The member of the event of someone following an issue or leaving it.
 pub(crate) mod follower {
     pub(crate) const PERSON: &str = "follower";
@@ -225,4 +238,70 @@ pub(crate) mod timer {
     pub(crate) const STARTED_AT: &str = "started_at";
     /// The moment the person was told that it runs long.
     pub(crate) const WARNED_AT: &str = "warned_at";
+}
+
+/// The members of the changes of an event that hold a person (their ID, a list of them, or an
+/// object with one inside), for each kind of record (ADR-0044, decisions 1 and 6): the walk of a
+/// person's data finds the events by them, and *Remove a person* scrubs their values. A use case
+/// that writes a person into a member of an event declares it here, beside the member's name; the
+/// in-memory store of the tests refuses an event that holds a person in a member not declared.
+pub mod people {
+    use bb_core::event::RecordKind as K;
+    use bb_core::personal::{Link, PayloadMember, PayloadPerson};
+
+    use bb_core::fields::Field;
+
+    use super::{agent, assignment, edit_lock, follower, work_day, work_times};
+    use crate::issues::member as issue_member;
+
+    const fn named(kind: K, member: &'static str, link: Link) -> PayloadPerson {
+        PayloadPerson {
+            kind,
+            member: PayloadMember::Named(member),
+            link,
+        }
+    }
+
+    /// Every member that names a person, by kind of record.
+    pub const IN_CHANGES: &[PayloadPerson] = &[
+        named(K::WorkDay, work_day::PERSON, Link::Subject),
+        named(K::WorkTimes, work_times::PERSON, Link::Subject),
+        named(K::AwayTime, work_times::PERSON, Link::Subject),
+        named(K::Share, work_times::PERSON, Link::Subject),
+        named(K::Follower, follower::PERSON, Link::Subject),
+        named(K::Issue, Field::ReportedBy.code(), Link::Author),
+        named(K::Issue, Field::AssignedTo.code(), Link::Subject),
+        named(K::Assignment, assignment::ROW, Link::Holder),
+        named(K::Agent, agent::OFFERED_TO, Link::Recipient),
+        named(K::Agent, agent::PERSON, Link::Holder),
+        named(K::Project, issue_member::ISSUE_IDS_FAILED, Link::Recipient),
+        named(K::Issue, issue_member::TIME_FACTOR_FOR, Link::Subject),
+        named(K::Issue, edit_lock::FIELD, Link::Holder),
+        named(K::Project, edit_lock::FIELD, Link::Holder),
+        named(K::Comment, edit_lock::FIELD, Link::Holder),
+        PayloadPerson {
+            kind: K::Issue,
+            member: PayloadMember::OwnField,
+            link: Link::Subject,
+        },
+    ];
+
+    /// What the person is to an event about a record of `kind` whose change `member` names them;
+    /// none when the member is not declared.
+    #[must_use]
+    pub fn link_of(kind: &str, member: &str) -> Option<Link> {
+        IN_CHANGES
+            .iter()
+            .find(|declared| {
+                declared.kind.code() == kind
+                    && match declared.member {
+                        PayloadMember::Named(name) => name == member,
+                        PayloadMember::OwnField => matches!(
+                            bb_core::fields::FieldKey::from_code(member),
+                            Some(bb_core::fields::FieldKey::Own(_))
+                        ),
+                    }
+            })
+            .map(|declared| declared.link)
+    }
 }

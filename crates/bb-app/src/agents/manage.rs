@@ -499,7 +499,7 @@ pub async fn change_agent<S: AuthStore>(
     // A stopped agent is offered to nobody.
     if to == AgentState::Stopped && found.offered_to.is_some() {
         changes.push(bb_core::event::FieldChange {
-            field: "offered_to".to_owned(),
+            field: crate::member::agent::OFFERED_TO.to_owned(),
             before: found.offered_to.map(|person| json!(person.to_string())),
             after: None,
         });
@@ -618,7 +618,10 @@ pub async fn hand_agent<S: AuthStore>(
         ctx,
         person,
         found.id,
-        vec![set_to("offered_to", json!(input.to.to_string()))],
+        vec![set_to(
+            crate::member::agent::OFFERED_TO,
+            json!(input.to.to_string()),
+        )],
         found.version,
     )?;
     let (id, version, to) = (found.id, found.version, input.to);
@@ -670,7 +673,7 @@ pub async fn take_back_offer<S: AuthStore>(
         person,
         found.id,
         vec![bb_core::event::FieldChange {
-            field: "offered_to".to_owned(),
+            field: crate::member::agent::OFFERED_TO.to_owned(),
             before: found.offered_to.map(|to| json!(to.to_string())),
             after: None,
         }],
@@ -729,7 +732,7 @@ pub async fn accept_agent<S: AuthStore>(
         person,
         found.id,
         vec![bb_core::event::FieldChange {
-            field: "person".to_owned(),
+            field: crate::member::agent::PERSON.to_owned(),
             before: Some(json!(found.person.to_string())),
             after: Some(json!(person.to_string())),
         }],

@@ -342,6 +342,7 @@ impl ChangeStore for FakeStore {
             follow_ups: Vec::new(),
         };
         let result = change(&mut tx).await?;
+        undeclared_people(&tx.state, events.iter().chain(&tx.follow_ups));
         let mut shared = self.lock();
         shared.state = tx.state;
         shared.events.extend(events.iter().cloned());
@@ -380,4 +381,43 @@ pub(super) fn fake_page<E, T: Ord + Copy>(
         .skip(usize::try_from(skip).unwrap_or(usize::MAX))
         .take(usize::try_from(limit).unwrap_or(usize::MAX))
         .collect()
+}
+
+/// Stops a test whose change wrote an event that holds a person in a member of its changes that
+/// `member::people::IN_CHANGES` does not declare for the kind of record (ADR-0044): the walk of a
+/// person's data would not know what the person is to the event, and *Remove a person* would not
+/// scrub the value.
+fn undeclared_people<'e>(state: &State, events: impl Iterator<Item = &'e DomainEvent>) {
+    let people: Vec<String> = state
+        .people
+        .iter()
+        .map(|(person, _)| person.id.to_string())
+        .collect();
+    for event in events {
+        for change in &event.changes {
+            let holds_a_person = [&change.before, &change.after]
+                .into_iter()
+                .flatten()
+                .any(|value| holds_any(value, &people));
+            assert!(
+                !holds_a_person
+                    || crate::member::people::link_of(event.entity.kind.as_str(), &change.field)
+                        .is_some(),
+                "the event about a `{}` holds a person in its member `{}`; declare it in \
+                 `member::people::IN_CHANGES` (ADR-0044)",
+                event.entity.kind.as_str(),
+                change.field
+            );
+        }
+    }
+}
+
+/// Whether the value holds one of the IDs, as a text anywhere inside it.
+fn holds_any(value: &serde_json::Value, ids: &[String]) -> bool {
+    match value {
+        serde_json::Value::String(text) => ids.iter().any(|id| id == text),
+        serde_json::Value::Array(items) => items.iter().any(|item| holds_any(item, ids)),
+        serde_json::Value::Object(members) => members.values().any(|item| holds_any(item, ids)),
+        _ => false,
+    }
 }

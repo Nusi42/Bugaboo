@@ -201,7 +201,7 @@ pub async fn remove_assignment<S: AuthStore>(
         by(actor.person.id),
         entity(RecordKind::Assignment, id),
         vec![FieldChange {
-            field: "assignment".to_owned(),
+            field: crate::member::assignment::ROW.to_owned(),
             before: Some(json!({
                 "person": row.person.map(|person| person.to_string()),
                 "group": row.group.map(|group| group.to_string()),
