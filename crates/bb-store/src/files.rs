@@ -12,12 +12,12 @@ use bb_core::files::{Attachment, MediaType, PreviewStatus, StoredFile, Upload};
 use bb_core::id::{AttachmentId, CommentId, IssueId, UploadId, UserId};
 use bb_core::security_log::Digest;
 use jiff::Timestamp;
-use sea_query::{Expr, ExprTrait as _, Order, Query, SelectStatement};
+use sea_query::{Condition, Expr, ExprTrait as _, Order, Query, SelectStatement};
 
 use crate::auth::AuthStorage;
 use crate::db::{Database, Row, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
-use crate::keeping::{events_about, forget_events};
+use crate::keeping::{events_about, forget_events, hold_trashed};
 use crate::locks::{LockClass, lock_key};
 use crate::schema::{AttachmentRow, StoredFileRow, UploadRow};
 
@@ -381,22 +381,18 @@ impl AttachmentStore for AuthStorage {
         before: Timestamp,
         limit: u64,
     ) -> Result<u64, StoreError> {
-        // The ones to delete are chosen first, so a limit holds on both databases and every
-        // statement of the change finds the same ones.
-        let mut select = Query::select();
-        select
-            .column(AttachmentRow::Id)
-            .from(AttachmentRow::Table)
-            .and_where(Expr::col(AttachmentRow::DeletedAt).lt(to_micros(before)))
-            .order_by(AttachmentRow::Id, Order::Asc)
-            .limit(limit);
+        // The ones to delete are chosen and held first, so a limit holds on both databases, every
+        // statement of the change finds the same ones and one taken out of the trash meanwhile stays.
         let mut transaction = self.database().begin().await?;
-        let chosen: Vec<Vec<u8>> = transaction
-            .fetch_all(&select)
-            .await?
-            .iter()
-            .map(|row| row.get(AttachmentRow::Id))
-            .collect::<Result<_, _>>()?;
+        let chosen = hold_trashed(
+            &mut transaction,
+            AttachmentRow::Table,
+            (AttachmentRow::Id, AttachmentRow::DeletedAt),
+            Condition::all(),
+            before,
+            limit,
+        )
+        .await?;
         let mut doomed = Query::select();
         doomed
             .column(AttachmentRow::Id)

@@ -8,11 +8,13 @@ pub(crate) mod trash;
 
 use bb_core::event::RecordKind;
 use sea_query::{
-    Condition, DeleteStatement, Expr, ExprTrait as _, IntoIden, IntoTableRef, Order, Query,
+    Condition, DeleteStatement, Expr, ExprTrait as _, Iden, IntoIden, IntoTableRef, Order, Query,
     SelectStatement,
 };
 
-use crate::db::Transaction;
+use jiff::Timestamp;
+
+use crate::db::{Transaction, to_micros};
 use crate::error::StoreError;
 use crate::schema::{Event, HistoryEntryRow, Outbox};
 
@@ -52,6 +54,49 @@ where
         .from_table(table.clone())
         .and_where(limited_rows(table, keys, condition, limit));
     delete
+}
+
+/// Chooses at most `limit` rows of `table` that went into the trash before `before` and match
+/// `also`, and holds them for the change, in one statement; their keys `key`, in order. The outer
+/// statement asks again that each row is in the trash: on PostgreSQL a row that somebody took out of
+/// the trash after the choice, and before the hold got its lock, is checked again as it is now and
+/// left out; SQLite has one writer at a time. A row taken out of the trash after the hold waits
+/// until the purge is done and finds it gone.
+pub(crate) async fn hold_trashed<T, C>(
+    transaction: &mut Transaction,
+    table: T,
+    (key, deleted_at): (C, C),
+    also: Condition,
+    before: Timestamp,
+    limit: u64,
+) -> Result<Vec<Vec<u8>>, StoreError>
+where
+    T: IntoTableRef + Clone,
+    C: Iden + Copy + 'static,
+{
+    let in_the_trash = || {
+        Condition::all()
+            .add(Expr::col(deleted_at).is_not_null())
+            .add(Expr::col(deleted_at).lt(to_micros(before)))
+    };
+    let mut chosen = Query::select();
+    chosen
+        .column(key)
+        .from(table.clone())
+        .cond_where(in_the_trash().add(also))
+        .order_by(key, Order::Asc)
+        .limit(limit);
+    let mut held = Query::update();
+    held.table(table)
+        .value(deleted_at, Expr::col(deleted_at))
+        .cond_where(in_the_trash().add(Expr::col(key).in_subquery(chosen)))
+        .returning_col(key);
+    transaction
+        .fetch_all(&held)
+        .await?
+        .iter()
+        .map(|row| row.get(key))
+        .collect()
 }
 
 /// Deletes the events that `events` finds, with what was made from them: their entries in the

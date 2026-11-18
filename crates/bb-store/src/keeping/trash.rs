@@ -13,12 +13,12 @@
 use bb_core::event::RecordKind;
 use jiff::Timestamp;
 use sea_query::{
-    ColumnRef, Cond, Condition, Expr, ExprTrait as _, IntoColumnRef, IntoTableRef, Order, Query,
+    ColumnRef, Cond, Condition, Expr, ExprTrait as _, IntoColumnRef, IntoTableRef, Query,
     SelectStatement, TableRef,
 };
 
-use super::{delete_events, events_about};
-use crate::db::{Database, Transaction, to_micros};
+use super::{delete_events, events_about, hold_trashed};
+use crate::db::{Database, Transaction};
 use crate::error::StoreError;
 use crate::files::delete_attachments;
 use crate::schema::{
@@ -300,44 +300,39 @@ async fn delete_named(transaction: &mut Transaction, doomed: &Doomed) -> Result<
     Ok(())
 }
 
-/// Chooses the issues to purge and holds them for the change, in one statement: an issue that
-/// somebody takes out of the trash at the same moment is either taken out first, and not chosen,
-/// or waits until the purge is done and finds it gone. The IDs of the chosen issues.
+/// Chooses the issues to purge and holds them for the change ([`hold_trashed`]): issues of the
+/// trash without a time entry and without a running timer, each asked of the index of its issue.
 async fn hold(
     transaction: &mut Transaction,
     before: Timestamp,
     limit: u64,
 ) -> Result<Vec<Vec<u8>>, StoreError> {
-    let booked = ids_where(
-        TimeEntryRow::Table,
-        TimeEntryRow::Issue,
-        Expr::col(TimeEntryRow::Issue).is_not_null(),
-    );
-    let timed = ids_where(
-        TimerRow::Table,
-        TimerRow::Issue,
-        Expr::col(TimerRow::Issue).is_not_null(),
-    );
-    let mut chosen = Query::select();
-    chosen
-        .column(IssueRow::Id)
-        .from(IssueRow::Table)
-        .and_where(Expr::col(IssueRow::DeletedAt).lt(to_micros(before)))
-        .and_where(Expr::col(IssueRow::Id).not_in_subquery(booked))
-        .and_where(Expr::col(IssueRow::Id).not_in_subquery(timed))
-        .order_by(IssueRow::Id, Order::Asc)
-        .limit(limit);
-    let mut held = Query::update();
-    held.table(IssueRow::Table)
-        .value(IssueRow::DeletedAt, Expr::col(IssueRow::DeletedAt))
-        .and_where(Expr::col(IssueRow::Id).in_subquery(chosen))
-        .returning_col(IssueRow::Id);
-    transaction
-        .fetch_all(&held)
-        .await?
-        .iter()
-        .map(|row| row.get(IssueRow::Id))
-        .collect()
+    let of_the_issue = |table: TableRef, column: ColumnRef| {
+        let mut select = Query::select();
+        select
+            .expr(Expr::val(1))
+            .from(table)
+            .and_where(Expr::col(column).equals((IssueRow::Table, IssueRow::Id)));
+        Expr::exists(select).not()
+    };
+    let also = Cond::all()
+        .add(of_the_issue(
+            TimeEntryRow::Table.into_table_ref(),
+            (TimeEntryRow::Table, TimeEntryRow::Issue).into_column_ref(),
+        ))
+        .add(of_the_issue(
+            TimerRow::Table.into_table_ref(),
+            (TimerRow::Table, TimerRow::Issue).into_column_ref(),
+        ));
+    hold_trashed(
+        transaction,
+        IssueRow::Table,
+        (IssueRow::Id, IssueRow::DeletedAt),
+        also,
+        before,
+        limit,
+    )
+    .await
 }
 
 /// The column `id` of the rows of `table` that match `condition`.
@@ -361,3 +356,7 @@ async fn delete_where(
     delete.from_table(table).cond_where(condition);
     transaction.execute(&delete).await
 }
+
+#[cfg(test)]
+#[path = "../tests/trash.rs"]
+mod tests;
