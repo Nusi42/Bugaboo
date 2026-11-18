@@ -467,3 +467,15 @@ route = "GET /api/v1/about"
 property = "files"
 whole_value = true
 reason = "The files of the build are at most as many as the kinds of file the code knows (the parts list as CycloneDX and as SPDX, and the notices): a list bounded by the code, not one that grows with data, and the page lists all of them at once (M9-F40)."
+
+[[exempt]]
+route = "GET /api/v1/admin/backups"
+property = "files"
+whole_value = true
+reason = "The backup files of the folder: the rotation keeps the newest of `backups.keep-daily` days and `backups.keep-weekly` weeks and deletes the rest every night (ADR-0046, decision 3), so the list stays small by its own rule, and the page lists all of them at once (M9-F15)."
+
+[[exempt]]
+route = "GET /api/v1/admin/backups"
+property = "runs"
+whole_value = true
+reason = "The newest `LISTED_RUNS` (50) records of backups made and restored: a number fixed by the code, not a list that grows with data (ADR-0046, decision 3; M9-F15)."

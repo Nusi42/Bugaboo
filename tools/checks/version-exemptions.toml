@@ -311,3 +311,7 @@ reason = "A DELETE has no body: the removal of an away time takes the version it
 [[exempt]]
 routes = ["POST /api/v1/timeline", "POST /api/v1/timeline/move-after"]
 reason = "A page of the timeline and the preview of Move it after read and save nothing: they are posted because the options of the view do not fit an address. The move the preview names is made by POST /api/v1/issues/move-dates, which takes the version of every issue (ADR-0043, decision 5)."
+
+[[exempt]]
+routes = ["POST /api/v1/admin/backups"]
+reason = "A backup is made new: a new file and its record, with nothing yet that another change could overwrite (ADR-0019); one backup is made at a time, and a second one meanwhile is refused with backup.running (ADR-0046, decision 3)."
