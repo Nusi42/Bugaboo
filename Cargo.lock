@@ -700,6 +700,7 @@ dependencies = [
  "webauthn-authenticator-rs",
  "windows-service",
  "zeroize",
+ "zip",
 ]
 
 [[package]]

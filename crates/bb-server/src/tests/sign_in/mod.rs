@@ -35,6 +35,7 @@ mod concurrent;
 mod concurrent_agents;
 mod concurrent_plan;
 mod conflict_http;
+mod data_exports_http;
 mod editing;
 mod exit_editing;
 mod exit_handle_probe;

@@ -41,6 +41,7 @@ use webauthn_authenticator_rs as _;
 #[cfg(windows)]
 use windows_service as _;
 use zeroize as _;
+use zip as _;
 
 #[cfg(test)] // Clippy lets tests unwrap only inside test modules (clippy.toml).
 mod preview {
