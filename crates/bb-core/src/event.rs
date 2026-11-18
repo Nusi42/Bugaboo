@@ -164,6 +164,8 @@ words! {
         Assignment => "assignment",
         /// A comment on an issue.
         Comment => "comment",
+        /// A file of *Download my data* (PRIV-03).
+        DataExport => "data_export",
         /// Who follows an issue (the record is the issue).
         Follower => "follower",
         /// A group of people.

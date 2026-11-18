@@ -315,6 +315,11 @@ define_ordered_id! {
 }
 
 define_ordered_id! {
+    /// The ID of a file of *Download my data*; the file in `exports/` is named by it (PRIV-03).
+    DataExportId
+}
+
+define_ordered_id! {
     /// The ID of a comment (ISS-05).
     CommentId
 }
@@ -524,6 +529,7 @@ into_entity_id!(
     WorkflowId,
     SavedSearchId,
     ThemeId,
+    DataExportId,
     CommentId,
     TimeEntryId,
     WorkDayId,

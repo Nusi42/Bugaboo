@@ -45,6 +45,7 @@ crate::entities! {
     crate::many_changes::ManyChangeRun,
     crate::mark::TextMark,
     crate::comment::Comment,
+    crate::data_export::DataExport,
     crate::sign_up_invitation::SignUpInvitation,
     crate::sign_up_invitation::SignUpMail,
     crate::comment::CommentVersion,

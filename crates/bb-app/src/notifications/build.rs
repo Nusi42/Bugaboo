@@ -316,6 +316,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             RecordKind::AccessKey
             | RecordKind::OAuthClient
             | RecordKind::ConnectedApp
+            | RecordKind::DataExport
             | RecordKind::Field
             | RecordKind::Assignment
             | RecordKind::Follower

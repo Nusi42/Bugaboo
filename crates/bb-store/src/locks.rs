@@ -76,6 +76,9 @@ pub(crate) enum LockClass {
     /// Adding own themes (key 0 for the themes for everyone, four bytes of the maker's ID for
     /// personal ones): two themes added at the same moment cannot both pass the limit of their kind.
     Themes = 17,
+    /// Asking for a file of *Download my data* (key: four bytes of the person's ID): two requests
+    /// at the same moment cannot both find no waiting export of the person.
+    DataExports = 18,
 }
 
 impl LockClass {
@@ -102,6 +105,7 @@ impl LockClass {
             Self::IssueTaking => 14,
             Self::AgentTaking => 15,
             Self::Themes => 16,
+            Self::DataExports => 17,
         }
     }
 }

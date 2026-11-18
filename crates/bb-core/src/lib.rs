@@ -18,6 +18,7 @@ pub mod app_paths;
 pub mod backup;
 pub mod comment;
 pub mod contrast;
+pub mod data_export;
 pub mod edit;
 pub mod entities;
 pub mod error_code;

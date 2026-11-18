@@ -10761,6 +10761,7 @@ export interface components {
       | "field"
       | "assignment"
       | "comment"
+      | "data-export"
       | "follower"
       | "group"
       | "invitation"

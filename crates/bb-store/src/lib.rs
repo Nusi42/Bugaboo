@@ -17,6 +17,7 @@ mod auth;
 pub mod backup;
 mod chain;
 mod comments;
+mod data_exports;
 #[cfg(feature = "dataset")]
 mod dataset;
 mod db;

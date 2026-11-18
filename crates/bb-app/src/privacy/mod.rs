@@ -2,4 +2,5 @@
 //! port [`PersonData`](crate::ports::PersonData) hands them over, and what *Download my data* and
 //! *Remove a person* make of them.
 
+pub mod export;
 pub mod walk;

@@ -83,6 +83,7 @@ mod m0051_own_themes;
 mod m0052_time_factor_and_accepted_warnings;
 mod m0053_issue_dates_index;
 mod m0054_backup_runs;
+mod m0055_data_exports;
 #[cfg(test)]
 mod old_rows;
 
@@ -450,6 +451,11 @@ const ALL: &[Definition] = &[
         version: 54,
         name: "backup_runs",
         steps: || Ok(m0054_backup_runs::steps()),
+    },
+    Definition {
+        version: 55,
+        name: "data_exports",
+        steps: || Ok(m0055_data_exports::steps()),
     },
 ];
 
