@@ -13,6 +13,7 @@ use anyhow::Context as _;
 pub(crate) mod formats;
 pub(crate) mod notices;
 pub(crate) mod parts_list;
+pub(crate) mod vex;
 
 /// The bytes as lower-case hexadecimal.
 pub(crate) fn hex(bytes: &[u8]) -> String {
@@ -41,6 +42,8 @@ pub(crate) struct Files {
     pub(crate) list: parts_list::PartsList,
     pub(crate) cyclonedx: serde_json::Value,
     pub(crate) spdx: serde_json::Value,
+    /// The statements about the accepted advisories (CycloneDX VEX).
+    pub(crate) vex: serde_json::Value,
     pub(crate) notices: notices::Notices,
 }
 
@@ -51,12 +54,13 @@ pub(crate) fn compose(root: &Path) -> anyhow::Result<Files> {
     Ok(Files {
         cyclonedx: formats::cyclonedx(&list),
         spdx: formats::spdx(&list),
+        vex: vex::vex(&list, &vex::accepted(root)?, &register),
         notices: notices::notices(root, &list, &register)?,
         list,
     })
 }
 
-/// Writes the three files into `folder` under their release names, and nothing else.
+/// Writes the four files into `folder` under their release names, and nothing else.
 pub(crate) fn write(files: &Files, folder: &Path) -> anyhow::Result<()> {
     let version = &files.list.program.version;
     write_file(
@@ -65,6 +69,7 @@ pub(crate) fn write(files: &Files, folder: &Path) -> anyhow::Result<()> {
         &to_text(&files.cyclonedx),
     )?;
     write_file(folder, &formats::spdx_name(version), &to_text(&files.spdx))?;
+    write_file(folder, &formats::vex_name(version), &to_text(&files.vex))?;
     write_file(folder, &formats::notices_name(version), &files.notices.text)
 }
 
@@ -97,6 +102,9 @@ pub(crate) fn schema_errors(files: &Files) -> anyhow::Result<Vec<String>> {
     }
     for error in formats::spdx_errors(&files.spdx)? {
         lines.push(format!("{}: {error}", formats::spdx_name(version)));
+    }
+    for error in formats::cyclonedx_errors(&files.vex)? {
+        lines.push(format!("{}: {error}", formats::vex_name(version)));
     }
     Ok(lines)
 }

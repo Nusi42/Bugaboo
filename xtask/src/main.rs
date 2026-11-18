@@ -85,10 +85,10 @@ enum Command {
         #[arg(long)]
         target: Option<String>,
     },
-    /// Write the parts list (CycloneDX and SPDX) and the third-party notices from the lockfiles
+    /// Write the parts list (CycloneDX and SPDX), the third-party notices and the VEX statements from the lockfiles
     /// (COMP-01, COMP-02), into the folder given, else into `parts-list/` of the build folder.
     PartsList {
-        /// Where to write the three files.
+        /// Where to write the four files.
         #[arg(long)]
         out: Option<PathBuf>,
     },
@@ -393,7 +393,7 @@ fn run() -> anyhow::Result<ExitCode> {
             }
             release::write(&files, &folder)?;
             output::info(&format!(
-                "wrote the parts list ({} parts) and the notices to {}",
+                "wrote the parts list ({} parts), the notices and the VEX statements to {}",
                 files.list.parts.len(),
                 folder.display()
             ));

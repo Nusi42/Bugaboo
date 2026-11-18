@@ -37,12 +37,14 @@ impl Check for DepSbom {
         };
         let cyclonedx = read(formats::cyclonedx_name(version))?;
         let spdx = read(formats::spdx_name(version))?;
+        let vex = read(formats::vex_name(version))?;
         let mut findings = unfinished_parts(&files.list);
         findings.extend(compare(&files.list, &cyclonedx, &spdx));
         let written = release::Files {
             list: files.list.clone(),
             cyclonedx,
             spdx,
+            vex,
             notices: release::notices::Notices {
                 text: String::new(),
                 without_text: Vec::new(),

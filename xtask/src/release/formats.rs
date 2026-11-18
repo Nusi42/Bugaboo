@@ -33,6 +33,10 @@ pub(crate) fn spdx_name(version: &str) -> String {
     format!("bugaboo-{version}.spdx.json")
 }
 
+pub(crate) fn vex_name(version: &str) -> String {
+    format!("bugaboo-{version}.vex.json")
+}
+
 pub(crate) fn notices_name(version: &str) -> String {
     format!("bugaboo-{version}-notices.txt")
 }

@@ -506,5 +506,5 @@ The decisions are [ADR-0013](../adr/0013-ai.md) and [ADR-0029](../adr/0029-ai-ag
 | Third-party notices | xtask, from the license files of the parts and `docs/third-party/notices/` | every release; shown in *About* |
 | Third-party register check | xtask compares lockfiles with `docs/third-party/` | every CI run |
 | License policy | `cargo deny` (`deny.toml`) and the same list for npm | every CI run |
-| Vulnerability scan + VEX | `cargo deny check advisories` and `npm audit` (SEC-ADVISORIES); accepted ones are the `ignore` list in `deny.toml` and `tools/checks/npm-advisories.toml`, each with a row in the register's *Accepted risks*; VEX statements in `security/vex/` | every CI run and daily |
+| Vulnerability scan + VEX | `cargo deny check advisories` and `npm audit` (SEC-ADVISORIES); accepted ones are the `ignore` list in `deny.toml` and `tools/checks/npm-advisories.toml`, each with a row in the register's *Accepted risks*; VEX statements (one CycloneDX VEX file, a *not affected* statement for each accepted advisory with the reason of its row, written by `xtask/src/release/vex.rs`) in the release folder | every CI run and daily |
 | Technical documentation file | xtask assembles architecture docs, ADRs, SBOM, test reports, support period | every release |
