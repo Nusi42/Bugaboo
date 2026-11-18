@@ -23,6 +23,7 @@ use bb_policy::{Evaluation, PeopleContext, PersonRef, Place};
 use serde_json::{Value, json};
 
 use super::ask::EXPORT_KEY;
+use super::issue_fields::SeenInProjects;
 use super::shape::{ShapedKind, people_in, shape_row};
 use super::writer::ExportWriter;
 use super::{ExportSink, recipients};
@@ -185,6 +186,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let mut writer = ExportWriter::new(sink, region);
         let mut seen = BTreeMap::new();
         let mut uploads = Vec::new();
+        let mut in_projects = SeenInProjects::default();
         let kinds = self
             .store()
             .kinds_of(person)
@@ -203,11 +205,14 @@ impl<S: AuthStore> Ctx<'_, S> {
                 if found.kind == RecordKind::Attachment.code() {
                     uploads.extend(page.rows.iter().filter_map(upload_of));
                 }
-                rows.extend(
-                    page.rows
-                        .into_iter()
-                        .map(|row| shape_row(row, &found.marks, person, &seen)),
-                );
+                for row in page.rows {
+                    let row = if found.kind == RecordKind::Issue.code() {
+                        self.issue_as_seen(person, row, &mut in_projects).await?
+                    } else {
+                        row
+                    };
+                    rows.push(shape_row(row, &found.marks, person, &seen));
+                }
                 from = page.next;
             }
             writer

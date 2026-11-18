@@ -3,6 +3,7 @@
 
 mod ask;
 mod files;
+mod issue_fields;
 mod job;
 mod pages;
 mod readme;
