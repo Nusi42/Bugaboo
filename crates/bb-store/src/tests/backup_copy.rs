@@ -3,6 +3,8 @@
 
 use bb_core::backup::member::MemberName;
 
+use sea_query::{Alias, Table};
+
 use super::*;
 
 /// A copy of the backup at `archive` with its copy of the database changed by `change`, at
@@ -175,6 +177,55 @@ async fn ops_07_a_table_whose_rows_point_into_itself_comes_back_whole() -> TestR
             .from(ProjectRow::Table)
             .and_where(Expr::col(ProjectRow::Parent).is_not_null());
         assert_eq!(restored.fetch_all(&select).await?.len(), count - 1);
+        restored.close().await;
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn ops_07_a_restore_touches_only_bugaboos_own_tables() -> TestResult {
+    each_database("ops_07_own_tables", async |db| {
+        if db.kind() == bb_testing::DatabaseKind::Sqlite {
+            // The copy of SQLite is the file itself; a table of the schema matters on PostgreSQL.
+            return Ok(());
+        }
+        let installation = Installation::new(db)?;
+        let database = installation.open().await?;
+        // Every table the migrations make is one Bugaboo knows, so the copy takes all of them.
+        let mut transaction = database.begin_read().await?;
+        let all = catalog::tables_in_schema(&mut transaction).await?;
+        let own = catalog::tables(&mut transaction).await?;
+        transaction.commit().await?;
+        assert_eq!(all, own);
+        // A table somebody else keeps beside them stays as it is through a backup and a restore.
+        let mut other = Table::create();
+        other
+            .table(Alias::new("someone_elses"))
+            .col(sea_query::ColumnDef::new(Alias::new("note")).text());
+        let mut transaction = database.begin().await?;
+        transaction.execute_schema(&other).await?;
+        let mut note = Query::insert();
+        note.into_table(Alias::new("someone_elses"))
+            .columns([Alias::new("note")])
+            .values([Expr::val("kept")])?;
+        transaction.execute(&note).await?;
+        transaction.commit().await?;
+        save(&database, 1).await?;
+        let backup = database
+            .create_backup(&installation.places, Purpose::Regular, at(10))
+            .await?;
+        database.close().await;
+        installation
+            .restore(&backup.path, &[], at(20))
+            .await
+            .map_err(failed)?;
+        let restored = installation.open().await?;
+        let mut select = Query::select();
+        select
+            .column(Alias::new("note"))
+            .from(Alias::new("someone_elses"));
+        assert_eq!(restored.fetch_all(&select).await?.len(), 1);
         restored.close().await;
         Ok(())
     })

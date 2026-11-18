@@ -4,6 +4,8 @@
 //! again by the database), the columns that point into the same table, and the columns that count
 //! up by themselves.
 
+use std::collections::HashSet;
+
 use sea_query::{Alias, Expr, ExprTrait as _, Iden, JoinType, Order, Query};
 
 use crate::db::Transaction;
@@ -37,9 +39,26 @@ fn catalog(table: &str) -> (Alias, Alias) {
     (Alias::new("pg_catalog"), Alias::new(table))
 }
 
-/// The tables of the schema in the order they were made, without the record of migrations (a
-/// restore writes it by running the migrations).
+/// Bugaboo's own tables in the schema, in the order they were made, without the record of
+/// migrations (a restore writes it by running the migrations): only the tables the migrations
+/// make ([`crate::schema::tables`]), so a table somebody else keeps in the same schema is never
+/// copied, emptied or dropped.
 pub(crate) async fn tables(transaction: &mut Transaction) -> Result<Vec<String>, StoreError> {
+    let own: HashSet<String> = crate::schema::tables()
+        .into_iter()
+        .map(|table| table.name)
+        .collect();
+    Ok(tables_in_schema(transaction)
+        .await?
+        .into_iter()
+        .filter(|name| own.contains(name))
+        .collect())
+}
+
+/// Every table of the schema in the order they were made, without the record of migrations.
+pub(crate) async fn tables_in_schema(
+    transaction: &mut Transaction,
+) -> Result<Vec<String>, StoreError> {
     let mut select = Query::select();
     select
         .expr_as(Expr::cust("c.relname::text"), Answer::Name)
