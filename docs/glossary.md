@@ -226,7 +226,7 @@ Rules:
 | **Setup code**           | The one-time code printed by the server for first setup            | setup token                        |
 | **Security log**         | The record of who changed what, which cannot be altered            | audit trail                        |
 | **Download my data**     | Get a copy of everything Bugaboo stores about you                  | data subject access request, DSAR  |
-| **Remove a person**      | Delete someone's account and replace their name with *Former user* plus a random code (*Former user K7Q2*); the work days kept by law are the one exception (ADR-0035, decision 7) | anonymize, pseudonymize (in UI) |
+| **Remove a person**      | Delete someone's account for good; they are shown as *Former user* from then on. The work days kept by law keep the name for the people who may see working hours, until an administrator deletes them (ADR-0035, decision 7; ADR-0044) | anonymize, pseudonymize (in UI) |
 | **Former user**          | How a removed person is shown everywhere after *Remove a person*: *Former user* and a random code of four signs (*Former user K7Q2*), the same in every place, so their work still reads | deleted user, anonymous user, ghost user |
 | **Switch off** / **Switch on** (a person) | End a person's sign-in at once (their sessions, access keys, connected apps and agents stop) while every record of theirs stays; *Switch on* gives the sign-in back. A person is switched off before *Remove a person* | deactivate, suspend, disable (in UI) |
 | **Download someone's data** | The permission to make the file of *Download my data* for another person; the person is told and the security log records it | — |
@@ -251,7 +251,7 @@ Rules:
 | **Holidays** (the setting) | Which public holidays count for a person: *None*, *Germany* or one of the 16 states. Chosen in *My settings › Work times*; until then the organization's choice counts. Not part of *Region*, which is about how dates and numbers are written | holiday calendar, holiday region (in UI) |
 | **Project members**      | The kind of people information for lists of who works in a project; also the page *Project settings › Project members*, where the shares are set. People who manage people or roles always see the names there | roster, participants (in UI) |
 | **Someone**              | Shown instead of a name when the viewer may not see who it was    | anonymous, redacted                |
-| **Keep and delete rules**| How long each kind of data is kept before it is deleted automatically; working hours are deleted only by an administrator after their keep period (ADR-0035, decision 7) | retention policy                |
+| **Keep and delete rules**| How long each kind of data is kept at least (its *keep period*), and what happens then: Bugaboo deletes it by itself (technical data such as IP addresses, sessions, notifications, the trash), or an administrator deletes it (business records: work days and time entries) (ADR-0045) | retention policy                |
 | **Keep period**          | How long one kind of data is kept at least; after it, Bugaboo deletes it by itself or an administrator deletes it, as *Keep and delete rules* say for that kind | retention period, retention time |
 
 ## Settings and appearance
@@ -397,7 +397,8 @@ On screens the AI is always *the assistant*, *an AI app* or *an agent*: never *b
 | Manufacturer        | Us, as the maker of the software under the CRA, in both models        |
 | Person links        | What a person is to a row that names them (`author`, `recipient`, `subject`, `actor`, `holder`), declared beside the personal-data marks of each entity (ADR-0044) |
 | Walk of a person's data | `PersonData`: the one way to find every row that names one person, read by *Download my data*, *Remove a person* and the removal plan (ADR-0044) |
-| Removal list        | The file `privacy/removed.list` in the data folder: one line per *Remove a person* (the ID and the moment), run again after a restore of an older backup (ADR-0044, ADR-0046) |
+| Legal-hold name     | The one place a removed person's name is kept: on the tombstone, with its reason and end date, read only where ADR-0035, decision 7, shows it, and cleared when an administrator deletes the person's last kept work days (ADR-0044) |
+| Replay list         | The file `privacy/replay.list` in the data folder: one line for each removal (with its choice about comments), switch-off and key, grant, passkey or support access taken back, which a restore of an older backup runs again (ADR-0044, ADR-0046) |
 | Release folder      | What `cargo xtask release` writes for one version: the programs, checksums, signatures, parts lists, notices, VEX file and release notes (ADR-0047) |
 | Period (of a work day) | One stretch of work of a work day, from a start to an end; a day reopened after *End work day* has two. The screens have no word for it: they show the first start, the last end and *Breaks*, which include the gaps between periods (ADR-0035, decision 5) |
 | Person's day        | The date a moment falls on in a person's time zone (`bb_core::time`); how work days and time entries use it is ADR-0035, decision 5 |
