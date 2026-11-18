@@ -3,12 +3,12 @@
 use std::sync::Mutex;
 
 use bb_core::backup::name::{BackupName, Purpose};
-use bb_core::backup::run::BackupRun;
+use bb_core::backup::run::{BackupRun, CreatedFile};
 use bb_core::security_log::Digest;
 use jiff::Timestamp;
 
 use super::fake::{FakeError, FakeStore, Tx};
-use crate::backups::{BackupFile, BackupFiles, BackupStore, CreatedFile};
+use crate::backups::{BackupFile, BackupFiles, BackupStore};
 use crate::ports::BoxFuture;
 
 impl BackupStore for FakeStore {

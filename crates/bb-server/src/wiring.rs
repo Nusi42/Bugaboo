@@ -24,9 +24,10 @@ use bb_files::{DiskFiles, PreviewCommand};
 use bb_notify::SmtpMailer;
 use bb_store::{AuthStorage, Database, LogSeal};
 
-use bb_app::backups::{BackupFile, BackupFiles, CreatedFile};
+use bb_app::backups::{BackupFile, BackupFiles};
 use bb_app::ports::BoxFuture;
 use bb_core::backup::name::{BackupName, Purpose};
+use bb_core::backup::run::CreatedFile;
 use bb_store::backup::backups_in;
 
 use crate::cli::backup::{backup_folder, places};
@@ -104,16 +105,11 @@ impl BackupFiles for ServerBackups {
     ) -> BoxFuture<'_, std::io::Result<CreatedFile>> {
         Box::pin(async move {
             let places = places(&self.data, self.folder(folder.as_deref())?);
-            let created = self
-                .database
+            self.database
                 .create_backup(&places, purpose, now)
                 .await
-                .map_err(|error| std::io::Error::other(error.to_string()))?;
-            Ok(CreatedFile {
-                name: created.name,
-                size: created.size,
-                checksum: created.checksum,
-            })
+                .map(|created| created.file)
+                .map_err(|error| std::io::Error::other(error.to_string()))
         })
     }
 
@@ -143,7 +139,7 @@ impl BackupFiles for ServerBackups {
 /// (`security-log verify`, `rotate-key`, `keys export`) and not by the server.
 pub(crate) struct Store {
     pub(crate) database: Database,
-    pub(crate) keys: bb_store::KeyRing,
+    pub(crate) keys: Arc<bb_store::KeyRing>,
     pub(crate) seal: LogSeal,
 }
 
@@ -155,10 +151,12 @@ pub(crate) struct Store {
 /// missing.
 pub(crate) async fn open_store(settings: &Settings, data: &DataFolder) -> anyhow::Result<Store> {
     let database = connect(settings, data).await?;
-    let keys = database
-        .open_keys(&data.keys())
-        .await
-        .map_err(|error| database_failed(&error))?;
+    let keys = Arc::new(
+        database
+            .open_keys(&data.keys())
+            .await
+            .map_err(|error| database_failed(&error))?,
+    );
     let seal = LogSeal::new(&keys, data.security_log_anchor());
     Ok(Store {
         database,

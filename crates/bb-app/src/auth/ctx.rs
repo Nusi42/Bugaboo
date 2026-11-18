@@ -603,10 +603,6 @@ impl<S: AuthStore> Ctx<'_, S> {
         person: Option<UserId>,
         subject: Option<EntityRef>,
     ) {
-        let subject_kind = subject
-            .as_ref()
-            .map(|subject| subject.kind.as_str().to_owned());
-        let subject_id = subject.as_ref().map(|subject| subject.id);
         let event = SecurityEvent {
             time: self.now(),
             person,
@@ -615,14 +611,20 @@ impl<S: AuthStore> Ctx<'_, S> {
             network: self.request.network.clone(),
         };
         let written = self.store().append_security_log(&event).await;
+        self.log_written(&event, written);
+    }
+
+    /// Counts a write of the security log for the status page, and reports one that failed in
+    /// the server log (see [`Self::note`]).
+    pub(crate) fn log_written(&self, event: &SecurityEvent, written: Result<(), S::Error>) {
         self.services.log_writes.record(written.is_ok());
         if let Err(error) = written {
             // IDs only: who and what it was about, never a secret or a name.
             tracing::error!(
-                action = action.code(),
-                person = ?person,
-                subject_kind = subject_kind.as_deref(),
-                subject_id = ?subject_id,
+                action = event.action.code(),
+                person = ?event.person,
+                subject_kind = event.subject.as_ref().map(|subject| subject.kind.as_str()),
+                subject_id = ?event.subject.as_ref().map(|subject| subject.id),
                 cause = %S::describe(&error),
                 "the security log could not be written"
             );

@@ -7,8 +7,6 @@
 //! older data would be made under the old rule and emptied again by the migration at the next
 //! start of the server, which builds it again by itself.
 
-use std::sync::Arc;
-
 use bb_core::message::{self, Message};
 use bb_store::SchemaState;
 use jiff::Timestamp;
@@ -40,7 +38,7 @@ pub(super) async fn rebuild(args: &StoreArgs) -> anyhow::Result<()> {
             anyhow::bail!(Message::from(message::SEARCH_INDEX_DATA_NEWER).render())
         }
     }
-    let storage = bb_store::AuthStorage::new(store.database, Arc::new(store.keys), store.seal);
+    let storage = bb_store::AuthStorage::new(store.database, store.keys, store.seal);
     let issues =
         bb_app::text_index::TextIndexStore::rebuild_text_index(&storage, Timestamp::now()).await?;
     output::line(

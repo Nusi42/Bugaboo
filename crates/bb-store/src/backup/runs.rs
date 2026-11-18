@@ -1,20 +1,17 @@
-//! The records of the backups made and restored (migration 54), each with its domain event and
-//! its line in the security log (ADR-0046, decisions 3 and 4).
+//! The records of the backups made and restored (migration 54). The one recorder,
+//! `bb_app::backups::record_backup_run`, writes each with its domain event and its line in the
+//! security log (ADR-0046, decisions 3 and 4).
 
 use bb_core::backup::name::BackupName;
 use bb_core::backup::run::{BackupEvent, BackupMaker, BackupRun};
-use bb_core::event::DomainEvent;
 use bb_core::id::UserId;
 use bb_core::security_log::Digest;
-use bb_core::technical::TechnicalName;
 use sea_query::{Expr, Order, Query};
 
-use crate::anchor::LogSeal;
 use crate::auth::AuthStorage;
 use crate::db::{Database, Row, StoredId as _, Transaction, to_micros};
 use crate::error::StoreError;
 use crate::schema::BackupRunRow as Columns;
-use crate::security_log::NewSecurityLogEntry;
 
 const COLUMNS: [Columns; 10] = [
     Columns::Id,
@@ -72,36 +69,6 @@ fn read(row: &Row) -> Result<BackupRun, StoreError> {
 }
 
 impl Database {
-    /// Writes the record of a backup made or restored together with its event, and then its line
-    /// in the security log, which points to the record.
-    ///
-    /// # Errors
-    /// Fails when the database fails, or with [`StoreError::AnchorFile`] when the line is stored
-    /// but the anchor file could not be written.
-    pub async fn record_backup(
-        &self,
-        seal: &LogSeal,
-        run: &BackupRun,
-        event: &DomainEvent,
-    ) -> Result<(), StoreError> {
-        self.record_change(event, async |transaction| insert(transaction, run).await)
-            .await?;
-        let action = TechnicalName::new(run.security_action().code())
-            .map_err(|_| StoreError::Corrupt("an action of the security log"))?;
-        self.append_security_log(
-            seal,
-            &NewSecurityLogEntry {
-                time: run.at,
-                person: run.person,
-                action,
-                subject: Some(event.entity.clone()),
-                network: None,
-            },
-        )
-        .await
-        .map(|_| ())
-    }
-
     /// The newest `limit` records of backups made and restored, newest first.
     ///
     /// # Errors

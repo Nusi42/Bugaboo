@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use anyhow::anyhow;
+use bb_app::backups::record_backup_run;
 use bb_app::context::SystemIds;
 use bb_core::backup::manifest::BackupProblem;
 use bb_core::backup::name::Purpose;
@@ -16,7 +17,7 @@ use bb_core::message::{self, Message};
 use bb_store::backup::{
     BackupPlaces, RestoreFailure, RestoreInput, RestoreReport, RestoreTarget, backups_in,
 };
-use bb_store::{KeyRing, LogSeal, OpenMode, StoreError};
+use bb_store::{AuthStorage, KeyRing, LogSeal, OpenMode, StoreError};
 use clap::{Args, Subcommand};
 use jiff::Timestamp;
 
@@ -25,6 +26,7 @@ use super::{StoreArgs, load_settings, text};
 use crate::data_folder::{DataFolder, create_private, open_to_others};
 use crate::output;
 use crate::probe::log_state;
+use crate::wiring::connect;
 
 /// What `bugaboo backup` is told.
 #[derive(Args, Clone, Default)]
@@ -101,32 +103,28 @@ pub(super) async fn backup(args: &BackupArgs) -> anyhow::Result<()> {
         .create_backup(&places(&data, folder), Purpose::Regular, now)
         .await
         .map_err(|error| anyhow!(message::backups_failed(error).render()))?;
-    let run = BackupRun {
-        id: BackupId::generate(&mut SystemIds)?,
-        event: BackupEvent::Made,
-        name: created.name.clone(),
-        size: size_of(created.size),
-        checksum: created.checksum,
-        maker: BackupMaker::CommandLine,
-        person: None,
-        at: now,
-        lost_from: None,
-        lost_to: None,
-    };
+    let run = BackupRun::new(
+        BackupId::generate(&mut SystemIds)?,
+        BackupEvent::Made,
+        &created.file,
+        BackupMaker::CommandLine,
+        None,
+        now,
+    );
     let event = run.domain_event(
         EventId::generate(&mut SystemIds)?,
         Actor::System,
         Channel::System,
     )?;
-    store
-        .database
-        .record_backup(&store.seal, &run, &event)
-        .await?;
+    let storage = AuthStorage::new(store.database, store.keys, store.seal);
+    record_backup_run(&storage, &run, &event, None)
+        .await?
+        .written?;
     output::line(
         &message::backups_created(
-            created.name.to_string(),
+            created.file.name.to_string(),
             created.path.display(),
-            size_of(created.size),
+            size_of(created.file.size),
         )
         .render(),
     );
@@ -135,17 +133,6 @@ pub(super) async fn backup(args: &BackupArgs) -> anyhow::Result<()> {
 
 fn size_of(bytes: u64) -> i64 {
     i64::try_from(bytes).unwrap_or(i64::MAX)
-}
-
-/// The database a restore goes into, from the settings.
-fn target(database_url: Option<&str>, data: &DataFolder) -> RestoreTarget {
-    match database_url {
-        Some(url) if url.starts_with("postgres") => RestoreTarget::Postgres(url.to_owned()),
-        Some(url) => RestoreTarget::File(PathBuf::from(
-            url.trim_start_matches("sqlite:").trim_start_matches("//"),
-        )),
-        None => RestoreTarget::File(data.database_file()),
-    }
 }
 
 /// `bugaboo restore <file>`: refuses a running server and another account, then restores.
@@ -159,13 +146,14 @@ pub(super) async fn restore(args: &RestoreArgs) -> anyhow::Result<()> {
             message::restore_server_running(data.root().display()).render()
         ));
     };
-    let keys = KeyRing::open(&data.keys(), OpenMode::ExistingOnly)?;
+    let keys = Arc::new(KeyRing::open(&data.keys(), OpenMode::ExistingOnly)?);
     let seal = LogSeal::new(&keys, data.security_log_anchor());
     let more: Vec<PathBuf> = args.replay_list.iter().cloned().collect();
+    let target = RestoreTarget::of(connect(&settings, &data).await?).await;
     let result = bb_store::backup::restore(
         RestoreInput {
             archive: &args.file,
-            target: &target(settings.database_url.as_deref(), &data),
+            target: &target,
             places: &places(&data, data.backups()),
             keys: &keys,
             seal: &seal,

@@ -10,7 +10,7 @@ use bb_core::settings::{
     BACKUPS_DAILY, BACKUPS_KEEP_DAILY, BACKUPS_KEEP_WEEKLY, SECURITY_LOG_KEEP_DAYS,
 };
 
-use crate::auth::{AppError, AuthStore, Ctx, Stops, change_failed};
+use crate::auth::{AppError, AuthStore, Ctx};
 
 /// What a round of the schedule did.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -29,19 +29,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let mut round = Round::default();
         if layers.yes(&BACKUPS_DAILY) {
             let created = self.created_backup(BackupMaker::Schedule, None).await?;
-            let stored = created.run.clone();
-            self.store()
-                .record_change(&created.event, move |transaction| {
-                    Box::pin(async move { S::insert_backup_run(transaction, &stored).await })
-                })
-                .await
-                .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
-            self.note(
-                created.run.security_action(),
-                None,
-                Some(created.event.entity),
-            )
-            .await;
+            self.record_run(&created).await?;
             round.created = true;
         }
         let keep = Keep {

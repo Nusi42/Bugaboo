@@ -72,10 +72,56 @@ pub struct BackupRun {
     pub lost_to: Option<i64>,
 }
 
+/// A backup file as its record names it: its name, its size and its checksum.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CreatedFile {
+    /// Its name.
+    pub name: BackupName,
+    /// The size of the file in bytes.
+    pub size: u64,
+    /// The SHA-256 of the file.
+    pub checksum: Digest,
+}
+
 /// The kind of record the events and the security log name a backup by.
 pub const ENTITY_KIND: &str = "backup";
 
 impl BackupRun {
+    /// The record of `file`, made or restored at `at` by `maker` (and `person`, who pressed the
+    /// button). A restore adds the range of the security log it lost with [`Self::with_lost`].
+    #[must_use]
+    pub fn new(
+        id: BackupId,
+        event: BackupEvent,
+        file: &CreatedFile,
+        maker: BackupMaker,
+        person: Option<UserId>,
+        at: Timestamp,
+    ) -> Self {
+        Self {
+            id,
+            event,
+            name: file.name.clone(),
+            size: i64::try_from(file.size).unwrap_or(i64::MAX),
+            checksum: file.checksum,
+            maker,
+            person,
+            at,
+            lost_from: None,
+            lost_to: None,
+        }
+    }
+
+    /// The record with the first and last entry of the security log that a restore lost.
+    #[must_use]
+    pub const fn with_lost(mut self, lost: Option<(i64, i64)>) -> Self {
+        if let Some((from, to)) = lost {
+            self.lost_from = Some(from);
+            self.lost_to = Some(to);
+        }
+        self
+    }
+
     /// What the record is, for an event or a line of the security log.
     ///
     /// # Errors

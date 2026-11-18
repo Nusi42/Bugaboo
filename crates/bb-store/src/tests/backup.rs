@@ -26,10 +26,18 @@ use crate::keys::KeyRing;
 use crate::schema::{AccessKeyRow, Event, SignInSession as SessionColumns};
 use crate::test_support::{at, event, ids, person};
 
+/// The database of an installation of the test.
+enum Place {
+    /// A SQLite file of its own.
+    File(PathBuf),
+    /// The PostgreSQL database of the test, by its address.
+    Postgres(String),
+}
+
 /// An installation of the test: its data folder, its database and its keys.
 struct Installation {
     folder: tempfile::TempDir,
-    target: RestoreTarget,
+    place: Place,
     places: BackupPlaces,
     seal: LogSeal,
 }
@@ -42,11 +50,9 @@ impl Installation {
         }
         // The harness keeps the SQLite file of the test open, which Windows does not let a restore
         // replace; the installation gets a file of its own.
-        let target = match db.kind() {
-            bb_testing::DatabaseKind::Sqlite => {
-                RestoreTarget::File(folder.path().join("bugaboo.db"))
-            }
-            bb_testing::DatabaseKind::Postgres => RestoreTarget::Postgres(db.url().to_owned()),
+        let place = match db.kind() {
+            bb_testing::DatabaseKind::Sqlite => Place::File(folder.path().join("bugaboo.db")),
+            bb_testing::DatabaseKind::Postgres => Place::Postgres(db.url().to_owned()),
         };
         let keys = KeyRing::open_or_create(&folder.path().join("keys"))?;
         let seal = LogSeal::new(&keys, folder.path().join("logs").join("security-head.log"));
@@ -62,29 +68,64 @@ impl Installation {
         };
         Ok(Self {
             folder,
-            target,
+            place,
             places,
             seal,
         })
     }
 
-    fn keys(&self) -> Result<KeyRing, StoreError> {
-        KeyRing::open_or_create(&self.folder.path().join("keys"))
+    fn keys(&self) -> Result<Arc<KeyRing>, StoreError> {
+        Ok(Arc::new(KeyRing::open_or_create(
+            &self.folder.path().join("keys"),
+        )?))
     }
 
     async fn open(&self) -> Result<Database, StoreError> {
-        let database = match &self.target {
-            RestoreTarget::File(file) => Database::connect_file(file).await?,
-            RestoreTarget::Postgres(url) => Database::connect(url).await?,
-        };
+        let database = self.open_unchecked().await?;
         database.migrate(at(0)).await?;
         Ok(database)
+    }
+
+    /// The database to restore into, as the command line finds it: by opening it.
+    async fn target(&self) -> Result<RestoreTarget, StoreError> {
+        Ok(RestoreTarget::of(self.open_unchecked().await?).await)
+    }
+
+    /// Restores with `keys`, and lets the target go after.
+    async fn restore_with(
+        &self,
+        archive: &Path,
+        keys: &Arc<KeyRing>,
+        more: &[PathBuf],
+        now: Timestamp,
+    ) -> Result<RestoreReport, RestoreFailure> {
+        let target = self.target().await.map_err(|error| RestoreFailure {
+            error,
+            before: None,
+        })?;
+        let result = restore(
+            RestoreInput {
+                archive,
+                target: &target,
+                places: &self.places,
+                keys,
+                seal: &self.seal,
+                more_replay_lists: more,
+                now,
+            },
+            &mut bb_app::context::SystemIds,
+        )
+        .await;
+        if let RestoreTarget::Postgres(database) = &target {
+            database.close().await;
+        }
+        result
     }
 
     fn storage(&self, database: &Database) -> Result<AuthStorage, StoreError> {
         Ok(AuthStorage::new(
             database.clone(),
-            Arc::new(self.keys()?),
+            self.keys()?,
             self.seal.clone(),
         ))
     }
@@ -99,19 +140,7 @@ impl Installation {
             error,
             before: None,
         })?;
-        restore(
-            RestoreInput {
-                archive,
-                target: &self.target,
-                places: &self.places,
-                keys: &keys,
-                seal: &self.seal,
-                more_replay_lists: more,
-                now,
-            },
-            &mut bb_app::context::SystemIds,
-        )
-        .await
+        self.restore_with(archive, &keys, more, now).await
     }
 }
 
@@ -222,7 +251,7 @@ async fn ops_07_a_backup_holds_no_keys() -> TestResult {
         let storage = installation.storage(&database)?;
         let name = bb_core::technical::TechnicalName::new("mail.password")?;
         database
-            .put_secret(&installation.keys()?, &name, b"hunter2-mail", at(1))
+            .put_secret(&*installation.keys()?, &name, b"hunter2-mail", at(1))
             .await?;
         let _ = storage;
         let backup = database
@@ -307,9 +336,9 @@ async fn ops_07_a_damaged_or_newer_backup_is_refused_and_nothing_changes() -> Te
 impl Installation {
     /// Opens the database without migrating it (it may hold a newer migration).
     async fn open_unchecked(&self) -> Result<Database, StoreError> {
-        match &self.target {
-            RestoreTarget::File(file) => Database::connect_file(file).await,
-            RestoreTarget::Postgres(url) => Database::connect(url).await,
+        match &self.place {
+            Place::File(file) => Database::connect_file(file).await,
+            Place::Postgres(url) => Database::connect(url).await,
         }
     }
 }
@@ -329,7 +358,7 @@ async fn ops_07_a_restore_keeps_a_backup_of_the_present_first() -> TestResult {
             .restore(&backup.path, &[], at(20))
             .await
             .map_err(failed)?;
-        assert_eq!(report.before.name.purpose, Purpose::BeforeRestore);
+        assert_eq!(report.before.file.name.purpose, Purpose::BeforeRestore);
         assert!(report.before.path.is_file());
         // The copy of the present holds the change the restore took away: restoring it puts it
         // back.
@@ -584,7 +613,7 @@ async fn ops_07_a_wrong_master_key_stops_the_restore_before_anything_is_replaced
         let database = installation.open().await?;
         let name = bb_core::technical::TechnicalName::new("mail.password")?;
         database
-            .put_secret(&installation.keys()?, &name, b"hunter2-mail", at(1))
+            .put_secret(&*installation.keys()?, &name, b"hunter2-mail", at(1))
             .await?;
         save(&database, 1).await?;
         let backup = database
@@ -594,21 +623,11 @@ async fn ops_07_a_wrong_master_key_stops_the_restore_before_anything_is_replaced
         database.close().await;
         // Another installation's keys.
         let other = tempfile::tempdir()?;
-        let keys = KeyRing::open_or_create(other.path())?;
-        let failure = restore(
-            RestoreInput {
-                archive: &backup.path,
-                target: &installation.target,
-                places: &installation.places,
-                keys: &keys,
-                seal: &installation.seal,
-                more_replay_lists: &[],
-                now: at(20),
-            },
-            &mut ids(),
-        )
-        .await
-        .expect_err("the keys do not open the secrets");
+        let keys = Arc::new(KeyRing::open_or_create(other.path())?);
+        let failure = installation
+            .restore_with(&backup.path, &keys, &[], at(20))
+            .await
+            .expect_err("the keys do not open the secrets");
         assert!(matches!(failure.error, StoreError::KeysDoNotOpen));
         assert!(failure.before.is_none());
         let database = installation.open().await?;

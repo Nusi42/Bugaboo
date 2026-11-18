@@ -11,7 +11,8 @@
 //! text under its lock, which calls `record_change` itself), `open_run` (a run that a command opens
 //! so the changes it makes next belong to one run: the run is a row with its own event, and a
 //! command like *move the dates of several issues* writes its changes through the use case of a
-//! single change), or the method `record_change` of the
+//! single change), `record_run` (the record of a backup, written with its event and then its line
+//! in the security log, through `record_change`), or the method `record_change` of the
 //! context of the fields (`fields/definitions.rs`), which calls the port and then drops what the
 //! request kept of the field definitions, or *Apply* of the registry of AI tools: a command whose
 //! body calls `call_tool(` in the mode `ToolMode::Apply` saves through the use case of the tool,
@@ -43,6 +44,9 @@ const RECORD_MANY: &str = "record_changes";
 const SAVE_TEXT: &str = "save_text";
 /// The call of the runs that opens a run with its event (`runs/service.rs`), through `record_change`.
 const OPEN_RUN: &str = "open_run";
+/// The call that records a backup with its event and its line in the security log
+/// (`backups/mod.rs`), through `record_change`.
+const RECORD_RUN: &str = "record_run";
 /// The call of the registry and the mode that runs the use case of a tool that changes something.
 const APPLY_CALL: &str = "call_tool(";
 const APPLY_MODE: &str = "ToolMode::Apply";
@@ -169,7 +173,7 @@ fn evaluate(sources: &[Source], table: Option<&str>) -> Vec<Finding> {
             };
             let applies_a_tool = applies_a_tool(body);
             if applies_a_tool
-                || [RECORD, RECORD_MANY, SAVE_TEXT, OPEN_RUN]
+                || [RECORD, RECORD_MANY, SAVE_TEXT, OPEN_RUN, RECORD_RUN]
                     .iter()
                     .any(|call| body.contains(&format!("{call}(")))
             {
@@ -248,6 +252,17 @@ mod tests {
         let text =
             "pub async fn change_status(ctx: &Ctx, cmd: ChangeStatus) -> Result<(), AppError> {
     ctx.save_text(person, place, &save, &event, write).await?;
+    Ok(())
+}
+";
+        assert!(found(text).is_empty());
+    }
+
+    #[test]
+    fn good_example_a_command_that_records_a_backup() {
+        let text =
+            "pub async fn create_backup(ctx: &Ctx, cmd: CreateBackup) -> Result<(), AppError> {
+    ctx.record_run(&created).await?;
     Ok(())
 }
 ";

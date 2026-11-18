@@ -228,6 +228,17 @@ impl Database {
         Ok(true)
     }
 
+    /// The file of a SQLite database as it was opened, whether from an address or a path;
+    /// `None` on PostgreSQL. The address is read once, by the database library, so nothing of
+    /// its query (`?mode=…`) is ever taken for a part of the file's name.
+    #[must_use]
+    pub fn file(&self) -> Option<std::path::PathBuf> {
+        match &self.pool {
+            Pool::Sqlite(pool) => Some(pool.connect_options().get_filename().to_path_buf()),
+            Pool::Postgres(_) => None,
+        }
+    }
+
     /// Which database this is.
     #[must_use]
     pub const fn dialect(&self) -> Dialect {

@@ -20,6 +20,7 @@ use bb_core::backup::DatabaseKind;
 use bb_core::backup::manifest::{AppliedMigration, FORMAT, LogHead, Manifest};
 use bb_core::backup::member::{self, MemberName};
 use bb_core::backup::name::{BackupName, EXTENSION, Purpose};
+use bb_core::backup::run::CreatedFile;
 use bb_core::hex;
 use bb_core::security_log::Digest;
 use jiff::Timestamp;
@@ -54,14 +55,10 @@ pub struct BackupPlaces {
 /// A backup that was created.
 #[derive(Clone, Debug)]
 pub struct CreatedBackup {
-    /// Its name.
-    pub name: BackupName,
+    /// Its name, size and checksum.
+    pub file: CreatedFile,
     /// The file.
     pub path: PathBuf,
-    /// The size of the file in bytes.
-    pub size: u64,
-    /// The SHA-256 of the file.
-    pub checksum: Digest,
     /// The newest place and hash of the security log in it.
     pub log_head: Option<(i64, Digest)>,
 }
@@ -231,10 +228,12 @@ impl Database {
         }
         std::fs::rename(&partial, target).map_err(io)?;
         Ok(CreatedBackup {
-            name: name.clone(),
+            file: CreatedFile {
+                name: name.clone(),
+                size,
+                checksum,
+            },
             path: target.to_path_buf(),
-            size,
-            checksum,
             log_head: copied.log_head,
         })
     }

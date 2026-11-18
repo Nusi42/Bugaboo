@@ -14,12 +14,13 @@ use bb_core::backup::name::{BackupName, Purpose};
 use bb_core::backup::run::{BackupEvent, BackupMaker, BackupRun};
 use bb_core::event::{Actor as EventActor, DomainEvent};
 use bb_core::id::{BackupId, UserId};
+use bb_core::network::NetworkPrefix;
 use bb_core::settings::BACKUPS_FOLDER;
 use bb_policy::{Authorized, Masked, Permission, Place};
 
-pub use ports::{BackupFile, BackupFiles, BackupStore, CreatedFile, NoBackupFiles};
+pub use ports::{BackupFile, BackupFiles, BackupStore, NoBackupFiles};
 
-use crate::auth::{AppError, AuthStore, Ctx, Stops, by, change_failed, internal};
+use crate::auth::{AppError, AuthStore, Ctx, SecurityEvent, Stops, by, change_failed, internal};
 
 /// How many records of backups the list shows.
 const LISTED_RUNS: u64 = 50;
@@ -117,19 +118,7 @@ pub async fn create_backup<S: AuthStore>(
     let created = ctx
         .created_backup(BackupMaker::Person, Some(actor.person.id))
         .await?;
-    let stored = created.run.clone();
-    ctx.store()
-        .record_change(&created.event, move |transaction| {
-            Box::pin(async move { S::insert_backup_run(transaction, &stored).await })
-        })
-        .await
-        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
-    ctx.note(
-        created.run.security_action(),
-        Some(actor.person.id),
-        Some(created.event.entity),
-    )
-    .await;
+    ctx.record_run(&created).await?;
     Ok(access.authorize(created.item))
 }
 
@@ -138,6 +127,44 @@ pub(crate) struct Created {
     pub(crate) item: BackupItem,
     pub(crate) run: BackupRun,
     pub(crate) event: DomainEvent,
+}
+
+/// What [`record_backup_run`] wrote: the line of the security log, and whether it was written.
+pub struct Recorded<E> {
+    /// The line of the security log that points to the record.
+    pub line: SecurityEvent,
+    /// Whether the line was written; the record is written either way.
+    pub written: Result<(), E>,
+}
+
+/// Writes the record of a backup made or restored together with its event, and then its line in
+/// the security log, which points to the record (ADR-0046, decisions 3 and 4). This is the one way
+/// a backup is recorded: by the route, the schedule, the command line and the restore.
+///
+/// # Errors
+/// The error of the record, which is then not written. A line that could not be written after the
+/// record is in [`Recorded::written`]: what already happened is not undone (SEC-15).
+pub async fn record_backup_run<S: AuthStore>(
+    store: &S,
+    run: &BackupRun,
+    event: &DomainEvent,
+    network: Option<NetworkPrefix>,
+) -> Result<Recorded<S::Error>, S::Error> {
+    let stored = run.clone();
+    store
+        .record_change(event, move |transaction| {
+            Box::pin(async move { S::insert_backup_run(transaction, &stored).await })
+        })
+        .await?;
+    let line = SecurityEvent {
+        time: run.at,
+        person: run.person,
+        action: run.security_action(),
+        subject: Some(event.entity.clone()),
+        network,
+    };
+    let written = store.append_security_log(&line).await;
+    Ok(Recorded { line, written })
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -162,19 +189,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             .create(folder, Purpose::Regular, now)
             .await
             .map_err(|error| AppError::Internal(error.to_string()))?;
-        let run = BackupRun {
-            id: BackupId::generate(&mut self.ids())
-                .map_err(|error| AppError::Internal(error.to_string()))?,
-            event: BackupEvent::Made,
-            name: created.name.clone(),
-            size: i64::try_from(created.size).unwrap_or(i64::MAX),
-            checksum: created.checksum,
-            maker,
-            person,
-            at: now,
-            lost_from: None,
-            lost_to: None,
-        };
+        let id = BackupId::generate(&mut self.ids())
+            .map_err(|error| AppError::Internal(error.to_string()))?;
+        let run = BackupRun::new(id, BackupEvent::Made, &created, maker, person, now);
         let entity = run
             .entity()
             .map_err(|error| AppError::Internal(error.to_string()))?;
@@ -187,5 +204,20 @@ impl<S: AuthStore> Ctx<'_, S> {
             run,
             event,
         })
+    }
+
+    /// Records a backup this server created, with [`record_backup_run`]; a line of the security
+    /// log that could not be written is counted and reported like every other (`note`).
+    pub(crate) async fn record_run(&self, created: &Created) -> Result<(), AppError> {
+        let recorded = record_backup_run(
+            self.store(),
+            &created.run,
+            &created.event,
+            self.request.network.clone(),
+        )
+        .await
+        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
+        self.log_written(&recorded.line, recorded.written);
+        Ok(())
     }
 }

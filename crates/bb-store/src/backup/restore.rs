@@ -16,14 +16,16 @@
 //! restored the same way.
 
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use bb_app::auth::{OAuthStore as _, SecondStepStore as _};
+use bb_app::backups::record_backup_run;
 use bb_core::backup::DatabaseKind;
 use bb_core::backup::manifest::{BackupProblem, KnownMigration, Manifest};
 use bb_core::backup::member::{self, MemberName};
 use bb_core::backup::name::{BackupName, Purpose};
 use bb_core::backup::replay::{self, ReplayKind, ReplayLine};
-use bb_core::backup::run::{BackupEvent, BackupMaker, BackupRun};
+use bb_core::backup::run::{BackupEvent, BackupMaker, BackupRun, CreatedFile};
 use bb_core::event::{Actor, Channel, DomainEvent, EntityKind, EntityRef, FieldChange};
 use bb_core::id::{AccessKeyId, BackupId, EntityId, EventId, GrantId, IdSource, PasskeyId, UserId};
 use bb_core::oauth::GrantEnd;
@@ -49,13 +51,25 @@ use crate::security_log::head_in;
 /// The database a backup is restored into.
 #[derive(Clone, Debug)]
 pub enum RestoreTarget {
-    /// The SQLite file of the installation.
+    /// The SQLite file of the installation, which the restore replaces.
     File(PathBuf),
-    /// A PostgreSQL database, by its address.
-    Postgres(String),
+    /// A PostgreSQL database, by its open pool.
+    Postgres(Database),
 }
 
 impl RestoreTarget {
+    /// The target that the opened `database` of the installation is: a SQLite database by its
+    /// file (closed here, because the restore replaces the file), PostgreSQL by its pool.
+    pub async fn of(database: Database) -> Self {
+        match database.file() {
+            Some(file) => {
+                database.close().await;
+                Self::File(file)
+            }
+            None => Self::Postgres(database),
+        }
+    }
+
     const fn kind(&self) -> DatabaseKind {
         match self {
             Self::File(_) => DatabaseKind::Sqlite,
@@ -66,7 +80,15 @@ impl RestoreTarget {
     async fn connect(&self) -> Result<Database, StoreError> {
         match self {
             Self::File(file) => Database::connect_file(file).await,
-            Self::Postgres(url) => Database::connect(url).await,
+            Self::Postgres(database) => Ok(database.clone()),
+        }
+    }
+
+    /// Lets a database [`Self::connect`] gave go: a SQLite file is closed, so it can be replaced;
+    /// the pool of PostgreSQL stays open for the next step and the caller.
+    async fn release(&self, database: &Database) {
+        if let Self::File(_) = self {
+            database.close().await;
         }
     }
 }
@@ -80,7 +102,7 @@ pub struct RestoreInput<'a> {
     /// The backups folder, the files folder and the replay list of the installation.
     pub places: &'a BackupPlaces,
     /// The keys of the installation.
-    pub keys: &'a KeyRing,
+    pub keys: &'a Arc<KeyRing>,
     /// The seal of the security log of the installation.
     pub seal: &'a LogSeal,
     /// Copies of the replay list given besides the data folder's and the backup's (the one
@@ -159,7 +181,7 @@ async fn run(
         Ok(_) => newest_known(&present, input.seal).await,
         Err(_) => Ok(0),
     };
-    present.close().await;
+    input.target.release(&present).await;
     let before = created.map_err(early)?;
     let failed = |error: StoreError| RestoreFailure {
         error,
@@ -178,7 +200,7 @@ async fn run(
         present_head,
     )
     .await;
-    restored.close().await;
+    input.target.release(&restored).await;
     done.map_err(failed)
 }
 
@@ -245,12 +267,7 @@ async fn put_back(
     let copy = database_member(work, manifest)?;
     match input.target {
         RestoreTarget::File(file) => replace_file(&copy, file)?,
-        RestoreTarget::Postgres(url) => {
-            let database = Database::connect(url).await?;
-            let filled = fill(&database, manifest, &copy, input.now).await;
-            database.close().await;
-            filled?;
-        }
+        RestoreTarget::Postgres(database) => fill(database, manifest, &copy, input.now).await?,
     }
     put_back_files(&work.join(member::FILES), &input.places.files)
 }
@@ -542,32 +559,31 @@ async fn record(
     lost: Option<(i64, i64)>,
 ) -> Result<(), StoreError> {
     let (size, checksum) = archive::measure(input.archive)?;
+    let restored_file = CreatedFile {
+        name: BackupName::new(Purpose::Regular, manifest.moment, &manifest.version),
+        size,
+        checksum,
+    };
     let runs = [
-        BackupRun {
-            id: BackupId::generate(ids).map_err(|_| unreadable())?,
-            event: BackupEvent::Made,
-            name: before.name.clone(),
-            size: i64::try_from(before.size).unwrap_or(i64::MAX),
-            checksum: before.checksum,
-            maker: BackupMaker::CommandLine,
-            person: None,
-            at: input.now,
-            lost_from: None,
-            lost_to: None,
-        },
-        BackupRun {
-            id: BackupId::generate(ids).map_err(|_| unreadable())?,
-            event: BackupEvent::Restored,
-            name: BackupName::new(Purpose::Regular, manifest.moment, &manifest.version),
-            size: i64::try_from(size).unwrap_or(i64::MAX),
-            checksum,
-            maker: BackupMaker::CommandLine,
-            person: None,
-            at: input.now,
-            lost_from: lost.map(|(from, _)| from),
-            lost_to: lost.map(|(_, to)| to),
-        },
+        BackupRun::new(
+            BackupId::generate(ids).map_err(|_| unreadable())?,
+            BackupEvent::Made,
+            &before.file,
+            BackupMaker::CommandLine,
+            None,
+            input.now,
+        ),
+        BackupRun::new(
+            BackupId::generate(ids).map_err(|_| unreadable())?,
+            BackupEvent::Restored,
+            &restored_file,
+            BackupMaker::CommandLine,
+            None,
+            input.now,
+        )
+        .with_lost(lost),
     ];
+    let storage = AuthStorage::new(restored.clone(), Arc::clone(input.keys), input.seal.clone());
     for run in &runs {
         let event = run
             .domain_event(
@@ -576,7 +592,9 @@ async fn record(
                 Channel::System,
             )
             .map_err(|_| unreadable())?;
-        restored.record_backup(input.seal, run, &event).await?;
+        record_backup_run(&storage, run, &event, None)
+            .await?
+            .written?;
     }
     Ok(())
 }

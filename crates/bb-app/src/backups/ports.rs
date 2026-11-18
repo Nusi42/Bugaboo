@@ -2,23 +2,11 @@
 //! archive) and the records of the backups (the store).
 
 use bb_core::backup::name::{BackupName, Purpose};
-use bb_core::backup::run::BackupRun;
-use bb_core::security_log::Digest;
+use bb_core::backup::run::{BackupRun, CreatedFile};
 use jiff::Timestamp;
 
 use crate::ports::{BoxFuture, ChangeStore};
 use crate::store_macros::{reads, writes};
-
-/// A backup the port created.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct CreatedFile {
-    /// Its name.
-    pub name: BackupName,
-    /// The size of the file in bytes.
-    pub size: u64,
-    /// The SHA-256 of the file.
-    pub checksum: Digest,
-}
 
 /// A backup file in the folder of the backups.
 #[derive(Clone, Debug, PartialEq, Eq)]
