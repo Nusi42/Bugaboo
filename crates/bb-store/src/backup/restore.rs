@@ -332,7 +332,12 @@ async fn finish(
     let mut transaction = restored.begin_read().await?;
     let head = head_in(&mut transaction).await?;
     transaction.commit().await?;
-    let backup_seq = head.map_or(0, |(seq, _)| seq);
+    // What is gone is what came after the backup's own head, whatever the steps after the
+    // replace wrote since.
+    let backup_seq = manifest
+        .security_log_head
+        .as_ref()
+        .map_or(0, |head| head.seq);
     let lost = (present_head > backup_seq).then_some((backup_seq + 1, present_head));
     input.seal.restart(head, lost.unwrap_or((0, 0)))?;
     record(input, ids, restored, manifest, before, lost).await?;
@@ -363,8 +368,16 @@ async fn record(
     lost: Option<(i64, i64)>,
 ) -> Result<(), StoreError> {
     let (size, checksum) = archive::measure(input.archive)?;
+    // The restored backup by the name of its file, which says what it was made for (a backup made
+    // before an earlier restore keeps that kind); a file renamed by hand is named from its manifest.
+    let name = input
+        .archive
+        .file_name()
+        .and_then(|name| name.to_str())
+        .and_then(BackupName::parse)
+        .unwrap_or_else(|| BackupName::new(Purpose::Regular, manifest.moment, &manifest.version));
     let restored_file = CreatedFile {
-        name: BackupName::new(Purpose::Regular, manifest.moment, &manifest.version),
+        name,
         size,
         checksum,
     };

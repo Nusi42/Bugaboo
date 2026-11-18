@@ -365,6 +365,14 @@ async fn ops_07_a_restore_keeps_a_backup_of_the_present_first() -> TestResult {
             .map_err(failed)?;
         let again = installation.open().await?;
         assert_eq!(saved(&again).await?, [1, 2]);
+        // The record of that restore names the backup by its own kind, made before a restore.
+        let runs = again.backup_runs(10).await?;
+        let restored = runs
+            .iter()
+            .find(|run| run.event == bb_core::backup::run::BackupEvent::Restored)
+            .ok_or("no record of the restore")?;
+        assert_eq!(restored.name, report.before.file.name);
+        assert_eq!(restored.name.purpose, Purpose::BeforeRestore);
         again.close().await;
         Ok(())
     })
