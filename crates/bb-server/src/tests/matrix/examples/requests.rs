@@ -80,6 +80,7 @@ pub(super) fn open_request(operation: &str) -> Result<Option<Request>, Failure> 
         "resetMySetting" => ("DELETE", "/api/v1/me/settings/appearance.mode".into(), None),
         "getMe" => ("GET", "/api/v1/auth/me".into(), None),
         "getAbout" => ("GET", "/api/v1/about".into(), None),
+        "listAboutParts" => ("GET", "/api/v1/about/parts".into(), None),
         // A file the build does not carry, so the row is the same whether or not this build has them.
         "downloadAboutFile" => ("GET", "/api/v1/about/files/nothing".into(), None),
         // The person's own handle: their own data, so only a session reaches it.

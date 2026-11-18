@@ -461,3 +461,9 @@ route = "GET /api/v1/people/{person}/work-times"
 property = "next_holidays"
 whole_value = true
 reason = "The next `NEXT_HOLIDAYS` (three) public holidays of the choice of *Holidays*: a fixed number, not a list that grows with data, shown together under the choice (PLAN-11, ADR-0030, amendment M8; UX §4.13; M8-F65)."
+
+[[exempt]]
+route = "GET /api/v1/about"
+property = "files"
+whole_value = true
+reason = "The files of the build are at most as many as the kinds of file the code knows (the parts list as CycloneDX and as SPDX, and the notices): a list bounded by the code, not one that grows with data, and the page lists all of them at once (M9-F40)."

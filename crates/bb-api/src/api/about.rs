@@ -1,6 +1,6 @@
 //! *About* below `/api/v1/about` (COMP-01, COMP-02, ADR-0047 decision 3): the version, the license,
 //! the parts list by name, version and license, and the three files of the build: the parts list
-//! in CycloneDX and in SPDX, and the third-party notices.
+//! in `CycloneDX` and in SPDX, and the third-party notices.
 //!
 //! The files are the ones `cargo xtask build` writes into `about-files/` before it compiles the
 //! program, taken in by `rust-embed` like the browser app. A build made another way (a plain
@@ -14,6 +14,7 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse as _, Response};
 use bb_api_words::about;
 use bb_app::auth::AuthenticateQuery;
+use bb_policy::Masked;
 use rust_embed::RustEmbed;
 use serde::Serialize;
 use serde_json::Value;
@@ -23,7 +24,8 @@ use utoipa_axum::routes;
 
 use super::auth::{AuthHandle, Info, NotFoundAnswer, NotSignedInAnswer, Session, answer};
 use super::files::{FileBytes, download_headers};
-use crate::errors::{ApiError, ApiPath};
+use crate::errors::{ApiError, ApiPath, ApiQuery};
+use crate::lean::{FieldSpec, ListParams, Listed, Page};
 use bb_core::error_code::ErrorCode;
 
 /// What `cargo xtask build` writes before the program is compiled.
@@ -109,6 +111,18 @@ pub(crate) struct AboutFileBody {
     address: String,
 }
 
+impl Masked for PartBody {}
+
+/// The name of the list of parts, so its cursors are its own.
+const PARTS_LIST: &str = "about-parts";
+
+/// The fields of a part: all of them are small, so all are there by default.
+const PART_FIELDS: [FieldSpec; 3] = [
+    FieldSpec::by_default("name"),
+    FieldSpec::by_default("version"),
+    FieldSpec::by_default("license"),
+];
+
 /// What this program is and what it is made of.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct AboutBody {
@@ -116,14 +130,14 @@ pub(crate) struct AboutBody {
     version: String,
     /// The license of the program, as an SPDX identifier.
     license: String,
-    /// The parts the program is made of, in the order of the parts list. Empty when this build
-    /// carries no parts list.
-    parts: Vec<PartBody>,
+    /// How many parts the program is made of; the parts themselves are the list
+    /// `/api/v1/about/parts`. Zero when this build carries no parts list.
+    part_count: usize,
     /// The files of the build: the parts list in two formats and the third-party notices.
     files: Vec<AboutFileBody>,
 }
 
-/// The license of a CycloneDX component, as text.
+/// The license of a `CycloneDX` component, as text.
 fn license_of(component: &Value) -> String {
     let first = component.pointer("/licenses/0");
     first
@@ -138,7 +152,7 @@ fn license_of(component: &Value) -> String {
         .to_owned()
 }
 
-/// The parts named in the text of a CycloneDX file; none when it cannot be read.
+/// The parts named in the text of a `CycloneDX` file; none when it cannot be read.
 fn parts_of(cyclonedx: &[u8]) -> Vec<PartBody> {
     let Ok(document) = serde_json::from_slice::<Value>(cyclonedx) else {
         return Vec::new();
@@ -184,7 +198,7 @@ fn about() -> AboutBody {
     AboutBody {
         version: env!("CARGO_PKG_VERSION").to_owned(),
         license: env!("CARGO_PKG_LICENSE").to_owned(),
-        parts: PARTS.clone(),
+        part_count: PARTS.len(),
         files,
     }
 }
@@ -215,7 +229,36 @@ async fn get_about(
     Ok(answer(about()))
 }
 
-/// One file of the build: the parts list as CycloneDX (`cyclonedx`) or SPDX (`spdx`) JSON, or the
+/// The parts the program is made of, a page at a time. Needs a signed-in person, nothing more.
+#[utoipa::path(
+    get,
+    path = "/api/v1/about/parts",
+    operation_id = "listAboutParts",
+    tag = "about",
+    params(ListParams),
+    responses((status = 200, description = "The parts, a page at a time.", body = Page<PartBody>), NotSignedInAnswer)
+)]
+async fn list_about_parts(
+    State(auth): State<AuthHandle>,
+    Info(info): Info,
+    Session(session_token): Session,
+    ApiQuery(params): ApiQuery<ListParams>,
+) -> Result<Response, ApiError> {
+    let (cursor, bad_cursor) = params.start(PARTS_LIST);
+    let me = auth
+        .api()?
+        .authenticate(info, AuthenticateQuery { session_token })
+        .await?;
+    bad_cursor?;
+    let limit = usize::try_from(params.limit()).unwrap_or(usize::MAX);
+    let list = me
+        .access
+        .authorize(Listed::cut(PARTS.clone(), cursor.as_deref(), limit));
+    let fields = params.fields_readable(&PART_FIELDS, &list.hidden_properties())?;
+    Ok(answer(Page::of_authorized(PARTS_LIST, &list, &fields)?))
+}
+
+/// One file of the build: the parts list as `CycloneDX` (`cyclonedx`) or SPDX (`spdx`) JSON, or the
 /// third-party notices (`notices`). Needs a signed-in person, nothing more.
 #[utoipa::path(
     get,
@@ -251,6 +294,7 @@ where
 {
     OpenApiRouter::new()
         .routes(routes!(get_about))
+        .routes(routes!(list_about_parts))
         .routes(routes!(download_about_file))
 }
 

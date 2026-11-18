@@ -432,3 +432,8 @@ reason = "Days, not a count of things: how many work days of the person on the b
 route = "POST /api/v1/timeline"
 property = "away_weeks"
 reason = "Weeks, not a count of things: the same away work days as whole weeks, Monday to Friday, sent only with away_days, so only to a viewer who may see Away about that bar: who reads Assigned to, sees the person by name and may know their away times (PLAN-13, ADR-0030 amendment M8)."
+
+[[exempt]]
+route = "GET /api/v1/about"
+property = "part_count"
+reason = "The number of parts of the program. The parts are the same for everybody who is signed in and none is hidden from anybody, so the number counts only what the viewer may see."

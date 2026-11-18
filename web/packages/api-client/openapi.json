@@ -100,6 +100,69 @@
         "x-permission": "signed-in"
       }
     },
+    "/api/v1/about/parts": {
+      "get": {
+        "tags": ["about"],
+        "summary": "The parts the program is made of, a page at a time. Needs a signed-in person, nothing more.",
+        "operationId": "listAboutParts",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Fields"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
+              "maximum": 100,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The parts, a page at a time.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_PartBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadListRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "signed-in"
+      }
+    },
     "/api/v1/access-keys": {
       "get": {
         "tags": ["access-keys"],
@@ -19472,7 +19535,7 @@
       "AboutBody": {
         "type": "object",
         "description": "What this program is and what it is made of.",
-        "required": ["version", "license", "parts", "files"],
+        "required": ["version", "license", "part_count", "files"],
         "properties": {
           "files": {
             "type": "array",
@@ -19485,12 +19548,10 @@
             "type": "string",
             "description": "The license of the program, as an SPDX identifier."
           },
-          "parts": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PartBody"
-            },
-            "description": "The parts the program is made of, in the order of the parts list. Empty when this build\ncarries no parts list."
+          "part_count": {
+            "type": "integer",
+            "description": "How many parts the program is made of; the parts themselves are the list\n`/api/v1/about/parts`. Zero when this build carries no parts list.",
+            "minimum": 0
           },
           "version": {
             "type": "string",
@@ -28277,6 +28338,24 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/OfferRowItem"
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
+      "Page_PartBody": {
+        "type": "object",
+        "description": "One page of a list: its items, and where the next page starts.",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PartBody"
             },
             "description": "The items of this page."
           },

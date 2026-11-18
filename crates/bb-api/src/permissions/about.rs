@@ -6,5 +6,6 @@ use super::{Answer, Declared, Route, route};
 /// The routes of *About*, by operation ID.
 pub(super) const ROUTES: &[Route] = &[
     route("getAbout", Declared::SignedIn, Answer::Ordinary),
+    route("listAboutParts", Declared::SignedIn, Answer::Ordinary),
     route("downloadAboutFile", Declared::SignedIn, Answer::Ordinary),
 ];

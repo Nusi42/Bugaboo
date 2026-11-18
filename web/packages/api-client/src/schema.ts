@@ -42,6 +42,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/about/parts": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The parts the program is made of, a page at a time. Needs a signed-in person, nothing more. */
+    get: operations["listAboutParts"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/access-keys": {
     parameters: {
       query?: never;
@@ -5273,10 +5290,10 @@ export interface components {
       /** @description The license of the program, as an SPDX identifier. */
       license: string;
       /**
-       * @description The parts the program is made of, in the order of the parts list. Empty when this build
-       *     carries no parts list.
+       * @description How many parts the program is made of; the parts themselves are the list
+       *     `/api/v1/about/parts`. Zero when this build carries no parts list.
        */
-      parts: components["schemas"]["PartBody"][];
+      part_count: number;
       /** @description The version of the program. */
       version: string;
     };
@@ -9641,6 +9658,13 @@ export interface components {
       next_cursor: string | null;
     };
     /** @description One page of a list: its items, and where the next page starts. */
+    Page_PartBody: {
+      /** @description The items of this page. */
+      items: components["schemas"]["PartBody"][];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
+    /** @description One page of a list: its items, and where the next page starts. */
     Page_PersonItem: {
       /** @description The items of this page. */
       items: components["schemas"]["PersonItem"][];
@@ -13199,6 +13223,40 @@ export interface operations {
       304: components["responses"]["NotModified"];
       401: components["responses"]["NotSignedIn"];
       404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  listAboutParts: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: components["parameters"]["Fields"];
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: components["parameters"]["Cursor"];
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The parts, a page at a time. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_PartBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      400: components["responses"]["BadListRequest"];
+      401: components["responses"]["NotSignedIn"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];

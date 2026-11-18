@@ -4,3 +4,4 @@ Points found while building M9 that were accepted for later. Each names where it
 
 | ID | What | Why later | Planned in |
 |----|------|-----------|------------|
+| M9-F40 | The files of *About* are a plain list of at most three, exempt from the lean-list rule as bounded by the code. If a fourth kind of file (for example the VEX statements) joins them, check that the list stays small by nature. | The list is bounded by the kinds of file; nothing grows with data. | WP-11 (the *About* screen), when it shows the files |
