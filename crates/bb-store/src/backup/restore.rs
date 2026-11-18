@@ -29,23 +29,19 @@ use bb_core::backup::run::{BackupEvent, BackupMaker, BackupRun, CreatedFile};
 use bb_core::event::{Actor, Channel, DomainEvent, EntityKind, EntityRef, FieldChange};
 use bb_core::id::{AccessKeyId, BackupId, EntityId, EventId, GrantId, IdSource, PasskeyId, UserId};
 use bb_core::oauth::GrantEnd;
-use bb_core::secret::StoredSecret;
-use bb_core::technical::TechnicalName;
 use jiff::Timestamp;
-use sea_query::{Alias, Expr, ExprTrait as _, Query, Table};
-use serde_json::Value as Json;
+use sea_query::{Expr, ExprTrait as _, Query};
 
-use super::value::{ColumnKind, bytes_of, json_to_values, text_of};
-use super::{BackupPlaces, CreatedBackup, archive, catalog, io, work_folder};
+use super::{BackupPlaces, CreatedBackup, archive, fill, io, work_folder};
 use crate::anchor::{Anchored, LogSeal};
 use crate::auth::AuthStorage;
 use crate::chain::Verification;
-use crate::db::{Database, StoredId as _, Transaction, from_micros, rows_per_insert};
+use crate::db::{Database, StoredId as _, Transaction};
 use crate::error::StoreError;
 use crate::keys::KeyRing;
 use crate::migrations::known_migrations;
-use crate::schema::{AccessKeyRow, Migration, PasskeyRow, Secret, SignInSession};
-use crate::secrets::{all_columns, keys_open};
+use crate::schema::{AccessKeyRow, PasskeyRow, SignInSession};
+use crate::secrets::keys_open;
 use crate::security_log::head_in;
 
 /// The database a backup is restored into.
@@ -229,7 +225,7 @@ async fn check(input: &RestoreInput<'_>, work: &Path) -> Result<Manifest, StoreE
             copy.close().await;
             secrets?
         }
-        DatabaseKind::Postgres => secrets_in_rows(&database_member(work, &manifest)?)?,
+        DatabaseKind::Postgres => fill::secrets_in_rows(&database_member(work, &manifest)?)?,
     };
     if keys_open(input.keys, &secrets) {
         Ok(manifest)
@@ -267,7 +263,9 @@ async fn put_back(
     let copy = database_member(work, manifest)?;
     match input.target {
         RestoreTarget::File(file) => replace_file(&copy, file)?,
-        RestoreTarget::Postgres(database) => fill(database, manifest, &copy, input.now).await?,
+        RestoreTarget::Postgres(database) => {
+            fill::fill(database, manifest, &copy, input.now).await?;
+        }
     }
     put_back_files(&work.join(member::FILES), &input.places.files)
 }
@@ -313,201 +311,8 @@ fn put_back_files(from: &Path, files: &Path) -> Result<(), StoreError> {
     Ok(())
 }
 
-/// The head of a table in the copy of a PostgreSQL database.
-struct TableHead {
-    name: String,
-    columns: Vec<(String, ColumnKind)>,
-}
-
-fn read_head(line: &Json) -> Option<TableHead> {
-    let name = line.get("table")?.as_str()?.to_owned();
-    let columns = line
-        .get("columns")?
-        .as_array()?
-        .iter()
-        .map(|column| {
-            Some((
-                column.get("name")?.as_str()?.to_owned(),
-                ColumnKind::from_word(column.get("kind")?.as_str()?)?,
-            ))
-        })
-        .collect::<Option<_>>()?;
-    Some(TableHead { name, columns })
-}
-
 fn unreadable() -> StoreError {
     StoreError::Corrupt("the copy of a database")
-}
-
-/// Every table of the copy with its rows, in the order of the copy.
-fn tables_of(copy: &Path) -> Result<Vec<(TableHead, Vec<Json>)>, StoreError> {
-    let text = std::fs::read_to_string(copy).map_err(io)?;
-    let mut tables: Vec<(TableHead, Vec<Json>)> = Vec::new();
-    for line in text.lines() {
-        let line: Json = serde_json::from_str(line)?;
-        if line.is_object() {
-            tables.push((read_head(&line).ok_or_else(unreadable)?, Vec::new()));
-        } else {
-            tables.last_mut().ok_or_else(unreadable)?.1.push(line);
-        }
-    }
-    Ok(tables)
-}
-
-/// The stored secrets in the copy of a PostgreSQL database.
-fn secrets_in_rows(copy: &Path) -> Result<Vec<StoredSecret>, StoreError> {
-    let name = sea_query::Iden::to_string(&Secret::Table);
-    let Some((head, rows)) = tables_of(copy)?
-        .into_iter()
-        .find(|(head, _)| head.name == name)
-    else {
-        return Ok(Vec::new());
-    };
-    let at = |column: Secret| {
-        let wanted = sea_query::Iden::to_string(&column);
-        head.columns
-            .iter()
-            .position(|(name, _)| *name == wanted)
-            .ok_or_else(unreadable)
-    };
-    let [
-        name,
-        key_id,
-        wrapped_key,
-        wrapped_nonce,
-        nonce,
-        ciphertext,
-        updated_at,
-    ] = all_columns().map(at);
-    let (name, key_id, wrapped_key, wrapped_nonce, nonce, ciphertext, updated_at) = (
-        name?,
-        key_id?,
-        wrapped_key?,
-        wrapped_nonce?,
-        nonce?,
-        ciphertext?,
-        updated_at?,
-    );
-    rows.iter()
-        .map(|row| {
-            let cell = |index: usize| row.get(index).ok_or_else(unreadable);
-            let word = |index| {
-                text_of(cell(index)?)?
-                    .and_then(|text| TechnicalName::new(&text).ok())
-                    .ok_or_else(unreadable)
-            };
-            let bytes = |index| bytes_of(cell(index)?)?.ok_or_else(unreadable);
-            Ok(StoredSecret {
-                name: word(name)?,
-                key_id: word(key_id)?,
-                wrapped_key: bytes(wrapped_key)?,
-                wrapped_nonce: bytes(wrapped_nonce)?,
-                nonce: bytes(nonce)?,
-                ciphertext: bytes(ciphertext)?,
-                updated_at: from_micros(cell(updated_at)?.as_i64().ok_or_else(unreadable)?)?,
-            })
-        })
-        .collect()
-}
-
-/// Empties the PostgreSQL database, makes its tables again with the backup's migrations and
-/// fills them from the copy.
-async fn fill(
-    database: &Database,
-    manifest: &Manifest,
-    copy: &Path,
-    now: Timestamp,
-) -> Result<(), StoreError> {
-    let tables = tables_of(copy)?;
-    let mut transaction = database.begin().await?;
-    for table in catalog::tables(&mut transaction).await?.iter().rev() {
-        let mut drop = Table::drop();
-        drop.table(Alias::new(table)).cascade();
-        transaction.execute_schema(&drop).await?;
-    }
-    let mut drop = Table::drop();
-    drop.table(Migration::Table).if_exists();
-    transaction.execute_schema(&drop).await?;
-    transaction.commit().await?;
-    let versions: Vec<i64> = manifest
-        .migrations
-        .iter()
-        .map(|applied| applied.version)
-        .collect();
-    database.migrate_only(&versions, now).await?;
-    let mut transaction = database.begin().await?;
-    // What the migrations seeded is in the copy too.
-    for table in catalog::tables(&mut transaction).await?.iter().rev() {
-        let mut delete = Query::delete();
-        delete.from_table(Alias::new(table));
-        transaction.execute(&delete).await?;
-    }
-    for (head, rows) in tables {
-        insert_rows(&mut transaction, &head, rows).await?;
-    }
-    transaction.commit().await
-}
-
-/// Writes the rows of one table; the rows that others of the same table point to go first.
-async fn insert_rows(
-    transaction: &mut Transaction,
-    head: &TableHead,
-    rows: Vec<Json>,
-) -> Result<(), StoreError> {
-    let references = catalog::self_references(transaction, &head.name).await?;
-    let index = |name: &str| head.columns.iter().position(|(column, _)| column == name);
-    let pairs: Vec<(usize, usize)> = references
-        .iter()
-        .filter_map(|(child, parent)| Some((index(child)?, index(parent)?)))
-        .collect();
-    let kinds: Vec<ColumnKind> = head.columns.iter().map(|(_, kind)| *kind).collect();
-    let mut pending = rows;
-    let mut written: Vec<String> = Vec::new();
-    while !pending.is_empty() {
-        let (ready, rest): (Vec<Json>, Vec<Json>) = pending.into_iter().partition(|row| {
-            pairs.iter().all(|(child, _)| {
-                row.get(*child)
-                    .is_none_or(|value| value.is_null() || written.contains(&value.to_string()))
-            })
-        });
-        // Rows whose parents are not in the table at all go in as they are.
-        let ready = if ready.is_empty() {
-            rest.clone()
-        } else {
-            ready
-        };
-        let rest = if ready.len() == rest.len() && ready == rest {
-            Vec::new()
-        } else {
-            rest
-        };
-        for (_, parent) in &pairs {
-            written.extend(
-                ready
-                    .iter()
-                    .filter_map(|row| Some(row.get(*parent)?.to_string())),
-            );
-        }
-        for chunk in ready.chunks(rows_per_insert(kinds.len().max(1))) {
-            let mut insert = Query::insert();
-            insert
-                .into_table(Alias::new(&head.name))
-                .columns(head.columns.iter().map(|(name, _)| Alias::new(name)));
-            for row in chunk {
-                insert
-                    .values(json_to_values(row, &kinds)?.into_iter().map(Expr::val))
-                    .map_err(|_| unreadable())?;
-            }
-            transaction.execute(&insert).await?;
-        }
-        pending = rest;
-    }
-    for column in catalog::columns(transaction, &head.name).await? {
-        if column.counts_up {
-            catalog::continue_count(transaction, &head.name, &column.name).await?;
-        }
-    }
-    Ok(())
 }
 
 /// Everything after the database is back: migrations, sessions, the replay list, the anchor, the

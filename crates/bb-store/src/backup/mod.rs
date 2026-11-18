@@ -9,6 +9,7 @@
 mod archive;
 mod catalog;
 mod copy;
+mod fill;
 mod restore;
 mod runs;
 mod value;

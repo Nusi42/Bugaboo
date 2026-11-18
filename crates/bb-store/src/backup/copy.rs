@@ -4,15 +4,15 @@
 //! - SQLite: `VACUUM INTO` a new file; what the backup needs to know (the migrations, the head of
 //!   the security log, the files) is then read from that copy, so it matches it exactly;
 //! - PostgreSQL: one transaction at `REPEATABLE READ` reads all of it: the same facts and the rows
-//!   of every table in the order the tables were made, written as JSON lines (`value.rs`): a head
-//!   `{"table": …, "columns": […]}` for each table, then one array per row.
+//!   of every table in the order the tables were made, a batch at a time, written as JSON lines
+//!   (`value.rs`): a head `{"table": …, "columns": […]}` for each table, then one array per row.
 
 use std::io::{BufWriter, Write as _};
 use std::path::Path;
 
 use bb_core::migration::MigrationRecord;
 use bb_core::security_log::Digest;
-use sea_query::{Alias, Query};
+use sea_query::{Alias, Expr, Iden, Order, Query, SelectStatement};
 use serde_json::json;
 
 use crate::db::{Database, Transaction};
@@ -33,6 +33,34 @@ pub(crate) struct Copied {
     pub(crate) log_head: Option<(i64, Digest)>,
     /// The files it points to.
     pub(crate) files: Vec<Digest>,
+}
+
+/// How many rows of a table the copy reads at a time, so a big table never sits in memory whole.
+const ROWS_PER_BATCH: usize = 1_000;
+
+/// The place of a row in its table (PostgreSQL's `ctid`), which stays the same within the one
+/// snapshot the copy reads, so the batches follow each other without a gap or an overlap.
+#[derive(Clone, Copy, Iden)]
+enum Place {
+    // A name of its own: `ctid` would make `ORDER BY ctid` sort the text instead of the place.
+    #[iden = "backup_row_place"]
+    Text,
+}
+
+/// The next batch of the rows of `table`: those after the row at the place `after`, in the order
+/// of their places, each with its data columns and then its place.
+fn batch_after(table: &str, columns: &[catalog::Column], after: Option<&str>) -> SelectStatement {
+    let mut select = Query::select();
+    select
+        .columns(columns.iter().map(|column| Alias::new(&column.name)))
+        .expr_as(Expr::cust("ctid::text"), Place::Text)
+        .from(Alias::new(table))
+        .order_by_expr(Expr::cust("ctid"), Order::Asc)
+        .limit(u64::try_from(ROWS_PER_BATCH).unwrap_or(u64::MAX));
+    if let Some(after) = after {
+        select.and_where(Expr::cust_with_values("ctid > CAST($1 AS tid)", [after]));
+    }
+    select
 }
 
 fn write_failed(error: std::io::Error) -> StoreError {
@@ -61,13 +89,21 @@ impl Database {
                     .collect::<Vec<_>>(),
             });
             writeln!(out, "{head}").map_err(write_failed)?;
-            let mut select = Query::select();
-            select
-                .columns(columns.iter().map(|column| Alias::new(&column.name)))
-                .from(Alias::new(&table));
             let kinds: Vec<_> = columns.iter().map(|column| column.kind).collect();
-            for row in transaction.fetch_all(&select).await? {
-                writeln!(out, "{}", row_to_json(&row, &kinds)?).map_err(write_failed)?;
+            let mut after: Option<String> = None;
+            loop {
+                let rows = transaction
+                    .fetch_all(&batch_after(&table, &columns, after.as_deref()))
+                    .await?;
+                for row in &rows {
+                    writeln!(out, "{}", row_to_json(row, &kinds)?).map_err(write_failed)?;
+                }
+                match rows.last() {
+                    Some(last) if rows.len() == ROWS_PER_BATCH => {
+                        after = Some(last.get(Place::Text)?);
+                    }
+                    _ => break,
+                }
             }
         }
         out.flush().map_err(write_failed)?;

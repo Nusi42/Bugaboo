@@ -610,72 +610,86 @@ impl Database {
         Ok(())
     }
 
-    /// Applies exactly the migrations `versions` and no other: the schema of the database a
-    /// backup was made from, which the rows of its copy are put back into before the migrations it
-    /// lacks run (ADR-0046, decision 4).
-    pub(crate) async fn migrate_only(
-        &self,
-        versions: &[i64],
-        now: Timestamp,
-    ) -> Result<Vec<i64>, StoreError> {
-        self.migrate_where(|version| versions.contains(&version), now)
-            .await
-    }
-
     async fn migrate_until(&self, last: i64, now: Timestamp) -> Result<Vec<i64>, StoreError> {
-        self.migrate_where(|version| version <= last, now).await
-    }
-
-    async fn migrate_where(
-        &self,
-        wanted: impl Fn(i64) -> bool,
-        now: Timestamp,
-    ) -> Result<Vec<i64>, StoreError> {
         let mut done = Vec::new();
         loop {
+            // One transaction for each migration, so a failure keeps the ones before it.
             let mut transaction = self.begin().await?;
-            transaction.advisory_lock(LockClass::Migration, 0).await?;
-            transaction.execute_schema(&record_table()).await?;
-            let applied = read_applied(&mut transaction).await?;
-            check(&applied)?;
-            let Some(next) = ALL
-                .iter()
-                .filter(|definition| {
-                    wanted(definition.version)
-                        && !applied
-                            .iter()
-                            .any(|record| record.version == definition.version)
-                })
-                .min_by_key(|definition| definition.version)
-            else {
-                transaction.commit().await?;
-                return Ok(done);
-            };
-            for step in next.steps()? {
-                match step {
-                    Step::Table(statement) => transaction.execute_schema(&statement).await?,
-                    Step::Index(statement) => transaction.execute_schema(&statement).await?,
-                    Step::Alter(statement) => transaction.execute_schema(&statement).await?,
-                    Step::Seed(statement) => {
-                        transaction.execute(&statement).await?;
-                    }
-                    Step::Delete(statement) => {
-                        transaction.execute(&statement).await?;
-                    }
-                    Step::Update(statement) => {
-                        transaction.execute(&statement).await?;
-                    }
-                    Step::Rename(statement) => transaction.execute_schema(&statement).await?,
-                    Step::DropIndex(statement) => transaction.execute_schema(&statement).await?,
-                    Step::Sql(sql) => transaction.execute_fixed(&sql).await?,
-                }
-            }
-            record(&mut transaction, next, now).await?;
+            let applied = apply_next(&mut transaction, &|version| version <= last, now).await?;
             transaction.commit().await?;
-            done.push(next.version);
+            match applied {
+                Some(version) => done.push(version),
+                None => return Ok(done),
+            }
         }
     }
+}
 
+/// Applies exactly the migrations `versions` and no other, inside `transaction`: the schema of
+/// the database a backup was made from, which the rows of its copy are put back into before the
+/// migrations it lacks run (ADR-0046, decision 4). Nothing of it stays when the transaction is
+/// not committed.
+pub(crate) async fn migrate_only_in(
+    transaction: &mut Transaction,
+    versions: &[i64],
+    now: Timestamp,
+) -> Result<Vec<i64>, StoreError> {
+    let mut done = Vec::new();
+    while let Some(version) =
+        apply_next(transaction, &|version| versions.contains(&version), now).await?
+    {
+        done.push(version);
+    }
+    Ok(done)
+}
+
+/// Applies the oldest migration that is `wanted` and not applied yet, inside `transaction`, and
+/// returns its number; `None` when there is none.
+async fn apply_next(
+    transaction: &mut Transaction,
+    wanted: &(dyn Fn(i64) -> bool + Sync),
+    now: Timestamp,
+) -> Result<Option<i64>, StoreError> {
+    transaction.advisory_lock(LockClass::Migration, 0).await?;
+    transaction.execute_schema(&record_table()).await?;
+    let applied = read_applied(transaction).await?;
+    check(&applied)?;
+    let Some(next) = ALL
+        .iter()
+        .filter(|definition| {
+            wanted(definition.version)
+                && !applied
+                    .iter()
+                    .any(|record| record.version == definition.version)
+        })
+        .min_by_key(|definition| definition.version)
+    else {
+        return Ok(None);
+    };
+    for step in next.steps()? {
+        match step {
+            Step::Table(statement) => transaction.execute_schema(&statement).await?,
+            Step::Index(statement) => transaction.execute_schema(&statement).await?,
+            Step::Alter(statement) => transaction.execute_schema(&statement).await?,
+            Step::Seed(statement) => {
+                transaction.execute(&statement).await?;
+            }
+            Step::Delete(statement) => {
+                transaction.execute(&statement).await?;
+            }
+            Step::Update(statement) => {
+                transaction.execute(&statement).await?;
+            }
+            Step::Rename(statement) => transaction.execute_schema(&statement).await?,
+            Step::DropIndex(statement) => transaction.execute_schema(&statement).await?,
+            Step::Sql(sql) => transaction.execute_fixed(&sql).await?,
+        }
+    }
+    record(transaction, next, now).await?;
+    Ok(Some(next.version))
+}
+
+impl Database {
     /// The migrations the database has recorded, oldest first.
     ///
     /// # Errors

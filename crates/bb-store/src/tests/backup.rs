@@ -643,3 +643,6 @@ fn a_backup_name_of_the_folder_reads_back() {
     let name = BackupName::new(Purpose::Regular, at(0), VERSION);
     assert_eq!(BackupName::parse(&name.to_string()), Some(name));
 }
+
+#[path = "backup_copy.rs"]
+mod copy;
