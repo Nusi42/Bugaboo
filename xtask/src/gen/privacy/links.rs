@@ -15,8 +15,11 @@ pub(crate) enum Scope {
     Rows(String),
     /// The rows that hold the person's e-mail address (`#[person_email(…)]`).
     Email,
-    /// The rows whose changes name the person (`#[person_in_changes(…)]`).
+    /// The rows whose changes name the person (`#[person_in_changes]`); each member says what the
+    /// person is to the event.
     Changes,
+    /// The rows whose JSON holds the person's ID (`#[person_in_json(…)]`).
+    Json,
     /// None: the reference never names a person (`#[names_no_person]`).
     Never,
 }
@@ -42,7 +45,12 @@ pub(crate) fn read_links(field: &syn::Field) -> Vec<Result<LinkMark, String>> {
             } else if path.is_ident("person_email") {
                 Some(read_word(attr, "person_email", Scope::Email))
             } else if path.is_ident("person_in_changes") {
-                Some(read_word(attr, "person_in_changes", Scope::Changes))
+                Some(Ok(LinkMark {
+                    word: String::new(),
+                    scope: Scope::Changes,
+                }))
+            } else if path.is_ident("person_in_json") {
+                Some(read_word(attr, "person_in_json", Scope::Json))
             } else if path.is_ident("person_for") {
                 Some(read_person_for(attr))
             } else if path.is_ident("names_no_person") {
@@ -162,7 +170,8 @@ pub(crate) const TUPLE: &str = "(tuple)";
 /// inside anything else (a tuple, a container of its own) cannot carry a link.
 pub(crate) const CONTAINERS: &[&str] = &["Option", "Vec", "Box", "BTreeSet", "BTreeMap"];
 
-/// The types in `names_a_person!(…)` or `refers_to_a_record!(…)`: the last part of each path.
+/// The types in `names_a_person!(…)`, `refers_to_a_record!(…)`, `carries_changes!(…)` or
+/// `holds_json!(…)`: the last part of each path.
 pub(crate) fn read_listed_types(items: &[Item], list: &str) -> Vec<String> {
     let mut names = Vec::new();
     for item in items {

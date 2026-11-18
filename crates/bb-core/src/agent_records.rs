@@ -364,9 +364,11 @@ pub struct Proposal {
     pub field: RuleField,
     /// The value now, as the proposal saw it.
     #[personal(category = "content", basis = "contract")]
+    #[person_in_json(subject)]
     pub before: serde_json::Value,
     /// The value proposed.
     #[personal(category = "content", basis = "contract")]
+    #[person_in_json(subject)]
     pub after: serde_json::Value,
     /// What became of it.
     #[not_personal]

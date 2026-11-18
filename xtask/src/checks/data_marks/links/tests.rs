@@ -11,6 +11,7 @@ const LINKS: &str = "words! { pub enum Link { Author => \"author\", Subject => \
 names_a_person!(crate::id::UserId, crate::event::Actor);
 refers_to_a_record!(crate::id::EntityId, crate::event::EntityRef);
 carries_changes!(crate::event::FieldChange);
+holds_json!(serde_json::Value);
 ";
 
 const MARK: &str = "#[personal(category = \"identity\", basis = \"contract\")]";
@@ -42,7 +43,7 @@ fn note(fields: &str) -> String {
 #[test]
 fn good_example_every_field_that_names_a_person_has_a_link() {
     let entity = note(&format!(
-        "    {MARK}\n    #[person(author)]\n    pub author: UserId,\n    {MARK}\n    #[person(subject)]\n    pub about: Option<Vec<crate::id::UserId>>,\n    #[not_personal]\n    #[person_for(record, link = \"subject\")]\n    pub entity: EntityRef,\n    {MARK}\n    #[person_for(record, kind = \"entity_kind\", link = \"subject\")]\n    pub entity_id: EntityId,\n    {MARK}\n    #[person_for(field_type = \"person\", key = \"field\", link = \"subject\")]\n    #[person_for(field_type = \"people\", key = \"field\", link = \"subject\")]\n    pub value: Option<EntityId>,\n    {MARK}\n    #[person_in_changes(subject)]\n    pub changes: Vec<FieldChange>,\n    #[not_personal]\n    #[names_no_person]\n    pub record: EntityId,\n    {MARK}\n    #[person_email(subject)]\n    pub email: String,\n    {MARK}\n    pub text: String,\n"
+        "    {MARK}\n    #[person(author)]\n    pub author: UserId,\n    {MARK}\n    #[person(subject)]\n    pub about: Option<Vec<crate::id::UserId>>,\n    #[not_personal]\n    #[person_for(record, link = \"subject\")]\n    pub entity: EntityRef,\n    {MARK}\n    #[person_for(record, kind = \"entity_kind\", link = \"subject\")]\n    pub entity_id: EntityId,\n    {MARK}\n    #[person_for(field_type = \"person\", key = \"field\", link = \"subject\")]\n    #[person_for(field_type = \"people\", key = \"field\", link = \"subject\")]\n    pub value: Option<EntityId>,\n    {MARK}\n    #[person_in_changes]\n    pub changes: Vec<FieldChange>,\n    #[not_personal]\n    #[names_no_person]\n    pub record: EntityId,\n    {MARK}\n    #[person_email(subject)]\n    pub email: String,\n    {MARK}\n    pub text: String,\n"
     ));
     assert_eq!(findings(&entity), "");
 }
@@ -106,7 +107,7 @@ fn bad_example_a_person_inside_a_type_no_link_can_be_put_on() {
 #[test]
 fn bad_example_a_link_with_an_unknown_word_or_on_a_field_that_does_not_fit() {
     let entity = note(&format!(
-        "    {MARK}\n    #[person(writer)]\n    pub author: UserId,\n    {MARK}\n    #[person(author)]\n    pub text: String,\n    {MARK}\n    #[names_no_person]\n    pub name: String,\n    {MARK}\n    #[person_for(record)]\n    pub entity: EntityRef,\n    {MARK}\n    #[person_in_changes(subject)]\n    pub words: String,\n"
+        "    {MARK}\n    #[person(writer)]\n    pub author: UserId,\n    {MARK}\n    #[person(author)]\n    pub text: String,\n    {MARK}\n    #[names_no_person]\n    pub name: String,\n    {MARK}\n    #[person_for(record)]\n    pub entity: EntityRef,\n    {MARK}\n    #[person_in_changes]\n    pub words: String,\n"
     ));
     let all = findings(&entity);
     assert!(all.contains("`writer` is not a link"), "{all}");
@@ -115,7 +116,7 @@ fn bad_example_a_link_with_an_unknown_word_or_on_a_field_that_does_not_fit() {
         "{all}"
     );
     assert!(
-        all.contains("its type is not a reference to a record"),
+        all.contains("neither a reference to a record nor JSON"),
         "{all}"
     );
     assert!(all.contains("needs link"), "{all}");
@@ -137,4 +138,17 @@ fn bad_example_changes_without_the_link_of_their_people() {
         all.contains("holds the changes of a record, whose values can name a person"),
         "{all}"
     );
+}
+
+#[test]
+fn bad_example_json_that_does_not_say_whether_it_names_a_person() {
+    let entity = note(&format!(
+        "    {MARK}\n    pub payload: serde_json::Value,\n    {MARK}\n    #[person_in_json(subject)]\n    pub text: String,\n"
+    ));
+    let all = findings(&entity);
+    assert!(
+        all.contains("The field holds JSON, which can name a person"),
+        "{all}"
+    );
+    assert!(all.contains("its type does not hold JSON"), "{all}");
 }

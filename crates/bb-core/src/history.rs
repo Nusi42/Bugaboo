@@ -126,6 +126,6 @@ pub struct HistoryEntry {
     #[personal(category = "content", basis = "legitimate_interests")]
     #[personal_for(kind = "time_entry", category = "employee_time", basis = "contract")]
     #[personal_for(kind = "timer", category = "employee_time", basis = "contract")]
-    #[person_in_changes(subject)]
+    #[person_in_changes]
     pub changes: Vec<FieldChange>,
 }

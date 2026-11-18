@@ -86,6 +86,8 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
             fn refers_to_a_record<T: ?Sized + ::bb_core::personal::RefersToARecord>() {}
             fn holds_an_address<T: ?Sized + ::bb_core::personal::HoldsAnAddress>() {}
             fn carries_changes<T: ?Sized + ::bb_core::personal::CarriesChanges>() {}
+            fn holds_json<T: ?Sized + ::bb_core::personal::HoldsJson>() {}
+            fn can_name_a_person<T: ?Sized + ::bb_core::personal::CanNameAPerson>() {}
             #(#person_assertions)*
         };
     })

@@ -61,6 +61,7 @@ pub struct Job {
     /// What the work needs to know. It can name people or hold their text (for example the
     /// recipient of an e-mail), so it is deleted with the job.
     #[personal(category = "content", basis = "legitimate_interests")]
+    #[person_in_json(subject)]
     pub payload: serde_json::Value,
     /// The earliest moment the job may run.
     #[not_personal]

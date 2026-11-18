@@ -1,4 +1,4 @@
-error: field `author` names a person in more than one way; a field names a person always (`person`), as an address (`person_email`), in its changes (`person_in_changes`), in some rows (`person_for`) or never (`names_no_person`)
+error: field `author` names a person in more than one way; a field names a person always (`person`), as an address (`person_email`), in its changes (`person_in_changes`), in its JSON (`person_in_json`), in some rows (`person_for`) or never (`names_no_person`)
  --> tests/ui/person_and_person_for.rs:9:5
   |
 9 |     #[person_for(record, link = "subject")]

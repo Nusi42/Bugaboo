@@ -384,31 +384,38 @@ pub(super) fn fake_page<E, T: Ord + Copy>(
 }
 
 /// Stops a test whose change wrote an event that holds a person in a member of its changes that
-/// `member::people::IN_CHANGES` does not declare for the kind of record (ADR-0044): the walk of a
+/// `bb_core::whose::IN_CHANGES` does not declare for the kind of record (ADR-0044): the walk of a
 /// person's data would not know what the person is to the event, and *Remove a person* would not
-/// scrub the value.
+/// scrub the value. A backstop: the walk and the removal find the person by the value wherever it
+/// is, and the declarations only say what the person is to the event.
 fn undeclared_people<'e>(state: &State, events: impl Iterator<Item = &'e DomainEvent>) {
+    for event in events {
+        undeclared_people_in(state, event.entity.kind.as_str(), &event.changes);
+    }
+}
+
+/// The same for the changes of one record of `kind`: of an event, or of a notification about it.
+pub(crate) fn undeclared_people_in(
+    state: &State,
+    kind: &str,
+    changes: &[bb_core::event::FieldChange],
+) {
     let people: Vec<String> = state
         .people
         .iter()
         .map(|(person, _)| person.id.to_string())
         .collect();
-    for event in events {
-        for change in &event.changes {
-            let holds_a_person = [&change.before, &change.after]
-                .into_iter()
-                .flatten()
-                .any(|value| holds_any(value, &people));
-            assert!(
-                !holds_a_person
-                    || crate::member::people::link_of(event.entity.kind.as_str(), &change.field)
-                        .is_some(),
-                "the event about a `{}` holds a person in its member `{}`; declare it in \
-                 `member::people::IN_CHANGES` (ADR-0044)",
-                event.entity.kind.as_str(),
-                change.field
-            );
-        }
+    for change in changes {
+        let holds_a_person = [&change.before, &change.after]
+            .into_iter()
+            .flatten()
+            .any(|value| holds_any(value, &people));
+        assert!(
+            !holds_a_person || bb_core::whose::link_in_changes(kind, &change.field).is_some(),
+            "the changes about a `{kind}` hold a person in their member `{}`; declare it in \
+             `bb_core::whose::IN_CHANGES` (ADR-0044)",
+            change.field
+        );
     }
 }
 

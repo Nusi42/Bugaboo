@@ -13,6 +13,8 @@ use serde::{Deserialize, Serialize};
 use crate::id::{AgentId, EntityId, EventId, UserId};
 use crate::personal::Entity;
 
+pub use crate::whose::{Whose, whose};
+
 /// Who did it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", content = "id", rename_all = "snake_case")]
@@ -230,77 +232,6 @@ words! {
     }
 }
 
-/// Whose a record of a kind is (ADR-0044, decision 1): the walk of a person's data finds the
-/// events and security-log entries about a person's records through it.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Whose {
-    /// The record is the person: its ID is the person's.
-    ThePerson,
-    /// The record belongs to a person: it is stored as the entity of `marks`, with the ID of the
-    /// record in its field `id`, and its field `owner` names the person.
-    Owner {
-        /// The marks of the entity the record is stored as.
-        marks: crate::personal::EntityMarks,
-        /// Its field that names the person the record belongs to.
-        owner: &'static str,
-    },
-    /// The record is no person's: the people in it are found by its own links.
-    Nobody,
-}
-
-const fn owner<E: Entity>(owner: &'static str) -> Whose {
-    Whose::Owner {
-        marks: E::MARKS,
-        owner,
-    }
-}
-
-/// Whose a record of `kind` is. A `match` without a catch-all, so a new kind has to say.
-#[must_use]
-pub const fn whose(kind: RecordKind) -> Whose {
-    use RecordKind as K;
-    match kind {
-        K::Person | K::Timer | K::WorkTimes | K::Share => Whose::ThePerson,
-        K::AccessKey => owner::<crate::access_key::AccessKey>("owner"),
-        K::Agent => owner::<crate::agent::Agent>("person"),
-        K::AgentWork => owner::<crate::agent_records::IssueWork>("person"),
-        K::HandOver => owner::<crate::agent_records::HandOver>("person"),
-        K::StandingRule => owner::<crate::agent_records::StandingRule>("person"),
-        K::ChangeRun => owner::<crate::many_changes::ManyChangeRun>("person"),
-        K::Assignment => owner::<crate::access::Assignment>("person"),
-        K::ConnectedApp => owner::<crate::oauth::OAuthGrant>("person"),
-        K::Passkey => owner::<crate::sign_in::StoredPasskey>("person"),
-        K::SavedSearch => owner::<crate::saved_search::SavedSearch>("maker"),
-        K::Session => owner::<crate::sign_in::SignInSession>("person"),
-        K::Theme => owner::<crate::theme::OwnTheme>("maker"),
-        K::TimeEntry => owner::<crate::time::entry::TimeEntry>("person"),
-        K::WorkDay => owner::<crate::working_time::record::WorkDay>("person"),
-        K::AwayTime => owner::<crate::work_times::record::AwayTime>("person"),
-        K::Attachment
-        | K::Field
-        | K::Comment
-        | K::Follower
-        | K::Group
-        | K::Invitation
-        | K::Issue
-        | K::IssueType
-        | K::Label
-        | K::LabelGroup
-        | K::OAuthClient
-        | K::Project
-        | K::Relation
-        | K::Layout
-        | K::RelationKind
-        | K::Workflow
-        | K::Role
-        | K::Setting
-        | K::SetupCode
-        | K::StartingRoles
-        | K::Tag
-        | K::StarterFields => Whose::Nobody,
-    }
-}
-
 impl From<RecordKind> for EntityKind {
     fn from(kind: RecordKind) -> Self {
         // Every word of `RecordKind` is a valid name (a test checks it).
@@ -370,7 +301,7 @@ pub struct DomainEvent {
         category = "employee_time",
         basis = "legal_obligation"
     )]
-    #[person_in_changes(subject)]
+    #[person_in_changes]
     pub changes: Vec<FieldChange>,
     /// Why, when the person said so; for a change a job made as the person, the item of the job
     /// (a change to many issues, `ManyChangeRun::item_reason`). For a work day it is the reason of

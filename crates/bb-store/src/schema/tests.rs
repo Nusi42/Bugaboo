@@ -63,7 +63,7 @@ fn priv_02_every_field_that_names_a_person_has_a_link_on_a_stored_column() {
                 LinkScope::Record { kind: None } => (2..=2, None),
                 LinkScope::Record { kind: Some(kind) } => (1..=1, Some(kind)),
                 LinkScope::FieldType { key, .. } => (1..=1, Some(key)),
-                LinkScope::Email | LinkScope::Changes => (1..=1, None),
+                LinkScope::Email | LinkScope::Changes | LinkScope::Json => (1..=1, None),
             };
             assert!(
                 expected.contains(&columns),
@@ -96,7 +96,7 @@ fn priv_02_every_field_that_names_a_person_has_a_link_on_a_stored_column() {
 }
 
 /// The second hop of the walk (ADR-0044): a record that belongs to a person is found in the table
-/// of its entity by the column `id` of its field `id`, and the owner is a field of that entity that names a person in every
+/// of its entity by the first column of its ID field, and the owner is a field of that entity that names a person in every
 /// row.
 #[test]
 fn priv_02_every_kind_of_record_says_whose_it_is_through_a_stored_owner() {
@@ -104,17 +104,21 @@ fn priv_02_every_kind_of_record_says_whose_it_is_through_a_stored_owner() {
     use bb_core::personal::LinkScope;
     let tables = tables();
     for kind in RecordKind::ALL {
-        let Whose::Owner { marks, owner } = whose(*kind) else {
+        let Whose::Owner { of } = whose(*kind) else {
             continue;
         };
+        let (marks, owner) = (of.marks, of.value);
         let table = tables
             .iter()
             .find(|table| table.marks.name() == marks.name())
             .unwrap_or_else(|| panic!("{} is stored in no table", marks.name()));
-        assert!(
-            columns_of(table, "id").contains(&"id"),
-            "{} has no column `id` for the field `id`",
-            table.name
+        // The walk reads the ID of a record from the first column of the field.
+        assert_eq!(
+            columns_of(table, of.id).first(),
+            Some(&of.id),
+            "{}.{}",
+            table.name,
+            of.id
         );
         assert!(
             marks

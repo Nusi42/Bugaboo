@@ -32,8 +32,9 @@ use syn::{DeriveInput, parse_macro_input};
 /// `#[person(author)]` (a word of `bb_core::personal::Link`) on a field that holds the ID of a
 /// person, `#[person_for(record, link = "subject")]` or
 /// `#[person_for(field_type = "person", key = "field", link = "subject")]` on a reference to a
-/// record, `#[person_email(recipient)]` on an e-mail address, `#[person_in_changes(subject)]` on
-/// the changes of a record, and `#[names_no_person]` on a reference that never names a person
+/// record, `#[person_email(recipient)]` on an e-mail address, `#[person_in_changes]` on
+/// the changes of a record, `#[person_in_json(subject)]` on JSON, and `#[names_no_person]` on a
+/// reference or JSON that never names a person
 /// (the module `links` says more). The links are the list the walk of a person's data reads;
 /// DATA-MARKS fails a field that can name a person and has none. The macro implements `bb_core::personal::Entity`.
 #[proc_macro_derive(
@@ -46,6 +47,7 @@ use syn::{DeriveInput, parse_macro_input};
         person_for,
         person_email,
         person_in_changes,
+        person_in_json,
         names_no_person
     )
 )]

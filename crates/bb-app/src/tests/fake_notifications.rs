@@ -44,6 +44,13 @@ impl NotificationStore for FakeStore {
     ) -> Result<(), FakeError> {
         let mut shared = self.lock();
         for row in rows {
+            if let Some(event) = shared.events.iter().find(|event| event.id == row.event) {
+                super::fake::undeclared_people_in(
+                    &shared.state,
+                    event.entity.kind.as_str(),
+                    &row.changes,
+                );
+            }
             let there = shared
                 .state
                 .notifications

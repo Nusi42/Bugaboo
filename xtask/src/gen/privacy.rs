@@ -93,6 +93,8 @@ pub(crate) struct Model {
     pub(crate) record_types: Vec<String>,
     /// The types that hold the changes of a record (`carries_changes!`).
     pub(crate) change_types: Vec<String>,
+    /// The types that hold JSON (`holds_json!`).
+    pub(crate) json_types: Vec<String>,
 }
 
 pub(crate) fn generate(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
@@ -125,12 +127,16 @@ pub(crate) fn read_model(sources: &[Source]) -> anyhow::Result<Model> {
         }
     }
     let (person_types, record_types) = read_reference_types(sources)?;
-    let change_types = sources
-        .iter()
-        .find(|(path, _)| path == LINKS_PATH)
-        .and_then(|(_, text)| syn::parse_file(text).ok())
-        .map(|file| links::read_listed_types(&file.items, "carries_changes"))
-        .unwrap_or_default();
+    let listed_in_links = |list: &str| {
+        sources
+            .iter()
+            .find(|(path, _)| path == LINKS_PATH)
+            .and_then(|(_, text)| syn::parse_file(text).ok())
+            .map(|file| links::read_listed_types(&file.items, list))
+            .unwrap_or_default()
+    };
+    let change_types = listed_in_links("carries_changes");
+    let json_types = listed_in_links("holds_json");
     entities.sort_by(|a, b| a.name.cmp(&b.name).then_with(|| a.path.cmp(&b.path)));
     Ok(Model {
         entities,
@@ -139,6 +145,7 @@ pub(crate) fn read_model(sources: &[Source]) -> anyhow::Result<Model> {
         person_types,
         record_types,
         change_types,
+        json_types,
     })
 }
 
@@ -509,8 +516,11 @@ fn links_line(entity: &EntityDef) -> Option<String> {
                     links::Scope::Every => Some(format!("`{name}` is the {word}")),
                     links::Scope::Rows(rows) => Some(format!("`{name}` is the {word} in {rows}")),
                     links::Scope::Changes => Some(format!(
-                        "the values of `{name}` name the {word} as the members declared for each kind say"
+                        "the values of `{name}` name a person as the members declared for each kind say"
                     )),
+                    links::Scope::Json => {
+                        Some(format!("`{name}` is the {word} where its JSON holds their ID"))
+                    }
                     links::Scope::Email => {
                         Some(format!("`{name}` is the {word}, by the e-mail address"))
                     }

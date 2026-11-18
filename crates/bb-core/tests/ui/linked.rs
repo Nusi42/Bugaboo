@@ -29,8 +29,14 @@ pub struct Note {
     #[person_email(recipient)]
     pub email: String,
     #[personal(category = "content", basis = "legitimate_interests")]
-    #[person_in_changes(subject)]
+    #[person_in_changes]
     pub changes: Vec<FieldChange>,
+    #[personal(category = "content", basis = "legitimate_interests")]
+    #[person_in_json(subject)]
+    pub payload: serde_json::Value,
+    #[personal(category = "content", basis = "contract")]
+    #[names_no_person]
+    pub options: Option<serde_json::Value>,
 }
 
 // The derive writes every link into the constant, in the order of the fields.
@@ -44,13 +50,18 @@ fn main() {
     assert_eq!(
         links.links(),
         [
-            PersonLink::new("author", Link::Author, LinkScope::Every),
-            PersonLink::new("readers", Link::Recipient, LinkScope::Every),
-            PersonLink::new("about", Link::Subject, LinkScope::Record { kind: None }),
-            PersonLink::new("value", Link::Subject, person_in(FieldType::Person)),
-            PersonLink::new("value", Link::Subject, person_in(FieldType::People)),
-            PersonLink::new("email", Link::Recipient, LinkScope::Email),
-            PersonLink::new("changes", Link::Subject, LinkScope::Changes),
+            PersonLink::new("author", Some(Link::Author), LinkScope::Every),
+            PersonLink::new("readers", Some(Link::Recipient), LinkScope::Every),
+            PersonLink::new(
+                "about",
+                Some(Link::Subject),
+                LinkScope::Record { kind: None }
+            ),
+            PersonLink::new("value", Some(Link::Subject), person_in(FieldType::Person)),
+            PersonLink::new("value", Some(Link::Subject), person_in(FieldType::People)),
+            PersonLink::new("email", Some(Link::Recipient), LinkScope::Email),
+            PersonLink::new("changes", None, LinkScope::Changes),
+            PersonLink::new("payload", Some(Link::Subject), LinkScope::Json),
         ]
     );
     assert_eq!(links.of_field("text").count(), 0);

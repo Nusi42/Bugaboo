@@ -220,7 +220,7 @@ pub(crate) mod member {
     /// The time factor, in percent of the estimate; `null` for ×1.
     pub(crate) const TIME_FACTOR: &str = Field::TimeFactor.code();
     /// The person on the bar a change of the time factor is for: the one who hears of it.
-    pub(crate) const TIME_FACTOR_FOR: &str = "time-factor-for";
+    pub(crate) const TIME_FACTOR_FOR: &str = bb_core::whose::members::TIME_FACTOR_FOR;
     /// The kind of a plan warning somebody accepted (*Keep and accept*).
     pub(crate) const ACCEPTED_WARNING: &str = "accepted-warning";
     pub(crate) const TAGS: &str = Field::Tags.code();
@@ -232,7 +232,7 @@ pub(crate) mod member {
     pub(crate) const ISSUE_IDS: &str = "issue-ids";
     /// The renewal of the issue IDs of the project gave up; the value is the person who asked for
     /// it, who is told (M3-F150), in the event of the project.
-    pub(crate) const ISSUE_IDS_FAILED: &str = "issue-ids-failed";
+    pub(crate) const ISSUE_IDS_FAILED: &str = bb_core::whose::members::ISSUE_IDS_FAILED;
     /// A sub-issue that was added or taken away, in the event of the parent as History writes it.
     pub(crate) const SUB_ISSUE: &str = "sub-issue";
 

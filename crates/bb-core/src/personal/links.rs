@@ -4,12 +4,11 @@
 //! the person is to the row: always (`#[person(author)]`), in the rows about some kinds of record
 //! (`#[person_for(record, …)]`, as `crate::event::whose` says for each kind), in the rows whose own
 //! field is of a type that holds people (`#[person_for(field_type = …)]`), as the e-mail address of
-//! the person (`#[person_email(…)]`) or in the values of the changes it holds
-//! (`#[person_in_changes(…)]`). A reference to a record that never names a person says so
-//! (`#[names_no_person]`). `#[derive(Entity)]` writes the links into the entity's marks
-//! ([`PersonLinks`]): the list the walk of a person's data reads. The members of the changes of an
-//! event that name a person are declared per kind of record ([`PayloadPerson`]), by the use cases
-//! that write them.
+//! the person (`#[person_email(…)]`), in the values of the changes it holds (`#[person_in_changes]`,
+//! where each member says what the person is to the event in `crate::whose::IN_CHANGES`) or in
+//! the JSON it holds (`#[person_in_json(…)]`). A reference or JSON that never names a person says
+//! so (`#[names_no_person]`). `#[derive(Entity)]` writes the links into the entity's marks
+//! ([`PersonLinks`]): the list the walk of a person's data reads.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -95,6 +94,33 @@ carries_changes!(crate::event::FieldChange);
 
 impl<T: CarriesChanges> CarriesChanges for Vec<T> {}
 
+/// A type that holds JSON, which can hold anything, a person too, so a field of it carries
+/// `#[person_in_json(…)]` or `#[names_no_person]`. DATA-MARKS reads the list from `holds_json!`
+/// below.
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` does not hold JSON, so it cannot carry `#[person_in_json(...)]`"
+)]
+pub trait HoldsJson {}
+
+macro_rules! holds_json {
+    ($($ty:ty),+ $(,)?) => { $(impl HoldsJson for $ty {})+ };
+}
+
+holds_json!(serde_json::Value);
+
+impl<T: HoldsJson> HoldsJson for Option<T> {}
+
+/// A type that can name a person without always doing so: a reference to a record or JSON. A field
+/// of it that never names one says so with `#[names_no_person]`.
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` cannot name a person, so it needs no `#[names_no_person]`"
+)]
+pub trait CanNameAPerson {}
+
+impl<T: RefersToARecord> CanNameAPerson for T {}
+impl CanNameAPerson for serde_json::Value {}
+impl CanNameAPerson for Option<serde_json::Value> {}
+
 /// In which rows a field names a person.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum LinkScope {
@@ -120,23 +146,26 @@ pub enum LinkScope {
     /// (`#[person_email(…)]`).
     Email,
     /// The field holds the changes of a record (`FieldChange`), whose values can name a person:
-    /// the members that do are declared for each kind of record ([`PayloadPerson`])
-    /// (`#[person_in_changes(…)]`).
+    /// the members that do, and what the person is to the event, are declared for each kind of
+    /// record in `crate::whose::IN_CHANGES` (`#[person_in_changes]`).
     Changes,
+    /// The field holds JSON, which names the person when it holds their ID as a text anywhere
+    /// inside (`#[person_in_json(…)]`).
+    Json,
 }
 
 /// One field of an entity that names a person, when it does, and what the person is to the row.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct PersonLink {
     field: &'static str,
-    link: Link,
+    link: Option<Link>,
     scope: LinkScope,
 }
 
 impl PersonLink {
     /// The field `field` names a person in the rows `scope` says. Written by `#[derive(Entity)]`.
     #[must_use]
-    pub const fn new(field: &'static str, link: Link, scope: LinkScope) -> Self {
+    pub const fn new(field: &'static str, link: Option<Link>, scope: LinkScope) -> Self {
         Self { field, link, scope }
     }
 
@@ -146,9 +175,10 @@ impl PersonLink {
         self.field
     }
 
-    /// What the person is to the row.
+    /// What the person is to the row; none for the changes of a record, where each member says
+    /// it (`crate::whose::IN_CHANGES`).
     #[must_use]
-    pub const fn link(&self) -> Link {
+    pub const fn link(&self) -> Option<Link> {
         self.link
     }
 
@@ -193,29 +223,6 @@ impl PersonLinks {
     }
 }
 
-/// A member of the changes of an event that holds the ID of a person (or a list of them, or an
-/// object with one inside) in its values before and after, in the events about one kind of record
-/// (ADR-0044, decisions 1 and 6). The use cases that write the member declare it beside its name,
-/// so the walk finds the event and *Remove a person* knows which values to scrub.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct PayloadPerson {
-    /// The kind of record of the events.
-    pub kind: crate::event::RecordKind,
-    /// The name of the member in the changes; see [`PayloadMember`].
-    pub member: PayloadMember,
-    /// What the person is to the event.
-    pub link: Link,
-}
-
-/// Which member of the changes holds a person.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum PayloadMember {
-    /// The member with this name.
-    Named(&'static str),
-    /// Every member that is an own field (named by the field's ID) of a type that holds people.
-    OwnField,
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -223,19 +230,23 @@ mod tests {
     #[test]
     fn a_link_keeps_its_field_word_and_scope() {
         const LINKS: &[PersonLink] = &[
-            PersonLink::new("author", Link::Author, LinkScope::Every),
-            PersonLink::new("about", Link::Subject, LinkScope::Record { kind: None }),
+            PersonLink::new("author", Some(Link::Author), LinkScope::Every),
+            PersonLink::new(
+                "about",
+                Some(Link::Subject),
+                LinkScope::Record { kind: None },
+            ),
         ];
         let link = PersonLink::new(
             "about",
-            Link::Subject,
+            Some(Link::Subject),
             LinkScope::FieldType {
                 key: "field",
                 field_type: FieldType::People,
             },
         );
         assert_eq!(link.field(), "about");
-        assert_eq!(link.link(), Link::Subject);
+        assert_eq!(link.link(), Some(Link::Subject));
         let all = PersonLinks::new("Note", LINKS);
         assert_eq!(all.of_field("about").count(), 1);
         assert_eq!(all.entity(), "Note");

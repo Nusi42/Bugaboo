@@ -297,7 +297,7 @@ pub struct Notification {
     /// The fields that changed, only those the person could see when the row was built. Read
     /// again with the person's mask when it is shown or sent.
     #[personal(category = "content", basis = "legitimate_interests")]
-    #[person_in_changes(subject)]
+    #[person_in_changes]
     pub changes: Vec<FieldChange>,
     /// Whether the person hears of it in the app.
     #[not_personal]

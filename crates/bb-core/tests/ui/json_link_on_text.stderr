@@ -1,0 +1,23 @@
+error[E0277]: `String` does not hold JSON, so it cannot carry `#[person_in_json(...)]`
+ --> tests/ui/json_link_on_text.rs:7:15
+  |
+7 |     pub text: String,
+  |               ^^^^^^ the trait `HoldsJson` is not implemented for `String`
+  |
+help: the following other types implement trait `HoldsJson`
+ --> src/personal/links.rs
+  |
+  |     ($($ty:ty),+ $(,)?) => { $(impl HoldsJson for $ty {})+ };
+  |                                ^^^^^^^^^^^^^^^^^^^^^^ `serde_json::value::Value`
+...
+  | holds_json!(serde_json::Value);
+  | ------------------------------ in this macro invocation
+  |
+  | impl<T: HoldsJson> HoldsJson for Option<T> {}
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `std::option::Option<T>`
+note: required by a bound in `holds_json`
+ --> tests/ui/json_link_on_text.rs:3:10
+  |
+3 | #[derive(Entity)]
+  |          ^^^^^^ required by this bound in `holds_json`
+  = note: this error originates in the macro `holds_json` which comes from the expansion of the derive macro `Entity` (in Nightly builds, run with -Z macro-backtrace for more info)

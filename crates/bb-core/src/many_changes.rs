@@ -150,6 +150,7 @@ pub struct ManyChangeRun {
     pub agent: Option<crate::id::AgentId>,
     /// What the change is, as the use case wrote it. It can hold what a person typed (a value).
     #[personal(category = "content", basis = "legitimate_interests")]
+    #[person_in_json(subject)]
     pub action: serde_json::Value,
     /// The issues and the versions the preview read.
     #[not_personal]

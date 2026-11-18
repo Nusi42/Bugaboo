@@ -288,7 +288,7 @@ What happened, to whom, by whom, and why (ADR-0007).
 
 Defined in `crates/bb-core/src/event.rs`.
 
-A person in its rows: `actor` is the actor; `entity` is the subject in the rows about a record that is the person or belongs to them (`whose`); the values of `changes` name the subject as the members declared for each kind say.
+A person in its rows: `actor` is the actor; `entity` is the subject in the rows about a record that is the person or belongs to them (`whose`); the values of `changes` name a person as the members declared for each kind say.
 
 | Field                                 | Personal data | Category        | Legal basis            | What it holds                                                                                                                                                                                                                                                                             |
 | ------------------------------------- | ------------- | --------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -471,7 +471,7 @@ One row of the history of an issue.
 
 Defined in `crates/bb-core/src/history.rs`.
 
-A person in its rows: `by` is the actor; the values of `changes` name the subject as the members declared for each kind say.
+A person in its rows: `by` is the actor; the values of `changes` name a person as the members declared for each kind say.
 
 | Field                                 | Personal data | Category        | Legal basis            | What it holds                                                                                                                      |
 | ------------------------------------- | ------------- | --------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
@@ -684,6 +684,8 @@ One job in the queue.
 
 Defined in `crates/bb-core/src/job.rs`.
 
+A person in its rows: `payload` is the subject where its JSON holds their ID.
+
 | Field          | Personal data | Category  | Legal basis            | What it holds                                                                                                                               |
 | -------------- | ------------- | --------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | `id`           | No            | –         | –                      | The ID of the job.                                                                                                                          |
@@ -811,7 +813,7 @@ A change to many issues that runs in the background.
 
 Defined in `crates/bb-core/src/many_changes.rs`.
 
-A person in its rows: `person` is the actor.
+A person in its rows: `person` is the actor; `action` is the subject where its JSON holds their ID.
 
 | Field         | Personal data | Category   | Legal basis            | What it holds                                                                                                                                    |
 | ------------- | ------------- | ---------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -874,7 +876,7 @@ A notification for one person (NTF-01).
 
 Defined in `crates/bb-core/src/notification.rs`.
 
-A person in its rows: `recipient` is the recipient; `by` is the actor; the values of `changes` name the subject as the members declared for each kind say.
+A person in its rows: `recipient` is the recipient; `by` is the actor; the values of `changes` name a person as the members declared for each kind say.
 
 | Field       | Personal data | Category   | Legal basis            | What it holds                                                                                                                                |
 | ----------- | ------------- | ---------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1224,7 +1226,7 @@ A change a standing rule proposes; nothing changes until a person applies it (AI
 
 Defined in `crates/bb-core/src/agent_records.rs`.
 
-A person in its rows: `decided_by` is the actor.
+A person in its rows: `before` is the subject where its JSON holds their ID; `after` is the subject where its JSON holds their ID; `decided_by` is the actor.
 
 | Field        | Personal data | Category   | Legal basis | What it holds                          |
 | ------------ | ------------- | ---------- | ----------- | -------------------------------------- |

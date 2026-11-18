@@ -55,13 +55,15 @@ fn field_problems(
     let names_a_person = names(&model.person_types);
     let refers_to_a_record = names(&model.record_types);
     let carries_changes = names(&model.change_types);
+    let holds_json = names(&model.json_types);
     let mut problems = Vec::new();
     let mut scopes = Vec::new();
     for link in &field.links {
         match link {
             Err(problem) => problems.push(format!("The field {problem}.")),
             Ok(link) => {
-                if link.scope != Scope::Never && !words.contains(link.word.as_str()) {
+                let has_a_word = !matches!(link.scope, Scope::Never | Scope::Changes);
+                if has_a_word && !words.contains(link.word.as_str()) {
                     problems.push(format!(
                         "`{}` is not a link; use one of {all_words}.",
                         link.word
@@ -71,23 +73,38 @@ fn field_problems(
             }
         }
     }
-    let every = scopes.iter().any(|scope| **scope == Scope::Every);
-    let changes = scopes.iter().any(|scope| **scope == Scope::Changes);
+    let has = |test: fn(&Scope) -> bool| scopes.iter().any(|scope| test(scope));
+    let every = has(|scope| *scope == Scope::Every);
+    let changes = has(|scope| *scope == Scope::Changes);
+    let json = has(|scope| *scope == Scope::Json);
+    let rows = has(|scope| matches!(scope, Scope::Rows(_)));
+    let never = has(|scope| *scope == Scope::Never);
     if carries_changes && !changes {
         problems.push(
-            "The field holds the changes of a record, whose values can name a person. Add \n             `#[person_in_changes(…)]` and declare the members that name a person for each kind \n             (ADR-0044)."
+            "The field holds the changes of a record, whose values can name a person. Add \
+             `#[person_in_changes]` and declare the members that name a person in \
+             `bb_core::whose::IN_CHANGES` (ADR-0044)."
                 .to_owned(),
         );
     }
     if changes && !carries_changes {
         problems.push(
-            "The field carries `#[person_in_changes(…)]`, but its type does not hold changes."
+            "The field carries `#[person_in_changes]`, but its type does not hold changes."
                 .to_owned(),
         );
     }
-    let rows = scopes
-        .iter()
-        .any(|scope| matches!(scope, Scope::Rows(_) | Scope::Never));
+    if holds_json && !json && !never {
+        problems.push(
+            "The field holds JSON, which can name a person. Add `#[person_in_json(…)]`, or \
+             `#[names_no_person]` when it never does (ADR-0044)."
+                .to_owned(),
+        );
+    }
+    if json && !holds_json {
+        problems.push(
+            "The field carries `#[person_in_json(…)]`, but its type does not hold JSON.".to_owned(),
+        );
+    }
     if every && !names_a_person {
         problems.push(
             "The field carries `#[person(…)]`, but its type does not hold the ID of a person."
@@ -96,8 +113,14 @@ fn field_problems(
     }
     if rows && !refers_to_a_record {
         problems.push(
-            "The field carries `#[person_for(…)]` or `#[names_no_person]`, but its type is not a \
-             reference to a record."
+            "The field carries `#[person_for(…)]`, but its type is not a reference to a record."
+                .to_owned(),
+        );
+    }
+    if never && !refers_to_a_record && !holds_json {
+        problems.push(
+            "The field carries `#[names_no_person]`, but its type is neither a reference to a \
+             record nor JSON."
                 .to_owned(),
         );
     }
@@ -114,7 +137,7 @@ fn field_problems(
              to say what the person is to the row (ADR-0044)."
         ));
     }
-    if refers_to_a_record && !names_a_person && !rows {
+    if refers_to_a_record && !names_a_person && !rows && !never {
         problems.push(
             "The field refers to a record, which can be a person. Add `#[person_for(…)]` for the \
              rows in which it names a person, or `#[names_no_person]` when it never does \

@@ -4,6 +4,7 @@
 
 use bb_app::auth::{AccountStore as _, InvitationStore as _};
 use bb_app::fields::FieldStore as _;
+use bb_app::jobs::JobStore as _;
 use bb_app::ports::ChangeStore;
 use bb_app::working_hours::WorkingHoursStore as _;
 use bb_core::event::{Actor, EntityKind, EntityRef, FieldChange, RecordKind};
@@ -79,6 +80,19 @@ fn invitation_to(source: &mut impl IdSource, email: &str, by: UserId) -> Invitat
         expires_at: at(9_000),
         used_at: None,
     }
+}
+
+/// Queues a job that waits with `person` in its payload.
+async fn job_naming(
+    storage: &AuthStorage,
+    source: &mut impl IdSource,
+    person: UserId,
+) -> Result<(), StoreError> {
+    let kind = bb_core::technical::TechnicalName::new("mail.send")
+        .map_err(|_| StoreError::Corrupt("a kind of job"))?;
+    let id = bb_core::id::JobId::generate(source).map_err(|_| StoreError::Corrupt("a job"))?;
+    let payload = json!({ "person": person.to_string() });
+    storage.queue_job(id, &kind, &payload, at(40), at(40)).await
 }
 
 #[tokio::test]
@@ -157,6 +171,7 @@ async fn priv_03_the_walk_finds_every_row_of_a_person() -> TestResult {
         for one in &events {
             ChangeStore::record_change(storage, one, |_| Box::pin(async { Ok(()) })).await?;
         }
+        job_naming(storage, &mut source, lea.id).await?;
         let found = counted(storage, lea.id).await?;
         let rows = |table: &str| {
             found
@@ -166,6 +181,7 @@ async fn priv_03_the_walk_finds_every_row_of_a_person() -> TestResult {
         };
         assert_eq!(rows("person"), 1, "{found:?}");
         assert_eq!(rows("work_day"), 1, "{found:?}");
+        assert_eq!(rows("job"), 1, "the job that names her: {found:?}");
         assert_eq!(
             rows("invitation"),
             1,
@@ -181,4 +197,22 @@ async fn priv_03_the_walk_finds_every_row_of_a_person() -> TestResult {
         Ok(())
     })
     .await
+}
+
+/// A link whose field is not stored would make the walk miss rows without a word: it is an error.
+#[test]
+fn priv_03_a_link_to_a_field_that_is_not_stored_is_an_error_not_a_miss() {
+    let all = tables();
+    let comments = all
+        .iter()
+        .find(|table| table.marks.name() == "Comment")
+        .unwrap();
+    let without_columns = StoredTable {
+        name: comments.name.clone(),
+        marks: comments.marks,
+        columns: Vec::new(),
+    };
+    let person = UserId::generate(&mut ids());
+    assert!(names_the_person(comments, &all, person).unwrap().is_some());
+    assert!(names_the_person(&without_columns, &all, person).is_err());
 }

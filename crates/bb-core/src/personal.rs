@@ -14,7 +14,7 @@ mod links;
 use jiff::Timestamp;
 
 pub use links::{
-    CarriesChanges, HoldsAnAddress, Link, LinkScope, NamesAPerson, PayloadMember, PayloadPerson,
+    CanNameAPerson, CarriesChanges, HoldsAnAddress, HoldsJson, Link, LinkScope, NamesAPerson,
     PersonLink, PersonLinks, RefersToARecord,
 };
 

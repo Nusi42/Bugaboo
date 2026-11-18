@@ -6,8 +6,10 @@
 //! - `#[person_for(field_type = "person", key = "field", link = "subject")]` on a reference that
 //!   names a person in the rows whose own field (`key`) is of that type, once for each type;
 //! - `#[person_email(recipient)]` on the text of an e-mail address;
-//! - `#[person_in_changes(subject)]` on the changes of a record, whose values can name a person;
-//! - `#[names_no_person]` on a reference to a record that never names a person.
+//! - `#[person_in_changes]` on the changes of a record, whose members say what a person in them is
+//!   to the event (`bb_core::whose::IN_CHANGES`);
+//! - `#[person_in_json(subject)]` on JSON, which names a person when it holds their ID;
+//! - `#[names_no_person]` on a reference to a record or on JSON that never names a person.
 //!
 //! Like the marks, the macro knows no words: a link or a field type is looked up in `bb_core` at
 //! compile time. A field of a type that can name a person and has no link is found by DATA-MARKS,
@@ -30,6 +32,7 @@ enum Way {
     Always,
     Email,
     Changes,
+    Json,
     Rows,
     Never,
 }
@@ -53,7 +56,16 @@ pub(crate) fn read(field: &Field, name: &str) -> syn::Result<FieldLinks> {
         } else if path.is_ident("person_email") {
             word(attr, "person_email", Way::Email, quote! { Email })?
         } else if path.is_ident("person_in_changes") {
-            word(attr, "person_in_changes", Way::Changes, quote! { Changes })?
+            attr.meta.require_path_only()?;
+            Written {
+                way: Way::Changes,
+                span: attr.span(),
+                link: None,
+                scope: quote! { Changes },
+                field_type: None,
+            }
+        } else if path.is_ident("person_in_json") {
+            word(attr, "person_in_json", Way::Json, quote! { Json })?
         } else if path.is_ident("person_for") {
             read_for(attr)?
         } else if path.is_ident("names_no_person") {
@@ -79,20 +91,25 @@ pub(crate) fn read(field: &Field, name: &str) -> syn::Result<FieldLinks> {
             Way::Always => quote_spanned! { ty.span() => names_a_person::<#ty>(); },
             Way::Email => quote_spanned! { ty.span() => holds_an_address::<#ty>(); },
             Way::Changes => quote_spanned! { ty.span() => carries_changes::<#ty>(); },
-            Way::Rows | Way::Never => {
-                quote_spanned! { ty.span() => refers_to_a_record::<#ty>(); }
-            }
+            Way::Json => quote_spanned! { ty.span() => holds_json::<#ty>(); },
+            Way::Rows => quote_spanned! { ty.span() => refers_to_a_record::<#ty>(); },
+            Way::Never => quote_spanned! { ty.span() => can_name_a_person::<#ty>(); },
         });
-        if let Some(word) = &one.link {
-            let scope = &one.scope;
-            links.push(quote_spanned! { word.span() =>
-                ::bb_core::personal::PersonLink::new(
-                    #name,
-                    ::bb_core::personal::Link::from_code_const(#word),
-                    ::bb_core::personal::LinkScope::#scope,
-                )
-            });
+        if one.way == Way::Never {
+            continue;
         }
+        let scope = &one.scope;
+        let link = one.link.as_ref().map_or_else(
+            || quote! { None },
+            |word| {
+                quote_spanned! { word.span() =>
+                Some(::bb_core::personal::Link::from_code_const(#word)) }
+            },
+        );
+        links.push(quote_spanned! { one.span =>
+            ::bb_core::personal::PersonLink::new(
+                #name, #link, ::bb_core::personal::LinkScope::#scope)
+        });
     }
     Ok(FieldLinks { links, assertions })
 }
@@ -111,8 +128,8 @@ fn check_combination(written: &[Written], name: &str) -> syn::Result<()> {
                 format!(
                     "field `{name}` names a person in more than one way; a field names a person \
                      always (`person`), as an address (`person_email`), in its changes \
-                     (`person_in_changes`), in some rows (`person_for`) or never \
-                     (`names_no_person`)"
+                     (`person_in_changes`), in its JSON (`person_in_json`), in some rows \
+                     (`person_for`) or never (`names_no_person`)"
                 ),
             ));
         }
