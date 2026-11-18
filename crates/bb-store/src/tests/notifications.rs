@@ -415,6 +415,83 @@ async fn priv_05_notifications_before_the_cutoff_are_deleted_and_the_rest_stay()
     .await
 }
 
+/// How many old notifications the purge works through in steps (the plan of PRIV-05).
+const MANY_NOTIFICATIONS: usize = 100_000;
+
+/// The longest a step of the purge, or a write beside it, may take: far more than either needs on a
+/// quiet computer (a step deletes one step of rows by the index of the moment), so only a step that
+/// reads the whole table or holds the write lock for the whole purge fails it.
+const STEP_AT_MOST: std::time::Duration = std::time::Duration::from_secs(2);
+
+#[tokio::test]
+async fn priv_05_each_purge_deletes_in_steps_and_a_write_does_not_wait_behind_it() -> TestResult {
+    use bb_app::keeping::KEEP_STEP_ROWS;
+    use std::time::{Duration, Instant};
+
+    each_database("priv_05_many_notifications", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = fixture.storage.clone();
+        let mut source = ids();
+        let ana = stored_person(&storage, &mut source, "ana@example.test").await?;
+        let old = (0..MANY_NOTIFICATIONS)
+            .map(|_| row(&mut source, ana, None, 100))
+            .collect::<Result<Vec<_>, _>>()?;
+        storage.store_notifications(&old, &[], 0, at(101)).await?;
+        let mut new = Vec::new();
+        for _ in 0..20 {
+            new.push(row(&mut source, ana, None, 200)?);
+        }
+        let purging = async {
+            let (mut steps, mut longest) = (0_usize, Duration::ZERO);
+            loop {
+                let started = Instant::now();
+                let gone = storage.purge_notifications(at(150), KEEP_STEP_ROWS).await?;
+                longest = longest.max(started.elapsed());
+                assert!(gone <= KEEP_STEP_ROWS, "a step deleted {gone} rows");
+                if gone == 0 {
+                    return Ok::<_, StoreError>((steps, longest));
+                }
+                steps += 1;
+            }
+        };
+        // People keep writing while the purge runs; none of their writes waits behind it.
+        let writing = async {
+            let mut longest = Duration::ZERO;
+            for written in &new {
+                let started = Instant::now();
+                storage
+                    .store_notifications(std::slice::from_ref(written), &[], 0, at(201))
+                    .await?;
+                longest = longest.max(started.elapsed());
+                tokio::task::yield_now().await;
+            }
+            Ok::<_, StoreError>(longest)
+        };
+        let (purged, written) = tokio::join!(purging, writing);
+        let (steps, longest_step) = purged?;
+        let longest_write = written?;
+        assert_eq!(
+            steps,
+            MANY_NOTIFICATIONS.div_ceil(usize::try_from(KEEP_STEP_ROWS)?)
+        );
+        assert!(longest_step < STEP_AT_MOST, "a step took {longest_step:?}");
+        assert!(
+            longest_write < STEP_AT_MOST,
+            "a write took {longest_write:?}"
+        );
+        assert_eq!(
+            storage
+                .notifications_of(ana, NotificationFilter::All, None, 100)
+                .await?
+                .len(),
+            new.len(),
+            "only the new ones stay"
+        );
+        Ok(())
+    })
+    .await
+}
+
 #[tokio::test]
 async fn priv_05_a_dead_job_loses_its_payload_after_its_period() -> TestResult {
     each_database("priv_05_dead_payload", async |db| {
