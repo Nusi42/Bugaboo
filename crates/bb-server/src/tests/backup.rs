@@ -101,6 +101,90 @@ async fn ops_07_keys_import_is_the_twin_of_keys_export() -> TestResult {
     Ok(())
 }
 
+/// The key files of another installation, exported into a folder of `root`.
+async fn foreign_keys(root: &Path) -> Result<PathBuf, bb_testing::Failure> {
+    let (other_store, _) = installation(root).await?;
+    let exported = root.join("exported");
+    export_keys(&other_store, &exported).await?;
+    Ok(exported)
+}
+
+/// The files of the keys folder, by name and bytes.
+fn key_folder(data: &DataFolder) -> Result<Vec<(String, Vec<u8>)>, std::io::Error> {
+    let mut files = Vec::new();
+    for entry in std::fs::read_dir(data.keys())? {
+        let entry = entry?;
+        files.push((
+            entry.file_name().to_string_lossy().into_owned(),
+            std::fs::read(entry.path())?,
+        ));
+    }
+    files.sort();
+    Ok(files)
+}
+
+#[tokio::test]
+async fn ops_07_keys_import_replaces_no_key_when_the_database_cannot_be_read() -> TestResult {
+    let folder = tempfile::tempdir()?;
+    let (store, data) = installation(folder.path()).await?;
+    let other = tempfile::tempdir()?;
+    let others = foreign_keys(other.path()).await?;
+    let before = key_folder(&data)?;
+    // A database that cannot be reached: whether the keys are needed cannot be told.
+    let gone = folder.path().join("no-such-folder").join("gone.db");
+    let down = StoreArgs {
+        database_url: Some(format!("sqlite:{}?mode=ro", gone.display())),
+        ..store.clone()
+    };
+    let error = import_keys(&down, &others)
+        .await
+        .err()
+        .ok_or("a key was replaced while the database was down")?;
+    assert!(
+        format!("{error:#}").contains("could not be read"),
+        "{error:#}"
+    );
+    assert_eq!(key_folder(&data)?, before);
+    Ok(())
+}
+
+#[tokio::test]
+async fn ops_07_keys_import_waits_for_the_server_to_stop() -> TestResult {
+    let folder = tempfile::tempdir()?;
+    let (store, data) = installation(folder.path()).await?;
+    let exported = folder.path().join("exported");
+    export_keys(&store, &exported).await?;
+    let running = data.lock_server()?.ok_or("the folder was locked already")?;
+    let error = import_keys(&store, &exported)
+        .await
+        .err()
+        .ok_or("keys were imported beside a running server")?;
+    assert!(format!("{error:#}").contains("Stop it"), "{error:#}");
+    drop(running);
+    Ok(())
+}
+
+#[tokio::test]
+async fn ops_07_keys_import_into_a_new_folder_puts_every_key_in_place() -> TestResult {
+    let folder = tempfile::tempdir()?;
+    let other = tempfile::tempdir()?;
+    let others = foreign_keys(other.path()).await?;
+    let fresh = StoreArgs {
+        data_dir: Some(folder.path().join("fresh").to_string_lossy().into_owned()),
+        ..StoreArgs::default()
+    };
+    import_keys(&fresh, &others).await?;
+    let data = DataFolder::existing(&folder.path().join("fresh")).ok_or("no data folder")?;
+    let mut expected = Vec::new();
+    for name in bb_store::KEY_BACKUP_FILES {
+        expected.push((name.to_owned(), std::fs::read(others.join(name))?));
+    }
+    expected.sort();
+    // Every key, and nothing staged left behind.
+    assert_eq!(key_folder(&data)?, expected);
+    Ok(())
+}
+
 #[cfg(windows)]
 #[tokio::test]
 async fn sec_16_the_master_key_has_its_own_access_list_on_windows() -> TestResult {

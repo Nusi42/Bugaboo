@@ -13005,6 +13005,27 @@ pub fn keys_import_missing(file: impl std::fmt::Display, path: impl std::fmt::Di
     )
 }
 
+/// The message `keys.import-server-running`.
+#[must_use]
+pub fn keys_import_server_running(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keys.import-server-running"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `keys.import-unsure`.
+#[must_use]
+pub fn keys_import_unsure(file: impl std::fmt::Display, reason: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keys.import-unsure"),
+        vec![
+            ("file", Value::Text(file.to_string())),
+            ("reason", Value::Text(reason.to_string())),
+        ],
+    )
+}
+
 /// The message `keys.import-would-replace`.
 #[must_use]
 pub fn keys_import_would_replace(file: impl std::fmt::Display) -> Message {
@@ -22622,6 +22643,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "keys.import-missing",
         "The folder {path} holds no {file}. Choose the folder that bugaboo keys export wrote.",
+    ),
+    (
+        "keys.import-server-running",
+        "A Bugaboo server uses the data folder {path}. Stop it, then import the keys again.",
+    ),
+    (
+        "keys.import-unsure",
+        "This installation has another {file}, and Bugaboo cannot tell whether its data needs it, because the database could not be read ({reason}), so Bugaboo does not replace it. Start the database and try again, or import the keys into a new data folder.",
     ),
     (
         "keys.import-would-replace",

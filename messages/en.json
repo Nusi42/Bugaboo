@@ -274,6 +274,8 @@
   "restore.lost": "The entries {from} to {to} of the security log are gone with the restore. The log names them, and the anchor starts again from the restored log.",
   "keys.imported": "Copied the key files from {path} into this installation.",
   "keys.import-missing": "The folder {path} holds no {file}. Choose the folder that bugaboo keys export wrote.",
+  "keys.import-server-running": "A Bugaboo server uses the data folder {path}. Stop it, then import the keys again.",
+  "keys.import-unsure": "This installation has another {file}, and Bugaboo cannot tell whether its data needs it, because the database could not be read ({reason}), so Bugaboo does not replace it. Start the database and try again, or import the keys into a new data folder.",
   "keys.import-would-replace": "This installation has another {file}, and its data needs it, so Bugaboo does not replace it. Import the keys into a new data folder, then restore the backup there.",
   "server.already-running": "Another Bugaboo server uses the data folder {path}. Only one server may use it at a time.",
   "server.lock-failed": "Bugaboo could not mark the data folder {path} as in use",

@@ -230,43 +230,155 @@ fn data_keys(args: &StoreArgs) -> anyhow::Result<PathBuf> {
 }
 
 /// `bugaboo keys import <folder>`: the twin of `keys export`. Copies the key files from `folder`
-/// into the keys folder of the installation, each made private before the key goes in. A key
-/// file that is there and differs is never replaced while the database holds data that needs it
-/// (stored secrets or a security log): the keys are imported into a new data folder, and the
-/// backup restored there.
+/// into the keys folder of the installation, with the server stopped. A key file that is there
+/// and differs is never replaced while the database holds data that needs it (stored secrets or
+/// a security log), nor when the database cannot be read to tell: the keys are imported into a
+/// new data folder, and the backup restored there. The files are all made first and then put in
+/// place together, so an import never stops half way.
 pub(super) async fn import_keys(args: &StoreArgs, folder: &Path) -> anyhow::Result<()> {
     let settings = load_settings(args.config.as_deref(), &args.settings(), false)?;
     let data = DataFolder::prepare(&settings.data_dir)?;
     require_own_installation(&data, args, "keys import", Some(folder))?;
-    let names: Vec<_> = bb_store::KEY_BACKUP_FILES.to_vec();
-    for name in &names {
-        if !folder.join(name).is_file() {
+    let Some(_stopped) = data.lock_server()? else {
+        return Err(anyhow!(
+            message::keys_import_server_running(data.root().display()).render()
+        ));
+    };
+    let failed = |error: std::io::Error| anyhow!(message::keys_export_failed(error).render());
+    let mut incoming = Vec::new();
+    for name in bb_store::KEY_BACKUP_FILES {
+        let source = folder.join(name);
+        if !source.is_file() {
             return Err(anyhow!(
                 message::keys_import_missing(folder.display(), name).render()
             ));
         }
+        incoming.push((name, std::fs::read(source).map_err(failed)?));
     }
-    let needed = match wiring::open_store(&settings, &data).await {
-        Ok(store) => store.database.holds_key_bound_data().await?,
-        Err(_) => false,
-    };
-    for name in &names {
-        let bytes = std::fs::read(folder.join(name))
-            .map_err(|error| anyhow!(message::keys_export_failed(error).render()))?;
+    let need = keys_needed(&settings, &data).await;
+    let mut changes = Vec::new();
+    for (name, bytes) in incoming {
         let target = data.keys().join(name);
         match std::fs::read(&target) {
             Ok(present) if present == bytes => continue,
-            Ok(_) if needed => {
-                return Err(anyhow!(message::keys_import_would_replace(name).render()));
-            }
-            _ => {}
+            Ok(_) => match &need {
+                Need::No => {}
+                Need::Yes => {
+                    return Err(anyhow!(message::keys_import_would_replace(name).render()));
+                }
+                Need::Unknown(reason) => {
+                    return Err(anyhow!(message::keys_import_unsure(name, reason).render()));
+                }
+            },
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(failed(error)),
         }
-        write_private(&target, &bytes, Existing::Replace)
-            .map_err(|error| anyhow!(message::keys_export_failed(error).render()))?;
+        changes.push((target, bytes));
     }
+    place_together(&changes).map_err(failed)?;
     protect_key_files(&data.keys()).map_err(|reason| anyhow!(reason))?;
     output::line(&message::keys_imported(folder.display()).render());
     Ok(())
+}
+
+/// Whether the data of an installation needs the key files it has.
+enum Need {
+    /// No database yet, or one with nothing the keys protect.
+    No,
+    /// Stored secrets or a security log.
+    Yes,
+    /// The database could not be read, for this reason: nothing may be replaced.
+    Unknown(String),
+}
+
+/// Whether the database of the installation holds data that its key files protect. A built-in
+/// database that is not there needs nothing; any database that cannot be reached or read (the
+/// server of the database is down, a wrong address, a damaged file) is [`Need::Unknown`].
+async fn keys_needed(settings: &Settings, data: &DataFolder) -> Need {
+    if settings.database_url.is_none() && !data.database_file().is_file() {
+        return Need::No;
+    }
+    let database = match wiring::connect(settings, data).await {
+        Ok(database) => database,
+        Err(error) => return Need::Unknown(format!("{error:#}")),
+    };
+    let held = database.holds_key_bound_data().await;
+    database.close().await;
+    match held {
+        Ok(true) => Need::Yes,
+        Ok(false) => Need::No,
+        Err(error) => Need::Unknown(error.to_string()),
+    }
+}
+
+/// What a file is called while it waits to be put in place.
+const STAGED: &str = "importing";
+/// What a file it replaces is called until every file is in place.
+const REPLACED: &str = "replaced";
+
+fn beside(target: &Path, suffix: &str) -> PathBuf {
+    let mut name = target.as_os_str().to_owned();
+    name.push(".");
+    name.push(suffix);
+    PathBuf::from(name)
+}
+
+/// Puts every file in place or none: each is first made private beside its target, then the
+/// files they replace step aside, then the new files move in. A failure on the way takes back
+/// every step, so the folder holds the files it had.
+fn place_together(changes: &[(PathBuf, Vec<u8>)]) -> std::io::Result<()> {
+    let mut staged = Vec::new();
+    for (target, bytes) in changes {
+        let file = beside(target, STAGED);
+        if let Err(error) = write_private(&file, bytes, Existing::Replace) {
+            for done in &staged {
+                let _ = std::fs::remove_file(done);
+            }
+            return Err(error);
+        }
+        staged.push(file);
+    }
+    let mut moved: Vec<(&Path, Option<PathBuf>)> = Vec::new();
+    let mut result = Ok(());
+    for ((target, _), file) in changes.iter().zip(&staged) {
+        let aside = beside(target, REPLACED);
+        let stepped = match std::fs::rename(target, &aside) {
+            Ok(()) => Some(aside),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+            Err(error) => {
+                result = Err(error);
+                break;
+            }
+        };
+        if let Err(error) = std::fs::rename(file, target) {
+            if let Some(aside) = &stepped {
+                let _ = std::fs::rename(aside, target);
+            }
+            result = Err(error);
+            break;
+        }
+        moved.push((target, stepped));
+    }
+    if result.is_err() {
+        for (target, aside) in moved.iter().rev() {
+            match aside {
+                Some(aside) => {
+                    let _ = std::fs::rename(aside, target);
+                }
+                None => {
+                    let _ = std::fs::remove_file(target);
+                }
+            }
+        }
+    } else {
+        for aside in moved.iter().filter_map(|(_, aside)| aside.as_ref()) {
+            let _ = std::fs::remove_file(aside);
+        }
+    }
+    for file in &staged {
+        let _ = std::fs::remove_file(file);
+    }
+    result
 }
 
 fn copy_keys(files: &[PathBuf], folder: &Path) -> anyhow::Result<()> {

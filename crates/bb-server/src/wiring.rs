@@ -167,7 +167,9 @@ pub(crate) async fn open_store(settings: &Settings, data: &DataFolder) -> anyhow
     })
 }
 
-async fn connect(settings: &Settings, data: &DataFolder) -> anyhow::Result<Database> {
+/// Opens the database the settings name: the address given, or the built-in database of the
+/// data folder. Nothing is migrated.
+pub(crate) async fn connect(settings: &Settings, data: &DataFolder) -> anyhow::Result<Database> {
     match &settings.database_url {
         Some(url) => Database::connect(url).await,
         None => Database::connect_file(&data.database_file()).await,
