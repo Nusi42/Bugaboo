@@ -15,9 +15,9 @@ The lead updates this file after every step (builder started, report in, review 
 |----|------|-------|-----------------|-------|
 | WP-01 | Decision records, words, the UX gaps, the maintainer's answers | done (2026-11-18) | `win1` / `WIN1` (written in `win2`) | Wave 0; docs only |
 | WP-02 | Backup, and restore from the command line | not started | `win2` / `WIN2` | Wave 1; Opus; migration 54; rebases onto WP-03's links |
-| WP-03 | The walk of a person's data, and *Download my data* | not started | `win3` / `WIN3` | Wave 1; Opus; migration 55; its person links land first |
+| WP-03 | The walk of a person's data, and *Download my data* | person links merged (2026-11-18, three fix rounds); the export building (a second Opus builder) | `win3` / `WIN3` | Wave 1; Opus; migration 55; its person links land first |
 | WP-04 | Keep and delete rules on the server | not started | `win4` / `WIN4` | Wave 1; Opus; migration 56; rebases onto WP-03's links |
-| WP-05 | The parts list, the notices and the VEX statements | not started | `win5` / `WIN5` | Wave 1; Sonnet |
+| WP-05 | The parts list, the notices and the VEX statements | merged (2026-11-18, two fix rounds; Sonnet) | `win5` / `WIN5` | Wave 1; Sonnet |
 | WP-06 | *Switch off* and *Remove a person* on the server | not started | `win3` / `WIN3` | Wave 2; Opus; migration 57 |
 | WP-07 | Upgrades: a backup before migrating, the way back, the upgrade test | not started | `win2` / `WIN2` | Wave 2; Opus |
 | WP-08 | Signed releases, updates, the support period, vulnerability handling, secure defaults | not started | `win5` / `WIN5` | Wave 2; Opus |
