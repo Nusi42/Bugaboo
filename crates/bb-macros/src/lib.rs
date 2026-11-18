@@ -29,15 +29,25 @@ use syn::{DeriveInput, parse_macro_input};
 /// compile errors.
 ///
 /// A field that names a person also says what the person is to the row (ADR-0044):
-/// `#[person(author)]`, with one of the words of `bb_core::personal::Link`, on a field whose type
-/// holds the ID of a person (`bb_core::personal::NamesAPerson`), or, on a reference to a record
-/// that is a person in the rows about some kinds of record,
-/// `#[person_for(kind = "person", link = "subject")]`, once for each kind. The links are the
-/// list the walk of a person's data reads; DATA-MARKS fails a field that names a person without
-/// one. The macro implements `bb_core::personal::Entity`.
+/// `#[person(author)]` (a word of `bb_core::personal::Link`) on a field that holds the ID of a
+/// person, `#[person_for(record, link = "subject")]` or
+/// `#[person_for(field_type = "person", key = "field", link = "subject")]` on a reference to a
+/// record, `#[person_email(recipient)]` on an e-mail address, `#[person_in_changes(subject)]` on
+/// the changes of a record, and `#[names_no_person]` on a reference that never names a person
+/// (the module `links` says more). The links are the list the walk of a person's data reads;
+/// DATA-MARKS fails a field that can name a person and has none. The macro implements `bb_core::personal::Entity`.
 #[proc_macro_derive(
     Entity,
-    attributes(personal, not_personal, personal_for, person, person_for)
+    attributes(
+        personal,
+        not_personal,
+        personal_for,
+        person,
+        person_for,
+        person_email,
+        person_in_changes,
+        names_no_person
+    )
 )]
 pub fn derive_entity(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);

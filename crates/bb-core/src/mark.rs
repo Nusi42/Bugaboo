@@ -85,6 +85,7 @@ pub struct TextMark {
     pub entity_kind: EntityKind,
     /// The record.
     #[not_personal]
+    #[names_no_person]
     pub entity_id: EntityId,
     /// The part of the record: `description`, `text`, or the ID of an own field.
     #[not_personal]

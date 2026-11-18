@@ -340,6 +340,7 @@ pub struct Invitation {
     pub token_hash: Digest,
     /// The e-mail address the account will get.
     #[personal(category = "identity", basis = "contract")]
+    #[person_email(recipient)]
     pub email: String,
     /// The administrator who made it; nobody for the invitation a sign-up makes.
     #[personal(category = "identity", basis = "contract")]

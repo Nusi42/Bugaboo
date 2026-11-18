@@ -166,6 +166,7 @@ words_in_api!(
 pub struct EditLock {
     /// The record that is being edited.
     #[not_personal]
+    #[names_no_person]
     pub record: EntityRef,
     /// Which long text of the record.
     #[not_personal]
@@ -287,6 +288,7 @@ pub struct EditNotice {
     pub recipient: UserId,
     /// The record that was being edited.
     #[not_personal]
+    #[names_no_person]
     pub record: EntityRef,
     /// Which long text of the record.
     #[not_personal]

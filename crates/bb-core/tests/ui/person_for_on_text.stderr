@@ -1,0 +1,27 @@
+error[E0277]: `String` is not a reference to a record, so it cannot carry `#[person_for(...)]` or `#[names_no_person]`
+ --> tests/ui/person_for_on_text.rs:9:15
+  |
+9 |     pub text: String,
+  |               ^^^^^^ the trait `RefersToARecord` is not implemented for `String`
+  |
+  = note: a field that always names a person carries `#[person(...)]` (ADR-0044)
+help: the following other types implement trait `RefersToARecord`
+ --> src/personal/links.rs
+  |
+  |     ($($ty:ty),+ $(,)?) => { $(impl RefersToARecord for $ty {})+ };
+  |                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |                                |
+  |                                `EntityId`
+  |                                `EntityRef`
+...
+  | refers_to_a_record!(crate::id::EntityId, crate::event::EntityRef);
+  | ----------------------------------------------------------------- in this macro invocation
+  |
+  | impl<T: RefersToARecord> RefersToARecord for Option<T> {}
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `std::option::Option<T>`
+note: required by a bound in `refers_to_a_record`
+ --> tests/ui/person_for_on_text.rs:5:10
+  |
+5 | #[derive(Entity)]
+  |          ^^^^^^ required by this bound in `refers_to_a_record`
+  = note: this error originates in the macro `refers_to_a_record` which comes from the expansion of the derive macro `Entity` (in Nightly builds, run with -Z macro-backtrace for more info)

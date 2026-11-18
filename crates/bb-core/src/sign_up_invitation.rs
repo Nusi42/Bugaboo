@@ -84,6 +84,7 @@ pub struct SignUpInvitation {
     pub token_hash: Digest,
     /// The address the account will get.
     #[personal(category = "identity", basis = "contract")]
+    #[person_email(recipient)]
     pub email: String,
     /// When the link was made.
     #[personal(category = "activity", basis = "contract")]

@@ -55,6 +55,7 @@ pub struct IndexedText {
     /// The record the text comes from: the comment, the file or the own field; the issue itself for
     /// its title and description.
     #[not_personal]
+    #[names_no_person]
     pub source_ref: EntityId,
     /// The prepared words of the text, one space between. It can hold anything a person typed, so it
     /// has the legal basis of the texts it is made from.

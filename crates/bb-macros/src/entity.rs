@@ -54,7 +54,7 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
                 marks.push(mark);
                 assertions.extend(assertion);
                 links.extend(linked.links);
-                person_assertions.extend(linked.assertion);
+                person_assertions.extend(linked.assertions);
             }
             Err(error) => match &mut errors {
                 Some(all) => all.combine(error),
@@ -78,9 +78,14 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
             #(#assertions)*
         };
 
-        // A field with `#[person(...)]` must have a type that holds the ID of a person.
+        // A link must fit the type of its field: `#[person(...)]` the ID of a person,
+        // `#[person_for(...)]` and `#[names_no_person]` a reference to a record, `#[person_email(...)]`
+        // the text of an address.
         const _: fn() = || {
             fn names_a_person<T: ?Sized + ::bb_core::personal::NamesAPerson>() {}
+            fn refers_to_a_record<T: ?Sized + ::bb_core::personal::RefersToARecord>() {}
+            fn holds_an_address<T: ?Sized + ::bb_core::personal::HoldsAnAddress>() {}
+            fn carries_changes<T: ?Sized + ::bb_core::personal::CarriesChanges>() {}
             #(#person_assertions)*
         };
     })

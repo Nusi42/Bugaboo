@@ -111,6 +111,7 @@ pub struct HistoryEntry {
     pub kind: HistoryKind,
     /// The record the event is about: for a comment its ID, for a relation the relation.
     #[not_personal]
+    #[names_no_person]
     pub record: EntityId,
     /// The kind of record, as the event names it.
     #[not_personal]
@@ -125,5 +126,6 @@ pub struct HistoryEntry {
     #[personal(category = "content", basis = "legitimate_interests")]
     #[personal_for(kind = "time_entry", category = "employee_time", basis = "contract")]
     #[personal_for(kind = "timer", category = "employee_time", basis = "contract")]
+    #[person_in_changes(subject)]
     pub changes: Vec<FieldChange>,
 }

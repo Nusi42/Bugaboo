@@ -285,6 +285,7 @@ pub struct Notification {
     pub once: Once,
     /// The record it is about when that is not the issue: the comment, or the run.
     #[not_personal]
+    #[names_no_person]
     pub record: Option<EntityId>,
     /// Who did it; nobody when Bugaboo did.
     #[personal(category = "activity", basis = "legitimate_interests")]
@@ -296,6 +297,7 @@ pub struct Notification {
     /// The fields that changed, only those the person could see when the row was built. Read
     /// again with the person's mask when it is shown or sent.
     #[personal(category = "content", basis = "legitimate_interests")]
+    #[person_in_changes(subject)]
     pub changes: Vec<FieldChange>,
     /// Whether the person hears of it in the app.
     #[not_personal]

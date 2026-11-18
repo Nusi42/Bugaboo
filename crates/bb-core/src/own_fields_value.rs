@@ -111,6 +111,7 @@ pub struct StoredFieldValue {
     pub entity_kind: crate::event::EntityKind,
     /// The item.
     #[not_personal]
+    #[names_no_person]
     pub entity_id: crate::id::EntityId,
     /// The field.
     #[not_personal]
@@ -126,6 +127,8 @@ pub struct StoredFieldValue {
     pub value_date: Option<i64>,
     /// A choice, a person, a group or an issue.
     #[personal(category = "activity", basis = "legitimate_interests")]
+    #[person_for(field_type = "person", key = "field", link = "subject")]
+    #[person_for(field_type = "people", key = "field", link = "subject")]
     pub value_ref: Option<crate::id::EntityId>,
     /// The place among several values.
     #[not_personal]

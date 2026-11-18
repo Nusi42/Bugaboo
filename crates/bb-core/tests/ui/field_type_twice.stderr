@@ -1,0 +1,5 @@
+error: the field type `person` is given twice in `#[person_for(...)]` on `value`; keep one link for it
+ --> tests/ui/field_type_twice.rs:9:5
+  |
+9 |     #[person_for(field_type = "person", key = "field", link = "author")]
+  |     ^

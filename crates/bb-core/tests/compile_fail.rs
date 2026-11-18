@@ -65,4 +65,9 @@ fn priv_02_unmarked_or_wrongly_marked_fields_do_not_compile_and_links_are_writte
     cases.compile_fail("tests/ui/link_on_text.rs");
     cases.compile_fail("tests/ui/unknown_link.rs");
     cases.compile_fail("tests/ui/two_links.rs");
+    cases.compile_fail("tests/ui/person_and_person_for.rs");
+    cases.compile_fail("tests/ui/field_type_twice.rs");
+    cases.compile_fail("tests/ui/person_for_without_link.rs");
+    cases.compile_fail("tests/ui/unknown_field_type.rs");
+    cases.compile_fail("tests/ui/person_for_on_text.rs");
 }

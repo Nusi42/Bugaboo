@@ -1,0 +1,31 @@
+error[E0080]: evaluation panicked: not a known FieldType word; see the list in bb_core
+ --> tests/ui/unknown_field_type.rs:8:31
+  |
+8 |     #[person_for(field_type = "colleague", key = "field", link = "subject")]
+  |                               ^^^^^^^^^^^ evaluation of `<Note as bb_core::personal::Entity>::MARKS` failed inside this call
+  |
+note: inside `bb_core::own_fields::FieldType::from_code_const`
+ --> $RUST/core/src/panic.rs
+  |
+  |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: src/own_fields.rs
+  |
+  | / words! {
+  | |     /// What kind of information a field holds (CF-01). The word is stored. *Release* and *Pick
+  | |     /// one, then one more* come with their features (ISS-08, CF-02).
+  | |     pub enum FieldType {
+... |
+  | |     messages example = "field-example."
+  | | }
+  | |_- in this macro invocation
+  = note: this error originates in the macro `$crate::panic::panic_2021` which comes from the expansion of the macro `words` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: erroneous constant encountered
+ --> tests/ui/unknown_field_type.rs:5:10
+  |
+5 | #[derive(Entity)]
+  |          ^^^^^^
+  |
+  = note: this note originates in the derive macro `Entity` (in Nightly builds, run with -Z macro-backtrace for more info)

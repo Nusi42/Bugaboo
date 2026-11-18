@@ -10,19 +10,25 @@ use std::fmt::Write as _;
 use anyhow::{Context as _, bail};
 use syn::{Attribute, Expr, Fields, Item, Lit, Meta};
 
-mod links;
+pub(crate) mod links;
 
 use super::Generated;
 use crate::repo::Repo;
 use crate::source::{Kind, Source, read_sources};
-
-pub(crate) use links::LinkMark;
 
 /// The generated page, relative to the repository root.
 pub(crate) const OUTPUT: &str = "docs/privacy/personal-data.md";
 
 /// Where the words of the marks are defined (`Category` and `Basis`).
 pub(crate) const VOCABULARY_PATH: &str = "crates/bb-core/src/personal.rs";
+
+/// Where the words of the links of a person and the types that name a person are defined
+/// (`Link`, `names_a_person!`, `refers_to_a_record!`).
+pub(crate) const LINKS_PATH: &str = "crates/bb-core/src/personal/links.rs";
+
+/// Where the aliases and newtypes of the types that name a person are looked for: the crate that
+/// holds the entities and the types of their fields.
+const ALIASES_FOLDER: &str = "crates/bb-core/src/";
 
 /// Where all entities are listed (`entities! { … }`).
 pub(crate) const LIST_PATH: &str = "crates/bb-core/src/entities.rs";
@@ -44,7 +50,7 @@ pub(crate) struct Field {
     pub(crate) by_kind: Vec<(String, Result<Mark, String>)>,
     /// The links of a person written on the field (`#[person(…)]`, `#[person_for(…)]`), each one or
     /// what is wrong with it.
-    pub(crate) links: Vec<Result<LinkMark, String>>,
+    pub(crate) links: Vec<Result<links::LinkMark, String>>,
     /// The names of the types the field's type is made of, to tell whether it names a person.
     pub(crate) type_names: Vec<String>,
     pub(crate) doc: String,
@@ -80,8 +86,13 @@ pub(crate) struct Model {
     /// The names in the `entities!` list.
     pub(crate) listed: Vec<String>,
     pub(crate) vocabulary: Vocabulary,
-    /// The types that hold the ID of a person (`names_a_person!`).
+    /// The types that hold the ID of a person (`names_a_person!`), with their aliases and newtypes.
     pub(crate) person_types: Vec<String>,
+    /// The types that refer to a record of any kind (`refers_to_a_record!`), with their aliases and
+    /// newtypes.
+    pub(crate) record_types: Vec<String>,
+    /// The types that hold the changes of a record (`carries_changes!`).
+    pub(crate) change_types: Vec<String>,
 }
 
 pub(crate) fn generate(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
@@ -95,7 +106,6 @@ pub(crate) fn read_model(sources: &[Source]) -> anyhow::Result<Model> {
     let mut entities = Vec::new();
     let mut listed = Vec::new();
     let mut vocabulary = Vocabulary::default();
-    let mut person_types = Vec::new();
     for (path, text) in sources {
         // Only a file that names `Entity` can derive it, and the two files of the words and the
         // list are always read: parsing the other files cannot change the model.
@@ -106,25 +116,78 @@ pub(crate) fn read_model(sources: &[Source]) -> anyhow::Result<Model> {
         visit(&file.items, path, &mut entities);
         if path == VOCABULARY_PATH {
             vocabulary = read_vocabulary(&file.items);
-            person_types = links::read_person_types(&file.items);
+        }
+        if path == LINKS_PATH {
+            vocabulary.links = read_vocabulary(&file.items).links;
         }
         if path == LIST_PATH {
             listed = read_list(&file.items);
         }
     }
+    let (person_types, record_types) = read_reference_types(sources)?;
+    let change_types = sources
+        .iter()
+        .find(|(path, _)| path == LINKS_PATH)
+        .and_then(|(_, text)| syn::parse_file(text).ok())
+        .map(|file| links::read_listed_types(&file.items, "carries_changes"))
+        .unwrap_or_default();
     entities.sort_by(|a, b| a.name.cmp(&b.name).then_with(|| a.path.cmp(&b.path)));
     Ok(Model {
         entities,
         listed,
         vocabulary,
         person_types,
+        record_types,
+        change_types,
     })
+}
+
+/// The types that name a person and the types that refer to a record, as `bb_core::personal`
+/// lists them, and their aliases and newtypes in `bb-core` (an alias of an alias too).
+fn read_reference_types(sources: &[Source]) -> anyhow::Result<(Vec<String>, Vec<String>)> {
+    let Some((_, text)) = sources.iter().find(|(path, _)| path == LINKS_PATH) else {
+        return Ok((Vec::new(), Vec::new()));
+    };
+    let items = syn::parse_file(text)
+        .with_context(|| format!("{LINKS_PATH} is not valid Rust"))?
+        .items;
+    let mut person = links::read_listed_types(&items, "names_a_person");
+    let mut record = links::read_listed_types(&items, "refers_to_a_record");
+    let mut files = Vec::new();
+    for (path, text) in sources
+        .iter()
+        .filter(|(path, _)| path.starts_with(ALIASES_FOLDER))
+    {
+        let named = person
+            .iter()
+            .chain(&record)
+            .any(|name| text.contains(name.as_str()));
+        if named && (text.contains("type ") || text.contains("struct ")) {
+            files.push(syn::parse_file(text).with_context(|| format!("{path} is not valid Rust"))?);
+        }
+    }
+    for known in [&mut person, &mut record] {
+        loop {
+            let before = known.len();
+            for file in &files {
+                for alias in links::aliases_of(&file.items, known) {
+                    if !known.contains(&alias) {
+                        known.push(alias);
+                    }
+                }
+            }
+            if known.len() == before {
+                break;
+            }
+        }
+    }
+    Ok((person, record))
 }
 
 /// Whether the file can add to the model: it is the file of the words or of the list, or it names
 /// `Entity` (the derive). A cheap text search that spares parsing every other file.
 fn may_hold_marks(path: &str, text: &str) -> bool {
-    path == VOCABULARY_PATH || path == LIST_PATH || text.contains("Entity")
+    path == VOCABULARY_PATH || path == LIST_PATH || path == LINKS_PATH || text.contains("Entity")
 }
 
 fn visit(items: &[Item], path: &str, entities: &mut Vec<EntityDef>) {
@@ -441,13 +504,18 @@ fn links_line(entity: &EntityDef) -> Option<String> {
         .flat_map(|field| {
             field.links.iter().filter_map(move |link| {
                 let link = link.as_ref().ok()?;
-                Some(match &link.kind {
-                    Some(kind) => format!(
-                        "`{}` is the {} in the rows about a `{kind}`",
-                        field.name, link.word
-                    ),
-                    None => format!("`{}` is the {}", field.name, link.word),
-                })
+                let (name, word) = (&field.name, &link.word);
+                match &link.scope {
+                    links::Scope::Every => Some(format!("`{name}` is the {word}")),
+                    links::Scope::Rows(rows) => Some(format!("`{name}` is the {word} in {rows}")),
+                    links::Scope::Changes => Some(format!(
+                        "the values of `{name}` name the {word} as the members declared for each kind say"
+                    )),
+                    links::Scope::Email => {
+                        Some(format!("`{name}` is the {word}, by the e-mail address"))
+                    }
+                    links::Scope::Never => None,
+                }
             })
         })
         .collect();

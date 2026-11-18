@@ -552,6 +552,7 @@ pub struct StoredSetting {
     pub level: Level,
     /// The project the value is for; `None` on the organization level.
     #[not_personal]
+    #[names_no_person]
     pub scope: Option<crate::id::EntityId>,
     /// The value. A free text of the organization could name a person, so it is marked.
     #[personal(category = "content", basis = "contract")]

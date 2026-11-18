@@ -38,25 +38,47 @@ fn every_table_has_its_own_name_and_every_column_a_marked_field() {
     }
 }
 
+/// The columns of `field` in `table`.
+fn columns_of<'t>(table: &'t StoredTable, field: &str) -> Vec<&'t str> {
+    table
+        .columns
+        .iter()
+        .filter(|(_, of)| *of == field)
+        .map(|(column, _)| column.as_str())
+        .collect()
+}
+
 /// The walk of a person's data finds a row by the columns of a linked field (ADR-0044): one column
-/// with the person's ID, or a kind and an ID (an actor, a reference to a record), in that order.
+/// with the person's ID, or a kind and an ID (an actor, a reference to a record), in that order;
+/// the field a link reads the kind or the type of an own field from is stored too.
 #[test]
 fn priv_02_every_field_that_names_a_person_has_a_link_on_a_stored_column() {
+    use bb_core::personal::LinkScope;
     let tables = tables();
     for table in &tables {
         for link in table.marks.person_links().links() {
-            let columns = table
-                .columns
-                .iter()
-                .filter(|(_, field)| *field == link.field())
-                .count();
-            let expected = if link.kind().is_some() { 2..=2 } else { 1..=2 };
+            let columns = columns_of(table, link.field()).len();
+            let (expected, other) = match link.scope() {
+                LinkScope::Every => (1..=2, None),
+                LinkScope::Record { kind: None } => (2..=2, None),
+                LinkScope::Record { kind: Some(kind) } => (1..=1, Some(kind)),
+                LinkScope::FieldType { key, .. } => (1..=1, Some(key)),
+                LinkScope::Email | LinkScope::Changes => (1..=1, None),
+            };
             assert!(
                 expected.contains(&columns),
                 "{}.{} is stored in {columns} columns",
                 table.name,
                 link.field()
             );
+            if let Some(other) = other {
+                assert_eq!(
+                    columns_of(table, other).len(),
+                    1,
+                    "{}.{other} is not stored in one column",
+                    table.name
+                );
+            }
         }
     }
     // Every entity that names a person is stored in a table, so the walk reaches its rows.
@@ -70,5 +92,37 @@ fn priv_02_every_field_that_names_a_person_has_a_link_on_a_stored_column() {
                 marks.name()
             );
         }
+    }
+}
+
+/// The second hop of the walk (ADR-0044): a record that belongs to a person is found in the table
+/// of its entity by the column `id` of its field `id`, and the owner is a field of that entity that names a person in every
+/// row.
+#[test]
+fn priv_02_every_kind_of_record_says_whose_it_is_through_a_stored_owner() {
+    use bb_core::event::{RecordKind, Whose, whose};
+    use bb_core::personal::LinkScope;
+    let tables = tables();
+    for kind in RecordKind::ALL {
+        let Whose::Owner { marks, owner } = whose(*kind) else {
+            continue;
+        };
+        let table = tables
+            .iter()
+            .find(|table| table.marks.name() == marks.name())
+            .unwrap_or_else(|| panic!("{} is stored in no table", marks.name()));
+        assert!(
+            columns_of(table, "id").contains(&"id"),
+            "{} has no column `id` for the field `id`",
+            table.name
+        );
+        assert!(
+            marks
+                .person_links()
+                .of_field(owner)
+                .any(|link| link.scope() == LinkScope::Every),
+            "{}.{owner} does not name a person in every row",
+            marks.name()
+        );
     }
 }

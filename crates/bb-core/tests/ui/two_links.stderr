@@ -1,4 +1,4 @@
-error: field `author` has more than one `#[person(...)]`; keep exactly one link
+error: field `author` says more than once how it names a person; keep one
  --> tests/ui/two_links.rs:8:5
   |
 8 |     #[person(holder)]

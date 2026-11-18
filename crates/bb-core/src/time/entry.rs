@@ -59,6 +59,7 @@ pub struct TimeEntryValue {
     pub entity_kind: crate::event::EntityKind,
     /// The time entry.
     #[personal(category = "employee_time", basis = "contract")]
+    #[person_for(record, kind = "entity_kind", link = "subject")]
     pub entity_id: crate::id::EntityId,
     /// The field.
     #[not_personal]
@@ -74,6 +75,8 @@ pub struct TimeEntryValue {
     pub value_date: Option<i64>,
     /// A choice (an *Activity*, a *Cost center*), a person, a group or an issue.
     #[personal(category = "employee_time", basis = "contract")]
+    #[person_for(field_type = "person", key = "field", link = "subject")]
+    #[person_for(field_type = "people", key = "field", link = "subject")]
     pub value_ref: Option<crate::id::EntityId>,
     /// The place among several values.
     #[not_personal]

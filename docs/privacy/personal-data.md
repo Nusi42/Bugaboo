@@ -288,7 +288,7 @@ What happened, to whom, by whom, and why (ADR-0007).
 
 Defined in `crates/bb-core/src/event.rs`.
 
-A person in its rows: `actor` is the actor; `entity` is the subject in the rows about a `person`; `entity` is the subject in the rows about a `timer`; `entity` is the subject in the rows about a `work_times`; `entity` is the subject in the rows about a `share`.
+A person in its rows: `actor` is the actor; `entity` is the subject in the rows about a record that is the person or belongs to them (`whose`); the values of `changes` name the subject as the members declared for each kind say.
 
 | Field                                 | Personal data | Category        | Legal basis            | What it holds                                                                                                                                                                                                                                                                             |
 | ------------------------------------- | ------------- | --------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -471,7 +471,7 @@ One row of the history of an issue.
 
 Defined in `crates/bb-core/src/history.rs`.
 
-A person in its rows: `by` is the actor.
+A person in its rows: `by` is the actor; the values of `changes` name the subject as the members declared for each kind say.
 
 | Field                                 | Personal data | Category        | Legal basis            | What it holds                                                                                                                      |
 | ------------------------------------- | ------------- | --------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
@@ -512,7 +512,7 @@ An invitation to make an account (AUTH-06).
 
 Defined in `crates/bb-core/src/sign_in.rs`.
 
-A person in its rows: `invited_by` is the author.
+A person in its rows: `email` is the recipient, by the e-mail address; `invited_by` is the author.
 
 | Field        | Personal data | Category      | Legal basis | What it holds                                                                       |
 | ------------ | ------------- | ------------- | ----------- | ----------------------------------------------------------------------------------- |
@@ -874,7 +874,7 @@ A notification for one person (NTF-01).
 
 Defined in `crates/bb-core/src/notification.rs`.
 
-A person in its rows: `recipient` is the recipient; `by` is the actor.
+A person in its rows: `recipient` is the recipient; `by` is the actor; the values of `changes` name the subject as the members declared for each kind say.
 
 | Field       | Personal data | Category   | Legal basis            | What it holds                                                                                                                                |
 | ----------- | ------------- | ---------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1448,7 +1448,7 @@ One entry of the security log. The person and the shortened network address are 
 
 Defined in `crates/bb-core/src/security_log.rs`.
 
-A person in its rows: `person` is the actor; `subject` is the subject in the rows about a `person`.
+A person in its rows: `person` is the actor; `subject` is the subject in the rows about a record that is the person or belongs to them (`whose`).
 
 | Field           | Personal data | Category    | Legal basis            | What it holds                                                                                   |
 | --------------- | ------------- | ----------- | ---------------------- | ----------------------------------------------------------------------------------------------- |
@@ -1496,6 +1496,8 @@ A person in its rows: `person` is the holder.
 The invitation a sign-up makes. It is read as an [`crate::sign_in::Invitation`] with no person who invited.
 
 Defined in `crates/bb-core/src/sign_up_invitation.rs`.
+
+A person in its rows: `email` is the recipient, by the e-mail address.
 
 | Field        | Personal data | Category      | Legal basis | What it holds                                                         |
 | ------------ | ------------- | ------------- | ----------- | --------------------------------------------------------------------- |
@@ -1594,6 +1596,8 @@ Defined in `crates/bb-core/src/workflow.rs`.
 A value of an own field for one item (an issue or a project), as stored: one row per value. The text of a value is always marked personal data (a field cannot say otherwise yet, M3-F45); a reference may be a person.
 
 Defined in `crates/bb-core/src/own_fields_value.rs`.
+
+A person in its rows: `value_ref` is the subject in the rows whose own field `field` is of the type `person`; `value_ref` is the subject in the rows whose own field `field` is of the type `people`.
 
 | Field          | Personal data | Category   | Legal basis            | What it holds                               |
 | -------------- | ------------- | ---------- | ---------------------- | ------------------------------------------- |
@@ -1766,6 +1770,8 @@ A value of an own field of a time entry, as stored (TIME-13): one row per value,
 
 Defined in `crates/bb-core/src/time/entry.rs`.
 
+A person in its rows: `entity_id` is the subject in the rows about a record that is the person or belongs to them (`whose`), of the kind in `entity_kind`; `value_ref` is the subject in the rows whose own field `field` is of the type `person`; `value_ref` is the subject in the rows whose own field `field` is of the type `people`.
+
 | Field          | Personal data | Category        | Legal basis | What it holds                                                             |
 | -------------- | ------------- | --------------- | ----------- | ------------------------------------------------------------------------- |
 | `entity_kind`  | No            | –               | –           | The kind of item: always `time_entry`.                                    |
@@ -1798,7 +1804,7 @@ One call of one tool. Never the content, only its size.
 
 Defined in `crates/bb-core/src/ai/tools.rs`.
 
-A person in its rows: `person` is the subject.
+A person in its rows: `person` is the actor.
 
 | Field       | Personal data | Category   | Legal basis            | What it holds                                                                          |
 | ----------- | ------------- | ---------- | ---------------------- | -------------------------------------------------------------------------------------- |

@@ -1,0 +1,5 @@
+error: `#[person_for(...)]` needs `link = "..."`: what the person is to the row
+ --> tests/ui/person_for_without_link.rs:8:5
+  |
+8 |     #[person_for(record)]
+  |     ^

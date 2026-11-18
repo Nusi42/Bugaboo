@@ -10,11 +10,11 @@ note: inside `bb_core::personal::Link::from_code_const`
   |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
   |
- ::: src/personal.rs
+ ::: src/personal/links.rs
   |
   | / words! {
-  | |     /// What a person is to a row that names them (ADR-0044, decision 1). The words are the ones in
-  | |     /// `#[person(…)]` and `#[person_for(link = …)]`.
+  | |     /// What a person is to a row that names them. The words are the ones in `#[person(…)]`,
+  | |     /// `#[person_email(…)]` and `#[person_for(link = …)]`.
   | |     pub enum Link {
 ... |
   | | }

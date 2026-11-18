@@ -1,17 +1,33 @@
 //! The links of a person, read from the source like the marks (ADR-0044, decision 1): which
-//! fields name a person and what the person is to the row (`#[person(author)]`,
-//! `#[person_for(kind = "person", link = "subject")]`), and which types hold the ID of a person
-//! (`names_a_person!` in `bb_core::personal`).
+//! fields name a person, in which rows, and what the person is to the row (`#[person(…)]`,
+//! `#[person_for(…)]`, `#[person_email(…)]`, `#[names_no_person]`), and which types hold the ID of
+//! a person or refer to a record (`names_a_person!` and `refers_to_a_record!` in
+//! `bb_core::personal`, and the aliases and newtypes of them in `bb-core`).
 
-use syn::{Attribute, GenericArgument, Item, PathArguments, Type};
+use syn::{Attribute, Fields, GenericArgument, Item, PathArguments, Type};
+
+/// In which rows a link says the field names a person.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) enum Scope {
+    /// Every row (`#[person(…)]`).
+    Every,
+    /// Some rows (`#[person_for(…)]`), as the page words them.
+    Rows(String),
+    /// The rows that hold the person's e-mail address (`#[person_email(…)]`).
+    Email,
+    /// The rows whose changes name the person (`#[person_in_changes(…)]`).
+    Changes,
+    /// None: the reference never names a person (`#[names_no_person]`).
+    Never,
+}
 
 /// One link written on a field.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct LinkMark {
-    /// The word: `author`, `recipient`, `subject`, `actor` or `holder`.
+    /// The word: `author`, `recipient`, `subject`, `actor` or `holder`; empty for `Never`.
     pub(crate) word: String,
-    /// The kind of record whose rows the link is for (`#[person_for(…)]`); none for every row.
-    pub(crate) kind: Option<String>,
+    /// In which rows.
+    pub(crate) scope: Scope,
 }
 
 /// The links written on a field, each one or what is wrong with it.
@@ -20,10 +36,20 @@ pub(crate) fn read_links(field: &syn::Field) -> Vec<Result<LinkMark, String>> {
         .attrs
         .iter()
         .filter_map(|attr| {
-            if attr.path().is_ident("person") {
-                Some(read_person(attr))
-            } else if attr.path().is_ident("person_for") {
+            let path = attr.path();
+            if path.is_ident("person") {
+                Some(read_word(attr, "person", Scope::Every))
+            } else if path.is_ident("person_email") {
+                Some(read_word(attr, "person_email", Scope::Email))
+            } else if path.is_ident("person_in_changes") {
+                Some(read_word(attr, "person_in_changes", Scope::Changes))
+            } else if path.is_ident("person_for") {
                 Some(read_person_for(attr))
+            } else if path.is_ident("names_no_person") {
+                Some(Ok(LinkMark {
+                    word: String::new(),
+                    scope: Scope::Never,
+                }))
             } else {
                 None
             }
@@ -31,35 +57,67 @@ pub(crate) fn read_links(field: &syn::Field) -> Vec<Result<LinkMark, String>> {
         .collect()
 }
 
-fn read_person(attr: &Attribute) -> Result<LinkMark, String> {
+fn read_word(attr: &Attribute, what: &str, scope: Scope) -> Result<LinkMark, String> {
     attr.parse_args::<syn::Ident>()
         .map(|word| LinkMark {
             word: word.to_string(),
-            kind: None,
+            scope,
         })
-        .map_err(|_| "has a #[person(…)] that does not name one link".to_owned())
+        .map_err(|_| format!("has a #[{what}(…)] that does not name one link"))
 }
 
 fn read_person_for(attr: &Attribute) -> Result<LinkMark, String> {
-    let mut kind = None;
-    let mut word = None;
+    let mut parts: Vec<(String, String)> = Vec::new();
     attr.parse_nested_meta(|meta| {
-        let value: syn::LitStr = meta.value()?.parse()?;
-        if meta.path.is_ident("kind") {
-            kind = Some(value.value());
-        } else if meta.path.is_ident("link") {
-            word = Some(value.value());
-        }
+        let name = meta
+            .path
+            .get_ident()
+            .map_or_else(String::new, ToString::to_string);
+        // `record` stands alone; every other part has a value.
+        let value = if name == "record" {
+            String::new()
+        } else {
+            meta.value()?.parse::<syn::LitStr>()?.value()
+        };
+        parts.push((name, value));
         Ok(())
     })
     .map_err(|error| format!("has a #[person_for(…)] that is not understood: {error}"))?;
-    match (kind, word) {
-        (Some(kind), Some(word)) => Ok(LinkMark {
-            word,
-            kind: Some(kind),
-        }),
-        _ => Err("needs both kind = \"…\" and link = \"…\" in #[person_for(…)]".to_owned()),
-    }
+    let part = |name: &str| {
+        parts
+            .iter()
+            .find(|(key, _)| key == name)
+            .map(|(_, value)| value.clone())
+    };
+    let Some(word) = part("link") else {
+        return Err("needs link = \"…\" in #[person_for(…)]".to_owned());
+    };
+    let rows = match (
+        part("record"),
+        part("kind"),
+        part("field_type"),
+        part("key"),
+    ) {
+        (Some(_), None, None, None) => {
+            "the rows about a record that is the person or belongs to them (`whose`)".to_owned()
+        }
+        (Some(_), Some(kind), None, None) => format!(
+            "the rows about a record that is the person or belongs to them (`whose`), of the kind in `{kind}`"
+        ),
+        (None, None, Some(field_type), Some(key)) => {
+            format!("the rows whose own field `{key}` is of the type `{field_type}`")
+        }
+        _ => {
+            return Err(
+                "needs record (and maybe kind = \"…\"), or field_type = \"…\" and key = \"…\" in #[person_for(…)]"
+                    .to_owned(),
+            );
+        }
+    };
+    Ok(LinkMark {
+        word,
+        scope: Scope::Rows(rows),
+    })
 }
 
 /// The names of every type a field's type is made of (`Option<Vec<UserId>>` is `Option`, `Vec`
@@ -87,16 +145,25 @@ fn collect(ty: &Type, names: &mut Vec<String>) {
         Type::Reference(reference) => collect(&reference.elem, names),
         Type::Slice(slice) => collect(&slice.elem, names),
         Type::Array(array) => collect(&array.elem, names),
-        Type::Tuple(tuple) => tuple.elems.iter().for_each(|elem| collect(elem, names)),
+        Type::Tuple(tuple) => {
+            names.push(TUPLE.to_owned());
+            tuple.elems.iter().for_each(|elem| collect(elem, names));
+        }
         Type::Group(group) => collect(&group.elem, names),
         Type::Paren(paren) => collect(&paren.elem, names),
         _ => {}
     }
 }
 
-/// The types in `names_a_person!(crate::id::UserId, crate::event::Actor)`: the last part of each
-/// path.
-pub(crate) fn read_person_types(items: &[Item]) -> Vec<String> {
+/// The name `type_names` gives a tuple, which no link can be put on.
+pub(crate) const TUPLE: &str = "(tuple)";
+
+/// The containers a link sees through, as `bb_core::personal::NamesAPerson` does: a person type
+/// inside anything else (a tuple, a container of its own) cannot carry a link.
+pub(crate) const CONTAINERS: &[&str] = &["Option", "Vec", "Box", "BTreeSet", "BTreeMap"];
+
+/// The types in `names_a_person!(…)` or `refers_to_a_record!(…)`: the last part of each path.
+pub(crate) fn read_listed_types(items: &[Item], list: &str) -> Vec<String> {
     let mut names = Vec::new();
     for item in items {
         let Item::Macro(item) = item else { continue };
@@ -105,7 +172,7 @@ pub(crate) fn read_person_types(items: &[Item]) -> Vec<String> {
             .path
             .segments
             .last()
-            .is_none_or(|s| s.ident != "names_a_person")
+            .is_none_or(|s| s.ident != list)
         {
             continue;
         }
@@ -123,6 +190,38 @@ pub(crate) fn read_person_types(items: &[Item]) -> Vec<String> {
     names
 }
 
+/// The aliases (`type Owner = UserId;`) and newtypes (`struct Owner(UserId);`) of the types in
+/// `known` declared in `items`: a field of one of them names a person (or a record) as much.
+pub(crate) fn aliases_of(items: &[Item], known: &[String]) -> Vec<String> {
+    let mut found = Vec::new();
+    for item in items {
+        let (name, inner): (String, Vec<&Type>) = match item {
+            Item::Type(alias) => (alias.ident.to_string(), vec![&*alias.ty]),
+            Item::Struct(strukt) => match &strukt.fields {
+                Fields::Unnamed(fields) => (
+                    strukt.ident.to_string(),
+                    fields.unnamed.iter().map(|field| &field.ty).collect(),
+                ),
+                _ => continue,
+            },
+            Item::Mod(module) => {
+                if let Some((_, inner)) = &module.content {
+                    found.extend(aliases_of(inner, known));
+                }
+                continue;
+            }
+            _ => continue,
+        };
+        if inner
+            .iter()
+            .any(|ty| type_names(ty).iter().any(|name| known.contains(name)))
+        {
+            found.push(name);
+        }
+    }
+    found
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -133,37 +232,54 @@ mod tests {
     }
 
     #[test]
-    fn links_are_read_with_their_kinds() {
+    fn links_are_read_with_their_scopes() {
         let links = read_links(&field(
-            "#[person_for(kind = \"person\", link = \"subject\")] #[person(author)] a: UserId",
+            "#[person_for(record, kind = \"entity_kind\", link = \"subject\")] #[person(author)] #[person_email(recipient)] #[names_no_person] a: UserId",
         ));
+        assert_eq!(links.len(), 4);
         assert_eq!(
-            links,
-            [
-                Ok(LinkMark {
-                    word: "subject".into(),
-                    kind: Some("person".into())
-                }),
-                Ok(LinkMark {
-                    word: "author".into(),
-                    kind: None
-                }),
-            ]
+            links[0].as_ref().unwrap().scope,
+            Scope::Rows("the rows about a record that is the person or belongs to them (`whose`), of the kind in `entity_kind`".into())
         );
+        assert_eq!(links[1].as_ref().unwrap().scope, Scope::Every);
+        assert_eq!(links[2].as_ref().unwrap().scope, Scope::Email);
+        assert_eq!(links[3].as_ref().unwrap().scope, Scope::Never);
         assert!(read_links(&field("#[person(a, b)] a: UserId"))[0].is_err());
         assert!(read_links(&field("#[person_for(kind = \"x\")] a: UserId"))[0].is_err());
+        assert!(
+            read_links(&field(
+                "#[person_for(field_type = \"person\", link = \"subject\")] a: EntityId"
+            ))[0]
+                .is_err()
+        );
     }
 
     #[test]
     fn the_type_names_include_the_types_inside() {
         let names = type_names(&field("a: Option<Vec<crate::id::UserId>>").ty);
         assert_eq!(names, ["Option", "Vec", "UserId"]);
+        assert_eq!(type_names(&field("a: (UserId, u8)").ty)[0], TUPLE);
     }
 
     #[test]
-    fn the_person_types_are_the_last_part_of_each_path() {
+    fn the_listed_types_are_the_last_part_of_each_path() {
         let file: syn::File =
             syn::parse_str("names_a_person!(crate::id::UserId, crate::event::Actor);").unwrap();
-        assert_eq!(read_person_types(&file.items), ["UserId", "Actor"]);
+        assert_eq!(
+            read_listed_types(&file.items, "names_a_person"),
+            ["UserId", "Actor"]
+        );
+    }
+
+    #[test]
+    fn aliases_and_newtypes_of_a_person_type_are_found() {
+        let file: syn::File = syn::parse_str(
+            "type Owner = Option<UserId>; pub struct Keeper(pub UserId); struct Other(u8); mod inner { type Deep = UserId; }",
+        )
+        .unwrap();
+        assert_eq!(
+            aliases_of(&file.items, &["UserId".to_owned()]),
+            ["Owner", "Keeper", "Deep"]
+        );
     }
 }
