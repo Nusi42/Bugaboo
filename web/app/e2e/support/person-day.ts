@@ -1,7 +1,7 @@
 import { dataOf } from "@bugaboo/api-client";
 
 import type { ApiSession } from "./api.ts";
-import { momentOfClock, personToday, zoneOfNewDay } from "../../src/shared/clock.ts";
+import { isWeekend, momentOfClock, personToday, zoneOfNewDay } from "../../src/shared/clock.ts";
 import { addDays } from "../../src/shared/format.ts";
 import { regionOf } from "../../src/shared/region.ts";
 
@@ -19,6 +19,14 @@ export { daysBetween } from "../../src/shared/clock.ts";
  */
 export function dayFromToday(days: number): string {
   return addDays(personToday(regionOf(), Date.now()), days);
+}
+
+/**
+ * The first of these days from today, in their order, that is a weekday (Monday to Friday by the calendar, as the plan
+ * warnings count them); none when all of them fall on a weekend.
+ */
+export function firstWeekdayFromToday(days: readonly number[]): string | undefined {
+  return days.map((ahead) => dayFromToday(ahead)).find((date) => !isWeekend(date));
 }
 
 /** A minute: a day starts one minute after the midnight of its date at the earliest. */

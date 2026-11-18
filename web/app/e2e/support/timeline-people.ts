@@ -8,7 +8,15 @@ import { ada, bob, cleo, ownId, signInThroughApi } from "./accounts.ts";
 import type { ApiSession } from "./api.ts";
 import { createIssue, issueOf, versionOf } from "./issues.ts";
 import type { Instance } from "./server.ts";
-import { changeIssue, chart, dayFromToday, planned, prepareTimeline } from "./timeline.ts";
+import {
+  changeIssue,
+  chart,
+  dayFromToday,
+  dragMeDays,
+  firstWeekdayFromToday,
+  planned,
+  prepareTimeline,
+} from "./timeline.ts";
 
 // The scene of the people on the timeline (PLAN-10 … PLAN-13, UX §4.7, ADR-0030 and its amendment
 // M8): the scene of the timeline, with Bob first and Ada second on *Drag me*, Bob away on one of its
@@ -27,8 +35,21 @@ export const people = {
 /** The estimate of the issue planned by effort, in minutes: two of Bob's days of 8 hours. */
 export const effortMinutes = 16 * 60;
 
-/** The day Bob is away: the middle day of *Drag me*. */
-export const awayDay = dayFromToday(3);
+/**
+ * The day Bob is away: a weekday of *Drag me*, its middle day when that is one. Only an away day on a
+ * weekday makes the neutral warning *Days without work*; three days in a row always hold a weekday,
+ * since a weekend is two days.
+ */
+export const awayDay = awayWeekday();
+
+function awayWeekday(): string {
+  const { from, to } = dragMeDays;
+  const day = firstWeekdayFromToday([(from + to) / 2, from, to]);
+  if (day === undefined) {
+    throw new Error("Drag me has no weekday");
+  }
+  return day;
+}
 
 /** The first Monday at least a week after today, as the calendar writes it. */
 export function aMondayAhead(): string {

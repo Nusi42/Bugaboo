@@ -14,7 +14,7 @@ import { inOrder } from "./sequence.ts";
 // of issues, its issues given dates around today, a goal over two of them, one that must finish
 // before the other, and issues without dates for *Not scheduled yet*.
 
-export { dayFromToday } from "./person-day.ts";
+export { dayFromToday, firstWeekdayFromToday } from "./person-day.ts";
 
 /** The issues of the scene by what they are for. WEB-1 to WEB-3 are the issues of `prepareWeb`. */
 export const planned = {
@@ -35,6 +35,9 @@ export const planned = {
   twice: "WEB-15",
 } as const;
 
+/** The days of *Drag me*, from today: three days in a row. */
+export const dragMeDays = { from: 2, to: 4 } as const;
+
 /** The title of the goal. */
 export const goalTitle = "Mobile app 2.0";
 
@@ -49,7 +52,7 @@ const scene: readonly {
   readonly to?: number;
 }[] = [
   { key: planned.goal, title: goalTitle, to: 12 },
-  { key: planned.dragged, title: "Drag me", from: 2, to: 4 },
+  { key: planned.dragged, title: "Drag me", ...dragMeDays },
   { key: planned.keys, title: "Keys only", from: 3, to: 5 },
   { key: planned.dotFrom, title: "Dot start", from: 1, to: 2 },
   { key: planned.dotTo, title: "Dot end", from: 6, to: 7 },
