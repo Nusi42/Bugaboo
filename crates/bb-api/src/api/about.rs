@@ -7,9 +7,12 @@
 //! `cargo build`) has none, and the answer says so by listing no parts and no files. Signed-in
 //! people may read it: the version is not shown to strangers.
 
+use std::sync::LazyLock;
+
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse as _, Response};
+use bb_api_words::about;
 use bb_app::auth::AuthenticateQuery;
 use rust_embed::RustEmbed;
 use serde::Serialize;
@@ -49,11 +52,12 @@ impl Kind {
         }
     }
 
-    const fn name_ends_with(self) -> &'static str {
+    /// The ending of the file's name (`bb_api_words::about`, written once for `xtask` too).
+    const fn end(self) -> &'static str {
         match self {
-            Self::CycloneDx => ".cdx.json",
-            Self::Spdx => ".spdx.json",
-            Self::Notices => "-notices.txt",
+            Self::CycloneDx => about::CYCLONEDX_END,
+            Self::Spdx => about::SPDX_END,
+            Self::Notices => about::NOTICES_END,
         }
     }
 
@@ -68,16 +72,23 @@ impl Kind {
         Self::ALL.into_iter().find(|kind| kind.word() == word)
     }
 
-    /// The embedded file of this kind: its name and bytes.
-    fn file(self) -> Option<(String, Vec<u8>)> {
-        let name = BuildFiles::iter().find(|name| name.ends_with(self.name_ends_with()))?;
-        let bytes = BuildFiles::get(&name)?.data.into_owned();
-        Some((name.into_owned(), bytes))
+    /// The embedded file of this kind.
+    fn file(self) -> Option<Vec<u8>> {
+        Some(
+            BuildFiles::get(&about::embedded_name(self.end()))?
+                .data
+                .into_owned(),
+        )
+    }
+
+    /// The name the file is saved under: it names the version.
+    fn name(self) -> String {
+        about::release_name(env!("CARGO_PKG_VERSION"), self.end())
     }
 }
 
 /// One part of the program.
-#[derive(Serialize, ToSchema)]
+#[derive(Clone, Serialize, ToSchema)]
 pub(crate) struct PartBody {
     /// The name of the crate or package, or the path of the file.
     name: String,
@@ -152,27 +163,36 @@ fn parts_of(cyclonedx: &[u8]) -> Vec<PartBody> {
         .collect()
 }
 
-fn about() -> AboutBody {
-    let parts = Kind::CycloneDx
+/// The parts of this build, read once from its parts list.
+static PARTS: LazyLock<Vec<PartBody>> = LazyLock::new(|| {
+    Kind::CycloneDx
         .file()
-        .map(|(_, bytes)| parts_of(&bytes))
-        .unwrap_or_default();
+        .map(|bytes| parts_of(&bytes))
+        .unwrap_or_default()
+});
+
+fn about() -> AboutBody {
     let files = Kind::ALL
         .into_iter()
-        .filter_map(|kind| {
-            kind.file().map(|(name, _)| AboutFileBody {
-                kind: kind.word().to_owned(),
-                name,
-                address: format!("/api/v1/about/files/{}", kind.word()),
-            })
+        .filter(|kind| kind.file().is_some())
+        .map(|kind| AboutFileBody {
+            kind: kind.word().to_owned(),
+            name: kind.name(),
+            address: format!("/api/v1/about/files/{}", kind.word()),
         })
         .collect();
     AboutBody {
         version: env!("CARGO_PKG_VERSION").to_owned(),
         license: env!("CARGO_PKG_LICENSE").to_owned(),
-        parts,
+        parts: PARTS.clone(),
         files,
     }
+}
+
+/// The answer that carries one file of the build.
+fn file_response(kind: Kind, bytes: Vec<u8>) -> Response {
+    let headers = download_headers(&kind.name(), kind.media_type(), bytes.len() as u64);
+    (StatusCode::OK, headers, bytes).into_response()
 }
 
 /// The version, the license and the parts of the program, and where to download its parts list
@@ -218,11 +238,10 @@ async fn download_about_file(
     auth.api()?
         .authenticate(info, AuthenticateQuery { session_token })
         .await?;
-    let (kind, (name, bytes)) = Kind::named(&kind)
-        .and_then(|kind| kind.file().map(|file| (kind, file)))
+    let (kind, bytes) = Kind::named(&kind)
+        .and_then(|kind| kind.file().map(|bytes| (kind, bytes)))
         .ok_or_else(|| ApiError::new(ErrorCode::NotFound))?;
-    let headers = download_headers(&name, kind.media_type(), bytes.len() as u64);
-    Ok((StatusCode::OK, headers, bytes).into_response())
+    Ok(file_response(kind, bytes))
 }
 
 pub(crate) fn routes<S>() -> OpenApiRouter<S>
@@ -266,6 +285,23 @@ mod tests {
         let body = about();
         assert_eq!(body.version, env!("CARGO_PKG_VERSION"));
         assert_eq!(body.license, "AGPL-3.0-or-later");
+    }
+
+    #[test]
+    fn a_file_of_the_build_is_sent_as_an_attachment_with_its_type() {
+        let response = file_response(Kind::Spdx, b"{}".to_vec());
+        assert_eq!(response.status(), StatusCode::OK);
+        let header = |name: &str| response.headers()[name].to_str().unwrap().to_owned();
+        assert_eq!(header("content-type"), "application/json");
+        assert_eq!(header("content-length"), "2");
+        assert_eq!(header("x-content-type-options"), "nosniff");
+        assert!(header("content-disposition").starts_with("attachment"));
+        assert!(header("content-disposition").contains(".spdx.json"));
+        let notices = file_response(Kind::Notices, Vec::new());
+        assert_eq!(
+            notices.headers()["content-type"],
+            "text/plain; charset=utf-8"
+        );
     }
 
     #[test]

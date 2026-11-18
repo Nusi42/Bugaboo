@@ -313,3 +313,29 @@ mod tests {
         assert_eq!(sec_matrix::role_actor("guest"), "role-guest");
     }
 }
+
+/// The files of a build that *About* offers (COMP-01): the parts list in two formats and the
+/// third-party notices. `xtask` writes them (into the folder `bb-api` embeds, and into the release
+/// folder), `bb-api` reads them; the endings and the names are written here once.
+pub mod about {
+    /// The ending of the parts list as CycloneDX.
+    pub const CYCLONEDX_END: &str = ".cdx.json";
+    /// The ending of the parts list as SPDX.
+    pub const SPDX_END: &str = ".spdx.json";
+    /// The ending of the third-party notices.
+    pub const NOTICES_END: &str = "-notices.txt";
+    /// The ending of the VEX statements (a release file; the program does not carry it).
+    pub const VEX_END: &str = ".vex.json";
+
+    /// The name of a file inside the folder that `bb-api` embeds: the same for every version.
+    #[must_use]
+    pub fn embedded_name(end: &str) -> String {
+        format!("parts{end}")
+    }
+
+    /// The name a file is saved under and has in a release: it names the version.
+    #[must_use]
+    pub fn release_name(version: &str, end: &str) -> String {
+        format!("bugaboo-{version}{end}")
+    }
+}
