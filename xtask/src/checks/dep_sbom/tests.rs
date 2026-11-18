@@ -142,10 +142,7 @@ fn comp_01_no_font_or_icon_set_ships_without_an_entry() {
 
 #[test]
 fn bad_example_an_accepted_advisory_without_its_register_row_or_justification() {
-    let accepted = |id: &str| vex::Accepted {
-        id: id.to_owned(),
-        reason: "a reason".to_owned(),
-    };
+    let accepted = |id: &str| vex::Accepted { id: id.to_owned() };
     let register = parse_register(
         "| Advisory | Package | Severity | Why accepted | Re-check | VEX justification |\n|---|---|---|---|---|---|\n| [A-1](x) | p | low | Because. | later | code_not_present |\n| [A-2](x) | p | low | Because. | later | whatever |\n",
     );

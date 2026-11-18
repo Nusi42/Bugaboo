@@ -3,8 +3,8 @@
 //!
 //! The advisories are the entries of `deny.toml` (`[advisories] ignore`) and of
 //! `tools/checks/npm-advisories.toml` (`accepted`). The reason is the one written in the
-//! register's *Accepted risks*, so it is written once; an entry the register does not describe
-//! falls back to its own reason line.
+//! register's *Accepted risks*, so it is written once. An accepted advisory without its row has no
+//! reason to give: its statement is empty of detail and DEP-SBOM fails (`problems`).
 
 use std::fs;
 use std::path::Path;
@@ -25,12 +25,10 @@ const NPM_ADVISORIES: &str = "tools/checks/npm-advisories.toml";
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct Accepted {
     pub(crate) id: String,
-    /// The reason line of the entry that accepts it.
-    pub(crate) reason: String,
 }
 
 /// The advisories an entry list accepts: items of `list` in the table `section`, each a table
-/// with an `id` and a `reason`.
+/// with an `id` (the reason of an entry is its register row's, not read here).
 fn entries(text: &str, path: &[&str]) -> anyhow::Result<Vec<Accepted>> {
     let value: toml::Value = toml::from_str(text).context("not valid TOML")?;
     let mut at = Some(&value);
@@ -39,13 +37,11 @@ fn entries(text: &str, path: &[&str]) -> anyhow::Result<Vec<Accepted>> {
     }
     let mut accepted = Vec::new();
     for item in at.and_then(toml::Value::as_array).into_iter().flatten() {
-        let text = |key: &str| item.get(key).and_then(toml::Value::as_str);
-        match (item.as_str(), text("id")) {
-            (Some(id), _) | (None, Some(id)) => accepted.push(Accepted {
-                id: id.to_owned(),
-                reason: text("reason").unwrap_or_default().to_owned(),
-            }),
-            _ => {}
+        let id = item
+            .as_str()
+            .or_else(|| item.get("id").and_then(toml::Value::as_str));
+        if let Some(id) = id {
+            accepted.push(Accepted { id: id.to_owned() });
         }
     }
     Ok(accepted)
@@ -131,10 +127,7 @@ pub(crate) fn vex(list: &PartsList, accepted: &[Accepted], register: &Rows) -> V
         .iter()
         .map(|entry| {
             let row = register.risks.get(&entry.id);
-            let detail = row
-                .map(|row| row.purpose.clone())
-                .filter(|text| !text.is_empty())
-                .unwrap_or_else(|| entry.reason.clone());
+            let detail = row.map(|row| row.purpose.clone()).unwrap_or_default();
             let mut statement = json!({
                 "id": entry.id,
                 "source": source(&entry.id),

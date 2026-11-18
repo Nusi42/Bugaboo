@@ -33,8 +33,8 @@ fn entries_are_read_from_both_shapes() {
         .collect();
     assert_eq!(ids, ["RUSTSEC-2023-0001", "RUSTSEC-2023-0002"]);
     assert_eq!(
-        entries(NPM, &["accepted"]).unwrap()[0].reason,
-        "an npm reason"
+        entries(NPM, &["accepted"]).unwrap()[0].id,
+        "GHSA-aaaa-bbbb-cccc"
     );
 }
 
@@ -54,10 +54,8 @@ fn a_statement_says_not_affected_with_the_reason_written_in_the_register() {
         found[0]["source"]["url"],
         "https://rustsec.org/advisories/RUSTSEC-2023-0001"
     );
-    assert_eq!(
-        found[2]["analysis"]["detail"], "an npm reason",
-        "own reason as the fallback"
-    );
+    // No row, no reason: the statement says so by being empty, and DEP-SBOM fails for it.
+    assert_eq!(found[2]["analysis"]["detail"], "");
     assert_eq!(
         formats::cyclonedx_errors(&document).unwrap(),
         Vec::<String>::new()
