@@ -175,3 +175,7 @@ The totals of a search (an issue with its sub-issues, a project) read *Time spen
 TEST-WORKING-TIME, TXT-DATES, TEST-CONCURRENT, SEC-MATRIX, ARCH-PERMS, ARCH-PERSON-REF, ARCH-AUTHZ-ONLY, ARCH-AI-TOOLS, ARCH-EVENTS, ARCH-VERSIONED, ARCH-SETTINGS, ARCH-PURE, ARCH-DB-PARITY and DATA-MARKS (see `tools/checks/catalog.toml`), backed by the named tests of WP-05, WP-06 and WP-07, and review where the decisions say so.
 
 <!-- COMP-10 checked: nothing ranks, evaluates or compares people by time; no AI tool reads working hours or other people's time entries. -->
+
+## Amendment (M9): old work days are the first user of the use case of old records
+
+The count of old work days and *Delete them* (decision 7) are the use cases `old_records` and `delete_old_records` of `bb_app::keeping`, for the kind `work-days` of `KEEP_KINDS` ([ADR-0045](0045-keep-and-delete-rules.md), decision 6). Time entries are the second kind: kept at least `keeping.time-entry-years` (10 at the start) from their day, then counted and deleted the same way, with the values of their fields and the events and history rows that carry their note (M6-F45), and the security-log action `time_entries.deleted`. The routes `/api/v1/work-days/old` stay at their addresses and answer as before; the general routes are below `/api/v1/admin/keep-rules`.
