@@ -32,13 +32,12 @@ use bb_core::oauth::GrantEnd;
 use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, Query};
 
-use super::{BackupPlaces, CreatedBackup, archive, fill, io, work_folder};
+use super::{BackupPlaces, CreatedBackup, archive, fill, io, seal, work_folder};
 use crate::anchor::{Anchored, LogSeal};
 use crate::auth::AuthStorage;
 use crate::chain::Verification;
 use crate::db::{Database, StoredId as _, Transaction};
 use crate::error::StoreError;
-use crate::keys::KeyRing;
 use crate::migrations::known_migrations;
 use crate::schema::{AccessKeyRow, PasskeyRow, SignInSession};
 use crate::secrets::keys_open;
@@ -97,8 +96,6 @@ pub struct RestoreInput<'a> {
     pub target: &'a RestoreTarget,
     /// The backups folder, the files folder and the replay list of the installation.
     pub places: &'a BackupPlaces,
-    /// The keys of the installation.
-    pub keys: &'a Arc<KeyRing>,
     /// The seal of the security log of the installation.
     pub seal: &'a LogSeal,
     /// Copies of the replay list given besides the data folder's and the backup's (the one
@@ -202,7 +199,8 @@ async fn run(
 
 /// Reads and checks the backup into `work`; nothing else is touched.
 async fn check(input: &RestoreInput<'_>, work: &Path) -> Result<Manifest, StoreError> {
-    let manifest = archive::read(input.archive, work)?;
+    let keys = &input.places.keys;
+    let manifest = archive::read(input.archive, work, keys)?;
     manifest
         .check_database(input.target.kind())
         .map_err(StoreError::BackupRefused)?;
@@ -227,7 +225,7 @@ async fn check(input: &RestoreInput<'_>, work: &Path) -> Result<Manifest, StoreE
         }
         DatabaseKind::Postgres => fill::secrets_in_rows(&database_member(work, &manifest)?)?,
     };
-    if keys_open(input.keys, &secrets) {
+    if seal::keys_fit(keys, &manifest.keys)? && keys_open(keys, &secrets) {
         Ok(manifest)
     } else {
         Err(StoreError::KeysDoNotOpen)
@@ -389,7 +387,11 @@ async fn record(
         )
         .with_lost(lost),
     ];
-    let storage = AuthStorage::new(restored.clone(), Arc::clone(input.keys), input.seal.clone());
+    let storage = AuthStorage::new(
+        restored.clone(),
+        Arc::clone(&input.places.keys),
+        input.seal.clone(),
+    );
     for run in &runs {
         let event = run
             .domain_event(

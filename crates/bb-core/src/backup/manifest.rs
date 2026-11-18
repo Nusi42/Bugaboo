@@ -37,7 +37,10 @@ pub struct Manifest {
     pub migrations: Vec<AppliedMigration>,
     /// The newest entry of the security log in the copy, if it has one.
     pub security_log_head: Option<LogHead>,
-    /// Every member of the archive but the manifest itself.
+    /// A check value of each master key of the installation that made the backup, so a restore
+    /// with the master key of another installation is refused.
+    pub keys: Vec<KeyCheck>,
+    /// Every member of the archive but the manifest itself and its seal.
     pub members: Vec<Member>,
 }
 
@@ -78,6 +81,17 @@ impl LogHead {
     pub fn digest(&self) -> Option<Digest> {
         hex::decode(&self.hash).map(Digest::new)
     }
+}
+
+/// The check value of a master key: an HMAC of a fixed text under the key, which shows whether
+/// a key of the same ID is the same key without showing the key.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct KeyCheck {
+    /// The ID of the key.
+    pub id: String,
+    /// The check value, as 64 hex digits.
+    pub check: String,
 }
 
 /// One member of the archive.
@@ -172,7 +186,9 @@ impl Manifest {
             MemberName::parse(&listed.name)
                 .map_err(|problem| BackupProblem::BadName(listed.name.clone(), problem))?;
             // Two names that differ only in case would be one file on Windows.
-            if listed.name == member::MANIFEST || !folded.insert(member::folded(&listed.name)) {
+            if [member::MANIFEST, member::SEAL].contains(&listed.name.as_str())
+                || !folded.insert(member::folded(&listed.name))
+            {
                 return Err(BackupProblem::Extra(listed.name.clone()));
             }
             if !is_digest(&listed.sha256) {
@@ -312,6 +328,10 @@ mod tests {
                 checksum: hex::encode(digest(1).as_bytes()),
             }],
             security_log_head: Some(LogHead::new(4, &digest(9))),
+            keys: vec![KeyCheck {
+                id: "k1".to_owned(),
+                check: hex::encode(digest(8).as_bytes()),
+            }],
             members: vec![
                 Member::new(
                     &MemberName::parse(member::DATABASE_SQLITE).unwrap(),

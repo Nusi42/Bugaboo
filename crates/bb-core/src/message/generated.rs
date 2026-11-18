@@ -14833,6 +14833,21 @@ pub fn restore_not_replayed(line: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `restore.not-sealed`.
+#[must_use]
+pub fn restore_not_sealed(
+    command: impl std::fmt::Display,
+    path: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("restore.not-sealed"),
+        vec![
+            ("command", Value::Text(command.to_string())),
+            ("path", Value::Text(path.to_string())),
+        ],
+    )
+}
+
 /// The message `restore.reason-bad-name`.
 #[must_use]
 pub fn restore_reason_bad_name(name: impl std::fmt::Display) -> Message {
@@ -24152,6 +24167,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "restore.not-replayed",
         "Not done again, because this Bugaboo cannot do it yet: {line}. Do it again by hand.",
+    ),
+    (
+        "restore.not-sealed",
+        "The backup {path} was not restored, and nothing was changed: it does not carry the seal of this installation's keys, so another installation or somebody else wrote it, or it was changed after. If it comes from another installation, copy that installation's key files first, then restore again: {command}",
     ),
     (
         "restore.reason-bad-name",

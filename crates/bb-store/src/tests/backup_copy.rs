@@ -8,14 +8,16 @@ use sea_query::{Alias, Table};
 use super::*;
 
 /// A copy of the backup at `archive` with its copy of the database changed by `change`, at
-/// `into`: every member's size and checksum is counted again, so only the change is wrong.
+/// `into`: every member's size and checksum is counted again, and the copy is sealed with
+/// `keys` again, so only the change is wrong.
 fn changed_backup(
+    keys: &KeyRing,
     archive: &Path,
     into: &Path,
     change: impl FnOnce(&Path) -> Result<(), Failure>,
 ) -> Result<(), Failure> {
     let work = tempfile::tempdir()?;
-    let mut manifest = archive::read(archive, work.path())?;
+    let mut manifest = archive::read(archive, work.path(), keys)?;
     let mut sources = Vec::new();
     for listed in &manifest.members {
         let name = MemberName::parse(&listed.name).map_err(|problem| format!("{problem}"))?;
@@ -29,7 +31,7 @@ fn changed_backup(
         &MemberName::parse(manifest.database.member()).map_err(|problem| format!("{problem}"))?,
     );
     change(&database)?;
-    archive::write(into, &mut manifest, &sources)?;
+    archive::write(into, &mut manifest, &sources, keys)?;
     Ok(())
 }
 
@@ -87,7 +89,7 @@ async fn ops_07_a_restore_that_fails_half_way_leaves_the_database_as_it_was() ->
                 // The copy of a SQLite database is one file, which a restore checks whole before it
                 // replaces anything: a damaged one is refused.
                 bb_testing::DatabaseKind::Sqlite => {
-                    changed_backup(&backup.path, &changed, |copy| {
+                    changed_backup(&installation.places.keys, &backup.path, &changed, |copy| {
                         let mut bytes = std::fs::read(copy)?;
                         bytes[..16].fill(0xff);
                         std::fs::write(copy, bytes)?;
@@ -97,7 +99,7 @@ async fn ops_07_a_restore_that_fails_half_way_leaves_the_database_as_it_was() ->
                 // A row the database refuses, or one that is not a row at all, in the middle of
                 // the copy of PostgreSQL.
                 bb_testing::DatabaseKind::Postgres => {
-                    changed_backup(&backup.path, &changed, |copy| {
+                    changed_backup(&installation.places.keys, &backup.path, &changed, |copy| {
                         with_line_after_the_first_event(copy, bad)
                     })?;
                 }

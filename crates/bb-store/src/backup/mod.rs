@@ -12,6 +12,7 @@ mod copy;
 mod fill;
 mod restore;
 mod runs;
+mod seal;
 mod value;
 
 use std::path::{Path, PathBuf};
@@ -28,6 +29,7 @@ use jiff::Timestamp;
 
 use crate::db::{Database, Dialect};
 use crate::error::StoreError;
+use crate::keys::KeyRing;
 
 pub use restore::{RestoreFailure, RestoreInput, RestoreReport, RestoreTarget, restore};
 
@@ -51,6 +53,9 @@ pub struct BackupPlaces {
     pub replay_list: PathBuf,
     /// Where each stored file lies inside `files`.
     pub file_paths: FilePaths,
+    /// The keys of the installation: a backup carries a seal and the check values of its master
+    /// keys, and a restore checks both before anything changes.
+    pub keys: Arc<KeyRing>,
 }
 
 /// A backup that was created.
@@ -240,10 +245,11 @@ impl Database {
                 })
                 .collect(),
             security_log_head: copied.log_head.map(|(seq, hash)| LogHead::new(seq, &hash)),
+            keys: seal::key_checks(&places.keys)?,
             members: Vec::new(),
         };
         let partial = work.join(format!("archive{EXTENSION}"));
-        let (size, checksum) = archive::write(&partial, &mut manifest, &sources)?;
+        let (size, checksum) = archive::write(&partial, &mut manifest, &sources, &places.keys)?;
         place_new(&partial, target).map_err(io)?;
         Ok(CreatedBackup {
             file: CreatedFile {

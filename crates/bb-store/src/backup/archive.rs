@@ -14,7 +14,12 @@ use bb_core::security_log::Digest;
 use sha2::{Digest as _, Sha256};
 use tar::{Archive, Builder, EntryType, Header};
 
+use super::seal;
 use crate::error::StoreError;
+use crate::keys::KeyRing;
+
+/// The most bytes the seal may have: 64 hex digits and room for a line end.
+const SEAL_LIMIT: u64 = 128;
 
 /// The most bytes a manifest may have: far more than one with a million files needs, and a
 /// limit on what a crafted file can make the restore read into memory.
@@ -106,11 +111,13 @@ fn header(size: u64, moment: i64) -> Header {
 }
 
 /// Writes the archive `target` (a new file): the manifest first, with the size and checksum of
-/// every member counted into it, then the members. Returns the size and SHA-256 of the archive.
+/// every member counted into it, then its seal under `keys`, then the members. Returns the size and
+/// SHA-256 of the archive.
 pub(crate) fn write(
     target: &Path,
     manifest: &mut Manifest,
     sources: &[Source],
+    keys: &KeyRing,
 ) -> Result<(u64, Digest), StoreError> {
     manifest.members = sources
         .iter()
@@ -126,6 +133,11 @@ pub(crate) fn write(
     let mut head = header(u64::try_from(json.len()).unwrap_or(u64::MAX), moment);
     builder
         .append_data(&mut head, member::MANIFEST, json.as_slice())
+        .map_err(io)?;
+    let sealed = seal::seal(keys, &json)?;
+    let mut head = header(u64::try_from(sealed.len()).unwrap_or(u64::MAX), moment);
+    builder
+        .append_data(&mut head, member::SEAL, sealed.as_bytes())
         .map_err(io)?;
     for source in sources {
         let file = File::open(&source.path).map_err(io)?;
@@ -176,31 +188,45 @@ pub(crate) fn extracted(into: &Path, name: &MemberName) -> PathBuf {
     }
 }
 
+/// The bytes of the next entry, which must be `name`, up to `limit` bytes.
+fn next_bytes(
+    entries: &mut tar::Entries<'_, impl Read>,
+    name: &str,
+    limit: u64,
+) -> Result<Vec<u8>, StoreError> {
+    let mut entry = entries
+        .next()
+        .ok_or_else(|| refused(BackupProblem::Missing(name.to_owned())))?
+        .map_err(|_| refused(BackupProblem::Unreadable))?;
+    let (found, _) = checked(&entry)?;
+    if found != name {
+        return Err(refused(BackupProblem::Missing(name.to_owned())));
+    }
+    let mut bytes = Vec::new();
+    (&mut entry)
+        .take(limit)
+        .read_to_end(&mut bytes)
+        .map_err(|_| refused(BackupProblem::Unreadable))?;
+    Ok(bytes)
+}
+
 /// Reads and checks the archive `archive`, putting its members into the empty folder `into`, and
-/// returns its manifest. Nothing outside `into` is written. A backup that fails a check leaves a
-/// refusal, and the caller removes `into`.
-pub(crate) fn read(archive: &Path, into: &Path) -> Result<Manifest, StoreError> {
+/// returns its manifest. The seal is checked under `keys` before any member is written: a backup
+/// this installation did not seal is refused with nothing written. Nothing outside `into` is
+/// written. A backup that fails a check leaves a refusal, and the caller removes `into`.
+pub(crate) fn read(archive: &Path, into: &Path, keys: &KeyRing) -> Result<Manifest, StoreError> {
     let file = File::open(archive).map_err(io)?;
     let mut archive = Archive::new(BufReader::new(file));
     let mut entries = archive
         .entries()
         .map_err(|_| refused(BackupProblem::Unreadable))?;
-    let manifest = {
-        let mut first = entries
-            .next()
-            .ok_or_else(|| refused(BackupProblem::Unreadable))?
-            .map_err(|_| refused(BackupProblem::Unreadable))?;
-        let (name, _) = checked(&first)?;
-        if name != member::MANIFEST {
-            return Err(refused(BackupProblem::Missing(member::MANIFEST.to_owned())));
-        }
-        let mut bytes = Vec::new();
-        (&mut first)
-            .take(MANIFEST_LIMIT)
-            .read_to_end(&mut bytes)
-            .map_err(|_| refused(BackupProblem::Unreadable))?;
-        Manifest::read(&bytes).map_err(refused)?
-    };
+    let bytes = next_bytes(&mut entries, member::MANIFEST, MANIFEST_LIMIT)?;
+    let manifest = Manifest::read(&bytes).map_err(refused)?;
+    let sealed = next_bytes(&mut entries, member::SEAL, SEAL_LIMIT)
+        .map_err(|_| StoreError::BackupNotSealed)?;
+    if !seal::sealed(keys, &bytes, &sealed) {
+        return Err(StoreError::BackupNotSealed);
+    }
     let mut found: Vec<MemberName> = Vec::new();
     for entry in entries {
         let mut entry = entry.map_err(|_| refused(BackupProblem::Unreadable))?;

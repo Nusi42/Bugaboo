@@ -42,3 +42,13 @@ Bugaboo runs on SQLite (the start) and PostgreSQL. Both have to be backed up whi
 ## Enforced by
 
 ARCH-DB-PARITY, DATA-MIGRATIONS, ARCH-PERMS, ARCH-SETTINGS, ARCH-EVENTS, SEC-MATRIX, LINT-PATHS, DATA-LOGS; review (the manifest, and the upgrade test before each release).
+
+## Amendment: a backup is sealed with the keys of its installation
+
+The security review of the first build found that a restore took any backup file whose checksums matched its manifest, so a file that somebody else wrote, for example one whose database plants an administrator, would be restored, and that a master key of another installation passed when the backup held no stored secret. Decision 1 is refined:
+
+- **The seal.** Every backup carries `manifest.seal` right after `manifest.json`: an HMAC-SHA256 of the exact bytes of the manifest under the log key of the installation, which never changes. The manifest names the SHA-256 of every other member, so the seal covers the whole backup. A restore checks it before it writes any member and refuses a backup without it, or with one its keys did not make, changing nothing. A backup of another installation is restored after its key files are imported (`bugaboo keys import`).
+- **The check values of the master keys.** The manifest lists, for each master key of the installation, its ID and an HMAC of a fixed text under it. A restore refuses a master key of the same ID with another check value, and keys that share no ID with the backup, before anything is replaced, whether or not the backup holds stored secrets.
+- Each HMAC starts with a text of its own, so neither can stand for the other or for a signature of the security log under the same key. The backup still holds no key (decision 1): an HMAC shows whether a key is the same key, not the key.
+
+Enforced by: the restore tests `ops_07_a_backup_another_installation_sealed_is_refused_before_anything_is_replaced` and `ops_07_a_wrong_master_key_stops_the_restore_before_anything_is_replaced` (both databases), and the archive test `ops_07_a_backup_this_installation_did_not_seal_is_refused`.

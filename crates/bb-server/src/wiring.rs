@@ -82,12 +82,21 @@ fn database_failed(error: &impl std::fmt::Display) -> anyhow::Error {
 pub(crate) struct ServerBackups {
     database: Database,
     data: DataFolder,
+    keys: Arc<bb_store::KeyRing>,
 }
 
 impl ServerBackups {
-    /// The backups of the installation in `data`, with its database.
-    pub(crate) const fn new(database: Database, data: DataFolder) -> Self {
-        Self { database, data }
+    /// The backups of the installation in `data`, with its database and the keys that seal them.
+    pub(crate) const fn new(
+        database: Database,
+        data: DataFolder,
+        keys: Arc<bb_store::KeyRing>,
+    ) -> Self {
+        Self {
+            database,
+            data,
+            keys,
+        }
     }
 
     fn folder(&self, named: Option<&str>) -> std::io::Result<PathBuf> {
@@ -104,7 +113,11 @@ impl BackupFiles for ServerBackups {
         now: jiff::Timestamp,
     ) -> BoxFuture<'_, std::io::Result<CreatedFile>> {
         Box::pin(async move {
-            let places = places(&self.data, self.folder(folder.as_deref())?);
+            let places = places(
+                &self.data,
+                self.folder(folder.as_deref())?,
+                Arc::clone(&self.keys),
+            );
             self.database
                 .create_backup(&places, purpose, now)
                 .await
@@ -205,7 +218,7 @@ pub(crate) async fn wire(
     })?;
     let seal = LogSeal::new(&keys, data.security_log_anchor());
     let csrf = CsrfKey::from_bytes(keys.csrf_key().to_bytes());
-    let storage = AuthStorage::new(database.clone(), keys, seal.clone());
+    let storage = AuthStorage::new(database.clone(), Arc::clone(&keys), seal.clone());
     let name = Message::from(message::APP_NAME).render();
     if settings.public_url.is_empty() {
         // Without it an AI app is told the address the request came to, which a name pointed at this
@@ -238,6 +251,7 @@ pub(crate) async fn wire(
         database.clone(),
         DataFolder::existing(data.root())
             .ok_or_else(|| anyhow!(message::cli_no_data(data.root().display()).render()))?,
+        Arc::clone(&keys),
     )))
     .with_mailer(Arc::new(SmtpMailer))
     .with_ai_provider(Arc::new(HttpAiProvider))

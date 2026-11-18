@@ -272,7 +272,7 @@ impl Rig {
         let keys = Arc::new(database.open_keys(&folder.path().join("keys")).await?);
         let seal = LogSeal::new(&keys, folder.path().join("logs").join("security-head.log"));
         let csrf = CsrfKey::from_bytes(keys.csrf_key().to_bytes());
-        let storage = AuthStorage::new(database.clone(), keys, seal.clone());
+        let storage = AuthStorage::new(database.clone(), Arc::clone(&keys), seal.clone());
         let clock = Arc::new(TestClock(AtomicI64::new(START)));
         let party = RelyingParty::from_public_url(PUBLIC_URL, "Bugaboo")?;
         let mailer = FakeMailer::default();
@@ -303,6 +303,7 @@ impl Rig {
         let services = services.with_backups(Arc::new(crate::wiring::ServerBackups::new(
             database.clone(),
             data,
+            keys,
         )));
         let services = match records {
             Some(records) => services.with_records(records),

@@ -50,7 +50,8 @@ A restore puts the data of a backup back in place of what is there now. It runs 
 The restore:
 
 - checks the whole backup first: a damaged backup, one from a newer Bugaboo, or one of another kind of database is refused, and nothing changes;
-- checks that the keys of this installation open the stored secrets of the backup; when they do not, it stops before anything changes and says which command to run;
+- checks that this installation's keys sealed the backup, so a file that another installation or somebody else wrote, or changed, is refused, and nothing changes;
+- checks that the keys of this installation are the keys of the backup and open its stored secrets; when they are not, it stops before anything changes and says which command to run;
 - creates a backup of what is there now, so you can go back to it the same way;
 - puts the data and the files back, and brings an older backup up to this version of Bugaboo;
 - signs everybody out;

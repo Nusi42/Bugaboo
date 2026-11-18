@@ -54,7 +54,7 @@ impl Installation {
             bb_testing::DatabaseKind::Sqlite => Place::File(folder.path().join("bugaboo.db")),
             bb_testing::DatabaseKind::Postgres => Place::Postgres(db.url().to_owned()),
         };
-        let keys = KeyRing::open_or_create(&folder.path().join("keys"))?;
+        let keys = Arc::new(KeyRing::open_or_create(&folder.path().join("keys"))?);
         let seal = LogSeal::new(&keys, folder.path().join("logs").join("security-head.log"));
         let files = folder.path().join("files");
         let places = BackupPlaces {
@@ -65,6 +65,7 @@ impl Installation {
                 let name = hex::encode(hash.as_bytes());
                 vec![format!("content/{}/{name}", &name[..2])]
             }),
+            keys,
         };
         Ok(Self {
             folder,
@@ -74,10 +75,8 @@ impl Installation {
         })
     }
 
-    fn keys(&self) -> Result<Arc<KeyRing>, StoreError> {
-        Ok(Arc::new(KeyRing::open_or_create(
-            &self.folder.path().join("keys"),
-        )?))
+    fn keys(&self) -> Arc<KeyRing> {
+        Arc::clone(&self.places.keys)
     }
 
     async fn open(&self) -> Result<Database, StoreError> {
@@ -103,12 +102,15 @@ impl Installation {
             error,
             before: None,
         })?;
+        let places = BackupPlaces {
+            keys: Arc::clone(keys),
+            ..self.places.clone()
+        };
         let result = restore(
             RestoreInput {
                 archive,
                 target: &target,
-                places: &self.places,
-                keys,
+                places: &places,
                 seal: &self.seal,
                 more_replay_lists: more,
                 now,
@@ -122,12 +124,8 @@ impl Installation {
         result
     }
 
-    fn storage(&self, database: &Database) -> Result<AuthStorage, StoreError> {
-        Ok(AuthStorage::new(
-            database.clone(),
-            self.keys()?,
-            self.seal.clone(),
-        ))
+    fn storage(&self, database: &Database) -> AuthStorage {
+        AuthStorage::new(database.clone(), self.keys(), self.seal.clone())
     }
 
     async fn restore(
@@ -136,11 +134,7 @@ impl Installation {
         more: &[PathBuf],
         now: Timestamp,
     ) -> Result<RestoreReport, RestoreFailure> {
-        let keys = self.keys().map_err(|error| RestoreFailure {
-            error,
-            before: None,
-        })?;
-        self.restore_with(archive, &keys, more, now).await
+        self.restore_with(archive, &self.keys(), more, now).await
     }
 }
 
@@ -248,10 +242,10 @@ async fn ops_07_a_backup_holds_no_keys() -> TestResult {
     each_database("ops_07_no_keys", async |db| {
         let installation = Installation::new(db)?;
         let database = installation.open().await?;
-        let storage = installation.storage(&database)?;
+        let storage = installation.storage(&database);
         let name = bb_core::technical::TechnicalName::new("mail.password")?;
         database
-            .put_secret(&*installation.keys()?, &name, b"hunter2-mail", at(1))
+            .put_secret(&installation.keys(), &name, b"hunter2-mail", at(1))
             .await?;
         let _ = storage;
         let backup = database
@@ -465,7 +459,7 @@ async fn ops_07_a_restore_replays_removals_switch_offs_and_taken_back_keys_made_
     each_database("ops_07_replay", async |db| {
         let installation = Installation::new(db)?;
         let database = installation.open().await?;
-        let storage = installation.storage(&database)?;
+        let storage = installation.storage(&database);
         let mut source = ids();
         let (ada, key) = a_key(&storage, &mut source).await?;
         let moment: Timestamp = "2026-11-10T10:00:00Z".parse()?;
@@ -533,7 +527,7 @@ async fn ops_07_every_restore_signs_everybody_out() -> TestResult {
     each_database("ops_07_sign_out", async |db| {
         let installation = Installation::new(db)?;
         let database = installation.open().await?;
-        let storage = installation.storage(&database)?;
+        let storage = installation.storage(&database);
         let backup_before = database
             .create_backup(&installation.places, Purpose::Regular, at(5))
             .await?;
@@ -566,7 +560,7 @@ async fn sec_15_after_a_restore_the_log_verifies_and_names_what_is_gone() -> Tes
     each_database("sec_15_restore_log", async |db| {
         let installation = Installation::new(db)?;
         let database = installation.open().await?;
-        let storage = installation.storage(&database)?;
+        let storage = installation.storage(&database);
         storage.append_security_log(&signed_in(1)).await?;
         let backup = database
             .create_backup(&installation.places, Purpose::Regular, at(10))
@@ -613,29 +607,87 @@ async fn sec_15_after_a_restore_the_log_verifies_and_names_what_is_gone() -> Tes
     .await
 }
 
+/// Keys of another installation in `folder`; with `log_key_of`, its log key is that folder's.
+fn other_keys(folder: &Path, log_key_of: Option<&Path>) -> Result<Arc<KeyRing>, Failure> {
+    if let Some(keys) = log_key_of {
+        std::fs::copy(keys.join("log.key"), folder.join("log.key"))?;
+    }
+    Ok(Arc::new(KeyRing::open_or_create(folder)?))
+}
+
 #[tokio::test]
 async fn ops_07_a_wrong_master_key_stops_the_restore_before_anything_is_replaced() -> TestResult {
     each_database("ops_07_wrong_key", async |db| {
         let installation = Installation::new(db)?;
         let database = installation.open().await?;
+        save(&database, 1).await?;
+        // A backup with no stored secret: the check value of the master key shows a foreign one.
+        let bare = database
+            .create_backup(&installation.places, Purpose::Regular, at(5))
+            .await?;
         let name = bb_core::technical::TechnicalName::new("mail.password")?;
         database
-            .put_secret(&*installation.keys()?, &name, b"hunter2-mail", at(1))
+            .put_secret(&installation.keys(), &name, b"hunter2-mail", at(6))
             .await?;
-        save(&database, 1).await?;
         let backup = database
             .create_backup(&installation.places, Purpose::Regular, at(10))
             .await?;
         save(&database, 2).await?;
         database.close().await;
-        // Another installation's keys.
+        let own = installation.folder.path().join("keys");
+        for archive in [&bare.path, &backup.path] {
+            // A master key of another installation beside this installation's log key.
+            let other = tempfile::tempdir()?;
+            let keys = other_keys(other.path(), Some(&own))?;
+            let failure = installation
+                .restore_with(archive, &keys, &[], at(20))
+                .await
+                .expect_err("the master key is another installation's");
+            assert!(
+                matches!(failure.error, StoreError::KeysDoNotOpen),
+                "{}",
+                failure.error
+            );
+            assert!(failure.before.is_none());
+        }
+        let database = installation.open().await?;
+        assert_eq!(saved(&database).await?, [1, 2]);
+        database.close().await;
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn ops_07_a_backup_another_installation_sealed_is_refused_before_anything_is_replaced()
+-> TestResult {
+    each_database("ops_07_foreign_seal", async |db| {
+        // A backup made by another installation, for example one whose database plants an
+        // administrator, does not carry this installation's seal.
+        let installation = Installation::new(db)?;
+        let database = installation.open().await?;
+        save(&database, 1).await?;
+        database.close().await;
         let other = tempfile::tempdir()?;
-        let keys = Arc::new(KeyRing::open_or_create(other.path())?);
+        let elsewhere = BackupPlaces {
+            keys: other_keys(other.path(), None)?,
+            ..installation.places.clone()
+        };
+        let database = installation.open().await?;
+        let foreign = database
+            .create_backup(&elsewhere, Purpose::Regular, at(10))
+            .await?;
+        save(&database, 2).await?;
+        database.close().await;
         let failure = installation
-            .restore_with(&backup.path, &keys, &[], at(20))
+            .restore(&foreign.path, &[], at(20))
             .await
-            .expect_err("the keys do not open the secrets");
-        assert!(matches!(failure.error, StoreError::KeysDoNotOpen));
+            .expect_err("the backup is another installation's");
+        assert!(
+            matches!(failure.error, StoreError::BackupNotSealed),
+            "{}",
+            failure.error
+        );
         assert!(failure.before.is_none());
         let database = installation.open().await?;
         assert_eq!(saved(&database).await?, [1, 2]);

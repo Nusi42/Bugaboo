@@ -16,11 +16,19 @@ fn manifest() -> Manifest {
         moment: Timestamp::from_second(1_767_225_600).unwrap(),
         migrations: Vec::new(),
         security_log_head: None,
+        keys: Vec::new(),
         members: Vec::new(),
     }
 }
 
-/// An archive with a database and one file, written into `folder`.
+/// The keys of an installation of the test, in `folder`.
+fn keys(folder: &Path) -> KeyRing {
+    let keys = folder.join("keys");
+    std::fs::create_dir_all(&keys).unwrap();
+    KeyRing::open_or_create(&keys).unwrap()
+}
+
+/// An archive with a database and one file, written into `folder` and sealed with its keys.
 fn written(folder: &Path) -> PathBuf {
     let database = folder.join("db");
     std::fs::write(&database, b"the rows").unwrap();
@@ -37,7 +45,7 @@ fn written(folder: &Path) -> PathBuf {
             path: file,
         },
     ];
-    write(&archive, &mut manifest(), &sources).unwrap();
+    write(&archive, &mut manifest(), &sources, &keys(folder)).unwrap();
     archive
 }
 
@@ -57,7 +65,7 @@ fn a_backup_file_reads_back_what_was_written() {
     assert_ne!(digest, Digest::new([0; 32]));
     let into = folder.path().join("out");
     std::fs::create_dir(&into).unwrap();
-    let read = read(&archive, &into).unwrap();
+    let read = read(&archive, &into, &keys(folder.path())).unwrap();
     assert_eq!(read.members.len(), 2);
     let file = extracted(&into, &MemberName::of_file("content/ab/abcd").unwrap());
     assert_eq!(std::fs::read(file).unwrap(), b"the bytes of an attachment");
@@ -77,18 +85,13 @@ fn a_changed_byte_is_refused() {
     let into = folder.path().join("out");
     std::fs::create_dir(&into).unwrap();
     assert_eq!(
-        refusal(read(&archive, &into)),
+        refusal(read(&archive, &into, &keys(folder.path()))),
         BackupProblem::Damaged(member::DATABASE_SQLITE.to_owned())
     );
 }
 
-/// An archive with the right manifest first and then an entry with a name and kind written
-/// straight into its header, as somebody who crafts a file would.
-fn crafted(folder: &Path, name: &str, kind: EntryType) -> PathBuf {
-    let archive = folder.join("crafted.backup");
-    let file = File::create(&archive).unwrap();
-    let mut builder = Builder::new(file);
-    // The manifest lists what a backup must hold, so the entry after it is read.
+/// Appends a manifest that lists a database of four bytes, as the first entry, and returns it.
+fn append_manifest(builder: &mut Builder<File>) -> Vec<u8> {
     let mut listed = manifest();
     listed.members.push(Member::new(
         &MemberName::parse(member::DATABASE_SQLITE).unwrap(),
@@ -99,6 +102,22 @@ fn crafted(folder: &Path, name: &str, kind: EntryType) -> PathBuf {
     let mut head = header(json.len() as u64, 0);
     builder
         .append_data(&mut head, member::MANIFEST, json.as_slice())
+        .unwrap();
+    json
+}
+
+/// An archive with the right manifest first and then an entry with a name and kind written
+/// straight into its header, as somebody who crafts a file would.
+fn crafted(folder: &Path, name: &str, kind: EntryType) -> PathBuf {
+    let archive = folder.join("crafted.backup");
+    let file = File::create(&archive).unwrap();
+    let mut builder = Builder::new(file);
+    // The manifest lists what a backup must hold, so the entry after it is read.
+    let json = append_manifest(&mut builder);
+    let sealed = seal::seal(&keys(folder), &json).unwrap();
+    let mut head = header(sealed.len() as u64, 0);
+    builder
+        .append_data(&mut head, member::SEAL, sealed.as_bytes())
         .unwrap();
     let mut head = header(4, 0);
     head.set_entry_type(kind);
@@ -128,7 +147,7 @@ fn ops_07_a_name_that_leaves_the_folder_is_refused() {
         let into = folder.path().join("restore").join("inside");
         std::fs::create_dir_all(&into).unwrap();
         assert_eq!(
-            refusal(read(&archive, &into)),
+            refusal(read(&archive, &into, &keys(folder.path()))),
             BackupProblem::BadName(name.to_owned(), problem),
             "{name}"
         );
@@ -137,6 +156,34 @@ fn ops_07_a_name_that_leaves_the_folder_is_refused() {
         assert!(!folder.path().join("restore").join("escaped").exists());
         assert!(!folder.path().join("escaped").exists());
     }
+}
+
+#[test]
+fn ops_07_a_backup_this_installation_did_not_seal_is_refused() {
+    // Sealed by the keys of another installation, or written by somebody without the keys.
+    let folder = tempfile::tempdir().unwrap();
+    let archive = written(folder.path());
+    let elsewhere = tempfile::tempdir().unwrap();
+    let into = folder.path().join("out");
+    std::fs::create_dir(&into).unwrap();
+    assert!(matches!(
+        read(&archive, &into, &keys(elsewhere.path())),
+        Err(StoreError::BackupNotSealed)
+    ));
+    assert_eq!(std::fs::read_dir(&into).unwrap().count(), 0);
+    let unsealed = folder.path().join("unsealed.backup");
+    let mut builder = Builder::new(File::create(&unsealed).unwrap());
+    append_manifest(&mut builder);
+    let mut head = header(4, 0);
+    builder
+        .append_data(&mut head, member::DATABASE_SQLITE, &b"evil"[..])
+        .unwrap();
+    builder.finish().unwrap();
+    assert!(matches!(
+        read(&unsealed, &into, &keys(folder.path())),
+        Err(StoreError::BackupNotSealed)
+    ));
+    assert_eq!(std::fs::read_dir(&into).unwrap().count(), 0);
 }
 
 #[test]

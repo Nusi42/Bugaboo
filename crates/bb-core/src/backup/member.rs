@@ -10,6 +10,8 @@ use core::fmt;
 
 /// The manifest: the one description of what the backup holds.
 pub const MANIFEST: &str = "manifest.json";
+/// The seal of the manifest: an HMAC of its bytes under a key of the installation.
+pub const SEAL: &str = "manifest.seal";
 /// The copy of a SQLite database.
 pub const DATABASE_SQLITE: &str = "database.sqlite";
 /// The copy of a PostgreSQL database: the rows of every table.
@@ -133,7 +135,7 @@ impl MemberName {
         if name.split('/').any(is_unsafe_on_windows) {
             return Err(NameProblem::Unsafe);
         }
-        let fixed = [MANIFEST, DATABASE_SQLITE, DATABASE_ROWS, REPLAY_LIST];
+        let fixed = [MANIFEST, SEAL, DATABASE_SQLITE, DATABASE_ROWS, REPLAY_LIST];
         let in_files = name
             .strip_prefix(FILES)
             .and_then(|rest| rest.strip_prefix('/'))

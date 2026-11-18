@@ -262,6 +262,7 @@
   "restore.reason-newer-migration": "it was created by a newer Bugaboo (its database has change {version}, which this Bugaboo does not know)",
   "restore.reason-changed-migration": "change {version} of its database differs from the one this Bugaboo has",
   "restore.reason-other-database": "it is a backup of another kind of database ({kind})",
+  "restore.not-sealed": "The backup {path} was not restored, and nothing was changed: it does not carry the seal of this installation's keys, so another installation or somebody else wrote it, or it was changed after. If it comes from another installation, copy that installation's key files first, then restore again: {command}",
   "restore.keys-do-not-open": "The backup {path} was not restored, and nothing was changed: the key files of this installation do not open its stored secrets. Copy the key files of the installation it comes from, then restore again: {command}",
   "restore.failed": "The restore stopped half way: {reason}. The data that was there before is in the backup {before}. To put it back, run: {command}",
   "restore.done": "Restored the backup of {moment}. Every change after that moment is gone, password and role changes included, apart from what the replay list did again: tell the people concerned.",

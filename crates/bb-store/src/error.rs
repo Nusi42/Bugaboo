@@ -65,6 +65,10 @@ pub enum StoreError {
     /// backup was not restored (ADR-0046, decision 1): the key files of its installation are
     /// needed (`bugaboo keys import`).
     KeysDoNotOpen,
+    /// The seal of a backup is missing or is not one the keys of this installation made: the
+    /// backup was written by another installation or by somebody else, or changed after
+    /// (ADR-0046, amendment). Nothing was changed.
+    BackupNotSealed,
 }
 
 /// Why a setting value was refused.
@@ -141,6 +145,9 @@ impl fmt::Display for StoreError {
             }
             Self::KeysDoNotOpen => {
                 formatter.write_str("the master key does not open the secrets of the backup")
+            }
+            Self::BackupNotSealed => {
+                formatter.write_str("the backup does not carry the seal of this installation")
             }
             Self::AnchorFile(error) => {
                 write!(formatter, "the security log anchor file failed: {error}")

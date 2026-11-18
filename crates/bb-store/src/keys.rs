@@ -116,6 +116,11 @@ impl SigningKey {
         Ok(Self(Zeroizing::new(random_bytes()?)))
     }
 
+    /// The key with these bytes: a master key that signs a check value of itself.
+    pub(crate) fn from_bytes(bytes: &[u8; KEY_LENGTH]) -> Self {
+        Self(Zeroizing::new(*bytes))
+    }
+
     /// The bytes of the key, for code that makes its own HMACs under it (the CSRF token of
     /// `bb-auth`). They are wiped from memory when dropped.
     #[must_use]

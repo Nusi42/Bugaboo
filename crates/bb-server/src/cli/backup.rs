@@ -56,13 +56,15 @@ pub(crate) struct RestoreArgs {
     replay_list: Option<PathBuf>,
 }
 
-/// Where the backups of an installation go and what they copy besides the database.
-pub(crate) fn places(data: &DataFolder, folder: PathBuf) -> BackupPlaces {
+/// Where the backups of an installation go, what they copy besides the database, and the keys
+/// that seal them.
+pub(crate) fn places(data: &DataFolder, folder: PathBuf, keys: Arc<KeyRing>) -> BackupPlaces {
     BackupPlaces {
         folder,
         files: data.files(),
         replay_list: data.replay_list(),
         file_paths: Arc::new(bb_files::stored_paths),
+        keys,
     }
 }
 
@@ -100,7 +102,11 @@ pub(super) async fn backup(args: &BackupArgs) -> anyhow::Result<()> {
     let now = Timestamp::now();
     let created = store
         .database
-        .create_backup(&places(&data, folder), Purpose::Regular, now)
+        .create_backup(
+            &places(&data, folder, Arc::clone(&store.keys)),
+            Purpose::Regular,
+            now,
+        )
         .await
         .map_err(|error| anyhow!(message::backups_failed(error).render()))?;
     let run = BackupRun::new(
@@ -154,8 +160,7 @@ pub(super) async fn restore(args: &RestoreArgs) -> anyhow::Result<()> {
         RestoreInput {
             archive: &args.file,
             target: &target,
-            places: &places(&data, data.backups()),
-            keys: &keys,
+            places: &places(&data, data.backups(), Arc::clone(&keys)),
             seal: &seal,
             more_replay_lists: &more,
             now: Timestamp::now(),
@@ -235,7 +240,7 @@ fn failed(args: &RestoreArgs, failure: &RestoreFailure) -> anyhow::Error {
         StoreError::BackupRefused(problem) => {
             anyhow!(message::restore_refused(path, reason(problem)).render())
         }
-        StoreError::KeysDoNotOpen => {
+        StoreError::KeysDoNotOpen | StoreError::BackupNotSealed => {
             let import = command_line(
                 "keys import",
                 &args.store,
@@ -243,7 +248,11 @@ fn failed(args: &RestoreArgs, failure: &RestoreFailure) -> anyhow::Error {
                     &Message::from(message::KEYS_FOLDER_PLACEHOLDER).render(),
                 )),
             );
-            anyhow!(message::restore_keys_do_not_open(path, import).render())
+            if matches!(failure.error, StoreError::BackupNotSealed) {
+                anyhow!(message::restore_not_sealed(path, import).render())
+            } else {
+                anyhow!(message::restore_keys_do_not_open(path, import).render())
+            }
         }
         other => anyhow!("{other}"),
     }
