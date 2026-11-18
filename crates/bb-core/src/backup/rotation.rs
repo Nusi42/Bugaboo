@@ -1,6 +1,7 @@
 //! Which backups the schedule keeps (ADR-0046, decision 3): the newest backup of each of the
-//! newest `keep-daily` days and of each of the newest `keep-weekly` weeks, counted in UTC (a week
-//! as ISO 8601 counts it). The backup a restore made of the present stays for the keep period of
+//! newest `keep-daily` days and of each of the newest `keep-weekly` weeks, counted in the time zone
+//! of the organization (*Region › Time zone*, UTC when none is set) and a week as ISO 8601 counts
+//! it. The backup a restore made of the present stays for the keep period of
 //! the security log and goes after it (decision 4). A name the module [`super::name`] does not read
 //! never comes here, so it is never deleted.
 
@@ -21,9 +22,15 @@ pub struct Keep {
     pub before_restore: SignedDuration,
 }
 
-/// The backups among `backups` that the rotation deletes at `now`, in the order given.
+/// The backups among `backups` that the rotation deletes at `now`, in the order given, with the
+/// days and weeks counted in `zone`.
 #[must_use]
-pub fn to_delete(backups: &[BackupName], keep: Keep, now: Timestamp) -> Vec<&BackupName> {
+pub fn to_delete<'a>(
+    backups: &'a [BackupName],
+    keep: Keep,
+    zone: &TimeZone,
+    now: Timestamp,
+) -> Vec<&'a BackupName> {
     let mut regular: Vec<&BackupName> = backups
         .iter()
         .filter(|backup| backup.purpose == Purpose::Regular)
@@ -33,7 +40,7 @@ pub fn to_delete(backups: &[BackupName], keep: Keep, now: Timestamp) -> Vec<&Bac
     let mut weeks = Vec::new();
     let mut kept: Vec<&BackupName> = Vec::new();
     for backup in regular {
-        let date = backup.moment.to_zoned(TimeZone::UTC).date();
+        let date = backup.moment.to_zoned(zone.clone()).date();
         let week = ISOWeekDate::from_date(date);
         let week = (week.year(), week.week());
         let mut keep_it = false;
@@ -85,13 +92,35 @@ mod tests {
         let backups: Vec<BackupName> = (0..40)
             .map(|day| BackupName::new(Purpose::Regular, at(day), "0.6.0"))
             .collect();
-        let deleted = to_delete(&backups, keep(), at(40));
+        let deleted = to_delete(&backups, keep(), &TimeZone::UTC, at(40));
         let kept: Vec<i64> = (0..40)
             .filter(|day| !deleted.iter().any(|gone| gone.moment == at(*day)))
             .collect();
         // Day 39 is a Friday: the seven newest days, and the newest backup (the Sunday) of each
         // of the two weeks before them.
         assert_eq!(kept, [20, 27, 33, 34, 35, 36, 37, 38, 39]);
+    }
+
+    #[test]
+    fn ops_07_the_days_of_the_rotation_are_the_days_of_the_organization() {
+        // 23:30 and 22:30 in UTC on one day; in Berlin the first is past midnight, the next day.
+        let late = Timestamp::from_second(1_767_571_200 + 23 * 3_600 + 1_800).unwrap();
+        let earlier = late.checked_sub(SignedDuration::from_hours(1)).unwrap();
+        let backups = vec![
+            BackupName::new(Purpose::Regular, late, "0.6.0"),
+            BackupName::new(Purpose::Regular, earlier, "0.6.0"),
+        ];
+        let now = late.checked_add(SignedDuration::from_hours(2)).unwrap();
+        assert_eq!(
+            to_delete(&backups, keep(), &TimeZone::UTC, now),
+            [&backups[1]],
+            "one day in UTC"
+        );
+        let berlin = TimeZone::get("Europe/Berlin").unwrap();
+        assert!(
+            to_delete(&backups, keep(), &berlin, now).is_empty(),
+            "two days in Berlin"
+        );
     }
 
     #[test]
@@ -105,10 +134,10 @@ mod tests {
             ),
             BackupName::new(Purpose::BeforeRestore, at(0), "0.6.0"),
         ];
-        let deleted = to_delete(&backups, keep(), at(6));
+        let deleted = to_delete(&backups, keep(), &TimeZone::UTC, at(6));
         assert_eq!(deleted, [&backups[1]]);
         let a_year_later = at(366);
-        let deleted = to_delete(&backups, keep(), a_year_later);
+        let deleted = to_delete(&backups, keep(), &TimeZone::UTC, a_year_later);
         assert_eq!(deleted, [&backups[1], &backups[2]]);
     }
 }

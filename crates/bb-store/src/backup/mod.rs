@@ -227,6 +227,13 @@ impl Database {
                         name: member,
                         path: source,
                     });
+                } else {
+                    // A file the database points to and the disk does not have (taken away while
+                    // the backup ran, or lost before): the backup goes on without it, and says so.
+                    tracing::warn!(
+                        file = %hex::encode(hash.as_bytes()),
+                        "a stored file is missing and is not in the backup"
+                    );
                 }
             }
         }

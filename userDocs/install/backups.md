@@ -20,7 +20,7 @@ Backups are as private as the data folder. Copy them to another disk or computer
 
 ## Backups every day
 
-Bugaboo creates a backup every night at the quiet hour of the organization (*Create a backup every day*, on at the start). It keeps the newest backup of each of the last 7 days and of each of the last 4 weeks (*Daily backups to keep*, *Weekly backups to keep*) and deletes the others. A backup that a restore created of what was there before is kept for the keep period of the security log (*Organization settings › Security*), whatever these settings say. A file in the folder whose name Bugaboo did not create is never deleted.
+Bugaboo creates a backup every night at the quiet hour of the organization (*Create a backup every day*, on at the start). It keeps the newest backup of each of the last 7 days and of each of the last 4 weeks (*Daily backups to keep*, *Weekly backups to keep*) and deletes the others; the days and weeks are those of the time zone of the organization (*Region › Time zone*), or UTC when none is set. A backup that a restore created of what was there before is kept for the keep period of the security log (*Organization settings › Security*), whatever these settings say. A file in the folder whose name Bugaboo did not create is never deleted. A stored file that is missing from the disk while a backup runs is left out of it, and the server log says which.
 
 ## Create a backup now
 

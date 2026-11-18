@@ -9,6 +9,7 @@ use bb_core::backup::run::BackupMaker;
 use bb_core::settings::{
     BACKUPS_DAILY, BACKUPS_KEEP_DAILY, BACKUPS_KEEP_WEEKLY, SECURITY_LOG_KEEP_DAYS,
 };
+use bb_core::wording::region::Region;
 
 use crate::auth::{AppError, AuthStore, Ctx};
 
@@ -45,7 +46,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await
             .map_err(|error| io(&error))?;
         let names: Vec<_> = files.into_iter().map(|file| file.name).collect();
-        for name in to_delete(&names, keep, self.now()) {
+        // The days and weeks of the organization's time zone.
+        let zone = Region::of(&layers).zone().clone();
+        for name in to_delete(&names, keep, &zone, self.now()) {
             self.services
                 .backups
                 .delete(folder.clone(), name.clone())
