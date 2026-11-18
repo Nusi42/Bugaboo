@@ -133,12 +133,14 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// One step of the daily clean-up: unfinished uploads a day after their last part, attachments
-    /// that stayed in the trash past its keep period, and the files that no attachment points to,
-    /// at most [`KEEP_STEP_ROWS`] of each. The row of a file goes first, in one statement that looks
-    /// for an attachment again, so a file that somebody added at the same moment is kept; the bytes
-    /// go after it.
+    /// that stayed in the trash past its keep period with their events, and the files that no
+    /// attachment points to, at most [`KEEP_STEP_ROWS`] of each. The rows of the history are made
+    /// from the events first, so a deleted file keeps its rows, without its name (M4-F93). The row
+    /// of a file goes first, in one statement that looks for an attachment again, so a file that
+    /// somebody added at the same moment is kept; the bytes go after it.
     pub(crate) async fn clean_up_files(&self) -> Result<Cleaned, AppError> {
         let mut cleaned = Cleaned::default();
+        self.catch_up_history().await?;
         let unfinished_before = self
             .now()
             .checked_sub(UNFINISHED_KEPT)

@@ -7,6 +7,7 @@
 //! an attachment can never be deleted, whatever the order of two jobs.
 
 use bb_app::files::AttachmentStore;
+use bb_core::event::RecordKind;
 use bb_core::files::{Attachment, MediaType, PreviewStatus, StoredFile, Upload};
 use bb_core::id::{AttachmentId, CommentId, IssueId, UploadId, UserId};
 use bb_core::security_log::Digest;
@@ -16,6 +17,7 @@ use sea_query::{Expr, ExprTrait as _, Order, Query, SelectStatement};
 use crate::auth::AuthStorage;
 use crate::db::{Database, Row, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
+use crate::keeping::{events_about, forget_events};
 use crate::locks::{LockClass, lock_key};
 use crate::schema::{AttachmentRow, StoredFileRow, UploadRow};
 
@@ -379,7 +381,8 @@ impl AttachmentStore for AuthStorage {
         before: Timestamp,
         limit: u64,
     ) -> Result<u64, StoreError> {
-        // The ones to delete are chosen first, so a limit holds on both databases.
+        // The ones to delete are chosen first, so a limit holds on both databases and every
+        // statement of the change finds the same ones.
         let mut select = Query::select();
         select
             .column(AttachmentRow::Id)
@@ -387,11 +390,21 @@ impl AttachmentStore for AuthStorage {
             .and_where(Expr::col(AttachmentRow::DeletedAt).lt(to_micros(before)))
             .order_by(AttachmentRow::Id, Order::Asc)
             .limit(limit);
-        let mut delete = Query::delete();
-        delete
-            .from_table(AttachmentRow::Table)
-            .and_where(Expr::col(AttachmentRow::Id).in_subquery(select));
-        self.database().execute(&delete).await
+        let mut transaction = self.database().begin().await?;
+        let chosen: Vec<Vec<u8>> = transaction
+            .fetch_all(&select)
+            .await?
+            .iter()
+            .map(|row| row.get(AttachmentRow::Id))
+            .collect::<Result<_, _>>()?;
+        let mut doomed = Query::select();
+        doomed
+            .column(AttachmentRow::Id)
+            .from(AttachmentRow::Table)
+            .and_where(Expr::col(AttachmentRow::Id).is_in(chosen));
+        let deleted = delete_attachments(&mut transaction, &doomed).await?;
+        transaction.commit().await?;
+        Ok(deleted)
     }
 
     async fn unreferenced_files(&self, limit: u64) -> Result<Vec<StoredFile>, StoreError> {
@@ -547,6 +560,26 @@ impl AttachmentStore for AuthStorage {
         });
         Ok(transaction.execute(&update).await? > 0)
     }
+}
+
+/// Deletes the attachments that `doomed` finds (a select of their IDs), with the events of each,
+/// which carry the file's name (ADR-0045, decision 4, M4-F93); the rows of the history made from
+/// them stay, because they hold no name. The files go later, when nothing points to them. Says how
+/// many attachments went.
+pub(crate) async fn delete_attachments(
+    transaction: &mut Transaction,
+    doomed: &SelectStatement,
+) -> Result<u64, StoreError> {
+    forget_events(
+        transaction,
+        &events_about(RecordKind::Attachment, doomed.clone()),
+    )
+    .await?;
+    let mut delete = Query::delete();
+    delete
+        .from_table(AttachmentRow::Table)
+        .and_where(Expr::col(AttachmentRow::Id).in_subquery(doomed.clone()));
+    transaction.execute(&delete).await
 }
 
 #[cfg(test)]

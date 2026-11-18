@@ -61,16 +61,27 @@ pub(crate) async fn delete_events(
     transaction: &mut Transaction,
     events: &SelectStatement,
 ) -> Result<(), StoreError> {
-    let mut outbox = Query::delete();
-    outbox
-        .from_table(Outbox::Table)
-        .and_where(Expr::col(Outbox::EventId).in_subquery(events.clone()));
-    transaction.execute(&outbox).await?;
     let mut history = Query::delete();
     history
         .from_table(HistoryEntryRow::Table)
         .and_where(Expr::col(HistoryEntryRow::Event).in_subquery(events.clone()));
     transaction.execute(&history).await?;
+    forget_events(transaction, events).await
+}
+
+/// Deletes the events that `events` finds with their entries in the outbox, and keeps the rows of
+/// the history made from them: for a record whose issue is still there, whose history rows hold
+/// none of the record's values (a file deleted for good, M4-F93). The same rule for `events` as
+/// [`delete_events`].
+pub(crate) async fn forget_events(
+    transaction: &mut Transaction,
+    events: &SelectStatement,
+) -> Result<(), StoreError> {
+    let mut outbox = Query::delete();
+    outbox
+        .from_table(Outbox::Table)
+        .and_where(Expr::col(Outbox::EventId).in_subquery(events.clone()));
+    transaction.execute(&outbox).await?;
     let mut delete = Query::delete();
     delete
         .from_table(Event::Table)
