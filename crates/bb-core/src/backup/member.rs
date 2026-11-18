@@ -19,6 +19,37 @@ pub const REPLAY_LIST: &str = "replay.list";
 /// The folder of the files the database points to, inside the archive.
 pub const FILES: &str = "files";
 
+/// The names Windows keeps for its devices, whatever the extension after them.
+const DEVICES: [&str; 4] = ["CON", "PRN", "AUX", "NUL"];
+/// The devices Windows numbers from 1 to 9.
+const NUMBERED_DEVICES: [&str; 2] = ["COM", "LPT"];
+
+/// Whether Windows would read a part of a path as something else than a file of that name: a
+/// device (`NUL`, `com1.txt`), or a name it cuts at a dot or a space at its end.
+fn is_unsafe_on_windows(part: &str) -> bool {
+    if part.ends_with('.') || part.ends_with(' ') {
+        return true;
+    }
+    let stem = part
+        .split('.')
+        .next()
+        .unwrap_or(part)
+        .trim_end()
+        .to_ascii_uppercase();
+    DEVICES.contains(&stem.as_str())
+        || NUMBERED_DEVICES.iter().any(|device| {
+            stem.strip_prefix(device)
+                .is_some_and(|number| matches!(number.as_bytes(), [b'1'..=b'9']))
+        })
+}
+
+/// The form of a member's name in which names that differ only in case are one, as they are on
+/// Windows and on most Macs: a backup that holds two of them is refused.
+#[must_use]
+pub fn folded(name: &str) -> String {
+    name.to_lowercase()
+}
+
 /// What kind of entry the archive says a member is.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum EntryKind {
@@ -42,7 +73,8 @@ pub enum NameProblem {
     /// A part of the name is `..` or `.`, or empty.
     LeavesFolder,
     /// The name has a backslash, a colon or a control character, which a system could read as a
-    /// separator or a drive.
+    /// separator or a drive, or a part Windows reads as a device or cuts short (`NUL`, `com1.txt`,
+    /// a dot or a space at its end).
     Unsafe,
     /// The member is a link, a folder or another special entry.
     NotAFile,
@@ -97,6 +129,9 @@ impl MemberName {
             .any(|part| part.is_empty() || part == "." || part == "..")
         {
             return Err(NameProblem::LeavesFolder);
+        }
+        if name.split('/').any(is_unsafe_on_windows) {
+            return Err(NameProblem::Unsafe);
         }
         let fixed = [MANIFEST, DATABASE_SQLITE, DATABASE_ROWS, REPLAY_LIST];
         let in_files = name
@@ -186,6 +221,20 @@ mod tests {
                 Err(NameProblem::NotAFile),
             ),
             ("files/pipe", EntryKind::Other, Err(NameProblem::NotAFile)),
+            ("files/CON", EntryKind::File, Err(NameProblem::Unsafe)),
+            ("files/nul.txt", EntryKind::File, Err(NameProblem::Unsafe)),
+            (
+                "files/a/Com1.tar.gz",
+                EntryKind::File,
+                Err(NameProblem::Unsafe),
+            ),
+            ("files/lpt9", EntryKind::File, Err(NameProblem::Unsafe)),
+            ("files/aux /a", EntryKind::File, Err(NameProblem::Unsafe)),
+            ("files/a.", EntryKind::File, Err(NameProblem::Unsafe)),
+            ("files/a ", EntryKind::File, Err(NameProblem::Unsafe)),
+            ("files/com0", EntryKind::File, Ok(())),
+            ("files/com10", EntryKind::File, Ok(())),
+            ("files/console", EntryKind::File, Ok(())),
         ];
         for (name, kind, expected) in cases {
             let found = MemberName::check(name, *kind).map(|_| ());

@@ -7,6 +7,8 @@
 //! program does not know or one that differs, and a member whose bytes do not match are all
 //! refused (decision 4).
 
+use std::collections::HashSet;
+
 use jiff::Timestamp;
 use serde::{Deserialize, Serialize};
 
@@ -165,10 +167,12 @@ impl Manifest {
 
     fn check_form(&self) -> Result<(), BackupProblem> {
         let mut seen: Vec<&str> = Vec::with_capacity(self.members.len());
+        let mut folded = HashSet::with_capacity(self.members.len());
         for listed in &self.members {
             MemberName::parse(&listed.name)
                 .map_err(|problem| BackupProblem::BadName(listed.name.clone(), problem))?;
-            if listed.name == member::MANIFEST || seen.contains(&listed.name.as_str()) {
+            // Two names that differ only in case would be one file on Windows.
+            if listed.name == member::MANIFEST || !folded.insert(member::folded(&listed.name)) {
                 return Err(BackupProblem::Extra(listed.name.clone()));
             }
             if !is_digest(&listed.sha256) {
@@ -406,6 +410,14 @@ mod tests {
         assert_eq!(
             Manifest::read(&twice.to_json().unwrap()),
             Err(BackupProblem::Extra("files/content/ab/ab".to_owned()))
+        );
+        let mut in_case = manifest();
+        let mut upper = in_case.members[1].clone();
+        upper.name = "files/content/AB/ab".to_owned();
+        in_case.members.push(upper);
+        assert_eq!(
+            Manifest::read(&in_case.to_json().unwrap()),
+            Err(BackupProblem::Extra("files/content/AB/ab".to_owned()))
         );
         let mut without = manifest();
         without.members.remove(0);
