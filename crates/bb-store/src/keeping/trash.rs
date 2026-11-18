@@ -3,7 +3,8 @@
 //! versions, mentions and marks, the rows of its files (the files go when nothing points to them
 //! any more), its relations and its place under or over other issues, its fields, tags, labels,
 //! followers and people, its words for the search, its plan, its agent work, its notifications, its
-//! history, and the events of all of them with their entries in the outbox.
+//! history, and the events of all of them with their entries in the outbox. The issue at the other
+//! end of a relation keeps the rows of its history about the relation.
 //!
 //! An issue with a time entry stays in the trash: a time entry is a business record that only an
 //! administrator deletes (§147 AO, §257 HGB), so the purge never takes one along. When the last of
@@ -17,7 +18,7 @@ use sea_query::{
     SelectStatement, TableRef,
 };
 
-use super::{delete_events, events_about, hold_trashed};
+use super::{delete_events, events_about, forget_events, hold_trashed};
 use crate::db::{Database, Transaction};
 use crate::error::StoreError;
 use crate::files::delete_attachments;
@@ -117,11 +118,17 @@ async fn delete_events_and_files(
         (RecordKind::Issue, &doomed.chosen),
         (RecordKind::Follower, &doomed.chosen),
         (RecordKind::Comment, &doomed.comments),
-        (RecordKind::Relation, &doomed.relations),
         (RecordKind::AgentWork, &doomed.works),
     ] {
         delete_events(transaction, &events_about(kind, records.clone())).await?;
     }
+    // A relation is history of the issue at its other end too, which stays: its rows there are kept
+    // (the rows of the purged issue go with the issue below), only the events go.
+    forget_events(
+        transaction,
+        &events_about(RecordKind::Relation, doomed.relations.clone()),
+    )
+    .await?;
     delete_attachments(transaction, &doomed.attachments).await?;
     Ok(())
 }

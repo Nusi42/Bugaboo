@@ -4,9 +4,11 @@
 //! deletes.
 
 use axum::http::StatusCode;
+use bb_app::auth::RequestInfo;
 use bb_app::comments::CommentStore as _;
 use bb_app::context::Clock as _;
 use bb_app::files::AttachmentStore as _;
+use bb_app::history::HistoryStore as _;
 use bb_app::issues::IssueStore as _;
 use bb_core::event::{EntityKind, RecordKind};
 use bb_core::files::TRASH_KEPT;
@@ -66,6 +68,21 @@ async fn events_about(rig: &Rig, records: &[EntityId]) -> Result<usize, Failure>
     Ok(found)
 }
 
+/// How many rows of history the issue has stored, also those the page leaves out because the other
+/// issue of a relation is gone.
+async fn history_rows(rig: &Rig, issue: IssueId) -> Result<usize, Failure> {
+    // The page reads the events into rows first; the store's rows are counted after that.
+    rig.services
+        .ctx(RequestInfo::default())
+        .catch_up_history()
+        .await?;
+    Ok(rig
+        .storage
+        .history_page(issue, None, None, 0, 1000)
+        .await?
+        .len())
+}
+
 /// The daily jobs, as a new day starts them.
 async fn a_day_later(rig: &Rig, days: i64) -> Result<(), Failure> {
     rig.clock.advance(days * SECONDS_PER_DAY);
@@ -78,7 +95,7 @@ async fn priv_05_the_trash_is_deleted_after_its_period_with_its_files_and_events
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let (doomed, doomed_id) = new_issue(&site, &mut ada, "Printer jams").await?;
-        let (kept, _) = new_issue(&site, &mut ada, "Paper tray").await?;
+        let (kept, kept_id) = new_issue(&site, &mut ada, "Paper tray").await?;
         let written = ada
             .send(
                 "POST",
@@ -101,6 +118,7 @@ async fn priv_05_the_trash_is_deleted_after_its_period_with_its_files_and_events
         let version = version_of(&mut ada, &kept).await?;
         ok(&put_under(&mut ada, &kept, version, Some(&doomed)).await?)?;
         into_the_trash(&mut ada, &doomed).await?;
+        let rows_before = history_rows(&rig, kept_id).await?;
         let records = [doomed_id.into(), comment.into(), attachment.into()];
         assert!(events_about(&rig, &records).await? > 0);
 
@@ -127,6 +145,8 @@ async fn priv_05_the_trash_is_deleted_after_its_period_with_its_files_and_events
             "{}",
             relations.body
         );
+        // The history of the other issue keeps its rows, also those of the relation that went.
+        assert_eq!(history_rows(&rig, kept_id).await?, rows_before);
         // Safe to run again.
         assert_eq!(
             rig.storage
