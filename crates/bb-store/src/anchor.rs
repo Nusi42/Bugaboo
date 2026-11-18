@@ -21,6 +21,13 @@
 //! <signature>` with the head of the restored log and the range of entries that are gone, signed
 //! under a domain of its own. Lines before the newest new start no longer count, so the anchor
 //! vouches for the restored log from there on, and the line keeps saying what was lost.
+//!
+//! The file would grow for ever, so the job that prunes the log trims it after it deleted blocks
+//! (M1-F26, ADR-0045, decision 5): only the newest line counts, so only it is kept, after the newest
+//! new start copied as it was, so the file keeps saying what a restore lost. The trimmed file is
+//! written next to the old one and renamed into place; a crash between leaves the old file whole.
+//! A line appended while the file is trimmed may be lost, which leaves the file behind the
+//! database, which is harmless (as above).
 
 use std::fs;
 use std::io::Write as _;
@@ -37,6 +44,23 @@ const ANCHOR_DOMAIN: &[u8] = b"bugaboo.security-log.anchor.v1";
 const RESTART_DOMAIN: &[u8] = b"bugaboo.security-log.anchor.restart.v1";
 /// The first word of a new start.
 const RESTART: &str = "restart";
+
+/// The extension of the trimmed anchor file while it is written, before it is renamed into place.
+const TRIMMED_EXTENSION: &str = "trimmed";
+
+/// The newest new start of the anchor file: the line as it was written, and the head of the restored
+/// log it names (`None` for an empty log).
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct Restart {
+    line: String,
+    head: Option<(i64, Digest)>,
+}
+
+/// What the lines of the anchor file say: the newest entry, and the newest new start.
+struct Lines {
+    anchored: Anchored,
+    restart: Option<Restart>,
+}
 
 /// What the anchor file knows.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -122,14 +146,28 @@ impl LogSeal {
 
     /// The newest entry written down.
     pub(crate) fn latest(&self) -> Result<Anchored, StoreError> {
+        Ok(self.lines()?.anchored)
+    }
+
+    /// The newest entry written down, and the newest new start; a forged line makes the file
+    /// [`Anchored::Forged`] and nothing else.
+    fn lines(&self) -> Result<Lines, StoreError> {
+        let forged = Lines {
+            anchored: Anchored::Forged,
+            restart: None,
+        };
         let text = match fs::read(&self.file) {
             Ok(bytes) => bytes,
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
-                return Ok(Anchored::Nothing);
+                return Ok(Lines {
+                    anchored: Anchored::Nothing,
+                    restart: None,
+                });
             }
             Err(error) => return Err(StoreError::AnchorFile(error)),
         };
         let mut newest: Option<(i64, Digest)> = None;
+        let mut restart: Option<Restart> = None;
         // Only lines that end with a newline are whole; the rest is a write that was cut off.
         let whole = text
             .iter()
@@ -141,20 +179,71 @@ impl LogSeal {
                 .and_then(|rest| rest.strip_prefix(' '))
             {
                 let Some((seq, hash)) = self.read_restart(rest) else {
-                    return Ok(Anchored::Forged);
+                    return Ok(forged);
                 };
                 // A new start: what came before belongs to a log that was replaced.
                 newest = (seq > 0).then_some((seq, hash));
+                restart = Some(Restart {
+                    line: line.to_owned(),
+                    head: newest,
+                });
                 continue;
             }
             let Some((seq, hash)) = self.read_line(line) else {
-                return Ok(Anchored::Forged);
+                return Ok(forged);
             };
             if newest.is_none_or(|(known, _)| seq >= known) {
                 newest = Some((seq, hash));
             }
         }
-        Ok(newest.map_or(Anchored::Nothing, |(seq, hash)| Anchored::At(seq, hash)))
+        Ok(Lines {
+            anchored: newest.map_or(Anchored::Nothing, |(seq, hash)| Anchored::At(seq, hash)),
+            restart,
+        })
+    }
+
+    /// Trims the file to its newest new start and its newest line, by [`Self::write_trimmed`] and a
+    /// rename. Returns whether it did: a file without a line, or with a forged one, is left as it
+    /// is, so a forgery stays for the verification to report.
+    pub(crate) fn trim(&self) -> Result<bool, StoreError> {
+        let Some(trimmed) = self.write_trimmed()? else {
+            return Ok(false);
+        };
+        fs::rename(&trimmed, &self.file).map_err(StoreError::AnchorFile)?;
+        Ok(true)
+    }
+
+    /// The first half of [`Self::trim`]: writes the newest new start as it was and the newest line,
+    /// signed again when the new start does not name it already, to a file next to the anchor file
+    /// and says where. The anchor file itself is not touched.
+    fn write_trimmed(&self) -> Result<Option<PathBuf>, StoreError> {
+        let Lines { anchored, restart } = self.lines()?;
+        let head = match anchored {
+            Anchored::At(seq, hash) => Some((seq, hash)),
+            Anchored::Nothing => None,
+            Anchored::Forged => return Ok(None),
+        };
+        if head.is_none() && restart.is_none() {
+            return Ok(None);
+        }
+        let trimmed = self.file.with_extension(TRIMMED_EXTENSION);
+        // A trimmed file of a run that stopped half way is old: it is replaced.
+        match fs::remove_file(&trimmed) {
+            Err(error) if error.kind() != std::io::ErrorKind::NotFound => {
+                return Err(StoreError::AnchorFile(error));
+            }
+            _ => {}
+        }
+        let written = Self::with_key(self.key.clone(), &trimmed);
+        if let Some(restart) = &restart {
+            written.append_line(&format!("{}\n", restart.line))?;
+        }
+        if let Some((seq, hash)) = head
+            && restart.as_ref().is_none_or(|restart| restart.head != head)
+        {
+            written.record(seq, &hash)?;
+        }
+        Ok(Some(trimmed))
     }
 
     fn read_line(&self, line: &str) -> Option<(i64, Digest)> {
@@ -272,6 +361,70 @@ mod tests {
         let other = LogSeal::with_key(SigningKey::generate().unwrap(), seal.file.clone());
         other.restart(Some((1, digest(1))), (2, 5)).unwrap();
         assert_eq!(seal.latest().unwrap(), Anchored::Forged);
+    }
+
+    #[test]
+    fn sec_15_the_anchor_file_is_trimmed_and_keeps_its_newest_line() {
+        let (_folder, seal) = seal();
+        assert!(!seal.trim().unwrap(), "no file: nothing to trim");
+        for seq in 1..=5 {
+            seal.record(seq, &digest(u8::try_from(seq).unwrap()))
+                .unwrap();
+        }
+        let before = fs::read(&seal.file).unwrap();
+        // A crash between the write and the rename leaves the old file whole.
+        let trimmed = seal.write_trimmed().unwrap().unwrap();
+        assert_eq!(fs::read(&seal.file).unwrap(), before);
+        assert_eq!(seal.latest().unwrap(), Anchored::At(5, digest(5)));
+        assert!(trimmed.exists());
+        // The next trim replaces what the stopped one left.
+        assert!(seal.trim().unwrap());
+        assert!(!trimmed.exists());
+        let text = fs::read_to_string(&seal.file).unwrap();
+        assert_eq!(text.lines().count(), 1);
+        assert_eq!(seal.latest().unwrap(), Anchored::At(5, digest(5)));
+        // The log goes on after a trim.
+        seal.record(6, &digest(6)).unwrap();
+        assert_eq!(seal.latest().unwrap(), Anchored::At(6, digest(6)));
+    }
+
+    #[test]
+    fn sec_15_a_trim_after_a_new_start_keeps_the_head_of_the_restored_log() {
+        let (_folder, seal) = seal();
+        seal.record(5, &digest(5)).unwrap();
+        seal.restart(Some((3, digest(3))), (4, 5)).unwrap();
+        let text = fs::read_to_string(&seal.file).unwrap();
+        let restart = text.lines().nth(1).unwrap().to_owned();
+        assert!(seal.trim().unwrap());
+        assert_eq!(seal.latest().unwrap(), Anchored::At(3, digest(3)));
+        // The new start alone names the head: it is the whole file, as it was written.
+        assert_eq!(
+            fs::read_to_string(&seal.file).unwrap(),
+            format!("{restart}\n")
+        );
+        seal.record(4, &digest(14)).unwrap();
+        assert!(seal.trim().unwrap());
+        assert_eq!(seal.latest().unwrap(), Anchored::At(4, digest(14)));
+        // The new start stays as it was, so the file keeps saying what the restore lost.
+        let text = fs::read_to_string(&seal.file).unwrap();
+        assert_eq!(text.lines().count(), 2);
+        assert_eq!(text.lines().next(), Some(restart.as_str()));
+        // A restored log with no entries: the new start is kept too.
+        seal.restart(None, (1, 4)).unwrap();
+        assert!(seal.trim().unwrap());
+        assert_eq!(seal.latest().unwrap(), Anchored::Nothing);
+        assert_eq!(fs::read_to_string(&seal.file).unwrap().lines().count(), 1);
+    }
+
+    #[test]
+    fn bad_example_a_forged_anchor_file_is_not_trimmed() {
+        let (_folder, seal) = seal();
+        seal.record(1, &digest(1)).unwrap();
+        let other = LogSeal::with_key(SigningKey::generate().unwrap(), seal.file.clone());
+        other.record(2, &digest(2)).unwrap();
+        let before = fs::read(&seal.file).unwrap();
+        assert!(!seal.trim().unwrap());
+        assert_eq!(fs::read(&seal.file).unwrap(), before);
     }
 
     #[test]

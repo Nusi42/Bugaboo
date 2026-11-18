@@ -142,6 +142,11 @@ impl Database {
         )
         .await?;
         transaction.commit().await?;
+        // The anchor file is trimmed by the same job (M1-F26). A trim that fails leaves a longer
+        // file, which still verifies, so the deletion stands.
+        if let Err(error) = seal.trim() {
+            tracing::warn!(cause = %error, "the anchor file of the security log could not be trimmed");
+        }
         Ok(deleted)
     }
 }
