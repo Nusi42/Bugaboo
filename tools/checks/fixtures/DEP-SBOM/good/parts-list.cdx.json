@@ -1,0 +1,8 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6",
+  "components": [
+    { "type": "library", "name": "itoa", "version": "1.0.0" },
+    { "type": "library", "name": "serde", "version": "1.0.2" }
+  ]
+}

@@ -37,6 +37,7 @@ mod data_marks;
 pub(crate) mod data_migrations;
 pub(crate) mod dep_licenses;
 pub(crate) mod dep_register;
+mod dep_sbom;
 mod dev_ports;
 mod doc_adr_enforced;
 mod doc_generated;
@@ -248,6 +249,7 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(data_logs::DataLogs),
         Box::new(dep_register::DepRegister),
         Box::new(dep_licenses::DepLicenses),
+        Box::new(dep_sbom::DepSbom),
         Box::new(git_files::GitFiles),
         Box::new(git_commit_msg::GitCommitMsg),
         Box::new(git_linear::GitLinear),

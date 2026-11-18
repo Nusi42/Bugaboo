@@ -502,8 +502,8 @@ The decisions are [ADR-0013](../adr/0013-ai.md) and [ADR-0029](../adr/0029-ai-ag
 
 | Artifact | Made by | When |
 |----------|---------|------|
-| SBOM (CycloneDX + SPDX) | `cargo cyclonedx` + `@cyclonedx/cyclonedx-npm`, merged by xtask | every release |
-| Third-party notices | `cargo about` + npm license data, rendered by xtask | every release; shown in *About › Licenses* |
+| SBOM, the parts list (CycloneDX 1.6 + SPDX 2.3) | xtask writes both itself from `cargo metadata` (normal dependencies of each release target), `Cargo.lock`, `package-lock.json` and the register (`xtask/src/release/`); checked against both schemas (kept as test data in `tools/testdata/sbom/`). Enforced by: DEP-SBOM | every CI run (checked) and every release (written into the release folder and the program) |
+| Third-party notices | xtask, from the license files of the parts and `docs/third-party/notices/` | every release; shown in *About* |
 | Third-party register check | xtask compares lockfiles with `docs/third-party/` | every CI run |
 | License policy | `cargo deny` (`deny.toml`) and the same list for npm | every CI run |
 | Vulnerability scan + VEX | `cargo deny check advisories` and `npm audit` (SEC-ADVISORIES); accepted ones are the `ignore` list in `deny.toml` and `tools/checks/npm-advisories.toml`, each with a row in the register's *Accepted risks*; VEX statements in `security/vex/` | every CI run and daily |

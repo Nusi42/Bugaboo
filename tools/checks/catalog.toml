@@ -743,12 +743,19 @@ status = "planned"
 
 [[check]]
 id = "DEP-SBOM"
-title = "Release has CycloneDX and SPDX SBOMs and third-party notices"
+title = "The parts list (CycloneDX and SPDX) names every shipped crate and package with license and checksum, and fits its schemas"
 rule = "COMP-01, COMP-02"
-tool = "cargo-cyclonedx + @cyclonedx/cyclonedx-npm + cargo-about"
-when = ["release"]
-files = ["*"]
-status = "planned"
+tool = "xtask (the parts list from the lockfiles, checked against both schemas)"
+when = ["ci", "release"]
+files = [
+  "Cargo.lock",
+  "**/Cargo.toml",
+  "**/package-lock.json",
+  "docs/third-party/**",
+  "xtask/src/release/**",
+  "tools/testdata/sbom/**",
+]
+status = "active"
 
 [[check]]
 id = "DOC-GENERATED"
