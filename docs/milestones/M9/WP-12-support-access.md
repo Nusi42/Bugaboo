@@ -1,6 +1,6 @@
 # WP-12 — *Support access* with the customer's approval
 
-**Wave 3 · Folder / branch:** `bugaboo.win5` / `WIN5` · **Model:** Opus
+**Wave 3 · Folder / branch:** `bugaboo.win5` / `WIN5` · **Model:** Opus · moves to M14 if the cut of M9-Q20 is taken (DIST-03 then becomes a V1 feature; the "nothing by default" test stays in WP-08)
 **Features:** DIST-03 (server and screen). [ADR-0048](../../adr/0048-support-access-with-the-customers-approval.md); ADR-0012; architecture §12, boundary 4.
 
 ## Goal
@@ -14,10 +14,10 @@ The record and its rules in `crates/bb-core/src/support_access.rs` (new, pure: t
 ## What is decided
 
 - **Nothing by default** (ADR-0048, decision 1): no account, key or route exists for us; the test of default settings (WP-08) includes that the list of support accesses is empty at the start.
-- **Making it** (decision 2, M9-Q13 as answered): *Change organization settings*; a name, an e-mail address, a reason, a role among the roles that hold no permission the maker lacks (the start: *Viewer*), the projects it counts in, an end (8 hours at the start, at most 72); Bugaboo shows a one-time link good for one hour, which the administrator copies; e-mail is not needed.
+- **Making it** (decision 2, M9-Q15 as answered): *Change organization settings*; a name, an e-mail address, a reason, a role among the roles that hold no permission the maker lacks (the start: *Viewer*), the projects it counts in, an end (8 hours at the start, at most 72); Bugaboo shows a one-time link good for one hour, which the administrator copies; e-mail is not needed.
 - **Signing in** (decision 3): the link sets a password and a code app or passkey first; the account can make no access key, no AI app grant and no agent (the routes refuse a support account); it cannot make another support access, invite people or change roles, whatever its role says.
-- **The record** (decision 4): making, accepting, each sign-in, every request (route and record ID), the end, each a security-log entry; a support account reads as *Name (support access until HH:MM)* everywhere a person is named.
-- **The end** (decision 5): at its moment, by the job, or on *End now* by any administrator: the sessions end, the account is removed through WP-06's removal (its security-log entries stay), and the list shows it as ended with its log.
+- **The record** (decision 4): making, accepting, each sign-in, every request (route and record ID), the end, each a security-log entry. **The load is bounded:** the entries are appended one after another like every write (M1-F23), and a supporter's requests are capped by the API's limit per client (`rate_limit_per_minute`, 600 a minute at the start), so a supporter cannot slow the others more than any client can; a test drives a supporter at that limit while ten people save and checks the others' saves stay within their budget; a support account reads as *Name (support access until HH:MM)* everywhere a person is named.
+- **The end** (decision 5): at its moment, by the job, or on *End now* by any administrator: the sessions end, the account is removed through WP-06's removal (its security-log entries stay), and the list shows it as ended with its log. The record (supporter's name, reason, role, places, start, end, maker) stays for the keep period of the security log (M9-Q15 as answered), then goes by that keep rule (WP-04).
 
 ## Tasks
 
@@ -39,6 +39,8 @@ The record and its rules in `crates/bb-core/src/support_access.rs` (new, pure: t
 - `dist_03_every_request_of_the_supporter_is_in_the_security_log_without_its_body`.
 - `dist_03_a_request_after_the_end_is_refused` (the clock of the app moved one minute past the end).
 - `dist_03_end_now_ends_the_sessions_at_once`.
+- `dist_03_the_record_stays_for_the_keep_period_of_the_security_log`.
+- `dist_03_a_supporter_at_the_limit_does_not_slow_the_others_beyond_their_budget`.
 - `dist_03 an administrator makes support access copies the link and ends it` (browser, four themes).
 - SEC-MATRIX: rows for the four routes for every starting role, an access key and a support account, both databases.
 

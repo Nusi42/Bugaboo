@@ -1,7 +1,7 @@
 # WP-11 — The operations screens: *Backups*, *About*, failed jobs, notes for administrators
 
 **Wave 3 · Folder / branch:** `bugaboo.win2` / `WIN2` · **Model:** Sonnet (an exact brief: routes exist, words and frames come from WP-01)
-**Features:** OPS-07, COMP-01, COMP-04 (on screen). UX design §5.1 (*System*) as WP-01 completes it; ADR-0046, ADR-0047; follow-ups M4-F63, M4-F128.
+**Features:** OPS-07, COMP-01, COMP-04 (on screen). UX design §5.1 (*System*) as WP-01 completes it; ADR-0046, ADR-0047; follow-ups M4-F63 (screen), M4-F128; both unless M9-Q20 cuts them.
 
 ## Goal
 
@@ -9,7 +9,7 @@ An administrator makes, schedules, lists and restores backups on a screen; every
 
 ## Owns
 
-`web/app/src/features/admin/BackupsPage.tsx` and `RestoreWindow.tsx` (new), the page *Bugaboo is being restored* (`web/app/src/features/admin/RestoringPage.tsx`, shown when the server answers with restore mode), `web/app/src/features/admin/AboutPage.tsx` (new), `web/app/src/features/admin/FailedJobsPage.tsx` (new); the route of failed jobs in `crates/bb-api/src/api/admin.rs` (`GET /api/v1/admin/failed-jobs`, `POST /api/v1/admin/failed-jobs/{job}/try-again`, calling the store's `requeue_dead_job`, M3-F150, M4-F63) and its use case in `crates/bb-app/src/jobs.rs`; the note of capped sign-up e-mails on the status page (`StatusRows.tsx`, the count from `crates/bb-app/src/status.rs`, M4-F128); the addresses in `paths.ts` and the menu entries; their texts; `userDocs/install/backups.md` (screens part, with WP-02) and `userDocs/basics/about.md` (new).
+`web/app/src/features/admin/BackupsPage.tsx` (new) and, unless the cut of M9-Q20 is taken, `RestoreWindow.tsx` and the page *Bugaboo is being restored* (`web/app/src/features/admin/RestoringPage.tsx`, shown when the server answers with restore mode; with the cut, *Backups* shows the command `bugaboo restore` instead), `web/app/src/features/admin/AboutPage.tsx` (new), `web/app/src/features/admin/FailedJobsPage.tsx` (new; on WP-04's route and use case, which this package does not change); the note of capped sign-up e-mails on the status page (`StatusRows.tsx`, the count from `crates/bb-app/src/status.rs`, M4-F128); the addresses in `paths.ts` and the menu entries; their texts; `userDocs/install/backups.md` (screens part, with WP-02) and `userDocs/basics/about.md` (new).
 
 ## What is decided
 
@@ -22,21 +22,18 @@ An administrator makes, schedules, lists and restores backups on a screen; every
 ## Tasks
 
 1. Write the acceptance tests below.
-2. The route and use case of failed jobs.
-3. *Backups*, the restore window and the restore page.
-4. *About*.
-5. *Failed jobs* and the note on the status page.
-6. The user docs; pictures in four themes on computer and phone; frame samples of *Make a backup now*.
+2. *Backups*, the restore window and the restore page.
+3. *About*.
+4. *Failed jobs* and the note on the status page.
+5. The user docs; pictures in four themes on computer and phone; frame samples of *Make a backup now*.
 
 ## Acceptance tests (write first)
 
 - `ops_07 an administrator makes a backup and it appears at the top without moving the list`.
 - `ops_07 the restore window asks for the second step and every page shows the restore page until it is open again`.
 - `comp_01 About shows the version the support period and the parts list to download`.
-- `ops_08_a_failed_job_is_tried_again_by_an_administrator` (Rust, both databases; M4-F63).
 - `ops_08 failed jobs show the reason and never the payload`.
 - `ops_08 the status page notes held back sign-up e-mails` (M4-F128).
-- SEC-MATRIX: rows for the two routes of failed jobs for every starting role and an access key.
 - TEST-A11Y for every new address; pictures in four themes, computer and phone.
 
 ## Checks
@@ -49,4 +46,4 @@ Code review with the SSOT/DRY/ODR gate: the restore page is one component reache
 
 ## Depends on
 
-WP-02, WP-05 and WP-08 merged. Runs beside WP-10, WP-12 and WP-13.
+WP-02, WP-04, WP-05 and WP-08 merged. Runs beside WP-10, WP-12 and WP-13.

@@ -1,7 +1,7 @@
 # WP-13 — Run as a service, proven on a clean Windows and a Linux with systemd
 
-**Wave 3 · Folder / branch:** `bugaboo.win4` / `WIN4` · **Model:** Sonnet (an exact brief: the commands exist; this package proves them step by step)
-**Features:** OPS-04. Architecture §6, *Commands*; follow-ups M1-F57, M1-F63, M4-F61.
+**Wave 3 · Folder / branch:** `bugaboo.win4` / `WIN4` · **Model:** Opus (service accounts, unit hardening and real systems: open questions turn up while it runs)
+**Features:** OPS-04. Architecture §6, *Commands*; follow-ups M1-F57, M1-F63, M4-F61 (unless M9-Q20 cuts it).
 
 ## Goal
 
@@ -9,7 +9,7 @@
 
 ## Owns
 
-`crates/bb-server/src/cli/service/` (`windows.rs`, `systemd.rs`, `mod.rs`: the hardening of the unit, the failure actions, `bugaboo service status`); the setting `mail.certificate-authority` (a PEM file in the data folder's `tls/`, read with the mail server's settings) in `crates/bb-core/src/settings/` and its use in `crates/bb-notify/` (M4-F61); the try-out scripts in `xtask/src/try_install/` (new: `cargo xtask try-install windows-sandbox` writes a Windows Sandbox configuration into `.work/try-install/` that maps the release folder read only and a results folder, and runs the install script inside as the sandbox's administrator; `cargo xtask try-install wsl` imports a fresh distribution into `.work/try-install/wsl/`, switches systemd on inside it, runs the same steps, and unregisters it at the end); `userDocs/install/windows.md`, `linux.md`, `wsl.md` (brought in line with what ran).
+`crates/bb-server/src/cli/service/` (`windows.rs`, `systemd.rs`, `mod.rs`: the hardening of the unit, the failure actions of both services, which read WP-07's exit code of an upgrade stop, `bugaboo service status`); the setting `mail.certificate-authority` (a PEM file in the data folder's `tls/`, read with the mail server's settings) in `crates/bb-core/src/settings/` and its use in `crates/bb-notify/` (M4-F61); the try-out scripts in `xtask/src/try_install/` (new: `cargo xtask try-install windows-sandbox` starts Windows Sandbox through its command-line tool `wsb` (Windows 11 24H2 and later; found through the system, never a fixed path), shares the release folder read only and a results folder from `.work/try-install/`, and runs the install script inside as the sandbox's administrator, falling back to a `.wsb` configuration file where `wsb` is missing; `cargo xtask try-install wsl` imports a fresh distribution into `.work/try-install/wsl/` from the published Ubuntu image, downloaded once and cached in `.work/try-install/images/` with its checksum, switches systemd on inside it, runs the same steps, and unregisters it at the end); `userDocs/install/windows.md`, `linux.md`, `wsl.md` (brought in line with what ran).
 
 ## What is decided
 
