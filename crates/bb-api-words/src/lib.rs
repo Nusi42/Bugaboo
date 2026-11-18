@@ -123,6 +123,14 @@ pub mod sec_matrix {
     pub const ENTRY_ASSISTANT: &str = "assistant";
     /// A line of the record that starts like this is an `assistant` row.
     pub const ASK_LINE: &str = "ask ";
+    /// The file of *Download my data* a person makes of themselves (PRIV-03, M2-F65) is an entry
+    /// point of its own: a line of the record that starts like this is an `export` row, one for every
+    /// starting role and every kind of record in that person's file, saying what of the masked
+    /// fields and of other people was in it.
+    pub const EXPORT_LINE: &str = "export ";
+    /// An `export` line says `estimate=` or `status=` [`NOT_IN_KIND`] for a kind of record that has
+    /// no such field, and `others=` [`NOT_IN_KIND`] for one that names nobody else.
+    pub const NOT_IN_KIND: &str = "none";
     /// An `ask` line says `kept=` [`HELD_BACK`] or [`SENT`]: whether anything that is *Never sent to
     /// AI* was in a request to the provider.
     pub const HELD_BACK: &str = "held-back";

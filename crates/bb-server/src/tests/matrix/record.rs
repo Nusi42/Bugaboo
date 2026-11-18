@@ -137,8 +137,8 @@ impl Record {
 }
 
 /// The lines of the record that other tests than the route matrix write and compare: the lines of
-/// the tools and of the assistant.
-const OTHER_TESTS: [&str; 2] = [words::TOOL_LINE, words::ASK_LINE];
+/// the tools, of the assistant and of the exports.
+const OTHER_TESTS: [&str; 3] = [words::TOOL_LINE, words::ASK_LINE, words::EXPORT_LINE];
 
 /// Whether a line of the record is written by another test than the route matrix.
 fn is_of_another_test(line: &str) -> bool {
