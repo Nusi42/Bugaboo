@@ -59,6 +59,7 @@ mod backups;
 mod bodies;
 mod check_access;
 mod comments;
+mod data_exports;
 mod date_range;
 mod editing;
 mod field_permissions;
@@ -215,6 +216,7 @@ where
         .merge(follow::routes())
         .merge(saved_searches::routes())
         .merge(themes::routes())
+        .merge(data_exports::routes())
         .merge(working_hours::routes())
         .merge(work_times::routes())
         .merge(notifications::routes())

@@ -40,8 +40,10 @@ pub struct DataExportsQuery {
 pub struct ExportLinkQuery {
     /// The secret of the session of the request.
     pub session_token: String,
-    /// The export.
-    pub export: DataExportId,
+    /// The export; none for an address that names no export, which is refused like an export that
+    /// is not there, but only once the session is known, so an access key hears that it may not
+    /// come here at all.
+    pub export: Option<DataExportId>,
 }
 
 /// Download the file of an export through its signed link.

@@ -523,7 +523,7 @@ async fn restore_attachment(
 
 /// The pieces of a file as the body of an answer, read one after the other, so a big file is never
 /// in memory as a whole. A read that fails ends the body after the error.
-fn body_of(file: FileBody) -> Body {
+pub(super) fn body_of(file: FileBody) -> Body {
     let pieces = futures_util::stream::unfold(
         Some(file.reader),
         |reader: Option<Box<dyn ChunkReader>>| async move {

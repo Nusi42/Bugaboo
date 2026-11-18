@@ -81,7 +81,7 @@ async fn link(world: &World, session: &str, export: DataExportId) -> Result<Stri
         &world.ctx(),
         ExportLinkQuery {
             session_token: session.to_owned(),
-            export,
+            export: Some(export),
         },
     )
     .await

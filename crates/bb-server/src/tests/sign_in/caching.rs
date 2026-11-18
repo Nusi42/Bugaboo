@@ -16,6 +16,7 @@ use bb_testing::{Failure, TestResult, each_database};
 use serde_json::json;
 use tower::ServiceExt as _;
 
+use super::files_http::run_jobs;
 use super::http::{ADA_EMAIL, Browser, called, never_stored_reads, totp};
 use super::issues_site::id_of;
 use super::policy_rig::Org;
@@ -26,6 +27,11 @@ use super::status::app_with_probe;
 /// The download of a file by its signed link: its answer is the bytes of the file, kept apart from
 /// the records, and what it may be kept as is proven with the downloads (`files_http`).
 const SIGNED_DOWNLOAD: &str = "/api/v1/files/{file}";
+
+/// The download of the file of a person's data by its signed address: like the download of a file,
+/// its answer is the bytes of the file, and that no cache keeps it is proven where it is downloaded
+/// (`data_exports_http`).
+const EXPORT_DOWNLOAD: &str = "/api/v1/data-exports/download/{file}";
 
 /// The download of a file of the build (the parts list, the notices): the file exists only in a build
 /// that `cargo xtask build` made, so a test run cannot ask for it (`about_http`).
@@ -40,6 +46,7 @@ fn get_routes() -> Vec<String> {
         .filter(|operation| {
             operation.method == Method::GET
                 && operation.path != SIGNED_DOWNLOAD
+                && operation.path != EXPORT_DOWNLOAD
                 && operation.path != BUILD_FILE_DOWNLOAD
                 && operation.path.starts_with(bb_api::VERSION_PATH)
         })
@@ -251,13 +258,21 @@ async fn a_theme(ada: &mut Browser) -> Result<String, Failure> {
         .to_owned())
 }
 
-/// A saved search, an agent and a theme of the person, for the routes that name one.
-async fn own_records(ada: &mut Browser) -> Result<(String, String, String), Failure> {
-    Ok((
+/// An upload on the issue, a run, a saved search, an agent, a theme and a written file of the data
+/// of the person, for the routes that name one.
+async fn own_records(
+    rig: &Rig,
+    ada: &mut Browser,
+    (issue, person): (&str, &str),
+) -> Result<[String; 6], Failure> {
+    Ok([
+        an_upload_on(ada, issue).await?,
+        a_run_of(rig, person).await?,
         a_saved_search(ada).await?,
         an_agent(ada).await?,
         a_theme(ada).await?,
-    ))
+        an_export(rig, ada).await?,
+    ])
 }
 
 async fn an_agent(ada: &mut Browser) -> Result<String, Failure> {
@@ -265,6 +280,18 @@ async fn an_agent(ada: &mut Browser) -> Result<String, Failure> {
         &ada.send("POST", "/api/v1/agents", Some(json!({"name": "Fixer"})))
             .await?,
     )
+}
+
+/// The file of the person's own data, written: the address of its download names it.
+async fn an_export(rig: &Rig, ada: &mut Browser) -> Result<String, Failure> {
+    let asked = ada.send("POST", "/api/v1/me/data-export", None).await?;
+    assert_eq!(asked.status, StatusCode::OK, "{}", asked.body);
+    run_jobs(rig).await?;
+    let mine = ada.send("GET", "/api/v1/me/data-export", None).await?;
+    Ok(mine.body["export"]["id"]
+        .as_str()
+        .ok_or("no export")?
+        .to_owned())
 }
 
 /// A work day and an app that registered: what the routes that name a date or ask the consent step
@@ -327,9 +354,8 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
         // A comment and an own field, for the routes that name one.
         let (comment_id, field_id) = a_comment_and_a_field(&mut ada, &readable_id).await?;
         let (issue_type_id, label_group_id) = a_type_and_a_label_group(&mut ada).await?;
-        let run_id = a_run_of(&rig, &person_id).await?;
-        let upload_id = an_upload_on(&mut ada, &readable_id).await?;
-        let (search_id, agent_id, theme_id) = own_records(&mut ada).await?;
+        let [upload_id, run_id, search_id, agent_id, theme_id, export_id] =
+            own_records(&rig, &mut ada, (&readable_id, &person_id)).await?;
         // A work day of the person, for the routes that name a date, and an app.
         let app_query = a_work_day_and_an_app(&rig, &mut ada).await?;
         let routes = get_routes();
@@ -358,6 +384,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
                 .replace("{search}", &search_id)
                 .replace("{agent}", &agent_id)
                 .replace("{theme}", &theme_id)
+                .replace("{export}", &export_id)
                 .replace("{date}", "2027-01-14")
                 .replace("{project}", project);
             let filled = with_query(template, &filled, (project, &project_id), &app_query);

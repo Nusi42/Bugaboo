@@ -523,6 +523,73 @@
         "x-permission": "change-organization-settings"
       }
     },
+    "/api/v1/admin/data-exports": {
+      "get": {
+        "tags": ["privacy"],
+        "summary": "Every file of people's data, newest first, for a holder of *Download someone's data*.",
+        "operationId": "listDataExports",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Fields"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
+              "maximum": 100,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The exports.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_DataExportItem"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadListRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "download-someones-data"
+      }
+    },
     "/api/v1/admin/status": {
       "get": {
         "tags": ["admin"],
@@ -4253,6 +4320,119 @@
             "$ref": "#/components/responses/Unavailable"
           }
         },
+        "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/data-exports/download/{file}": {
+      "get": {
+        "tags": ["privacy"],
+        "summary": "Downloads the file of an export through its signed address. The download is written into the\nsecurity log; the file is sent as an attachment with `nosniff` and a policy that allows nothing.",
+        "operationId": "downloadDataExport",
+        "parameters": [
+          {
+            "name": "file",
+            "in": "path",
+            "description": "The signed address, as the address of the export gives it.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The ZIP file.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileBytes"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/data-exports/{export}/address": {
+      "get": {
+        "tags": ["privacy"],
+        "summary": "The signed address that downloads the file of a ready export, for the person who asked for it.",
+        "operationId": "getDataExportAddress",
+        "parameters": [
+          {
+            "name": "export",
+            "in": "path",
+            "description": "The ID of the export.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The signed address, good for five minutes.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataExportAddressBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
         "x-permission": "signed-in"
       }
     },
@@ -10349,6 +10529,93 @@
         "x-permission": "signed-in"
       }
     },
+    "/api/v1/me/data-export": {
+      "get": {
+        "tags": ["privacy"],
+        "summary": "Where the newest file of the person's own data stands.",
+        "operationId": "getMyDataExport",
+        "responses": {
+          "200": {
+            "description": "The newest export, or nothing.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyDataExportBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "own-account"
+      },
+      "post": {
+        "tags": ["privacy"],
+        "summary": "Asks for the file of the person's own data. A job creates it; the person is told when it is\nready. Only a session asks, never an access key.",
+        "operationId": "askForMyData",
+        "responses": {
+          "200": {
+            "description": "The export, waiting for its file.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataExportItem"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "description": "A file of this person's data is being created already (data-export.waiting); one at a time.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictProblem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "own-account"
+      }
+    },
     "/api/v1/me/handle": {
       "get": {
         "tags": ["people"],
@@ -13015,6 +13282,81 @@
           }
         },
         "x-permission": "enter-work-times-for-others"
+      }
+    },
+    "/api/v1/people/{person}/data-export": {
+      "post": {
+        "tags": ["privacy"],
+        "summary": "Asks, with *Download someone's data*, for the file of somebody else's data, always with a\nreason. The person is told, and the security log records it.",
+        "operationId": "askForSomeonesData",
+        "parameters": [
+          {
+            "name": "person",
+            "in": "path",
+            "description": "The ID of the person.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskSomeonesDataBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The export, waiting for its file.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataExportItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "A file of this person's data is being created already (data-export.waiting); one at a time.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictProblem"
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "download-someones-data"
       }
     },
     "/api/v1/people/{person}/work-days": {
@@ -20364,6 +20706,17 @@
           }
         }
       },
+      "AskSomeonesDataBody": {
+        "type": "object",
+        "description": "Why an administrator asks for somebody else's data; the person is told.",
+        "required": ["reason"],
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "The reason, in the administrator's own words (at most 500 characters)."
+          }
+        }
+      },
       "AssignmentItem": {
         "type": "object",
         "description": "A row of *Who has which role*: the fields that can be asked for.",
@@ -22765,6 +23118,79 @@
             "description": "The page the link opens, with the secret after the `#`. Put the address of this server\nin front. The secret is not stored and cannot be shown again."
           }
         }
+      },
+      "DataExportAddressBody": {
+        "type": "object",
+        "description": "The signed address that downloads a file of an export.",
+        "required": ["download_url"],
+        "properties": {
+          "download_url": {
+            "type": "string",
+            "description": "Good for five minutes and for the reader only."
+          }
+        }
+      },
+      "DataExportItem": {
+        "type": "object",
+        "description": "A file of *Download my data*.",
+        "required": [
+          "id",
+          "person",
+          "asked_by",
+          "reason",
+          "status",
+          "asked_at",
+          "ready_at",
+          "bytes",
+          "deleted_at"
+        ],
+        "properties": {
+          "asked_at": {
+            "type": "string",
+            "description": "When it was asked for.",
+            "format": "date-time"
+          },
+          "asked_by": {
+            "$ref": "#/components/schemas/PersonRef",
+            "description": "Who asked for it: the person, or an administrator."
+          },
+          "bytes": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "The size of the file in bytes, once it is ready."
+          },
+          "deleted_at": {
+            "type": "string",
+            "description": "When the file and its record are deleted: 7 days after it was asked for.",
+            "format": "date-time"
+          },
+          "id": {
+            "type": "string",
+            "description": "The ID of the export."
+          },
+          "person": {
+            "$ref": "#/components/schemas/PersonRef",
+            "description": "Whose data the file holds, as the reader may see them."
+          },
+          "ready_at": {
+            "type": ["string", "null"],
+            "description": "When the file was ready.",
+            "format": "date-time"
+          },
+          "reason": {
+            "type": ["string", "null"],
+            "description": "Why an administrator asked for somebody else's data."
+          },
+          "status": {
+            "$ref": "#/components/schemas/DataExportStatus",
+            "description": "Where it stands."
+          }
+        }
+      },
+      "DataExportStatus": {
+        "type": "string",
+        "description": "Where a file of *Download my data* stands: waiting for the job that writes it, ready to download, or failed.",
+        "enum": ["waiting", "ready", "failed"]
       },
       "DataFolderOpenBody": {
         "type": "object",
@@ -26910,6 +27336,24 @@
           }
         }
       },
+      "MyDataExportBody": {
+        "type": "object",
+        "description": "The newest file of the person's own data, if there is one.",
+        "required": ["export"],
+        "properties": {
+          "export": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DataExportItem",
+                "description": "The export; `null` before the first and once it is deleted."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
       "MyWorkBody": {
         "type": "object",
         "description": "One piece of work of one of the person's agents, with its issue.",
@@ -28255,6 +28699,24 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ConnectedAppItem"
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
+      "Page_DataExportItem": {
+        "type": "object",
+        "description": "One page of a list: its items, and where the next page starts.",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DataExportItem"
             },
             "description": "The items of this page."
           },

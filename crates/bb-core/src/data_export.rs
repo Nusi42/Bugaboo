@@ -31,7 +31,7 @@ words! {
 }
 
 words_in_api!(
-    ExportState,
+    ExportState as "DataExportStatus",
     "Where a file of *Download my data* stands: waiting for the job that writes it, ready to download, or failed."
 );
 

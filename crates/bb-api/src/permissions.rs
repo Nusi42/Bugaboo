@@ -331,28 +331,6 @@ pub const ROUTES: &[Route] = &[
     route("listRunChanges", Declared::ByRecord, Answer::NeverStored),
     route("previewUndoRun", Declared::ByRecord, Answer::NeverStored),
     route("undoRun", Declared::ByRecord, Answer::Ordinary),
-    route("startUpload", Declared::ByRecord, Answer::Ordinary),
-    route("getUpload", Declared::ByRecord, Answer::NeverStored),
-    route("sendUploadPart", Declared::ByRecord, Answer::Ordinary),
-    route("cancelUpload", Declared::ByRecord, Answer::Ordinary),
-    route("finishUpload", Declared::ByRecord, Answer::Ordinary),
-    route(
-        "listIssueFiles",
-        Declared::Permission(Permission::SeeIssues),
-        Answer::NeverStored,
-    ),
-    route(
-        "getFileRules",
-        Declared::Permission(Permission::SeeIssues),
-        Answer::NeverStored,
-    ),
-    route("deleteAttachment", Declared::ByRecord, Answer::Ordinary),
-    route("restoreAttachment", Declared::ByRecord, Answer::Ordinary),
-    route(
-        "downloadFile",
-        Declared::Permission(Permission::SeeIssues),
-        Answer::NeverStored,
-    ),
     route("getMyHandle", Declared::SignedIn, Answer::NeverStored),
     route("changeMyHandle", Declared::SignedIn, Answer::Ordinary),
     route("listNotifications", Declared::SignedIn, Answer::NeverStored),
@@ -687,6 +665,8 @@ mod agents;
 mod ai;
 mod backups;
 mod comments;
+mod data_exports;
+mod files;
 mod lookup;
 mod mail;
 mod oauth;

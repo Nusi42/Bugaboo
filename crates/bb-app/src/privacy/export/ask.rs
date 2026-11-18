@@ -271,7 +271,8 @@ pub async fn export_link<S: AuthStore>(
 ) -> Result<Authorized<ExportLinkView>, AppError> {
     let actor = ctx.session_actor(&input.session_token).await?;
     let held = ctx.evaluation_of(&actor, Place::Organization).await?;
-    let export = ctx.ready_export_of(&actor, input.export).await?;
+    let export = input.export.ok_or(AppError::Refused(ErrorCode::NotFound))?;
+    let export = ctx.ready_export_of(&actor, export).await?;
     let token = ExportLink::new(export.id, actor.person.id, ctx.now())
         .and_then(|link| ctx.services.links.sign(&link.to_bytes()))
         .ok_or_else(|| AppError::Internal("a link could not be signed".to_owned()))?;

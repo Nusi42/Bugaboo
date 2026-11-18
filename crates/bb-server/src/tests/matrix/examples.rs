@@ -357,6 +357,18 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("createLayout", &[Quirk::AtTheTargetProject]),
     Example::with("saveLayout", &[Quirk::AtTheTargetProject]),
     Example::with("deleteLayout", &[Quirk::AtTheTargetProject]),
+    Example::with("askForMyData", &[Quirk::SessionOnly]),
+    Example::with("getMyDataExport", &[Quirk::SessionOnly]),
+    Example::with("askForSomeonesData", &[Quirk::SessionOnly]),
+    Example::with("listDataExports", &[Quirk::SessionOnly]),
+    Example::with(
+        "getDataExportAddress",
+        &[Quirk::SessionOnly, Quirk::NamesAMissingThing],
+    ),
+    Example::with(
+        "downloadDataExport",
+        &[Quirk::SessionOnly, Quirk::NamesAMissingThing],
+    ),
     Example::route("listThemes"),
     Example::with("createTheme", &[Quirk::SessionOnly]),
     Example::route("getTheme"),
@@ -710,6 +722,9 @@ pub(super) async fn request(
         return Ok(found);
     }
     if let Some(found) = super::examples_themes::theme_request(fixture, operation).await? {
+        return Ok(found);
+    }
+    if let Some(found) = super::examples_data_exports::data_export_request(fixture, operation)? {
         return Ok(found);
     }
     if let Some(found) =

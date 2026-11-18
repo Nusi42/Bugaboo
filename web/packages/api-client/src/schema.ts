@@ -152,6 +152,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/admin/data-exports": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Every file of people's data, newest first, for a holder of *Download someone's data*. */
+    get: operations["listDataExports"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/admin/status": {
     parameters: {
       query?: never;
@@ -1273,6 +1290,43 @@ export interface paths {
      *     that every page carries. The list is split here once; the browser never splits it again.
      */
     get: operations["getImageHosts"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/data-exports/download/{file}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Downloads the file of an export through its signed address. The download is written into the
+     *     security log; the file is sent as an attachment with `nosniff` and a policy that allows nothing.
+     */
+    get: operations["downloadDataExport"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/data-exports/{export}/address": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The signed address that downloads the file of a ready export, for the person who asked for it. */
+    get: operations["getDataExportAddress"];
     put?: never;
     post?: never;
     delete?: never;
@@ -2900,6 +2954,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/me/data-export": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Where the newest file of the person's own data stands. */
+    get: operations["getMyDataExport"];
+    put?: never;
+    /**
+     * Asks for the file of the person's own data. A job creates it; the person is told when it is
+     *     ready. Only a session asks, never an access key.
+     */
+    post: operations["askForMyData"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/me/handle": {
     parameters: {
       query?: never;
@@ -3636,6 +3711,26 @@ export interface paths {
      *     the note is refused (only the person writes it), and nobody states a reason.
      */
     post: operations["enterAwayTimeForPerson"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/people/{person}/data-export": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Asks, with *Download someone's data*, for the file of somebody else's data, always with a
+     *     reason. The person is told, and the security log records it.
+     */
+    post: operations["askForSomeonesData"];
     delete?: never;
     options?: never;
     head?: never;
@@ -5688,6 +5783,11 @@ export interface components {
        */
       version: number;
     };
+    /** @description Why an administrator asks for somebody else's data; the person is told. */
+    AskSomeonesDataBody: {
+      /** @description The reason, in the administrator's own words (at most 500 characters). */
+      reason: string;
+    };
     /** @description A row of *Who has which role*: the fields that can be asked for. */
     AssignmentItem: {
       applies_to?: components["schemas"]["AppliesTo"] | null;
@@ -6880,6 +6980,49 @@ export interface components {
        */
       link_path: string;
     };
+    /** @description The signed address that downloads a file of an export. */
+    DataExportAddressBody: {
+      /** @description Good for five minutes and for the reader only. */
+      download_url: string;
+    };
+    /** @description A file of *Download my data*. */
+    DataExportItem: {
+      /**
+       * Format: date-time
+       * @description When it was asked for.
+       */
+      asked_at: string;
+      /** @description Who asked for it: the person, or an administrator. */
+      asked_by: components["schemas"]["PersonRef"];
+      /**
+       * Format: int64
+       * @description The size of the file in bytes, once it is ready.
+       */
+      bytes: number | null;
+      /**
+       * Format: date-time
+       * @description When the file and its record are deleted: 7 days after it was asked for.
+       */
+      deleted_at: string;
+      /** @description The ID of the export. */
+      id: string;
+      /** @description Whose data the file holds, as the reader may see them. */
+      person: components["schemas"]["PersonRef"];
+      /**
+       * Format: date-time
+       * @description When the file was ready.
+       */
+      ready_at: string | null;
+      /** @description Why an administrator asked for somebody else's data. */
+      reason: string | null;
+      /** @description Where it stands. */
+      status: components["schemas"]["DataExportStatus"];
+    };
+    /**
+     * @description Where a file of *Download my data* stands: waiting for the job that writes it, ready to download, or failed.
+     * @enum {string}
+     */
+    DataExportStatus: "waiting" | "ready" | "failed";
     /**
      * @description Which parts of the data folder other accounts on this computer can open. Bugaboo only looks;
      *     a folder that somebody made or moved keeps its rights.
@@ -9002,6 +9145,10 @@ export interface components {
       /** @description Whether the list was cut at the most it holds. */
       truncated: boolean;
     };
+    /** @description The newest file of the person's own data, if there is one. */
+    MyDataExportBody: {
+      export: components["schemas"]["DataExportItem"] | null;
+    };
     /** @description One piece of work of one of the person's agents, with its issue. */
     MyWorkBody: {
       /** @description The issue, as the person may see it. */
@@ -9632,6 +9779,13 @@ export interface components {
     Page_ConnectedAppItem: {
       /** @description The items of this page. */
       items: components["schemas"]["ConnectedAppItem"][];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
+    /** @description One page of a list: its items, and where the next page starts. */
+    Page_DataExportItem: {
+      /** @description The items of this page. */
+      items: components["schemas"]["DataExportItem"][];
       /** @description The cursor of the next page; `null` on the last page. */
       next_cursor: string | null;
     };
@@ -13564,6 +13718,41 @@ export interface operations {
       503: components["responses"]["Unavailable"];
     };
   };
+  listDataExports: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: components["parameters"]["Fields"];
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: components["parameters"]["Cursor"];
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The exports. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_DataExportItem"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      400: components["responses"]["BadListRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
   getServerStatus: {
     parameters: {
       query?: never;
@@ -15800,6 +15989,67 @@ export interface operations {
       };
       304: components["responses"]["NotModified"];
       401: components["responses"]["NotSignedIn"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  downloadDataExport: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The signed address, as the address of the export gives it. */
+        file: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The ZIP file. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/zip": components["schemas"]["FileBytes"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  getDataExportAddress: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the export. */
+        export: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The signed address, good for five minutes. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DataExportAddressBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];
@@ -19132,6 +19382,67 @@ export interface operations {
       503: components["responses"]["Unavailable"];
     };
   };
+  getMyDataExport: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The newest export, or nothing. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MyDataExportBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  askForMyData: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The export, waiting for its file. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DataExportItem"];
+        };
+      };
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      /** @description A file of this person's data is being created already (data-export.waiting); one at a time. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ConflictProblem"];
+        };
+      };
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
   getMyHandle: {
     parameters: {
       query?: never;
@@ -20628,6 +20939,50 @@ export interface operations {
       401: components["responses"]["NotSignedIn"];
       403: components["responses"]["Forbidden"];
       404: components["responses"]["NotFound"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  askForSomeonesData: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the person. */
+        person: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AskSomeonesDataBody"];
+      };
+    };
+    responses: {
+      /** @description The export, waiting for its file. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DataExportItem"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      /** @description A file of this person's data is being created already (data-export.waiting); one at a time. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ConflictProblem"];
+        };
+      };
       413: components["responses"]["TooLarge"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];

@@ -273,10 +273,10 @@ fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {
     use Permission::{
         BookTime, ChangeIssues, ChangeOrganizationSettings, ChangeOwnIssues, ChangeProjectSettings,
         CheckAccess, Comment, CreateAgents, CreateIssues, CreateProjects, CreateSubProjects,
-        DecideRoles, DecideWhatRolesSee, DeleteIssues, EditAnyway, EnterWorkTimesForOthers,
-        ManageFields, ManageGroups, ManageInvitations, ManageIssueTypes, ManageLabels,
-        ManagePeople, ManageRoles, ManageWorkflows, MoveIssues, MoveProjects, SeeIssues,
-        SeeProjects, SeeStatus, ShareSearches,
+        DecideRoles, DecideWhatRolesSee, DeleteIssues, DownloadSomeonesData, EditAnyway,
+        EnterWorkTimesForOthers, ManageFields, ManageGroups, ManageInvitations, ManageIssueTypes,
+        ManageLabels, ManagePeople, ManageRoles, ManageWorkflows, MoveIssues, MoveProjects,
+        SeeIssues, SeeProjects, SeeStatus, ShareSearches,
     };
     match role {
         StartingRole::Administrator => BTreeSet::from([
@@ -310,6 +310,7 @@ fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {
             ChangeOrganizationSettings,
             SeeStatus,
             EnterWorkTimesForOthers,
+            DownloadSomeonesData,
         ]),
         StartingRole::ProjectLead => BTreeSet::from([
             SeeProjects,
