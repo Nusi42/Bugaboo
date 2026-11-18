@@ -5067,6 +5067,10 @@ pub const PERMISSION_DECIDE_WHAT_ROLES_SEE: MessageKey =
 /// The message `permission.delete-issues`.
 pub const PERMISSION_DELETE_ISSUES: MessageKey = MessageKey::new("permission.delete-issues");
 
+/// The message `permission.download-someones-data`.
+pub const PERMISSION_DOWNLOAD_SOMEONES_DATA: MessageKey =
+    MessageKey::new("permission.download-someones-data");
+
 /// The message `permission.edit-anyway`.
 pub const PERMISSION_EDIT_ANYWAY: MessageKey = MessageKey::new("permission.edit-anyway");
 
@@ -23957,6 +23961,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Decide which fields and which people information each role sees",
     ),
     ("permission.delete-issues", "Delete issues into the trash"),
+    (
+        "permission.download-someones-data",
+        "Download someone's data: create the file of Download my data for somebody else, always with a reason; the person is told",
+    ),
     (
         "permission.edit-anyway",
         "Take over text someone else is editing; their text is kept",

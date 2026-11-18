@@ -804,6 +804,8 @@ export const messages = {
   "people-kind.work-times": "Work times",
   "permission.enter-work-times-for-others":
     "Enter work times for others: enter and change other people's usual work days, work hours and away times",
+  "permission.download-someones-data":
+    "Download someone's data: create the file of Download my data for somebody else, always with a reason; the person is told",
   "notification.kind.work-times-changed": "Your work times were changed",
   "notifications.work-times-away-entered": "{who} entered an away time for you: {days}",
   "notifications.work-times-away-changed": "{who} changed your away time: {days}",

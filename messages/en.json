@@ -3008,6 +3008,7 @@
   "holiday.second-christmas-day": "Boxing Day",
   "people-kind.work-times": "Work times",
   "permission.enter-work-times-for-others": "Enter work times for others: enter and change other people's usual work days, work hours and away times",
+  "permission.download-someones-data": "Download someone's data: create the file of Download my data for somebody else, always with a reason; the person is told",
   "setting.work-times.holidays.name": "Holidays",
   "setting.work-times.holidays.help": "Which public holidays count as days off for you in the plan. Germany means the days that count everywhere in Germany; a part of Germany adds its own. Until you choose, your organization's choice counts.",
   "notification.kind.work-times-changed": "Your work times were changed",

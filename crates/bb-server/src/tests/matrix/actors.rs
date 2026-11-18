@@ -180,7 +180,7 @@ impl Actor {
 
 /// The permissions that count only from a row for the whole organization, from the table of the
 /// catalogue in architecture §7 (*Counts: organization*).
-const ORGANIZATION_ONLY: [Permission; 8] = [
+const ORGANIZATION_ONLY: [Permission; 9] = [
     Permission::CreateProjects,
     Permission::ManageFields,
     Permission::ManagePeople,
@@ -189,12 +189,14 @@ const ORGANIZATION_ONLY: [Permission; 8] = [
     Permission::ManageRoles,
     Permission::ChangeOrganizationSettings,
     Permission::SeeStatus,
+    Permission::DownloadSomeonesData,
 ];
 
 /// The permissions no access key keeps, whatever its choice (`NOT_FOR_KEYS`, decisions on
 /// access keys and M3-Q6): inviting people, deciding who has which role, changing organization
-/// settings, taking over somebody's editing and the work settings stay in the app.
-const NOT_FOR_KEYS: [Permission; 13] = [
+/// settings, taking over somebody's editing, the work settings, other people's working hours and
+/// work times, and other people's data stay in the app.
+const NOT_FOR_KEYS: [Permission; 16] = [
     Permission::ManageInvitations,
     Permission::ManagePeople,
     Permission::ManageGroups,
@@ -207,7 +209,10 @@ const NOT_FOR_KEYS: [Permission; 13] = [
     Permission::ManageFields,
     Permission::ManageLabels,
     Permission::ManageWorkflows,
+    Permission::SeeWorkingHoursOfOthers,
+    Permission::ChangeWorkingHoursOfOthers,
     Permission::EnterWorkTimesForOthers,
+    Permission::DownloadSomeonesData,
 ];
 
 /// The permissions of the kind *See*, which an access key that may only see keeps (*Kind: See*).

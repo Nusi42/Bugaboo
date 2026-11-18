@@ -10024,7 +10024,8 @@ export interface components {
       | "create-agents"
       | "see-working-hours-of-others"
       | "change-working-hours-of-others"
-      | "enter-work-times-for-others";
+      | "enter-work-times-for-others"
+      | "download-someones-data";
     /** @description One permission with *yes* or *no* and the reasons. */
     PermissionAnswerBody: {
       /** @description Whether the person has it here. */
