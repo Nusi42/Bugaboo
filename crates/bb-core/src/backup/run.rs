@@ -60,6 +60,7 @@ pub struct BackupRun {
     pub maker: BackupMaker,
     /// The person who pressed the button: proof of who copied all the organization's data.
     #[personal(category = "identity", basis = "legitimate_interests")]
+    #[person(actor)]
     pub person: Option<UserId>,
     /// When it was made or restored.
     #[not_personal]

@@ -256,6 +256,8 @@ One backup made or restored.
 
 Defined in `crates/bb-core/src/backup/run.rs`.
 
+A person in its rows: `person` is the actor.
+
 | Field       | Personal data | Category   | Legal basis            | What it holds                                                                       |
 | ----------- | ------------- | ---------- | ---------------------- | ----------------------------------------------------------------------------------- |
 | `id`        | No            | –          | –                      | The ID of the record, which the line of the security log names.                     |
