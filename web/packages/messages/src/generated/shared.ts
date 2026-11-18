@@ -242,6 +242,8 @@ export const messages = {
     "Projects cannot be nested any deeper than this. Create or move it somewhere higher up.",
   "error.project.move-into-itself":
     "A project cannot go inside itself or inside one of its own sub-projects.",
+  "error.keeping.past-changed":
+    "What is past its keep period changed since you counted it: the period or the day is different. Count again before you delete.",
   "error.project.preview-changed":
     "The projects, or who has which role, changed since you looked at the preview. Look at it again before you move the project.",
   "permission-topic.projects": "Projects",

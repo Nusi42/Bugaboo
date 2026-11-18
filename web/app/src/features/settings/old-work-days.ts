@@ -8,8 +8,12 @@ export function oldDaysOptions() {
   return api.query.queryOptions("get", "/api/v1/work-days/old", undefined, { staleTime: 0 });
 }
 
-/** Deleting old work days, for everybody or for one person; says how many were deleted. */
-export function useDeleteOld() {
+/**
+ * Deleting old work days, for everybody or for one person; says how many were deleted. `before` is
+ * the date of the count that was shown: the server deletes only while the keep period still gives
+ * it, and refuses with `keeping.past-changed` otherwise (the count is then read again).
+ */
+export function useDeleteOld(before: string) {
   const [deleted, setDeleted] = useState<number>();
   const remove = api.query.useMutation("delete", "/api/v1/work-days/old", {
     onSuccess: ({ deleted: count }) => {
@@ -21,7 +25,7 @@ export function useDeleteOld() {
   });
   const send = (person?: string): void => {
     setDeleted(undefined);
-    remove.mutate({ params: { query: person === undefined ? {} : { person } } });
+    remove.mutate({ params: { query: person === undefined ? { before } : { person, before } } });
   };
   return {
     deleted,

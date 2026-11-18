@@ -381,6 +381,7 @@ async fn priv_05_no_purge_takes_a_business_record() -> Outcome {
             session_token: token(&world),
             kind: bb_core::keeping::KeepKind::TimeEntries,
             person: None,
+            before: old.before.to_string(),
         },
     )
     .await?

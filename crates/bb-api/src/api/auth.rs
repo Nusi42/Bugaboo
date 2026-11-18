@@ -398,6 +398,8 @@ problem_answers! {
     NotFoundAnswer => ("404", "There is no such thing (resource.not-found)."),
     /// Something stands in the way of a change.
     ConflictAnswer => ("409", "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed)."),
+    /// *Delete them* named another date than the records past their keep period have now.
+    PastChangedAnswer => ("409", "What is past the keep period changed since it was counted: the period or the day is different; count again (keeping.past-changed)."),
     /// Too soon after the last try.
     TooSoonAnswer => ("429", "Too soon after the last time (rate-limit.exceeded, handle.changed-lately)."),
 }

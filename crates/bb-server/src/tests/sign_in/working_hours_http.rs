@@ -622,12 +622,18 @@ async fn priv_09_old_working_hours_are_deleted_only_when_an_administrator_says_s
             StatusCode::FORBIDDEN
         );
         assert_eq!(
-            bob.send("DELETE", OLD, None).await?.status,
+            bob.send("DELETE", &format!("{OLD}?before={border}"), None)
+                .await?
+                .status,
             StatusCode::FORBIDDEN
         );
         let log_before = rig.database.security_log_entries(0, 10_000).await?.len();
         let deleted = ada
-            .send("DELETE", &format!("{OLD}?person={bob_id}"), None)
+            .send(
+                "DELETE",
+                &format!("{OLD}?person={bob_id}&before={border}"),
+                None,
+            )
             .await?;
         assert_eq!(ok(&deleted)?["deleted"], 1);
         // The day younger than the keep period stays; the old one is gone with its history.

@@ -2182,6 +2182,9 @@ pub const ERROR_ISSUE_TYPE_NOT_OFFERED: MessageKey =
 /// The message `error.issue.type-retired`.
 pub const ERROR_ISSUE_TYPE_RETIRED: MessageKey = MessageKey::new("error.issue.type-retired");
 
+/// The message `error.keeping.past-changed`.
+pub const ERROR_KEEPING_PAST_CHANGED: MessageKey = MessageKey::new("error.keeping.past-changed");
+
 /// The message `error.label.not-offered`.
 pub const ERROR_LABEL_NOT_OFFERED: MessageKey = MessageKey::new("error.label.not-offered");
 
@@ -21765,6 +21768,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "error.issue.type-retired",
         "That issue type is retired, so no new issues can be created with it. Choose another type.",
+    ),
+    (
+        "error.keeping.past-changed",
+        "What is past its keep period changed since you counted it: the period or the day is different. Count again before you delete.",
     ),
     (
         "error.label.not-offered",

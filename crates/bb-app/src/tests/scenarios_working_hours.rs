@@ -9,7 +9,7 @@ use jiff::civil::Date;
 use super::scenarios::{Added, measured, text, token};
 use super::world::World;
 use crate::auth::AppError;
-use crate::keeping::{DeleteOldRecords, delete_old_records};
+use crate::keeping::{DeleteOldRecords, OldRecordsQuery, delete_old_records, old_records};
 use crate::working_hours::{
     ChangeWorkDay, ChangedWorkDay, StartWorkDay, Tap, TapWorkDay, change_work_day, start_work_day,
     tap_work_day,
@@ -94,6 +94,17 @@ pub(crate) async fn change_work_day_scenario(world: &World) -> Added {
 pub(crate) async fn delete_old_records_scenario(world: &World) -> Added {
     let old = Date::new(2020, 3, 2).map_err(text)?;
     typed(world, old).await.map_err(text)?;
+    // The administrator counts first: *Delete them* names the date of the count.
+    let counted = old_records(
+        &world.ctx(),
+        OldRecordsQuery {
+            session_token: token(world),
+            kind: bb_core::keeping::KeepKind::WorkDays,
+        },
+    )
+    .await
+    .map_err(text)?
+    .into_value();
     measured(
         &world.store,
         delete_old_records(
@@ -102,6 +113,7 @@ pub(crate) async fn delete_old_records_scenario(world: &World) -> Added {
                 session_token: token(world),
                 kind: bb_core::keeping::KeepKind::WorkDays,
                 person: None,
+                before: counted.before.to_string(),
             },
         ),
     )

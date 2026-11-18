@@ -656,6 +656,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "description": "The date the count gave (`before` of its answer): the records before it are deleted, and\nonly while the period still gives it (`keeping.past-changed` otherwise).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -680,6 +689,16 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "What is past the keep period changed since it was counted: the period or the day is different; count again (keeping.past-changed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictProblem"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -19436,6 +19455,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "description": "The date the count gave (`before` of its answer): the records before it are deleted, and\nonly while the period still gives it (`keeping.past-changed` otherwise).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -19457,6 +19485,16 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "description": "What is past the keep period changed since it was counted: the period or the day is different; count again (keeping.past-changed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictProblem"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -23813,6 +23851,7 @@
           "project.move-into-itself",
           "project.too-deep",
           "project.preview-changed",
+          "keeping.past-changed",
           "issue.type-retired",
           "issue.type-not-offered",
           "issue.start-after-due",

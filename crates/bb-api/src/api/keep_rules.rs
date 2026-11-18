@@ -20,8 +20,8 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
 use super::auth::{
-    AuthHandle, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer, NotSignedInAnswer, Session,
-    answer_authorized,
+    AuthHandle, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer, NotSignedInAnswer,
+    PastChangedAnswer, Session, answer_authorized,
 };
 use super::body_id;
 use crate::errors::{ApiError, ApiPath, ApiQuery};
@@ -159,24 +159,33 @@ impl From<&DeletedRecords> for DeletedBody {
     }
 }
 
-/// Whose old records to delete.
+/// Whose old records to delete, and the date the count gave.
 #[derive(Deserialize, utoipa::IntoParams)]
 #[into_params(parameter_in = Query)]
-pub(crate) struct WhoseParams {
+pub(crate) struct DeleteParams {
     /// One person, by ID; everybody's when left out.
     person: Option<String>,
+    /// The date the count gave (`before` of its answer): the records before it are deleted, and
+    /// only while the period still gives it (`keeping.past-changed` otherwise).
+    before: String,
+}
+
+/// The person and the date that `params` name; the use case reads the date.
+pub(crate) fn delete_params(
+    params: Result<ApiQuery<DeleteParams>, ApiError>,
+) -> Result<(Option<UserId>, String), ApiError> {
+    let ApiQuery(params) = params?;
+    let person = params
+        .person
+        .as_deref()
+        .map(body_id::<UserId>)
+        .transpose()?;
+    Ok((person, params.before))
 }
 
 /// The kind a path names; an unknown word is not found.
 fn kind_of(word: &str) -> Result<KeepKind, ApiError> {
     KeepKind::from_code(word).ok_or_else(|| ApiError::new(ErrorCode::NotFound))
-}
-
-/// The person `whose` names, if any.
-pub(crate) fn whose_person(
-    whose: Result<ApiQuery<WhoseParams>, ApiError>,
-) -> Result<Option<UserId>, ApiError> {
-    whose.and_then(|ApiQuery(whose)| whose.person.as_deref().map(body_id::<UserId>).transpose())
 }
 
 /// Every rule of keeping and deleting, with the period in force.
@@ -250,14 +259,15 @@ async fn count_past_keep_period(
     tag = "privacy",
     params(
         ("kind" = String, Path, description = "The kind of records, like time-entries."),
-        WhoseParams
+        DeleteParams
     ),
     responses(
         (status = 200, description = "How many were deleted.", body = DeletedBody),
         InvalidAnswer,
         NotSignedInAnswer,
         ForbiddenAnswer,
-        NotFoundAnswer
+        NotFoundAnswer,
+        PastChangedAnswer
     )
 )]
 async fn delete_past_keep_period(
@@ -265,10 +275,10 @@ async fn delete_past_keep_period(
     Info(info): Info,
     Session(session_token): Session,
     ApiPath(kind): ApiPath<String>,
-    whose: Result<ApiQuery<WhoseParams>, ApiError>,
+    params: Result<ApiQuery<DeleteParams>, ApiError>,
 ) -> Result<Response, ApiError> {
-    let read = kind_of(&kind).and_then(|kind| whose_person(whose).map(|person| (kind, person)));
-    let (kind, person) = auth.after_who_asks(&info, &session_token, read).await?;
+    let read = kind_of(&kind).and_then(|kind| delete_params(params).map(|asked| (kind, asked)));
+    let (kind, (person, before)) = auth.after_who_asks(&info, &session_token, read).await?;
     let deleted = auth
         .api()?
         .delete_old_records(
@@ -277,6 +287,7 @@ async fn delete_past_keep_period(
                 session_token,
                 kind,
                 person,
+                before,
             },
         )
         .await?;

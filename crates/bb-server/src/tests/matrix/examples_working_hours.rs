@@ -57,13 +57,15 @@ pub(super) fn working_hours_request(
         "changeWorkDayOfPerson" => ("PATCH", format!("{others}/{date}"), Some(a_change(&date))),
         "getWorkDayHistoryOfPerson" => ("GET", format!("{others}/{date}/history"), None),
         "countOldWorkDays" => ("GET", OLD.into(), None),
-        "deleteOldWorkDays" => ("DELETE", OLD.into(), None),
+        // A date that is not the one the count gives: refused for an administrator, as a deletion
+        // that does not delete what they counted (`keeping.past-changed`).
+        "deleteOldWorkDays" => ("DELETE", format!("{OLD}?before={date}"), None),
         // The keep rules, whose kinds an administrator deletes are work days and time entries.
         "listKeepRules" => ("GET", KEEP_RULES.into(), None),
         "countPastKeepPeriod" => ("GET", format!("{KEEP_RULES}/time-entries/past"), None),
         "deletePastKeepPeriod" => (
             "POST",
-            format!("{KEEP_RULES}/time-entries/delete-past"),
+            format!("{KEEP_RULES}/time-entries/delete-past?before={date}"),
             None,
         ),
         _ => return Ok(None),

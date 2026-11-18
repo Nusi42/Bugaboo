@@ -7363,6 +7363,7 @@ export interface components {
       | "project.move-into-itself"
       | "project.too-deep"
       | "project.preview-changed"
+      | "keeping.past-changed"
       | "issue.type-retired"
       | "issue.type-not-offered"
       | "issue.start-after-due"
@@ -13923,9 +13924,14 @@ export interface operations {
   };
   deletePastKeepPeriod: {
     parameters: {
-      query?: {
+      query: {
         /** @description One person, by ID; everybody's when left out. */
         person?: string;
+        /**
+         * @description The date the count gave (`before` of its answer): the records before it are deleted, and
+         *     only while the period still gives it (`keeping.past-changed` otherwise).
+         */
+        before: string;
       };
       header?: never;
       path: {
@@ -13949,6 +13955,15 @@ export interface operations {
       401: components["responses"]["NotSignedIn"];
       403: components["responses"]["Forbidden"];
       404: components["responses"]["NotFound"];
+      /** @description What is past the keep period changed since it was counted: the period or the day is different; count again (keeping.past-changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ConflictProblem"];
+        };
+      };
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];
@@ -24432,9 +24447,14 @@ export interface operations {
   };
   deleteOldWorkDays: {
     parameters: {
-      query?: {
+      query: {
         /** @description One person, by ID; everybody's when left out. */
         person?: string;
+        /**
+         * @description The date the count gave (`before` of its answer): the records before it are deleted, and
+         *     only while the period still gives it (`keeping.past-changed` otherwise).
+         */
+        before: string;
       };
       header?: never;
       path?: never;
@@ -24454,6 +24474,15 @@ export interface operations {
       400: components["responses"]["BadRequest"];
       401: components["responses"]["NotSignedIn"];
       403: components["responses"]["Forbidden"];
+      /** @description What is past the keep period changed since it was counted: the period or the day is different; count again (keeping.past-changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ConflictProblem"];
+        };
+      };
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];

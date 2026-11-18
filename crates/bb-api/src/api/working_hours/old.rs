@@ -12,9 +12,10 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
 use super::super::auth::{
-    AuthHandle, ForbiddenAnswer, Info, InvalidAnswer, NotSignedInAnswer, Session, answer_authorized,
+    AuthHandle, ForbiddenAnswer, Info, InvalidAnswer, NotSignedInAnswer, PastChangedAnswer,
+    Session, answer_authorized,
 };
-use super::super::keep_rules::{DeletedBody, WhoseParams, whose_person};
+use super::super::keep_rules::{DeleteParams, DeletedBody, delete_params};
 use super::OldWorkDaysBody;
 use crate::errors::{ApiError, ApiQuery};
 
@@ -55,22 +56,23 @@ async fn count_old_work_days(
     path = "/api/v1/work-days/old",
     operation_id = "deleteOldWorkDays",
     tag = "working-hours",
-    params(WhoseParams),
+    params(DeleteParams),
     responses(
         (status = 200, description = "How many were deleted.", body = DeletedBody),
         InvalidAnswer,
         NotSignedInAnswer,
-        ForbiddenAnswer
+        ForbiddenAnswer,
+        PastChangedAnswer
     )
 )]
 async fn delete_old_work_days(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
-    whose: Result<ApiQuery<WhoseParams>, ApiError>,
+    params: Result<ApiQuery<DeleteParams>, ApiError>,
 ) -> Result<Response, ApiError> {
-    let person = auth
-        .after_who_asks(&info, &session_token, whose_person(whose))
+    let (person, before) = auth
+        .after_who_asks(&info, &session_token, delete_params(params))
         .await?;
     let deleted = auth
         .api()?
@@ -80,6 +82,7 @@ async fn delete_old_work_days(
                 session_token,
                 kind: KeepKind::WorkDays,
                 person,
+                before,
             },
         )
         .await?;

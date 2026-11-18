@@ -116,6 +116,9 @@ error_codes! {
     ProjectTooDeep => ("project.too-deep", 409),
     /// The projects, or who has which role, changed since the move was previewed.
     MovePreviewChanged => ("project.preview-changed", 409),
+    /// *Delete them* names another date than the records past their keep period have now: the
+    /// period changed, or a day passed, since the administrator counted them (ADR-0045, decision 6).
+    KeepPastChanged => ("keeping.past-changed", 409),
     /// An issue type that was retired takes no new issues (ISS-02).
     IssueTypeRetired => ("issue.type-retired", 409),
     /// The project does not offer that issue type (ISS-02).

@@ -55,7 +55,7 @@ function DeleteAll({
 
 /** What is past the keep period: the count, for each person, and *Delete them*. */
 function OldList({ old }: { readonly old: Old }) {
-  const { deleted, send, error, busy } = useDeleteOld();
+  const { deleted, send, error, busy } = useDeleteOld(old.before);
   return (
     <div {...partOf(part.stack)}>
       {error === undefined ? null : <Alert tone={alertTone.danger}>{messageOf(error)}</Alert>}

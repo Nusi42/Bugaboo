@@ -72,6 +72,9 @@ pub struct DeleteOldRecords {
     pub kind: KeepKind,
     /// One person; `None` for everybody.
     pub person: Option<UserId>,
+    /// The date the administrator's count gave (`OldRecords::before`, as `2026-11-18`): the records
+    /// before it are deleted, and only while it is still the date of the period now.
+    pub before: String,
 }
 
 /// The records of one person that are past the keep period.
@@ -248,14 +251,23 @@ fn name_of(person: &PersonRef) -> (bool, String) {
 ///
 /// # Errors
 /// `access.forbidden` without *Change organization settings*, `resource.not-found` for a kind that
-/// Bugaboo deletes by itself.
+/// Bugaboo deletes by itself, `request.invalid` for a `before` that is no date,
+/// `keeping.past-changed` when it is not the date of the period now: the period changed, or a day
+/// passed, since the count.
 pub async fn delete_old_records<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: DeleteOldRecords,
 ) -> Result<Authorized<DeletedRecords>, AppError> {
     let (actor, evaluation) = ctx.keeper(&input.session_token).await?;
     let (row, written) = deleted_by_an_administrator(input.kind)?;
+    let asked: Date = input
+        .before
+        .parse()
+        .map_err(|_| AppError::Refused(ErrorCode::InvalidRequest))?;
     let (_, before) = ctx.kept_from_today(row).await?;
+    if before != asked {
+        return Err(ErrorCode::KeepPastChanged.into());
+    }
     let maker = ctx.event_maker(by(actor.person.id));
     let (kind, person) = (input.kind, input.person);
     let (deleted_member, before_member) = (written.deleted, written.before);

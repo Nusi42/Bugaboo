@@ -20,7 +20,7 @@ use serde_json::json;
 use super::files_http::{on_disk, run_jobs, upload};
 use super::http::{ADA_EMAIL, Browser, rig_and_app};
 use super::issues_site::{ISSUES, Site, id_in, id_of, key_in, ok, version_of};
-use super::keep_rules_http::DELETE_PAST;
+use super::keep_rules_http::delete_counted;
 use super::relations_http::{kinds, put_under};
 use super::rig::Rig;
 use super::time_http::MY_ENTRIES;
@@ -188,10 +188,7 @@ async fn priv_05_an_issue_in_the_trash_stays_while_its_time_entries_are_kept() -
         a_day_later(&rig, 11 * 366).await?;
         assert!(rig.storage.issue(booked_id).await?.is_some());
         let mut ada = Browser::signed_in_as(&app, ADA_EMAIL).await?;
-        assert_eq!(
-            ok(&ada.send("POST", DELETE_PAST, None).await?)?["deleted"],
-            1
-        );
+        assert_eq!(ok(&delete_counted(&mut ada).await?)?["deleted"], 1);
         a_day_later(&rig, 1).await?;
         assert!(rig.storage.issue(booked_id).await?.is_none());
         Ok(())
