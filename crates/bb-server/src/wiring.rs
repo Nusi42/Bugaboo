@@ -25,7 +25,7 @@ use bb_notify::SmtpMailer;
 use bb_store::{AuthStorage, Database, LogSeal};
 
 use crate::config::Settings;
-use crate::data_folder::DataFolder;
+use crate::data_folder::{DataFolder, protect_key_files};
 use crate::probe::{Probe, database_kind};
 
 /// The subcommand of the program that creates a preview, which the server starts as a child
@@ -129,6 +129,11 @@ pub(crate) async fn wire(
             .await
             .map_err(|error| database_failed(&error))?,
     );
+    // The master key gets an access list of its own on Windows (M1-F22), also a key file made
+    // just now.
+    protect_key_files(&data.keys()).map_err(|reason| {
+        anyhow!(message::data_folder_protect_failed(data.keys().display(), reason).render())
+    })?;
     let seal = LogSeal::new(&keys, data.security_log_anchor());
     let csrf = CsrfKey::from_bytes(keys.csrf_key().to_bytes());
     let storage = AuthStorage::new(database.clone(), keys, seal.clone());

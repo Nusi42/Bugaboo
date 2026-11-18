@@ -1522,14 +1522,26 @@ pub const CHOICE_COLOR_CAT8: MessageKey = MessageKey::new("choice-color.cat8");
 /// The message `choice-color.cat9`.
 pub const CHOICE_COLOR_CAT9: MessageKey = MessageKey::new("choice-color.cat9");
 
+/// The message `cli.about.backup`.
+pub const CLI_ABOUT_BACKUP: MessageKey = MessageKey::new("cli.about.backup");
+
+/// The message `cli.about.backup-list`.
+pub const CLI_ABOUT_BACKUP_LIST: MessageKey = MessageKey::new("cli.about.backup-list");
+
 /// The message `cli.about.keys`.
 pub const CLI_ABOUT_KEYS: MessageKey = MessageKey::new("cli.about.keys");
 
 /// The message `cli.about.keys-export`.
 pub const CLI_ABOUT_KEYS_EXPORT: MessageKey = MessageKey::new("cli.about.keys-export");
 
+/// The message `cli.about.keys-import`.
+pub const CLI_ABOUT_KEYS_IMPORT: MessageKey = MessageKey::new("cli.about.keys-import");
+
 /// The message `cli.about.openapi`.
 pub const CLI_ABOUT_OPENAPI: MessageKey = MessageKey::new("cli.about.openapi");
+
+/// The message `cli.about.restore`.
+pub const CLI_ABOUT_RESTORE: MessageKey = MessageKey::new("cli.about.restore");
 
 /// The message `cli.about.rotate-key`.
 pub const CLI_ABOUT_ROTATE_KEY: MessageKey = MessageKey::new("cli.about.rotate-key");
@@ -1569,6 +1581,9 @@ pub const CLI_ABOUT_SETUP: MessageKey = MessageKey::new("cli.about.setup");
 /// The message `cli.help.address`.
 pub const CLI_HELP_ADDRESS: MessageKey = MessageKey::new("cli.help.address");
 
+/// The message `cli.help.backup-to`.
+pub const CLI_HELP_BACKUP_TO: MessageKey = MessageKey::new("cli.help.backup-to");
+
 /// The message `cli.help.config`.
 pub const CLI_HELP_CONFIG: MessageKey = MessageKey::new("cli.help.config");
 
@@ -1581,6 +1596,9 @@ pub const CLI_HELP_DATABASE_URL: MessageKey = MessageKey::new("cli.help.database
 /// The message `cli.help.keys-folder`.
 pub const CLI_HELP_KEYS_FOLDER: MessageKey = MessageKey::new("cli.help.keys-folder");
 
+/// The message `cli.help.keys-import-folder`.
+pub const CLI_HELP_KEYS_IMPORT_FOLDER: MessageKey = MessageKey::new("cli.help.keys-import-folder");
+
 /// The message `cli.help.non-interactive`.
 pub const CLI_HELP_NON_INTERACTIVE: MessageKey = MessageKey::new("cli.help.non-interactive");
 
@@ -1592,6 +1610,12 @@ pub const CLI_HELP_PORT: MessageKey = MessageKey::new("cli.help.port");
 
 /// The message `cli.help.public-url`.
 pub const CLI_HELP_PUBLIC_URL: MessageKey = MessageKey::new("cli.help.public-url");
+
+/// The message `cli.help.replay-list`.
+pub const CLI_HELP_REPLAY_LIST: MessageKey = MessageKey::new("cli.help.replay-list");
+
+/// The message `cli.help.restore-file`.
+pub const CLI_HELP_RESTORE_FILE: MessageKey = MessageKey::new("cli.help.restore-file");
 
 /// The message `cli.help.sample-check`.
 pub const CLI_HELP_SAMPLE_CHECK: MessageKey = MessageKey::new("cli.help.sample-check");
@@ -3769,6 +3793,9 @@ pub const ISSUES_WITH_SUB_ISSUES: MessageKey = MessageKey::new("issues.with-sub-
 /// The message `keys.database-placeholder`.
 pub const KEYS_DATABASE_PLACEHOLDER: MessageKey = MessageKey::new("keys.database-placeholder");
 
+/// The message `keys.folder-placeholder`.
+pub const KEYS_FOLDER_PLACEHOLDER: MessageKey = MessageKey::new("keys.folder-placeholder");
+
 /// The message `keys.settings-placeholder`.
 pub const KEYS_SETTINGS_PLACEHOLDER: MessageKey = MessageKey::new("keys.settings-placeholder");
 
@@ -5436,6 +5463,12 @@ pub const RELATION_KINDS_RETIRED: MessageKey = MessageKey::new("relation-kinds.r
 
 /// The message `relation-kinds.search`.
 pub const RELATION_KINDS_SEARCH: MessageKey = MessageKey::new("relation-kinds.search");
+
+/// The message `restore.reason-newer-format`.
+pub const RESTORE_REASON_NEWER_FORMAT: MessageKey = MessageKey::new("restore.reason-newer-format");
+
+/// The message `restore.reason-unreadable`.
+pub const RESTORE_REASON_UNREADABLE: MessageKey = MessageKey::new("restore.reason-unreadable");
 
 /// The message `roles.actions-intro`.
 pub const ROLES_ACTIONS_INTRO: MessageKey = MessageKey::new("roles.actions-intro");
@@ -10406,6 +10439,62 @@ pub fn backup_left(count: i64) -> Message {
     )
 }
 
+/// The message `backups.created`.
+#[must_use]
+pub fn backups_created(
+    name: impl std::fmt::Display,
+    path: impl std::fmt::Display,
+    size: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("backups.created"),
+        vec![
+            ("name", Value::Text(name.to_string())),
+            ("path", Value::Text(path.to_string())),
+            ("size", Value::Text(size.to_string())),
+        ],
+    )
+}
+
+/// The message `backups.failed`.
+#[must_use]
+pub fn backups_failed(reason: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("backups.failed"),
+        vec![("reason", Value::Text(reason.to_string()))],
+    )
+}
+
+/// The message `backups.folder-not-private`.
+#[must_use]
+pub fn backups_folder_not_private(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("backups.folder-not-private"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `backups.listed`.
+#[must_use]
+pub fn backups_listed(name: impl std::fmt::Display, size: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("backups.listed"),
+        vec![
+            ("name", Value::Text(name.to_string())),
+            ("size", Value::Text(size.to_string())),
+        ],
+    )
+}
+
+/// The message `backups.none`.
+#[must_use]
+pub fn backups_none(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("backups.none"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
 /// The message `check-access.for-issue-type`.
 #[must_use]
 pub fn check_access_for_issue_type(type_: impl std::fmt::Display) -> Message {
@@ -12876,6 +12965,36 @@ pub fn keys_how_windows(command: impl std::fmt::Display, owner: impl std::fmt::D
     )
 }
 
+/// The message `keys.import-missing`.
+#[must_use]
+pub fn keys_import_missing(file: impl std::fmt::Display, path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keys.import-missing"),
+        vec![
+            ("file", Value::Text(file.to_string())),
+            ("path", Value::Text(path.to_string())),
+        ],
+    )
+}
+
+/// The message `keys.import-would-replace`.
+#[must_use]
+pub fn keys_import_would_replace(file: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keys.import-would-replace"),
+        vec![("file", Value::Text(file.to_string()))],
+    )
+}
+
+/// The message `keys.imported`.
+#[must_use]
+pub fn keys_imported(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keys.imported"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
 /// The message `keys.no-access`.
 #[must_use]
 pub fn keys_no_access(how: impl std::fmt::Display, path: impl std::fmt::Display) -> Message {
@@ -14582,6 +14701,197 @@ pub fn relation_kinds_reads(
     )
 }
 
+/// The message `restore.before`.
+#[must_use]
+pub fn restore_before(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("restore.before"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `restore.done`.
+#[must_use]
+pub fn restore_done(moment: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("restore.done"),
+        vec![("moment", Value::Text(moment.to_string()))],
+    )
+}
+
+/// The message `restore.failed`.
+#[must_use]
+pub fn restore_failed(
+    before: impl std::fmt::Display,
+    command: impl std::fmt::Display,
+    reason: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("restore.failed"),
+        vec![
+            ("before", Value::Text(before.to_string())),
+            ("command", Value::Text(command.to_string())),
+            ("reason", Value::Text(reason.to_string())),
+        ],
+    )
+}
+
+/// The message `restore.keys-do-not-open`.
+#[must_use]
+pub fn restore_keys_do_not_open(
+    command: impl std::fmt::Display,
+    path: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("restore.keys-do-not-open"),
+        vec![
+            ("command", Value::Text(command.to_string())),
+            ("path", Value::Text(path.to_string())),
+        ],
+    )
+}
+
+/// The message `restore.lost`.
+#[must_use]
+pub fn restore_lost(from: impl std::fmt::Display, to: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("restore.lost"),
+        vec![
+            ("from", Value::Text(from.to_string())),
+            ("to", Value::Text(to.to_string())),
+        ],
+    )
+}
+
+/// The message `restore.migrations`.
+#[must_use]
+pub fn restore_migrations(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("restore.migrations"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `restore.not-replayed`.
+#[must_use]
+pub fn restore_not_replayed(line: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("restore.not-replayed"),
+        vec![("line", Value::Text(line.to_string()))],
+    )
+}
+
+/// The message `restore.reason-bad-name`.
+#[must_use]
+pub fn restore_reason_bad_name(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("restore.reason-bad-name"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `restore.reason-changed-migration`.
+#[must_use]
+pub fn restore_reason_changed_migration(version: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("restore.reason-changed-migration"),
+        vec![("version", Value::Text(version.to_string()))],
+    )
+}
+
+/// The message `restore.reason-damaged`.
+#[must_use]
+pub fn restore_reason_damaged(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("restore.reason-damaged"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `restore.reason-extra`.
+#[must_use]
+pub fn restore_reason_extra(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("restore.reason-extra"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `restore.reason-missing`.
+#[must_use]
+pub fn restore_reason_missing(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("restore.reason-missing"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `restore.reason-newer-migration`.
+#[must_use]
+pub fn restore_reason_newer_migration(version: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("restore.reason-newer-migration"),
+        vec![("version", Value::Text(version.to_string()))],
+    )
+}
+
+/// The message `restore.reason-other-database`.
+#[must_use]
+pub fn restore_reason_other_database(kind: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("restore.reason-other-database"),
+        vec![("kind", Value::Text(kind.to_string()))],
+    )
+}
+
+/// The message `restore.refused`.
+#[must_use]
+pub fn restore_refused(path: impl std::fmt::Display, reason: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("restore.refused"),
+        vec![
+            ("path", Value::Text(path.to_string())),
+            ("reason", Value::Text(reason.to_string())),
+        ],
+    )
+}
+
+/// The message `restore.replayed`.
+#[must_use]
+pub fn restore_replayed(line: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("restore.replayed"),
+        vec![("line", Value::Text(line.to_string()))],
+    )
+}
+
+/// The message `restore.server-running`.
+#[must_use]
+pub fn restore_server_running(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("restore.server-running"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `restore.signed-out`.
+#[must_use]
+pub fn restore_signed_out(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("restore.signed-out"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `restore.unreadable-lines`.
+#[must_use]
+pub fn restore_unreadable_lines(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("restore.unreadable-lines"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
 /// The message `roles.badge-used`.
 #[must_use]
 pub fn roles_badge_used(badge: impl std::fmt::Display, used: impl std::fmt::Display) -> Message {
@@ -15949,6 +16259,15 @@ pub fn server_status_uptime(days: i64, hours: i64, minutes: i64) -> Message {
     )
 }
 
+/// The message `server.already-running`.
+#[must_use]
+pub fn server_already_running(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("server.already-running"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
 /// The message `server.database-failed`.
 #[must_use]
 pub fn server_database_failed(reason: impl std::fmt::Display) -> Message {
@@ -15973,6 +16292,15 @@ pub fn server_listening(address: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("server.listening"),
         vec![("address", Value::Text(address.to_string()))],
+    )
+}
+
+/// The message `server.lock-failed`.
+#[must_use]
+pub fn server_lock_failed(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("server.lock-failed"),
+        vec![("path", Value::Text(path.to_string()))],
     )
 }
 
@@ -20100,6 +20428,20 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "These codes are shown only now. Save them before you leave this page.",
     ),
     ("backup.title", "Backup codes"),
+    (
+        "backups.created",
+        "Created the backup {name} ({size} bytes) in {path}. It holds all the organization's data and no keys: keep it as safe as the data folder.",
+    ),
+    (
+        "backups.failed",
+        "The backup could not be created: {reason}",
+    ),
+    (
+        "backups.folder-not-private",
+        "The folder {path} can be opened by other accounts on this computer. Choose a folder that only you can open, so the backup is not left where others can copy it.",
+    ),
+    ("backups.listed", "{name} ({size} bytes)"),
+    ("backups.none", "There are no backups in {path}."),
     ("check-access.all-fields", "All fields"),
     ("check-access.all-kinds", "All kinds of people information"),
     ("check-access.all-other-fields", "All other fields"),
@@ -20237,14 +20579,30 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("choice-color.cat7", "Coral"),
     ("choice-color.cat8", "Yellow"),
     ("choice-color.cat9", "Sky blue"),
+    (
+        "cli.about.backup",
+        "Create a backup of the data and the attached files, or list the backups",
+    ),
+    (
+        "cli.about.backup-list",
+        "List the backups in the folder of the backups",
+    ),
     ("cli.about.keys", "Look after the key files"),
     (
         "cli.about.keys-export",
         "Copy the key files into a folder, for your backup",
     ),
     (
+        "cli.about.keys-import",
+        "Copy key files from a folder into this installation, before restoring a backup on another computer",
+    ),
+    (
         "cli.about.openapi",
         "Print the description of the API (OpenAPI) and stop",
+    ),
+    (
+        "cli.about.restore",
+        "Put a backup back in place of the data there now. Stop the server first",
     ),
     (
         "cli.about.rotate-key",
@@ -20293,6 +20651,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The address to listen on (default 127.0.0.1, this computer only)",
     ),
     (
+        "cli.help.backup-to",
+        "The folder to put the backup into, instead of the backups folder of the data folder. Only you may be able to open it",
+    ),
+    (
         "cli.help.config",
         "The settings file (default: bugaboo.toml next to the program, if it exists)",
     ),
@@ -20304,6 +20666,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "cli.help.keys-folder",
         "The folder to copy the key files into. It is created if it does not exist",
+    ),
+    (
+        "cli.help.keys-import-folder",
+        "The folder that holds the exported key files",
     ),
     (
         "cli.help.non-interactive",
@@ -20318,6 +20684,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "cli.help.public-url",
         "The web address people type to reach Bugaboo, like https://bugaboo.example.com",
     ),
+    (
+        "cli.help.replay-list",
+        "A copy of the replay list to read together with the others, for example the one beside the exported key files",
+    ),
+    ("cli.help.restore-file", "The backup file to restore"),
     (
         "cli.help.sample-check",
         "With --large: makes a small dataset for the check of its rules: every event makes its notifications, and the check fails when Guests or Contributors were told nothing to look at",
@@ -22211,10 +22582,26 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "keys.exported",
         "Copied the key files into {path}. They can read everything Bugaboo stores in secret: keep them in a safe place, away from the database backup.",
     ),
+    (
+        "keys.folder-placeholder",
+        "<the folder of the exported key files>",
+    ),
     ("keys.how-linux", "sudo -u {owner} {command}"),
     (
         "keys.how-windows",
         "On Windows that account is {owner}. It has no password, so you cannot sign in as it: stop the service, start a terminal as that account with a tool that can do this, and run: {command}",
+    ),
+    (
+        "keys.import-missing",
+        "The folder {path} holds no {file}. Choose the folder that bugaboo keys export wrote.",
+    ),
+    (
+        "keys.import-would-replace",
+        "This installation has another {file}, and its data needs it, so Bugaboo does not replace it. Import the keys into a new data folder, then restore the backup there.",
+    ),
+    (
+        "keys.imported",
+        "Copied the key files from {path} into this installation.",
     ),
     (
         "keys.no-access",
@@ -23675,6 +24062,84 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("relation-kinds.retired", "Retired"),
     ("relation-kinds.search", "Search kinds of relation"),
     (
+        "restore.before",
+        "The data that was there before is kept in the backup {path} for the keep period of the security log.",
+    ),
+    (
+        "restore.done",
+        "Restored the backup of {moment}. Every change after that moment is gone, password and role changes included, apart from what the replay list did again: tell the people concerned.",
+    ),
+    (
+        "restore.failed",
+        "The restore stopped half way: {reason}. The data that was there before is in the backup {before}. To put it back, run: {command}",
+    ),
+    (
+        "restore.keys-do-not-open",
+        "The backup {path} was not restored, and nothing was changed: the key files of this installation do not open its stored secrets. Copy the key files of the installation it comes from, then restore again: {command}",
+    ),
+    (
+        "restore.lost",
+        "The entries {from} to {to} of the security log are gone with the restore. The log names them, and the anchor starts again from the restored log.",
+    ),
+    (
+        "restore.migrations",
+        "{count, plural, one {# change} other {# changes}} of the database ran, because the backup is older.",
+    ),
+    (
+        "restore.not-replayed",
+        "Not done again, because this Bugaboo cannot do it yet: {line}. Do it again by hand.",
+    ),
+    (
+        "restore.reason-bad-name",
+        "it holds the name {name}, which could lead out of the folder of the restore",
+    ),
+    (
+        "restore.reason-changed-migration",
+        "change {version} of its database differs from the one this Bugaboo has",
+    ),
+    ("restore.reason-damaged", "the part {name} is damaged"),
+    (
+        "restore.reason-extra",
+        "it holds the part {name}, which its list does not name",
+    ),
+    ("restore.reason-missing", "the part {name} is missing"),
+    (
+        "restore.reason-newer-format",
+        "it was created by a newer Bugaboo",
+    ),
+    (
+        "restore.reason-newer-migration",
+        "it was created by a newer Bugaboo (its database has change {version}, which this Bugaboo does not know)",
+    ),
+    (
+        "restore.reason-other-database",
+        "it is a backup of another kind of database ({kind})",
+    ),
+    (
+        "restore.reason-unreadable",
+        "the file is not a backup of Bugaboo, or it cannot be read",
+    ),
+    (
+        "restore.refused",
+        "The backup {path} was not restored, and nothing was changed: {reason}.",
+    ),
+    (
+        "restore.replayed",
+        "Done again from the replay list: {line}",
+    ),
+    (
+        "restore.server-running",
+        "A Bugaboo server uses the data folder {path}. Stop it, then run the restore again.",
+    ),
+    (
+        "restore.signed-out",
+        "Everybody was signed out: {count, plural, one {# session} other {# sessions}} ended.",
+    ),
+    (
+        "restore.unreadable-lines",
+        "{count, plural, one {# line} other {# lines}} of the replay lists could not be read.",
+    ),
+    (
         "roles.actions-intro",
         "Copy the role to start a new one from its permissions, or delete it.",
     ),
@@ -24666,6 +25131,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("server-status.version", "Version"),
     ("server.about", "Bugaboo: the issue tracker in one file"),
     (
+        "server.already-running",
+        "Another Bugaboo server uses the data folder {path}. Only one server may use it at a time.",
+    ),
+    (
         "server.database-built-in",
         "Database: built-in SQLite in the data folder.",
     ),
@@ -24683,6 +25152,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "server.listening",
         "Bugaboo is running at {address}. Stop it with Ctrl+C.",
+    ),
+    (
+        "server.lock-failed",
+        "Bugaboo could not mark the data folder {path} as in use",
     ),
     ("server.not-found", "Not found"),
     (

@@ -42,6 +42,13 @@ pub(super) async fn serve_settings(
     shutdown: impl Future<Output = ()> + Send + 'static,
 ) -> anyhow::Result<()> {
     let data = DataFolder::prepare(&settings.data_dir)?;
+    // Held while the server runs: a restore refuses a folder that a server uses (ADR-0046).
+    let _running = data
+        .lock_server()
+        .with_context(|| message::server_lock_failed(data.root().display()).render())?
+        .ok_or_else(|| {
+            anyhow::anyhow!(message::server_already_running(data.root().display()).render())
+        })?;
     report_open_parts(&data, data.rights(), &mut output::warning);
     let (listener_options, certificate) = listener_options(&settings, &data)?;
     let hsts_max_age = hsts_max_age(&settings);

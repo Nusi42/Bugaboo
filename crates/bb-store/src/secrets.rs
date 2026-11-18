@@ -117,7 +117,7 @@ impl Database {
     /// Fails with [`StoreError::KeysMissing`] as described, and when a file cannot be read or is
     /// damaged.
     pub async fn open_keys(&self, folder: &std::path::Path) -> Result<KeyRing, StoreError> {
-        let has_data = self.has_key_bound_data().await?;
+        let has_data = self.holds_key_bound_data().await?;
         let mode = if has_data {
             OpenMode::ExistingOnly
         } else {
@@ -126,8 +126,12 @@ impl Database {
         KeyRing::open(folder, mode)
     }
 
-    /// Whether the database holds anything that only the key files can make sense of.
-    async fn has_key_bound_data(&self) -> Result<bool, StoreError> {
+    /// Whether the database holds anything that only the key files can make sense of: stored
+    /// secrets or a security log. `bugaboo keys import` never replaces a key such data needs.
+    ///
+    /// # Errors
+    /// Fails when the database fails.
+    pub async fn holds_key_bound_data(&self) -> Result<bool, StoreError> {
         let mut secrets = Query::select();
         secrets.column(Columns::Name).from(Columns::Table).limit(1);
         let mut entries = Query::select();

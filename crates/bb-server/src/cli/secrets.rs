@@ -13,7 +13,8 @@ use jiff::Timestamp;
 use super::service::account_name;
 use super::{StoreArgs, load_settings};
 use crate::data_folder::{
-    DataFolder, Existing, create_private, open_to_others, other_owner, write_private,
+    DataFolder, Existing, create_private, open_to_others, other_owner, protect_key_files,
+    write_private,
 };
 use crate::probe::log_state;
 use crate::wiring::{self, Store};
@@ -49,7 +50,7 @@ fn word(text: &str) -> String {
 /// that were given (the settings file and the data folder, and the `folder` of an export). A
 /// database address is left out, because it can hold a password. When nothing names the
 /// installation, the words say that the settings file of the service is meant.
-fn command_line(command: &str, args: &StoreArgs, folder: Option<&Path>) -> String {
+pub(super) fn command_line(command: &str, args: &StoreArgs, folder: Option<&Path>) -> String {
     let mut line = format!("bugaboo {command}");
     if let Some(folder) = folder {
         line.push(' ');
@@ -93,7 +94,7 @@ fn how_to_run(command: &str, owner: &str) -> Message {
 /// Refuses to touch an installation that another account looks after, which is what a service
 /// install is: a command run from the wrong account would leave files that the service cannot
 /// read, or could not read the keys at all, and says how to run it as the right account.
-fn require_own_installation(
+pub(super) fn require_own_installation(
     data: &DataFolder,
     args: &StoreArgs,
     command: &str,
@@ -159,7 +160,7 @@ pub(super) async fn verify_security_log(args: &StoreArgs) -> anyhow::Result<()> 
 }
 
 /// Says what checking the log found; an error when the chain is broken.
-fn summarize(state: &LogState) -> anyhow::Result<()> {
+pub(super) fn summarize(state: &LogState) -> anyhow::Result<()> {
     match state {
         LogState::Valid {
             entries,
@@ -194,6 +195,8 @@ pub(super) async fn rotate_key(args: &StoreArgs) -> anyhow::Result<()> {
         .database
         .rotate_master_key(&store.keys, Timestamp::now())
         .await?;
+    // The new key file was written beside the old one and renamed: it gets its own access list.
+    protect_key_files(&data_keys(args)?).map_err(|reason| anyhow!(reason))?;
     output::line(&message::keys_rotated(i64::try_from(secrets).unwrap_or(i64::MAX)).render());
     Ok(())
 }
@@ -203,9 +206,66 @@ pub(super) async fn rotate_key(args: &StoreArgs) -> anyhow::Result<()> {
 /// private before the key goes in; a copy that is already there is never replaced, and a run that
 /// meets one takes back what it made.
 pub(super) async fn export_keys(args: &StoreArgs, folder: &Path) -> anyhow::Result<()> {
-    let (_, store) = open(args, "keys export", Some(folder)).await?;
-    copy_keys(&store.keys.backup_files(), folder)?;
+    let (settings, store) = open(args, "keys export", Some(folder)).await?;
+    // The replay list goes beside the keys, so a computer lost with its data folder does not take
+    // the list with it (ADR-0044, decision 8).
+    let mut files = store.keys.backup_files().to_vec();
+    if let Some(data) = DataFolder::existing(&settings.data_dir) {
+        let list = data.replay_list();
+        if list.is_file() {
+            files.push(list);
+        }
+    }
+    copy_keys(&files, folder)?;
     output::line(&message::keys_exported(folder.display()).render());
+    Ok(())
+}
+
+/// The keys folder of the installation the arguments name.
+fn data_keys(args: &StoreArgs) -> anyhow::Result<PathBuf> {
+    let settings = load_settings(args.config.as_deref(), &args.settings(), false)?;
+    Ok(DataFolder::existing(&settings.data_dir)
+        .ok_or_else(|| anyhow!(message::cli_no_data(settings.data_dir.display()).render()))?
+        .keys())
+}
+
+/// `bugaboo keys import <folder>`: the twin of `keys export`. Copies the key files from `folder`
+/// into the keys folder of the installation, each made private before the key goes in. A key
+/// file that is there and differs is never replaced while the database holds data that needs it
+/// (stored secrets or a security log): the keys are imported into a new data folder, and the
+/// backup restored there.
+pub(super) async fn import_keys(args: &StoreArgs, folder: &Path) -> anyhow::Result<()> {
+    let settings = load_settings(args.config.as_deref(), &args.settings(), false)?;
+    let data = DataFolder::prepare(&settings.data_dir)?;
+    require_own_installation(&data, args, "keys import", Some(folder))?;
+    let names: Vec<_> = bb_store::KEY_BACKUP_FILES.to_vec();
+    for name in &names {
+        if !folder.join(name).is_file() {
+            return Err(anyhow!(
+                message::keys_import_missing(folder.display(), name).render()
+            ));
+        }
+    }
+    let needed = match wiring::open_store(&settings, &data).await {
+        Ok(store) => store.database.holds_key_bound_data().await?,
+        Err(_) => false,
+    };
+    for name in &names {
+        let bytes = std::fs::read(folder.join(name))
+            .map_err(|error| anyhow!(message::keys_export_failed(error).render()))?;
+        let target = data.keys().join(name);
+        match std::fs::read(&target) {
+            Ok(present) if present == bytes => continue,
+            Ok(_) if needed => {
+                return Err(anyhow!(message::keys_import_would_replace(name).render()));
+            }
+            _ => {}
+        }
+        write_private(&target, &bytes, Existing::Replace)
+            .map_err(|error| anyhow!(message::keys_export_failed(error).render()))?;
+    }
+    protect_key_files(&data.keys()).map_err(|reason| anyhow!(reason))?;
+    output::line(&message::keys_imported(folder.display()).render());
     Ok(())
 }
 
@@ -246,4 +306,4 @@ fn copy_keys(files: &[PathBuf], folder: &Path) -> anyhow::Result<()> {
 
 #[cfg(test)]
 #[path = "../tests/secrets.rs"]
-mod tests;
+pub(super) mod tests;

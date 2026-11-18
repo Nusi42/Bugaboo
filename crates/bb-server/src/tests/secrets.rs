@@ -14,7 +14,7 @@ use crate::config::{SettingName, Sources, resolve};
 use crate::wiring::{Serving, wire};
 
 /// An installation with a built-in database and a security log with two entries.
-async fn installation(root: &Path) -> Result<(StoreArgs, DataFolder), Failure> {
+pub(crate) async fn installation(root: &Path) -> Result<(StoreArgs, DataFolder), Failure> {
     let data = DataFolder::prepare(&root.join("data"))?;
     let given = [
         (SettingName::Port, "47200".to_owned()),

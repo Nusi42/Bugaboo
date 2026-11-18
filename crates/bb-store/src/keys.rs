@@ -42,6 +42,9 @@ pub const MASTER_KEY_FILE: &str = "master.key";
 const LOG_FILE: &str = "log.key";
 /// The CSRF key file's name.
 const CSRF_FILE: &str = "csrf.key";
+/// The key files a backup of the keys holds (`bugaboo keys export` and `keys import`): the CSRF
+/// key protects nothing stored, so it is made new instead.
+pub const KEY_BACKUP_FILES: [&str; 2] = [MASTER_KEY_FILE, LOG_FILE];
 /// The same master file while it is being replaced.
 const NEW_MASTER_FILE: &str = "master.key.new";
 /// The size of a key.
@@ -261,7 +264,7 @@ impl KeyRing {
     /// missing and protects nothing that is stored.)
     #[must_use]
     pub fn backup_files(&self) -> [PathBuf; 2] {
-        [self.master_path(), self.folder.join(LOG_FILE)]
+        KEY_BACKUP_FILES.map(|name| self.folder.join(name))
     }
 
     /// The master keys as the file has them now.

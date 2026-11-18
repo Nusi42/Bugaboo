@@ -15,7 +15,7 @@ pub mod fixtures;
 pub mod preview;
 mod sniff;
 
-pub use disk::DiskFiles;
+pub use disk::{DiskFiles, stored_paths};
 pub use preview::{PreviewCommand, PreviewRefusal};
 pub use sniff::sniff;
 

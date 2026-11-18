@@ -8,6 +8,8 @@
 //! tls/         the certificate and key made by Bugaboo
 //! logs/        files the security log keeps outside the database (its anchor file), and the
 //!              log of a server that runs as a service
+//! privacy/     the replay list: what a restore must not undo (ADR-0044, decision 8)
+//! server.lock  held by the running server, so a restore can tell that it runs (ADR-0046)
 //! setup-code.txt  the setup code of the first start, for a server without a console
 //! ```
 //!
@@ -42,6 +44,9 @@ const ANCHOR_FILE: &str = bb_store::SECURITY_LOG_ANCHOR_FILE;
 #[cfg(windows)]
 const SERVER_LOG_FILE: &str = "server.log";
 const SETUP_CODE_FILE: &str = "setup-code.txt";
+const PRIVACY: &str = "privacy";
+const REPLAY_LIST: &str = "replay.list";
+const SERVER_LOCK: &str = "server.lock";
 /// The folders `prepare` makes inside the data folder.
 pub(crate) const SUB_FOLDERS: [&str; 5] = [FILES, KEYS, BACKUPS, TLS, LOGS];
 /// What the built-in database (SQLite) keeps next to its file.
@@ -166,6 +171,33 @@ impl DataFolder {
         self.root.join(DATABASE_FILE)
     }
 
+    /// Where backups go unless an administrator names another folder (ADR-0046, decision 6).
+    pub(crate) fn backups(&self) -> PathBuf {
+        self.root.join(BACKUPS)
+    }
+
+    /// The replay list (ADR-0044, decision 8).
+    pub(crate) fn replay_list(&self) -> PathBuf {
+        self.root.join(PRIVACY).join(REPLAY_LIST)
+    }
+
+    /// Takes the lock that says a server uses this folder, and holds it as long as the returned
+    /// file lives; `None` when another process holds it (a running server). The operating
+    /// system lets it go when the process ends, however it ends.
+    pub(crate) fn lock_server(&self) -> std::io::Result<Option<std::fs::File>> {
+        let file = std::fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .truncate(false)
+            .open(self.root.join(SERVER_LOCK))?;
+        match file.try_lock() {
+            Ok(()) => Ok(Some(file)),
+            Err(std::fs::TryLockError::WouldBlock) => Ok(None),
+            Err(std::fs::TryLockError::Error(error)) => Err(error),
+        }
+    }
+
     /// The files directly in the folder that Bugaboo itself makes and that exist now: the
     /// built-in database with its companions, and the setup code. A service takes over these and
     /// the sub-folders, and nothing else that happens to lie in the folder.
@@ -179,6 +211,7 @@ impl DataFolder {
             files.push(PathBuf::from(name));
         }
         files.push(self.setup_code_file());
+        files.push(self.root.join(SERVER_LOCK));
         // A link is not Bugaboo's file, whatever it points to: `symlink_metadata` does not follow.
         files.retain(|file| std::fs::symlink_metadata(file).is_ok_and(|data| data.is_file()));
         files
@@ -361,6 +394,25 @@ fn ensure_private(path: &Path) -> Result<(), String> {
 #[cfg(windows)]
 fn ensure_private(path: &Path) -> Result<(), String> {
     restrict(path)
+}
+
+/// Gives every key file in `keys` an access list of its own: the account that runs Bugaboo, and
+/// the administrators of the computer for reading, with nothing inherited from the folder
+/// (M1-F22). On Linux the store makes them owner-only and checks it at every start.
+#[cfg(windows)]
+pub(crate) fn protect_key_files(keys: &Path) -> Result<(), String> {
+    for entry in std::fs::read_dir(keys).map_err(|error| error.to_string())? {
+        let entry = entry.map_err(|error| error.to_string())?;
+        if entry.file_type().is_ok_and(|kind| kind.is_file()) {
+            restrict_file(&entry.path())?;
+        }
+    }
+    Ok(())
+}
+
+#[cfg(not(windows))]
+pub(crate) fn protect_key_files(_keys: &Path) -> Result<(), String> {
+    Ok(())
 }
 
 /// Windows: drop every entry that was added by hand (`/reset`), remove inherited rights and

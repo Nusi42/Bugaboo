@@ -37,6 +37,32 @@ const HOLDS: usize = 256;
 /// How many bytes a piece of a file holds when it is read.
 const CHUNK_BYTES: usize = 64 * 1024;
 
+/// The parts of the path of a stored file inside the files folder.
+fn content_parts(hash: &Digest) -> [String; 3] {
+    let name = hex::encode(hash.as_bytes());
+    [CONTENT.to_owned(), name[..2].to_owned(), name]
+}
+
+/// The parts of the path of the preview of a stored file inside the files folder.
+fn preview_parts(hash: &Digest) -> [String; 3] {
+    let name = hex::encode(hash.as_bytes());
+    [
+        PREVIEWS.to_owned(),
+        name[..2].to_owned(),
+        format!("{name}.{PREVIEW_EXTENSION}"),
+    ]
+}
+
+/// The paths, inside the files folder and with `/` between the parts, that a stored file and its
+/// preview have: what a backup copies for each file the database points to (ADR-0046).
+#[must_use]
+pub fn stored_paths(hash: &Digest) -> Vec<String> {
+    [content_parts(hash), preview_parts(hash)]
+        .iter()
+        .map(|parts| parts.join("/"))
+        .collect()
+}
+
 /// The files of an installation, on disk.
 pub struct DiskFiles {
     root: PathBuf,
@@ -68,16 +94,17 @@ impl DiskFiles {
     }
 
     fn content_path(&self, hash: Digest) -> PathBuf {
-        let name = hex::encode(hash.as_bytes());
-        self.root.join(CONTENT).join(&name[..2]).join(name)
+        self.place(&content_parts(&hash))
     }
 
     fn preview_path(&self, hash: Digest) -> PathBuf {
-        let name = hex::encode(hash.as_bytes());
-        self.root
-            .join(PREVIEWS)
-            .join(&name[..2])
-            .join(format!("{name}.{PREVIEW_EXTENSION}"))
+        self.place(&preview_parts(&hash))
+    }
+
+    fn place(&self, parts: &[String; 3]) -> PathBuf {
+        parts
+            .iter()
+            .fold(self.root.clone(), |path, part| path.join(part))
     }
 
     fn lock_of(&self, upload: UploadId) -> Arc<tokio::sync::Mutex<()>> {

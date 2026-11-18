@@ -3,14 +3,16 @@
 //! - `serve` starts the server (`serve.rs`);
 //! - `setup` asks a few questions and writes the settings file (`setup.rs`, OPS-03);
 //! - `service install` / `service uninstall` run Bugaboo as a service (`service.rs`);
-//! - `security-log verify`, `rotate-key` and `keys export` look after the secrets (`secrets.rs`,
-//!   M1-F19, M1-F20, M1-F22);
+//! - `security-log verify`, `rotate-key`, `keys export` and `keys import` look after the secrets
+//!   (`secrets.rs`, M1-F19, M1-F20, M1-F22);
+//! - `backup`, `backup list` and `restore` create, list and restore backups (`backup.rs`, OPS-07);
 //! - `search-index rebuild` builds the index of the text search again from the stored texts
 //!   (`search_index.rs`, M5 WP-05);
 //! - `openapi` prints the description of the API.
 //!
 //! Every text a person reads, the help of each option included, comes from the message catalog.
 
+mod backup;
 mod preview;
 mod renewal;
 mod search_index;
@@ -66,6 +68,10 @@ enum Command {
         #[command(subcommand)]
         command: SearchIndexCommand,
     },
+    #[command(about = text(message::CLI_ABOUT_BACKUP))]
+    Backup(backup::BackupArgs),
+    #[command(about = text(message::CLI_ABOUT_RESTORE))]
+    Restore(backup::RestoreArgs),
     #[command(about = text(message::CLI_ABOUT_KEYS))]
     Keys {
         #[command(subcommand)]
@@ -122,6 +128,14 @@ enum KeysCommand {
         store: StoreArgs,
         /// The folder the key files are copied into.
         #[arg(help = text(message::CLI_HELP_KEYS_FOLDER))]
+        folder: PathBuf,
+    },
+    #[command(about = text(message::CLI_ABOUT_KEYS_IMPORT))]
+    Import {
+        #[command(flatten)]
+        store: StoreArgs,
+        /// The folder the exported key files are in.
+        #[arg(help = text(message::CLI_HELP_KEYS_IMPORT_FOLDER))]
         folder: PathBuf,
     },
 }
@@ -245,6 +259,11 @@ async fn run(cli: Cli) -> ExitCode {
         Command::Keys {
             command: KeysCommand::Export { store, folder },
         } => secrets::export_keys(&store, &folder).await,
+        Command::Keys {
+            command: KeysCommand::Import { store, folder },
+        } => secrets::import_keys(&store, &folder).await,
+        Command::Backup(args) => backup::backup(&args).await,
+        Command::Restore(args) => backup::restore(&args).await,
         // Taken before the runtime is built (`start`), never here.
         Command::Preview(_) => return ExitCode::FAILURE,
     };
@@ -363,11 +382,18 @@ mod tests {
             "bugaboo security-log verify --data-dir data",
             "bugaboo rotate-key",
             "bugaboo keys export backup-folder",
+            "bugaboo keys import backup-folder",
+            "bugaboo backup",
+            "bugaboo backup --to elsewhere",
+            "bugaboo backup list",
+            "bugaboo restore bugaboo-20261118T031500Z-0.6.0.backup",
+            "bugaboo restore old.backup --replay-list keys/replay.list --data-dir data",
         ] {
             let words: Vec<&str> = line.split(' ').collect();
             assert!(Cli::try_parse_from(words).is_ok(), "{line}");
         }
         assert!(Cli::try_parse_from(["bugaboo", "keys", "export"]).is_err());
+        assert!(Cli::try_parse_from(["bugaboo", "restore"]).is_err());
         assert!(Cli::try_parse_from(["bugaboo", "security-log"]).is_err());
     }
 
