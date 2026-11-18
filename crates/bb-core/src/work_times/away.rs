@@ -11,7 +11,7 @@ use super::record::AwayTime;
 pub const AWAY_TIME_DAYS_MAX: i32 = 366;
 
 /// How long an away time is kept after its last day, in years (ADR-0017, amendment M8).
-const AWAY_TIME_KEPT_FOR_YEARS: i64 = 1;
+pub const AWAY_TIME_KEPT_FOR_YEARS: i64 = 1;
 
 /// What is wrong with the days of an away time.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

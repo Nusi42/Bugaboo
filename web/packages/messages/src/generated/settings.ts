@@ -355,6 +355,21 @@ export const messages = {
   "setting.security.log-keep-days.name": "Days to keep the security log",
   "setting.security.log-keep-days.help":
     "How many days the security log keeps its entries. Older entries are deleted once a day. A signed note of what was deleted stays, so you can still check that nobody changed the log.",
+  "setting.keeping.ip-address-days.name": "Days to keep IP addresses",
+  "setting.keeping.ip-address-days.help":
+    "How many days the shortened IP address a person signed in from is kept on their sign-in. After that it is deleted once a day.",
+  "setting.keeping.notification-days.name": "Days to keep notifications",
+  "setting.keeping.notification-days.help":
+    "How many days a notification is kept. Older notifications are deleted once a day.",
+  "setting.keeping.trash-days.name": "Days to keep the trash",
+  "setting.keeping.trash-days.help":
+    "How many days what was deleted stays in the trash, where it can still be brought back. After that it is deleted for good, except an issue whose time entries must still be kept.",
+  "setting.keeping.dead-job-days.name": "Days to keep background work that failed",
+  "setting.keeping.dead-job-days.help":
+    "How many days background work that gave up is kept, with what it was about, so you can see why it failed. After that it is deleted.",
+  "setting.keeping.time-entry-years.name": "Years to keep time entries",
+  "setting.keeping.time-entry-years.help":
+    "How many years a time entry is kept at least, counted from its day. After that an administrator can delete it; Bugaboo never deletes time entries by itself.",
   "setting.logs.server-log-megabytes.name": "Size of the server log file",
   "setting.logs.server-log-megabytes.help":
     "A server that runs as a service writes its log to a file. When the file is bigger than this many megabytes, Bugaboo starts a new one and keeps the old one next to it.",

@@ -33,6 +33,7 @@ pub use assistant::{ASSISTANT_LOOK_UPS, ASSISTANT_LOOK_UPS_MOST};
 pub mod agent_notices;
 pub mod agents;
 pub mod data_exports;
+pub mod keeping;
 pub use agent_notices::{
     NOTIFICATIONS_AGENT_ASKS_BY_MAIL, NOTIFICATIONS_AGENT_ASKS_IN_APP,
     NOTIFICATIONS_AGENT_GAVE_UP_BY_MAIL, NOTIFICATIONS_AGENT_GAVE_UP_IN_APP,
@@ -70,8 +71,8 @@ words! {
 
 /// The topics whose settings change how people sign in or what keeps the organization safe, and the
 /// settings of working hours and of time (*Billable*), whose every change is recorded (PRIV-09,
-/// ADR-0035, decision 8).
-const SECURITY_TOPICS: [&str; 4] = ["security", "auth", "working-hours", "time"];
+/// ADR-0035, decision 8), and the keep periods, whose shortening deletes data (ADR-0045).
+const SECURITY_TOPICS: [&str; 5] = ["security", "auth", "working-hours", "time", "keeping"];
 
 /// The least privileged group that may change a setting. Administrators can always change it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -664,6 +665,7 @@ pub fn registry() -> impl Iterator<Item = &'static SettingDefinition> {
         .chain(agents::ALL)
         .chain(backups::ALL)
         .chain(data_exports::ALL)
+        .chain(keeping::ALL)
         .copied()
         .chain(extra.iter().copied())
 }

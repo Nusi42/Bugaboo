@@ -10,6 +10,7 @@ use bb_core::ai::{AuthorKind, Tool};
 use bb_core::fields::Field;
 use bb_core::holidays::{Holiday, Region as HolidayRegion};
 use bb_core::issue::{IssueIcon, Priority, StatusGroup};
+use bb_core::keeping::{KeepGroup, KeepKind, LengthUnit};
 use bb_core::many_changes::{ManyChangeStatus, SkipReason};
 use bb_core::message::MessageKey;
 use bb_core::notification::NotificationKind;
@@ -88,10 +89,44 @@ fn plan_keys() -> Vec<Made> {
     kinds.chain(others).chain(ways).collect()
 }
 
+/// The messages of *Keep and delete rules*: the name and the reason of each kind of data, the two
+/// groups and the units of a keep period.
+fn keep_keys() -> Vec<Made> {
+    let kinds = KeepKind::ALL.iter().flat_map(|kind| {
+        [kind.name(), kind.why()].map(|key| Made {
+            key,
+            word: format!("the kind of kept data `{}`", kind.code()),
+        })
+    });
+    let groups = KeepGroup::ALL.iter().map(|group| Made {
+        key: group.name(),
+        word: format!("the group of keep rules `{}`", group.code()),
+    });
+    let units = LengthUnit::ALL.iter().map(|unit| Made {
+        key: unit.name(),
+        word: format!("the unit of a keep period `{}`", unit.code()),
+    });
+    kinds.chain(groups).chain(units).collect()
+}
+
 /// A message that the word of an enum makes, and the word.
 pub(crate) struct Made {
     pub(crate) key: MessageKey,
     pub(crate) word: String,
+}
+
+/// The messages of the words that have a list of their own above.
+fn listed_keys() -> Vec<Made> {
+    [
+        agent_work_keys(),
+        privacy_keys(),
+        holiday_keys(),
+        plan_keys(),
+        keep_keys(),
+    ]
+    .into_iter()
+    .flatten()
+    .collect()
 }
 
 /// Every message that the words of the enums make (`derived_key!` in `bb-core`): the code
@@ -136,7 +171,7 @@ pub(crate) fn made_keys() -> Vec<Made> {
     for field in Field::ALL {
         keys.push(made("the field", field.code(), field.name()));
     }
-    keys.extend(agent_work_keys().into_iter().chain(privacy_keys()));
+    keys.extend(listed_keys());
     for group in StatusGroup::ALL {
         keys.push(made("the status group", group.code(), group.name()));
     }
@@ -195,6 +230,5 @@ pub(crate) fn made_keys() -> Vec<Made> {
     for kind in NotificationKind::ALL {
         keys.push(made("the kind of notification", kind.code(), kind.label()));
     }
-    keys.extend(holiday_keys().into_iter().chain(plan_keys()));
     keys
 }

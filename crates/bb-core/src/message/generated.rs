@@ -3866,6 +3866,99 @@ pub const ISSUES_USE_MINE: MessageKey = MessageKey::new("issues.use-mine");
 /// The message `issues.with-sub-issues`.
 pub const ISSUES_WITH_SUB_ISSUES: MessageKey = MessageKey::new("issues.with-sub-issues");
 
+/// The message `keep-group.name.by-an-administrator`.
+pub const KEEP_GROUP_NAME_BY_AN_ADMINISTRATOR: MessageKey =
+    MessageKey::new("keep-group.name.by-an-administrator");
+
+/// The message `keep-group.name.by-itself`.
+pub const KEEP_GROUP_NAME_BY_ITSELF: MessageKey = MessageKey::new("keep-group.name.by-itself");
+
+/// The message `keep-kind.name.app-grants`.
+pub const KEEP_KIND_NAME_APP_GRANTS: MessageKey = MessageKey::new("keep-kind.name.app-grants");
+
+/// The message `keep-kind.name.away-times`.
+pub const KEEP_KIND_NAME_AWAY_TIMES: MessageKey = MessageKey::new("keep-kind.name.away-times");
+
+/// The message `keep-kind.name.dead-jobs`.
+pub const KEEP_KIND_NAME_DEAD_JOBS: MessageKey = MessageKey::new("keep-kind.name.dead-jobs");
+
+/// The message `keep-kind.name.drafts`.
+pub const KEEP_KIND_NAME_DRAFTS: MessageKey = MessageKey::new("keep-kind.name.drafts");
+
+/// The message `keep-kind.name.ip-addresses`.
+pub const KEEP_KIND_NAME_IP_ADDRESSES: MessageKey = MessageKey::new("keep-kind.name.ip-addresses");
+
+/// The message `keep-kind.name.notifications`.
+pub const KEEP_KIND_NAME_NOTIFICATIONS: MessageKey =
+    MessageKey::new("keep-kind.name.notifications");
+
+/// The message `keep-kind.name.security-log`.
+pub const KEEP_KIND_NAME_SECURITY_LOG: MessageKey = MessageKey::new("keep-kind.name.security-log");
+
+/// The message `keep-kind.name.sessions`.
+pub const KEEP_KIND_NAME_SESSIONS: MessageKey = MessageKey::new("keep-kind.name.sessions");
+
+/// The message `keep-kind.name.sign-up-links`.
+pub const KEEP_KIND_NAME_SIGN_UP_LINKS: MessageKey =
+    MessageKey::new("keep-kind.name.sign-up-links");
+
+/// The message `keep-kind.name.time-entries`.
+pub const KEEP_KIND_NAME_TIME_ENTRIES: MessageKey = MessageKey::new("keep-kind.name.time-entries");
+
+/// The message `keep-kind.name.tool-calls`.
+pub const KEEP_KIND_NAME_TOOL_CALLS: MessageKey = MessageKey::new("keep-kind.name.tool-calls");
+
+/// The message `keep-kind.name.trash`.
+pub const KEEP_KIND_NAME_TRASH: MessageKey = MessageKey::new("keep-kind.name.trash");
+
+/// The message `keep-kind.name.uploads`.
+pub const KEEP_KIND_NAME_UPLOADS: MessageKey = MessageKey::new("keep-kind.name.uploads");
+
+/// The message `keep-kind.name.work-days`.
+pub const KEEP_KIND_NAME_WORK_DAYS: MessageKey = MessageKey::new("keep-kind.name.work-days");
+
+/// The message `keep-kind.why.app-grants`.
+pub const KEEP_KIND_WHY_APP_GRANTS: MessageKey = MessageKey::new("keep-kind.why.app-grants");
+
+/// The message `keep-kind.why.away-times`.
+pub const KEEP_KIND_WHY_AWAY_TIMES: MessageKey = MessageKey::new("keep-kind.why.away-times");
+
+/// The message `keep-kind.why.dead-jobs`.
+pub const KEEP_KIND_WHY_DEAD_JOBS: MessageKey = MessageKey::new("keep-kind.why.dead-jobs");
+
+/// The message `keep-kind.why.drafts`.
+pub const KEEP_KIND_WHY_DRAFTS: MessageKey = MessageKey::new("keep-kind.why.drafts");
+
+/// The message `keep-kind.why.ip-addresses`.
+pub const KEEP_KIND_WHY_IP_ADDRESSES: MessageKey = MessageKey::new("keep-kind.why.ip-addresses");
+
+/// The message `keep-kind.why.notifications`.
+pub const KEEP_KIND_WHY_NOTIFICATIONS: MessageKey = MessageKey::new("keep-kind.why.notifications");
+
+/// The message `keep-kind.why.security-log`.
+pub const KEEP_KIND_WHY_SECURITY_LOG: MessageKey = MessageKey::new("keep-kind.why.security-log");
+
+/// The message `keep-kind.why.sessions`.
+pub const KEEP_KIND_WHY_SESSIONS: MessageKey = MessageKey::new("keep-kind.why.sessions");
+
+/// The message `keep-kind.why.sign-up-links`.
+pub const KEEP_KIND_WHY_SIGN_UP_LINKS: MessageKey = MessageKey::new("keep-kind.why.sign-up-links");
+
+/// The message `keep-kind.why.time-entries`.
+pub const KEEP_KIND_WHY_TIME_ENTRIES: MessageKey = MessageKey::new("keep-kind.why.time-entries");
+
+/// The message `keep-kind.why.tool-calls`.
+pub const KEEP_KIND_WHY_TOOL_CALLS: MessageKey = MessageKey::new("keep-kind.why.tool-calls");
+
+/// The message `keep-kind.why.trash`.
+pub const KEEP_KIND_WHY_TRASH: MessageKey = MessageKey::new("keep-kind.why.trash");
+
+/// The message `keep-kind.why.uploads`.
+pub const KEEP_KIND_WHY_UPLOADS: MessageKey = MessageKey::new("keep-kind.why.uploads");
+
+/// The message `keep-kind.why.work-days`.
+pub const KEEP_KIND_WHY_WORK_DAYS: MessageKey = MessageKey::new("keep-kind.why.work-days");
+
 /// The message `keys.database-placeholder`.
 pub const KEYS_DATABASE_PLACEHOLDER: MessageKey = MessageKey::new("keys.database-placeholder");
 
@@ -7072,6 +7165,46 @@ pub const SETTING_ISSUES_ID_MODE_HELP: MessageKey = MessageKey::new("setting.iss
 
 /// The message `setting.issues.id-mode.name`.
 pub const SETTING_ISSUES_ID_MODE_NAME: MessageKey = MessageKey::new("setting.issues.id-mode.name");
+
+/// The message `setting.keeping.dead-job-days.help`.
+pub const SETTING_KEEPING_DEAD_JOB_DAYS_HELP: MessageKey =
+    MessageKey::new("setting.keeping.dead-job-days.help");
+
+/// The message `setting.keeping.dead-job-days.name`.
+pub const SETTING_KEEPING_DEAD_JOB_DAYS_NAME: MessageKey =
+    MessageKey::new("setting.keeping.dead-job-days.name");
+
+/// The message `setting.keeping.ip-address-days.help`.
+pub const SETTING_KEEPING_IP_ADDRESS_DAYS_HELP: MessageKey =
+    MessageKey::new("setting.keeping.ip-address-days.help");
+
+/// The message `setting.keeping.ip-address-days.name`.
+pub const SETTING_KEEPING_IP_ADDRESS_DAYS_NAME: MessageKey =
+    MessageKey::new("setting.keeping.ip-address-days.name");
+
+/// The message `setting.keeping.notification-days.help`.
+pub const SETTING_KEEPING_NOTIFICATION_DAYS_HELP: MessageKey =
+    MessageKey::new("setting.keeping.notification-days.help");
+
+/// The message `setting.keeping.notification-days.name`.
+pub const SETTING_KEEPING_NOTIFICATION_DAYS_NAME: MessageKey =
+    MessageKey::new("setting.keeping.notification-days.name");
+
+/// The message `setting.keeping.time-entry-years.help`.
+pub const SETTING_KEEPING_TIME_ENTRY_YEARS_HELP: MessageKey =
+    MessageKey::new("setting.keeping.time-entry-years.help");
+
+/// The message `setting.keeping.time-entry-years.name`.
+pub const SETTING_KEEPING_TIME_ENTRY_YEARS_NAME: MessageKey =
+    MessageKey::new("setting.keeping.time-entry-years.name");
+
+/// The message `setting.keeping.trash-days.help`.
+pub const SETTING_KEEPING_TRASH_DAYS_HELP: MessageKey =
+    MessageKey::new("setting.keeping.trash-days.help");
+
+/// The message `setting.keeping.trash-days.name`.
+pub const SETTING_KEEPING_TRASH_DAYS_NAME: MessageKey =
+    MessageKey::new("setting.keeping.trash-days.name");
 
 /// The message `setting.logs.server-log-files.help`.
 pub const SETTING_LOGS_SERVER_LOG_FILES_HELP: MessageKey =
@@ -13138,6 +13271,33 @@ pub fn issues_unassign_name(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("issues.unassign-name"),
         vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `keep-length.days`.
+#[must_use]
+pub fn keep_length_days(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keep-length.days"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `keep-length.hours`.
+#[must_use]
+pub fn keep_length_hours(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keep-length.hours"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `keep-length.years`.
+#[must_use]
+pub fn keep_length_years(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keep-length.years"),
+        vec![("count", Value::Number(count))],
     )
 }
 
@@ -22938,6 +23098,81 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.use-mine", "Use mine"),
     ("issues.with-sub-issues", "With sub-issues"),
     (
+        "keep-group.name.by-an-administrator",
+        "An administrator deletes these after their period",
+    ),
+    (
+        "keep-group.name.by-itself",
+        "Bugaboo deletes these by itself",
+    ),
+    ("keep-kind.name.app-grants", "Ended access of AI apps"),
+    ("keep-kind.name.away-times", "Away times"),
+    ("keep-kind.name.dead-jobs", "Background work that failed"),
+    ("keep-kind.name.drafts", "Drafts"),
+    ("keep-kind.name.ip-addresses", "IP addresses of sign-ins"),
+    ("keep-kind.name.notifications", "Notifications"),
+    ("keep-kind.name.security-log", "Security log"),
+    ("keep-kind.name.sessions", "Sign-ins"),
+    (
+        "keep-kind.name.sign-up-links",
+        "Sign-ups that were used or ran out",
+    ),
+    ("keep-kind.name.time-entries", "Time on issues"),
+    ("keep-kind.name.tool-calls", "Log of tool calls"),
+    ("keep-kind.name.trash", "Trash"),
+    ("keep-kind.name.uploads", "Unfinished uploads"),
+    ("keep-kind.name.work-days", "Working hours"),
+    ("keep-kind.why.app-grants", "Seeing which app had access"),
+    (
+        "keep-kind.why.away-times",
+        "Planning; nobody needs them longer",
+    ),
+    ("keep-kind.why.dead-jobs", "Seeing why it failed"),
+    ("keep-kind.why.drafts", "Not losing text that was not saved"),
+    (
+        "keep-kind.why.ip-addresses",
+        "Stopping attacks on signing in",
+    ),
+    ("keep-kind.why.notifications", "Not needed longer"),
+    (
+        "keep-kind.why.security-log",
+        "Finding and explaining security problems",
+    ),
+    (
+        "keep-kind.why.sessions",
+        "Staying signed in; a sign-in that ended is deleted at once",
+    ),
+    (
+        "keep-kind.why.sign-up-links",
+        "Saying that a sign-up was finished already",
+    ),
+    (
+        "keep-kind.why.time-entries",
+        "Accounting; your organization sets the period",
+    ),
+    (
+        "keep-kind.why.tool-calls",
+        "Seeing what the assistant and AI apps did",
+    ),
+    (
+        "keep-kind.why.trash",
+        "Time to bring back what was deleted by mistake; an issue whose time entries must still be kept stays",
+    ),
+    ("keep-kind.why.uploads", "Time to finish an upload"),
+    ("keep-kind.why.work-days", "German working-time recording"),
+    (
+        "keep-length.days",
+        "{count, plural, one {# day} other {# days}}",
+    ),
+    (
+        "keep-length.hours",
+        "{count, plural, one {# hour} other {# hours}}",
+    ),
+    (
+        "keep-length.years",
+        "{count, plural, one {# year} other {# years}}",
+    ),
+    (
         "keys.database-placeholder",
         "--database-url <the address of your database>",
     ),
@@ -26027,6 +26262,43 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Random IDs (like WEB-K7Q2X) hide how many issues there are and how fast they come. Counting IDs (like WEB-142) are easy to say aloud. When you change this, every issue of the project gets a new ID; the old IDs keep working.",
     ),
     ("setting.issues.id-mode.name", "Issue IDs"),
+    (
+        "setting.keeping.dead-job-days.help",
+        "How many days background work that gave up is kept, with what it was about, so you can see why it failed. After that it is deleted.",
+    ),
+    (
+        "setting.keeping.dead-job-days.name",
+        "Days to keep background work that failed",
+    ),
+    (
+        "setting.keeping.ip-address-days.help",
+        "How many days the shortened IP address a person signed in from is kept on their sign-in. After that it is deleted once a day.",
+    ),
+    (
+        "setting.keeping.ip-address-days.name",
+        "Days to keep IP addresses",
+    ),
+    (
+        "setting.keeping.notification-days.help",
+        "How many days a notification is kept. Older notifications are deleted once a day.",
+    ),
+    (
+        "setting.keeping.notification-days.name",
+        "Days to keep notifications",
+    ),
+    (
+        "setting.keeping.time-entry-years.help",
+        "How many years a time entry is kept at least, counted from its day. After that an administrator can delete it; Bugaboo never deletes time entries by itself.",
+    ),
+    (
+        "setting.keeping.time-entry-years.name",
+        "Years to keep time entries",
+    ),
+    (
+        "setting.keeping.trash-days.help",
+        "How many days what was deleted stays in the trash, where it can still be brought back. After that it is deleted for good, except an issue whose time entries must still be kept.",
+    ),
+    ("setting.keeping.trash-days.name", "Days to keep the trash"),
     (
         "setting.logs.server-log-files.help",
         "How many old files of the server log are kept next to the current one. Older ones are deleted.",

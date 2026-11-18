@@ -34,6 +34,7 @@ pub mod holidays;
 pub mod id;
 pub mod issue;
 pub mod job;
+pub mod keeping;
 pub mod layout;
 pub mod lookup;
 pub mod mail;
