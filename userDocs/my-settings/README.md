@@ -6,6 +6,7 @@ Open *My settings* from the menu. It has these pages:
 
 - [Appearance](../basics/appearance.md): themes, spacing, larger text, less motion and where an issue opens
 - [Region](region.md): time zone, how dates and numbers are written, the first day of the week
+- [My data](my-data.md): a copy of everything Bugaboo stores about you
 - [Start page](start-page.md): the page that opens after you sign in
 - [Keyboard shortcuts](../basics/keyboard-shortcuts.md): see and change the keys
 - [Sign-in and security](../sign-in/sign-in.md): password, passkeys, two-step sign-in, where you're signed in
