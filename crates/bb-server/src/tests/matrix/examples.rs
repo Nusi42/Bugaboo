@@ -129,6 +129,8 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::route("createInvitation"),
     Example::route("takeBackInvitation"),
     Example::route("getMe"),
+    Example::route("getAbout"),
+    Example::with("downloadAboutFile", &[Quirk::NamesAMissingThing]),
     Example::route("signInWithPasskey"),
     Example::route("startPasskeySignIn"),
     Example::with(

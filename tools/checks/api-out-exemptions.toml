@@ -125,3 +125,7 @@ reason = "The metadata document of RFC 9728: the address of this server and the 
 function = "authorization_server_metadata"
 file = "crates/bb-api/src/api/oauth.rs"
 reason = "The metadata document of RFC 8414: the addresses of the sign-in of apps and the words it supports, public by the standard."
+
+[[exempt]]
+operation = "getAbout"
+reason = "Holds nothing of anybody: the version, the license and the parts of the program, the same for everyone who is signed in."

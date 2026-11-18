@@ -27,8 +27,12 @@ use super::status::app_with_probe;
 /// the records, and what it may be kept as is proven with the downloads (`files_http`).
 const SIGNED_DOWNLOAD: &str = "/api/v1/files/{file}";
 
-/// The addresses of every `GET` route in the API description, except the signed download and the
-/// style sheets of own themes: those are no API answers, their address names their version, and
+/// The download of a file of the build (the parts list, the notices): the file exists only in a build
+/// that `cargo xtask build` made, so a test run cannot ask for it (`about_http`).
+const BUILD_FILE_DOWNLOAD: &str = "/api/v1/about/files/{kind}";
+
+/// The addresses of every `GET` route in the API description, except the signed download, the files
+/// of the build and the style sheets of own themes: those are no API answers, their address names their version, and
 /// what they may be kept as is proven with the sheets (`themes_http`).
 fn get_routes() -> Vec<String> {
     operations()
@@ -36,6 +40,7 @@ fn get_routes() -> Vec<String> {
         .filter(|operation| {
             operation.method == Method::GET
                 && operation.path != SIGNED_DOWNLOAD
+                && operation.path != BUILD_FILE_DOWNLOAD
                 && operation.path.starts_with(bb_api::VERSION_PATH)
         })
         .map(|operation| operation.path.clone())

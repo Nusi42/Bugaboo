@@ -803,6 +803,7 @@ pub const ROUTES: &[Route] = &[
 pub const LONG_TEXT_ROUTES: &[&str] =
     &["saveIssueDescription", "saveIssueFieldText", "saveComment"];
 
+mod about;
 mod access_keys;
 mod agent_work;
 mod agents;

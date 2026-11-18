@@ -572,7 +572,7 @@ fn content_disposition(name: &str) -> HeaderValue {
 /// (`Content-Disposition: attachment`), the type never guessed (`nosniff`), and a policy that
 /// allows the content nothing at all, not even to run as a page of its own (`sandbox`). The
 /// other security headers of the table (`crate::headers`) are added to every answer as well.
-fn download_headers(name: &str, media_type: &str, size: u64) -> HeaderMap {
+pub(super) fn download_headers(name: &str, media_type: &str, size: u64) -> HeaderMap {
     let mut headers = HeaderMap::new();
     headers.insert(header::CONTENT_DISPOSITION, content_disposition(name));
     headers.insert(

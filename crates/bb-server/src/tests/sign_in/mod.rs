@@ -8,6 +8,7 @@
 //! cookies, limits), `timing` (equal time for unknown accounts) and `tls` (a real browser-like
 //! client over TLS and HTTP/2).
 
+mod about_http;
 mod access_keys;
 mod access_keys_cursor;
 mod access_keys_gate;

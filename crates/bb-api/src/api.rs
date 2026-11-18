@@ -40,6 +40,7 @@ use crate::logging::Scheme;
 use crate::openapi;
 use crate::web::decode_path;
 
+mod about;
 mod access_bodies;
 mod access_keys;
 mod admin;
@@ -221,6 +222,7 @@ where
         .merge(people::routes())
         .merge(groups::routes())
         .merge(roles::routes())
+        .merge(about::routes())
         .merge(own_access::routes())
         .merge(assignments::routes())
         .merge(field_permissions::routes())

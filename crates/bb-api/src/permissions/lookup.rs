@@ -6,7 +6,7 @@ use std::sync::OnceLock;
 use axum::http::Method;
 
 use super::{
-    Declared, ROUTES, Route, access_keys, agent_work, agents, ai, comments, mail, oauth,
+    Declared, ROUTES, Route, about, access_keys, agent_work, agents, ai, comments, mail, oauth,
     saved_searches, search_routes, themes, time, timeline, work_times, working_hours,
 };
 
@@ -15,6 +15,7 @@ use super::{
 pub fn rows() -> impl Iterator<Item = &'static Route> {
     ROUTES
         .iter()
+        .chain(about::ROUTES)
         .chain(ai::ROUTES)
         .chain(comments::ROUTES)
         .chain(mail::ROUTES)

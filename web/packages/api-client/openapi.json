@@ -6,6 +6,100 @@
     "version": "0.5.1"
   },
   "paths": {
+    "/api/v1/about": {
+      "get": {
+        "tags": ["about"],
+        "summary": "The version, the license and the parts of the program, and where to download its parts list\nand third-party notices. Needs a signed-in person, nothing more.",
+        "operationId": "getAbout",
+        "responses": {
+          "200": {
+            "description": "What the program is made of.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AboutBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/about/files/{kind}": {
+      "get": {
+        "tags": ["about"],
+        "summary": "One file of the build: the parts list as CycloneDX (`cyclonedx`) or SPDX (`spdx`) JSON, or the\nthird-party notices (`notices`). Needs a signed-in person, nothing more.",
+        "operationId": "downloadAboutFile",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "description": "Which file: `cyclonedx`, `spdx` or `notices`.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The file.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileBytes"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "signed-in"
+      }
+    },
     "/api/v1/access-keys": {
       "get": {
         "tags": ["access-keys"],
@@ -19375,6 +19469,54 @@
   },
   "components": {
     "schemas": {
+      "AboutBody": {
+        "type": "object",
+        "description": "What this program is and what it is made of.",
+        "required": ["version", "license", "parts", "files"],
+        "properties": {
+          "files": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AboutFileBody"
+            },
+            "description": "The files of the build: the parts list in two formats and the third-party notices."
+          },
+          "license": {
+            "type": "string",
+            "description": "The license of the program, as an SPDX identifier."
+          },
+          "parts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PartBody"
+            },
+            "description": "The parts the program is made of, in the order of the parts list. Empty when this build\ncarries no parts list."
+          },
+          "version": {
+            "type": "string",
+            "description": "The version of the program."
+          }
+        }
+      },
+      "AboutFileBody": {
+        "type": "object",
+        "description": "A file of the build that can be downloaded.",
+        "required": ["kind", "name", "address"],
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "The address to download it from."
+          },
+          "kind": {
+            "type": "string",
+            "description": "Which file: `cyclonedx`, `spdx` or `notices`."
+          },
+          "name": {
+            "type": "string",
+            "description": "The name the file is saved under."
+          }
+        }
+      },
       "AcceptBody": {
         "type": "object",
         "description": "Somebody who makes an account from an invitation.",
@@ -28412,6 +28554,25 @@
           }
         }
       },
+      "PartBody": {
+        "type": "object",
+        "description": "One part of the program.",
+        "required": ["name", "version", "license"],
+        "properties": {
+          "license": {
+            "type": "string",
+            "description": "The license, as an SPDX identifier or expression; empty when none is declared."
+          },
+          "name": {
+            "type": "string",
+            "description": "The name of the crate or package, or the path of the file."
+          },
+          "version": {
+            "type": "string",
+            "description": "The version; empty for a file."
+          }
+        }
+      },
       "PasskeyAnswerBody": {
         "type": "object",
         "description": "What the device answered to a passkey challenge.",
@@ -34615,28 +34776,8 @@
           }
         }
       },
-      "BadListRequest": {
-        "description": "The request is not valid: a cursor that is not one of this list, or a name in `fields` that does not exist (request.bad-cursor, request.unknown-field).",
-        "content": {
-          "application/problem+json": {
-            "schema": {
-              "$ref": "#/components/schemas/Problem"
-            }
-          }
-        }
-      },
       "NotSignedIn": {
         "description": "Not signed in (auth.not-signed-in).",
-        "content": {
-          "application/problem+json": {
-            "schema": {
-              "$ref": "#/components/schemas/Problem"
-            }
-          }
-        }
-      },
-      "Forbidden": {
-        "description": "Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed).",
         "content": {
           "application/problem+json": {
             "schema": {
@@ -34680,8 +34821,8 @@
           }
         }
       },
-      "BadRequest": {
-        "description": "The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected).",
+      "NotFound": {
+        "description": "There is no such thing (resource.not-found).",
         "content": {
           "application/problem+json": {
             "schema": {
@@ -34690,8 +34831,28 @@
           }
         }
       },
-      "NotFound": {
-        "description": "There is no such thing (resource.not-found).",
+      "BadListRequest": {
+        "description": "The request is not valid: a cursor that is not one of this list, or a name in `fields` that does not exist (request.bad-cursor, request.unknown-field).",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed).",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "BadRequest": {
+        "description": "The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected).",
         "content": {
           "application/problem+json": {
             "schema": {

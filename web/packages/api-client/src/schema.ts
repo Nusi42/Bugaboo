@@ -2,6 +2,46 @@
 
 import type { SafeHtml } from "./safe-html.ts";
 export interface paths {
+  "/api/v1/about": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The version, the license and the parts of the program, and where to download its parts list
+     *     and third-party notices. Needs a signed-in person, nothing more.
+     */
+    get: operations["getAbout"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/about/files/{kind}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * One file of the build: the parts list as CycloneDX (`cyclonedx`) or SPDX (`spdx`) JSON, or the
+     *     third-party notices (`notices`). Needs a signed-in person, nothing more.
+     */
+    get: operations["downloadAboutFile"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/access-keys": {
     parameters: {
       query?: never;
@@ -5226,6 +5266,29 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** @description What this program is and what it is made of. */
+    AboutBody: {
+      /** @description The files of the build: the parts list in two formats and the third-party notices. */
+      files: components["schemas"]["AboutFileBody"][];
+      /** @description The license of the program, as an SPDX identifier. */
+      license: string;
+      /**
+       * @description The parts the program is made of, in the order of the parts list. Empty when this build
+       *     carries no parts list.
+       */
+      parts: components["schemas"]["PartBody"][];
+      /** @description The version of the program. */
+      version: string;
+    };
+    /** @description A file of the build that can be downloaded. */
+    AboutFileBody: {
+      /** @description The address to download it from. */
+      address: string;
+      /** @description Which file: `cyclonedx`, `spdx` or `notices`. */
+      kind: string;
+      /** @description The name the file is saved under. */
+      name: string;
+    };
     /** @description Somebody who makes an account from an invitation. */
     AcceptBody: {
       /** @description The name others see. */
@@ -9688,6 +9751,15 @@ export interface components {
        */
       version: number;
     };
+    /** @description One part of the program. */
+    PartBody: {
+      /** @description The license, as an SPDX identifier or expression; empty when none is declared. */
+      license: string;
+      /** @description The name of the crate or package, or the path of the file. */
+      name: string;
+      /** @description The version; empty for a file. */
+      version: string;
+    };
     /** @description What the device answered to a passkey challenge. */
     PasskeyAnswerBody: {
       /** @description The challenge that was answered. */
@@ -12913,26 +12985,8 @@ export interface components {
       };
       content?: never;
     };
-    /** @description The request is not valid: a cursor that is not one of this list, or a name in `fields` that does not exist (request.bad-cursor, request.unknown-field). */
-    BadListRequest: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
-        "application/problem+json": components["schemas"]["Problem"];
-      };
-    };
     /** @description Not signed in (auth.not-signed-in). */
     NotSignedIn: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
-        "application/problem+json": components["schemas"]["Problem"];
-      };
-    };
-    /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
-    Forbidden: {
       headers: {
         [name: string]: unknown;
       };
@@ -12968,8 +13022,8 @@ export interface components {
         "application/problem+json": components["schemas"]["Problem"];
       };
     };
-    /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
-    BadRequest: {
+    /** @description There is no such thing (resource.not-found). */
+    NotFound: {
       headers: {
         [name: string]: unknown;
       };
@@ -12977,8 +13031,26 @@ export interface components {
         "application/problem+json": components["schemas"]["Problem"];
       };
     };
-    /** @description There is no such thing (resource.not-found). */
-    NotFound: {
+    /** @description The request is not valid: a cursor that is not one of this list, or a name in `fields` that does not exist (request.bad-cursor, request.unknown-field). */
+    BadListRequest: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        "application/problem+json": components["schemas"]["Problem"];
+      };
+    };
+    /** @description Not allowed (access.forbidden, request.wrong-token, auth.second-step-required, auth.access-key-not-allowed). */
+    Forbidden: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        "application/problem+json": components["schemas"]["Problem"];
+      };
+    };
+    /** @description The request is not valid (request.invalid, auth.password-too-short, auth.password-breached, auth.invitation-invalid, auth.passkey-rejected). */
+    BadRequest: {
       headers: {
         [name: string]: unknown;
       };
@@ -13076,6 +13148,62 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  getAbout: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description What the program is made of. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AboutBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  downloadAboutFile: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Which file: `cyclonedx`, `spdx` or `notices`. */
+        kind: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The file. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/octet-stream": components["schemas"]["FileBytes"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
   listAccessKeys: {
     parameters: {
       query?: {
