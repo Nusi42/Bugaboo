@@ -452,10 +452,10 @@ async fn adr_0017_every_keep_and_delete_job_runs_again_with_nothing_more_to_dele
             .await
             .map_err(|error| error.to_string())?;
         let first = rig.run_jobs().await?;
-        // Every kind but the statistics, which run a few minutes after the start.
-        assert_eq!(first, bb_app::jobs::JobKind::daily().count() - 1);
+        // Every kind but the statistics and the backup, which run a few minutes after the start.
+        assert_eq!(first, bb_app::jobs::JobKind::daily().count() - 2);
         // A day later every kind runs (once more), and none of them fails or leaves a dead job.
-        // The statistics run here for the first time; their second round is held by
+        // The statistics and the backup run here for the first time; their second round is held by
         // `adr_0017_the_statistics_job_writes_no_event_and_its_next_round_does_nothing`.
         rig.clock.advance(SECONDS_PER_DAY + 1);
         assert_eq!(
