@@ -1,0 +1,184 @@
+//! The walk of a person's data on both databases (ADR-0044, decision 1): a scene with one row of
+//! each way a row can name a person, and the counts the walk finds for the person and for nobody
+//! else.
+
+use bb_app::auth::{AccountStore as _, InvitationStore as _};
+use bb_app::fields::FieldStore as _;
+use bb_app::ports::ChangeStore;
+use bb_app::working_hours::WorkingHoursStore as _;
+use bb_core::event::{Actor, EntityKind, EntityRef, FieldChange, RecordKind};
+use bb_core::fields::{Field, FieldKey};
+use bb_core::id::{EntityId, IdSource, InvitationId, IssueId, UserId, WorkDayId};
+use bb_core::own_fields::FieldType;
+use bb_core::own_fields_value::FieldValue;
+use bb_core::security_log::Digest;
+use bb_core::sign_in::Invitation;
+use bb_core::working_time::Times;
+use bb_core::working_time::record::{StoredDay, WorkDay};
+use bb_testing::{TestResult, each_database};
+use serde_json::json;
+
+use super::*;
+use crate::test_support::{at, definition, event, fixture, ids, person, world};
+
+/// What the walk counts for `person`, by table.
+async fn counted(storage: &AuthStorage, person: UserId) -> Result<Vec<(String, u64)>, StoreError> {
+    Ok(storage
+        .person_row_counts(person)
+        .await?
+        .into_iter()
+        .map(|count| (count.table, count.rows))
+        .collect())
+}
+
+/// An event by `actor` about the record `entity` of `kind`, with `changes` and `reason`.
+fn about(
+    source: &mut impl IdSource,
+    actor: UserId,
+    kind: RecordKind,
+    entity: EntityId,
+    changes: Vec<FieldChange>,
+    reason: Option<&str>,
+) -> bb_core::event::DomainEvent {
+    bb_core::event::DomainEvent {
+        actor: Actor::Person(actor),
+        entity: EntityRef {
+            kind: EntityKind::from(kind),
+            id: entity,
+        },
+        changes,
+        reason: reason.map(str::to_owned),
+        ..event(source, 30)
+    }
+}
+
+/// A work day of `person`.
+fn work_day_of(source: &mut impl IdSource, person: UserId) -> StoredDay {
+    StoredDay {
+        day: WorkDay {
+            id: WorkDayId::generate(source).unwrap(),
+            person,
+            date: jiff::civil::date(2026, 1, 5),
+            zone: "Europe/Berlin".to_owned(),
+            warnings: Vec::new(),
+            updated_at: at(10),
+            version: 1,
+        },
+        times: Times::default(),
+    }
+}
+
+/// An invitation to `email`, made by `by`.
+fn invitation_to(source: &mut impl IdSource, email: &str, by: UserId) -> Invitation {
+    Invitation {
+        id: InvitationId::generate(source),
+        token_hash: Digest::new([7; 32]),
+        email: email.to_owned(),
+        invited_by: Some(by),
+        created_at: at(3),
+        expires_at: at(9_000),
+        used_at: None,
+    }
+}
+
+#[tokio::test]
+async fn priv_03_the_walk_finds_every_row_of_a_person() -> TestResult {
+    each_database("priv_03_the_walk_finds_rows", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = &fixture.storage;
+        let mut source = ids();
+        let lea = person(&mut source, "lea@example.test");
+        let ada_person = person(&mut source, "ada@example.test");
+        let ada = ada_person.id;
+        let scene = world(storage, &mut source, 1).await;
+        let reviewer = definition(&mut source, FieldType::Person, 0);
+        let field = reviewer.field.id;
+        let issue: IssueId = scene.issues[0].id;
+        let day = work_day_of(&mut source, lea.id);
+        let invitation = invitation_to(&mut source, &lea.email, ada);
+        let (stored_lea, stored_day) = (lea.clone(), day.clone());
+        ChangeStore::record_change(storage, &event(&mut source, 6), move |tx| {
+            Box::pin(async move {
+                AuthStorage::insert_person(tx, &stored_lea, "hash", at(1)).await?;
+                AuthStorage::insert_person(tx, &ada_person, "hash", at(1)).await?;
+                AuthStorage::insert_field(tx, &reviewer).await?;
+                AuthStorage::put_field_value(
+                    tx,
+                    EntityKind::from(RecordKind::Issue),
+                    EntityId::from(issue),
+                    field,
+                    &FieldValue::Ids(vec![stored_lea.id.to_bytes()]).to_cells(),
+                )
+                .await?;
+                AuthStorage::insert_work_day(tx, &stored_day).await?;
+                AuthStorage::insert_invitation(tx, &invitation).await
+            })
+        })
+        .await?;
+        // Ada changes Lea's past work day, with a reason; assigns her; Lea comments as herself.
+        let events = [
+            about(
+                &mut source,
+                ada,
+                RecordKind::WorkDay,
+                EntityId::from(day.day.id),
+                Vec::new(),
+                Some("forgot to stop"),
+            ),
+            about(
+                &mut source,
+                ada,
+                RecordKind::Issue,
+                EntityId::from(issue),
+                vec![FieldChange {
+                    field: FieldKey::BuiltIn(Field::AssignedTo).code().into_owned(),
+                    before: Some(json!([])),
+                    after: Some(json!([lea.id.to_string()])),
+                }],
+                None,
+            ),
+            about(
+                &mut source,
+                lea.id,
+                RecordKind::Issue,
+                EntityId::from(issue),
+                Vec::new(),
+                None,
+            ),
+            about(
+                &mut source,
+                ada,
+                RecordKind::Person,
+                EntityId::from(lea.id),
+                Vec::new(),
+                None,
+            ),
+        ];
+        for one in &events {
+            ChangeStore::record_change(storage, one, |_| Box::pin(async { Ok(()) })).await?;
+        }
+        let found = counted(storage, lea.id).await?;
+        let rows = |table: &str| {
+            found
+                .iter()
+                .find(|(name, _)| name == table)
+                .map_or(0, |(_, rows)| *rows)
+        };
+        assert_eq!(rows("person"), 1, "{found:?}");
+        assert_eq!(rows("work_day"), 1, "{found:?}");
+        assert_eq!(
+            rows("invitation"),
+            1,
+            "the invitation to her address: {found:?}"
+        );
+        assert_eq!(rows("field_value"), 1, "Reviewer = Lea: {found:?}");
+        // The work day by its owner, the assignment by its changes, her own event as actor, the
+        // change of her record as its subject.
+        assert_eq!(rows("event"), 4, "{found:?}");
+        // Nobody else is found in her rows.
+        let stranger = UserId::generate(&mut source);
+        assert_eq!(counted(storage, stranger).await?, Vec::new());
+        Ok(())
+    })
+    .await
+}

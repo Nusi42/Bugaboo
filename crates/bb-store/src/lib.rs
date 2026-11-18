@@ -40,6 +40,7 @@ mod notifications;
 mod oauth;
 mod offers;
 mod paging;
+mod person_data;
 mod plan;
 mod policy;
 mod projects;
@@ -75,6 +76,7 @@ pub use jobs::{NewJob, backoff};
 pub use keys::{KeyRing, MASTER_KEY_FILE, MasterKey, OpenMode, SigningKey};
 pub use layout::{DATABASE_FILE, KEYS_FOLDER, LOGS_FOLDER, SECURITY_LOG_ANCHOR_FILE};
 pub use migrations::{SchemaState, latest_version};
+pub use person_data::RowCount;
 pub use schema::{StoredTable, tables};
 pub use security_log::NewSecurityLogEntry;
 #[cfg(feature = "testing")]
