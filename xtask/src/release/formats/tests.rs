@@ -19,6 +19,7 @@ fn small_list() -> PartsList {
             hex: "2866f0d976e76497480b853d5e258dab6e4b89ecfe991124e08f15dfa8fd03ad".to_owned(),
         }),
         purpose: None,
+        authors: Vec::new(),
         depends_on: BTreeSet::new(),
         folder: None,
     };

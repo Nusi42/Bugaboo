@@ -18,6 +18,83 @@ const LICENSE_FILE_STARTS: [&str; 5] = ["license", "licence", "copying", "unlice
 /// A license file bigger than this is not a license text.
 const LARGEST_LICENSE_FILE: u64 = 200_000;
 
+/// The standard texts of the licenses that crates without a license file declare, from the SPDX
+/// license list (`docs/third-party/license-texts/`, copied unchanged).
+const STANDARD_TEXTS: [(&str, &str); 6] = [
+    (
+        "MIT",
+        include_str!("../../../docs/third-party/license-texts/MIT.txt"),
+    ),
+    (
+        "Apache-2.0",
+        include_str!("../../../docs/third-party/license-texts/Apache-2.0.txt"),
+    ),
+    (
+        "BSD-3-Clause",
+        include_str!("../../../docs/third-party/license-texts/BSD-3-Clause.txt"),
+    ),
+    (
+        "BSD-2-Clause",
+        include_str!("../../../docs/third-party/license-texts/BSD-2-Clause.txt"),
+    ),
+    (
+        "ISC",
+        include_str!("../../../docs/third-party/license-texts/ISC.txt"),
+    ),
+    (
+        "MPL-2.0",
+        include_str!("../../../docs/third-party/license-texts/MPL-2.0.txt"),
+    ),
+];
+
+/// The licenses whose standard text stands in for a missing license file: for `A OR B` the first
+/// one that has a text (the expression lists them in the order the package prefers), for `A AND B`
+/// all of them, none when one has no text.
+pub(crate) fn standard_licenses(expression: &str) -> Vec<&'static str> {
+    let spaced = expression.replace(['(', ')'], " ").replace('/', " OR ");
+    let ids: Vec<&str> = spaced
+        .split_whitespace()
+        .filter(|word| !matches!(*word, "OR" | "AND" | "WITH"))
+        .collect();
+    let known = |id: &str| {
+        STANDARD_TEXTS
+            .iter()
+            .find(|(name, _)| *name == id)
+            .map(|(name, _)| *name)
+    };
+    if spaced.split_whitespace().any(|word| word == "AND") {
+        let all: Vec<&'static str> = ids.iter().filter_map(|id| known(id)).collect();
+        return if all.len() == ids.len() {
+            all
+        } else {
+            Vec::new()
+        };
+    }
+    ids.iter().find_map(|id| known(id)).into_iter().collect()
+}
+
+/// The standard text of `license` with the authors of `package` as the copyright holders (the
+/// year is left out: the package does not say it).
+pub(crate) fn standard_text(license: &str, authors: &[String], package: &str) -> Option<String> {
+    let (_, template) = STANDARD_TEXTS.iter().find(|(name, _)| *name == license)?;
+    let names: Vec<&str> = authors
+        .iter()
+        .map(|author| author.split('<').next().unwrap_or(author).trim())
+        .filter(|name| !name.is_empty())
+        .collect();
+    let holders = if names.is_empty() {
+        format!("the authors of {package}")
+    } else {
+        names.join(", ")
+    };
+    Some(
+        template
+            .replace("<year> <copyright holders>", &holders)
+            .replace("<year> <owner>", &holders)
+            .replace("<year>, <owner>", &holders),
+    )
+}
+
 /// The notices, and the parts for which no license text was found in the package.
 #[derive(Debug)]
 pub(crate) struct Notices {
@@ -71,19 +148,32 @@ pub(crate) fn notices(root: &Path, list: &PartsList, register: &Rows) -> anyhow:
             .as_deref()
             .map(license_texts)
             .unwrap_or_default();
+        let mut texts: Vec<String> = texts.into_iter().map(|(_, text)| text).collect();
+        let mut standard = false;
         if texts.is_empty() {
-            without_text.push(label(part));
+            // No license file in the package: the standard text of the declared license stands in.
+            let declared = part.license.as_deref().unwrap_or_default();
+            texts = standard_licenses(declared)
+                .into_iter()
+                .filter_map(|id| standard_text(id, &part.authors, &part.name))
+                .map(|text| text.trim().to_owned())
+                .collect();
+            standard = !texts.is_empty();
+            if texts.is_empty() {
+                without_text.push(label(part));
+            }
         }
-        for (_, text) in texts {
+        for text in texts {
             let key = hex(&Sha256::digest(text.as_bytes()));
             groups
                 .entry(key)
                 .or_insert_with(|| (text, BTreeSet::new()))
                 .1
                 .insert(format!(
-                    "{} ({})",
+                    "{} ({}{})",
                     label(part),
-                    part.license.as_deref().unwrap_or("no license declared")
+                    part.license.as_deref().unwrap_or("no license declared"),
+                    if standard { ", standard text" } else { "" }
                 ));
         }
     }
@@ -109,7 +199,7 @@ pub(crate) fn notices(root: &Path, list: &PartsList, register: &Rows) -> anyhow:
     if !without_text.is_empty() {
         let _ = write!(
             out,
-            "\n================================================================\nParts that ship no license file in their package; the license they declare is in the \
+            "\n================================================================\nParts that ship no license file in their package, with a license that has no standard text; the license \n             they declare is in the \
              parts list:\n{}\n",
             without_text.join("\n")
         );

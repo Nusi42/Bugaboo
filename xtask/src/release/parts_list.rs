@@ -69,6 +69,9 @@ pub(crate) struct Part {
     pub(crate) checksum: Option<Checksum>,
     /// What the register says it is for (direct dependencies only).
     pub(crate) purpose: Option<String>,
+    /// Who wrote it, as the package says (crates only): the copyright line of a standard license
+    /// text.
+    pub(crate) authors: Vec<String>,
     /// The references of the parts it depends on.
     pub(crate) depends_on: BTreeSet<String>,
     /// Where its license files are, relative to the repository root or absolute.
@@ -125,6 +128,8 @@ struct MetaPackage {
     name: String,
     version: String,
     license: Option<String>,
+    #[serde(default)]
+    authors: Vec<String>,
     source: Option<String>,
     manifest_path: PathBuf,
 }
@@ -165,6 +170,7 @@ pub(crate) struct Crate {
     pub(crate) name: String,
     pub(crate) version: String,
     pub(crate) license: Option<String>,
+    pub(crate) authors: Vec<String>,
     pub(crate) folder: PathBuf,
     /// `(name, version)` of the crates it depends on.
     pub(crate) depends_on: BTreeSet<(String, String)>,
@@ -241,6 +247,7 @@ pub(crate) fn rust_closure(metadata: &str, roots: &[&str]) -> anyhow::Result<Clo
                 name: child.name.clone(),
                 version: child.version.clone(),
                 license: child.license.clone().map(|text| normalize_license(&text)),
+                authors: child.authors.clone(),
                 folder: child
                     .manifest_path
                     .parent()
@@ -479,6 +486,7 @@ fn npm_part(key: &str, entry: &Value, installed: &dyn Fn(&str) -> Option<Value>)
             .and_then(Value::as_str)
             .and_then(integrity_checksum),
         purpose: None,
+        authors: Vec::new(),
         depends_on: BTreeSet::new(),
         folder: Some(PathBuf::from(key)),
     }
@@ -549,6 +557,7 @@ fn file_parts(root: &Path, register: &Rows) -> anyhow::Result<Vec<Part>> {
             license: Some(leading_license(&row.license)),
             checksum: Some(sha256_of(&bytes)),
             purpose: Some(row.purpose.clone()).filter(|text| !text.is_empty()),
+            authors: Vec::new(),
             depends_on: BTreeSet::new(),
             folder: None,
         });
@@ -563,6 +572,7 @@ fn file_parts(root: &Path, register: &Rows) -> anyhow::Result<Vec<Part>> {
             license: notice_license(&text),
             checksum: Some(sha256_of(text.as_bytes())),
             purpose: text.lines().next().map(str::to_owned),
+            authors: Vec::new(),
             depends_on: BTreeSet::new(),
             folder: None,
         });
@@ -640,6 +650,7 @@ pub(crate) fn collect(root: &Path, created: &str) -> anyhow::Result<PartsList> {
                 .get(&found.name)
                 .map(|row| row.purpose.clone())
                 .filter(|text| !text.is_empty()),
+            authors: found.authors.clone(),
             depends_on: found
                 .depends_on
                 .iter()

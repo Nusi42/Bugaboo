@@ -113,3 +113,7 @@ reason = "Test data, not code: the public holidays of Germany and its 16 states 
 [[exempt]]
 path = "tools/testdata/sbom/LICENSE-*.txt"
 reason = "The official license texts of the published schemas next to them (tools/testdata/sbom/README.md); copied word for word and never edited."
+
+[[exempt]]
+path = "docs/third-party/license-texts/*.txt"
+reason = "The standard license texts of the SPDX license list (docs/third-party/README.md), copied word for word and never edited."

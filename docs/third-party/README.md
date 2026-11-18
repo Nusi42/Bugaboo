@@ -4,6 +4,8 @@ Every **direct** dependency of Bugaboo — shipped or used only for building, te
 
 Together with the lockfiles, this register is the source for the SBOM, the third-party notices and *About › Licenses* (COMP-01, COMP-02).
 
+**Crates that ship no license file.** Their notice carries the standard text of the license they declare, from the SPDX license list (copied unchanged into [`license-texts/`](license-texts/)), with the authors named in the package as the copyright holders; for `A OR B` it is the first license of the expression that has a text. A license without a text there is added to that folder when a crate needs it (the notices name the crate until then, and DEP-SBOM's test fails).
+
 **License texts that are not in a crate's license file.** Some crates carry other code or data inside, under a license of its own that asks for its notice to ship with the binary. Their texts are in [`notices/`](notices/), copied word for word below a header of ours that names the license as `SPDX-License-Identifier:`, and the third-party notices of a release include that folder. Today: the Foxit fonts that `hayro-interpret` embeds (BSD-3-Clause, `notices/hayro-interpret-fonts-bsd-3-clause.txt`) and its color profiles (CC0 1.0, `notices/hayro-interpret-profiles-cc0.txt`).
 
 Columns:

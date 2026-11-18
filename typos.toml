@@ -10,6 +10,8 @@ extend-exclude = [
   "crates/bb-sample/data/large.toml",
   # The published schemas and licenses of the parts list, copied unchanged (tools/testdata/sbom/README.md).
   "tools/testdata/sbom",
+  # The SPDX license texts that stand in for a missing license file, copied unchanged.
+  "docs/third-party/license-texts",
 ]
 
 [default.extend-words]

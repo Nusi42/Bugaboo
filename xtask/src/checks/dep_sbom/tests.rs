@@ -52,6 +52,7 @@ fn part(license: Option<&str>, checksum: bool) -> Part {
             hex: "ab".to_owned(),
         }),
         purpose: None,
+        authors: Vec::new(),
         depends_on: BTreeSet::new(),
         folder: None,
     }
