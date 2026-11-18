@@ -35,6 +35,7 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
     }
     let entity = &input.ident;
     let name = entity.to_string();
+    let entity_doc = doc_of(&input.attrs);
     let mut marks = Vec::new();
     let mut links = Vec::new();
     let mut assertions = Vec::new();
@@ -69,7 +70,8 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
         impl ::bb_core::personal::Entity for #entity {
             const MARKS: ::bb_core::personal::EntityMarks =
                 ::bb_core::personal::EntityMarks::new(#name, &[#(#marks),*])
-                    .with_links(&[#(#links),*]);
+                    .with_links(&[#(#links),*])
+                    .with_doc(#entity_doc);
         }
 
         // A field marked `#[not_personal]` must have a type that cannot hold personal data.
@@ -108,6 +110,13 @@ fn field_mark(entity: &Ident, field: &Field) -> syn::Result<(TokenStream, Option
     } else {
         quote! { .with_kinds(&[#(#kinds),*]) }
     };
+    let doc = doc_of(&field.attrs);
+    let moment = if holds_moment(&field.ty) {
+        quote! { .moment() }
+    } else {
+        quote! {}
+    };
+    let with_kinds = quote! { #with_kinds #moment .with_doc(#doc) };
     Ok(match read_mark(entity, ident, &field.attrs)? {
         Mark::NotPersonal => {
             let ty = &field.ty;
@@ -251,4 +260,38 @@ fn read_personal(attr: &Attribute) -> syn::Result<Mark> {
 fn word(text: &LitStr, enum_name: &str) -> TokenStream {
     let enum_ident = Ident::new(enum_name, text.span());
     quote_spanned! { text.span() => ::bb_core::personal::#enum_ident::from_code_const(#text) }
+}
+
+/// The doc comment as one line, for the readable pages and the `README` of *Download my data*.
+fn doc_of(attrs: &[Attribute]) -> String {
+    attrs
+        .iter()
+        .filter(|attr| attr.path().is_ident("doc"))
+        .filter_map(|attr| match &attr.meta {
+            syn::Meta::NameValue(pair) => match &pair.value {
+                syn::Expr::Lit(syn::ExprLit {
+                    lit: syn::Lit::Str(text),
+                    ..
+                }) => Some(text.value().trim().to_owned()),
+                _ => None,
+            },
+            _ => None,
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+/// Whether the type is a moment (`Timestamp`, or an `Option` of one), which the store keeps as
+/// microseconds since 1970: the walk of a person's data writes it as a moment in UTC.
+fn holds_moment(ty: &syn::Type) -> bool {
+    let syn::Type::Path(path) = ty else {
+        return false;
+    };
+    path.path.segments.last().is_some_and(|last| {
+        last.ident == "Timestamp"
+            || (last.ident == "Option"
+                && matches!(&last.arguments, syn::PathArguments::AngleBracketed(arguments)
+                    if arguments.args.iter().any(|argument| matches!(argument,
+                        syn::GenericArgument::Type(inner) if holds_moment(inner)))))
+    })
 }

@@ -5,7 +5,7 @@
 use bb_app::auth::{AccountStore as _, InvitationStore as _};
 use bb_app::fields::FieldStore as _;
 use bb_app::jobs::JobStore as _;
-use bb_app::ports::ChangeStore;
+use bb_app::ports::{ChangeStore, PersonData as _};
 use bb_app::working_hours::WorkingHoursStore as _;
 use bb_core::event::{Actor, EntityKind, EntityRef, FieldChange, RecordKind};
 use bb_core::fields::{Field, FieldKey};
@@ -25,10 +25,10 @@ use crate::test_support::{at, definition, event, fixture, ids, person, world};
 /// What the walk counts for `person`, by table.
 async fn counted(storage: &AuthStorage, person: UserId) -> Result<Vec<(String, u64)>, StoreError> {
     Ok(storage
-        .person_row_counts(person)
+        .kinds_of(person)
         .await?
         .into_iter()
-        .map(|count| (count.table, count.rows))
+        .map(|count| (count.kind, count.rows))
         .collect())
 }
 
@@ -191,6 +191,7 @@ async fn priv_03_the_walk_finds_every_row_of_a_person() -> TestResult {
         // The work day by its owner, the assignment by its changes, her own event as actor, the
         // change of her record as its subject.
         assert_eq!(rows("event"), 4, "{found:?}");
+        rows_say_what_she_is(storage, lea.id).await?;
         // Nobody else is found in her rows.
         let stranger = UserId::generate(&mut source);
         assert_eq!(counted(storage, stranger).await?, Vec::new());
@@ -215,4 +216,42 @@ fn priv_03_a_link_to_a_field_that_is_not_stored_is_an_error_not_a_miss() {
     let person = UserId::generate(&mut ids());
     assert!(names_the_person(comments, &all, person).unwrap().is_some());
     assert!(names_the_person(&without_columns, &all, person).is_err());
+}
+
+/// The rows of the walk: each with what the person is to it, the person as a person and the
+/// moments as moments, the same on both databases.
+async fn rows_say_what_she_is(storage: &AuthStorage, lea: UserId) -> Result<(), StoreError> {
+    use bb_app::privacy::walk::Value;
+    use bb_core::personal::Link;
+    let days = storage.rows_of(lea, "work_day", 0).await?;
+    assert_eq!(days.next, None);
+    let day = &days.rows[0];
+    assert_eq!(day.links, [Link::Subject]);
+    let cell = |field: &str| {
+        day.cells
+            .iter()
+            .find(|cell| cell.field == field)
+            .map(|cell| cell.value.clone())
+    };
+    assert_eq!(cell("person"), Some(Value::Person(lea)));
+    assert_eq!(cell("updated_at"), Some(Value::Moment(at(10))));
+    assert_eq!(cell("zone"), Some(Value::Text("Europe/Berlin".to_owned())));
+    let events = storage.rows_of(lea, "event", 0).await?;
+    let links: Vec<Vec<Link>> = events.rows.iter().map(|row| row.links.clone()).collect();
+    assert_eq!(events.rows.len(), 4, "{links:?}");
+    assert!(
+        links.iter().any(|found| found.contains(&Link::Actor)),
+        "{links:?}"
+    );
+    assert!(
+        links.iter().any(|found| found.contains(&Link::Subject)),
+        "{links:?}"
+    );
+    // The changes name her, and what she is to them comes from the members, not from the link.
+    assert!(links.iter().any(Vec::is_empty), "{links:?}");
+    assert_eq!(
+        storage.rows_of(lea, "no_such_table", 0).await?.rows,
+        Vec::new()
+    );
+    Ok(())
 }

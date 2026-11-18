@@ -150,6 +150,8 @@ pub struct FieldMark {
     name: &'static str,
     personal: Personal,
     by_kind: &'static [KindMark],
+    moment: bool,
+    doc: &'static str,
 }
 
 impl FieldMark {
@@ -160,6 +162,8 @@ impl FieldMark {
             name,
             personal: Personal::Yes { category, basis },
             by_kind: &[],
+            moment: false,
+            doc: "",
         }
     }
 
@@ -170,6 +174,8 @@ impl FieldMark {
             name,
             personal: Personal::No,
             by_kind: &[],
+            moment: false,
+            doc: "",
         }
     }
 
@@ -177,6 +183,35 @@ impl FieldMark {
     #[must_use]
     pub const fn with_kinds(self, by_kind: &'static [KindMark]) -> Self {
         Self { by_kind, ..self }
+    }
+
+    /// The same field, which holds a moment (a `Timestamp`, stored as microseconds since 1970).
+    /// Written by `#[derive(Entity)]` from the type of the field.
+    #[must_use]
+    pub const fn moment(self) -> Self {
+        Self {
+            moment: true,
+            ..self
+        }
+    }
+
+    /// The same field with its doc comment, which says what it holds. Written by
+    /// `#[derive(Entity)]`.
+    #[must_use]
+    pub const fn with_doc(self, doc: &'static str) -> Self {
+        Self { doc, ..self }
+    }
+
+    /// Whether the field holds a moment.
+    #[must_use]
+    pub const fn holds_moment(&self) -> bool {
+        self.moment
+    }
+
+    /// What the field holds, in the words of its doc comment; empty when it has none.
+    #[must_use]
+    pub const fn doc(&self) -> &'static str {
+        self.doc
     }
 
     /// The marks the field has in the rows of some kinds of record; empty when the field holds
@@ -205,6 +240,7 @@ pub struct EntityMarks {
     name: &'static str,
     fields: &'static [FieldMark],
     links: &'static [PersonLink],
+    doc: &'static str,
 }
 
 impl EntityMarks {
@@ -216,6 +252,7 @@ impl EntityMarks {
             name,
             fields,
             links: &[],
+            doc: "",
         }
     }
 
@@ -225,6 +262,19 @@ impl EntityMarks {
     #[must_use]
     pub const fn with_links(self, links: &'static [PersonLink]) -> Self {
         Self { links, ..self }
+    }
+
+    /// The same marks with the doc comment of the entity. Written by `#[derive(Entity)]`.
+    #[doc(hidden)]
+    #[must_use]
+    pub const fn with_doc(self, doc: &'static str) -> Self {
+        Self { doc, ..self }
+    }
+
+    /// What the entity is, in the words of its doc comment; empty when it has none.
+    #[must_use]
+    pub const fn doc(&self) -> &'static str {
+        self.doc
     }
 
     /// The fields that name a person, with what the person is to the row (ADR-0044).

@@ -3,11 +3,15 @@
 //! nothing else. It is the only code that searches rows by person; it works the same on both
 //! databases, because every condition is built from the names in `schema` with the query builder.
 
+mod cells;
+
+use bb_app::ports::PersonData;
+use bb_app::privacy::walk::{FoundRow, KindOfRows, ROWS_PAGE, RowsPage};
 use bb_core::event::RecordKind;
 use bb_core::id::UserId;
 use bb_core::personal::{EntityMarks, LinkScope, PersonLink};
 use bb_core::whose::{FieldOf, OWN_FIELD_TYPE, PERSON_ADDRESS, Whose, whose};
-use sea_query::{Alias, Cond, Expr, ExprTrait as _, Query, SelectStatement};
+use sea_query::{Alias, Cond, Expr, ExprTrait as _, Order, Query, SelectStatement};
 
 use crate::AuthStorage;
 use crate::db::StoredId as _;
@@ -15,27 +19,12 @@ use crate::error::StoreError;
 use crate::like;
 use crate::schema::{Computed, StoredTable, tables};
 
-/// How many rows of one table name a person.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct RowCount {
-    /// The table.
-    pub table: String,
-    /// The entity stored in it.
-    pub entity: &'static str,
-    /// How many of its rows name the person.
-    pub rows: u64,
-}
+impl PersonData for AuthStorage {
+    type Error = StoreError;
 
-impl AuthStorage {
-    /// How many rows of each table name `person`, by any of the links of its entity; only the
-    /// tables with at least one such row, in the order of the list of tables. What the removal
-    /// plan counts (ADR-0044, decision 6).
-    ///
-    /// # Errors
-    /// Fails when the database fails.
-    pub async fn person_row_counts(&self, person: UserId) -> Result<Vec<RowCount>, StoreError> {
+    async fn kinds_of(&self, person: UserId) -> Result<Vec<KindOfRows>, StoreError> {
         let all = tables();
-        let mut counts = Vec::new();
+        let mut kinds = Vec::new();
         for table in &all {
             let Some(condition) = names_the_person(table, &all, person)? else {
                 continue;
@@ -50,14 +39,63 @@ impl AuthStorage {
                 None => 0,
             };
             if rows > 0 {
-                counts.push(RowCount {
-                    table: table.name.clone(),
-                    entity: table.marks.name(),
+                kinds.push(KindOfRows {
+                    kind: table.name.clone(),
+                    marks: table.marks,
                     rows: u64::try_from(rows).map_err(|_| StoreError::Corrupt("a count"))?,
                 });
             }
         }
-        Ok(counts)
+        Ok(kinds)
+    }
+
+    async fn rows_of(&self, person: UserId, kind: &str, from: u64) -> Result<RowsPage, StoreError> {
+        let all = tables();
+        let Some(table) = all.iter().find(|table| table.name == kind) else {
+            return Ok(RowsPage {
+                rows: Vec::new(),
+                next: None,
+            });
+        };
+        let Some(condition) = names_the_person(table, &all, person)? else {
+            return Ok(RowsPage {
+                rows: Vec::new(),
+                next: None,
+            });
+        };
+        let links = table.marks.person_links().links();
+        let mut select = Query::select();
+        select.from(Alias::new(table.name.as_str()));
+        for (column, _) in &table.columns {
+            select.column(Alias::new(column.as_str()));
+        }
+        // Which link names the person in each row, as a flag of its own.
+        for (at, link) in links.iter().enumerate() {
+            let names = link_names(table, &all, link, person)?;
+            select.expr_as(
+                Expr::case(names, Expr::val(1_i64)).finally(Expr::val(0_i64)),
+                Alias::new(cells::flag(at)),
+            );
+        }
+        // A fixed order, so the pages neither repeat nor skip a row of a snapshot.
+        for (column, _) in &table.columns {
+            select.order_by(Alias::new(column.as_str()), Order::Asc);
+        }
+        select
+            .cond_where(condition)
+            .limit(ROWS_PAGE + 1)
+            .offset(from);
+        let mut found = self.database().fetch_all(&select).await?;
+        let more = u64::try_from(found.len()).unwrap_or(u64::MAX) > ROWS_PAGE;
+        found.truncate(usize::try_from(ROWS_PAGE).unwrap_or(usize::MAX));
+        let rows = found
+            .iter()
+            .map(|row| cells::read_row(row, table, links))
+            .collect::<Result<Vec<FoundRow>, StoreError>>()?;
+        Ok(RowsPage {
+            next: more.then_some(from + ROWS_PAGE),
+            rows,
+        })
     }
 }
 

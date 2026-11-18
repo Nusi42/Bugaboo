@@ -33,6 +33,7 @@ pub mod people;
 pub mod plan;
 pub mod ports;
 pub mod preview;
+pub mod privacy;
 pub mod projects;
 pub mod rate_window;
 pub mod relations;

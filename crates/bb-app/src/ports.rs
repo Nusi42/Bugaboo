@@ -79,3 +79,33 @@ pub trait SetupCodeFile: Send + Sync {
     /// The error of the file system when the file is there and cannot be removed.
     fn remove(&self) -> std::io::Result<()>;
 }
+
+/// The walk of a person's data (ADR-0044, decision 1): the one way to find the rows that name a
+/// person, read by *Download my data*, *Remove a person* and the removal plan. The store answers it
+/// from the links of the entities; nothing else searches rows by person.
+pub trait PersonData: Send + Sync {
+    /// What a failed read reports.
+    type Error: Send;
+
+    /// The kinds of record that name `person`, each with how many of its rows do; a kind with no
+    /// such row is left out.
+    ///
+    /// # Errors
+    /// The error of the store.
+    fn kinds_of(
+        &self,
+        person: bb_core::id::UserId,
+    ) -> impl Future<Output = Result<Vec<crate::privacy::walk::KindOfRows>, Self::Error>> + Send;
+
+    /// A page of the rows of `kind` that name `person`, starting at `from` (0 for the first page),
+    /// at most [`crate::privacy::walk::ROWS_PAGE`] rows.
+    ///
+    /// # Errors
+    /// The error of the store; a kind that is not a table is no error but an empty page.
+    fn rows_of(
+        &self,
+        person: bb_core::id::UserId,
+        kind: &str,
+        from: u64,
+    ) -> impl Future<Output = Result<crate::privacy::walk::RowsPage, Self::Error>> + Send;
+}
