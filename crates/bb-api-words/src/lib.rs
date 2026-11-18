@@ -318,7 +318,7 @@ mod tests {
 /// third-party notices. `xtask` writes them (into the folder `bb-api` embeds, and into the release
 /// folder), `bb-api` reads them; the endings and the names are written here once.
 pub mod about {
-    /// The ending of the parts list as CycloneDX.
+    /// The ending of the parts list as `CycloneDX`.
     pub const CYCLONEDX_END: &str = ".cdx.json";
     /// The ending of the parts list as SPDX.
     pub const SPDX_END: &str = ".spdx.json";
