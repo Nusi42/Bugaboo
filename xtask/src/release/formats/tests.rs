@@ -4,7 +4,9 @@ use serde_json::json;
 
 use super::*;
 use crate::release::parts_list::Program;
-use crate::release::{compose, repository_root, this_repository, to_text};
+use crate::release::{
+    EMBEDDED_FOLDER, compose, repository_root, this_repository, to_text, write_embedded,
+};
 
 fn small_list() -> PartsList {
     let part = |name: &str, version: &str, license: Option<&str>| Part {
@@ -104,4 +106,37 @@ fn the_files_are_named_for_the_version() {
     assert_eq!(cyclonedx_name("0.6.0"), "bugaboo-0.6.0.cdx.json");
     assert_eq!(spdx_name("0.6.0"), "bugaboo-0.6.0.spdx.json");
     assert_eq!(notices_name("0.6.0"), "bugaboo-0.6.0-notices.txt");
+}
+
+#[test]
+fn the_program_carries_the_files_of_its_build() {
+    let files = this_repository();
+    let temp = crate::testutil::TempDir::new("embedded-files");
+    let folder = temp.path().join("about-files");
+    write_file_for_test(&folder, "bugaboo-0.0.1.cdx.json");
+    write_embedded(files, &folder).unwrap();
+    let mut names: Vec<String> = std::fs::read_dir(&folder)
+        .unwrap()
+        .flatten()
+        .map(|entry| entry.file_name().to_string_lossy().into_owned())
+        .collect();
+    names.sort();
+    let version = &files.list.program.version;
+    let mut wanted = vec![
+        cyclonedx_name(version),
+        notices_name(version),
+        spdx_name(version),
+    ];
+    wanted.sort();
+    assert_eq!(names, wanted, "the file of an older version is gone");
+    // `bb-api` embeds this folder under this name.
+    let about =
+        std::fs::read_to_string(repository_root().join("crates/bb-api/src/api/about.rs")).unwrap();
+    let last = EMBEDDED_FOLDER.rsplit('/').next().unwrap();
+    assert!(about.contains(&format!("#[folder = \"{last}\"]")));
+    assert!(EMBEDDED_FOLDER.starts_with("crates/bb-api/"));
+}
+
+fn write_file_for_test(folder: &std::path::Path, name: &str) {
+    crate::release::write_file(folder, name, "old").unwrap();
 }

@@ -1,7 +1,9 @@
-//! `cargo xtask build`: the browser app, then the release binary (DIST-01).
+//! `cargo xtask build`: the parts list and the notices, the browser app, then the release binary
+//! (DIST-01, COMP-01).
 
 use std::path::Path;
 
+use crate::release;
 use crate::steps::{self, Profile, Step};
 
 /// Release builds embed `web/app/dist`, so the web build comes first.
@@ -16,6 +18,9 @@ pub(crate) fn plan(root: &Path, target: Option<&str>) -> Vec<Step> {
 }
 
 pub(crate) fn run(root: &Path, target: Option<&str>) -> anyhow::Result<bool> {
+    // The parts list and the notices come first: the program takes them in when it is compiled.
+    let files = release::compose(root)?;
+    release::write_embedded(&files, &root.join(release::EMBEDDED_FOLDER))?;
     Ok(steps::run(root, &plan(root, target))?.passed)
 }
 

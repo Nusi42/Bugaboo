@@ -108,3 +108,24 @@ pub(crate) fn schema_errors(files: &Files) -> anyhow::Result<Vec<String>> {
     }
     Ok(lines)
 }
+
+/// Where the program picks up the files it carries (`rust-embed` in `bb-api`, `about.rs`), relative
+/// to the repository root. Never committed.
+pub(crate) const EMBEDDED_FOLDER: &str = "crates/bb-api/about-files";
+
+/// Writes the parts list in both formats and the notices into `folder`, for the program to take in,
+/// and nothing else: files of an earlier version are removed first.
+pub(crate) fn write_embedded(files: &Files, folder: &Path) -> anyhow::Result<()> {
+    if folder.exists() {
+        fs::remove_dir_all(folder)
+            .with_context(|| format!("could not clear {}", folder.display()))?;
+    }
+    let version = &files.list.program.version;
+    write_file(
+        folder,
+        &formats::cyclonedx_name(version),
+        &to_text(&files.cyclonedx),
+    )?;
+    write_file(folder, &formats::spdx_name(version), &to_text(&files.spdx))?;
+    write_file(folder, &formats::notices_name(version), &files.notices.text)
+}
