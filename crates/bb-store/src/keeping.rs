@@ -3,7 +3,7 @@
 //! waits long behind it (M4-F104). [`limited_rows`] is the one way a purge chooses its rows, and
 //! [`delete_limited`] the one way it deletes them.
 
-mod old_records;
+pub(crate) mod old_records;
 pub(crate) mod trash;
 
 use bb_core::event::RecordKind;

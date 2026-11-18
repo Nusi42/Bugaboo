@@ -69,37 +69,30 @@ impl OldRecordStore for FakeStore {
         kind: KeepKind,
         before: Date,
         person: Option<UserId>,
+        limit: u64,
     ) -> Result<Vec<OldCount>, FakeError> {
         let state = &mut tx.state;
-        let (found, doomed): (Vec<OldCount>, Vec<EntityId>) = match kind {
-            KeepKind::WorkDays => (
-                counted(
-                    &state.work_days,
-                    |day| day.day.person,
-                    |day| old_day(day, before, person),
-                ),
-                state
-                    .work_days
-                    .iter()
-                    .filter(|day| old_day(day, before, person))
-                    .map(|day| day.day.id.into())
-                    .collect(),
-            ),
-            KeepKind::TimeEntries => (
-                counted(
-                    &state.time_entries,
-                    |entry| entry.person,
-                    |entry| old_entry(entry, before, person),
-                ),
-                state
-                    .time_entries
-                    .iter()
-                    .filter(|entry| old_entry(entry, before, person))
-                    .map(|entry| entry.id.into())
-                    .collect(),
-            ),
-            _ => (Vec::new(), Vec::new()),
+        let step = usize::try_from(limit).unwrap_or(usize::MAX);
+        // The records of the step, at most `limit`, each with its person; the count is theirs.
+        let chosen: Vec<(EntityId, UserId)> = match kind {
+            KeepKind::WorkDays => state
+                .work_days
+                .iter()
+                .filter(|day| old_day(day, before, person))
+                .map(|day| (day.day.id.into(), day.day.person))
+                .take(step)
+                .collect(),
+            KeepKind::TimeEntries => state
+                .time_entries
+                .iter()
+                .filter(|entry| old_entry(entry, before, person))
+                .map(|entry| (entry.id.into(), entry.person))
+                .take(step)
+                .collect(),
+            _ => Vec::new(),
         };
+        let found = counted(&chosen, |row| row.1, |_| true);
+        let doomed: Vec<EntityId> = chosen.iter().map(|row| row.0).collect();
         state
             .work_days
             .retain(|day| !doomed.contains(&day.day.id.into()));
@@ -270,9 +263,12 @@ impl FakeStore {
     /// spent (`fake_time.rs`) reads like the store.
     pub(crate) fn book(&self, person: UserId, date: Date, minutes: u32) {
         let mut shared = self.lock();
-        let number = u8::try_from(shared.state.time_entries.len()).unwrap_or(u8::MAX);
+        // An ID of its own for each entry, also past 255 of them.
+        let mut random = [7; 10];
+        let number = u64::try_from(shared.state.time_entries.len()).unwrap_or(u64::MAX);
+        random[2..].copy_from_slice(&number.to_be_bytes());
         let (Ok(id), Ok(issue)) = (
-            TimeEntryId::from_parts(Timestamp::UNIX_EPOCH, [number; 10]),
+            TimeEntryId::from_parts(Timestamp::UNIX_EPOCH, random),
             IssueId::from_parts(Timestamp::UNIX_EPOCH, [7; 10]),
         ) else {
             return;

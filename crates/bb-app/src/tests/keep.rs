@@ -317,6 +317,83 @@ async fn priv_05_each_purge_deletes_in_steps_and_queues_the_next_step() -> Outco
 }
 
 #[tokio::test]
+async fn priv_05_a_deletion_stopped_after_a_step_has_written_down_what_that_step_deleted() -> Outcome
+{
+    use bb_core::event::{EntityRef, RecordKind};
+    use bb_core::id::UserId;
+    use bb_core::keeping::KeepKind;
+    use bb_core::sign_in::SecurityAction;
+
+    use crate::keeping::{DeleteOldRecords, KEEP_STEP_ROWS, OldRecordsQuery};
+
+    let world = World::new().await?;
+    let ada = world.admin.person.id;
+    let bea = UserId::from_random([9; 16]);
+    let long_ago = jiff::civil::Date::new(2000, 1, 3)?;
+    // The first step takes all of Ada's entries and some of Bea's.
+    let (of_ada, of_bea) = (KEEP_STEP_ROWS / 2 + 100, KEEP_STEP_ROWS / 2 + 100);
+    for _ in 0..of_ada {
+        world.store.book(ada, long_ago, 30);
+    }
+    for _ in 0..of_bea {
+        world.store.book(bea, long_ago, 30);
+    }
+    let before = crate::keeping::old_records(
+        &world.ctx(),
+        OldRecordsQuery {
+            session_token: token(&world),
+            kind: KeepKind::TimeEntries,
+        },
+    )
+    .await?
+    .into_value()
+    .before
+    .to_string();
+    let delete = async || {
+        crate::keeping::delete_old_records(
+            &world.ctx(),
+            DeleteOldRecords {
+                session_token: token(&world),
+                kind: KeepKind::TimeEntries,
+                person: None,
+                before: before.clone(),
+            },
+        )
+        .await
+    };
+    let written = |world: &World| -> Vec<Option<EntityRef>> {
+        world
+            .store
+            .lock()
+            .log
+            .iter()
+            .filter(|entry| entry.action == SecurityAction::TimeEntriesDeleted)
+            .map(|entry| entry.subject.clone())
+            .collect()
+    };
+    let about = |person: UserId| Some(crate::auth::entity(RecordKind::Person, person));
+    // The request stops after its first step, as one cut off at its time limit does.
+    world.store.keep_a_change_busy_after(1);
+    assert!(delete().await.is_err());
+    let left = world.store.lock().state.time_entries.len();
+    assert_eq!(
+        u64::try_from(left)?,
+        of_ada + of_bea - KEEP_STEP_ROWS,
+        "one step went"
+    );
+    // That step is written down, for each person whose entries it deleted, and nothing more.
+    let first = written(&world);
+    assert_eq!(first.len(), 2, "{first:?}");
+    assert!(first.contains(&about(ada)) && first.contains(&about(bea)));
+    // Asked again with the same date, the rest goes, written down too.
+    let deleted = delete().await?.into_value();
+    assert_eq!(deleted.deleted, u64::try_from(left)?);
+    assert!(world.store.lock().state.time_entries.is_empty());
+    assert_eq!(written(&world)[2..], [about(bea)]);
+    Ok(())
+}
+
+#[tokio::test]
 async fn priv_05_every_purge_is_safe_to_run_again() -> Outcome {
     let world = World::new().await?;
     world.clock.advance(800 * SECONDS_PER_DAY);

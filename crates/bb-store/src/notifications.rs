@@ -380,4 +380,4 @@ impl NotificationStore for AuthStorage {
 
 #[cfg(test)]
 #[path = "tests/notifications.rs"]
-mod tests;
+pub(crate) mod tests;

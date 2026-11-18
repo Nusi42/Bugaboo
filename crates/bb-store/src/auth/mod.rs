@@ -87,7 +87,25 @@ impl ChangeStore for AuthStorage {
         + Send
         + 'a,
     ) -> impl Future<Output = Result<T, StoreError>> + Send + 'a {
-        ChangeStore::record_changes(&self.database, events, change)
+        // The entries of the security log a change added are appended at its end, under the lock
+        // of the end of the log, and committed with it; the anchor file follows after the commit.
+        let seal = &*self.seal;
+        async move {
+            let (result, head) = self
+                .database
+                .record_signed_changes(events, Some(seal.key()), async move |transaction| {
+                    change(transaction).await
+                })
+                .await?;
+            // The file one entry behind the database is harmless (`crate::anchor`); the change
+            // stands.
+            if let Some((seq, hash)) = head
+                && let Err(error) = seal.record(seq, &hash)
+            {
+                tracing::warn!(cause = %error, "the anchor file of the security log could not be written");
+            }
+            Ok(result)
+        }
     }
 
     fn read_snapshot<'a, T: Send + 'a>(
@@ -152,16 +170,8 @@ impl AuthStore for AuthStorage {
     }
 
     async fn append_security_log(&self, event: &SecurityEvent) -> Result<(), StoreError> {
-        let entry = NewSecurityLogEntry {
-            time: event.time,
-            person: event.person,
-            action: TechnicalName::new(event.action.code())
-                .map_err(|_| StoreError::Corrupt("a security action"))?,
-            subject: event.subject.clone(),
-            network: event.network.clone(),
-        };
         self.database
-            .append_security_log(&self.seal, &entry)
+            .append_security_log(&self.seal, &new_entry(event)?)
             .await
             .map(|_| ())
     }
@@ -200,6 +210,27 @@ impl AuthStore for AuthStorage {
     ) -> Result<(), StoreError> {
         put_organization_setting(transaction, key, value, at).await
     }
+
+    async fn append_security_log_in_change(
+        transaction: &mut Transaction,
+        event: &SecurityEvent,
+    ) -> Result<(), StoreError> {
+        // Signed and appended by `record_changes` at the end of the change.
+        transaction.security_log.push(new_entry(event)?);
+        Ok(())
+    }
+}
+
+/// The entry of the security log that `event` is.
+fn new_entry(event: &SecurityEvent) -> Result<NewSecurityLogEntry, StoreError> {
+    Ok(NewSecurityLogEntry {
+        time: event.time,
+        person: event.person,
+        action: TechnicalName::new(event.action.code())
+            .map_err(|_| StoreError::Corrupt("a security action"))?,
+        subject: event.subject.clone(),
+        network: event.network.clone(),
+    })
 }
 
 #[cfg(test)]

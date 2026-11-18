@@ -22,6 +22,7 @@ use sqlx::{AssertSqlSafe, PgPool, Postgres, Sqlite, SqlitePool};
 
 use crate::error::StoreError;
 use crate::locks::{Held, LockClass, Mode};
+use crate::security_log::NewSecurityLogEntry;
 
 mod fixed;
 mod gate;
@@ -310,6 +311,7 @@ impl Database {
         self.statements.record_transaction();
         Ok(Transaction {
             follow_ups: Vec::new(),
+            security_log: Vec::new(),
             locks: Held::default(),
             statements: Arc::clone(&self.statements),
             inner: match &self.pool {
@@ -333,6 +335,7 @@ impl Database {
         self.statements.record_transaction();
         Ok(Transaction {
             follow_ups: Vec::new(),
+            security_log: Vec::new(),
             locks: Held::default(),
             statements: Arc::clone(&self.statements),
             _turn: None,
@@ -553,6 +556,9 @@ pub struct Transaction {
     /// Events the change adds besides its own; `record_change` appends them after the event of
     /// the change, so the lock on the outbox stays the last lock of the transaction.
     pub(crate) follow_ups: Vec<DomainEvent>,
+    /// Entries of the security log the change adds: the sign-in storage appends them at the end of
+    /// the change, so they are committed with it or not at all.
+    pub(crate) security_log: Vec<NewSecurityLogEntry>,
     /// The advisory locks it took (also on SQLite, which needs none), to refuse a wrong order.
     locks: Held,
     /// The turn in the queue of the writers on SQLite. Last, so it ends after the transaction has

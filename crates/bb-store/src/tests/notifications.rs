@@ -21,7 +21,7 @@ use crate::schema::Secret;
 use crate::test_support::{at, event, fixture, ids, person};
 
 /// A person in the database.
-async fn stored_person(
+pub(crate) async fn stored_person(
     storage: &AuthStorage,
     source: &mut SequentialIds,
     email: &str,
@@ -36,7 +36,7 @@ async fn stored_person(
     Ok(id)
 }
 
-fn row(
+pub(crate) fn row(
     source: &mut SequentialIds,
     recipient: UserId,
     issue: Option<IssueId>,

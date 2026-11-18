@@ -12,14 +12,14 @@ use sea_query::{Expr, ExprTrait as _, Order, Query, SelectStatement};
 
 use crate::db::{Reader, StoredId, Transaction};
 use crate::error::StoreError;
+use crate::keeping::old_records::choose;
 use crate::keeping::{delete_events, events_about};
 use crate::schema::{Computed, NotificationRow, WorkBreakRow, WorkDayRow, WorkPeriodRow};
 
-/// The IDs of the days older than `before`, of one person or of everybody.
-fn doomed(before: Date, person: Option<UserId>) -> SelectStatement {
+/// The days older than `before`, of one person or of everybody (no column chosen yet).
+fn past(before: Date, person: Option<UserId>) -> SelectStatement {
     let mut select = Query::select();
     select
-        .column(WorkDayRow::Id)
         .from(WorkDayRow::Table)
         .and_where(Expr::col(WorkDayRow::Date).lt(before.to_string()));
     if let Some(person) = person {
@@ -34,17 +34,12 @@ pub(crate) async fn count(
     before: Date,
     person: Option<UserId>,
 ) -> Result<Vec<OldCount>, StoreError> {
-    let mut select = Query::select();
+    let mut select = past(before, person);
     select
         .column(WorkDayRow::Person)
         .expr_as(Expr::col(WorkDayRow::Id).count(), Computed::Total)
-        .from(WorkDayRow::Table)
-        .and_where(Expr::col(WorkDayRow::Date).lt(before.to_string()))
         .group_by_col(WorkDayRow::Person)
         .order_by(WorkDayRow::Person, Order::Asc);
-    if let Some(person) = person {
-        select.and_where(Expr::col(WorkDayRow::Person).eq(person.stored()));
-    }
     reader
         .fetch_all(&select)
         .await?
@@ -59,43 +54,49 @@ pub(crate) async fn count(
         .collect()
 }
 
-/// Deletes the days older than `before` with everything that tells about them; how many of whose.
+/// One step: deletes at most `limit` days older than `before` with everything that tells about
+/// them; how many of whose.
 pub(crate) async fn delete(
     transaction: &mut Transaction,
     before: Date,
     person: Option<UserId>,
+    limit: u64,
 ) -> Result<Vec<OldCount>, StoreError> {
-    let counted = count(transaction, before, person).await?;
-    if counted.is_empty() {
+    let (keys, counted) = choose(
+        transaction,
+        past(before, person),
+        (WorkDayRow::Id, WorkDayRow::Person),
+        limit,
+    )
+    .await?;
+    if keys.is_empty() {
         return Ok(counted);
     }
+    let mut chosen = Query::select();
+    chosen
+        .column(WorkDayRow::Id)
+        .from(WorkDayRow::Table)
+        .and_where(Expr::col(WorkDayRow::Id).is_in(keys.clone()));
     let mut notifications = Query::delete();
     notifications
         .from_table(NotificationRow::Table)
         .and_where(Expr::col(NotificationRow::Kind).eq(NotificationKind::WorkDayChanged.code()))
-        .and_where(Expr::col(NotificationRow::Record).in_subquery(doomed(before, person)));
+        .and_where(Expr::col(NotificationRow::Record).is_in(keys.clone()));
     transaction.execute(&notifications).await?;
-    delete_events(
-        transaction,
-        &events_about(RecordKind::WorkDay, doomed(before, person)),
-    )
-    .await?;
+    delete_events(transaction, &events_about(RecordKind::WorkDay, chosen)).await?;
     let mut periods = Query::delete();
     periods
         .from_table(WorkPeriodRow::Table)
-        .and_where(Expr::col(WorkPeriodRow::Day).in_subquery(doomed(before, person)));
+        .and_where(Expr::col(WorkPeriodRow::Day).is_in(keys.clone()));
     transaction.execute(&periods).await?;
     let mut breaks = Query::delete();
     breaks
         .from_table(WorkBreakRow::Table)
-        .and_where(Expr::col(WorkBreakRow::Day).in_subquery(doomed(before, person)));
+        .and_where(Expr::col(WorkBreakRow::Day).is_in(keys.clone()));
     transaction.execute(&breaks).await?;
     let mut days = Query::delete();
     days.from_table(WorkDayRow::Table)
-        .and_where(Expr::col(WorkDayRow::Date).lt(before.to_string()));
-    if let Some(person) = person {
-        days.and_where(Expr::col(WorkDayRow::Person).eq(person.stored()));
-    }
+        .and_where(Expr::col(WorkDayRow::Id).is_in(keys));
     transaction.execute(&days).await?;
     Ok(counted)
 }

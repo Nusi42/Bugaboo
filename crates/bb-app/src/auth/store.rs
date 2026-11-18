@@ -432,6 +432,9 @@ pub trait AuthStore:
         fn count_sign_up_policy_up(version: Version) -> bool;
         /// Stores the value of a setting of the whole organization.
         fn put_setting(key: &str, value: &SettingValue, at: Timestamp) -> ();
+        /// Adds an entry to the security log as part of the change: it is committed with what the
+        /// change wrote, or not at all, so a change is never committed without its entry.
+        fn append_security_log_in_change(event: &SecurityEvent) -> ();
     }
 }
 

@@ -252,6 +252,8 @@ pub(crate) struct Tx {
     pub(crate) state: State,
     /// The events of what a change did besides what its own event says.
     pub(crate) follow_ups: Vec<DomainEvent>,
+    /// The entries of the security log the change adds.
+    pub(crate) log: Vec<SecurityEvent>,
 }
 
 impl FakeStore {
@@ -359,10 +361,17 @@ impl ChangeStore for FakeStore {
         let mut tx = Tx {
             state,
             follow_ups: Vec::new(),
+            log: Vec::new(),
         };
         let result = change(&mut tx).await?;
         undeclared_people(&tx.state, events.iter().chain(&tx.follow_ups));
         let mut shared = self.lock();
+        // The entries of the security log are part of the change: a log that cannot be written
+        // stops it whole.
+        if !tx.log.is_empty() && shared.log_fails {
+            return Err(FakeError::Failed);
+        }
+        shared.log.extend(tx.log);
         shared.state = tx.state;
         shared.events.extend(events.iter().cloned());
         shared.events.extend(tx.follow_ups);
@@ -381,6 +390,7 @@ impl ChangeStore for FakeStore {
         read(&mut Tx {
             state,
             follow_ups: Vec::new(),
+            log: Vec::new(),
         })
         .await
     }

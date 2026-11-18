@@ -113,6 +113,14 @@ impl AuthStore for FakeStore {
         Ok(true)
     }
 
+    async fn append_security_log_in_change(
+        tx: &mut Tx,
+        event: &SecurityEvent,
+    ) -> Result<(), FakeError> {
+        tx.log.push(event.clone());
+        Ok(())
+    }
+
     async fn put_setting(
         tx: &mut Tx,
         key: &str,

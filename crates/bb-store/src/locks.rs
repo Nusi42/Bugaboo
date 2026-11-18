@@ -79,6 +79,10 @@ pub(crate) enum LockClass {
     /// Asking for a file of *Download my data* (key: four bytes of the person's ID): two requests
     /// at the same moment cannot both find no waiting export of the person.
     DataExports = 18,
+    /// The end of the security log (key 0): two appends at the same moment, one of them inside a
+    /// change, do not both take the next place. Last in the order: an append comes at the end of
+    /// its change, after its events.
+    SecurityLog = 19,
 }
 
 impl LockClass {
@@ -106,6 +110,7 @@ impl LockClass {
             Self::AgentTaking => 15,
             Self::Themes => 16,
             Self::DataExports => 17,
+            Self::SecurityLog => 18,
         }
     }
 }
@@ -180,7 +185,7 @@ pub(crate) fn lock_key(id: [u8; 16]) -> i32 {
 mod tests {
     use super::*;
 
-    const ORDER: [LockClass; 17] = [
+    const ORDER: [LockClass; 19] = [
         LockClass::Migration,
         LockClass::Policy,
         LockClass::TagsAndLabels,
@@ -198,6 +203,8 @@ mod tests {
         LockClass::IssueTaking,
         LockClass::AgentTaking,
         LockClass::Themes,
+        LockClass::DataExports,
+        LockClass::SecurityLog,
     ];
 
     #[test]
@@ -247,7 +254,10 @@ mod tests {
     #[test]
     fn arch_lock_order_the_order_is_the_written_one_and_covers_every_class() {
         let ranks: Vec<u8> = ORDER.iter().map(|class| class.rank()).collect();
-        assert_eq!(ranks, (0..17).collect::<Vec<u8>>());
+        assert_eq!(
+            ranks,
+            (0..u8::try_from(ORDER.len()).unwrap()).collect::<Vec<u8>>()
+        );
         // The numbers of the classes are the ones PostgreSQL sees: none may repeat.
         let mut numbers: Vec<i32> = ORDER.iter().map(|class| *class as i32).collect();
         numbers.sort_unstable();

@@ -12,7 +12,7 @@ use std::sync::Arc;
 use bb_core::ErrorCode;
 use bb_core::event::RecordKind;
 use bb_core::id::UserId;
-use bb_core::keeping::{KeepGroup, KeepKind, KeepRule, Length, rule};
+use bb_core::keeping::{KeepGroup, KeepKind, KeepRule, Length, Step, rule};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::sign_in::SecurityAction;
 use bb_core::time::day::date_of;
@@ -22,7 +22,10 @@ use jiff::civil::Date;
 use serde_json::json;
 
 use crate::access::Actor;
-use crate::auth::{AppError, AuthStore, Ctx, Stops, by, change_failed, entity, internal, set_to};
+use crate::auth::{
+    AppError, AuthStore, Ctx, SecurityEvent, Stops, by, change_failed, entity, internal, set_to,
+};
+use crate::keeping::KEEP_STEP_ROWS;
 use crate::member;
 use crate::ports::ChangeStore;
 use crate::store_macros::{reads, writes};
@@ -49,10 +52,16 @@ pub trait OldRecordStore: ChangeStore + 'static {
     }
 
     writes! {
-        /// Deletes the records of `kind` with a date before `before`, of one person or of
-        /// everybody, with everything that tells about them (their parts, the events of their
-        /// changes, the notifications about them); how many of whose were deleted.
-        fn delete_old_records(kind: KeepKind, before: Date, person: Option<UserId>) -> Vec<OldCount>;
+        /// One step of *Delete them*: deletes at most `limit` records of `kind` with a date before
+        /// `before`, of one person or of everybody, with everything that tells about them (their
+        /// parts, the events of their changes, the notifications about them); how many of whose
+        /// were deleted, counted from the deleted records.
+        fn delete_old_records(
+            kind: KeepKind,
+            before: Date,
+            person: Option<UserId>,
+            limit: u64
+        ) -> Vec<OldCount>;
     }
 }
 
@@ -268,40 +277,57 @@ pub async fn delete_old_records<S: AuthStore>(
     if before != asked {
         return Err(ErrorCode::KeepPastChanged.into());
     }
-    let maker = ctx.event_maker(by(actor.person.id));
+    // In steps of the one shape of deleting (ADR-0045, decision 5), each a short change with its
+    // events and its entries of the security log, until a step deletes less than it may; the
+    // counts come from the deleted records. A request that stops between steps leaves every step
+    // it committed written down; asking again with the same date deletes the rest.
+    let mut deleted = 0;
     let (kind, person) = (input.kind, input.person);
     let (deleted_member, before_member) = (written.deleted, written.before);
-    let deleted = ctx
-        .store()
-        .record_changes(&[], move |transaction| {
-            Box::pin(async move {
-                let deleted = S::delete_old_records(transaction, kind, before, person).await?;
-                for old in &deleted {
-                    let event = maker
-                        .create(
-                            entity(RecordKind::Person, old.person),
-                            vec![
-                                set_to(deleted_member, json!(old.count)),
-                                set_to(before_member, json!(before.to_string())),
-                            ],
-                        )
-                        .map_err(|_| S::aborted())?;
-                    S::append_follow_up_event(transaction, &event).await?;
-                }
-                Ok(deleted)
+    let note = ctx.security_event(written.action, Some(actor.person.id), None);
+    loop {
+        let maker = ctx.event_maker(by(actor.person.id));
+        let note = note.clone();
+        let (step, notes) = ctx
+            .store()
+            .record_changes(&[], move |transaction| {
+                Box::pin(async move {
+                    let step =
+                        S::delete_old_records(transaction, kind, before, person, KEEP_STEP_ROWS)
+                            .await?;
+                    let mut notes = Vec::with_capacity(step.len());
+                    for old in &step {
+                        let about = entity(RecordKind::Person, old.person);
+                        let event = maker
+                            .create(
+                                about.clone(),
+                                vec![
+                                    set_to(deleted_member, json!(old.count)),
+                                    set_to(before_member, json!(before.to_string())),
+                                ],
+                            )
+                            .map_err(|_| S::aborted())?;
+                        S::append_follow_up_event(transaction, &event).await?;
+                        let entry = SecurityEvent {
+                            subject: Some(about),
+                            ..note.clone()
+                        };
+                        S::append_security_log_in_change(transaction, &entry).await?;
+                        notes.push(entry);
+                    }
+                    Ok((step, notes))
+                })
             })
-        })
-        .await
-        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
-    for old in &deleted {
-        ctx.note(
-            written.action,
-            Some(actor.person.id),
-            Some(entity(RecordKind::Person, old.person)),
-        )
-        .await;
+            .await
+            .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
+        for entry in &notes {
+            ctx.log_written(entry, Ok(()));
+        }
+        let rows = step.iter().map(|old| old.count).sum();
+        deleted += rows;
+        if !Step::of(rows, KEEP_STEP_ROWS).more {
+            break;
+        }
     }
-    Ok(evaluation.authorize(DeletedRecords {
-        deleted: deleted.iter().map(|old| old.count).sum(),
-    }))
+    Ok(evaluation.authorize(DeletedRecords { deleted }))
 }

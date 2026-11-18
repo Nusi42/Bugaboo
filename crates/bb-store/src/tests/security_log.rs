@@ -16,7 +16,7 @@ use crate::keys::SigningKey;
 use crate::schema::{SecurityLog as Columns, SecurityLogCheckpoint as Checkpoint};
 use crate::test_support::{at, open};
 
-fn new_entry(seconds: i64, action: &str) -> NewSecurityLogEntry {
+pub(super) fn new_entry(seconds: i64, action: &str) -> NewSecurityLogEntry {
     NewSecurityLogEntry {
         time: at(seconds),
         person: Some(UserId::from_random([3; 16])),
@@ -26,7 +26,11 @@ fn new_entry(seconds: i64, action: &str) -> NewSecurityLogEntry {
     }
 }
 
-async fn append_many(database: &Database, seal: &LogSeal, count: i64) -> Result<(), StoreError> {
+pub(super) async fn append_many(
+    database: &Database,
+    seal: &LogSeal,
+    count: i64,
+) -> Result<(), StoreError> {
     for number in 1..=count {
         database
             .append_security_log(seal, &new_entry(number, "sign_in.ok"))
@@ -37,7 +41,7 @@ async fn append_many(database: &Database, seal: &LogSeal, count: i64) -> Result<
 
 /// A seal with a key of its own and an anchor file in a folder that lives as long as the
 /// returned guard.
-fn new_seal() -> (tempfile::TempDir, LogSeal) {
+pub(super) fn new_seal() -> (tempfile::TempDir, LogSeal) {
     let folder = tempfile::tempdir().unwrap();
     std::fs::create_dir(folder.path().join("logs")).unwrap();
     let seal = LogSeal::with_key(

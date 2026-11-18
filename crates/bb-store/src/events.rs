@@ -64,40 +64,6 @@ fn committed_events_of(order: Order, columns: usize) -> sea_query::SelectStateme
 }
 
 impl Database {
-    /// Runs `change` and appends `event` and its outbox entry, all in one transaction. If
-    /// `change` fails, nothing is written.
-    ///
-    /// # Errors
-    /// Returns the error of `change`, or a database error.
-    pub async fn record_change<T>(
-        &self,
-        event: &DomainEvent,
-        change: impl AsyncFnOnce(&mut Transaction) -> Result<T, StoreError>,
-    ) -> Result<T, StoreError> {
-        self.record_changes(std::slice::from_ref(event), change)
-            .await
-    }
-
-    /// The same for any number of events of its own, also none.
-    ///
-    /// # Errors
-    /// Returns the error of `change`, or a database error.
-    pub async fn record_changes<T>(
-        &self,
-        events: &[DomainEvent],
-        change: impl AsyncFnOnce(&mut Transaction) -> Result<T, StoreError>,
-    ) -> Result<T, StoreError> {
-        let mut transaction = self.begin().await?;
-        let result = change(&mut transaction).await?;
-        append_events(&mut transaction, events).await?;
-        // The events the change added besides its own come last, so the lock on the outbox is
-        // the last lock of the transaction and no writer waits on it while holding a row.
-        let follow_ups = std::mem::take(&mut transaction.follow_ups);
-        append_events(&mut transaction, &follow_ups).await?;
-        transaction.commit().await?;
-        Ok(result)
-    }
-
     /// The events about one record, oldest first.
     ///
     /// # Errors

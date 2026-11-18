@@ -620,15 +620,25 @@ impl<S: AuthStore> Ctx<'_, S> {
         person: Option<UserId>,
         subject: Option<EntityRef>,
     ) {
-        let event = SecurityEvent {
+        let event = self.security_event(action, person, subject);
+        let written = self.store().append_security_log(&event).await;
+        self.log_written(&event, written);
+    }
+
+    /// An entry of the security log about this request: now, from its network.
+    pub(crate) fn security_event(
+        &self,
+        action: SecurityAction,
+        person: Option<UserId>,
+        subject: Option<EntityRef>,
+    ) -> SecurityEvent {
+        SecurityEvent {
             time: self.now(),
             person,
             action,
             subject,
             network: self.request.network.clone(),
-        };
-        let written = self.store().append_security_log(&event).await;
-        self.log_written(&event, written);
+        }
     }
 
     /// Counts a write of the security log for the status page, and reports one that failed in

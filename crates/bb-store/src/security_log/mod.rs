@@ -1,6 +1,7 @@
 //! The security log (SEC-15) in the database: appending, verifying and deleting old blocks.
 //!
-//! Entries are only ever added. Each entry stores the keyed hash (HMAC-SHA256 under the log key,
+//! Entries are only ever added, alone or as part of a change that must not be committed without its
+//! entry ([`append_in`]). Each entry stores the keyed hash (HMAC-SHA256 under the log key,
 //! see [`crate::chain`]) of the entry before it, and after every append the newest place and hash
 //! are written to the anchor file ([`crate::anchor`]), so somebody who can only change the
 //! database can neither rewrite entries nor cut the end off.
@@ -56,8 +57,9 @@ pub struct NewSecurityLogEntry {
 
 impl Database {
     /// Adds an entry to the end of the chain, writes the new end to the anchor file, and returns
-    /// the entry with its place and hash. When two writers add at the same moment, one of them
-    /// starts over.
+    /// the entry with its place and hash. Writers take the end of the log one after the other, under
+    /// its lock, also a change that adds an entry inside its own transaction (`append_in`); a writer
+    /// that still meets another's entry starts over.
     ///
     /// Do not call this again after [`StoreError::AnchorFile`]: the entry is stored already, and
     /// a second call would add it twice. Report the problem with the file instead.
@@ -90,42 +92,7 @@ impl Database {
         new: &NewSecurityLogEntry,
     ) -> Result<SecurityLogEntry, StoreError> {
         let mut transaction = self.begin().await?;
-        let (seq, previous) = match last_entry(&mut transaction).await? {
-            Some((seq, hash)) => (seq + 1, hash),
-            None => match read_checkpoint(&mut transaction).await? {
-                Some(checkpoint) => (checkpoint.seq + 1, checkpoint.hash),
-                None => (1, START),
-            },
-        };
-        let mut entry = SecurityLogEntry {
-            seq,
-            time: new.time,
-            person: new.person,
-            action: new.action.clone(),
-            subject: new.subject.clone(),
-            network: new.network.clone(),
-            previous_hash: previous,
-            hash: START,
-        };
-        entry.hash = hash_of(key, &previous, &entry)?;
-
-        let mut insert = Query::insert();
-        insert
-            .into_table(Columns::Table)
-            .columns(entry_columns())
-            .values([
-                Expr::val(entry.seq),
-                Expr::val(to_micros(entry.time)),
-                Expr::val(entry.person.map(UserId::stored)),
-                Expr::val(entry.action.as_str()),
-                Expr::val(entry.subject.as_ref().map(|subject| subject.kind.as_str())),
-                Expr::val(entry.subject.as_ref().map(|subject| subject.id.stored())),
-                Expr::val(entry.network.as_ref().map(NetworkPrefix::as_str)),
-                Expr::val(entry.previous_hash.as_bytes().to_vec()),
-                Expr::val(entry.hash.as_bytes().to_vec()),
-            ])
-            .map_err(|_| StoreError::Corrupt("a security log entry"))?;
-        transaction.execute(&insert).await?;
+        let entry = append_in(&mut transaction, key, new).await?;
         transaction.commit().await?;
         Ok(entry)
     }
@@ -157,6 +124,55 @@ impl Database {
     }
 }
 
+/// Adds an entry to the end of the chain inside `transaction` and returns it with its place and
+/// hash; nothing is written to the anchor file, which is the caller's after the commit. The lock
+/// of the end of the log keeps two appends from taking the same place.
+///
+/// # Errors
+/// Fails when the database fails or the entry cannot be hashed.
+pub(crate) async fn append_in(
+    transaction: &mut crate::db::Transaction,
+    key: &SigningKey,
+    new: &NewSecurityLogEntry,
+) -> Result<SecurityLogEntry, StoreError> {
+    transaction
+        .advisory_lock(crate::locks::LockClass::SecurityLog, 0)
+        .await?;
+    let (seq, previous) = head_in(transaction)
+        .await?
+        .map_or((1, START), |(seq, hash)| (seq + 1, hash));
+    let mut entry = SecurityLogEntry {
+        seq,
+        time: new.time,
+        person: new.person,
+        action: new.action.clone(),
+        subject: new.subject.clone(),
+        network: new.network.clone(),
+        previous_hash: previous,
+        hash: START,
+    };
+    entry.hash = hash_of(key, &previous, &entry)?;
+
+    let mut insert = Query::insert();
+    insert
+        .into_table(Columns::Table)
+        .columns(entry_columns())
+        .values([
+            Expr::val(entry.seq),
+            Expr::val(to_micros(entry.time)),
+            Expr::val(entry.person.map(UserId::stored)),
+            Expr::val(entry.action.as_str()),
+            Expr::val(entry.subject.as_ref().map(|subject| subject.kind.as_str())),
+            Expr::val(entry.subject.as_ref().map(|subject| subject.id.stored())),
+            Expr::val(entry.network.as_ref().map(NetworkPrefix::as_str)),
+            Expr::val(entry.previous_hash.as_bytes().to_vec()),
+            Expr::val(entry.hash.as_bytes().to_vec()),
+        ])
+        .map_err(|_| StoreError::Corrupt("a security log entry"))?;
+    transaction.execute(&insert).await?;
+    Ok(entry)
+}
+
 /// The newest place and hash of the log in a transaction: its last entry, or the checkpoint when
 /// every entry was pruned, or `None` for a log that never had one. A backup names it in its
 /// manifest, and a restore starts the anchor again from it (ADR-0046, decision 4).
@@ -182,3 +198,7 @@ fn shown_action(stored: &TechnicalName) -> Option<TechnicalName> {
 #[cfg(test)]
 #[path = "../tests/security_log.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "../tests/security_log_changes.rs"]
+mod tests_changes;
