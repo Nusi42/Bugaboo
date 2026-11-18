@@ -68,6 +68,17 @@ async fn ops_07_a_restore_that_fails_half_way_leaves_the_database_as_it_was() ->
         save(&database, 2).await?;
         database.close().await;
         let changed = installation.folder.path().join("changed.backup");
+        // The data folder's replay list stays as it was too; a copy given beside it is not merged
+        // into it.
+        let list = "2026-11-02T10:00:00Z switch-off 0195f7a0-0000-4000-8000-000000000001
+";
+        std::fs::write(&installation.places.replay_list, list)?;
+        let given = installation.folder.path().join("given.list");
+        std::fs::write(
+            &given,
+            "2026-11-03T10:00:00Z switch-off 0195f7a0-0000-4000-8000-000000000002
+",
+        )?;
         let cases: [Option<&str>; 2] = [None, Some(r#"["not", "a", "row"]"#)];
         for bad in cases {
             match db.kind() {
@@ -90,9 +101,13 @@ async fn ops_07_a_restore_that_fails_half_way_leaves_the_database_as_it_was() ->
                 }
             }
             installation
-                .restore(&changed, &[], at(20))
+                .restore(&changed, std::slice::from_ref(&given), at(20))
                 .await
                 .expect_err("a copy that cannot be put back");
+            assert_eq!(
+                std::fs::read_to_string(&installation.places.replay_list)?,
+                list
+            );
             let database = installation.open().await?;
             assert_eq!(saved(&database).await?, [1, 2], "{bad:?}");
             database.close().await;

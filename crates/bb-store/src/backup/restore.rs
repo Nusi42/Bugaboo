@@ -330,8 +330,7 @@ async fn finish(
     let mut sessions = Query::delete();
     sessions.from_table(SignInSession::Table);
     let sessions_ended = restored.execute(&sessions).await?;
-    let (replayed, not_replayed, unreadable_lines) =
-        replay_newer(input, ids, restored, manifest, work).await?;
+    let replay = replay_newer(input, ids, restored, manifest, work).await?;
     let mut transaction = restored.begin_read().await?;
     let head = head_in(&mut transaction).await?;
     transaction.commit().await?;
@@ -340,14 +339,16 @@ async fn finish(
     input.seal.restart(head, lost.unwrap_or((0, 0)))?;
     record(input, ids, restored, manifest, before, lost).await?;
     let log = restored.verify_security_log(input.seal).await?;
+    // The merged list replaces the data folder's only now that the restore went through.
+    keep_merged(input, &replay.merged)?;
     Ok(RestoreReport {
         moment: manifest.moment,
         before: before.clone(),
         migrations_run,
         sessions_ended,
-        replayed,
-        not_replayed,
-        unreadable_lines,
+        replayed: replay.replayed,
+        not_replayed: replay.not_replayed,
+        unreadable_lines: replay.unreadable,
         lost,
         log,
     })
@@ -404,15 +405,38 @@ async fn record(
     Ok(())
 }
 
-/// Merges the copies of the replay list (the data folder's, the backup's and the ones given),
-/// keeps the merged list in the data folder, and runs every line newer than the backup.
+/// What the replay list of a restore did.
+struct Replay {
+    /// Every readable line of every copy, each once.
+    merged: Vec<ReplayLine>,
+    /// The lines newer than the backup that ran again.
+    replayed: Vec<ReplayLine>,
+    /// The lines newer than the backup that this program cannot run yet.
+    not_replayed: Vec<ReplayLine>,
+    /// How many lines of the copies could not be read.
+    unreadable: usize,
+}
+
+/// Keeps the merged replay list in the data folder.
+fn keep_merged(input: &RestoreInput<'_>, merged: &[ReplayLine]) -> Result<(), StoreError> {
+    if merged.is_empty() {
+        return Ok(());
+    }
+    if let Some(folder) = input.places.replay_list.parent() {
+        std::fs::create_dir_all(folder).map_err(io)?;
+    }
+    std::fs::write(&input.places.replay_list, replay::write(merged)).map_err(io)
+}
+
+/// Merges the copies of the replay list (the data folder's, the backup's and the ones given) and
+/// runs every line newer than the backup.
 async fn replay_newer(
     input: &RestoreInput<'_>,
     ids: &mut impl IdSource,
     restored: &Database,
     manifest: &Manifest,
     work: &Path,
-) -> Result<(Vec<ReplayLine>, Vec<ReplayLine>, usize), StoreError> {
+) -> Result<Replay, StoreError> {
     let mut copies = vec![
         input.places.replay_list.clone(),
         work.join(member::REPLAY_LIST),
@@ -431,53 +455,66 @@ async fn replay_newer(
         lists.push(lines);
     }
     let merged = replay::merge(lists);
-    if !merged.is_empty() {
-        if let Some(folder) = input.places.replay_list.parent() {
-            std::fs::create_dir_all(folder).map_err(io)?;
-        }
-        std::fs::write(&input.places.replay_list, replay::write(&merged)).map_err(io)?;
-    }
     let mut replayed = Vec::new();
     let mut not_replayed = Vec::new();
-    for line in merged
-        .into_iter()
-        .filter(|line| line.moment > manifest.moment)
-    {
-        if replay_line(restored, ids, &line, input.now).await? {
-            replayed.push(line);
+    for line in merged.iter().filter(|line| line.moment > manifest.moment) {
+        if replay_line(restored, ids, line, input.now).await? {
+            replayed.push(line.clone());
         } else {
-            not_replayed.push(line);
+            not_replayed.push(line.clone());
         }
     }
-    Ok((replayed, not_replayed, unreadable_lines))
+    Ok(Replay {
+        merged,
+        replayed,
+        not_replayed,
+        unreadable: unreadable_lines,
+    })
 }
 
-/// Runs one line again; `false` for a kind this program cannot run yet (a removal and a switch-off
-/// come with *Remove a person*, a support access with support access).
+/// What a line of the replay list takes back, when this program can take it back.
+#[derive(Clone, Copy)]
+enum TakeBack {
+    AccessKey(AccessKeyId),
+    Grant(GrantId),
+    Passkey(PasskeyId),
+}
+
+impl TakeBack {
+    /// What `line` takes back; `None` for a kind this program cannot run yet (a removal and a
+    /// switch-off come with *Remove a person*, a support access with support access), and for an
+    /// ID of another kind, which reading the line refused already.
+    fn of(line: &ReplayLine) -> Option<Self> {
+        match line.kind {
+            ReplayKind::AccessKey => line.id.parse().ok().map(Self::AccessKey),
+            ReplayKind::AiAppGrant => line.id.parse().ok().map(Self::Grant),
+            ReplayKind::Passkey => line.id.parse().ok().map(Self::Passkey),
+            ReplayKind::Removal | ReplayKind::SwitchOff | ReplayKind::SupportAccess => None,
+        }
+    }
+
+    /// The record it is about, for its event.
+    fn entity(self) -> (&'static str, EntityId) {
+        match self {
+            Self::AccessKey(id) => ("access_key", EntityId::from(id)),
+            Self::Grant(id) => ("oauth_grant", EntityId::from(id)),
+            Self::Passkey(id) => ("passkey", EntityId::from(id)),
+        }
+    }
+}
+
+/// Runs one line again; `false` for a line this program cannot run ([`TakeBack::of`]).
 async fn replay_line(
     database: &Database,
     ids: &mut impl IdSource,
     line: &ReplayLine,
     now: Timestamp,
 ) -> Result<bool, StoreError> {
-    let bad = || StoreError::Corrupt("the ID of a line of the replay list");
-    let (kind, entity) = match line.kind {
-        ReplayKind::AccessKey => (
-            "access_key",
-            EntityId::from(line.id.parse::<AccessKeyId>().map_err(|_| bad())?),
-        ),
-        ReplayKind::AiAppGrant => (
-            "oauth_grant",
-            EntityId::from(line.id.parse::<GrantId>().map_err(|_| bad())?),
-        ),
-        ReplayKind::Passkey => (
-            "passkey",
-            EntityId::from(line.id.parse::<PasskeyId>().map_err(|_| bad())?),
-        ),
-        ReplayKind::Removal | ReplayKind::SwitchOff | ReplayKind::SupportAccess => {
-            return Ok(false);
-        }
+    let Some(target) = TakeBack::of(line) else {
+        return Ok(false);
     };
+    let bad = || StoreError::Corrupt("the event of a line of the replay list");
+    let (kind, entity) = target.entity();
     let event = DomainEvent {
         id: EventId::generate(ids).map_err(|_| bad())?,
         time: now,
@@ -495,10 +532,9 @@ async fn replay_line(
         reason: None,
         run: None,
     };
-    let line = line.clone();
     database
         .record_change(&event, async move |transaction| {
-            take_back(transaction, &line, now).await
+            take_back(transaction, target, now).await
         })
         .await?;
     Ok(true)
@@ -507,13 +543,11 @@ async fn replay_line(
 /// Takes back what a line names, through the function that takes it back in the program.
 async fn take_back(
     transaction: &mut Transaction,
-    line: &ReplayLine,
+    target: TakeBack,
     now: Timestamp,
 ) -> Result<(), StoreError> {
-    let bad = || StoreError::Corrupt("the ID of a line of the replay list");
-    match line.kind {
-        ReplayKind::AccessKey => {
-            let id: AccessKeyId = line.id.parse().map_err(|_| bad())?;
+    match target {
+        TakeBack::AccessKey(id) => {
             let mut owner = Query::select();
             owner
                 .column(AccessKeyRow::Owner)
@@ -524,12 +558,10 @@ async fn take_back(
                 crate::access_keys::delete_access_key(transaction, owner, id).await?;
             }
         }
-        ReplayKind::AiAppGrant => {
-            let id: GrantId = line.id.parse().map_err(|_| bad())?;
+        TakeBack::Grant(id) => {
             AuthStorage::end_grant(transaction, id, GrantEnd::TakenBack, now).await?;
         }
-        ReplayKind::Passkey => {
-            let id: PasskeyId = line.id.parse().map_err(|_| bad())?;
+        TakeBack::Passkey(id) => {
             let mut person = Query::select();
             person
                 .column(PasskeyRow::Person)
@@ -540,7 +572,6 @@ async fn take_back(
                 AuthStorage::delete_passkey(transaction, person, id).await?;
             }
         }
-        ReplayKind::Removal | ReplayKind::SwitchOff | ReplayKind::SupportAccess => {}
     }
     Ok(())
 }

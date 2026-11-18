@@ -11,6 +11,8 @@ use core::fmt;
 
 use jiff::Timestamp;
 
+use crate::id::{AccessKeyId, GrantId, PasskeyId, UserId};
+
 words! {
     /// What a line of the replay list stands for.
     pub enum ReplayKind {
@@ -47,14 +49,30 @@ fn is_word(text: &str) -> bool {
     !text.is_empty() && text.chars().all(|c| c.is_ascii_alphanumeric() || c == '-')
 }
 
+impl ReplayKind {
+    /// Whether `id` is the ID of what a line of this kind names: a person for a removal and a
+    /// switch-off, the key, grant or passkey taken back. A support access has no ID of its own
+    /// yet, so any word is read.
+    fn reads_id(self, id: &str) -> bool {
+        match self {
+            Self::Removal | Self::SwitchOff => id.parse::<UserId>().is_ok(),
+            Self::AccessKey => id.parse::<AccessKeyId>().is_ok(),
+            Self::AiAppGrant => id.parse::<GrantId>().is_ok(),
+            Self::Passkey => id.parse::<PasskeyId>().is_ok(),
+            Self::SupportAccess => is_word(id),
+        }
+    }
+}
+
 impl ReplayLine {
-    /// Reads one line; `None` when it is not one.
+    /// Reads one line; `None` when it is not one, also when its ID is not the ID of what its kind
+    /// names, so a restore never meets a line it cannot read.
     #[must_use]
     pub fn parse(line: &str) -> Option<Self> {
         let mut parts = line.split(' ');
         let moment = parts.next()?.parse().ok()?;
         let kind = ReplayKind::from_code(parts.next()?)?;
-        let id = parts.next().filter(|id| is_word(id))?.to_owned();
+        let id = parts.next().filter(|id| kind.reads_id(id))?.to_owned();
         let choice = match parts.next() {
             Some(choice) if is_word(choice) => Some(choice.to_owned()),
             Some(_) => return None,
@@ -129,11 +147,11 @@ mod tests {
 
     #[test]
     fn ops_07_a_restore_merges_the_replay_list_of_the_folder_the_backup_and_keys_export() {
-        let folder = "2026-11-02T10:00:00Z switch-off 0195f7a0-0000-7000-8000-000000000001\n\
+        let folder = "2026-11-02T10:00:00Z switch-off 0195f7a0-0000-4000-8000-000000000001\n\
                       2026-11-03T10:00:00Z access-key 0195f7a0-0000-4000-8000-000000000002\n";
         let backup = "2026-11-01T10:00:00Z passkey 0195f7a0-0000-4000-8000-000000000003\n\
-                      2026-11-02T10:00:00Z switch-off 0195f7a0-0000-7000-8000-000000000001\n";
-        let exported = "2026-11-04T10:00:00Z removal 0195f7a0-0000-7000-8000-000000000004 keep\n\
+                      2026-11-02T10:00:00Z switch-off 0195f7a0-0000-4000-8000-000000000001\n";
+        let exported = "2026-11-04T10:00:00Z removal 0195f7a0-0000-4000-8000-000000000004 keep\n\
                         not a line\n";
         let copies: Vec<(Vec<ReplayLine>, usize)> =
             [folder, backup, exported].into_iter().map(read).collect();
@@ -154,20 +172,39 @@ mod tests {
         assert_eq!((again, unreadable), (merged, 0));
     }
 
+    const PERSON: &str = "0195f7a0-0000-4000-8000-000000000001";
+
     #[test]
     fn a_line_with_more_than_kind_id_and_choice_is_not_read() {
         for bad in [
-            "2026-11-02T10:00:00Z switch-off",
-            "yesterday switch-off a",
-            "2026-11-02T10:00:00Z unknown a",
-            "2026-11-02T10:00:00Z removal a b c",
-            "2026-11-02T10:00:00Z removal a/b",
+            "2026-11-02T10:00:00Z switch-off".to_owned(),
+            format!("yesterday switch-off {PERSON}"),
+            format!("2026-11-02T10:00:00Z unknown {PERSON}"),
+            format!("2026-11-02T10:00:00Z removal {PERSON} b c"),
+            "2026-11-02T10:00:00Z removal a/b".to_owned(),
+        ] {
+            assert_eq!(ReplayLine::parse(&bad), None, "{bad}");
+        }
+        let removal = format!("2026-11-02T10:00:00Z removal {PERSON} delete");
+        assert_eq!(line(&removal).to_string(), removal);
+    }
+
+    #[test]
+    fn a_line_whose_id_is_not_of_its_kind_is_not_read() {
+        for bad in [
+            "2026-11-02T10:00:00Z removal a",
+            "2026-11-02T10:00:00Z switch-off not-an-id",
+            "2026-11-02T10:00:00Z access-key 0195f7a0",
+            "2026-11-02T10:00:00Z ai-app-grant x",
+            "2026-11-02T10:00:00Z passkey ffff",
         ] {
             assert_eq!(ReplayLine::parse(bad), None, "{bad}");
         }
-        assert_eq!(
-            line("2026-11-02T10:00:00Z removal a delete").to_string(),
-            "2026-11-02T10:00:00Z removal a delete"
-        );
+        let (lines, unreadable) = read(&format!(
+            "2026-11-02T10:00:00Z access-key nope
+2026-11-02T10:00:00Z switch-off {PERSON}
+"
+        ));
+        assert_eq!((lines.len(), unreadable), (1, 1));
     }
 }

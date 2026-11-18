@@ -502,14 +502,21 @@ async fn ops_07_a_restore_replays_removals_switch_offs_and_taken_back_keys_made_
                 choice: Some("keep".to_owned()),
             },
         ];
+        // A line whose ID is not a key's: it is counted as unreadable and stops nothing.
+        let unreadable = format!(
+            "{} access-key not-a-key
+",
+            later(4)?
+        );
         std::fs::write(
             &installation.places.replay_list,
-            bb_core::backup::replay::write(&lines),
+            bb_core::backup::replay::write(&lines) + &unreadable,
         )?;
         let report = installation
             .restore(&backup.path, &[], later(10)?)
             .await
             .map_err(failed)?;
+        assert_eq!(report.unreadable_lines, 1);
         assert_eq!(report.replayed, [lines[1].clone()]);
         // A removal and a switch-off are named in the report until the program can run them.
         assert_eq!(report.not_replayed, [lines[2].clone(), lines[3].clone()]);
