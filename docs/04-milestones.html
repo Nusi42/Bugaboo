@@ -157,12 +157,12 @@
 <tr><td><strong>M6</strong></td><td>Time and working hours</td><td>MVP</td><td>10</td></tr>
 <tr><td><strong>M7</strong></td><td>Assistant, AI apps and agents</td><td>MVP</td><td>24</td></tr>
 <tr><td><strong>M8</strong></td><td>Timeline and theme editor</td><td>MVP</td><td>14</td></tr>
-<tr><td><strong>M9</strong></td><td>Privacy, operations and the first release</td><td>MVP</td><td>14</td></tr>
+<tr><td><strong>M9</strong></td><td>Privacy, operations and the first release</td><td>MVP</td><td>13</td></tr>
 <tr><td><strong>M10</strong></td><td>Board, calendar, relation map and dashboards</td><td>1.0</td><td>10</td></tr>
 <tr><td><strong>M11</strong></td><td>Documents</td><td>1.0</td><td>11</td></tr>
 <tr><td><strong>M12</strong></td><td>Teams, integrations and AI 1.0</td><td>1.0</td><td>16</td></tr>
 <tr><td><strong>M13</strong></td><td>Admin power tools</td><td>1.0</td><td>15</td></tr>
-<tr><td><strong>M14</strong></td><td>Sold and served</td><td>1.0</td><td>15</td></tr>
+<tr><td><strong>M14</strong></td><td>Sold and served</td><td>1.0</td><td>16</td></tr>
 <tr><td><strong>M15</strong></td><td>Live updates and 1.0</td><td>1.0</td><td>2</td></tr>
 </tbody></table>
 </div>
@@ -487,21 +487,20 @@
 <li><code>COMP-03</code> Vulnerability handling</li>
 <li><code>COMP-04</code> Secure by default and security updates</li>
 <li><code>COMP-15</code> Accessibility</li>
-<li><code>DIST-03</code> Operator access</li>
 <li><code>DIST-07</code> Updates</li>
 </ul>
 <p><strong>Work packages (outline):</strong></p>
 <ul>
 <li>Download my data, Remove a person, keep-and-delete rules and jobs</li>
-<li>Service install on Windows and Linux; upgrades with automatic backup; backup and restore</li>
+<li>Service install on Windows and Linux; upgrades with automatic backup; backup, and restore from the command line</li>
 <li>Release pipeline: build matrix, signing, SBOM, third-party notices, support period</li>
 <li>Security policy, <code>security.txt</code>, vulnerability and reporting runbook</li>
-<li>Operator access with customer approval (for the later served model)</li>
 <li>Accessibility statement and full accessibility pass</li>
-<li>Release candidate: external security review recommended</li>
+<li>Release candidate: a full security pass before 0.6.0; an outside test before 1.0 (M15)</li>
 </ul>
 <p><strong>Demo (exit):</strong> Install the signed MVP on a clean Windows PC and in WSL, restore a backup, download someone's data, remove a person; the release page shows SBOM and licenses.</p>
-<p><strong>Tests and checks added:</strong> Full local run and benchmarks green on a quiet computer; long TEST-CONCURRENT; DEP-SBOM; upgrade test from M8 build.</p>
+<p><strong>Tests and checks added:</strong> Full local run and benchmarks green on a quiet computer; long TEST-CONCURRENT (two hours on each database, by hand); DEP-SBOM; TEST-UPGRADE (the upgrade test from the M8 build).</p>
+<p><strong>Decided (2026-11-18):</strong> the maintainer took every recommendation of M9-Q1 to Q21 (<span title="milestones/M9/README.md in the repository">the plan</span>). Restore is from the command line only in the MVP; support access (<code>DIST-03</code>) moved to M14 as a V1 feature; three small operations follow-ups (M4-F61, M4-F63, M4-F128) wait for a later package. The version arithmetic of ADR-0040 does not change: the features of M0 to M14 are still 225.</p>
 <h2 id="s13"><button class="sec" data-sec>§13</button>M10 — Board, calendar, relation map and dashboards</h2>
 <p><strong>Phase:</strong> 1.0 · <strong>Goal:</strong> More ways to see and plan work.</p>
 <p><strong>Features:</strong></p>
@@ -615,6 +614,7 @@
 <p><strong>Features:</strong></p>
 <ul>
 <li><code>DIST-02</code> Served = one isolated instance per customer</li>
+<li><code>DIST-03</code> Operator access (moved from M9, 2026-11-18)</li>
 <li><code>DIST-04</code> Sold model licensing</li>
 <li><code>DIST-05</code> Served model paperwork</li>
 <li><code>DIST-06</code> Switching</li>
@@ -633,6 +633,7 @@
 <p><strong>Work packages (outline):</strong></p>
 <ul>
 <li>Control plane (minimal) and isolated instances per customer in the EU</li>
+<li>Support access with the customer's approval (ADR-0048, decisions 2 to 6), asked for by the control plane and granted in the customer's Bugaboo</li>
 <li>License files for the sold model; signed update check</li>
 <li>Export and import between self-hosted and hosted</li>
 <li>Packages (winget, MSI, deb, rpm, container image); metrics endpoint; Try it out with sample data</li>

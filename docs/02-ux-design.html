@@ -1220,21 +1220,28 @@ sort by priority, highest first</div>
     <h3 id="s5-7"><button type="button" class="sec" data-sec>§5.7</button>Privacy and GDPR <span class="ids">PRIV</span></h3>
     <p>Bugaboo is built so an organization can run it in line with the GDPR. The organization running Bugaboo stays responsible; Bugaboo makes the right thing the easy thing.</p>
     <div class="demo"><div class="frame"><div class="frame-cap">Organization settings › Privacy › Keep and delete rules</div><div class="frame-body"><div class="scr">
-      <table class="perm"><thead><tr><th>Kind of data</th><th>Kept for</th><th>Then</th><th>Why</th></tr></thead><tbody>
-        <tr><td><b>Working hours</b></td><td>At least 2 years</td><td>An administrator deletes them</td><td class="muted">German working-time recording</td></tr>
-        <tr><td><b>Time on issues</b></td><td>10 years</td><td>Deleted</td><td class="muted">Accounting; your organization sets the period</td></tr>
-        <tr><td><b>Security log</b></td><td>1 year</td><td>Deleted</td><td class="muted">Finding and explaining security problems</td></tr>
+      <table class="perm"><thead><tr><th scope="col">Kind of data</th><th scope="col">Kept for</th><th scope="col">Then</th><th scope="col">Why</th></tr></thead><tbody>
+        <tr><th colspan="4" scope="rowgroup">Bugaboo deletes these by itself</th></tr>
         <tr><td><b>IP addresses in logs</b></td><td>7 days</td><td>Deleted</td><td class="muted">Stopping attacks on sign-in</td></tr>
+        <tr><td><b>Sessions and sign-in history</b></td><td>90 days</td><td>Deleted</td><td class="muted">Seeing who signed in, and from where</td></tr>
         <tr><td><b>Notifications</b></td><td>90 days</td><td>Deleted</td><td class="muted">Not needed longer</td></tr>
-        <tr><td><b>Trash</b></td><td>30 days</td><td>Deleted</td><td class="muted">Time to restore by mistake</td></tr>
+        <tr><td><b>Trash</b></td><td>30 days</td><td>Deleted, except an issue whose time entries must still be kept</td><td class="muted">Time to restore by mistake</td></tr>
+        <tr><td><b>Downloads of data</b></td><td>7 days</td><td>Deleted</td><td class="muted">Time to fetch the file</td></tr>
+        <tr><td><b>Away times</b></td><td>1 year after the last day</td><td>Deleted</td><td class="muted">Planning; nobody needs them longer</td></tr>
+        <tr><td><b>Security log</b></td><td>1 year</td><td>Deleted</td><td class="muted">Finding and explaining security problems</td></tr>
+        <tr><td><b>Backups</b></td><td>7 daily, 4 weekly</td><td>Deleted</td><td class="muted">Bringing data back after a mistake</td></tr>
+      </tbody><tbody>
+        <tr><th colspan="4" scope="rowgroup">An administrator deletes these after their period</th></tr>
+        <tr><td><b>Working hours</b></td><td>At least 2 years</td><td>An administrator deletes them</td><td class="muted">German working-time recording</td></tr>
+        <tr><td><b>Time on issues</b></td><td>At least 10 years</td><td>An administrator deletes them</td><td class="muted">Accounting; your organization sets the period</td></tr>
       </tbody></table>
       <div class="explain"><b>Remove a person: Malik Weber</b><br>The account is deleted and "Malik Weber" becomes <b>Former user K7Q2</b> everywhere. Comments written by this person: <u>keep, anonymized</u> ▾.<br><span class="muted">The working hours of this person must be kept until 2028-10-01 by law. They keep the name Malik Weber for the people who may see working hours, and stay until an administrator deletes them.</span><div class="u-margin-top-8px--display-flex--gap-6px--flex-wrap-wrap"><span class="btn sm">Cancel</span><span class="btn sm danger">Remove Malik Weber</span></div></div>
     </div></div></div></div>
     <ul>
       <li><b>Nothing extra is collected:</b> no tracking, no analytics, no outside scripts or fonts. Only the cookies needed to stay signed in, so there's no cookie banner.</li>
       <li><b>Download my data:</b> every person can download everything Bugaboo stores about them (My settings). Admins can create the same export for anyone; that's recorded in the security log.</li>
-      <li><b>Remove a person:</b> as above. The screen says in plain words what is deleted now, what is anonymized, and what must be kept by law and until when.</li>
-      <li><b>Keep and delete rules:</b> one table, every kind of data, sensible defaults, automatic deletion. Changing a rule shows what it will delete before it does.</li>
+      <li><b>Remove a person:</b> as above, after <i>Switch off</i>, which ends the person's sign-in at once and keeps every record. The screen says in plain words what is deleted now, what stays as <i>Former user</i>, and what must be kept by law and until when (ADR-0044).</li>
+      <li><b>Keep and delete rules:</b> one table, every kind of data, sensible defaults, in two groups (ADR-0045). Bugaboo deletes technical data by itself after its period; business records (working hours, time on issues) stay until an administrator deletes them, after a count of what is past its period and <i>Delete them</i>. The trash keeps an issue while its time entries must be kept. Changing a period shows what it will delete before it does.</li>
       <li><b>Outside services:</b> the assistant, e-mail and other providers stay off until an admin switches them on. For an external AI provider, the admin first confirms a data processing agreement and sees which data goes where (provider and country). A model on your own server is offered as the private choice.</li>
       <li><b>Employee data:</b> working hours and time entries are treated as sensitive. People see their own; seeing others' needs explicit permission; no scores, no rankings, and no AI that evaluates, ranks or assigns work to people (AI Act; this can't be switched on).</li>
       <li><b>Record of processing</b> (1.0): Bugaboo drafts the GDPR Art. 30 record and a privacy notice from the features that are switched on.</li>

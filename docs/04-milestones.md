@@ -131,12 +131,12 @@ A session can end at any time, and a new one starts in the master and continues 
 | **M6** | Time and working hours | MVP | 10 |
 | **M7** | Assistant, AI apps and agents | MVP | 24 |
 | **M8** | Timeline and theme editor | MVP | 14 |
-| **M9** | Privacy, operations and the first release | MVP | 14 |
+| **M9** | Privacy, operations and the first release | MVP | 13 |
 | **M10** | Board, calendar, relation map and dashboards | 1.0 | 10 |
 | **M11** | Documents | 1.0 | 11 |
 | **M12** | Teams, integrations and AI 1.0 | 1.0 | 16 |
 | **M13** | Admin power tools | 1.0 | 15 |
-| **M14** | Sold and served | 1.0 | 15 |
+| **M14** | Sold and served | 1.0 | 16 |
 | **M15** | Live updates and 1.0 | 1.0 | 2 |
 
 ## M0 — Foundation
@@ -497,22 +497,22 @@ A session can end at any time, and a new one starts in the master and continues 
 - `COMP-03` Vulnerability handling
 - `COMP-04` Secure by default and security updates
 - `COMP-15` Accessibility
-- `DIST-03` Operator access
 - `DIST-07` Updates
 
 **Work packages (outline):**
 
 - Download my data, Remove a person, keep-and-delete rules and jobs
-- Service install on Windows and Linux; upgrades with automatic backup; backup and restore
+- Service install on Windows and Linux; upgrades with automatic backup; backup, and restore from the command line
 - Release pipeline: build matrix, signing, SBOM, third-party notices, support period
 - Security policy, `security.txt`, vulnerability and reporting runbook
-- Operator access with customer approval (for the later served model)
 - Accessibility statement and full accessibility pass
-- Release candidate: external security review recommended
+- Release candidate: a full security pass before 0.6.0; an outside test before 1.0 (M15)
 
 **Demo (exit):** Install the signed MVP on a clean Windows PC and in WSL, restore a backup, download someone's data, remove a person; the release page shows SBOM and licenses.
 
-**Tests and checks added:** Full local run and benchmarks green on a quiet computer; long TEST-CONCURRENT; DEP-SBOM; upgrade test from M8 build.
+**Tests and checks added:** Full local run and benchmarks green on a quiet computer; long TEST-CONCURRENT (two hours on each database, by hand); DEP-SBOM; TEST-UPGRADE (the upgrade test from the M8 build).
+
+**Decided (2026-11-18):** the maintainer took every recommendation of M9-Q1 to Q21 ([the plan](milestones/M9/README.md)). Restore is from the command line only in the MVP; support access (`DIST-03`) moved to M14 as a V1 feature; three small operations follow-ups (M4-F61, M4-F63, M4-F128) wait for a later package. The version arithmetic of ADR-0040 does not change: the features of M0 to M14 are still 225.
 
 ## M10 — Board, calendar, relation map and dashboards
 
@@ -645,6 +645,7 @@ A session can end at any time, and a new one starts in the master and continues 
 **Features:**
 
 - `DIST-02` Served = one isolated instance per customer
+- `DIST-03` Operator access (moved from M9, 2026-11-18)
 - `DIST-04` Sold model licensing
 - `DIST-05` Served model paperwork
 - `DIST-06` Switching
@@ -663,6 +664,7 @@ A session can end at any time, and a new one starts in the master and continues 
 **Work packages (outline):**
 
 - Control plane (minimal) and isolated instances per customer in the EU
+- Support access with the customer's approval (ADR-0048, decisions 2 to 6), asked for by the control plane and granted in the customer's Bugaboo
 - License files for the sold model; signed update check
 - Export and import between self-hosted and hosted
 - Packages (winget, MSI, deb, rpm, container image); metrics endpoint; Try it out with sample data

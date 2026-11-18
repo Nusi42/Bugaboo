@@ -360,7 +360,7 @@ What each means in practice:
 - **OPS-04 (M)** — Run as a service: `bugaboo service install` (Windows Service / systemd unit).
 - **OPS-05 (V1)** — Packages: winget and MSI on Windows, `.deb`/`.rpm` on Linux, and an OCI/Docker image.
 - **OPS-06 (M)** — Automatic schema migrations on upgrade, with an automatic backup before migrating and a clear rollback path.
-- **OPS-07 (M)** — Online **backup and restore**, both from the CLI and the admin UI, with scheduled backups and retention.
+- **OPS-07 (M)** — Online **backup and restore**: backups from the CLI and the admin UI, with scheduled backups and retention; restore from the CLI, which the admin UI names (ADR-0046).
 - **OPS-08 (M)** — Health endpoint, structured logs (JSON), and an admin system-status page.
 - **OPS-09 (V1)** — Prometheus metrics endpoint (off by default, authenticated).
 - **OPS-10 (M)** — Bootstrap settings (bind address, port, data directory, TLS) live in a small config file or environment variables. *Everything else* is configured in the UI.
@@ -414,7 +414,7 @@ Bugaboo is built so an organization can run it in line with the GDPR. Bugaboo su
 - **PRIV-02 (M)** — **Personal-data map**: every stored field that holds personal data is marked in the data model (single source). Export, erasure, retention and the processing record are all generated from these marks, so a new feature can't forget them.
 - **PRIV-03 (M)** — **Download my data** (access and portability): every person can download everything Bugaboo stores about them, as readable pages and as machine-readable JSON. Admins can create the same export for any person; doing so is recorded in the security log.
 - **PRIV-04 (M)** — **Remove a person** (erasure): their account is deleted and their name is replaced everywhere by *"Former user K7Q2"*. The organization chooses whether text they wrote stays (anonymized) or is removed. Records that must be kept by law (working hours, security log) stay until their retention period ends; the screen explains this in plain words.
-- **PRIV-05 (M)** — **Keep and delete rules** per kind of data (working hours, time entries, security log, notifications, sign-in history, IP addresses, trash, backups), with automatic deletion. Sensible defaults, for example IP addresses in logs after 7 days.
+- **PRIV-05 (M)** — **Keep and delete rules** per kind of data (working hours, time entries, security log, notifications, sign-in history, IP addresses, trash, backups), each with a keep period and sensible defaults, for example IP addresses in logs after 7 days. Technical data is deleted automatically after its period; business records (working hours, time entries) are deleted only by an administrator after theirs, and the trash keeps an issue while its time entries must be kept (ADR-0045).
 - **PRIV-06 (M)** — People can correct their own profile data; admins can correct anything else, with a record of the change.
 - **PRIV-07 (V1)** — **Record of processing** (Art. 30 GDPR) and a privacy notice template, generated from the personal-data map and the enabled features.
 - **PRIV-08 (M)** — **Outside services**: the assistant, e-mail and any external provider are off until an admin enables them. Before enabling an external AI provider, the admin confirms that a data processing agreement is in place, and sees which data goes where (provider and country). Local models are offered as the private choice.
@@ -471,11 +471,11 @@ the start. See [compliance.md](compliance.md) for what each model means legally.
 
 - **DIST-01 (M)** — **One codebase and one server binary for both models.** No separate "cloud edition"; behaviour differences come from configuration only.
 - **DIST-02 (V1)** — **Served = one isolated instance per customer**: own database, files, encryption keys and web address, in EU data centres. A separate **control plane** handles set-up, updates, backups and monitoring. No database is shared between customers. This keeps the "one organization per instance" decision.
-- **DIST-03 (M)** — **Operator access**: our staff have no access to customer data by default. Emergency access only with the customer's approval, time-limited, and recorded in the customer's own security log.
+- **DIST-03 (V1)** — **Operator access**: our staff have no access to customer data by default. Emergency access only with the customer's approval, time-limited, and recorded in the customer's own security log.
 - **DIST-04 (V1)** — **Sold model licensing**: a signed license file that works offline. No phone-home, no telemetry.
 - **DIST-05 (V1)** — **Served model paperwork**: data processing agreement, sub-processor list, technical and organisational measures, data location, exit terms, service levels, and a status page.
 - **DIST-06 (V1)** — **Switching**: full export and import between served and self-hosted, in both directions (Data Act, COMP-12).
-- **DIST-07 (M)** — **Updates**: self-hosted installations get signed updates and update notifications (OPS-11); served instances are updated by us, with announced maintenance windows and release notes.
+- **DIST-07 (M)** — **Updates**: self-hosted installations get signed releases with release notes, a command that checks a download before it replaces the program, and an automatic backup and migration at the next start (ADR-0047). The update notice inside Bugaboo is OPS-11 (V1); served instances are updated by us, with announced maintenance windows, from DIST-02 (V1).
 - **DIST-08 (V1)** — **Incident reporting runbook** for us as manufacturer and operator, with the CRA and NIS2 deadlines (24 h early warning, 72 h notification, final report) and ready-to-fill templates.
 
 ---
