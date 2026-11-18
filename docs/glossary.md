@@ -227,6 +227,11 @@ Rules:
 | **Security log**         | The record of who changed what, which cannot be altered            | audit trail                        |
 | **Download my data**     | Get a copy of everything Bugaboo stores about you                  | data subject access request, DSAR  |
 | **Remove a person**      | Delete someone's account and replace their name with *Former user* plus a random code (*Former user K7Q2*); the work days kept by law are the one exception (ADR-0035, decision 7) | anonymize, pseudonymize (in UI) |
+| **Former user**          | How a removed person is shown everywhere after *Remove a person*: *Former user* and a random code of four signs (*Former user K7Q2*), the same in every place, so their work still reads | deleted user, anonymous user, ghost user |
+| **Switch off** / **Switch on** (a person) | End a person's sign-in at once (their sessions, access keys, connected apps and agents stop) while every record of theirs stays; *Switch on* gives the sign-in back. A person is switched off before *Remove a person* | deactivate, suspend, disable (in UI) |
+| **Download someone's data** | The permission to make the file of *Download my data* for another person; the person is told and the security log records it | — |
+| **Remove people**        | The permission to use *Remove a person* | — |
+| **Data exports**         | The page that lists every file of *Download my data* that was made, by whom and for whom, and where an administrator makes one for somebody else | data dump (in UI) |
 | **Who sees people**      | Per role and per kind of people information: show people's *Names*, only their *Role* ("Someone (Team member)"), or nothing (*Hidden*: "Someone") | identity masking, pseudonymization (in UI) |
 | **Kind of people information** | One of the places a person can be shown: *Assigned to, Reported by, Last changed by*, comment and history authors, *"… is editing"*, followers, time entries, mentions, pictures of people, *Project members*, *Work times* | identity field, people field (in UI) |
 | **Away**                 | A stretch of whole or half days on which a person does not work. Bugaboo stores no reason; others see only *Away* | absent, absence, out of office, sick, on leave (in UI) |
@@ -247,6 +252,7 @@ Rules:
 | **Project members**      | The kind of people information for lists of who works in a project; also the page *Project settings › Project members*, where the shares are set. People who manage people or roles always see the names there | roster, participants (in UI) |
 | **Someone**              | Shown instead of a name when the viewer may not see who it was    | anonymous, redacted                |
 | **Keep and delete rules**| How long each kind of data is kept before it is deleted automatically; working hours are deleted only by an administrator after their keep period (ADR-0035, decision 7) | retention policy                |
+| **Keep period**          | How long one kind of data is kept at least; after it, Bugaboo deletes it by itself or an administrator deletes it, as *Keep and delete rules* say for that kind | retention period, retention time |
 
 ## Settings and appearance
 
@@ -256,6 +262,12 @@ Rules:
 | **Project settings**     | Settings of one project                                            | project admin                      |
 | **Organization settings**| Settings for the whole Bugaboo server                              | admin console, instance settings   |
 | **Server status**        | Whether the Bugaboo server is running and healthy: its database, its certificate, its security log (the route `/api/v1/status`; not the status of an issue) | health page, health check page     |
+| **Backup**               | One file that holds the organization's data and its attached files at one moment, made by hand or every day; it holds no keys | snapshot (in UI) |
+| **Restore a backup**     | Put the data of a backup back in place of what is there now; Bugaboo first makes a backup of the present | roll back, rollback (in UI) |
+| **About**                | The page that says which version of Bugaboo runs, until when it gets security fixes, and the licenses and parts list of what is inside | — |
+| **Support period**       | How long a release of Bugaboo gets security fixes, shown on *About* and on the release page | end of life, EOL, LTS (in UI) |
+| **Parts list**           | The machine-readable list of every part inside a release of Bugaboo, with versions and licenses, in the CycloneDX and SPDX formats (a software bill of materials) | SBOM, bill of materials (in UI) |
+| **Support access**       | A time-limited account an administrator makes for one named supporter from outside the organization, with a role they choose and two-step sign-in; every request of it is in the security log, and it ends by itself or with *End now* | operator access, emergency access, break-glass access (in UI) |
 | **Reset to default**     | Take away the value set at this level, so the value from above counts again; also for a workflow or a layout that a place has of its own (it goes back to the one that counts there without its own) | clear override, use the inherited … again (in UI) |
 | **Default value**        | The value a setting has until somebody sets one at a level: the line under a setting says *Default value* when none is set; *Reset to default* brings it back | standard value, Bugaboo's standard value (in UI) |
 | **Set by your organization** | Shown on a setting an administrator locked: it can't be changed here, and the line says why | enforced (in UI) |
@@ -383,6 +395,10 @@ On screens the AI is always *the assistant*, *an AI app* or *an agent*: never *b
 | Control plane       | Our separate system that creates, updates, backs up and monitors served instances; it holds no customer data |
 | Operator            | Us, when running served instances; our staff have no default access to customer data |
 | Manufacturer        | Us, as the maker of the software under the CRA, in both models        |
+| Person links        | What a person is to a row that names them (`author`, `recipient`, `subject`, `actor`, `holder`), declared beside the personal-data marks of each entity (ADR-0044) |
+| Walk of a person's data | `PersonData`: the one way to find every row that names one person, read by *Download my data*, *Remove a person* and the removal plan (ADR-0044) |
+| Removal list        | The file `privacy/removed.list` in the data folder: one line per *Remove a person* (the ID and the moment), run again after a restore of an older backup (ADR-0044, ADR-0046) |
+| Release folder      | What `cargo xtask release` writes for one version: the programs, checksums, signatures, parts lists, notices, VEX file and release notes (ADR-0047) |
 | Period (of a work day) | One stretch of work of a work day, from a start to an end; a day reopened after *End work day* has two. The screens have no word for it: they show the first start, the last end and *Breaks*, which include the gaps between periods (ADR-0035, decision 5) |
 | Person's day        | The date a moment falls on in a person's time zone (`bb_core::time`); how work days and time entries use it is ADR-0035, decision 5 |
 | Starter fields      | Own fields that Bugaboo makes at the first start and on upgrade, like *Activity* and *Cost center* of time entries; found by a stable mark, never by their name, and changed by administrators like any own field |
