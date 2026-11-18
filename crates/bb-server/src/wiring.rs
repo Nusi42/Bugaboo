@@ -89,8 +89,8 @@ impl ServerBackups {
         Self { database, data }
     }
 
-    fn folder(&self, named: Option<String>) -> std::io::Result<PathBuf> {
-        backup_folder(&self.data, named.as_deref().map(std::path::Path::new))
+    fn folder(&self, named: Option<&str>) -> std::io::Result<PathBuf> {
+        backup_folder(&self.data, named.map(std::path::Path::new))
             .map_err(|error| std::io::Error::other(error.to_string()))
     }
 }
@@ -103,7 +103,7 @@ impl BackupFiles for ServerBackups {
         now: jiff::Timestamp,
     ) -> BoxFuture<'_, std::io::Result<CreatedFile>> {
         Box::pin(async move {
-            let places = places(&self.data, self.folder(folder)?);
+            let places = places(&self.data, self.folder(folder.as_deref())?);
             let created = self
                 .database
                 .create_backup(&places, purpose, now)
@@ -119,7 +119,7 @@ impl BackupFiles for ServerBackups {
 
     fn list(&self, folder: Option<String>) -> BoxFuture<'_, std::io::Result<Vec<BackupFile>>> {
         Box::pin(async move {
-            let found = backups_in(&self.folder(folder)?)
+            let found = backups_in(&self.folder(folder.as_deref())?)
                 .map_err(|error| std::io::Error::other(error.to_string()))?;
             Ok(found
                 .into_iter()
@@ -133,7 +133,9 @@ impl BackupFiles for ServerBackups {
         folder: Option<String>,
         name: BackupName,
     ) -> BoxFuture<'_, std::io::Result<()>> {
-        Box::pin(async move { std::fs::remove_file(self.folder(folder)?.join(name.to_string())) })
+        Box::pin(async move {
+            std::fs::remove_file(self.folder(folder.as_deref())?.join(name.to_string()))
+        })
     }
 }
 
@@ -232,11 +234,11 @@ pub(crate) async fn wire(
         PreviewCommand::of_this_program(PREVIEW_COMMAND)
             .map_err(|error| anyhow!(error.to_string()))?,
     )))
-    .with_backups(Arc::new(ServerBackups {
-        database: database.clone(),
-        data: DataFolder::existing(data.root())
+    .with_backups(Arc::new(ServerBackups::new(
+        database.clone(),
+        DataFolder::existing(data.root())
             .ok_or_else(|| anyhow!(message::cli_no_data(data.root().display()).render()))?,
-    }))
+    )))
     .with_mailer(Arc::new(SmtpMailer))
     .with_ai_provider(Arc::new(HttpAiProvider))
     .with_public_url(settings.public_url.clone())

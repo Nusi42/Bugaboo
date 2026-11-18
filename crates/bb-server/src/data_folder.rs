@@ -398,7 +398,7 @@ fn ensure_private(path: &Path) -> Result<(), String> {
 
 /// Gives every key file in `keys` an access list of its own: the account that runs Bugaboo, and
 /// the administrators of the computer for reading, with nothing inherited from the folder
-/// (M1-F22). On Linux the store makes them owner-only and checks it at every start.
+/// (M1-F22).
 #[cfg(windows)]
 pub(crate) fn protect_key_files(keys: &Path) -> Result<(), String> {
     for entry in std::fs::read_dir(keys).map_err(|error| error.to_string())? {
@@ -410,9 +410,10 @@ pub(crate) fn protect_key_files(keys: &Path) -> Result<(), String> {
     Ok(())
 }
 
+/// Linux: the key files get mode `0600` again if somebody loosened them, like at every start.
 #[cfg(not(windows))]
-pub(crate) fn protect_key_files(_keys: &Path) -> Result<(), String> {
-    Ok(())
+pub(crate) fn protect_key_files(keys: &Path) -> Result<(), String> {
+    ensure_private(keys)
 }
 
 /// Windows: drop every entry that was added by hand (`/reset`), remove inherited rights and
