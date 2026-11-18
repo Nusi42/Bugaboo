@@ -5,6 +5,8 @@ use std::future::Future;
 use std::pin::Pin;
 
 use bb_core::event::DomainEvent;
+use bb_core::keeping::KeepKind;
+use jiff::civil::Date;
 
 /// A future that can move between threads: what a change hands back to the store, so the
 /// use cases stay `Send` whatever store they run on (HTTP handlers need that).
@@ -105,4 +107,13 @@ pub trait PersonData: ChangeStore {
         kind: &str,
         from: u64,
     ) -> impl Future<Output = Result<crate::privacy::walk::RowsPage, Self::Error>> + Send;
+}
+
+/// How long each kind of data is kept (ADR-0045): the last day a record of a kind is kept, from the
+/// record's date and the organization's keep periods. The window of *Remove a person* and the trash
+/// read it; `crate::keeping` answers it from the settings, so no period is counted twice.
+pub trait KeepPeriods {
+    /// The last day a record of `kind` dated `date` is kept; `None` when the day cannot be counted
+    /// (past the end of the calendar).
+    fn kept_until(&self, kind: KeepKind, date: Date) -> Option<Date>;
 }

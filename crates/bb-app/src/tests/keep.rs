@@ -389,3 +389,45 @@ async fn priv_05_no_purge_takes_a_business_record() -> Outcome {
     assert!(world.store.lock().state.time_entries.is_empty());
     Ok(())
 }
+
+#[tokio::test]
+async fn priv_05_the_port_of_keep_periods_answers_with_the_organizations_settings() -> Outcome {
+    use bb_core::keeping::KeepKind;
+    use jiff::civil::date;
+
+    use crate::ports::KeepPeriods as _;
+
+    let world = World::new().await?;
+    let recorded = date(2026, 3, 10);
+    let periods = world.ctx().keep_periods().await?;
+    // The starting periods: ten years for time entries, a month for the trash.
+    assert_eq!(
+        periods.kept_until(KeepKind::TimeEntries, recorded),
+        Some(date(2036, 3, 11))
+    );
+    assert_eq!(
+        periods.kept_until(KeepKind::Trash, recorded),
+        Some(date(2026, 4, 10))
+    );
+    // The organization keeps time entries for eight years: the port follows the setting.
+    change_setting(
+        &world.ctx(),
+        ChangeSetting {
+            version: None,
+            session_token: token(&world),
+            scope: SettingsScope::Organization,
+            key: bb_core::settings::keeping::KEEPING_TIME_ENTRY_YEARS
+                .definition()
+                .key()
+                .to_owned(),
+            value: SettingValue::Integer(8),
+        },
+    )
+    .await?;
+    let periods = world.ctx().keep_periods().await?;
+    assert_eq!(
+        periods.kept_until(KeepKind::TimeEntries, recorded),
+        Some(date(2034, 3, 11))
+    );
+    Ok(())
+}

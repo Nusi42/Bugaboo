@@ -25,7 +25,7 @@ pub use rules::{KeepRuleView, KeepRules, KeepRulesQuery, keep_rules};
 use bb_core::event::{Actor as EventActor, RecordKind};
 use bb_core::id::JobId;
 use bb_core::keeping::{KeepKind, Step, rule};
-use bb_core::settings::{LOGS_SERVER_LOG_FILES, LOGS_SERVER_LOG_MEGABYTES};
+use bb_core::settings::{LOGS_SERVER_LOG_FILES, LOGS_SERVER_LOG_MEGABYTES, Layers};
 use bb_core::wording::Region;
 use jiff::Timestamp;
 use serde_json::Value;
@@ -35,6 +35,7 @@ use crate::auth::{
 };
 use crate::editing::{PurgeDraftsQuery, purge_drafts};
 use crate::jobs::JobKind;
+use crate::ports::KeepPeriods;
 
 /// The most rows one part of a step of a deleting job deletes in one write (ADR-0045, decision 5).
 pub const KEEP_STEP_ROWS: u64 = 1000;
@@ -81,7 +82,23 @@ impl JobKind {
     }
 }
 
+/// The stored settings answer the port: each kind's period is its row of `KEEP_KINDS`.
+impl KeepPeriods for Layers {
+    fn kept_until(&self, kind: KeepKind, date: jiff::civil::Date) -> Option<jiff::civil::Date> {
+        rule(kind).kept_until(self, date)
+    }
+}
+
 impl<S: AuthStore> Ctx<'_, S> {
+    /// The keep periods of the organization, for whoever asks how long a record is kept
+    /// ([`KeepPeriods`]).
+    ///
+    /// # Errors
+    /// The error of the store when the settings cannot be read.
+    pub async fn keep_periods(&self) -> Result<impl KeepPeriods + use<S>, AppError> {
+        self.setting_layers_of(None).await
+    }
+
     /// The moment before which data of `kind` is past its keep period now, with the organization's
     /// settings and zone.
     pub(crate) async fn keep_cutoff(&self, kind: KeepKind) -> Result<Timestamp, AppError> {
