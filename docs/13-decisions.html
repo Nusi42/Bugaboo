@@ -2704,6 +2704,14 @@ Worked-out days are shown, never stored: a date is stored only when a person or 
 <li>A person on Windows sees a warning about an unknown publisher until a code-signing certificate is bought (M9-Q12).</li>
 <li>The parts list is checked in every full run, not only at release time, so a release never finds a gap late.</li>
 </ul>
+<h3>Amendment (M9, the parts list)</h3>
+<ul>
+<li><strong>The schema validator is a normal dependency of xtask, not a development-only one.</strong> Decision 3 said "test-only". The check DEP-SBOM runs inside the xtask program in every full run and must validate both files, so the validator (<code>jsonschema</code>, built without its network code) is compiled into xtask. It is never part of the program that ships, and its register row says so. Enforced by: DEP-REGISTER.</li>
+<li><strong>The crate list is what <code>cargo tree -e normal</code> says each program compiles in.</strong> <code>cargo metadata</code> joins the features of every member of the workspace, so it names crates that a program does not compile in; it still gives the licenses and the edges. DEP-SBOM holds the list to <code>cargo tree</code> in both directions, and the npm packages to the lockfile's own marks (not <code>dev</code>, not <code>devOptional</code>). Enforced by: DEP-SBOM.</li>
+<li><strong>A crate without a license file</strong> gets the standard text of its declared license in the notices (decision 3), with the authors named in the package as the copyright holders.</li>
+<li><strong>The VEX reason is the register's.</strong> A statement takes its reason and its CycloneDX justification from the row of the register's <em>Accepted risks</em>; an accepted advisory without a row, or with a justification CycloneDX does not know, fails DEP-SBOM. Enforced by: DEP-SBOM.</li>
+<li><strong>The files are the same bytes only for the same lockfiles and the same installed packages:</strong> the license texts are read from the installed crates and packages.</li>
+</ul>
 <h3>Alternatives considered</h3>
 <ul>
 <li><strong>Sigstore (cosign keyless):</strong> needs a hosted build identity and the network at signing time; ADR-0037 has no hosted build. Not now.</li>
