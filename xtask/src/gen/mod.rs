@@ -11,6 +11,7 @@ pub(crate) mod contrast_spec;
 pub(crate) mod favicon;
 pub(crate) mod icu;
 pub(crate) mod kdl_reader;
+pub(crate) mod keep_rules;
 pub(crate) mod load_book;
 pub(crate) mod made_keys;
 pub(crate) mod messages;
@@ -88,7 +89,7 @@ pub(crate) const DOCS: &str = "docs";
 /// Every generator, once. A generated file in the repository is written by one of these;
 /// DOC-GENERATED compares all of them with the disk, `cargo xtask gen <name>` writes one, and
 /// META-COVERAGE counts their paths as generated.
-pub(crate) const GENERATORS: [Generator; 15] = [
+pub(crate) const GENERATORS: [Generator; 16] = [
     Generator {
         name: DOCS,
         help: "The commentable HTML pages from the Markdown sources and the check catalogue.",
@@ -142,6 +143,12 @@ pub(crate) const GENERATORS: [Generator; 15] = [
         help: "The test vectors of the wording of values (tools/testdata/value-words.json), from the code of bb-core that the server runs.",
         paths: || vec![word_vectors::OUTPUT],
         generate: |_, _| word_vectors::generate(),
+    },
+    Generator {
+        name: "keep-rules",
+        help: "The table of Keep and delete rules in the user docs (userDocs/privacy/keep-and-delete.md), from bb_core::keeping.",
+        paths: || vec![keep_rules::OUTPUT],
+        generate: |_, _| Ok(keep_rules::generate()),
     },
     Generator {
         name: "time-vectors",

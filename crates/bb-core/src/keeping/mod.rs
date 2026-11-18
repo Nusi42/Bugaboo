@@ -4,6 +4,7 @@
 //! rules and the table of the user docs all read it. Pure: nothing here reads the clock or a store.
 
 mod length;
+mod table;
 #[cfg(test)]
 mod tests;
 
@@ -11,6 +12,7 @@ use jiff::civil::Date;
 use jiff::{Timestamp, tz::TimeZone};
 
 pub use length::{Length, LengthUnit};
+pub use table::keep_table;
 
 use crate::edit::DRAFT_KEEP_DAYS;
 use crate::files::UNFINISHED_KEPT;
