@@ -61,7 +61,7 @@ fn comp_02_the_notices_hold_every_license_text_the_parts_need() {
     );
     assert!(checked > 300, "only {checked} license texts were found");
     // The notices of code and data inside crates, and the data files that ship.
-    for path in crate::release::parts_list::notice_files(&repository_root()).unwrap() {
+    for path in crate::release::parts_list::notice_files(&repository_root()) {
         let text = fs::read_to_string(repository_root().join(&path)).unwrap();
         assert!(
             notices.text.contains(text.replace("\r\n", "\n").trim_end()),
@@ -108,7 +108,7 @@ fn bad_example_a_package_without_a_file_or_a_standard_text_is_named() {
         part.license = Some("LicenseRef-unknown".to_owned());
     }
     let register = crate::checks::dep_register::read_register(&repository_root()).unwrap();
-    let notices = notices(&repository_root(), &list, &register).unwrap();
+    let notices = notices(&repository_root(), &list, &register);
     assert_eq!(notices.without_text.len(), list.parts.len());
     assert!(notices.text.contains("ship no license file"));
 }

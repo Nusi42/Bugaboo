@@ -43,7 +43,7 @@ pub(crate) struct Files {
     pub(crate) list: parts_list::PartsList,
     pub(crate) cyclonedx: serde_json::Value,
     pub(crate) spdx: serde_json::Value,
-    /// The statements about the accepted advisories (CycloneDX VEX).
+    /// The statements about the accepted advisories (`CycloneDX` VEX).
     pub(crate) vex: serde_json::Value,
     pub(crate) notices: notices::Notices,
 }
@@ -56,7 +56,7 @@ pub(crate) fn compose(root: &Path) -> anyhow::Result<Files> {
         cyclonedx: formats::cyclonedx(&list),
         spdx: formats::spdx(&list),
         vex: vex::vex(&list, &vex::accepted(root)?, &register),
-        notices: notices::notices(root, &list, &register)?,
+        notices: notices::notices(root, &list, &register),
         list,
     })
 }
@@ -132,4 +132,31 @@ pub(crate) fn write_embedded(files: &Files, folder: &Path) -> anyhow::Result<()>
             .with_context(|| format!("could not clear {}", folder.display()))?;
     }
     write_about_files(files, folder, about::embedded_name)
+}
+
+/// `cargo xtask parts-list`: makes the files, checks them against their schemas, and writes them
+/// into `out`, else into the work folder.
+pub(crate) fn run(root: &Path, out: Option<std::path::PathBuf>) -> anyhow::Result<()> {
+    let files = compose(root)?;
+    let folder = match out {
+        Some(folder) => folder,
+        None => work_folder(root)?,
+    };
+    let invalid = schema_errors(&files)?;
+    if !invalid.is_empty() {
+        anyhow::bail!(
+            "the parts list does not fit its schema:\n{}",
+            invalid.join("\n")
+        );
+    }
+    for name in &files.notices.without_text {
+        crate::output::info(&format!("no license file in the package of {name}"));
+    }
+    write(&files, &folder)?;
+    crate::output::info(&format!(
+        "wrote the parts list ({} parts), the notices and the VEX statements to {}",
+        files.list.parts.len(),
+        folder.display()
+    ));
+    Ok(())
 }

@@ -444,7 +444,7 @@ fn file_parts(root: &Path, register: &Rows) -> anyhow::Result<Vec<Part>> {
             folder: None,
         });
     }
-    for path in notice_files(root)? {
+    for path in notice_files(root) {
         let text = fs::read_to_string(root.join(&path))
             .with_context(|| format!("could not read {path}"))?;
         parts.push(Part {
@@ -476,10 +476,10 @@ pub(crate) fn notice_license(text: &str) -> Option<String> {
 }
 
 /// The notice files, as paths relative to the repository root, in order.
-pub(crate) fn notice_files(root: &Path) -> anyhow::Result<Vec<String>> {
+pub(crate) fn notice_files(root: &Path) -> Vec<String> {
     let mut names = Vec::new();
     let Ok(entries) = fs::read_dir(root.join(NOTICES_FOLDER)) else {
-        return Ok(names);
+        return names;
     };
     for entry in entries.flatten() {
         if entry.path().is_file() {
@@ -490,7 +490,7 @@ pub(crate) fn notice_files(root: &Path) -> anyhow::Result<Vec<String>> {
         }
     }
     names.sort();
-    Ok(names)
+    names
 }
 
 // ---- The list ---------------------------------------------------------------------------------

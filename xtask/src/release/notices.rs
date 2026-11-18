@@ -140,7 +140,7 @@ fn label(part: &Part) -> String {
 }
 
 /// Makes the notices of `list`.
-pub(crate) fn notices(root: &Path, list: &PartsList, register: &Rows) -> anyhow::Result<Notices> {
+pub(crate) fn notices(root: &Path, list: &PartsList, register: &Rows) -> Notices {
     // text -> (the first line of the group, the parts that carry it)
     let mut groups: BTreeMap<String, (String, BTreeSet<String>)> = BTreeMap::new();
     let mut without_text = Vec::new();
@@ -218,10 +218,10 @@ pub(crate) fn notices(root: &Path, list: &PartsList, register: &Rows) -> anyhow:
             let _ = write!(out, "\n{}\n", text.replace("\r\n", "\n").trim_end());
         }
     }
-    Ok(Notices {
+    Notices {
         text: out,
         without_text,
-    })
+    }
 }
 
 #[cfg(test)]

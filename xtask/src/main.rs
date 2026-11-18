@@ -85,7 +85,7 @@ enum Command {
         #[arg(long)]
         target: Option<String>,
     },
-    /// Write the parts list (CycloneDX and SPDX), the third-party notices and the VEX statements from the lockfiles
+    /// Write the parts list (`CycloneDX` and SPDX), the third-party notices and the VEX statements from the lockfiles
     /// (COMP-01, COMP-02), into the folder given, else into `parts-list/` of the build folder.
     PartsList {
         /// Where to write the four files.
@@ -372,31 +372,7 @@ fn run() -> anyhow::Result<ExitCode> {
             target.as_deref(),
         )?)),
         Command::PartsList { out } => {
-            let files = release::compose(repo.root())?;
-            let folder = match out {
-                Some(folder) => folder,
-                None => release::work_folder(repo.root())?,
-            };
-            let invalid = release::schema_errors(&files)?;
-            if !invalid.is_empty() {
-                anyhow::bail!(
-                    "the parts list does not fit its schema:
-{}",
-                    invalid.join(
-                        "
-"
-                    )
-                );
-            }
-            for name in &files.notices.without_text {
-                output::info(&format!("no license file in the package of {name}"));
-            }
-            release::write(&files, &folder)?;
-            output::info(&format!(
-                "wrote the parts list ({} parts), the notices and the VEX statements to {}",
-                files.list.parts.len(),
-                folder.display()
-            ));
+            release::run(repo.root(), out)?;
             Ok(ExitCode::SUCCESS)
         }
         Command::Wasm => Ok(steps::exit_code(wasm::run(repo.root())?)),

@@ -1,4 +1,4 @@
-//! The VEX statements of a release (COMP-03, M6-F126, ADR-0047 decision 4): one CycloneDX VEX file
+//! The VEX statements of a release (COMP-03, M6-F126, ADR-0047 decision 4): one `CycloneDX` VEX file
 //! with one statement, *not affected*, for each advisory that Bugaboo accepts.
 //!
 //! The advisories are the entries of `deny.toml` (`[advisories] ignore`) and of
@@ -61,7 +61,7 @@ pub(crate) fn accepted(root: &Path) -> anyhow::Result<Vec<Accepted>> {
     Ok(all)
 }
 
-/// The reasons CycloneDX knows for *not affected* (`vulnerability.analysis.justification`).
+/// The reasons `CycloneDX` knows for *not affected* (`vulnerability.analysis.justification`).
 const JUSTIFICATIONS: [&str; 9] = [
     "code_not_present",
     "code_not_reachable",

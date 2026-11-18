@@ -189,7 +189,7 @@ fn the_notice_files_name_their_license() {
         Some("CC0-1.0".to_owned())
     );
     assert_eq!(notice_license("Fonts\nLicense: x\n"), None);
-    let notices = notice_files(&repository_root()).unwrap();
+    let notices = notice_files(&repository_root());
     assert!(notices.len() >= 2);
     for path in notices {
         let text = fs::read_to_string(repository_root().join(&path)).unwrap();

@@ -1,4 +1,4 @@
-//! The parts list as CycloneDX 1.6 and SPDX 2.3 JSON, and the check of both against their schemas
+//! The parts list as `CycloneDX` 1.6 and SPDX 2.3 JSON, and the check of both against their schemas
 //! (COMP-01). The schemas are test data, copied from their published versions
 //! (`tools/testdata/sbom/`).
 
@@ -12,7 +12,7 @@ use sha2::{Digest as _, Sha256};
 use super::hex;
 use super::parts_list::{Algorithm, Checksum, Kind, Part, PartsList};
 
-/// The version of the CycloneDX format.
+/// The version of the `CycloneDX` format.
 const CYCLONEDX_VERSION: &str = "1.6";
 /// The version of the SPDX format.
 const SPDX_VERSION: &str = "SPDX-2.3";
@@ -79,7 +79,7 @@ fn spdx_algorithm(checksum: &Checksum) -> &'static str {
     }
 }
 
-/// The license identifiers CycloneDX knows (its own copy of the SPDX list).
+/// The license identifiers `CycloneDX` knows (its own copy of the SPDX list).
 fn known_licenses() -> BTreeSet<String> {
     serde_json::from_str::<Value>(CYCLONEDX_LICENSES)
         .ok()
@@ -93,7 +93,7 @@ fn known_licenses() -> BTreeSet<String> {
         .unwrap_or_default()
 }
 
-/// A license as CycloneDX writes it: an identifier it knows, else the expression or the name.
+/// A license as `CycloneDX` writes it: an identifier it knows, else the expression or the name.
 fn cyclonedx_licenses(license: Option<&str>, known: &BTreeSet<String>) -> Value {
     match license {
         None => json!([]),
@@ -135,7 +135,7 @@ fn cyclonedx_component(part: &Part, known: &BTreeSet<String>) -> Value {
     component
 }
 
-/// The parts list as a CycloneDX 1.6 document.
+/// The parts list as a `CycloneDX` 1.6 document.
 pub(crate) fn cyclonedx(list: &PartsList) -> Value {
     let known = known_licenses();
     let program = &list.program;
@@ -269,7 +269,7 @@ pub(crate) fn spdx(list: &PartsList) -> Value {
     })
 }
 
-/// Gives the schemas that the CycloneDX schema points to, by their file name.
+/// Gives the schemas that the `CycloneDX` schema points to, by their file name.
 struct Neighbours;
 
 impl Retrieve for Neighbours {
@@ -297,7 +297,7 @@ fn validator(schema: &str, with_neighbours: bool) -> anyhow::Result<Validator> {
         .map_err(|error| anyhow::anyhow!("the schema cannot be used: {error}"))
 }
 
-/// What is wrong with a CycloneDX 1.6 document, one line each; empty when it is valid.
+/// What is wrong with a `CycloneDX` 1.6 document, one line each; empty when it is valid.
 pub(crate) fn cyclonedx_errors(document: &Value) -> anyhow::Result<Vec<String>> {
     Ok(errors(&validator(CYCLONEDX_SCHEMA, true)?, document))
 }
