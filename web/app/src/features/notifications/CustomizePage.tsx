@@ -40,6 +40,8 @@ const kindName = {
   "agent-gave-up": "notification.kind.agent-gave-up",
   "rule-runs-out-soon": "notification.kind.rule-runs-out-soon",
   "agent-stopped": "notification.kind.agent-stopped",
+  "export-ready": "notification.kind.export-ready",
+  "export-by-administrator": "notification.kind.export-by-administrator",
 } as const satisfies Record<Kind, MessageKey>;
 
 /** The two ways of hearing of an event, with the words the column of each has. */
@@ -97,9 +99,16 @@ function KindRow({
         {t(kindName[kind])}
       </span>
       <fieldset aria-labelledby={id} {...partOf(part.customizeRowWays)}>
-        {ways.map(({ way, name }) => (
-          <Way key={way} setting={settings.find((each) => each.key === keys[way])} name={name} />
-        ))}
+        {ways.map(({ way, name }) =>
+          keys === null ? (
+            // Nobody can switch this kind off: the person is told both ways, whatever they chose.
+            <span key={way} {...partOf(part.muted)}>
+              {t("notifications.always-told", { way: t(name) })}
+            </span>
+          ) : (
+            <Way key={way} setting={settings.find((each) => each.key === keys[way])} name={name} />
+          ),
+        )}
       </fieldset>
     </li>
   );
@@ -107,14 +116,18 @@ function KindRow({
 
 /**
  * *Customize* (UX §4.11, NTF-01): one row for each kind of event, with *In the app* and *By
- * e-mail*. A choice shows at once and is saved in the background; an organization may lock one.
+ * e-mail*. A choice shows at once and is saved in the background; an organization may lock one,
+ * and a kind nobody can switch off says so.
  */
 export function CustomizePage() {
   usePageTitle(t("nav.notification-settings"));
   const settings = useMySettings()?.settings ?? [];
   const progress = useSaveProgress();
   const ownChoices = notificationKindWords
-    .flatMap((kind) => [notificationSettings[kind].app, notificationSettings[kind].mail])
+    .flatMap((kind) => {
+      const keys = notificationSettings[kind];
+      return keys === null ? [] : [keys.app, keys.mail];
+    })
     .filter((key) => settings.some((each) => each.key === key && each.own && !each.locked));
   return (
     <Card

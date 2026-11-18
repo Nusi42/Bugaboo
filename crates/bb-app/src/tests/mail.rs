@@ -361,8 +361,7 @@ async fn ntf_02_a_person_who_switched_the_e_mail_off_meanwhile_gets_none() -> Ou
             scope: SettingsScope::Person,
             key: NotificationKind::FollowedActivity
                 .setting(Via::Mail)
-                .definition()
-                .key()
+                .map_or("", |setting| setting.definition().key())
                 .to_owned(),
             value: SettingValue::Bool(false),
         },

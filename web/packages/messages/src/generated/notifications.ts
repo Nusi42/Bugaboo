@@ -56,6 +56,7 @@ export const messages = {
     "Signing up without an invitation needs e-mail. While e-mail is off it is closed.",
   "mail-server.short-title": "What e-mails say",
   "notifications.locked-way": "{way}: {value} · Set by your organization",
+  "notifications.always-told": "{way}: always on · You are always told of this",
 } as const;
 
 register(messages);

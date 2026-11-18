@@ -9529,7 +9529,10 @@ export interface components {
       part?: string | null;
       /** @description Whether the person has read it. */
       read: boolean;
-      /** @description The work day: why it was changed, in the words of whoever changed it. */
+      /**
+       * @description Why, in the words of whoever did it: why a work day was changed, or why an administrator
+       *     created a file of the person's data.
+       */
       reason?: string | null;
       /** @description The end of a run: the ID of the run. */
       run?: string | null;
@@ -9549,7 +9552,7 @@ export interface components {
       work_times_last?: string | null;
     };
     /**
-     * @description What a notification is about: a mention, an assignment, activity on an issue the person follows, other changes to what they follow, the end of a run of many changes, a note about their editing, or a timer that runs long.
+     * @description What a notification is about: a mention, an assignment, activity on an issue the person follows, other changes to what they follow, the end of a run of many changes, a note about their editing, a timer that runs long, work of an agent, or a file of their data.
      * @enum {string}
      */
     NotificationKind:
@@ -9568,7 +9571,9 @@ export interface components {
       | "ready-for-review"
       | "agent-gave-up"
       | "rule-runs-out-soon"
-      | "agent-stopped";
+      | "agent-stopped"
+      | "export-ready"
+      | "export-by-administrator";
     /**
      * @description Which notifications a list shows: all, the unread ones, or the ones that mention the person.
      * @enum {string}

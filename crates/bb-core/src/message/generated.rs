@@ -4687,6 +4687,14 @@ pub const NOTIFICATION_KIND_ASSIGNED: MessageKey = MessageKey::new("notification
 pub const NOTIFICATION_KIND_EDIT_NOTICE: MessageKey =
     MessageKey::new("notification.kind.edit-notice");
 
+/// The message `notification.kind.export-by-administrator`.
+pub const NOTIFICATION_KIND_EXPORT_BY_ADMINISTRATOR: MessageKey =
+    MessageKey::new("notification.kind.export-by-administrator");
+
+/// The message `notification.kind.export-ready`.
+pub const NOTIFICATION_KIND_EXPORT_READY: MessageKey =
+    MessageKey::new("notification.kind.export-ready");
+
 /// The message `notification.kind.followed-activity`.
 pub const NOTIFICATION_KIND_FOLLOWED_ACTIVITY: MessageKey =
     MessageKey::new("notification.kind.followed-activity");
@@ -4747,6 +4755,9 @@ pub const NOTIFICATIONS_CUSTOMIZE: MessageKey = MessageKey::new("notifications.c
 /// The message `notifications.customize-intro`.
 pub const NOTIFICATIONS_CUSTOMIZE_INTRO: MessageKey =
     MessageKey::new("notifications.customize-intro");
+
+/// The message `notifications.export-ready`.
+pub const NOTIFICATIONS_EXPORT_READY: MessageKey = MessageKey::new("notifications.export-ready");
 
 /// The message `notifications.filter.all`.
 pub const NOTIFICATIONS_FILTER_ALL: MessageKey = MessageKey::new("notifications.filter.all");
@@ -7209,6 +7220,22 @@ pub const SETTING_NOTIFICATIONS_EDIT_NOTICE_IN_APP_HELP: MessageKey =
 /// The message `setting.notifications.edit-notice-in-app.name`.
 pub const SETTING_NOTIFICATIONS_EDIT_NOTICE_IN_APP_NAME: MessageKey =
     MessageKey::new("setting.notifications.edit-notice-in-app.name");
+
+/// The message `setting.notifications.export-ready-by-mail.help`.
+pub const SETTING_NOTIFICATIONS_EXPORT_READY_BY_MAIL_HELP: MessageKey =
+    MessageKey::new("setting.notifications.export-ready-by-mail.help");
+
+/// The message `setting.notifications.export-ready-by-mail.name`.
+pub const SETTING_NOTIFICATIONS_EXPORT_READY_BY_MAIL_NAME: MessageKey =
+    MessageKey::new("setting.notifications.export-ready-by-mail.name");
+
+/// The message `setting.notifications.export-ready-in-app.help`.
+pub const SETTING_NOTIFICATIONS_EXPORT_READY_IN_APP_HELP: MessageKey =
+    MessageKey::new("setting.notifications.export-ready-in-app.help");
+
+/// The message `setting.notifications.export-ready-in-app.name`.
+pub const SETTING_NOTIFICATIONS_EXPORT_READY_IN_APP_NAME: MessageKey =
+    MessageKey::new("setting.notifications.export-ready-in-app.name");
 
 /// The message `setting.notifications.followed-activity-by-mail.help`.
 pub const SETTING_NOTIFICATIONS_FOLLOWED_ACTIVITY_BY_MAIL_HELP: MessageKey =
@@ -13749,6 +13776,15 @@ pub fn mail_subject(issue: impl std::fmt::Display, title: impl std::fmt::Display
     )
 }
 
+/// The message `mail.subject-notice`.
+#[must_use]
+pub fn mail_subject_notice(what: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.subject-notice"),
+        vec![("what", Value::Text(what.to_string()))],
+    )
+}
+
 /// The message `mail.subject-short`.
 #[must_use]
 pub fn mail_subject_short(issue: impl std::fmt::Display) -> Message {
@@ -13902,6 +13938,15 @@ pub fn mcp_wait(seconds: i64) -> Message {
     )
 }
 
+/// The message `notifications.always-told`.
+#[must_use]
+pub fn notifications_always_told(way: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("notifications.always-told"),
+        vec![("way", Value::Text(way.to_string()))],
+    )
+}
+
 /// The message `notifications.assigned`.
 #[must_use]
 pub fn notifications_assigned(who: impl std::fmt::Display) -> Message {
@@ -13926,6 +13971,24 @@ pub fn notifications_count_capped(max: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("notifications.count-capped"),
         vec![("max", Value::Text(max.to_string()))],
+    )
+}
+
+/// The message `notifications.export-by-administrator`.
+#[must_use]
+pub fn notifications_export_by_administrator(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("notifications.export-by-administrator"),
+        vec![("who", Value::Text(who.to_string()))],
+    )
+}
+
+/// The message `notifications.export-reason`.
+#[must_use]
+pub fn notifications_export_reason(reason: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("notifications.export-reason"),
+        vec![("reason", Value::Text(reason.to_string()))],
     )
 }
 
@@ -23292,6 +23355,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "mail.subject-ids-failed",
         "Bugaboo: new issue IDs could not be given out",
     ),
+    ("mail.subject-notice", "Bugaboo: {what}"),
     (
         "mail.subject-run",
         "Bugaboo: your change to many issues has ended",
@@ -23583,6 +23647,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Somebody asks you to finish editing, or takes your editing over",
     ),
     (
+        "notification.kind.export-by-administrator",
+        "An administrator downloaded your data",
+    ),
+    ("notification.kind.export-ready", "Your data is ready"),
+    (
         "notification.kind.followed-activity",
         "A status change, a comment or a file on an issue you follow",
     ),
@@ -23626,6 +23695,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "notifications.agent-stopped",
         "An agent of yours was stopped or paused. Look at My agents to see which one and why.",
     ),
+    (
+        "notifications.always-told",
+        "{way}: always on · You are always told of this",
+    ),
     ("notifications.assigned", "{who} assigned this issue to you"),
     ("notifications.by-mail", "By e-mail"),
     ("notifications.commented", "{who} wrote a comment"),
@@ -23635,6 +23708,15 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "notifications.customize-intro",
         "Choose for each kind of event whether you hear of it in the app, by e-mail, in both or not at all. You never hear of your own changes. E-mail goes only when your organization has switched it on.",
     ),
+    (
+        "notifications.export-by-administrator",
+        "{who} created a file of all your data to download",
+    ),
+    (
+        "notifications.export-ready",
+        "The file of your data is ready. Download it under My settings › My data",
+    ),
+    ("notifications.export-reason", "Why: {reason}"),
     ("notifications.filter.all", "All"),
     ("notifications.filter.mentions", "Mentions"),
     ("notifications.filter.unread", "Unread"),
@@ -26081,6 +26163,22 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "setting.notifications.edit-notice-in-app.name",
         "Somebody asks you to finish editing: in the app",
+    ),
+    (
+        "setting.notifications.export-ready-by-mail.help",
+        "Sends you an e-mail when the file of your data that you asked for under My data is ready to download. E-mail goes only when your organization has switched it on.",
+    ),
+    (
+        "setting.notifications.export-ready-by-mail.name",
+        "Your data is ready: by e-mail",
+    ),
+    (
+        "setting.notifications.export-ready-in-app.help",
+        "Tells you when the file of your data that you asked for under My data is ready to download.",
+    ),
+    (
+        "setting.notifications.export-ready-in-app.name",
+        "Your data is ready: in the app",
     ),
     (
         "setting.notifications.followed-activity-by-mail.help",

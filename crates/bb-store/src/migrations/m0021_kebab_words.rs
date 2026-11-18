@@ -86,6 +86,8 @@ mod tests {
             NotificationKind::AgentGaveUp.code(),
             NotificationKind::RuleRunsOutSoon.code(),
             NotificationKind::AgentStopped.code(),
+            NotificationKind::ExportReady.code(),
+            NotificationKind::ExportByAdministrator.code(),
         ];
         let renamed: Vec<&str> = hyphenated::<NotificationKind>()
             .into_iter()

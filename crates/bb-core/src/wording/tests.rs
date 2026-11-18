@@ -234,6 +234,7 @@ fn notice(kind: NotificationKind) -> Notice {
         file: None,
         work_day: None,
         work_times: None,
+        export_reason: None,
     }
 }
 

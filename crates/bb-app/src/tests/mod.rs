@@ -39,6 +39,7 @@ mod assistant_words;
 mod backups;
 mod check_access_types;
 mod choice_numbers;
+mod data_export_notices;
 mod data_exports;
 mod editing;
 mod event_members;

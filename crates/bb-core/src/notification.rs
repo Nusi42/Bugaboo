@@ -106,13 +106,19 @@ words! {
         RuleRunsOutSoon => "rule-runs-out-soon",
         /// An agent was stopped.
         AgentStopped => "agent-stopped",
+        /// The file of *Download my data* that the person asked for is ready to download (ADR-0044,
+        /// decision 2).
+        ExportReady => "export-ready",
+        /// An administrator made a file of the person's data, with a reason (ADR-0044, decision 4).
+        /// The person is always told, in the app and by e-mail: it cannot be switched off.
+        ExportByAdministrator => "export-by-administrator",
     }
     messages label = "notification.kind."
 }
 
 words_in_api!(
     NotificationKind,
-    "What a notification is about: a mention, an assignment, activity on an issue the person follows, other changes to what they follow, the end of a run of many changes, a note about their editing, or a timer that runs long."
+    "What a notification is about: a mention, an assignment, activity on an issue the person follows, other changes to what they follow, the end of a run of many changes, a note about their editing, a timer that runs long, work of an agent, or a file of their data."
 );
 
 words! {
@@ -145,9 +151,13 @@ words! {
 impl NotificationKind {
     /// The setting that says whether a person hears of this kind of event this way: one switch
     /// for each kind and way, with the starting values of M4-Q5 (ADR-0033 §1). The organization's
-    /// value is the default of everybody; each person changes their own under *Customize*.
+    /// value is the default of everybody; each person changes their own under *Customize*. `None`
+    /// for a kind that nobody can switch off: the person always hears of it both ways.
     #[must_use]
-    pub const fn setting(self, via: Via) -> &'static Setting<Bool> {
+    pub const fn setting(self, via: Via) -> Option<&'static Setting<Bool>> {
+        use settings::data_exports::{
+            NOTIFICATIONS_EXPORT_READY_BY_MAIL, NOTIFICATIONS_EXPORT_READY_IN_APP,
+        };
         use settings::plan::{
             NOTIFICATIONS_TIME_FACTOR_CHANGED_BY_MAIL, NOTIFICATIONS_TIME_FACTOR_CHANGED_IN_APP,
         };
@@ -173,38 +183,45 @@ impl NotificationKind {
             NOTIFICATIONS_RUN_ENDED_BY_MAIL, NOTIFICATIONS_RUN_ENDED_IN_APP,
         };
         match (self, via) {
-            (Self::Mentioned, Via::App) => &NOTIFICATIONS_MENTIONED_IN_APP,
-            (Self::Mentioned, Via::Mail) => &NOTIFICATIONS_MENTIONED_BY_MAIL,
-            (Self::Assigned, Via::App) => &NOTIFICATIONS_ASSIGNED_IN_APP,
-            (Self::Assigned, Via::Mail) => &NOTIFICATIONS_ASSIGNED_BY_MAIL,
-            (Self::FollowedActivity, Via::App) => &NOTIFICATIONS_FOLLOWED_ACTIVITY_IN_APP,
-            (Self::FollowedActivity, Via::Mail) => &NOTIFICATIONS_FOLLOWED_ACTIVITY_BY_MAIL,
-            (Self::FollowedFields, Via::App) => &NOTIFICATIONS_FOLLOWED_FIELDS_IN_APP,
-            (Self::FollowedFields, Via::Mail) => &NOTIFICATIONS_FOLLOWED_FIELDS_BY_MAIL,
-            (Self::RunEnded, Via::App) => &NOTIFICATIONS_RUN_ENDED_IN_APP,
-            (Self::RunEnded, Via::Mail) => &NOTIFICATIONS_RUN_ENDED_BY_MAIL,
-            (Self::EditNotice, Via::App) => &NOTIFICATIONS_EDIT_NOTICE_IN_APP,
-            (Self::EditNotice, Via::Mail) => &NOTIFICATIONS_EDIT_NOTICE_BY_MAIL,
-            (Self::LongTimer, Via::App) => &NOTIFICATIONS_LONG_TIMER_IN_APP,
-            (Self::LongTimer, Via::Mail) => &NOTIFICATIONS_LONG_TIMER_BY_MAIL,
-            (Self::WorkDayChanged, Via::App) => &NOTIFICATIONS_WORK_DAY_CHANGED_IN_APP,
-            (Self::WorkDayChanged, Via::Mail) => &NOTIFICATIONS_WORK_DAY_CHANGED_BY_MAIL,
-            (Self::WorkTimesChanged, Via::App) => &NOTIFICATIONS_WORK_TIMES_CHANGED_IN_APP,
-            (Self::WorkTimesChanged, Via::Mail) => &NOTIFICATIONS_WORK_TIMES_CHANGED_BY_MAIL,
-            (Self::TimeFactorChanged, Via::App) => &NOTIFICATIONS_TIME_FACTOR_CHANGED_IN_APP,
-            (Self::TimeFactorChanged, Via::Mail) => &NOTIFICATIONS_TIME_FACTOR_CHANGED_BY_MAIL,
-            (Self::AgentAsks, Via::App) => &NOTIFICATIONS_AGENT_ASKS_IN_APP,
-            (Self::AgentAsks, Via::Mail) => &NOTIFICATIONS_AGENT_ASKS_BY_MAIL,
-            (Self::PlanWaits, Via::App) => &NOTIFICATIONS_PLAN_WAITS_IN_APP,
-            (Self::PlanWaits, Via::Mail) => &NOTIFICATIONS_PLAN_WAITS_BY_MAIL,
-            (Self::ReadyForReview, Via::App) => &NOTIFICATIONS_READY_FOR_REVIEW_IN_APP,
-            (Self::ReadyForReview, Via::Mail) => &NOTIFICATIONS_READY_FOR_REVIEW_BY_MAIL,
-            (Self::AgentGaveUp, Via::App) => &NOTIFICATIONS_AGENT_GAVE_UP_IN_APP,
-            (Self::AgentGaveUp, Via::Mail) => &NOTIFICATIONS_AGENT_GAVE_UP_BY_MAIL,
-            (Self::RuleRunsOutSoon, Via::App) => &NOTIFICATIONS_RULE_RUNS_OUT_SOON_IN_APP,
-            (Self::RuleRunsOutSoon, Via::Mail) => &NOTIFICATIONS_RULE_RUNS_OUT_SOON_BY_MAIL,
-            (Self::AgentStopped, Via::App) => &NOTIFICATIONS_AGENT_STOPPED_IN_APP,
-            (Self::AgentStopped, Via::Mail) => &NOTIFICATIONS_AGENT_STOPPED_BY_MAIL,
+            (Self::Mentioned, Via::App) => Some(&NOTIFICATIONS_MENTIONED_IN_APP),
+            (Self::Mentioned, Via::Mail) => Some(&NOTIFICATIONS_MENTIONED_BY_MAIL),
+            (Self::Assigned, Via::App) => Some(&NOTIFICATIONS_ASSIGNED_IN_APP),
+            (Self::Assigned, Via::Mail) => Some(&NOTIFICATIONS_ASSIGNED_BY_MAIL),
+            (Self::FollowedActivity, Via::App) => Some(&NOTIFICATIONS_FOLLOWED_ACTIVITY_IN_APP),
+            (Self::FollowedActivity, Via::Mail) => Some(&NOTIFICATIONS_FOLLOWED_ACTIVITY_BY_MAIL),
+            (Self::FollowedFields, Via::App) => Some(&NOTIFICATIONS_FOLLOWED_FIELDS_IN_APP),
+            (Self::FollowedFields, Via::Mail) => Some(&NOTIFICATIONS_FOLLOWED_FIELDS_BY_MAIL),
+            (Self::RunEnded, Via::App) => Some(&NOTIFICATIONS_RUN_ENDED_IN_APP),
+            (Self::RunEnded, Via::Mail) => Some(&NOTIFICATIONS_RUN_ENDED_BY_MAIL),
+            (Self::EditNotice, Via::App) => Some(&NOTIFICATIONS_EDIT_NOTICE_IN_APP),
+            (Self::EditNotice, Via::Mail) => Some(&NOTIFICATIONS_EDIT_NOTICE_BY_MAIL),
+            (Self::LongTimer, Via::App) => Some(&NOTIFICATIONS_LONG_TIMER_IN_APP),
+            (Self::LongTimer, Via::Mail) => Some(&NOTIFICATIONS_LONG_TIMER_BY_MAIL),
+            (Self::WorkDayChanged, Via::App) => Some(&NOTIFICATIONS_WORK_DAY_CHANGED_IN_APP),
+            (Self::WorkDayChanged, Via::Mail) => Some(&NOTIFICATIONS_WORK_DAY_CHANGED_BY_MAIL),
+            (Self::WorkTimesChanged, Via::App) => Some(&NOTIFICATIONS_WORK_TIMES_CHANGED_IN_APP),
+            (Self::WorkTimesChanged, Via::Mail) => Some(&NOTIFICATIONS_WORK_TIMES_CHANGED_BY_MAIL),
+            (Self::TimeFactorChanged, Via::App) => Some(&NOTIFICATIONS_TIME_FACTOR_CHANGED_IN_APP),
+            (Self::TimeFactorChanged, Via::Mail) => {
+                Some(&NOTIFICATIONS_TIME_FACTOR_CHANGED_BY_MAIL)
+            }
+            (Self::AgentAsks, Via::App) => Some(&NOTIFICATIONS_AGENT_ASKS_IN_APP),
+            (Self::AgentAsks, Via::Mail) => Some(&NOTIFICATIONS_AGENT_ASKS_BY_MAIL),
+            (Self::PlanWaits, Via::App) => Some(&NOTIFICATIONS_PLAN_WAITS_IN_APP),
+            (Self::PlanWaits, Via::Mail) => Some(&NOTIFICATIONS_PLAN_WAITS_BY_MAIL),
+            (Self::ReadyForReview, Via::App) => Some(&NOTIFICATIONS_READY_FOR_REVIEW_IN_APP),
+            (Self::ReadyForReview, Via::Mail) => Some(&NOTIFICATIONS_READY_FOR_REVIEW_BY_MAIL),
+            (Self::AgentGaveUp, Via::App) => Some(&NOTIFICATIONS_AGENT_GAVE_UP_IN_APP),
+            (Self::AgentGaveUp, Via::Mail) => Some(&NOTIFICATIONS_AGENT_GAVE_UP_BY_MAIL),
+            (Self::RuleRunsOutSoon, Via::App) => Some(&NOTIFICATIONS_RULE_RUNS_OUT_SOON_IN_APP),
+            (Self::RuleRunsOutSoon, Via::Mail) => Some(&NOTIFICATIONS_RULE_RUNS_OUT_SOON_BY_MAIL),
+            (Self::AgentStopped, Via::App) => Some(&NOTIFICATIONS_AGENT_STOPPED_IN_APP),
+            (Self::AgentStopped, Via::Mail) => Some(&NOTIFICATIONS_AGENT_STOPPED_BY_MAIL),
+            (Self::ExportReady, Via::App) => Some(&NOTIFICATIONS_EXPORT_READY_IN_APP),
+            (Self::ExportReady, Via::Mail) => Some(&NOTIFICATIONS_EXPORT_READY_BY_MAIL),
+            // The person whose data an administrator took is told whatever they chose (ADR-0044,
+            // decision 4).
+            (Self::ExportByAdministrator, _) => None,
         }
     }
 }
@@ -335,15 +352,18 @@ mod tests {
             (NotificationKind::AgentGaveUp, (true, false)),
             (NotificationKind::RuleRunsOutSoon, (true, false)),
             (NotificationKind::AgentStopped, (true, false)),
+            (NotificationKind::ExportReady, (true, true)),
         ];
-        assert_eq!(expected.len(), NotificationKind::ALL.len());
+        let always = [NotificationKind::ExportByAdministrator];
+        assert_eq!(expected.len() + always.len(), NotificationKind::ALL.len());
         for (kind, (app, mail)) in expected {
-            assert_eq!(kind.setting(Via::App).default_value(), Ok(app), "{kind:?}");
-            assert_eq!(
-                kind.setting(Via::Mail).default_value(),
-                Ok(mail),
-                "{kind:?}"
-            );
+            let value = |via| kind.setting(via).map(Setting::default_value);
+            assert_eq!(value(Via::App), Some(Ok(app)), "{kind:?}");
+            assert_eq!(value(Via::Mail), Some(Ok(mail)), "{kind:?}");
+        }
+        for kind in always {
+            assert!(kind.setting(Via::App).is_none(), "{kind:?}");
+            assert!(kind.setting(Via::Mail).is_none(), "{kind:?}");
         }
     }
 

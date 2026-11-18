@@ -44,6 +44,7 @@ use crate::member::{comment, follower};
 use crate::outbox_reader::read_all;
 
 mod agent_work;
+mod data_exports;
 mod timer_job;
 mod work_days;
 mod work_times;
@@ -311,12 +312,12 @@ impl<S: AuthStore> Ctx<'_, S> {
             RecordKind::AgentWork => self.agent_work_event(round, event).await,
             RecordKind::StandingRule => self.standing_rule_event(round, event).await,
             RecordKind::HandOver => self.hand_over_event(round, event).await,
+            RecordKind::DataExport => self.data_export_event(round, event).await,
             // The rest changes the setup of the organization or a person's own data; no follower
             // of an issue hears of it.
             RecordKind::AccessKey
             | RecordKind::OAuthClient
             | RecordKind::ConnectedApp
-            | RecordKind::DataExport
             | RecordKind::Field
             | RecordKind::Assignment
             | RecordKind::Follower

@@ -2,7 +2,8 @@
 //! code, so their texts and tables never write a number or a key a second time:
 //!
 //! - the table of *Customize*: for each kind of notification, the setting that says whether the
-//!   person hears of it in the app and the one for e-mail (`NotificationKind::setting`);
+//!   person hears of it in the app and the one for e-mail (`NotificationKind::setting`), or `null`
+//!   for a kind nobody can switch off;
 //! - the numbers the texts say: how long notifications are kept, how long the link of a sign-up
 //!   works and how long a new one waits, how often a test e-mail may go, how often a handle may be
 //!   changed and how long it may be.
@@ -63,7 +64,41 @@ fn pattern_name(pattern: &syn::Pat) -> Option<String> {
     }
 }
 
-/// The match of `NotificationKind::setting`, as `(variant, way, constant)` for each arm.
+/// The setting an arm of the match names: `Some(&CONSTANT)` (in braces or not), or `None` for a
+/// kind nobody can switch off.
+fn constant_of(body: &syn::Expr) -> anyhow::Result<Option<String>> {
+    let not_read =
+        || anyhow::anyhow!("an arm of `{KIND_TYPE}::{SETTING_FUNCTION}` does not name a setting");
+    match body {
+        syn::Expr::Path(path) if last_name(&path.path).as_deref() == Some("None") => Ok(None),
+        syn::Expr::Call(call) => {
+            let (syn::Expr::Path(function), Some(syn::Expr::Reference(reference))) =
+                (&*call.func, call.args.first())
+            else {
+                return Err(not_read());
+            };
+            let syn::Expr::Path(constant) = &*reference.expr else {
+                return Err(not_read());
+            };
+            match (
+                last_name(&function.path).as_deref(),
+                last_name(&constant.path),
+            ) {
+                (Some("Some"), Some(constant)) => Ok(Some(constant)),
+                _ => Err(not_read()),
+            }
+        }
+        // A long arm is written in braces by the formatter: the one expression inside counts.
+        syn::Expr::Block(block) => match block.block.stmts.as_slice() {
+            [syn::Stmt::Expr(inner, None)] => constant_of(inner),
+            _ => Err(not_read()),
+        },
+        _ => Err(not_read()),
+    }
+}
+
+/// The match of `NotificationKind::setting`, as `(variant, way, constant)` for each arm that names
+/// a setting. An arm that names none is a kind nobody can switch off, and is left out.
 fn arms(file: &syn::File) -> anyhow::Result<Vec<(String, String, String)>> {
     let function = file
         .items
@@ -90,29 +125,24 @@ fn arms(file: &syn::File) -> anyhow::Result<Vec<(String, String, String)>> {
             _ => None,
         })
         .with_context(|| format!("`{KIND_TYPE}::{SETTING_FUNCTION}` is not a `match`"))?;
-    table
-        .arms
-        .iter()
-        .map(|arm| {
-            let syn::Pat::Tuple(pair) = &arm.pat else {
-                bail!("an arm of `{KIND_TYPE}::{SETTING_FUNCTION}` is not a pair");
-            };
-            let syn::Expr::Reference(reference) = &*arm.body else {
-                bail!("an arm of `{KIND_TYPE}::{SETTING_FUNCTION}` does not name a setting");
-            };
-            let syn::Expr::Path(constant) = &*reference.expr else {
-                bail!("an arm of `{KIND_TYPE}::{SETTING_FUNCTION}` does not name a setting");
-            };
-            let (kind, way) = (
-                pair.elems.first().and_then(pattern_name),
-                pair.elems.get(1).and_then(pattern_name),
-            );
-            match (kind, way, last_name(&constant.path)) {
-                (Some(kind), Some(way), Some(constant)) => Ok((kind, way, constant)),
-                _ => bail!("an arm of `{KIND_TYPE}::{SETTING_FUNCTION}` is not read"),
-            }
-        })
-        .collect()
+    let mut found = Vec::new();
+    for arm in &table.arms {
+        let syn::Pat::Tuple(pair) = &arm.pat else {
+            bail!("an arm of `{KIND_TYPE}::{SETTING_FUNCTION}` is not a pair");
+        };
+        let Some(constant) = constant_of(&arm.body)? else {
+            continue;
+        };
+        let (kind, way) = (
+            pair.elems.first().and_then(pattern_name),
+            pair.elems.get(1).and_then(pattern_name),
+        );
+        match (kind, way) {
+            (Some(kind), Some(way)) => found.push((kind, way, constant)),
+            _ => bail!("an arm of `{KIND_TYPE}::{SETTING_FUNCTION}` is not read"),
+        }
+    }
+    Ok(found)
 }
 
 /// The words of `NotificationKind` in the order the server lists them.
@@ -152,14 +182,19 @@ fn settings_table(sources: &[Source], spec: &str) -> anyhow::Result<String> {
                 keys.insert(way.as_str(), key_of(constant)?);
             }
         }
-        let (Some(app), Some(mail)) = (keys.get(APP), keys.get(MAIL)) else {
-            bail!("`{KIND_TYPE}::{SETTING_FUNCTION}` has no setting for both ways of `{word}`");
-        };
         // A word with a hyphen is not a name in TypeScript, so it is written as a string.
         let key = if word.contains('-') {
             format!("{word:?}")
         } else {
             word.clone()
+        };
+        // A kind with no setting at all is one nobody can switch off: it has no switches.
+        if keys.is_empty() {
+            let _ = writeln!(table, "  {key}: null,");
+            continue;
+        }
+        let (Some(app), Some(mail)) = (keys.get(APP), keys.get(MAIL)) else {
+            bail!("`{KIND_TYPE}::{SETTING_FUNCTION}` has no setting for both ways of `{word}`");
         };
         let _ = writeln!(table, "  {key}: {{ app: {app:?}, mail: {mail:?} }},");
     }
@@ -170,7 +205,7 @@ fn settings_table(sources: &[Source], spec: &str) -> anyhow::Result<String> {
 pub(crate) fn notifications(sources: &[Source], spec: &str) -> anyhow::Result<String> {
     let number = |path: &str, name: &str| number_const(&parsed(sources, path)?, path, name);
     Ok(format!(
-        "{TS_HEADER}/** For each kind of notification, the settings that say whether a person hears of it in the app and by e-mail (*Customize*). */
+        "{TS_HEADER}/** For each kind of notification, the settings that say whether a person hears of it in the app and by e-mail (*Customize*); `null` for a kind nobody can switch off. */
 export const notificationSettings = {{
 {table}}} as const;
 

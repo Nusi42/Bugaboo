@@ -634,6 +634,10 @@ pub struct Notice {
     /// Work times of the reader that somebody else changed.
     #[serde(default)]
     pub work_times: Option<WorkTimesNotice>,
+    /// Why an administrator created a file of the reader's data, in their words (ADR-0044, decision
+    /// 4).
+    #[serde(default)]
+    pub export_reason: Option<String>,
 }
 
 /// What happened, in words: one sentence, or one for each field a change touched.
@@ -663,6 +667,17 @@ pub fn notification_sentences(notice: &Notice) -> Vec<Said> {
             one(Said::key(message::NOTIFICATIONS_RULE_RUNS_OUT_SOON))
         }
         NotificationKind::AgentStopped => one(Said::key(message::NOTIFICATIONS_AGENT_STOPPED)),
+        NotificationKind::ExportReady => one(Said::key(message::NOTIFICATIONS_EXPORT_READY)),
+        NotificationKind::ExportByAdministrator => {
+            let mut said = vec![said!(message::notifications_export_by_administrator, who())];
+            if let Some(reason) = &notice.export_reason {
+                said.push(said!(
+                    message::notifications_export_reason,
+                    Said::text(reason.as_str())
+                ));
+            }
+            said
+        }
         NotificationKind::RunEnded => one(match (&notice.renewal, notice.run_done) {
             (
                 Some(Renewal {

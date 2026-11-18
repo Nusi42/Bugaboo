@@ -309,6 +309,12 @@ export const messages = {
   "setting.notifications.agent-stopped-by-mail.name": "An agent was stopped or paused: by e-mail",
   "setting.notifications.agent-stopped-by-mail.help":
     "Sends you an e-mail when an agent of yours is stopped by an administrator or because you lost access, or paused because it reached a limit.",
+  "setting.notifications.export-ready-in-app.name": "Your data is ready: in the app",
+  "setting.notifications.export-ready-in-app.help":
+    "Tells you when the file of your data that you asked for under My data is ready to download.",
+  "setting.notifications.export-ready-by-mail.name": "Your data is ready: by e-mail",
+  "setting.notifications.export-ready-by-mail.help":
+    "Sends you an e-mail when the file of your data that you asked for under My data is ready to download. E-mail goes only when your organization has switched it on.",
   "setting.time.billable.name": "Billable",
   "setting.time.billable.help":
     "Lets people mark a time entry as time that can be charged to a customer. Switching it off hides the box and keeps what was marked.",

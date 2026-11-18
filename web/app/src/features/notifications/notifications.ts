@@ -149,6 +149,11 @@ export function noticeOf(row: NotificationRow): WordedNotice {
     (entry) => entry.issue_ids_failed !== undefined && entry.issue_ids_failed !== null,
   )?.issue_ids_failed;
   const file = row.entries.find((entry) => entry.file_event !== undefined);
+  // Why an administrator created a file of the reader's data; a work day keeps its reason apart.
+  const exportReason =
+    row.kind === "export-by-administrator"
+      ? (row.entries.find((entry) => entry.reason !== undefined)?.reason ?? null)
+      : null;
   return {
     kind: row.kind,
     who: whoOf(row),
@@ -161,6 +166,7 @@ export function noticeOf(row: NotificationRow): WordedNotice {
       renewal === undefined || renewal === null
         ? null
         : { project: renewal.shown === "visible" ? (renewal.name ?? null) : null },
+    export_reason: exportReason,
   };
 }
 

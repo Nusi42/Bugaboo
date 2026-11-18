@@ -111,6 +111,8 @@ export const notificationKindWords = [
   "agent-gave-up",
   "rule-runs-out-soon",
   "agent-stopped",
+  "export-ready",
+  "export-by-administrator",
 ] as const;
 
 /** Every word of `NotificationTab`, in the order the server lists them. */

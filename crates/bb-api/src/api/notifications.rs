@@ -122,7 +122,8 @@ pub(crate) struct NotificationEntry {
     /// One of the person's work days that somebody else changed: its date (`2026-10-05`).
     #[serde(skip_serializing_if = "Option::is_none")]
     work_day: Option<String>,
-    /// The work day: why it was changed, in the words of whoever changed it.
+    /// Why, in the words of whoever did it: why a work day was changed, or why an administrator
+    /// created a file of the person's data.
     #[serde(skip_serializing_if = "Option::is_none")]
     reason: Option<String>,
     /// Work times of the person that somebody else changed: what was done. Never a note: only its
@@ -222,6 +223,11 @@ fn entries_of(item: &NotificationItem) -> Vec<NotificationEntry> {
             entry.work_times_event = Some(*event);
             entry.work_times_first = first.map(|date| date.to_string());
             entry.work_times_last = last.map(|date| date.to_string());
+            vec![entry]
+        }
+        NotificationWhat::ExportByAdministrator { reason } => {
+            let mut entry = start(item);
+            entry.reason.clone_from(reason);
             vec![entry]
         }
         NotificationWhat::Plain => vec![start(item)],

@@ -222,7 +222,10 @@ impl Crew {
                 version: None,
                 session_token: token(&self.world),
                 scope: SettingsScope::Organization,
-                key: kind.setting(via).definition().key().to_owned(),
+                key: kind
+                    .setting(via)
+                    .map_or("", |setting| setting.definition().key())
+                    .to_owned(),
                 value: SettingValue::Bool(true),
             },
         )

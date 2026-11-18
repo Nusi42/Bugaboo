@@ -32,6 +32,7 @@ pub mod assistant;
 pub use assistant::{ASSISTANT_LOOK_UPS, ASSISTANT_LOOK_UPS_MOST};
 pub mod agent_notices;
 pub mod agents;
+pub mod data_exports;
 pub use agent_notices::{
     NOTIFICATIONS_AGENT_ASKS_BY_MAIL, NOTIFICATIONS_AGENT_ASKS_IN_APP,
     NOTIFICATIONS_AGENT_GAVE_UP_BY_MAIL, NOTIFICATIONS_AGENT_GAVE_UP_IN_APP,
@@ -662,6 +663,7 @@ pub fn registry() -> impl Iterator<Item = &'static SettingDefinition> {
         .chain(agent_notices::ALL)
         .chain(agents::ALL)
         .chain(backups::ALL)
+        .chain(data_exports::ALL)
         .copied()
         .chain(extra.iter().copied())
 }

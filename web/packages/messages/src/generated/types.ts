@@ -511,9 +511,12 @@ export interface MessageArguments {
   "many-changes.result-done": { changed: number; skipped: number };
   "many-changes.skipped-line": { issue: string | number; reason: string | number };
   "many-changes.title": { action: string | number; count: number };
+  "notifications.always-told": { way: string | number };
   "notifications.assigned": { who: string | number };
   "notifications.commented": { who: string | number };
   "notifications.count-capped": { max: string | number };
+  "notifications.export-by-administrator": { who: string | number };
+  "notifications.export-reason": { reason: string | number };
   "notifications.finish-asked": { who: string | number };
   "notifications.group-name": { issue: string | number };
   "notifications.issue-ids-failed": { project: string | number };

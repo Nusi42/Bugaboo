@@ -29,12 +29,12 @@ use crate::privacy::export::{
 use crate::privacy::walk::{Cell, FoundRow, Value};
 use crate::roles::{SetPeopleLevel, set_level};
 
-async fn run_jobs(world: &World) -> Result<(), String> {
+pub(super) async fn run_jobs(world: &World) -> Result<(), String> {
     while world.ctx().run_due_jobs().await.map_err(text)? > 0 {}
     Ok(())
 }
 
-async fn ask_mine(world: &World, session: &str) -> Result<ExportView, AppError> {
+pub(super) async fn ask_mine(world: &World, session: &str) -> Result<ExportView, AppError> {
     ask_for_my_data(
         &world.ctx(),
         AskMyData {
@@ -45,7 +45,7 @@ async fn ask_mine(world: &World, session: &str) -> Result<ExportView, AppError> 
     .map(crate::access::Authorized::into_value)
 }
 
-async fn ask_for(
+pub(super) async fn ask_for(
     world: &World,
     session: &str,
     person: UserId,
@@ -182,6 +182,11 @@ async fn priv_03_an_administrator_needs_download_someones_data_and_the_person_is
     let made = ask_for(world, &token(world), carol, "Carol asked by letter").await?;
     assert_eq!(made.export.person, carol);
     assert_eq!(made.export.reason.as_deref(), Some("Carol asked by letter"));
+    // Carol is told at once (the notices of exports are tested in `data_export_notices`).
+    assert_eq!(
+        super::notifications::kinds(&crew.heard(&crew.carol.session_token).await?),
+        vec![bb_core::notification::NotificationKind::ExportByAdministrator]
+    );
     run_jobs(world).await?;
     // The file is Ada's to download, not Carol's.
     let ada_link = link(world, &token(world), made.export.id).await?;

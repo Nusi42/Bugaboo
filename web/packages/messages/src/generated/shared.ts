@@ -672,6 +672,8 @@ export const messages = {
   "notification.kind.agent-stopped": "An agent was stopped or paused",
   "notification.kind.edit-notice":
     "Somebody asks you to finish editing, or takes your editing over",
+  "notification.kind.export-ready": "Your data is ready",
+  "notification.kind.export-by-administrator": "An administrator downloaded your data",
   "error.mail.rejected":
     "The mail server did not accept the e-mail. Check the user name and the password, and the address e-mails are sent from.",
   "error.mail.unavailable":
@@ -717,6 +719,10 @@ export const messages = {
     "A standing rule of yours runs out in three days. Renew it if the agent should go on.",
   "notifications.agent-stopped":
     "An agent of yours was stopped or paused. Look at My agents to see which one and why.",
+  "notifications.export-ready":
+    "The file of your data is ready. Download it under My settings › My data",
+  "notifications.export-by-administrator": "{who} created a file of all your data to download",
+  "notifications.export-reason": "Why: {reason}",
   "notifications.run-failed": "Your change to many issues stopped before it was done",
   "notifications.issue-ids-failed":
     "Bugaboo could not give every issue of {project} its new ID. Open the project settings to try again",

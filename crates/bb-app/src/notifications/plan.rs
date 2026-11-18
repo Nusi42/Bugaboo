@@ -16,9 +16,10 @@ use crate::issues::member as issue_member;
 use crate::member::{edit_lock, run};
 
 /// Whether a person in the layers they have wants to hear of `kind` this way. The organization's
-/// value is the default of everybody and a locked one counts for everybody.
+/// value is the default of everybody and a locked one counts for everybody. A kind without a
+/// setting is wanted always: nobody can switch it off.
 pub(crate) fn wants(layers: &Layers, kind: NotificationKind, via: Via) -> bool {
-    layers.yes(kind.setting(via))
+    kind.setting(via).is_none_or(|setting| layers.yes(setting))
 }
 
 /// Where the event of a run of many changes says the run is now, if it says.

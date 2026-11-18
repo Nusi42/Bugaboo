@@ -247,8 +247,7 @@ async fn news_of_fields_everywhere(g: &Groups) -> Result<(), AppError> {
                 scope: crate::settings::SettingsScope::Organization,
                 key: bb_core::notification::NotificationKind::FollowedFields
                     .setting(via)
-                    .definition()
-                    .key()
+                    .map_or("", |setting| setting.definition().key())
                     .to_owned(),
                 value: bb_core::settings::SettingValue::Bool(true),
             },

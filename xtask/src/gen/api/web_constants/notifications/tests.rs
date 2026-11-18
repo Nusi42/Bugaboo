@@ -3,16 +3,19 @@
 use super::*;
 use crate::checks::arch_settings::CATALOG_PATH;
 
-const KINDS: &str = r#"{"components":{"schemas":{"NotificationKind":{"type":"string","enum":["mentioned","followed-activity"]}}}}"#;
+const KINDS: &str = r#"{"components":{"schemas":{"NotificationKind":{"type":"string","enum":["mentioned","followed-activity","always-told"]}}}}"#;
 
 const NOTIFICATION: &str = "impl NotificationKind {
-    pub const fn setting(self, via: Via) -> &'static Setting<Bool> {
+    pub const fn setting(self, via: Via) -> Option<&'static Setting<Bool>> {
         use settings::{A, B, C, D};
         match (self, via) {
-            (Self::Mentioned, Via::App) => &A,
-            (Self::Mentioned, Via::Mail) => &B,
-            (Self::FollowedActivity, Via::App) => &C,
-            (Self::FollowedActivity, Via::Mail) => &D,
+            (Self::Mentioned, Via::App) => Some(&A),
+            (Self::Mentioned, Via::Mail) => Some(&B),
+            (Self::FollowedActivity, Via::App) => Some(&C),
+            (Self::FollowedActivity, Via::Mail) => {
+                Some(&D)
+            }
+            (Self::AlwaysTold, _) => None,
         }
     }
 }
@@ -67,6 +70,8 @@ fn the_table_of_customize_comes_from_the_match_of_the_notification_kind() {
         text.contains("\"followed-activity\": { app: \"notifications.followed-activity-in-app\""),
         "{text}"
     );
+    // A kind that nobody can switch off has no switches on *Customize*.
+    assert!(text.contains("\"always-told\": null,"), "{text}");
 }
 
 #[test]
@@ -83,7 +88,10 @@ fn the_numbers_of_the_texts_come_from_the_constants_of_the_core() {
 
 #[test]
 fn a_kind_without_both_settings_or_a_missing_source_is_an_error() {
-    let one_way = NOTIFICATION.replace("            (Self::Mentioned, Via::Mail) => &B,\n", "");
+    let one_way = NOTIFICATION.replace(
+        "            (Self::Mentioned, Via::Mail) => Some(&B),\n",
+        "",
+    );
     let mut broken = sources();
     broken[0].1 =
         format!("pub const KEEP_DAYS: i64 = 90;\npub const AT_ONCE_MAX: usize = 100;\n{one_way}");

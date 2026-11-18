@@ -191,6 +191,7 @@ fn lines_about(
         file: None,
         work_day: None,
         work_times: None,
+        export_reason: None,
     };
     match what {
         NotificationWhat::Comment { .. } => notice.comment = true,
@@ -234,6 +235,9 @@ fn lines_about(
                 }),
             });
         }
+        NotificationWhat::ExportByAdministrator { reason } => {
+            notice.export_reason.clone_from(reason);
+        }
         NotificationWhat::Plain => {}
     }
     let sentences = notification_sentences(&notice)
@@ -248,6 +252,18 @@ fn lines_about(
         _ => sentences
             .map(|sentence| line_of(&sentence, End::Sentence))
             .collect(),
+    }
+}
+
+/// The subject of an e-mail about no issue: the end of a run and a renewal that gave up say what
+/// they say, anything else names its kind.
+fn subject_without_issue(first: &NotificationItem) -> Message {
+    match (&first.what, first.kind) {
+        (NotificationWhat::IssueIdsFailed { .. }, _) => {
+            Message::from(message::MAIL_SUBJECT_IDS_FAILED)
+        }
+        (_, NotificationKind::RunEnded) => Message::from(message::MAIL_SUBJECT_RUN),
+        (_, kind) => message::mail_subject_notice(Message::from(kind.label()).render()),
     }
 }
 
@@ -272,15 +288,9 @@ pub(crate) fn compose(
             }),
             message::mail_open(format!("{public_url}{}", app_paths::issue(&issue.key))),
         ),
-        // Work that is not about one issue ends in the notifications, so that is where the link goes.
+        // What is not about one issue ends in the notifications, so that is where the link goes.
         None => (
-            subject_of(&Message::from(
-                if matches!(first.what, NotificationWhat::IssueIdsFailed { .. }) {
-                    message::MAIL_SUBJECT_IDS_FAILED
-                } else {
-                    message::MAIL_SUBJECT_RUN
-                },
-            )),
+            subject_of(&subject_without_issue(first)),
             message::mail_open_notifications(format!("{public_url}{}", app_paths::NOTIFICATIONS)),
         ),
     };

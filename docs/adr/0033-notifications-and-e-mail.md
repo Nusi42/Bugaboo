@@ -147,6 +147,18 @@ Work times and the time factor ([ADR-0030](0030-planning-with-people.md)) add tw
 - An away time is named only by its days (*"Ada Brandt entered an away time for you: 26–30 Oct"*); it has no reason to name (ADR-0030, decision 2). The text of the note of an away time is never sent: only its person sees it.
 - Neither kind names another person's work times, and no notification goes to anybody else about them. Enforced by: SEC-MATRIX (the notifications column) and the tests of WP-04 and WP-06.
 
+## Amendment (M9, Download my data)
+
+*Download my data* ([ADR-0044](0044-download-my-data-and-remove-a-person.md), decisions 2 and 4) adds two kinds of notification, built by the same reader from the events of the export and checked again in the same way (decision 2). Neither is about an issue: its e-mail names the kind in its subject and links to *Notifications*.
+
+| Event | In the app | By e-mail |
+|---|---|---|
+| *Your data is ready* (the file you asked for can be downloaded; told to whoever asked for it) | on | on |
+| *An administrator downloaded your data* (somebody with *Download someone's data* created a file of your data; told with the reason) | always | always |
+
+- *Your data is ready* is changed under *Customize* like any other kind. The person waits for the file, so it is on by e-mail at the start.
+- *An administrator downloaded your data* has no setting: nobody can switch it off, not the person and not the organization, because the person must learn that somebody took their data (decision 4). *Customize* shows it as always on. It is told when the administrator asks for the file, so it reaches the person even when the job that writes the file fails. The administrator is shown as *Who sees people* lets the person see authors, never by name when that hides them. The e-mail goes to the address on record, like every e-mail of a notification; e-mail itself must be switched on, because without a mail server nothing can be sent. Enforced by: the tests of the notices of exports in `bb-app` and SEC-MATRIX.
+
 ## Enforced by
 
 SEC-MATRIX (the e-mail and notifications column), DOC-GENERATED and the browser test of the vectors (the wording amendment), ARCH-PERSON-REF, ARCH-EVENTS, DATA-MARKS, DATA-LOGS, DEP-REGISTER (`lettre`), the permission tests of M4 WP-06, and review (no other path sends mail).

@@ -33,6 +33,7 @@ use crate::event_members::text_set;
 use crate::files::is_listed;
 use crate::files::member as file_member;
 use crate::history::ChangeReader;
+use crate::member::data_export;
 use crate::member::notifications as member;
 use crate::relations::LineMaker;
 
@@ -286,9 +287,15 @@ impl<S: AuthStore> Ctx<'_, S> {
             | NotificationKind::ReadyForReview
             | NotificationKind::AgentGaveUp
             | NotificationKind::TimeFactorChanged => Ok(issue.map(|_| NotificationWhat::Plain)),
-            // About an agent or a rule, not about an issue: the kind says it all.
-            NotificationKind::RuleRunsOutSoon | NotificationKind::AgentStopped => {
-                Ok(Some(NotificationWhat::Plain))
+            // About an agent, a rule or the file of the person's data, not about an issue: the kind
+            // says it all.
+            NotificationKind::RuleRunsOutSoon
+            | NotificationKind::AgentStopped
+            | NotificationKind::ExportReady => Ok(Some(NotificationWhat::Plain)),
+            NotificationKind::ExportByAdministrator => {
+                Ok(Some(NotificationWhat::ExportByAdministrator {
+                    reason: text_set(&row.changes, data_export::REASON).map(str::to_owned),
+                }))
             }
             NotificationKind::WorkDayChanged => Ok(work_day_change_of(&row.changes)),
             NotificationKind::WorkTimesChanged => Ok(work_times_change_of(&row.changes)),

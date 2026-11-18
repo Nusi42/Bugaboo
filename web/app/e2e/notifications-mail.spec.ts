@@ -70,6 +70,14 @@ test("ntf_02 Customize has a row for each kind of event, with the standard choic
   await expect(
     followed.getByRole("switch", { name: t("notifications.by-mail") }),
   ).not.toBeChecked();
+  // Nobody can switch off being told that an administrator took Ana's data: the row says so.
+  const taken = page.getByRole("group", {
+    name: t("notification.kind.export-by-administrator"),
+  });
+  await expect(taken.getByRole("switch")).toHaveCount(0);
+  await expect(
+    taken.getByText(t("notifications.always-told", { way: t("notifications.by-mail") })),
+  ).toBeVisible();
   await expectGoodInEveryLook(page);
 });
 
