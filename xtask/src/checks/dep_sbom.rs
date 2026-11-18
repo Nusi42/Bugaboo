@@ -5,9 +5,11 @@
 //! The list is made from the lockfiles by `crate::release`, written to the build folder, and read
 //! back from the files. What it must hold is worked out a second way: the crates are what
 //! `cargo tree -e normal` says each program compiles in, the npm packages are what the lockfile
-//! does not mark as only for development. A part that the writer drops, or an entry it invents, is
-//! found by the difference. The signatures of the release folder are a later step of
-//! `cargo xtask release`.
+//! does not mark as only for development. A part that the writer drops is found by the
+//! difference. An entry the writer invents is a real finding for npm packages only: the crate list
+//! is cut to the `cargo tree` set when it is made, and the files are added to both sides from the
+//! list itself, so for crates and files only "missing" is a check. The signatures of the release
+//! folder are a later step of `cargo xtask release`.
 
 use std::collections::BTreeSet;
 use std::fs;
