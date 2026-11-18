@@ -21,7 +21,7 @@ use sea_query::{Condition, Expr, ExprTrait as _, OnConflict, Order, Query, SubQu
 use zeroize::Zeroizing;
 
 use crate::auth::AuthStorage;
-use crate::db::{Database, Row, StoredId, Transaction, to_micros};
+use crate::db::{Database, Row, StoredId, Transaction, rows_per_insert, to_micros};
 use crate::error::{SecretProblem, StoreError};
 use crate::events::{consumer_name, outbox_move};
 use crate::jobs::{NewJob, enqueue};
@@ -111,32 +111,38 @@ fn ids_of(ids: &[NotificationId]) -> Vec<Vec<u8>> {
 }
 
 /// Stores one notification unless the person has it already. Returns whether it was stored.
-async fn insert(transaction: &mut Transaction, row: &Notification) -> Result<bool, StoreError> {
-    let mut insert = Query::insert();
-    insert
-        .into_table(NotificationRow::Table)
-        .columns(columns())
-        .values([
-            Expr::val(row.id.stored()),
-            Expr::val(row.recipient.stored()),
-            Expr::val(row.kind.code()),
-            Expr::val(row.issue.map(StoredId::stored)),
-            Expr::val(row.event.stored()),
-            Expr::val(row.once.key()),
-            Expr::val(row.record.map(StoredId::stored)),
-            Expr::val(row.by.map(StoredId::stored)),
-            Expr::val(to_micros(row.at)),
-            Expr::val(serde_json::to_string(&row.changes)?),
-            Expr::val(row.in_app),
-            Expr::val(row.mail.code()),
-        ])
-        .map_err(|_| StoreError::Corrupt("a notification"))?
-        .on_conflict(
+/// Writes the rows, as many in one statement as the database takes; a row whose person and key are
+/// there already is left out (`Once`).
+async fn insert(transaction: &mut Transaction, rows: &[Notification]) -> Result<(), StoreError> {
+    for chunk in rows.chunks(rows_per_insert(columns().len())) {
+        let mut insert = Query::insert();
+        insert.into_table(NotificationRow::Table).columns(columns());
+        for row in chunk {
+            insert
+                .values([
+                    Expr::val(row.id.stored()),
+                    Expr::val(row.recipient.stored()),
+                    Expr::val(row.kind.code()),
+                    Expr::val(row.issue.map(StoredId::stored)),
+                    Expr::val(row.event.stored()),
+                    Expr::val(row.once.key()),
+                    Expr::val(row.record.map(StoredId::stored)),
+                    Expr::val(row.by.map(StoredId::stored)),
+                    Expr::val(to_micros(row.at)),
+                    Expr::val(serde_json::to_string(&row.changes)?),
+                    Expr::val(row.in_app),
+                    Expr::val(row.mail.code()),
+                ])
+                .map_err(|_| StoreError::Corrupt("a notification"))?;
+        }
+        insert.on_conflict(
             OnConflict::columns([NotificationRow::Recipient, NotificationRow::Once])
                 .do_nothing()
                 .to_owned(),
         );
-    Ok(transaction.execute(&insert).await? > 0)
+        transaction.execute(&insert).await?;
+    }
+    Ok(())
 }
 
 impl Database {
@@ -177,9 +183,7 @@ impl NotificationStore for AuthStorage {
         // The rows, the jobs and the place of the reader are one step: a reader that stops reads
         // the same events again, and the rows it made once are not made twice.
         let mut transaction = self.database().begin().await?;
-        for row in rows {
-            insert(&mut transaction, row).await?;
-        }
+        insert(&mut transaction, rows).await?;
         for queued in jobs {
             let job = NewJob {
                 kind: queued.kind.clone(),
