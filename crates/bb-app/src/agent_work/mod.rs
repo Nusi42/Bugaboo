@@ -21,6 +21,7 @@ mod stop;
 mod store;
 mod take;
 mod types;
+mod waiting;
 
 pub use attempt::{ask_question, attach_result, end_attempt, report_attempt};
 pub use changes::{ChangeSeen, ChangesPage, ChangesSinceQuery, MatchSeen, WorkSeen, changes_since};
@@ -39,3 +40,6 @@ pub use stop::{Closing, close_work_of};
 pub use store::{AgentWorkRecords, GrantStore, RuleCursor, WorkDetails};
 pub use take::take_work;
 pub use types::*;
+pub use waiting::{
+    Pause, WAITING_SHARE_OF_CONNECTIONS, WaitForWorkQuery, WaitedPage, WorkSignal, wait_for_work,
+};

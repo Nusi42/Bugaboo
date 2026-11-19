@@ -49,6 +49,7 @@ fn example(tool: Tool, ground: &Ground<'_>) -> Value {
         Tool::SearchIssues => json!({"query": ""}),
         Tool::GetIssue | Tool::StartTimer | Tool::Take | Tool::Submit => json!({"issue": issue}),
         Tool::ListProjects | Tool::GetMyWork | Tool::ChangesSince => json!({}),
+        Tool::WaitForWork => json!({"seconds": 1}),
         Tool::CreateIssue => {
             json!({"project": "ACME", "issue_type": ground.kind, "title": "From the matrix"})
         }

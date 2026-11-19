@@ -21,7 +21,7 @@ use serde_json::{Value, json};
 use super::call::Saved;
 use super::inputs::{
     AskInput, AttachInput, ChangesSinceInput, GiveUpInput, ProposeInput, ReportInput, SubmitInput,
-    TakeInput, limit_within,
+    TakeInput, WaitForWorkInput, limit_within,
 };
 use super::preview::preview_parts;
 use super::refused::{refused_at, word_at};
@@ -29,8 +29,8 @@ use super::registry::{Boxed, Run};
 use crate::agent_work::WorkView;
 use crate::agent_work::{
     AskQuestion, AttachResult, ChangesSinceQuery, EndAttempt, ProposeChange, ReportAttempt,
-    TakeWork, ask_question, attach_result, changes_since, end_attempt, propose_change,
-    report_attempt, take_work,
+    TakeWork, WaitForWorkQuery, ask_question, attach_result, changes_since, end_attempt,
+    propose_change, report_attempt, take_work, wait_for_work,
 };
 use crate::ai::context::Part;
 use crate::auth::{AppError, AuthStore, Ctx};
@@ -495,6 +495,40 @@ pub(super) fn changes<'a, S: AuthStore>(
         .await?;
         let value = super::read::masked(&page)?;
         Ok(parts_of_changes(&run, &value))
+    })
+}
+
+/// `wait_for_work`: waits until work waits for the agent or the seconds are over, then answers what
+/// `changes_since` answers for the same mark, and whether work waits now.
+pub(super) fn wait<'a, S: AuthStore>(
+    ctx: &'a Ctx<'_, S>,
+    run: Run<'a>,
+) -> Boxed<'a, Result<Vec<Part>, AppError>> {
+    Box::pin(async move {
+        ensure_agent(&run)?;
+        let input: WaitForWorkInput = run.input()?;
+        let answer = wait_for_work(
+            ctx,
+            WaitForWorkQuery {
+                session_token: run.token.to_owned(),
+                since: input.since,
+                limit: limit_within(input.limit.as_ref())?,
+                seconds: input.seconds,
+            },
+        )
+        .await?;
+        let value = super::read::masked(&answer)?;
+        let mut parts = parts_of_changes(&run, &value["page"]);
+        parts.push(Part {
+            name: "waited",
+            value: json!({
+                "work_waiting": value["work_waiting"],
+                "waited": value["waited"],
+            }),
+            author: AuthorKind::Agent,
+            project: None,
+        });
+        Ok(parts)
     })
 }
 

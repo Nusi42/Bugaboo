@@ -496,6 +496,8 @@ pub async fn hand_over<S: AuthStore>(
         .await?
         .record_change(ctx.store())
         .await?;
+    // The work waits for the agent now: a call of the agent that waits for work answers.
+    ctx.work_came_for(view.agent);
     Ok(ctx
         .evaluate(person, Place::Organization)
         .await?

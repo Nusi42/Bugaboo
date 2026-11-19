@@ -98,6 +98,8 @@ pub struct AuthServices<S> {
     /// What `mcp_identity` left for the call of the tool of a message, by the handle only that message
     /// has (`access/handoff.rs`).
     pub(crate) agent_handoff: Mutex<HashMap<String, crate::access::Handoff>>,
+    /// The agents that wait for work now (ADR-0029, amendment M9).
+    pub(crate) work_signal: crate::agent_work::WorkSignal,
 }
 
 impl<S> AuthServices<S> {
@@ -143,7 +145,27 @@ impl<S> AuthServices<S> {
             call_rate: super::oauth_rate::CallRate::default(),
             agent_rate: crate::agents::AgentRate::default(),
             agent_handoff: Mutex::default(),
+            work_signal: crate::agent_work::WorkSignal::default(),
         }
+    }
+
+    /// How many connections the listener holds at once, of which a share may wait for work
+    /// ([`crate::agent_work::WAITING_SHARE_OF_CONNECTIONS`]), and how time passes. Without it, no
+    /// call of *Wait for work* waits.
+    #[must_use]
+    pub fn with_waiting(
+        mut self,
+        connections: usize,
+        pause: Arc<dyn crate::agent_work::Pause>,
+    ) -> Self {
+        self.work_signal = crate::agent_work::WorkSignal::for_connections(connections, pause);
+        self
+    }
+
+    /// Ends every wait for work, because the server stops: no call keeps the stop waiting for its
+    /// seconds.
+    pub fn end_waits(&self) {
+        self.work_signal.ring_all();
     }
 
     /// The store of the bytes of files (ADR-0032). Without one, every call that touches a file

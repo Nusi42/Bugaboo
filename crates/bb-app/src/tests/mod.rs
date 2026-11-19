@@ -9,6 +9,7 @@ mod agent_requests_bound;
 mod agent_tools;
 mod agent_tools_more;
 mod agent_tools_writes;
+mod agent_waiting;
 mod agent_work;
 mod agent_work_attempt_writes;
 mod agent_work_dates;

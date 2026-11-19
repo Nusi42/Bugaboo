@@ -23,7 +23,7 @@ use super::inputs::{
     AddCommentInput, AskForAgentsInput, AskInput, AttachInput, ChangeStatusInput,
     ChangesSinceInput, CollectAgentKeysInput, CreateIssueInput, GetIssueInput, GetMyWorkInput,
     GiveUpInput, ListProjectsInput, LogTimeInput, ProposeInput, ReportInput, SearchIssuesInput,
-    StartTimerInput, StopTimerInput, SubmitInput, TakeInput, UpdateIssueInput,
+    StartTimerInput, StopTimerInput, SubmitInput, TakeInput, UpdateIssueInput, WaitForWorkInput,
 };
 use super::{agents, apply, preview, programs, read};
 use crate::access::Actor;
@@ -327,7 +327,7 @@ fn tools_of_people<S: AuthStore>() -> [ToolSpec<S>; 11] {
 
 /// The tools of agents (AI-36): the work they were handed, what changed, and the proposals of a
 /// standing rule.
-fn tools_of_agents<S: AuthStore>() -> [ToolSpec<S>; 8] {
+fn tools_of_agents<S: AuthStore>() -> [ToolSpec<S>; 9] {
     [
         changes(
             Tool::Take,
@@ -382,6 +382,13 @@ fn tools_of_agents<S: AuthStore>() -> [ToolSpec<S>; 8] {
             "changes_since",
             schema_of::<ChangesSinceInput>,
             agents::changes::<S>,
+            Need::Nothing,
+        ),
+        reads(
+            Tool::WaitForWork,
+            "wait_for_work",
+            schema_of::<WaitForWorkInput>,
+            agents::wait::<S>,
             Need::Nothing,
         ),
         changes(

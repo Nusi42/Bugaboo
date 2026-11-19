@@ -25,8 +25,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         self.plan_hand_over(actor, agent, reach, giving, &[issue.to_string()], Some(by))
             .await?
             .record_change(self.store())
-            .await
-            .map(drop)
+            .await?;
+        // The work waits for the agent now: a call of the agent that waits for work answers.
+        self.work_came_for(agent.id);
+        Ok(())
     }
 
     /// Hands over the issues a rule found that it did not know yet, one hand-over for each, as the

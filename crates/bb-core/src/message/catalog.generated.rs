@@ -1011,6 +1011,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Take an issue that was handed over to you and start an attempt. Two agents never start the same work.",
     ),
     ("ai-tool.update-issue", "Change fields of an issue."),
+    (
+        "ai-tool.wait-for-work",
+        "Wait until work waits for you (an issue handed over to you or sent back), or until the seconds are over, then list what changed since the mark you got last time, with a new mark.",
+    ),
     ("ai.country.anthropic", "United States"),
     (
         "ai.country.local-model",

@@ -124,6 +124,15 @@ impl World {
         })
     }
 
+    /// The same world where *Wait for work* waits, as on a server whose listener holds
+    /// `connections` at once, with the time of the test's runtime.
+    pub(crate) fn waiting(mut self, connections: usize) -> Self {
+        self.services = self
+            .services
+            .with_waiting(connections, Arc::new(super::agent_waiting::RuntimePause));
+        self
+    }
+
     /// The first start (`first_start`, as the server runs it), and the first administrator, Ada.
     pub(crate) async fn new() -> Result<Self, String> {
         let mut world = Self::bare()?;

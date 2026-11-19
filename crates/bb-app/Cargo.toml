@@ -40,7 +40,7 @@ bb-core = { path = "../bb-core", features = ["fake-ids"] }
 # Makes `Authorized::into_value` for the tests of this crate (ARCH-AUTHZ-ONLY).
 bb-policy = { path = "../bb-policy", features = ["peek"] }
 proptest = { workspace = true }
-tokio = { workspace = true, features = ["macros", "rt"] }
+tokio = { workspace = true, features = ["macros", "rt", "time"] }
 tracing-subscriber = { workspace = true }
 webauthn-authenticator-rs = { workspace = true }
 

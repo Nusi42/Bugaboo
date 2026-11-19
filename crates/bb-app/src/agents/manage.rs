@@ -492,6 +492,9 @@ pub async fn change_agent<S: AuthStore>(
         })?;
     if input.action == AgentAction::Resume {
         ctx.forget_agent_changes(found.id);
+    } else {
+        // A paused or stopped agent gets no work: its wait for work answers now.
+        ctx.wait_ends_for(found.id);
     }
     if !own {
         ctx.note(
@@ -527,12 +530,16 @@ pub async fn stop_all_agents<S: AuthStore>(
         entity(RecordKind::Person, person),
         vec![agents_stopped()],
     )?;
-    ctx.store()
+    let stopped = ctx
+        .store()
         .record_change(&event, move |transaction| {
-            Box::pin(async move { stop_agents_in::<S>(transaction, person).await.map(|_| ()) })
+            Box::pin(async move { stop_agents_in::<S>(transaction, person).await })
         })
         .await
         .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
+    for agent in stopped {
+        ctx.wait_ends_for(agent);
+    }
     Ok(Done)
 }
 

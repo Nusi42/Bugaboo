@@ -32,7 +32,7 @@ const SCAN: u64 = 200;
 /// How many looks one request makes at the most: it never reads the whole log for one page.
 const SCANS: usize = 2;
 /// How many pieces of open work one answer lists at the most.
-const MOST_WORK_SEEN: u64 = 100;
+pub(super) const MOST_WORK_SEEN: u64 = 100;
 
 /// Ask what changed in the issues the agent may see since a mark.
 pub struct ChangesSinceQuery {

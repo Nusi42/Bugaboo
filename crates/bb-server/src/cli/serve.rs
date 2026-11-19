@@ -108,6 +108,12 @@ pub(super) async fn serve_settings(
     });
     // The jobs that are queued are done in the background (ADR-0017): a change to many issues, and
     // the daily clearing of old drafts and catching up of the history (M3-F30, M3-F71).
+    // When the server stops, every wait for work answers at once (ADR-0029, amendment M9).
+    let waits = Arc::clone(&wired.jobs);
+    let shutdown = async move {
+        shutdown.await;
+        waits.end_waits();
+    };
     let working = bb_jobs::spawn(wired.jobs, bb_jobs::POLL_EVERY);
     let served = bb_api::serve(incoming, options, shutdown).await;
     working.abort();

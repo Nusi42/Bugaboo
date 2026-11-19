@@ -42,6 +42,11 @@ pub const MOST_RULE_DAYS: i64 = most_days(AGENTS_RULE_DAYS.definition());
 pub const RULE_WARNING_DAYS: i64 = 3;
 /// The most issues one hand-over names.
 pub const MOST_ISSUES_OF_A_HAND_OVER: usize = 100;
+/// How long *Wait for work* waits when the agent does not say: below the 30 seconds after which many
+/// proxies and clients give up on a quiet connection (ADR-0029, amendment M9).
+pub const WAIT_SECONDS_DEFAULT: u64 = 25;
+/// The longest *Wait for work* waits for one call.
+pub const WAIT_SECONDS_MOST: u64 = 60;
 
 words! {
     /// The state of the agent work on an issue. It is not the issue's status.

@@ -263,6 +263,20 @@ pub struct ChangesSinceInput {
     pub limit: Option<Number>,
 }
 
+/// Wait until work waits for you, then ask what changed since the mark you got last time.
+#[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct WaitForWorkInput {
+    /// The mark from the last answer, as for `changes_since`. Leave it out the first time.
+    pub since: Option<String>,
+    /// The most changes to answer with.
+    #[schema(schema_with = limit_schema)]
+    pub limit: Option<Number>,
+    /// How many seconds to wait at most, from 1 to 60; 25 when left out.
+    #[schema(minimum = 1, maximum = 60)]
+    pub seconds: Option<u64>,
+}
+
 /// Propose a change under your standing rule.
 #[derive(Debug, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]

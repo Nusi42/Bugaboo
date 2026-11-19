@@ -64,6 +64,15 @@ pub(crate) struct Wired {
     pub(crate) jobs: Arc<AuthServices<AuthStorage>>,
 }
 
+/// How time passes for *Wait for work*: the timer of the server's runtime.
+struct RuntimePause;
+
+impl bb_app::agent_work::Pause for RuntimePause {
+    fn pause(&self, length: std::time::Duration) -> BoxFuture<'static, ()> {
+        Box::pin(tokio::time::sleep(length))
+    }
+}
+
 /// The setup code file of a server without a console, as the use case that makes the first
 /// administrator sees it: something it can remove.
 struct SetupCodeOnDisk(PathBuf);
@@ -275,7 +284,8 @@ pub(crate) async fn wire(
     .with_mailer(Arc::new(SmtpMailer))
     .with_ai_provider(Arc::new(HttpAiProvider))
     .with_public_url(settings.public_url.clone())
-    .with_mail_batch(settings.mail_batch);
+    .with_mail_batch(settings.mail_batch)
+    .with_waiting(settings.max_connections, Arc::new(RuntimePause));
     // A server that runs as a service writes its log to a file, which a job rotates (M1-F61).
     let services = match crate::log::server_log_file() {
         Some(file) => services.with_server_log(file),

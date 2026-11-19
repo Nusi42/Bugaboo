@@ -353,6 +353,10 @@ pub async fn review_work<S: AuthStore>(
         })
     })
     .await?;
+    if next == AgentWorkState::WaitingForTheAgent {
+        // Sent back: the work waits for the agent again.
+        ctx.work_came_for(acting.work.agent);
+    }
     ctx.after_review(&acting).await
 }
 

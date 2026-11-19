@@ -95,6 +95,8 @@ words! {
         AskForAgents => "ask_for_agents",
         /// The program that asked collects the keys of the agents its person approved, once.
         CollectAgentKeys => "collect_agent_keys",
+        /// An agent waits until work waits for it, or some seconds, then asks what changed.
+        WaitForWork => "wait_for_work",
     }
     messages description = "ai-tool.";
 }
@@ -114,6 +116,7 @@ impl Tool {
                 | Self::GiveUp
                 | Self::ChangesSince
                 | Self::Propose
+                | Self::WaitForWork
         )
     }
 

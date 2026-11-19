@@ -531,7 +531,7 @@ async fn ai_36_every_text_in_a_tool_answer_names_its_author() -> Outcome {
 async fn ai_36_the_tools_of_agents_are_declared_to_read_or_to_change() {
     for spec in registry::<FakeStore>() {
         if spec.tool.is_for_agents() {
-            let expected = if spec.tool == Tool::ChangesSince {
+            let expected = if matches!(spec.tool, Tool::ChangesSince | Tool::WaitForWork) {
                 ToolEffect::Reads
             } else {
                 ToolEffect::Changes

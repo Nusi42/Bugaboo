@@ -1141,6 +1141,9 @@ pub const AI_TOOL_TAKE: MessageKey = MessageKey::new("ai-tool.take");
 /// The message `ai-tool.update-issue`.
 pub const AI_TOOL_UPDATE_ISSUE: MessageKey = MessageKey::new("ai-tool.update-issue");
 
+/// The message `ai-tool.wait-for-work`.
+pub const AI_TOOL_WAIT_FOR_WORK: MessageKey = MessageKey::new("ai-tool.wait-for-work");
+
 /// The message `ai.country.anthropic`.
 pub const AI_COUNTRY_ANTHROPIC: MessageKey = MessageKey::new("ai.country.anthropic");
 
