@@ -1,6 +1,7 @@
-//! *About* below `/api/v1/about` (COMP-01, COMP-02, ADR-0047 decision 3): the version, the license,
-//! the parts list by name, version and license, and the three files of the build: the parts list
-//! in `CycloneDX` and in SPDX, and the third-party notices.
+//! *About* below `/api/v1/about` (COMP-01, COMP-02, COMP-04, ADR-0047 decisions 3 and 5): the
+//! version, the support period, the license, the parts list by name, version and license, and the
+//! three files of the build: the parts list in `CycloneDX` and in SPDX, and the third-party
+//! notices.
 //!
 //! The files are the ones `cargo xtask build` writes into `about-files/` before it compiles the
 //! program, taken in by `rust-embed` like the browser app. A build made another way (a plain
@@ -27,6 +28,7 @@ use super::files::{FileBytes, download_headers};
 use crate::errors::{ApiError, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
 use bb_core::error_code::ErrorCode;
+use bb_core::release::{self, SupportPeriod};
 
 /// What `cargo xtask build` writes before the program is compiled.
 #[derive(RustEmbed)]
@@ -85,7 +87,7 @@ impl Kind {
 
     /// The name the file is saved under: it names the version.
     fn name(self) -> String {
-        about::release_name(env!("CARGO_PKG_VERSION"), self.end())
+        about::release_name(release::VERSION, self.end())
     }
 }
 
@@ -123,11 +125,36 @@ const PART_FIELDS: [FieldSpec; 3] = [
     FieldSpec::by_default("license"),
 ];
 
+/// How long this release gets security fixes (COMP-04, ADR-0047 decision 5), from the one place
+/// it is written (`[workspace.metadata.release]` of `Cargo.toml`, read by `bb_core::release`).
+#[derive(Serialize, ToSchema)]
+pub(crate) struct SupportPeriodBody {
+    /// The day this release was made, as `YYYY-MM-DD`.
+    released: String,
+    /// The last day this release gets security fixes, as `YYYY-MM-DD`; `null` for a preview (a
+    /// version before 1.0), which gets them only until the next release comes out.
+    fixes_until: Option<String>,
+}
+
+impl SupportPeriodBody {
+    fn of_this_release() -> Self {
+        Self {
+            released: release::RELEASE_DATE.to_string(),
+            fixes_until: match release::this_support_period() {
+                Some(SupportPeriod::Until(day)) => Some(day.to_string()),
+                Some(SupportPeriod::UntilNextRelease) | None => None,
+            },
+        }
+    }
+}
+
 /// What this program is and what it is made of.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct AboutBody {
     /// The version of the program.
     version: String,
+    /// How long this release gets security fixes.
+    support_period: SupportPeriodBody,
     /// The license of the program, as an SPDX identifier.
     license: String,
     /// How many parts the program is made of; the parts themselves are the list
@@ -196,7 +223,8 @@ fn about() -> AboutBody {
         })
         .collect();
     AboutBody {
-        version: env!("CARGO_PKG_VERSION").to_owned(),
+        version: release::VERSION.to_owned(),
+        support_period: SupportPeriodBody::of_this_release(),
         license: env!("CARGO_PKG_LICENSE").to_owned(),
         part_count: PARTS.len(),
         files,
@@ -329,6 +357,17 @@ mod tests {
         let body = about();
         assert_eq!(body.version, env!("CARGO_PKG_VERSION"));
         assert_eq!(body.license, "AGPL-3.0-or-later");
+    }
+
+    #[test]
+    fn a_preview_names_no_last_day_of_fixes() {
+        let period = SupportPeriodBody::of_this_release();
+        assert_eq!(period.released, release::RELEASE_DATE.to_string());
+        if release::VERSION.starts_with("0.") {
+            assert_eq!(period.fixes_until, None);
+        } else {
+            assert!(period.fixes_until.is_some());
+        }
     }
 
     #[test]

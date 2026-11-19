@@ -20602,7 +20602,7 @@
       "AboutBody": {
         "type": "object",
         "description": "What this program is and what it is made of.",
-        "required": ["version", "license", "part_count", "files"],
+        "required": ["version", "support_period", "license", "part_count", "files"],
         "properties": {
           "files": {
             "type": "array",
@@ -20619,6 +20619,10 @@
             "type": "integer",
             "description": "How many parts the program is made of; the parts themselves are the list\n`/api/v1/about/parts`. Zero when this build carries no parts list.",
             "minimum": 0
+          },
+          "support_period": {
+            "$ref": "#/components/schemas/SupportPeriodBody",
+            "description": "How long this release gets security fixes."
           },
           "version": {
             "type": "string",
@@ -34311,6 +34315,21 @@
             "type": "integer",
             "format": "int64",
             "description": "The version of the timer that was looked at."
+          }
+        }
+      },
+      "SupportPeriodBody": {
+        "type": "object",
+        "description": "How long this release gets security fixes (COMP-04, ADR-0047 decision 5), from the one place\nit is written (`[workspace.metadata.release]` of `Cargo.toml`, read by `bb_core::release`).",
+        "required": ["released"],
+        "properties": {
+          "fixes_until": {
+            "type": ["string", "null"],
+            "description": "The last day this release gets security fixes, as `YYYY-MM-DD`; `null` for a preview (a\nversion before 1.0), which gets them only until the next release comes out."
+          },
+          "released": {
+            "type": "string",
+            "description": "The day this release was made, as `YYYY-MM-DD`."
           }
         }
       },

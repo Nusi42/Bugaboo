@@ -5630,6 +5630,8 @@ export interface components {
        *     `/api/v1/about/parts`. Zero when this build carries no parts list.
        */
       part_count: number;
+      /** @description How long this release gets security fixes. */
+      support_period: components["schemas"]["SupportPeriodBody"];
       /** @description The version of the program. */
       version: string;
     };
@@ -12596,6 +12598,19 @@ export interface components {
        * @description The version of the timer that was looked at.
        */
       version: number;
+    };
+    /**
+     * @description How long this release gets security fixes (COMP-04, ADR-0047 decision 5), from the one place
+     *     it is written (`[workspace.metadata.release]` of `Cargo.toml`, read by `bb_core::release`).
+     */
+    SupportPeriodBody: {
+      /**
+       * @description The last day this release gets security fixes, as `YYYY-MM-DD`; `null` for a preview (a
+       *     version before 1.0), which gets them only until the next release comes out.
+       */
+      fixes_until?: string | null;
+      /** @description The day this release was made, as `YYYY-MM-DD`. */
+      released: string;
     };
     /** @description A switch of the timer to another issue. */
     SwitchTimerBody: {

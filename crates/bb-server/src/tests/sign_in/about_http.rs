@@ -87,3 +87,44 @@ async fn comp_01_about_answers_the_version_and_the_parts_to_signed_in_people_onl
     })
     .await
 }
+
+/// `[workspace.metadata.release]` of the workspace's `Cargo.toml`, read as TOML.
+fn release_table() -> Result<toml::Table, Box<dyn std::error::Error + Send + Sync>> {
+    let manifest = std::fs::read_to_string(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../Cargo.toml"),
+    )?;
+    let table: toml::Table = manifest.parse()?;
+    Ok(table["workspace"]["metadata"]["release"]
+        .as_table()
+        .ok_or("no [workspace.metadata.release]")?
+        .clone())
+}
+
+#[tokio::test]
+async fn comp_04_about_answers_the_support_period_from_its_one_home() -> TestResult {
+    each_database("comp_04_about_support", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        Org::start(&rig).await?;
+        let mut ada = Browser::signed_in_as(&app, ADA_EMAIL).await?;
+        let about = ada.send("GET", ABOUT, None).await?;
+        assert_eq!(about.status, StatusCode::OK, "{}", about.body);
+        let release = release_table()?;
+        let period = &about.body["support_period"];
+        assert_eq!(
+            period["released"],
+            release["date"].as_str().unwrap_or_default()
+        );
+        assert_eq!(
+            release["support-years"].as_integer(),
+            Some(i64::from(bb_core::release::SUPPORT_YEARS))
+        );
+        // A preview gets fixes until the next release; it names no last day.
+        if env!("CARGO_PKG_VERSION").starts_with("0.") {
+            assert!(period["fixes_until"].is_null(), "{period}");
+        } else {
+            assert!(period["fixes_until"].is_string(), "{period}");
+        }
+        Ok(())
+    })
+    .await
+}
