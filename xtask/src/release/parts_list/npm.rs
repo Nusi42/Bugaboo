@@ -9,7 +9,6 @@ use serde_json::Value;
 
 use super::{Algorithm, Checksum, Kind, Part};
 use crate::checks::dep_licenses::declared_license;
-use crate::release::hex;
 use crate::steps::WEB_APP;
 
 /// The npm packages that the browser app bundles, from the parsed `package-lock.json`: what the
@@ -228,7 +227,7 @@ pub(super) fn integrity_checksum(integrity: &str) -> Option<Checksum> {
     };
     Some(Checksum {
         algorithm,
-        hex: hex(&base64_decode(encoded)?),
+        hex: bb_core::hex::encode(&base64_decode(encoded)?),
     })
 }
 

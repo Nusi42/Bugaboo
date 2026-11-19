@@ -18,7 +18,7 @@ use bb_core::release::{
 };
 use sha2::{Digest as _, Sha256};
 
-use super::{formats, hex};
+use super::formats;
 
 /// What a release folder is built from.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -125,7 +125,7 @@ pub(crate) fn release_root(root: &Path) -> anyhow::Result<PathBuf> {
 /// The SHA-256 checksum of a file, in lower-case hexadecimal.
 pub(crate) fn checksum(path: &Path) -> anyhow::Result<String> {
     let bytes = fs::read(path).with_context(|| format!("could not read {}", path.display()))?;
-    Ok(hex(&Sha256::digest(&bytes)))
+    Ok(bb_core::hex::encode(&Sha256::digest(&bytes)))
 }
 
 /// Writes `SHA256SUMS` for the payload of the release named `release` in `folder`, in the order
@@ -161,7 +161,7 @@ pub(crate) fn problems(folder: &Path, release: &str, keys: &[ReleaseKey]) -> Vec
             continue;
         };
         if name != CHECKSUMS_FILE {
-            let sum = hex(&Sha256::digest(&bytes));
+            let sum = bb_core::hex::encode(&Sha256::digest(&bytes));
             if release::checksum_of(&sums, &name).as_deref() != Some(sum.as_str()) {
                 found.push(format!(
                     "{name} has no entry in {CHECKSUMS_FILE} with its checksum."

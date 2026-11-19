@@ -9,7 +9,6 @@ use jsonschema::{Retrieve, Uri, Validator};
 use serde_json::{Value, json};
 use sha2::{Digest as _, Sha256};
 
-use super::hex;
 use super::parts_list::{Algorithm, Checksum, Kind, Part, PartsList};
 
 /// The version of the `CycloneDX` format.
@@ -62,7 +61,7 @@ fn content_hash(list: &PartsList) -> String {
             hasher.update(&checksum.hex);
         }
     }
-    hex(&hasher.finalize())
+    bb_core::hex::encode(&hasher.finalize())
 }
 
 fn cyclonedx_algorithm(checksum: &Checksum) -> &'static str {

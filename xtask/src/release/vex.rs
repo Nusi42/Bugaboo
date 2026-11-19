@@ -13,7 +13,6 @@ use anyhow::Context as _;
 use serde_json::{Value, json};
 use sha2::{Digest as _, Sha256};
 
-use super::hex;
 use super::parts_list::PartsList;
 use crate::checks::dep_register::Rows;
 use crate::tools::DENY_CONFIG;
@@ -122,7 +121,7 @@ pub(crate) fn vex(list: &PartsList, accepted: &[Accepted], register: &Rows) -> V
     for entry in accepted {
         hasher.update(&entry.id);
     }
-    let digest = hex(&hasher.finalize());
+    let digest = bb_core::hex::encode(&hasher.finalize());
     let statements: Vec<Value> = accepted
         .iter()
         .map(|entry| {

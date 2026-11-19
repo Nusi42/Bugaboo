@@ -7,7 +7,6 @@
 //! holds the tools to the version of the library, PERF-BUNDLE the size of each module to its
 //! budget.
 
-use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
 
@@ -107,7 +106,7 @@ pub(crate) fn run(root: &Path) -> anyhow::Result<bool> {
 /// Builds one module, or says it is up to date.
 fn build(root: &Path, module: Module) -> anyhow::Result<bool> {
     let built = cargo_build(root, module)?;
-    let hash = hex(&Sha256::digest(
+    let hash = bb_core::hex::encode(&Sha256::digest(
         std::fs::read(&built).with_context(|| format!("could not read {}", built.display()))?,
     ));
     let out = module.dir(root);
@@ -337,14 +336,6 @@ fn module_from(cargo_output: &str, module: Module) -> Option<PathBuf> {
         .next_back()
 }
 
-fn hex(bytes: &[u8]) -> String {
-    bytes.iter().fold(String::new(), |mut text, byte| {
-        // Writing into a String cannot fail.
-        let _ = write!(text, "{byte:02x}");
-        text
-    })
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -404,10 +395,5 @@ mod tests {
             !is_fresh(path, module),
             "the source is newer than the stamp"
         );
-    }
-
-    #[test]
-    fn a_hash_is_written_in_hex() {
-        assert_eq!(hex(&[0, 15, 255]), "000fff");
     }
 }

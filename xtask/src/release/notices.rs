@@ -9,7 +9,6 @@ use std::path::Path;
 
 use sha2::{Digest as _, Sha256};
 
-use super::hex;
 use super::parts_list::{Kind, Part, PartsList};
 use crate::checks::dep_licenses::{spdx_words, with_or_for_slash};
 use crate::checks::dep_register::Rows;
@@ -166,7 +165,7 @@ pub(crate) fn notices(root: &Path, list: &PartsList, register: &Rows) -> Notices
             }
         }
         for text in texts {
-            let key = hex(&Sha256::digest(text.as_bytes()));
+            let key = bb_core::hex::encode(&Sha256::digest(text.as_bytes()));
             groups
                 .entry(key)
                 .or_insert_with(|| (text, BTreeSet::new()))

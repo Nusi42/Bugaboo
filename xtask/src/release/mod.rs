@@ -9,7 +9,6 @@
 //! (`sign.rs`); `release check` is the `release` part of DEP-SBOM (SEC-18, ADR-0047 decisions 1
 //! and 2).
 
-use std::fmt::Write as _;
 use std::fs;
 use std::path::Path;
 
@@ -140,14 +139,6 @@ pub(crate) fn run_release(repo: &crate::repo::Repo, arguments: Arguments) -> any
             Ok(true)
         }
     }
-}
-
-/// The bytes as lower-case hexadecimal.
-pub(crate) fn hex(bytes: &[u8]) -> String {
-    bytes.iter().fold(String::new(), |mut text, byte| {
-        let _ = write!(text, "{byte:02x}");
-        text
-    })
 }
 
 /// A JSON document as the text a release file holds: indented, with a final line break.

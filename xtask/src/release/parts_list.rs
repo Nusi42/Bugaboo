@@ -15,7 +15,6 @@ use anyhow::{Context as _, bail};
 use serde::Deserialize;
 use sha2::{Digest as _, Sha256};
 
-use super::hex;
 use crate::checks::dep_licenses::with_or_for_slash;
 use crate::checks::dep_register::{Rows, read_register};
 use crate::wasm;
@@ -417,7 +416,7 @@ fn compiled_crates(root: &Path) -> anyhow::Result<Closure> {
 fn sha256_of(bytes: &[u8]) -> Checksum {
     Checksum {
         algorithm: Algorithm::Sha256,
-        hex: hex(&Sha256::digest(bytes)),
+        hex: bb_core::hex::encode(&Sha256::digest(bytes)),
     }
 }
 
