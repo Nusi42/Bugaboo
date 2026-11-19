@@ -6141,7 +6141,7 @@ export interface components {
        * @description For a restore: the last entry of the security log that is gone.
        */
       lost_to?: number | null;
-      /** @description `schedule`, `command-line` or `person`. */
+      /** @description `schedule`, `command-line`, `person` or `upgrade`. */
       maker: string;
       /** @description The name of the backup. */
       name: string;

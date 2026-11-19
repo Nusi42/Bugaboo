@@ -1,9 +1,10 @@
 //! The name of a backup file (ADR-0046, decision 1): `bugaboo-<moment>-<version>.backup`, the
 //! moment in UTC to the second (`20261118T031500Z`). The backup a restore makes of the present
 //! first is `bugaboo-before-restore-<moment>-<version>.backup`: the schedule's rotation does not
-//! delete it, only the keep period of the security log does (decision 4). A name this module does
-//! not read (the backup before an upgrade, a file somebody put there) is never deleted by the
-//! rotation.
+//! delete it, only the keep period of the security log does (decision 4). The backup a new program
+//! makes before it migrates the database is `bugaboo-before-upgrade-<moment>-<version>.backup`, the
+//! version being the new program's: the rotation keeps the newest few (decision 5). A name this
+//! module does not read (a file somebody put there) is never deleted by the rotation.
 
 use core::fmt;
 
@@ -15,6 +16,8 @@ use jiff::tz::Offset;
 const PREFIX: &str = "bugaboo-";
 /// What the name of a backup made before a restore has after the prefix.
 const BEFORE_RESTORE: &str = "before-restore-";
+/// What the name of a backup made before an upgrade has after the prefix.
+const BEFORE_UPGRADE: &str = "before-upgrade-";
 /// The end of every backup's name.
 pub const EXTENSION: &str = ".backup";
 /// How the moment is written in a name.
@@ -27,6 +30,19 @@ pub enum Purpose {
     Regular,
     /// Made by a restore of what was there before: kept for the keep period of the security log.
     BeforeRestore,
+    /// Made by a new program before it migrated the database: the newest few are kept.
+    BeforeUpgrade,
+}
+
+impl Purpose {
+    /// What the name of a backup made for this purpose has after the prefix.
+    const fn word(self) -> &'static str {
+        match self {
+            Self::Regular => "",
+            Self::BeforeRestore => BEFORE_RESTORE,
+            Self::BeforeUpgrade => BEFORE_UPGRADE,
+        }
+    }
 }
 
 /// The name of a backup this program made.
@@ -55,10 +71,10 @@ impl BackupName {
     #[must_use]
     pub fn parse(file_name: &str) -> Option<Self> {
         let rest = file_name.strip_prefix(PREFIX)?.strip_suffix(EXTENSION)?;
-        let (purpose, rest) = match rest.strip_prefix(BEFORE_RESTORE) {
-            Some(rest) => (Purpose::BeforeRestore, rest),
-            None => (Purpose::Regular, rest),
-        };
+        let (purpose, rest) = [Purpose::BeforeRestore, Purpose::BeforeUpgrade]
+            .into_iter()
+            .find_map(|purpose| Some((purpose, rest.strip_prefix(purpose.word())?)))
+            .unwrap_or((Purpose::Regular, rest));
         let (moment, version) = rest.split_once('-')?;
         if !is_version(version) {
             return None;
@@ -88,13 +104,10 @@ impl fmt::Display for BackupName {
             .moment
             .to_zoned(jiff::tz::TimeZone::UTC)
             .strftime(MOMENT);
-        let purpose = match self.purpose {
-            Purpose::Regular => "",
-            Purpose::BeforeRestore => BEFORE_RESTORE,
-        };
         write!(
             formatter,
-            "{PREFIX}{purpose}{moment}-{}{EXTENSION}",
+            "{PREFIX}{}{moment}-{}{EXTENSION}",
+            self.purpose.word(),
             self.version
         )
     }
@@ -119,6 +132,12 @@ mod tests {
             "bugaboo-before-restore-20261118T031500Z-0.6.0.backup"
         );
         assert_eq!(BackupName::parse(&before.to_string()), Some(before));
+        let upgrade = BackupName::new(Purpose::BeforeUpgrade, moment, "0.6.0");
+        assert_eq!(
+            upgrade.to_string(),
+            "bugaboo-before-upgrade-20261118T031500Z-0.6.0.backup"
+        );
+        assert_eq!(BackupName::parse(&upgrade.to_string()), Some(upgrade));
     }
 
     #[test]

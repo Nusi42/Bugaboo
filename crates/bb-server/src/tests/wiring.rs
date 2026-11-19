@@ -14,7 +14,8 @@ use crate::config::{SettingName, Settings, Sources, resolve};
 use crate::data_folder::DataFolder;
 use crate::sign_in_tests::http::{Browser, called, setup_body};
 
-fn settings(data: &Path, database: Option<&str>) -> Result<Settings, Failure> {
+/// The start-up settings of a test: a data folder, a port nobody listens on, and a database.
+pub(crate) fn settings(data: &Path, database: Option<&str>) -> Result<Settings, Failure> {
     let mut cli = vec![
         (SettingName::Port, "47200".to_owned()),
         (SettingName::DataDir, data.to_string_lossy().into_owned()),

@@ -1,7 +1,8 @@
-//! The settings of backups (OPS-07, ADR-0046 decisions 3 and 6): whether the schedule creates one
-//! every day at the quiet hour, how many daily and weekly backups it keeps, and the folder they go
-//! into. They are part of the registry like every other setting ([`super::registry`] lists them);
-//! administrators change them on *Organization settings › System › Backups*.
+//! The settings of backups (OPS-07, OPS-06, ADR-0046 decisions 3, 5 and 6): whether the schedule
+//! creates one every day at the quiet hour, how many daily and weekly backups it keeps, how many of
+//! the backups made before an upgrade, and the folder they go into. They are part of the registry
+//! like every other setting ([`super::registry`] lists them); administrators change them on
+//! *Organization settings › System › Backups*.
 
 use super::{Bool, ChangedBy, Integer, Level, Setting, SettingDefinition, Text, settings};
 use crate::message;
@@ -41,6 +42,19 @@ settings! {
         help: message::SETTING_BACKUPS_KEEP_WEEKLY_HELP,
         lockable: false,
         bounds: (0, 520),
+    }
+
+    /// How many of the backups made before an upgrade are kept, the newest; older ones go with the
+    /// rotation of the schedule.
+    BACKUPS_KEEP_BEFORE_UPGRADE: Integer = {
+        key: "backups.keep-before-upgrade",
+        name: message::SETTING_BACKUPS_KEEP_BEFORE_UPGRADE_NAME,
+        default: 3,
+        levels: [Organization],
+        changed_by: Administrators,
+        help: message::SETTING_BACKUPS_KEEP_BEFORE_UPGRADE_HELP,
+        lockable: false,
+        bounds: (1, 100),
     }
 
     /// The folder backups go into, on the computer of the server; empty for the backups folder of

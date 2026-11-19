@@ -11,6 +11,7 @@ mod log_file;
 mod output;
 mod probe;
 mod system;
+mod upgrade;
 mod wiring;
 
 use std::process::ExitCode;

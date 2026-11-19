@@ -189,19 +189,23 @@ extern "system" fn service_main(_count: u32, _arguments: *mut *mut u16) {
     }
 }
 
+/// The code of a service that stopped with any other failure (`ERROR_INVALID_FUNCTION`, the
+/// common code of a failure, as the exit code 1 of the command line).
+const FAILED: ServiceExitCode = ServiceExitCode::Win32(1);
+
 /// Reports a state to the service manager.
 fn report(
     status: ServiceStatusHandle,
     state: ServiceState,
     accepted: ServiceControlAccept,
-    exit_code: u32,
+    exit_code: ServiceExitCode,
 ) -> anyhow::Result<()> {
     status
         .set_service_status(ServiceStatus {
             service_type: ServiceType::OWN_PROCESS,
             current_state: state,
             controls_accepted: accepted,
-            exit_code: ServiceExitCode::Win32(exit_code),
+            exit_code,
             checkpoint: 0,
             wait_hint: WAIT_HINT,
             process_id: None,
@@ -233,11 +237,18 @@ fn run_service() -> anyhow::Result<()> {
         status,
         ServiceState::Running,
         ServiceControlAccept::STOP | ServiceControlAccept::SHUTDOWN,
-        0,
+        ServiceExitCode::NO_ERROR,
     )?;
 
     let outcome = serve_until_stopped(args, stopped);
-    let exit_code = u32::from(outcome.is_err());
+    // A start that stopped at an upgrade says so with a code of its own, so the service manager
+    // can tell that starting again does not help.
+    let exit_code = match &outcome {
+        Ok(()) => ServiceExitCode::NO_ERROR,
+        Err(error) => crate::upgrade::stop_code(error).map_or(FAILED, |code| {
+            ServiceExitCode::ServiceSpecific(u32::from(code))
+        }),
+    };
     report(
         status,
         ServiceState::Stopped,

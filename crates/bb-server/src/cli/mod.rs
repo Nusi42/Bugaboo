@@ -271,9 +271,15 @@ async fn run(cli: Cli) -> ExitCode {
         Ok(()) => ExitCode::SUCCESS,
         Err(error) => {
             output::error(&format!("{error:#}"));
-            ExitCode::FAILURE
+            exit_code_of(&error)
         }
     }
+}
+
+/// The exit code of a command that failed: one of its own for a start that stopped at an upgrade
+/// (a service reads it, so it does not start again on the same database), the common one else.
+pub(crate) fn exit_code_of(error: &anyhow::Error) -> ExitCode {
+    crate::upgrade::stop_code(error).map_or(ExitCode::FAILURE, ExitCode::from)
 }
 
 /// The warning for a database address with a password on the command line, or `None` when the

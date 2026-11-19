@@ -34,6 +34,8 @@ words! {
         CommandLine => "command-line",
         /// A person with *Change organization settings*, with the button.
         Person => "person",
+        /// A new program, before it changed the database of an older one (ADR-0046, decision 5).
+        Upgrade => "upgrade",
     }
 }
 

@@ -264,6 +264,7 @@ Rules:
 | **Server status**        | Whether the Bugaboo server is running and healthy: its database, its certificate, its security log (the route `/api/v1/status`; not the status of an issue) | health page, health check page     |
 | **Backup**               | One file that holds the organization's data and its attached files at one moment, made by hand or every day; it holds no keys | snapshot (in UI) |
 | **Restore a backup**     | Put the data of a backup back in place of what is there now; Bugaboo first makes a backup of the present | roll back, rollback (in UI) |
+| **Upgrade**              | Start a newer version of Bugaboo on the data of an older one: it makes a backup first, then changes the database, and puts the backup back and stops when a change fails | migration (in UI) |
 | **About**                | The page that says which version of Bugaboo runs, until when it gets security fixes, and the licenses and parts list of what is inside | — |
 | **Support period**       | How long a release of Bugaboo gets security fixes, shown on *About* and on the release page | end of life, EOL, LTS (in UI) |
 | **Parts list**           | The machine-readable list of every part inside a release of Bugaboo, with versions and licenses, in the CycloneDX and SPDX formats (a software bill of materials) | SBOM, bill of materials (in UI) |

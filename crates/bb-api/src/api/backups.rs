@@ -59,7 +59,7 @@ pub(crate) struct BackupRunBody {
     size: i64,
     /// Its SHA-256, as 64 hex digits.
     checksum: String,
-    /// `schedule`, `command-line` or `person`.
+    /// `schedule`, `command-line`, `person` or `upgrade`.
     maker: String,
     /// The person who pressed *Create a backup now*.
     person: Option<String>,

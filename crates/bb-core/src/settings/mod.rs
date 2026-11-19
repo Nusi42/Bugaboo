@@ -15,7 +15,10 @@ use crate::message::MessageKey;
 
 pub mod ai;
 pub mod backups;
-pub use backups::{BACKUPS_DAILY, BACKUPS_FOLDER, BACKUPS_KEEP_DAILY, BACKUPS_KEEP_WEEKLY};
+pub use backups::{
+    BACKUPS_DAILY, BACKUPS_FOLDER, BACKUPS_KEEP_BEFORE_UPGRADE, BACKUPS_KEEP_DAILY,
+    BACKUPS_KEEP_WEEKLY,
+};
 mod catalog;
 mod format;
 mod layers;

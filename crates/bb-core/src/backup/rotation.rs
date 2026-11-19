@@ -2,7 +2,8 @@
 //! newest `keep-daily` days and of each of the newest `keep-weekly` weeks, counted in the time zone
 //! of the organization (*Region › Time zone*, UTC when none is set) and a week as ISO 8601 counts
 //! it. The backup a restore made of the present stays for the keep period of
-//! the security log and goes after it (decision 4). A name the module [`super::name`] does not read
+//! the security log and goes after it (decision 4); of the backups made before an upgrade the
+//! newest `keep-before-upgrade` stay (decision 5). A name the module [`super::name`] does not read
 //! never comes here, so it is never deleted.
 
 use jiff::civil::ISOWeekDate;
@@ -20,6 +21,8 @@ pub struct Keep {
     pub weekly: usize,
     /// How long a backup made before a restore is kept: the keep period of the security log.
     pub before_restore: SignedDuration,
+    /// How many of the backups made before an upgrade are kept, the newest.
+    pub before_upgrade: usize,
 }
 
 /// The backups among `backups` that the rotation deletes at `now`, in the order given, with the
@@ -31,11 +34,17 @@ pub fn to_delete<'a>(
     zone: &TimeZone,
     now: Timestamp,
 ) -> Vec<&'a BackupName> {
-    let mut regular: Vec<&BackupName> = backups
-        .iter()
-        .filter(|backup| backup.purpose == Purpose::Regular)
-        .collect();
-    regular.sort_by_key(|backup| core::cmp::Reverse(backup.moment));
+    let newest_first = |purpose: Purpose| {
+        let mut of: Vec<&BackupName> = backups
+            .iter()
+            .filter(|backup| backup.purpose == purpose)
+            .collect();
+        of.sort_by_key(|backup| core::cmp::Reverse(backup.moment));
+        of
+    };
+    let regular = newest_first(Purpose::Regular);
+    let upgrades = newest_first(Purpose::BeforeUpgrade);
+    let kept_upgrades = &upgrades[..keep.before_upgrade.min(upgrades.len())];
     let mut days = Vec::new();
     let mut weeks = Vec::new();
     let mut kept: Vec<&BackupName> = Vec::new();
@@ -64,6 +73,9 @@ pub fn to_delete<'a>(
                 .moment
                 .checked_add(keep.before_restore)
                 .is_ok_and(|until| until < now),
+            Purpose::BeforeUpgrade => !kept_upgrades
+                .iter()
+                .any(|kept| std::ptr::eq(*kept, *backup)),
         })
         .collect()
 }
@@ -84,6 +96,7 @@ mod tests {
             daily: 7,
             weekly: 4,
             before_restore: SignedDuration::from_hours(24 * 365),
+            before_upgrade: 3,
         }
     }
 
@@ -139,5 +152,24 @@ mod tests {
         let a_year_later = at(366);
         let deleted = to_delete(&backups, keep(), &TimeZone::UTC, a_year_later);
         assert_eq!(deleted, [&backups[1], &backups[2]]);
+    }
+
+    #[test]
+    fn ops_06_the_newest_three_backups_before_an_upgrade_are_kept() {
+        let backups: Vec<BackupName> = (0..5)
+            .map(|day| BackupName::new(Purpose::BeforeUpgrade, at(day), "0.6.0"))
+            .chain([BackupName::new(Purpose::Regular, at(4), "0.6.0")])
+            .collect();
+        let deleted = to_delete(&backups, keep(), &TimeZone::UTC, at(5));
+        assert_eq!(deleted, [&backups[0], &backups[1]], "the two oldest go");
+        let none = Keep {
+            before_upgrade: 0,
+            ..keep()
+        };
+        assert_eq!(
+            to_delete(&backups, none, &TimeZone::UTC, at(5)).len(),
+            5,
+            "the regular backup stays by its own rule"
+        );
     }
 }

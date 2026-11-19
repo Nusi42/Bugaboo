@@ -218,6 +218,9 @@ export const messages = {
   "setting.backups.keep-weekly.name": "Weekly backups to keep",
   "setting.backups.keep-weekly.help":
     "How many weeks keep their newest backup, besides the daily ones.",
+  "setting.backups.keep-before-upgrade.name": "Backups before an upgrade to keep",
+  "setting.backups.keep-before-upgrade.help":
+    "How many of the backups that a new version of Bugaboo makes before it changes the database are kept. Older ones are deleted when the next backup is created.",
   "setting.backups.folder.name": "Folder of the backups",
   "setting.backups.folder.help":
     "The folder on the computer of the server that backups go into. Leave it empty for the backups folder of the data folder. Only the account that runs Bugaboo may be able to open it.",

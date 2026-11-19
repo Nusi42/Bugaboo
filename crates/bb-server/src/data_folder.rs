@@ -11,6 +11,9 @@
 //! privacy/     the replay list: what a restore must not undo (ADR-0044, decision 8)
 //! server.lock  held by the running server, so a restore can tell that it runs (ADR-0046)
 //! setup-code.txt  the setup code of the first start, for a server without a console
+//! version.txt  the version of the program that last started on the data, which the words of an
+//!              upgrade that stops name, and while an upgrade migrates, the backup made before it
+//!              (ADR-0046, decision 5 and its amendment)
 //! ```
 //!
 //! Folders this program creates are readable by their owner only: on Linux mode `0700`, on
@@ -48,6 +51,7 @@ const SETUP_CODE_FILE: &str = "setup-code.txt";
 const PRIVACY: &str = "privacy";
 const REPLAY_LIST: &str = "replay.list";
 const SERVER_LOCK: &str = "server.lock";
+const VERSION_FILE: &str = "version.txt";
 /// The folders `prepare` makes inside the data folder.
 pub(crate) const SUB_FOLDERS: [&str; 6] = [FILES, EXPORTS, KEYS, BACKUPS, TLS, LOGS];
 /// What the built-in database (SQLite) keeps next to its file.
@@ -183,6 +187,12 @@ impl DataFolder {
         self.root.join(BACKUPS)
     }
 
+    /// The version of the program that last started on this data, written at every start once the
+    /// database is up to date.
+    pub(crate) fn version_file(&self) -> PathBuf {
+        self.root.join(VERSION_FILE)
+    }
+
     /// The replay list (ADR-0044, decision 8).
     pub(crate) fn replay_list(&self) -> PathBuf {
         self.root.join(PRIVACY).join(REPLAY_LIST)
@@ -219,6 +229,7 @@ impl DataFolder {
         }
         files.push(self.setup_code_file());
         files.push(self.root.join(SERVER_LOCK));
+        files.push(self.version_file());
         // A link is not Bugaboo's file, whatever it points to: `symlink_metadata` does not follow.
         files.retain(|file| std::fs::symlink_metadata(file).is_ok_and(|data| data.is_file()));
         files

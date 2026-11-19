@@ -10,7 +10,7 @@ use bb_app::backups::record_backup_run;
 use bb_app::context::SystemIds;
 use bb_core::backup::manifest::BackupProblem;
 use bb_core::backup::name::Purpose;
-use bb_core::backup::run::{BackupEvent, BackupMaker, BackupRun};
+use bb_core::backup::run::{BackupEvent, BackupMaker, BackupRun, CreatedFile};
 use bb_core::event::{Actor, Channel};
 use bb_core::id::{BackupId, EventId};
 use bb_core::message::{self, Message};
@@ -109,23 +109,8 @@ pub(super) async fn backup(args: &BackupArgs) -> anyhow::Result<()> {
         )
         .await
         .map_err(|error| anyhow!(message::backups_failed(error).render()))?;
-    let run = BackupRun::new(
-        BackupId::generate(&mut SystemIds)?,
-        BackupEvent::Made,
-        &created.file,
-        BackupMaker::CommandLine,
-        None,
-        now,
-    );
-    let event = run.domain_event(
-        EventId::generate(&mut SystemIds)?,
-        Actor::System,
-        Channel::System,
-    )?;
     let storage = AuthStorage::new(store.database, store.keys, store.seal);
-    record_backup_run(&storage, &run, &event, None)
-        .await?
-        .written?;
+    record_made(&storage, &created.file, BackupMaker::CommandLine, now).await?;
     output::line(
         &message::backups_created(
             created.file.name.to_string(),
@@ -134,6 +119,33 @@ pub(super) async fn backup(args: &BackupArgs) -> anyhow::Result<()> {
         )
         .render(),
     );
+    Ok(())
+}
+
+/// Writes the record of a backup made outside the use cases (by the command line or before an
+/// upgrade), with its event and its line in the security log (ADR-0046, decision 3).
+pub(crate) async fn record_made(
+    storage: &AuthStorage,
+    file: &CreatedFile,
+    maker: BackupMaker,
+    now: Timestamp,
+) -> anyhow::Result<()> {
+    let run = BackupRun::new(
+        BackupId::generate(&mut SystemIds)?,
+        BackupEvent::Made,
+        file,
+        maker,
+        None,
+        now,
+    );
+    let event = run.domain_event(
+        EventId::generate(&mut SystemIds)?,
+        Actor::System,
+        Channel::System,
+    )?;
+    record_backup_run(storage, &run, &event, None)
+        .await?
+        .written?;
     Ok(())
 }
 

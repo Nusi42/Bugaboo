@@ -79,7 +79,7 @@ pub use error::{SecretProblem, SettingProblem, StoreError};
 pub use jobs::{NewJob, backoff};
 pub use keys::{KEY_BACKUP_FILES, KeyRing, MASTER_KEY_FILE, MasterKey, OpenMode, SigningKey};
 pub use layout::{DATABASE_FILE, KEYS_FOLDER, LOGS_FOLDER, SECURITY_LOG_ANCHOR_FILE};
-pub use migrations::{SchemaState, known_migrations, latest_version};
+pub use migrations::{Due, SchemaState, Upgrade, UpgradeError, known_migrations, latest_version};
 pub use schema::{StoredTable, tables};
 pub use security_log::NewSecurityLogEntry;
 #[cfg(feature = "testing")]

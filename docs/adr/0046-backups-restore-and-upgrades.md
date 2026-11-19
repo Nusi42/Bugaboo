@@ -52,3 +52,15 @@ The security review of the first build found that a restore took any backup file
 - Each HMAC starts with a text of its own, so neither can stand for the other or for a signature of the security log under the same key. The backup still holds no key (decision 1): an HMAC shows whether a key is the same key, not the key.
 
 Enforced by: the restore tests `ops_07_a_backup_another_installation_sealed_is_refused_before_anything_is_replaced` and `ops_07_a_wrong_master_key_stops_the_restore_before_anything_is_replaced` (both databases), and the archive test `ops_07_a_backup_this_installation_did_not_seal_is_refused`.
+
+## Amendment: the backup before an upgrade, as built
+
+Building the upgrade showed where decision 5 had to be exact. Decision 5 is refined:
+
+- **The name.** The backup is `bugaboo-before-upgrade-<moment>-<version>.backup`, with the version of the program that makes it, in the format of decision 1.
+- **The folder.** It always goes into `backups/` of the data folder, never into a folder the administrator named for the other backups: that folder is a setting in the database, and the settings may not be readable before the migrations have run.
+- **How many are kept.** The newest N are kept, N being `backups.keep-before-upgrade` (3 at the start); the rotation of decision 3 deletes older ones, in `backups/` of the data folder whatever folder the other backups go into.
+- **`version.txt`** in the data folder exists only for the words of a stop: it holds the version of the program that last started on the data, so the words can name the previous version, and, from the backup to the end of the migrations, the name of the backup made before them. A start after one that was cut off part way then says that the database may be half changed, tells the administrator not to start Bugaboo on it, names that backup (while it is there) to be kept, and does not say that the previous program works with the database. Going back from it needs a restore that does not migrate (M9-F62).
+- **The stop.** Every start that stops at an upgrade (a newer database, a migration this program does not have, or has in another form, a backup that failed, a migration that failed) exits with `UPGRADE_STOPPED` = 65, defined once in `crates/bb-server/src/upgrade.rs`; a Windows service reports it as its own service-specific code, so a service manager can tell that starting again does not help.
+
+Enforced by: TEST-UPGRADE, DATA-MIGRATIONS, ARCH-DB-PARITY.

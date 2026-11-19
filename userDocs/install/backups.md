@@ -10,7 +10,7 @@ A backup is one file that holds the organization's data and its attached files a
 
 A backup holds no keys. Back up the keys apart from the backups with `bugaboo keys export <folder>`, and keep them in another safe place. Whoever has a backup and the keys can read everything Bugaboo stores.
 
-The file is called `bugaboo-<moment>-<version>.backup`, for example `bugaboo-20261118T031500Z-0.6.0.backup`. The moment is in UTC.
+The file is called `bugaboo-<moment>-<version>.backup`, for example `bugaboo-20261118T031500Z-0.6.0.backup`. The moment is in UTC. A backup that a new version created before it changed the database is called `bugaboo-before-upgrade-<moment>-<version>.backup`: [Upgrade Bugaboo](upgrade.md).
 
 ## Where backups go
 
@@ -20,7 +20,7 @@ Backups are as private as the data folder. Copy them to another disk or computer
 
 ## Backups every day
 
-Bugaboo creates a backup every night at the quiet hour of the organization (*Create a backup every day*, on at the start). It keeps the newest backup of each of the last 7 days and of each of the last 4 weeks (*Daily backups to keep*, *Weekly backups to keep*) and deletes the others; the days and weeks are those of the time zone of the organization (*Region › Time zone*), or UTC when none is set. A backup that a restore created of what was there before is kept for the keep period of the security log (*Organization settings › Security*), whatever these settings say. A file in the folder whose name Bugaboo did not create is never deleted. A stored file that is missing from the disk while a backup runs is left out of it, and the server log says which.
+Bugaboo creates a backup every night at the quiet hour of the organization (*Create a backup every day*, on at the start). It keeps the newest backup of each of the last 7 days and of each of the last 4 weeks (*Daily backups to keep*, *Weekly backups to keep*) and deletes the others; the days and weeks are those of the time zone of the organization (*Region › Time zone*), or UTC when none is set. A backup that a restore created of what was there before is kept for the keep period of the security log (*Organization settings › Security*), whatever these settings say. Of the backups created before an upgrade, the newest 3 are kept (*Backups before an upgrade to keep*). A file in the folder whose name Bugaboo did not create is never deleted. A stored file that is missing from the disk while a backup runs is left out of it, and the server log says which.
 
 ## Create a backup now
 

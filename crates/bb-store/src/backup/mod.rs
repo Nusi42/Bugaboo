@@ -31,6 +31,7 @@ use crate::db::{Database, Dialect};
 use crate::error::StoreError;
 use crate::keys::KeyRing;
 
+pub(crate) use restore::put_back_before_upgrade;
 pub use restore::{RestoreFailure, RestoreInput, RestoreReport, RestoreTarget, restore};
 
 /// The version of Bugaboo that makes a backup, as its name and manifest say.

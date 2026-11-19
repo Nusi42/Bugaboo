@@ -2,9 +2,11 @@
 //! to date, opens the key files, and builds the sign-in services around them. This is the only
 //! place that knows both `bb-store` and `bb-app`.
 //!
-//! The order matters. The database is opened and migrated first, then the keys are opened with
-//! it (`Database::open_keys` refuses to make new keys for a database that already holds secrets or
-//! a security log), then the services are built, and last the setup code of the first start is
+//! The order matters. The database is opened and brought up to date first, with the keys opened
+//! with it (`Database::open_keys` refuses to make new keys for a database that already holds
+//! secrets or a security log): a new database gets its keys after its tables, an older one before
+//! its migrations, because the backup made before an upgrade is sealed with them
+//! (`crate::upgrade`). Then the services are built, and last the setup code of the first start is
 //! made, so a failure of any step stops the server before it listens.
 
 use std::path::PathBuf;
@@ -30,10 +32,12 @@ use bb_core::backup::name::{BackupName, Purpose};
 use bb_core::backup::run::CreatedFile;
 use bb_store::backup::backups_in;
 
-use crate::cli::backup::{backup_folder, places};
+use crate::cli::backup::{backup_folder, places, record_made};
 use crate::config::Settings;
 use crate::data_folder::{DataFolder, protect_key_files};
 use crate::probe::{Probe, database_kind};
+use crate::upgrade::{UpToDate, bring_up_to_date};
+use bb_core::backup::run::BackupMaker;
 
 /// The subcommand of the program that creates a preview, which the server starts as a child
 /// process (ADR-0032 §4).
@@ -73,7 +77,7 @@ impl SetupCodeFile for SetupCodeOnDisk {
     }
 }
 
-fn database_failed(error: &impl std::fmt::Display) -> anyhow::Error {
+pub(crate) fn database_failed(error: &impl std::fmt::Display) -> anyhow::Error {
     anyhow!(message::server_database_failed(error).render())
 }
 
@@ -209,17 +213,8 @@ pub(crate) async fn wire(
     serving: Serving,
 ) -> anyhow::Result<Wired> {
     let database = connect(settings, data).await?;
-    let applied = database
-        .migrate(jiff::Timestamp::now())
-        .await
-        .map_err(|error| database_failed(&error))?;
-    tracing::info!(migrations = applied.len(), "database ready");
-    let keys = Arc::new(
-        database
-            .open_keys(&data.keys())
-            .await
-            .map_err(|error| database_failed(&error))?,
-    );
+    let now = jiff::Timestamp::now();
+    let UpToDate { keys, backup } = bring_up_to_date(&database, data, now).await?;
     // The master key gets an access list of its own on Windows (M1-F22), also a key file made
     // just now.
     protect_key_files(&data.keys()).map_err(|reason| {
@@ -228,6 +223,11 @@ pub(crate) async fn wire(
     let seal = LogSeal::new(&keys, data.security_log_anchor());
     let csrf = CsrfKey::from_bytes(keys.csrf_key().to_bytes());
     let storage = AuthStorage::new(database.clone(), Arc::clone(&keys), seal.clone());
+    if let Some(backup) = backup {
+        // Like every backup, the one before the upgrade has its record and its line in the
+        // security log, written now that the database has the table for it.
+        record_made(&storage, &backup.file, BackupMaker::Upgrade, now).await?;
+    }
     let name = Message::from(message::APP_NAME).render();
     if settings.public_url.is_empty() {
         // Without it an AI app is told the address the request came to, which a name pointed at this
@@ -308,4 +308,4 @@ pub(crate) async fn wire(
 
 #[cfg(test)]
 #[path = "tests/wiring.rs"]
-mod tests;
+pub(crate) mod tests;

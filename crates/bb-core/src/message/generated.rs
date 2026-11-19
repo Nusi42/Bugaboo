@@ -6797,6 +6797,9 @@ pub const SERVER_SETUP_CODE_HINT: MessageKey = MessageKey::new("server.setup-cod
 /// The message `server.signal-failed`.
 pub const SERVER_SIGNAL_FAILED: MessageKey = MessageKey::new("server.signal-failed");
 
+/// The message `server.upgrade-previous`.
+pub const SERVER_UPGRADE_PREVIOUS: MessageKey = MessageKey::new("server.upgrade-previous");
+
 /// The message `server.web-app-missing`.
 pub const SERVER_WEB_APP_MISSING: MessageKey = MessageKey::new("server.web-app-missing");
 
@@ -7120,6 +7123,14 @@ pub const SETTING_BACKUPS_FOLDER_HELP: MessageKey = MessageKey::new("setting.bac
 
 /// The message `setting.backups.folder.name`.
 pub const SETTING_BACKUPS_FOLDER_NAME: MessageKey = MessageKey::new("setting.backups.folder.name");
+
+/// The message `setting.backups.keep-before-upgrade.help`.
+pub const SETTING_BACKUPS_KEEP_BEFORE_UPGRADE_HELP: MessageKey =
+    MessageKey::new("setting.backups.keep-before-upgrade.help");
+
+/// The message `setting.backups.keep-before-upgrade.name`.
+pub const SETTING_BACKUPS_KEEP_BEFORE_UPGRADE_NAME: MessageKey =
+    MessageKey::new("setting.backups.keep-before-upgrade.name");
 
 /// The message `setting.backups.keep-daily.help`.
 pub const SETTING_BACKUPS_KEEP_DAILY_HELP: MessageKey =
@@ -16763,6 +16774,45 @@ pub fn server_database_failed(reason: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `server.database-newer`.
+#[must_use]
+pub fn server_database_newer(own: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("server.database-newer"),
+        vec![("own", Value::Text(own.to_string()))],
+    )
+}
+
+/// The message `server.database-newer-version`.
+#[must_use]
+pub fn server_database_newer_version(
+    own: impl std::fmt::Display,
+    version: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("server.database-newer-version"),
+        vec![
+            ("own", Value::Text(own.to_string())),
+            ("version", Value::Text(version.to_string())),
+        ],
+    )
+}
+
+/// The message `server.database-unknown-change`.
+#[must_use]
+pub fn server_database_unknown_change(
+    number: impl std::fmt::Display,
+    own: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("server.database-unknown-change"),
+        vec![
+            ("number", Value::Text(number.to_string())),
+            ("own", Value::Text(own.to_string())),
+        ],
+    )
+}
+
 /// The message `server.error`.
 #[must_use]
 pub fn server_error(message: impl std::fmt::Display) -> Message {
@@ -16837,6 +16887,92 @@ pub fn server_setup_code_file_failed(
         vec![
             ("path", Value::Text(path.to_string())),
             ("reason", Value::Text(reason.to_string())),
+        ],
+    )
+}
+
+/// The message `server.upgrade-backup`.
+#[must_use]
+pub fn server_upgrade_backup(
+    path: impl std::fmt::Display,
+    version: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("server.upgrade-backup"),
+        vec![
+            ("path", Value::Text(path.to_string())),
+            ("version", Value::Text(version.to_string())),
+        ],
+    )
+}
+
+/// The message `server.upgrade-backup-failed`.
+#[must_use]
+pub fn server_upgrade_backup_failed(
+    folder: impl std::fmt::Display,
+    reason: impl std::fmt::Display,
+    version: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("server.upgrade-backup-failed"),
+        vec![
+            ("folder", Value::Text(folder.to_string())),
+            ("reason", Value::Text(reason.to_string())),
+            ("version", Value::Text(version.to_string())),
+        ],
+    )
+}
+
+/// The message `server.upgrade-failed`.
+#[must_use]
+pub fn server_upgrade_failed(
+    path: impl std::fmt::Display,
+    reason: impl std::fmt::Display,
+    version: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("server.upgrade-failed"),
+        vec![
+            ("path", Value::Text(path.to_string())),
+            ("reason", Value::Text(reason.to_string())),
+            ("version", Value::Text(version.to_string())),
+        ],
+    )
+}
+
+/// The message `server.upgrade-interrupted`.
+#[must_use]
+pub fn server_upgrade_interrupted(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("server.upgrade-interrupted"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `server.upgrade-previous-version`.
+#[must_use]
+pub fn server_upgrade_previous_version(version: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("server.upgrade-previous-version"),
+        vec![("version", Value::Text(version.to_string()))],
+    )
+}
+
+/// The message `server.upgrade-put-back-failed`.
+#[must_use]
+pub fn server_upgrade_put_back_failed(
+    path: impl std::fmt::Display,
+    problem: impl std::fmt::Display,
+    reason: impl std::fmt::Display,
+    version: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("server.upgrade-put-back-failed"),
+        vec![
+            ("path", Value::Text(path.to_string())),
+            ("problem", Value::Text(problem.to_string())),
+            ("reason", Value::Text(reason.to_string())),
+            ("version", Value::Text(version.to_string())),
         ],
     )
 }
@@ -25872,8 +26008,20 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "server.database-failed",
         "Bugaboo could not open its database: {reason}",
     ),
+    (
+        "server.database-newer",
+        "This database was changed by a newer Bugaboo, and this Bugaboo {own} cannot work on it. Start the newer version.",
+    ),
+    (
+        "server.database-newer-version",
+        "This database was changed by a newer Bugaboo, version {version}, and this Bugaboo {own} cannot work on it. Start version {version} or newer.",
+    ),
     ("server.database-postgres", "Database: PostgreSQL."),
     ("server.database-sqlite", "Database: SQLite."),
+    (
+        "server.database-unknown-change",
+        "This database has a change, number {number}, that this Bugaboo {own} does not have in the same form: it comes from another version of Bugaboo. Nothing was changed. Start the version of Bugaboo that last worked on this database.",
+    ),
     ("server.error", "Error: {message}"),
     (
         "server.keys-missing",
@@ -25915,6 +26063,34 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "server.signal-failed",
         "Bugaboo could not listen for the stop signal (Ctrl+C), so it cannot be stopped cleanly.",
+    ),
+    (
+        "server.upgrade-backup",
+        "This database was used by an older Bugaboo. Before changing it, Bugaboo {version} created a backup of it: {path}",
+    ),
+    (
+        "server.upgrade-backup-failed",
+        "Bugaboo {version} stopped before changing the database of the older Bugaboo, because the backup it creates first failed: {reason}. Nothing was changed. Free up room on the drive of the backups folder {folder}, or fix what the reason names, then start Bugaboo again.",
+    ),
+    (
+        "server.upgrade-failed",
+        "Bugaboo {version} could not change the database of the older Bugaboo: {reason}. It put back the backup it created first, {path}, and stopped. The database is as it was.",
+    ),
+    (
+        "server.upgrade-interrupted",
+        "An earlier upgrade of this database did not finish, so the database may be half changed: do not start Bugaboo on it. Keep the backup Bugaboo created before that upgrade, {path}: it holds the database as the program you used before left it. Report the problem.",
+    ),
+    (
+        "server.upgrade-previous",
+        "The program you used before works with this database: start it again and report the problem.",
+    ),
+    (
+        "server.upgrade-previous-version",
+        "The previous program, version {version}, works with this database: start it again and report the problem.",
+    ),
+    (
+        "server.upgrade-put-back-failed",
+        "Bugaboo {version} could not change the database of the older Bugaboo: {reason}. Putting back the backup it created first failed too: {problem}. The database may be half changed: do not start Bugaboo on it. Keep the backup {path} safe and report the problem.",
     ),
     ("server.warning", "Warning: {message}"),
     (
@@ -26249,6 +26425,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The folder on the computer of the server that backups go into. Leave it empty for the backups folder of the data folder. Only the account that runs Bugaboo may be able to open it.",
     ),
     ("setting.backups.folder.name", "Folder of the backups"),
+    (
+        "setting.backups.keep-before-upgrade.help",
+        "How many of the backups that a new version of Bugaboo makes before it changes the database are kept. Older ones are deleted when the next backup is created.",
+    ),
+    (
+        "setting.backups.keep-before-upgrade.name",
+        "Backups before an upgrade to keep",
+    ),
     (
         "setting.backups.keep-daily.help",
         "How many days keep their newest backup. Older ones are deleted when the next backup is created.",

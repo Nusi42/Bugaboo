@@ -27,6 +27,7 @@ use bb_core::backup::name::{BackupName, Purpose};
 use bb_core::backup::replay::{self, ReplayKind, ReplayLine};
 use bb_core::backup::run::{BackupEvent, BackupMaker, BackupRun, CreatedFile};
 use bb_core::event::{Actor, Channel, DomainEvent, EntityKind, EntityRef, FieldChange};
+use bb_core::hex;
 use bb_core::id::{AccessKeyId, BackupId, EntityId, EventId, GrantId, IdSource, PasskeyId, UserId};
 use bb_core::oauth::GrantEnd;
 use jiff::Timestamp;
@@ -38,6 +39,7 @@ use crate::auth::AuthStorage;
 use crate::chain::Verification;
 use crate::db::{Database, StoredId as _, Transaction};
 use crate::error::StoreError;
+use crate::keys::KeyRing;
 use crate::migrations::known_migrations;
 use crate::schema::{AccessKeyRow, PasskeyRow, SignInSession};
 use crate::secrets::keys_open;
@@ -165,7 +167,9 @@ async fn run(
     ids: &mut impl IdSource,
     work: &Path,
 ) -> Result<RestoreReport, RestoreFailure> {
-    let manifest = check(input, work).await.map_err(early)?;
+    let manifest = check(input.archive, input.target, &input.places.keys, work)
+        .await
+        .map_err(early)?;
     let present = input.target.connect().await.map_err(early)?;
     let created = present
         .create_backup(input.places, Purpose::BeforeRestore, input.now)
@@ -181,7 +185,15 @@ async fn run(
         before: Some(before.path.clone()),
     };
     let present_head = present_head.map_err(failed)?;
-    put_back(input, &manifest, work).await.map_err(failed)?;
+    put_back(
+        input.target,
+        &input.places.files,
+        input.now,
+        &manifest,
+        work,
+    )
+    .await
+    .map_err(failed)?;
     let restored = input.target.connect().await.map_err(failed)?;
     let done = finish(
         input,
@@ -197,12 +209,16 @@ async fn run(
     done.map_err(failed)
 }
 
-/// Reads and checks the backup into `work`; nothing else is touched.
-async fn check(input: &RestoreInput<'_>, work: &Path) -> Result<Manifest, StoreError> {
-    let keys = &input.places.keys;
-    let manifest = archive::read(input.archive, work, keys)?;
+/// Reads and checks the backup `archive` into `work` for `target`; nothing else is touched.
+async fn check(
+    archive: &Path,
+    target: &RestoreTarget,
+    keys: &KeyRing,
+    work: &Path,
+) -> Result<Manifest, StoreError> {
+    let manifest = archive::read(archive, work, keys)?;
     manifest
-        .check_database(input.target.kind())
+        .check_database(target.kind())
         .map_err(StoreError::BackupRefused)?;
     let known = known_migrations()?;
     let known: Vec<KnownMigration<'_>> = known
@@ -254,18 +270,68 @@ async fn newest_known(database: &Database, seal: &LogSeal) -> Result<i64, StoreE
 
 /// Puts the database and the files of the backup in place of the present ones.
 async fn put_back(
-    input: &RestoreInput<'_>,
+    target: &RestoreTarget,
+    files: &Path,
+    now: Timestamp,
     manifest: &Manifest,
     work: &Path,
 ) -> Result<(), StoreError> {
     let copy = database_member(work, manifest)?;
-    match input.target {
+    match target {
         RestoreTarget::File(file) => replace_file(&copy, file)?,
         RestoreTarget::Postgres(database) => {
-            fill::fill(database, manifest, &copy, input.now).await?;
+            fill::fill(database, manifest, &copy, now).await?;
         }
     }
-    put_back_files(&work.join(member::FILES), &input.places.files)
+    put_back_files(&work.join(member::FILES), files)
+}
+
+/// Puts the backup `archive`, made just before, back in place of `database` after an upgrade
+/// whose migration failed (ADR-0046, decision 5), and checks that the database has the migrations
+/// the backup names again. Nothing else of a restore is done: nothing was written in between, so
+/// the sessions, the replay list and the anchor of the security log are as the backup has them.
+/// A SQLite database is closed, because its file is replaced.
+pub(crate) async fn put_back_before_upgrade(
+    archive: &Path,
+    database: &Database,
+    places: &BackupPlaces,
+    now: Timestamp,
+) -> Result<(), StoreError> {
+    let target = RestoreTarget::of(database.clone()).await;
+    let work = work_folder(&places.folder, "restore")?;
+    let result = put_back_checked(archive, &target, places, now, &work).await;
+    let _ = std::fs::remove_dir_all(&work);
+    result
+}
+
+async fn put_back_checked(
+    archive: &Path,
+    target: &RestoreTarget,
+    places: &BackupPlaces,
+    now: Timestamp,
+    work: &Path,
+) -> Result<(), StoreError> {
+    let manifest = check(archive, target, &places.keys, work).await?;
+    put_back(target, &places.files, now, &manifest, work).await?;
+    let restored = target.connect().await?;
+    let applied = restored.applied_migrations().await;
+    target.release(&restored).await;
+    let applied: Vec<(i64, String)> = applied?
+        .iter()
+        .map(|record| (record.version, hex::encode(record.checksum.as_bytes())))
+        .collect();
+    let named: Vec<(i64, String)> = manifest
+        .migrations
+        .iter()
+        .map(|migration| (migration.version, migration.checksum.clone()))
+        .collect();
+    if applied == named {
+        Ok(())
+    } else {
+        Err(StoreError::Corrupt(
+            "the migrations of the database put back after an upgrade",
+        ))
+    }
 }
 
 /// Replaces the SQLite file with the copy. The write-ahead files of the old database go first,

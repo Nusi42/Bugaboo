@@ -1,8 +1,63 @@
 use bb_testing::{TestResult, each_database};
-use sea_query::{Alias, ExprTrait as _, Query};
+use sea_query::{Alias, ColumnDef, Expr, ExprTrait as _, Query, Table};
 
 use super::*;
+use crate::schema::Migration;
 use crate::test_support::at;
+
+/// A migration of the tests that changes what was saved (the reason of every event): what a later
+/// migration that fails must not leave behind.
+pub(super) const CHANGES_SAVED: Definition = Definition {
+    version: 1_001,
+    name: "changes_saved_in_tests",
+    steps: || Ok(changes_saved()),
+};
+
+/// The migration of the tests that fails: it makes a table that is there already.
+pub(super) const FAILS: Definition = Definition {
+    version: 1_002,
+    name: "fails_in_tests",
+    steps: || Ok(fails()),
+};
+
+/// A second migration of the tests that changes nothing that is read, for a gap in the numbers.
+pub(super) const CHANGES_NOTHING: Definition = Definition {
+    version: 1_003,
+    name: "changes_nothing_in_tests",
+    steps: || Ok(changes_nothing()),
+};
+
+fn changes_saved() -> Vec<Step> {
+    vec![Step::Update(
+        Query::update()
+            .table(crate::schema::Event::Table)
+            .value(crate::schema::Event::Reason, "changed by a migration")
+            .to_owned(),
+    )]
+}
+
+fn fails() -> Vec<Step> {
+    vec![Step::Table(
+        Table::create()
+            .table(crate::schema::Event::Table)
+            .col(ColumnDef::new(Alias::new("again")).integer())
+            .to_owned(),
+    )]
+}
+
+fn changes_nothing() -> Vec<Step> {
+    vec![Step::Update(
+        Query::update()
+            .table(Migration::Table)
+            .value(Migration::AppliedAt, Expr::col(Migration::AppliedAt))
+            .to_owned(),
+    )]
+}
+
+/// The program's migrations and `more`: a program of the tests.
+pub(super) fn program_with(more: &[Definition]) -> Vec<Definition> {
+    ALL.iter().chain(more).copied().collect()
+}
 
 /// By the number of the migration, not by place in the list: the numbers of other migrations that
 /// are added later fall between these.

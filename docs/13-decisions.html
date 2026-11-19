@@ -2710,6 +2710,16 @@ Worked-out days are shown, never stored: a date is stored only when a person or 
 <li>Each HMAC starts with a text of its own, so neither can stand for the other or for a signature of the security log under the same key. The backup still holds no key (decision 1): an HMAC shows whether a key is the same key, not the key.</li>
 </ul>
 <p>Enforced by: the restore tests <code>ops_07_a_backup_another_installation_sealed_is_refused_before_anything_is_replaced</code> and <code>ops_07_a_wrong_master_key_stops_the_restore_before_anything_is_replaced</code> (both databases), and the archive test <code>ops_07_a_backup_this_installation_did_not_seal_is_refused</code>.</p>
+<h3>Amendment: the backup before an upgrade, as built</h3>
+<p>Building the upgrade showed where decision 5 had to be exact. Decision 5 is refined:</p>
+<ul>
+<li><strong>The name.</strong> The backup is <code>bugaboo-before-upgrade-&lt;moment&gt;-&lt;version&gt;.backup</code>, with the version of the program that makes it, in the format of decision 1.</li>
+<li><strong>The folder.</strong> It always goes into <code>backups/</code> of the data folder, never into a folder the administrator named for the other backups: that folder is a setting in the database, and the settings may not be readable before the migrations have run.</li>
+<li><strong>How many are kept.</strong> The newest N are kept, N being <code>backups.keep-before-upgrade</code> (3 at the start); the rotation of decision 3 deletes older ones, in <code>backups/</code> of the data folder whatever folder the other backups go into.</li>
+<li><strong><code>version.txt</code></strong> in the data folder exists only for the words of a stop: it holds the version of the program that last started on the data, so the words can name the previous version, and, from the backup to the end of the migrations, the name of the backup made before them. A start after one that was cut off part way then says that the database may be half changed, tells the administrator not to start Bugaboo on it, names that backup (while it is there) to be kept, and does not say that the previous program works with the database. Going back from it needs a restore that does not migrate (M9-F62).</li>
+<li><strong>The stop.</strong> Every start that stops at an upgrade (a newer database, a migration this program does not have, or has in another form, a backup that failed, a migration that failed) exits with <code>UPGRADE_STOPPED</code> = 65, defined once in <code>crates/bb-server/src/upgrade.rs</code>; a Windows service reports it as its own service-specific code, so a service manager can tell that starting again does not help.</li>
+</ul>
+<p>Enforced by: TEST-UPGRADE, DATA-MIGRATIONS, ARCH-DB-PARITY.</p>
 
 <!-- 0047-releases-signatures-parts-list-and-support.md -->
 <h2 id="adr-0047"><button class="sec" data-sec>§47</button>ADR-0047: Releases: signatures, the parts list, the support period and vulnerability handling</h2>

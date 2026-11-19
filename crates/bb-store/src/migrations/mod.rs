@@ -9,25 +9,28 @@
 //! the record of applied migrations again inside it, so two processes that start at the same
 //! moment cannot both apply the same migration.
 //!
+//! Whether migrations are due is decided by the set of migrations applied, never by the newest
+//! one alone: a database can lack a migration older than its newest (see below). A start that
+//! finds migrations due on a database that has some already makes a backup first and puts it back
+//! when a migration fails (`upgrade.rs`, ADR-0046 decision 5).
+//!
 //! Migrations that are given out to work packages built at the same time must not depend on each
 //! other: a database can get them in either order (a database that has number 19 may get 18 later,
 //! and the other way round), so each one builds only on the migrations before the numbers given out.
 
 use bb_core::migration::MigrationRecord;
 use bb_core::security_log::Digest;
-use bb_core::technical::TechnicalName;
 use jiff::Timestamp;
 use sea_query::{
-    ColumnDef, DeleteStatement, Expr, IndexCreateStatement, IndexDropStatement, InsertStatement,
-    Order, PostgresQueryBuilder, Query, SqliteQueryBuilder, Table, TableAlterStatement,
-    TableCreateStatement, TableRenameStatement, UpdateStatement,
+    ColumnDef, DeleteStatement, IndexCreateStatement, IndexDropStatement, InsertStatement,
+    PostgresQueryBuilder, SqliteQueryBuilder, TableAlterStatement, TableCreateStatement,
+    TableRenameStatement, UpdateStatement,
 };
 use sha2::{Digest as _, Sha256};
 
-use crate::db::{Database, FixedSql, Row, Transaction, from_micros, to_micros};
+use crate::db::{Database, FixedSql, Transaction};
 use crate::error::StoreError;
 use crate::locks::LockClass;
-use crate::schema::Migration;
 
 mod m0001_initial;
 mod m0002_sign_in;
@@ -87,6 +90,13 @@ mod m0055_data_exports;
 mod m0056_keeping;
 #[cfg(test)]
 mod old_rows;
+mod record;
+mod upgrade;
+
+pub(crate) use record::read_applied;
+use record::{record, record_table};
+
+pub use upgrade::{Due, Upgrade, UpgradeError};
 
 /// A column that holds the ID of a record: 16 bytes, never empty.
 pub(super) fn id_column(name: impl sea_query::Iden + 'static) -> ColumnDef {
@@ -119,6 +129,7 @@ pub(crate) enum Step {
 }
 
 /// One migration.
+#[derive(Clone, Copy)]
 struct Definition {
     version: i64,
     name: &'static str,
@@ -479,30 +490,15 @@ pub fn known_migrations() -> Result<Vec<(i64, &'static str, Digest)>, StoreError
 /// The number of the newest migration this program knows.
 #[must_use]
 pub fn latest_version() -> i64 {
-    ALL.iter()
+    newest_of(ALL)
+}
+
+/// The number of the newest migration of `list`.
+fn newest_of(list: &[Definition]) -> i64 {
+    list.iter()
         .map(|definition| definition.version)
         .max()
         .unwrap_or(0)
-}
-
-fn record_table() -> TableCreateStatement {
-    Table::create()
-        .table(Migration::Table)
-        .if_not_exists()
-        .col(
-            ColumnDef::new(Migration::Version)
-                .big_integer()
-                .not_null()
-                .primary_key(),
-        )
-        .col(ColumnDef::new(Migration::Name).text().not_null())
-        .col(ColumnDef::new(Migration::Checksum).blob().not_null())
-        .col(
-            ColumnDef::new(Migration::AppliedAt)
-                .big_integer()
-                .not_null(),
-        )
-        .to_owned()
 }
 
 /// How the schema of a database stands to the program that opened it.
@@ -510,15 +506,16 @@ fn record_table() -> TableCreateStatement {
 pub enum SchemaState {
     /// Every migration the program has is applied.
     Current,
-    /// The program has migrations the database has not: a start of the server applies them.
+    /// The program has migrations the database has not (newer ones, or one older than its newest):
+    /// a start of the server applies them.
     Older,
     /// A newer program changed the database: this one must not work on it.
     Newer,
 }
 
-/// Whether what the database recorded is what this program has.
-fn check(applied: &[MigrationRecord]) -> Result<(), StoreError> {
-    let known = latest_version();
+/// Whether what the database recorded is what the program with the migrations `list` has.
+fn check(list: &[Definition], applied: &[MigrationRecord]) -> Result<(), StoreError> {
+    let known = newest_of(list);
     if let Some(newest) = applied.iter().map(|record| record.version).max()
         && newest > known
     {
@@ -528,7 +525,7 @@ fn check(applied: &[MigrationRecord]) -> Result<(), StoreError> {
         });
     }
     for record in applied {
-        let definition = ALL
+        let definition = list
             .iter()
             .find(|definition| definition.version == record.version)
             .ok_or(StoreError::MigrationMismatch {
@@ -551,23 +548,7 @@ impl Database {
     /// [`StoreError::MigrationMismatch`] when a recorded migration is not the one this program has,
     /// and when the database fails.
     pub async fn schema_state(&self) -> Result<SchemaState, StoreError> {
-        let applied = self.applied_migrations().await?;
-        match check(&applied) {
-            Err(StoreError::SchemaTooNew { .. }) => Ok(SchemaState::Newer),
-            Err(other) => Err(other),
-            Ok(()) => {
-                let newest = applied
-                    .iter()
-                    .map(|record| record.version)
-                    .max()
-                    .unwrap_or(0);
-                Ok(if newest < latest_version() {
-                    SchemaState::Older
-                } else {
-                    SchemaState::Current
-                })
-            }
-        }
+        state_of(ALL, &self.applied_migrations().await?)
     }
 
     /// Brings the schema up to date (`now` is what gets recorded) and returns the numbers of the
@@ -579,7 +560,16 @@ impl Database {
     /// with [`StoreError::MigrationMismatch`] when a recorded migration is not the one this
     /// program has, and when the database fails.
     pub async fn migrate(&self, now: Timestamp) -> Result<Vec<i64>, StoreError> {
-        let done = self.migrate_until(i64::MAX, now).await?;
+        self.migrate_list(ALL, now).await
+    }
+
+    /// [`Database::migrate`] with the migrations `list`: the program's, or those of a test.
+    async fn migrate_list(
+        &self,
+        list: &[Definition],
+        now: Timestamp,
+    ) -> Result<Vec<i64>, StoreError> {
+        let done = self.migrate_through(list, i64::MAX, now).await?;
         // Data that the migrations only mark, made with the code that runs (migration 26).
         self.fill_name_keys().await?;
         Ok(done)
@@ -595,39 +585,29 @@ impl Database {
         self.migrate_until(last, now).await
     }
 
-    /// Records a migration this program does not have, as a newer program would have: the database
-    /// then stands [`SchemaState::Newer`], for the tests of what refuses to work on it.
-    ///
-    /// # Errors
-    /// When the database fails.
     #[cfg(any(test, feature = "testing"))]
-    pub async fn record_newer_migration(&self, now: Timestamp) -> Result<(), StoreError> {
-        let mut insert = Query::insert();
-        insert
-            .into_table(Migration::Table)
-            .columns([
-                Migration::Version,
-                Migration::Name,
-                Migration::Checksum,
-                Migration::AppliedAt,
-            ])
-            .values([
-                Expr::val(latest_version() + 1),
-                Expr::val("from-the-future"),
-                Expr::val(vec![0_u8; 32]),
-                Expr::val(to_micros(now)),
-            ])
-            .map_err(|_| StoreError::Corrupt("a migration"))?;
-        self.execute(&insert).await?;
-        Ok(())
+    async fn migrate_until(&self, last: i64, now: Timestamp) -> Result<Vec<i64>, StoreError> {
+        self.migrate_through(ALL, last, now).await
     }
 
-    async fn migrate_until(&self, last: i64, now: Timestamp) -> Result<Vec<i64>, StoreError> {
+    /// Applies the migrations of `list` up to number `last`, one transaction each.
+    async fn migrate_through(
+        &self,
+        migrations: &[Definition],
+        last: i64,
+        now: Timestamp,
+    ) -> Result<Vec<i64>, StoreError> {
         let mut done = Vec::new();
         loop {
             // One transaction for each migration, so a failure keeps the ones before it.
             let mut transaction = self.begin().await?;
-            let applied = apply_next(&mut transaction, &|version| version <= last, now).await?;
+            let applied = apply_next(
+                &mut transaction,
+                migrations,
+                &|version| version <= last,
+                now,
+            )
+            .await?;
             transaction.commit().await?;
             match applied {
                 Some(version) => done.push(version),
@@ -647,32 +627,58 @@ pub(crate) async fn migrate_only_in(
     now: Timestamp,
 ) -> Result<Vec<i64>, StoreError> {
     let mut done = Vec::new();
-    while let Some(version) =
-        apply_next(transaction, &|version| versions.contains(&version), now).await?
+    while let Some(version) = apply_next(
+        transaction,
+        ALL,
+        &|version| versions.contains(&version),
+        now,
+    )
+    .await?
     {
         done.push(version);
     }
     Ok(done)
 }
 
-/// Applies the oldest migration that is `wanted` and not applied yet, inside `transaction`, and
-/// returns its number; `None` when there is none.
+/// How the migrations `applied` stand to the program with the migrations `list`.
+fn state_of(list: &[Definition], applied: &[MigrationRecord]) -> Result<SchemaState, StoreError> {
+    match check(list, applied) {
+        Err(StoreError::SchemaTooNew { .. }) => Ok(SchemaState::Newer),
+        Err(other) => Err(other),
+        Ok(()) => Ok(if lacks_some(list, applied) {
+            SchemaState::Older
+        } else {
+            SchemaState::Current
+        }),
+    }
+}
+
+/// Whether the migrations `applied` lack one of `list`: the one comparison of the two sets.
+fn lacks_some(list: &[Definition], applied: &[MigrationRecord]) -> bool {
+    list.iter()
+        .any(|definition| !is_applied(applied, definition.version))
+}
+
+fn is_applied(applied: &[MigrationRecord], version: i64) -> bool {
+    applied.iter().any(|record| record.version == version)
+}
+
+/// Applies the oldest migration of `list` that is `wanted` and not applied yet, inside
+/// `transaction`, and returns its number; `None` when there is none.
 async fn apply_next(
     transaction: &mut Transaction,
+    list: &[Definition],
     wanted: &(dyn Fn(i64) -> bool + Sync),
     now: Timestamp,
 ) -> Result<Option<i64>, StoreError> {
     transaction.advisory_lock(LockClass::Migration, 0).await?;
     transaction.execute_schema(&record_table()).await?;
     let applied = read_applied(transaction).await?;
-    check(&applied)?;
-    let Some(next) = ALL
+    check(list, &applied)?;
+    let Some(next) = list
         .iter()
         .filter(|definition| {
-            wanted(definition.version)
-                && !applied
-                    .iter()
-                    .any(|record| record.version == definition.version)
+            wanted(definition.version) && !is_applied(&applied, definition.version)
         })
         .min_by_key(|definition| definition.version)
     else {
@@ -699,81 +705,6 @@ async fn apply_next(
     }
     record(transaction, next, now).await?;
     Ok(Some(next.version))
-}
-
-impl Database {
-    /// The migrations the database has recorded, oldest first.
-    ///
-    /// # Errors
-    /// Fails when the database fails or a record is unreadable.
-    pub async fn applied_migrations(&self) -> Result<Vec<MigrationRecord>, StoreError> {
-        self.fetch_all(&applied_query())
-            .await?
-            .iter()
-            .map(read_record)
-            .collect()
-    }
-}
-
-fn applied_query() -> sea_query::SelectStatement {
-    let mut select = Query::select();
-    select
-        .columns([
-            Migration::Version,
-            Migration::Name,
-            Migration::Checksum,
-            Migration::AppliedAt,
-        ])
-        .from(Migration::Table)
-        .order_by(Migration::Version, Order::Asc);
-    select
-}
-
-pub(crate) async fn read_applied(
-    transaction: &mut Transaction,
-) -> Result<Vec<MigrationRecord>, StoreError> {
-    transaction
-        .fetch_all(&applied_query())
-        .await?
-        .iter()
-        .map(read_record)
-        .collect()
-}
-
-async fn record(
-    transaction: &mut Transaction,
-    definition: &Definition,
-    now: Timestamp,
-) -> Result<(), StoreError> {
-    let mut insert = Query::insert();
-    insert
-        .into_table(Migration::Table)
-        .columns([
-            Migration::Version,
-            Migration::Name,
-            Migration::Checksum,
-            Migration::AppliedAt,
-        ])
-        .values([
-            Expr::val(definition.version),
-            Expr::val(definition.name),
-            Expr::val(definition.checksum()?.as_bytes().to_vec()),
-            Expr::val(to_micros(now)),
-        ])
-        .map_err(|_| StoreError::Corrupt("a migration record"))?;
-    transaction.execute(&insert).await?;
-    Ok(())
-}
-
-fn read_record(row: &Row) -> Result<MigrationRecord, StoreError> {
-    let checksum: Vec<u8> = row.get(Migration::Checksum)?;
-    Ok(MigrationRecord {
-        version: row.get(Migration::Version)?,
-        name: TechnicalName::new(&row.get::<String>(Migration::Name)?)
-            .map_err(|_| StoreError::Corrupt("a migration name"))?,
-        checksum: Digest::from_slice(&checksum).ok_or(StoreError::Corrupt("a checksum"))?,
-        applied_at: from_micros(row.get(Migration::AppliedAt)?)?,
-    })
 }
 
 #[cfg(test)]
