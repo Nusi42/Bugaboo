@@ -35,9 +35,13 @@ export const guestRoute = createRoute({
   beforeLoad: async ({
     location,
   }: {
-    readonly location: { readonly search: unknown };
+    readonly location: { readonly search: unknown; readonly pathname: string };
   }): Promise<void> => {
     await loadStatus();
+    // The link to a new e-mail address works with a session too: its secret proves the address.
+    if (location.pathname === paths.eMailChange) {
+      return;
+    }
     // A sign-in that does not fit the page (M1-F51) still has its cookie, but the person is sent
     // here to sign in again, so the page with a reason is not left for the start page.
     if (!hasReason(location.search) && (await currentPerson()) !== null) {

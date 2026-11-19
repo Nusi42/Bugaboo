@@ -122,7 +122,7 @@ const WORDED: [(ErrorCode, SkipReason); 14] = [
 /// Every other refusal says the single change would not take this issue as it is and has no word of
 /// its own. The codes are listed, so a new one is a decision made here: a test fails until it is in
 /// [`WORDED`] or in this list.
-const UNWORDED: [ErrorCode; 102] = [
+const UNWORDED: [ErrorCode; 107] = [
     ErrorCode::AgentWorkOpen,
     ErrorCode::AgentWorkNotReady,
     ErrorCode::AgentWorkBudget,
@@ -173,6 +173,11 @@ const UNWORDED: [ErrorCode; 102] = [
     ErrorCode::WorkflowInvalid,
     ErrorCode::ExportWaiting,
     ErrorCode::ExportReasonNeeded,
+    ErrorCode::CorrectionReasonNeeded,
+    ErrorCode::CorrectionOwnProfile,
+    ErrorCode::EmailChangeNeedsMail,
+    ErrorCode::EmailChangeLinkInvalid,
+    ErrorCode::EmailTaken,
     ErrorCode::TimerRunning,
     ErrorCode::TimerNotRunning,
     ErrorCode::TimerStartInFuture,

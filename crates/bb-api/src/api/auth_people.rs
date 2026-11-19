@@ -50,11 +50,11 @@ pub(crate) struct AcceptBody {
     password: String,
 }
 
-/// The secret of an invitation link.
+/// The secret of a link: an invitation, or a new e-mail address.
 #[derive(Deserialize, ToSchema)]
 pub(crate) struct SecretBody {
     /// The secret from the link (the part after the `#`).
-    secret: String,
+    pub(crate) secret: String,
 }
 
 /// The fields of an invitation that can be asked for, and which of them a list holds when the

@@ -3,7 +3,7 @@
 
 use bb_core::ErrorCode;
 use bb_core::tags::TAG_NAME_MAX;
-use bb_core::text::{LONG_TEXT_MAX, NAME_MAX, clean, clean_long, has_invisible_format};
+use bb_core::text::{LONG_TEXT_MAX, NAME_MAX, REASON_MAX, clean, clean_long, has_invisible_format};
 
 use crate::auth::AppError;
 
@@ -32,6 +32,22 @@ pub(crate) fn cursor_or_invalid<T>(
     cursor
         .map(|text| read(text).ok_or(AppError::Refused(ErrorCode::InvalidRequest)))
         .transpose()
+}
+
+/// The reason an administrator gives for what they do to somebody else's data (an export, a
+/// correction), trimmed: `needed` when it is empty, `request.invalid` when there is none at all or
+/// it is longer than `REASON_MAX` characters.
+pub(crate) fn given_reason(reason: Option<&str>, needed: ErrorCode) -> Result<String, AppError> {
+    let reason = reason
+        .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?
+        .trim();
+    if reason.is_empty() {
+        return Err(needed.into());
+    }
+    if reason.chars().count() > REASON_MAX {
+        return Err(ErrorCode::InvalidRequest.into());
+    }
+    Ok(reason.to_owned())
 }
 
 /// The name of a person, group, role, project or access key as it is kept.

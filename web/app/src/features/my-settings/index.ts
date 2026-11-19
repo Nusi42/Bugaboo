@@ -8,6 +8,8 @@ export { AssistantPage } from "./AssistantPage.tsx";
 export { StartPage, type StartPageProps } from "./StartPage.tsx";
 export { AccessKeysPage } from "./access-keys/AccessKeysPage.tsx";
 export { HandlePage } from "./HandlePage.tsx";
+export { ProfilePage } from "./ProfilePage.tsx";
+export { EmailChangePage } from "./EmailChangePage.tsx";
 export { ConnectedAppsPage } from "./connected-apps/ConnectedAppsPage.tsx";
 export { ShortcutsPage } from "./shortcuts/ShortcutsPage.tsx";
 // What the consent step of an AI app shares with the choices of an access key (one definition).

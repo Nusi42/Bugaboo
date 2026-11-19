@@ -8,7 +8,7 @@ use std::io::{Cursor, Read as _};
 use bb_core::ErrorCode;
 use bb_core::access::PeopleLevel;
 use bb_core::comment::Comment;
-use bb_core::data_export::{EXPORT_REASON_MOST, ExportState};
+use bb_core::data_export::ExportState;
 use bb_core::files::LINK_LIFETIME;
 use bb_core::id::{DataExportId, UserId};
 use bb_core::notification::NotificationKind;
@@ -16,6 +16,7 @@ use bb_core::people_kinds::PeopleKind;
 use bb_core::personal::{Entity as _, Link};
 use bb_core::sign_in::SecurityAction;
 use bb_core::technical::TechnicalName;
+use bb_core::text::REASON_MAX;
 use bb_policy::Permission;
 use jiff::SignedDuration;
 use zip::ZipArchive;
@@ -517,7 +518,7 @@ async fn priv_03_the_reason_of_an_administrators_export_has_a_length_it_may_not_
     let crew = Crew::new().await?;
     let world = &crew.world;
     let carol = crew.carol.person.id;
-    let longest = "x".repeat(EXPORT_REASON_MOST);
+    let longest = "x".repeat(REASON_MAX);
     assert_eq!(
         refused(&ask_for(world, &token(world), carol, &format!("{longest}x")).await),
         Some(ErrorCode::InvalidRequest)

@@ -76,6 +76,7 @@ export const guestScreens: readonly Path[] = [
   paths.setUpSecondStep,
   paths.signUp,
   paths.invitation,
+  paths.eMailChange,
 ];
 
 /** The screen at an address, if there is one. */

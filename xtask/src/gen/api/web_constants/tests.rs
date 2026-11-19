@@ -31,6 +31,8 @@ pub const INVITATION: &str = \"/invitation\";
 pub const NOTIFICATIONS: &str = \"/n\";
 pub const SIGN_IN: &str = \"/in\";
 pub const CONNECT: &str = \"/c\";
+pub const E_MAIL_CHANGE: &str = \"/e\";
+pub const SESSIONS: &str = \"/s\";
 "
         .to_owned(),
     );
@@ -38,6 +40,8 @@ pub const CONNECT: &str = \"/c\";
     assert!(written.contains("issue: \"/issues/$issue\","), "{written}");
     assert!(written.contains("signIn: \"/in\","), "{written}");
     assert!(written.contains("connect: \"/c\","), "{written}");
+    assert!(written.contains("eMailChange: \"/e\","), "{written}");
+    assert!(written.contains("sessions: \"/s\","), "{written}");
     assert!(app_paths(&[]).is_err());
 }
 

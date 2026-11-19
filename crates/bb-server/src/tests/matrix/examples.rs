@@ -494,6 +494,17 @@ pub(super) const EXAMPLES: &[Example] = &[
     ),
     Example::route("getMyHandle"),
     Example::route("changeMyHandle"),
+    Example::with("changeMyName", &[Quirk::SessionOnly]),
+    Example::with(
+        "askEmailChange",
+        &[
+            Quirk::SessionOnly,
+            Quirk::AlsoAnswers("auth.wrong-credentials"),
+        ],
+    ),
+    Example::route("confirmEmailChange"),
+    Example::with("correctName", &[Quirk::SessionOnly]),
+    Example::with("correctEmail", &[Quirk::SessionOnly]),
     Example::route("listNotifications"),
     Example::route("getUnreadCount"),
     Example::route("markNotificationsRead"),

@@ -191,7 +191,7 @@ fn lines_about(
         file: None,
         work_day: None,
         work_times: None,
-        export_reason: None,
+        administrators_reason: None,
     };
     match what {
         NotificationWhat::Comment { .. } => notice.comment = true,
@@ -235,8 +235,8 @@ fn lines_about(
                 }),
             });
         }
-        NotificationWhat::ExportByAdministrator { reason } => {
-            notice.export_reason.clone_from(reason);
+        NotificationWhat::ByAdministrator { reason } => {
+            notice.administrators_reason.clone_from(reason);
         }
         NotificationWhat::Plain => {}
     }

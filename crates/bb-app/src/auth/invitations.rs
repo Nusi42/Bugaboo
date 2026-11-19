@@ -12,12 +12,13 @@ use bb_core::sign_in::{Invitation, SecurityAction};
 use bb_core::version::Version;
 use bb_core::version::{counted_up, next};
 use bb_policy::{Authorized, Permission, Place};
-use jiff::Timestamp;
+use jiff::SignedDuration;
 use serde_json::json;
 
 use super::ctx::Ctx;
 use super::error::{AppError, Stops, change_failed, internal};
 use super::events::{by, changed, entity, fixed_entity, set_to};
+use super::one_use_link::OneUseLink;
 use super::request_session::INVITATION_SECONDS;
 use super::store::AuthStore;
 use super::types::{
@@ -61,17 +62,15 @@ pub async fn create_invitation<S: AuthStore>(
     {
         return Err(ErrorCode::InvalidRequest.into());
     }
-    let secret = SecretToken::generate()?;
     let now = ctx.now();
-    let expires_at = Timestamp::from_second(now.as_second().saturating_add(INVITATION_SECONDS))
-        .map_err(|error| AppError::Internal(error.to_string()))?;
+    let link = OneUseLink::new(now, SignedDuration::from_secs(INVITATION_SECONDS))?;
     let invitation = Invitation {
         id: InvitationId::generate(&mut ctx.ids()),
-        token_hash: secret.hash(Purpose::Invitation),
+        token_hash: link.secret.hash(Purpose::Invitation),
         email: email.as_str().to_owned(),
         invited_by: Some(actor.person.id),
         created_at: now,
-        expires_at,
+        expires_at: link.expires_at,
         used_at: None,
     };
     let event = ctx.event(
@@ -94,7 +93,7 @@ pub async fn create_invitation<S: AuthStore>(
     .await;
     Ok(access.authorize(CreatedInvitation {
         invitation: view(&invitation),
-        link_path: format!("{}#{}", app_paths::INVITATION, secret.encode()),
+        link_path: link.path(app_paths::INVITATION),
     }))
 }
 

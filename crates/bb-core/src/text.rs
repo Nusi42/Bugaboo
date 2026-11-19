@@ -7,6 +7,10 @@ use unicode_properties::{GeneralCategory, UnicodeGeneralCategory as _};
 /// The longest name of a person, group, role, project or access key, in characters.
 pub const NAME_MAX: usize = 100;
 
+/// The longest reason an administrator gives for what they do to somebody else's data (the export
+/// of it, a correction of a name or an address), in characters.
+pub const REASON_MAX: usize = 500;
+
 /// The longest label of a passkey, in characters.
 pub const LABEL_MAX: usize = 64;
 

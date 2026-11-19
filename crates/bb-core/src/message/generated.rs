@@ -2098,12 +2098,28 @@ pub const ERROR_BACKUP_RUNNING: MessageKey = MessageKey::new("error.backup.runni
 /// The message `error.choice.number-taken`.
 pub const ERROR_CHOICE_NUMBER_TAKEN: MessageKey = MessageKey::new("error.choice.number-taken");
 
+/// The message `error.correction.own-profile`.
+pub const ERROR_CORRECTION_OWN_PROFILE: MessageKey =
+    MessageKey::new("error.correction.own-profile");
+
+/// The message `error.correction.reason-needed`.
+pub const ERROR_CORRECTION_REASON_NEEDED: MessageKey =
+    MessageKey::new("error.correction.reason-needed");
+
 /// The message `error.data-export.reason-needed`.
 pub const ERROR_DATA_EXPORT_REASON_NEEDED: MessageKey =
     MessageKey::new("error.data-export.reason-needed");
 
 /// The message `error.data-export.waiting`.
 pub const ERROR_DATA_EXPORT_WAITING: MessageKey = MessageKey::new("error.data-export.waiting");
+
+/// The message `error.e-mail-change.link-invalid`.
+pub const ERROR_E_MAIL_CHANGE_LINK_INVALID: MessageKey =
+    MessageKey::new("error.e-mail-change.link-invalid");
+
+/// The message `error.e-mail-change.mail-off`.
+pub const ERROR_E_MAIL_CHANGE_MAIL_OFF: MessageKey =
+    MessageKey::new("error.e-mail-change.mail-off");
 
 /// The message `error.edit.in-progress`.
 pub const ERROR_EDIT_IN_PROGRESS: MessageKey = MessageKey::new("error.edit.in-progress");
@@ -2209,6 +2225,9 @@ pub const ERROR_MAIL_UNAVAILABLE: MessageKey = MessageKey::new("error.mail.unava
 
 /// The message `error.name.taken`.
 pub const ERROR_NAME_TAKEN: MessageKey = MessageKey::new("error.name.taken");
+
+/// The message `error.person.e-mail-taken`.
+pub const ERROR_PERSON_E_MAIL_TAKEN: MessageKey = MessageKey::new("error.person.e-mail-taken");
 
 /// The message `error.project.move-into-itself`.
 pub const ERROR_PROJECT_MOVE_INTO_ITSELF: MessageKey =
@@ -3891,6 +3910,10 @@ pub const KEEP_KIND_NAME_DEAD_JOBS: MessageKey = MessageKey::new("keep-kind.name
 /// The message `keep-kind.name.drafts`.
 pub const KEEP_KIND_NAME_DRAFTS: MessageKey = MessageKey::new("keep-kind.name.drafts");
 
+/// The message `keep-kind.name.e-mail-change-links`.
+pub const KEEP_KIND_NAME_E_MAIL_CHANGE_LINKS: MessageKey =
+    MessageKey::new("keep-kind.name.e-mail-change-links");
+
 /// The message `keep-kind.name.ip-addresses`.
 pub const KEEP_KIND_NAME_IP_ADDRESSES: MessageKey = MessageKey::new("keep-kind.name.ip-addresses");
 
@@ -3937,6 +3960,10 @@ pub const KEEP_KIND_WHY_DEAD_JOBS: MessageKey = MessageKey::new("keep-kind.why.d
 
 /// The message `keep-kind.why.drafts`.
 pub const KEEP_KIND_WHY_DRAFTS: MessageKey = MessageKey::new("keep-kind.why.drafts");
+
+/// The message `keep-kind.why.e-mail-change-links`.
+pub const KEEP_KIND_WHY_E_MAIL_CHANGE_LINKS: MessageKey =
+    MessageKey::new("keep-kind.why.e-mail-change-links");
 
 /// The message `keep-kind.why.ip-addresses`.
 pub const KEEP_KIND_WHY_IP_ADDRESSES: MessageKey = MessageKey::new("keep-kind.why.ip-addresses");
@@ -4350,6 +4377,16 @@ pub const MAIL_SERVER_TEST_TITLE: MessageKey = MessageKey::new("mail-server.test
 /// The message `mail-server.title`.
 pub const MAIL_SERVER_TITLE: MessageKey = MessageKey::new("mail-server.title");
 
+/// The message `mail.e-mail-change-exists-subject`.
+pub const MAIL_E_MAIL_CHANGE_EXISTS_SUBJECT: MessageKey =
+    MessageKey::new("mail.e-mail-change-exists-subject");
+
+/// The message `mail.e-mail-change-subject`.
+pub const MAIL_E_MAIL_CHANGE_SUBJECT: MessageKey = MessageKey::new("mail.e-mail-change-subject");
+
+/// The message `mail.e-mail-changed-subject`.
+pub const MAIL_E_MAIL_CHANGED_SUBJECT: MessageKey = MessageKey::new("mail.e-mail-changed-subject");
+
 /// The message `mail.line-more`.
 pub const MAIL_LINE_MORE: MessageKey = MessageKey::new("mail.line-more");
 
@@ -4725,6 +4762,9 @@ pub const NAV_PEOPLE: MessageKey = MessageKey::new("nav.people");
 /// The message `nav.people-visibility`.
 pub const NAV_PEOPLE_VISIBILITY: MessageKey = MessageKey::new("nav.people-visibility");
 
+/// The message `nav.profile`.
+pub const NAV_PROFILE: MessageKey = MessageKey::new("nav.profile");
+
 /// The message `nav.project-members`.
 pub const NAV_PROJECT_MEMBERS: MessageKey = MessageKey::new("nav.project-members");
 
@@ -4784,6 +4824,10 @@ pub const NOTIFICATION_KIND_AGENT_STOPPED: MessageKey =
 
 /// The message `notification.kind.assigned`.
 pub const NOTIFICATION_KIND_ASSIGNED: MessageKey = MessageKey::new("notification.kind.assigned");
+
+/// The message `notification.kind.details-corrected`.
+pub const NOTIFICATION_KIND_DETAILS_CORRECTED: MessageKey =
+    MessageKey::new("notification.kind.details-corrected");
 
 /// The message `notification.kind.edit-notice`.
 pub const NOTIFICATION_KIND_EDIT_NOTICE: MessageKey =
@@ -5270,11 +5314,35 @@ pub const PERSON_BACK: MessageKey = MessageKey::new("person.back");
 /// The message `person.bugaboo`.
 pub const PERSON_BUGABOO: MessageKey = MessageKey::new("person.bugaboo");
 
+/// The message `person.correct-e-mail`.
+pub const PERSON_CORRECT_E_MAIL: MessageKey = MessageKey::new("person.correct-e-mail");
+
+/// The message `person.correct-name`.
+pub const PERSON_CORRECT_NAME: MessageKey = MessageKey::new("person.correct-name");
+
+/// The message `person.corrected`.
+pub const PERSON_CORRECTED: MessageKey = MessageKey::new("person.corrected");
+
+/// The message `person.corrections`.
+pub const PERSON_CORRECTIONS: MessageKey = MessageKey::new("person.corrections");
+
 /// The message `person.email`.
 pub const PERSON_EMAIL: MessageKey = MessageKey::new("person.email");
 
 /// The message `person.groups`.
 pub const PERSON_GROUPS: MessageKey = MessageKey::new("person.groups");
+
+/// The message `person.new-e-mail`.
+pub const PERSON_NEW_E_MAIL: MessageKey = MessageKey::new("person.new-e-mail");
+
+/// The message `person.new-name`.
+pub const PERSON_NEW_NAME: MessageKey = MessageKey::new("person.new-name");
+
+/// The message `person.reason`.
+pub const PERSON_REASON: MessageKey = MessageKey::new("person.reason");
+
+/// The message `person.reason-help`.
+pub const PERSON_REASON_HELP: MessageKey = MessageKey::new("person.reason-help");
 
 /// The message `person.roles`.
 pub const PERSON_ROLES: MessageKey = MessageKey::new("person.roles");
@@ -5343,6 +5411,45 @@ pub const PRIORITY_LOW: MessageKey = MessageKey::new("priority.low");
 
 /// The message `priority.normal`.
 pub const PRIORITY_NORMAL: MessageKey = MessageKey::new("priority.normal");
+
+/// The message `profile.change-e-mail`.
+pub const PROFILE_CHANGE_E_MAIL: MessageKey = MessageKey::new("profile.change-e-mail");
+
+/// The message `profile.confirm-title`.
+pub const PROFILE_CONFIRM_TITLE: MessageKey = MessageKey::new("profile.confirm-title");
+
+/// The message `profile.confirmed`.
+pub const PROFILE_CONFIRMED: MessageKey = MessageKey::new("profile.confirmed");
+
+/// The message `profile.e-mail`.
+pub const PROFILE_E_MAIL: MessageKey = MessageKey::new("profile.e-mail");
+
+/// The message `profile.incomplete`.
+pub const PROFILE_INCOMPLETE: MessageKey = MessageKey::new("profile.incomplete");
+
+/// The message `profile.intro`.
+pub const PROFILE_INTRO: MessageKey = MessageKey::new("profile.intro");
+
+/// The message `profile.name`.
+pub const PROFILE_NAME: MessageKey = MessageKey::new("profile.name");
+
+/// The message `profile.name-changed`.
+pub const PROFILE_NAME_CHANGED: MessageKey = MessageKey::new("profile.name-changed");
+
+/// The message `profile.new-e-mail`.
+pub const PROFILE_NEW_E_MAIL: MessageKey = MessageKey::new("profile.new-e-mail");
+
+/// The message `profile.send-link`.
+pub const PROFILE_SEND_LINK: MessageKey = MessageKey::new("profile.send-link");
+
+/// The message `profile.sign-in`.
+pub const PROFILE_SIGN_IN: MessageKey = MessageKey::new("profile.sign-in");
+
+/// The message `profile.title`.
+pub const PROFILE_TITLE: MessageKey = MessageKey::new("profile.title");
+
+/// The message `profile.wrong-password`.
+pub const PROFILE_WRONG_PASSWORD: MessageKey = MessageKey::new("profile.wrong-password");
 
 /// The message `project-members.intro`.
 pub const PROJECT_MEMBERS_INTRO: MessageKey = MessageKey::new("project-members.intro");
@@ -13915,6 +14022,57 @@ pub fn mail_date_time(moment: impl std::fmt::Display, zone: impl std::fmt::Displ
     )
 }
 
+/// The message `mail.e-mail-change-exists-text`.
+#[must_use]
+pub fn mail_e_mail_change_exists_text(address: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.e-mail-change-exists-text"),
+        vec![("address", Value::Text(address.to_string()))],
+    )
+}
+
+/// The message `mail.e-mail-change-text`.
+#[must_use]
+pub fn mail_e_mail_change_text(address: impl std::fmt::Display, hours: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.e-mail-change-text"),
+        vec![
+            ("address", Value::Text(address.to_string())),
+            ("hours", Value::Number(hours)),
+        ],
+    )
+}
+
+/// The message `mail.e-mail-changed-text`.
+#[must_use]
+pub fn mail_e_mail_changed_text(
+    address: impl std::fmt::Display,
+    moment: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.e-mail-changed-text"),
+        vec![
+            ("address", Value::Text(address.to_string())),
+            ("moment", Value::Text(moment.to_string())),
+        ],
+    )
+}
+
+/// The message `mail.e-mail-corrected-text`.
+#[must_use]
+pub fn mail_e_mail_corrected_text(
+    address: impl std::fmt::Display,
+    moment: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.e-mail-corrected-text"),
+        vec![
+            ("address", Value::Text(address.to_string())),
+            ("moment", Value::Text(moment.to_string())),
+        ],
+    )
+}
+
 /// The message `mail.footer`.
 #[must_use]
 pub fn mail_footer(page: impl std::fmt::Display, settings: impl std::fmt::Display) -> Message {
@@ -14149,6 +14307,15 @@ pub fn mcp_wait(seconds: i64) -> Message {
     )
 }
 
+/// The message `notifications.administrators-reason`.
+#[must_use]
+pub fn notifications_administrators_reason(reason: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("notifications.administrators-reason"),
+        vec![("reason", Value::Text(reason.to_string()))],
+    )
+}
+
 /// The message `notifications.always-told`.
 #[must_use]
 pub fn notifications_always_told(way: impl std::fmt::Display) -> Message {
@@ -14185,21 +14352,21 @@ pub fn notifications_count_capped(max: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `notifications.details-corrected`.
+#[must_use]
+pub fn notifications_details_corrected(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("notifications.details-corrected"),
+        vec![("who", Value::Text(who.to_string()))],
+    )
+}
+
 /// The message `notifications.export-by-administrator`.
 #[must_use]
 pub fn notifications_export_by_administrator(who: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("notifications.export-by-administrator"),
         vec![("who", Value::Text(who.to_string()))],
-    )
-}
-
-/// The message `notifications.export-reason`.
-#[must_use]
-pub fn notifications_export_reason(reason: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("notifications.export-reason"),
-        vec![("reason", Value::Text(reason.to_string()))],
     )
 }
 
@@ -14841,6 +15008,24 @@ pub fn preview_summary(changed: i64, skipped: i64) -> Message {
             ("changed", Value::Number(changed)),
             ("skipped", Value::Number(skipped)),
         ],
+    )
+}
+
+/// The message `profile.change-name`.
+#[must_use]
+pub fn profile_change_name(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("profile.change-name"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `profile.link-sent`.
+#[must_use]
+pub fn profile_link_sent(address: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("profile.link-sent"),
+        vec![("address", Value::Text(address.to_string()))],
     )
 }
 

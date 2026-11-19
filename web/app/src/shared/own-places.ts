@@ -135,6 +135,14 @@ export const ownPlaces: readonly Place[] = [
     listed: true,
   },
   {
+    path: paths.profile,
+    name: "nav.profile",
+    icon: iconName.people,
+    parent: paths.mySettings,
+    group: "nav.group.sign-in",
+    listed: true,
+  },
+  {
     path: paths.security,
     name: "nav.security",
     icon: iconName.security,

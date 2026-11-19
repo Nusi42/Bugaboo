@@ -634,10 +634,10 @@ pub struct Notice {
     /// Work times of the reader that somebody else changed.
     #[serde(default)]
     pub work_times: Option<WorkTimesNotice>,
-    /// Why an administrator created a file of the reader's data, in their words (ADR-0044, decision
-    /// 4).
+    /// Why an administrator created a file of the reader's data (ADR-0044, decision 4) or corrected
+    /// their details (decision 9), in their words.
     #[serde(default)]
-    pub export_reason: Option<String>,
+    pub administrators_reason: Option<String>,
 }
 
 /// What happened, in words: one sentence, or one for each field a change touched.
@@ -668,11 +668,15 @@ pub fn notification_sentences(notice: &Notice) -> Vec<Said> {
         }
         NotificationKind::AgentStopped => one(Said::key(message::NOTIFICATIONS_AGENT_STOPPED)),
         NotificationKind::ExportReady => one(Said::key(message::NOTIFICATIONS_EXPORT_READY)),
-        NotificationKind::ExportByAdministrator => {
-            let mut said = vec![said!(message::notifications_export_by_administrator, who())];
-            if let Some(reason) = &notice.export_reason {
+        NotificationKind::ExportByAdministrator | NotificationKind::DetailsCorrected => {
+            let mut said = vec![if notice.kind == NotificationKind::DetailsCorrected {
+                said!(message::notifications_details_corrected, who())
+            } else {
+                said!(message::notifications_export_by_administrator, who())
+            }];
+            if let Some(reason) = &notice.administrators_reason {
                 said.push(said!(
-                    message::notifications_export_reason,
+                    message::notifications_administrators_reason,
                     Said::text(reason.as_str())
                 ));
             }

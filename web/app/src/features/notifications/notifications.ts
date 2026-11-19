@@ -149,9 +149,10 @@ export function noticeOf(row: NotificationRow): WordedNotice {
     (entry) => entry.issue_ids_failed !== undefined && entry.issue_ids_failed !== null,
   )?.issue_ids_failed;
   const file = row.entries.find((entry) => entry.file_event !== undefined);
-  // Why an administrator created a file of the reader's data; a work day keeps its reason apart.
-  const exportReason =
-    row.kind === "export-by-administrator"
+  // Why an administrator created a file of the reader's data or corrected their name or address; a
+  // work day keeps its reason apart.
+  const administratorsReason =
+    row.kind === "export-by-administrator" || row.kind === "details-corrected"
       ? (row.entries.find((entry) => entry.reason !== undefined)?.reason ?? null)
       : null;
   return {
@@ -166,7 +167,7 @@ export function noticeOf(row: NotificationRow): WordedNotice {
       renewal === undefined || renewal === null
         ? null
         : { project: renewal.shown === "visible" ? (renewal.name ?? null) : null },
-    export_reason: exportReason,
+    administrators_reason: administratorsReason,
   };
 }
 

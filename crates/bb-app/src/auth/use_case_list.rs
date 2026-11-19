@@ -649,6 +649,16 @@ macro_rules! each_use_case {
             list_backups(ListBackupsQuery) -> Authorized<Backups>;
             /// Creates a backup now.
             create_backup(CreateBackup) -> Authorized<BackupItem>;
+            /// Changes the name of the person, at once.
+            change_my_name(ChangeMyName) -> Authorized<MyName>;
+            /// Asks for a new e-mail address: a link goes to it.
+            ask_e_mail_change(AskEmailChange) -> Done;
+            /// Opens the link that makes a new e-mail address the person's own.
+            confirm_e_mail_change(ConfirmEmailChange) -> Done;
+            /// Corrects the name of somebody else, with a reason.
+            correct_name(CorrectName) -> Authorized<PersonDetail>;
+            /// Corrects the e-mail address of somebody else, with a reason.
+            correct_e_mail(CorrectEmail) -> Authorized<PersonDetail>;
             /// Asks for the file of the person's own data (*Download my data*).
             ask_for_my_data(AskMyData) -> Authorized<ExportView>;
             /// Asks for the file of somebody else's data, with a reason (*Download someone's data*).

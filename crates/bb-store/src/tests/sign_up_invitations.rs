@@ -107,7 +107,7 @@ async fn claim_mail(
     let address = *address;
     ChangeStore::record_change(storage, &change, move |tx| {
         Box::pin(async move {
-            AuthStorage::claim_sign_up_mail(tx, &address, invitation, at(since), at(now)).await
+            AuthStorage::claim_link_mail(tx, &address, invitation, at(since), at(now)).await
         })
     })
     .await
@@ -157,8 +157,7 @@ async fn auth_two_jobs_for_one_address_at_the_same_moment_send_one_e_mail() -> T
             let claim_for = |storage: AuthStorage, change, invitation| async move {
                 ChangeStore::record_change(&storage, &change, move |tx| {
                     Box::pin(async move {
-                        AuthStorage::claim_sign_up_mail(tx, &eve, invitation, at(since), at(now))
-                            .await
+                        AuthStorage::claim_link_mail(tx, &eve, invitation, at(since), at(now)).await
                     })
                 })
                 .await

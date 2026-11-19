@@ -37,6 +37,8 @@ words! {
         Sessions => "sessions",
         /// The links of sign-ups that were used or ran out.
         SignUpLinks => "sign-up-links",
+        /// The links that confirm a new e-mail address, with the address, until they run out.
+        EmailChangeLinks => "e-mail-change-links",
         /// Text being written and not yet saved, and the notes of who is editing.
         Drafts => "drafts",
         /// Notifications in the app.
@@ -212,6 +214,11 @@ pub const KEEP_KINDS: &[KeepRule] = &[
         kind: KeepKind::SignUpLinks,
         group: KeepGroup::ByItself,
         period: Period::Fixed(Length::hours(crate::sign_up_invitation::KEEP_HOURS)),
+    },
+    KeepRule {
+        kind: KeepKind::EmailChangeLinks,
+        group: KeepGroup::ByItself,
+        period: Period::Fixed(Length::hours(crate::e_mail_change::LINK_HOURS)),
     },
     KeepRule {
         kind: KeepKind::Drafts,

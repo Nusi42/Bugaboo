@@ -84,6 +84,17 @@ async fn invitations(tour: &mut Tour) -> TestResult {
         )
         .await?;
     assert_eq!(reply.body["email"], "bob@example.test");
+    // A link to a new e-mail address needs no session; one that is no link opens nothing (PRIV-06).
+    let reply = bob
+        .route(
+            "POST",
+            "/api/v1/auth/e-mail-change/confirm",
+            &format!("{api}/e-mail-change/confirm"),
+            Some(json!({"secret": secret})),
+        )
+        .await?;
+    assert_eq!(reply.status, StatusCode::BAD_REQUEST);
+    assert_eq!(reply.body["code"], "e-mail-change.link-invalid");
     let reply = bob
         .route(
             "POST",

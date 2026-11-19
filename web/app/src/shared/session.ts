@@ -63,6 +63,28 @@ export function signedInPersonId(): string | null {
 }
 
 /**
+ * Asks the server again who is signed in, when somebody is, after something of theirs changed (a
+ * new e-mail address). The query never asks by itself, so it is asked here. When the answer does
+ * not come, the app keeps what it knew until the next page load: the change itself is done.
+ */
+export async function refreshPerson(): Promise<void> {
+  if (signedInPersonId() === null) {
+    return;
+  }
+  const { data } = await api.client.GET("/api/v1/auth/me").catch(() => ({ data: undefined }));
+  if (data !== undefined) {
+    queryClient.setQueryData(meOptions().queryKey, data);
+  }
+}
+
+/** The name the app knows for the person who is signed in, after they changed it. */
+export function keepPersonName(name: string): void {
+  queryClient.setQueryData<Person>(meOptions().queryKey, (known) =>
+    known === undefined ? known : { ...known, name },
+  );
+}
+
+/**
  * Forgets who was known, after somebody signed in: the next page asks the server who it is and
  * what that person may do (the answer of signing in holds neither the permissions nor anything the
  * menus need).

@@ -172,6 +172,21 @@ error_codes! {
     ExportWaiting => ("data-export.waiting", 409),
     /// An administrator's export of somebody else's data needs a reason (ADR-0044, decision 4).
     ExportReasonNeeded => ("data-export.reason-needed", 400),
+    /// An administrator's correction of somebody's name or e-mail address needs a reason
+    /// (ADR-0044, decision 9).
+    CorrectionReasonNeeded => ("correction.reason-needed", 400),
+    /// An administrator corrects only the name and e-mail address of somebody else: their own are
+    /// changed in *My settings › Profile*, the address through its link (ADR-0044, decision 9).
+    CorrectionOwnProfile => ("correction.own-profile", 409),
+    /// A person can change their own e-mail address only while e-mail is on, because the new
+    /// address is proved by a link sent to it; an administrator changes it meanwhile.
+    EmailChangeNeedsMail => ("e-mail-change.mail-off", 409),
+    /// The link that confirms a new e-mail address does not work: it ran out, was used, or was
+    /// replaced by a newer one.
+    EmailChangeLinkInvalid => ("e-mail-change.link-invalid", 400),
+    /// An administrator gave a person an e-mail address that another account has (ADR-0044,
+    /// decision 9). Only people who see everybody's address are told.
+    EmailTaken => ("person.e-mail-taken", 409),
     /// A timer runs already for the person (maybe started on another device).
     TimerRunning => ("timer.running", 409),
     /// The person's timer does not run (it was stopped meanwhile, maybe on another device).

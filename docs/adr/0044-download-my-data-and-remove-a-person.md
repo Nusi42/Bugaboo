@@ -55,3 +55,9 @@ Some records must outlive the person's account: work days, for the keep period, 
 ## Enforced by
 
 DATA-MARKS, ARCH-PERMS, SEC-MATRIX, ARCH-PERSON-REF, ARCH-EVENTS, ARCH-DB-PARITY, DATA-LOGS; review (the one walk, the legal-hold field, and what a replay restores).
+
+## Amendment (M9, how corrections are kept)
+
+- **One keyed digest.** The secret of the link to a new address, the memory of sign-up e-mails (M4-F122) and the values a correction replaces are kept as an HMAC-SHA256 under a key of the server (`bb_auth::DigestKey`). It is the same key as `keys/csrf.key`, kept apart by a name: every digest starts with a name of its own, as every signed link does, so there is no further key file to back up or rotate: what depends on it lives an hour or is only ever compared. Enforced by: review (one function makes every keyed digest).
+- **What the history keeps.** A person's own new name is kept in the history in clear, as the change of a short value. A change of an address keeps only the keyed digests of both addresses, and a correction by an administrator keeps the keyed digests of the old and the new value and the reason. The security log names who changed what of whom and holds no value. Enforced by: review (the tests `priv_06_*` check the events).
+- **The second check of a new address** asks for the password again; a passkey as the second check comes later (M9-F80). The link to a new address is made like the link of an invitation (`OneUseLink`, one hour, one use), and the daily job `sessions.purge` deletes the links that ran out (the row *Links that confirm a new e-mail address* of ADR-0045).

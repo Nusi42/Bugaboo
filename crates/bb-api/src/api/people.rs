@@ -5,7 +5,9 @@
 
 use axum::extract::State;
 use axum::response::Response;
-use bb_app::people::{PeopleQuery, PersonLine, PersonQuery};
+use bb_app::people::{
+    CorrectEmail, CorrectName, PeopleQuery, PersonDetail, PersonLine, PersonQuery,
+};
 use bb_core::id::UserId;
 use bb_core::person::Standing;
 use bb_policy::{Masked, PersonRef};
@@ -16,11 +18,11 @@ use utoipa_axum::routes;
 
 use super::access_bodies::{NamedRef, RoleAtRef, cursor_error};
 use super::auth::{
-    AuthHandle, ForbiddenAnswer, Info, NotFoundAnswer, NotSignedInAnswer, Session, answer,
-    answer_authorized,
+    AddressConflictAnswer, AuthHandle, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
+    NotSignedInAnswer, OwnProfileAnswer, Session, answer, answer_authorized,
 };
 use super::path_id;
-use crate::errors::{ApiError, ApiPath, ApiQuery};
+use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
 /// The fields of a person in a list that can be asked for, and which of them a list holds when
@@ -94,6 +96,33 @@ pub(crate) struct PersonDetailBody {
 
 impl Masked for PersonDetailBody {}
 
+impl From<PersonDetail> for PersonDetailBody {
+    fn from(detail: PersonDetail) -> Self {
+        Self {
+            person: PersonItem::from(&detail.line),
+            created_at: detail.created_at.to_string(),
+        }
+    }
+}
+
+/// A corrected name, and why.
+#[derive(Deserialize, ToSchema)]
+pub(crate) struct CorrectNameBody {
+    /// The name from now on.
+    name: String,
+    /// Why, in a few words; the person is told.
+    reason: Option<String>,
+}
+
+/// A corrected e-mail address, and why.
+#[derive(Deserialize, ToSchema)]
+pub(crate) struct CorrectEmailBody {
+    /// The address from now on.
+    email: String,
+    /// Why, in a few words; the person is told.
+    reason: Option<String>,
+}
+
 /// The people, by name, a page at a time. Needs the permission *See everybody's e-mail address
 /// and correct their names*.
 #[utoipa::path(
@@ -166,10 +195,76 @@ async fn get_person(
             },
         )
         .await?;
-    answer_authorized(&found.map(|detail| PersonDetailBody {
-        person: PersonItem::from(&detail.line),
-        created_at: detail.created_at.to_string(),
-    }))
+    answer_authorized(&found.map(PersonDetailBody::from))
+}
+
+/// Corrects the name of a person, with a reason (PRIV-06). Needs *Manage people*; the person is
+/// told with the reason, and the security log records who corrected whose name.
+#[utoipa::path(
+    put,
+    path = "/api/v1/people/{person}/name",
+    operation_id = "correctName",
+    tag = "people",
+    params(("person" = String, Path, description = "The ID of the person.")),
+    request_body = CorrectNameBody,
+    responses((status = 200, description = "The person now.", body = PersonDetailBody), InvalidAnswer, NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer, OwnProfileAnswer)
+)]
+async fn correct_name(
+    State(auth): State<AuthHandle>,
+    Info(info): Info,
+    Session(session_token): Session,
+    ApiPath(person_id): ApiPath<String>,
+    ApiJson(body): ApiJson<CorrectNameBody>,
+) -> Result<Response, ApiError> {
+    let person = path_id::<UserId>(&person_id)?;
+    let corrected = auth
+        .api()?
+        .correct_name(
+            info,
+            CorrectName {
+                session_token,
+                person,
+                name: body.name,
+                reason: body.reason,
+            },
+        )
+        .await?;
+    answer_authorized(&corrected.map(PersonDetailBody::from))
+}
+
+/// Corrects the e-mail address of a person, with a reason (PRIV-06). It counts at once; both
+/// addresses and the person are told, and the security log records who corrected whose address.
+/// Needs *Manage people*.
+#[utoipa::path(
+    put,
+    path = "/api/v1/people/{person}/e-mail",
+    operation_id = "correctEmail",
+    tag = "people",
+    params(("person" = String, Path, description = "The ID of the person.")),
+    request_body = CorrectEmailBody,
+    responses((status = 200, description = "The person now.", body = PersonDetailBody), InvalidAnswer, NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer, AddressConflictAnswer)
+)]
+async fn correct_e_mail(
+    State(auth): State<AuthHandle>,
+    Info(info): Info,
+    Session(session_token): Session,
+    ApiPath(person_id): ApiPath<String>,
+    ApiJson(body): ApiJson<CorrectEmailBody>,
+) -> Result<Response, ApiError> {
+    let person = path_id::<UserId>(&person_id)?;
+    let corrected = auth
+        .api()?
+        .correct_e_mail(
+            info,
+            CorrectEmail {
+                session_token,
+                person,
+                email: body.email,
+                reason: body.reason,
+            },
+        )
+        .await?;
+    answer_authorized(&corrected.map(PersonDetailBody::from))
 }
 
 /// The routes of the people.
@@ -181,6 +276,8 @@ where
     OpenApiRouter::new()
         .routes(routes!(list_people))
         .routes(routes!(get_person))
+        .routes(routes!(correct_name))
+        .routes(routes!(correct_e_mail))
 }
 
 #[cfg(test)]

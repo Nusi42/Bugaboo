@@ -63,6 +63,8 @@ export interface TextFieldProps {
   readonly unit?: string;
   /** What a password manager or the browser may fill in: one of `autoComplete`. */
   readonly autoComplete?: AutoComplete;
+  /** The most characters the box takes: a limit of the server, from the generated client. */
+  readonly maxLength?: number;
 }
 
 /**
@@ -143,6 +145,7 @@ export function TextField({
   onChange,
   unit,
   autoComplete: fill = autoComplete.off,
+  maxLength,
 }: TextFieldProps) {
   const unitId = useId();
   return (
@@ -154,6 +157,7 @@ export function TextField({
       type={typeOf(kind)}
       inputMode={kind === fieldKind.email ? inputModes.email : inputModes.text}
       autoComplete={fill}
+      {...(maxLength === undefined ? {} : { maxLength })}
       // Only a problem is passed on: `isInvalid={false}` would switch off the checks of the field.
       {...(errorMessage === undefined ? {} : { isInvalid: true })}
       {...(unit === undefined ? {} : { "aria-describedby": unitId })}

@@ -154,7 +154,6 @@ test("ux_01 the top bar says where you are, and a phone has Back", async ({ page
 function topics(page: Page, heading: string): Locator {
   return page.getByRole("navigation", { name: heading, exact: true }).getByRole("link");
 }
-
 /** The topics of My settings, in their order: the same on every size of screen. */
 function ownTopics(): string[] {
   return [
@@ -166,6 +165,7 @@ function ownTopics(): string[] {
     t("nav.notification-settings"),
     t("nav.handle"),
     t("nav.assistant-settings"),
+    t("nav.profile"),
     t("nav.security"),
     t("nav.sessions"),
     t("nav.access-keys"),

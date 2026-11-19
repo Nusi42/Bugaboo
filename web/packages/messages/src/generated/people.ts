@@ -37,6 +37,14 @@ export const messages = {
     "No domain is listed. Everybody who can reach Bugaboo will be able to create an account.",
   "sign-up-policy.confirm-yes": "Let everybody sign up",
   "sign-up-policy.confirm-no": "Keep it off",
+  "person.corrections": "Corrections",
+  "person.new-name": "Name",
+  "person.new-e-mail": "E-mail address",
+  "person.correct-name": "Correct name",
+  "person.correct-e-mail": "Correct e-mail address",
+  "person.reason": "Reason",
+  "person.reason-help": "In a few words. The person is told.",
+  "person.corrected": "Corrected. The person is told.",
   "people.intro":
     "Everybody who has an account. Open a person to see the groups they are in and the roles they have.",
   "people.list-ask":

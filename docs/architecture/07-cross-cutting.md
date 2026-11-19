@@ -95,7 +95,7 @@ One enum, `Permission` in `bb-policy`. The four tables of this section and the n
 | `decide-roles` | People | project | Manage | Decide who has which role, including No access |
 | `decide-what-roles-see` | People | project | Manage | Decide which fields and which people information each role sees |
 | `check-access` | People | project | See | Check what other people can do, and why |
-| `manage-people` | People | organization | Manage | See everybody's e-mail address, correct their names and stop a change to many issues that somebody else started |
+| `manage-people` | People | organization | Manage | See everybody's e-mail address, correct their names and e-mail addresses and stop a change to many issues that somebody else started |
 | `manage-invitations` | People | organization | Manage | Invite people and take invitations back |
 | `manage-groups` | People | organization | Manage | Create, rename and delete groups and change who is in them |
 | `manage-roles` | People | organization | Manage | Create, change and delete roles |
@@ -173,7 +173,7 @@ Made once at the first start from one Rust definition in `bb-policy` (ADR-0025, 
 | Decide who has which role, including No access | ✓ | ✓ | – | – | – | – | – |
 | Decide which fields and which people information each role sees | ✓ | ✓ | – | – | – | – | – |
 | Check what other people can do, and why | ✓ | ✓ | – | – | – | – | – |
-| See everybody's e-mail address, correct their names and stop a change to many issues that somebody else started | ✓ | – | – | – | – | – | – |
+| See everybody's e-mail address, correct their names and e-mail addresses and stop a change to many issues that somebody else started | ✓ | – | – | – | – | – | – |
 | Invite people and take invitations back | ✓ | – | – | – | – | – | – |
 | Create, rename and delete groups and change who is in them | ✓ | – | – | – | – | – | – |
 | Create, change and delete roles | ✓ | – | – | – | – | – | – |

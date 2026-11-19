@@ -15,9 +15,6 @@ pub const EXPORT_KEPT: SignedDuration = SignedDuration::from_hours(7 * 24);
 /// The type the file of an export is sent as.
 pub const EXPORT_MEDIA_TYPE: &str = "application/zip";
 
-/// The longest reason an administrator may give for the export of somebody else's data.
-pub const EXPORT_REASON_MOST: usize = 500;
-
 words! {
     /// Where an export stands.
     pub enum ExportState {

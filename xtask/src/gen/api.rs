@@ -31,6 +31,8 @@
 //! - the numbers of agents (how long a standing rule lasts and when it is about to run out, the
 //!   most agents a person has: `crates/bb-core/src/agent_work.rs` and `agent.rs`) are written as
 //!   `src/agents.generated.ts`;
+//! - the most characters of a reason (`REASON_MAX` of `crates/bb-core/src/text.rs`, linked) is
+//!   written as `src/texts.generated.ts`;
 //! - the words a search names the fields of an issue by (`ID_WORD`, `Field::search_word`,
 //!   `IssueField::word`, from the linked crates) are written as `src/search-words.generated.ts`;
 //! - the members of an issue a hand-over can name (`issue_member::NAMEABLE`, linked) are written as
@@ -96,6 +98,8 @@ pub(crate) const MANY_CHANGES_PATH: &str = "web/packages/api-client/src/many-cha
 pub(crate) const ASSISTANT_PATH: &str = "web/packages/api-client/src/assistant.generated.ts";
 /// The numbers of agents the browser app shows or checks.
 pub(crate) const AGENTS_PATH: &str = "web/packages/api-client/src/agents.generated.ts";
+/// The limits of texts people type.
+pub(crate) const TEXTS_PATH: &str = "web/packages/api-client/src/texts.generated.ts";
 /// The words a search names the fields of an issue by, for the browser app.
 pub(crate) const SEARCH_WORDS_PATH: &str = "web/packages/api-client/src/search-words.generated.ts";
 /// The members of an issue a hand-over can name, for the browser app.
@@ -135,6 +139,7 @@ pub(crate) fn output_paths() -> Vec<&'static str> {
         MANY_CHANGES_PATH,
         ASSISTANT_PATH,
         AGENTS_PATH,
+        TEXTS_PATH,
         SEARCH_WORDS_PATH,
         AGENT_WORK_PATH,
         WORDS_PATH,
@@ -164,12 +169,16 @@ fn assistant_file(repo: &Repo, sources: &[Source]) -> anyhow::Result<Generated> 
 }
 
 /// The words and numbers the browser takes from the linked crates: what a search names fields by,
-/// what a hand-over can name, and the numbers of agents.
-fn words_of_linked_crates(repo: &Repo) -> anyhow::Result<[Generated; 3]> {
+/// what a hand-over can name, the numbers of agents and the limits of texts.
+fn words_of_linked_crates(repo: &Repo) -> anyhow::Result<[Generated; 4]> {
     Ok([
         Generated::new(
             AGENTS_PATH,
             format_with_oxfmt(repo, AGENTS_PATH, &web_constants::agents())?,
+        ),
+        Generated::new(
+            TEXTS_PATH,
+            format_with_oxfmt(repo, TEXTS_PATH, &web_constants::texts())?,
         ),
         Generated::new(
             SEARCH_WORDS_PATH,

@@ -18,6 +18,12 @@ pub const ISSUE: &str = "/issues/$issue";
 /// The page that takes an invitation link (the secret follows the `#`, so it never reaches a log).
 pub const INVITATION: &str = "/invitation";
 
+/// The page that takes the link to a new e-mail address (the secret follows the `#`).
+pub const E_MAIL_CHANGE: &str = "/e-mail-change";
+
+/// The page of the sessions of the person who is signed in, with *Sign out everywhere*.
+pub const SESSIONS: &str = "/me/sessions";
+
 /// The page of the notifications of the person who is signed in.
 pub const NOTIFICATIONS: &str = "/notifications";
 

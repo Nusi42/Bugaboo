@@ -18,6 +18,7 @@ pub mod backup;
 mod chain;
 mod changes;
 mod comments;
+mod corrections;
 mod data_exports;
 #[cfg(feature = "dataset")]
 mod dataset;

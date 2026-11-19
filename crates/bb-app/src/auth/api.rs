@@ -144,6 +144,10 @@ use crate::plan::{
     move_after_preview, set_time_factor, time_factor, timeline,
 };
 
+use crate::people::{
+    AskEmailChange, ChangeMyName, ConfirmEmailChange, CorrectEmail, CorrectName, MyName,
+    ask_e_mail_change, change_my_name, confirm_e_mail_change, correct_e_mail, correct_name,
+};
 use crate::people::{SwitchOff, SwitchOn, switch_off, switch_on};
 use crate::privacy::removal::{RemovalPlan, RemovalPlanQuery, removal_plan};
 

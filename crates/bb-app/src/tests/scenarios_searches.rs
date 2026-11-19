@@ -256,9 +256,9 @@ async fn adas_search(world: &World) -> Result<SavedSearchView, String> {
 }
 
 pub(crate) async fn save_search_scenario(world: &World) -> Added {
-    measured(&world.store, async {
+    Box::pin(measured(&world.store, async {
         save_plain(world, &token(world), "Open bugs").await
-    })
+    }))
     .await
 }
 

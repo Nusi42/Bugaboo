@@ -287,7 +287,7 @@ export const messages = {
     "Decide which fields and which people information each role sees",
   "permission.check-access": "Check what other people can do, and why",
   "permission.manage-people":
-    "See everybody's e-mail address, correct their names and stop a change to many issues that somebody else started",
+    "See everybody's e-mail address, correct their names and e-mail addresses and stop a change to many issues that somebody else started",
   "permission.manage-invitations": "Invite people and take invitations back",
   "permission.manage-groups": "Create, rename and delete groups and change who is in them",
   "permission.manage-roles": "Create, change and delete roles",
@@ -431,6 +431,14 @@ export const messages = {
     "A file of your data is being created already. Wait until it is ready, then ask again.",
   "error.data-export.reason-needed":
     "Say in a few words why you download this person's data. They are told.",
+  "error.correction.reason-needed": "Say in a few words why. The person is told.",
+  "error.correction.own-profile":
+    "Change your own name and e-mail address in My settings › Profile.",
+  "error.e-mail-change.mail-off":
+    "E-mail is off, so no link can prove a new address. Ask an administrator.",
+  "error.e-mail-change.link-invalid":
+    "This link does not work. It may have run out, been used already, or a newer one was sent. Ask for the change again in My settings › Profile.",
+  "error.person.e-mail-taken": "Another account uses this e-mail address.",
   "error.timer.running": "Your timer is already running, maybe on another device. Stop it first.",
   "error.timer.not-running":
     "Your timer is not running any more, maybe it was stopped on another device.",
@@ -676,6 +684,7 @@ export const messages = {
     "Somebody asks you to finish editing, or takes your editing over",
   "notification.kind.export-ready": "Your data is ready",
   "notification.kind.export-by-administrator": "An administrator downloaded your data",
+  "notification.kind.details-corrected": "An administrator corrected your name or e-mail address",
   "error.mail.rejected":
     "The mail server did not accept the e-mail. Check the user name and the password, and the address e-mails are sent from.",
   "error.mail.unavailable":
@@ -698,6 +707,7 @@ export const messages = {
   "nav.timesheet": "Timesheet",
   "nav.notification-settings": "Notification settings",
   "nav.handle": "Handle",
+  "nav.profile": "Profile",
   "nav.mail-server": "E-mail and notifications",
   "nav.group.hearing": "Notifications and mentions",
   "nav.group.connections": "Connections",
@@ -724,7 +734,8 @@ export const messages = {
   "notifications.export-ready":
     "The file of your data is ready. Download it under My settings › My data",
   "notifications.export-by-administrator": "{who} created a file of all your data to download",
-  "notifications.export-reason": "Why: {reason}",
+  "notifications.administrators-reason": "Why: {reason}",
+  "notifications.details-corrected": "{who} corrected your name or e-mail address",
   "notifications.run-failed": "Your change to many issues stopped before it was done",
   "notifications.issue-ids-failed":
     "Bugaboo could not give every issue of {project} its new ID. Open the project settings to try again",

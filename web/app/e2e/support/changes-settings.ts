@@ -2,6 +2,7 @@ import { expect, type Locator, type Page } from "@playwright/test";
 
 import { t } from "@bugaboo/messages";
 
+import { ada } from "./accounts.ts";
 import type { ChangeInPlace } from "./change-row.ts";
 import { savedWords } from "./saved.ts";
 import { answerTo } from "./sequence.ts";
@@ -10,7 +11,8 @@ import { changeColor, colorField, readabilityLine } from "./theme-editor.ts";
 import { paths } from "../../src/shared/paths.ts";
 
 // The changes in place of the pages of settings and of the theme editor, for the table of changes
-// (`changes-in-place.ts`): a choice, a switch, a number with *Save*, and a color of a theme.
+// (`changes-in-place.ts`): a choice, a switch, a number with *Save*, a color of a theme, and one's
+// own name in *My settings › Profile*.
 
 /** Opens a page of settings, whole. */
 async function openPage(page: Page, path: string): Promise<void> {
@@ -133,4 +135,25 @@ export const settingsChanges: readonly ChangeInPlace[] = [
   },
   colorOfATheme("a color of a theme", { name: "Harbor", color: READABLE }),
   colorOfATheme("a color of a theme that is hard to read", { name: "Quay", color: HARD_TO_READ }),
+  {
+    screen: paths.profile,
+    change: "one's own name, saved in place",
+    open: (page) => openPage(page, paths.profile),
+    part: (page) =>
+      page
+        .getByRole("heading", { name: t("profile.name"), exact: true })
+        .locator("xpath=ancestor::*[@data-part='form-section'][1]"),
+    // Opening the box and typing are the person's own; the name is as long as before.
+    before: async (page) => {
+      await page
+        .getByRole("button", { name: t("profile.change-name", { name: ada.name }) })
+        .click();
+      await page.getByLabel(t("profile.name"), { exact: true }).fill(ada.name.toUpperCase());
+    },
+    act: async (page) => {
+      await page.getByLabel(t("profile.name"), { exact: true }).press("Enter");
+      await saved(page);
+    },
+    landmarks: pageLandmarks,
+  },
 ];

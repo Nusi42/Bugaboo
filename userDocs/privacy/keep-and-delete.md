@@ -14,6 +14,7 @@ the shortest period that kind allows.
 | IP addresses of sign-ins | 7 days | Stopping attacks on signing in |
 | Sign-ins | 24 hours | Staying signed in; a sign-in that ended is deleted at once |
 | Sign-ups that were used or ran out | 24 hours | Saying that a sign-up was finished already |
+| Links that confirm a new e-mail address | 1 hour | Changing the e-mail address only after the new one is proved; a link that was opened is deleted at once |
 | Drafts | 30 days | Not losing text that was not saved |
 | Notifications | 90 days | Not needed longer |
 | Trash | 30 days | Time to bring back what was deleted by mistake; an issue whose time entries must still be kept stays |

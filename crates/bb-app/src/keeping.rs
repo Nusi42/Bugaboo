@@ -5,8 +5,8 @@
 //! safe to run again. [`JobKind::keeps`] says which rows of `bb_core::keeping::KEEP_KINDS` each job
 //! deletes; a row of the group *by an administrator* has no job.
 //!
-//! - `sessions.purge`: the sessions nobody can use any more, the links of finished sign-ups and the
-//!   IP addresses of old sessions.
+//! - `sessions.purge`: the sessions nobody can use any more, the links of finished sign-ups, the
+//!   links to new e-mail addresses that ran out, and the IP addresses of old sessions.
 //! - `security-log.prune`: the oldest whole blocks of the security log past its keep setting, and
 //!   the log of tool calls with it.
 //! - `jobs.purge-dead`: the jobs that gave up, with their payload (M1-F21).
@@ -54,6 +54,7 @@ impl JobKind {
                 KeepKind::IpAddresses,
                 KeepKind::Sessions,
                 KeepKind::SignUpLinks,
+                KeepKind::EmailChangeLinks,
             ],
             Self::PurgeDrafts => &[KeepKind::Drafts],
             Self::PurgeNotifications => &[KeepKind::Notifications],
@@ -176,7 +177,10 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// out, and the IP addresses of sessions past their keep period: one step. A change of Bugaboo
     /// itself, so it writes an event.
     pub(crate) async fn purge_dead_sessions(&self) -> Result<Step, AppError> {
-        let links = self.delete_old_sign_up_links().await?;
+        let links = self
+            .delete_old_sign_up_links()
+            .await?
+            .and(self.delete_old_e_mail_changes().await?);
         let settings = self.settings().await?;
         let networks_before = self.keep_cutoff(KeepKind::IpAddresses).await?;
         let event = self.event(

@@ -4,9 +4,7 @@
 //! log records it. One export waits or runs per person at a time.
 
 use bb_core::ErrorCode;
-use bb_core::data_export::{
-    DataExport, EXPORT_MEDIA_TYPE, EXPORT_REASON_MOST, ExportLink, ExportState,
-};
+use bb_core::data_export::{DataExport, EXPORT_MEDIA_TYPE, ExportLink, ExportState};
 use bb_core::event::RecordKind;
 use bb_core::id::{DataExportId, JobId, UserId};
 use bb_core::people_kinds::PeopleKind;
@@ -21,6 +19,7 @@ use super::types::{
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal, set_to};
 use crate::files::FileDownload;
+use crate::input::given_reason;
 use crate::jobs::JobKind;
 use crate::member::data_export as member;
 use crate::projects::Why;
@@ -185,17 +184,7 @@ pub async fn ask_for_someones_data<S: AuthStore>(
             Place::Organization,
         )
         .await?;
-    let reason = input
-        .reason
-        .as_deref()
-        .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?
-        .trim();
-    if reason.is_empty() {
-        return Err(ErrorCode::ExportReasonNeeded.into());
-    }
-    if reason.chars().count() > EXPORT_REASON_MOST {
-        return Err(ErrorCode::InvalidRequest.into());
-    }
+    let reason = given_reason(input.reason.as_deref(), ErrorCode::ExportReasonNeeded)?;
     let person = input.person.ok_or(AppError::Refused(ErrorCode::NotFound))?;
     if ctx.person_known(person).await?.is_none() {
         return Err(ErrorCode::NotFound.into());
@@ -203,7 +192,7 @@ pub async fn ask_for_someones_data<S: AuthStore>(
     let export = NewExport {
         person,
         asked_by: actor.person.id,
-        reason: Some(reason.to_owned()),
+        reason: Some(reason),
     }
     .record_change(ctx)
     .await?;

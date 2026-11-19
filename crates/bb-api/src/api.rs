@@ -76,6 +76,7 @@ mod issues;
 mod keep_rules;
 mod layouts;
 mod many_changes;
+mod me_profile;
 mod my_agent_work;
 mod never_sent;
 mod notifications;
@@ -226,6 +227,7 @@ where
         .merge(ai_setup::routes())
         .merge(assistant::routes())
         .merge(handles::routes())
+        .merge(me_profile::routes())
         .merge(people::routes())
         .merge(people_state::routes())
         .merge(groups::routes())
@@ -408,12 +410,15 @@ mod word_tests {
     }
 }
 
-/// A name, in a request: the name of a copy of a role, of a new group, of a tag to put on an issue.
-#[derive(Deserialize, ToSchema)]
+/// A name, in a request: the name of a copy of a role, of a new group, of a tag to put on an issue;
+/// and a person's own name, in a request and its answer (PRIV-06).
+#[derive(Deserialize, Serialize, ToSchema)]
 pub(crate) struct NameBody {
     /// The name.
     pub(crate) name: String,
 }
+
+impl bb_policy::Masked for NameBody {}
 
 /// An e-mail address, in a request or an answer: where a sign-up link goes, whom to invite, whom an
 /// invitation is for.

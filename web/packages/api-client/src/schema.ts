@@ -727,6 +727,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/auth/e-mail-change/confirm": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Opens the link to a new e-mail address: from now on it is the address of the account, and the
+     *     old address is told. It is a `POST` so the secret is in the body, not in an address that logs
+     *     and browser history keep.
+     */
+    post: operations["confirmEmailChange"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/auth/invitations": {
     parameters: {
       query?: never;
@@ -3033,6 +3054,28 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/me/e-mail-change": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Asks for a new e-mail address: a link goes to it (one hour, once). The answer is `202` for
+     *     every address, whether another account has it or not; the old address works until the link is
+     *     opened. While e-mail is off, the answer is `e-mail-change.mail-off`: an administrator changes
+     *     the address then.
+     */
+    post: operations["askEmailChange"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/me/handle": {
     parameters: {
       query?: never;
@@ -3048,6 +3091,23 @@ export interface paths {
      *     them, but a new text that uses it names nobody.
      */
     put: operations["changeMyHandle"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/name": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Changes the name of the person who asks, at once. The history keeps the change. */
+    put: operations["changeMyName"];
     post?: never;
     delete?: never;
     options?: never;
@@ -3789,6 +3849,47 @@ export interface paths {
      *     reason. The person is told, and the security log records it.
      */
     post: operations["askForSomeonesData"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/people/{person}/e-mail": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Corrects the e-mail address of a person, with a reason. It counts at once; both
+     *     addresses and the person are told, and the security log records who corrected whose address.
+     *     Needs *Manage people*.
+     */
+    put: operations["correctEmail"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/people/{person}/name": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Corrects the name of a person, with a reason. Needs *Manage people*; the person is
+     *     told with the reason, and the security log records who corrected whose name.
+     */
+    put: operations["correctName"];
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -7044,6 +7145,20 @@ export interface components {
       /** @description What the copy is called. */
       name: string;
     };
+    /** @description A corrected e-mail address, and why. */
+    CorrectEmailBody: {
+      /** @description The address from now on. */
+      email: string;
+      /** @description Why, in a few words; the person is told. */
+      reason?: string | null;
+    };
+    /** @description A corrected name, and why. */
+    CorrectNameBody: {
+      /** @description The name from now on. */
+      name: string;
+      /** @description Why, in a few words; the person is told. */
+      reason?: string | null;
+    };
     /** @description An agent key to make. */
     CreateAgentKeyBody: {
       /**
@@ -7363,6 +7478,13 @@ export interface components {
       /** @description The e-mail address. */
       email: string;
     };
+    /** @description A new e-mail address for the person who asks, with their password. */
+    EmailChangeBody: {
+      /** @description The new address, which a link goes to. */
+      new_email: string;
+      /** @description The password, asked again so a stolen session cannot move the account to another address. */
+      password: string;
+    };
     /** @description What a new time entry on an issue starts with. */
     EntryDefaultsItem: {
       /** @description Whether the organization offers *Billable*. */
@@ -7445,6 +7567,11 @@ export interface components {
       | "limit.reached"
       | "data-export.waiting"
       | "data-export.reason-needed"
+      | "correction.reason-needed"
+      | "correction.own-profile"
+      | "e-mail-change.mail-off"
+      | "e-mail-change.link-invalid"
+      | "person.e-mail-taken"
       | "timer.running"
       | "timer.not-running"
       | "timer.start-in-the-future"
@@ -8535,6 +8662,7 @@ export interface components {
       | "ip-addresses"
       | "sessions"
       | "sign-up-links"
+      | "e-mail-change-links"
       | "drafts"
       | "notifications"
       | "trash"
@@ -9360,7 +9488,10 @@ export interface components {
       /** @description The work, with its brief, attempts, questions and reviews. */
       work: components["schemas"]["WorkBody"];
     };
-    /** @description A name, in a request: the name of a copy of a role, of a new group, of a tag to put on an issue. */
+    /**
+     * @description A name, in a request: the name of a copy of a role, of a new group, of a tag to put on an issue;
+     *     and a person's own name, in a request and its answer.
+     */
     NameBody: {
       /** @description The name. */
       name: string;
@@ -9755,7 +9886,7 @@ export interface components {
       work_times_last?: string | null;
     };
     /**
-     * @description What a notification is about: a mention, an assignment, activity on an issue the person follows, other changes to what they follow, the end of a run of many changes, a note about their editing, a timer that runs long, work of an agent, or a file of their data.
+     * @description What a notification is about: a mention, an assignment, activity on an issue the person follows, other changes to what they follow, the end of a run of many changes, a note about their editing, a timer that runs long, work of an agent, a file of their data, or a correction of their name or e-mail address.
      * @enum {string}
      */
     NotificationKind:
@@ -9776,7 +9907,8 @@ export interface components {
       | "rule-runs-out-soon"
       | "agent-stopped"
       | "export-ready"
-      | "export-by-administrator";
+      | "export-by-administrator"
+      | "details-corrected";
     /**
      * @description Which notifications a list shows: all, the unread ones, or the ones that mention the person.
      * @enum {string}
@@ -11882,7 +12014,7 @@ export interface components {
        */
       still_to_set_up: number;
     };
-    /** @description The secret of an invitation link. */
+    /** @description The secret of a link: an invitation, or a new e-mail address. */
     SecretBody: {
       /** @description The secret from the link (the part after the `#`). */
       secret: string;
@@ -15140,6 +15272,33 @@ export interface operations {
       401: components["responses"]["NotSignedIn"];
       403: components["responses"]["Forbidden"];
       404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  confirmEmailChange: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SecretBody"];
+      };
+    };
+    responses: {
+      /** @description The new address is the account's. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      400: components["responses"]["BadRequest"];
+      413: components["responses"]["TooLarge"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];
@@ -19809,6 +19968,43 @@ export interface operations {
       503: components["responses"]["Unavailable"];
     };
   };
+  askEmailChange: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["EmailChangeBody"];
+      };
+    };
+    responses: {
+      /** @description An e-mail goes to the new address, the same answer for every address. */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      /** @description E-mail is off, so no link can prove a new address; an administrator changes it (e-mail-change.mail-off). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ConflictProblem"];
+        };
+      };
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests2"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
   getMyHandle: {
     parameters: {
       query?: never;
@@ -19862,6 +20058,36 @@ export interface operations {
       409: components["responses"]["Conflict"];
       413: components["responses"]["TooLarge"];
       429: components["responses"]["TooManyRequests2"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  changeMyName: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NameBody"];
+      };
+    };
+    responses: {
+      /** @description The name now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["NameBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];
     };
@@ -21341,6 +21567,94 @@ export interface operations {
       403: components["responses"]["Forbidden"];
       404: components["responses"]["NotFound"];
       /** @description A file of this person's data is being created already (data-export.waiting); one at a time. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ConflictProblem"];
+        };
+      };
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  correctEmail: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the person. */
+        person: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CorrectEmailBody"];
+      };
+    };
+    responses: {
+      /** @description The person now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PersonDetailBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      /** @description Another account has this e-mail address (person.e-mail-taken), or it is one's own, which is changed in My settings › Profile (correction.own-profile). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ConflictProblem"];
+        };
+      };
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  correctName: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the person. */
+        person: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CorrectNameBody"];
+      };
+    };
+    responses: {
+      /** @description The person now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PersonDetailBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      /** @description One's own name and e-mail address are changed in My settings › Profile (correction.own-profile). */
       409: {
         headers: {
           [name: string]: unknown;

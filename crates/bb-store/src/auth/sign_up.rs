@@ -95,27 +95,27 @@ impl SignUpStore for AuthStorage {
         }
     }
 
-    async fn claim_sign_up_mail(
+    async fn claim_link_mail(
         transaction: &mut Transaction,
         address: &Digest,
-        invitation: InvitationId,
+        link: InvitationId,
         since: Timestamp,
         now: Timestamp,
     ) -> Result<bool, StoreError> {
         // One statement decides, so two jobs for one address cannot both pass: the update takes
-        // the row only when the last e-mail is old enough (or is this very sign-up's), and the
+        // the row only when the last e-mail is old enough (or is this very link's), and the
         // insert takes the address only when no row has it.
         let key = address.as_bytes().to_vec();
         let mut update = Query::update();
         update
             .table(Mail::Table)
-            .value(Mail::Invitation, invitation.stored())
+            .value(Mail::Invitation, link.stored())
             .value(Mail::SentAt, to_micros(now))
             .and_where(Expr::col(Mail::Address).eq(key.clone()))
             .and_where(
                 Cond::any()
                     .add(Expr::col(Mail::SentAt).lte(to_micros(since)))
-                    .add(Expr::col(Mail::Invitation).eq(invitation.stored()))
+                    .add(Expr::col(Mail::Invitation).eq(link.stored()))
                     .into(),
             );
         if transaction.execute(&update).await? > 0 {
@@ -127,7 +127,7 @@ impl SignUpStore for AuthStorage {
             .columns([Mail::Address, Mail::Invitation, Mail::SentAt])
             .values([
                 Expr::val(key),
-                Expr::val(invitation.stored()),
+                Expr::val(link.stored()),
                 Expr::val(to_micros(now)),
             ])
             .map_err(|_| StoreError::Corrupt("a sign-up e-mail"))?

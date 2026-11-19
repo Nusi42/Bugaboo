@@ -136,8 +136,8 @@ export interface Notice {
   readonly work_day?: WorkDayNotice | null;
   /** Work times of the reader that somebody else changed. */
   readonly work_times?: WorkTimesNotice | null;
-  /** Why an administrator created a file of the reader's data, in their words (ADR-0044, decision 4). */
-  readonly export_reason?: string | null;
+  /** Why an administrator created a file of the reader's data (ADR-0044, decision 4) or corrected their details (decision 9), in their words. */
+  readonly administrators_reason?: string | null;
 }
 
 /** A length of time a person typed, as the browser hands it to the reader: the text, the person's *Number format* that says the decimal mark (the browser names the format of the device by the fixed one that writes the same mark), and the short words of the units from the browser's catalog, so the module carries no catalog of its own. */

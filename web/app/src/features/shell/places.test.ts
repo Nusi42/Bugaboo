@@ -98,6 +98,7 @@ describe("ux_01 the topics of a settings screen", () => {
       paths.notificationSettings,
       paths.handle,
       paths.assistantSettings,
+      paths.profile,
       paths.security,
       paths.sessions,
       paths.accessKeys,

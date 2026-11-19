@@ -225,7 +225,7 @@ fn entries_of(item: &NotificationItem) -> Vec<NotificationEntry> {
             entry.work_times_last = last.map(|date| date.to_string());
             vec![entry]
         }
-        NotificationWhat::ExportByAdministrator { reason } => {
+        NotificationWhat::ByAdministrator { reason } => {
             let mut entry = start(item);
             entry.reason.clone_from(reason);
             vec![entry]

@@ -88,8 +88,9 @@ pub enum NotificationWhat {
         /// The last day of the away time.
         last: Option<jiff::civil::Date>,
     },
-    /// An administrator created a file of the person's data (ADR-0044, decision 4).
-    ExportByAdministrator {
+    /// An administrator created a file of the person's data (ADR-0044, decision 4) or corrected
+    /// their details (decision 9); the kind says which.
+    ByAdministrator {
         /// Why, in the words of the administrator.
         reason: Option<String>,
     },

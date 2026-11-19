@@ -400,6 +400,12 @@ problem_answers! {
     ConflictAnswer => ("409", "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version-changed, project.move-lifts-no-access, project.move-into-itself, project.too-deep, project.preview-changed)."),
     /// *Delete them* named another date than the records past their keep period have now.
     PastChangedAnswer => ("409", "What is past the keep period changed since it was counted: the period or the day is different; count again (keeping.past-changed)."),
+    /// An administrator asked to correct their own name or address.
+    OwnProfileAnswer => ("409", "One's own name and e-mail address are changed in My settings › Profile (correction.own-profile)."),
+    /// An address another account has, or one's own address, for an administrator's correction.
+    AddressConflictAnswer => ("409", "Another account has this e-mail address (person.e-mail-taken), or it is one's own, which is changed in My settings › Profile (correction.own-profile)."),
+    /// A new e-mail address cannot be proved while e-mail is off.
+    MailOffAnswer => ("409", "E-mail is off, so no link can prove a new address; an administrator changes it (e-mail-change.mail-off)."),
     /// Too soon after the last try.
     TooSoonAnswer => ("429", "Too soon after the last time (rate-limit.exceeded, handle.changed-lately)."),
 }

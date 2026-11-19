@@ -149,6 +149,7 @@ pub(crate) struct State {
     pub(crate) handles: Vec<bb_core::handle::PersonHandle>,
     pub(crate) sign_up_invitations: Vec<bb_core::sign_up_invitation::SignUpInvitation>,
     pub(crate) sign_up_mail: Vec<bb_core::sign_up_invitation::SignUpMail>,
+    pub(crate) e_mail_changes: Vec<bb_core::e_mail_change::EmailChange>,
     /// How many events the notifications reader has finished (their place in the outbox).
     pub(crate) notification_position: i64,
     /// The password of the mail server, as the secrets table would hold it (not encrypted here).

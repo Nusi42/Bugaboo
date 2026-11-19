@@ -398,6 +398,7 @@ pub trait AuthStore:
     + crate::ports::PersonData
     + crate::people::StandingStore
     + crate::privacy::replay::ReplayStore
+    + crate::people::CorrectionStore
     + 'static
 {
     /// Whether the error is a unique key that was used twice (for example the e-mail address of

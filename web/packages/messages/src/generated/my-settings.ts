@@ -105,6 +105,23 @@ export const messages = {
   "connected-apps.taken-back": "What the app may do was taken back.",
   "access-keys.pick-one": "Tick at least one permission, or switch single permissions off.",
   "access-keys.project-label": "{short_name}: {name}",
+  "profile.title": "Profile",
+  "profile.intro":
+    "Your name and your e-mail address. Others see your name as far as their role lets them.",
+  "profile.name": "Name",
+  "profile.change-name": "Change your name, {name}",
+  "profile.name-changed": "Your name was changed.",
+  "profile.e-mail": "E-mail address",
+  "profile.change-e-mail": "Change e-mail address",
+  "profile.new-e-mail": "New e-mail address",
+  "profile.send-link": "Send link",
+  "profile.link-sent":
+    "A link went to {address}. Open it within an hour to use this address. Until then you sign in with your current address.",
+  "profile.wrong-password": "This is not your password.",
+  "profile.confirm-title": "New e-mail address",
+  "profile.confirmed": "Your e-mail address is changed. From now on you sign in with it.",
+  "profile.incomplete": "This link is incomplete. Copy the whole address from the e-mail.",
+  "profile.sign-in": "Sign in",
   "handle.title": "Handle",
   "handle.intro":
     "Your handle is the short name people type after @ to mention you, like @ana.brandt.",

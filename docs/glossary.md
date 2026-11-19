@@ -260,6 +260,7 @@ Rules:
 | Say                      | Meaning                                                            | Don't say                          |
 |--------------------------|--------------------------------------------------------------------|------------------------------------|
 | **My settings**          | Personal preferences                                               | profile settings, preferences      |
+| **Profile**              | The page *My settings › Profile*, where a person changes their own name at once and their own e-mail address through a link sent to the new address | account page, personal details (in UI) |
 | **Project settings**     | Settings of one project                                            | project admin                      |
 | **Organization settings**| Settings for the whole Bugaboo server                              | admin console, instance settings   |
 | **Server status**        | Whether the Bugaboo server is running and healthy: its database, its certificate, its security log (the route `/api/v1/status`; not the status of an issue) | health page, health check page     |

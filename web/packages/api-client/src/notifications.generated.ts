@@ -62,6 +62,7 @@ export const notificationSettings = {
     mail: "notifications.export-ready-by-mail",
   },
   "export-by-administrator": null,
+  "details-corrected": null,
 } as const;
 
 /** The most unread notifications the server counts: a count of this many means this many or more. */

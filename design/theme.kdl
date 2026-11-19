@@ -5410,6 +5410,12 @@ part "save-status[variant=keeps-room]" {
     justify-items end
 }
 
+// Under a value of a section of a form (one's own name in *My settings › Profile*), the words start
+// where the value starts.
+part "form-section save-status[variant=keeps-room]" {
+    justify-items start
+}
+
 part "save-status.room" "save-status.words" {
     grid-column 1
     grid-row 1
@@ -7868,11 +7874,14 @@ part "focus-view.bar" {
 // The issue page (UX §4.4) and the list of a project's issues (UX §4.2). The layout of the page
 // (focus view, side panel, phone) is chosen by the app; the variants here only say which.
 
-// A value that is changed where it stands: it looks like the text around it until it is pressed.
+// A value that is changed where it stands: it looks like the text around it until it is pressed. One that
+// cannot be changed has the same face, so it stands where a value that can be changed stands (an issue title
+// for a person who may not change it, the address in *My settings › Profile*).
 part "in-place.text" {
-    font-family inherit
-    font-size inherit
-    overflow-wrap anywhere
+    use "in-place-face"
+    use "hang-start"
+    display block
+    max-width "100%"
 }
 
 // The text of a value changed in place and the box that takes its place share one face: the same font as the

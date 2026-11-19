@@ -743,6 +743,7 @@ pub(super) fn app_paths(sources: &[Source]) -> anyhow::Result<String> {
         path("NOTIFICATIONS")?,
         path("CONNECT")?,
     );
+    let (e_mail_change, sessions) = (path("E_MAIL_CHANGE")?, path("SESSIONS")?);
     Ok(format!(
         "{TS_HEADER}/** The addresses of the app pages that the server links to (invitations, e-mails). */
 export const appPaths = {{
@@ -752,6 +753,8 @@ export const appPaths = {{
   signIn: {sign_in:?},
   notifications: {notifications:?},
   connect: {connect:?},
+  eMailChange: {e_mail_change:?},
+  sessions: {sessions:?},
 }} as const;
 "
     ))
@@ -782,11 +785,13 @@ export const ownThemeSheets = \"{sheets}\";
 }
 mod notifications;
 mod safe_html;
+mod texts;
 pub(super) mod user_pages;
 pub(super) use notifications::notifications;
 pub(super) use safe_html::safe_html;
 #[cfg(test)]
 use safe_html::safe_html_paths;
+pub(super) use texts::texts;
 
 #[cfg(test)]
 mod tests;

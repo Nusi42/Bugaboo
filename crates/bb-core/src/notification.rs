@@ -96,13 +96,16 @@ words! {
         /// An administrator made a file of the person's data, with a reason (ADR-0044, decision 4).
         /// The person is always told, in the app and by e-mail: it cannot be switched off.
         ExportByAdministrator => "export-by-administrator",
+        /// An administrator corrected the person's name or e-mail address, with a reason
+        /// (ADR-0044, decision 9). The person is always told: it cannot be switched off.
+        DetailsCorrected => "details-corrected",
     }
     messages label = "notification.kind."
 }
 
 words_in_api!(
     NotificationKind,
-    "What a notification is about: a mention, an assignment, activity on an issue the person follows, other changes to what they follow, the end of a run of many changes, a note about their editing, a timer that runs long, work of an agent, or a file of their data."
+    "What a notification is about: a mention, an assignment, activity on an issue the person follows, other changes to what they follow, the end of a run of many changes, a note about their editing, a timer that runs long, work of an agent, a file of their data, or a correction of their name or e-mail address."
 );
 
 words! {
@@ -213,7 +216,8 @@ impl NotificationKind {
             (Self::ExportReady, Via::Mail) => Some(&NOTIFICATIONS_EXPORT_READY_BY_MAIL),
             // The person whose data an administrator took is told whatever they chose (ADR-0044,
             // decision 4).
-            (Self::ExportByAdministrator, _) => None,
+            // So is the person whose details an administrator corrected (decision 9).
+            (Self::ExportByAdministrator | Self::DetailsCorrected, _) => None,
         }
     }
 }
@@ -346,7 +350,10 @@ mod tests {
             (NotificationKind::AgentStopped, (true, false)),
             (NotificationKind::ExportReady, (true, true)),
         ];
-        let always = [NotificationKind::ExportByAdministrator];
+        let always = [
+            NotificationKind::ExportByAdministrator,
+            NotificationKind::DetailsCorrected,
+        ];
         assert_eq!(expected.len() + always.len(), NotificationKind::ALL.len());
         for (kind, (app, mail)) in expected {
             let value = |via| kind.setting(via).map(Setting::default_value);

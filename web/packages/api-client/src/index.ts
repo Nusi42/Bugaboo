@@ -87,6 +87,7 @@ export {
   agentRuleWarningDays,
   agentsMost,
 } from "./agents.generated.ts";
+export { reasonMax } from "./texts.generated.ts";
 export { searchWords, type SearchWord } from "./search-words.generated.ts";
 export { issueMemberOf } from "./issue-member.ts";
 export { pageSizeDefault, pageSizeMax } from "./paging.generated.ts";

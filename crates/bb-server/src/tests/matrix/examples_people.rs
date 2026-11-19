@@ -14,6 +14,7 @@ use serde_json::json;
 use super::actors::Project;
 use super::examples::Request;
 use super::routes::Fixture;
+use crate::sign_in_tests::http::ADA_EMAIL;
 use crate::sign_in_tests::rig::Rig;
 
 /// A group, made by the administrator of the matrix.
@@ -91,6 +92,18 @@ async fn groups_request(
             "GET",
             format!("/api/v1/people/{}", fixture.admin_id()),
             None,
+        ),
+        // The corrections of an administrator (PRIV-06) give Ada the name and address she has, so
+        // the matrix changes nothing for the rows after them.
+        "correctName" => (
+            "PUT",
+            format!("/api/v1/people/{}/name", fixture.admin_id()),
+            Some(json!({"name": "Ada Admin", "reason": "The matrix checks who may"})),
+        ),
+        "correctEmail" => (
+            "PUT",
+            format!("/api/v1/people/{}/e-mail", fixture.admin_id()),
+            Some(json!({"email": ADA_EMAIL, "reason": "The matrix checks who may"})),
         ),
         "listGroups" => ("GET", "/api/v1/groups".into(), None),
         "createGroup" => (

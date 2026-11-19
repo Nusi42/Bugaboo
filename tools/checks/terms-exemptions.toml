@@ -21,10 +21,17 @@ at = [
   "messages/en.json#mail.open-notifications",
   "messages/en.json#mail.open-project-settings",
   "messages/en.json#mail.sign-up-text",
+  "messages/en.json#mail.e-mail-change-text",
+  "messages/en.json#profile.send-link",
+  "messages/en.json#profile.link-sent",
+  "messages/en.json#profile.incomplete",
+  "messages/en.json#error.e-mail-change.*",
+  "messages/en.json#keep-kind.*.e-mail-change-links",
   "messages/en.json#setting.auth.sign-up-enabled.help",
   "messages/en.json#service.settings-is-link",
   "messages/en.json#service.data-folder-real",
   "api:property CreatedInvitationBody.link_path",
+  "api:enum ErrorCode e-mail-change.link-invalid",
   "api:enum LogBreakReason broken-link",
 ]
 reason = "A web link that a person sends or opens (the glossary term Link), a link in the file system, or a link in the chain of the security log (an entry that does not point to the one before it). Not the connection between two issues, which is a Relation."
@@ -35,6 +42,8 @@ term = "link"
 at = [
   "userDocs/sign-in/sign-in.md",
   "userDocs/people/people.md",
+  "userDocs/my-settings/profile.md",
+  "userDocs/privacy/keep-and-delete.md",
   "userDocs/notifications/customize.md",
   "userDocs/notifications/mail-server.md",
 ]
@@ -49,6 +58,14 @@ phrases = [
   "gives the link to the issue",
   "with the link to open",
   "sends the link that lets",
+  "send link",
+  "the link in it",
+  "no link can be sent",
+  "links that confirm a new e-mail address",
+  "a link that was opened",
+  "replaces a link you asked for",
+  "the newest link works",
+  "the link of the first e-mail",
 ]
 reason = "The web link of an invitation (the glossary term Link)."
 

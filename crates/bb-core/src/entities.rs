@@ -48,6 +48,7 @@ crate::entities! {
     crate::data_export::DataExport,
     crate::sign_up_invitation::SignUpInvitation,
     crate::sign_up_invitation::SignUpMail,
+    crate::e_mail_change::EmailChange,
     crate::comment::CommentVersion,
     crate::comment::Mention,
     crate::time::entry::StarterFieldMark,

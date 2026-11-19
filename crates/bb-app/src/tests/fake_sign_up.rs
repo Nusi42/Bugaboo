@@ -37,17 +37,17 @@ impl SignUpStore for FakeStore {
         }))
     }
 
-    async fn claim_sign_up_mail(
+    async fn claim_link_mail(
         tx: &mut Tx,
         address: &Digest,
-        invitation: InvitationId,
+        link: InvitationId,
         since: Timestamp,
         now: Timestamp,
     ) -> Result<bool, FakeError> {
         let rows = &mut tx.state.sign_up_mail;
         match rows.iter_mut().find(|known| known.address == *address) {
-            Some(known) if known.sent_at <= since || known.invitation == invitation => {
-                known.invitation = invitation;
+            Some(known) if known.sent_at <= since || known.invitation == link => {
+                known.invitation = link;
                 known.sent_at = now;
                 Ok(true)
             }
@@ -55,7 +55,7 @@ impl SignUpStore for FakeStore {
             None => {
                 rows.push(SignUpMail {
                     address: *address,
-                    invitation,
+                    invitation: link,
                     sent_at: now,
                 });
                 Ok(true)

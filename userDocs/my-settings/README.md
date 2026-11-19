@@ -4,6 +4,7 @@
 
 Open *My settings* from the menu. It has these pages:
 
+- [Profile](profile.md): your name and your e-mail address, and how to correct them
 - [Appearance](../basics/appearance.md): themes, spacing, larger text, less motion and where an issue opens
 - [Region](region.md): time zone, how dates and numbers are written, the first day of the week
 - [My data](my-data.md): a copy of everything Bugaboo stores about you

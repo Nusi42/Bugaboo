@@ -90,6 +90,24 @@ pub(super) fn open_request(operation: &str) -> Result<Option<Request>, Failure> 
             "/api/v1/me/handle".into(),
             Some(json!({"handle": "somebody.new"})),
         ),
+        // The person's own name and address (PRIV-06): only a session reaches them. The address is
+        // asked for with a wrong password (and e-mail is off in the matrix), so nothing changes.
+        "changeMyName" => (
+            "PUT",
+            "/api/v1/me/name".into(),
+            Some(json!({"name": "Somebody New"})),
+        ),
+        "askEmailChange" => (
+            "POST",
+            "/api/v1/me/e-mail-change".into(),
+            Some(json!({"new_email": "somebody.new@example.test", "password": wrong})),
+        ),
+        // A link that is no link: the route needs no session, and opens nothing for anybody.
+        "confirmEmailChange" => (
+            "POST",
+            "/api/v1/auth/e-mail-change/confirm".into(),
+            Some(json!({"secret": "not a secret"})),
+        ),
         // The person's own notifications.
         "listNotifications" => ("GET", "/api/v1/notifications".into(), None),
         "getUnreadCount" => ("GET", "/api/v1/notifications/unread".into(), None),

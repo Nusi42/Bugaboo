@@ -18,6 +18,7 @@ mod error;
 mod events;
 mod invitations;
 mod limit;
+mod link_mail;
 mod oauth;
 mod oauth_actor;
 mod oauth_admin;
@@ -26,6 +27,7 @@ mod oauth_session;
 mod oauth_store;
 mod oauth_token;
 mod oauth_types;
+mod one_use_link;
 mod request_session;
 mod second_factor;
 mod session;
@@ -248,6 +250,7 @@ pub use invitations::{
 #[cfg(any(test, feature = "testing"))]
 pub use limit::NoFailureLimit;
 pub use limit::{FailureLimit, NETWORK_KEY_PREFIX};
+pub(crate) use link_mail::{Capped, LinkMail, MailText};
 pub use oauth::{authorization, connected_apps, decide_authorization, register_app, take_back};
 pub use oauth_admin::clean_old_grants;
 pub use oauth_admin::{

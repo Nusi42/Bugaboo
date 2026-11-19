@@ -3,6 +3,21 @@
 //! may show with the same constants. The words are what the events already store, so no stored
 //! event is renamed.
 
+/// Why an administrator did what they did to somebody else's data: the export of it, a
+/// correction of their name or e-mail address.
+pub(crate) const REASON: &str = "reason";
+
+/// The members of a person: what a change of their own or a correction by an administrator
+/// writes (PRIV-06), and their standing (PRIV-04).
+pub(crate) mod person {
+    /// *Active*, *switched off* or *removed*.
+    pub(crate) const STANDING: &str = "standing";
+    /// The name.
+    pub(crate) const NAME: &str = "name";
+    /// The e-mail address; an event keeps only its keyed digest.
+    pub(crate) const EMAIL: &str = "email";
+}
+
 /// The members of a project.
 pub(crate) mod project {
     pub(crate) const NAME: &str = "name";
@@ -52,13 +67,7 @@ pub(crate) mod data_export {
     /// Whose data an administrator asked for.
     pub(crate) const PERSON: &str = bb_core::whose::members::PERSON;
     /// Why an administrator asked for somebody else's data.
-    pub(crate) const REASON: &str = "reason";
-}
-
-/// The members of the events of a person's standing (PRIV-04).
-pub(crate) mod person {
-    /// *Active*, *switched off* or *removed*.
-    pub(crate) const STANDING: &str = "standing";
+    pub(crate) const REASON: &str = super::REASON;
 }
 
 /// The members of a workflow.

@@ -635,6 +635,7 @@ mod agents;
 mod ai;
 mod backups;
 mod comments;
+mod corrections;
 mod data_exports;
 mod files;
 mod keep_rules;

@@ -1897,12 +1897,28 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Another choice of this field has that number. Choose another one.",
     ),
     (
+        "error.correction.own-profile",
+        "Change your own name and e-mail address in My settings › Profile.",
+    ),
+    (
+        "error.correction.reason-needed",
+        "Say in a few words why. The person is told.",
+    ),
+    (
         "error.data-export.reason-needed",
         "Say in a few words why you download this person's data. They are told.",
     ),
     (
         "error.data-export.waiting",
         "A file of your data is being created already. Wait until it is ready, then ask again.",
+    ),
+    (
+        "error.e-mail-change.link-invalid",
+        "This link does not work. It may have run out, been used already, or a newer one was sent. Ask for the change again in My settings › Profile.",
+    ),
+    (
+        "error.e-mail-change.mail-off",
+        "E-mail is off, so no link can prove a new address. Ask an administrator.",
     ),
     (
         "error.edit.in-progress",
@@ -2033,6 +2049,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "error.name.taken",
         "That name is already used. Choose another one.",
+    ),
+    (
+        "error.person.e-mail-taken",
+        "Another account uses this e-mail address.",
     ),
     (
         "error.project.move-into-itself",
@@ -3346,6 +3366,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("keep-kind.name.backups", "Backups"),
     ("keep-kind.name.dead-jobs", "Background work that failed"),
     ("keep-kind.name.drafts", "Drafts"),
+    (
+        "keep-kind.name.e-mail-change-links",
+        "Links that confirm a new e-mail address",
+    ),
     ("keep-kind.name.ip-addresses", "IP addresses of sign-ins"),
     ("keep-kind.name.notifications", "Notifications"),
     ("keep-kind.name.security-log", "Security log"),
@@ -3370,6 +3394,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("keep-kind.why.dead-jobs", "Seeing why it failed"),
     ("keep-kind.why.drafts", "Not losing text that was not saved"),
+    (
+        "keep-kind.why.e-mail-change-links",
+        "Changing the e-mail address only after the new one is proved; a link that was opened is deleted at once",
+    ),
     (
         "keep-kind.why.ip-addresses",
         "Stopping attacks on signing in",
@@ -3798,6 +3826,34 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("mail-server.title", "E-mail and notifications"),
     ("mail.date-time", "{moment} ({zone})"),
     (
+        "mail.e-mail-change-exists-subject",
+        "Bugaboo: this address has an account already",
+    ),
+    (
+        "mail.e-mail-change-exists-text",
+        "Somebody, probably you, asked to use this e-mail address for an account, but it has an account already, and an address can belong to one account only. Sign in here:\n\n{address}\n\nIf you did not do this, you do not need to do anything.",
+    ),
+    (
+        "mail.e-mail-change-subject",
+        "Bugaboo: confirm your new e-mail address",
+    ),
+    (
+        "mail.e-mail-change-text",
+        "Open this link to use this as the e-mail address of your account. It works once, for {hours, plural, one {# hour} other {# hours}}. Until then you sign in with your old address.\n\n{address}\n\nIf you did not ask for this, you do not need to do anything.",
+    ),
+    (
+        "mail.e-mail-changed-subject",
+        "Bugaboo: your e-mail address was changed",
+    ),
+    (
+        "mail.e-mail-changed-text",
+        "The e-mail address of your account was changed on {moment}. From now on you sign in with the new address, and e-mails go there.\n\nIf this was not you, open your sessions and choose Sign out everywhere, then ask an administrator for help:\n\n{address}",
+    ),
+    (
+        "mail.e-mail-corrected-text",
+        "An administrator changed the e-mail address of your account on {moment}. From now on you sign in with the new address, and e-mails go there.\n\nIf you did not expect this, ask an administrator. To end every session of your account, open your sessions and choose Sign out everywhere:\n\n{address}",
+    ),
+    (
         "mail.footer",
         "You get this e-mail because of your notification settings. You can change them in Bugaboo under {settings} › {page}.",
     ),
@@ -4100,6 +4156,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("nav.organization-settings", "Organization settings"),
     ("nav.people", "People"),
     ("nav.people-visibility", "Who sees people"),
+    ("nav.profile", "Profile"),
     ("nav.project-members", "Project members"),
     ("nav.projects", "Projects"),
     ("nav.region", "Region"),
@@ -4122,6 +4179,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "An agent was stopped or paused",
     ),
     ("notification.kind.assigned", "An issue is assigned to you"),
+    (
+        "notification.kind.details-corrected",
+        "An administrator corrected your name or e-mail address",
+    ),
     (
         "notification.kind.edit-notice",
         "Somebody asks you to finish editing, or takes your editing over",
@@ -4163,6 +4224,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "notification.kind.work-times-changed",
         "Your work times were changed",
     ),
+    ("notifications.administrators-reason", "Why: {reason}"),
     (
         "notifications.agent-asks",
         "An agent asked a question and waits for your answer.",
@@ -4189,6 +4251,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Choose for each kind of event whether you hear of it in the app, by e-mail, in both or not at all. You never hear of your own changes. E-mail goes only when your organization has switched it on.",
     ),
     (
+        "notifications.details-corrected",
+        "{who} corrected your name or e-mail address",
+    ),
+    (
         "notifications.export-by-administrator",
         "{who} created a file of all your data to download",
     ),
@@ -4196,7 +4262,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "notifications.export-ready",
         "The file of your data is ready. Download it under My settings › My data",
     ),
-    ("notifications.export-reason", "Why: {reason}"),
     ("notifications.filter.all", "All"),
     ("notifications.filter.mentions", "Mentions"),
     ("notifications.filter.unread", "Unread"),
@@ -4572,7 +4637,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "permission.manage-people",
-        "See everybody's e-mail address, correct their names and stop a change to many issues that somebody else started",
+        "See everybody's e-mail address, correct their names and e-mail addresses and stop a change to many issues that somebody else started",
     ),
     ("permission.manage-roles", "Create, change and delete roles"),
     (
@@ -4616,11 +4681,19 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("person.agent-of", "{agent}, agent of {person}"),
     ("person.back", "All people"),
     ("person.bugaboo", "Bugaboo"),
+    ("person.correct-e-mail", "Correct e-mail address"),
+    ("person.correct-name", "Correct name"),
+    ("person.corrected", "Corrected. The person is told."),
+    ("person.corrections", "Corrections"),
     ("person.email", "E-mail address"),
     ("person.former", "Former user {label}"),
     ("person.former-inside", "former user {label}"),
     ("person.groups", "Groups"),
     ("person.groups-none", "{name} is in no group."),
+    ("person.new-e-mail", "E-mail address"),
+    ("person.new-name", "Name"),
+    ("person.reason", "Reason"),
+    ("person.reason-help", "In a few words. The person is told."),
     ("person.role", "Someone ({role})"),
     ("person.role-inside", "someone ({role})"),
     ("person.roles", "Roles"),
@@ -4717,6 +4790,33 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("priority.high", "High"),
     ("priority.low", "Low"),
     ("priority.normal", "Normal"),
+    ("profile.change-e-mail", "Change e-mail address"),
+    ("profile.change-name", "Change your name, {name}"),
+    ("profile.confirm-title", "New e-mail address"),
+    (
+        "profile.confirmed",
+        "Your e-mail address is changed. From now on you sign in with it.",
+    ),
+    ("profile.e-mail", "E-mail address"),
+    (
+        "profile.incomplete",
+        "This link is incomplete. Copy the whole address from the e-mail.",
+    ),
+    (
+        "profile.intro",
+        "Your name and your e-mail address. Others see your name as far as their role lets them.",
+    ),
+    (
+        "profile.link-sent",
+        "A link went to {address}. Open it within an hour to use this address. Until then you sign in with your current address.",
+    ),
+    ("profile.name", "Name"),
+    ("profile.name-changed", "Your name was changed."),
+    ("profile.new-e-mail", "New e-mail address"),
+    ("profile.send-link", "Send link"),
+    ("profile.sign-in", "Sign in"),
+    ("profile.title", "Profile"),
+    ("profile.wrong-password", "This is not your password."),
     ("project-members.also-in", "Also in {projects}"),
     (
         "project-members.intro",

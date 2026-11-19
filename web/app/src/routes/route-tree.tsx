@@ -70,8 +70,8 @@ import {
   workTimesRoute,
   themeRoute,
 } from "./app-pages.tsx";
-import { shortcutsRoute } from "./shortcuts-pages.tsx";
-import { invitationRoute, signUpRoute } from "./guest-pages.tsx";
+import { profileRoute, shortcutsRoute } from "./shortcuts-pages.tsx";
+import { eMailChangeRoute, invitationRoute, signUpRoute } from "./guest-pages.tsx";
 import { projectRoute, projectSettingsRoute } from "./project-pages.tsx";
 import {
   appRoute,
@@ -86,7 +86,14 @@ import { secondStepRoute, setUpSecondStepRoute, signInRoute } from "./sign-in.ts
 
 /** Every route of the app, under the root. */
 export const routeTree = rootRoute.addChildren([
-  guestRoute.addChildren([setupRoute, signInRoute, secondStepRoute, signUpRoute, invitationRoute]),
+  guestRoute.addChildren([
+    setupRoute,
+    signInRoute,
+    secondStepRoute,
+    signUpRoute,
+    invitationRoute,
+    eMailChangeRoute,
+  ]),
   setUpRoute.addChildren([setUpSecondStepRoute]),
   appRoute.addChildren([
     homeRoute,
@@ -124,6 +131,7 @@ export const routeTree = rootRoute.addChildren([
       startPageRoute,
       notificationSettingsRoute,
       handleRoute,
+      profileRoute,
       shortcutsRoute,
       securityRoute,
       sessionsRoute,

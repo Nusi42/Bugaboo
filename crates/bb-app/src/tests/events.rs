@@ -11,6 +11,7 @@
 use std::future::Future;
 use std::pin::Pin;
 
+use super::corrections as sco;
 use super::data_exports as sde;
 use super::runs as sru;
 use super::scenarios::{self as s, Added};
@@ -207,6 +208,11 @@ table! {
     "ask_for_someones_data" => sde::ask_for_someones_data_scenario,
     "switch_off" => super::switch_off::switch_off_scenario,
     "switch_on" => super::switch_off::switch_on_scenario,
+    "change_my_name" => sco::change_my_name_scenario,
+    "ask_e_mail_change" => sco::ask_e_mail_change_scenario,
+    "confirm_e_mail_change" => sco::confirm_e_mail_change_scenario,
+    "correct_name" => sco::correct_name_scenario,
+    "correct_e_mail" => sco::correct_e_mail_scenario,
     "create_theme" => sth::create_theme_scenario,
     "save_theme" => sth::save_theme_scenario,
     "copy_theme" => sth::copy_theme_scenario,

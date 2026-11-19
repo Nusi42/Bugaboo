@@ -317,6 +317,16 @@ routes = ["POST /api/v1/admin/backups"]
 reason = "A backup is made new: a new file and its record, with nothing yet that another change could overwrite (ADR-0019); one backup is made at a time, and a second one meanwhile is refused with backup.running (ADR-0046, decision 3)."
 
 [[exempt]]
+routes = [
+  "PUT /api/v1/me/name",
+  "POST /api/v1/me/e-mail-change",
+  "POST /api/v1/auth/e-mail-change/confirm",
+  "PUT /api/v1/people/{person}/name",
+  "PUT /api/v1/people/{person}/e-mail",
+]
+reason = "A name or an e-mail address is set to a value, which can be set again, and the person and the administrator see the value they set in the answer (PRIV-06). A new address waits for its link, which works once; the change of an address by an administrator is refused when another account has it."
+
+[[exempt]]
 routes = ["POST /api/v1/me/data-export", "POST /api/v1/people/{person}/data-export"]
 reason = "Each asks for a new file of a person's data, a new record that nobody could have read before; a second one while one waits is refused (ADR-0044, Limits)."
 

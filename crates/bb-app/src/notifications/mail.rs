@@ -51,6 +51,27 @@ pub(crate) enum MailJob {
         /// The ID the link will have.
         invitation: InvitationId,
     },
+    /// The e-mail to a new address a person asked for (PRIV-06): the link that makes it theirs,
+    /// or, for an address with an account, the word that it has one. The link is made when the job
+    /// runs; the address is in the payload until the job is done.
+    EmailChange {
+        /// Whose address changes.
+        person: UserId,
+        /// The new address.
+        email: String,
+        /// The line of the e-mail in the memory of link e-mails, so a second try of the same job
+        /// is not a second e-mail.
+        link: InvitationId,
+    },
+    /// The note to an address that the address of its account was changed, with the moment.
+    EmailChanged {
+        /// The address that is told.
+        email: String,
+        /// When it was changed.
+        at: Timestamp,
+        /// Who changed it, which says what the note says.
+        by: crate::people::ChangedBy,
+    },
 }
 
 impl MailJob {
@@ -163,6 +184,14 @@ impl<S: AuthStore> Ctx<'_, S> {
             }
             Some(MailJob::SignUp { email, invitation }) => {
                 self.send_sign_up_mail(&email, invitation).await
+            }
+            Some(MailJob::EmailChange {
+                person,
+                email,
+                link,
+            }) => self.send_e_mail_change_mail(person, &email, link).await,
+            Some(MailJob::EmailChanged { email, at, by }) => {
+                self.send_e_mail_changed_mail(&email, at, by).await
             }
             None => Err(AppError::Refused(ErrorCode::InvalidRequest)),
         }

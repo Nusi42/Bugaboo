@@ -13,7 +13,7 @@ Each page is there only for the people who hold its permission, and a page you m
 
 | Page | You need |
 |--------|----------|
-| People (the list of everybody, with e-mail addresses) | "See everybody's e-mail address and correct their names" |
+| People (the list of everybody, with e-mail addresses, and the corrections of a name or an address) | "See everybody's e-mail address and correct their names and e-mail addresses" |
 | People › Invitations | "Invite people and take invitations back" |
 | People › Signing up without an invitation | "Change organization settings" |
 | Groups | "Create, rename and delete groups and change who is in them" |

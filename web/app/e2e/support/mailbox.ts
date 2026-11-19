@@ -271,3 +271,13 @@ export function invitationPath(mail: Mail): string {
   const link = new URL(found[0]);
   return `${link.pathname}${link.hash}`;
 }
+
+/** The address of the page of a new e-mail address in an e-mail: the path and the secret (PRIV-06). */
+export function eMailChangePath(mail: Mail): string {
+  const found = /https?:\/\/\S+\/e-mail-change#\S+/u.exec(mail.text);
+  if (found === null) {
+    throw new Error(`no link to a new e-mail address in the e-mail: ${mail.text}`);
+  }
+  const link = new URL(found[0]);
+  return `${link.pathname}${link.hash}`;
+}

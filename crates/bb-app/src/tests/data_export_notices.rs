@@ -71,7 +71,7 @@ async fn priv_03_the_person_is_told_of_an_administrators_export_with_the_reason_
     assert_eq!(kinds(&heard), vec![NotificationKind::ExportByAdministrator]);
     assert_eq!(
         heard[0].what,
-        NotificationWhat::ExportByAdministrator {
+        NotificationWhat::ByAdministrator {
             reason: Some(REASON.to_owned())
         }
     );

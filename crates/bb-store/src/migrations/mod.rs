@@ -89,6 +89,7 @@ mod m0054_backup_runs;
 mod m0055_data_exports;
 mod m0056_keeping;
 mod m0057_person_standing;
+mod m0058_e_mail_changes;
 #[cfg(test)]
 mod old_rows;
 mod record;
@@ -479,6 +480,11 @@ const ALL: &[Definition] = &[
         version: 57,
         name: "person_standing",
         steps: || Ok(m0057_person_standing::steps()),
+    },
+    Definition {
+        version: 58,
+        name: "e_mail_changes",
+        steps: || Ok(m0058_e_mail_changes::steps()),
     },
 ];
 

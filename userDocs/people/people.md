@@ -10,6 +10,12 @@ Press a name to open the page of that person. It shows when the account was crea
 
 Each role opens the list where it is changed: *Roles and permissions* for the whole organization, *Who has which role* in the settings of the project for a project. You cannot change a person's roles on their page: change them where the rows are, in [Groups](groups.md) and in [Who has which role](who-has-which-role.md).
 
+## Correct a name or an e-mail address
+
+On the page of a person, **Correct name** and **Correct e-mail address** change what is wrong, for example after a marriage or a typo. Each always asks for a reason, in a few words. The change counts at once: the person signs in with the corrected address from then on. The person is told in the app and by e-mail with your reason, and for an address both the old and the new address get an e-mail. The security log records who corrected what of whom; of the old value it keeps only a fingerprint.
+
+An address that another account has is refused. People correct their own name and address in *My settings › Profile* (see [Profile](../my-settings/profile.md)).
+
 ## Invitations
 
 An invitation is a link that lets one person create their account. It works once and runs out after 7 days. Type the person's e-mail address under "Invitations", press "Create the invitation" and send them the link yourself: Bugaboo does not send invitations by e-mail. The link is shown only once.

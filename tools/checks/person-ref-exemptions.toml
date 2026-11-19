@@ -239,3 +239,39 @@ file = "crates/bb-app/src/access/mod.rs"
 function = "person_ref"
 reads = 1
 reason = "The resolution of a person into a PersonRef for the viewer reads the name that the level Names allows; a removed person's legal-hold name goes through the tombstone (FormerUser), not this read."
+
+[[read]]
+file = "crates/bb-app/src/people/corrections.rs"
+function = "own_name"
+reads = 1
+reason = "A person changing their own name reads the name they have now, which they always see, to keep it in the history of the change (PRIV-06)."
+
+[[read]]
+file = "crates/bb-app/src/people/corrections.rs"
+function = "address_of"
+reads = 1
+reason = "A change of an address reads the address of the account it changes: to tell it apart from the new one and to send it the note that it was changed (PRIV-06). It never reaches an answer."
+
+[[read]]
+file = "crates/bb-app/src/people/corrections.rs"
+function = "ask_e_mail_change"
+reads = 1
+reason = "The address a person asks for is read to put it into the job that sends the link to it (PRIV-06); the answer holds no address."
+
+[[read]]
+file = "crates/bb-app/src/people/corrections.rs"
+function = "correct_name"
+reads = 2
+reason = "An administrator with Manage people, who sees names on the page of a person, corrects a name: the name now is compared with the new one and kept only as its keyed digest (PRIV-06)."
+
+[[read]]
+file = "crates/bb-app/src/people/corrections.rs"
+function = "correct_e_mail"
+reads = 2
+reason = "An administrator with Manage people, who sees every address, corrects an address: the new one is written and both are told by e-mail; the event keeps only their keyed digests (PRIV-06)."
+
+[[read]]
+file = "crates/bb-api/src/api/people.rs"
+function = "correct_e_mail"
+reads = 1
+reason = "The address an administrator with Manage people gives a person only goes in; the answer shows the person as the page of a person does (PRIV-06)."

@@ -36,3 +36,16 @@ export const shortcutsRoute = createRoute({
     );
   },
 });
+
+const ProfileScreen = lazyRouteComponent(
+  () => import("../features/my-settings/index.ts"),
+  "ProfilePage",
+);
+
+/** *My settings › Profile*: the name and the e-mail address of the person (PRIV-06). */
+export const profileRoute = createRoute({
+  getParentRoute: () => mySettingsRoute,
+  path: paths.profile,
+  loader: loadsScreen(ProfileScreen),
+  component: ProfileScreen,
+});

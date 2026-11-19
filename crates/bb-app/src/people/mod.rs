@@ -7,12 +7,18 @@
 //! roles, so it is held to the same rule as giving a role: nobody puts somebody into a group that
 //! holds more than they hold themselves (ADR-0025, decision 6).
 
+mod corrections;
 mod group_page;
 mod list;
 mod standing;
 mod switch_off;
 mod used_by;
 
+pub(crate) use corrections::ChangedBy;
+pub use corrections::{
+    AskEmailChange, ChangeMyName, ConfirmEmailChange, CorrectEmail, CorrectName, CorrectionStore,
+    MyName, ask_e_mail_change, change_my_name, confirm_e_mail_change, correct_e_mail, correct_name,
+};
 pub use group_page::{GROUP_ROLES_MAX, GroupQuery, group};
 pub(crate) use list::write_cursor;
 pub use list::{

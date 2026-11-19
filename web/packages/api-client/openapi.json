@@ -2540,6 +2540,44 @@
         "x-permission": "by-record"
       }
     },
+    "/api/v1/auth/e-mail-change/confirm": {
+      "post": {
+        "tags": ["auth"],
+        "summary": "Opens the link to a new e-mail address: from now on it is the address of the account, and the\nold address is told. It is a `POST` so the secret is in the body, not in an address that logs\nand browser history keep.",
+        "operationId": "confirmEmailChange",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SecretBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "The new address is the account's."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "public"
+      }
+    },
     "/api/v1/auth/invitations": {
       "get": {
         "tags": ["auth"],
@@ -10797,6 +10835,57 @@
         "x-permission": "own-account"
       }
     },
+    "/api/v1/me/e-mail-change": {
+      "post": {
+        "tags": ["people"],
+        "summary": "Asks for a new e-mail address: a link goes to it (one hour, once). The answer is `202` for\nevery address, whether another account has it or not; the old address works until the link is\nopened. While e-mail is off, the answer is `e-mail-change.mail-off`: an administrator changes\nthe address then.",
+        "operationId": "askEmailChange",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailChangeBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "An e-mail goes to the new address, the same answer for every address."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "409": {
+            "description": "E-mail is off, so no link can prove a new address; an administrator changes it (e-mail-change.mail-off).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictProblem"
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests2"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "own-account"
+      }
+    },
     "/api/v1/me/handle": {
       "get": {
         "tags": ["people"],
@@ -10885,6 +10974,54 @@
           }
         },
         "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/me/name": {
+      "put": {
+        "tags": ["people"],
+        "summary": "Changes the name of the person who asks, at once. The history keeps the change.",
+        "operationId": "changeMyName",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NameBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The name now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NameBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "own-account"
       }
     },
     "/api/v1/me/settings": {
@@ -13538,6 +13675,156 @@
           }
         },
         "x-permission": "download-someones-data"
+      }
+    },
+    "/api/v1/people/{person}/e-mail": {
+      "put": {
+        "tags": ["people"],
+        "summary": "Corrects the e-mail address of a person, with a reason. It counts at once; both\naddresses and the person are told, and the security log records who corrected whose address.\nNeeds *Manage people*.",
+        "operationId": "correctEmail",
+        "parameters": [
+          {
+            "name": "person",
+            "in": "path",
+            "description": "The ID of the person.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorrectEmailBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The person now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonDetailBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Another account has this e-mail address (person.e-mail-taken), or it is one's own, which is changed in My settings › Profile (correction.own-profile).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictProblem"
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "manage-people"
+      }
+    },
+    "/api/v1/people/{person}/name": {
+      "put": {
+        "tags": ["people"],
+        "summary": "Corrects the name of a person, with a reason. Needs *Manage people*; the person is\ntold with the reason, and the security log records who corrected whose name.",
+        "operationId": "correctName",
+        "parameters": [
+          {
+            "name": "person",
+            "in": "path",
+            "description": "The ID of the person.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorrectNameBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The person now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonDetailBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "One's own name and e-mail address are changed in My settings › Profile (correction.own-profile).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictProblem"
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "manage-people"
       }
     },
     "/api/v1/people/{person}/removal-plan": {
@@ -23382,6 +23669,36 @@
           }
         }
       },
+      "CorrectEmailBody": {
+        "type": "object",
+        "description": "A corrected e-mail address, and why.",
+        "required": ["email"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "The address from now on."
+          },
+          "reason": {
+            "type": ["string", "null"],
+            "description": "Why, in a few words; the person is told."
+          }
+        }
+      },
+      "CorrectNameBody": {
+        "type": "object",
+        "description": "A corrected name, and why.",
+        "required": ["name"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name from now on."
+          },
+          "reason": {
+            "type": ["string", "null"],
+            "description": "Why, in a few words; the person is told."
+          }
+        }
+      },
       "CreateAgentKeyBody": {
         "type": "object",
         "description": "An agent key to make.",
@@ -23932,6 +24249,21 @@
           }
         }
       },
+      "EmailChangeBody": {
+        "type": "object",
+        "description": "A new e-mail address for the person who asks, with their password.",
+        "required": ["new_email", "password"],
+        "properties": {
+          "new_email": {
+            "type": "string",
+            "description": "The new address, which a link goes to."
+          },
+          "password": {
+            "type": "string",
+            "description": "The password, asked again so a stolen session cannot move the account to another address."
+          }
+        }
+      },
       "EntryDefaultsItem": {
         "type": "object",
         "description": "What a new time entry on an issue starts with.",
@@ -24023,6 +24355,11 @@
           "limit.reached",
           "data-export.waiting",
           "data-export.reason-needed",
+          "correction.reason-needed",
+          "correction.own-profile",
+          "e-mail-change.mail-off",
+          "e-mail-change.link-invalid",
+          "person.e-mail-taken",
           "timer.running",
           "timer.not-running",
           "timer.start-in-the-future",
@@ -26209,6 +26546,7 @@
           "ip-addresses",
           "sessions",
           "sign-up-links",
+          "e-mail-change-links",
           "drafts",
           "notifications",
           "trash",
@@ -27856,7 +28194,7 @@
       },
       "NameBody": {
         "type": "object",
-        "description": "A name, in a request: the name of a copy of a role, of a new group, of a tag to put on an issue.",
+        "description": "A name, in a request: the name of a copy of a role, of a new group, of a tag to put on an issue;\nand a person's own name, in a request and its answer.",
         "required": ["name"],
         "properties": {
           "name": {
@@ -28713,7 +29051,7 @@
       },
       "NotificationKind": {
         "type": "string",
-        "description": "What a notification is about: a mention, an assignment, activity on an issue the person follows, other changes to what they follow, the end of a run of many changes, a note about their editing, a timer that runs long, work of an agent, or a file of their data.",
+        "description": "What a notification is about: a mention, an assignment, activity on an issue the person follows, other changes to what they follow, the end of a run of many changes, a note about their editing, a timer that runs long, work of an agent, a file of their data, or a correction of their name or e-mail address.",
         "enum": [
           "mentioned",
           "assigned",
@@ -28732,7 +29070,8 @@
           "rule-runs-out-soon",
           "agent-stopped",
           "export-ready",
-          "export-by-administrator"
+          "export-by-administrator",
+          "details-corrected"
         ]
       },
       "NotificationTab": {
@@ -32886,7 +33225,7 @@
       },
       "SecretBody": {
         "type": "object",
-        "description": "The secret of an invitation link.",
+        "description": "The secret of a link: an invitation, or a new e-mail address.",
         "required": ["secret"],
         "properties": {
           "secret": {
