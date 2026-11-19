@@ -80,4 +80,35 @@ mod tests {
         assert_eq!(field_of("project"), None);
         assert_eq!(field_of("created_at"), None);
     }
+
+    /// The fields of the catalogue that are no member of the issue row: rows of their own hold them
+    /// (the people assigned, labels, tags, releases), they are worked out (time spent), or they are
+    /// kept for each person (the time factor).
+    const NOT_ON_THE_ROW: [Field; 7] = [
+        Field::AssignedTo,
+        Field::Labels,
+        Field::Tags,
+        Field::PlannedForRelease,
+        Field::FoundInRelease,
+        Field::TimeSpent,
+        Field::TimeFactor,
+    ];
+
+    #[test]
+    fn priv_03_every_field_of_the_catalogue_on_the_issue_row_is_read_as_that_field() {
+        use bb_core::personal::Entity as _;
+        let on_the_row: Vec<Field> = bb_core::issue::Issue::MARKS
+            .fields()
+            .iter()
+            .filter_map(|mark| field_of(mark.name()))
+            .collect();
+        // A member renamed away from its field would be shown to a person the field is hidden from.
+        for field in Field::ALL {
+            assert_ne!(
+                on_the_row.contains(field),
+                NOT_ON_THE_ROW.contains(field),
+                "{field:?} is either a member of the issue row read as its field, or listed here"
+            );
+        }
+    }
 }
