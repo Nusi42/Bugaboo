@@ -428,6 +428,11 @@ pub(super) fn agent_request(operation: &str) -> Option<Request> {
             "/api/v1/agents".into(),
             Some(json!({"name": "Made by the matrix"})),
         ),
+        "createSeveralAgents" => (
+            "POST",
+            "/api/v1/agents/several".into(),
+            Some(json!({"password": wrong, "agents": [{"name": "Made by the matrix"}]})),
+        ),
         "getAgent" => ("GET", format!("/api/v1/agents/{NOBODYS_RANDOM_ID}"), None),
         "changeAgent" => (
             "PATCH",

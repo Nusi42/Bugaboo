@@ -10,6 +10,7 @@ These are the limits of agents and of the assistant, as Bugaboo works by them. A
 | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | A person has at most                                     | 50 agents                                                                                                                                            |
 | An agent has at most                                     | 20 keys                                                                                                                                              |
+| *Create several agents* makes at most                    | 20 agents                                                                                                                                            |
 | A new agent is held to at most                           | 60 changes a minute                                                                                                                                  |
 | A new agent works on at most                             | 5 issues at once                                                                                                                                     |
 | A new agent may try one issue at most                    | 5 times                                                                                                                                              |

@@ -21,6 +21,14 @@ An agent is never *Assigned to* an issue: the issue keeps its person and says *w
 
 **One agent for each role, each with its own key.** If several programs work for you, for example one that fixes bugs and one that writes tests, create an agent for each and give each its own agent key. Everything an agent does is shown under its name, its limits count for it alone, and you can pause, stop or hand over one without the others. Programs that share one key all appear as the same agent, and only their own words could tell them apart.
 
+## Creating several agents at once
+
+A team of agents works best with one agent for each part of the work, for example one that plans, one that builds and one that checks: each has its own key, its own history, its own limits and can be paused on its own. To create them in one step, press **Create several agents** under the list of your agents. Write one name a line, choose when their keys run out, enter your password **once** and press **Create … agents**.
+
+- Every agent gets one key, called like the agent. You see all the keys **once** at the end, each with its own button to copy it and **Copy all keys** for the whole list (one line each: the name of the agent, then its key). Copy them then: Bugaboo keeps only a fingerprint of each.
+- All or nothing: if one agent cannot be created, for example because you have an agent of that name already or a name is in the list twice, none is created and Bugaboo says which line to fix.
+- The agents start with the same limits as an agent you create alone. The most agents of one list is on [the page of numbers](../ai/numbers.md).
+
 ## The page of an agent
 
 - **Agent keys.** An agent signs in with a key. Press **Create an agent key**, give it a name that says what it is for (for example "Fixer on the build server") and enter your password. You see the key **once**: copy it then. Every key runs out. **Renew the key** gives a new one and takes the old one back; **Take back** stops a key at once, and an agent that uses it can no longer sign in.

@@ -380,7 +380,7 @@ fn whole(number: i64) -> anyhow::Result<u128> {
 fn agent_rows() -> anyhow::Result<Vec<Vec<String>>> {
     use bb_core::agent::{
         DEFAULT_ATTEMPTS_ON_ONE_ISSUE, DEFAULT_CHANGES_A_MINUTE, DEFAULT_ISSUES_AT_ONCE,
-        MOST_AGENT_KEYS, MOST_AGENTS, MOST_ISSUES_OF_ONE_CHANGE,
+        MOST_AGENT_KEYS, MOST_AGENTS, MOST_AGENTS_AT_ONCE, MOST_ISSUES_OF_ONE_CHANGE,
     };
     use bb_core::agent_work::{
         DEFAULT_HAND_OVER_DAYS, DEFAULT_RULE_DAYS, MOST_HAND_OVER_DAYS, MOST_ISSUES_OF_A_HAND_OVER,
@@ -394,6 +394,10 @@ fn agent_rows() -> anyhow::Result<Vec<Vec<String>>> {
         (
             "An agent has at most",
             counted(MOST_AGENT_KEYS as u128, "key", "keys"),
+        ),
+        (
+            "*Create several agents* makes at most",
+            counted(MOST_AGENTS_AT_ONCE as u128, "agent", "agents"),
         ),
         (
             "A new agent is held to at most",

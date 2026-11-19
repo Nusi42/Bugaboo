@@ -96,6 +96,7 @@ mod saved_searches;
 mod search;
 mod second_step_gap;
 mod settings;
+mod several_agents;
 mod tags;
 mod themes;
 mod time;
@@ -188,6 +189,7 @@ where
         .merge(agent_work::routes())
         .merge(my_agent_work::routes())
         .merge(agents::routes())
+        .merge(several_agents::routes())
         .merge(second_step_gap::routes())
         .merge(admin::routes())
         .merge(backups::routes())

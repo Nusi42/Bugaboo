@@ -182,6 +182,14 @@ export function useCreateAgent() {
   return api.query.useMutation("post", "/api/v1/agents", { onSuccess: refreshAgents });
 }
 
+/** *Create several agents*: each with one key, the password once; the keys come back once. */
+export function useCreateSeveralAgents() {
+  return api.query.useMutation("post", "/api/v1/agents/several", {
+    gcTime: 0,
+    onSuccess: refreshAgents,
+  });
+}
+
 /** Hand an agent to another person, who has to accept it. */
 export function useHandAgent() {
   return api.query.useMutation("post", "/api/v1/agents/{agent}/hand-over", {

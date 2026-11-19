@@ -19,6 +19,7 @@ use bb_policy::guards::Refusal;
 use bb_policy::{ActorKind, Authorized, Permission, Place};
 use serde_json::json;
 
+use super::plan::{CREATING_STOPS, insert_agents, new_agent};
 use super::types::{
     AcceptAgent, AgentAction, AgentPage, AgentPosition, AgentQuery, AgentView, AgentsQuery,
     ChangeAgent, CreateAgent, HandAgent, RenameAgent, SetAgentLimits, StopAllAgents, TakeBackOffer,
@@ -56,7 +57,7 @@ fn stale_agent(person: UserId, agent: AgentId) -> AppError {
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// The agent as the viewer may see it: its person as *Who sees people* says for the viewer.
-    async fn agent_view(
+    pub(super) async fn agent_view(
         &self,
         viewer: &crate::access::Actor,
         agent: &Agent,
@@ -144,59 +145,16 @@ pub async fn create_agent<S: AuthStore>(
 ) -> Result<Authorized<AgentView>, AppError> {
     let record = ctx.active(&input.session_token).await?;
     let person = record.person.id;
-    if ctx
-        .projects_where(person, Permission::CreateAgents)
-        .await?
-        .is_empty()
-    {
-        return Err(AppError::Refused(ErrorCode::Forbidden));
-    }
+    ctx.ensure_may_create_agents(person).await?;
     let name = clean_name(&input.name)?;
-    let limits = ctx.starting_limits().await?;
-    let agent = Agent {
-        id: AgentId::generate(&mut ctx.ids()),
-        person,
-        name,
-        state: AgentState::Active,
-        paused_for: None,
-        changes_a_minute: limits.changes_a_minute,
-        issues_at_once: limits.issues_at_once,
-        attempts_on_one_issue: limits.attempts_on_one_issue,
-        offered_to: None,
-        made_by: person,
-        made_at: ctx.now(),
-        version: 1,
-    };
-    let event = ctx.event(
-        crate::auth::by(person),
-        entity(RecordKind::Agent, agent.id),
-        vec![
-            set_to("name", json!(agent.name)),
-            set_to("state", json!(agent.state.code())),
-            set_to(bb_core::version::FIELD, json!(agent.version)),
-        ],
-    )?;
-    let to_store = agent.clone();
+    let (agent, event) = new_agent(ctx, person, name, ctx.starting_limits().await?)?;
+    let to_store = [agent.clone()];
     ctx.store()
         .record_change(&event, move |transaction| {
-            Box::pin(async move {
-                // One person's agents are counted one change at a time, so two requests at the
-                // same moment cannot both pass the most.
-                S::lock_agents_of(transaction, person).await?;
-                let held = S::agent_count_of_in(transaction, person).await?;
-                if usize::try_from(held).map_or(true, |held| held >= MOST_AGENTS) {
-                    return Err(S::aborted());
-                }
-                S::insert_agent(transaction, &to_store).await
-            })
+            Box::pin(async move { insert_agents::<S>(transaction, person, &to_store).await })
         })
         .await
-        .map_err(|error| {
-            change_failed::<S>(
-                &error,
-                Stops::new(ErrorCode::InvalidRequest, ErrorCode::NameTaken),
-            )
-        })?;
+        .map_err(|error| change_failed::<S>(&error, CREATING_STOPS))?;
     let actor = crate::access::Actor {
         person: record.person,
         key: None,

@@ -176,6 +176,11 @@ export interface MessageArguments {
   "agents.rule-powers": { powers: string | number };
   "agents.rule-search-named": { search: string | number };
   "agents.rule-stop-name": { agent: string | number; search: string | number };
+  "agents.several-confirm": { count: number };
+  "agents.several-copy-one": { name: string | number };
+  "agents.several-names-help": { most: string | number };
+  "agents.several-shown-title": { count: number };
+  "agents.several-too-many": { most: string | number };
   "agents.stop-name": { agent: string | number };
   "agents.stop-title": { agent: string | number };
   "agents.waiting-button-name": { action: string | number; issue: string | number };

@@ -6,6 +6,8 @@ mod actor;
 mod limits;
 mod manage;
 mod names;
+mod plan;
+mod several;
 mod store;
 mod types;
 
@@ -16,8 +18,10 @@ pub use manage::{
 };
 pub(crate) use manage::{agents_stopped, stop_agents_in};
 pub(crate) use names::AgentNames;
+pub use several::create_several_agents;
 pub use store::{AgentReach, AgentStore, AgentWorkStore, Hold};
 pub use types::{
     AcceptAgent, AgentAction, AgentPage, AgentPosition, AgentQuery, AgentView, AgentsQuery,
-    ChangeAgent, CreateAgent, HandAgent, RenameAgent, SetAgentLimits, StopAllAgents, TakeBackOffer,
+    ChangeAgent, CreateAgent, CreateSeveralAgents, CreatedAgent, CreatedAgents, HandAgent,
+    RenameAgent, SetAgentLimits, SeveralAgent, StopAllAgents, TakeBackOffer,
 };

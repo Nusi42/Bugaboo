@@ -428,3 +428,90 @@ async fn test_concurrent_ai_30_ten_people_and_their_agents_hold_the_rules() -> T
     })
     .await
 }
+
+/// The agents of the person behind `browser` and how many keys they hold together: the list names
+/// the agents, and the page of each its keys.
+async fn agents_and_keys(browser: &mut Browser) -> Result<(usize, usize), Failure> {
+    let list = browser
+        .send(
+            "GET",
+            &format!("/api/v1/agents?limit={}", bb_core::agent::MOST_AGENTS),
+            None,
+        )
+        .await?;
+    let ids: Vec<String> = ok(&list)?["items"]
+        .as_array()
+        .ok_or("no agents")?
+        .iter()
+        .filter_map(|agent| agent["id"].as_str().map(str::to_owned))
+        .collect();
+    let mut keys = 0;
+    for id in &ids {
+        let agent = browser
+            .send("GET", &format!("/api/v1/agents/{id}"), None)
+            .await?;
+        keys += ok(&agent)?["keys"].as_array().map_or(0, Vec::len);
+    }
+    Ok((ids.len(), keys))
+}
+
+/// The room under the most agents that two lists race for.
+const ROOM: usize = 10;
+
+/// A list of `count` agents named after `stem`, with the password.
+fn several(stem: &str, count: usize) -> Value {
+    let agents: Vec<Value> = (0..count)
+        .map(|row| json!({"name": format!("{stem} {row}")}))
+        .collect();
+    json!({"password": super::rig::PASSWORD, "agents": agents})
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn test_concurrent_ai_30_two_lists_at_once_stay_within_the_most_agents() -> TestResult {
+    use bb_core::agent::{MOST_AGENTS, MOST_AGENTS_AT_ONCE};
+    each_database("test_concurrent_two_lists", async |db| {
+        let (rig, app) = Mcp::start(db).await?;
+        let (_site, mut ada) = Site::start(&rig, &app).await?;
+        // Fill up to `ROOM` short of the most, one list at a time.
+        let target = MOST_AGENTS - ROOM;
+        let mut held = 0;
+        while held < target {
+            let count = MOST_AGENTS_AT_ONCE.min(target - held);
+            let made = ada
+                .send(
+                    "POST",
+                    "/api/v1/agents/several",
+                    Some(several(&format!("Filler {held}"), count)),
+                )
+                .await?;
+            ok(&made)?;
+            held += count;
+        }
+        // Each list alone fits; both together do not.
+        let each = ROOM / 2 + 1;
+        let mut second = Browser::signed_in_as(&app, super::http::ADA_EMAIL).await?;
+        let (one, other) = tokio::join!(
+            ada.send(
+                "POST",
+                "/api/v1/agents/several",
+                Some(several("Left", each))
+            ),
+            second.send(
+                "POST",
+                "/api/v1/agents/several",
+                Some(several("Right", each))
+            ),
+        );
+        let passed = [one?, other?]
+            .iter()
+            .filter(|reply| reply.status.is_success())
+            .count();
+        assert_eq!(passed, 1, "one list is made, the other refused whole");
+        let (agents, keys) = agents_and_keys(&mut ada).await?;
+        assert_eq!(agents, held + each);
+        assert!(agents <= MOST_AGENTS);
+        assert_eq!(keys, agents, "one key for each agent");
+        Ok(())
+    })
+    .await
+}

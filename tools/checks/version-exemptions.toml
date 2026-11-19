@@ -341,3 +341,7 @@ reason = "*Switch off* and *Switch on* change only whether a person may sign in 
 [[exempt]]
 routes = ["POST /api/v1/people/{person}/remove"]
 reason = "*Remove a person* changes only the standing of a switched-off person, once and for good (ADR-0044, decision 6), with no text to overwrite; it is refused (person.not-switched-off) unless the person is switched off, and (edit.version-changed) only when somebody switched them on meanwhile, and a removed person is not found, so two administrators cannot overwrite each other unseen."
+
+[[exempt]]
+routes = ["POST /api/v1/agents/several"]
+reason = "It makes new agents and keys: there is no version to read before them. Two lists at the same moment are counted one after the other under the lock of the person's agents (ADR-0029, amendment M9)."

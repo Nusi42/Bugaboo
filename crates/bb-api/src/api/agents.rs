@@ -15,7 +15,7 @@ use bb_app::agents::{
 };
 use bb_app::auth::{AppError, CreateAccessKey, DeleteAccessKey};
 use bb_core::ErrorCode;
-use bb_core::access_key::KeyChoice;
+use bb_core::access_key::AGENT_KEY_CHOICE;
 use bb_core::agent::{AgentLimits, AgentState, LimitKind};
 use bb_core::id::{AccessKeyId, AgentId, UserId};
 use bb_policy::{Authorized, Masked, PersonRef};
@@ -539,8 +539,7 @@ async fn create_agent_key(
                 session_token,
                 password: body.password,
                 name: body.name,
-                // What an agent may do is its work, cut from its person (`Narrowing::agent`).
-                choice: KeyChoice::SeeAndChange,
+                choice: AGENT_KEY_CHOICE,
                 permissions: Vec::new(),
                 projects: Vec::new(),
                 expires_at: body.expires_at,
@@ -595,7 +594,7 @@ async fn renew_agent_key(
                 session_token,
                 password: body.password,
                 name: String::new(),
-                choice: KeyChoice::SeeAndChange,
+                choice: AGENT_KEY_CHOICE,
                 permissions: Vec::new(),
                 projects: Vec::new(),
                 expires_at: body.expires_at,

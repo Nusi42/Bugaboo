@@ -16,6 +16,10 @@ pub const MOST_AGENTS: usize = 50;
 /// The most keys one agent can have at the same time.
 pub const MOST_AGENT_KEYS: usize = 20;
 
+/// The most agents one list of *Create several agents*, or one request for agents, makes at once
+/// (ADR-0029, amendment M9): each comes with a key, and one change makes them all.
+pub const MOST_AGENTS_AT_ONCE: usize = 20;
+
 /// The most changes an agent may make in a minute when nobody chose otherwise (ADR-0029, decision 9).
 pub const DEFAULT_CHANGES_A_MINUTE: i64 = 60;
 /// The most issues an agent may work on at once when nobody chose otherwise.

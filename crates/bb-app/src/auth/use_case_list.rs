@@ -536,6 +536,8 @@ macro_rules! each_use_case {
             who_may_change(WhoMayChangeQuery) -> Authorized<WhoMayChange>;
             /// Makes an agent for the person.
             create_agent(CreateAgent) -> Authorized<AgentView>;
+            /// Makes several agents for the person, each with one key, with the password once.
+            create_several_agents(CreateSeveralAgents) -> Authorized<CreatedAgents>;
             /// Lists the person's own agents.
             my_agents(AgentsQuery) -> Authorized<AgentPage>;
             /// Lists every agent of the organization, for an administrator.

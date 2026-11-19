@@ -781,6 +781,28 @@ pub const AGENTS_RULES_MORE: MessageKey = MessageKey::new("agents.rules-more");
 /// The message `agents.rules-none`.
 pub const AGENTS_RULES_NONE: MessageKey = MessageKey::new("agents.rules-none");
 
+/// The message `agents.several`.
+pub const AGENTS_SEVERAL: MessageKey = MessageKey::new("agents.several");
+
+/// The message `agents.several-copy-all`.
+pub const AGENTS_SEVERAL_COPY_ALL: MessageKey = MessageKey::new("agents.several-copy-all");
+
+/// The message `agents.several-keys`.
+pub const AGENTS_SEVERAL_KEYS: MessageKey = MessageKey::new("agents.several-keys");
+
+/// The message `agents.several-names`.
+pub const AGENTS_SEVERAL_NAMES: MessageKey = MessageKey::new("agents.several-names");
+
+/// The message `agents.several-password-help`.
+pub const AGENTS_SEVERAL_PASSWORD_HELP: MessageKey =
+    MessageKey::new("agents.several-password-help");
+
+/// The message `agents.several-shown-once`.
+pub const AGENTS_SEVERAL_SHOWN_ONCE: MessageKey = MessageKey::new("agents.several-shown-once");
+
+/// The message `agents.several-text`.
+pub const AGENTS_SEVERAL_TEXT: MessageKey = MessageKey::new("agents.several-text");
+
 /// The message `agents.state.paused`.
 pub const AGENTS_STATE_PAUSED: MessageKey = MessageKey::new("agents.state.paused");
 
@@ -10794,6 +10816,51 @@ pub fn agents_rule_stop_name(values: AgentsRuleStopName<'_>) -> Message {
             ("agent", Value::Text(values.agent.to_string())),
             ("search", Value::Text(values.search.to_string())),
         ],
+    )
+}
+
+/// The message `agents.several-confirm`.
+#[must_use]
+pub fn agents_several_confirm(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agents.several-confirm"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `agents.several-copy-one`.
+#[must_use]
+pub fn agents_several_copy_one(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agents.several-copy-one"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `agents.several-names-help`.
+#[must_use]
+pub fn agents_several_names_help(most: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agents.several-names-help"),
+        vec![("most", Value::Text(most.to_string()))],
+    )
+}
+
+/// The message `agents.several-shown-title`.
+#[must_use]
+pub fn agents_several_shown_title(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agents.several-shown-title"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `agents.several-too-many`.
+#[must_use]
+pub fn agents_several_too_many(most: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agents.several-too-many"),
+        vec![("most", Value::Text(most.to_string()))],
     )
 }
 

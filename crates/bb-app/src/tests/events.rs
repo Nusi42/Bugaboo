@@ -103,6 +103,7 @@ table! {
     "reset_setting" => s::reset_setting_scenario,
     "lock_setting" => s::lock_setting_scenario,
     "create_agent" => super::agents::create_agent_scenario,
+    "create_several_agents" => super::several_agents::create_several_agents_scenario,
     "hand_over" => super::agent_work_scenarios::hand_over_scenario,
     "create_standing_rule" => super::agent_work_rules::create_standing_rule_scenario,
     "change_standing_rule" => super::agent_work_rules::change_standing_rule_scenario,
@@ -312,6 +313,11 @@ async fn adr_0007_every_command_use_case_appends_its_event() -> Outcome {
             // for the one issue of this scenario) and closes the run.
             "end_attempt" | "move_dates" => {
                 assert_eq!(added, 3, "{name} appended {added} events");
+            }
+            // *Create several agents* writes an event for each agent and each key: two of each in
+            // its scenario.
+            "create_several_agents" => {
+                assert_eq!(added, 4, "{name} appended {added} events");
             }
             _ => assert_eq!(added, 1, "{name} appended {added} events"),
         }

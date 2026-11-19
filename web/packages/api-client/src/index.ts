@@ -85,6 +85,7 @@ export {
   agentRuleDaysDefault,
   agentRuleDaysMost,
   agentRuleWarningDays,
+  agentsAtOnceMost,
   agentsMost,
 } from "./agents.generated.ts";
 export { reasonMax } from "./texts.generated.ts";

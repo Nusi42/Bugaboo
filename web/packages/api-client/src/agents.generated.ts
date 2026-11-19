@@ -8,3 +8,5 @@ export const agentRuleDaysMost = 90;
 export const agentRuleWarningDays = 3;
 /** The most agents one person can have (`MOST_AGENTS`). */
 export const agentsMost = 50;
+/** The most agents one list of *Create several agents* makes at once (`MOST_AGENTS_AT_ONCE`). */
+export const agentsAtOnceMost = 20;

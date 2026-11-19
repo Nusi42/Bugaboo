@@ -35,6 +35,10 @@ words! {
     }
 }
 
+/// *What it may do* of every agent key: what an agent may do is its work, cut from its person
+/// (`bb_policy::Narrowing::agent`), so its key narrows nothing more (ADR-0029, decision 2).
+pub const AGENT_KEY_CHOICE: KeyChoice = KeyChoice::SeeAndChange;
+
 /// In the API description *What it may do* is one of the known words.
 #[cfg(feature = "openapi")]
 impl utoipa::PartialSchema for KeyChoice {

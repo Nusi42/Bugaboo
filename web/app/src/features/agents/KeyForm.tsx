@@ -1,23 +1,11 @@
 import { t } from "@bugaboo/messages";
-import {
-  Alert,
-  alertTone,
-  autoComplete,
-  Button,
-  fieldKind,
-  Form,
-  DelayedSkeleton,
-  SubmitButton,
-  TextField,
-  partOf,
-  part,
-} from "@bugaboo/ui";
+import { Button, Form, DelayedSkeleton, SubmitButton, TextField, partOf, part } from "@bugaboo/ui";
 import { useQuery } from "@tanstack/react-query";
 
-import { messageOf } from "../../shared/errors.ts";
 import { keyRulesOptions, KeyExpiry, useKeyDraft } from "../my-settings/index.ts";
 import type { AgentKey } from "./agents.ts";
 import { useKeyRequest } from "./use-key-request.ts";
+import { PasswordAgain } from "./PasswordAgain.tsx";
 
 export interface KeyFormProps {
   readonly agent: string;
@@ -55,18 +43,12 @@ export function KeyForm({ agent, renewing, onMade, onCancel }: KeyFormProps) {
         <p {...partOf(part.text)}>{t("agents.key-renew-text", { name: renewing.name })}</p>
       )}
       <KeyExpiry draft={draft} rules={loaded} wrongDay={request.wrongDay} />
-      <TextField
-        label={t("field.confirm-password")}
-        description={t("field.confirm-password-help")}
-        kind={fieldKind.password}
-        autoComplete={autoComplete.currentPassword}
-        requiredMessage={t("error.field.required")}
+      <PasswordAgain
+        help={t("field.confirm-password-help")}
         value={draft.password}
         onChange={draft.setPassword}
+        failure={request.failure}
       />
-      {request.failure === null ? null : (
-        <Alert tone={alertTone.danger}>{messageOf(request.failure)}</Alert>
-      )}
       <div {...partOf(part.row, { variants: ["stretch"] })}>
         <SubmitButton isPending={request.pending}>
           {renewing === null ? t("agents.key-create-confirm") : t("agents.key-renew-confirm")}

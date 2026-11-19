@@ -3,7 +3,7 @@ import { partOf, part } from "@bugaboo/ui";
 
 import { type ListedAgent, type MyWorkItem } from "./agents.ts";
 import { AgentSection } from "./AgentSection.tsx";
-import { CreateAgentButton } from "./CreateAgentDialog.tsx";
+import { CreateAgentsRow } from "./CreateSeveralAgents.tsx";
 import { Section } from "./Section.tsx";
 
 export interface AgentsSectionsProps {
@@ -11,7 +11,7 @@ export interface AgentsSectionsProps {
   readonly work: readonly MyWorkItem[];
 }
 
-/** *Agents*: one box for each agent, in the order they come in, and the button to make one. */
+/** *Agents*: one box for each agent, in the order they come in, and the buttons to make them. */
 export function AgentList({ agents, work }: AgentsSectionsProps) {
   return (
     <Section heading={t("agents.list")} count={agents.length}>
@@ -28,9 +28,7 @@ export function AgentList({ agents, work }: AgentsSectionsProps) {
           ))}
         </ul>
       )}
-      <div {...partOf(part.row)}>
-        <CreateAgentButton count={agents.length} />
-      </div>
+      <CreateAgentsRow count={agents.length} />
     </Section>
   );
 }

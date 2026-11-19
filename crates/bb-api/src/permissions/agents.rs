@@ -14,6 +14,7 @@ use super::{Answer, Declared, Route, route};
 pub(super) const ROUTES: &[Route] = &[
     route("listMyAgents", Declared::OwnAccount, Answer::NeverStored),
     route("createAgent", Declared::OwnAccount, Answer::Ordinary),
+    route("createSeveralAgents", Declared::OwnAccount, Answer::Secret),
     route("getAgent", Declared::SignedIn, Answer::NeverStored),
     route("changeAgent", Declared::OwnAccount, Answer::Ordinary),
     route("handAgent", Declared::OwnAccount, Answer::Ordinary),

@@ -336,6 +336,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/agents/several": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Makes several agents, each with one key, after the password once. When one row cannot be made,
+     *     none is, and the answer names the row (`agents/<row>/name` or `agents/<row>/expires_at`).
+     */
+    post: operations["createSeveralAgents"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/agents/{agent}": {
     parameters: {
       query?: never;
@@ -7217,6 +7237,13 @@ export interface components {
        */
       projects?: string[];
     };
+    /** @description The agents to make, and the password of the person, asked again. */
+    CreateSeveralAgentsBody: {
+      /** @description The agents, in the order they are shown; at least one and at most `agentsAtOnceMost`. */
+      agents: components["schemas"]["SeveralAgentBody"][];
+      /** @description The password of the person, asked again once for every key. */
+      password: string;
+    };
     /** @description A new access key: the secret is shown only now. */
     CreatedAccessKeyBody: {
       /** @description The key as it will be listed. */
@@ -7226,6 +7253,18 @@ export interface components {
        *     `Authorization: Bearer <key>`. It is not stored and cannot be shown again.
        */
       secret: string;
+    };
+    /** @description An agent that was made, with its key. */
+    CreatedAgentBody: {
+      /** @description The agent. */
+      agent: components["schemas"]["AgentBody"];
+      /** @description Its key, with the secret: it is not stored and cannot be shown again. */
+      key: components["schemas"]["CreatedAccessKeyBody"];
+    };
+    /** @description The agents that were made, in the order of the list. */
+    CreatedAgentsBody: {
+      /** @description The agents with their keys. */
+      items: components["schemas"]["CreatedAgentBody"][];
     };
     /** @description A new invitation: the secret is shown only now. */
     CreatedInvitationBody: {
@@ -12278,6 +12317,17 @@ export interface components {
       /** @description The password of the administrator. */
       password: string;
     };
+    /** @description One agent of the list. */
+    SeveralAgentBody: {
+      /**
+       * Format: date-time
+       * @description When its key stops working (a date and time such as `2027-03-01T00:00:00Z`). Left out: the
+       *     default number of days from now. It cannot be later than the longest time.
+       */
+      expires_at?: string | null;
+      /** @description What the agent is called; unique among the person's agents. Its key is called the same. */
+      name: string;
+    };
     /** @description One layer of a shadow: offsets, blur, spread and a color. */
     ShadowLayerBody: {
       /**
@@ -14520,6 +14570,37 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["AgentBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  createSeveralAgents: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateSeveralAgentsBody"];
+      };
+    };
+    responses: {
+      /** @description The agents with their keys, shown once. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CreatedAgentsBody"];
         };
       };
       400: components["responses"]["BadRequest"];

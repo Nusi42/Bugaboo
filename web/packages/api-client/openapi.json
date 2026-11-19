@@ -1184,6 +1184,58 @@
         "x-permission": "own-account"
       }
     },
+    "/api/v1/agents/several": {
+      "post": {
+        "tags": ["agents"],
+        "summary": "Makes several agents, each with one key, after the password once. When one row cannot be made,\nnone is, and the answer names the row (`agents/<row>/name` or `agents/<row>/expires_at`).",
+        "operationId": "createSeveralAgents",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSeveralAgentsBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The agents with their keys, shown once.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedAgentsBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "own-account",
+        "x-secret": true
+      }
+    },
     "/api/v1/agents/{agent}": {
       "get": {
         "tags": ["agents"],
@@ -23822,6 +23874,24 @@
           }
         }
       },
+      "CreateSeveralAgentsBody": {
+        "type": "object",
+        "description": "The agents to make, and the password of the person, asked again.",
+        "required": ["password", "agents"],
+        "properties": {
+          "agents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SeveralAgentBody"
+            },
+            "description": "The agents, in the order they are shown; at least one and at most `agentsAtOnceMost`."
+          },
+          "password": {
+            "type": "string",
+            "description": "The password of the person, asked again once for every key."
+          }
+        }
+      },
       "CreatedAccessKeyBody": {
         "type": "object",
         "description": "A new access key: the secret is shown only now.",
@@ -23834,6 +23904,35 @@
           "secret": {
             "type": "string",
             "description": "The whole key, `bb_`, the prefix, `_` and the secret. Send it as\n`Authorization: Bearer <key>`. It is not stored and cannot be shown again."
+          }
+        }
+      },
+      "CreatedAgentBody": {
+        "type": "object",
+        "description": "An agent that was made, with its key.",
+        "required": ["agent", "key"],
+        "properties": {
+          "agent": {
+            "$ref": "#/components/schemas/AgentBody",
+            "description": "The agent."
+          },
+          "key": {
+            "$ref": "#/components/schemas/CreatedAccessKeyBody",
+            "description": "Its key, with the secret: it is not stored and cannot be shown again."
+          }
+        }
+      },
+      "CreatedAgentsBody": {
+        "type": "object",
+        "description": "The agents that were made, in the order of the list.",
+        "required": ["items"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreatedAgentBody"
+            },
+            "description": "The agents with their keys."
           }
         }
       },
@@ -33739,6 +33838,22 @@
           "password": {
             "type": "string",
             "description": "The password of the administrator."
+          }
+        }
+      },
+      "SeveralAgentBody": {
+        "type": "object",
+        "description": "One agent of the list.",
+        "required": ["name"],
+        "properties": {
+          "expires_at": {
+            "type": ["string", "null"],
+            "description": "When its key stops working (a date and time such as `2027-03-01T00:00:00Z`). Left out: the\ndefault number of days from now. It cannot be later than the longest time.",
+            "format": "date-time"
+          },
+          "name": {
+            "type": "string",
+            "description": "What the agent is called; unique among the person's agents. Its key is called the same."
           }
         }
       },

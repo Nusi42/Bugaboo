@@ -22,6 +22,23 @@ export const messages = {
   "agents.create-need": "Write a name first.",
   "agents.create-full":
     "You have {most, plural, one {# agent} other {# agents}}, the most there can be. Stop one you do not need.",
+  "agents.several": "Create several agents",
+  "agents.several-text":
+    "Write one name a line. Every agent gets one key, called like the agent; you see all the keys once at the end. If one agent cannot be created, none is.",
+  "agents.several-names": "Names of the agents",
+  "agents.several-names-help":
+    "One name a line, at most {most}. Each agent does its own part of the work, with its own key, history and limits.",
+  "agents.several-too-many": "At most {most} agents at once. Create the rest in a second step.",
+  "agents.several-password-help": "Your password, once for all the keys.",
+  "agents.several-confirm":
+    "{count, plural, =0 {Create the agents} one {Create # agent} other {Create # agents}}",
+  "agents.several-shown-title":
+    "{count, plural, one {Your new agent and its key} other {Your # new agents and their keys}}",
+  "agents.several-shown-once":
+    "Copy the keys now. Bugaboo keeps only a fingerprint of each and cannot show them again.",
+  "agents.several-keys": "The new agent keys",
+  "agents.several-copy-one": "Copy the key of {name}",
+  "agents.several-copy-all": "Copy all keys",
   "agents.name": "Name",
   "agents.stop-all": "Stop all my agents",
   "agents.stop-all-title": "Stop all my agents?",

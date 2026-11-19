@@ -21,7 +21,7 @@ use std::collections::BTreeSet;
 
 use bb_auth::{AccessKeySecret, same_digest};
 use bb_core::ErrorCode;
-use bb_core::access_key::{AccessKey, KeyChoice, MOST_KEYS, MOST_PROJECTS};
+use bb_core::access_key::{KeyChoice, MOST_KEYS, MOST_PROJECTS};
 use bb_core::agent::MOST_AGENT_KEYS;
 use bb_core::backup::replay::ReplayKind;
 use bb_core::event::{DomainEvent, EntityRef, RecordKind};
@@ -37,6 +37,7 @@ use serde_json::json;
 use super::ctx::Ctx;
 use super::error::{AppError, Stops, change_failed, internal};
 use super::events::{by, entity, set_to};
+use super::key_plan::{KeyWanted, key_end};
 use super::store::{AccessKeyRecord, AuthStore};
 use super::types::{
     AccessKeyPage, AccessKeyRules, AccessKeyRulesQuery, AccessKeyView, AccessKeysQuery,
@@ -283,7 +284,7 @@ const CLOCK_SLACK_SECONDS: i64 = 300;
 /// When a key made now stops working: the moment the person picked, or the default number of days;
 /// in the future and at most the organization's longest time. A moment at most
 /// [`CLOCK_SLACK_SECONDS`] after the longest time is cut to it; a later one is `request.invalid`.
-fn expiry(
+pub(super) fn expiry(
     now: Timestamp,
     picked: Option<Timestamp>,
     default_days: i64,
@@ -321,7 +322,7 @@ fn clean_choice(
 /// names what the key may do and when it runs out; never the secret or its hash. The public
 /// prefix is 8 symbols and unique, so two keys can (very rarely) draw the same one: the store
 /// refuses the second, and the key is made once more with a new secret.
-fn a_try_at_the_key<S: AuthStore>(
+pub(crate) fn a_try_at_the_key<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     draft: &AccessKeyRecord,
 ) -> Result<(AccessKeySecret, AccessKeyRecord, DomainEvent), AppError> {
@@ -348,7 +349,7 @@ fn a_try_at_the_key<S: AuthStore>(
 /// Stores a new key in the change that makes it. The keys of one agent are counted one change at a
 /// time. A renewed key is taken back in the same change, and the change stops unless exactly that
 /// key went.
-async fn insert_key<S: AuthStore>(
+pub(crate) async fn insert_key<S: AuthStore>(
     transaction: &mut S::Transaction,
     stored: &AccessKeyRecord,
     agent: Option<AgentId>,
@@ -418,39 +419,20 @@ pub async fn create_access_key<S: AuthStore>(
     };
     ctx.ensure_projects_known(&actor, &projects).await?;
     let settings = ctx.settings().await?;
-    let now = ctx.now();
-    let picked = input
-        .expires_at
-        .as_deref()
-        .map(str::parse::<Timestamp>)
-        .transpose()
-        .map_err(|_| AppError::Refused(ErrorCode::InvalidRequest))?;
-    let expires_at = expiry(
-        now,
-        picked,
-        settings.access_key_default_days,
-        settings.access_key_longest_days,
-    )?;
+    let expires_at = key_end(ctx.now(), input.expires_at.as_deref(), &settings)?;
     // The keys of agents are not counted among the person's own keys.
     if input.agent.is_none() {
         ctx.ensure_room_for_a_key(owner).await?;
     }
-    let draft = AccessKeyRecord {
-        key: AccessKey {
-            id: AccessKeyId::generate(&mut ctx.ids()),
-            owner,
-            name,
-            prefix: String::new(),
-            secret_hash: bb_core::security_log::Digest::new([0; 32]),
-            choice: input.choice,
-            created_at: now,
-            expires_at,
-            last_used_at: None,
-            agent: input.agent,
-        },
+    let draft = KeyWanted {
+        name,
+        choice: input.choice,
         permissions,
         projects,
-    };
+        expires_at,
+        agent: input.agent,
+    }
+    .draft(ctx, owner);
     let mut clashed = false;
     let (secret, stored) = loop {
         let (secret, stored, event) = a_try_at_the_key(ctx, &draft)?;

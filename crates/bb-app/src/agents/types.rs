@@ -6,7 +6,7 @@ use bb_core::id::{AgentId, UserId};
 use bb_policy::{Masked, PersonRef};
 use jiff::Timestamp;
 
-use crate::auth::AccessKeyView;
+use crate::auth::{AccessKeyView, CreatedAccessKey};
 
 /// Make an agent for the person.
 pub struct CreateAgent {
@@ -203,3 +203,42 @@ pub struct AgentPage {
 }
 
 impl Masked for AgentPage {}
+
+/// One row of *Create several agents*: an agent and its first key.
+#[derive(Clone, Debug)]
+pub struct SeveralAgent {
+    /// What the agent is called; unique among the person's agents. Its key is called the same.
+    pub name: String,
+    /// When its key stops working, as a date and time such as `2027-03-01T00:00:00Z`; left out
+    /// for the organization's default number of days from now.
+    pub expires_at: Option<String>,
+}
+
+/// *Create several agents*: every agent of the list with one key each, in one change, with the
+/// password once (ADR-0029, amendment M9).
+pub struct CreateSeveralAgents {
+    /// The secret of the session of the request.
+    pub session_token: String,
+    /// The password, asked again for the keys.
+    pub password: String,
+    /// The agents, in the order they are shown.
+    pub agents: Vec<SeveralAgent>,
+}
+
+/// An agent that was made with its key. Not `Debug`: the secret of the key is in it.
+#[derive(Clone)]
+pub struct CreatedAgent {
+    /// The agent.
+    pub agent: AgentView,
+    /// Its key, with the secret, shown once.
+    pub key: CreatedAccessKey,
+}
+
+/// The agents a list made, in its order, each with its key.
+#[derive(Clone)]
+pub struct CreatedAgents {
+    /// The agents and their keys.
+    pub items: Vec<CreatedAgent>,
+}
+
+impl Masked for CreatedAgents {}

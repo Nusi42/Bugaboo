@@ -63,8 +63,6 @@ export const messages = {
     "Copy the key now and keep it safe. Bugaboo shows it only this once and cannot show it again.",
   "access-keys.key-label": "The access key",
   "access-keys.copy": "Copy the key",
-  "access-keys.copied": "Copied",
-  "access-keys.done": "I have copied it",
   "access-keys.row.prefix": "Starts with {prefix}",
   "access-keys.row.permissions":
     "{count, plural, one {# single permission} other {# single permissions}}",

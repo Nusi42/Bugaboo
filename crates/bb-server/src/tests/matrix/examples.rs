@@ -241,6 +241,13 @@ pub(super) const EXAMPLES: &[Example] = &[
             Quirk::HeldInSomeProject(Permission::CreateAgents),
         ],
     ),
+    Example::with(
+        "createSeveralAgents",
+        &[
+            Quirk::AlsoAnswers("auth.wrong-credentials"),
+            Quirk::HeldInSomeProject(Permission::CreateAgents),
+        ],
+    ),
     Example::with("getAgent", &[Quirk::NamesAMissingThing]),
     Example::with("changeAgent", &[Quirk::NamesAMissingThing]),
     Example::with("handAgent", &[Quirk::NamesAMissingThing]),

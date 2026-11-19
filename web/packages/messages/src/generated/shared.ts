@@ -262,6 +262,8 @@ export const messages = {
   "nav.access-keys": "Access keys",
   "access-keys.may": "What it may do",
   "access-keys.more": "More options",
+  "access-keys.copied": "Copied",
+  "access-keys.done": "I have copied it",
   "nav.connected-apps": "Connected apps",
   "nav.ai": "Set up the assistant",
   "assistant.guide-title": "The AI guide",

@@ -655,9 +655,8 @@ export const assistantLimits = {{ turns: {turns}, question: {question}, turn: {t
     ))
 }
 
-/// The numbers of agents the browser app shows or checks, from the code that owns them: how long a
-/// standing rule lasts, how long before its end it is about to run out, and how many agents one
-/// person can have. They come from the linked `bb-core`, so no screen writes them a second time.
+/// The numbers of agents the browser app shows or checks, from the linked `bb-core` that owns them
+/// (the days of a standing rule, the most agents of a person and of one list), written once.
 pub(super) fn agents() -> String {
     format!(
         "{TS_HEADER}/** The days a standing rule lasts unless the person sets another end (`DEFAULT_RULE_DAYS`). */
@@ -668,11 +667,14 @@ export const agentRuleDaysMost = {most};
 export const agentRuleWarningDays = {warning};
 /** The most agents one person can have (`MOST_AGENTS`). */
 export const agentsMost = {agents};
+/** The most agents one list of *Create several agents* makes at once (`MOST_AGENTS_AT_ONCE`). */
+export const agentsAtOnceMost = {at_once};
 ",
         default = bb_core::agent_work::DEFAULT_RULE_DAYS,
         most = bb_core::agent_work::MOST_RULE_DAYS,
         warning = bb_core::agent_work::RULE_WARNING_DAYS,
         agents = bb_core::agent::MOST_AGENTS,
+        at_once = bb_core::agent::MOST_AGENTS_AT_ONCE,
     )
 }
 

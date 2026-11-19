@@ -148,6 +148,7 @@ mod search_run;
 mod search_run_more;
 mod search_words;
 mod settings;
+mod several_agents;
 mod sign_up;
 mod switch_off;
 mod tags;

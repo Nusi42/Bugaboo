@@ -17,6 +17,7 @@ mod ctx;
 mod error;
 mod events;
 mod invitations;
+mod key_plan;
 mod limit;
 mod link_mail;
 mod oauth;
@@ -61,9 +62,10 @@ use crate::agent_work::{
 use crate::agent_work::{MyAgentWork, MyAgentWorkQuery, my_agent_work};
 use crate::agents::{
     AcceptAgent, AgentPage, AgentQuery, AgentView, AgentsQuery, ChangeAgent, CreateAgent,
-    HandAgent, RenameAgent, SetAgentLimits, StopAllAgents, TakeBackOffer, accept_agent, agent,
-    change_agent, create_agent, hand_agent, my_agents, organization_agents, rename_agent,
-    set_agent_limits, stop_all_agents, take_back_offer,
+    CreateSeveralAgents, CreatedAgents, HandAgent, RenameAgent, SetAgentLimits, StopAllAgents,
+    TakeBackOffer, accept_agent, agent, change_agent, create_agent, create_several_agents,
+    hand_agent, my_agents, organization_agents, rename_agent, set_agent_limits, stop_all_agents,
+    take_back_offer,
 };
 use crate::ai::assistant::{
     Applied, ApplyProposal, AskAssistantQuery, AssistantAnswer, AssistantStatus,
@@ -232,6 +234,7 @@ use crate::working_hours::{
 
 #[cfg(test)]
 pub(crate) use access_keys::narrowing_of;
+pub(crate) use access_keys::{a_try_at_the_key, insert_key};
 pub use access_keys::{
     access_key_rules, access_keys, create_access_key, delete_access_key, project_choices,
     require_session, see_server_status,
@@ -247,6 +250,7 @@ pub use invitations::{
     change_sign_up_policy, create_invitation, invitation_lookup, invitations, revoke_invitation,
     sign_up_policy,
 };
+pub(crate) use key_plan::{KeyWanted, key_end};
 #[cfg(any(test, feature = "testing"))]
 pub use limit::NoFailureLimit;
 pub use limit::{FailureLimit, NETWORK_KEY_PREFIX};
