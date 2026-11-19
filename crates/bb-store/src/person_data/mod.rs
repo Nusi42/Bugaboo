@@ -4,6 +4,7 @@
 //! databases, because every condition is built from the names in `schema` with the query builder.
 
 mod cells;
+mod removal;
 
 use bb_app::ports::PersonData;
 use bb_app::privacy::walk::{FoundRow, KindOfRows, ROWS_PAGE, RowsPage};
@@ -54,20 +55,9 @@ impl PersonData for AuthStorage {
         links: &[Link],
     ) -> Result<u64, StoreError> {
         let all = tables();
-        let Some(table) = all.iter().find(|table| table.name == kind) else {
+        let Some((table, any)) = linked(&all, person, kind, links)? else {
             return Ok(0);
         };
-        let mut any = Cond::any();
-        let mut some = false;
-        for link in table.marks.person_links().links() {
-            if link.link().is_some_and(|what| links.contains(&what)) {
-                any = any.add(link_names(table, &all, link, person)?);
-                some = true;
-            }
-        }
-        if !some {
-            return Ok(0);
-        }
         let mut select = Query::select();
         select
             .expr_as(Expr::cust("COUNT(*)"), Computed::Total)
@@ -133,6 +123,28 @@ impl PersonData for AuthStorage {
             rows,
         })
     }
+}
+
+/// The table of `kind` and the condition for its rows that name `person` by a link that is one of
+/// `links`; none when `kind` is not a table or has none of the links.
+fn linked<'t>(
+    all: &'t [StoredTable],
+    person: UserId,
+    kind: &str,
+    links: &[Link],
+) -> Result<Option<(&'t StoredTable, Cond)>, StoreError> {
+    let Some(table) = all.iter().find(|table| table.name == kind) else {
+        return Ok(None);
+    };
+    let mut any = Cond::any();
+    let mut some = false;
+    for link in table.marks.person_links().links() {
+        if link.link().is_some_and(|what| links.contains(&what)) {
+            any = any.add(link_names(table, all, link, person)?);
+            some = true;
+        }
+    }
+    Ok(some.then_some((table, any)))
 }
 
 /// The condition for the rows of `table` that name `person` by any link; none when the entity
@@ -222,8 +234,20 @@ fn record_names(
     id_column: &Alias,
     person: UserId,
 ) -> Result<Cond, StoreError> {
+    records_of_kinds(all, RecordKind::ALL, kind_column, id_column, person)
+}
+
+/// The rows about a record of one of `kinds` that is `person` or belongs to them, as `whose` says
+/// for each kind.
+fn records_of_kinds(
+    all: &[StoredTable],
+    kinds: &[RecordKind],
+    kind_column: &Alias,
+    id_column: &Alias,
+    person: UserId,
+) -> Result<Cond, StoreError> {
     let mut any = Cond::any();
-    for kind in RecordKind::ALL {
+    for kind in kinds {
         let of_the_kind = Expr::col(kind_column.clone()).eq(kind.code());
         let the_record = match whose(*kind) {
             Whose::ThePerson => Expr::col(id_column.clone()).eq(person.stored()),

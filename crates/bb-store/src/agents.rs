@@ -438,6 +438,30 @@ impl AgentStore for AuthStorage {
         Ok(stopped)
     }
 
+    async fn delete_agents_of(
+        transaction: &mut Transaction,
+        person: UserId,
+    ) -> Result<Vec<AccessKeyId>, StoreError> {
+        let mut held = Query::select();
+        held.column(AgentRow::Id)
+            .from(AgentRow::Table)
+            .and_where(Expr::col(AgentRow::Person).eq(person.stored()));
+        let mut agents = Vec::new();
+        for row in transaction.fetch_all(&held).await? {
+            agents.push(row.id::<AgentId>(AgentRow::Id)?);
+        }
+        let mut keys = Vec::new();
+        for agent in &agents {
+            keys.extend(Self::delete_keys_of_agent(transaction, *agent).await?);
+        }
+        let mut delete = Query::delete();
+        delete
+            .from_table(AgentRow::Table)
+            .and_where(Expr::col(AgentRow::Person).eq(person.stored()));
+        transaction.execute(&delete).await?;
+        Ok(keys)
+    }
+
     async fn delete_keys_of_agent(
         transaction: &mut Transaction,
         agent: AgentId,

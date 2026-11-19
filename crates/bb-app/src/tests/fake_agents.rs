@@ -338,6 +338,22 @@ impl AgentStore for FakeStore {
         Ok(stopped)
     }
 
+    async fn delete_agents_of(tx: &mut Tx, person: UserId) -> Result<Vec<AccessKeyId>, FakeError> {
+        let agents: Vec<AgentId> = tx
+            .state
+            .agents
+            .iter()
+            .filter(|agent| agent.person == person)
+            .map(|agent| agent.id)
+            .collect();
+        let mut keys = Vec::new();
+        for agent in agents {
+            keys.extend(Self::delete_keys_of_agent(tx, agent).await?);
+        }
+        tx.state.agents.retain(|agent| agent.person != person);
+        Ok(keys)
+    }
+
     async fn delete_keys_of_agent(
         tx: &mut Tx,
         agent: AgentId,

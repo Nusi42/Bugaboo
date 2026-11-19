@@ -105,5 +105,8 @@ pub trait AgentStore: ChangeStore + AgentWorkStore + 'static {
         fn stop_agents_of(person: UserId) -> Vec<AgentId>;
         /// Removes every key of an agent; the IDs of the keys that went.
         fn delete_keys_of_agent(agent: AgentId) -> Vec<bb_core::id::AccessKeyId>;
+        /// Deletes every agent of a person, stopped or not, with its keys (the person is removed,
+        /// ADR-0044, decision 6); the IDs of the keys that went. The agent work they did stays.
+        fn delete_agents_of(person: UserId) -> Vec<bb_core::id::AccessKeyId>;
     }
 }

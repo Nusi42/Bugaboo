@@ -98,6 +98,9 @@ pub(crate) struct State {
     pub(crate) standings: Vec<bb_core::person::PersonStanding>,
     /// The lines of the replay list that wait for its file (ADR-0044, decision 8).
     pub(crate) replay_waiting: Vec<String>,
+    /// What each removal asked the changes to be scrubbed of, with its person (PRIV-04): the
+    /// in-memory store keeps its events outside the state, so a test reads the request.
+    pub(crate) scrubs: Vec<(UserId, crate::privacy::removal::Scrub)>,
     pub(crate) sessions: Vec<SignInSession>,
     pub(crate) two_steps: Vec<TwoStep>,
     pub(crate) totp_secrets: Vec<(UserId, Vec<u8>)>,

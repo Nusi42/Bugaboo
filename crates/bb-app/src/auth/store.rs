@@ -197,6 +197,9 @@ pub trait AccountStore: ChangeStore + 'static {
         fn insert_person(person: &Person, password_hash: &str, at: Timestamp) -> ();
         /// Replaces the password hash of a person.
         fn set_password(person: UserId, password_hash: &str, at: Timestamp) -> ();
+        /// Clears the name of a removed person and replaces their e-mail address with `address`
+        /// (`bb_core::person::cleared_address`), ADR-0044, decision 6.
+        fn clear_person(person: UserId, address: &str) -> ();
     }
 }
 
@@ -399,6 +402,7 @@ pub trait AuthStore:
     + crate::people::StandingStore
     + crate::privacy::replay::ReplayStore
     + crate::people::CorrectionStore
+    + crate::privacy::removal::RemovalStore
     + 'static
 {
     /// Whether the error is a unique key that was used twice (for example the e-mail address of

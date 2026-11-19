@@ -83,6 +83,9 @@ pub trait OAuthStore: ChangeStore + 'static {
         fn end_grant(id: GrantId, how: GrantEnd, at: Timestamp) -> bool;
         /// Ends every grant of a person and takes away their codes and tokens; the IDs ended.
         fn end_grants_of(person: UserId, how: GrantEnd, at: Timestamp) -> Vec<GrantId>;
+        /// Deletes every grant of a person, ended or not, with its codes, tokens and projects
+        /// (the person is removed, ADR-0044, decision 6); the IDs that went.
+        fn delete_grants_of(person: UserId) -> Vec<GrantId>;
         /// Allows a web address (`false` when it was allowed already).
         fn insert_oauth_web_address(address: &OAuthWebAddress) -> bool;
         /// Takes a web address away (`false` when it was not there).

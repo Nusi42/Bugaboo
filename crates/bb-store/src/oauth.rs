@@ -112,6 +112,26 @@ async fn with_projects(
         .collect())
 }
 
+/// Deletes the grants with these IDs (stored) with their codes, tokens and projects: the one
+/// deletion of grants, which the removal of a person and the clean-up of old grants call. How many
+/// grants went.
+async fn delete_grant_rows(
+    transaction: &mut Transaction,
+    grants: Vec<Vec<u8>>,
+) -> Result<u64, StoreError> {
+    delete_secrets_of(transaction, grants.clone()).await?;
+    let mut projects = Query::delete();
+    projects
+        .from_table(OAuthGrantProjectRow::Table)
+        .and_where(Expr::col(OAuthGrantProjectRow::Grant).is_in(grants.clone()));
+    transaction.execute(&projects).await?;
+    let mut delete = Query::delete();
+    delete
+        .from_table(OAuthGrantRow::Table)
+        .and_where(Expr::col(OAuthGrantRow::Id).is_in(grants));
+    transaction.execute(&delete).await
+}
+
 /// Takes away the codes and tokens of grants, by the ID of the grant.
 async fn delete_secrets_of(
     transaction: &mut Transaction,
@@ -528,6 +548,28 @@ impl OAuthStore for AuthStorage {
         Ok(ids)
     }
 
+    async fn delete_grants_of(
+        transaction: &mut Transaction,
+        person: UserId,
+    ) -> Result<Vec<GrantId>, StoreError> {
+        let mut select = Query::select();
+        select
+            .column(OAuthGrantRow::Id)
+            .from(OAuthGrantRow::Table)
+            .and_where(Expr::col(OAuthGrantRow::Person).eq(person.stored()))
+            .order_by(OAuthGrantRow::Id, Order::Asc);
+        let mut ids = Vec::new();
+        for row in transaction.fetch_all(&select).await? {
+            ids.push(row.id::<GrantId>(OAuthGrantRow::Id)?);
+        }
+        if ids.is_empty() {
+            return Ok(ids);
+        }
+        let stored: Vec<Vec<u8>> = ids.iter().map(|id| id.stored()).collect();
+        delete_grant_rows(transaction, stored).await?;
+        Ok(ids)
+    }
+
     async fn insert_oauth_web_address(
         transaction: &mut Transaction,
         address: &OAuthWebAddress,
@@ -637,17 +679,7 @@ impl OAuthStore for AuthStorage {
         }
         let mut grants = 0;
         if !gone.is_empty() {
-            delete_secrets_of(transaction, gone.clone()).await?;
-            let mut projects = Query::delete();
-            projects
-                .from_table(OAuthGrantProjectRow::Table)
-                .and_where(Expr::col(OAuthGrantProjectRow::Grant).is_in(gone.clone()));
-            transaction.execute(&projects).await?;
-            let mut delete = Query::delete();
-            delete
-                .from_table(OAuthGrantRow::Table)
-                .and_where(Expr::col(OAuthGrantRow::Id).is_in(gone));
-            grants = transaction.execute(&delete).await?;
+            grants = delete_grant_rows(transaction, gone).await?;
         }
         let mut held = Query::select();
         held.column(OAuthGrantRow::Client)

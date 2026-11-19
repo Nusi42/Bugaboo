@@ -19,15 +19,16 @@ use sea_query::{
 };
 
 use super::{delete_events, events_about, forget_events, hold_trashed};
+use crate::comments::delete_comment_rows;
 use crate::db::{Database, Transaction};
 use crate::error::StoreError;
 use crate::files::delete_attachments;
 use crate::schema::{
     AcceptedWarningRow, AssignedPersonRow, AttachmentRow, AttemptResultRow, AttemptRow, CommentRow,
-    CommentVersionRow, FieldValueRow, FollowerRow, HistoryEntryRow, IssueAliasRow, IssueLabelRow,
-    IssueParentRow, IssueRow, IssueTagRow, IssueWorkRow, MentionRow, NotificationRow, ProposalRow,
-    QuestionRow, RelationRow, ReviewRow, RuleMatchRow, TextIndexRow, TextMarkRow, TimeEntryRow,
-    TimeFactorRow, TimerRow, UploadRow,
+    FieldValueRow, FollowerRow, HistoryEntryRow, IssueAliasRow, IssueLabelRow, IssueParentRow,
+    IssueRow, IssueTagRow, IssueWorkRow, NotificationRow, ProposalRow, QuestionRow, RelationRow,
+    ReviewRow, RuleMatchRow, TextIndexRow, TextMarkRow, TimeEntryRow, TimeFactorRow, TimerRow,
+    UploadRow,
 };
 
 /// Deletes at most `limit` issues that went into the trash before `before` and have no time entry
@@ -117,7 +118,6 @@ async fn delete_events_and_files(
     for (kind, records) in [
         (RecordKind::Issue, &doomed.chosen),
         (RecordKind::Follower, &doomed.chosen),
-        (RecordKind::Comment, &doomed.comments),
         (RecordKind::AgentWork, &doomed.works),
     ] {
         delete_events(transaction, &events_about(kind, records.clone())).await?;
@@ -146,7 +146,8 @@ async fn delete_under(transaction: &mut Transaction, doomed: &Doomed) -> Result<
         Expr::col(AttemptResultRow::Attempt).in_subquery(attempts),
     )
     .await?;
-    let under: [(TableRef, ColumnRef, &SelectStatement); 5] = [
+    delete_comment_rows(transaction, &doomed.comments).await?;
+    let under: [(TableRef, ColumnRef, &SelectStatement); 3] = [
         (
             AttemptRow::Table.into_table_ref(),
             AttemptRow::Work.into_column_ref(),
@@ -162,16 +163,6 @@ async fn delete_under(transaction: &mut Transaction, doomed: &Doomed) -> Result<
             ReviewRow::Work.into_column_ref(),
             &doomed.works,
         ),
-        (
-            CommentVersionRow::Table.into_table_ref(),
-            CommentVersionRow::Comment.into_column_ref(),
-            &doomed.comments,
-        ),
-        (
-            MentionRow::Table.into_table_ref(),
-            MentionRow::Comment.into_column_ref(),
-            &doomed.comments,
-        ),
     ];
     for (table, column, parents) in under {
         delete_where(
@@ -181,14 +172,7 @@ async fn delete_under(transaction: &mut Transaction, doomed: &Doomed) -> Result<
         )
         .await?;
     }
-    let of_records: [(TableRef, ColumnRef, ColumnRef, RecordKind, &SelectStatement); 3] = [
-        (
-            TextMarkRow::Table.into_table_ref(),
-            TextMarkRow::EntityKind.into_column_ref(),
-            TextMarkRow::EntityId.into_column_ref(),
-            RecordKind::Comment,
-            &doomed.comments,
-        ),
+    let of_records: [(TableRef, ColumnRef, ColumnRef, RecordKind, &SelectStatement); 2] = [
         (
             TextMarkRow::Table.into_table_ref(),
             TextMarkRow::EntityKind.into_column_ref(),

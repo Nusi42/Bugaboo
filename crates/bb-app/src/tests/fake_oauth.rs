@@ -224,6 +224,22 @@ impl OAuthStore for FakeStore {
         Ok(true)
     }
 
+    async fn delete_grants_of(tx: &mut Tx, person: UserId) -> Result<Vec<GrantId>, FakeError> {
+        let gone: Vec<GrantId> = tx
+            .state
+            .oauth
+            .grants
+            .iter()
+            .filter(|found| found.grant.person == person)
+            .map(|found| found.grant.id)
+            .collect();
+        let oauth = &mut tx.state.oauth;
+        oauth.codes.retain(|code| !gone.contains(&code.grant));
+        oauth.tokens.retain(|token| !gone.contains(&token.grant));
+        oauth.grants.retain(|found| found.grant.person != person);
+        Ok(gone)
+    }
+
     async fn delete_oauth_web_address(tx: &mut Tx, address: &str) -> Result<bool, FakeError> {
         let before = tx.state.oauth.web_addresses.len();
         tx.state

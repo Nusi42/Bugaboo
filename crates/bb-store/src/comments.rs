@@ -7,6 +7,7 @@
 
 use bb_app::comments::CommentStore;
 use bb_core::comment::{Comment, CommentVersion, Mention, MentionTarget};
+use bb_core::event::RecordKind;
 use bb_core::id::{CommentId, IssueId, UserId};
 use bb_core::version::Version;
 use jiff::Timestamp;
@@ -15,7 +16,11 @@ use sea_query::{Expr, ExprTrait as _, Order, Query, SelectStatement};
 use crate::auth::AuthStorage;
 use crate::db::{Row, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
-use crate::schema::{CommentRow, CommentVersionRow, MentionRow};
+use crate::keeping::{delete_events, events_about};
+use crate::schema::{
+    AttachmentRow, CommentRow, CommentVersionRow, MentionRow, NotificationRow, TextMarkRow,
+    UploadRow,
+};
 
 fn comment_select() -> SelectStatement {
     let mut select = Query::select();
@@ -281,4 +286,104 @@ impl CommentStore for AuthStorage {
         }
         Ok(())
     }
+
+    async fn delete_comments_of(
+        transaction: &mut Transaction,
+        author: UserId,
+    ) -> Result<Vec<(CommentId, IssueId)>, StoreError> {
+        let mut held = Query::select();
+        held.columns([CommentRow::Id, CommentRow::Issue])
+            .from(CommentRow::Table)
+            .and_where(Expr::col(CommentRow::Author).eq(author.stored()))
+            .order_by(CommentRow::Id, Order::Asc);
+        let mut gone = Vec::new();
+        for row in transaction.fetch_all(&held).await? {
+            gone.push((
+                row.id::<CommentId>(CommentRow::Id)?,
+                row.id::<IssueId>(CommentRow::Issue)?,
+            ));
+        }
+        if gone.is_empty() {
+            return Ok(gone);
+        }
+        let comments = || {
+            let mut select = Query::select();
+            select
+                .column(CommentRow::Id)
+                .from(CommentRow::Table)
+                .and_where(Expr::col(CommentRow::Author).eq(author.stored()));
+            select
+        };
+        // A file stays with its issue when the comment it came with goes.
+        let mut attachments = Query::update();
+        attachments
+            .table(AttachmentRow::Table)
+            .value(AttachmentRow::Comment, Option::<Vec<u8>>::None)
+            .and_where(Expr::col(AttachmentRow::Comment).in_subquery(comments()));
+        transaction.execute(&attachments).await?;
+        let mut uploads = Query::update();
+        uploads
+            .table(UploadRow::Table)
+            .value(UploadRow::Comment, Option::<Vec<u8>>::None)
+            .and_where(Expr::col(UploadRow::Comment).in_subquery(comments()));
+        transaction.execute(&uploads).await?;
+        // A notification of a comment carries its text in its changes.
+        let mut told = Query::delete();
+        told.from_table(NotificationRow::Table).and_where(
+            Expr::col(NotificationRow::Event)
+                .in_subquery(events_about(RecordKind::Comment, comments())),
+        );
+        transaction.execute(&told).await?;
+        delete_comment_rows(transaction, &comments()).await?;
+        Ok(gone)
+    }
+}
+
+/// Deletes the comments that `comments` selects (their IDs) with what hangs under them: their
+/// versions, mentions and marks, then their events with what was made of them, then the comments.
+/// The one deletion of comments, which the purge of the trash and the removal of a person call;
+/// what points to a comment from outside (files, notifications) is the caller's.
+///
+/// # Errors
+/// Fails when the database fails.
+pub(crate) async fn delete_comment_rows(
+    transaction: &mut Transaction,
+    comments: &SelectStatement,
+) -> Result<(), StoreError> {
+    let mut versions = Query::delete();
+    versions
+        .from_table(CommentVersionRow::Table)
+        .and_where(Expr::col(CommentVersionRow::Comment).in_subquery(comments.clone()));
+    transaction.execute(&versions).await?;
+    let mut mentions = Query::delete();
+    mentions
+        .from_table(MentionRow::Table)
+        .and_where(Expr::col(MentionRow::Comment).in_subquery(comments.clone()));
+    transaction.execute(&mentions).await?;
+    let mut marks = Query::delete();
+    marks
+        .from_table(TextMarkRow::Table)
+        .and_where(Expr::col(TextMarkRow::EntityKind).eq(RecordKind::Comment.code()))
+        .and_where(Expr::col(TextMarkRow::EntityId).in_subquery(comments.clone()));
+    transaction.execute(&marks).await?;
+    delete_events(
+        transaction,
+        &events_about(RecordKind::Comment, comments.clone()),
+    )
+    .await?;
+    // The IDs first: the select may name the comments by a column of their own rows.
+    let ids: Vec<Vec<u8>> = transaction
+        .fetch_all(comments)
+        .await?
+        .iter()
+        .map(|row| row.get(CommentRow::Id))
+        .collect::<Result<_, _>>()?;
+    for chunk in ids.chunks(crate::db::STATEMENT_ITEMS) {
+        let mut delete = Query::delete();
+        delete
+            .from_table(CommentRow::Table)
+            .and_where(Expr::col(CommentRow::Id).is_in(chunk.to_vec()));
+        transaction.execute(&delete).await?;
+    }
+    Ok(())
 }

@@ -6,7 +6,7 @@
 use std::future::Future;
 
 use bb_core::comment::{Comment, CommentVersion, Mention};
-use bb_core::id::CommentId;
+use bb_core::id::{CommentId, IssueId, UserId};
 use bb_core::version::Version;
 use jiff::Timestamp;
 
@@ -53,5 +53,9 @@ pub trait CommentStore: IssueStore + 'static {
         ) -> bool;
         /// Makes these the mentions of a comment: the ones that stay keep the date they were read.
         fn replace_mentions(comment: CommentId, mentions: &[Mention]) -> ();
+        /// Deletes every comment `author` wrote, in the trash or not, with its versions, mentions,
+        /// marks of text, events and what was made of them; a file attached to one stays with its
+        /// issue (ADR-0044, decision 7). The comments that went, each with its issue.
+        fn delete_comments_of(author: UserId) -> Vec<(CommentId, IssueId)>;
     }
 }

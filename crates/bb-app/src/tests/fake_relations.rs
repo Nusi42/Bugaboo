@@ -303,6 +303,31 @@ impl CommentStore for FakeStore {
         Ok(true)
     }
 
+    async fn delete_comments_of(
+        tx: &mut Tx,
+        author: UserId,
+    ) -> Result<Vec<(CommentId, IssueId)>, FakeError> {
+        let gone: Vec<(CommentId, IssueId)> = tx
+            .state
+            .comments
+            .iter()
+            .filter(|comment| comment.author == author)
+            .map(|comment| (comment.id, comment.issue))
+            .collect();
+        let goes = |id: &CommentId| gone.iter().any(|(gone, _)| gone == id);
+        for attachment in &mut tx.state.attachments {
+            if attachment.comment.as_ref().is_some_and(goes) {
+                attachment.comment = None;
+            }
+        }
+        tx.state
+            .comment_versions
+            .retain(|version| !goes(&version.comment));
+        tx.state.mentions.retain(|mention| !goes(&mention.comment));
+        tx.state.comments.retain(|comment| !goes(&comment.id));
+        Ok(gone)
+    }
+
     async fn replace_mentions(
         tx: &mut Tx,
         comment: CommentId,

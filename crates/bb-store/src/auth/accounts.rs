@@ -213,6 +213,21 @@ impl AccountStore for AuthStorage {
         transaction.execute(&login).await.map(|_| ())
     }
 
+    async fn clear_person(
+        transaction: &mut Transaction,
+        person: UserId,
+        address: &str,
+    ) -> Result<(), StoreError> {
+        let mut update = Query::update();
+        update
+            .table(PersonRow::Table)
+            .value(PersonRow::DisplayName, "")
+            .value(PersonRow::NameKey, name_key(""))
+            .value(PersonRow::Email, address)
+            .and_where(Expr::col(PersonRow::Id).eq(person.stored()));
+        transaction.execute(&update).await.map(|_| ())
+    }
+
     async fn set_password(
         transaction: &mut Transaction,
         person: UserId,

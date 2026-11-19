@@ -88,3 +88,29 @@ impl crate::privacy::replay::ReplayStore for FakeStore {
         Ok(())
     }
 }
+
+impl crate::privacy::removal::RemovalStore for FakeStore {
+    async fn delete_linked(
+        tx: &mut Tx,
+        person: UserId,
+        kind: &str,
+        links: &[bb_core::personal::Link],
+    ) -> Result<u64, FakeError> {
+        let before = tx.state.walk.len();
+        tx.state.walk.retain(|walked| {
+            walked.person != person
+                || walked.kind != kind
+                || !walked.row.links.iter().any(|link| links.contains(link))
+        });
+        Ok(u64::try_from(before - tx.state.walk.len()).unwrap_or(u64::MAX))
+    }
+
+    async fn scrub_changes(
+        tx: &mut Tx,
+        person: UserId,
+        scrub: &crate::privacy::removal::Scrub,
+    ) -> Result<u64, FakeError> {
+        tx.state.scrubs.push((person, scrub.clone()));
+        Ok(0)
+    }
+}

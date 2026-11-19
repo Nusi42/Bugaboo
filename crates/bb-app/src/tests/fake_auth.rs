@@ -116,6 +116,16 @@ impl AccountStore for FakeStore {
         Ok(())
     }
 
+    async fn clear_person(tx: &mut Tx, person: UserId, address: &str) -> Result<(), FakeError> {
+        for (known, _) in &mut tx.state.people {
+            if known.id == person {
+                known.display_name = String::new();
+                address.clone_into(&mut known.email);
+            }
+        }
+        Ok(())
+    }
+
     async fn set_password(
         tx: &mut Tx,
         person: UserId,
