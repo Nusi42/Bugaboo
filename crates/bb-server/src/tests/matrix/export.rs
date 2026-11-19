@@ -64,13 +64,39 @@ impl Exported {
     }
 }
 
-/// Whether the rows of a kind hold a field: shown when a row has a value for it, hidden when the
-/// kind has the field and no row shows it, none when the kind has no such field at all.
+/// The values inside `value`, at every depth: the members of an object and the items of a list,
+/// so a person or a field inside the changes of an event is found like one at the top of a row.
+fn inside(value: &Value) -> Box<dyn Iterator<Item = &Value> + '_> {
+    let children: Box<dyn Iterator<Item = &Value>> = match value {
+        Value::Object(members) => Box::new(members.values()),
+        Value::Array(items) => Box::new(items.iter()),
+        _ => Box::new(std::iter::empty()),
+    };
+    Box::new(std::iter::once(value).chain(children.flat_map(inside)))
+}
+
+/// Whether `value` holds the field `key` with a value: as a member of that name, or as a change
+/// of the field, named by its member or by its word in the catalogue (`estimated-time`), with a
+/// value before or after.
+fn holds_field(value: &Value, key: &str) -> bool {
+    let word = key.replace('_', "-");
+    inside(value).any(|found| {
+        found.get(key).is_some_and(|held| !held.is_null())
+            || (found
+                .get("field")
+                .and_then(Value::as_str)
+                .is_some_and(|field| field == key || field == word)
+                && ["before", "after"]
+                    .iter()
+                    .any(|side| found.get(side).is_some_and(|held| !held.is_null())))
+    })
+}
+
+/// Whether the rows of a kind hold a field: shown when a row has a value for it anywhere inside,
+/// hidden when the kind has the field and no row shows it, none when the kind has no such field at
+/// all.
 fn field_word(kind: &str, rows: &[Value], key: &str) -> &'static str {
-    if rows
-        .iter()
-        .any(|row| row.get(key).is_some_and(|value| !value.is_null()))
-    {
+    if rows.iter().any(|row| holds_field(row, key)) {
         words::SHOWN
     } else if kind == ISSUE_KIND {
         words::LEFT_OUT
@@ -89,11 +115,10 @@ fn other_in(value: &Value, me: UserId) -> Option<PeopleLevel> {
     }
 }
 
-/// The most open way the rows show anybody but `me`.
+/// The most open way the rows show anybody but `me`, at any depth of a row.
 fn others_in(rows: &[Value], me: UserId) -> Option<PeopleLevel> {
     rows.iter()
-        .filter_map(Value::as_object)
-        .flat_map(|row| row.values())
+        .flat_map(inside)
         .filter_map(|value| other_in(value, me))
         .max()
 }
