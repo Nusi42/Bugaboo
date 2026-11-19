@@ -25,6 +25,7 @@ the shortest period that kind allows.
 | Away times | 1 year | Planning; nobody needs them longer |
 | Security log | 365 days | Finding and explaining security problems |
 | Backups | No fixed end; about 28 days while a backup is created every day | Getting everything back after a loss; the newest backups of the days and weeks the settings of backups say are kept whatever their age, and a backup created before a restore is kept as long as the security log |
+| Data exports | 7 days | Giving a person the file of Download my data; the record of the file goes with it |
 
 ## An administrator deletes these after their period
 

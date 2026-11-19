@@ -59,6 +59,8 @@ words! {
         SecurityLog => "security-log",
         /// The backups of the schedule and those made by hand (ADR-0046).
         Backups => "backups",
+        /// The files of *Download my data* with their records (ADR-0044, decision 2).
+        DataExports => "data-exports",
         /// Work days with their breaks and the reasons of their changes (ADR-0035, decision 7).
         WorkDays => "work-days",
         /// Time entries on issues (M9-Q2).
@@ -191,8 +193,7 @@ impl KeepRule {
 }
 
 /// Every kind of data that is deleted after a time, in the order of the page of the rules: first
-/// what Bugaboo deletes by itself, then what an administrator deletes (ADR-0045, decision 1). The
-/// row of data exports joins when its records do.
+/// what Bugaboo deletes by itself, then what an administrator deletes (ADR-0045, decision 1).
 pub const KEEP_KINDS: &[KeepRule] = &[
     KeepRule {
         kind: KeepKind::IpAddresses,
@@ -291,6 +292,11 @@ pub const KEEP_KINDS: &[KeepRule] = &[
                 Length::days(layers.number(&BACKUPS_KEEP_DAILY).max(weeks))
             },
         },
+    },
+    KeepRule {
+        kind: KeepKind::DataExports,
+        group: KeepGroup::ByItself,
+        period: Period::Fixed(Length::days(crate::data_export::EXPORT_KEPT_DAYS)),
     },
     KeepRule {
         kind: KeepKind::WorkDays,

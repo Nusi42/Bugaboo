@@ -26557,6 +26557,7 @@
           "away-times",
           "security-log",
           "backups",
+          "data-exports",
           "work-days",
           "time-entries"
         ]

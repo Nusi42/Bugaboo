@@ -5,10 +5,11 @@
 
 use std::io::{self, Seek, Write};
 
-use bb_core::data_export::EXPORT_KEPT;
 use bb_core::event::RecordKind;
+use bb_core::keeping::{KeepKind, rule};
 use bb_core::message;
 use bb_core::personal::EntityMarks;
+use bb_core::settings::Layers;
 use bb_core::wording::Region;
 use serde_json::{Map, Value as Json, json};
 use zip::write::SimpleFileOptions;
@@ -28,11 +29,14 @@ struct Written {
     fields: Vec<&'static str>,
 }
 
-/// How long `kind` is kept, in words. Until the keep and delete rules give a period for every kind
-/// (follow-up M9-F21), only the files of this export have one of their own.
+/// How long `kind` is kept, in words. The files of this export are kept as long as the row *Data
+/// exports* of the keep rules says; a kind of record that no row deletes by its age is kept as long
+/// as the organization needs it.
 fn kept_of(kind: &str) -> String {
     if kind == RecordKind::DataExport.code() {
-        message::export_readme_kept_for_days(EXPORT_KEPT.as_hours() / 24).render()
+        // A fixed period: no setting changes it, so the stored settings are not needed.
+        let period = rule(KeepKind::DataExports).kept_for(&Layers::default());
+        message::export_readme_kept_for(period.render()).render()
     } else {
         words(message::EXPORT_README_KEPT_WHILE_NEEDED)
     }

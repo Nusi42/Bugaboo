@@ -8673,6 +8673,7 @@ export interface components {
       | "away-times"
       | "security-log"
       | "backups"
+      | "data-exports"
       | "work-days"
       | "time-entries";
     /** @description One row of the rules. */

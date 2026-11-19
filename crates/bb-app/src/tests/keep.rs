@@ -241,9 +241,6 @@ fn priv_05_every_kind_of_data_has_one_row_and_one_group() {
             JobKind::CatchUpHistory,
             JobKind::RefreshStatistics,
             JobKind::RotateServerLog,
-            // The daily round of *Download my data* deletes old exports with its own call until
-            // it moves under the one shape of deleting (M9-F24).
-            JobKind::DeleteOldExports,
         ])
     );
 }

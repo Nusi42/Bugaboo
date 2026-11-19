@@ -73,7 +73,7 @@ review; every job type has an idempotency test (part of ARCH-EVENTS test harness
 
 - **Kinds of M9** ([ADR-0044](0044-download-my-data-and-remove-a-person.md), decision 2), each idempotent:
   - `privacy.export` is not daily: it is queued in the change that asks for an export and writes its file through the walk of the person's data. An export that waits no more leaves it nothing to do; a try that fails leaves the export waiting for the next. Each try writes a file of its own and keeps its lease while it works, renewing it when half of it has passed (a file can take longer than any fixed lease); the change that marks the export ready makes that try's file the export's, and it changes nothing, with no event and no notice, when another try finished the export first. When the job gives up, the export becomes *Failed*, so the person may ask again, and what was written of its file is deleted.
-  - `privacy.delete-old-exports` is daily (`FromTheStart`): it deletes each export asked for more than 7 days ago (`EXPORT_KEPT`), a hundred at a time until none is left, the file first, then its record with an event; a file that is gone already is no error. The keep and delete rules (ADR-0045) take this round over when they land.
+  - `privacy.delete-old-exports` is daily (`FromTheStart`): it deletes the exports past the keep period of the row *Data exports* of the keep and delete rules (ADR-0045; 7 days, `EXPORT_KEPT_DAYS`), through the one deleting step `keep_step`: at most `KEEP_STEP_ROWS` exports a step, the file first, then its record with an event, and the next step queued at once when a step was full; a file that is gone already is no error.
 
 ## Amendment (M9, keep and delete rules)
 

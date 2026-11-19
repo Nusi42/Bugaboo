@@ -9,11 +9,12 @@
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 
-use bb_core::data_export::{DataExport, EXPORT_KEPT, ExportState};
+use bb_core::data_export::{DataExport, ExportState};
 use bb_core::event::{Actor as EventActor, RecordKind};
 use bb_core::files::LinkTarget;
 use bb_core::id::{DataExportId, UserId};
 use bb_core::job::Job;
+use bb_core::keeping::KeepKind;
 use bb_core::message::Message;
 use bb_core::people_kinds::PeopleKind;
 use bb_core::personal::Link;
@@ -30,11 +31,9 @@ use super::writer::ExportWriter;
 use super::{ExportSink, recipients};
 use crate::auth::{AppError, AuthStore, Ctx, entity, internal, set_to};
 use crate::jobs::lease::HeldJob;
+use crate::keeping::KEEP_STEP_ROWS;
 use crate::member::data_export as member;
 use crate::privacy::walk::FoundRow;
-
-/// How many old exports the daily job reads at a time; it reads again until none is left.
-const OLD_EXPORTS_AT_A_TIME: u64 = 100;
 
 /// The field of an attachment that holds the hash of its file, and the one that holds its ID.
 const ATTACHMENT_FILE: &str = "file";
@@ -355,36 +354,30 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map(|_| ())
     }
 
-    /// Deletes the exports asked for more than [`EXPORT_KEPT`] ago, the file first, then the record
-    /// with its event. Safe to run again: a file that is gone is no error. Answers how many went.
+    /// Deletes the exports past the keep period of *Data exports*, at most [`KEEP_STEP_ROWS`]: one
+    /// step of the job `privacy.delete-old-exports`, which queues the next step when this one was
+    /// full (`keep_step`). Each file goes first, then its record with its event. Safe to run again:
+    /// a file that is gone is no error. Answers how many it read, which tells whether the step was
+    /// full and another one follows.
     ///
     /// # Errors
     /// The error of the store or of the file system.
     pub(crate) async fn delete_old_exports(&self) -> Result<u64, AppError> {
-        let before = self
-            .now()
-            .checked_sub(EXPORT_KEPT)
-            .map_err(|error| AppError::Internal(error.to_string()))?;
-        let mut deleted = 0;
-        loop {
-            let old = self
-                .store()
-                .exports_asked_before(before, OLD_EXPORTS_AT_A_TIME)
-                .await
-                .map_err(|error| internal::<S>(&error))?;
-            let short = u64::try_from(old.len()).unwrap_or(u64::MAX) < OLD_EXPORTS_AT_A_TIME;
-            for export in old {
-                deleted += u64::from(self.delete_old_export(export.id).await?);
-            }
-            if short {
-                return Ok(deleted);
-            }
+        let before = self.keep_cutoff(KeepKind::DataExports).await?;
+        let old = self
+            .store()
+            .exports_asked_before(before, KEEP_STEP_ROWS)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        let read = u64::try_from(old.len()).unwrap_or(u64::MAX);
+        for export in old {
+            self.delete_old_export(export.id).await?;
         }
+        Ok(read)
     }
 
-    /// Deletes one old export, the file first, then the record with its event. Answers whether the
-    /// record was still there.
-    async fn delete_old_export(&self, id: DataExportId) -> Result<bool, AppError> {
+    /// Deletes one old export, the file first, then the record with its event.
+    async fn delete_old_export(&self, id: DataExportId) -> Result<(), AppError> {
         self.exports()
             .delete(id)
             .await
@@ -399,6 +392,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 Box::pin(async move { S::delete_data_export(transaction, id).await })
             })
             .await
+            .map(|_| ())
             .map_err(|error| internal::<S>(&error))
     }
 }

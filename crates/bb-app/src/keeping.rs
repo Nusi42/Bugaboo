@@ -10,6 +10,8 @@
 //! - `security-log.prune`: the oldest whole blocks of the security log past its keep setting, and
 //!   the log of tool calls with it.
 //! - `jobs.purge-dead`: the jobs that gave up, with their payload (M1-F21).
+//! - `privacy.delete-old-exports`: the files of *Download my data* past their keep period, each
+//!   file first, then its record.
 //! - `server-log.rotate`: a new file of the log of a server that runs as a service; it keeps a
 //!   number of files, not a period, so it has no row.
 
@@ -64,6 +66,7 @@ impl JobKind {
             Self::PruneSecurityLog => &[KeepKind::SecurityLog, KeepKind::ToolCalls],
             Self::DeleteOldAwayTimes => &[KeepKind::AwayTimes],
             Self::BackupsDaily => &[KeepKind::Backups],
+            Self::DeleteOldExports => &[KeepKind::DataExports],
             Self::CatchUpHistory
             | Self::RefreshStatistics
             | Self::RotateServerLog
@@ -77,8 +80,7 @@ impl JobKind {
             | Self::RuleAboutToRunOut
             | Self::RuleMatches
             | Self::RulesGetAnEnd
-            | Self::DataExport
-            | Self::DeleteOldExports => &[],
+            | Self::DataExport => &[],
         }
     }
 }
@@ -134,6 +136,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             JobKind::DeleteOldAwayTimes => {
                 rows(crate::work_times::delete_old_away_times(self).await?)
             }
+            JobKind::DeleteOldExports => rows(self.delete_old_exports().await?),
             // The job of the schedule makes the backup of the day, then deletes through this step.
             // The rotation deletes all it no longer keeps at once, so it never asks for another
             // step: a queued `backups.daily` would make another backup.
@@ -154,8 +157,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             | JobKind::RuleAboutToRunOut
             | JobKind::RuleMatches
             | JobKind::RulesGetAnEnd
-            | JobKind::DataExport
-            | JobKind::DeleteOldExports => {
+            | JobKind::DataExport => {
                 return Err(AppError::Internal(format!(
                     "the job kind {} deletes nothing past a keep period",
                     kind.code()

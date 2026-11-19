@@ -3904,6 +3904,9 @@ pub const KEEP_KIND_NAME_AWAY_TIMES: MessageKey = MessageKey::new("keep-kind.nam
 /// The message `keep-kind.name.backups`.
 pub const KEEP_KIND_NAME_BACKUPS: MessageKey = MessageKey::new("keep-kind.name.backups");
 
+/// The message `keep-kind.name.data-exports`.
+pub const KEEP_KIND_NAME_DATA_EXPORTS: MessageKey = MessageKey::new("keep-kind.name.data-exports");
+
 /// The message `keep-kind.name.dead-jobs`.
 pub const KEEP_KIND_NAME_DEAD_JOBS: MessageKey = MessageKey::new("keep-kind.name.dead-jobs");
 
@@ -3954,6 +3957,9 @@ pub const KEEP_KIND_WHY_AWAY_TIMES: MessageKey = MessageKey::new("keep-kind.why.
 
 /// The message `keep-kind.why.backups`.
 pub const KEEP_KIND_WHY_BACKUPS: MessageKey = MessageKey::new("keep-kind.why.backups");
+
+/// The message `keep-kind.why.data-exports`.
+pub const KEEP_KIND_WHY_DATA_EXPORTS: MessageKey = MessageKey::new("keep-kind.why.data-exports");
 
 /// The message `keep-kind.why.dead-jobs`.
 pub const KEEP_KIND_WHY_DEAD_JOBS: MessageKey = MessageKey::new("keep-kind.why.dead-jobs");
@@ -11857,12 +11863,12 @@ pub fn export_page_role(role: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `export.readme.kept-for-days`.
+/// The message `export.readme.kept-for`.
 #[must_use]
-pub fn export_readme_kept_for_days(days: impl std::fmt::Display) -> Message {
+pub fn export_readme_kept_for(period: impl std::fmt::Display) -> Message {
     Message::with_arguments(
-        MessageKey::new("export.readme.kept-for-days"),
-        vec![("days", Value::Text(days.to_string()))],
+        MessageKey::new("export.readme.kept-for"),
+        vec![("period", Value::Text(period.to_string()))],
     )
 }
 

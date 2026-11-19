@@ -8,9 +8,12 @@ use crate::files::{LINK_LIFETIME, SignedLink};
 use crate::id::{DataExportId, UserId};
 use crate::personal::Entity;
 
-/// How long the file of an export is kept after it was asked for (ADR-0044, decision 2): then it is
-/// deleted with its record.
-pub const EXPORT_KEPT: SignedDuration = SignedDuration::from_hours(7 * 24);
+/// How many days the file of an export is kept after it was asked for (ADR-0044, decision 2): then
+/// it is deleted with its record. The row *Data exports* of the keep rules shows it.
+pub const EXPORT_KEPT_DAYS: i64 = 7;
+
+/// The same as a length of time.
+pub const EXPORT_KEPT: SignedDuration = crate::time::days(EXPORT_KEPT_DAYS);
 
 /// The type the file of an export is sent as.
 pub const EXPORT_MEDIA_TYPE: &str = "application/zip";

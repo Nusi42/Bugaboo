@@ -492,7 +492,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             | JobKind::PurgeSessions
             | JobKind::DeleteOldAwayTimes
             | JobKind::CleanUpFiles
-            | JobKind::CleanOldGrants => self.keep_daily(job, kind).await,
+            | JobKind::CleanOldGrants
+            | JobKind::DeleteOldExports => self.keep_daily(job, kind).await,
             JobKind::CatchUpHistory => Box::pin(self.run_daily(JobKind::CatchUpHistory, async {
                 self.catch_up_history().await.map(|events| {
                     tracing::info!(events, "the history caught up with the events");
@@ -506,7 +507,6 @@ impl<S: AuthStore> Ctx<'_, S> {
             JobKind::RotateServerLog => self.rotate_server_log_daily(job).await,
             JobKind::RefreshStatistics => self.refresh_statistics_daily(job).await,
             JobKind::BackupsDaily => self.backups_daily(job).await,
-            JobKind::DeleteOldExports => self.delete_old_exports_daily(job).await,
             // The other kinds go to `do_one_off_job`; listed so that a new kind has to be placed.
             JobKind::ManyChangesStep
             | JobKind::RenewIds

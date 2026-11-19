@@ -196,3 +196,14 @@ fn priv_03_the_readme_names_every_field_any_row_of_a_kind_holds() {
         "{readme}"
     );
 }
+
+#[test]
+fn m9_f21_the_readme_reads_the_period_of_exports_from_the_keep_rules() {
+    let period = rule(KeepKind::DataExports)
+        .kept_for(&Layers::default())
+        .render();
+    let kept = kept_of(RecordKind::DataExport.code());
+    assert!(kept.starts_with(&period), "{kept} names {period}");
+    // A kind that no row deletes by its age is kept while it is needed.
+    assert_ne!(kept_of("comment"), kept);
+}

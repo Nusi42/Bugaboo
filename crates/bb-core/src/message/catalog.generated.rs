@@ -2322,10 +2322,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "For each kind of record: its file in the folder data, why it is kept, on which legal basis, how long it is kept, who receives it, and what each field means (GDPR Art. 15(1)).",
     ),
     ("export.readme.kept", "How long it is kept"),
-    (
-        "export.readme.kept-for-days",
-        "{days} days, then it is deleted.",
-    ),
+    ("export.readme.kept-for", "{period}, then it is deleted."),
     (
         "export.readme.kept-while-needed",
         "As long as the organization needs it for its purpose; the keep and delete rules of the organization say more.",
@@ -3364,6 +3361,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("keep-kind.name.app-grants", "Ended access of AI apps"),
     ("keep-kind.name.away-times", "Away times"),
     ("keep-kind.name.backups", "Backups"),
+    ("keep-kind.name.data-exports", "Data exports"),
     ("keep-kind.name.dead-jobs", "Background work that failed"),
     ("keep-kind.name.drafts", "Drafts"),
     (
@@ -3391,6 +3389,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "keep-kind.why.backups",
         "Getting everything back after a loss; the newest backups of the days and weeks the settings of backups say are kept whatever their age, and a backup created before a restore is kept as long as the security log",
+    ),
+    (
+        "keep-kind.why.data-exports",
+        "Giving a person the file of Download my data; the record of the file goes with it",
     ),
     ("keep-kind.why.dead-jobs", "Seeing why it failed"),
     ("keep-kind.why.drafts", "Not losing text that was not saved"),
