@@ -28,6 +28,7 @@ The lead updates this file after every step (builder started, report in, review 
 | WP-13 | Run as a service, proven on clean systems | not started | `win4` / `WIN4` | Wave 3; Opus; needs Windows Sandbox switched on |
 | WP-14 | The accessibility pass, the EN 301 549 report, the statement | not started | `win4` / `WIN4` | Wave 4; Opus |
 | WP-15 | Sample part 8, the long run, speed, the release candidate, the exit demo | not started | `win2` / `WIN2` | Wave 4; Opus; measures alone on a quiet computer |
+| WP-17 | Several agents at once, and agents asked for by a program | building (Opus) | `win5` / `WIN5` | Wave 3; Opus; migration 61; added on 2026-11-19 by the maintainer's decision |
 
 ## Work packages (M8)
 

@@ -340,6 +340,11 @@ Rules:
 | **Accept by itself when its checks pass** | A project setting for handed-over issues; off at the start | auto-merge, auto-accept (in UI) |
 | **My agents**            | Your agents and all their work in one place, *Waiting for you* first | agent dashboard, fleet (in UI) |
 | **Stop all my agents**   | Stop every one of your agents at once                              | kill switch (in UI) |
+| **Create several agents** | Make a list of agents on *My agents*, each with its own key, in one step and with the password once; all or nothing | bulk create, batch provisioning (in UI) |
+| **Ask for agents** (a program) | An AI app or a script with your key asks you for agents, with a reason; nothing is made until you approve | provision, request access (in UI) |
+| **Request for agents** | What a program asked for: the agents, what each is for, and the reason; it waits a day for *Approve* or *Decline* on *My agents* | ticket, pending approval (in UI) |
+| **What it is for** (an agent asked for) | A few words a program gives to say what an agent it asks for will do, such as *plans* or *reviews*; shown with the request. Never called a *role*, which is a set of permissions | persona, job title (in UI) |
+| **Collect the keys** (a program) | The one time the program that asked fetches the keys of the agents you approved; nobody else can, and not twice | pickup token, claim (in UI) |
 | **Agents in this project** | The switch in a project's settings: its first choice follows the level above and names it with its value (*As the organization (on)*, or *As WEB (off)* below a project), then *On* and *Off*; off, no agent works in that project | agents on/off, enable agents (in UI) |
 | **AI apps in this project** | The switch of AI apps in a project's settings, the same choices as *Agents in this project*; off, no AI app reads or changes anything in that project | AI on/off for the project (in UI) |
 | **Assistant in this project** | The switch of the assistant in a project's settings; it follows the organization until the project has its own; off, the assistant is kept from that project | AI in this project (in UI) |

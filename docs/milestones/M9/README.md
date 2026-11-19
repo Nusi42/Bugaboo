@@ -28,6 +28,7 @@ M9 runs in **five waves**: wave 0 alone, then four waves of at most four builder
 - **Wave 1 (four side by side):** the foundations, in different crates and tables: backups (WP-02), the walk of a person's data with *Download my data* (WP-03), the keep and delete rules (WP-04), and the parts list with the notices and VEX, which is xtask (WP-05). **WP-03's person links land first**, as their own small landing in the first days of the wave (the derive, the generated list, the grown DATA-MARKS and the links of every existing entity); WP-02 and WP-04 rebase onto it and add the links of their own new columns.
 - **Wave 2 (four side by side):** what stands on them: *Remove a person* on the walk and the keep rules (WP-06), upgrades on backups (WP-07), signed releases with vulnerability handling on the parts list (WP-08), and corrections of one's own data (WP-09), which needs nothing of wave 1 but the links.
 - **Wave 3 (three side by side):** the screens of privacy (WP-10) and operations (WP-11), and the service proven on real systems (WP-13), which needs the signed program and the upgrade path.
+  - **WP-17 joins wave 3** (added on 2026-11-19 by the maintainer's decision after an outside test with a team of agents): several agents made at once, and agents asked for by a program; it runs in `bugaboo.win5` after WP-08.
 - **Wave 4 (two side by side, then alone):** the accessibility pass over every screen (WP-14), then the exit (WP-15): the sample, the long run of ten people, speed, the release candidate and the exit demo. WP-15's measurements run alone on a quiet computer.
 
 | Wave | WP | Name | Model | Folder / branch | Features (owner in **bold**) |
@@ -43,6 +44,7 @@ M9 runs in **five waves**: wave 0 alone, then four waves of at most four builder
 | 2 | [WP-09](WP-09-correct-your-own-data.md) | Correct your own data, and corrections by administrators | Opus | `bugaboo.win4` / `WIN4` | **PRIV-06** |
 | 3 | [WP-10](WP-10-the-privacy-screens.md) | The privacy screens: *My data*, *Keep and delete rules*, *Data exports*, *Remove a person* | Opus | `bugaboo.win3` / `WIN3` | PRIV-03, PRIV-04, PRIV-05 on screen |
 | 3 | [WP-11](WP-11-the-operations-screens.md) | The operations screens: *Backups* and *About* | Sonnet | `bugaboo.win2` / `WIN2` | OPS-07, COMP-01, COMP-04 on screen |
+| 3 | [WP-17](WP-17-several-agents-at-once.md) | Several agents at once, and agents asked for by a program | Opus | `bugaboo.win5` / `WIN5` | AI-30, AI-37, AI-20, AI-22, AUTH-07 (grown; the maintainer's decision of 2026-11-19) |
 | 3 | [WP-13](WP-13-run-as-a-service.md) | Run as a service, proven on a clean Windows and a Linux with systemd | Opus | `bugaboo.win4` / `WIN4` | **OPS-04** |
 | 4 | [WP-14](WP-14-accessibility-pass-and-statement.md) | The accessibility pass, the EN 301 549 report and the statement | Opus | `bugaboo.win4` / `WIN4` | **COMP-15** |
 | 4 | [WP-15](WP-15-sample-long-run-release-candidate-and-exit-demo.md) | Sample part 8, the long run, speed, the release candidate, the exit demo | Opus | `bugaboo.win2` / `WIN2` | all of M9, proved end to end |
@@ -85,6 +87,7 @@ DIST-03 (operator access) is a V1 feature of M14 since 2026-11-18; its "nothing 
 - **WP-09 (PRIV-06; migration 58):** *My settings › Profile*: the name, and the e-mail address changed through a link to the new address with a note to the old one; an administrator with *Manage people* corrects name and e-mail of others with a reason; the keyed digest of addresses (M4-F122).
 - **WP-10 (screens of PRIV-03, PRIV-04, PRIV-05):** *My settings › My data*, *Organization settings › Privacy › Keep and delete rules*, *Data exports*, *Switch off* and the window *Remove a person* on a person's page.
 - **WP-11 (screens of OPS-07, COMP-01, COMP-04):** *Backups* (list, schedule, *Make a backup now*, and the command that restores) and *About*.
+- **WP-17 (AI-30, AI-37, AI-20, AI-22, AUTH-07; migration 61):** *Create several agents* on *My agents*, each with its key, the password once, all or nothing, through the one plan of an agent and a key; the tools `ask_for_agents` and `collect_agent_keys`: a program asks with a reason, the person approves with the password once or declines, and the credential that asked collects the keys once; the notification, the keep rule and the screens. The ADR-0029 amendment M9 (several agents and requests).
 - **WP-13 (OPS-04):** the service installed, started, upgraded and removed for real in Windows Sandbox (through `wsb`) and in a fresh WSL distribution with systemd (M1-F57); the hardened unit (M1-F63); the services' failure settings, reading WP-07's exit code; `bugaboo service status`.
 - **WP-14 (COMP-15):** every screen measured against WCAG 2.2 AA and EN 301 549; fixes; the EN 301 549 report, the statement template and the screen-reader checklist.
 - **WP-15 (exit):** sample part 8; the long run; the benchmarks; the release candidate 0.6.0; an Opus security pass; the exit demo.
@@ -96,6 +99,8 @@ Wave 0 first, because the answers decide what is kept, what is deleted and how a
 **Shared files, one entry each; rebase conflicts expected:** the packages of a wave each add their entries to `crates/bb-core/src/settings/catalog.rs`, `crates/bb-store/src/migrations/mod.rs` and its list `list.rs`, `crates/bb-api/src/router.rs`, `crates/bb-policy/src/catalogue.rs`, `bb_app::jobs::JobKind`, `messages/en.json`, `crates/bb-server/src/cli/mod.rs`, `web/app/src/shared/paths.ts` and `web/app/src/features/settings/SettingsScreens.tsx`, and nothing else in those files; `web/app/src/features/people/PersonPage.tsx` is shared by WP-09 and WP-10 (WP-10 lands later and rebases). The one who lands later rebases and keeps both. **Migrations given out:** 54 (WP-02), 55 (WP-03), 56 (WP-04), 57 (WP-06), 58 (WP-09); none depends on another (architecture §7, *Storage types*). Migration 59 is WP-08's: AI apps and agents start off, and an upgrade keeps them on where people already worked. Migration 60 is WP-06's: `person_standing.by` may be empty, and a standing that a restore wrote names nobody (it builds on 57, which has landed).
 
 **New dependencies, each with its register row in its package:** `tar` joins the shipped program (WP-02; already in the lockfile for xtask); a JSON Schema validator used only by xtask's checks and never shipped (WP-05); `minisign-verify` in the program and `minisign` in xtask (WP-08).
+
+**Migration 61** is WP-17's (added on 2026-11-19): the requests for agents. Migration 60 is the removal of a person (WP-06), which lands first.
 
 ## Follow-ups handled in M9
 

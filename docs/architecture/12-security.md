@@ -239,6 +239,11 @@ M7 lets AI read and change Bugaboo in three ways: the assistant (it only propose
 | Denial of service, tampering | An agent runs away with changes, or an app floods the server | The limits of an agent and its keys (ADR-0029, decision 9 and amendment M7) pause the agent with a sentence; rate limits per grant and per person; *Stop*, *Stop all my agents* and agents off; *Undo the run* in one step | TEST-CONCURRENT ("Two agents take the same issue at the same moment"); the tests of WP-07 and WP-09 |
 | Repudiation | Nobody can tell what an AI wrote, or which app or agent changed something | Every event names the person, the channel and the app or the agent; texts carry *Written with the assistant*, *Written by an AI app* or *Written by an agent* in the history, the API and every export (COMP-09); grants, agents and keys are in the security log | ARCH-EVENTS; the tests of WP-07 |
 | Information disclosure | The log of tool calls or a server log keeps what the AI read or wrote | The log of tool calls holds who, which tool, sizes, time and outcome, never content; tokens and keys never in a log; the conversation of the assistant is not stored | DATA-LOGS |
+| Elevation of privilege | A stolen access key or grant of an app makes agent keys for itself, so it outlives being taken back (M9, WP-17) | A key or a grant may only **ask** for agents (`ask_for_agents`): nothing is made until the person approves in the browser with the password; every key comes from the person's password, typed for one key, for a list (*Create several agents*) or for an approval; the routes that make agents, keys and approvals take a session only | SEC-MATRIX (the routes of several agents and requests, every kind of key); the tests of WP-17 (M9) |
+| Elevation of privilege | An agent asks for more agents and widens the team it is part of, or a key that can only look causes a request | `ask_for_agents` is offered to AI apps only (a person's key or an app's grant), never to an agent or the assistant; the narrowed person must hold *Create agents that work for you*, which no agent holds (`NOT_FOR_AGENTS`), and the tool changes something, so *See only* is refused | SEC-MATRIX (the tool, every kind of key); the tests of WP-17 (M9) |
+| Information disclosure, spoofing | The keys of an approved request reach somebody other than the program that asked, or are read from the database while they wait | The keys are made at the pickup, in the change that marks the request collected, and answered once to the same access key or the same grant that asked; no secret of a key is stored, only its hash; a pickup by another credential, a second pickup, one after a decline or after its day is refused and makes nothing, and the person who approves is shown no key | The tests of WP-17 (M9) |
+| Denial of service | A program floods a person with requests for agents | At most three requests wait for one key or grant, each with at most `MOST_AGENTS_AT_ONCE` agents and a reason of bounded length; a request runs out after a day; the calls count toward the limits of ADR-0042, decision 6 | The tests of WP-17 (M9) |
+| Repudiation | Nobody can tell who asked for an agent, who approved it, or who collected its key | The request keeps the key or grant that asked and the app's name; asking, approving, declining and collecting each write an event and a security-log entry, and every key made writes *Access key created* as before | ARCH-EVENTS; the tests of WP-17 (M9) |
 
 ### Timeline, work times and own themes (M8)
 
@@ -502,6 +507,9 @@ M7 sends text to an AI provider and stores the work of agents and the sign-in of
 | Hand-over and standing rule (WP-08) | the person who handed over or made it | yes | `identity` | `contract` |
 | Agent work (WP-08) | brief, note, questions, answers, plans, steps, review notes | yes | `content` | `contract` |
 | Agent work (WP-08) | time and cost the agent reports | no | – | – |
+| Request for agents (M9, WP-17) | person, the key or grant that asked, the app's name, when it was asked and answered | yes | `identity` | `contract` |
+| Request for agents (M9, WP-17) | the reason, the names of the agents and what each is for | yes | `content` | `contract` |
+| Request for agents (M9, WP-17) | state, days of the keys, the agents it made | no | – | – |
 
 | Data | Purpose | Legal basis (GDPR Art. 6) | Kept | Where it goes |
 |------|---------|---------------------------|------|---------------|
@@ -509,6 +517,7 @@ M7 sends text to an AI provider and stores the work of agents and the sign-in of
 | What an AI app or an agent reads and writes through MCP | The work the person told it to do | (b) contract | As the issues it changed | The app or agent the person allowed; Bugaboo does not know where the app sends it, and the consent step says the app acts as the person |
 | Briefs, questions, answers, plans and notes of agent work | People's text about the work, like comments | (b) contract | With the issue | As the issue: people who see the issue |
 | Agents, agent keys, grants of apps | Who acts for whom, and signing in | (b) contract | Until deleted, taken back or run out; the daily job deletes what ran out | The person; administrators see every agent |
+| Requests for agents (M9, WP-17) | A program asks the person for agents; the person approves or declines | (b) contract | A day to answer and a day to collect; deleted by itself a week after it was asked (*Requests for agents*, ADR-0045) | The person; the program that asked learns only the state and, once, the keys of an approved request |
 | The log of tool calls | Security and finding abuse (AI-05) | (f) legitimate interests | The keep period of ADR-0013, amendment M7 | Administrators, through the security log of refused calls; never content |
 
 The marks of AI-written text are no personal data of their own, and the time and cost an agent reports are not a person's working time (M7-Q7).
