@@ -75,6 +75,7 @@ mod my_agents_http;
 mod my_agents_statements;
 mod notifications_http;
 mod offers_http;
+mod removal_plan_http;
 mod rules_hand_over_http;
 mod switch_off_http;
 mod themes_http;

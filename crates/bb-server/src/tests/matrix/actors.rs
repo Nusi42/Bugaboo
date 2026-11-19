@@ -180,7 +180,7 @@ impl Actor {
 
 /// The permissions that count only from a row for the whole organization, from the table of the
 /// catalogue in architecture §7 (*Counts: organization*).
-const ORGANIZATION_ONLY: [Permission; 9] = [
+const ORGANIZATION_ONLY: [Permission; 10] = [
     Permission::CreateProjects,
     Permission::ManageFields,
     Permission::ManagePeople,
@@ -190,13 +190,14 @@ const ORGANIZATION_ONLY: [Permission; 9] = [
     Permission::ChangeOrganizationSettings,
     Permission::SeeStatus,
     Permission::DownloadSomeonesData,
+    Permission::RemovePeople,
 ];
 
 /// The permissions no access key keeps, whatever its choice (`NOT_FOR_KEYS`, decisions on
 /// access keys and M3-Q6): inviting people, deciding who has which role, changing organization
 /// settings, taking over somebody's editing, the work settings, other people's working hours and
 /// work times, and other people's data stay in the app.
-const NOT_FOR_KEYS: [Permission; 16] = [
+const NOT_FOR_KEYS: [Permission; 17] = [
     Permission::ManageInvitations,
     Permission::ManagePeople,
     Permission::ManageGroups,
@@ -213,6 +214,7 @@ const NOT_FOR_KEYS: [Permission; 16] = [
     Permission::ChangeWorkingHoursOfOthers,
     Permission::EnterWorkTimesForOthers,
     Permission::DownloadSomeonesData,
+    Permission::RemovePeople,
 ];
 
 /// The permissions of the kind *See*, which an access key that may only see keeps (*Kind: See*).
@@ -276,7 +278,7 @@ fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {
         DecideRoles, DecideWhatRolesSee, DeleteIssues, DownloadSomeonesData, EditAnyway,
         EnterWorkTimesForOthers, ManageFields, ManageGroups, ManageInvitations, ManageIssueTypes,
         ManageLabels, ManagePeople, ManageRoles, ManageWorkflows, MoveIssues, MoveProjects,
-        SeeIssues, SeeProjects, SeeStatus, ShareSearches,
+        RemovePeople, SeeIssues, SeeProjects, SeeStatus, ShareSearches,
     };
     match role {
         StartingRole::Administrator => BTreeSet::from([
@@ -311,6 +313,7 @@ fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {
             SeeStatus,
             EnterWorkTimesForOthers,
             DownloadSomeonesData,
+            RemovePeople,
         ]),
         StartingRole::ProjectLead => BTreeSet::from([
             SeeProjects,

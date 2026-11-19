@@ -13540,6 +13540,64 @@
         "x-permission": "download-someones-data"
       }
     },
+    "/api/v1/people/{person}/removal-plan": {
+      "get": {
+        "tags": ["people"],
+        "summary": "What *Remove a person* would delete now, what stays shown as *Former user*, and what the law\nkeeps until when. Changes nothing. Needs *Remove people*.",
+        "operationId": "getRemovalPlan",
+        "parameters": [
+          {
+            "name": "person",
+            "in": "path",
+            "description": "The ID of the person.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The plan.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemovalPlanBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "remove-people"
+      }
+    },
     "/api/v1/people/{person}/switch-off": {
       "post": {
         "tags": ["people"],
@@ -26211,6 +26269,35 @@
           }
         }
       },
+      "KeptByLawBody": {
+        "type": "object",
+        "description": "One kind the keep rules keep for its period.",
+        "required": ["kind", "title"],
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/KeepKind",
+            "description": "The row of the keep rules."
+          },
+          "no_fixed_end": {
+            "type": ["string", "null"],
+            "description": "Why no day can be named, in words."
+          },
+          "rows": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "How many of its rows name the person; left out for the backups, which hold everything.",
+            "minimum": 0
+          },
+          "title": {
+            "type": "string",
+            "description": "The kind, in plain words."
+          },
+          "until": {
+            "type": ["string", "null"],
+            "description": "The last day it is kept (`YYYY-MM-DD`); left out when no day can be named."
+          }
+        }
+      },
       "KeyChoice": {
         "type": "string",
         "description": "What the key may do: see only, see and change, everything its owner can do, or single permissions.",
@@ -30013,7 +30100,8 @@
           "see-working-hours-of-others",
           "change-working-hours-of-others",
           "enter-work-times-for-others",
-          "download-someones-data"
+          "download-someones-data",
+          "remove-people"
         ]
       },
       "PermissionAnswerBody": {
@@ -30322,6 +30410,23 @@
           "by": {
             "$ref": "#/components/schemas/PersonRef",
             "description": "Who accepted it."
+          }
+        }
+      },
+      "PlanKindBody": {
+        "type": "object",
+        "description": "One kind of record in a list of the plan.",
+        "required": ["title", "rows"],
+        "properties": {
+          "rows": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How many of its rows name the person.",
+            "minimum": 0
+          },
+          "title": {
+            "type": "string",
+            "description": "The kind, in plain words."
           }
         }
       },
@@ -31603,6 +31708,47 @@
             "description": "Counts up with every change. A change is made on the version that was looked at."
           }
         }
+      },
+      "RemovalPlanBody": {
+        "type": "object",
+        "description": "The plan of the removal of a person.",
+        "required": ["person", "deleted_now", "kept_as_former_user", "comments", "kept_by_law"],
+        "properties": {
+          "comments": {
+            "$ref": "#/components/schemas/RemovedTexts",
+            "description": "What the window offers first for the person's comments."
+          },
+          "deleted_now": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlanKindBody"
+            },
+            "description": "Deleted in the change that removes the person."
+          },
+          "kept_as_former_user": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlanKindBody"
+            },
+            "description": "Kept as records of the organization, shown as *Former user*."
+          },
+          "kept_by_law": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KeptByLawBody"
+            },
+            "description": "Kept for their keep period, and until when."
+          },
+          "person": {
+            "$ref": "#/components/schemas/PersonRef",
+            "description": "The person, as the viewer sees them."
+          }
+        }
+      },
+      "RemovedTexts": {
+        "type": "string",
+        "description": "What Remove a person does with the comments the person wrote: keep them, shown as Former user, or delete them.",
+        "enum": ["keep", "delete"]
       },
       "RenewAgentKeyBody": {
         "type": "object",

@@ -96,6 +96,19 @@ pub trait PersonData: ChangeStore {
         person: bb_core::id::UserId,
     ) -> impl Future<Output = Result<Vec<crate::privacy::walk::KindOfRows>, Self::Error>> + Send;
 
+    /// How many rows of `kind` name `person` by a link that is one of `links` (what the person is
+    /// to the row): the rows of a kind that a removal deletes, apart from those that name the
+    /// person some other way.
+    ///
+    /// # Errors
+    /// The error of the store; a kind that is not a table is no error but none.
+    fn rows_linked(
+        &self,
+        person: bb_core::id::UserId,
+        kind: &str,
+        links: &[bb_core::personal::Link],
+    ) -> impl Future<Output = Result<u64, Self::Error>> + Send;
+
     /// A page of the rows of `kind` that name `person`, starting at `from` (0 for the first page),
     /// at most [`crate::privacy::walk::ROWS_PAGE`] rows.
     ///

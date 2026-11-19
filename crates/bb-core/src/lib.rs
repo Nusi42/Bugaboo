@@ -60,6 +60,7 @@ pub mod plan;
 pub mod project;
 pub mod readable_id;
 pub mod relation;
+pub mod removal;
 pub mod run;
 pub mod saved_search;
 pub mod secret;

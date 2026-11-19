@@ -1,17 +1,24 @@
-//! *Switch off* and *Switch on* (PRIV-04, ADR-0044, decision 5): the routes below
-//! `/api/v1/people/{person}` that end a person's every way in at once and give back the sign-in.
-//! Both need *Manage people* for the whole organization.
+//! *Switch off*, *Switch on* and *Remove a person* (PRIV-04, ADR-0044, decisions 5 and 6): the
+//! routes below `/api/v1/people/{person}` that end a person's every way in at once, give back the
+//! sign-in, and show the plan of a removal. *Switch off* and *Switch on* need *Manage people*, the
+//! plan *Remove people*, all for the whole organization.
 
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::people::{SwitchOff, SwitchOn};
+use bb_app::privacy::removal::{KeptByLaw, PlanKind, RemovalPlan, RemovalPlanQuery};
 use bb_core::id::UserId;
+use bb_core::keeping::KeepKind;
+use bb_core::settings::privacy::RemovedTexts;
+use bb_policy::{Masked, PersonRef};
+use serde::Serialize;
+use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
 use super::auth::{
     AuthHandle, ConflictAnswer, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
-    NotSignedInAnswer, Session, done,
+    NotSignedInAnswer, Session, answer_authorized, done,
 };
 use super::path_id;
 use crate::errors::{ApiError, ApiPath};
@@ -88,6 +95,122 @@ async fn switch_person_on(
     Ok(done())
 }
 
+/// One kind of record in a list of the plan.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct PlanKindBody {
+    /// The kind, in plain words.
+    title: String,
+    /// How many of its rows name the person.
+    rows: u64,
+}
+
+impl From<&PlanKind> for PlanKindBody {
+    fn from(kind: &PlanKind) -> Self {
+        Self {
+            title: kind.title.clone(),
+            rows: kind.rows,
+        }
+    }
+}
+
+/// One kind the keep rules keep for its period.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct KeptByLawBody {
+    /// The row of the keep rules.
+    kind: KeepKind,
+    /// The kind, in plain words.
+    title: String,
+    /// How many of its rows name the person; left out for the backups, which hold everything.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    rows: Option<u64>,
+    /// The last day it is kept (`YYYY-MM-DD`); left out when no day can be named.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    until: Option<String>,
+    /// Why no day can be named, in words.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    no_fixed_end: Option<String>,
+}
+
+impl From<&KeptByLaw> for KeptByLawBody {
+    fn from(kept: &KeptByLaw) -> Self {
+        Self {
+            kind: kept.kind,
+            title: kept.title.clone(),
+            rows: kept.rows,
+            until: kept.until.map(|day| day.to_string()),
+            no_fixed_end: kept.no_fixed_end.clone(),
+        }
+    }
+}
+
+/// The plan of the removal of a person.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct RemovalPlanBody {
+    /// The person, as the viewer sees them.
+    person: PersonRef,
+    /// Deleted in the change that removes the person.
+    deleted_now: Vec<PlanKindBody>,
+    /// Kept as records of the organization, shown as *Former user*.
+    kept_as_former_user: Vec<PlanKindBody>,
+    /// What the window offers first for the person's comments.
+    comments: RemovedTexts,
+    /// Kept for their keep period, and until when.
+    kept_by_law: Vec<KeptByLawBody>,
+}
+
+impl Masked for RemovalPlanBody {}
+
+impl From<&RemovalPlan> for RemovalPlanBody {
+    fn from(plan: &RemovalPlan) -> Self {
+        Self {
+            person: plan.person.clone(),
+            deleted_now: plan.deleted_now.iter().map(PlanKindBody::from).collect(),
+            kept_as_former_user: plan
+                .kept_as_former_user
+                .iter()
+                .map(PlanKindBody::from)
+                .collect(),
+            comments: plan.comments,
+            kept_by_law: plan.kept_by_law.iter().map(KeptByLawBody::from).collect(),
+        }
+    }
+}
+
+/// What *Remove a person* would delete now, what stays shown as *Former user*, and what the law
+/// keeps until when. Changes nothing. Needs *Remove people*.
+#[utoipa::path(
+    get,
+    path = "/api/v1/people/{person}/removal-plan",
+    operation_id = "getRemovalPlan",
+    tag = "people",
+    params(("person" = String, Path, description = "The ID of the person.")),
+    responses(
+        (status = 200, description = "The plan.", body = RemovalPlanBody),
+        NotSignedInAnswer,
+        ForbiddenAnswer,
+        NotFoundAnswer
+    )
+)]
+async fn get_removal_plan(
+    State(auth): State<AuthHandle>,
+    Info(info): Info,
+    Session(session_token): Session,
+    ApiPath(person): ApiPath<String>,
+) -> Result<Response, ApiError> {
+    let person = path_id::<UserId>(&person)?;
+    let plan = auth
+        .api()?
+        .removal_plan(
+            info,
+            RemovalPlanQuery {
+                session_token,
+                person,
+            },
+        )
+        .await?;
+    answer_authorized(&plan.map(|plan| RemovalPlanBody::from(&plan)))
+}
+
 pub(crate) fn routes<S>() -> OpenApiRouter<S>
 where
     S: Clone + Send + Sync + 'static,
@@ -96,4 +219,5 @@ where
     OpenApiRouter::new()
         .routes(routes!(switch_person_off))
         .routes(routes!(switch_person_on))
+        .routes(routes!(get_removal_plan))
 }

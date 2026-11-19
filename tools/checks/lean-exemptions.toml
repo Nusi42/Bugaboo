@@ -490,3 +490,21 @@ reason = "One row for each kind of data of `KEEP_KINDS` (`bb_core::keeping`): a 
 route = "GET /api/v1/admin/keep-rules/{kind}/past"
 property = "people"
 reason = "The people who have records of the kind past its keep period, at most `OLD_PEOPLE_MAX` (`bb_app::keeping`); the answer says when more have them (PRIV-05, ADR-0045, decision 6; M9-F32)."
+
+[[exempt]]
+route = "GET /api/v1/people/{person}/removal-plan"
+property = "deleted_now"
+whole_value = true
+reason = "One row for each kind of record that names the person and goes with the account (`bb_core::removal`): a list fixed by the kinds of record in the code, not one that grows with data, and the window of a removal shows it whole before anything happens (ADR-0044, decision 6; M9-F50)."
+
+[[exempt]]
+route = "GET /api/v1/people/{person}/removal-plan"
+property = "kept_as_former_user"
+whole_value = true
+reason = "One row for each kind of record that names the person and stays as a record of the organization: a list fixed by the kinds of record in the code, not one that grows with data, and shown whole before a removal (ADR-0044, decision 6; M9-F50)."
+
+[[exempt]]
+route = "GET /api/v1/people/{person}/removal-plan"
+property = "kept_by_law"
+whole_value = true
+reason = "One row for each row of the keep rules that keeps the person's records (work days, the security log, backups): a list fixed by `KEEP_KINDS`, not one that grows with data, and shown whole before a removal (ADR-0044, decision 6; M9-F50)."

@@ -18,12 +18,12 @@ pub use crate::parts::{Counts, Kind, Topic};
 /// the two-step requirement, open signing up or change how long sessions last), take over
 /// somebody's editing, change issue types, layouts, fields, labels and tags, or read or change
 /// other people's working hours (ADR-0025, amendment M6), enter their work times (amendment M8) or
-/// download their data (amendment M9).
+/// download their data or remove them (amendment M9).
 /// These stay in the app, where the person is signed in. Defined once, here beside the kinds a
 /// key's choice keeps; narrowing, the key form and the key's own checks all
 /// read this list.
 // The permissions of working hours, `OF_WORKING_HOURS` below, *Enter work times for others*
-// (ADR-0025, amendment M8) and *Download someone's data* (amendment M9).
+// (ADR-0025, amendment M8), *Download someone's data* and *Remove people* (amendment M9).
 pub const NOT_FOR_KEYS: &[Permission] = &[
     Permission::ManageInvitations,
     Permission::ManagePeople,
@@ -41,6 +41,7 @@ pub const NOT_FOR_KEYS: &[Permission] = &[
     Permission::ChangeWorkingHoursOfOthers,
     Permission::EnterWorkTimesForOthers,
     Permission::DownloadSomeonesData,
+    Permission::RemovePeople,
 ];
 
 /// The permissions an agent never holds besides every permission of kind *Manage* (AI-30,
@@ -182,6 +183,9 @@ permissions! {
     /// Make the file of *Download my data* for somebody else, always with a reason; the person is
     /// told (ADR-0044, decision 4).
     DownloadSomeonesData => ("download-someones-data", People, Organization, Manage),
+    /// Remove a switched-off person for good, after the plan of what is deleted, what stays as
+    /// *Former user* and what the law keeps until when (ADR-0044, decision 6).
+    RemovePeople => ("remove-people", People, Organization, Manage),
 }
 
 words_in_api!(Permission, "One permission of the catalogue.");

@@ -18,4 +18,9 @@ pub(super) const ROUTES: &[Route] = &[
         Declared::Permission(Permission::ManagePeople),
         Answer::Ordinary,
     ),
+    route(
+        "getRemovalPlan",
+        Declared::Permission(Permission::RemovePeople),
+        Answer::NeverStored,
+    ),
 ];

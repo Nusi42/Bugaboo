@@ -5230,6 +5230,9 @@ pub const PERMISSION_MOVE_ISSUES: MessageKey = MessageKey::new("permission.move-
 /// The message `permission.move-projects`.
 pub const PERMISSION_MOVE_PROJECTS: MessageKey = MessageKey::new("permission.move-projects");
 
+/// The message `permission.remove-people`.
+pub const PERMISSION_REMOVE_PEOPLE: MessageKey = MessageKey::new("permission.remove-people");
+
 /// The message `permission.see-issues`.
 pub const PERMISSION_SEE_ISSUES: MessageKey = MessageKey::new("permission.see-issues");
 
@@ -5715,6 +5718,9 @@ pub const RELATION_KINDS_RETIRED: MessageKey = MessageKey::new("relation-kinds.r
 
 /// The message `relation-kinds.search`.
 pub const RELATION_KINDS_SEARCH: MessageKey = MessageKey::new("relation-kinds.search");
+
+/// The message `removal.exports-go`.
+pub const REMOVAL_EXPORTS_GO: MessageKey = MessageKey::new("removal.exports-go");
 
 /// The message `restore.reason-newer-format`.
 pub const RESTORE_REASON_NEWER_FORMAT: MessageKey = MessageKey::new("restore.reason-newer-format");
@@ -15199,6 +15205,15 @@ pub fn relation_kinds_reads(
     )
 }
 
+/// The message `removal.no-fixed-end`.
+#[must_use]
+pub fn removal_no_fixed_end(kind: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("removal.no-fixed-end"),
+        vec![("kind", Value::Text(kind.to_string()))],
+    )
+}
+
 /// The message `restore.before`.
 #[must_use]
 pub fn restore_before(path: impl std::fmt::Display) -> Message {
@@ -24526,6 +24541,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Move sub-projects into or out of the project",
     ),
     (
+        "permission.remove-people",
+        "Remove people: remove a switched-off person for good, after seeing what is deleted, what stays as Former user and what the law keeps until when",
+    ),
+    (
         "permission.see-issues",
         "See every issue of the project, not only the ones they reported",
     ),
@@ -24939,6 +24958,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("relation-kinds.retired", "Retired"),
     ("relation-kinds.search", "Search kinds of relation"),
+    (
+        "removal.exports-go",
+        "Files of Download my data about this person, also one that was not fetched yet: give it to them first",
+    ),
+    (
+        "removal.no-fixed-end",
+        "No fixed last day: {kind} are kept by their rotation, the newest of each day and week, whatever their age, and then deleted",
+    ),
     (
         "restore.before",
         "The data that was there before is kept in the backup {path} for the keep period of the security log.",

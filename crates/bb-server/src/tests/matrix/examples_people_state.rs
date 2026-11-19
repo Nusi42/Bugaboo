@@ -1,4 +1,5 @@
-//! The example requests of the routes of *Switch off* and *Switch on* (PRIV-04).
+//! The example requests of the routes of *Switch off*, *Switch on* and the plan of *Remove a
+//! person* (PRIV-04).
 //!
 //! Each example names a person of its own, made for it by the administrator of the matrix, so every
 //! actor who is let in switches off (or on) somebody who is active (or switched off) at that moment.
@@ -48,6 +49,11 @@ pub(super) async fn people_state_request(
                 .map_err(|error| error.to_string())?;
             ("POST", format!("/api/v1/people/{person}/switch-on"), None)
         }
+        "getRemovalPlan" => (
+            "GET",
+            format!("/api/v1/people/{}/removal-plan", fixture.a_person()),
+            None,
+        ),
         _ => return Ok(None),
     }))
 }

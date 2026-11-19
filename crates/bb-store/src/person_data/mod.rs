@@ -9,7 +9,7 @@ use bb_app::ports::PersonData;
 use bb_app::privacy::walk::{FoundRow, KindOfRows, ROWS_PAGE, RowsPage};
 use bb_core::event::RecordKind;
 use bb_core::id::UserId;
-use bb_core::personal::{EntityMarks, LinkScope, PersonLink};
+use bb_core::personal::{EntityMarks, Link, LinkScope, PersonLink};
 use bb_core::whose::{FieldOf, OWN_FIELD_TYPE, PERSON_ADDRESS, Whose, whose};
 use sea_query::{Alias, Cond, Expr, ExprTrait as _, Order, Query, SelectStatement};
 
@@ -45,6 +45,39 @@ impl PersonData for AuthStorage {
             }
         }
         Ok(kinds)
+    }
+
+    async fn rows_linked(
+        &self,
+        person: UserId,
+        kind: &str,
+        links: &[Link],
+    ) -> Result<u64, StoreError> {
+        let all = tables();
+        let Some(table) = all.iter().find(|table| table.name == kind) else {
+            return Ok(0);
+        };
+        let mut any = Cond::any();
+        let mut some = false;
+        for link in table.marks.person_links().links() {
+            if link.link().is_some_and(|what| links.contains(&what)) {
+                any = any.add(link_names(table, &all, link, person)?);
+                some = true;
+            }
+        }
+        if !some {
+            return Ok(0);
+        }
+        let mut select = Query::select();
+        select
+            .expr_as(Expr::cust("COUNT(*)"), Computed::Total)
+            .from(Alias::new(table.name.as_str()))
+            .cond_where(any);
+        let rows: i64 = match self.database().fetch_optional(&select).await? {
+            Some(row) => row.get(Computed::Total)?,
+            None => 0,
+        };
+        u64::try_from(rows).map_err(|_| StoreError::Corrupt("a count"))
     }
 
     async fn person_rows(

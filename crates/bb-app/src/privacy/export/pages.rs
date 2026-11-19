@@ -28,7 +28,7 @@ pub(super) fn first_sentence<'a>(doc: &'a str, fallback: &'a str) -> &'a str {
 }
 
 /// How a kind of record is named: the first sentence of its doc comment.
-pub(super) fn title_of(marks: &EntityMarks) -> &'static str {
+pub(crate) fn title_of(marks: &EntityMarks) -> &'static str {
     first_sentence(marks.doc(), marks.name())
 }
 

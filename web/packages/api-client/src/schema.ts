@@ -3795,6 +3795,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/people/{person}/removal-plan": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * What *Remove a person* would delete now, what stays shown as *Former user*, and what the law
+     *     keeps until when. Changes nothing. Needs *Remove people*.
+     */
+    get: operations["getRemovalPlan"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/people/{person}/switch-off": {
     parameters: {
       query?: never;
@@ -8554,6 +8574,22 @@ export interface components {
       /** @description The rows. */
       rules: components["schemas"]["KeepRuleBody"][];
     };
+    /** @description One kind the keep rules keep for its period. */
+    KeptByLawBody: {
+      /** @description The row of the keep rules. */
+      kind: components["schemas"]["KeepKind"];
+      /** @description Why no day can be named, in words. */
+      no_fixed_end?: string | null;
+      /**
+       * Format: int64
+       * @description How many of its rows name the person; left out for the backups, which hold everything.
+       */
+      rows?: number | null;
+      /** @description The kind, in plain words. */
+      title: string;
+      /** @description The last day it is kept (`YYYY-MM-DD`); left out when no day can be named. */
+      until?: string | null;
+    };
     /**
      * @description What the key may do: see only, see and change, everything its owner can do, or single permissions.
      * @enum {string}
@@ -10371,7 +10407,8 @@ export interface components {
       | "see-working-hours-of-others"
       | "change-working-hours-of-others"
       | "enter-work-times-for-others"
-      | "download-someones-data";
+      | "download-someones-data"
+      | "remove-people";
     /** @description One permission with *yes* or *no* and the reasons. */
     PermissionAnswerBody: {
       /** @description Whether the person has it here. */
@@ -10516,6 +10553,16 @@ export interface components {
       at: string;
       /** @description Who accepted it. */
       by: components["schemas"]["PersonRef"];
+    };
+    /** @description One kind of record in a list of the plan. */
+    PlanKindBody: {
+      /**
+       * Format: int64
+       * @description How many of its rows name the person.
+       */
+      rows: number;
+      /** @description The kind, in plain words. */
+      title: string;
     };
     /** @description A plan warning of an issue of the page. */
     PlanWarningBody: {
@@ -11212,6 +11259,24 @@ export interface components {
        */
       version?: number | null;
     };
+    /** @description The plan of the removal of a person. */
+    RemovalPlanBody: {
+      /** @description What the window offers first for the person's comments. */
+      comments: components["schemas"]["RemovedTexts"];
+      /** @description Deleted in the change that removes the person. */
+      deleted_now: components["schemas"]["PlanKindBody"][];
+      /** @description Kept as records of the organization, shown as *Former user*. */
+      kept_as_former_user: components["schemas"]["PlanKindBody"][];
+      /** @description Kept for their keep period, and until when. */
+      kept_by_law: components["schemas"]["KeptByLawBody"][];
+      /** @description The person, as the viewer sees them. */
+      person: components["schemas"]["PersonRef"];
+    };
+    /**
+     * @description What Remove a person does with the comments the person wrote: keep them, shown as Former user, or delete them.
+     * @enum {string}
+     */
+    RemovedTexts: "keep" | "delete";
     /** @description An agent key to renew: the new key keeps the name of the old one, which is taken back. */
     RenewAgentKeyBody: {
       /**
@@ -21285,6 +21350,37 @@ export interface operations {
         };
       };
       413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  getRemovalPlan: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the person. */
+        person: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The plan. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RemovalPlanBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];

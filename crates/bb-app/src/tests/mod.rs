@@ -114,6 +114,7 @@ mod prompt_injection;
 mod prompt_injection_agents;
 mod prompt_injection_assistant;
 mod recurring_jobs;
+mod removal_plan;
 mod rights_once;
 mod runs;
 mod runs_end;

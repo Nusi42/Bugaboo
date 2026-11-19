@@ -665,6 +665,8 @@ macro_rules! each_use_case {
             switch_off(SwitchOff) -> Done;
             /// Switches a switched-off person on again (*Switch on*).
             switch_on(SwitchOn) -> Done;
+            /// The plan of *Remove a person*: what goes, what stays and until when.
+            removal_plan(RemovalPlanQuery) -> Authorized<RemovalPlan>;
         }
     };
 }

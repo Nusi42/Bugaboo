@@ -35,6 +35,9 @@ pub trait SavedSearchStore: ChangeStore + 'static {
         fn search_columns(id: SavedSearchId) -> Vec<SearchColumn> = search_columns_in;
         /// The groups and projects one saved search is shared with, in the order they were added.
         fn search_shares(id: SavedSearchId) -> Vec<SearchShare> = search_shares_in;
+        /// How many saved searches a person made that are shared with a group or a project: the
+        /// ones that stay, shown with *Former user* as their maker, when the person is removed.
+        fn count_shared_searches_of(maker: UserId) -> u64 = count_shared_searches_of_in;
         /// How many saved searches a person has, the trash included.
         fn count_saved_searches_of(maker: UserId) -> u64 = count_saved_searches_of_in;
         /// The saved search a project shows as its list, if it has one.

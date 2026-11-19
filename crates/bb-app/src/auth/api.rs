@@ -145,6 +145,7 @@ use crate::plan::{
 };
 
 use crate::people::{SwitchOff, SwitchOn, switch_off, switch_on};
+use crate::privacy::removal::{RemovalPlan, RemovalPlanQuery, removal_plan};
 
 use crate::privacy::export::{
     AskMyData, AskSomeonesData, DataExportsQuery, DownloadExportQuery, ExportLinkQuery,

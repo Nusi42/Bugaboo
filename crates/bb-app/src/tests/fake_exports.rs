@@ -159,6 +159,24 @@ impl PersonData for FakeStore {
         }))
     }
 
+    async fn rows_linked(
+        &self,
+        person: UserId,
+        kind: &str,
+        links: &[bb_core::personal::Link],
+    ) -> Result<u64, FakeError> {
+        Ok(self.read(|state| {
+            count(
+                state
+                    .walk
+                    .iter()
+                    .filter(|walked| walked.person == person && walked.kind == kind)
+                    .filter(|walked| walked.row.links.iter().any(|link| links.contains(link)))
+                    .count(),
+            )
+        }))
+    }
+
     async fn person_rows(
         &self,
         person: UserId,

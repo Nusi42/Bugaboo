@@ -130,6 +130,22 @@ impl SavedSearchStore for FakeStore {
         }))
     }
 
+    async fn count_shared_searches_of_in(tx: &mut Tx, maker: UserId) -> Result<u64, FakeError> {
+        let count = tx
+            .state
+            .saved_searches
+            .iter()
+            .filter(|search| search.maker == maker)
+            .filter(|search| {
+                tx.state
+                    .search_shares
+                    .iter()
+                    .any(|share| share.search == search.id)
+            })
+            .count();
+        Ok(u64::try_from(count).unwrap_or(u64::MAX))
+    }
+
     async fn count_saved_searches_of_in(tx: &mut Tx, maker: UserId) -> Result<u64, FakeError> {
         let count = tx
             .state
