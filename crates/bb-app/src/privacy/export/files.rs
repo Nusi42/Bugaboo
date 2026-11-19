@@ -10,27 +10,36 @@ use bb_core::id::DataExportId;
 use crate::files::FileBody;
 use crate::ports::BoxFuture;
 
-/// A file of an export being written. Nobody can download it before [`Self::keep`].
+/// A file of an export being written by one try. Nobody can download it before [`Self::keep`], and
+/// one that is dropped before is deleted.
 pub trait ExportSink: Write + Seek + Send {
-    /// Makes the written file the file of its export; answers its size in bytes.
+    /// Writes what is still buffered to the disk; answers the size of the file in bytes. Blocks.
     ///
     /// # Errors
     /// The error of the file system.
-    fn keep(self: Box<Self>) -> io::Result<u64>;
+    fn finish(&mut self) -> io::Result<u64>;
+
+    /// Makes the finished file the file of its export, in place of one an earlier try left. Blocks.
+    ///
+    /// # Errors
+    /// The error of the file system.
+    fn keep(self: Box<Self>) -> io::Result<()>;
 }
 
 /// Where the files of exports are kept.
 pub trait ExportFiles: Send + Sync {
-    /// Starts the file of `export`; a half-written one from an earlier try is replaced.
+    /// Starts a file of `export` for the try `attempt` under a name of its own, so two tries of one
+    /// export never write into one file. Blocks.
     ///
     /// # Errors
-    /// The error of the file system.
-    fn create(&self, export: DataExportId) -> io::Result<Box<dyn ExportSink>>;
+    /// The error of the file system, also when the folder of the exports is missing.
+    fn create(&self, export: DataExportId, attempt: &str) -> io::Result<Box<dyn ExportSink>>;
 
     /// Opens the file of `export`; `None` when it is not there.
     fn open(&self, export: DataExportId) -> BoxFuture<'_, io::Result<Option<FileBody>>>;
 
-    /// Deletes the file of `export`, written or half-written. A file that is not there is no error.
+    /// Deletes the file of `export` and every half-written one of its tries. A file that is not
+    /// there is no error.
     fn delete(&self, export: DataExportId) -> BoxFuture<'_, io::Result<()>>;
 }
 
@@ -40,7 +49,7 @@ pub trait ExportFiles: Send + Sync {
 pub struct NoExportFiles;
 
 impl ExportFiles for NoExportFiles {
-    fn create(&self, _export: DataExportId) -> io::Result<Box<dyn ExportSink>> {
+    fn create(&self, _export: DataExportId, _attempt: &str) -> io::Result<Box<dyn ExportSink>> {
         Err(io::Error::from(io::ErrorKind::Unsupported))
     }
 

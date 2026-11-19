@@ -11,9 +11,12 @@ use bb_core::comment::Comment;
 use bb_core::data_export::ExportState;
 use bb_core::files::LINK_LIFETIME;
 use bb_core::id::{DataExportId, UserId};
+use bb_core::notification::NotificationKind;
 use bb_core::people_kinds::PeopleKind;
 use bb_core::personal::{Entity as _, Link};
 use bb_core::sign_in::SecurityAction;
+use bb_core::technical::TechnicalName;
+use jiff::SignedDuration;
 use zip::ZipArchive;
 
 use super::fake_exports::WalkedRow;
@@ -21,6 +24,7 @@ use super::notifications::Crew;
 use super::scenarios::{Added, measured, text, token};
 use super::world::{Outcome, World};
 use crate::auth::AppError;
+use crate::jobs::JobStore as _;
 use crate::privacy::export::{
     AskMyData, AskSomeonesData, DownloadExportQuery, ExportLinkQuery, ExportView,
     MyDataExportQuery, ask_for_my_data, ask_for_someones_data, download_export, export_link,
@@ -185,7 +189,7 @@ async fn priv_03_an_administrator_needs_download_someones_data_and_the_person_is
     // Carol is told at once (the notices of exports are tested in `data_export_notices`).
     assert_eq!(
         super::notifications::kinds(&crew.heard(&crew.carol.session_token).await?),
-        vec![bb_core::notification::NotificationKind::ExportByAdministrator]
+        vec![NotificationKind::ExportByAdministrator]
     );
     run_jobs(world).await?;
     // The file is Ada's to download, not Carol's.
@@ -377,5 +381,56 @@ async fn priv_03_others_appear_only_as_the_person_may_see_them() -> Outcome {
         assert!(!hidden.contains("Carol"), "{level:?}: {hidden}");
         assert!(!hidden.contains(&"Crane".to_owned()), "{level:?}: {hidden}");
     }
+    Ok(())
+}
+
+/// A worker of the queue, by name.
+fn worker(name: &str) -> Result<TechnicalName, String> {
+    TechnicalName::new(name).map_err(text)
+}
+
+#[tokio::test]
+async fn priv_03_an_export_whose_job_runs_twice_is_finished_and_told_once() -> Outcome {
+    let crew = Crew::new().await?;
+    let (world, bob) = (&crew.world, crew.bob.session_token.as_str());
+    let made = ask_mine(world, bob).await?;
+    // A worker takes the job; its lease runs out while it still works, and a second worker takes
+    // the same job, so both write the file at once.
+    let lease = SignedDuration::from_secs(1);
+    let mut first = world
+        .store
+        .lease_jobs(&worker("worker.first")?, world.ctx().now(), lease, 5)
+        .await
+        .map_err(text)?;
+    world.clock.advance(2);
+    let mut second = world
+        .store
+        .lease_jobs(&worker("worker.second")?, world.ctx().now(), lease, 5)
+        .await
+        .map_err(text)?;
+    let (first, second) = (
+        first.pop().ok_or("the first worker took the job")?,
+        second.pop().ok_or("the second worker took it again")?,
+    );
+    assert_eq!(first.id, second.id);
+    let (one, other) = (world.ctx(), world.ctx());
+    let (one, other) = tokio::join!(one.run_export(&first), other.run_export(&second));
+    one?;
+    other?;
+    // One file was made the export's, and it is whole.
+    assert_eq!(world.exports.kept(), 1);
+    let zip = world
+        .exports
+        .bytes(made.export.id)
+        .ok_or("the file is there")?;
+    assert!(entry(&zip, "README.txt")?.contains("GDPR"));
+    assert_eq!(state_of(world, bob).await?, Some(ExportState::Ready));
+    // Bob hears once that it is ready.
+    run_jobs(world).await?;
+    let ready = super::notifications::kinds(&crew.heard(bob).await?)
+        .into_iter()
+        .filter(|kind| *kind == NotificationKind::ExportReady)
+        .count();
+    assert_eq!(ready, 1);
     Ok(())
 }

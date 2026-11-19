@@ -77,6 +77,25 @@ impl JobStore for FakeStore {
         Ok(shared.state.jobs.len() < before)
     }
 
+    async fn hold_job(
+        &self,
+        id: JobId,
+        worker: &TechnicalName,
+        until: Timestamp,
+    ) -> Result<bool, FakeError> {
+        let mut shared = self.lock();
+        let Some(job) = shared
+            .state
+            .jobs
+            .iter_mut()
+            .find(|job| job.id == id && job.lease_owner.as_ref() == Some(worker))
+        else {
+            return Ok(false);
+        };
+        job.lease_until = Some(until);
+        Ok(true)
+    }
+
     async fn fail_job(
         &self,
         id: JobId,

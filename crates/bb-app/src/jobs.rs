@@ -6,6 +6,7 @@
 //! nothing of them.
 
 mod daily;
+pub(crate) mod lease;
 
 use std::future::Future;
 
@@ -287,6 +288,9 @@ pub trait JobStore: ChangeStore + 'static {
         /// Reports a job as done; it leaves the queue. `false` when `worker` does not hold the
         /// lease any more.
         fn complete_job(id: JobId, worker: &TechnicalName) -> bool;
+        /// Keeps a job leased to `worker` until `until`, for a job that works longer than its
+        /// lease. `false` when `worker` does not hold the lease any more.
+        fn hold_job(id: JobId, worker: &TechnicalName, until: Timestamp) -> bool;
         /// Reports a job as failed, with a technical code, and says what happened to it: it runs
         /// again later or it is on the dead-letter list (after its last start, or at once for a
         /// failure that is permanent). `None` when `worker` does not hold the lease any more.
@@ -441,7 +445,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                     tracing::warn!(cause = %error, "a long timer could not be told");
                     JobFailure::of(&error, FAILED, job)
                 }),
-            JobKind::DataExport => Box::pin(self.run_export(&job.payload))
+            JobKind::DataExport => Box::pin(self.run_export(job))
                 .await
                 .map_err(|error| {
                     tracing::warn!(cause = %error, "a file of a person's data could not be written");

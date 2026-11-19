@@ -305,10 +305,10 @@ impl Rig {
             data,
             keys,
         )));
-        // The files of *Download my data*, in the folder the program uses for them.
-        let services = services.with_exports(Arc::new(bb_files::DiskExports::new(
-            folder.path().join(bb_files::EXPORTS_FOLDER),
-        )));
+        // The files of *Download my data*, in the folder the program prepares for them.
+        let exports = folder.path().join(bb_files::EXPORTS_FOLDER);
+        std::fs::create_dir_all(&exports)?;
+        let services = services.with_exports(Arc::new(bb_files::DiskExports::new(exports)));
         let services = match records {
             Some(records) => services.with_records(records),
             None => services,

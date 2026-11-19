@@ -161,6 +161,26 @@ impl Database {
         Ok(self.execute(&delete).await? > 0)
     }
 
+    /// Keeps a job leased to `worker` until `until`, for a job that works longer than its lease.
+    /// Returns `false` when `worker` does not hold the lease any more.
+    ///
+    /// # Errors
+    /// Fails when the database fails.
+    pub async fn hold_job(
+        &self,
+        id: JobId,
+        worker: &TechnicalName,
+        until: Timestamp,
+    ) -> Result<bool, StoreError> {
+        let mut update = Query::update();
+        update
+            .table(Columns::Table)
+            .value(Columns::LeaseUntil, to_micros(until))
+            .and_where(Expr::col(Columns::Id).eq(id.stored()))
+            .and_where(Expr::col(Columns::LeaseOwner).eq(worker.as_str()));
+        Ok(self.execute(&update).await? > 0)
+    }
+
     /// Reports a job as failed, with a technical code (never an error message). It waits
     /// [`backoff`] and runs again, or goes to the dead-letter list after its last attempt, or at
     /// once when the failure is [`FailureKind::Permanent`]. Returns `None` when `worker` does not
@@ -412,6 +432,15 @@ impl JobStore for AuthStorage {
         self.database().complete_job(id, worker).await
     }
 
+    async fn hold_job(
+        &self,
+        id: JobId,
+        worker: &TechnicalName,
+        until: Timestamp,
+    ) -> Result<bool, StoreError> {
+        self.database().hold_job(id, worker, until).await
+    }
+
     async fn fail_job(
         &self,
         id: JobId,
@@ -527,6 +556,35 @@ mod tests {
             );
             assert!(database.complete_job(id, &name("worker-2")).await?);
             assert_eq!(database.queued_job_count().await?, 0);
+            Ok(())
+        })
+        .await
+    }
+
+    #[tokio::test]
+    async fn adr_0017_a_long_job_keeps_its_lease_while_its_worker_holds_it() -> TestResult {
+        each_database("adr_0017_hold", async |db| {
+            let database = open(db).await?;
+            let id = JobId::generate(&mut ids())?;
+            database.enqueue_job(id, &mail(at(0), 3), at(0)).await?;
+            let (first, second) = (name("worker-1"), name("worker-2"));
+            assert_eq!(database.lease_jobs(&first, at(1), LEASE, 5).await?.len(), 1);
+            assert!(database.hold_job(id, &first, at(500)).await?);
+            assert!(
+                database
+                    .lease_jobs(&second, at(400), LEASE, 5)
+                    .await?
+                    .is_empty()
+            );
+            assert!(!database.hold_job(id, &second, at(900)).await?);
+            assert_eq!(
+                database.lease_jobs(&second, at(501), LEASE, 5).await?.len(),
+                1
+            );
+            assert!(
+                !database.hold_job(id, &first, at(900)).await?,
+                "worker-1 lost it"
+            );
             Ok(())
         })
         .await

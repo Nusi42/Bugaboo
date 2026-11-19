@@ -140,6 +140,9 @@ impl ExportStore for FakeStore {
 
 impl PersonData for FakeStore {
     async fn kinds_of(&self, person: UserId) -> Result<Vec<KindOfRows>, FakeError> {
+        // A real store waits for the database here: two tries of one export run side by side in a
+        // test only if each lets the other go on at this point.
+        tokio::task::yield_now().await;
         Ok(self.read(|state| {
             let mut kinds: Vec<KindOfRows> = Vec::new();
             for walked in state.walk.iter().filter(|walked| walked.person == person) {
@@ -178,14 +181,24 @@ impl PersonData for FakeStore {
     }
 }
 
-/// The files of exports in memory: the finished ones by their export, readable by the tests.
+/// What the files of exports in memory hold.
+#[derive(Default)]
+struct Held {
+    /// The finished files by their export.
+    done: std::collections::HashMap<DataExportId, Vec<u8>>,
+    /// The files tries are writing or left half-written, by export and try. Unlike the disk, a try
+    /// that stops leaves its file here until it is deleted, as a server that stopped would.
+    writing: std::collections::BTreeSet<(DataExportId, String)>,
+    /// How often a finished file was kept.
+    kept: usize,
+}
+
+/// The files of exports in memory, readable by the tests.
 #[derive(Clone, Default)]
-pub(crate) struct FakeExports(
-    std::sync::Arc<std::sync::Mutex<std::collections::HashMap<DataExportId, Vec<u8>>>>,
-);
+pub(crate) struct FakeExports(std::sync::Arc<std::sync::Mutex<Held>>);
 
 impl FakeExports {
-    fn held(&self) -> std::sync::MutexGuard<'_, std::collections::HashMap<DataExportId, Vec<u8>>> {
+    fn held(&self) -> std::sync::MutexGuard<'_, Held> {
         self.0
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -193,19 +206,25 @@ impl FakeExports {
 
     /// The bytes of the finished file of `export`.
     pub(crate) fn bytes(&self, export: DataExportId) -> Option<Vec<u8>> {
-        self.held().get(&export).cloned()
+        self.held().done.get(&export).cloned()
     }
 
     /// How many finished files there are.
     pub(crate) fn count(&self) -> usize {
-        self.held().len()
+        self.held().done.len()
+    }
+
+    /// How often a finished file was kept, by every try.
+    pub(crate) fn kept(&self) -> usize {
+        self.held().kept
     }
 }
 
-/// A file being written in memory.
+/// A file being written in memory by one try.
 struct FakeSink {
     bytes: std::io::Cursor<Vec<u8>>,
     export: DataExportId,
+    attempt: String,
     files: FakeExports,
 }
 
@@ -226,11 +245,22 @@ impl std::io::Seek for FakeSink {
 }
 
 impl crate::privacy::export::ExportSink for FakeSink {
-    fn keep(self: Box<Self>) -> std::io::Result<u64> {
-        let bytes = self.bytes.into_inner();
-        let size = u64::try_from(bytes.len()).unwrap_or(u64::MAX);
-        self.files.held().insert(self.export, bytes);
-        Ok(size)
+    fn finish(&mut self) -> std::io::Result<u64> {
+        Ok(u64::try_from(self.bytes.get_ref().len()).unwrap_or(u64::MAX))
+    }
+
+    fn keep(self: Box<Self>) -> std::io::Result<()> {
+        let FakeSink {
+            bytes,
+            export,
+            attempt,
+            files,
+        } = *self;
+        let mut held = files.held();
+        held.writing.remove(&(export, attempt));
+        held.done.insert(export, bytes.into_inner());
+        held.kept += 1;
+        Ok(())
     }
 }
 
@@ -238,10 +268,15 @@ impl crate::privacy::export::ExportFiles for FakeExports {
     fn create(
         &self,
         export: DataExportId,
+        attempt: &str,
     ) -> std::io::Result<Box<dyn crate::privacy::export::ExportSink>> {
+        if !self.held().writing.insert((export, attempt.to_owned())) {
+            return Err(std::io::Error::from(std::io::ErrorKind::AlreadyExists));
+        }
         Ok(Box::new(FakeSink {
             bytes: std::io::Cursor::new(Vec::new()),
             export,
+            attempt: attempt.to_owned(),
             files: self.clone(),
         }))
     }
@@ -260,7 +295,9 @@ impl crate::privacy::export::ExportFiles for FakeExports {
     }
 
     fn delete(&self, export: DataExportId) -> crate::ports::BoxFuture<'_, std::io::Result<()>> {
-        self.held().remove(&export);
+        let mut held = self.held();
+        held.done.remove(&export);
+        held.writing.retain(|(of, _)| *of != export);
         Box::pin(async { Ok(()) })
     }
 }

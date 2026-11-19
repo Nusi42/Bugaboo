@@ -7,12 +7,13 @@
 //! screen would. It logs IDs only (DATA-LOGS).
 
 use std::collections::BTreeMap;
-use std::io::Write as _;
+use std::sync::{Arc, Mutex};
 
 use bb_core::data_export::{DataExport, EXPORT_KEPT, ExportState};
 use bb_core::event::{Actor as EventActor, RecordKind};
 use bb_core::files::LinkTarget;
 use bb_core::id::{DataExportId, UserId};
+use bb_core::job::Job;
 use bb_core::message::Message;
 use bb_core::people_kinds::PeopleKind;
 use bb_core::personal::Link;
@@ -28,6 +29,7 @@ use super::shape::{ShapedKind, people_in, shape_row};
 use super::writer::ExportWriter;
 use super::{ExportSink, recipients};
 use crate::auth::{AppError, AuthStore, Ctx, entity, internal, set_to};
+use crate::jobs::lease::HeldJob;
 use crate::member::data_export as member;
 use crate::privacy::walk::FoundRow;
 
@@ -79,6 +81,17 @@ fn strictest_kind(viewer: &Evaluation) -> PeopleKind {
 
 fn failed(error: &std::io::Error) -> AppError {
     AppError::Internal(error.to_string())
+}
+
+/// The file being written.
+type Writer = ExportWriter<Box<dyn ExportSink>>;
+
+/// Why the change that finishes an export stopped itself.
+enum Stopped {
+    /// The export was finished already, by another try: nothing changed.
+    Unchanged,
+    /// The file could not be made the file of the export.
+    NotKept(AppError),
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -141,8 +154,9 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// Writes the bytes of the files the person uploaded into `files/`.
     async fn write_uploads(
         &self,
-        writer: &mut ExportWriter<Box<dyn ExportSink>>,
+        writer: &mut Writer,
         uploads: Vec<Upload>,
+        held: &mut HeldJob,
     ) -> Result<(), AppError> {
         for upload in uploads {
             let Some(mut body) = self
@@ -167,21 +181,27 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .map_err(|error| failed(&error))?
             {
                 writer.write_bytes(&chunk).map_err(|error| failed(&error))?;
+                self.hold_on(held).await?;
             }
         }
         Ok(())
     }
 
-    /// Writes the file of `export`: every kind of record the walk finds, the files the person
-    /// uploaded and the README. Answers the size of the file.
-    async fn write_export(&self, export: &DataExport) -> Result<u64, AppError> {
+    /// Writes the file of `export` for the try that holds `held`: every kind of record the walk
+    /// finds, the files the person uploaded and the README. Answers the finished file, not yet the
+    /// file of the export, and its size.
+    async fn write_export(
+        &self,
+        export: &DataExport,
+        held: &mut HeldJob,
+    ) -> Result<(Box<dyn ExportSink>, u64), AppError> {
         let person = export.person;
         let viewer = self.evaluate(person, Place::Organization).await?;
         let kind = strictest_kind(&viewer);
         let region = Region::of(&self.setting_layers_of(Some(person)).await?);
         let sink = self
             .exports()
-            .create(export.id)
+            .create(export.id, &held.attempt())
             .map_err(|error| failed(&error))?;
         let mut writer = ExportWriter::new(sink, region);
         let mut seen = BTreeMap::new();
@@ -214,6 +234,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                     rows.push(shape_row(row, &found.marks, person, &seen));
                 }
                 from = page.next;
+                self.hold_on(held).await?;
             }
             writer
                 .kind(&ShapedKind {
@@ -223,21 +244,25 @@ impl<S: AuthStore> Ctx<'_, S> {
                 })
                 .map_err(|error| failed(&error))?;
         }
-        self.write_uploads(&mut writer, uploads).await?;
+        self.write_uploads(&mut writer, uploads, held).await?;
         let mut sink = writer
             .finish(&self.recipients_now().await?)
             .map_err(|error| failed(&error))?;
-        sink.flush().map_err(|error| failed(&error))?;
-        sink.keep().map_err(|error| failed(&error))
+        let bytes = sink.finish().map_err(|error| failed(&error))?;
+        Ok((sink, bytes))
     }
 
-    /// Ends a waiting export in `state`, with its event, from which the person is told.
+    /// Ends a waiting export in `state`, with its event, from which the person is told; `keep` is
+    /// the finished file of a ready one, which becomes the file of the export in the same change.
+    /// Answers `false`, and changes nothing, when the export waits no more: another try of its job
+    /// finished it, so no second event and no second notice follow.
     async fn finish_export(
         &self,
         export: &DataExport,
         state: ExportState,
         bytes: Option<u64>,
-    ) -> Result<(), AppError> {
+        keep: Option<Box<dyn ExportSink>>,
+    ) -> Result<bool, AppError> {
         let now = self.now();
         let ready_at = (state == ExportState::Ready).then_some(now);
         let bytes = bytes.map(|bytes| i64::try_from(bytes).unwrap_or(i64::MAX));
@@ -247,36 +272,65 @@ impl<S: AuthStore> Ctx<'_, S> {
             vec![set_to(member::STATE, json!(state.code()))],
         )?;
         let id = export.id;
-        self.store()
+        let stopped = Arc::new(Mutex::new(None));
+        let said = stopped.clone();
+        let done = self
+            .store()
             .record_change(&event, move |transaction| {
                 Box::pin(async move {
-                    S::finish_data_export(transaction, id, state, ready_at, bytes)
-                        .await
-                        .map(|_| ())
+                    let stop = |why: Stopped| {
+                        *said
+                            .lock()
+                            .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(why);
+                        S::aborted()
+                    };
+                    if !S::finish_data_export(transaction, id, state, ready_at, bytes).await? {
+                        return Err(stop(Stopped::Unchanged));
+                    }
+                    if let Some(sink) = keep
+                        && let Err(error) = sink.keep()
+                    {
+                        return Err(stop(Stopped::NotKept(failed(&error))));
+                    }
+                    Ok(())
                 })
             })
-            .await
-            .map_err(|error| internal::<S>(&error))
+            .await;
+        let stopped = stopped
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .take();
+        match (done, stopped) {
+            (Ok(()), _) => Ok(true),
+            (Err(_), Some(Stopped::Unchanged)) => Ok(false),
+            (Err(_), Some(Stopped::NotKept(error))) => Err(error),
+            (Err(error), None) => Err(internal::<S>(&error)),
+        }
     }
 
     /// The work of a job of `privacy.export`: writes the file of the export the payload names, if
-    /// it still waits, and marks it ready. A try that fails leaves the export waiting for the
-    /// next; the half-written file is replaced then.
+    /// it still waits, and marks it ready. A try that fails leaves the export waiting for the next;
+    /// each try writes a file of its own, and only the try that marks the export ready makes its
+    /// file the export's.
     ///
     /// # Errors
-    /// `request.invalid` for a payload that names no export; the error of the store or of the
-    /// file system.
-    pub(crate) async fn run_export(&self, job: &Value) -> Result<(), AppError> {
-        let Some(export) = self.export_of_job(job).await? else {
+    /// `request.invalid` for a payload that names no export; an internal error when another worker
+    /// took the job over; the error of the store or of the file system.
+    pub(crate) async fn run_export(&self, job: &Job) -> Result<(), AppError> {
+        let Some(export) = self.export_of_job(&job.payload).await? else {
             return Ok(());
         };
         if export.state != ExportState::Waiting {
             return Ok(());
         }
-        let bytes = self.write_export(&export).await?;
-        self.finish_export(&export, ExportState::Ready, Some(bytes))
-            .await?;
-        tracing::info!(export = %export.id, bytes, "a file of a person's data was written");
+        let mut held = self.held(job);
+        let (sink, bytes) = self.write_export(&export, &mut held).await?;
+        if self
+            .finish_export(&export, ExportState::Ready, Some(bytes), Some(sink))
+            .await?
+        {
+            tracing::info!(export = %export.id, bytes, "a file of a person's data was written");
+        }
         Ok(())
     }
 
@@ -296,7 +350,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             .delete(export.id)
             .await
             .map_err(|error| failed(&error))?;
-        self.finish_export(&export, ExportState::Failed, None).await
+        self.finish_export(&export, ExportState::Failed, None, None)
+            .await
+            .map(|_| ())
     }
 
     /// Deletes the exports asked for more than [`EXPORT_KEPT`] ago, the file first, then the record
