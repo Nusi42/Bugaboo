@@ -70,6 +70,18 @@ fn kind_json(kind: &ShapedKind) -> Json {
     Json::Array(kind.rows.iter().map(row_json).collect())
 }
 
+/// The fields the rows of a kind hold, each once, in the order they first come: a row may hold a
+/// field another row leaves out, and the README names every one.
+fn fields_of(kind: &ShapedKind) -> Vec<&'static str> {
+    let mut fields = Vec::new();
+    for cell in kind.rows.iter().flat_map(|row| &row.cells) {
+        if !fields.contains(&cell.field) {
+            fields.push(cell.field);
+        }
+    }
+    fields
+}
+
 fn failed(error: zip::result::ZipError) -> io::Error {
     io::Error::other(error)
 }
@@ -120,11 +132,7 @@ impl<W: Write + Seek> ExportWriter<W> {
         self.written.push(Written {
             kind: kind.kind.clone(),
             marks: kind.marks,
-            fields: kind
-                .rows
-                .first()
-                .map(|row| row.cells.iter().map(|cell| cell.field).collect())
-                .unwrap_or_default(),
+            fields: fields_of(kind),
         });
         Ok(())
     }

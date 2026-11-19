@@ -171,3 +171,28 @@ fn priv_03_the_readme_gives_purpose_basis_keep_period_and_recipients_for_every_k
         "the files of exports are kept 7 days"
     );
 }
+
+#[test]
+fn priv_03_the_readme_names_every_field_any_row_of_a_kind_holds() {
+    let mut kind = comments();
+    let mut only_text = kind.rows[0].clone();
+    // The first row holds no text, the second nothing but its text.
+    kind.rows[0].cells.retain(|cell| cell.field != "text");
+    only_text.cells.retain(|cell| cell.field == "text");
+    kind.rows.push(only_text);
+    assert_eq!(fields_of(&kind), vec!["author", "created_at", "text"]);
+    let mut writer = ExportWriter::new(Cursor::new(Vec::new()), Region::of(&Layers::default()));
+    writer.kind(&kind).unwrap();
+    let sink = writer.finish(&recipients(false, None)).unwrap();
+    let mut archive = ZipArchive::new(Cursor::new(sink.into_inner())).unwrap();
+    let mut readme = String::new();
+    archive
+        .by_name("README.txt")
+        .unwrap()
+        .read_to_string(&mut readme)
+        .unwrap();
+    assert!(
+        readme.contains("    text: The text, in Markdown."),
+        "{readme}"
+    );
+}
