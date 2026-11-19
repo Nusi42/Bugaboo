@@ -87,15 +87,15 @@ export function keyRuns<Row>(
   saving: Readonly<SaveQueue<Row>>,
   schedule: Schedule,
 ) {
-  const standing = (row: Row) => runs.get(saving.idOf(row)) ?? saving.standing(row);
+  const keptBar = (row: Row) => runs.get(saving.idOf(row)) ?? saving.keptBar(row);
   const end = (id: string): void => {
     endRun(runs, saving, id);
   };
   return {
-    standing,
+    keptBar,
     onKeyMove: (row: Row, move: Move, days: number): void => {
       const id = saving.idOf(row);
-      const now = standing(row);
+      const now = keptBar(row);
       if (now === undefined) {
         return;
       }

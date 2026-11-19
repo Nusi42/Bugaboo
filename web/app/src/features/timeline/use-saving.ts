@@ -39,7 +39,7 @@ function askAbout(
     useMine: () => {
       askAboutConflict(null);
       takeVersion(row, refused.conflict.version ?? 0);
-      const now = queue().standing(row);
+      const now = queue().keptBar(row);
       const step = now === undefined ? undefined : setTo(now, dates);
       if (step !== undefined) {
         queue().save(row, step, { move: "set" });

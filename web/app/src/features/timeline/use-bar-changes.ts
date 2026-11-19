@@ -24,7 +24,7 @@ export function useBarChanges(fields: DateFields | undefined, rowOf: RowOf) {
   // A waiting run of keys is saved first, so the next change starts where it left the bar.
   const beforeOf = (row: TimelineRow) => {
     keys.onRunEnd(idOf(row));
-    const now = keys.standing(row);
+    const now = keys.keptBar(row);
     const kept = fields === undefined ? undefined : keptDates(row, fields);
     return now ?? (kept === undefined ? undefined : { dates: kept, days: undefined });
   };

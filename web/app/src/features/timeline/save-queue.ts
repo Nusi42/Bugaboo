@@ -6,20 +6,20 @@ import type { BarDays } from "./lines.ts";
 import { moved, shownWhileMoving, type Move } from "./moves.ts";
 
 /** Where the dates of an issue stand on this screen: what it keeps and what its bar shows. */
-export interface Standing {
+export interface KeptBar {
   readonly dates: KeptDates;
   readonly days: BarDays;
 }
 
 /** A step of a bar from where it stands: the dates and days before, the dates and days after. */
-export interface Step extends Standing {
+export interface Step extends KeptBar {
   readonly before: KeptDates;
   /** The days the bar showed before; none for an issue that had no bar. */
   readonly from: BarDays | undefined;
 }
 
 /** The step a move makes from where a bar stands. */
-export function stepFrom(now: Standing, move: Move, days: number): Step {
+export function stepFrom(now: KeptBar, move: Move, days: number): Step {
   return {
     before: now.dates,
     from: now.days,
@@ -63,7 +63,7 @@ export interface QueueWays<Row> {
   /** Shows days on the bar of an issue; none shows the server's again. */
   readonly show: (id: string, days?: BarDays) => void;
   /** Where the issue of a row stands when no change of it is on its way. */
-  readonly kept: (row: Row) => Standing | undefined;
+  readonly kept: (row: Row) => KeptBar | undefined;
   readonly offers: Pick<UndoStore, "offer" | "withdraw">;
 }
 
@@ -185,7 +185,7 @@ export function saveQueue<Row>(book: ChangeBook, ways: QueueWays<Row>) {
       withdrawOffer(book, ways, id);
     },
     /** Where the issue of a row stands: the change on its way, or what the page read. */
-    standing: (row: Row): Standing | undefined => book.get(ways.idOf(row)) ?? ways.kept(row),
+    keptBar: (row: Row): KeptBar | undefined => book.get(ways.idOf(row)) ?? ways.kept(row),
     /** Shows the days of the issue's change on its way, or the server's when none is. */
     settle: (id: string): void => {
       ways.show(id, book.get(id)?.days);
