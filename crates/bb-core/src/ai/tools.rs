@@ -97,6 +97,10 @@ words! {
         CollectAgentKeys => "collect_agent_keys",
         /// An agent waits until work waits for it, or some seconds, then asks what changed.
         WaitForWork => "wait_for_work",
+        /// An agent hands issues of its own work over to another agent of its person.
+        HandOver => "hand_over_work",
+        /// An agent undoes the run of one of its own attempts.
+        UndoMyRun => "undo_my_run",
     }
     messages description = "ai-tool.";
 }
@@ -117,6 +121,8 @@ impl Tool {
                 | Self::ChangesSince
                 | Self::Propose
                 | Self::WaitForWork
+                | Self::HandOver
+                | Self::UndoMyRun
         )
     }
 

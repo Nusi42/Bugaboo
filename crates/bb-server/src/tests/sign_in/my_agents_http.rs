@@ -6,6 +6,7 @@ use bb_app::access::StartingRole;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::json;
 
+use super::ai_mcp_rig::an_agent_with_a_key;
 use super::http::{Browser, rig_and_app};
 use super::issues_site::{Site, key_of, ok};
 use super::rig::PASSWORD;
@@ -197,6 +198,38 @@ async fn ai_37_a_person_changes_the_limits_of_an_agent_over_http() -> TestResult
             )
             .await?;
         assert_eq!(too_much.code(), "request.invalid", "{}", too_much.body);
+        Ok::<(), Failure>(())
+    })
+    .await
+}
+
+/// The switches of an agent (ADR-0029, amendment M9) widen what it does for its person, so only
+/// that person changes them: an administrator, who may stop any agent, is told the agent is not
+/// found, and the agent's own key is refused like every key on the agent's record.
+#[tokio::test]
+async fn ai_31_only_the_person_of_an_agent_changes_its_switches_over_http() -> TestResult {
+    each_database("ai_31_agent_switches_http", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        rig.turn_ai_apps_and_agents_on().await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut tess, _) = site.person(StartingRole::TeamMember, "tess").await?;
+        let (agent, key) = an_agent_with_a_key(&mut tess, "Fixer", None).await?;
+        let path = format!("/api/v1/agents/{agent}");
+        let on = json!({
+            "version": 1,
+            "switches": {"may_hand_over": true, "may_undo": true},
+        });
+        let by_admin = ada.send("PATCH", &path, Some(on.clone())).await?;
+        assert_eq!(by_admin.code(), "resource.not-found", "{}", by_admin.body);
+        let mut script = Browser::new(&app, &super::http::called());
+        let by_key = script
+            .script("PATCH", &path, Some(on.clone()), &key)
+            .await?;
+        assert!(!by_key.status.is_success(), "{}", by_key.body);
+        let by_person = tess.send("PATCH", &path, Some(on)).await?;
+        let changed = ok(&by_person)?;
+        assert_eq!(changed["may_hand_over"], json!(true), "{changed}");
+        assert_eq!(changed["may_undo"], json!(true), "{changed}");
         Ok::<(), Failure>(())
     })
     .await

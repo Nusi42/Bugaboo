@@ -80,6 +80,9 @@ error_codes! {
     AgentWorkNotReady => ("agent-work.not-ready", 409),
     /// The agent used all the attempts the hand-over gave it.
     AgentWorkBudget => ("agent-work.budget-reached", 409),
+    /// A hand-over by an agent would make the chain of hand-overs of an issue longer than it may
+    /// be (ADR-0029, amendment M9).
+    AgentHandOverTooDeep => ("agent-work.hand-over-too-deep", 409),
     /// The agent reached one of its limits and is paused until its person resumes it (ADR-0029,
     /// decision 9). The change it asked for was not started.
     AgentLimitReached => ("agent.limit-reached", 429),

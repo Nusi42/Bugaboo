@@ -191,6 +191,13 @@ pub struct Agent {
     /// Attempts on one issue.
     #[not_personal]
     pub attempts_on_one_issue: i64,
+    /// Its person lets it hand issues of its own work over to the person's other agents (ADR-0029,
+    /// amendment M9). Off when it is made.
+    #[not_personal]
+    pub may_hand_over: bool,
+    /// Its person lets it undo the runs of its own attempts. Off when it is made.
+    #[not_personal]
+    pub may_undo: bool,
     /// The person it is handed to, who has not accepted yet (the hand-over of an agent needs the
     /// acceptance of the other person).
     #[personal(category = "identity", basis = "contract")]
@@ -208,7 +215,26 @@ pub struct Agent {
     pub version: i64,
 }
 
+/// What a person lets their agent do beyond its work (ADR-0029, amendment M9): both off when an
+/// agent is made.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct AgentSwitches {
+    /// *May hand over to my other agents*.
+    pub may_hand_over: bool,
+    /// *May undo its own runs*.
+    pub may_undo: bool,
+}
+
 impl Agent {
+    /// Its switches.
+    #[must_use]
+    pub const fn switches(&self) -> AgentSwitches {
+        AgentSwitches {
+            may_hand_over: self.may_hand_over,
+            may_undo: self.may_undo,
+        }
+    }
+
     /// Its limits.
     #[must_use]
     pub const fn limits(&self) -> AgentLimits {

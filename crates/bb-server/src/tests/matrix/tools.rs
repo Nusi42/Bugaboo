@@ -47,9 +47,12 @@ fn example(tool: Tool, ground: &Ground<'_>) -> Value {
     let issue = ground.issue;
     match tool {
         Tool::SearchIssues => json!({"query": ""}),
-        Tool::GetIssue | Tool::StartTimer | Tool::Take | Tool::Submit => json!({"issue": issue}),
+        Tool::GetIssue | Tool::StartTimer | Tool::Take | Tool::Submit | Tool::UndoMyRun => {
+            json!({"issue": issue})
+        }
         Tool::ListProjects | Tool::GetMyWork | Tool::ChangesSince => json!({}),
         Tool::WaitForWork => json!({"seconds": 1}),
+        Tool::HandOver => json!({"agent": HELPER, "issues": [issue]}),
         Tool::CreateIssue => {
             json!({"project": "ACME", "issue_type": ground.kind, "title": "From the matrix"})
         }
@@ -154,7 +157,8 @@ impl Scene<'_> {
         let wanted = self.made / AGENTS_OF_A_PERSON;
         while self.more_teams.len() < wanted {
             let who = format!("matrix-team-{}", self.more_teams.len() + 2);
-            let (person, _) = self.site.person(StartingRole::TeamMember, &who).await?;
+            let (mut person, _) = self.site.person(StartingRole::TeamMember, &who).await?;
+            helper_of(&mut person).await?;
             self.more_teams.push(person);
         }
         let team = match wanted {
@@ -342,6 +346,15 @@ fn check(tool: Tool, effect: ToolEffect, name: &str, word: &str) -> Result<(), F
     Ok(())
 }
 
+/// The name of the second agent of every team member, which `hand_over_work` names.
+const HELPER: &str = "Helper";
+
+/// The second agent of the team member: an agent hands over only to another agent of its person, so
+/// `hand_over_work` reaches the switch *May hand over to my other agents*.
+async fn helper_of(team: &mut Browser) -> Result<(), Failure> {
+    an_agent_with_a_key(team, HELPER, None).await.map(drop)
+}
+
 /// The issues, the rule and the agents that last for the whole run.
 async fn scene<'a>(
     rig: &Rig,
@@ -350,6 +363,7 @@ async fn scene<'a>(
     mut team: Browser,
 ) -> Result<Scene<'a>, Failure> {
     let issue = key_of(&site.create(&mut ada, "The issue of the matrix").await?)?;
+    helper_of(&mut team).await?;
     // A project where agents will be off (WP-15: each kind of AI has its own switch), with an issue
     // handed over before it is switched off.
     let off_project = ada

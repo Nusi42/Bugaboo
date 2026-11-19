@@ -38,7 +38,7 @@ use bb_policy::Authorized;
 
 /// Refuses a call that does not come from an agent. The registry does not offer these tools to
 /// anybody else, and the use cases refuse again.
-fn ensure_agent(run: &Run<'_>) -> Result<(), AppError> {
+pub(super) fn ensure_agent(run: &Run<'_>) -> Result<(), AppError> {
     if run.actor.agent().is_none() {
         return Err(ErrorCode::Forbidden.into());
     }
@@ -123,7 +123,7 @@ fn propose_request(run: &Run<'_>) -> Result<ProposeChange, AppError> {
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// Refuses an issue in a project kept from AI as one that is not there, like every tool does.
-    async fn agent_issue_in_reach(
+    pub(super) async fn agent_issue_in_reach(
         &self,
         run: &Run<'_>,
         address: &str,

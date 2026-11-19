@@ -44,7 +44,7 @@ async fn started(world: &World) -> Result<Handed, String> {
 
 pub(crate) async fn take_work_scenario(world: &World) -> Added {
     let given = handed(world).await.map_err(text)?;
-    measured(
+    Box::pin(measured(
         &world.store,
         take_work(
             &world.ctx(),
@@ -54,7 +54,7 @@ pub(crate) async fn take_work_scenario(world: &World) -> Added {
                 version: None,
             },
         ),
-    )
+    ))
     .await
 }
 

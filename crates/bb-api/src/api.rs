@@ -481,6 +481,17 @@ mod tests {
         assert!(!has_time_limit("/index.html"));
     }
 
+    /// `wait_for_work` holds its answer for up to `WAIT_SECONDS_MOST` (ADR-0029, amendment M9):
+    /// the MCP server is not under the API's limit, so nothing cuts a long wait short.
+    #[test]
+    fn ai_36_the_mcp_server_is_not_held_to_the_time_limit_of_the_api() {
+        assert!(!has_time_limit(bb_core::oauth::MCP_PATH));
+        assert!(
+            bb_core::agent_work::WAIT_SECONDS_MOST > TIME_LIMIT.as_secs(),
+            "a wait is longer than the limit of the API"
+        );
+    }
+
     /// The host and port of the public address.
     fn authority() -> &'static str {
         PUBLIC_URL.strip_prefix("https://").unwrap()

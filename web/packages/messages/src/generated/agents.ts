@@ -114,6 +114,11 @@ export const messages = {
   "agents.key-take-back-text":
     "The key stops working at once. An agent that uses it can no longer sign in.",
   "agents.limits": "Limits",
+  "agents.switches": "What it may do",
+  "agents.switches-intro":
+    "Besides the work you give it. Both are off when you create an agent, and only you change them.",
+  "agents.may-hand-over": "May hand over to my other agents",
+  "agents.may-undo": "May undo its own runs",
   "agents.limits-intro":
     "How much this agent may do. Reaching a limit pauses the agent with a sentence that says which. A limit is never more than your organization allows.",
   "agents.limit-changes": "Changes a minute",

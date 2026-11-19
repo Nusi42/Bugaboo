@@ -46,6 +46,10 @@ export interface ListedAgent {
   readonly changesAMinute: number;
   readonly issuesAtOnce: number;
   readonly attemptsOnOneIssue: number;
+  /** Its person lets it hand issues of its own work over to the person's other agents. */
+  readonly mayHandOver: boolean;
+  /** Its person lets it undo the runs of its own attempts. */
+  readonly mayUndo: boolean;
 }
 
 /** The agents of a list that came with all they need (a field can be missing in an answer). */
@@ -73,6 +77,8 @@ export function listedAgents(items: readonly AgentEntry[] | undefined): readonly
             changesAMinute: item.changes_a_minute ?? 0,
             issuesAtOnce: item.issues_at_once ?? 0,
             attemptsOnOneIssue: item.attempts_on_one_issue ?? 0,
+            mayHandOver: item.may_hand_over === true,
+            mayUndo: item.may_undo === true,
           },
         ],
   );

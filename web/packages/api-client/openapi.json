@@ -21261,6 +21261,14 @@
             "description": "When it last signed in with a key; left out when it never did. Asked for by name.",
             "format": "date-time"
           },
+          "may_hand_over": {
+            "type": ["boolean", "null"],
+            "description": "Whether its person lets it hand issues of its own work over to the person's other agents."
+          },
+          "may_undo": {
+            "type": ["boolean", "null"],
+            "description": "Whether its person lets it undo the runs of its own attempts."
+          },
           "name": {
             "type": ["string", "null"],
             "description": "Its name."
@@ -21428,6 +21436,21 @@
         "type": "string",
         "description": "Whether an agent may act.",
         "enum": ["active", "paused", "stopped"]
+      },
+      "AgentSwitchesBody": {
+        "type": "object",
+        "description": "What a person lets their agent do beyond its work (ADR-0029, amendment M9). Both start off.",
+        "required": ["may_hand_over", "may_undo"],
+        "properties": {
+          "may_hand_over": {
+            "type": "boolean",
+            "description": "*May hand over to my other agents*."
+          },
+          "may_undo": {
+            "type": "boolean",
+            "description": "*May undo its own runs*."
+          }
+        }
       },
       "AgentWorkState": {
         "type": "string",
@@ -22655,7 +22678,7 @@
       },
       "ChangeAgentBody": {
         "type": "object",
-        "description": "What to do to an agent: give it another name, other limits, or pause, resume or stop it. Exactly\none of `name`, `limits` and `action`.",
+        "description": "What to do to an agent: give it another name, other limits or other switches, or pause, resume\nor stop it. Exactly one of `name`, `limits`, `switches` and `action`.",
         "required": ["version"],
         "properties": {
           "action": {
@@ -22683,6 +22706,17 @@
           "name": {
             "type": ["string", "null"],
             "description": "The new name."
+          },
+          "switches": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AgentSwitchesBody",
+                "description": "What the agent may do beyond its work: both switches as they shall be. Only its person\nchanges them."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "version": {
             "type": "integer",
@@ -24748,6 +24782,7 @@
           "agent-work.already-open",
           "agent-work.not-ready",
           "agent-work.budget-reached",
+          "agent-work.hand-over-too-deep",
           "agent.limit-reached",
           "auth.not-signed-in",
           "access.forbidden",

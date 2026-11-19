@@ -383,8 +383,9 @@ fn agent_rows() -> anyhow::Result<Vec<Vec<String>>> {
         MOST_AGENT_KEYS, MOST_AGENTS, MOST_AGENTS_AT_ONCE, MOST_ISSUES_OF_ONE_CHANGE,
     };
     use bb_core::agent_work::{
-        DEFAULT_HAND_OVER_DAYS, DEFAULT_RULE_DAYS, MOST_HAND_OVER_DAYS, MOST_ISSUES_OF_A_HAND_OVER,
-        MOST_RULE_DAYS, RULE_WARNING_DAYS,
+        DEFAULT_HAND_OVER_DAYS, DEFAULT_RULE_DAYS, MOST_HAND_OVER_DAYS, MOST_HAND_OVER_DEPTH,
+        MOST_ISSUES_OF_A_HAND_OVER, MOST_RULE_DAYS, RULE_WARNING_DAYS, WAIT_SECONDS_DEFAULT,
+        WAIT_SECONDS_MOST,
     };
     Ok(pairs(vec![
         (
@@ -441,6 +442,24 @@ fn agent_rows() -> anyhow::Result<Vec<Vec<String>>> {
         (
             "A change to many issues, also by an agent, names at most",
             counted(MOST_ISSUES_OF_ONE_CHANGE as u128, "issue", "issues"),
+        ),
+        (
+            "An agent waits for work, unless it asks for another time,",
+            format!(
+                "{}; keep this behind a proxy that closes quiet connections",
+                counted(u128::from(WAIT_SECONDS_DEFAULT), "second", "seconds")
+            ),
+        ),
+        (
+            "An agent waits for work at most",
+            format!(
+                "{}; when a wait ends with nothing new, it calls again",
+                counted(u128::from(WAIT_SECONDS_MOST), "second", "seconds")
+            ),
+        ),
+        (
+            "Agents hand an issue on to each other at most",
+            counted(whole(MOST_HAND_OVER_DEPTH)?, "time", "times"),
         ),
     ]))
 }

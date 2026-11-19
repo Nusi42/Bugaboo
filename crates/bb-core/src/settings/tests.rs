@@ -424,3 +424,13 @@ fn comp_04_every_setting_that_matters_for_security_starts_safe() {
         }
     }
 }
+
+/// What a person lets their agent do beyond its work is not a setting but a value of each agent
+/// (ADR-0029, amendment M9), judged beside [`SAFE_STARTS`]: both switches start off, and a new agent
+/// is made with these (`ai_31_both_switches_of_a_new_agent_are_off` in `bb-app`).
+#[test]
+fn comp_04_the_switches_of_a_new_agent_start_off() {
+    let start = crate::agent::AgentSwitches::default();
+    assert!(!start.may_hand_over, "may hand over starts unsafe");
+    assert!(!start.may_undo, "may undo starts unsafe");
+}

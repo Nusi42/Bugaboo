@@ -10,12 +10,20 @@ export interface SwitchProps {
   readonly onChange: (isSelected: boolean) => void;
   /** The label names the switch for screen readers only, where the row already shows the same words. */
   readonly hideLabel?: boolean;
+  /** The switch cannot be changed now, for example while its last change is saved. */
+  readonly isDisabled?: boolean;
 }
 
 /** An on and off switch, with a label next to it. */
-export function Switch({ label, isSelected, onChange, hideLabel = false }: SwitchProps) {
+export function Switch({
+  label,
+  isSelected,
+  onChange,
+  hideLabel = false,
+  isDisabled = false,
+}: SwitchProps) {
   return (
-    <SwitchField isSelected={isSelected} onChange={onChange}>
+    <SwitchField isSelected={isSelected} onChange={onChange} isDisabled={isDisabled}>
       <SwitchButton {...partOf(part.switch)}>
         <span {...partOf(part.switchTrack)}>
           <span {...partOf(part.switchThumb)} />

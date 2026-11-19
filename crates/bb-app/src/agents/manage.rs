@@ -22,7 +22,7 @@ use serde_json::json;
 use super::plan::{CREATING_STOPS, insert_agents, new_agent};
 use super::types::{
     AcceptAgent, AgentAction, AgentPage, AgentPosition, AgentQuery, AgentView, AgentsQuery,
-    ChangeAgent, CreateAgent, HandAgent, RenameAgent, SetAgentLimits, StopAllAgents, TakeBackOffer,
+    ChangeAgent, CreateAgent, HandAgent, RenameAgent, StopAllAgents, TakeBackOffer,
 };
 use crate::auth::{AppError, AuthStore, Ctx, Done, Stops, change_failed, internal};
 use crate::auth::{entity, set_to};
@@ -30,7 +30,7 @@ use crate::input::{clean_name, cursor_or_invalid};
 use crate::privacy::replay::taken_back_in;
 
 /// The event of a change to an agent that counted its version up.
-fn counted<S: AuthStore>(
+pub(super) fn counted<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     by: UserId,
     agent: AgentId,
@@ -47,7 +47,7 @@ fn counted<S: AuthStore>(
 
 /// The answer for a change made on a version of an agent that is not the current one: the person
 /// is told what changed meanwhile (`edit.version-changed` with the conflict).
-fn stale_agent(person: UserId, agent: AgentId) -> AppError {
+pub(super) fn stale_agent(person: UserId, agent: AgentId) -> AppError {
     AppError::stale(
         entity(RecordKind::Agent, agent),
         Place::Organization,
@@ -92,6 +92,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             paused_for: agent.paused_for,
             person,
             limits: agent.limits(),
+            switches: agent.switches(),
             maximums: if with_keys {
                 Some(self.agent_maximums().await?)
             } else {
@@ -108,7 +109,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 
     /// The agent with this ID, if the person may handle it: their own, or any for an
     /// administrator. Anybody else is told there is no such agent.
-    async fn agent_to_handle(
+    pub(super) async fn agent_to_handle(
         &self,
         person: UserId,
         administrator: bool,
@@ -335,80 +336,6 @@ pub async fn rename_agent<S: AuthStore>(
                 Stops::new(ErrorCode::VersionChanged, ErrorCode::NameTaken),
             )
             .about(&entity(RecordKind::Agent, id), Place::Organization, person)
-        })?;
-    agent(
-        ctx,
-        AgentQuery {
-            session_token: input.session_token,
-            id,
-        },
-    )
-    .await
-}
-
-/// Gives the agent other limits, each at least one and at most what the organization allows. Only
-/// the person responsible may.
-///
-/// # Errors
-/// `resource.not-found`, `request.invalid` for limits that do not fit, `edit.version-changed` when the
-/// agent changed meanwhile.
-pub async fn set_agent_limits<S: AuthStore>(
-    ctx: &Ctx<'_, S>,
-    input: SetAgentLimits,
-) -> Result<Authorized<AgentView>, AppError> {
-    let record = ctx.active(&input.session_token).await?;
-    let person = record.person.id;
-    let found = ctx.agent_to_handle(person, false, input.id).await?;
-    if found.state == AgentState::Stopped || !input.limits.fit_within(ctx.agent_maximums().await?) {
-        return Err(ErrorCode::InvalidRequest.into());
-    }
-    if found.version != input.version {
-        return Err(stale_agent(person, found.id));
-    }
-    let before = found.limits();
-    let now = input.limits;
-    let change = |field: &str, was: i64, to: i64| bb_core::event::FieldChange {
-        field: field.to_owned(),
-        before: Some(json!(was)),
-        after: Some(json!(to)),
-    };
-    let event = counted(
-        ctx,
-        person,
-        found.id,
-        vec![
-            change(
-                "changes_a_minute",
-                before.changes_a_minute,
-                now.changes_a_minute,
-            ),
-            change("issues_at_once", before.issues_at_once, now.issues_at_once),
-            change(
-                "attempts_on_one_issue",
-                before.attempts_on_one_issue,
-                now.attempts_on_one_issue,
-            ),
-        ],
-        found.version,
-    )?;
-    let (id, version) = (found.id, found.version);
-    ctx.store()
-        .record_change(&event, move |transaction| {
-            Box::pin(async move {
-                if S::set_agent_limits(transaction, id, now, version).await? {
-                    Ok(())
-                } else {
-                    Err(S::aborted())
-                }
-            })
-        })
-        .await
-        .map_err(|error| {
-            change_failed::<S>(&error, Stops::both(ErrorCode::VersionChanged)).about(
-                &entity(RecordKind::Agent, id),
-                Place::Organization,
-                person,
-            )
         })?;
     agent(
         ctx,

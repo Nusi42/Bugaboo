@@ -11,12 +11,13 @@ use axum::extract::State;
 use axum::response::Response;
 use bb_app::agents::{
     AcceptAgent, AgentAction, AgentPage, AgentQuery, AgentView, AgentsQuery, ChangeAgent,
-    CreateAgent, HandAgent, RenameAgent, SetAgentLimits, StopAllAgents, TakeBackOffer,
+    CreateAgent, HandAgent, RenameAgent, SetAgentLimits, SetAgentSwitches, StopAllAgents,
+    TakeBackOffer,
 };
 use bb_app::auth::{AppError, CreateAccessKey, DeleteAccessKey};
 use bb_core::ErrorCode;
 use bb_core::access_key::AGENT_KEY_CHOICE;
-use bb_core::agent::{AgentLimits, AgentState, LimitKind};
+use bb_core::agent::{AgentLimits, AgentState, AgentSwitches, LimitKind};
 use bb_core::id::{AccessKeyId, AgentId, UserId};
 use bb_policy::{Authorized, Masked, PersonRef};
 use serde::{Deserialize, Serialize};
@@ -36,7 +37,7 @@ use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
 /// The fields of an agent that can be asked for, and which of them a list holds when the request
 /// names none.
-const AGENT_FIELDS: [FieldSpec; 13] = [
+const AGENT_FIELDS: [FieldSpec; 15] = [
     FieldSpec::by_default("id"),
     FieldSpec::by_default("name"),
     FieldSpec::by_default("state"),
@@ -47,6 +48,8 @@ const AGENT_FIELDS: [FieldSpec; 13] = [
     FieldSpec::by_default("attempts_on_one_issue"),
     FieldSpec::by_default("yours"),
     FieldSpec::by_default("offered"),
+    FieldSpec::by_default("may_hand_over"),
+    FieldSpec::by_default("may_undo"),
     FieldSpec::by_default("version"),
     FieldSpec::on_request("created_at"),
     FieldSpec::on_request("last_used_at"),
@@ -87,6 +90,12 @@ pub(crate) struct AgentItem {
     /// Whether it is offered to another person who has not accepted yet.
     #[serde(skip_serializing_if = "Option::is_none")]
     offered: Option<bool>,
+    /// Whether its person lets it hand issues of its own work over to the person's other agents.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    may_hand_over: Option<bool>,
+    /// Whether its person lets it undo the runs of its own attempts.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    may_undo: Option<bool>,
     /// The version of the agent; send it back with a change.
     #[serde(skip_serializing_if = "Option::is_none")]
     version: Option<i64>,
@@ -113,6 +122,8 @@ impl From<&AgentView> for AgentItem {
             attempts_on_one_issue: Some(agent.limits.attempts_on_one_issue),
             yours: Some(agent.yours),
             offered: Some(agent.offered),
+            may_hand_over: Some(agent.switches.may_hand_over),
+            may_undo: Some(agent.switches.may_undo),
             version: Some(agent.version),
             created_at: Some(agent.made_at.to_string()),
             last_used_at: agent.last_used_at.map(|at| at.to_string()),
@@ -174,8 +185,35 @@ impl From<AgentLimitsBody> for AgentLimits {
     }
 }
 
-/// What to do to an agent: give it another name, other limits, or pause, resume or stop it. Exactly
-/// one of `name`, `limits` and `action`.
+/// What a person lets their agent do beyond its work (ADR-0029, amendment M9). Both start off.
+#[derive(Clone, Copy, Deserialize, Serialize, ToSchema)]
+pub(crate) struct AgentSwitchesBody {
+    /// *May hand over to my other agents*.
+    may_hand_over: bool,
+    /// *May undo its own runs*.
+    may_undo: bool,
+}
+
+impl From<AgentSwitches> for AgentSwitchesBody {
+    fn from(switches: AgentSwitches) -> Self {
+        Self {
+            may_hand_over: switches.may_hand_over,
+            may_undo: switches.may_undo,
+        }
+    }
+}
+
+impl From<AgentSwitchesBody> for AgentSwitches {
+    fn from(body: AgentSwitchesBody) -> Self {
+        Self {
+            may_hand_over: body.may_hand_over,
+            may_undo: body.may_undo,
+        }
+    }
+}
+
+/// What to do to an agent: give it another name, other limits or other switches, or pause, resume
+/// or stop it. Exactly one of `name`, `limits`, `switches` and `action`.
 #[derive(Deserialize, ToSchema)]
 pub(crate) struct ChangeAgentBody {
     /// The new name.
@@ -187,6 +225,10 @@ pub(crate) struct ChangeAgentBody {
     /// The new limits.
     #[serde(default)]
     limits: Option<AgentLimitsBody>,
+    /// What the agent may do beyond its work: both switches as they shall be. Only its person
+    /// changes them.
+    #[serde(default)]
+    switches: Option<AgentSwitchesBody>,
     /// The version the person saw.
     version: i64,
 }
@@ -375,6 +417,23 @@ async fn change_agent(
     let read = body.and_then(|ApiJson(body)| Ok((body, path_id::<AgentId>(&agent_id)?)));
     let (body, id) = auth.after_who_asks(&info, &session_token, read).await?;
     let api = auth.api()?;
+    if let Some(switches) = body.switches {
+        if body.name.is_some() || body.action.is_some() || body.limits.is_some() {
+            return Err(ApiError::from(AppError::Refused(ErrorCode::InvalidRequest)));
+        }
+        let changed = api
+            .set_agent_switches(
+                info,
+                SetAgentSwitches {
+                    session_token,
+                    id,
+                    switches: switches.into(),
+                    version: body.version,
+                },
+            )
+            .await?;
+        return answer_authorized(&changed.map(|agent| AgentBody::from(&agent)));
+    }
     let changed = match (body.name, body.action, body.limits) {
         (Some(name), None, None) => {
             api.rename_agent(

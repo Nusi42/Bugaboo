@@ -22,10 +22,11 @@ use utoipa::PartialSchema;
 use super::inputs::{
     AddCommentInput, AskForAgentsInput, AskInput, AttachInput, ChangeStatusInput,
     ChangesSinceInput, CollectAgentKeysInput, CreateIssueInput, GetIssueInput, GetMyWorkInput,
-    GiveUpInput, ListProjectsInput, LogTimeInput, ProposeInput, ReportInput, SearchIssuesInput,
-    StartTimerInput, StopTimerInput, SubmitInput, TakeInput, UpdateIssueInput, WaitForWorkInput,
+    GiveUpInput, HandOverInput, ListProjectsInput, LogTimeInput, ProposeInput, ReportInput,
+    SearchIssuesInput, StartTimerInput, StopTimerInput, SubmitInput, TakeInput, UndoMyRunInput,
+    UpdateIssueInput, WaitForWorkInput,
 };
-use super::{agents, apply, preview, programs, read};
+use super::{agents, apply, handing, preview, programs, read};
 use crate::access::Actor;
 use crate::ai::Withheld;
 use crate::ai::context::Part;
@@ -327,7 +328,7 @@ fn tools_of_people<S: AuthStore>() -> [ToolSpec<S>; 11] {
 
 /// The tools of agents (AI-36): the work they were handed, what changed, and the proposals of a
 /// standing rule.
-fn tools_of_agents<S: AuthStore>() -> [ToolSpec<S>; 9] {
+fn tools_of_agents<S: AuthStore>() -> [ToolSpec<S>; 11] {
     [
         changes(
             Tool::Take,
@@ -389,6 +390,22 @@ fn tools_of_agents<S: AuthStore>() -> [ToolSpec<S>; 9] {
             "wait_for_work",
             schema_of::<WaitForWorkInput>,
             agents::wait::<S>,
+            Need::Nothing,
+        ),
+        changes(
+            Tool::HandOver,
+            "hand_over",
+            schema_of::<HandOverInput>,
+            handing::preview_hand_over::<S>,
+            handing::apply_hand_over::<S>,
+            Need::Nothing,
+        ),
+        changes(
+            Tool::UndoMyRun,
+            "undo_run",
+            schema_of::<UndoMyRunInput>,
+            handing::preview_undo_my_run::<S>,
+            handing::apply_undo_my_run::<S>,
             Need::Nothing,
         ),
         changes(

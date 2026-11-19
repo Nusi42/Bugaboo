@@ -258,7 +258,7 @@ const KNOWN_REFUSALS: [&str; 3] = [
 ];
 
 /// What a reply is, for the comparison.
-fn seen(reply: &Reply) -> Expect {
+pub(super) fn seen(reply: &Reply) -> Expect {
     match reply.code() {
         "auth.not-signed-in" => Expect::NotSignedIn,
         "access.forbidden" => Expect::Forbidden,

@@ -6,18 +6,21 @@ These are the limits of agents and of the assistant, as Bugaboo works by them. A
 
 ## Agents
 
-| What                                                     | Number                                                                                                                                               |
-| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A person has at most                                     | 50 agents                                                                                                                                            |
-| An agent has at most                                     | 20 keys                                                                                                                                              |
-| *Create several agents* makes at most                    | 20 agents                                                                                                                                            |
-| A new agent is held to at most                           | 60 changes a minute                                                                                                                                  |
-| A new agent works on at most                             | 5 issues at once                                                                                                                                     |
-| A new agent may try one issue at most                    | 5 times                                                                                                                                              |
-| One hand-over names at most                              | 100 issues                                                                                                                                           |
-| A hand-over ends after                                   | 14 days unless you choose another end, at most 90 days                                                                                               |
-| A standing rule ends after                               | 30 days unless you choose another end, at most 90 days (no end where your administrators allow rules that never run out); you are told 3 days before |
-| A change to many issues, also by an agent, names at most | 1000 issues                                                                                                                                          |
+| What                                                      | Number                                                                                                                                               |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A person has at most                                      | 50 agents                                                                                                                                            |
+| An agent has at most                                      | 20 keys                                                                                                                                              |
+| *Create several agents* makes at most                     | 20 agents                                                                                                                                            |
+| A new agent is held to at most                            | 60 changes a minute                                                                                                                                  |
+| A new agent works on at most                              | 5 issues at once                                                                                                                                     |
+| A new agent may try one issue at most                     | 5 times                                                                                                                                              |
+| One hand-over names at most                               | 100 issues                                                                                                                                           |
+| A hand-over ends after                                    | 14 days unless you choose another end, at most 90 days                                                                                               |
+| A standing rule ends after                                | 30 days unless you choose another end, at most 90 days (no end where your administrators allow rules that never run out); you are told 3 days before |
+| A change to many issues, also by an agent, names at most  | 1000 issues                                                                                                                                          |
+| An agent waits for work, unless it asks for another time, | 60 seconds; keep this behind a proxy that closes quiet connections                                                                                   |
+| An agent waits for work at most                           | 300 seconds; when a wait ends with nothing new, it calls again                                                                                       |
+| Agents hand an issue on to each other at most             | 3 times                                                                                                                                              |
 
 ## AI apps and agents over MCP
 

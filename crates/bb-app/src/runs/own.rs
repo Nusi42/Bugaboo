@@ -32,6 +32,31 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 }
 
+impl<S: AuthStore> Ctx<'_, S> {
+    /// Refuses an actor who may not undo runs: a key that may only look, and an agent whose person
+    /// has not switched on *May undo its own runs* (ADR-0029, amendment M9). Which runs it may
+    /// undo is [`Self::own_run`]'s.
+    ///
+    /// # Errors
+    /// `access.forbidden`.
+    pub(crate) async fn ensure_may_undo(&self, actor: &Actor) -> Result<(), AppError> {
+        let Some(agent) = actor.agent() else {
+            return actor.may_change_own();
+        };
+        let allowed = self
+            .store()
+            .agent(agent)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .is_some_and(|found| found.may_undo);
+        if allowed && actor.key_may_change() {
+            Ok(())
+        } else {
+            Err(ErrorCode::Forbidden.into())
+        }
+    }
+}
+
 /// The issue a record is, when it is one.
 pub(crate) fn issue_of(entity: &EntityRef) -> Option<IssueId> {
     (entity.kind.as_str() == RecordKind::Issue.code())

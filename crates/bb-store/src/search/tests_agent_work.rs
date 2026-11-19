@@ -95,6 +95,8 @@ pub(super) async fn hand_over(
         budget_cost: None,
         plan_needs_approval: false,
         accept_by_itself: false,
+        by_agent: None,
+        depth: 0,
         state: GivingState::Open,
         ends_at: at(ENDS),
         made_at: at(0),

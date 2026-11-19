@@ -505,6 +505,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("agents.limits-title", "Limits of {agent}"),
     ("agents.list", "Agents"),
+    ("agents.may-hand-over", "May hand over to my other agents"),
+    ("agents.may-undo", "May undo its own runs"),
     ("agents.name", "Name"),
     (
         "agents.none",
@@ -751,6 +753,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The agent stops now, its keys stop working and the work it was given ends. A stopped agent does not work again.",
     ),
     ("agents.stop-title", "Stop {agent}?"),
+    ("agents.switches", "What it may do"),
+    (
+        "agents.switches-intro",
+        "Besides the work you give it. Both are off when you create an agent, and only you change them.",
+    ),
     ("agents.title", "My agents"),
     ("agents.waiting-button-name", "{action}, {issue}"),
     ("agents.waiting-none", "Nothing waits for you."),
@@ -986,6 +993,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "ai-tool.give-up",
         "Give up on the issue and say why. A person decides what happens next.",
     ),
+    (
+        "ai-tool.hand-over-work",
+        "Hand issues of your own work over to another agent of your person, by its name, if your person allows it. You cannot give more than you may do yourself.",
+    ),
     ("ai-tool.list-projects", "List the projects you may see."),
     ("ai-tool.log-time", "Book your own time on an issue."),
     (
@@ -1009,6 +1020,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "ai-tool.take",
         "Take an issue that was handed over to you and start an attempt. Two agents never start the same work.",
+    ),
+    (
+        "ai-tool.undo-my-run",
+        "Undo what one of your own attempts changed on an issue, if your person allows it. What somebody changed since stays and is named.",
     ),
     ("ai-tool.update-issue", "Change fields of an issue."),
     (
@@ -1974,6 +1989,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "error.agent-work.budget-reached",
         "The agent used all the attempts it was given on this issue.",
+    ),
+    (
+        "error.agent-work.hand-over-too-deep",
+        "This issue was handed on between agents as often as it may be. A person can hand it over.",
     ),
     (
         "error.agent-work.not-ready",

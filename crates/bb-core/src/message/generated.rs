@@ -606,6 +606,12 @@ pub const AGENTS_LIMITS_TEXT: MessageKey = MessageKey::new("agents.limits-text")
 /// The message `agents.list`.
 pub const AGENTS_LIST: MessageKey = MessageKey::new("agents.list");
 
+/// The message `agents.may-hand-over`.
+pub const AGENTS_MAY_HAND_OVER: MessageKey = MessageKey::new("agents.may-hand-over");
+
+/// The message `agents.may-undo`.
+pub const AGENTS_MAY_UNDO: MessageKey = MessageKey::new("agents.may-undo");
+
 /// The message `agents.name`.
 pub const AGENTS_NAME: MessageKey = MessageKey::new("agents.name");
 
@@ -839,6 +845,12 @@ pub const AGENTS_STOP_OTHERS_TEXT: MessageKey = MessageKey::new("agents.stop-oth
 
 /// The message `agents.stop-text`.
 pub const AGENTS_STOP_TEXT: MessageKey = MessageKey::new("agents.stop-text");
+
+/// The message `agents.switches`.
+pub const AGENTS_SWITCHES: MessageKey = MessageKey::new("agents.switches");
+
+/// The message `agents.switches-intro`.
+pub const AGENTS_SWITCHES_INTRO: MessageKey = MessageKey::new("agents.switches-intro");
 
 /// The message `agents.title`.
 pub const AGENTS_TITLE: MessageKey = MessageKey::new("agents.title");
@@ -1111,6 +1123,9 @@ pub const AI_TOOL_GET_MY_WORK: MessageKey = MessageKey::new("ai-tool.get-my-work
 /// The message `ai-tool.give-up`.
 pub const AI_TOOL_GIVE_UP: MessageKey = MessageKey::new("ai-tool.give-up");
 
+/// The message `ai-tool.hand-over-work`.
+pub const AI_TOOL_HAND_OVER_WORK: MessageKey = MessageKey::new("ai-tool.hand-over-work");
+
 /// The message `ai-tool.list-projects`.
 pub const AI_TOOL_LIST_PROJECTS: MessageKey = MessageKey::new("ai-tool.list-projects");
 
@@ -1137,6 +1152,9 @@ pub const AI_TOOL_SUBMIT: MessageKey = MessageKey::new("ai-tool.submit");
 
 /// The message `ai-tool.take`.
 pub const AI_TOOL_TAKE: MessageKey = MessageKey::new("ai-tool.take");
+
+/// The message `ai-tool.undo-my-run`.
+pub const AI_TOOL_UNDO_MY_RUN: MessageKey = MessageKey::new("ai-tool.undo-my-run");
 
 /// The message `ai-tool.update-issue`.
 pub const AI_TOOL_UPDATE_ISSUE: MessageKey = MessageKey::new("ai-tool.update-issue");
@@ -2093,6 +2111,10 @@ pub const ERROR_AGENT_WORK_ALREADY_OPEN: MessageKey =
 /// The message `error.agent-work.budget-reached`.
 pub const ERROR_AGENT_WORK_BUDGET_REACHED: MessageKey =
     MessageKey::new("error.agent-work.budget-reached");
+
+/// The message `error.agent-work.hand-over-too-deep`.
+pub const ERROR_AGENT_WORK_HAND_OVER_TOO_DEEP: MessageKey =
+    MessageKey::new("error.agent-work.hand-over-too-deep");
 
 /// The message `error.agent-work.not-ready`.
 pub const ERROR_AGENT_WORK_NOT_READY: MessageKey = MessageKey::new("error.agent-work.not-ready");

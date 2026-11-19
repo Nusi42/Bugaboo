@@ -2,7 +2,7 @@
 //! the change, and who may create agents. Creating one agent and creating several run it.
 
 use bb_core::ErrorCode;
-use bb_core::agent::{Agent, AgentLimits, AgentState, MOST_AGENTS};
+use bb_core::agent::{Agent, AgentLimits, AgentState, AgentSwitches, MOST_AGENTS};
 use bb_core::event::RecordKind;
 use bb_core::id::{AgentId, UserId};
 use bb_policy::Permission;
@@ -30,6 +30,9 @@ pub(super) fn new_agent<S: AuthStore>(
         changes_a_minute: limits.changes_a_minute,
         issues_at_once: limits.issues_at_once,
         attempts_on_one_issue: limits.attempts_on_one_issue,
+        // Off when it is made: only its person switches them on (ADR-0047, decision 6).
+        may_hand_over: AgentSwitches::default().may_hand_over,
+        may_undo: AgentSwitches::default().may_undo,
         offered_to: None,
         made_by: person,
         made_at: ctx.now(),

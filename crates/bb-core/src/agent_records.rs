@@ -96,6 +96,14 @@ pub struct HandOver {
     /// Whether an attempt may be accepted by itself (when the project allows it too).
     #[not_personal]
     pub accept_by_itself: bool,
+    /// The agent that made the hand-over, when an agent did (ADR-0029, amendment M9); none for a
+    /// person or a standing rule.
+    #[not_personal]
+    pub by_agent: Option<AgentId>,
+    /// Its place in a chain of hand-overs: 0 for a person's or a rule's, one more than the agent's
+    /// own hand-over of the issue for an agent's (at most `MOST_HAND_OVER_DEPTH`).
+    #[not_personal]
+    pub depth: i64,
     /// Whether it still gives work.
     #[not_personal]
     pub state: GivingState,

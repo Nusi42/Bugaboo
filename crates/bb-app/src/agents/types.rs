@@ -1,7 +1,7 @@
 //! What the use cases of agents take and give back. Inputs that change something are named after
 //! what they do; inputs that only read end in `Query` (ARCH-EVENTS).
 
-use bb_core::agent::{AgentLimits, AgentState, LimitKind};
+use bb_core::agent::{AgentLimits, AgentState, AgentSwitches, LimitKind};
 use bb_core::agent_request::{AgentRequest, AskedAgent, RequestStands};
 use bb_core::id::{AgentId, AgentRequestId, UserId};
 use bb_policy::{Masked, PersonRef};
@@ -48,6 +48,18 @@ pub struct SetAgentLimits {
     pub id: AgentId,
     /// The new limits; at least one each, and at most what the organization allows.
     pub limits: AgentLimits,
+    /// The version the person saw.
+    pub version: i64,
+}
+
+/// Switch what a person lets their agent do beyond its work on or off.
+pub struct SetAgentSwitches {
+    /// The secret of the session of the request.
+    pub session_token: String,
+    /// The agent.
+    pub id: AgentId,
+    /// The switches as they shall be.
+    pub switches: AgentSwitches,
     /// The version the person saw.
     pub version: i64,
 }
@@ -174,6 +186,8 @@ pub struct AgentView {
     pub person: PersonRef,
     /// What it may do at most.
     pub limits: AgentLimits,
+    /// What its person lets it do beyond its work.
+    pub switches: AgentSwitches,
     /// The most any agent can be given, when the view is of one agent; none in a list.
     pub maximums: Option<AgentLimits>,
     /// Whether the viewer is the person responsible for it (an administrator who is not may read it

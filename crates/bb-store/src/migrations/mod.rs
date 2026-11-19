@@ -95,6 +95,7 @@ mod m0058_e_mail_changes;
 mod m0059_ai_switches_kept;
 mod m0060_standing_by_optional;
 mod m0061_agent_requests;
+mod m0062_agent_switches;
 
 pub(crate) use m0057_person_standing::VERSION as REPLAY_WAITING_FROM;
 #[cfg(test)]

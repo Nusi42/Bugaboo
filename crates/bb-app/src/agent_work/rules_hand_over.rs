@@ -70,8 +70,11 @@ impl<S: AuthStore> Ctx<'_, S> {
                 budget_minutes: None,
                 budget_cost: None,
                 plan_needs_approval: false,
+                by_agent: None,
+                depth: 0,
                 accept_by_itself: rule.accept_by_itself,
                 days: None,
+                ends_by: None,
             };
             let by = ByRule {
                 rule: rule.id,

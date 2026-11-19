@@ -7,7 +7,7 @@ use std::task::{Context, Poll};
 use std::time::{Duration, Instant};
 
 use bb_core::ErrorCode;
-use bb_core::agent_work::ReviewAnswer;
+use bb_core::agent_work::{ReviewAnswer, WAIT_SECONDS_MOST};
 use serde_json::json;
 
 use super::agent_tools::used;
@@ -165,13 +165,21 @@ async fn ai_36_wait_for_work_answers_after_its_seconds_with_what_changes_since_a
 }
 
 #[tokio::test]
-async fn ai_36_wait_for_work_takes_one_to_sixty_seconds() -> Outcome {
+async fn ai_36_wait_for_work_takes_one_second_to_five_minutes() -> Outcome {
     let world = World::with_ai_apps_and_agents().await?.waiting(CONNECTIONS);
     let given = ground(&world).await?;
-    for seconds in [0, 61] {
+    for seconds in [0, WAIT_SECONDS_MOST + 1] {
         let refusal = waited(&world, &given.key, seconds).await;
         assert!(refused(&refusal.unwrap_err(), ErrorCode::InvalidRequest));
     }
+    // The most is allowed: with work waiting it answers at once.
+    hand_over(
+        &world.ctx(),
+        plain_hand_over(&given.team.session_token, given.agent, &[given.issue]),
+    )
+    .await?;
+    let most = waited(&world, &given.key, WAIT_SECONDS_MOST).await?;
+    assert!(most.text.contains("work_waiting: true"), "{}", most.text);
     // A person is not offered it.
     let person = used(
         &world,

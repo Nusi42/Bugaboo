@@ -11,11 +11,12 @@ mod request_store;
 mod several;
 mod store;
 mod types;
+mod values;
 
 pub(crate) use limits::{AgentRate, input_changes_something};
 pub use manage::{
     accept_agent, agent, change_agent, create_agent, hand_agent, my_agents, organization_agents,
-    rename_agent, set_agent_limits, stop_all_agents, take_back_offer,
+    rename_agent, stop_all_agents, take_back_offer,
 };
 pub(crate) use manage::{agents_stopped, stop_agents_in};
 pub(crate) use names::AgentNames;
@@ -31,5 +32,6 @@ pub use types::{
     AgentRequestView, AgentRequestsQuery, AgentView, AgentsQuery, ApproveAgentRequests,
     AskForAgents, ChangeAgent, CollectAgentKeys, CollectedKey, CollectedKeys, CreateAgent,
     CreateSeveralAgents, CreatedAgent, CreatedAgents, DeclineAgentRequest, HandAgent, RenameAgent,
-    SetAgentLimits, SeveralAgent, StopAllAgents, TakeBackOffer,
+    SetAgentLimits, SetAgentSwitches, SeveralAgent, StopAllAgents, TakeBackOffer,
 };
+pub use values::{set_agent_limits, set_agent_switches};

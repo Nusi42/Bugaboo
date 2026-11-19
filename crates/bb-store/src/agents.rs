@@ -3,7 +3,7 @@
 
 use bb_app::agents::{AgentPosition, AgentStore};
 use bb_app::auth::AccessKeyRecord;
-use bb_core::agent::{Agent, AgentLimits, AgentState, LimitKind};
+use bb_core::agent::{Agent, AgentLimits, AgentState, AgentSwitches, LimitKind};
 use bb_core::id::{AccessKeyId, AgentId, UserId};
 use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, Func, Order, Query, SelectStatement};
@@ -27,6 +27,8 @@ fn agent_select() -> SelectStatement {
             AgentRow::ChangesAMinute,
             AgentRow::IssuesAtOnce,
             AgentRow::AttemptsOnOneIssue,
+            AgentRow::MayHandOver,
+            AgentRow::MayUndo,
             AgentRow::OfferedTo,
             AgentRow::MadeBy,
             AgentRow::MadeAt,
@@ -52,6 +54,8 @@ fn read_agent(row: &Row) -> Result<Agent, StoreError> {
         changes_a_minute: row.get(AgentRow::ChangesAMinute)?,
         issues_at_once: row.get(AgentRow::IssuesAtOnce)?,
         attempts_on_one_issue: row.get(AgentRow::AttemptsOnOneIssue)?,
+        may_hand_over: row.get(AgentRow::MayHandOver)?,
+        may_undo: row.get(AgentRow::MayUndo)?,
         offered_to: row.optional_id::<UserId>(AgentRow::OfferedTo)?,
         made_by: row.id::<UserId>(AgentRow::MadeBy)?,
         made_at: row.time(AgentRow::MadeAt)?,
@@ -307,6 +311,8 @@ impl AgentStore for AuthStorage {
                 AgentRow::ChangesAMinute,
                 AgentRow::IssuesAtOnce,
                 AgentRow::AttemptsOnOneIssue,
+                AgentRow::MayHandOver,
+                AgentRow::MayUndo,
                 AgentRow::OfferedTo,
                 AgentRow::MadeBy,
                 AgentRow::MadeAt,
@@ -320,6 +326,8 @@ impl AgentStore for AuthStorage {
                 Expr::val(agent.changes_a_minute),
                 Expr::val(agent.issues_at_once),
                 Expr::val(agent.attempts_on_one_issue),
+                Expr::val(agent.may_hand_over),
+                Expr::val(agent.may_undo),
                 Expr::val(agent.offered_to.map(StoredId::stored)),
                 Expr::val(agent.made_by.stored()),
                 Expr::val(to_micros(agent.made_at)),
@@ -382,6 +390,20 @@ impl AgentStore for AuthStorage {
         .await
     }
 
+    async fn set_agent_switches(
+        transaction: &mut Transaction,
+        id: AgentId,
+        switches: AgentSwitches,
+        version: i64,
+    ) -> Result<bool, StoreError> {
+        update_at(transaction, id, version, |update| {
+            update
+                .value(AgentRow::MayHandOver, switches.may_hand_over)
+                .value(AgentRow::MayUndo, switches.may_undo);
+        })
+        .await
+    }
+
     async fn offer_agent(
         transaction: &mut Transaction,
         id: AgentId,
@@ -400,10 +422,14 @@ impl AgentStore for AuthStorage {
         person: UserId,
         version: i64,
     ) -> Result<bool, StoreError> {
+        // The new person has not chosen what it may do beyond its work: both are as for a new agent.
+        let start = AgentSwitches::default();
         update_at(transaction, id, version, |update| {
             update
                 .value(AgentRow::Person, person.stored())
-                .value(AgentRow::OfferedTo, None::<Vec<u8>>);
+                .value(AgentRow::OfferedTo, None::<Vec<u8>>)
+                .value(AgentRow::MayHandOver, start.may_hand_over)
+                .value(AgentRow::MayUndo, start.may_undo);
         })
         .await
     }
@@ -483,3 +509,7 @@ impl AgentStore for AuthStorage {
         Ok(ids.into_iter().map(|(id, _)| id).collect())
     }
 }
+
+#[cfg(test)]
+#[path = "tests/agents.rs"]
+mod tests;

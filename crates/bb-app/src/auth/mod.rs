@@ -64,10 +64,11 @@ use crate::agents::{
     AcceptAgent, AgentPage, AgentQuery, AgentRequestPage, AgentRequestView, AgentRequestsQuery,
     AgentView, AgentsQuery, ApproveAgentRequests, AskForAgents, ChangeAgent, CollectAgentKeys,
     CollectedKeys, CreateAgent, CreateSeveralAgents, CreatedAgents, DeclineAgentRequest, HandAgent,
-    RenameAgent, SetAgentLimits, StopAllAgents, TakeBackOffer, accept_agent, agent, agent_requests,
-    approve_agent_requests, ask_for_agents, change_agent, collect_agent_keys, create_agent,
-    create_several_agents, decline_agent_request, hand_agent, my_agents, organization_agents,
-    rename_agent, set_agent_limits, stop_all_agents, take_back_offer,
+    RenameAgent, SetAgentLimits, SetAgentSwitches, StopAllAgents, TakeBackOffer, accept_agent,
+    agent, agent_requests, approve_agent_requests, ask_for_agents, change_agent,
+    collect_agent_keys, create_agent, create_several_agents, decline_agent_request, hand_agent,
+    my_agents, organization_agents, rename_agent, set_agent_limits, set_agent_switches,
+    stop_all_agents, take_back_offer,
 };
 use crate::ai::assistant::{
     Applied, ApplyProposal, AskAssistantQuery, AssistantAnswer, AssistantStatus,

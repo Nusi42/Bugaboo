@@ -137,8 +137,13 @@ impl Record {
 }
 
 /// The lines of the record that other tests than the route matrix write and compare: the lines of
-/// the tools, of the assistant and of the exports.
-const OTHER_TESTS: [&str; 3] = [words::TOOL_LINE, words::ASK_LINE, words::EXPORT_LINE];
+/// the tools, of the assistant, of the exports and of the members with a rule of their own.
+const OTHER_TESTS: [&str; 4] = [
+    words::TOOL_LINE,
+    words::ASK_LINE,
+    words::EXPORT_LINE,
+    words::MEMBER_LINE,
+];
 
 /// Whether a line of the record is written by another test than the route matrix.
 fn is_of_another_test(line: &str) -> bool {
@@ -224,7 +229,7 @@ pub(super) fn refusal_word(text: &str) -> Option<&'static str> {
 }
 
 /// How an answer is written in the record.
-const fn word(expected: Expect) -> &'static str {
+pub(super) const fn word(expected: Expect) -> &'static str {
     match expected {
         Expect::Allowed => words::ALLOWED,
         Expect::NotSignedIn => words::NOT_SIGNED_IN,

@@ -2,7 +2,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use bb_core::agent::{Agent, AgentLimits, AgentState};
+use bb_core::agent::{Agent, AgentLimits, AgentState, AgentSwitches};
 use bb_core::agent_work::Allowance;
 use bb_core::id::{AccessKeyId, AgentId, IssueId, ProjectId, UserId};
 
@@ -304,6 +304,18 @@ impl AgentStore for FakeStore {
         }))
     }
 
+    async fn set_agent_switches(
+        tx: &mut Tx,
+        id: AgentId,
+        switches: AgentSwitches,
+        version: i64,
+    ) -> Result<bool, FakeError> {
+        Ok(change(tx, id, version, |agent| {
+            agent.may_hand_over = switches.may_hand_over;
+            agent.may_undo = switches.may_undo;
+        }))
+    }
+
     async fn offer_agent(
         tx: &mut Tx,
         id: AgentId,
@@ -322,6 +334,9 @@ impl AgentStore for FakeStore {
         Ok(change(tx, id, version, |agent| {
             agent.person = person;
             agent.offered_to = None;
+            let start = AgentSwitches::default();
+            agent.may_hand_over = start.may_hand_over;
+            agent.may_undo = start.may_undo;
         }))
     }
 

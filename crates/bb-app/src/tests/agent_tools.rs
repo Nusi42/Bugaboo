@@ -306,8 +306,9 @@ async fn ai_36_every_tool_that_changes_answers_a_preview_and_saves_nothing() -> 
         if spec.effect() != ToolEffect::Changes || !spec.tool.is_for_agents() {
             continue;
         }
-        // `propose` works on a standing rule and is asked about in its own test.
-        if spec.tool == Tool::Propose {
+        // `propose` works on a standing rule, `hand_over` needs a second agent and `undo_my_run` a
+        // switch: each is asked about in its own tests (`agents_switches`, `agent_undo`).
+        if matches!(spec.tool, Tool::Propose | Tool::HandOver | Tool::UndoMyRun) {
             continue;
         }
         assert!(

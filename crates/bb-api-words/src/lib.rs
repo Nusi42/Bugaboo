@@ -148,6 +148,14 @@ pub mod sec_matrix {
     pub const ENTRY_POINTS: [&str; 2] = [ENTRY_API, ENTRY_MCP];
     /// A line of the record that starts like this is a tool; the others are routes and deliveries.
     pub const TOOL_LINE: &str = "tool ";
+    /// A line of the record that starts like this is a member of the body of a route that has a
+    /// rule of its own beside the other members (the switches of an agent): the route, the member,
+    /// and what every actor of that line was answered.
+    pub const MEMBER_LINE: &str = "member ";
+    /// The person an agent works for, changing it with their session.
+    pub const THE_AGENTS_PERSON: &str = "the-agents-person";
+    /// An access key of the person an agent works for, one that may see and change.
+    pub const KEY_OF_THE_AGENTS_PERSON: &str = "key-of-the-agents-person";
     /// The key of an agent that was handed an issue (nothing ticked) and has not taken it: it
     /// reaches only that issue, and writes there only after it took it.
     pub const AGENT_WITH_WORK: &str = "agent-with-work";

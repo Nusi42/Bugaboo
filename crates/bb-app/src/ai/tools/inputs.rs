@@ -272,9 +272,38 @@ pub struct WaitForWorkInput {
     /// The most changes to answer with.
     #[schema(schema_with = limit_schema)]
     pub limit: Option<Number>,
-    /// How many seconds to wait at most, from 1 to 60; 25 when left out.
-    #[schema(minimum = 1, maximum = 60)]
+    /// How many seconds to wait at most, from 1 to 300 (five minutes); 60 when left out. Keep the
+    /// default behind a proxy that closes quiet connections. When the wait ends with nothing new,
+    /// call again with the new mark.
+    #[schema(minimum = 1, maximum = 300)]
     pub seconds: Option<u64>,
+}
+
+/// Hand issues of your own work over to another agent of your person.
+#[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct HandOverInput {
+    /// The other agent, by its name or its ID.
+    pub agent: String,
+    /// The issues, by their readable IDs or internal IDs: only issues handed over to you.
+    pub issues: Vec<String>,
+    /// A note for the other agent; it joins its brief.
+    pub note: Option<String>,
+    /// What the other agent may do besides what it always may: `change-fields`, `change-status`,
+    /// `create-sub-issues`. Never more than your own hand-over of the issue lets you do.
+    pub powers: Option<Vec<String>>,
+    /// The fields it may change with `change-fields`. Never more than yours.
+    pub fields: Option<Vec<String>>,
+}
+
+/// Undo what one of your own attempts changed.
+#[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct UndoMyRunInput {
+    /// The issue of your work, by its readable ID or its internal ID.
+    pub issue: String,
+    /// The number of the attempt; your newest attempt on the issue when left out.
+    pub attempt: Option<i64>,
 }
 
 /// Propose a change under your standing rule.

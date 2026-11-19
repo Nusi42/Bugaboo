@@ -5924,6 +5924,10 @@ export interface components {
        * @description When it last signed in with a key; left out when it never did. Asked for by name.
        */
       last_used_at?: string | null;
+      /** @description Whether its person lets it hand issues of its own work over to the person's other agents. */
+      may_hand_over?: boolean | null;
+      /** @description Whether its person lets it undo the runs of its own attempts. */
+      may_undo?: boolean | null;
       /** @description Its name. */
       name?: string | null;
       /** @description Whether it is offered to another person who has not accepted yet. */
@@ -6003,6 +6007,13 @@ export interface components {
      * @enum {string}
      */
     AgentState: "active" | "paused" | "stopped";
+    /** @description What a person lets their agent do beyond its work (ADR-0029, amendment M9). Both start off. */
+    AgentSwitchesBody: {
+      /** @description *May hand over to my other agents*. */
+      may_hand_over: boolean;
+      /** @description *May undo its own runs*. */
+      may_undo: boolean;
+    };
     /**
      * @description The state of the agent work on an issue.
      * @enum {string}
@@ -6615,14 +6626,15 @@ export interface components {
       options: Record<string, unknown>;
     };
     /**
-     * @description What to do to an agent: give it another name, other limits, or pause, resume or stop it. Exactly
-     *     one of `name`, `limits` and `action`.
+     * @description What to do to an agent: give it another name, other limits or other switches, or pause, resume
+     *     or stop it. Exactly one of `name`, `limits`, `switches` and `action`.
      */
     ChangeAgentBody: {
       action?: components["schemas"]["AgentActionBody"] | null;
       limits?: components["schemas"]["AgentLimitsBody"] | null;
       /** @description The new name. */
       name?: string | null;
+      switches?: components["schemas"]["AgentSwitchesBody"] | null;
       /**
        * Format: int64
        * @description The version the person saw.
@@ -7701,6 +7713,7 @@ export interface components {
       | "agent-work.already-open"
       | "agent-work.not-ready"
       | "agent-work.budget-reached"
+      | "agent-work.hand-over-too-deep"
       | "agent.limit-reached"
       | "auth.not-signed-in"
       | "access.forbidden"

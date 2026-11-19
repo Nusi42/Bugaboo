@@ -371,13 +371,14 @@ pub async fn undo_run<S: AuthStore>(
     input: UndoRun,
 ) -> Result<Authorized<UndoView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    // A key that may only look undoes nothing, and an agent never undoes (it is not the person).
-    actor.may_change_own()?;
+    // A key that may only look undoes nothing, and an agent only its own runs when its person
+    // allows it; the undo is then recorded as the agent's.
+    ctx.ensure_may_undo(&actor).await?;
     let held = ctx.evaluation_of(&actor, Place::Organization).await?;
     let by = RunActor {
         person: actor.person.id,
         app: None,
-        agent: None,
+        agent: actor.agent(),
     };
     let runs = RunsOf::new(ctx, &actor, &input.session_token);
     let outcome = runs

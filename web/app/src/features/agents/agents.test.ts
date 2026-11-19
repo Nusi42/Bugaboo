@@ -19,6 +19,8 @@ function testAgent(name: string, state: ListedAgent["state"], id = name): Listed
     changesAMinute: 60,
     issuesAtOnce: 5,
     attemptsOnOneIssue: 3,
+    mayHandOver: false,
+    mayUndo: false,
   };
 }
 

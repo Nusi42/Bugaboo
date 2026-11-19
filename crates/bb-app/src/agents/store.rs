@@ -6,7 +6,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::future::Future;
 
-use bb_core::agent::{Agent, AgentLimits, AgentState, LimitKind};
+use bb_core::agent::{Agent, AgentLimits, AgentState, AgentSwitches, LimitKind};
 use bb_core::agent_work::Allowance;
 use bb_core::id::{AgentId, IssueId, ProjectId, UserId};
 use jiff::Timestamp;
@@ -94,12 +94,15 @@ pub trait AgentStore: ChangeStore + AgentWorkStore + 'static {
         fn set_agent_state(id: AgentId, state: AgentState, paused_for: Option<LimitKind>, version: i64) -> bool;
         /// Writes the limits, counts the version up and says whether the agent was at `version`.
         fn set_agent_limits(id: AgentId, limits: AgentLimits, version: i64) -> bool;
+        /// Writes the switches, counts the version up and says whether the agent was at `version`.
+        fn set_agent_switches(id: AgentId, switches: AgentSwitches, version: i64) -> bool;
         /// Ends the offer of the agent without counting its version up: it runs inside the change that
         /// stops the agent, which counts the version once (a stopped agent is offered to nobody).
         fn end_offer_of(id: AgentId) -> ();
         /// Offers the agent to a person (`Some`) or takes the offer back (`None`).
         fn offer_agent(id: AgentId, to: Option<UserId>, version: i64) -> bool;
-        /// Hands the agent to the person who accepted it, counting the version up.
+        /// Hands the agent to the person who accepted it, counting the version up; its switches go
+        /// off, as the new person has not chosen them.
         fn hand_agent_to(id: AgentId, person: UserId, version: i64) -> bool;
         /// Stops every active or paused agent of a person; the IDs of those that were stopped.
         fn stop_agents_of(person: UserId) -> Vec<AgentId>;

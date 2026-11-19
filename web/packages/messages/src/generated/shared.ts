@@ -866,6 +866,8 @@ export const messages = {
   "error.agent-work.already-open": "This agent already has this issue handed over.",
   "error.agent-work.not-ready": "The work is not waiting for that.",
   "error.agent-work.budget-reached": "The agent used all the attempts it was given on this issue.",
+  "error.agent-work.hand-over-too-deep":
+    "This issue was handed on between agents as often as it may be. A person can hand it over.",
   "error.agent.limit-reached":
     "The agent reached one of its limits and is paused. Its person can let it work again.",
   "error.ai.off": "AI is off here.",

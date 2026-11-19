@@ -558,6 +558,8 @@ macro_rules! each_use_case {
             rename_agent(RenameAgent) -> Authorized<AgentView>;
             /// Gives an agent other limits.
             set_agent_limits(SetAgentLimits) -> Authorized<AgentView>;
+            /// Switches what an agent may do beyond its work on or off.
+            set_agent_switches(SetAgentSwitches) -> Authorized<AgentView>;
             /// Pauses, resumes or stops an agent.
             change_agent(ChangeAgent) -> Authorized<AgentView>;
             /// Stops every agent of the person.

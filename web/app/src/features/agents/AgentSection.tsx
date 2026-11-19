@@ -14,8 +14,9 @@ export interface AgentSectionProps {
 }
 
 /**
- * One agent on *My agents* (UX §4.17): its name and state pill (and the limit that paused it), what
- * it works on with the state of each piece of work, and *Pause* or *Resume* and *Stop*.
+ * One agent on *My agents* (UX §4.17): its name and state pill (and the limit that paused it), the
+ * switches its person turned on, what it works on with the state of each piece of work, and *Pause*
+ * or *Resume* and *Stop*.
  */
 export function AgentSection({ agent, work }: AgentSectionProps) {
   const open = work.filter((item) => item.work.open);
@@ -30,6 +31,9 @@ export function AgentSection({ agent, work }: AgentSectionProps) {
         </span>
         <StateButtons agent={agent} />
       </div>
+      {/* What its person lets it do beyond its work, when anything: both start off. */}
+      {agent.mayHandOver ? <p {...partOf(part.muted)}>{t("agents.may-hand-over")}</p> : null}
+      {agent.mayUndo ? <p {...partOf(part.muted)}>{t("agents.may-undo")}</p> : null}
       {open.length > 0 ? <WorkLines work={open} /> : null}
       {/* A stopped agent says nothing more than its state: the card is quiet. */}
       {open.length === 0 && mayAct(agent) ? (

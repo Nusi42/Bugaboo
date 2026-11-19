@@ -42,11 +42,16 @@ pub const MOST_RULE_DAYS: i64 = most_days(AGENTS_RULE_DAYS.definition());
 pub const RULE_WARNING_DAYS: i64 = 3;
 /// The most issues one hand-over names.
 pub const MOST_ISSUES_OF_A_HAND_OVER: usize = 100;
-/// How long *Wait for work* waits when the agent does not say: below the 30 seconds after which many
-/// proxies and clients give up on a quiet connection (ADR-0029, amendment M9).
-pub const WAIT_SECONDS_DEFAULT: u64 = 25;
-/// The longest *Wait for work* waits for one call.
-pub const WAIT_SECONDS_MOST: u64 = 60;
+/// How long *Wait for work* waits when the agent does not say: a minute, below the time after which
+/// common proxies (about 100 seconds) and many clients give up on a quiet connection (ADR-0029,
+/// amendment M9).
+pub const WAIT_SECONDS_DEFAULT: u64 = 60;
+/// The longest *Wait for work* waits for one call: five minutes, for a setup without a proxy.
+pub const WAIT_SECONDS_MOST: u64 = 300;
+/// How deep a chain of hand-overs goes: a person's hand-over is at depth 0, a hand-over by an agent
+/// one deeper than the agent's own hand-over of that issue (ADR-0029, amendment M9). Three steps
+/// cover plan, build and check; with one open hand-over of an issue per agent no loop gets past it.
+pub const MOST_HAND_OVER_DEPTH: i64 = 3;
 
 words! {
     /// The state of the agent work on an issue. It is not the issue's status.

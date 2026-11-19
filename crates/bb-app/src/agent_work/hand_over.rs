@@ -6,12 +6,14 @@ use bb_core::ErrorCode;
 use bb_core::access::FieldLevel;
 use bb_core::agent_records::{GivingState, HandOver as HandOverRecord, IssueWork, RuleMatch};
 use bb_core::agent_work::{
-    AgentWorkState, BriefPart, MOST_ISSUES_OF_A_HAND_OVER, hand_over_end, issue_member,
-    missing_in_brief,
+    AgentWorkState, BriefPart, MOST_HAND_OVER_DEPTH, MOST_ISSUES_OF_A_HAND_OVER, hand_over_end,
+    issue_member, missing_in_brief,
 };
 use bb_core::event::{DomainEvent, EntityKind, RecordKind};
 use bb_core::fields::FieldKey;
-use bb_core::id::{AgentWorkId, EntityId, HandOverId, IssueId, ProjectId, StandingRuleId, UserId};
+use bb_core::id::{
+    AgentId, AgentWorkId, EntityId, HandOverId, IssueId, ProjectId, StandingRuleId, UserId,
+};
 use bb_core::issue::Issue;
 use bb_core::own_fields::FieldFor;
 use bb_policy::{Authorized, Permission, Place};
@@ -264,6 +266,13 @@ pub(super) struct Giving {
     pub(super) plan_needs_approval: bool,
     pub(super) accept_by_itself: bool,
     pub(super) days: Option<i64>,
+    /// The latest end the hand-over may have: the end of the agent's own hand-over when an agent
+    /// hands over (ADR-0029, amendment M9); none for a person and a standing rule.
+    pub(super) ends_by: Option<jiff::Timestamp>,
+    /// The agent that hands over, and the place of the hand-over in a chain (ADR-0029, amendment
+    /// M9): none and 0 for a person and a standing rule.
+    pub(super) by_agent: Option<AgentId>,
+    pub(super) depth: i64,
 }
 
 /// A hand-over that a standing rule makes: the rule, and the most open pieces of work its agent
@@ -408,8 +417,11 @@ impl<S: AuthStore> Ctx<'_, S> {
             Some(days) => days,
             None => self.hand_over_days().await?,
         };
-        let ends_at = hand_over_end(now, Some(days))
+        let asked_end = hand_over_end(now, Some(days))
             .map_err(|_| AppError::Refused(ErrorCode::InvalidRequest))?;
+        let ends_at = giving
+            .ends_by
+            .map_or(asked_end, |latest| asked_end.min(latest));
         let id = HandOverId::generate(&mut self.ids());
         let (works, handed) = self
             .works_to_hand_over(actor, agent, reach, id, issues, now)
@@ -426,6 +438,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             budget_cost: giving.budget_cost,
             plan_needs_approval: giving.plan_needs_approval,
             accept_by_itself: giving.accept_by_itself,
+            by_agent: giving.by_agent,
+            depth: giving.depth,
             state: GivingState::Open,
             ends_at,
             made_at: now,
@@ -455,51 +469,215 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 }
 
-/// Hands one or several issues over to one of the person's agents. The person needs *Change
-/// issues* (or *Change the issues they reported*) on each issue and *Create agents that work for
-/// you* in its project; an agent has one open hand-over for an issue.
+impl<S: AuthStore> Ctx<'_, S> {
+    /// What an agent may hand over (ADR-0029, amendment M9): only when its person switched on *May
+    /// hand over to my other agents*, never to itself, only issues of its own open work that was
+    /// handed to it, and no more than its own hand-over of each issue lets it change. Answers the
+    /// depth of the new hand-over in its chain, at most [`MOST_HAND_OVER_DEPTH`], and the agent's
+    /// own hand-over of each issue, which [`within_own`] holds the new one to.
+    async fn agent_may_hand_over(
+        &self,
+        actor: &Actor,
+        me: AgentId,
+        to: AgentId,
+        input: &HandOver,
+    ) -> Result<(i64, Vec<HandOverRecord>), AppError> {
+        let failed = |error| internal::<S>(&error);
+        let mine = self
+            .store()
+            .agent(me)
+            .await
+            .map_err(failed)?
+            .ok_or(AppError::Refused(ErrorCode::Forbidden))?;
+        if !mine.may_hand_over {
+            return Err(ErrorCode::Forbidden.into());
+        }
+        if to == me {
+            return Err(ErrorCode::InvalidRequest.into());
+        }
+        let mut depth = 0;
+        let mut owns = Vec::with_capacity(input.issues.len());
+        for address in &input.issues {
+            let (issue, _) = self.visible_issue(actor, address).await?;
+            let own = match self
+                .store()
+                .open_work_of(me, issue.id)
+                .await
+                .map_err(failed)?
+            {
+                Some(work) => self
+                    .store()
+                    .hand_over(work.hand_over)
+                    .await
+                    .map_err(failed)?,
+                None => None,
+            }
+            .ok_or(AppError::Refused(ErrorCode::Forbidden))?;
+            let gives_more = input.powers.iter().any(|power| !own.powers.contains(power))
+                || input.fields.iter().any(|field| !own.fields.contains(field));
+            if gives_more {
+                return Err(ErrorCode::Forbidden.into());
+            }
+            depth = depth.max(own.depth + 1);
+            owns.push(own);
+        }
+        if depth > MOST_HAND_OVER_DEPTH {
+            return Err(ErrorCode::AgentHandOverTooDeep.into());
+        }
+        Ok((depth, owns))
+    }
+}
+
+/// Holds what an agent gives to what its own hand-over of the issue gives it (ADR-0029, amendment
+/// M9): a plan its person approves stays so, it accepts by itself only where it may, each budget is
+/// at most its own where its own has one, and the hand-over ends no later than its own. The
+/// attempts are at most its own also when it names none, and never more than the agent that gets
+/// the work may make.
+fn within_own(mut giving: Giving, own: &HandOverRecord, most_attempts: i64) -> Giving {
+    let smaller = |asked: Option<i64>, own: Option<i64>| match (asked, own) {
+        (Some(asked), Some(own)) => Some(asked.min(own)),
+        (asked, None) => asked,
+        (None, own) => own,
+    };
+    giving.plan_needs_approval |= own.plan_needs_approval;
+    giving.accept_by_itself &= own.accept_by_itself;
+    giving.budget_attempts = Some(
+        giving
+            .budget_attempts
+            .unwrap_or(most_attempts)
+            .min(own.budget_attempts),
+    );
+    giving.budget_minutes = smaller(giving.budget_minutes, own.budget_minutes);
+    giving.budget_cost = smaller(giving.budget_cost, own.budget_cost);
+    giving.ends_by = Some(
+        giving
+            .ends_by
+            .map_or(own.ends_at, |end| end.min(own.ends_at)),
+    );
+    giving
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// The actor of an agent's key; anybody else is refused: a person hands over in the window.
+    async fn handing_agent(&self, input: &HandOver) -> Result<Actor, AppError> {
+        let actor = self.actor(&input.session_token).await?;
+        if actor.agent().is_none() {
+            return Err(ErrorCode::Forbidden.into());
+        }
+        Ok(actor)
+    }
+
+    /// The preview of the tool `hand_over`: the hand-over by the agent behind the key, judged as
+    /// [`Self::agent_hand_over`] judges it, and nothing written.
+    ///
+    /// # Errors
+    /// What [`Self::agent_hand_over`] refuses.
+    pub(crate) async fn preview_hand_over(&self, input: &HandOver) -> Result<(), AppError> {
+        let actor = self.handing_agent(input).await?;
+        self.plan_asked_hand_over(actor, input).await.map(drop)
+    }
+
+    /// The hand-over by the agent behind the key (the tool `hand_over`, ADR-0029, amendment M9),
+    /// through the one path of every hand-over.
+    ///
+    /// # Errors
+    /// `access.forbidden` for a key that is not an agent's, and what [`hand_over`] refuses.
+    pub(crate) async fn agent_hand_over(
+        &self,
+        input: HandOver,
+    ) -> Result<Authorized<HandOverView>, AppError> {
+        let actor = self.handing_agent(&input).await?;
+        let (plan, person) = self.plan_asked_hand_over(actor, &input).await?;
+        let view = plan.record_change(self.store()).await?;
+        self.handed_over(view, person).await
+    }
+
+    /// What follows a hand-over that is written: the agent that gets the work is rung, so a call of
+    /// it that waits for work answers, and the answer is authorized for the person.
+    async fn handed_over(
+        &self,
+        view: HandOverView,
+        person: UserId,
+    ) -> Result<Authorized<HandOverView>, AppError> {
+        self.work_came_for(view.agent);
+        Ok(self
+            .evaluate(person, Place::Organization)
+            .await?
+            .authorize(view))
+    }
+
+    /// Judges the hand-over the input asks for, by a person or by an agent, and plans it: what a
+    /// hand-over writes and what the preview of the tool `hand_over` shows. Nothing is written.
+    async fn plan_asked_hand_over(
+        &self,
+        actor: Actor,
+        input: &HandOver,
+    ) -> Result<(HandOverPlan, UserId), AppError> {
+        let ctx = self;
+        let by_agent = actor.agent();
+        let person = actor.person.id;
+        if input.issues.is_empty() || input.issues.len() > MOST_ISSUES_OF_A_HAND_OVER {
+            return Err(ErrorCode::InvalidRequest.into());
+        }
+        let agent = ctx
+            .store()
+            .agent(input.agent)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .filter(|found| found.person == person)
+            .ok_or(AppError::Refused(ErrorCode::NotFound))?;
+        let (depth, owns) = match by_agent {
+            Some(me) => ctx.agent_may_hand_over(&actor, me, agent.id, input).await?,
+            None => (0, Vec::new()),
+        };
+        // The rights are the person's, checked as for the person's own hand-over.
+        let as_person = Actor {
+            person: actor.person.clone(),
+            key: None,
+        };
+        let giving = Giving {
+            note: note_of(&input.note)?,
+            powers: input.powers.clone(),
+            budget_attempts: input.budget_attempts,
+            budget_minutes: input.budget_minutes,
+            budget_cost: input.budget_cost,
+            plan_needs_approval: input.plan_needs_approval,
+            accept_by_itself: input.accept_by_itself,
+            days: input.days,
+            ends_by: None,
+            by_agent,
+            depth,
+        };
+        // An agent gives no more than its own hand-over of each issue gives it.
+        let giving = owns.iter().fold(giving, |giving, own| {
+            within_own(giving, own, agent.attempts_on_one_issue)
+        });
+        let reach = ctx.hand_over_reach(person, input.fields.clone()).await?;
+        let plan = ctx
+            .plan_hand_over(&as_person, &agent, &reach, giving, &input.issues, None)
+            .await?;
+        Ok((plan, person))
+    }
+}
+
+/// Hands one or several issues over to one of the person's agents, from the person's session. The
+/// person needs *Change issues* (or *Change the issues they reported*) on each issue and *Create
+/// agents that work for you* in its project; an agent has one open hand-over for an issue. An agent
+/// hands over through the tool `hand_over` ([`Ctx::agent_hand_over`]), by the same path, and no key
+/// comes in here.
 ///
 /// # Errors
 /// `resource.not-found` for an agent that is not the person's or an issue they cannot see,
 /// `access.forbidden` where they may not hand over, `agent-work.already-open` for an issue the
-/// agent has already, `request.invalid` for a list of issues that is empty or too long, a budget or
-/// an end out of range.
+/// agent has already, `agent-work.hand-over-too-deep` for a chain that is too long,
+/// `request.invalid` for a list of issues that is empty or too long, a budget or an end out of
+/// range.
 pub async fn hand_over<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: HandOver,
 ) -> Result<Authorized<HandOverView>, AppError> {
     let actor = ctx.session_actor(&input.session_token).await?;
-    let person = actor.person.id;
-    if input.issues.is_empty() || input.issues.len() > MOST_ISSUES_OF_A_HAND_OVER {
-        return Err(ErrorCode::InvalidRequest.into());
-    }
-    let agent = ctx
-        .store()
-        .agent(input.agent)
-        .await
-        .map_err(|error| internal::<S>(&error))?
-        .filter(|found| found.person == person)
-        .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-    let giving = Giving {
-        note: note_of(&input.note)?,
-        powers: input.powers,
-        budget_attempts: input.budget_attempts,
-        budget_minutes: input.budget_minutes,
-        budget_cost: input.budget_cost,
-        plan_needs_approval: input.plan_needs_approval,
-        accept_by_itself: input.accept_by_itself,
-        days: input.days,
-    };
-    let reach = ctx.hand_over_reach(person, input.fields).await?;
-    let view = ctx
-        .plan_hand_over(&actor, &agent, &reach, giving, &input.issues, None)
-        .await?
-        .record_change(ctx.store())
-        .await?;
-    // The work waits for the agent now: a call of the agent that waits for work answers.
-    ctx.work_came_for(view.agent);
-    Ok(ctx
-        .evaluate(person, Place::Organization)
-        .await?
-        .authorize(view))
+    let (plan, person) = ctx.plan_asked_hand_over(actor, &input).await?;
+    let view = plan.record_change(ctx.store()).await?;
+    ctx.handed_over(view, person).await
 }

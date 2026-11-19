@@ -310,4 +310,9 @@ pub(super) const ALL: &[Definition] = &[
         name: "agent_requests",
         steps: || Ok(super::m0061_agent_requests::steps()),
     },
+    Definition {
+        version: 62,
+        name: "agent_switches",
+        steps: || Ok(super::m0062_agent_switches::steps()),
+    },
 ];
