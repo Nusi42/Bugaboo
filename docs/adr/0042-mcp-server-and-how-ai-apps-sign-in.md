@@ -88,3 +88,8 @@ Which of these records are personal data, and their marks, are decided once in a
 SEC-MATRIX (the `mcp` rows), ARCH-API-OUT, ARCH-AI-TOOLS, ARCH-DEPS, ARCH-EVENTS, DATA-MARKS, DATA-LOGS (see `tools/checks/catalog.toml`), and the tests named above and in WP-05.
 
 <!-- COMP-10 checked: signing in and scopes rank, evaluate or assign nobody; an app does what its person tells it, as ADR-0029 decision 9 says. -->
+
+## Amendment (M9, secure defaults): ai apps start off
+
+- **AI apps start off** (`ai-apps.enabled`, ADR-0047 decision 6 and its amendment): every kind of AI is off in a new installation until an administrator switches it on. This replaces the *on at the start* of this record.
+- **An upgrade keeps them as they were.** A stored value is only a change of the default, so migration 59 writes *on* as the organization's own value where a person already exists and the organization set no value of its own; a value the organization set stays. Enforced by: the tests of migration 59 on both databases, `comp_04_every_setting_that_matters_for_security_starts_safe`.

@@ -14,11 +14,13 @@ use bb_app::auth::{
     start_app_session,
 };
 use bb_app::fields::{ChangeField, FieldsQuery, change_field, fields};
+use bb_app::settings::{ChangeSetting, SettingsScope, change_setting};
 use bb_auth::pkce_challenge;
 use bb_core::access_key::KeyChoice;
 use bb_core::ai::{Destination, ProviderKind};
 use bb_core::fields::Field;
 use bb_core::own_fields::Edit;
+use bb_core::settings::{AGENTS_ENABLED, AI_APPS_ENABLED, SettingValue};
 use bb_dev_words::sample::{AiPlan, AppPlan};
 use serde_json::json;
 
@@ -40,7 +42,7 @@ fn failed(error: &dyn std::fmt::Display) -> SampleError {
 }
 
 /// The administrator whose session is `token` sets up the provider, confirms the agreement and
-/// switches AI on for the organization.
+/// switches AI on for the organization, and AI apps and agents too (both start off, COMP-04).
 pub(crate) async fn switch_on_ai(
     world: &World<'_>,
     token: &str,
@@ -84,6 +86,21 @@ pub(crate) async fn switch_on_ai(
     change_ai_setup(&ctx, on)
         .await
         .map_err(|error| failed(&error))?;
+    for switch in [AI_APPS_ENABLED.definition(), AGENTS_ENABLED.definition()] {
+        world.tick();
+        change_setting(
+            &ctx,
+            ChangeSetting {
+                version: None,
+                session_token: token.to_owned(),
+                scope: SettingsScope::Organization,
+                key: switch.key().to_owned(),
+                value: SettingValue::Bool(true),
+            },
+        )
+        .await
+        .map_err(|error| failed(&error))?;
+    }
     Ok(())
 }
 

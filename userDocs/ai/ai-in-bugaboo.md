@@ -33,7 +33,7 @@ Bugaboo is an issue tracker. People write down bugs and tasks and work on them. 
 > - AI apps: the organization has *Let AI apps sign in*. A project has *AI apps in this project*.
 > - The assistant: the organization has *Use the assistant*. A project has *Assistant in this project*.
 >
-> The assistant is **off at the start**; agents and AI apps are on. Each kind follows the organization's choice until a project has its own. Switching one kind off never switches another off. What is marked *Never sent to AI* stays out of all three.
+> All three are **off at the start**; an upgrade from an older version keeps agents and AI apps as they were. Each kind follows the organization's choice until a project has its own. Switching one kind off never switches another off. What is marked *Never sent to AI* stays out of all three.
 
 ### What AI never does
 
@@ -73,7 +73,7 @@ Not every change can be undone yet. See [Known gaps](#known-gaps-k).
 
 #### The big picture (A)
 
-- **A1** **Each kind has its own switch.** The assistant is off at the start; agents and AI apps are on. An administrator can switch each kind on or off for the organization, and each project can switch each kind on or off for itself. A kind counts in a place by the nearest choice: the project's own, else the project above, else the organization's. One kind never depends on another.
+- **A1** **Each kind has its own switch.** All three are off at the start; an upgrade from an older version keeps agents and AI apps as they were. An administrator can switch each kind on or off for the organization, and each project can switch each kind on or off for itself. A kind counts in a place by the nearest choice: the project's own, else the project above, else the organization's. One kind never depends on another.
 - **A2** **One set of tools, one set of rules.** All three kinds use the same list of tools. A *tool* is one thing an AI can do in Bugaboo, such as "read an issue". Every tool runs as the person behind the AI and asks the same rule engine as a person's own click. There is no second rule set for AI.
 - **A3** **No AI ever has more rights than its person.** An AI app has at most your rights. An agent has at most the rights of its person. Both can have less.
 - **A4** **Bugaboo does not run agents and does not host a model.** Agents run somewhere else: on a developer's computer, on a build server, in a company's own system. They connect to Bugaboo. The assistant asks an AI provider the administrator picked.
@@ -522,7 +522,7 @@ Many trackers now add AI. They choose differently, and each choice has a reason.
 | I7 Where agent work lives | In its own record on the issue, apart from comments | Progress written as comments | Two places to look on an issue |
 | I8 Questions | An agent can ask and wait; the answer joins the brief | The AI guesses, or asks in a chat outside the tracker | An agent can be held up until someone answers |
 | I9 Running AI | Bugaboo runs no agents and hosts no model; bring your own provider or local model | The vendor runs the AI in its cloud | Someone must set up a provider or run agents |
-| I10 At the start | The assistant is off, and an outside provider needs the agreement step first; agents and AI apps are on | AI on by default | An administrator has to act before anyone can use it |
+| I10 At the start | The assistant, agents and AI apps are off, and an outside provider needs the agreement step first; an upgrade keeps agents and AI apps as they were | AI on by default | An administrator has to act before anyone can use it |
 
 ### The numbers (N)
 

@@ -45,7 +45,7 @@ async fn set(world: &World, scope: SettingsScope, key: &str, value: SettingValue
 
 #[tokio::test]
 async fn ai_30_agents_off_for_a_project_refuses_its_agents_there() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let admin = token(&world);
     let web = a_project(&world, "WEB").await?;
     let api = a_project(&world, "API").await?;
@@ -81,7 +81,7 @@ async fn ai_30_agents_off_for_a_project_refuses_its_agents_there() -> Outcome {
 
 #[tokio::test]
 async fn ai_30_a_new_agent_starts_within_the_maximums_of_the_organization() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let admin = token(&world);
     a_project(&world, "WEB").await?;
     set(
@@ -108,7 +108,7 @@ async fn ai_30_a_new_agent_starts_within_the_maximums_of_the_organization() -> O
 
 #[tokio::test]
 async fn ai_30_a_person_has_at_most_fifty_agents() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let admin = token(&world);
     a_project(&world, "WEB").await?;
     for number in 0..bb_core::agent::MOST_AGENTS {
@@ -121,7 +121,7 @@ async fn ai_30_a_person_has_at_most_fifty_agents() -> Outcome {
 
 #[tokio::test]
 async fn ai_30_an_agent_of_a_person_who_is_gone_is_refused_at_once() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let (_, team, _, key) = a_team_agent(&world).await?;
     assert!(projects(&world.ctx(), list(&key)).await.is_ok());
     // The person is removed from the organization.
@@ -138,7 +138,7 @@ async fn ai_30_an_agent_of_a_person_who_is_gone_is_refused_at_once() -> Outcome 
 
 #[tokio::test]
 async fn ai_30_renewing_an_agent_key_replaces_it_in_one_change() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let admin = token(&world);
     a_project(&world, "WEB").await?;
     let fixer = an_agent(&world, &admin, "Fixer").await?;
@@ -177,7 +177,7 @@ async fn ai_30_renewing_an_agent_key_replaces_it_in_one_change() -> Outcome {
 
 #[tokio::test]
 async fn ai_30_work_on_the_parent_does_not_reach_a_child_where_agents_are_off() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let admin = token(&world);
     let (web, child) = web_with_api(&world).await?;
     let fixer = an_agent(&world, &admin, "Fixer").await?;
@@ -232,7 +232,7 @@ async fn ai_30_work_on_the_parent_does_not_reach_a_child_where_agents_are_off() 
 
 #[tokio::test]
 async fn ai_30_an_agent_never_reaches_the_own_data_of_its_person() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let admin = token(&world);
     a_project(&world, "WEB").await?;
     let fixer = an_agent(&world, &admin, "Fixer").await?;
@@ -279,7 +279,7 @@ async fn ai_30_an_agent_never_reaches_the_own_data_of_its_person() -> Outcome {
 
 #[tokio::test]
 async fn ai_30_an_agent_is_not_accepted_by_a_person_who_has_the_most_agents() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let admin = token(&world);
     let project = a_project(&world, "WEB").await?;
     let team = member(
@@ -350,7 +350,7 @@ async fn web_with_api(
 async fn seen_inside_web(
     switches: &[(&str, bool)],
 ) -> Result<Vec<String>, Box<dyn std::error::Error + Send + Sync>> {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let admin = token(&world);
     let (web, api) = web_with_api(&world).await?;
     let fixer = an_agent(&world, &admin, "Fixer").await?;
@@ -431,7 +431,7 @@ async fn an_issue_of(
 
 #[tokio::test]
 async fn ai_04_a_reader_who_sees_the_person_only_as_a_role_is_not_told_the_agent() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let admin = token(&world);
     let project = a_project(&world, "WEB").await?;
     // A guest sees people by their role only, and sees the issues they reported.
@@ -516,7 +516,7 @@ async fn ai_04_the_mark_of_a_text_names_the_agent_only_to_a_reader_told_its_pers
     use crate::comments::{AddComment, add_comment};
     use bb_core::mark::WrittenBy;
 
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let admin = token(&world);
     let project = a_project(&world, "WEB").await?;
     let guest = member(&world, "guest@example.test", StartingRole::Guest, project).await?;

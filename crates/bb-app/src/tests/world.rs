@@ -6,6 +6,7 @@ use std::sync::atomic::{AtomicI64, Ordering};
 
 use bb_auth::{CSRF_KEY_LENGTH, CsrfKey, Passkeys, PasswordHasher, RelyingParty};
 use bb_core::id::UserId;
+use bb_core::settings::{AGENTS_ENABLED, AI_APPS_ENABLED, Scope, SettingValue};
 use jiff::Timestamp;
 
 use super::fake::FakeStore;
@@ -132,6 +133,28 @@ impl World {
             .ok_or("no setup code on a new store")?;
         world.admin = world.first_administrator(code.as_str()).await?;
         Ok(world)
+    }
+
+    /// The first start and Ada, with AI apps and agents switched on for the organization: the world
+    /// of the tests of AI apps and agents. Both start off (COMP-04), so these tests switch them on
+    /// as an administrator would, straight in the store, so no test counts the change.
+    pub(crate) async fn with_ai_apps_and_agents() -> Result<Self, String> {
+        let world = Self::new().await?;
+        world.switch_on_ai_apps_and_agents();
+        Ok(world)
+    }
+
+    /// Switches AI apps and agents on for the organization, straight in the store.
+    pub(crate) fn switch_on_ai_apps_and_agents(&self) {
+        let mut shared = self.store.lock();
+        for switch in [AI_APPS_ENABLED.definition(), AGENTS_ENABLED.definition()] {
+            super::fake_settings::put(
+                &mut shared.state,
+                Scope::Organization,
+                switch.key(),
+                &SettingValue::Bool(true),
+            );
+        }
     }
 
     /// The first start and the first administrator, before the starter workflows are made: an

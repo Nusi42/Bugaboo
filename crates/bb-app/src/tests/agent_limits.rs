@@ -50,7 +50,7 @@ pub(super) fn the_agent(world: &World) -> bb_core::agent::Agent {
 #[tokio::test]
 async fn ai_37_reaching_a_limit_pauses_the_agent_with_a_sentence_and_no_change_halfway() -> Outcome
 {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     limit(&world, LimitKind::ChangesAMinute, 3);
     let issue_text = given.issue.to_string();
@@ -146,7 +146,7 @@ async fn ai_37_reaching_a_limit_pauses_the_agent_with_a_sentence_and_no_change_h
 
 #[tokio::test]
 async fn ai_37_an_agent_works_on_as_many_issues_at_once_as_it_may_and_no_more() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let (first, second) = two_issues_and_a_limit_of_one(&world).await?;
     used(
         &world,
@@ -182,7 +182,7 @@ async fn ai_37_an_agent_works_on_as_many_issues_at_once_as_it_may_and_no_more() 
 
 #[tokio::test]
 async fn ai_37_an_agent_makes_as_many_attempts_on_an_issue_as_it_may_and_no_more() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     limit(&world, LimitKind::AttemptsOnOneIssue, 1);
     let address = given.issue.to_string();
@@ -213,7 +213,7 @@ async fn ai_37_an_agent_makes_as_many_attempts_on_an_issue_as_it_may_and_no_more
 
 #[tokio::test]
 async fn ai_37_a_preview_that_finds_a_limit_pauses_nobody() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     limit(&world, LimitKind::IssuesAtOnce, 0);
     let over = previewed(
@@ -230,7 +230,7 @@ async fn ai_37_a_preview_that_finds_a_limit_pauses_nobody() -> Outcome {
 
 #[tokio::test]
 async fn ai_37_the_changes_of_an_agent_over_the_api_count_against_its_limits() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed_with(&world, |asked| {
         asked.powers = vec![HandOverPower::ChangeFields];
         asked.fields = vec!["title".to_owned()];
@@ -280,7 +280,7 @@ async fn ai_37_the_changes_of_an_agent_over_the_api_count_against_its_limits() -
 
 #[tokio::test]
 async fn ai_37_a_change_that_is_refused_counts_nothing() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     // Nothing ticked: every change of a field is refused.
     let given = handed(&world).await?;
     limit(&world, LimitKind::ChangesAMinute, 1);
@@ -318,7 +318,7 @@ async fn ai_37_a_change_that_is_refused_counts_nothing() -> Outcome {
 
 #[tokio::test]
 async fn ai_37_an_agent_cannot_run_a_second_issue_by_reporting_on_it() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let (first, second) = two_issues_and_a_limit_of_one(&world).await?;
     used(
         &world,
@@ -351,7 +351,7 @@ async fn ai_37_an_agent_cannot_run_a_second_issue_by_reporting_on_it() -> Outcom
 
 #[tokio::test]
 async fn ai_37_two_takes_at_the_same_moment_pass_a_limit_of_one_issue_once() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let (first, second) = two_issues_and_a_limit_of_one(&world).await?;
     let (one, other) = tokio::join!(
         used(
@@ -399,7 +399,7 @@ async fn ai_37_two_takes_at_the_same_moment_pass_a_limit_of_one_issue_once() -> 
 
 #[tokio::test]
 async fn ai_37_parallel_changes_cannot_pass_the_limit_of_a_minute() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed_with(&world, |asked| {
         asked.powers = vec![HandOverPower::ChangeFields];
         asked.fields = vec!["title".to_owned()];

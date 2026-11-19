@@ -451,6 +451,7 @@ async fn iss_17_every_route_with_a_version_answers_a_stale_save_with_the_current
 -> TestResult {
     each_database("iss_17_conflict_everywhere", async |db| {
         let (rig, app) = rig_and_app(db).await?;
+        rig.turn_ai_apps_and_agents_on().await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         for id in VERSIONED {
             let save = prepare(id, &site, &mut ada)

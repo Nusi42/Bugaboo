@@ -14,6 +14,7 @@ use super::rig::PASSWORD;
 async fn ai_37_my_agents_lists_the_work_of_my_agents_and_nobody_elses() -> TestResult {
     each_database("ai_37_my_agents_work", async |db| {
         let (rig, app) = rig_and_app(db).await?;
+        rig.turn_ai_apps_and_agents_on().await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let (mut tess, _) = site.person(StartingRole::TeamMember, "tess").await?;
         let (mut other, _) = site.person(StartingRole::TeamMember, "olga").await?;
@@ -60,6 +61,7 @@ async fn ai_37_my_agents_lists_the_work_of_my_agents_and_nobody_elses() -> TestR
 async fn ai_30_the_list_of_the_organization_says_when_an_agent_last_signed_in() -> TestResult {
     each_database("ai_30_agents_last_use", async |db| {
         let (rig, app) = rig_and_app(db).await?;
+        rig.turn_ai_apps_and_agents_on().await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let (mut tess, _) = site.person(StartingRole::TeamMember, "tess").await?;
         let made = tess
@@ -94,6 +96,7 @@ async fn ai_30_the_list_of_the_organization_says_when_an_agent_last_signed_in() 
 async fn ai_30_an_agent_handed_to_a_person_is_listed_for_them_until_they_accept() -> TestResult {
     each_database("ai_30_agent_offered", async |db| {
         let (rig, app) = rig_and_app(db).await?;
+        rig.turn_ai_apps_and_agents_on().await?;
         let (site, _ada) = Site::start(&rig, &app).await?;
         let (mut tess, _) = site.person(StartingRole::TeamMember, "tess").await?;
         let (mut olga, olga_id) = site.person(StartingRole::TeamMember, "olga").await?;
@@ -152,6 +155,7 @@ async fn ai_30_an_agent_handed_to_a_person_is_listed_for_them_until_they_accept(
 async fn ai_37_a_person_changes_the_limits_of_an_agent_over_http() -> TestResult {
     each_database("ai_37_agent_limits", async |db| {
         let (rig, app) = rig_and_app(db).await?;
+        rig.turn_ai_apps_and_agents_on().await?;
         let (site, _ada) = Site::start(&rig, &app).await?;
         let (mut tess, _) = site.person(StartingRole::TeamMember, "tess").await?;
         let made = tess
@@ -202,6 +206,7 @@ async fn ai_37_a_person_changes_the_limits_of_an_agent_over_http() -> TestResult
 async fn ai_30_the_list_of_the_organization_puts_working_agents_first_page_by_page() -> TestResult {
     each_database("ai_30_agents_order", async |db| {
         let (rig, app) = rig_and_app(db).await?;
+        rig.turn_ai_apps_and_agents_on().await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let (mut tess, _) = site.person(StartingRole::TeamMember, "tess").await?;
         // Made in an order that is neither the order of names nor of states.

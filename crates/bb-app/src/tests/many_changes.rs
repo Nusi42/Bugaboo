@@ -748,7 +748,7 @@ async fn iss_09_a_stopped_run_changes_nothing_more() -> Outcome {
 
 #[tokio::test]
 async fn iss_09_a_key_of_an_agent_never_starts_a_change_to_more_than_a_thousand() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let admin = token(&world);
     let project = a_project(&world, "ACME").await?;
     let issues = more_than_a_thousand_issues(&world, &admin, project).await?;

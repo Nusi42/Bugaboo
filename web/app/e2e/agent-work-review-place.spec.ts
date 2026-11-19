@@ -1,18 +1,18 @@
 import { t } from "@bugaboo/messages";
 
 import { issueAddress } from "../src/shared/paths.ts";
+import { prepareWebWithAgents } from "./support/agents-scene.ts";
 import { ada } from "./support/accounts.ts";
 import { openWindow } from "./support/agent-work.ts";
 import { readyForReview } from "./support/agent-work-ready.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { topOf } from "./support/geometry.ts";
-import { prepareWeb } from "./support/issues.ts";
 import { inOrder } from "./support/sequence.ts";
 
 // The review window keeps its place (AI-35, M7 WP-11), on a computer and on a phone.
 
-test.use({ preparation: { run: prepareWeb } });
+test.use({ preparation: { run: prepareWebWithAgents } });
 
 test("ai_35 the review window keeps its top whatever is decided", async ({ page, server }) => {
   const { issue } = await readyForReview(server, "Review place issue", "Placer", true);

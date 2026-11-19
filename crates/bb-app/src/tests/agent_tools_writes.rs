@@ -32,7 +32,7 @@ use crate::relations::{AddRelation, add_relation};
 
 #[tokio::test]
 async fn ai_36_each_text_of_the_brief_names_the_kind_of_the_person_who_wrote_it() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     let guest = member(
         &world,
@@ -103,7 +103,7 @@ async fn ai_36_each_text_of_the_brief_names_the_kind_of_the_person_who_wrote_it(
 #[tokio::test]
 async fn ai_32_a_rule_agent_is_refused_on_relations_and_uploads_of_an_issue_it_was_not_handed()
 -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = rule_world(&world).await?;
     made(&world, &given).await?;
     let other = an_issue(&world, given.project).await?;
@@ -143,7 +143,7 @@ async fn ai_32_a_rule_agent_is_refused_on_relations_and_uploads_of_an_issue_it_w
 
 #[tokio::test]
 async fn ai_37_a_change_to_many_issues_counts_one_change_for_each_issue() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let first = handed_with(&world, |asked| {
         asked.powers = vec![HandOverPower::ChangeFields];
         asked.fields = vec!["priority".to_owned()];

@@ -75,7 +75,7 @@ async fn title_of(world: &World, session: &str, id: IssueId) -> Result<String, A
 
 #[tokio::test]
 async fn ai_35_throw_away_undoes_every_attempt_in_one_step() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let project = a_project(&world, "WEB").await?;
     let issue_id = an_issue(&world, project).await?;
     let given = titled(&world, issue_id, project).await?;
@@ -134,7 +134,7 @@ async fn retitle(world: &World, given: &Handed, title: &str) -> Result<(), AppEr
 
 #[tokio::test]
 async fn m7_f120_an_agent_changes_a_handed_issue_only_while_an_attempt_runs() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let project = a_project(&world, "WEB").await?;
     let issue_id = an_issue(&world, project).await?;
     let given = titled(&world, issue_id, project).await?;
@@ -229,7 +229,7 @@ async fn finish_with_passed_check(world: &World, given: &Handed) -> Result<(), A
 #[tokio::test]
 async fn ai_35_after_an_accept_by_itself_the_issue_moves_to_the_one_done_status_the_workflow_allows()
 -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let project = a_project(&world, "WEB").await?;
     allow_accepting(&world, project).await?;
     // *Simple*: from *Open* exactly one status of the *Done* group follows.
@@ -245,7 +245,7 @@ async fn ai_35_after_an_accept_by_itself_the_issue_moves_to_the_one_done_status_
 
 #[tokio::test]
 async fn ai_35_with_several_done_statuses_the_status_stays_and_the_person_is_told() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let project = a_project(&world, "WEB").await?;
     allow_accepting(&world, project).await?;
     // *Bug*: from *Testing* both *Done* and *Won't fix* follow.
@@ -265,7 +265,7 @@ async fn ai_35_with_several_done_statuses_the_status_stays_and_the_person_is_tol
 
 #[tokio::test]
 async fn ai_33_a_ready_attempt_leaves_one_short_comment_written_by_an_agent() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let project = a_project(&world, "WEB").await?;
     let issue_id = an_issue(&world, project).await?;
     let given = titled(&world, issue_id, project).await?;
@@ -295,7 +295,7 @@ async fn ai_33_a_ready_attempt_leaves_one_short_comment_written_by_an_agent() ->
 
 #[tokio::test]
 async fn m7_f127_the_move_after_an_accept_by_itself_carries_the_run_of_the_attempt() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let project = a_project(&world, "WEB").await?;
     allow_accepting(&world, project).await?;
     let issue_id = an_issue(&world, project).await?;
@@ -326,7 +326,7 @@ async fn ai_31_an_agent_changes_nothing_its_hand_over_did_not_name_and_sees_only
     use crate::issues::{CreateIssue, DeleteIssue, create_issue, delete_issue};
     use crate::search::{SearchQuery, SearchScope, search};
 
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let project = a_project(&world, "WEB").await?;
     let issue_id = an_issue(&world, project).await?;
     let other = an_issue(&world, project).await?;
@@ -398,7 +398,7 @@ async fn ai_31_an_agent_changes_nothing_its_hand_over_did_not_name_and_sees_only
 /// closed to it, the preview and the undo too (AI-30, ADR-0029).
 #[tokio::test]
 async fn ai_30_an_agent_with_work_reaches_its_attempt_and_not_the_runs_of_its_person() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     report_attempt(&world.ctx(), report(&given.key, given.issue, None, 5)).await?;
     let theirs = open(&world, &given.team.session_token, given.team.person.id).await?;

@@ -47,7 +47,7 @@ async fn proposed(
 #[tokio::test]
 async fn ai_32_a_rule_that_proposes_may_propose_any_field_of_the_list() -> Outcome {
     for field in [RuleField::Type, RuleField::Labels, RuleField::Tags] {
-        let world = World::new().await?;
+        let world = World::with_ai_apps_and_agents().await?;
         let given = rule_world(&world).await?;
         proposed(&world, &given, field, json!("x")).await??;
     }
@@ -56,7 +56,7 @@ async fn ai_32_a_rule_that_proposes_may_propose_any_field_of_the_list() -> Outco
 
 #[tokio::test]
 async fn ai_32_a_proposal_that_cannot_be_carried_out_is_open_again() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = rule_world(&world).await?;
     // A type that is no ID: the change fails after the proposal was claimed.
     let proposal = proposed(&world, &given, RuleField::Type, json!("nonsense")).await??;
@@ -90,7 +90,7 @@ async fn ai_32_a_proposal_that_cannot_be_carried_out_is_open_again() -> Outcome 
 
 #[tokio::test]
 async fn ai_32_a_proposal_that_asks_for_something_not_applied_yet_is_open_again() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = rule_world(&world).await?;
     // *Duplicate of* is not carried out yet: the decision to apply it fails after the claim.
     let proposal = proposed(&world, &given, RuleField::DuplicateOf, json!("x")).await??;
@@ -114,7 +114,7 @@ async fn ai_32_a_proposal_that_asks_for_something_not_applied_yet_is_open_again(
 
 #[tokio::test]
 async fn ai_31_ending_a_hand_over_that_keeps_changing_fails_for_the_job_to_run_again() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = super::agent_work::handed(&world).await?;
     world.clock.advance(15 * 24 * 3600);
     world.store.lock().state.hand_overs_cannot_end = true;
@@ -137,7 +137,7 @@ async fn ai_31_ending_a_hand_over_that_keeps_changing_fails_for_the_job_to_run_a
 
 #[tokio::test]
 async fn ai_32_opening_a_proposal_again_that_nobody_claimed_writes_no_event() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = rule_world(&world).await?;
     proposed(&world, &given, RuleField::Type, json!("x")).await??;
     let (rule, proposal) = {
@@ -163,7 +163,7 @@ async fn ai_32_opening_a_proposal_again_that_nobody_claimed_writes_no_event() ->
 
 #[tokio::test]
 async fn ai_32_a_proposal_on_the_issue_names_its_agent_without_any_hand_over() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = rule_world(&world).await?;
     let made = proposed(&world, &given, RuleField::Labels, json!("x")).await??;
     assert_eq!(made.agent_name, "Fixer");

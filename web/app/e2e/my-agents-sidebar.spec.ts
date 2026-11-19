@@ -2,18 +2,17 @@ import { t } from "@bugaboo/messages";
 
 import { paths } from "../src/shared/paths.ts";
 import { ada } from "./support/accounts.ts";
-import { adminWithOneAgent } from "./support/agents-scene.ts";
+import { adminWithOneAgent, prepareWebWithAgents } from "./support/agents-scene.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { inFourChosenThemesAsWindow } from "./support/four-themes.ts";
 import { signIn } from "./support/flows.ts";
-import { prepareWeb } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
 import { screenshotFolder } from "./support/screenshots.ts";
 
 // The sidebar with *My agents* fits a window 600 px high (UX §3.1, M5-F150). A spec of its own: the sidebar grows with
 // every saved search, so it needs a server where nobody saved one.
 
-test.use({ preparation: { run: prepareWeb } });
+test.use({ preparation: { run: prepareWebWithAgents } });
 
 test("ux_01_the_sidebar_with_my_agents_fits_a_window_600_px_high", async ({ page, server }) => {
   test.skip(layoutOf(page) === "phone", "the sidebar is a computer's");

@@ -28,6 +28,8 @@ Bugaboo records the backup like every other, with the upgrade as what created it
 
 A new installation creates no backup: there is nothing to keep yet. A start of the same version creates none either.
 
+An upgrade keeps AI apps and agents as they were; new installations start with both off. An administrator switches them on in *Organization settings › Connections*.
+
 ## When something goes wrong
 
 Bugaboo stops before it serves anybody and says in plain words what happened. It ends with an exit code of its own, so a service manager can tell that starting it again does not help.

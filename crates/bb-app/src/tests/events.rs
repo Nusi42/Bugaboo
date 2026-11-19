@@ -273,7 +273,7 @@ fn adr_0007_the_table_names_every_command_use_case_and_nothing_else() {
 #[tokio::test]
 async fn adr_0007_every_command_use_case_appends_its_event() -> Outcome {
     for (name, scenario) in TABLE {
-        let world = World::new().await?;
+        let world = World::with_ai_apps_and_agents().await?;
         let added = scenario(&world)
             .await
             .map_err(|error| format!("{name}: {error}"))?;

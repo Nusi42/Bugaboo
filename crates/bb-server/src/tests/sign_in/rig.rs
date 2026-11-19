@@ -22,7 +22,7 @@ use bb_auth::{CsrfKey, Passkeys, PasswordHasher, RelyingParty};
 use bb_core::ErrorCode;
 use bb_core::event::{Actor, Channel, DomainEvent, EntityKind, EntityRef};
 use bb_core::id::{EntityId, EventId, GroupId, RoleId, UserId};
-use bb_core::settings::SettingValue;
+use bb_core::settings::{AGENTS_ENABLED, AI_APPS_ENABLED, SettingValue};
 use bb_core::technical::TechnicalName;
 use bb_files::{DiskFiles, PreviewCommand};
 use bb_store::{AuthStorage, Database, LogSeal, SettingChange};
@@ -176,6 +176,13 @@ impl Rig {
     /// A server with the default number of failed tries allowed.
     pub(super) async fn start(db: &TestDatabase) -> Result<Self, Failure> {
         Self::start_new(db, Shape::NEW).await
+    }
+
+    /// A server with AI apps and agents switched on, as an administrator does (both start off).
+    pub(super) async fn start_with_ai_apps_and_agents(db: &TestDatabase) -> Result<Self, Failure> {
+        let rig = Self::start(db).await?;
+        rig.turn_ai_apps_and_agents_on().await?;
+        Ok(rig)
     }
 
     /// A server that allows `tries` failed tries per account and minute.
@@ -408,6 +415,15 @@ impl Rig {
         self.set_organization_text("mail.from", "bugaboo@example.test")
             .await?;
         self.set_organization_switch("mail.enabled", true).await
+    }
+
+    /// Switches AI apps and agents on for the organization, as an administrator does: both start
+    /// off (COMP-04), and the tests of apps and agents need them.
+    pub(super) async fn turn_ai_apps_and_agents_on(&self) -> Result<(), Failure> {
+        for switch in [AI_APPS_ENABLED.definition(), AGENTS_ENABLED.definition()] {
+            self.set_organization_switch(switch.key(), true).await?;
+        }
+        Ok(())
     }
 
     /// Runs the jobs that are due until none is left, as the job runner does; how many ran.

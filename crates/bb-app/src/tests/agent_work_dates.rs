@@ -12,7 +12,7 @@ use crate::issues::{ChangeIssue, ChangedIssue, change_issue, issue};
 
 #[tokio::test]
 async fn plan_03_an_agent_changes_a_date_only_when_the_hand_over_names_it() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed_with(&world, ticking(&["due-date"])).await?;
     start_attempt(&world, &given.key, given.issue).await?;
     let version = issue(&world.ctx(), query(&given.key, given.issue))

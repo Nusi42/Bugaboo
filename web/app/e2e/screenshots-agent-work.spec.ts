@@ -1,5 +1,6 @@
 import { t } from "@bugaboo/messages";
 
+import { prepareWebWithAgents } from "./support/agents-scene.ts";
 import { openWindow } from "./support/agent-work.ts";
 import { readyForReview } from "./support/agent-work-ready.ts";
 import {
@@ -15,13 +16,12 @@ import { openRowsList } from "./support/agent-work-rows-list.ts";
 import { showAgentColumns, skipOnAPhone } from "./support/agent-work-columns.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { inFourThemes } from "./support/four-themes.ts";
-import { prepareWeb } from "./support/issues.ts";
 import { screenshotFolder } from "./support/screenshots.ts";
 
 // The block of agent work in each of its states, after a review and the rows of a list in the four
 // themes, for the review of M7 WP-11. They are only taken when `BB_SCREENSHOT_DIR` names the folder.
 test.skip(screenshotFolder === undefined, "Set BB_SCREENSHOT_DIR to take the screenshots.");
-test.use({ preparation: { run: prepareWeb } });
+test.use({ preparation: { run: prepareWebWithAgents } });
 test.describe.configure({ mode: "serial" });
 
 const MILESTONE = "M7/agent-work";

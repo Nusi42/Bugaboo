@@ -2,7 +2,7 @@
 
 Bugaboo has three kinds of AI help. This guide says in plain words what each one can and cannot do, where your data goes, how to check what an AI wrote, and what Bugaboo never lets AI do. It is for the people who use Bugaboo and for the administrators who switch AI on. Many organizations must ensure that the people who work with AI understand it; this guide is a part of that, and not legal advice.
 
-**Each of the three can be switched on or off by itself**, for the whole organization and for each project. Switching one off never switches another off. The assistant is off until an administrator switches it on; agents and AI apps are on at the start, and an administrator can switch them off.
+**Each of the three can be switched on or off by itself**, for the whole organization and for each project. Switching one off never switches another off. All three are off until an administrator switches them on, and an administrator can switch each off again. An upgrade from an older version keeps agents and AI apps as they were.
 
 ## The three kinds
 

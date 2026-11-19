@@ -177,7 +177,7 @@ pub(super) fn app_call(
 
 #[tokio::test]
 async fn ai_22_an_app_on_this_computer_registers_and_the_person_allows_it() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     ai_on(&world).await?;
     let client = registered(&world, LOOPBACK).await?;
     let seen = authorization(
@@ -224,7 +224,7 @@ async fn ai_22_an_app_on_this_computer_registers_and_the_person_allows_it() -> O
 #[tokio::test]
 async fn ai_22_apps_are_refused_while_apps_are_switched_off_and_not_while_the_assistant_is()
 -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let register = || RegisterApp {
         name: "Claude Code".to_owned(),
         return_addresses: vec![LOOPBACK.to_owned()],
@@ -244,7 +244,7 @@ async fn ai_22_apps_are_refused_while_apps_are_switched_off_and_not_while_the_as
 
 #[tokio::test]
 async fn ai_22_an_app_on_a_web_address_needs_an_administrator_first() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     ai_on(&world).await?;
     let web = "https://app.example.com/callback";
     let wanted = || RegisterApp {
@@ -299,7 +299,7 @@ async fn ai_22_an_app_on_a_web_address_needs_an_administrator_first() -> Outcome
 
 #[tokio::test]
 async fn ai_22_a_code_without_its_pkce_proof_is_refused() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     ai_on(&world).await?;
     let client = registered(&world, LOOPBACK).await?;
     let code = allowed(&world, client, "see-only", KeyChoice::SeeOnly).await?;
@@ -327,7 +327,7 @@ async fn ai_22_a_code_without_its_pkce_proof_is_refused() -> Outcome {
 
 #[tokio::test]
 async fn ai_22_an_address_the_app_did_not_register_is_never_sent_anything() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     ai_on(&world).await?;
     let client = registered(&world, LOOPBACK).await?;
     let mut elsewhere = request(client, "see-only");
@@ -360,7 +360,7 @@ async fn ai_22_an_address_the_app_did_not_register_is_never_sent_anything() -> O
 
 #[tokio::test]
 async fn ai_22_a_code_used_twice_ends_the_grant_it_made() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     ai_on(&world).await?;
     let client = registered(&world, LOOPBACK).await?;
     let code = allowed(&world, client, "see-only", KeyChoice::SeeOnly).await?;
@@ -388,7 +388,7 @@ async fn ai_22_a_code_used_twice_ends_the_grant_it_made() -> Outcome {
 
 #[tokio::test]
 async fn ai_22_a_refresh_token_used_twice_ends_the_grant() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     ai_on(&world).await?;
     let (client, first) = signed_in(&world, KeyChoice::SeeAndChange).await?;
     let second = issued(&world, renew(client, &first.refresh_token)).await?;
@@ -433,7 +433,7 @@ async fn ai_22_a_refresh_token_used_twice_ends_the_grant() -> Outcome {
 
 #[tokio::test]
 async fn ai_22_an_access_token_lives_fifteen_minutes_and_a_refresh_token_thirty_days() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     ai_on(&world).await?;
     let (client, tokens) = signed_in(&world, KeyChoice::SeeOnly).await?;
     assert_eq!(tokens.expires_in, 15 * 60);
@@ -459,7 +459,7 @@ async fn ai_22_an_access_token_lives_fifteen_minutes_and_a_refresh_token_thirty_
 
 #[tokio::test]
 async fn ai_22_a_see_only_grant_cannot_call_change_status() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     ai_on(&world).await?;
     a_project(&world, "WEB").await?;
     let (_, tokens) = signed_in(&world, KeyChoice::SeeOnly).await?;
@@ -506,7 +506,7 @@ async fn ai_22_a_see_only_grant_cannot_call_change_status() -> Outcome {
 
 #[tokio::test]
 async fn ai_22_the_person_may_narrow_what_the_app_asked_and_never_widen_it() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     ai_on(&world).await?;
     let client = registered(&world, LOOPBACK).await?;
     let wider = decide_authorization(
@@ -557,7 +557,7 @@ async fn ai_22_the_person_may_narrow_what_the_app_asked_and_never_widen_it() -> 
 
 #[tokio::test]
 async fn ai_24_connected_apps_lists_an_app_and_take_back_ends_it() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     ai_on(&world).await?;
     let (_, tokens) = signed_in(&world, KeyChoice::SeeAndChange).await?;
     list_tools(
@@ -630,7 +630,7 @@ async fn ai_24_connected_apps_lists_an_app_and_take_back_ends_it() -> Outcome {
 
 #[tokio::test]
 async fn ai_22_sign_out_everywhere_ends_every_grant() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     ai_on(&world).await?;
     let (_, tokens) = signed_in(&world, KeyChoice::SeeAndChange).await?;
     let (_, other) = signed_in(&world, KeyChoice::SeeOnly).await?;
@@ -667,7 +667,7 @@ async fn ai_22_sign_out_everywhere_ends_every_grant() -> Outcome {
 
 #[tokio::test]
 async fn ai_22_the_token_of_an_app_is_not_a_session() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     ai_on(&world).await?;
     let (_, tokens) = signed_in(&world, KeyChoice::SeeAndChange).await?;
     // Where only a session goes (the consent step, Connected apps), a token opens nothing.
@@ -696,7 +696,7 @@ async fn ai_22_the_token_of_an_app_is_not_a_session() -> Outcome {
 
 #[tokio::test]
 async fn ai_22_switching_apps_off_refuses_the_grants_but_keeps_them() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     ai_on(&world).await?;
     let (_, tokens) = signed_in(&world, KeyChoice::SeeAndChange).await?;
     let setting = |on| crate::settings::ChangeSetting {

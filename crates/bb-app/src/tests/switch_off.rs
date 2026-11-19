@@ -161,7 +161,7 @@ async fn agent_state(world: &World, ways: &WaysIn) -> Result<AgentState, AppErro
 
 #[tokio::test]
 async fn priv_04_switch_off_ends_sessions_keys_grants_and_agents_at_once() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let ways = every_way_in(&world).await?;
     for secret in [
         &ways.session,
@@ -201,7 +201,7 @@ async fn priv_04_switch_off_ends_sessions_keys_grants_and_agents_at_once() -> Ou
 
 #[tokio::test]
 async fn priv_04_switch_on_gives_back_the_sign_in_only() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let ways = every_way_in(&world).await?;
     switched_off(&world, ways.person).await?;
     switched_on(&world, ways.person).await?;

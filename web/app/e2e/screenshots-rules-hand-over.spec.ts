@@ -2,11 +2,10 @@ import { t } from "@bugaboo/messages";
 
 import { paths } from "../src/shared/paths.ts";
 import { ada } from "./support/accounts.ts";
-import { agentsScene } from "./support/agents-scene.ts";
+import { agentsScene, prepareWebWithAgents } from "./support/agents-scene.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { inFourChosenThemes } from "./support/four-themes.ts";
 import { signIn } from "./support/flows.ts";
-import { prepareWeb } from "./support/issues.ts";
 import {
   allowNever,
   fillTopOfRule,
@@ -21,7 +20,7 @@ import { screenshotFolder } from "./support/screenshots.ts";
 // rules and the setting of the administrators (AI-32, WP-14) in the four themes. Every window is in a state that can
 // be sent. They are only taken when `BB_SCREENSHOT_DIR` names the folder.
 test.skip(screenshotFolder === undefined, "Set BB_SCREENSHOT_DIR to take the screenshots.");
-test.use({ preparation: { run: prepareWeb } });
+test.use({ preparation: { run: prepareWebWithAgents } });
 
 const MILESTONE = "M7/rules-hand-over";
 

@@ -1796,7 +1796,7 @@
   "error.issue.type-retired": "That issue type is retired, so no new issues can be created with it. Choose another type.",
   "error.issue.type-not-offered": "This project does not offer that issue type. Choose another type, or ask the project lead.",
   "setting.agents.enabled.name": "Agents may work",
-  "setting.agents.enabled.help": "Switch this off and the agents of people are refused at their next request. A project can switch its agents off while they are on for the organization. AI apps and the assistant have switches of their own.",
+  "setting.agents.enabled.help": "New installations start with it off. Switch this on and people can create agents that work for them; switch it off again and their agents are refused at their next request. A project can switch its agents off while they are on for the organization. AI apps and the assistant have switches of their own.",
   "setting.agents.project-switch": "Agents in this project",
   "setting.agents.project-follows": "As the organization",
   "setting.agents.project-follows-on": "As the organization (on)",

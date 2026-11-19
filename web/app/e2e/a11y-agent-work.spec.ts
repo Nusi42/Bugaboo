@@ -9,18 +9,19 @@ import {
   openHandOver,
   openWindow,
   putScene,
+  prepareWebWithAgents,
 } from "./support/agent-work.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { readyForReview } from "./support/agent-work-ready.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { createIssue, prepareWeb } from "./support/issues.ts";
+import { createIssue } from "./support/issues.ts";
 
 // The accessibility suite for agent work (TEST-A11Y): the block on the issue page in the states a
 // person meets (a question, a plan, a result to review), the window of a hand-over and the window
 // of a review, each in the four themes on a computer and a phone.
 
-test.use({ preparation: { run: prepareWeb } });
+test.use({ preparation: { run: prepareWebWithAgents } });
 test.describe.configure({ mode: "serial" });
 
 test("a11y the window of a hand-over names what is missing", async ({ page, server }) => {

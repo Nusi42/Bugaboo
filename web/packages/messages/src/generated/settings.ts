@@ -177,7 +177,7 @@ export const messages = {
     "Kept from agents, AI apps and the assistant, with every project inside this one, even for people who can read it.",
   "setting.agents.enabled.name": "Agents may work",
   "setting.agents.enabled.help":
-    "Switch this off and the agents of people are refused at their next request. A project can switch its agents off while they are on for the organization. AI apps and the assistant have switches of their own.",
+    "New installations start with it off. Switch this on and people can create agents that work for them; switch it off again and their agents are refused at their next request. A project can switch its agents off while they are on for the organization. AI apps and the assistant have switches of their own.",
   "setting.agents.project-switch": "Agents in this project",
   "setting.agents.project-follows": "As the organization",
   "setting.agents.project-follows-on": "As the organization (on)",

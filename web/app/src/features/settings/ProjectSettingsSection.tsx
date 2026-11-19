@@ -1,8 +1,7 @@
+import { agentsEnabledKey, aiAppsEnabledKey } from "../../shared/ai-kinds.ts";
 import { QueryGate } from "../shell/index.ts";
 import { useProjectSettings } from "./project.ts";
 import {
-  agentsEnabledKey,
-  aiAppsEnabledKey,
   projectAgentsControl,
   projectAgentsHelp,
   projectAiAppsControl,

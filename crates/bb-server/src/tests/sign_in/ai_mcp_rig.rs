@@ -57,9 +57,9 @@ pub(super) async fn ai_on(rig: &Rig) -> Result<(), Failure> {
 }
 
 impl<'a> Mcp<'a> {
-    /// A rig and a router with the MCP server mounted.
+    /// A rig and a router with the MCP server mounted, AI apps and agents switched on.
     pub(super) async fn start(db: &TestDatabase) -> Result<(Rig, Router), Failure> {
-        let rig = Rig::start(db).await?;
+        let rig = Rig::start_with_ai_apps_and_agents(db).await?;
         let mcp = bb_mcp::router(bb_mcp::McpOptions {
             api: rig.services.clone(),
         });

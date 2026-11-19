@@ -75,7 +75,7 @@ async fn agents_off(world: &World) -> Outcome {
 
 #[tokio::test]
 async fn m7_f127_only_the_calls_of_the_message_take_what_its_entry_left_and_only_once() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     let handle = entry(&world, &given.key).await?;
     let other = entry(&world, &given.key).await?;
@@ -113,7 +113,7 @@ async fn m7_f127_only_the_calls_of_the_message_take_what_its_entry_left_and_only
 
 #[tokio::test]
 async fn m7_f127_a_change_of_a_message_with_a_handle_counts_against_the_limit() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     limit(&world, LimitKind::ChangesAMinute, 1);
     let issue = given.issue.to_string();

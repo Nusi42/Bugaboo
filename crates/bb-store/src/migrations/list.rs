@@ -295,4 +295,9 @@ pub(super) const ALL: &[Definition] = &[
         name: "e_mail_changes",
         steps: || Ok(super::m0058_e_mail_changes::steps()),
     },
+    Definition {
+        version: 59,
+        name: "ai_switches_kept",
+        steps: || Ok(super::m0059_ai_switches_kept::steps()),
+    },
 ];

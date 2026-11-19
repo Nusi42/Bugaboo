@@ -23,8 +23,8 @@ use bb_core::security_log::Digest;
 use jiff::Timestamp;
 use sea_query::{
     ColumnDef, DeleteStatement, IndexCreateStatement, IndexDropStatement, InsertStatement,
-    PostgresQueryBuilder, SqliteQueryBuilder, TableAlterStatement, TableCreateStatement,
-    TableRenameStatement, UpdateStatement,
+    PostgresQueryBuilder, QueryStatementWriter, SqliteQueryBuilder, TableAlterStatement,
+    TableCreateStatement, TableRenameStatement, UpdateStatement,
 };
 use sha2::{Digest as _, Sha256};
 
@@ -92,6 +92,7 @@ mod m0055_data_exports;
 mod m0056_keeping;
 mod m0057_person_standing;
 mod m0058_e_mail_changes;
+mod m0059_ai_switches_kept;
 #[cfg(test)]
 mod old_rows;
 mod record;
@@ -117,6 +118,8 @@ pub(crate) enum Step {
     Index(IndexCreateStatement),
     /// Insert rows the program relies on, or rows copied from another table.
     Seed(InsertStatement),
+    /// Insert rows that carry the moment the migration is applied (the checksum takes Unix time 0).
+    SeedAt(Box<SeedAtMoment>),
     /// Change a table (take a column away).
     Alter(TableAlterStatement),
     /// Delete rows that no longer have a meaning.
@@ -130,6 +133,18 @@ pub(crate) enum Step {
     DropIndex(IndexDropStatement),
     /// Statements that only one database knows (a virtual table, a generated column).
     Sql(FixedSql),
+}
+
+/// The statement of a [`Step::SeedAt`] for the moment the migration is applied.
+type SeedAtMoment =
+    dyn Fn(Timestamp) -> Result<InsertStatement, sea_query::error::Error> + Send + Sync;
+
+/// A statement of data as both databases get it, for the checksum.
+fn texts_of(statement: &impl QueryStatementWriter) -> [String; 2] {
+    [
+        statement.to_string(SqliteQueryBuilder),
+        statement.to_string(PostgresQueryBuilder),
+    ]
 }
 
 /// One migration.
@@ -161,22 +176,17 @@ impl Definition {
                     statement.build(SqliteQueryBuilder),
                     statement.build(PostgresQueryBuilder),
                 ],
-                Step::Seed(statement) => [
-                    statement.to_string(SqliteQueryBuilder),
-                    statement.to_string(PostgresQueryBuilder),
-                ],
+                Step::Seed(statement) => texts_of(statement),
+                Step::SeedAt(statement) => texts_of(
+                    &statement(Timestamp::UNIX_EPOCH)
+                        .map_err(|_| StoreError::Corrupt("a migration"))?,
+                ),
                 Step::Alter(statement) => [
                     statement.build(SqliteQueryBuilder),
                     statement.build(PostgresQueryBuilder),
                 ],
-                Step::Delete(statement) => [
-                    statement.to_string(SqliteQueryBuilder),
-                    statement.to_string(PostgresQueryBuilder),
-                ],
-                Step::Update(statement) => [
-                    statement.to_string(SqliteQueryBuilder),
-                    statement.to_string(PostgresQueryBuilder),
-                ],
+                Step::Delete(statement) => texts_of(statement),
+                Step::Update(statement) => texts_of(statement),
                 Step::Rename(statement) => [
                     statement.build(SqliteQueryBuilder),
                     statement.build(PostgresQueryBuilder),
@@ -410,6 +420,10 @@ async fn apply_next(
             Step::Index(statement) => transaction.execute_schema(&statement).await?,
             Step::Alter(statement) => transaction.execute_schema(&statement).await?,
             Step::Seed(statement) => {
+                transaction.execute(&statement).await?;
+            }
+            Step::SeedAt(statement) => {
+                let statement = statement(now).map_err(|_| StoreError::Corrupt("a migration"))?;
                 transaction.execute(&statement).await?;
             }
             Step::Delete(statement) => {

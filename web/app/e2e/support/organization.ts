@@ -1,7 +1,8 @@
-import { type SettingKey } from "@bugaboo/api-client";
+import { dataOf, type SettingKey } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { type Browser, expect } from "@playwright/test";
 
+import { agentsEnabledKey, aiAppsEnabledKey } from "../../src/shared/ai-kinds.ts";
 import { paths } from "../../src/shared/paths.ts";
 import { ada, addCodeApp, createPerson, ownId, type Person, signInThroughApi } from "./accounts.ts";
 import { giveRole, roleName, signedInAdmin } from "./access.ts";
@@ -56,6 +57,25 @@ export async function setOrganizationSwitch(
   await (on
     ? keepers.client.PUT("/api/v1/settings/{key}", { ...path, body: { value: true } })
     : keepers.client.DELETE("/api/v1/settings/{key}", path));
+}
+
+/**
+ * Switches AI apps and agents on for the organization, as an administrator does on their pages:
+ * both start off on a new installation (COMP-04), and the tests of agents and AI apps need them.
+ * `admin` is the session of an administrator.
+ */
+export async function turnAiAppsAndAgentsOn(admin: ApiSession): Promise<void> {
+  const turnOn = async (key: string): Promise<void> => {
+    dataOf(
+      await admin.client.PUT("/api/v1/settings/{key}", {
+        params: { path: { key } },
+        body: { value: true },
+      }),
+    );
+  };
+  // One after the other: each change is a new version of the organization's settings.
+  await turnOn(agentsEnabledKey);
+  await turnOn(aiAppsEnabledKey);
 }
 
 /**

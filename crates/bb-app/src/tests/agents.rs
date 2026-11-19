@@ -176,7 +176,7 @@ pub(super) fn page(session: &str) -> AgentsQuery {
 
 #[tokio::test]
 async fn ai_30_an_agent_needs_a_responsible_person() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let project = a_project(&world, "WEB").await?;
     // A Viewer holds the permission to create agents nowhere, a Team member in the project.
     let viewer = member(&world, "viewer@example.test", StartingRole::Viewer, project).await?;
@@ -208,7 +208,7 @@ async fn ai_30_an_agent_needs_a_responsible_person() -> Outcome {
 
 #[tokio::test]
 async fn ai_30_without_work_an_agent_reads_only_its_own_record() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let admin = token(&world);
     a_project(&world, "WEB").await?;
     let fixer = an_agent(&world, &admin, "Fixer").await?;
@@ -245,7 +245,7 @@ async fn ai_30_without_work_an_agent_reads_only_its_own_record() -> Outcome {
 
 #[tokio::test]
 async fn ai_30_an_agent_never_does_more_than_its_person() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let admin = token(&world);
     let work = a_project(&world, "WORK").await?;
     let secret = a_project(&world, "SECRET").await?;
@@ -269,7 +269,7 @@ async fn ai_30_an_agent_never_does_more_than_its_person() -> Outcome {
 
 #[tokio::test]
 async fn ai_30_an_agent_never_holds_a_manage_permission() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let admin = token(&world);
     let secret = a_project(&world, "SECRET").await?;
     let boss = an_agent(&world, &admin, "Boss").await?;
@@ -297,7 +297,7 @@ async fn ai_30_an_agent_never_holds_a_manage_permission() -> Outcome {
 
 #[tokio::test]
 async fn ai_30_an_agent_stops_when_its_person_loses_access() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let project = a_project(&world, "WEB").await?;
     let person = world.person("team@example.test").await?;
     let role = starting_role(&world, StartingRole::TeamMember).await?;
@@ -335,7 +335,7 @@ async fn ai_30_an_agent_stops_when_its_person_loses_access() -> Outcome {
 
 #[tokio::test]
 async fn ai_30_an_administrator_stops_any_agent() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let (project, team, fixer, key) = a_team_agent(&world).await?;
     let other = member(
         &world,
@@ -376,7 +376,7 @@ async fn ai_30_an_administrator_stops_any_agent() -> Outcome {
 
 #[tokio::test]
 async fn ai_30_an_agent_key_always_runs_out_and_is_shown_once() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let admin = token(&world);
     a_project(&world, "WEB").await?;
     let fixer = an_agent(&world, &admin, "Fixer").await?;
@@ -418,7 +418,7 @@ async fn ai_30_an_agent_key_always_runs_out_and_is_shown_once() -> Outcome {
 
 #[tokio::test]
 async fn ai_30_an_agent_has_no_role_and_cannot_be_assigned() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let admin = token(&world);
     let project = a_project(&world, "WEB").await?;
     let fixer = an_agent(&world, &admin, "Fixer").await?;
@@ -472,7 +472,7 @@ async fn ai_30_an_agent_has_no_role_and_cannot_be_assigned() -> Outcome {
 
 #[tokio::test]
 async fn ai_04_an_event_of_an_agent_names_the_agent_and_its_person() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let admin = token(&world);
     let project = a_project(&world, "WEB").await?;
     let issue_id = an_issue(&world, project).await?;

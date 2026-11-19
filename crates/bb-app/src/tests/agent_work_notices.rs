@@ -33,7 +33,7 @@ fn agent_work_kinds(world: &World, person: UserId) -> Vec<NotificationKind> {
 
 #[tokio::test]
 async fn ai_34_a_question_tells_the_person_who_answers_for_the_agent() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     report_attempt(&world.ctx(), report(&given.key, given.issue, None, 5)).await?;
     ask_question(
@@ -55,7 +55,7 @@ async fn ai_34_a_question_tells_the_person_who_answers_for_the_agent() -> Outcom
 
 #[tokio::test]
 async fn ai_35_a_result_that_is_ready_and_an_agent_that_gave_up_are_told() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     report_attempt(&world.ctx(), report(&given.key, given.issue, None, 5)).await?;
     end_attempt(&world.ctx(), ready(&given.key, given.issue)).await?;
@@ -104,7 +104,7 @@ async fn handed_again(
 
 #[tokio::test]
 async fn ai_30_a_stopped_agent_and_a_rule_that_runs_out_soon_tell_the_person() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = rule_world(&world).await?;
     let rule = made(&world, &given).await?;
     world

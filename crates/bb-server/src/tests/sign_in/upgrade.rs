@@ -206,13 +206,13 @@ async fn cfg_04_the_theme_of_m1_becomes_the_mode_and_the_light_and_the_dark_them
         assert_eq!(di.person["region.time-zone"], text("Europe/Berlin"));
         // The organization's locked theme became a locked mode and a locked dark theme.
         let organization = &ada.organization;
-        assert_eq!(organization.len(), 2);
+        assert_eq!(organization.len(), 4);
         assert_eq!(organization["appearance.mode"].value, text("dark"));
         assert!(organization["appearance.mode"].locked);
         assert_eq!(organization["appearance.dark-theme"].value, text("dusk"));
         assert!(organization["appearance.dark-theme"].locked);
-        // Nothing of the old setting is left behind, for people or the organization.
-        assert_eq!(rig.database.setting_row_count().await?, 2);
+        // Nothing of the old setting is left behind (the two more rows keep AI on, migration 59).
+        assert_eq!(rig.database.setting_row_count().await?, 4);
         Ok(())
     })
     .await

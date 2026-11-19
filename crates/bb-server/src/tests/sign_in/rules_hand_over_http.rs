@@ -186,6 +186,7 @@ async fn found_by(rig: &Rig, rule: &str) -> Result<usize, Failure> {
 async fn m7_wp14_a_rule_writes_its_hand_over_in_one_change_and_stops_at_the_cap() -> TestResult {
     each_database("m7_wp14_rule_cap", async |db| {
         let (rig, app) = rig_and_app(db).await?;
+        rig.turn_ai_apps_and_agents_on().await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let mut crew = crew(&site, 2).await?;
         let made = issues(&site, &mut ada, &["One", "Two", "Three"]).await?;
@@ -214,6 +215,7 @@ async fn m7_wp14_a_rule_writes_its_hand_over_in_one_change_and_stops_at_the_cap(
 async fn m7_f234_a_hand_over_that_runs_out_makes_room_for_the_issue_that_waited() -> TestResult {
     each_database("m7_f234_run_out", async |db| {
         let (rig, app) = rig_and_app(db).await?;
+        rig.turn_ai_apps_and_agents_on().await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let crew = crew(&site, 1).await?;
         let made = issues(&site, &mut ada, &["One", "Two"]).await?;
@@ -250,6 +252,7 @@ async fn m7_f234_a_hand_over_that_runs_out_makes_room_for_the_issue_that_waited(
 async fn m7_f234_a_review_that_ends_work_makes_room_for_the_issue_that_waited() -> TestResult {
     each_database("m7_f234_review", async |db| {
         let (rig, app) = rig_and_app(db).await?;
+        rig.turn_ai_apps_and_agents_on().await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let mut crew = crew(&site, 1).await?;
         let made = issues(&site, &mut ada, &["One", "Two"]).await?;
@@ -371,6 +374,7 @@ async fn room_after(
 async fn m7_f234_an_agent_that_gives_up_makes_room_for_the_issue_that_waited() -> TestResult {
     each_database("m7_f234_gave_up", async |db| {
         let (rig, app) = rig_and_app(db).await?;
+        rig.turn_ai_apps_and_agents_on().await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let mut crew = crew(&site, 1).await?;
         let made = issues(&site, &mut ada, &["One", "Two"]).await?;
@@ -389,6 +393,7 @@ async fn m7_f234_an_agent_that_gives_up_makes_room_for_the_issue_that_waited() -
 async fn m7_f234_a_result_accepted_by_itself_makes_room_for_the_issue_that_waited() -> TestResult {
     each_database("m7_f234_accepted", async |db| {
         let (rig, app) = rig_and_app(db).await?;
+        rig.turn_ai_apps_and_agents_on().await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let allowed = ada
             .send(
@@ -464,6 +469,7 @@ async fn m7_wp14_two_rules_of_one_agent_looking_at_the_same_moment_pass_its_limi
 -> TestResult {
     each_database("m7_wp14_two_rules", async |db| {
         let (rig, app) = rig_and_app(db).await?;
+        rig.turn_ai_apps_and_agents_on().await?;
         Box::pin(two_rules(&rig, &app)).await
     })
     .await
@@ -474,6 +480,7 @@ async fn m7_wp14_a_person_and_a_rule_handing_over_one_issue_at_once_give_it_one_
 -> TestResult {
     each_database("m7_wp14_person_and_rule", async |db| {
         let (rig, app) = rig_and_app(db).await?;
+        rig.turn_ai_apps_and_agents_on().await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let (mut tess, _) = site.person(StartingRole::TeamMember, "tess").await?;
         let (agent, _) = agent_with_limit(&mut tess, 5).await?;

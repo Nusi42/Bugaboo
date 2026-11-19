@@ -32,7 +32,7 @@ fn listing(session: &str, project: &impl ToString, agent: bool) -> IssuesQuery {
 
 #[tokio::test]
 async fn ai_31_the_brief_is_told_before_anything_is_handed_over() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     let work = issue_agent_work(&world.ctx(), ask(&given.team.session_token, &given.issue))
         .await?
@@ -51,7 +51,7 @@ async fn ai_31_the_brief_is_told_before_anything_is_handed_over() -> Outcome {
 
 #[tokio::test]
 async fn ai_33_the_work_names_its_agent_the_person_and_who_handed_it_over() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     let work = issue_agent_work(&world.ctx(), ask(&given.team.session_token, &given.issue))
         .await?
@@ -67,7 +67,7 @@ async fn ai_33_the_work_names_its_agent_the_person_and_who_handed_it_over() -> O
 
 #[tokio::test]
 async fn ai_33_a_list_row_names_the_agent_and_its_state_only_when_asked() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     let found = world
         .store
@@ -108,7 +108,7 @@ async fn ai_30_a_reader_not_told_who_people_are_sees_someone_behind_an_agent() -
     use super::workflows_rules::{member, starting_role};
     use crate::roles::{SetPeopleLevel, set_level};
 
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     let reader = member(
         &world,

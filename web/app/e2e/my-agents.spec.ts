@@ -10,18 +10,18 @@ import {
   createKeyOnPage,
   ruleSearchName,
   takeKeyBackOnPage,
+  prepareWebWithAgents,
 } from "./support/agents-scene.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { prepareWeb } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
 
 // *My agents* (AI-37, AI-30, AI-32, UX §4.17): what waits for the person comes first, an agent can be paused and
 // stopped, all of them can be stopped with a question first, a key is shown once, a standing rule offers only the
 // short list of fields, and an administrator stops any agent. The same specs run on a computer and on a phone.
 
-test.use({ preparation: { run: prepareWeb } });
+test.use({ preparation: { run: prepareWebWithAgents } });
 
 const helper = "Bobs helper";
 

@@ -15,6 +15,7 @@ const databaseFile = "bugaboo.db";
 const MICROSECONDS = 1000;
 
 export { tickTwo } from "./labels.ts";
+export { prepareWebWithAgents } from "./agents-scene.ts";
 export { agentWorkRead, openHandOver, showsTheAgentWork } from "./agent-work-view.ts";
 
 /** Makes an agent of the person who is signed in, through the API; its ID. */

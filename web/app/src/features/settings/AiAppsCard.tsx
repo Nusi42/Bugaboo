@@ -1,6 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { Card } from "@bugaboo/ui";
 
+import { aiAppsEnabledKey } from "../../shared/ai-kinds.ts";
 import type { Setting } from "../../shared/my-settings.ts";
 import { AiAppAddresses } from "./AiAppAddresses.tsx";
 import { OrganizationTopic } from "./OrganizationTopic.tsx";
@@ -10,7 +11,7 @@ const APP_TOPICS = "ai-apps.";
 
 /** The explanation of *Let AI apps sign in*: one sentence, for the state the switch is in. */
 const APP_HELPS = {
-  "ai-apps.enabled": (setting: Setting): string =>
+  [aiAppsEnabledKey]: (setting: Setting): string =>
     setting.value === true
       ? t("setting.ai-apps.enabled.help-on")
       : t("setting.ai-apps.enabled.help-off"),

@@ -120,7 +120,7 @@ async fn allow_never(world: &World, on: bool) -> Result<(), AppError> {
 
 #[tokio::test]
 async fn m7_wp14_a_rule_hands_over_what_its_search_finds() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = rule_world(&world).await?;
     let rule = rule_that_hands_over(&world, &given).await?;
     assert!(
@@ -158,7 +158,7 @@ async fn m7_wp14_a_rule_hands_over_what_its_search_finds() -> Outcome {
 
 #[tokio::test]
 async fn m7_wp14_one_hand_over_for_each_found_issue_and_never_again() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = rule_world(&world).await?;
     rule_that_hands_over(&world, &given).await?;
     look(&world, given.project).await?;
@@ -193,7 +193,7 @@ async fn m7_wp14_one_hand_over_for_each_found_issue_and_never_again() -> Outcome
 
 #[tokio::test]
 async fn m7_wp14_the_limit_of_the_agent_caps_the_open_hand_overs_of_a_rule() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = rule_world(&world).await?;
     let second = an_issue(&world, given.project).await?;
     let third = an_issue(&world, given.project).await?;
@@ -235,7 +235,7 @@ async fn m7_wp14_the_limit_of_the_agent_caps_the_open_hand_overs_of_a_rule() -> 
 #[tokio::test]
 async fn m7_wp14_an_agent_takes_a_hand_over_of_a_rule_and_throw_away_undoes_the_attempt() -> Outcome
 {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = rule_world(&world).await?;
     rule_that_hands_over(&world, &given).await?;
     look(&world, given.project).await?;
@@ -304,7 +304,7 @@ async fn retitle(world: &World, given: &RuleWorld, title: &str) -> Result<(), Ap
 #[tokio::test]
 async fn m7_wp14_a_rule_that_proposes_hands_over_nothing_and_its_agent_changes_nothing() -> Outcome
 {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = rule_world(&world).await?;
     create_standing_rule(&world.ctx(), rule_request(&given)).await?;
     look(&world, given.project).await?;
@@ -337,7 +337,7 @@ async fn m7_wp14_a_rule_that_proposes_hands_over_nothing_and_its_agent_changes_n
 
 #[tokio::test]
 async fn m7_wp14_a_rule_that_never_runs_out_needs_the_setting() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = rule_world(&world).await?;
     let never = |given: &RuleWorld| CreateStandingRule {
         never_ends: true,
@@ -417,7 +417,7 @@ async fn m7_wp14_a_rule_that_never_runs_out_needs_the_setting() -> Outcome {
 
 #[tokio::test]
 async fn m7_wp14_the_setting_is_for_administrators_only() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = rule_world(&world).await?;
     let refusal = change_setting(
         &world.ctx(),
@@ -440,7 +440,7 @@ async fn m7_wp14_the_setting_is_for_administrators_only() -> Outcome {
 
 #[tokio::test]
 async fn m7_wp14_an_accept_by_itself_of_a_hand_over_of_a_rule_is_listed_in_my_agents() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = rule_world(&world).await?;
     allow_accepting(&world, given.project).await?;
     let mut rule = handing(&given);
@@ -488,7 +488,7 @@ fn jobs_of_kind(world: &World, kind: &str) -> usize {
 
 #[tokio::test]
 async fn m7_f236_switching_the_setting_off_gives_a_rule_that_never_runs_out_an_end() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = rule_world(&world).await?;
     allow_never(&world, true).await?;
     let never = create_standing_rule(
@@ -529,7 +529,7 @@ async fn m7_f236_switching_the_setting_off_gives_a_rule_that_never_runs_out_an_e
 
 #[tokio::test]
 async fn m7_f236_resetting_the_setting_to_its_default_gives_the_rules_an_end_too() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = rule_world(&world).await?;
     allow_never(&world, true).await?;
     create_standing_rule(
@@ -560,7 +560,7 @@ async fn m7_f236_resetting_the_setting_to_its_default_gives_the_rules_an_end_too
 #[tokio::test]
 async fn m7_wp14_a_rule_with_a_field_no_agent_can_have_is_skipped_and_the_other_rules_work()
 -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = rule_world(&world).await?;
     let second = an_issue(&world, given.project).await?;
     // The first rule names a field that is no member of an issue (as a retired own field is not).

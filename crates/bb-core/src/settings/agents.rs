@@ -14,7 +14,7 @@ settings! {
     AGENTS_ENABLED: Bool = {
         key: "agents.enabled",
         name: message::SETTING_AGENTS_ENABLED_NAME,
-        default: true,
+        default: false,
         levels: [Organization, Project],
         changed_by: Administrators,
         help: message::SETTING_AGENTS_ENABLED_HELP,

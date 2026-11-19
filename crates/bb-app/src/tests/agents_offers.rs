@@ -64,7 +64,7 @@ fn take_back(who: &Started, agent: AgentId) -> TakeBackOffer {
 
 #[tokio::test]
 async fn ai_30_an_offer_can_be_taken_back_or_declined_and_nobody_else_ends_it() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = ground(&world).await?;
     let other = another(&world, given.project).await?;
     let stranger = member(
@@ -114,7 +114,7 @@ async fn ai_30_an_offer_can_be_taken_back_or_declined_and_nobody_else_ends_it() 
 
 #[tokio::test]
 async fn ai_30_a_stopped_agent_is_offered_to_nobody() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = ground(&world).await?;
     let other = another(&world, given.project).await?;
     hand_agent(&world.ctx(), offer(&given.team, given.agent, &other, 1)).await?;
@@ -143,7 +143,7 @@ async fn ai_30_a_stopped_agent_is_offered_to_nobody() -> Outcome {
 
 #[tokio::test]
 async fn ai_37_work_accepted_by_itself_stays_with_the_person_it_was_given_for() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = ground(&world).await?;
     let other = another(&world, given.project).await?;
     hand_over(
@@ -219,7 +219,7 @@ async fn ai_37_work_accepted_by_itself_stays_with_the_person_it_was_given_for() 
 
 #[tokio::test]
 async fn ai_37_what_waits_for_the_person_comes_before_work_that_is_newer() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = ground(&world).await?;
     let second = an_issue(&world, given.project).await?;
     hand_over(
@@ -258,7 +258,7 @@ async fn ai_37_what_waits_for_the_person_comes_before_work_that_is_newer() -> Ou
 
 #[tokio::test]
 async fn ai_37_the_agents_handed_to_a_person_are_cut_at_the_most_and_say_so() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = ground(&world).await?;
     let other = another(&world, given.project).await?;
     // More agents are offered to the person than a list of agents holds.
@@ -288,7 +288,7 @@ async fn ai_37_the_agents_handed_to_a_person_are_cut_at_the_most_and_say_so() ->
 
 #[tokio::test]
 async fn ai_30_nobody_but_the_person_changes_the_limits_of_an_agent() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = ground(&world).await?;
     let asking = |session: &str| SetAgentLimits {
         session_token: session.to_owned(),
@@ -337,7 +337,7 @@ pub(crate) async fn take_back_offer_scenario(world: &World) -> super::scenarios:
 
 #[tokio::test]
 async fn ai_30_an_agent_is_never_handed_to_its_own_person() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = ground(&world).await?;
     let refusal = hand_agent(
         &world.ctx(),

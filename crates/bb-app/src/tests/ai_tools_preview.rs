@@ -49,7 +49,7 @@ fn said<T>(answer: &Result<T, AppError>) -> String {
 
 #[tokio::test]
 async fn m7_f225_an_agent_previews_a_sub_issue_under_the_checks_of_the_real_call() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed_with(&world, |asked| {
         asked.powers = vec![HandOverPower::CreateSubIssues];
     })
@@ -85,7 +85,7 @@ async fn m7_f225_an_agent_previews_a_sub_issue_under_the_checks_of_the_real_call
 
 #[tokio::test]
 async fn m7_f225_an_agent_previews_no_change_while_no_attempt_runs() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     let issue = given.issue.to_string();
     let version = 1;

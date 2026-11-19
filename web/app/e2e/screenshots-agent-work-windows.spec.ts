@@ -1,18 +1,18 @@
 import { t } from "@bugaboo/messages";
 
 import { issueAddress } from "../src/shared/paths.ts";
+import { prepareWebWithAgents } from "./support/agents-scene.ts";
 import { openHandOver, openWindow, tickTwo } from "./support/agent-work.ts";
 import { openReview, signedInWithAgent } from "./support/agent-work-windows.ts";
 import { scrollWindow } from "./support/agent-work-shots.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { inFourThemesAsWindow } from "./support/four-themes.ts";
-import { prepareWeb } from "./support/issues.ts";
 import { screenshotFolder } from "./support/screenshots.ts";
 
 // The windows of a hand-over and of a review in the four themes, for the review of M7 WP-11. They are
 // only taken when `BB_SCREENSHOT_DIR` names the folder.
 test.skip(screenshotFolder === undefined, "Set BB_SCREENSHOT_DIR to take the screenshots.");
-test.use({ preparation: { run: prepareWeb } });
+test.use({ preparation: { run: prepareWebWithAgents } });
 test.describe.configure({ mode: "serial" });
 
 const MILESTONE = "M7/agent-work";

@@ -315,10 +315,10 @@ const SAFE_STARTS: &[(&str, DefaultValue)] = &[
     ("ai.address", DefaultValue::Text("")),
     // When the assistant is switched on, it runs at most this many tools for one question.
     ("assistant.look-ups-most", DefaultValue::Text("8")),
-    // AI apps and agents may be allowed, but none exists at the start: each is connected or made by
-    // a person, acts only with that person's rights, and its rules run out (ADR-0029, ADR-0042).
-    ("ai-apps.enabled", DefaultValue::Bool(true)),
-    ("agents.enabled", DefaultValue::Bool(true)),
+    // No AI app may sign in and no agent may work until an administrator switches them on; an
+    // upgrade keeps what an installation had (migration 59).
+    ("ai-apps.enabled", DefaultValue::Bool(false)),
+    ("agents.enabled", DefaultValue::Bool(false)),
     ("agents.accept-by-itself", DefaultValue::Bool(false)),
     ("agents.rules-never-run-out", DefaultValue::Bool(false)),
     ("agents.rule-days", DefaultValue::Integer(30)),

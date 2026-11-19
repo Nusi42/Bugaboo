@@ -357,7 +357,7 @@ async fn comp_09_a_comment_written_by_an_agent_carries_the_mark_in_the_api_and_t
     use crate::comments::{AddComment, add_comment};
     use crate::history::{HistoryQuery, HistoryWhat, history};
 
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let (project, team, fixer, key) = a_team_agent(&world).await?;
     let id = an_issue(&world, project).await?;
     super::agents::hand_title_and_take(&world, &team.session_token, fixer, &key, id).await?;
@@ -408,7 +408,7 @@ async fn comp_09_a_comment_written_by_an_agent_carries_the_mark_in_the_api_and_t
 /// is its own (AI-30).
 #[tokio::test]
 async fn ai_30_an_agent_key_reads_its_own_attempt_and_never_the_runs_of_its_person() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let (project, team, fixer, key) = a_team_agent(&world).await?;
     let id = an_issue(&world, project).await?;
     let person = world

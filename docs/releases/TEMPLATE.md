@@ -23,6 +23,8 @@ What does not work yet, and how to get around it.
   (`bugaboo update verify <file>`), stop the service, replace the program and
   start it again. It makes a backup and brings the database up to date by
   itself ([Update Bugaboo](https://github.com/Nusi42/Bugaboo/blob/main/userDocs/install/upgrade.md)).
+- An upgrade keeps AI apps and agents as they were; new installations start
+  with both off.
 - Windows warns about an unknown publisher until Bugaboo's program is signed
   with a certificate; check the signature first.
 

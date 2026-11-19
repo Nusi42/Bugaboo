@@ -16,18 +16,19 @@ import {
   putScene,
   tickTwo,
   workByAgent,
+  prepareWebWithAgents,
 } from "./support/agent-work.ts";
 import { readyForReview } from "./support/agent-work-ready.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { createIssue, prepareWeb, readIssue } from "./support/issues.ts";
+import { createIssue, readIssue } from "./support/issues.ts";
 import { partIn } from "./support/parts.ts";
 
 // Agent work on screen (AI-31, AI-33, AI-34, AI-35, M7 WP-11): the window of a hand-over, the block
 // under the description, the answer to a question, Approve plan, the review, and the mark in a row.
 // The tests run on a computer and on a phone.
 
-test.use({ preparation: { run: prepareWeb } });
+test.use({ preparation: { run: prepareWebWithAgents } });
 test.describe.configure({ mode: "serial" });
 
 test("ai_31 hand over names what the brief is missing and still hands over", async ({

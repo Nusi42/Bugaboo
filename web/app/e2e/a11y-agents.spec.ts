@@ -2,16 +2,15 @@ import { t } from "@bugaboo/messages";
 
 import { paths } from "../src/shared/paths.ts";
 import { ada } from "./support/accounts.ts";
-import { agentsScene } from "./support/agents-scene.ts";
+import { agentsScene, prepareWebWithAgents } from "./support/agents-scene.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { prepareWeb } from "./support/issues.ts";
 
 // The accessibility suite for agents (TEST-A11Y): `paths.myAgents`, `paths.agent` and `paths.organizationAgents` in
 // the states a person meets, in the four themes on a computer and a phone.
 
-test.use({ preparation: { run: prepareWeb } });
+test.use({ preparation: { run: prepareWebWithAgents } });
 
 test("a11y My agents at paths.myAgents with work, a rule about to run out and an agent paused", async ({
   page,

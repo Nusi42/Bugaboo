@@ -14,7 +14,7 @@ settings! {
     AI_APPS_ENABLED: Bool = {
         key: "ai-apps.enabled",
         name: message::SETTING_AI_APPS_ENABLED_NAME,
-        default: true,
+        default: false,
         levels: [Organization, Project],
         changed_by: Administrators,
         help: message::SETTING_AI_APPS_ENABLED_HELP_ON,

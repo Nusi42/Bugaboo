@@ -28,6 +28,7 @@ use bb_app::roles::SetFieldLevel;
 use bb_core::access::{FieldLevel, PeopleLevel};
 use bb_core::fields::Field;
 use bb_core::id::{ProjectId, RoleId};
+use bb_core::settings::{AGENTS_ENABLED, AI_APPS_ENABLED};
 use bb_testing::{Failure, TestResult, each_database};
 
 use super::actors::{
@@ -607,8 +608,11 @@ fn both_actors() -> Vec<Actor> {
 pub(super) async fn run(rig: &Rig, actors: &[Actor]) -> Result<Record, Failure> {
     // AI apps are off in the matrix: the sign-in of an app answers an actor who is let in that apps
     // are off, which is no refusal of a permission (the switch of the assistant no longer decides
-    // this, WP-15).
-    rig.set_organization_switch("ai-apps.enabled", false)
+    // this, WP-15). Agents are on, so their routes answer by the permissions alone; both start off
+    // since migration 59 (COMP-04), and the record was made with agents on.
+    rig.set_organization_switch(AI_APPS_ENABLED.definition().key(), false)
+        .await?;
+    rig.set_organization_switch(AGENTS_ENABLED.definition().key(), true)
         .await?;
     let fixture = Fixture::start(rig).await?;
     let routes = operations();

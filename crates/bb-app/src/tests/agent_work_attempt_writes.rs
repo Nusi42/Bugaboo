@@ -78,7 +78,7 @@ async fn tries(
 #[tokio::test]
 async fn m7_f120_a_comment_a_relation_a_file_and_a_sub_issue_need_an_attempt_that_runs() -> Outcome
 {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed_with(&world, |asked| {
         asked.powers = vec![HandOverPower::CreateSubIssues];
     })

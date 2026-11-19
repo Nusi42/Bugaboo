@@ -60,6 +60,7 @@ pub(super) async fn an_agents_key(rig: &Rig, member: &Member) -> Result<String, 
 async fn sec_01_an_agent_without_work_is_refused_on_every_route() -> TestResult {
     each_database("sec_matrix_agent_without_work", async |db| {
         let rig = Rig::start_with(db, Tries::Unreached).await?;
+        // `run` switches agents on, as the record was made.
         run(&rig, &[Actor::AgentWithoutWork]).await?;
         Ok(())
     })

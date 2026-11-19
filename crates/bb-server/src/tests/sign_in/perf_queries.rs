@@ -365,6 +365,7 @@ async fn perf_05_a_page_with_agent_marks_runs_as_many_statements_for_forty_issue
 -> TestResult {
     each_database("perf_05_list_agents", async |db| {
         let (rig, app) = rig_and_app(db).await?;
+        rig.turn_ai_apps_and_agents_on().await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let mut keys = Vec::new();
         for number in 0..40 {

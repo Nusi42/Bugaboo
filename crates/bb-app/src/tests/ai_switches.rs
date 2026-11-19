@@ -103,7 +103,7 @@ async fn who_reaches(world: &World, issue: &str) -> Result<Vec<bool>, String> {
 }
 
 async fn a_world_with_an_issue() -> Result<(World, ProjectId, String), String> {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let project = a_project(&world, "OPS").await?;
     ai_on(&world).await.map_err(|error| error.to_string())?;
     let issue = issue_with(&world, "OPS", "Pager", "plain", BTreeMap::default()).await?;
@@ -206,7 +206,7 @@ async fn register(world: &World) -> Result<bool, String> {
 
 #[tokio::test]
 async fn m7_wp15_the_assistant_off_leaves_ai_apps_and_agents_on_for_the_organization() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     // The assistant is off at the start; apps and agents are on.
     assert!(register(&world).await?);
     assert!(world.ctx().agents_on_in_the_organization().await?);
@@ -219,7 +219,7 @@ async fn m7_wp15_the_assistant_off_leaves_ai_apps_and_agents_on_for_the_organiza
 
 #[tokio::test]
 async fn m7_wp15_ai_apps_off_leaves_agents_and_the_assistant_on_for_the_organization() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     ai_on(&world).await?;
     set(
         &world,

@@ -82,7 +82,7 @@ pub(super) async fn show(world: &World, given: &Handed) -> Result<WorkView, AppE
 
 #[tokio::test]
 async fn ai_34_a_question_waits_for_an_answer_and_the_answer_joins_the_brief() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     report_attempt(&world.ctx(), report(&given.key, given.issue, None, 5)).await?;
     let asked = ask_question(
@@ -145,7 +145,7 @@ async fn ai_34_a_question_waits_for_an_answer_and_the_answer_joins_the_brief() -
 
 #[tokio::test]
 async fn ai_34_with_plan_needs_approval_an_attempt_waits_for_approve_plan() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let Ground {
         team,
         agent,
@@ -193,7 +193,7 @@ async fn ai_34_with_plan_needs_approval_an_attempt_waits_for_approve_plan() -> O
 
 #[tokio::test]
 async fn ai_31_a_hand_over_ends_at_accept() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     report_attempt(&world.ctx(), report(&given.key, given.issue, None, 5)).await?;
     end_attempt(&world.ctx(), ready(&given.key, given.issue)).await?;
@@ -215,7 +215,7 @@ async fn ai_31_a_hand_over_ends_at_accept() -> Outcome {
 
 #[tokio::test]
 async fn ai_35_send_back_starts_another_attempt_with_the_note_in_the_brief() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     report_attempt(&world.ctx(), report(&given.key, given.issue, None, 5)).await?;
     end_attempt(&world.ctx(), ready(&given.key, given.issue)).await?;
@@ -270,7 +270,7 @@ async fn handed_to_accept_by_itself(world: &World) -> Result<Handed, AppError> {
 
 #[tokio::test]
 async fn ai_35_accept_by_itself_is_off_at_the_start() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed_to_accept_by_itself(&world).await?;
     finish_with_check(&world, &given, CheckResult::Passed).await?;
     let work = show(&world, &given).await?;
@@ -283,7 +283,7 @@ async fn ai_35_accept_by_itself_is_off_at_the_start() -> Outcome {
 
 #[tokio::test]
 async fn ai_35_an_attempt_without_a_check_or_with_a_failed_one_waits_for_a_person() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed_to_accept_by_itself(&world).await?;
     allow_by_itself(&world, given.project).await?;
     finish_with_check(&world, &given, CheckResult::Failed).await?;
@@ -304,7 +304,7 @@ async fn ai_35_an_attempt_without_a_check_or_with_a_failed_one_waits_for_a_perso
 
 #[tokio::test]
 async fn ai_35_a_passed_check_is_accepted_by_itself_when_the_project_allows_it() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed_to_accept_by_itself(&world).await?;
     allow_by_itself(&world, given.project).await?;
     finish_with_check(&world, &given, CheckResult::Passed).await?;
@@ -326,7 +326,7 @@ async fn ai_35_a_passed_check_is_accepted_by_itself_when_the_project_allows_it()
 
 #[tokio::test]
 async fn ai_33_an_agent_never_makes_a_time_entry() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     report_attempt(&world.ctx(), report(&given.key, given.issue, None, 90)).await?;
     // What the agent reports stays on its attempt, marked as its own.
@@ -352,7 +352,7 @@ async fn ai_33_an_agent_never_makes_a_time_entry() -> Outcome {
 
 #[tokio::test]
 async fn ai_34_the_attempts_are_limited_by_the_budget() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let Ground {
         team,
         agent,

@@ -2,18 +2,18 @@ import { t } from "@bugaboo/messages";
 
 import { part } from "../../packages/ui/src/tokens.ts";
 import { issueAddress } from "../src/shared/paths.ts";
+import { prepareWebWithAgents } from "./support/agents-scene.ts";
 import { ada } from "./support/accounts.ts";
 import { openWindow } from "./support/agent-work.ts";
 import { readyForReview } from "./support/agent-work-ready.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { prepareWeb } from "./support/issues.ts";
 import { roomUnderContent, roomUnderWindowContent } from "./support/windows.ts";
 
 // The review window is as tall as the decision chosen needs (AI-35, M7-F246), on a computer and on
 // a phone: no empty room under *Move the issue to* once *Accept* is chosen.
 
-test.use({ preparation: { run: prepareWeb } });
+test.use({ preparation: { run: prepareWebWithAgents } });
 
 test("ai_35_the_review_window_is_as_tall_as_the_choice_made", async ({ page, server }) => {
   const { issue } = await readyForReview(server, "Review height issue", "Measurer", true);

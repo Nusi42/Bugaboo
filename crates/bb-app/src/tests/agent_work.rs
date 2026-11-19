@@ -116,7 +116,7 @@ pub(super) fn query(session: &str, issue: IssueId) -> IssueQuery {
 
 #[tokio::test]
 async fn ai_31_a_handed_over_agent_sees_only_its_issues() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     let other = an_issue(&world, given.project).await?;
     // The person sees both issues; the agent only the one it was given.
@@ -137,7 +137,7 @@ async fn ai_31_a_handed_over_agent_sees_only_its_issues() -> Outcome {
 
 #[tokio::test]
 async fn ai_31_a_hand_over_needs_change_issues_on_each_issue() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     // A project where the person is only a Viewer: they see the issue, but may not hand it over.
     let quiet = a_project(&world, "QUIET").await?;
@@ -178,7 +178,7 @@ async fn ai_31_a_hand_over_needs_change_issues_on_each_issue() -> Outcome {
 
 #[tokio::test]
 async fn ai_31_the_brief_names_what_is_missing_and_does_not_stop_the_hand_over() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     // The test issue has no description, and no steps or *Done when*.
     let missing = &given.hand_over.issues[0].missing;
@@ -196,7 +196,7 @@ async fn ai_31_the_brief_names_what_is_missing_and_does_not_stop_the_hand_over()
 
 #[tokio::test]
 async fn ai_31_an_agent_has_one_open_hand_over_for_an_issue() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     let again = hand_over(
         &world.ctx(),
@@ -209,7 +209,7 @@ async fn ai_31_an_agent_has_one_open_hand_over_for_an_issue() -> Outcome {
 
 #[tokio::test]
 async fn ai_33_the_issue_keeps_its_person_and_shows_worked_on_by() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     let before = issue(&world.ctx(), query(&token(&world), given.issue))
         .await?
@@ -238,7 +238,7 @@ async fn ai_33_the_issue_keeps_its_person_and_shows_worked_on_by() -> Outcome {
 
 #[tokio::test]
 async fn ai_31_a_hand_over_runs_out_after_14_days() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     let id: HandOverId = given.hand_over.id;
     // Not yet: the job of a hand-over that has not run out leaves it as it is.
@@ -273,7 +273,7 @@ async fn ai_31_a_hand_over_runs_out_after_14_days() -> Outcome {
 
 #[tokio::test]
 async fn ai_33_open_work_becomes_stopped_when_the_person_loses_access() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     world
         .ctx()
@@ -288,7 +288,7 @@ async fn ai_33_open_work_becomes_stopped_when_the_person_loses_access() -> Outco
 
 #[tokio::test]
 async fn ai_33_open_work_becomes_stopped_when_the_agent_is_stopped() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     crate::agents::stop_all_agents(
         &world.ctx(),
@@ -344,7 +344,7 @@ pub(super) async fn report_attempt(
 
 #[tokio::test]
 async fn ai_33_open_work_stops_for_the_hand_on_when_another_person_accepts_the_agent() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     let other = member(
         &world,

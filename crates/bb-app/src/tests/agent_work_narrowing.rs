@@ -41,7 +41,7 @@ pub(super) fn ticking(fields: &[&str]) -> impl FnOnce(&mut crate::agent_work::Ha
 
 #[tokio::test]
 async fn ai_31_a_hand_over_names_only_members_an_agent_may_be_given() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let text = a_field(&world, "Customer", FieldType::Text, &[]).await?;
     let people = a_field(&world, "Owner", FieldType::Person, &[]).await?;
     let (text, people) = (text.id.to_string(), people.id.to_string());
@@ -53,7 +53,7 @@ async fn ai_31_a_hand_over_names_only_members_an_agent_may_be_given() -> Outcome
         "nope",
     ] {
         // Each try in a world of its own: a hand-over makes its person and agent.
-        let world = World::new().await?;
+        let world = World::with_ai_apps_and_agents().await?;
         let result = handed_with(&world, ticking(&["title", refused_field])).await;
         assert!(
             refused(&result.err().ok_or("accepted")?, ErrorCode::InvalidRequest),
@@ -77,7 +77,7 @@ async fn ai_31_a_hand_over_names_only_members_an_agent_may_be_given() -> Outcome
 #[tokio::test]
 async fn ai_31_an_agent_never_changes_an_own_field_that_holds_people_whatever_is_stored() -> Outcome
 {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let people = a_field(&world, "Owner", FieldType::Person, &[]).await?;
     let given = handed_with(&world, ticking(&["title"])).await?;
     // A hand-over stored before the check existed names the field: the kind still refuses it.
@@ -101,7 +101,7 @@ async fn ai_31_an_agent_never_changes_an_own_field_that_holds_people_whatever_is
 
 #[tokio::test]
 async fn ai_31_an_agent_edits_and_deletes_a_comment_only_when_it_was_given_comments() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let without = handed_with(&world, ticking(&["title"])).await?;
     let comment = add_comment(
         &world.ctx(),
@@ -132,7 +132,7 @@ async fn ai_31_an_agent_edits_and_deletes_a_comment_only_when_it_was_given_comme
 
 #[tokio::test]
 async fn ai_31_an_agent_with_comments_given_deletes_the_comment() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed_with(&world, ticking(&["comments"])).await?;
     start_attempt(&world, &given.key, given.issue).await?;
     let comment = add_comment(
@@ -159,7 +159,7 @@ async fn ai_31_an_agent_with_comments_given_deletes_the_comment() -> Outcome {
 
 #[tokio::test]
 async fn ai_33_an_agent_sees_only_its_own_work_on_an_issue() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     // A second agent of the same person has work on the same issue.
     let other = an_agent(&world, &given.team.session_token, "Helper").await?;
@@ -271,7 +271,7 @@ async fn stops_told(
 
 #[tokio::test]
 async fn ai_33_losing_one_project_cuts_the_work_there_and_stops_nothing() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = two_projects(&world).await?;
     remove_assignment(
         &world.ctx(),
@@ -297,7 +297,7 @@ async fn ai_33_losing_one_project_cuts_the_work_there_and_stops_nothing() -> Out
 
 #[tokio::test]
 async fn ai_33_losing_every_project_stops_the_work_once_and_tells_the_person_once() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = two_projects(&world).await?;
     for row in [given.first, given.second] {
         remove_assignment(
@@ -332,7 +332,7 @@ async fn ai_33_losing_every_project_stops_the_work_once_and_tells_the_person_onc
 
 #[tokio::test]
 async fn ai_33_work_that_ran_out_is_not_reached_even_before_the_job_ends_it() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     issue(&world.ctx(), query(&given.key, given.issue)).await?;
     world.clock.advance(15 * 24 * 3600);
@@ -351,7 +351,7 @@ async fn ready_for_review(world: &World) -> Result<Handed, AppError> {
 
 #[tokio::test]
 async fn ai_35_two_reviews_at_the_same_moment_give_one_answer_and_one_conflict() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = ready_for_review(&world).await?;
     let work = show(&world, &given).await?;
     let (first, second) = (world.ctx(), world.ctx());
@@ -380,7 +380,7 @@ async fn ai_35_two_reviews_at_the_same_moment_give_one_answer_and_one_conflict()
 
 #[tokio::test]
 async fn ai_35_two_ends_of_one_attempt_write_one_summary() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     report_attempt(&world.ctx(), report(&given.key, given.issue, None, 5)).await?;
     let (first, second) = (world.ctx(), world.ctx());
@@ -402,7 +402,7 @@ async fn ai_35_two_ends_of_one_attempt_write_one_summary() -> Outcome {
 
 #[tokio::test]
 async fn ai_35_looking_at_work_counts_its_version_up_and_tells_nobody_again() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = ready_for_review(&world).await?;
     world.ctx().catch_up_notifications().await?;
     let before = show(&world, &given).await?;
@@ -435,7 +435,9 @@ async fn ai_35_looking_at_work_counts_its_version_up_and_tells_nobody_again() ->
 /// How many reads of the store a look at the agent work of an issue takes, with this many agents
 /// working on the issue.
 async fn reads_of_a_look_with(agents: usize) -> Result<usize, AppError> {
-    let world = World::new().await.map_err(AppError::Internal)?;
+    let world = World::with_ai_apps_and_agents()
+        .await
+        .map_err(AppError::Internal)?;
     let given = handed(&world).await?;
     for number in 0..agents.saturating_sub(1) {
         let more = an_agent(
@@ -499,7 +501,7 @@ pub(super) async fn new_under(
 
 #[tokio::test]
 async fn ai_31_an_agent_creates_a_sub_issue_only_under_the_issue_it_was_handed() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed_with(&world, |asked| {
         asked.powers = vec![HandOverPower::CreateSubIssues];
     })
@@ -532,7 +534,7 @@ async fn ai_31_an_agent_creates_a_sub_issue_only_under_the_issue_it_was_handed()
 
 #[tokio::test]
 async fn ai_31_a_new_issue_of_an_agent_carries_only_members_the_hand_over_covers() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let people = a_field(&world, "Owner", FieldType::Person, &[]).await?;
     let given = handed_with(&world, |asked| {
         asked.powers = vec![HandOverPower::CreateSubIssues];
@@ -563,7 +565,7 @@ async fn ai_31_a_new_issue_of_an_agent_carries_only_members_the_hand_over_covers
 
 #[tokio::test]
 async fn ai_31_without_the_tick_an_agent_creates_no_sub_issue() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     let refusal = create_issue(
         &world.ctx(),
@@ -576,7 +578,7 @@ async fn ai_31_without_the_tick_an_agent_creates_no_sub_issue() -> Outcome {
 
 #[tokio::test]
 async fn ai_35_a_throw_away_that_cannot_undo_stops_with_an_error_and_leaves_the_work() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed_with(&world, ticking(&["title"])).await?;
     report_attempt(&world.ctx(), report(&given.key, given.issue, None, 5)).await?;
     let version = issue(&world.ctx(), query(&given.key, given.issue))
@@ -615,7 +617,7 @@ async fn ai_35_a_throw_away_that_cannot_undo_stops_with_an_error_and_leaves_the_
 #[tokio::test]
 async fn ai_35_a_throw_away_and_an_accept_with_a_status_at_the_same_moment_give_one_answer()
 -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = ready_for_review(&world).await?;
     let work = show(&world, &given).await?;
     let mut accept = review(&given.team.session_token, &work, ReviewAnswer::Accept);
@@ -631,7 +633,7 @@ async fn ai_35_a_throw_away_and_an_accept_with_a_status_at_the_same_moment_give_
 #[tokio::test]
 async fn ai_35_an_agent_cannot_ask_while_its_result_waits_for_the_review() -> Outcome {
     use crate::agent_work::{AskQuestion, ask_question};
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = ready_for_review(&world).await?;
     let asked = ask_question(
         &world.ctx(),
@@ -652,7 +654,7 @@ async fn ai_35_an_agent_cannot_ask_while_its_result_waits_for_the_review() -> Ou
 
 #[tokio::test]
 async fn ai_31_a_new_issue_under_a_parent_is_judged_like_the_change_of_a_parent() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let project = a_project(&world, "DEEP").await?;
     let issue_type = a_type(&world).await.map_err(AppError::Internal)?;
     let make = |parent: Option<IssueId>| CreateIssue {
@@ -703,7 +705,7 @@ async fn ai_35_two_accepts_by_itself_on_two_pieces_of_one_hand_over_close_both_a
     use super::agent_work_review::check;
     use super::agent_work_runs::allow_accepting;
     use crate::agent_work::attach_result;
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let Ground {
         project,
         team,
@@ -749,7 +751,7 @@ fn touches_fail(world: &World, times: usize) {
 
 #[tokio::test]
 async fn ai_35_a_review_closes_again_when_a_sibling_closed_first_once() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = ready_for_review(&world).await?;
     let work = show(&world, &given).await?;
     touches_fail(&world, 1);
@@ -767,7 +769,7 @@ async fn ai_35_a_review_closes_again_when_a_sibling_closed_first_once() -> Outco
 
 #[tokio::test]
 async fn ai_35_a_review_that_always_finds_the_hand_over_changed_leaves_the_work_open() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = ready_for_review(&world).await?;
     let work = show(&world, &given).await?;
     touches_fail(&world, crate::agent_work::TRIES);

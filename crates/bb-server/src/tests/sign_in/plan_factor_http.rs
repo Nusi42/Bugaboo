@@ -237,6 +237,7 @@ async fn plan_14_no_report_or_search_sorts_by_time_factor() -> TestResult {
 async fn plan_14_the_time_factor_says_who_may_change_it() -> TestResult {
     each_database("plan_14_may_change", async |db| {
         let (rig, app) = rig_and_app(db).await?;
+        rig.turn_ai_apps_and_agents_on().await?;
         super::ai_mcp_rig::ai_on(&rig).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         // Lea is a Contributor, whose role may not change the field, and the person on the bar.

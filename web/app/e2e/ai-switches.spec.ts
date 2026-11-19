@@ -54,6 +54,10 @@ test("m7_wp15 a project has a switch for each kind of AI, agents first and the a
   await expect(agents).toBeVisible();
   await expect(apps).toBeVisible();
   await expect(assistant).toBeChecked();
+  // Agents and AI apps start off for the organization, and the project follows it (COMP-04).
+  const followsOff = t("setting.agents.project-follows-off");
+  await expect(agents.locator("option:checked")).toHaveText(followsOff);
+  await expect(apps.locator("option:checked")).toHaveText(followsOff);
   expect(await top(agents)).toBeLessThan(await top(apps));
   expect(await top(apps)).toBeLessThan(await top(assistant));
   // AI apps off for the project leaves the other two as they were, and sticks.

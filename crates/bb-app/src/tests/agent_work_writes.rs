@@ -36,7 +36,7 @@ fn ticking(members: &[&str]) -> impl FnOnce(&mut HandOver) {
 async fn ai_31_an_agent_deletes_and_restores_a_file_only_when_it_was_given_attachments() -> Outcome
 {
     for ticked in [false, true] {
-        let world = World::new().await?;
+        let world = World::with_ai_apps_and_agents().await?;
         let given = handed_with(
             &world,
             ticking(if ticked { &["attachments"] } else { &["title"] }),
@@ -71,7 +71,7 @@ async fn ai_31_an_agent_deletes_and_restores_a_file_only_when_it_was_given_attac
 
 #[tokio::test]
 async fn ai_31_an_agent_restores_no_file_without_attachments_given() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed_with(&world, ticking(&["title"])).await?;
     let file = an_attachment(&world, given.issue, "jam.txt", A_FILE).await?;
     delete_attachment(
@@ -118,7 +118,7 @@ async fn two_handed(
 #[tokio::test]
 async fn ai_31_an_agent_takes_a_relation_away_only_when_it_was_given_relations() -> Outcome {
     for ticked in [false, true] {
-        let world = World::new().await?;
+        let world = World::with_ai_apps_and_agents().await?;
         let (given, second) =
             two_handed(&world, if ticked { &["relations"] } else { &["title"] }).await?;
         let relation = add_relation(
@@ -152,7 +152,7 @@ async fn ai_31_an_agent_takes_a_relation_away_only_when_it_was_given_relations()
 
 #[tokio::test]
 async fn ai_31_an_agent_never_saves_a_long_text_or_restores_an_issue() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let long = a_field(&world, "Notes", FieldType::LongText, &[]).await?;
     let given = handed_with(&world, ticking(&["title"])).await?;
     // A lock belongs to a person in a browser tab, never to a key.

@@ -6461,7 +6461,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.agents.enabled.help",
-        "Switch this off and the agents of people are refused at their next request. A project can switch its agents off while they are on for the organization. AI apps and the assistant have switches of their own.",
+        "New installations start with it off. Switch this on and people can create agents that work for them; switch it off again and their agents are refused at their next request. A project can switch its agents off while they are on for the organization. AI apps and the assistant have switches of their own.",
     ),
     ("setting.agents.enabled.name", "Agents may work"),
     (

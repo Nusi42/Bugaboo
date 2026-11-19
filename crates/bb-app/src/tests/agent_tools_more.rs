@@ -73,7 +73,7 @@ pub(super) async fn version_of(world: &World, given: &Handed) -> Result<i64, App
 
 #[tokio::test]
 async fn ai_36_an_agent_never_takes_over_a_lock() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed_with_description(&world).await?;
     let version = version_of(&world, &given).await?;
     // The person is editing the description in a window of their own.
@@ -117,7 +117,7 @@ async fn ai_36_an_agent_never_takes_over_a_lock() -> Outcome {
 
 #[tokio::test]
 async fn ai_36_an_agent_holds_a_lock_for_one_save_and_no_longer() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed_with_description(&world).await?;
     let version = version_of(&world, &given).await?;
     save_as_agent(&world, &given, version, "Steps: press the button").await?;
@@ -191,7 +191,7 @@ pub(super) fn mark_of(text: &str) -> String {
 
 #[tokio::test]
 async fn ai_36_changes_since_shows_only_what_the_agent_may_see() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     let other = elsewhere(&world, &given).await?;
     // The first look tells nothing and gives the mark of now.
@@ -233,7 +233,7 @@ async fn ai_36_changes_since_shows_only_what_the_agent_may_see() -> Outcome {
 
 #[tokio::test]
 async fn ai_36_changes_since_is_paged_and_a_mark_that_is_none_is_refused() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     let first = used(&world, &given.key, "changes_since", json!({})).await?;
     let mark = mark_of(&without_nonces(&first.text));
@@ -283,7 +283,7 @@ fn the_text(value: &Value) -> String {
 #[tokio::test]
 async fn ai_32_a_standing_rule_that_proposes_changes_nothing_through_its_tools() -> Outcome {
     use super::agent_work_rules::{found_by_search, made, rule_world};
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = rule_world(&world).await?;
     let rule = made(&world, &given).await?;
     found_by_search(&world);
@@ -364,7 +364,7 @@ async fn ai_32_a_standing_rule_that_proposes_changes_nothing_through_its_tools()
 #[tokio::test]
 async fn ai_21_preview_propose_answers_what_would_change_and_saves_nothing() -> Outcome {
     use super::agent_work_rules::{found_by_search, made, rule_world};
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = rule_world(&world).await?;
     let rule = made(&world, &given).await?;
     found_by_search(&world);
@@ -390,7 +390,7 @@ async fn ai_21_preview_propose_answers_what_would_change_and_saves_nothing() -> 
 
 #[tokio::test]
 async fn ai_36_a_report_never_starts_an_attempt_only_take_does() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let first = handed(&world).await?;
     let session = first.team.session_token.clone();
     let helper = an_agent(&world, &session, "Helper").await?;
@@ -422,7 +422,7 @@ async fn ai_36_a_report_never_starts_an_attempt_only_take_does() -> Outcome {
 
 #[tokio::test]
 async fn ai_36_an_agents_save_leaves_the_draft_of_its_person() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed_with_description(&world).await?;
     let version = version_of(&world, &given).await?;
     crate::editing::save_draft(
@@ -446,7 +446,7 @@ async fn ai_36_an_agents_save_leaves_the_draft_of_its_person() -> Outcome {
 #[tokio::test]
 async fn ai_32_an_agent_comments_only_on_an_issue_it_was_handed() -> Outcome {
     use super::agent_work_rules::{found_by_search, made, rule_world};
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = rule_world(&world).await?;
     made(&world, &given).await?;
     found_by_search(&world);
@@ -477,7 +477,7 @@ async fn ai_32_an_agent_comments_only_on_an_issue_it_was_handed() -> Outcome {
 #[tokio::test]
 async fn ai_36_more_matches_than_a_page_all_reach_the_agent() -> Outcome {
     use super::agent_work_rules::{made, rule_world};
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = rule_world(&world).await?;
     let rule = made(&world, &given).await?;
     let first = used(&world, &given.key, "changes_since", json!({})).await?;
@@ -524,7 +524,7 @@ async fn ai_36_more_matches_than_a_page_all_reach_the_agent() -> Outcome {
 
 #[tokio::test]
 async fn ai_36_only_a_web_address_is_attached_as_a_link() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     let address = given.issue.to_string();
     used(&world, &given.key, "take", json!({"issue": address})).await?;
@@ -561,7 +561,7 @@ async fn ai_36_only_a_web_address_is_attached_as_a_link() -> Outcome {
 
 #[tokio::test]
 async fn ai_36_the_answer_to_an_old_version_leaves_out_a_field_kept_from_ai() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     let version = version_of(&world, &given).await?;
     retitle(&world, given.issue, "A title that changed").await?;
@@ -598,7 +598,7 @@ async fn ai_36_the_answer_to_an_old_version_leaves_out_a_field_kept_from_ai() ->
 async fn ai_36_the_answer_to_an_old_version_is_judged_for_the_agent_not_its_person() -> Outcome {
     use super::search_fields::set_field;
     use super::workflows_rules::starting_role;
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     let version = version_of(&world, &given).await?;
     // The issue changes: its title and its priority.

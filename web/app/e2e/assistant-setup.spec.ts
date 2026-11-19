@@ -134,8 +134,11 @@ test("ai_22 the web addresses AI apps may sign in from are allowed and taken awa
   await page.getByRole("button", { name: t("ai-setup.address-add") }).click();
   const list = page.getByRole("list", { name: t("ai-setup.addresses-list") });
   await expect(list.getByText("https://app.example.com/callback")).toBeVisible();
-  // The switch for apps that may sign in at all is drawn by the one settings form.
-  await expect(page.getByRole("switch", { name: t("setting.ai-apps.enabled.name") })).toBeVisible();
+  // The switch for apps that may sign in at all is drawn by the one settings form, off at the start
+  // of a new installation (COMP-04).
+  const appsSwitch = page.getByRole("switch", { name: t("setting.ai-apps.enabled.name") });
+  await expect(appsSwitch).toBeVisible();
+  await expect(appsSwitch).not.toBeChecked();
   await list
     .getByRole("button", {
       name: t("ai-setup.address-remove-name", { address: "https://app.example.com/callback" }),

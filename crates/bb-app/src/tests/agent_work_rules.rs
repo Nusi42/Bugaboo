@@ -49,7 +49,7 @@ async fn version_of(world: &World, key: &str, issue_id: IssueId) -> Result<i64, 
 
 #[tokio::test]
 async fn ai_32_a_standing_rule_never_changes_people_fields() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let Ground {
         team,
         agent,
@@ -77,7 +77,7 @@ async fn ai_32_a_standing_rule_never_changes_people_fields() -> Outcome {
 
 #[tokio::test]
 async fn ai_31_ticked_fields_are_changed_and_people_and_the_status_never_unasked() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let Ground {
         team,
         agent,
@@ -200,7 +200,7 @@ pub(super) fn payload_of(rule: &StandingRuleView) -> serde_json::Value {
 
 #[tokio::test]
 async fn ai_32_a_standing_rule_runs_out_after_30_days_and_never_after_more_than_90() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = rule_world(&world).await?;
     let rule = made(&world, &given).await?;
     let thirty = rule.ends_at.unwrap().as_second() - world.ctx().now().as_second();
@@ -255,7 +255,7 @@ async fn ai_32_a_standing_rule_runs_out_after_30_days_and_never_after_more_than_
 
 #[tokio::test]
 async fn ai_32_every_new_match_is_written_down() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = rule_world(&world).await?;
     let rule = made(&world, &given).await?;
     let job = json!({ "project": given.project.to_string() });
@@ -313,7 +313,7 @@ async fn another_type(world: &World, current: IssueTypeId) -> Result<IssueTypeId
 
 #[tokio::test]
 async fn m7_f120_an_agent_changes_nothing_on_an_issue_only_a_standing_rule_found() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = rule_world(&world).await?;
     // The search of the rule finds the issue: still no hand-over, no attempt and so no run, which
     // is why the agent only reads and proposes there.
@@ -339,7 +339,7 @@ async fn m7_f120_an_agent_changes_nothing_on_an_issue_only_a_standing_rule_found
 #[tokio::test]
 async fn ai_32_a_proposal_of_a_standing_rule_changes_nothing_until_a_person_applies_it() -> Outcome
 {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = rule_world(&world).await?;
     let rule = made(&world, &given).await?;
     found_by_search(&world);
@@ -499,7 +499,7 @@ pub(crate) async fn decide_proposal_scenario(world: &World) -> Added {
 
 #[tokio::test]
 async fn ai_32_a_change_to_an_issue_where_a_rule_works_queues_the_job_of_the_matches() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = rule_world(&world).await?;
     made(&world, &given).await?;
     let waiting = |world: &World| {
@@ -527,7 +527,7 @@ async fn ai_32_a_change_to_an_issue_where_a_rule_works_queues_the_job_of_the_mat
 
 #[tokio::test]
 async fn ai_32_applying_a_proposed_tag_puts_it_on_the_issue_as_the_person() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = rule_world(&world).await?;
     let rule = made(&world, &given).await?;
     found_by_search(&world);
@@ -563,7 +563,7 @@ async fn ai_32_applying_a_proposed_tag_puts_it_on_the_issue_as_the_person() -> O
 
 #[tokio::test]
 async fn ai_32_a_rule_proposes_only_for_an_issue_it_found() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = rule_world(&world).await?;
     let rule = made(&world, &given).await?;
     // The job of the matches did not run: the rule found nothing, so there is nothing to propose.
@@ -597,7 +597,7 @@ async fn switch_agents(world: &World, scope: SettingsScope, on: bool) -> Outcome
 
 #[tokio::test]
 async fn ai_32_a_rule_is_made_and_renewed_only_where_agents_are_on() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = rule_world(&world).await?;
     let rule = made(&world, &given).await?;
     let renew = |version: i64| ChangeStandingRule {
@@ -637,7 +637,7 @@ async fn ai_32_a_rule_is_made_and_renewed_only_where_agents_are_on() -> Outcome 
 async fn ai_32_a_rule_that_creates_in_a_project_gives_top_level_issues_with_no_members() -> Outcome
 {
     use crate::issues::{CreateIssue, create_issue};
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = rule_world(&world).await?;
     let mut request = rule_request(&given);
     request.creates_in = Some(given.project);

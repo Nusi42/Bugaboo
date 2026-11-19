@@ -323,7 +323,7 @@ async fn a_registered_app_query(rig: &Rig, ada: &mut Browser) -> Result<String, 
 #[tokio::test]
 async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
     each_database("perf_03_http_etags", async |db| {
-        let rig = Rig::start(db).await?;
+        let rig = Rig::start_with_ai_apps_and_agents(db).await?;
         let app = app_with_probe(&rig, None);
         let mut ada = ada_with_hr(&rig, &app).await?;
 

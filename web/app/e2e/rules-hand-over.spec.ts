@@ -2,11 +2,10 @@ import { t } from "@bugaboo/messages";
 
 import { paths } from "../src/shared/paths.ts";
 import { ada } from "./support/accounts.ts";
-import { agentsScene } from "./support/agents-scene.ts";
+import { agentsScene, prepareWebWithAgents } from "./support/agents-scene.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { prepareWeb } from "./support/issues.ts";
 import { allowNever, fillTopOfRule, pieceCount } from "./support/rules-hand-over.ts";
 import { answerTo } from "./support/sequence.ts";
 
@@ -14,7 +13,7 @@ import { answerTo } from "./support/sequence.ts";
 // offers both ways and *Never runs out* only where an administrator allows it, and a rule that hands over gives its
 // agent each issue it finds. The same specs run on a computer and on a phone.
 
-test.use({ preparation: { run: prepareWeb } });
+test.use({ preparation: { run: prepareWebWithAgents } });
 
 test("m7_wp14_a_rule_that_hands_over_gives_its_agent_each_issue_it_finds", async ({
   page,

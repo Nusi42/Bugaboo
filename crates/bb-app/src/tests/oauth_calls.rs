@@ -25,7 +25,7 @@ fn in_run(world: &World, run: Option<bb_core::id::RunId>) -> Ctx<'_, FakeStore> 
 
 #[tokio::test]
 async fn ai_38_an_mcp_session_is_one_run_and_its_changes_say_which_app() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     ai_on(&world).await?;
     a_project(&world, "WEB").await?;
     let kind = super::scenarios_issues::a_type(&world).await?;
@@ -124,7 +124,7 @@ async fn a_key(world: &World, choice: KeyChoice) -> Result<String, AppError> {
 
 #[tokio::test]
 async fn ai_23_an_access_key_works_as_the_person_narrowed_by_it() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     ai_on(&world).await?;
     a_project(&world, "WEB").await?;
     let kind = super::scenarios_issues::a_type(&world).await?;
@@ -177,7 +177,7 @@ async fn ai_23_an_access_key_works_as_the_person_narrowed_by_it() -> Outcome {
 
 #[tokio::test]
 async fn ai_23_a_change_through_mcp_says_person_via_app_in_the_history() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     ai_on(&world).await?;
     a_project(&world, "WEB").await?;
     let kind = super::scenarios_issues::a_type(&world).await?;

@@ -4,16 +4,22 @@ import { part } from "../../packages/ui/src/tokens.ts";
 import { issueAddress } from "../src/shared/paths.ts";
 import { ada } from "./support/accounts.ts";
 import { signedInAdmin } from "./support/access.ts";
-import { createAgent, handOverOne, putScene, showsTheAgentWork } from "./support/agent-work.ts";
+import {
+  createAgent,
+  handOverOne,
+  putScene,
+  showsTheAgentWork,
+  prepareWebWithAgents,
+} from "./support/agent-work.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { gapUnder } from "./support/geometry.ts";
-import { createIssue, prepareWeb } from "./support/issues.ts";
+import { createIssue } from "./support/issues.ts";
 
 // Agent work on the page of an issue on a phone (AI-33, M7-F245): where the page shows it, the
 // state of the work stands whole under the bar of the page.
 
-test.use({ preparation: { run: prepareWeb } });
+test.use({ preparation: { run: prepareWebWithAgents } });
 
 /** A description longer than the screen of a phone, so the page scrolls down to the agent work. */
 const LONG = Array.from({ length: 40 }, (_, at) => `Line ${String(at + 1)} of the text.`).join(

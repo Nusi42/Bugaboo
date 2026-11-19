@@ -110,7 +110,7 @@ async fn a_helper_with_the_same_issue(world: &World, first: &Handed) -> Result<S
 
 #[tokio::test]
 async fn ai_36_two_agents_take_the_same_issue_and_only_one_gets_it() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let first = handed(&world).await?;
     let helper_key = a_helper_with_the_same_issue(&world, &first).await?;
     let input = json!({"issue": first.issue.to_string()});
@@ -135,7 +135,7 @@ async fn ai_36_two_agents_take_the_same_issue_and_only_one_gets_it() -> Outcome 
 
 #[tokio::test]
 async fn ai_36_two_agents_who_take_at_the_same_moment_are_judged_one_after_the_other() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let first = handed(&world).await?;
     let helper_key = a_helper_with_the_same_issue(&world, &first).await?;
     let input = json!({"issue": first.issue.to_string()});
@@ -163,7 +163,7 @@ async fn ai_36_two_agents_who_take_at_the_same_moment_are_judged_one_after_the_o
 
 #[tokio::test]
 async fn ai_36_a_take_with_an_old_version_of_the_issue_takes_nothing() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     let before = stored(&world);
     let stale = used(
@@ -229,7 +229,7 @@ fn preview_case(tool: &str, issue: IssueId) -> Option<(Vec<(&'static str, Value)
 /// The preview of the tool says what the call changes and saves nothing, and the call then changes
 /// what the preview said.
 async fn the_preview_saves_nothing_and_the_call_does_what_it_said(tool: &str) -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     let (first, input) = preview_case(tool, given.issue).ok_or("a tool without a case")?;
     for (earlier, earlier_input) in first {
@@ -322,7 +322,7 @@ async fn ai_36_every_tool_that_changes_answers_a_preview_and_saves_nothing() -> 
 
 #[tokio::test]
 async fn ai_36_give_up_sets_agent_gave_up_with_the_reason() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     used(
         &world,
@@ -362,7 +362,7 @@ async fn ai_36_give_up_sets_agent_gave_up_with_the_reason() -> Outcome {
 
 #[tokio::test]
 async fn ai_36_the_tools_of_agents_are_offered_to_agents_and_to_nobody_else() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     let names = |listed: crate::ai::tools::ToolList| -> Vec<String> {
         listed
@@ -441,7 +441,7 @@ pub(super) fn fence_above(answer: &str, needle: &str) -> Option<String> {
 
 #[tokio::test]
 async fn ai_36_every_text_in_a_tool_answer_names_its_author() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     let given = handed(&world).await?;
     let phrase = |kind: AuthorKind| format!("text written by {}", kind.phrase());
     let taken = used(

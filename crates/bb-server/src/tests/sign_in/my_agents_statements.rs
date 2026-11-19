@@ -106,6 +106,7 @@ async fn agent_works(rig: &Rig, key: &str, first: &str, third: &str) -> Result<(
 async fn ai_37_waiting_work_comes_first_and_accepted_work_stays_with_its_person() -> TestResult {
     each_database("ai_37_my_agents_statements", async |db| {
         let (rig, app) = rig_and_app(db).await?;
+        rig.turn_ai_apps_and_agents_on().await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let (mut tess, _) = site.person(StartingRole::TeamMember, "tess").await?;
         let (mut olga, olga_id) = site.person(StartingRole::TeamMember, "olga").await?;
@@ -190,6 +191,7 @@ async fn ai_37_waiting_work_comes_first_and_accepted_work_stays_with_its_person(
 async fn ai_37_the_rules_of_all_my_agents_come_in_one_answer() -> TestResult {
     each_database("ai_37_my_agents_rules", async |db| {
         let (rig, app) = rig_and_app(db).await?;
+        rig.turn_ai_apps_and_agents_on().await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let (mut tess, _) = site.person(StartingRole::TeamMember, "tess").await?;
         let (mut olga, _) = site.person(StartingRole::TeamMember, "olga").await?;
@@ -249,6 +251,7 @@ async fn ai_37_the_rules_of_all_my_agents_come_in_one_answer() -> TestResult {
 async fn ai_30_an_offer_is_cut_taken_back_and_ended_by_a_stop() -> TestResult {
     each_database("ai_30_my_agents_offers", async |db| {
         let (rig, app) = rig_and_app(db).await?;
+        rig.turn_ai_apps_and_agents_on().await?;
         let (site, _ada) = Site::start(&rig, &app).await?;
         let (mut tess, _) = site.person(StartingRole::TeamMember, "tess").await?;
         let (mut ruth, _) = site.person(StartingRole::TeamMember, "ruth").await?;
@@ -357,6 +360,7 @@ async fn ai_30_an_offer_is_cut_taken_back_and_ended_by_a_stop() -> TestResult {
 async fn ai_32_the_rules_of_an_agent_come_open_first_then_ended_in_pages() -> TestResult {
     each_database("ai_32_agent_rules_pages", async |db| {
         let (rig, app) = rig_and_app(db).await?;
+        rig.turn_ai_apps_and_agents_on().await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let (mut tess, _) = site.person(StartingRole::TeamMember, "tess").await?;
         let search = tess

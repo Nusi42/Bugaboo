@@ -8,11 +8,11 @@ import {
   openRuleOfSearch,
   takeKeyBackOnPage,
   takeKeysBack,
+  prepareWebWithAgents,
 } from "./support/agents-scene.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { inFourChosenThemes } from "./support/four-themes.ts";
 import { signIn } from "./support/flows.ts";
-import { prepareWeb } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
 import { screenshotFolder } from "./support/screenshots.ts";
 
@@ -20,7 +20,7 @@ import { screenshotFolder } from "./support/screenshots.ts";
 // and where *My agents* sits on a phone (AI-30, AI-32, AI-37), in the four themes. Taken only when `BB_SCREENSHOT_DIR`
 // names the folder they go to.
 test.skip(screenshotFolder === undefined, "Set BB_SCREENSHOT_DIR to take the screenshots.");
-test.use({ preparation: { run: prepareWeb } });
+test.use({ preparation: { run: prepareWebWithAgents } });
 
 const MILESTONE = "M7/my-agents";
 

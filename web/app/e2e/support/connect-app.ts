@@ -4,6 +4,7 @@ import { request, type Page } from "@playwright/test";
 
 import { ada } from "./accounts.ts";
 import { openSession } from "./api.ts";
+import { turnAiAppsAndAgentsOn } from "./organization.ts";
 import { type Instance } from "./server.ts";
 
 /** The address an app comes back to: this computer, on a port the app picked (RFC 8252). */
@@ -41,7 +42,10 @@ export interface AppAtTheDoor {
   ) => Promise<{ readonly access: string; readonly refresh: string }>;
 }
 
-/** AI is on for the organization: a model on this computer needs no agreement. */
+/**
+ * AI is on for the organization, AI apps and agents too (both start off): a model on this computer
+ * needs no agreement.
+ */
 export async function switchAiOn(server: Instance): Promise<void> {
   const admin = openSession(server.url);
   await admin.client.POST("/api/v1/auth/sign-in", {
@@ -59,6 +63,7 @@ export async function switchAiOn(server: Instance): Promise<void> {
   if (!changed.response.ok) {
     throw new Error(`AI could not be switched on: ${String(changed.response.status)}`);
   }
+  await turnAiAppsAndAgentsOn(admin);
   await admin.dispose();
 }
 

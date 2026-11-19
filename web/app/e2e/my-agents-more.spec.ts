@@ -2,6 +2,7 @@ import { dataOf } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import type { Page } from "@playwright/test";
 
+import { agentsEnabledKey } from "../src/shared/ai-kinds.ts";
 import { addressInProject, paths, savedSearchAddress } from "../src/shared/paths.ts";
 import { ada, bob, signInThroughApi } from "./support/accounts.ts";
 import {
@@ -9,10 +10,10 @@ import {
   createAgent,
   openRuleOfSearch,
   ruleSearchName,
+  prepareWebWithAgents,
 } from "./support/agents-scene.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { prepareWeb } from "./support/issues.ts";
 
 // The rest of the specs of *My agents* and the agent pages (AI-30, AI-32, UX §4.17, §5.1): the order of the list of
 // every agent, the window of a standing rule from a saved search, and the switch of a project.
@@ -25,7 +26,7 @@ async function saved(page: Page, change: () => Promise<unknown>): Promise<void> 
   ]);
 }
 
-test.use({ preparation: { run: prepareWeb } });
+test.use({ preparation: { run: prepareWebWithAgents } });
 
 test("ai_30_the_list_of_the_organization_shows_working_agents_before_stopped_ones", async ({
   page,
@@ -118,7 +119,7 @@ test("ai_30_a_sub_project_below_a_project_that_is_off_shows_where_its_value_come
       body: { name: "Agents below", short_name: sub },
     }),
   );
-  const key = "agents.enabled";
+  const key = agentsEnabledKey;
   const settings = (project: string) => ({ params: { path: { project, key } } });
   await scene.admin.client.PUT("/api/v1/projects/{project}/settings/{key}", {
     ...settings(scene.project),

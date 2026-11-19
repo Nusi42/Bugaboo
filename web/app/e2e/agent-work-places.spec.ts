@@ -1,17 +1,18 @@
 import { t } from "@bugaboo/messages";
 
 import { issueAddress } from "../src/shared/paths.ts";
+import { prepareWebWithAgents } from "./support/agents-scene.ts";
 import { ada } from "./support/accounts.ts";
 import { signedInAdmin } from "./support/access.ts";
 import { createAgent, handOverOne, openHandOver } from "./support/agent-work.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { topOf } from "./support/geometry.ts";
-import { createIssue, prepareWeb } from "./support/issues.ts";
+import { createIssue } from "./support/issues.ts";
 
 // The places of agent work: the block above the comments, and the window of a hand-over that keeps its place (AI-31, M7 WP-11), on a computer and on a phone.
 
-test.use({ preparation: { run: prepareWeb } });
+test.use({ preparation: { run: prepareWebWithAgents } });
 
 test("ai_31 ticking what the agent may change keeps the window where it is", async ({
   page,

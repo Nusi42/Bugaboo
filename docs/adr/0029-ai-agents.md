@@ -161,3 +161,8 @@ The maintainer decided on 2026-11-09 that Bugaboo must be able to run agents wit
 ARCH-AI-TOOLS, ARCH-PERMS, SEC-MATRIX (see `tools/checks/catalog.toml`), and the tests named above, which the M7 work packages add.
 
 <!-- COMP-10 checked: no tool or rule ranks, evaluates or assigns people; agents are never assigned; standing rules never change fields that hold people. -->
+
+## Amendment (M9, secure defaults): agents start off
+
+- **Agents start off** (`agents.enabled`, ADR-0047 decision 6 and its amendment): every kind of AI is off in a new installation until an administrator switches it on. This replaces the *on at the start* of this record.
+- **An upgrade keeps them as they were.** A stored value is only a change of the default, so migration 59 writes *on* as the organization's own value where a person already exists and the organization set no value of its own; a value the organization set stays. Enforced by: the tests of migration 59 on both databases, `comp_04_every_setting_that_matters_for_security_starts_safe`.

@@ -38,7 +38,7 @@ fn identity(token: &str) -> McpIdentityQuery {
 
 #[tokio::test]
 async fn ai_22_a_network_registers_only_so_many_apps_in_an_hour() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     ai_on(&world).await?;
     let register = async || {
         register_app(
@@ -62,7 +62,7 @@ async fn ai_22_a_network_registers_only_so_many_apps_in_an_hour() -> Outcome {
 
 #[tokio::test]
 async fn ai_22_while_apps_are_off_nobody_comes_in_at_mcp_and_it_is_no_guess() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     ai_on(&world).await?;
     let (_, tokens) = signed_in(&world, KeyChoice::SeeAndChange).await?;
     mcp_identity(&world.ctx(), identity(&tokens.access_token)).await?;
@@ -86,7 +86,7 @@ async fn ai_22_while_apps_are_off_nobody_comes_in_at_mcp_and_it_is_no_guess() ->
 
 #[tokio::test]
 async fn ai_22_the_secret_of_a_session_does_not_open_mcp() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     ai_on(&world).await?;
     let refused = mcp_identity(&world.ctx(), identity(&token(&world))).await;
     assert_eq!(
@@ -98,7 +98,7 @@ async fn ai_22_the_secret_of_a_session_does_not_open_mcp() -> Outcome {
 
 #[tokio::test]
 async fn ai_22_the_days_without_use_do_not_count_while_apps_are_off() -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     ai_on(&world).await?;
     let (client, tokens) = signed_in(&world, KeyChoice::SeeAndChange).await?;
     apps_on(&world, false).await?;
@@ -142,7 +142,7 @@ async fn ai_22_the_days_without_use_do_not_count_while_apps_are_off() -> Outcome
 #[tokio::test]
 async fn ai_22_a_grant_past_its_end_is_not_listed_nor_counted_and_the_clean_up_deletes_it()
 -> Outcome {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     ai_on(&world).await?;
     signed_in(&world, KeyChoice::SeeAndChange).await?;
     let person = world.admin.person.id;
@@ -183,7 +183,7 @@ async fn ai_22_a_grant_past_its_end_is_not_listed_nor_counted_and_the_clean_up_d
 #[tokio::test]
 async fn ai_22_the_pause_adds_only_the_time_that_passed_however_often_it_runs() -> Outcome {
     use bb_auth::{OAuthKind, OAuthSecret};
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     ai_on(&world).await?;
     let (_, tokens) = signed_in(&world, KeyChoice::SeeAndChange).await?;
     let hash = OAuthSecret::parse(OAuthKind::Refresh, &tokens.refresh_token)
@@ -218,7 +218,7 @@ async fn ai_22_the_pause_adds_only_the_time_that_passed_however_often_it_runs() 
 #[tokio::test]
 async fn ai_22_apps_switched_off_is_no_failed_try_at_registration_or_the_token_endpoint() -> Outcome
 {
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     ai_on(&world).await?;
     apps_on(&world, false).await?;
     // Far more tries than a network may fail in a minute: every one is answered the same way, and
@@ -270,7 +270,7 @@ async fn ai_22_apps_switched_off_is_no_failed_try_at_registration_or_the_token_e
 async fn ai_22_an_access_key_is_turned_away_at_mcp_while_apps_are_off_and_an_agent_key_while_agents_are()
 -> Outcome {
     use super::agents::{an_agent, key_of};
-    let world = World::new().await?;
+    let world = World::with_ai_apps_and_agents().await?;
     ai_on(&world).await?;
     let session = token(&world);
     let key = crate::auth::create_access_key(

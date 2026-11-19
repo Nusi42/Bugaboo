@@ -5,8 +5,9 @@ import type { Page } from "@playwright/test";
 import { paths } from "../../src/shared/paths.ts";
 import { signedInAdmin } from "./access.ts";
 import { type ApiSession } from "./api.ts";
-import { webIssues } from "./issues.ts";
+import { prepareWeb, webIssues } from "./issues.ts";
 import { layoutOf } from "./layout.ts";
+import { turnAiAppsAndAgentsOn } from "./organization.ts";
 
 /** How many scenes this server has had: agent names are taken for good, so each scene has names of its own. */
 let scenesMade = 0;
@@ -25,6 +26,19 @@ export interface AgentsScene {
   readonly sorter: string;
   readonly search: string;
   readonly project: string;
+}
+
+/**
+ * Gets a server ready for the tests of agents: the one `prepareWeb` makes, with AI apps and agents
+ * switched on as an administrator does (both start off).
+ */
+export async function prepareWebWithAgents(
+  server: Parameters<typeof signedInAdmin>[0],
+): Promise<void> {
+  await prepareWeb(server);
+  const admin = await signedInAdmin(server);
+  await turnAiAppsAndAgentsOn(admin);
+  await admin.dispose();
 }
 
 /** Creates an agent for the person of the session; its ID. */

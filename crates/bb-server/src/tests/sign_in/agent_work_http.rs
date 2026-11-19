@@ -78,6 +78,7 @@ async fn take(rig: &Rig, key: &str, issue: &str) -> Result<(), Failure> {
 async fn sec_01_an_agent_with_work_reaches_only_its_issue_and_only_what_was_ticked() -> TestResult {
     each_database("sec_01_agent_with_work", async |db| {
         let (rig, app) = rig_and_app(db).await?;
+        rig.turn_ai_apps_and_agents_on().await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let mut given = given(&site, &mut ada).await?;
         let mut script = Browser::new(&app, &super::http::called());
@@ -177,6 +178,7 @@ async fn sec_01_an_agent_with_work_reaches_only_its_issue_and_only_what_was_tick
 async fn sec_01_a_hand_over_cannot_name_a_member_that_holds_people_or_is_none() -> TestResult {
     each_database("sec_01_hand_over_members", async |db| {
         let (rig, app) = rig_and_app(db).await?;
+        rig.turn_ai_apps_and_agents_on().await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let mut given = given(&site, &mut ada).await?;
         let agent = given.person.send("GET", "/api/v1/agents", None).await?.body["items"][0]["id"]
@@ -229,6 +231,7 @@ async fn sec_01_a_hand_over_cannot_name_a_member_that_holds_people_or_is_none() 
 async fn ai_31_a_hand_over_with_one_piece_accepted_still_ends_and_stops_the_other() -> TestResult {
     each_database("ai_31_end_after_accept", async |db| {
         let (rig, app) = rig_and_app(db).await?;
+        rig.turn_ai_apps_and_agents_on().await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let mut given = given(&site, &mut ada).await?;
         let agent = given.person.send("GET", "/api/v1/agents", None).await?.body["items"][0]["id"]
