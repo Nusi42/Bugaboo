@@ -12,6 +12,7 @@ mod inputs;
 mod log;
 mod preview;
 mod read;
+mod refused;
 mod registry;
 mod requests;
 
@@ -24,4 +25,5 @@ pub use log::ToolCallStore;
 pub use preview::ProposedChange;
 pub(crate) use read::masked;
 pub use read::search_refusal;
+pub use refused::{field_refusal, input_refusal};
 pub use registry::{DESIGNED_OUT, ToolSpec, registry};

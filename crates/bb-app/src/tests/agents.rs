@@ -163,7 +163,8 @@ pub(super) async fn a_team_agent(
 }
 
 pub(super) fn refused(error: &AppError, code: ErrorCode) -> bool {
-    matches!(error, AppError::Refused(found) if *found == code)
+    // An input refused at one of its members is the same refusal, with the member named.
+    error.code() == Some(code)
 }
 
 pub(super) fn page(session: &str) -> AgentsQuery {

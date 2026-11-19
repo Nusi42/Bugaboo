@@ -21,6 +21,16 @@ pub enum AppError {
         /// The field, as the client names it.
         field: String,
     },
+    /// An input of a tool that does not fit its schema, with the member it is refused at and the
+    /// values that member takes when the schema lists them (`request.invalid`). Never the value
+    /// that was given.
+    RefusedInput {
+        /// The member of the input, by its name in the schema; `None` for a member the schema does
+        /// not know whose name is not a plain name, which may be text a person wrote.
+        field: Option<String>,
+        /// The values the member takes; empty when the schema lists none.
+        choices: Vec<String>,
+    },
     /// The session of the cookie has ended (it ran out, was ended, or never was one): the same
     /// answer as [`ErrorCode::NotSignedIn`], and the browser is told to forget the cookie and
     /// what it kept (M2-F06). A session that is only not at the stage the request needs (the
@@ -84,6 +94,7 @@ impl AppError {
     pub const fn code(&self) -> Option<ErrorCode> {
         match self {
             Self::Refused(code) | Self::RefusedAtField { code, .. } => Some(*code),
+            Self::RefusedInput { .. } => Some(ErrorCode::InvalidRequest),
             Self::SessionEnded => Some(ErrorCode::NotSignedIn),
             Self::Stale(_) | Self::Conflict(_) => Some(ErrorCode::VersionChanged),
             Self::TakenOver { .. } => Some(ErrorCode::EditTakenOver),
@@ -141,6 +152,9 @@ impl fmt::Display for AppError {
         match self {
             Self::Refused(code) | Self::RefusedAtField { code, .. } => {
                 write!(formatter, "refused: {code}")
+            }
+            Self::RefusedInput { .. } => {
+                write!(formatter, "refused: {}", ErrorCode::InvalidRequest)
             }
             Self::SessionEnded => write!(formatter, "refused: the session has ended"),
             Self::Stale(_) | Self::Conflict(_) => {

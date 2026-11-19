@@ -690,6 +690,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("ai-author.guest", "a Guest"),
     ("ai-author.member", "someone in the project"),
     ("ai-author.outsider", "someone outside"),
+    ("ai-refused.choices", "It takes one of: {choices}."),
+    ("ai-refused.field", "The field it is about: {field}."),
+    (
+        "ai-refused.unknown-field",
+        "The field it is about: an unknown field.",
+    ),
     ("ai-saved.done", "Saved."),
     (
         "ai-saved.issue",

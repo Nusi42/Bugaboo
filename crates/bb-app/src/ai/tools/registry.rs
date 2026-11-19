@@ -13,7 +13,6 @@
 use std::future::Future;
 use std::pin::Pin;
 
-use bb_core::ErrorCode;
 use bb_core::ai::{Tool, ToolCaller, ToolEffect, ToolScope};
 use bb_policy::{Evaluation, Permission};
 use serde::de::DeserializeOwned;
@@ -46,13 +45,16 @@ pub(super) struct Run<'a> {
     pub(super) input: &'a Value,
     pub(super) withheld: &'a Withheld,
     pub(super) caller: ToolCaller,
+    /// The schema of the input of the tool, which names the member a refused input is refused at.
+    pub(super) schema: fn() -> Value,
 }
 
 impl Run<'_> {
-    /// The input as the type of the tool; an input that is not one is `request.invalid`.
+    /// The input as the type of the tool; an input that is not one is refused at the member the
+    /// schema names (`refused.rs`), else with `request.invalid`.
     pub(super) fn input<T: DeserializeOwned>(&self) -> Result<T, AppError> {
         serde_json::from_value(self.input.clone())
-            .map_err(|_| AppError::Refused(ErrorCode::InvalidRequest))
+            .map_err(|_| super::refused::refusal(&(self.schema)(), self.input))
     }
 }
 
@@ -130,6 +132,12 @@ impl<S: AuthStore> ToolSpec<S> {
     #[must_use]
     pub fn input_schema(&self) -> Value {
         (self.input)()
+    }
+
+    /// The function that makes the schema of the input, which a call carries to name a refused
+    /// member.
+    pub(super) const fn schema_maker(&self) -> fn() -> Value {
+        self.input
     }
 
     /// *Apply* of a tool that changes something: the same input, saved as the person. A tool that

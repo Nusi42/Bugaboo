@@ -507,6 +507,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             input: &request.input,
             withheld: &withheld,
             caller: request.caller,
+            schema: spec.schema_maker(),
         };
         let outcome = if mode == ToolMode::Apply {
             // What an agent changes counts against its limits, before anything is written.

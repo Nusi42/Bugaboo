@@ -10,7 +10,9 @@
 use std::sync::Arc;
 
 use bb_app::ai::context::PeopleMode;
-use bb_app::ai::tools::{ToolCallQuery, ToolListQuery, ToolMode, search_refusal};
+use bb_app::ai::tools::{
+    ToolCallQuery, ToolListQuery, ToolMode, field_refusal, input_refusal, search_refusal,
+};
 use bb_app::auth::{AppError, AuthApi, McpIdentity, RequestInfo};
 use bb_core::ErrorCode;
 use bb_core::ai::{Tool, ToolCaller, ToolScope};
@@ -172,7 +174,11 @@ impl Caller<'_> {
             {
                 Ok(Err(code.text().render()))
             }
-            Err(AppError::RefusedAtField { code, .. }) => Ok(Err(code.text().render())),
+            // The field is named, never its value: a word of the program or the ID of an own field.
+            Err(AppError::RefusedAtField { code, field }) => Ok(Err(field_refusal(code, &field))),
+            Err(AppError::RefusedInput { field, choices }) => {
+                Ok(Err(input_refusal(field.as_deref(), &choices)))
+            }
             // A change made from an old version: the agent is told it is old, which version the
             // record has now and which fields changed, in words of the program; the values are
             // not told here, so no text of people is in it.

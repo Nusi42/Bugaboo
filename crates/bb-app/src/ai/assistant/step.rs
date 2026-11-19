@@ -177,8 +177,33 @@ fn sentence_of(error: &AppError) -> String {
     match error {
         AppError::Refused(code) => code.text().render(),
         AppError::Mistakes(mistakes) => crate::ai::tools::search_refusal(mistakes),
-        AppError::RefusedAtField { .. } => NOT_VALID.to_owned(),
+        AppError::RefusedAtField { code, field } => crate::ai::tools::field_refusal(*code, field),
+        AppError::RefusedInput { field, choices } => {
+            crate::ai::tools::input_refusal(field.as_deref(), choices)
+        }
         AppError::Stale(_) | AppError::Conflict(_) => CHANGED.to_owned(),
         _ => COULD_NOT_RUN.to_owned(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use bb_core::ErrorCode;
+
+    use super::*;
+
+    #[test]
+    fn ai_21_a_value_refused_at_a_field_names_the_field_as_mcp_does() {
+        let refused = AppError::RefusedAtField {
+            code: ErrorCode::FieldTooLong,
+            field: "title".to_owned(),
+        };
+        let sentence = sentence_of(&refused);
+        assert_eq!(
+            sentence,
+            crate::ai::tools::field_refusal(ErrorCode::FieldTooLong, "title")
+        );
+        assert!(sentence.contains("title"), "{sentence}");
+        assert_ne!(sentence, NOT_VALID);
     }
 }

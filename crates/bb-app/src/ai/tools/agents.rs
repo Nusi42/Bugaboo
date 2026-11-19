@@ -9,8 +9,7 @@
 //! author, and what the agent wrote itself with *an agent*.
 
 use bb_core::ErrorCode;
-use bb_core::agent_records::ResultKind;
-use bb_core::agent_work::{CheckResult, RuleField};
+use bb_core::agent_work::CheckResult;
 use bb_core::ai::AuthorKind;
 use bb_core::event::FieldChange;
 use bb_core::fields::FieldKey;
@@ -25,6 +24,7 @@ use super::inputs::{
     TakeInput, limit_within,
 };
 use super::preview::preview_parts;
+use super::refused::{refused_at, word_at};
 use super::registry::{Boxed, Run};
 use crate::agent_work::WorkView;
 use crate::agent_work::{
@@ -35,10 +35,6 @@ use crate::agent_work::{
 use crate::ai::context::Part;
 use crate::auth::{AppError, AuthStore, Ctx};
 use bb_policy::Authorized;
-
-fn invalid() -> AppError {
-    AppError::Refused(ErrorCode::InvalidRequest)
-}
 
 /// Refuses a call that does not come from an agent. The registry does not offer these tools to
 /// anybody else, and the use cases refuse again.
@@ -83,12 +79,12 @@ fn attach_request(run: &Run<'_>) -> Result<AttachResult, AppError> {
     Ok(AttachResult {
         session_token: run.token.to_owned(),
         issue: input.issue,
-        kind: ResultKind::from_code(&input.kind).ok_or_else(invalid)?,
+        kind: word_at("kind", &input.kind)?,
         label: input.label,
         link: input.address,
         outcome: input
             .outcome
-            .map(|outcome| CheckResult::from_code(&outcome).ok_or_else(invalid))
+            .map(|outcome| word_at::<CheckResult>("outcome", &outcome))
             .transpose()?,
     })
 }
@@ -118,9 +114,9 @@ fn propose_request(run: &Run<'_>) -> Result<ProposeChange, AppError> {
         rule: input
             .rule
             .parse::<StandingRuleId>()
-            .map_err(|_| invalid())?,
+            .map_err(|_| refused_at("rule"))?,
         issue: input.issue,
-        field: RuleField::from_code(&input.field).ok_or_else(invalid)?,
+        field: word_at("field", &input.field)?,
         after: input.value,
     })
 }

@@ -160,12 +160,12 @@ async fn plan_01_a_tool_refuses_a_start_after_the_due_date_like_every_other_way_
             "{tool}: {refused:?}"
         );
     }
-    // A text that is no date is no request, and an order that is right is saved.
+    // A text that is no date is refused at its field, and an order that is right is saved.
     let nonsense = json!({"issue": key, "version": 1, "due_date": "soon"});
     let refused = call_tool(&world.ctx(), applying(&who, "update_issue", nonsense)).await;
     assert!(matches!(
         refused,
-        Err(AppError::Refused(ErrorCode::InvalidRequest))
+        Err(AppError::RefusedInput { ref field, .. }) if field.as_deref() == Some("due_date")
     ));
     let fine =
         json!({"issue": key, "version": 1, "start_date": "2026-11-03", "due_date": "2026-11-10"});

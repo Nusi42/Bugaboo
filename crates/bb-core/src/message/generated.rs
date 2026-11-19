@@ -830,6 +830,9 @@ pub const AI_AUTHOR_MEMBER: MessageKey = MessageKey::new("ai-author.member");
 /// The message `ai-author.outsider`.
 pub const AI_AUTHOR_OUTSIDER: MessageKey = MessageKey::new("ai-author.outsider");
 
+/// The message `ai-refused.unknown-field`.
+pub const AI_REFUSED_UNKNOWN_FIELD: MessageKey = MessageKey::new("ai-refused.unknown-field");
+
 /// The message `ai-saved.done`.
 pub const AI_SAVED_DONE: MessageKey = MessageKey::new("ai-saved.done");
 
@@ -10664,6 +10667,24 @@ pub fn agents_work_state(state: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("agents.work-state"),
         vec![("state", Value::Text(state.to_string()))],
+    )
+}
+
+/// The message `ai-refused.choices`.
+#[must_use]
+pub fn ai_refused_choices(choices: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("ai-refused.choices"),
+        vec![("choices", Value::Text(choices.to_string()))],
+    )
+}
+
+/// The message `ai-refused.field`.
+#[must_use]
+pub fn ai_refused_field(field: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("ai-refused.field"),
+        vec![("field", Value::Text(field.to_string()))],
     )
 }
 

@@ -109,6 +109,13 @@ impl From<AppError> for ApiError {
         match error {
             AppError::Refused(code) => Self::new(code),
             AppError::RefusedAtField { code, field } => Self::new(code).with_field(field),
+            AppError::RefusedInput { field, .. } => {
+                let refused = Self::new(ErrorCode::InvalidRequest);
+                match field {
+                    Some(field) => refused.with_field(field),
+                    None => refused,
+                }
+            }
             AppError::SessionEnded => Self::new(ErrorCode::NotSignedIn).with_session_ended(),
             AppError::Conflict(conflict) => {
                 Self::new(ErrorCode::VersionChanged).with_conflict(ConflictBody::from(&*conflict))

@@ -165,6 +165,66 @@ async fn ai_21_a_limit_of_zero_or_less_is_refused_over_mcp_with_the_range() -> T
 }
 
 #[tokio::test]
+async fn ai_21_a_refused_input_names_its_field_and_values_but_never_the_value_given() -> TestResult
+{
+    each_database("ai_21_refused_field_http", async |db| {
+        let (rig, app) = Mcp::start(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        ai_on(&rig).await?;
+        let mcp = Mcp::new(&app);
+        let made = site.create(&mut ada, "Old title").await?;
+        let key = made.body["readable_id"]
+            .as_str()
+            .ok_or("no key")?
+            .to_owned();
+        let signed = sign_in_app(
+            &mcp,
+            &mut ada,
+            "Claude Code",
+            "see-and-change",
+            "see-and-change",
+        )
+        .await?;
+        let cases = [
+            // A word the program knows: the field and every value it takes.
+            (
+                json!({"issue": key, "version": 1, "priority": "secret words"}),
+                "priority",
+                Some("low, normal, high, critical"),
+            ),
+            // A member of the wrong kind, and one that is missing.
+            (
+                json!({"issue": key, "version": "secret words"}),
+                "version",
+                None,
+            ),
+            (
+                json!({"version": 1, "title": "secret words"}),
+                "issue",
+                None,
+            ),
+        ];
+        for (input, field, values) in cases {
+            let refused = mcp.call_tool(&signed, "update_issue", input).await?;
+            assert_eq!(
+                refused.json["result"]["isError"],
+                json!(true),
+                "{}",
+                refused.json
+            );
+            let text = text_of(&refused);
+            assert!(text.contains(&format!(": {field}.")), "{text}");
+            assert!(!text.contains("secret"), "{text}");
+            if let Some(values) = values {
+                assert!(text.contains(values), "{text}");
+            }
+        }
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn ai_04_tools_list_offers_only_the_tools_a_person_may_use_somewhere() -> TestResult {
     each_database("ai_04_tools_by_role_http", async |db| {
         let (rig, app) = Mcp::start(db).await?;
