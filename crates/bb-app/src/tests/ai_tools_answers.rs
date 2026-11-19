@@ -90,3 +90,50 @@ async fn ai_21_a_change_that_changes_nothing_on_an_old_version_says_the_version_
     }
     Ok(())
 }
+
+#[tokio::test]
+async fn ai_21_an_empty_answer_says_nothing_was_found() -> Outcome {
+    let world = World::new().await?;
+    let admin = token(&world);
+    let projects = read(&world, &admin, "list_projects", json!({})).await?;
+    assert_eq!(
+        projects.lines().last(),
+        Some("Nothing found."),
+        "{projects}"
+    );
+    a_project(&world, "WEB").await?;
+    for (tool, input) in [
+        ("get_my_work", json!({})),
+        (
+            "search_issues",
+            json!({"query": "title contains \"nowhere\""}),
+        ),
+    ] {
+        let text = read(&world, &admin, tool, input).await?;
+        assert_eq!(
+            text.lines().last(),
+            Some("Nothing found."),
+            "{tool}: {text}"
+        );
+    }
+    // An answer with something in it has no such line.
+    let listed = read(&world, &admin, "list_projects", json!({})).await?;
+    assert!(!listed.contains("Nothing found."), "{listed}");
+    Ok(())
+}
+
+#[tokio::test]
+async fn ai_21_a_preview_of_a_change_that_changes_nothing_says_no_change() -> Outcome {
+    let world = World::new().await?;
+    a_project(&world, "WEB").await?;
+    let key = issue_with(&world, "WEB", "Old title", "d", BTreeMap::new()).await?;
+    let mut preview = call(
+        &token(&world),
+        "change_status",
+        json!({"issue": key, "version": 1, "status": "open"}),
+    );
+    preview.mode = ToolMode::Preview;
+    let text = without_nonces(&call_tool(&world.ctx(), preview).await?.into_value().text);
+    assert_eq!(text.lines().last(), Some("No change."), "{text}");
+    Ok(())
+}

@@ -683,6 +683,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("agents.work", "What it works on"),
     ("agents.work-none", "Nothing yet."),
     ("agents.work-state", "Work: {state}"),
+    ("ai-answer.no-change", "No change."),
+    ("ai-answer.nothing-found", "Nothing found."),
     ("ai-author.agent", "an agent"),
     ("ai-author.assistant", "the assistant"),
     ("ai-author.guest", "a Guest"),

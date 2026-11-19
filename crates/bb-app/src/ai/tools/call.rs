@@ -191,6 +191,16 @@ impl Saved {
     }
 }
 
+/// The line of an answer that shows nothing else, so it never reads like the sentence on fences
+/// alone: a tool that reads found nothing, and the preview of a change has nothing to change.
+fn nothing_shown(effect: ToolEffect) -> String {
+    Message::from(match effect {
+        ToolEffect::Reads => message::AI_ANSWER_NOTHING_FOUND,
+        ToolEffect::Changes => message::AI_ANSWER_NO_CHANGE,
+    })
+    .render()
+}
+
 impl Masked for ToolAnswer {}
 
 /// Ask which tools a caller may use.
@@ -537,8 +547,13 @@ impl<S: AuthStore> Ctx<'_, S> {
             .people_as(actor.person.id, request.people, &parts)
             .await?;
         let mut text = render(&parts, &people, &nonce()?);
-        if let Some(saved) = &saved {
-            text.push_str(&saved.sentence());
+        let last = match &saved {
+            Some(saved) => Some(saved.sentence()),
+            None if parts.is_empty() => Some(nothing_shown(spec.effect())),
+            None => None,
+        };
+        if let Some(last) = last {
+            text.push_str(&last);
             text.push('\n');
         }
         Ok(ToolAnswer {

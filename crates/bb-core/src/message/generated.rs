@@ -809,6 +809,12 @@ pub const AGENTS_WORK: MessageKey = MessageKey::new("agents.work");
 /// The message `agents.work-none`.
 pub const AGENTS_WORK_NONE: MessageKey = MessageKey::new("agents.work-none");
 
+/// The message `ai-answer.no-change`.
+pub const AI_ANSWER_NO_CHANGE: MessageKey = MessageKey::new("ai-answer.no-change");
+
+/// The message `ai-answer.nothing-found`.
+pub const AI_ANSWER_NOTHING_FOUND: MessageKey = MessageKey::new("ai-answer.nothing-found");
+
 /// The message `ai-author.agent`.
 pub const AI_AUTHOR_AGENT: MessageKey = MessageKey::new("ai-author.agent");
 
