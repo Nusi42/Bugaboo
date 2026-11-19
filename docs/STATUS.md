@@ -21,7 +21,7 @@ The lead updates this file after every step (builder started, report in, review 
 | WP-06 | *Switch off* and *Remove a person* on the server | *Switch off* and the removal plan merged (2026-11-19, three fix rounds); the removal itself building | `win3` / `WIN3` | Wave 2; Opus; migration 57 |
 | WP-07 | Upgrades: a backup before migrating, the way back, the upgrade test | merged (2026-11-19, two fix rounds; a second builder took over for the fixes) | `win2` / `WIN2` | Wave 2; Opus |
 | WP-08 | Signed releases, updates, the support period, vulnerability handling, secure defaults | building (Opus) | `win5` / `WIN5` | Wave 2; Opus |
-| WP-09 | Correct your own data, and corrections by administrators | building (Opus) | `win4` / `WIN4` | Wave 2; Opus; migration 58 |
+| WP-09 | Correct your own data, and corrections by administrators | merged (2026-11-19, two fix rounds; a second builder took over for the fixes; first-page budget raised to 260 KB by the maintainer) | `win4` / `WIN4` | Wave 2; Opus; migration 58 |
 | WP-10 | The privacy screens | not started | `win3` / `WIN3` | Wave 3; Opus |
 | WP-11 | The operations screens: *Backups* and *About* | not started | `win2` / `WIN2` | Wave 3; Sonnet |
 | WP-12 | *Support access* | moved to M14 (2026-11-18) | — | Draft kept in the M9 folder |
