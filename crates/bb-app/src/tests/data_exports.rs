@@ -55,8 +55,8 @@ pub(super) async fn ask_for(
         &world.ctx(),
         AskSomeonesData {
             session_token: session.to_owned(),
-            person,
-            reason: reason.to_owned(),
+            person: Some(person),
+            reason: Some(reason.to_owned()),
         },
     )
     .await

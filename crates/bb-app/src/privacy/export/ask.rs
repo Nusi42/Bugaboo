@@ -171,18 +171,23 @@ pub async fn ask_for_someones_data<S: AuthStore>(
             Place::Organization,
         )
         .await?;
-    let reason = input.reason.trim();
+    let reason = input
+        .reason
+        .as_deref()
+        .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?
+        .trim();
     if reason.is_empty() {
         return Err(ErrorCode::ExportReasonNeeded.into());
     }
     if reason.chars().count() > EXPORT_REASON_MOST {
         return Err(ErrorCode::InvalidRequest.into());
     }
-    if ctx.person_known(input.person).await?.is_none() {
+    let person = input.person.ok_or(AppError::Refused(ErrorCode::NotFound))?;
+    if ctx.person_known(person).await?.is_none() {
         return Err(ErrorCode::NotFound.into());
     }
     let export = NewExport {
-        person: input.person,
+        person,
         asked_by: actor.person.id,
         reason: Some(reason.to_owned()),
     }

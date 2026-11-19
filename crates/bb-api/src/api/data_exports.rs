@@ -22,12 +22,12 @@ use utoipa::{IntoResponses, ToSchema};
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
+use super::VERSION_PATH;
 use super::auth::{
     AuthHandle, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer, NotSignedInAnswer, Session,
     answer, answer_authorized, problem_answers,
 };
 use super::files::{FileBytes, body_of, download_headers};
-use super::{VERSION_PATH, path_id};
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
@@ -202,16 +202,18 @@ async fn ask_for_someones_data(
     Info(info): Info,
     Session(session_token): Session,
     ApiPath(person): ApiPath<String>,
-    ApiJson(body): ApiJson<AskSomeonesDataBody>,
+    body: Result<ApiJson<AskSomeonesDataBody>, ApiError>,
 ) -> Result<Response, ApiError> {
+    // The ID and the body are read only once the session is known (the use case refuses them
+    // then), so an access key hears that it may not come here, whatever it sent.
     let asked = auth
         .api()?
         .ask_for_someones_data(
             info,
             AskSomeonesData {
                 session_token,
-                person: path_id::<UserId>(&person)?,
-                reason: body.reason,
+                person: person.parse::<UserId>().ok(),
+                reason: body.ok().map(|ApiJson(body)| body.reason),
             },
         )
         .await?;

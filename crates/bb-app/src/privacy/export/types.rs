@@ -14,10 +14,12 @@ pub struct AskMyData {
 pub struct AskSomeonesData {
     /// The secret of the session of the request.
     pub session_token: String,
-    /// Whose data.
-    pub person: UserId,
-    /// Why, in the administrator's own words; the person is told.
-    pub reason: String,
+    /// Whose data; none for an address whose ID cannot be read, refused like a person who is not
+    /// there, but only once the session is known, so an access key hears that it may not come here.
+    pub person: Option<UserId>,
+    /// Why, in the administrator's own words; the person is told. None for a body that cannot be
+    /// read, refused as not valid once the session is known.
+    pub reason: Option<String>,
 }
 
 /// Ask where the newest file of one's own data stands.
