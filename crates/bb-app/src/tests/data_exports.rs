@@ -8,7 +8,7 @@ use std::io::{Cursor, Read as _};
 use bb_core::ErrorCode;
 use bb_core::access::PeopleLevel;
 use bb_core::comment::Comment;
-use bb_core::data_export::ExportState;
+use bb_core::data_export::{EXPORT_REASON_MOST, ExportState};
 use bb_core::files::LINK_LIFETIME;
 use bb_core::id::{DataExportId, UserId};
 use bb_core::notification::NotificationKind;
@@ -24,7 +24,7 @@ use super::notifications::Crew;
 use super::scenarios::{Added, measured, text, token};
 use super::world::{Outcome, World};
 use crate::auth::AppError;
-use crate::jobs::JobStore as _;
+use crate::jobs::{JOB_ATTEMPTS_MAX, JobStore as _};
 use crate::privacy::export::{
     AskMyData, AskSomeonesData, DownloadExportQuery, ExportLinkQuery, ExportView,
     MyDataExportQuery, ask_for_my_data, ask_for_someones_data, download_export, export_link,
@@ -432,5 +432,61 @@ async fn priv_03_an_export_whose_job_runs_twice_is_finished_and_told_once() -> O
         .filter(|kind| *kind == NotificationKind::ExportReady)
         .count();
     assert_eq!(ready, 1);
+    Ok(())
+}
+
+#[tokio::test]
+async fn priv_03_an_export_whose_job_gives_up_fails_and_may_be_asked_again() -> Outcome {
+    let crew = Crew::new().await?;
+    let (world, bob) = (&crew.world, crew.bob.session_token.as_str());
+    let made = ask_mine(world, bob).await?;
+    // The disk is full: every try stops half way and leaves its half-written file.
+    world.exports.break_writing();
+    run_jobs(world).await?;
+    assert_eq!(world.exports.half_written(made.export.id), 1);
+    for _ in 1..JOB_ATTEMPTS_MAX {
+        world.clock.advance(RETRY_WAIT);
+        run_jobs(world).await?;
+    }
+    assert_eq!(state_of(world, bob).await?, Some(ExportState::Failed));
+    assert_eq!(world.exports.half_written(made.export.id), 0);
+    assert!(world.exports.bytes(made.export.id).is_none());
+    assert!(
+        !super::notifications::kinds(&crew.heard(bob).await?)
+            .contains(&NotificationKind::ExportReady)
+    );
+    // Bob may ask again.
+    ask_mine(world, bob).await?;
+    Ok(())
+}
+
+/// Longer than the in-memory queue waits before a job is tried again (thirty seconds), and far
+/// shorter than a session lasts.
+const RETRY_WAIT: i64 = 60;
+
+#[tokio::test]
+async fn priv_03_an_administrator_cannot_ask_for_the_data_of_somebody_who_is_not_there() -> Outcome
+{
+    let crew = Crew::new().await?;
+    let world = &crew.world;
+    let nobody = UserId::generate(&mut world.ctx().ids());
+    assert_eq!(
+        refused(&ask_for(world, &token(world), nobody, "asked by letter").await),
+        Some(ErrorCode::NotFound)
+    );
+    Ok(())
+}
+
+#[tokio::test]
+async fn priv_03_the_reason_of_an_administrators_export_has_a_length_it_may_not_pass() -> Outcome {
+    let crew = Crew::new().await?;
+    let world = &crew.world;
+    let carol = crew.carol.person.id;
+    let longest = "x".repeat(EXPORT_REASON_MOST);
+    assert_eq!(
+        refused(&ask_for(world, &token(world), carol, &format!("{longest}x")).await),
+        Some(ErrorCode::InvalidRequest)
+    );
+    ask_for(world, &token(world), carol, &longest).await?;
     Ok(())
 }

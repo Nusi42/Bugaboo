@@ -191,6 +191,8 @@ struct Held {
     writing: std::collections::BTreeSet<(DataExportId, String)>,
     /// How often a finished file was kept.
     kept: usize,
+    /// Whether writing into a file fails, as on a full disk.
+    broken: bool,
 }
 
 /// The files of exports in memory, readable by the tests.
@@ -214,9 +216,23 @@ impl FakeExports {
         self.held().done.len()
     }
 
+    /// How many files of `export` are half-written.
+    pub(crate) fn half_written(&self, export: DataExportId) -> usize {
+        self.held()
+            .writing
+            .iter()
+            .filter(|(of, _)| *of == export)
+            .count()
+    }
+
     /// How often a finished file was kept, by every try.
     pub(crate) fn kept(&self) -> usize {
         self.held().kept
+    }
+
+    /// From now on, writing into a file fails.
+    pub(crate) fn break_writing(&self) {
+        self.held().broken = true;
     }
 }
 
@@ -230,6 +246,9 @@ struct FakeSink {
 
 impl std::io::Write for FakeSink {
     fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+        if self.files.held().broken {
+            return Err(std::io::Error::from(std::io::ErrorKind::StorageFull));
+        }
         self.bytes.write(bytes)
     }
 
