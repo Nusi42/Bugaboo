@@ -29,3 +29,12 @@ pub const FILES_FOLDER: &str = "files";
 /// (ADR-0044, decision 2): only the account of the server may open it, and a file is only sent
 /// through a signed link.
 pub const EXPORTS_FOLDER: &str = "exports";
+
+/// Makes the new name of a file durable after a rename: on Unix the name holds after a crash only
+/// once its folder is synced too. Elsewhere the file system keeps the name with the file.
+pub(crate) fn sync_folder_of(file: &std::path::Path) -> std::io::Result<()> {
+    match file.parent() {
+        Some(folder) if cfg!(unix) => std::fs::File::open(folder)?.sync_all(),
+        _ => Ok(()),
+    }
+}

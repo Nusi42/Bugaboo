@@ -83,7 +83,8 @@ impl ExportSink for DiskSink {
             self.writing = Some(writing);
             return Err(error);
         }
-        Ok(())
+        // A crash after the rename could otherwise lose the file whose record says it is ready.
+        crate::sync_folder_of(&self.done)
     }
 }
 
