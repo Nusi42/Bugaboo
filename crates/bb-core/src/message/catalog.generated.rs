@@ -887,7 +887,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("ai-tool.create-issue", "Create a new issue in a project."),
     (
         "ai-tool.get-issue",
-        "Read one issue you may see, with its fields and comments.",
+        "Read one issue you may see, with its fields, its comments and the keys of the statuses you may move it to (next_statuses). An agent may still be refused a status there if its work does not let it change the status.",
     ),
     (
         "ai-tool.get-my-work",

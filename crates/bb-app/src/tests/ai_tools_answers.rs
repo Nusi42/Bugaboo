@@ -1,15 +1,22 @@
-//! The line under the answer of a tool (AI-21): a change that changes nothing says so and never
-//! that it saved.
+//! What the AI reads back from a tool (AI-21): a change that changes nothing says so and never that
+//! it saved, an empty answer says that nothing was found, and an issue names the statuses the reader
+//! may move it to.
 
 use std::collections::BTreeMap;
 
 use serde_json::json;
 
-use super::ai_tools::{call, issue_with, read, without_nonces};
+use super::ai_tools::{call, issue_with, mark, read, without_nonces};
+use super::notifications::levels;
 use super::scenarios::{a_project, token};
 use super::world::{Outcome, World};
+use crate::ai::NeverSentTarget;
 use crate::ai::tools::{ToolMode, call_tool};
+use crate::roles::{AssignRole, CreateRole, Given, Subject, assign_role, create_role};
 use bb_core::ErrorCode;
+use bb_core::access::{AppliesTo, FieldLevel};
+use bb_core::fields::Field;
+use bb_policy::Permission;
 
 #[tokio::test]
 async fn ai_21_a_change_that_changes_nothing_says_nothing_changed() -> Outcome {
@@ -135,5 +142,66 @@ async fn ai_21_a_preview_of_a_change_that_changes_nothing_says_no_change() -> Ou
     preview.mode = ToolMode::Preview;
     let text = without_nonces(&call_tool(&world.ctx(), preview).await?.into_value().text);
     assert_eq!(text.lines().last(), Some("No change."), "{text}");
+    Ok(())
+}
+
+#[tokio::test]
+async fn ai_21_get_issue_names_the_statuses_the_reader_may_move_it_to() -> Outcome {
+    let world = World::new().await?;
+    a_project(&world, "WEB").await?;
+    let key = issue_with(&world, "WEB", "Old title", "d", BTreeMap::new()).await?;
+    let text = read(&world, &token(&world), "get_issue", json!({"issue": key})).await?;
+    let next: Vec<&str> = text
+        .lines()
+        .skip_while(|line| line.trim() != "next_statuses:")
+        .skip(1)
+        .take_while(|line| line.starts_with("    "))
+        .filter_map(|line| line.trim().strip_prefix("key: "))
+        .collect();
+    assert!(next.contains(&"in-progress"), "{text}");
+    // The keys only: the text of the buttons stays on the screen.
+    assert!(!text.contains("button"), "{text}");
+    // A reader who may not see the status gets no next statuses either.
+    let admin = token(&world);
+    let blind = create_role(
+        &world.ctx(),
+        CreateRole {
+            session_token: admin.clone(),
+            name: "Blind".to_owned(),
+            permissions: vec![Permission::SeeProjects, Permission::SeeIssues],
+            two_step: false,
+        },
+    )
+    .await?
+    .into_value()
+    .id;
+    levels(&world, blind, &[Field::Title], FieldLevel::CanSee).await?;
+    levels(&world, blind, &[Field::Status], FieldLevel::Hidden).await?;
+    let dave = world.person_named("dave@example.test", "Dave Dunn").await?;
+    assign_role(
+        &world.ctx(),
+        AssignRole {
+            session_token: admin,
+            subject: Subject::Person(dave.person.id),
+            given: Given::Role(blind),
+            project: None,
+            applies_to: AppliesTo::Organization,
+        },
+    )
+    .await?;
+    let unseen = read(
+        &world,
+        &dave.session_token,
+        "get_issue",
+        json!({"issue": key}),
+    )
+    .await?;
+    assert!(unseen.contains("Old title"), "{unseen}");
+    assert!(!unseen.contains("next_statuses"), "{unseen}");
+    assert!(!unseen.contains("in-progress"), "{unseen}");
+    // A status kept from AI takes its next statuses with it.
+    mark(&world, NeverSentTarget::Field(Field::Status)).await?;
+    let kept = read(&world, &token(&world), "get_issue", json!({"issue": key})).await?;
+    assert!(!kept.contains("next_statuses"), "{kept}");
     Ok(())
 }

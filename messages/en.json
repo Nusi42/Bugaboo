@@ -3309,7 +3309,7 @@
   "mcp.changed": "The record is at version {version} now. What changed: {fields}.",
   "mcp.wait": "Wait {seconds, plural, one {# second} other {# seconds}} and call again.",
   "ai-tool.search-issues": "Search the issues you may read. Write a search in the search language, such as title contains \"brakes\" or status group is not Done and priority is High, or plain words, which are looked for in the title, the description and the comments.",
-  "ai-tool.get-issue": "Read one issue you may see, with its fields and comments.",
+  "ai-tool.get-issue": "Read one issue you may see, with its fields, its comments and the keys of the statuses you may move it to (next_statuses). An agent may still be refused a status there if its work does not let it change the status.",
   "ai-tool.list-projects": "List the projects you may see.",
   "ai-tool.get-my-work": "List the issues that are assigned to you.",
   "ai-tool.create-issue": "Create a new issue in a project.",

@@ -38,8 +38,32 @@ const MY_WORK: [&str; 2] = [
 ];
 
 /// The members left out of what the AI reads: HTML made from a text that is in the answer already
-/// as Markdown, and the buttons of the screen.
-const LEFT_OUT: &[&str] = &["html", "description_html", "status_changes"];
+/// as Markdown, and the buttons of the screen (their statuses are kept, see [`keep_next_statuses`]).
+const LEFT_OUT: &[&str] = &["html", "description_html", STATUS_CHANGES];
+
+/// The member of the screen with the status changes the reader may make now.
+const STATUS_CHANGES: &str = "status_changes";
+/// The member the AI reads them as: the key of each status the issue may move to, each written as
+/// `key`, a word of the program like the key of the status itself.
+const NEXT_STATUSES: &str = "next_statuses";
+
+/// The status changes of an issue as the keys of the statuses it may move to, without the text of
+/// the buttons. They are the reader's own (the use case works them out for the reader) and hidden
+/// with the status, so a reader who may not see the status, or a status kept from AI, has none.
+fn keep_next_statuses(value: &mut Value) {
+    let Some(object) = value.as_object_mut() else {
+        return;
+    };
+    let Some(Value::Array(changes)) = object.get(STATUS_CHANGES) else {
+        return;
+    };
+    let keys: Vec<Value> = changes
+        .iter()
+        .filter_map(|change| change.get("to")?.get("key").cloned())
+        .map(|key| serde_json::json!({ "key": key }))
+        .collect();
+    object.insert(NEXT_STATUSES.to_owned(), Value::Array(keys));
+}
 
 fn drop_html(value: &mut Value) {
     match value {
@@ -98,6 +122,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         // The author is told before *Reported by* may be taken out.
         let author = self.author_in(&value, "reported_by", project).await?;
         drop_withheld::<IssueView>(&mut value, withheld);
+        keep_next_statuses(&mut value);
         drop_html(&mut value);
         Ok(Some(Part {
             name: "issue",
