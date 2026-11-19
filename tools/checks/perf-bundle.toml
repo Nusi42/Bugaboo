@@ -5,8 +5,11 @@ dist = "web/app/dist"
 manifest = ".vite/manifest.json"
 
 # The most JavaScript the first page may load, after Brotli, in bytes (1 KB is 1000 bytes). The
-# quality is the server's (tools/dev/compression.json).
-budget_bytes = 250000
+# quality is the server's (tools/dev/compression.json). Raised from 250 KB to 260 KB, approved by
+# the maintainer on 2026-11-19 for what the privacy screens add to the first page: the texts of
+# the refusals of the server (any page may show one), the menu entry Profile, and the texts of the
+# notifications. The texts of the three screens themselves load with their areas.
+budget_bytes = 260000
 
 # The most each WebAssembly module of the build may have, after Brotli at the same quality, by the
 # name of its file without the hash (a list should not fetch the module of Markdown, nor an editor
