@@ -57,6 +57,9 @@ impl NewExport {
         };
         let mut changes = vec![set_to(member::STATE, json!(export.state.code()))];
         if let Some(reason) = &export.reason {
+            // Whose data and why stay in the history after the export and its record are deleted,
+            // so the entry of the security log that points to it can still be answered.
+            changes.push(set_to(member::PERSON, json!(export.person)));
             changes.push(set_to(member::REASON, json!(reason)));
         }
         let event = ctx.event(

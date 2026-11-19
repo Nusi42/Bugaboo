@@ -49,6 +49,8 @@ pub(crate) mod theme {
 pub(crate) mod data_export {
     /// Where the export stands now.
     pub(crate) const STATE: &str = "state";
+    /// Whose data an administrator asked for.
+    pub(crate) const PERSON: &str = bb_core::whose::members::PERSON;
     /// Why an administrator asked for somebody else's data.
     pub(crate) const REASON: &str = "reason";
 }

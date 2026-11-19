@@ -177,6 +177,7 @@ pub const IN_CHANGES: &[PersonInChanges] = {
         named(K::Issue, m::EDIT_LOCK, Link::Holder),
         named(K::Project, m::EDIT_LOCK, Link::Holder),
         named(K::Comment, m::EDIT_LOCK, Link::Holder),
+        named(K::DataExport, m::PERSON, Link::Subject),
         PersonInChanges {
             kind: K::Issue,
             member: Member::OwnField,

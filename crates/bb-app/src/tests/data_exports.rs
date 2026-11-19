@@ -251,6 +251,40 @@ async fn priv_03_the_administrators_export_is_in_the_security_log_with_its_reaso
     // A person's own export is no administrator's export.
     ask_mine(world, &crew.bob.session_token).await?;
     assert_eq!(noted(SecurityAction::DataExportForSomebodyElse), 1);
+    // Seven days on, the file and its record are deleted. The entry still points to the export,
+    // and its history still says whose data it was and why.
+    world
+        .clock
+        .advance(bb_core::data_export::EXPORT_KEPT.as_secs() + 1);
+    assert!(world.ctx().delete_old_exports().await? >= 1);
+    assert!(world.store.lock().state.data_exports.is_empty());
+    assert_eq!(noted(SecurityAction::DataExportForSomebodyElse), 1);
+    let asked = world
+        .store
+        .lock()
+        .events
+        .iter()
+        .find(|event| {
+            event.entity.id == bb_core::id::EntityId::from(made.export.id)
+                && event.changes.iter().any(|change| change.field == "reason")
+        })
+        .cloned()
+        .ok_or("the history of the export is kept")?;
+    let after = |field: &str| {
+        asked
+            .changes
+            .iter()
+            .find(|change| change.field == field)
+            .and_then(|change| change.after.clone())
+    };
+    assert_eq!(
+        after("person"),
+        Some(serde_json::to_value(crew.carol.person.id).map_err(text)?)
+    );
+    assert_eq!(
+        after("reason"),
+        Some(serde_json::json!("Carol asked by letter"))
+    );
     Ok(())
 }
 
