@@ -26,6 +26,7 @@ pub use list::{
     PeopleQuery, PersonDetail, PersonLine, PersonPage, PersonQuery, member_choices, people, person,
 };
 pub use standing::StandingStore;
+pub(crate) use switch_off::state_change;
 pub use switch_off::{SwitchOff, SwitchOn, switch_off, switch_on};
 pub use used_by::{GroupDetail, GroupUsedBy, RoleUsedBy};
 

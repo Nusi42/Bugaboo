@@ -28,7 +28,8 @@ pub(crate) const OUTBOX_HEAD: &str = "head";
 /// How many events one page of the search for a record's newest event of a kind reads.
 const EVENT_PAGE: u64 = 50;
 
-const ACTOR_PERSON: &str = "person";
+/// The kind of an event by a person; `actor_id` holds the person.
+pub(crate) const ACTOR_PERSON: &str = "person";
 /// The kind of an event by an agent is `agent:` and the ID of the agent; `actor_id` holds the person
 /// responsible for it. Two IDs in one row without a column of their own, so that an event table
 /// that older databases hold stays as it is (M7-F37).

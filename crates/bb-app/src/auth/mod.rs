@@ -265,8 +265,8 @@ pub use second_factor::{
     passkey_second_step_options, passkey_sign_in, passkey_sign_in_options, remove_code_app,
     remove_passkey, renew_backup_codes, start_code_app, two_step,
 };
-pub(crate) use session::end_ways_in;
 pub(crate) use session::purge as purge_sessions;
+pub(crate) use session::{TakenBack, end_ways_in};
 pub use session::{
     authenticate, end_session, passkey_second_step, second_step, second_step_gap, sessions,
     sign_in, sign_out, sign_out_everywhere, status,

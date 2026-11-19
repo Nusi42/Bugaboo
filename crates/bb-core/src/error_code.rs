@@ -96,6 +96,12 @@ error_codes! {
     /// Somebody tried to add or give more than they hold in that place themselves (ADR-0025,
     /// decision 6).
     TooMuch => ("access.too-much", 403),
+    /// Only a person who is switched off can be removed: the window switches them off first
+    /// (ADR-0044, decision 6).
+    PersonNotSwitchedOff => ("person.not-switched-off", 409),
+    /// The name and the address of a person who is switched off or removed are not changed, by a
+    /// correction or by the link of an e-mail change (ADR-0044, decisions 5 and 6).
+    PersonNotActive => ("person.not-active", 409),
     /// A role that somebody has cannot be deleted without choosing the role that takes its place.
     RoleInUse => ("role.in-use", 409),
     /// A person or group would have a role and *No access* in the same project.

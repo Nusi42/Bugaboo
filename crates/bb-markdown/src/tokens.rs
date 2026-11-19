@@ -48,9 +48,19 @@ const LOOK_ALIKE_LETTERS: [char; 4] = ['I', 'L', 'O', 'U'];
 /// The mark of an issue ID between the short name and the number or code.
 const ID_SEPARATOR: char = '-';
 /// The mark of a mention.
-const MENTION_MARK: char = '@';
+pub const MENTION_MARK: char = '@';
 /// Characters, besides letters and digits, that may be inside a name after `@`.
 const MENTION_INNER: [char; 3] = ['_', '.', '-'];
+/// Characters that may be inside a name after `@` but never end it: a dot or a dash right after
+/// the name ends the sentence, not the name.
+pub const MENTION_TRAILING: [char; 2] = ['.', '-'];
+
+/// Whether `character` may stand in a name after `@`: a letter or a digit of any script, or one of
+/// the few marks a handle holds.
+#[must_use]
+pub fn is_in_mention(character: char) -> bool {
+    character.is_alphanumeric() || MENTION_INNER.contains(&character)
+}
 /// Characters, besides letters and digits, that a token must not follow (a path, an address).
 const NOT_BEFORE_A_TOKEN: [char; 7] = ['_', '@', '.', '/', ':', '-', '\\'];
 
@@ -121,12 +131,12 @@ fn mention_length(text: &str) -> Option<usize> {
     let name = &text[MENTION_MARK.len_utf8()..];
     let mut end = 0;
     for (count, (at, c)) in name.char_indices().enumerate() {
-        if count == MAX_MENTION_CHARS || !(c.is_alphanumeric() || MENTION_INNER.contains(&c)) {
+        if count == MAX_MENTION_CHARS || !is_in_mention(c) {
             break;
         }
         end = at + c.len_utf8();
     }
-    let trimmed = name[..end].trim_end_matches(['.', '-']);
+    let trimmed = name[..end].trim_end_matches(MENTION_TRAILING);
     let followed_by_more = name[trimmed.len()..].starts_with(MENTION_MARK);
     (!trimmed.is_empty() && !followed_by_more).then_some(MENTION_MARK.len_utf8() + trimmed.len())
 }

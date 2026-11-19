@@ -362,6 +362,10 @@ export const messages = {
   "person.role": "Someone ({role})",
   "person.someone": "Someone",
   "person.former": "Former user {label}",
+  "error.person.not-switched-off":
+    "Only a person who is switched off can be removed. Switch them off first.",
+  "error.person.not-active":
+    "This person is switched off or removed, so their name and e-mail address stay as they are.",
   "error.role.in-use":
     "Someone has this role. Choose the role that takes its place before you delete it.",
   "nav.people": "People",

@@ -106,6 +106,19 @@ pub const fn whose(kind: RecordKind) -> Whose {
     }
 }
 
+/// The kinds whose records only their owner makes and changes: a person's own access keys,
+/// passkeys, connected AI apps and sessions. An event a person made about such a record is about
+/// their own record, even when the record is gone by now (the name of a key they deleted), so a
+/// removal scrubs it by its actor. A record of any other kind can be made or changed by somebody
+/// else (an administrator gives roles and edits work times), and the events of that somebody stay
+/// as they are.
+pub const MADE_ONLY_BY_THEIR_OWNER: &[RecordKind] = &[
+    RecordKind::AccessKey,
+    RecordKind::Passkey,
+    RecordKind::ConnectedApp,
+    RecordKind::Session,
+];
+
 /// The names of the members of the changes that hold a person, as the events store them. The use
 /// cases spell the members with these.
 pub mod members {
@@ -227,6 +240,17 @@ mod tests {
                 "{}.{}",
                 of.marks.name(),
                 of.value
+            );
+        }
+    }
+
+    #[test]
+    fn priv_04_a_kind_only_its_owner_makes_belongs_to_a_person() {
+        for kind in MADE_ONLY_BY_THEIR_OWNER {
+            assert!(
+                matches!(whose(*kind), Whose::Owner { .. }),
+                "{}",
+                kind.code()
             );
         }
     }

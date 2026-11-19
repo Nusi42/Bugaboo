@@ -49,9 +49,51 @@ pub(crate) fn containing_any_case(column: impl Into<Expr>, text: &str) -> Expr {
     any_case(column, format!("%{}%", plain(text)))
 }
 
+/// The fewest characters a pattern of [`may_hold_folded`] keeps: with fewer it would pick nearly
+/// every row, so the caller reads them all instead.
+pub(crate) const FOLDED_KEPT_MIN: usize = 3;
+
+/// The rows of `column` that may hold `folded`, a text folded in Rust (`bb_core::names::name_key`):
+/// a pattern that keeps only the ASCII letters and digits the database folds the way Rust does,
+/// with `%` for every run of other characters. `lower` folds only ASCII on SQLite (and on
+/// PostgreSQL without a locale), so a letter outside it (`Ö`, `Ł`, Cyrillic) is any run; so are
+/// `i` and `k`, which the dotted capital `İ` and the Kelvin sign fold to in Rust but not in the
+/// database; and so are spaces, quotes and the escapes of JSON. The rows are only candidates: the
+/// caller decides in Rust. `None` when fewer than [`FOLDED_KEPT_MIN`] characters are kept.
+pub(crate) fn may_hold_folded(column: impl Into<Expr>, folded: &str) -> Option<Expr> {
+    let mut pattern = String::from('%');
+    let mut kept = 0;
+    for character in folded.chars() {
+        if character.is_ascii_alphanumeric() && !matches!(character, 'i' | 'k') {
+            pattern.push(character.to_ascii_lowercase());
+            kept += 1;
+        } else if !pattern.ends_with('%') {
+            pattern.push('%');
+        }
+    }
+    if !pattern.ends_with('%') {
+        pattern.push('%');
+    }
+    (kept >= FOLDED_KEPT_MIN).then(|| any_case(column, pattern))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use sea_query::{Alias, Query, SqliteQueryBuilder};
+
+    fn pattern_of(folded: &str) -> Option<String> {
+        may_hold_folded(Expr::col(Alias::new("t")), folded)
+            .map(|expr| Query::select().expr(expr).to_string(SqliteQueryBuilder))
+    }
+
+    #[test]
+    fn priv_04_a_folded_text_keeps_only_what_the_database_folds_alike() {
+        let found = pattern_of("özlem çelik").unwrap_or_default();
+        assert!(found.contains("'%zlem%el%'"), "{found}");
+        assert!(pattern_of("юлия").is_none());
+        assert!(pattern_of("kiki li").is_none());
+    }
 
     #[test]
     fn the_characters_of_a_pattern_stand_for_themselves() {

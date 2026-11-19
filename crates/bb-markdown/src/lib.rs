@@ -23,7 +23,7 @@ mod tokens;
 mod urls;
 
 pub use render::render;
-pub use tokens::{Token, TokenKind};
+pub use tokens::{MENTION_MARK, MENTION_TRAILING, Token, TokenKind, is_in_mention};
 
 /// A plain text made safe to stand in HTML, as text or as the value of an attribute: the one
 /// escaping of this crate, for the words a page of Bugaboo writes around rendered texts.

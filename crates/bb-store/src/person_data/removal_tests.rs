@@ -6,6 +6,7 @@ use bb_app::auth::{AccountStore as _, InvitationStore as _};
 use bb_app::ports::ChangeStore;
 use bb_core::event::{Actor, EntityKind, EntityRef, FieldChange, RecordKind};
 use bb_core::id::{EntityId, IdSource, InvitationId, IssueId, UserId};
+use bb_core::personal::Entity as _;
 use bb_core::security_log::Digest;
 use bb_core::sign_in::Invitation;
 use bb_testing::{TestResult, each_database};
@@ -68,6 +69,57 @@ async fn stored_changes(storage: &AuthStorage) -> Result<Vec<String>, StoreError
         .collect()
 }
 
+/// The events of the scrub: Lea's name changed, a key she made and deleted, her setting changed,
+/// and Ada wrote her name and address into a title. `records` are the key, the setting and the
+/// issue.
+fn lea_events(
+    source: &mut impl IdSource,
+    lea_id: UserId,
+    ada_id: UserId,
+    records: [EntityId; 3],
+) -> [DomainEvent; 4] {
+    let [key, setting, issue] = records;
+    [
+        about(
+            source,
+            lea_id,
+            RecordKind::AccessKey,
+            key,
+            vec![change("name", json!(""), json!("Build robot"))],
+        ),
+        // Her name changed; her setting changed; Ada wrote her name and address into a title.
+        about(
+            source,
+            lea_id,
+            RecordKind::Person,
+            EntityId::from(lea_id),
+            vec![change("display_name", json!("Lea L."), json!("Lea Lind"))],
+        ),
+        about(
+            source,
+            lea_id,
+            RecordKind::Setting,
+            setting,
+            vec![change("display_theme", json!("light"), json!("dark"))],
+        ),
+        about(
+            source,
+            ada_id,
+            RecordKind::Issue,
+            issue,
+            vec![
+                change(
+                    "title",
+                    json!("Ask lea lind"),
+                    json!("Mail LEA@example.test"),
+                ),
+                change("priority", json!("low"), json!("high")),
+                change("summary", json!("Leadership"), json!("Linden")),
+            ],
+        ),
+    ]
+}
+
 #[tokio::test]
 async fn priv_04_a_removal_deletes_by_link_and_scrubs_the_changes() -> TestResult {
     each_database("priv_04_removal_writes", async |db| {
@@ -91,47 +143,21 @@ async fn priv_04_a_removal_deletes_by_link_and_scrubs_the_changes() -> TestResul
         .await?;
         let issue = EntityId::from(IssueId::generate(&mut source)?);
         let setting = EntityId::from(IssueId::generate(&mut source)?);
-        let events = [
-            // Her name changed; her setting changed; Ada wrote her name and address into a title.
-            about(
-                &mut source,
-                lea_id,
-                RecordKind::Person,
-                EntityId::from(lea_id),
-                vec![change("display_name", json!("Lea L."), json!("Lea Lind"))],
-            ),
-            about(
-                &mut source,
-                lea_id,
-                RecordKind::Setting,
-                setting,
-                vec![change("display_theme", json!("light"), json!("dark"))],
-            ),
-            about(
-                &mut source,
-                ada_id,
-                RecordKind::Issue,
-                issue,
-                vec![
-                    change(
-                        "title",
-                        json!("Ask Lea Lind"),
-                        json!("Mail lea@example.test"),
-                    ),
-                    change("priority", json!("low"), json!("high")),
-                ],
-            ),
-        ];
+        // A key she made and deleted: no row of it is left to find its events by.
+        let key = EntityId::from(IssueId::generate(&mut source)?);
+        let events = lea_events(&mut source, lea_id, ada_id, [key, setting, issue]);
         for one in &events {
             ChangeStore::record_change(storage, one, |_| Box::pin(async { Ok(()) })).await?;
         }
         let scrub = Scrub {
-            kinds: vec![RecordKind::Person],
+            kinds: vec![RecordKind::Person, RecordKind::AccessKey],
             records: vec![EntityRef {
                 kind: EntityKind::from(RecordKind::Setting),
                 id: setting,
             }],
-            words: vec!["Lea Lind".to_owned(), "lea@example.test".to_owned()],
+            names: vec!["Lea Lind".to_owned()],
+            handles: vec!["lea.lind".to_owned()],
+            addresses: vec!["lea@example.test".to_owned()],
         };
         let (deleted, scrubbed) =
             ChangeStore::record_change(storage, &event(&mut source, 50), move |tx| {
@@ -139,7 +165,7 @@ async fn priv_04_a_removal_deletes_by_link_and_scrubs_the_changes() -> TestResul
                     let deleted = AuthStorage::delete_linked(
                         tx,
                         lea_id,
-                        "invitation",
+                        &Invitation::MARKS,
                         &[Link::Author, Link::Recipient],
                     )
                     .await?;
@@ -150,15 +176,91 @@ async fn priv_04_a_removal_deletes_by_link_and_scrubs_the_changes() -> TestResul
             .await?;
         // The invitation she made and the one to her address go.
         assert_eq!(deleted, 2);
-        assert_eq!(scrubbed, 3);
+        assert_eq!(scrubbed, 4);
         let text = stored_changes(storage).await?.join("\n");
-        for gone in ["Lea L.", "Lea Lind", "lea@example.test", "dark"] {
+        for gone in [
+            "Lea L.",
+            "lea lind",
+            "LEA@example.test",
+            "dark",
+            "Build robot",
+        ] {
             assert!(!text.contains(gone), "{gone} in {text}");
         }
         // The members stay, and so do values that name nothing of her.
-        for kept in ["display_name", "display_theme", "title", "high"] {
+        for kept in [
+            "display_name",
+            "display_theme",
+            "title",
+            "high",
+            "Leadership",
+            "Linden",
+        ] {
             assert!(text.contains(kept), "{kept} not in {text}");
         }
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn priv_04_a_removal_deletes_the_jobs_that_name_the_person_by_id_or_address() -> TestResult {
+    use bb_app::jobs::JobStore as _;
+    use bb_core::id::JobId;
+    use bb_core::technical::TechnicalName;
+    each_database("priv_04_removal_jobs", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = &fixture.storage;
+        let mut source = ids();
+        let lea = person(&mut source, "lea@example.test");
+        let lea_id = lea.id;
+        let kind = TechnicalName::new("mail.send")?;
+        let payloads = [
+            json!({ "person": lea_id.to_string() }),
+            json!({ "to": "Lea@Example.test" }),
+            json!({ "to": "ada@example.test" }),
+        ];
+        let jobs: Vec<JobId> = payloads
+            .iter()
+            .map(|_| JobId::generate(&mut source))
+            .collect::<Result<_, _>>()?;
+        ChangeStore::record_change(storage, &event(&mut source, 6), move |tx| {
+            Box::pin(async move {
+                AuthStorage::insert_person(tx, &lea, "hash", at(1)).await?;
+                for (job, payload) in jobs.iter().zip(&payloads) {
+                    AuthStorage::enqueue_job(tx, *job, &kind, payload, at(2), at(2)).await?;
+                }
+                Ok(())
+            })
+        })
+        .await?;
+        let deleted = ChangeStore::record_change(storage, &event(&mut source, 50), move |tx| {
+            Box::pin(async move {
+                let by_id = AuthStorage::delete_linked(
+                    tx,
+                    lea_id,
+                    &bb_core::job::Job::MARKS,
+                    &[Link::Subject],
+                )
+                .await?;
+                let by_address =
+                    AuthStorage::delete_jobs_with_address(tx, "lea@example.test").await?;
+                Ok((by_id, by_address))
+            })
+        })
+        .await?;
+        assert_eq!(deleted, (1, 1));
+        let mut select = Query::select();
+        select.column(Job::Payload).from(Job::Table);
+        let left: Vec<String> = storage
+            .database()
+            .fetch_all(&select)
+            .await?
+            .iter()
+            .map(|row| row.get(Job::Payload))
+            .collect::<Result<_, _>>()?;
+        assert_eq!(left.len(), 1);
+        assert!(left[0].contains("ada@example.test"), "{left:?}");
         Ok(())
     })
     .await

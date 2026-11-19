@@ -354,7 +354,8 @@ pub async fn ask_e_mail_change<S: AuthStore>(
 ///
 /// # Errors
 /// `e-mail-change.link-invalid` for a link that ran out, was used, was replaced by a newer one, or
-/// whose address an account took meanwhile.
+/// whose address an account took meanwhile; `person.not-active` for a person who is switched off
+/// or removed.
 pub async fn confirm_e_mail_change<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: ConfirmEmailChange,
@@ -371,12 +372,15 @@ pub async fn confirm_e_mail_change<S: AuthStore>(
         .map_err(failed)?
         .filter(|change| change.works_at(now))
         .ok_or_else(invalid)?;
-    let whose = ctx
-        .store()
-        .person(change.person)
-        .await
-        .map_err(failed)?
+    let known = ctx
+        .person_with_standing(change.person)
+        .await?
         .ok_or_else(invalid)?;
+    // A switched-off or removed person keeps the address on record (ADR-0044, decision 5).
+    if !known.active() {
+        return Err(ErrorCode::PersonNotActive.into());
+    }
+    let whose = known.person;
     let event = ctx.event(
         by(whose.id),
         entity(RecordKind::Person, whose.id),
@@ -426,7 +430,7 @@ struct Correction {
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// Checks a correction by an administrator: a session with *Manage people*, somebody else, a
-    /// reason, and a person who is there.
+    /// reason, and a person who is there and active (`person.not-active` otherwise).
     async fn correction(
         &self,
         session_token: &str,
@@ -442,12 +446,11 @@ impl<S: AuthStore> Ctx<'_, S> {
             return Err(ErrorCode::CorrectionOwnProfile.into());
         }
         let reason = given_reason(reason, ErrorCode::CorrectionReasonNeeded)?;
-        let whose = self
-            .store()
-            .person(person)
-            .await
-            .map_err(|error| internal::<S>(&error))?
-            .ok_or(AppError::Refused(ErrorCode::NotFound))?;
+        let known = self.known_person_or_missing(person).await?;
+        if !known.active() {
+            return Err(ErrorCode::PersonNotActive.into());
+        }
+        let whose = known.person;
         Ok(Correction {
             actor,
             whose,

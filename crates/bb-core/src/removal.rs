@@ -46,10 +46,11 @@ const RECIPIENT: &[Link] = &[Link::Recipient];
 /// follows, work times and the away times that are theirs, the agents they hold and their standing
 /// rules, the hand-overs they made, the rows that give them roles (their memberships end), the
 /// invitations they made or got (sign-in records of the account, used or not), and the files of
-/// *Download my data* made of them. A note of an edit goes where the person is its recipient; a
-/// note they caused for somebody else stays, like a notification. Rows that name nobody themselves (the projects and permissions of a key or a grant, the
-/// codes and tokens of a grant, the columns of a search) go with the row they belong to, through
-/// the module that deletes it.
+/// *Download my data* made of them, and the jobs whose payload names them. A note of an edit goes
+/// where the person is its recipient; a note they caused for somebody else stays, like a
+/// notification. Rows that name nobody themselves
+/// (the projects and permissions of a key or a grant, the codes and tokens of a grant, the columns
+/// of a search) go with the row they belong to, through the module that deletes it.
 const DELETED: &[(EntityMarks, &[Link])] = &[
     deleted::<crate::sign_in::PasswordLogin>(HOLDER),
     deleted::<crate::sign_in::SignInSession>(HOLDER),
@@ -78,7 +79,15 @@ const DELETED: &[(EntityMarks, &[Link])] = &[
     deleted::<crate::access::GroupMember>(SUBJECT),
     deleted::<crate::sign_in::Invitation>(&[Link::Author, Link::Recipient]),
     deleted::<crate::data_export::DataExport>(OWN),
+    // A job that waits names the person in its payload (a queued e-mail to them); one that names
+    // them only by the address is found by it (`RemovalStore::delete_jobs_with_address`).
+    deleted::<crate::job::Job>(SUBJECT),
 ];
+
+/// Every kind a removal deletes rows of, each with what the person is to a row that goes.
+pub fn deleted_kinds() -> impl Iterator<Item = (EntityMarks, &'static [Link])> {
+    DELETED.iter().copied()
+}
 
 /// Whether `kind` is the files of *Download my data*: the plan names them in words of their own,
 /// so an administrator gives a file that was not fetched yet to the person before it goes.

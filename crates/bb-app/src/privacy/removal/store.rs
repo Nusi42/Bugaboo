@@ -9,34 +9,236 @@ use std::future::Future;
 
 use bb_core::event::{EntityRef, RecordKind};
 use bb_core::id::UserId;
-use bb_core::personal::Link;
+use bb_core::names::name_key;
+use bb_core::personal::{EntityMarks, Link};
+use bb_markdown::{MENTION_MARK, MENTION_TRAILING, is_in_mention};
 
 use crate::ports::ChangeStore;
 use crate::store_macros::writes;
 
 /// What the changes of events, the history and notifications are scrubbed of (M2-F75, M5-F63):
 /// the values of a change about one of these records lose their before and after, and so does
-/// every member whose value holds one of the words. The names of the members stay, so the
-/// history still says what changed.
+/// every value that holds one of the person's words ([`Scrub::holds`]). The names of the members
+/// stay, so the history still says what changed.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Scrub {
     /// The kinds whose records belong to the person, as `bb_core::whose` says: every change
-    /// about such a record of the person is scrubbed.
+    /// about such a record of the person, and every change the person made to a record of such
+    /// a kind that only its owner makes (a key that is gone by now), is scrubbed.
     pub kinds: Vec<RecordKind>,
     /// Records named one by one: the person's own settings, their private searches.
     pub records: Vec<EntityRef>,
-    /// Texts no change may keep: the person's name and e-mail address.
-    pub words: Vec<String>,
+    /// The person's full names, each found as one phrase of whole words when it has two words or
+    /// more. A name of one word ("Mark") is a common word too often; its person is found by the
+    /// handle and the address.
+    pub names: Vec<String>,
+    /// The person's handles (without `@`), each found only as a mention: `@` and the whole handle
+    /// (`@lea.lind`, not `@lea.lindner`). A handle stands in a text only as a mention.
+    pub handles: Vec<String>,
+    /// The person's e-mail addresses, found anywhere in a text.
+    pub addresses: Vec<String>,
+}
+
+/// The fewest characters a name or a handle has to be looked for: a shorter one ("Al") is part of
+/// too many words and names nobody.
+pub const NAME_LETTERS_MIN: usize = 3;
+
+/// The fewest words a full name has to be looked for as a phrase.
+const NAME_WORDS_MIN: usize = 2;
+
+impl Scrub {
+    /// The texts a value is looked for, each folded the way names are compared
+    /// (`bb_core::names::name_key`): the full names, the handles and the addresses. Only these
+    /// pick the rows the store reads; [`Self::holds`] decides.
+    #[must_use]
+    pub fn looked_for(&self) -> Vec<String> {
+        self.folded_names()
+            .chain(self.folded_handles())
+            .chain(self.folded_addresses())
+            .collect()
+    }
+
+    fn folded_names(&self) -> impl Iterator<Item = String> + '_ {
+        folded_at_least(&self.names, NAME_LETTERS_MIN)
+            .filter(|name| name.split_whitespace().count() >= NAME_WORDS_MIN)
+    }
+
+    /// The handles as their mentions: `@` and the folded handle.
+    fn folded_handles(&self) -> impl Iterator<Item = String> + '_ {
+        folded_at_least(&self.handles, NAME_LETTERS_MIN)
+            .map(|handle| format!("{MENTION_MARK}{handle}"))
+    }
+
+    fn folded_addresses(&self) -> impl Iterator<Item = String> + '_ {
+        folded_at_least(&self.addresses, 1)
+    }
+
+    /// Whether `text` holds one of the person's words, capitals not counting and spaces squeezed:
+    /// a full name of two words or more as one phrase of whole words (no letter or digit, in any
+    /// script, right before or after it), a handle as a whole mention, an address anywhere.
+    #[must_use]
+    pub fn holds(&self, text: &str) -> bool {
+        let folded = name_key(text);
+        self.folded_addresses()
+            .any(|address| folded.contains(&address))
+            || self
+                .folded_names()
+                .any(|name| holds_whole(&folded, &name, char::is_alphanumeric, &[]))
+            || self
+                .folded_handles()
+                .any(|handle| holds_whole(&folded, &handle, is_in_mention, &MENTION_TRAILING))
+    }
+
+    /// Whether a JSON value holds one of the person's words in one of its texts.
+    #[must_use]
+    pub fn holds_value(&self, value: &serde_json::Value) -> bool {
+        match value {
+            serde_json::Value::String(text) => self.holds(text),
+            serde_json::Value::Array(items) => items.iter().any(|item| self.holds_value(item)),
+            serde_json::Value::Object(members) => members
+                .iter()
+                .any(|(key, item)| self.holds(key) || self.holds_value(item)),
+            serde_json::Value::Null | serde_json::Value::Bool(_) | serde_json::Value::Number(_) => {
+                false
+            }
+        }
+    }
+}
+
+/// `texts` folded the way names are compared, each with at least `fewest` characters.
+fn folded_at_least(texts: &[String], fewest: usize) -> impl Iterator<Item = String> + '_ {
+    texts
+        .iter()
+        .map(|text| name_key(text))
+        .filter(move |folded| folded.chars().count() >= fewest)
+}
+
+/// Whether `found` stands in `text` on its own: no character of `inside` right before it, and none
+/// right after it once a run of `trailing` (the dot that ends a sentence after a handle) is
+/// skipped.
+fn holds_whole(text: &str, found: &str, inside: fn(char) -> bool, trailing: &[char]) -> bool {
+    text.match_indices(found).any(|(at, matched)| {
+        let before = text[..at].chars().next_back();
+        let after = text[at + matched.len()..]
+            .trim_start_matches(trailing)
+            .chars()
+            .next();
+        !before.is_some_and(inside) && !after.is_some_and(inside)
+    })
+}
+
+/// What the person's records say of them, read inside the change that removes them: the texts no
+/// change may keep afterwards.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct PersonWords {
+    /// The name, which the legal-hold field keeps while work days are kept.
+    pub name: String,
+    /// The e-mail address.
+    pub address: String,
+    /// Every handle the person has or had.
+    pub handles: Vec<String>,
 }
 
 /// What the removal of a person needs from storage.
 pub trait RemovalStore: ChangeStore + 'static {
     writes! {
-        /// Deletes the rows of `kind` that name `person` by a link that is one of `links`, found
-        /// by the walk's conditions; how many went. A kind that is not a table deletes nothing.
-        fn delete_linked(person: UserId, kind: &str, links: &[Link]) -> u64;
+        /// The name, the address and the handles of `person`, read under the change; none for
+        /// nobody (a replay into a backup older than the account).
+        fn person_words(person: UserId) -> Option<PersonWords>;
+        /// Deletes the rows of the entity of `kind` that name `person` by a link that is one of
+        /// `links`, found by the walk's conditions; how many went. An entity that is not stored
+        /// deletes nothing.
+        fn delete_linked(person: UserId, kind: &EntityMarks, links: &[Link]) -> u64;
+        /// Deletes the jobs whose payload holds `address` (in any case), waiting or dead: a payload
+        /// that names the person only by the address (a queued e-mail); how many went.
+        fn delete_jobs_with_address(address: &str) -> u64;
         /// Scrubs the changes of the events, the history and the notifications of what `scrub`
         /// names, about `person`; how many rows changed.
         fn scrub_changes(person: UserId, scrub: &Scrub) -> u64;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn of(name: &str) -> Scrub {
+        Scrub {
+            names: vec![name.to_owned()],
+            handles: vec!["lea.lind".to_owned()],
+            addresses: vec!["Lea@Example.test".to_owned()],
+            ..Scrub::default()
+        }
+    }
+
+    #[test]
+    fn priv_04_a_full_name_is_found_as_one_phrase_whatever_the_capitals_and_spaces() {
+        let lea = of("Lea Lind");
+        assert!(lea.holds("ask LEA   lind, please"));
+        assert!(lea.holds("Mail lea@example.test now"));
+        assert!(!lea.holds("LEA, please"));
+        assert!(!lea.holds("Lind will know"));
+        assert!(!lea.holds("Leadership and Linden"));
+        assert!(of("Jürgen Groß").holds("Frag JÜRGEN GROß"));
+        assert!(!of("Jürgen Groß").holds("Jürgen Großmann"));
+        assert!(of("Özlem Çelik").holds("ÖZLEM ÇELIK"));
+    }
+
+    #[test]
+    fn priv_04_a_surname_that_is_a_common_word_leaves_the_word_alone() {
+        for name in ["Anna Will", "Ben Koch"] {
+            let scrub = of(name);
+            assert!(!scrub.holds("Will fix later"), "{name}");
+            assert!(!scrub.holds("Koch the rice"), "{name}");
+        }
+    }
+
+    #[test]
+    fn priv_04_a_handle_is_found_as_a_whole_handle() {
+        let lea = of("Lea Lind");
+        assert!(lea.holds("thanks @lea.lind."));
+        assert!(lea.holds("@LEA.LIND said"));
+        assert!(!lea.holds("@lea.lindner said"));
+        assert!(!lea.holds("@lea.lind.2 said"));
+        assert!(!lea.holds("@x.lea.lind said"));
+        assert!(
+            !lea.holds("lea.lind said"),
+            "a handle without `@` is no mention"
+        );
+        assert!(!lea.holds("x@lea.lind said"), "an address is no mention");
+    }
+
+    #[test]
+    fn priv_04_a_name_of_one_word_is_found_only_by_its_mention_and_address() {
+        let mark = Scrub {
+            names: vec!["Mark".to_owned()],
+            handles: vec!["mark".to_owned()],
+            addresses: vec!["mark@example.test".to_owned()],
+            ..Scrub::default()
+        };
+        assert!(!mark.holds("Mark as done"));
+        assert!(!mark.holds("mark the issue, Mark"));
+        assert!(mark.holds("thanks @mark."));
+        assert!(mark.holds("@MARK said"));
+        assert!(mark.holds("write to mark@example.test"));
+        let max = Scrub {
+            names: vec!["Max".to_owned()],
+            handles: vec!["max".to_owned()],
+            ..Scrub::default()
+        };
+        assert!(!max.holds("max retries"));
+        assert!(max.holds("ask @max"));
+    }
+
+    #[test]
+    fn priv_04_a_short_name_is_never_looked_for() {
+        let al = Scrub {
+            names: vec!["Al".to_owned()],
+            handles: vec!["al".to_owned()],
+            ..Scrub::default()
+        };
+        assert!(!al.holds("Alpha"));
+        assert!(!al.holds("Al said"));
+        assert!(al.looked_for().is_empty());
     }
 }

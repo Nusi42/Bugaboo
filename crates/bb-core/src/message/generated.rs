@@ -2250,6 +2250,13 @@ pub const ERROR_NAME_TAKEN: MessageKey = MessageKey::new("error.name.taken");
 /// The message `error.person.e-mail-taken`.
 pub const ERROR_PERSON_E_MAIL_TAKEN: MessageKey = MessageKey::new("error.person.e-mail-taken");
 
+/// The message `error.person.not-active`.
+pub const ERROR_PERSON_NOT_ACTIVE: MessageKey = MessageKey::new("error.person.not-active");
+
+/// The message `error.person.not-switched-off`.
+pub const ERROR_PERSON_NOT_SWITCHED_OFF: MessageKey =
+    MessageKey::new("error.person.not-switched-off");
+
 /// The message `error.project.move-into-itself`.
 pub const ERROR_PROJECT_MOVE_INTO_ITSELF: MessageKey =
     MessageKey::new("error.project.move-into-itself");

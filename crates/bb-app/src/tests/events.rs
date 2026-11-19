@@ -213,6 +213,7 @@ table! {
     "confirm_e_mail_change" => sco::confirm_e_mail_change_scenario,
     "correct_name" => sco::correct_name_scenario,
     "correct_e_mail" => sco::correct_e_mail_scenario,
+    "remove_person" => super::removal::remove_person_scenario,
     "create_theme" => sth::create_theme_scenario,
     "save_theme" => sth::save_theme_scenario,
     "copy_theme" => sth::copy_theme_scenario,

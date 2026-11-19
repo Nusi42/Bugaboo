@@ -7538,6 +7538,8 @@ export interface components {
       | "access.cannot-lift"
       | "access.would-lock-out"
       | "access.too-much"
+      | "person.not-switched-off"
+      | "person.not-active"
       | "role.in-use"
       | "assignment.conflict"
       | "setting.locked"

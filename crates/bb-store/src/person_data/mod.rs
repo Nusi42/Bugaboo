@@ -55,7 +55,10 @@ impl PersonData for AuthStorage {
         links: &[Link],
     ) -> Result<u64, StoreError> {
         let all = tables();
-        let Some((table, any)) = linked(&all, person, kind, links)? else {
+        let Some(table) = all.iter().find(|table| table.name == kind) else {
+            return Ok(0);
+        };
+        let Some(any) = linked(table, &all, person, links)? else {
             return Ok(0);
         };
         let mut select = Query::select();
@@ -125,17 +128,14 @@ impl PersonData for AuthStorage {
     }
 }
 
-/// The table of `kind` and the condition for its rows that name `person` by a link that is one of
-/// `links`; none when `kind` is not a table or has none of the links.
-fn linked<'t>(
-    all: &'t [StoredTable],
+/// The condition for the rows of `table` that name `person` by a link that is one of `links`;
+/// none when the table has none of the links.
+fn linked(
+    table: &StoredTable,
+    all: &[StoredTable],
     person: UserId,
-    kind: &str,
     links: &[Link],
-) -> Result<Option<(&'t StoredTable, Cond)>, StoreError> {
-    let Some(table) = all.iter().find(|table| table.name == kind) else {
-        return Ok(None);
-    };
+) -> Result<Option<Cond>, StoreError> {
     let mut any = Cond::any();
     let mut some = false;
     for link in table.marks.person_links().links() {
@@ -144,7 +144,7 @@ fn linked<'t>(
             some = true;
         }
     }
-    Ok(some.then_some((table, any)))
+    Ok(some.then_some(any))
 }
 
 /// The condition for the rows of `table` that name `person` by any link; none when the entity

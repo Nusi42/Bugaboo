@@ -616,3 +616,40 @@ async fn priv_06_the_person_is_told_and_the_security_log_records_the_correction(
     }
     Ok(())
 }
+
+#[tokio::test]
+async fn priv_04_a_switched_off_or_removed_person_keeps_their_name_and_address() -> Outcome {
+    let crew = crew().await?;
+    let (world, bob) = (&crew.world, crew.bob.person.id);
+    ask(world, &crew.bob.session_token, NEW).await?;
+    run_jobs(world).await?;
+    let secret = secret_sent_to(world, NEW)?;
+    super::switch_off::switched_off(world, bob).await?;
+    // Neither the link nor an administrator changes a switched-off person.
+    assert_eq!(
+        refused(&confirm(world, &secret).await),
+        Some(ErrorCode::PersonNotActive)
+    );
+    let corrected = correct_name_of(world, &token(world), bob, "A typo in the name").await;
+    assert_eq!(refused(&corrected), Some(ErrorCode::PersonNotActive));
+    assert_eq!(address_of(world, bob).as_deref(), Some(BOB));
+    // The removal takes the waiting change with it.
+    crate::privacy::removal::remove_person(
+        &world.ctx(),
+        crate::privacy::removal::RemovePerson {
+            session_token: token(world),
+            person: bob,
+            comments: None,
+        },
+    )
+    .await?;
+    let waiting = world.store.read(|state| {
+        state
+            .e_mail_changes
+            .iter()
+            .filter(|change| change.person == bob)
+            .count()
+    });
+    assert_eq!(waiting, 0);
+    Ok(())
+}

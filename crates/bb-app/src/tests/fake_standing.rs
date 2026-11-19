@@ -90,19 +90,55 @@ impl crate::privacy::replay::ReplayStore for FakeStore {
 }
 
 impl crate::privacy::removal::RemovalStore for FakeStore {
+    async fn person_words(
+        tx: &mut Tx,
+        person: UserId,
+    ) -> Result<Option<crate::privacy::removal::PersonWords>, FakeError> {
+        let handles = tx
+            .state
+            .handles
+            .iter()
+            .filter(|known| known.person == person)
+            .map(|known| known.handle.clone())
+            .collect();
+        Ok(tx
+            .state
+            .people
+            .iter()
+            .find(|(known, _)| known.id == person)
+            .map(|(known, _)| crate::privacy::removal::PersonWords {
+                name: known.display_name.clone(),
+                address: known.email.clone(),
+                handles,
+            }))
+    }
+
+    // The in-memory store keeps the rows of the walk apart from its tables (`state.walk`), so this
+    // deletes from those rows only and the tables keep theirs: what the removal deletes from the
+    // stored tables is tested on both databases (`bb-store`, `person_data::removal`) and over HTTP
+    // (`bb-server`, `removal_http`). The comments go from the real state (`delete_comments_of`).
     async fn delete_linked(
         tx: &mut Tx,
         person: UserId,
-        kind: &str,
+        kind: &bb_core::personal::EntityMarks,
         links: &[bb_core::personal::Link],
     ) -> Result<u64, FakeError> {
         let before = tx.state.walk.len();
         tx.state.walk.retain(|walked| {
             walked.person != person
-                || walked.kind != kind
+                || walked.marks.name() != kind.name()
                 || !walked.row.links.iter().any(|link| links.contains(link))
         });
         Ok(u64::try_from(before - tx.state.walk.len()).unwrap_or(u64::MAX))
+    }
+
+    async fn delete_jobs_with_address(tx: &mut Tx, address: &str) -> Result<u64, FakeError> {
+        let before = tx.state.jobs.len();
+        let address = address.to_lowercase();
+        tx.state
+            .jobs
+            .retain(|job| !job.payload.to_string().to_lowercase().contains(&address));
+        Ok(u64::try_from(before - tx.state.jobs.len()).unwrap_or(u64::MAX))
     }
 
     async fn scrub_changes(

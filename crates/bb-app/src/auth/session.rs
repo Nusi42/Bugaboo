@@ -588,6 +588,7 @@ pub async fn sign_out_everywhere<S: AuthStore>(
 }
 
 /// What ending every way in of a person took back: their access keys and the grants of AI apps.
+#[derive(Debug)]
 pub(crate) struct TakenBack {
     keys: Vec<AccessKeyId>,
     grants: Vec<GrantId>,

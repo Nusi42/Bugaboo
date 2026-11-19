@@ -2124,6 +2124,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Another account uses this e-mail address.",
     ),
     (
+        "error.person.not-active",
+        "This person is switched off or removed, so their name and e-mail address stay as they are.",
+    ),
+    (
+        "error.person.not-switched-off",
+        "Only a person who is switched off can be removed. Switch them off first.",
+    ),
+    (
         "error.project.move-into-itself",
         "A project cannot go inside itself or inside one of its own sub-projects.",
     ),

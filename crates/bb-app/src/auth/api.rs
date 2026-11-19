@@ -149,7 +149,9 @@ use crate::people::{
     ask_e_mail_change, change_my_name, confirm_e_mail_change, correct_e_mail, correct_name,
 };
 use crate::people::{SwitchOff, SwitchOn, switch_off, switch_on};
-use crate::privacy::removal::{RemovalPlan, RemovalPlanQuery, removal_plan};
+use crate::privacy::removal::{
+    RemovalPlan, RemovalPlanQuery, RemovePerson, Removed, removal_plan, remove_person,
+};
 
 use crate::privacy::export::{
     AskMyData, AskSomeonesData, DataExportsQuery, DownloadExportQuery, ExportLinkQuery,
