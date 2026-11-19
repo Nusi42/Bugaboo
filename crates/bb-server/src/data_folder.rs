@@ -542,12 +542,12 @@ fn write_private_with(
     placed
 }
 
-/// Moves the staged file to `target`. Replacing is a rename. Never replacing is a hard link,
-/// which fails when the target is there. A drive without hard links (FAT32, exFAT, some network
-/// drives) makes `link` fail for another reason: then the file is made new in the target with
-/// `create_new`, which fails when the target is there as well. Such drives have no access lists
-/// to keep, so nothing of the privacy of the file is lost (on Windows it is made private where the
-/// drive allows).
+/// Moves the staged file to `target`. Replacing is a rename. Never replacing is the one placing of
+/// a new file of the store ([`bb_store::backup::place_new`]): `link` (a hard link), which fails
+/// when the target is there, and on a drive without hard links (FAT32, exFAT, some network
+/// drives) the name taken by an empty file made new, the copy beside it and a rename, so the name
+/// never shows half a key file or setup code. Such drives have no access lists to keep, so nothing
+/// of the privacy of the file is lost (on Windows it is made private where the drive allows).
 fn place(
     staged: &Path,
     target: &Path,
@@ -556,26 +556,10 @@ fn place(
 ) -> std::io::Result<()> {
     match existing {
         Existing::Replace => std::fs::rename(staged, target),
-        Existing::Refuse => match link(staged, target) {
-            Err(error) if error.kind() != std::io::ErrorKind::AlreadyExists => {
-                copy_new(staged, target)
-            }
-            other => other,
-        },
+        Existing::Refuse => {
+            bb_store::backup::place_new(staged, target, link, open_new_where_allowed)
+        }
     }
-}
-
-/// Copies `from` to a file that is new at `to`, and takes it back if the copy fails.
-fn copy_new(from: &Path, to: &Path) -> std::io::Result<()> {
-    let mut source = std::fs::File::open(from)?;
-    let mut target = open_new_where_allowed(to)?;
-    let copied =
-        std::io::copy(&mut source, &mut target).and_then(|_| std::io::Write::flush(&mut target));
-    drop(target);
-    if copied.is_err() {
-        let _ = std::fs::remove_file(to);
-    }
-    copied
 }
 
 /// How many names are tried for the staging folder before giving up.

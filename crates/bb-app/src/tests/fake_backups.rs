@@ -31,6 +31,8 @@ impl BackupStore for FakeStore {
 #[derive(Default)]
 pub(crate) struct MemoryBackups {
     pub(crate) files: Mutex<Vec<BackupFile>>,
+    /// The folders whose leftovers were removed, in order.
+    pub(crate) cleaned: Mutex<Vec<Option<String>>>,
 }
 
 impl BackupFiles for MemoryBackups {
@@ -77,5 +79,13 @@ impl BackupFiles for MemoryBackups {
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .retain(|file| file.name != name);
         Box::pin(async { Ok(()) })
+    }
+
+    fn remove_leftovers(&self, folder: Option<String>) -> BoxFuture<'_, ()> {
+        self.cleaned
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .push(folder);
+        Box::pin(async {})
     }
 }

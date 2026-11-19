@@ -246,6 +246,25 @@ fn sec_16_without_hard_links_a_new_file_is_made_in_the_target() {
 }
 
 #[test]
+fn sec_16_without_hard_links_a_copy_never_shows_half_a_file_under_its_name() {
+    let temp = tempfile::tempdir().unwrap();
+    let unsupported =
+        |_: &Path, _: &Path| Err(std::io::Error::from(std::io::ErrorKind::Unsupported));
+    // The copy goes beside the name and is renamed onto it: nothing of it is left beside.
+    let staged = temp.path().join("staged.txt");
+    std::fs::write(&staged, "the secret").unwrap();
+    let target = temp.path().join("target.txt");
+    place(&staged, &target, Existing::Refuse, unsupported).unwrap();
+    assert_eq!(names(temp.path()), ["staged.txt", "target.txt"]);
+    // A copy that fails half way leaves neither the name nor the copy beside it.
+    let unreadable = temp.path().join("a-folder");
+    std::fs::create_dir(&unreadable).unwrap();
+    let other = temp.path().join("other.txt");
+    place(&unreadable, &other, Existing::Refuse, unsupported).unwrap_err();
+    assert_eq!(names(temp.path()), ["a-folder", "staged.txt", "target.txt"]);
+}
+
+#[test]
 fn sec_16_a_secret_file_can_refuse_to_replace_a_file() {
     let temp = tempfile::tempdir().unwrap();
     let file = temp.path().join("code.txt");

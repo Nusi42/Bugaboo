@@ -109,7 +109,8 @@ pub fn backups_in(folder: &Path) -> Result<Vec<(BackupName, PathBuf, u64)>, Stor
         let data = entry.metadata().map_err(io)?;
         let name = entry.file_name();
         let parsed = name.to_str().and_then(BackupName::parse);
-        if let (true, Some(parsed)) = (data.is_file(), parsed) {
+        // An empty file is a name being taken by a backup that is still copied (`place_new`).
+        if let (true, true, Some(parsed)) = (data.is_file(), data.len() > 0, parsed) {
             found.push((parsed, entry.path(), data.len()));
         }
     }
@@ -120,44 +121,149 @@ pub fn backups_in(folder: &Path) -> Result<Vec<(BackupName, PathBuf, u64)>, Stor
 /// How many seconds back a name is looked for when backups follow each other within a second.
 const NAME_TRIES: i64 = 60;
 
-/// The first name that is free in `folder`, at `now` or a few seconds before: an earlier moment
-/// keeps the promise of the name (every change saved before it is in the backup), a later one
-/// would not.
-fn free_name(
+/// Puts the finished archive `staged` into `folder` under the first name that is free at `moment`
+/// or a few seconds before: an earlier moment keeps the promise of the name (every change saved
+/// before it is in the backup), a later one would not. A backup made at the same moment beside
+/// this one (the command line beside the server) that takes a name first makes this one take the
+/// next (M9-F17).
+fn place_under_free_name(
+    staged: &Path,
     folder: &Path,
     purpose: Purpose,
-    now: Timestamp,
+    moment: Timestamp,
 ) -> Result<(BackupName, PathBuf), StoreError> {
     for back in 0..NAME_TRIES {
-        let moment = now
+        let earlier = moment
             .checked_sub(jiff::SignedDuration::from_secs(back))
             .map_err(|_| StoreError::Corrupt("the moment of a backup"))?;
-        let name = BackupName::new(purpose, moment, VERSION);
+        let name = BackupName::new(purpose, earlier, VERSION);
         let target = folder.join(name.to_string());
-        if !target.exists() {
-            return Ok((name, target));
+        match place_backup(staged, &target) {
+            Ok(()) => return Ok((name, target)),
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {}
+            Err(error) => return Err(io(error)),
         }
     }
     Err(io(std::io::ErrorKind::AlreadyExists.into()))
 }
 
-/// Puts the finished archive `staged` at `target`, which must not be there: a link, which fails
-/// when the name is taken, so two backups can never take one name, even made at the same moment
-/// by the server and the command line. A drive without links gets a copy into a file that is made
-/// new under the name, which fails the same way.
-fn place_new(staged: &Path, target: &Path) -> std::io::Result<()> {
-    match std::fs::hard_link(staged, target) {
+/// What a file being copied under a name of its own carries after that name, until it is renamed
+/// onto the name ([`place_new`]).
+pub const PARTIAL: &str = ".partial";
+
+/// Puts the finished archive `staged` at `target`, which must not be there, through [`place_new`]
+/// with a hard link and files for the owner only.
+fn place_backup(staged: &Path, target: &Path) -> std::io::Result<()> {
+    place_new(
+        staged,
+        target,
+        |from, to| std::fs::hard_link(from, to),
+        archive::create_private,
+    )
+}
+
+/// Puts the file `staged` at `target`, which must not be there, and never shows it half written
+/// under that name: the one way Bugaboo places a new file that must not replace one (a backup, a
+/// copy of the key files, the setup code).
+///
+/// `link` is tried first: a hard link fails when the name is taken, so two writers can never
+/// take one name. A drive without links (FAT32, exFAT, some network drives) makes it fail for
+/// another reason: then the name is taken by an empty file made new with `create` (which must
+/// fail with `AlreadyExists` when the name is taken, as the link does), the copy goes into
+/// `<target>.partial`, also made with `create`, and that file is renamed over the empty one
+/// (M9-F16). Until then the name holds an empty file, which [`backups_in`] does not list. A copy
+/// that fails takes both files back.
+///
+/// # Errors
+/// `AlreadyExists` when `target` is there, and the errors of the disk.
+pub fn place_new(
+    staged: &Path,
+    target: &Path,
+    link: impl FnOnce(&Path, &Path) -> std::io::Result<()>,
+    create: impl Fn(&Path) -> std::io::Result<std::fs::File>,
+) -> std::io::Result<()> {
+    match link(staged, target) {
         Err(error) if error.kind() != std::io::ErrorKind::AlreadyExists => {
-            let mut copy = archive::create_private(target)?;
-            let copied = std::io::copy(&mut std::fs::File::open(staged)?, &mut copy)
-                .and_then(|_| copy.sync_all());
+            drop(create(target)?);
+            let beside = partial_of(target);
+            let copied = copy_whole(staged, &beside, &create)
+                .and_then(|()| std::fs::rename(&beside, target));
             if copied.is_err() {
-                drop(copy);
+                let _ = std::fs::remove_file(&beside);
                 let _ = std::fs::remove_file(target);
             }
             copied
         }
         other => other,
+    }
+}
+
+/// The file beside `target` that its copy goes into.
+fn partial_of(target: &Path) -> PathBuf {
+    let mut beside = target.as_os_str().to_owned();
+    beside.push(PARTIAL);
+    PathBuf::from(beside)
+}
+
+/// Copies `staged` into the new file `copy` made by `create`, and waits until it is on disk.
+fn copy_whole(
+    staged: &Path,
+    copy: &Path,
+    create: &impl Fn(&Path) -> std::io::Result<std::fs::File>,
+) -> std::io::Result<()> {
+    let mut file = create(copy)?;
+    std::io::copy(&mut std::fs::File::open(staged)?, &mut file)?;
+    file.sync_all()
+}
+
+/// How long a copy beside a backup's name, or the empty file that holds the name, may stand
+/// unchanged before it counts as left behind by a backup that never finished (the program was
+/// stopped while it copied). A copy that runs writes its file all the time; an hour is far more
+/// than any file system waits before it shows the time of the last write.
+const LEFTOVER_AFTER: std::time::Duration = std::time::Duration::from_hours(1);
+
+/// Deletes from `folder` what a backup that never finished left there: a copy `<name>.partial`
+/// and the empty file that held its name, once they have not changed for [`LEFTOVER_AFTER`]. An
+/// empty name whose copy is still written stays. Nothing else is touched, and a file that cannot
+/// be deleted is left for the next time. Only the server's daily round of backups calls it, so a
+/// backup made on the command line at the same time never loses its copy to another.
+pub fn remove_leftovers(folder: &Path) {
+    let Ok(entries) = std::fs::read_dir(folder) else {
+        return;
+    };
+    let now = std::time::SystemTime::now();
+    let stale = |path: &Path| {
+        std::fs::symlink_metadata(path).is_ok_and(|data| {
+            data.is_file()
+                && data
+                    .modified()
+                    .ok()
+                    .and_then(|changed| now.duration_since(changed).ok())
+                    .is_some_and(|age| age >= LEFTOVER_AFTER)
+        })
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let Some(name) = entry.file_name().to_str().map(str::to_owned) else {
+            continue;
+        };
+        let copy_of = name
+            .strip_suffix(PARTIAL)
+            .and_then(BackupName::parse)
+            .is_some();
+        let empty_name = BackupName::parse(&name).is_some()
+            && entry
+                .metadata()
+                .is_ok_and(|data| data.is_file() && data.len() == 0);
+        let left = if copy_of {
+            stale(&path)
+        } else {
+            let copy = partial_of(&path);
+            empty_name && stale(&path) && (!copy.exists() || stale(&copy))
+        };
+        if left && let Err(error) = std::fs::remove_file(&path) {
+            tracing::warn!(cause = %error, "a file left by a backup that never finished stays");
+        }
     }
 }
 
@@ -176,9 +282,8 @@ impl Database {
         purpose: Purpose,
         now: Timestamp,
     ) -> Result<CreatedBackup, StoreError> {
-        let (name, target) = free_name(&places.folder, purpose, now)?;
         let work = work_folder(&places.folder, "backup")?;
-        let made = self.create_in(&work, places, &name, &target).await;
+        let made = self.create_in(&work, places, purpose, now).await;
         let _ = std::fs::remove_dir_all(&work);
         made
     }
@@ -187,9 +292,11 @@ impl Database {
         &self,
         work: &Path,
         places: &BackupPlaces,
-        name: &BackupName,
-        target: &Path,
+        purpose: Purpose,
+        now: Timestamp,
     ) -> Result<CreatedBackup, StoreError> {
+        // The name the backup is made for; it is placed under it or a second or two before.
+        let name = BackupName::new(purpose, now, VERSION);
         let kind = kind_of(self.dialect());
         let database =
             MemberName::parse(kind.member()).map_err(|_| StoreError::Corrupt("a member"))?;
@@ -257,14 +364,14 @@ impl Database {
         };
         let partial = work.join(format!("archive{EXTENSION}"));
         let (size, checksum) = archive::write(&partial, &mut manifest, &sources, &places.keys)?;
-        place_new(&partial, target).map_err(io)?;
+        let (name, target) = place_under_free_name(&partial, &places.folder, purpose, name.moment)?;
         Ok(CreatedBackup {
             file: CreatedFile {
-                name: name.clone(),
+                name,
                 size,
                 checksum,
             },
-            path: target.to_path_buf(),
+            path: target,
             log_head: copied.log_head,
         })
     }
@@ -272,4 +379,4 @@ impl Database {
 
 #[cfg(test)]
 #[path = "../tests/backup.rs"]
-mod tests;
+pub(crate) mod tests;

@@ -37,6 +37,11 @@ pub trait BackupFiles: Send + Sync {
         folder: Option<String>,
         name: BackupName,
     ) -> BoxFuture<'_, std::io::Result<()>>;
+
+    /// Deletes from the folder what a backup that never finished left behind (the program was
+    /// stopped while it copied): the copy beside a name and the empty file that held the name.
+    /// What cannot be deleted stays for the next time.
+    fn remove_leftovers(&self, folder: Option<String>) -> BoxFuture<'_, ()>;
 }
 
 /// No backup files: every call fails. What the services have until the server gives them the
@@ -70,6 +75,10 @@ impl BackupFiles for NoBackupFiles {
         _name: BackupName,
     ) -> BoxFuture<'_, std::io::Result<()>> {
         Box::pin(async { none() })
+    }
+
+    fn remove_leftovers(&self, _folder: Option<String>) -> BoxFuture<'_, ()> {
+        Box::pin(async {})
     }
 }
 

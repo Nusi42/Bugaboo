@@ -35,15 +35,15 @@ enum Place {
 }
 
 /// An installation of the test: its data folder, its database and its keys.
-struct Installation {
+pub(crate) struct Installation {
     folder: tempfile::TempDir,
     place: Place,
-    places: BackupPlaces,
-    seal: LogSeal,
+    pub(crate) places: BackupPlaces,
+    pub(crate) seal: LogSeal,
 }
 
 impl Installation {
-    fn new(db: &TestDatabase) -> Result<Self, Failure> {
+    pub(crate) fn new(db: &TestDatabase) -> Result<Self, Failure> {
         let folder = tempfile::tempdir()?;
         for name in ["keys", "logs", "backups", "files", "privacy"] {
             std::fs::create_dir(folder.path().join(name))?;
@@ -79,7 +79,7 @@ impl Installation {
         Arc::clone(&self.places.keys)
     }
 
-    async fn open(&self) -> Result<Database, StoreError> {
+    pub(crate) async fn open(&self) -> Result<Database, StoreError> {
         let database = self.open_unchecked().await?;
         database.migrate(at(0)).await?;
         Ok(database)
@@ -124,11 +124,11 @@ impl Installation {
         result
     }
 
-    fn storage(&self, database: &Database) -> AuthStorage {
+    pub(crate) fn storage(&self, database: &Database) -> AuthStorage {
         AuthStorage::new(database.clone(), self.keys(), self.seal.clone())
     }
 
-    async fn restore(
+    pub(crate) async fn restore(
         &self,
         archive: &Path,
         more: &[PathBuf],
@@ -139,14 +139,14 @@ impl Installation {
 }
 
 /// Saves the change numbered `number`: an event whose reason is the number.
-async fn save(database: &Database, number: i64) -> Result<(), StoreError> {
+pub(crate) async fn save(database: &Database, number: i64) -> Result<(), StoreError> {
     let mut saved = event(&mut bb_app::context::SystemIds, number);
     saved.reason = Some(number.to_string());
     database.record_change(&saved, async |_| Ok(())).await
 }
 
 /// The numbers of the saved changes, in order.
-async fn saved(database: &Database) -> Result<Vec<i64>, StoreError> {
+pub(crate) async fn saved(database: &Database) -> Result<Vec<i64>, StoreError> {
     let mut select = Query::select();
     select.column(Event::Reason).from(Event::Table);
     let mut numbers: Vec<i64> = database
@@ -161,7 +161,7 @@ async fn saved(database: &Database) -> Result<Vec<i64>, StoreError> {
 }
 
 /// A sign-in at `seconds`, for the security log.
-fn signed_in(seconds: i64) -> bb_app::auth::SecurityEvent {
+pub(crate) fn signed_in(seconds: i64) -> bb_app::auth::SecurityEvent {
     bb_app::auth::SecurityEvent {
         time: at(seconds),
         person: None,
@@ -329,7 +329,7 @@ async fn ops_07_a_damaged_or_newer_backup_is_refused_and_nothing_changes() -> Te
 
 impl Installation {
     /// Opens the database without migrating it (it may hold a newer migration).
-    async fn open_unchecked(&self) -> Result<Database, StoreError> {
+    pub(crate) async fn open_unchecked(&self) -> Result<Database, StoreError> {
         match &self.place {
             Place::File(file) => Database::connect_file(file).await,
             Place::Postgres(url) => Database::connect(url).await,
@@ -709,6 +709,83 @@ async fn ops_07_a_backup_another_installation_sealed_is_refused_before_anything_
 fn a_backup_name_of_the_folder_reads_back() {
     let name = BackupName::new(Purpose::Regular, at(0), VERSION);
     assert_eq!(BackupName::parse(&name.to_string()), Some(name));
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn ops_07_two_backups_made_at_the_same_moment_take_two_names() -> TestResult {
+    // The command line beside the server: both look for a free name at once (M9-F17).
+    each_database("ops_07_two_at_once", async |db| {
+        let installation = Installation::new(db)?;
+        let database = installation.open().await?;
+        let (first, second) = tokio::join!(
+            database.create_backup(&installation.places, Purpose::Regular, at(10)),
+            database.create_backup(&installation.places, Purpose::Regular, at(10)),
+        );
+        let mut moments = [first?.file.name.moment, second?.file.name.moment];
+        moments.sort_unstable();
+        assert_eq!(moments, [at(9), at(10)]);
+        assert_eq!(backups_in(&installation.places.folder)?.len(), 2);
+        database.close().await;
+        Ok(())
+    })
+    .await
+}
+
+#[test]
+fn ops_07_an_empty_file_is_a_name_being_taken_and_not_listed() -> TestResult {
+    // A drive without links takes the name with an empty file until the copy is renamed onto it
+    // (M9-F16).
+    let folder = tempfile::tempdir()?;
+    let name = BackupName::new(Purpose::Regular, at(0), VERSION);
+    std::fs::write(folder.path().join(name.to_string()), b"")?;
+    assert!(backups_in(folder.path())?.is_empty());
+    Ok(())
+}
+
+#[test]
+fn ops_07_a_backup_deletes_what_one_that_never_finished_left_behind() -> TestResult {
+    // A program stopped while it copied a backup onto a drive without links leaves the empty
+    // name and the copy beside it; the next backup deletes them once they have stood an hour.
+    let folder = tempfile::tempdir()?;
+    let named = |seconds| BackupName::new(Purpose::Regular, at(seconds), VERSION).to_string();
+    let long_ago = std::time::SystemTime::now() - 2 * LEFTOVER_AFTER;
+    let file = |name: &str, contents: &[u8], old: bool| -> Result<(), Failure> {
+        let path = folder.path().join(name);
+        std::fs::write(&path, contents)?;
+        if old {
+            std::fs::File::options()
+                .write(true)
+                .open(&path)?
+                .set_modified(long_ago)?;
+        }
+        Ok(())
+    };
+    // Left behind: an old copy, and an old empty name with no copy.
+    file(&format!("{}{PARTIAL}", named(1)), b"half", true)?;
+    file(&named(2), b"", true)?;
+    // Still at work: an old empty name whose copy is written now, and a new empty name.
+    file(&named(3), b"", true)?;
+    file(&format!("{}{PARTIAL}", named(3)), b"half", false)?;
+    file(&named(4), b"", false)?;
+    // Not a backup's: an old finished backup, and an old file of another name.
+    file(&named(5), b"a backup", true)?;
+    file(&format!("notes.txt{PARTIAL}"), b"", true)?;
+
+    remove_leftovers(folder.path());
+    let mut left: Vec<String> = std::fs::read_dir(folder.path())?
+        .map(|entry| Ok(entry?.file_name().to_string_lossy().into_owned()))
+        .collect::<Result<_, std::io::Error>>()?;
+    left.sort();
+    let mut kept = vec![
+        named(3),
+        format!("{}{PARTIAL}", named(3)),
+        named(4),
+        named(5),
+        format!("notes.txt{PARTIAL}"),
+    ];
+    kept.sort();
+    assert_eq!(left, kept);
+    Ok(())
 }
 
 #[path = "backup_copy.rs"]

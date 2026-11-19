@@ -26,6 +26,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// Creates the backup of the day when the setting is on, and deletes what the rotation no
     /// longer keeps.
     pub(crate) async fn backup_round(&self) -> Result<Round, AppError> {
+        self.remove_backup_leftovers().await?;
         let layers = self.setting_layers_of(None).await?;
         let mut round = Round::default();
         if layers.yes(&BACKUPS_DAILY) {
@@ -37,6 +38,19 @@ impl<S: AuthStore> Ctx<'_, S> {
         let step = self.keep_step(crate::jobs::JobKind::BackupsDaily).await?;
         round.deleted = usize::try_from(step.rows).unwrap_or(usize::MAX);
         Ok(round)
+    }
+
+    /// Removes what backups that never finished left in the backups folder of the data folder
+    /// and in the one the setting names. Only this round does it: a backup made on the command
+    /// line beside the server must never lose its copy to another backup.
+    async fn remove_backup_leftovers(&self) -> Result<(), AppError> {
+        let named = self.backups_folder().await?;
+        let backups = &self.services.backups;
+        backups.remove_leftovers(None).await;
+        if named.is_some() {
+            backups.remove_leftovers(named).await;
+        }
+        Ok(())
     }
 
     /// Deletes the backups the rotation no longer keeps, and says how many: the row *Backups* of

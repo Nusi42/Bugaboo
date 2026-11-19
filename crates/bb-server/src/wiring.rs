@@ -146,6 +146,15 @@ impl BackupFiles for ServerBackups {
             std::fs::remove_file(self.folder(folder.as_deref())?.join(name.to_string()))
         })
     }
+
+    fn remove_leftovers(&self, folder: Option<String>) -> BoxFuture<'_, ()> {
+        Box::pin(async move {
+            match self.folder(folder.as_deref()) {
+                Ok(folder) => bb_store::backup::remove_leftovers(&folder),
+                Err(error) => tracing::warn!(cause = %error, "the backups folder is not there"),
+            }
+        })
+    }
 }
 
 /// The stored data of an installation that exists, opened by the commands that look after it

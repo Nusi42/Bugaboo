@@ -194,11 +194,11 @@ fn ops_07_a_finished_backup_never_takes_the_name_of_another()
     let target = folder.path().join("taken.backup");
     std::fs::write(&staged, b"new")?;
     std::fs::write(&target, b"there first")?;
-    let error = super::super::place_new(&staged, &target).expect_err("the name is taken");
+    let error = super::super::place_backup(&staged, &target).expect_err("the name is taken");
     assert_eq!(error.kind(), std::io::ErrorKind::AlreadyExists);
     assert_eq!(std::fs::read(&target)?, b"there first");
     let free = folder.path().join("free.backup");
-    super::super::place_new(&staged, &free)?;
+    super::super::place_backup(&staged, &free)?;
     assert_eq!(std::fs::read(&free)?, b"new");
     Ok(())
 }

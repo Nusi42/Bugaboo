@@ -124,6 +124,14 @@ async fn ops_07_the_schedule_keeps_seven_daily_and_four_weekly_backups() -> Outc
     )
     .await?;
     assert!(!world.ctx().backup_round().await?.created);
+    // Every round, and only the round, first removes what a backup that never finished left.
+    let cleaned = world
+        .backups
+        .cleaned
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .clone();
+    assert_eq!(cleaned, [None]);
     change_setting(
         &world.ctx(),
         ChangeSetting {
