@@ -205,7 +205,11 @@ export const messages = {
   "save.saved-at": "Saved · {time}",
   "save.not-saved": "Not saved yet",
   "data-folder.open":
-    "{part} {path} can be opened by other accounts on this computer. Bugaboo leaves it as it is, in case you set these rights on purpose. If nobody else should read it, remove the rights of the other accounts: on Linux run chmod go-rwx on it, on Windows open the Security tab of its properties.",
+    "{part} {path} can be opened by other accounts on this computer. Bugaboo leaves it as it is, in case you set these rights on purpose. If nobody else should read it, remove the rights of the other accounts: chmod go-rwx ''{path}''",
+  "data-folder.open-windows":
+    "{part} {path} can be opened by other accounts on this computer. Bugaboo leaves it as it is, in case you set these rights on purpose. If nobody else should read it, keep only the account that runs Bugaboo, in a command window: {command}",
+  "data-folder.open-windows-unknown-account":
+    "{part} {path} can be opened by other accounts on this computer. Bugaboo leaves it as it is, in case you set these rights on purpose. If nobody else should read it, open the Security tab of its properties and keep only the account that runs Bugaboo.",
   "data-folder.own-certificate":
     "The folder {path} holds only files of your own in its tls folder, such as a certificate. Installing the service would change who owns them. If this folder is meant to become the data folder of Bugaboo, run the command again with {flag}.",
   "setup.database-url-password":

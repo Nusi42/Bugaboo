@@ -12302,6 +12302,53 @@ pub fn data_folder_open(values: DataFolderOpen<'_>) -> Message {
     )
 }
 
+/// The values of the message `data-folder.open-windows`, by name.
+#[derive(Clone, Copy)]
+pub struct DataFolderOpenWindows<'a> {
+    /// The value of `{command}`.
+    pub command: &'a dyn std::fmt::Display,
+    /// The value of `{part}`.
+    pub part: &'a dyn std::fmt::Display,
+    /// The value of `{path}`.
+    pub path: &'a dyn std::fmt::Display,
+}
+
+/// The message `data-folder.open-windows`.
+#[must_use]
+pub fn data_folder_open_windows(values: DataFolderOpenWindows<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("data-folder.open-windows"),
+        vec![
+            ("command", Value::Text(values.command.to_string())),
+            ("part", Value::Text(values.part.to_string())),
+            ("path", Value::Text(values.path.to_string())),
+        ],
+    )
+}
+
+/// The values of the message `data-folder.open-windows-unknown-account`, by name.
+#[derive(Clone, Copy)]
+pub struct DataFolderOpenWindowsUnknownAccount<'a> {
+    /// The value of `{part}`.
+    pub part: &'a dyn std::fmt::Display,
+    /// The value of `{path}`.
+    pub path: &'a dyn std::fmt::Display,
+}
+
+/// The message `data-folder.open-windows-unknown-account`.
+#[must_use]
+pub fn data_folder_open_windows_unknown_account(
+    values: DataFolderOpenWindowsUnknownAccount<'_>,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("data-folder.open-windows-unknown-account"),
+        vec![
+            ("part", Value::Text(values.part.to_string())),
+            ("path", Value::Text(values.path.to_string())),
+        ],
+    )
+}
+
 /// The values of the message `data-folder.own-certificate`, by name.
 #[derive(Clone, Copy)]
 pub struct DataFolderOwnCertificate<'a> {

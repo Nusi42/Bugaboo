@@ -88,10 +88,7 @@ impl DataFolder {
                 let part = Message::from(part).render();
                 let sentence = match access {
                     Access::Private => return None,
-                    Access::Open => message::data_folder_open(message::DataFolderOpen {
-                        part: &part,
-                        path: &path.display(),
-                    }),
+                    Access::Open => open_sentence(&part, &path),
                     Access::Unknown => message::data_folder_unknown(message::DataFolderUnknown {
                         part: &part,
                         path: &path.display(),
@@ -101,6 +98,66 @@ impl DataFolder {
             })
             .collect()
     }
+}
+
+/// The sentence of a part that other accounts can open, with the command that takes their rights
+/// away: `chmod` here. It needs no `-R` for a folder: the check reads the rights of the folder
+/// itself, and once other accounts cannot enter it they cannot reach anything inside, where what
+/// Bugaboo makes is private already.
+#[cfg(not(windows))]
+fn open_sentence(part: &str, path: &Path) -> Message {
+    message::data_folder_open(message::DataFolderOpen {
+        part: &part,
+        path: &path.display(),
+    })
+}
+
+/// The same on Windows, with the account that runs Bugaboo.
+#[cfg(windows)]
+fn open_sentence(part: &str, path: &Path) -> Message {
+    windows_open_sentence(part, path, super::current_sid().ok().as_deref())
+}
+
+/// The sentence on Windows for the account `sid`: the two `icacls` commands that keep only that
+/// account, exactly as Bugaboo restricts what it makes itself (`restrict_arguments`), with the
+/// grants of a folder or of a file. Without the account the sentence names no command and points
+/// to the Security tab: the account of the person who types is the wrong one when a service runs
+/// Bugaboo.
+#[cfg(windows)]
+fn windows_open_sentence(part: &str, path: &Path, sid: Option<&str>) -> Message {
+    let Some(sid) = sid else {
+        return message::data_folder_open_windows_unknown_account(
+            message::DataFolderOpenWindowsUnknownAccount {
+                part: &part,
+                path: &path.display(),
+            },
+        );
+    };
+    let grants = if path.is_dir() {
+        super::folder_grants(sid)
+    } else {
+        super::file_grants(sid)
+    };
+    let quoted = |word: &str| format!("\"{word}\"");
+    let command = super::restrict_arguments(&grants)
+        .map(|arguments| {
+            std::iter::once(format!("icacls {}", quoted(&path.display().to_string())))
+                .chain(arguments.iter().map(|argument| {
+                    if argument.starts_with('/') {
+                        argument.clone()
+                    } else {
+                        quoted(argument)
+                    }
+                }))
+                .collect::<Vec<_>>()
+                .join(" ")
+        })
+        .join(" && ");
+    message::data_folder_open_windows(message::DataFolderOpenWindows {
+        command: &command,
+        part: &part,
+        path: &path.display(),
+    })
 }
 
 /// How open `path` is. A path that is not there is private.
@@ -325,10 +382,40 @@ mod tests {
             "{database}"
         );
         assert!(database.contains("leaves it as it is"), "{database}");
-        assert!(
-            database.contains("chmod") && database.contains("Security tab"),
-            "{database}"
-        );
+        // The exact command that keeps only the account that runs Bugaboo, for a file and for a
+        // folder (whose rights the files made in it later take over).
+        let backups = &found[1].1;
+        if cfg!(windows) {
+            // As Bugaboo restricts what it makes itself: every entry added by hand goes first.
+            let path = folder.database_file().display().to_string();
+            let line = format!(
+                "icacls \"{path}\" /reset && icacls \"{path}\" /inheritance:r /grant:r \"*"
+            );
+            assert!(database.contains(&line), "{database}");
+            // A file keeps reading for the administrators, a folder hands its rights on.
+            assert!(
+                database.ends_with(&format!(":F\" /grant:r \"*{ADMINISTRATORS_SID}:R\"")),
+                "{database}"
+            );
+            assert!(backups.ends_with(":(OI)(CI)F\""), "{backups}");
+        } else {
+            let path = folder.database_file().display().to_string();
+            assert!(
+                database.ends_with(&format!("chmod go-rwx '{path}'")),
+                "{database}"
+            );
+            assert!(backups.contains("chmod go-rwx '"), "{backups}");
+        }
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn sec_16_without_the_account_no_command_names_a_guessed_one() {
+        let temp = tempfile::tempdir().unwrap();
+        let said = windows_open_sentence("The data folder", temp.path(), None).render();
+        assert!(said.contains("Security tab"), "{said}");
+        assert!(!said.contains("icacls"), "{said}");
+        assert!(!said.contains("%USERNAME%"), "{said}");
     }
 
     #[test]

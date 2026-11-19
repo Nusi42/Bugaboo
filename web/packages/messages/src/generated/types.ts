@@ -277,6 +277,12 @@ export interface MessageArguments {
   "data-folder.create-failed": { path: string | number; reason: string | number };
   "data-folder.not-a-data-folder": { path: string | number };
   "data-folder.open": { part: string | number; path: string | number };
+  "data-folder.open-windows": {
+    command: string | number;
+    part: string | number;
+    path: string | number;
+  };
+  "data-folder.open-windows-unknown-account": { part: string | number; path: string | number };
   "data-folder.own-certificate": { flag: string | number; path: string | number };
   "data-folder.protect-failed": { path: string | number; reason: string | number };
   "data-folder.unknown": { part: string | number; path: string | number };

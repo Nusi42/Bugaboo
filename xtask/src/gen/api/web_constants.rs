@@ -785,6 +785,7 @@ export const ownThemeSheets = \"{sheets}\";
 }
 mod notifications;
 mod safe_html;
+pub(super) mod settings_page;
 mod texts;
 pub(super) mod user_pages;
 pub(super) use notifications::notifications;

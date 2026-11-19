@@ -188,6 +188,15 @@ fn auth_02_the_public_address_is_given_or_comes_from_this_computer() {
     assert_eq!(given.public_url, "https://bugaboo.example.test:8443");
 }
 
+/// The sentence that asks for the public address names the setting and the three places it can
+/// be given: the question of `bugaboo setup`, the settings file and the environment variable.
+fn says_where_to_set_the_public_address(said: &str) {
+    assert!(said.contains(SettingName::PublicUrl.code()), "{said}");
+    assert!(said.contains("bugaboo setup"), "{said}");
+    assert!(said.contains(DEFAULT_FILE), "{said}");
+    assert!(said.contains(&env_name(SettingName::PublicUrl)), "{said}");
+}
+
 #[test]
 fn auth_02_a_server_behind_a_proxy_must_be_told_its_public_address() {
     // Even on this computer: people reach it through the address of the proxy.
@@ -198,7 +207,7 @@ fn auth_02_a_server_behind_a_proxy_must_be_told_its_public_address() {
     ];
     let error = resolve_with(None, &[], &cli).unwrap_err();
     assert!(matches!(error, ConfigError::PublicUrlNeededBehindProxy));
-    assert!(error.message().contains("public_url"));
+    says_where_to_set_the_public_address(&error.message());
     let with = [
         (SettingName::Port, "1"),
         (SettingName::TlsMode, "off"),
@@ -221,7 +230,7 @@ fn auth_02_a_server_on_the_network_must_be_told_its_public_address() {
     )
     .unwrap_err();
     assert!(matches!(error, ConfigError::PublicUrlNeeded(_)));
-    assert!(error.message().contains("public_url"));
+    says_where_to_set_the_public_address(&error.message());
     for bad in [
         "bugaboo.example.test",
         "https://example.test/app",
@@ -396,4 +405,19 @@ fn ops_10_the_default_settings_file_is_next_to_the_program() {
 fn ops_10_environment_names_follow_the_setting_names() {
     assert_eq!(env_name(SettingName::TlsMode), "BUGABOO_TLS_MODE");
     assert_eq!(env_name(SettingName::Port), "BUGABOO_PORT");
+}
+
+/// The page of start-up settings in the user documentation names the environment variable of every
+/// setting, and of the settings file.
+#[test]
+fn ops_10_every_environment_variable_is_on_the_page_of_settings() {
+    let page = include_str!("../../../../userDocs/install/settings.md");
+    for name in SettingName::ALL
+        .iter()
+        .copied()
+        .map(env_name)
+        .chain([FILE_ENV.to_owned()])
+    {
+        assert!(page.contains(&format!("`{name}`")), "{name}");
+    }
 }

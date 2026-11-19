@@ -1640,11 +1640,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "config.public-url-needed",
-        "Bugaboo listens on {address}, so it cannot know the address people type in the browser. Set public_url, for example https://bugaboo.example.com.",
+        "Bugaboo listens on {address}, so it cannot know the address people type in the browser. Set public_url to it, for example https://bugaboo.example.com: answer the question of bugaboo setup, write public_url into bugaboo.toml, or set the environment variable BUGABOO_PUBLIC_URL.",
     ),
     (
         "config.public-url-proxy",
-        "A proxy is listed in trusted_proxies, so people reach Bugaboo through the address of the proxy, which Bugaboo cannot know. Set public_url, for example https://bugaboo.example.com.",
+        "A proxy is listed in trusted_proxies, so people reach Bugaboo through the address of the proxy, which Bugaboo cannot know. Set public_url to it, for example https://bugaboo.example.com: answer the question of bugaboo setup, write public_url into bugaboo.toml, or set the environment variable BUGABOO_PUBLIC_URL.",
     ),
     (
         "config.tls-files-missing",
@@ -1790,7 +1790,15 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "data-folder.open",
-        "{part} {path} can be opened by other accounts on this computer. Bugaboo leaves it as it is, in case you set these rights on purpose. If nobody else should read it, remove the rights of the other accounts: on Linux run chmod go-rwx on it, on Windows open the Security tab of its properties.",
+        "{part} {path} can be opened by other accounts on this computer. Bugaboo leaves it as it is, in case you set these rights on purpose. If nobody else should read it, remove the rights of the other accounts: chmod go-rwx ''{path}''",
+    ),
+    (
+        "data-folder.open-windows",
+        "{part} {path} can be opened by other accounts on this computer. Bugaboo leaves it as it is, in case you set these rights on purpose. If nobody else should read it, keep only the account that runs Bugaboo, in a command window: {command}",
+    ),
+    (
+        "data-folder.open-windows-unknown-account",
+        "{part} {path} can be opened by other accounts on this computer. Bugaboo leaves it as it is, in case you set these rights on purpose. If nobody else should read it, open the Security tab of its properties and keep only the account that runs Bugaboo.",
     ),
     (
         "data-folder.own-certificate",

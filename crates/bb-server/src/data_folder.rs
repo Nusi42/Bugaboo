@@ -451,8 +451,7 @@ pub(crate) fn protect_key_files(keys: &Path) -> Result<(), String> {
 /// objects, `CI` containers).
 #[cfg(windows)]
 fn restrict(path: &Path) -> Result<(), String> {
-    let sid = current_sid()?;
-    restrict_to(path, &[format!("*{sid}:(OI)(CI)F")])
+    restrict_to(path, &folder_grants(&current_sid()?))
 }
 
 /// The well-known SID of the group of administrators of the computer (fixed, while the name of
@@ -464,22 +463,40 @@ pub(crate) const ADMINISTRATORS_SID: &str = "S-1-5-32-544";
 /// administrators of the computer may read (they can take over the file anyway).
 #[cfg(windows)]
 fn restrict_file(path: &Path) -> Result<(), String> {
-    let sid = current_sid()?;
-    restrict_to(
-        path,
-        &[format!("*{sid}:F"), format!("*{ADMINISTRATORS_SID}:R")],
-    )
+    restrict_to(path, &file_grants(&current_sid()?))
 }
 
-/// Windows: removes every entry of the access list and inherited rights, then grants `grants`.
+/// The entries a folder keeps: full control for the account `sid`, handed on to what is made in
+/// it later.
 #[cfg(windows)]
-fn restrict_to(path: &Path, grants: &[String]) -> Result<(), String> {
+fn folder_grants(sid: &str) -> Vec<String> {
+    vec![format!("*{sid}:(OI)(CI)F")]
+}
+
+/// The entries a file keeps: full control for the account `sid`, reading for the administrators.
+#[cfg(windows)]
+fn file_grants(sid: &str) -> Vec<String> {
+    vec![format!("*{sid}:F"), format!("*{ADMINISTRATORS_SID}:R")]
+}
+
+/// The two runs of `icacls` that keep only `grants` on a path: the first removes every entry of
+/// the access list (`/reset`), the second removes inherited rights and grants `grants`. Bugaboo
+/// runs them itself (`restrict_to`), and the warning about an open part of a data folder writes
+/// them out for a person to run.
+#[cfg(windows)]
+fn restrict_arguments(grants: &[String]) -> [Vec<String>; 2] {
     let mut grant = vec!["/inheritance:r".to_owned()];
     for entry in grants {
         grant.push("/grant:r".to_owned());
         grant.push(entry.clone());
     }
-    for arguments in [vec!["/reset".to_owned()], grant] {
+    [vec!["/reset".to_owned()], grant]
+}
+
+/// Windows: removes every entry of the access list and inherited rights, then grants `grants`.
+#[cfg(windows)]
+fn restrict_to(path: &Path, grants: &[String]) -> Result<(), String> {
+    for arguments in restrict_arguments(grants) {
         let output =
             std::process::Command::new(system_tool("icacls.exe").map_err(|said| said.render())?)
                 .arg(path)

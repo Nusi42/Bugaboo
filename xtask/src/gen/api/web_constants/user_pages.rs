@@ -504,6 +504,10 @@ pub(crate) fn pages(sources: &[Source]) -> anyhow::Result<Vec<(&'static str, Str
         (NOTIFICATION_NUMBERS_PAGE, notification_numbers(sources)?),
         (TIME_NUMBERS_PAGE, time_numbers(sources)?),
         (AI_NUMBERS_PAGE, ai_numbers()?),
+        (
+            super::settings_page::SETTINGS_PAGE,
+            super::settings_page::settings_page(sources)?,
+        ),
     ])
 }
 
@@ -557,6 +561,14 @@ mod tests {
                     ("TIME_NOTE_CHARS_MAX", 2000),
                     ("LONG_TIMER_HOURS", 10),
                 ],
+            ),
+            (
+                super::super::settings_page::CONFIG_SOURCE.to_owned(),
+                "words! { pub(crate) enum SettingName { Port => \"port\", } }\n\
+                 const ENV_PREFIX: &str = \"BUGABOO_\";\n\
+                 const FILE_ENV: &str = \"BUGABOO_CONFIG\";\n\
+                 const DEFAULT_FILE: &str = \"bugaboo.toml\";\n"
+                    .to_owned(),
             ),
         ]
     }

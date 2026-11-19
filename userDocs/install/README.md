@@ -31,6 +31,37 @@ Your answers are saved in the settings file `bugaboo.toml`. You can run `bugaboo
 
 To skip the questions, for example in a script, run `bugaboo setup --non-interactive` with the options you want. Run `bugaboo setup --help` to see them.
 
+Every setting of `bugaboo.toml` can also come from an environment variable, `BUGABOO_` followed by its name in capitals, such as `BUGABOO_PORT`. A variable is stronger than the file, and an option on the command line is stronger than both. [Start-up settings](settings.md) lists every setting with its variable.
+
+## The web address people type (`public_url`)
+
+When Bugaboo listens on every address (`0.0.0.0`), or sits behind a proxy, it cannot know which address people type in the browser, and it says so when it starts. Set the address in one of three ways:
+
+- Run `bugaboo setup` again and answer the question *Which web address will people type?*.
+- Write it into `bugaboo.toml`: `public_url = "https://bugaboo.example.com"`.
+- Set the environment variable `BUGABOO_PUBLIC_URL` to it, for example for a service or a container.
+
+Use the address exactly as people type it, with `https://` and, if it is not 443, the port. Passkeys and the sign-in of AI apps belong to this address.
+
+## When other accounts can open the data folder
+
+When Bugaboo starts, it checks whether other accounts on the computer can open the data folder, the database, the attachments, the backups or the setup code file. It does not change rights you set yourself, in case you set them on purpose; it warns, and the warning gives the command that takes the rights of the other accounts away.
+
+- On Linux, as the account that runs Bugaboo: `chmod go-rwx '<path>'`. A folder needs no `-R`: once other accounts cannot enter it, they cannot reach anything inside, and what Bugaboo makes inside is private already.
+- On Windows, in a command window, for a folder:
+
+  ```text
+  icacls "<path>" /reset && icacls "<path>" /inheritance:r /grant:r "*<account>:(OI)(CI)F"
+  ```
+
+  and for a file, such as the database, which the administrators of the computer may still read:
+
+  ```text
+  icacls "<path>" /reset && icacls "<path>" /inheritance:r /grant:r "*<account>:F" /grant:r "*S-1-5-32-544:R"
+  ```
+
+  The first command removes every entry that was added by hand, such as a right for everyone to read; the second keeps only the account that runs Bugaboo. `<account>` is the security identifier of that account, which the warning fills in, so copy the line from the warning. If Bugaboo cannot find out the account, the warning sends you to the *Security* tab of the properties instead.
+
 ## Your own certificate before the first start
 
 If you already have a certificate, put the files into a folder named `tls` inside the data folder before Bugaboo has ever started, and choose `files` in the questions above. When you then run `bugaboo service install`, Bugaboo refuses the folder, because it holds files that Bugaboo did not create, and the message names the flag `--take-over-data-folder`. Run the command again with that flag to let the service take the folder over. The flag takes over nothing else: a folder with any other files in it is still refused.
