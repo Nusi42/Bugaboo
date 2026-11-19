@@ -375,6 +375,11 @@ Rules:
 | **Check** (a result)     | A result an agent attaches with *passed* or *failed*, such as its tests; Bugaboo does not run or verify it | CI status, build status (in UI) |
 | **Accepted by itself**   | The list in *My agents* of attempts that were accepted because every check passed, until a person looked at them | auto-merged (in UI) |
 | **Undo the run**         | Put back everything one run changed, in one step; a change somebody made afterwards is skipped and named | rollback, revert (in UI) |
+| **Wait for work** (an agent) | An agent asks Bugaboo to answer when work waits for it (a hand-over or work sent back), or after at most a minute; it only reads | long poll (in UI) |
+| **May hand over to my other agents** | A switch of an agent, set by its person and off at the start: the agent may hand issues of its own work over to another agent of the same person, giving no more than it has itself | delegate, sub-agent, agent-to-agent (in UI) |
+| **May undo its own runs** | A switch of an agent, set by its person and off at the start: the agent may use *Undo the run* on the runs of its own attempts | self-revert, rollback (in UI) |
+| **Thrown away** (a comment of an agent) | What the history says of a comment an agent wrote in a run that was undone: it was there and is gone, with no text kept | redacted, purged (in UI) |
+| **History** (of an agent) | The list on an agent's page of what it handed over and what it undid, newest first | audit log, activity feed (in UI) |
 
 On screens the AI is always *the assistant*, *an AI app* or *an agent*: never *bot*, *copilot*, *auto-pilot* or a vendor's word, and a credential is never a *token*. These words fail TXT-TERMS through the rows above and the row of *Agent*.
 
