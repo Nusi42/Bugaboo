@@ -286,7 +286,7 @@ pub(super) const ALL: &[Definition] = &[
         steps: || Ok(super::m0056_keeping::steps()),
     },
     Definition {
-        version: 57,
+        version: super::m0057_person_standing::VERSION,
         name: "person_standing",
         steps: || Ok(super::m0057_person_standing::steps()),
     },

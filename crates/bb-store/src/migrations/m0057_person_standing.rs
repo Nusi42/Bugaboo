@@ -14,6 +14,9 @@ use sea_query::{ColumnDef, ForeignKey, Index, Table};
 use super::{Step, id_column};
 use crate::schema::{PersonRow, PersonStandingRow, ReplayWaitingRow};
 
+/// The number of this migration: a database below it has no table of waiting lines.
+pub(crate) const VERSION: i64 = 57;
+
 pub(super) fn steps() -> Vec<Step> {
     vec![
         Step::Table(
@@ -64,4 +67,35 @@ pub(super) fn steps() -> Vec<Step> {
                 .to_owned(),
         ),
     ]
+}
+
+#[cfg(test)]
+mod tests {
+    use bb_testing::{TestResult, each_database};
+
+    use super::VERSION;
+    use crate::auth::replay_waiting::{waiting_lines, waiting_lines_of_any_version};
+    use crate::db::Database;
+    use crate::test_support::at;
+
+    #[tokio::test]
+    async fn priv_04_a_database_before_the_waiting_lines_has_none_to_restore() -> TestResult {
+        each_database("m0057_no_waiting_lines_before", async |db| {
+            let database = Database::connect(db.url()).await?;
+            database.migrate_until(VERSION - 1, at(0)).await?;
+            // A restore onto a database of an older release reads no waiting lines, and fails not.
+            assert!(waiting_lines(&database).await.is_err());
+            assert_eq!(
+                waiting_lines_of_any_version(&database).await?,
+                Vec::<String>::new()
+            );
+            database.migrate_until(VERSION, at(1)).await?;
+            assert_eq!(
+                waiting_lines_of_any_version(&database).await?,
+                Vec::<String>::new()
+            );
+            Ok(())
+        })
+        .await
+    }
 }

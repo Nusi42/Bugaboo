@@ -26,6 +26,22 @@ pub(crate) async fn waiting_lines(database: &Database) -> Result<Vec<String>, St
         .collect()
 }
 
+/// The same for a database of any version, as a restore finds it: one that has not reached the
+/// migration of the table of waiting lines has none.
+pub(crate) async fn waiting_lines_of_any_version(
+    database: &Database,
+) -> Result<Vec<String>, StoreError> {
+    let applied = database.applied_migrations().await?;
+    if applied
+        .iter()
+        .any(|record| record.version == crate::migrations::REPLAY_WAITING_FROM)
+    {
+        waiting_lines(database).await
+    } else {
+        Ok(Vec::new())
+    }
+}
+
 impl ReplayStore for AuthStorage {
     async fn wait_to_replay(
         transaction: &mut Transaction,

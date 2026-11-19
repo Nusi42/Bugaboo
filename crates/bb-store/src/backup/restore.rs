@@ -36,7 +36,7 @@ use sea_query::{Expr, ExprTrait as _, Query};
 use super::{BackupPlaces, CreatedBackup, archive, fill, io, seal, work_folder};
 use crate::anchor::{Anchored, LogSeal};
 use crate::auth::AuthStorage;
-use crate::auth::replay_waiting::waiting_lines;
+use crate::auth::replay_waiting::waiting_lines_of_any_version;
 use crate::chain::Verification;
 use crate::db::{Database, StoredId as _, Transaction};
 use crate::error::StoreError;
@@ -174,7 +174,7 @@ async fn run(
     let present = input.target.connect().await.map_err(early)?;
     // The lines a change wrote and the file of the list does not hold yet are part of the list:
     // read before the database that holds them is replaced (ADR-0044, decision 8).
-    let waiting = waiting_lines(&present).await;
+    let waiting = waiting_lines_of_any_version(&present).await;
     let created = present
         .create_backup(input.places, Purpose::BeforeRestore, input.now)
         .await;
@@ -545,10 +545,7 @@ async fn replay_newer(
         unreadable_lines += unreadable;
         lists.push(lines);
     }
-    let (lines, unreadable) = replay::read(&waiting.join(
-        "
-",
-    ));
+    let (lines, unreadable) = replay::read(&waiting.join("\n"));
     unreadable_lines += unreadable;
     lists.push(lines);
     let merged = replay::merge(lists);
