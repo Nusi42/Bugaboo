@@ -273,9 +273,14 @@ async fn ai_33_a_ready_attempt_leaves_one_short_comment_written_by_an_agent() ->
     end_attempt(&world.ctx(), ready(&given.key, issue_id)).await?;
     let shared = world.store.lock();
     assert_eq!(shared.state.comments.len(), 1);
+    // The number of the attempt and the address each stand in their own place.
+    let text = &shared.state.comments[0].text;
+    let address = text
+        .strip_prefix("Attempt 1 is ready for review: ")
+        .ok_or_else(|| format!("not the sentence of a ready attempt: {text}"))?;
     assert!(
-        shared.state.comments[0].text.contains("/issues/"),
-        "it links to the issue"
+        address.starts_with(super::world::PUBLIC_URL) && address.contains("/issues/"),
+        "it links to the issue: {text}"
     );
     // The event names the agent, which is what the mark *Written by an agent* is set from.
     let written = shared

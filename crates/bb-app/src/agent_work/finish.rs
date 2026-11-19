@@ -114,7 +114,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await?
             .unwrap_or_else(|| mine.work.issue.to_string());
         let address = self.app_address(&app_paths::ISSUE.replace("$issue", &key));
-        let text = message::agent_work_summary(attempt.number, address).render();
+        let text = message::agent_work_summary(address, attempt.number).render();
         // The system writes it as the agent when the attempt has ended, so no attempt runs.
         *locked(&self.accepting) = Some(mine.work.issue);
         let written = add_comment(
