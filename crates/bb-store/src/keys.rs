@@ -8,9 +8,12 @@
 //! - `log.key` holds the **log key**: 64 hex digits. It signs the hash chain and the checkpoints
 //!   of the security log. It never changes, so rotating the master key does not touch the log.
 //! - `csrf.key` holds the **CSRF key**: 64 hex digits. The token of a session is an HMAC of the
-//!   session ID under this key (SEC-12). It never changes, and no stored data depends on it: if the
-//!   file is lost, a new one is made and people sign in again (the old tokens stop matching), so
-//!   it is made even when the database already has data.
+//!   session ID under this key (SEC-12); signed links and the keyed digest (`bb_auth::DigestKey`)
+//!   use the same key, kept apart by a name that each of them starts with. It never changes, and
+//!   no lasting data depends on it: if the file is lost, a new one is made and people sign in again
+//!   (the old tokens stop matching, and so do the digests of the last hour's sign-up e-mails, of the
+//!   links that confirm a new address and of corrected values), so it is made even when the
+//!   database already has data.
 //!
 //! Keys are made on the first start only. If the database already holds secrets or a security log
 //! and a key file is missing, [`Database::open_keys`](crate::Database::open_keys) refuses instead

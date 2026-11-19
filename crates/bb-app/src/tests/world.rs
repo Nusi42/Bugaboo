@@ -87,7 +87,7 @@ impl World {
             clock.clone(),
             PasswordHasher::new().map_err(text)?,
             Some(Passkeys::new(&party).map_err(text)?),
-            CsrfKey::from_bytes(zeroize::Zeroizing::new([7; CSRF_KEY_LENGTH])),
+            server_key(),
             Arc::new(NoFailureLimit),
             "Bugaboo".to_owned(),
         )
@@ -238,4 +238,9 @@ impl World {
         )
         .await
     }
+}
+
+/// The key of the server of every world (`keys/csrf.key`), from which its other keys are derived.
+pub(crate) fn server_key() -> CsrfKey {
+    CsrfKey::from_bytes(zeroize::Zeroizing::new([7; CSRF_KEY_LENGTH]))
 }

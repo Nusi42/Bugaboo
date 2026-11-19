@@ -11,12 +11,14 @@ use bb_core::time::SECONDS_PER_DAY;
 
 use super::scenarios::{text, token};
 use super::scenarios_notifications::switch_mail_on;
-use super::world::{Outcome, PASSWORD, PUBLIC_URL, World};
+use super::world::{Outcome, PASSWORD, PUBLIC_URL, World, server_key};
 use crate::auth::{
     AcceptInvitation, AppError, ChangeSignUpPolicy, SignIn, SignUp, SignUpPolicy,
     accept_invitation, change_sign_up_policy, sign_in, sign_up,
 };
 use crate::settings::{ChangeSetting, SettingsScope, change_setting};
+use bb_auth::{CSRF_KEY_LENGTH, CsrfKey};
+use zeroize::Zeroizing;
 
 const EVE: &str = "eve@example.test";
 
@@ -347,6 +349,26 @@ async fn gdpr_the_next_sign_up_e_mail_forgets_what_is_no_use_any_more_without_th
     run_jobs(&world).await?;
     let kept = world.store.lock().state.sign_up_mail.len();
     assert_eq!(kept, 1, "only the memory of the e-mail that went last");
+    Ok(())
+}
+
+#[tokio::test]
+async fn sec_16_the_memory_of_sign_up_e_mails_keeps_a_keyed_digest() -> Outcome {
+    let world = world(true).await?;
+    sign_up_for(&world, EVE).await?;
+    run_jobs(&world).await?;
+    let kept = world.store.lock().state.sign_up_mail.clone();
+    let [memory] = kept.as_slice() else {
+        return Err(format!("one memory expected, found {}", kept.len()).into());
+    };
+    // Only the server's key makes it: a copy of the database cannot confirm a guessed address.
+    let keyed = server_key().digest_key().address(EVE).map_err(text)?;
+    assert_eq!(memory.address, keyed);
+    let other_server = CsrfKey::from_bytes(Zeroizing::new([8; CSRF_KEY_LENGTH]));
+    assert_ne!(
+        memory.address,
+        other_server.digest_key().address(EVE).map_err(text)?
+    );
     Ok(())
 }
 

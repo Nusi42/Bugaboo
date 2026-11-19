@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
-use bb_auth::{CsrfKey, Device, LinkKey, Passkeys, PasswordHasher, SecretToken};
+use bb_auth::{CsrfKey, Device, DigestKey, LinkKey, Passkeys, PasswordHasher, SecretToken};
 use bb_core::event::{Actor, Channel, DomainEvent, EntityRef, FieldChange};
 use bb_core::id::{AgentId, EventId, IdSource, RunId, SessionId, UserId};
 use bb_core::network::NetworkPrefix;
@@ -77,6 +77,8 @@ pub struct AuthServices<S> {
     pub(crate) replay: Arc<dyn crate::privacy::replay::ReplayFile>,
     /// The key the links of downloads are signed under (ATT-07).
     pub(crate) links: LinkKey,
+    /// The key of the keyed digest of addresses, names and the secrets of links (M4-F122).
+    pub(crate) digests: DigestKey,
     pub(crate) mailer: Arc<dyn Mailer>,
     /// The AI provider (AI-01). Without one, every call is turned away.
     pub(crate) ai: Arc<dyn AiProvider>,
@@ -112,6 +114,7 @@ impl<S> AuthServices<S> {
         product_name: String,
     ) -> Self {
         let links = csrf.link_key();
+        let digests = csrf.digest_key();
         Self {
             store,
             clock,
@@ -129,6 +132,7 @@ impl<S> AuthServices<S> {
             exports: Arc::new(crate::privacy::export::NoExportFiles),
             replay: Arc::new(crate::privacy::replay::ReplayInMemory::default()),
             links,
+            digests,
             mailer: Arc::new(NoMailer),
             ai: Arc::new(NoAiProvider),
             server_log: None,

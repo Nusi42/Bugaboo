@@ -12,7 +12,7 @@
 //! signing up cannot fill somebody's inbox). With e-mail off nothing can be sent, so signing up is
 //! refused.
 
-use bb_auth::{EmailAddress, Purpose, SecretToken, address_digest, domain_is_listed};
+use bb_auth::{EmailAddress, Purpose, SecretToken, domain_is_listed};
 use bb_core::ErrorCode;
 use bb_core::app_paths;
 use bb_core::event::{Actor as EventActor, RecordKind};
@@ -157,7 +157,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let since = now
             .checked_sub(SignedDuration::from_mins(RESEND_AFTER_MINUTES))
             .map_err(|error| AppError::Internal(error.to_string()))?;
-        let digest = address_digest(address);
+        let digest = self.services.digests.address(address)?;
         let forget_before = now
             .checked_sub(MAIL_MEMORY)
             .map_err(|error| AppError::Internal(error.to_string()))?;

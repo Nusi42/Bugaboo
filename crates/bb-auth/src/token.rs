@@ -32,8 +32,13 @@ pub enum Purpose {
     SetupCode,
     /// A backup code.
     BackupCode,
-    /// An e-mail address, to remember that one went to it without keeping the address.
-    SignUpAddress,
+    /// An e-mail address, kept as its keyed digest where only the fact of it is needed: that a
+    /// sign-up e-mail went to it, or what an administrator corrected (`crate::DigestKey`).
+    Address,
+    /// The name of a person, kept as its keyed digest where the security log records a correction.
+    PersonName,
+    /// The secret in the link that confirms a new e-mail address (PRIV-06).
+    EmailChange,
     /// The secret of an access key.
     AccessKey,
     /// The code an AI app gets after *Allow*.
@@ -45,7 +50,7 @@ pub enum Purpose {
 }
 
 impl Purpose {
-    const fn domain(self) -> &'static [u8] {
+    pub(crate) const fn domain(self) -> &'static [u8] {
         match self {
             Self::Session => b"bugaboo.session.v1",
             Self::Invitation => b"bugaboo.invitation.v1",
@@ -55,7 +60,9 @@ impl Purpose {
             Self::OAuthCode => b"bugaboo.oauth-code.v1",
             Self::OAuthAccess => b"bugaboo.oauth-access.v1",
             Self::OAuthRefresh => b"bugaboo.oauth-refresh.v1",
-            Self::SignUpAddress => b"bugaboo.sign-up-address.v1",
+            Self::Address => b"bugaboo.address.v1",
+            Self::PersonName => b"bugaboo.person-name.v1",
+            Self::EmailChange => b"bugaboo.e-mail-change.v1",
         }
     }
 
@@ -151,13 +158,6 @@ pub fn stable_id(kind: &str, name: &str) -> [u8; 16] {
 #[must_use]
 pub fn same_digest(a: &Digest, b: &Digest) -> bool {
     a.as_bytes().ct_eq(b.as_bytes()).into()
-}
-
-/// The digest of an e-mail address (in the form [`crate::EmailAddress`] keeps it), which stands for
-/// the address where only the fact that one went to it is kept.
-#[must_use]
-pub fn address_digest(address: &str) -> Digest {
-    Purpose::SignUpAddress.hash(address.as_bytes())
 }
 
 #[cfg(test)]

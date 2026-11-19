@@ -15,6 +15,7 @@ mod csrf;
 mod device;
 mod email;
 mod error;
+mod keyed_digest;
 mod oauth;
 mod passkeys;
 mod password;
@@ -28,6 +29,7 @@ pub use csrf::{CsrfKey, KEY_LENGTH as CSRF_KEY_LENGTH};
 pub use device::Device;
 pub use email::{EmailAddress, domain_is_listed, listed_domains};
 pub use error::AuthError;
+pub use keyed_digest::DigestKey;
 pub use oauth::{
     OAuthKind, OAuthSecret, is_pkce_challenge, is_pkce_verifier, looks_like_oauth_access_token,
     looks_like_oauth_secret, pkce_challenge, pkce_proves,
@@ -41,7 +43,7 @@ pub use password::{
     PasswordProblem, Verdict, check_policy,
 };
 pub use signed_link::LinkKey;
-pub use token::{Purpose, SecretToken, address_digest, same_digest, stable_id};
+pub use token::{Purpose, SecretToken, same_digest, stable_id};
 pub use totp::{Enrolment, STEP_SECONDS, TotpSecret};
 
 // Used by the integration tests in `tests/` only (`unused_crate_dependencies`).
