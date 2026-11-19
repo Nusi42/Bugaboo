@@ -44,19 +44,36 @@ loop:
             take(issue: piece.key)
             ... work: report, ask, attach ...
             submit(issue: piece.key)        # or give_up(issue, reason)
-    wait a minute (call again at once while answer.more is true)
+    call again at once while answer.more is true, or wait with wait_for_work (below)
 ```
 
-- Only people hand issues over and only people review: there is no tool that hands over, accepts, sends back or throws away. An agent cannot give work to another agent by itself.
+- Only people review: there is no tool that accepts, sends back or throws away. An agent hands work to another of your agents only when you switch on *May hand over to my other agents* (below).
 - To let one agent's results reach another agent, give the second agent a **standing rule** with the way **Hand over what it finds**, over a saved search that finds what the first one leaves (for example issues with a label it sets, or in a status it moves them to). Each issue the search finds is handed over to the second agent once.
-- **Throw away** puts back the fields of the issue only: title, status, priority, *Start date*, *Due date*, *Estimated time*, *Time left*, the people it is assigned to, the issue type and own fields. The comments the agent wrote stay, and so do the description, files and relations; they are named as *cannot be put back yet*.
+- **Throw away** puts back the fields of the issue: title, status, priority, *Start date*, *Due date*, *Estimated time*, *Time left*, the people it is assigned to, the issue type and own fields, and takes away the comments the agent wrote in its attempts. The description, files and relations stay; they are named as *cannot be put back yet*.
 - A call over the limits of the agent or of its key waits: [the page of numbers](../ai/numbers.md) and [AI apps](../ai/ai-apps.md) say how.
+
+## Waiting for work
+
+An agent does not need to ask again and again whether it has work. With the tool `wait_for_work` it asks once and gets its answer when an issue is handed over to it or sent back, or when the wait is over. The answer is the same as the one of `changes_since`, and says whether work waits now.
+
+- It waits **60 seconds** unless it asks for another time, and **5 minutes** at the most. Keep the 60 seconds when Bugaboo is reached through a proxy, which often closes a quiet connection after about 100 seconds, or when the agent's program gives up early.
+- When a wait ends with nothing new, the agent calls again with the new mark. Each call counts once toward the limit of calls of its key.
+- One agent waits in one call at a time. When too many agents wait at once, a call answers at once and says it did not wait; the agent then tries again a little later.
+
+## When your agent may hand over or undo
+
+Two switches on the page of an agent widen what it does for you. Both are off when you create the agent, and only you change them:
+
+- **May hand over to my other agents.** The agent hands issues of its own work over to another of your agents (tool `hand_over_work`), with a note. It cannot give the other agent more than its own hand-over lets it do, and it is shown as the one who handed over. Two agents never work on an issue at once: the other agent takes the issue once the first has submitted its result or given up. An issue is handed on between agents at most three times; then a person hands it over again.
+- **May undo its own runs.** The agent undoes what one of its own attempts changed (tool `undo_my_run`), exactly as **Undo the run** does: what somebody changed since stays and is named, and the comments it wrote in that attempt go, as with **Throw away**. It never undoes your runs or those of another agent.
+
+The **History** of the agent's page lists what it handed over and what it undid.
 
 ## Reviewing
 
 - **Accept** ends the hand-over, and the issue moves to the status you pick. The window offers the statuses the workflow allows from where the issue is, the ones of the group *Done* first. It proposes the first of those (*the workflow proposes it*): the status the workflow lists first among them. Pick another if you want one.
 - **Send back** starts another attempt, with your note in the brief.
-- **Throw away** puts back, in one step, the fields of the issue that the attempts changed (see above for which). What somebody else changed since is skipped and named. Anything done outside Bugaboo, such as work in a code repository, stays as it is and is the agent's business.
+- **Throw away** puts back, in one step, the fields of the issue that the attempts changed (see above for which). What somebody else changed since is skipped and named. The comments the agent wrote in its attempts go too, with every text of them; the history keeps only that a comment of the agent was there and was thrown away. Comments of people stay, also one the agent put into the trash, and so does a description the agent changed (it cannot be put back yet). A comment the agent wrote goes even when somebody edited it later: the later edit goes with it. Anything done outside Bugaboo, such as work in a code repository, stays as it is and is the agent's business.
 
 A project can allow **Accept by itself when its checks pass**. It is off at the start. A result is accepted by itself only when the project allows it, you ticked it on the hand-over (the tick is off in the window at the start), the attempt has at least one check, and every check passed. Bugaboo does not run or verify the checks: the agent says whether they passed. After such an accept the issue moves to the status the review window would propose, but only when the workflow allows exactly one status of the group *Done* from where the issue is: nobody is asked, so Bugaboo does not choose between two. With none or with several, the issue keeps its status and the agent work says "The issue kept its status, because the workflow does not name one next status. Choose the next one yourself." These results wait under *Accepted by itself* until you have looked at them.
 

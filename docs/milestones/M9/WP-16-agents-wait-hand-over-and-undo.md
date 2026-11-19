@@ -9,9 +9,9 @@ People who run several agents can do with them what they need. An outside test w
 
 ## Owns
 
-- The tool `wait_for_work` and the signal it waits on: `crates/bb-app/src/agent_work/waiting.rs` (new), `crates/bb-app/src/ai/tools/agents.rs`, `inputs.rs`, `registry.rs`, `bb_core::ai::Tool`; the share of connections in `AuthServices` (`with_most_waiting`), set from the listener's limit in `crates/bb-server/src/wiring.rs`.
+- The tool `wait_for_work` and the signal it waits on: `crates/bb-app/src/agent_work/waiting.rs` (new), `crates/bb-app/src/ai/tools/agents.rs`, `inputs.rs`, `registry.rs`, `bb_core::ai::Tool`; the share of connections in `AuthServices` (`with_waiting`), set from the listener's limit in `crates/bb-server/src/wiring.rs`.
 - The two switches of an agent: migration 62 (`m0062_agent_switches.rs`: `agents.may_hand_over`, `agents.may_undo`, and on `hand_overs` the agent that made it, `by_agent`, and its place in a chain, `depth`), `bb_core::agent::Agent`, `crates/bb-app/src/agents/manage.rs` (`set_agent_switches`), `PATCH /api/v1/agents/{agent}` with the new optional member `switches` (`crates/bb-api/src/api/agents.rs`).
-- The hand-over by an agent: `crates/bb-app/src/agent_work/hand_over.rs` (the one use case `hand_over` takes the key of an agent too) and the tool `hand_over`.
+- The hand-over by an agent: `crates/bb-app/src/agent_work/hand_over.rs` (the use case `hand_over` and `Ctx::agent_hand_over`, one path) and the tool `hand_over_work`.
 - The undo by an agent: `crates/bb-app/src/runs/use_cases.rs` (`undo_run` takes the key of an agent whose switch is on) and the tool `undo_my_run`.
 - *Throw away* of comments: `crates/bb-app/src/runs/service.rs` and `crates/bb-store/src/keeping/trash.rs` (the deletion of comments, taken out into one function both use), `crates/bb-app/src/comments/`.
 - The agent's history: `GET /api/v1/agents/{agent}/history` and its use case in `crates/bb-app/src/agents/`.
@@ -22,19 +22,19 @@ People who run several agents can do with them what they need. An outside test w
 
 ### 1. Waiting for work (`wait_for_work`)
 
-- **One tool that reads.** `wait_for_work` takes the mark of `changes_since` (`since`), a `limit`, and `seconds` (1 to 60, 25 when not given: below the 30 seconds after which many proxies and clients give up on a quiet connection). It answers at once when the agent has work *Waiting for the agent* (handed over and not taken, or sent back with a note). Otherwise it waits until such work comes to the agent or the seconds are over. Then it answers exactly what `changes_since` answers for the same mark, from the same use case (no second query), and one part `waited` that says whether work waits for the agent now.
+- **One tool that reads.** `wait_for_work` takes the mark of `changes_since` (`since`), a `limit`, and `seconds` (1 to 300, so at most five minutes, and 60 when not given: below the time after which common proxies, such as Cloudflare at about 100 seconds, and many clients give up on a quiet connection; the API's limit of 30 seconds is for `/api` only and does not cover `/mcp`). It answers at once when the agent has work *Waiting for the agent* (handed over and not taken, or sent back with a note). Otherwise it waits until such work comes to the agent or the seconds are over. Then it answers exactly what `changes_since` answers for the same mark, from the same use case (no second query), and one part `waited` that says whether work waits for the agent now.
 - **Level, not edge.** The answer depends on what is stored (is there work waiting for this agent?), never on whether a signal was seen, so a signal that comes between two calls is never lost: the next call answers at once.
 - **No stream.** It is one request and one answer; `GET /mcp` stays `405`. Real MCP subscriptions (`resources/subscribe`) stay with the live updates of M15.
 - **No database while it waits.** The wait holds no connection and no lock: the use case reads (one statement: the open work of the agent), then waits on an in-process signal of that agent (`WorkSignal`, a `tokio::sync::Notify` per agent that somebody waits for), then reads again. The signal is rung after the commit of every change that gives an agent work waiting for it: a hand-over (by a person, a standing rule or an agent, all through `HandOverPlan::record_change`) and *Send back*. Bugaboo runs as one process, so an in-process signal reaches every waiter.
 - **Fair to the listener.** A waiting call holds one connection of the listener. One agent waits once at a time: a second call of the same agent while the first waits answers at once. At most a quarter of the listener's connections wait at once (`WAITING_SHARE_OF_CONNECTIONS = 4`, so 256 of the default 1024); a call over that answers at once. Both answers say *did not wait*, and the agent tries again later.
-- **Counted like any call.** The call counts once toward the limits of the key (ADR-0042, decision 6) when it comes in, like every tool call. A wait of 25 seconds is one call where asking every second would be 25.
+- **Counted like any call.** The call counts once toward the limits of the key (ADR-0042, decision 6) when it comes in, like every tool call. A wait of a minute is one call where asking every second would be 60.
 - **Always allowed.** It only reads, so no switch: any agent may wait. People and AI apps are not offered it (`Tool::is_for_agents`).
 - **What it costs** is measured by the test `ai_36_many_waits_cost_one_read_each_and_a_hand_over_wakes_only_its_agent` and written into the report and the ADR amendment: memory per waiting call, the reads a hand-over causes (only the waits of that agent read again), and the time from the commit of a hand-over to the answer.
 
 ### 2. Hand-over by an agent
 
 - **A switch of the agent:** *May hand over to my other agents*, set by its person on the agent's page, off when the agent is made. Only the person responsible changes it; an administrator does not (it widens what an agent does for that person).
-- **One hand-over path.** The use case `hand_over` takes the key of an agent as well as a session; `plan_hand_over` and `HandOverPlan::record_change` stay the one place that builds and writes a hand-over. The tool `hand_over` (changes, with `preview`) calls that use case and nothing else.
+- **One hand-over path.** The use case `hand_over` keeps taking a session; the agent comes in through `Ctx::agent_hand_over`, and both go through `plan_hand_over` and `HandOverPlan::record_change`, the one place that builds and writes a hand-over. The tool `hand_over_work` (changes, with `preview`) calls that use case and nothing else.
 - **What it may hand over:** only issues of its own open work (handed to it, not only found by a standing rule), only to another agent of the same person that can act, never to itself. The person must hold on each issue what a hand-over by the person needs (*Change issues* or *Change the issues they reported*, and *Create agents that work for you* in the project, agents on there), checked as the person, with the budget and the end within the same limits. What the new hand-over lets the other agent change is at most what the agent's own hand-over of that issue lets it change (the ticks and the named fields): an agent cannot give more than it has.
 - **Recorded as done by the agent:** the event of the hand-over has the agent as its actor (the one event maker does this for every request of an agent), and the hand-over keeps `by_agent`. The note of the brief is the word of *an agent* when the next agent reads it.
 - **Against loops:** never to itself; one open hand-over of an issue per agent (as for people), so A cannot hand an issue back to B while B still has it; and a cap on the chain: a hand-over by a person is at depth 0, a hand-over by an agent one deeper than the agent's own hand-over of that issue, and a chain stops at depth 3 (`MOST_HAND_OVER_DEPTH`). Three steps cover the common chain of plan, build and check; a depth rather than a count per run, because a loop is a chain, while one run may well hand many different issues on once each.
@@ -59,8 +59,8 @@ People who run several agents can do with them what they need. An outside test w
 
 ### 6. Security and defaults
 
-- SEC-MATRIX: rows for the tools `wait_for_work`, `hand_over` and `undo_my_run` and for `GET /api/v1/agents/{agent}/history` and the member `switches`, for every starting role, an access key and the actor kinds of agents, on both databases.
-- Both switches start off (ADR-0047, decision 6). The test of secure defaults judges them with the other starting values; its `SAFE_STARTS` table (`crates/bb-core/src/settings/tests.rs`) comes with WP-08, which is not on this package's base: the rows are added when this package is rebased onto it, and until then `ai_31_both_switches_of_a_new_agent_are_off` holds the rule.
+- SEC-MATRIX: rows for the tools `wait_for_work`, `hand_over_work` and `undo_my_run` and for `GET /api/v1/agents/{agent}/history` and the member `switches`, for every starting role, an access key and the actor kinds of agents, on both databases.
+- Both switches start off (ADR-0047, decision 6). They are no setting, so the table of secure starting settings does not hold them: `comp_04_the_switches_of_a_new_agent_start_off` (`crates/bb-core/src/settings/tests.rs`) judges them beside it, and `ai_31_both_switches_of_a_new_agent_are_off` holds that a new agent is made with them.
 
 ## Tasks
 
@@ -79,7 +79,7 @@ People who run several agents can do with them what they need. An outside test w
 - `ai_36_wait_for_work_answers_when_work_is_handed_over_while_it_waits`.
 - `ai_36_wait_for_work_answers_when_work_is_sent_back_while_it_waits`.
 - `ai_36_wait_for_work_answers_after_its_seconds_with_what_changes_since_answers`.
-- `ai_36_wait_for_work_takes_one_to_sixty_seconds`.
+- `ai_36_wait_for_work_takes_one_second_to_five_minutes`.
 - `ai_36_a_second_wait_of_the_same_agent_does_not_wait`.
 - `ai_36_waits_over_the_share_of_connections_do_not_wait`.
 - `ai_36_many_waits_cost_one_read_each_and_a_hand_over_wakes_only_its_agent` (the measurement).
@@ -110,4 +110,4 @@ Code review with the SSOT/DRY/ODR gate: one hand-over path, one undo, one deleti
 
 ## Depends on
 
-M9 waves 0 to 2 merged as far as they are on `WIN1` at `80c280527`. Rebases onto WP-08 (the `SAFE_STARTS` rows) and onto the MCP fixes of `win2` (answers of `get_issue`, refusals, *Nothing changed*, *Nothing found*, 413 and 415), whose lines it avoids.
+M9 waves 0 to 2 merged as far as they are on `WIN1` at `80c280527`. Rebases onto WP-08 (`comp_04_the_switches_of_a_new_agent_start_off` beside its test of secure defaults) and onto the MCP fixes of `win2` (answers of `get_issue`, refusals, *Nothing changed*, *Nothing found*, 413 and 415), whose lines it avoids.

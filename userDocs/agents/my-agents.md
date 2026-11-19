@@ -43,7 +43,8 @@ An AI app you allowed, or a script with one of your access keys that may change 
 
 - **Agent keys.** An agent signs in with a key. Press **Create an agent key**, give it a name that says what it is for (for example "Fixer on the build server") and enter your password. You see the key **once**: copy it then. Every key runs out. **Renew the key** gives a new one and takes the old one back; **Take back** stops a key at once, and an agent that uses it can no longer sign in.
 - **Limits.** *Changes a minute* and *Issues at once*, and how many times it may try one issue. A limit is never more than your organization allows. When an agent reaches a limit it is paused with a sentence that says which.
-- Its **work** and its **standing rules**.
+- **What it may do.** The switches **May hand over to my other agents** and **May undo its own runs**, off when you create the agent. Only you change them; see [when your agent may hand over or undo](README.md#when-your-agent-may-hand-over-or-undo). When you hand the agent to another person, both go off.
+- Its **work**, its **standing rules** and its **History**: what it handed over and what it undid.
 - **Hand to another person.** The other person must accept the agent. Its keys are taken back and they create their own.
 
 ## For administrators

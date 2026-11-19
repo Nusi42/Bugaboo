@@ -160,7 +160,7 @@ An example. Ada works with three agents: Fixer, Sorter and Helper. The agents co
 - **Asks instead of guessing.** A stuck agent asks. The work waits for you. The answer joins the brief. (E4)
 - **Plan first, if you tick it.** With *Plan needs approval* each attempt starts with a plan and waits. (E5)
 - **Changes live in a run.** It may change an issue only while an attempt runs. So *Throw away* can undo it. (E3)
-- **A person reviews.** Accept, Send back or Throw away. Throw away undoes everything in one step. (E9)
+- **A person reviews.** Accept, Send back or Throw away. Throw away undoes everything in one step, the agent's comments too. (E9)
 - **Accept by itself is off at the start.** Only when the project allows it, you ticked it and every check passed. (E10)
 - **Limits and a stop button.** 60 changes a minute, 5 issues at once. Pause, Resume or Stop at any time. (E13, E14)
 
@@ -179,7 +179,7 @@ A **standing rule** lets one agent work on everything a saved search finds, for 
 ![New standing rule](../../docs/media/ai/standing-rule-window.jpg)
 ![A rule proposes a change](../../docs/media/ai/rule-proposes.jpg)
 
-### All rules (E1 to E16, F1 to F11)
+### All rules (E1 to E19, F1 to F11)
 
 #### Agent work, step by step (E)
 
@@ -200,7 +200,7 @@ A **standing rule** lets one agent work on everything a saved search finds, for 
 - **E9** **Review.** A person picks one of three answers.
   - **Accept** ends the hand-over. The person picks the next status. The window offers the statuses the workflow allows, those of the *Done* group first, and proposes the first of them.
   - **Send back** needs a note. The note joins the brief and the agent makes a new attempt.
-  - **Throw away** undoes everything all attempts changed in Bugaboo, newest first, in one step. A change somebody else did since is skipped and named. Work outside Bugaboo, such as a branch, stays; the window says so.
+  - **Throw away** undoes everything all attempts changed in Bugaboo, newest first, in one step. A change somebody else did since is skipped and named. The comments the agent wrote in its attempts go with all their text; the history keeps only that they were there. Work outside Bugaboo, such as a branch, stays; the window says so.
 - **E10** **Accept by itself when its checks pass.** An attempt is accepted without a person only when all four are true: the project allows it (off at the start); the hand-over has it ticked (the tick is off in the window at the start); the attempt has at least one check; and every check passed. The issue then moves to the one *Done* status the workflow allows from where it is. With none or several, it keeps its status and the agent work asks a person to choose. Such results wait under *Accepted by itself* in *My agents* until someone presses **I looked at it**.
 - **E11** **Give up.** The agent may stop with a reason: *Agent gave up*.
 - **E12** **Runs out.** A hand-over ends at *Accept*, *Throw away*, *Stop*, or when its days are over. Then the work is *Stopped*.
@@ -208,6 +208,9 @@ A **standing rule** lets one agent work on everything a saved search finds, for 
 - **E14** **Pause, Resume, Stop.** **Pause** keeps the agent and its work; it starts nothing new. **Resume** lets it go on. **Stop** is for good: a stopped agent never works again. **Stop all my agents** stops every agent of the person, takes their keys back and ends their work.
 - **E15** **Edit locks.** An agent never takes over text a person is editing. For a long text it holds a lock for one save only. A save against an older version is refused with the newer text, as for people.
 - **E16** **Notifications.** The person is told when an agent asks, when a plan waits, when a result is ready, when an agent gave up, when an agent was stopped or paused, and three days before a standing rule runs out.
+- **E17** **Wait for work.** An agent asks once with `wait_for_work` and is answered when an issue is handed over to it or sent back, or when the wait is over: 60 seconds unless it asks otherwise, 5 minutes at most. Behind a proxy, keep the 60 seconds. When a wait ends with nothing new, the agent calls again. It only reads, so every agent may wait.
+- **E18** **Hand over to another agent.** With the switch *May hand over to my other agents* (off at the start, set by its person), an agent hands issues of its own work to another agent of the same person, giving no more than it has. It is shown as the one who handed over. A chain of such hand-overs ends after three steps.
+- **E19** **Undo its own runs.** With the switch *May undo its own runs* (off at the start), an agent uses *Undo the run* on its own attempts (`undo_my_run`). Never on the runs of its person or of another agent.
 
 #### Standing rules (F)
 
@@ -499,7 +502,7 @@ Bugaboo works out an AI's rights from its person, every time it asks. It never g
 
 - **D1** **The rights of an AI are the rights of its person, cut down.** For an AI app: the person's rights at that place, cut to *See only* or *See and change*, and maybe to some projects. For an agent: its person's rights, cut to what it was given (E1) and held back by its limits (E13).
 - **D2** **What no app and no key may hold:** managing invitations, people, groups and roles, deciding roles, changing organization settings, taking over text someone else is editing, managing issue types, fields, labels and workflows, and seeing or changing other people's working hours.
-- **D3** **What an agent never holds:** every permission of the kind *Manage*, the permissions of working hours, and *Create agents that work for you*. So an agent can never create another agent.
+- **D3** **What an agent never holds:** every permission of the kind *Manage*, the permissions of working hours, and *Create agents that work for you*. So an agent can never create another agent. It hands work to another agent or undoes its own runs only when its person switched that on (E18, E19).
 - **D4** **An agent is not a member.** It has no role, is in no group, and is never *Assigned to* an issue. The issue keeps its person. While an agent works on it, the issue shows *Worked on by* the agent. So a person always answers for every issue.
 - **D5** **Who may create agents.** The permission *Create agents that work for you* is a project permission. *Administrator*, *Project lead* and *Team member* hold it at the start. An agent may only get work in projects where its person holds it. So a project lead decides where agents work.
 - **D6** **Who may hand over an issue:** a person with *Change issues* (or *Change the issues they reported*) on that issue, who also holds *Create agents that work for you* in its project.
@@ -546,7 +549,7 @@ Many trackers now add AI. They choose differently, and each choice has a reason.
 
 What is not done yet and matters for understanding the above.
 
-- **K1** **Not every change can be undone yet.** *Undo the run* and *Throw away* put back the fields of an issue (title, status, priority, times, *Assigned to*, type, own fields). The text of a description, comments, files, relations, labels and tags, and a newly created record stay, and are named as "cannot be taken back yet" (P31 shows it). (M7-F60)
+- **K1** **Not every change can be undone yet.** *Undo the run* and *Throw away* put back the fields of an issue (title, status, priority, times, *Assigned to*, type, own fields), and take away the comments an agent wrote in its run. The text of a description, the comments of an AI app, files, relations, labels and tags, and a newly created record stay, and are named as "cannot be taken back yet" (P31 shows it). (M7-F60)
 - **K3** **`changes_since` sees only changes of issue fields.** A new comment, file or relation is not in its answer. (M7-F82)
 - **K4** **The block does not say who stopped work or who approved a plan.** It is not stored yet. (M7-F216)
 - **K5** **Proposal cards name people only by number** ("2 people"), not by name. (M7-F232)
