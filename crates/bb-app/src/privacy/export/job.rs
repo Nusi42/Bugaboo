@@ -247,6 +247,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         let mut sink = writer
             .finish(&self.recipients_now().await?)
             .map_err(|error| failed(&error))?;
+        // Writing the end of the file and syncing it can take a while for a large file: the lease
+        // is renewed first, so no other worker takes the job meanwhile.
+        self.hold_on(held).await?;
         let bytes = sink.finish().map_err(|error| failed(&error))?;
         Ok((sink, bytes))
     }
