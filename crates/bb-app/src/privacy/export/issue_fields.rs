@@ -18,8 +18,10 @@ const PROJECT: &str = "project";
 const ISSUE_TYPE: &str = "issue_type";
 
 /// The field of the catalogue a member of the issue holds: `estimated_time` holds *Estimated time*.
-/// A member that holds none (its ID, its code, when it was made) is no field a role can hide.
-fn field_of(member: &str) -> Option<Field> {
+/// A member that holds none (its ID, its code, when it was made) is no field a role can hide. The
+/// one mapping of a member to its field: the matrix of exports reads it too.
+#[must_use]
+pub fn field_of(member: &str) -> Option<Field> {
     Field::from_code(&member.replace('_', "-"))
 }
 

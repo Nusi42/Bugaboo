@@ -14,6 +14,7 @@ use std::collections::BTreeMap;
 
 use bb_api_words::sec_matrix as words;
 use bb_app::access::StartingRole;
+use bb_app::privacy::export::field_of;
 use bb_core::access::{FieldLevel, PeopleLevel};
 use bb_core::fields::Field;
 use bb_core::id::UserId;
@@ -79,13 +80,13 @@ fn inside(value: &Value) -> Box<dyn Iterator<Item = &Value> + '_> {
 /// of the field, named by its member or by its word in the catalogue (`estimated-time`), with a
 /// value before or after.
 fn holds_field(value: &Value, key: &str) -> bool {
-    let word = key.replace('_', "-");
+    let word = field_of(key).map(Field::code);
     inside(value).any(|found| {
         found.get(key).is_some_and(|held| !held.is_null())
             || (found
                 .get("field")
                 .and_then(Value::as_str)
-                .is_some_and(|field| field == key || field == word)
+                .is_some_and(|field| field == key || Some(field) == word)
                 && ["before", "after"]
                     .iter()
                     .any(|side| found.get(side).is_some_and(|held| !held.is_null())))

@@ -17,6 +17,7 @@ pub use ask::{
     export_link, my_data_export,
 };
 pub use files::{ExportFiles, ExportSink, NoExportFiles};
+pub use issue_fields::field_of;
 pub(crate) use pages::title_of;
 pub use readme::recipients;
 pub use shape::{ShapedCell, ShapedKind, ShapedRow, Shown, people_in, shape_row};
