@@ -1,9 +1,10 @@
 //! What the AI reads back from a tool (AI-21): a change that changes nothing says so and never that
 //! it saved, an empty answer says that nothing was found, and an issue names the statuses the reader
-//! may move it to.
+//! may move it to. Time added by hand or by the AI may lie in the future (TIME-02).
 
 use std::collections::BTreeMap;
 
+use jiff::civil::{Date, date};
 use serde_json::json;
 
 use super::ai_tools::{call, issue_with, mark, read, without_nonces};
@@ -13,9 +14,11 @@ use super::world::{Outcome, World};
 use crate::ai::NeverSentTarget;
 use crate::ai::tools::{ToolMode, call_tool};
 use crate::roles::{AssignRole, CreateRole, Given, Subject, assign_role, create_role};
+use crate::time::{AddTime, EntryDetails, add_time};
 use bb_core::ErrorCode;
 use bb_core::access::{AppliesTo, FieldLevel};
 use bb_core::fields::Field;
+use bb_core::time::Minutes;
 use bb_policy::Permission;
 
 #[tokio::test]
@@ -203,5 +206,42 @@ async fn ai_21_get_issue_names_the_statuses_the_reader_may_move_it_to() -> Outco
     mark(&world, NeverSentTarget::Field(Field::Status)).await?;
     let kept = read(&world, &token(&world), "get_issue", json!({"issue": key})).await?;
     assert!(!kept.contains("next_statuses"), "{kept}");
+    Ok(())
+}
+
+#[tokio::test]
+async fn time_02_add_time_and_log_time_take_a_day_in_the_future() -> Outcome {
+    let world = World::new().await?;
+    a_project(&world, "WEB").await?;
+    let key = issue_with(&world, "WEB", "Old title", "d", BTreeMap::new()).await?;
+    // The clock of the tests stands on 2027-01-15: the next day is in the future (ADR-0035,
+    // amendment). The screen and the API book it with *Add time*, the AI with `log_time`.
+    let tomorrow = date(2027, 1, 16);
+    add_time(
+        &world.ctx(),
+        AddTime {
+            session_token: token(&world),
+            issue: key.clone(),
+            date: tomorrow,
+            minutes: Minutes::new(60),
+            details: EntryDetails::default(),
+        },
+    )
+    .await?;
+    let mut logged = call(
+        &token(&world),
+        "log_time",
+        json!({"issue": key, "date": tomorrow.to_string(), "minutes": 30}),
+    );
+    logged.mode = ToolMode::Apply;
+    call_tool(&world.ctx(), logged).await?;
+    let booked: Vec<(Date, u32)> = world.store.read(|state| {
+        state
+            .time_entries
+            .iter()
+            .map(|entry| (entry.date, entry.minutes.get()))
+            .collect()
+    });
+    assert_eq!(booked, [(tomorrow, 60), (tomorrow, 30)]);
     Ok(())
 }
