@@ -214,3 +214,46 @@ async fn sec_16_the_master_key_has_its_own_access_list_on_windows() -> TestResul
     );
     Ok(())
 }
+
+#[tokio::test]
+async fn ops_07_a_failed_restore_puts_each_path_and_command_in_its_place() -> TestResult {
+    let folder = tempfile::tempdir()?;
+    let (store, _data) = installation(folder.path()).await?;
+    let file = folder.path().join("chosen.bbak");
+    let args = RestoreArgs {
+        store,
+        file: file.clone(),
+        replay_list: None,
+    };
+    let chosen = file.display().to_string();
+    for error in [StoreError::BackupNotSealed, StoreError::KeysDoNotOpen] {
+        let failure = RestoreFailure {
+            error,
+            before: None,
+        };
+        let text = failed(&args, &failure).to_string();
+        assert!(
+            text.starts_with(&format!("The backup {chosen} was not restored")),
+            "{text}"
+        );
+        let command = text.rsplit(": ").next().unwrap_or_default();
+        assert!(command.contains("keys import"), "{text}");
+    }
+    let before = folder.path().join("before.bbak");
+    let failure = RestoreFailure {
+        error: StoreError::BackupNotSealed,
+        before: Some(before.clone()),
+    };
+    let text = failed(&args, &failure).to_string();
+    let reason = StoreError::BackupNotSealed.to_string();
+    assert!(
+        text.starts_with(&format!("The restore stopped half way: {reason}.")),
+        "{text}"
+    );
+    assert!(
+        text.contains(&format!("is in the backup {}.", before.display())),
+        "{text}"
+    );
+    assert!(text.contains("run: ") && text.contains("restore"), "{text}");
+    Ok(())
+}

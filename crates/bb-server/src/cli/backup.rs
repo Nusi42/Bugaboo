@@ -246,7 +246,7 @@ fn failed(args: &RestoreArgs, failure: &RestoreFailure) -> anyhow::Error {
     let path = args.file.display();
     if let Some(before) = &failure.before {
         let again = command_line("restore", &args.store, Some(before));
-        return anyhow!(message::restore_failed(&failure.error, before.display(), again).render());
+        return anyhow!(message::restore_failed(before.display(), again, &failure.error).render());
     }
     match &failure.error {
         StoreError::BackupRefused(problem) => {
@@ -261,9 +261,9 @@ fn failed(args: &RestoreArgs, failure: &RestoreFailure) -> anyhow::Error {
                 )),
             );
             if matches!(failure.error, StoreError::BackupNotSealed) {
-                anyhow!(message::restore_not_sealed(path, import).render())
+                anyhow!(message::restore_not_sealed(import, path).render())
             } else {
-                anyhow!(message::restore_keys_do_not_open(path, import).render())
+                anyhow!(message::restore_keys_do_not_open(import, path).render())
             }
         }
         other => anyhow!("{other}"),
