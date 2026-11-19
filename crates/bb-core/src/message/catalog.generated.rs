@@ -2130,11 +2130,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.person.not-active",
-        "This person is switched off or removed, so their name and e-mail address stay as they are.",
+        "This person is switched off or removed already, so this cannot be done to them.",
     ),
     (
         "error.person.not-switched-off",
-        "Only a person who is switched off can be removed. Switch them off first.",
+        "This person is not switched off. Only a person who is switched off can be switched on or removed.",
     ),
     (
         "error.project.move-into-itself",
@@ -5228,6 +5228,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "restore.migrations",
         "{count, plural, one {# change} other {# changes}} of the database ran, because the backup is older.",
+    ),
+    (
+        "restore.nobody-decides-roles",
+        "After the switch-offs and removals were done again, nobody can manage roles and decide who has which role. Setup is open again: start Bugaboo and enter the setup code it shows to create an administrator.",
     ),
     (
         "restore.not-replayed",

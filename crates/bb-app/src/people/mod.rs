@@ -27,7 +27,7 @@ pub use list::{
 };
 pub use standing::StandingStore;
 pub(crate) use switch_off::state_change;
-pub use switch_off::{SwitchOff, SwitchOn, switch_off, switch_on};
+pub use switch_off::{SwitchOff, SwitchOn, SwitchedOff, switch_off, switch_off_in, switch_on};
 pub use used_by::{GroupDetail, GroupUsedBy, RoleUsedBy};
 
 use bb_core::ErrorCode;

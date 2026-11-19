@@ -190,7 +190,7 @@ async fn priv_04_switch_off_ends_sessions_keys_grants_and_agents_at_once() -> Ou
     // A person is switched off once, and nobody switches themselves off.
     assert_eq!(
         switched_off(&world, ways.person).await.err(),
-        Some(AppError::Refused(ErrorCode::VersionChanged))
+        Some(AppError::Refused(ErrorCode::PersonNotActive))
     );
     assert_eq!(
         switched_off(&world, world.admin.person.id).await.err(),
@@ -219,7 +219,7 @@ async fn priv_04_switch_on_gives_back_the_sign_in_only() -> Outcome {
     // Only a switched-off person is switched on.
     assert_eq!(
         switched_on(&world, ways.person).await.err(),
-        Some(AppError::Refused(ErrorCode::VersionChanged))
+        Some(AppError::Refused(ErrorCode::PersonNotSwitchedOff))
     );
     Ok(())
 }

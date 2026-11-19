@@ -27,6 +27,9 @@ pub trait StandingStore: ChangeStore + 'static {
     }
 
     writes! {
+        /// Whether `person` is somebody: a replay into a backup older than the account finds
+        /// nobody.
+        fn person_exists(person: UserId) -> bool;
         /// Writes the standing of its person, replacing the one they had.
         fn set_standing(standing: &PersonStanding) -> ();
         /// Deletes the standing of a switched-off person (*Switch on*); says whether there was one.

@@ -1,12 +1,15 @@
 //! The standing of a person on both databases (PRIV-04): a standing is written, read with the person,
 //! replaced and cleared; a page of people holds the people its caller asks for; a label belongs to
-//! one removed person; the legal-hold field is cleared on its own.
+//! one removed person; the legal-hold field is cleared on its own; a standing a restore wrote
+//! names nobody.
 
 use bb_app::auth::{AccountStore as _, PeopleOf, SearchIn};
 use bb_app::people::StandingStore;
-use bb_app::ports::ChangeStore;
+use bb_app::ports::{ChangeStore, PersonData as _};
+use bb_app::privacy::walk::Value;
 use bb_core::id::{IdSource, UserId};
 use bb_core::person::{HoldReason, PersonStanding, Standing};
+use bb_core::personal::Link;
 use bb_testing::{TestResult, each_database};
 use jiff::civil::date;
 
@@ -18,7 +21,7 @@ fn standing(person: UserId, by: UserId, standing: Standing) -> PersonStanding {
         person,
         standing,
         since: at(5),
-        by,
+        by: Some(by),
         label: None,
         hold_name: None,
         hold_reason: None,
@@ -118,6 +121,40 @@ async fn priv_04_a_standing_is_read_with_the_person_and_picks_leave_them_out() -
             (Some("K7Q2"), None, None)
         );
         assert_eq!(storage.standing(bob.id).await?, None);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn priv_04_a_standing_a_restore_wrote_names_nobody_and_the_walk_no_actor() -> TestResult {
+    each_database("priv_04_standing_by_nobody", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = &fixture.storage;
+        let mut source = ids();
+        let bob = person(&mut source, "bob@example.test");
+        let stored = bob.clone();
+        ChangeStore::record_change(storage, &event(&mut source, 1), move |tx| {
+            Box::pin(async move { AuthStorage::insert_person(tx, &stored, "hash", at(1)).await })
+        })
+        .await?;
+        // A restore switched Bob off again: nobody did it.
+        let replayed = PersonStanding {
+            by: None,
+            ..standing(bob.id, bob.id, Standing::SwitchedOff)
+        };
+        write(storage, &mut source, &replayed).await?;
+        assert_eq!(storage.standing(bob.id).await?, Some(replayed));
+        // The walk finds his standing as its subject, and him as the actor of nothing.
+        let page = storage.person_rows(bob.id, "person_standing", 0).await?;
+        assert_eq!(page.rows.len(), 1);
+        assert_eq!(page.rows[0].links, [Link::Subject]);
+        let by = page.rows[0]
+            .cells
+            .iter()
+            .find(|cell| cell.field == "by")
+            .ok_or("no cell of by")?;
+        assert_eq!(by.value, Value::Empty);
         Ok(())
     })
     .await

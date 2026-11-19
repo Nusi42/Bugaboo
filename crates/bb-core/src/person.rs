@@ -68,10 +68,11 @@ pub struct PersonStanding {
     /// When the person was switched off or removed.
     #[personal(category = "activity", basis = "legitimate_interests")]
     pub since: Timestamp,
-    /// The administrator who did it.
+    /// The administrator who did it; none when a restore did it again from the replay list
+    /// (ADR-0044, decision 8), whose line names no administrator.
     #[personal(category = "activity", basis = "legitimate_interests")]
     #[person(actor)]
-    pub by: UserId,
+    pub by: Option<UserId>,
     /// The random code of a removed person, drawn by `bb_policy::former_user_label`; unique. A
     /// pseudonym: it stands for the person and tells nothing of them.
     #[personal(category = "identity", basis = "legitimate_interests")]

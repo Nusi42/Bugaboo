@@ -336,7 +336,7 @@ reason = "*Delete them* deletes what is past its keep period, of a kind that onl
 
 [[exempt]]
 routes = ["POST /api/v1/people/{person}/switch-off", "POST /api/v1/people/{person}/switch-on"]
-reason = "*Switch off* and *Switch on* change only whether a person may sign in (ADR-0044, decision 5), with no text to overwrite; each needs the person in the other status and is refused (edit.version-changed) when somebody switched them first, so two administrators cannot overwrite each other unseen."
+reason = "*Switch off* and *Switch on* change only whether a person may sign in (ADR-0044, decision 5), with no text to overwrite; each needs the person in the other status and is refused otherwise (person.not-active, person.not-switched-off), and (edit.version-changed) only when somebody switched them in the same moment, so two administrators cannot overwrite each other unseen."
 
 [[exempt]]
 routes = ["POST /api/v1/people/{person}/remove"]

@@ -34,6 +34,10 @@ impl StandingStore for FakeStore {
         Ok(())
     }
 
+    async fn person_exists(tx: &mut Tx, person: UserId) -> Result<bool, FakeError> {
+        Ok(tx.state.people.iter().any(|(known, _)| known.id == person))
+    }
+
     async fn clear_standing(tx: &mut Tx, person: UserId) -> Result<bool, FakeError> {
         let before = tx.state.standings.len();
         tx.state.standings.retain(|standing| {

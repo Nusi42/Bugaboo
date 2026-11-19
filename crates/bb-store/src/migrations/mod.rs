@@ -93,6 +93,7 @@ mod m0056_keeping;
 mod m0057_person_standing;
 mod m0058_e_mail_changes;
 mod m0059_ai_switches_kept;
+mod m0060_standing_by_optional;
 
 pub(crate) use m0057_person_standing::VERSION as REPLAY_WAITING_FROM;
 #[cfg(test)]

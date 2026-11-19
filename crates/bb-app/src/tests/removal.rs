@@ -19,8 +19,9 @@ use crate::auth::AppError;
 use crate::people::{SwitchOn, switch_on};
 use crate::ports::ChangeStore as _;
 use crate::privacy::removal::{
-    FinishRemoval, Removal, RemovalAsked, RemovePerson, Removed, remove_in, remove_person,
+    FinishRemoval, Removal, RemovePerson, Removed, remove_in, remove_person,
 };
+use crate::privacy::replay::Asked;
 
 /// The administrator removes `person`, with `comments` or the setting's choice.
 async fn removed(
@@ -102,7 +103,7 @@ async fn priv_04_only_a_switched_off_person_is_removed_and_only_once() -> Outcom
     .await;
     assert_eq!(
         on.err().and_then(|error| error.code()),
-        Some(ErrorCode::VersionChanged)
+        Some(ErrorCode::PersonNotSwitchedOff)
     );
     Ok(())
 }
@@ -192,13 +193,12 @@ async fn priv_04_a_replayed_removal_needs_no_switch_off_and_runs_once() -> Outco
     let ada = world.admin.person.id;
     let removal = std::sync::Arc::new(Removal {
         person: bob,
-        by: ada,
         at: world.ctx().now(),
         label: "K7Q2".to_owned(),
         comments: RemovedTexts::Keep,
         keep: world.ctx().setting_layers_of(None).await?,
         today: jiff::civil::date(2026, 11, 19),
-        asked: RemovalAsked::ByReplay,
+        asked: Asked::ByReplay,
         job: bb_core::id::JobId::generate(&mut SequentialIds::default()).map_err(text)?,
     });
     let event = world.ctx().event(
@@ -332,12 +332,12 @@ async fn priv_04_a_replayed_removal_of_nobody_does_nothing() -> Outcome {
             &world.store,
             &mut ids,
             nobody,
-            ada,
             world.ctx().now(),
             None,
-            RemovalAsked::ByReplay,
+            Asked::ByReplay,
         )
-        .await?,
+        .await
+        .map_err(|failure| format!("{failure:?}"))?,
     );
     let event = world.ctx().event(
         crate::auth::by(ada),
@@ -409,15 +409,14 @@ async fn priv_04_the_legal_hold_ends_with_the_keep_period_of_the_last_work_day()
             &world.store,
             &mut ids,
             bob,
-            ada,
             world.ctx().now(),
             None,
-            RemovalAsked::ByReplay,
+            Asked::ByReplay,
         )
-        .await?;
+        .await
+        .map_err(|failure| format!("{failure:?}"))?;
         let removal = std::sync::Arc::new(Removal {
             person: prepared.person,
-            by: prepared.by,
             at: prepared.at,
             label: prepared.label,
             comments: prepared.comments,
@@ -456,5 +455,56 @@ async fn priv_04_the_legal_hold_ends_with_the_keep_period_of_the_last_work_day()
             "{until:?}"
         );
     }
+    Ok(())
+}
+
+#[tokio::test]
+async fn priv_04_a_replayed_switch_off_runs_once() -> Outcome {
+    let world = World::new().await?;
+    let bob = world.person("bob@example.test").await?.person.id;
+    let ada = world.admin.person.id;
+    let at = world.ctx().now();
+    let event = world.ctx().event(
+        crate::auth::by(ada),
+        crate::auth::entity(RecordKind::Person, bob),
+        Vec::new(),
+    )?;
+    let mut done = Vec::new();
+    for _ in 0..2 {
+        let switched = world
+            .store
+            .record_change(&event, move |transaction| {
+                Box::pin(async move {
+                    crate::people::switch_off_in::<super::fake::FakeStore>(
+                        transaction,
+                        bob,
+                        at,
+                        Asked::ByReplay,
+                    )
+                    .await
+                    .map(|switched| switched.is_some())
+                })
+            })
+            .await
+            .map_err(text)?;
+        done.push(switched);
+    }
+    assert_eq!(done, [true, false], "the second run leaves him as he is");
+    let (standing, lines) = world.store.read(|state| {
+        (
+            state
+                .standings
+                .iter()
+                .find(|s| s.person == bob)
+                .map(|s| s.standing),
+            state
+                .replay_waiting
+                .iter()
+                .filter(|line| line.contains("switch-off"))
+                .count(),
+        )
+    });
+    assert_eq!(standing, Some(Standing::SwitchedOff));
+    assert_eq!(lines, 1);
     Ok(())
 }

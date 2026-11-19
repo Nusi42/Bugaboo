@@ -95,7 +95,7 @@ async fn priv_04_the_people_who_are_not_active_are_found() -> TestResult {
                             person: whom,
                             standing,
                             since: at(2),
-                            by: ada_id,
+                            by: Some(ada_id),
                             label: (standing == Standing::Removed).then(|| "K7Q2".to_owned()),
                             hold_name: None,
                             hold_reason: None,

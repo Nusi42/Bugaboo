@@ -18,18 +18,26 @@
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use bb_app::auth::{OAuthStore as _, SecondStepStore as _};
+use bb_app::access::PolicyStore as _;
+use bb_app::auth::{AuthStore as _, OAuthStore as _, SecondStepStore as _, SecurityEvent};
 use bb_app::backups::record_backup_run;
+use bb_app::people::switch_off_in;
+use bb_app::ports::ChangeStore;
+use bb_app::privacy::removal::{NotPrepared, prepare_removal, remove_in};
+use bb_app::privacy::replay::Asked;
 use bb_core::backup::DatabaseKind;
 use bb_core::backup::manifest::{BackupProblem, KnownMigration, Manifest};
 use bb_core::backup::member::{self, MemberName};
 use bb_core::backup::name::{BackupName, Purpose};
 use bb_core::backup::replay::{self, ReplayKind, ReplayLine};
 use bb_core::backup::run::{BackupEvent, BackupMaker, BackupRun, CreatedFile};
-use bb_core::event::{Actor, Channel, DomainEvent, EntityKind, EntityRef, FieldChange};
+use bb_core::event::{Actor, Channel, DomainEvent, EntityKind, EntityRef, FieldChange, RecordKind};
 use bb_core::hex;
 use bb_core::id::{AccessKeyId, BackupId, EntityId, EventId, GrantId, IdSource, PasskeyId, UserId};
 use bb_core::oauth::GrantEnd;
+use bb_core::settings::privacy::RemovedTexts;
+use bb_core::sign_in::SecurityAction;
+use bb_policy::guards::ensure_a_manager_remains;
 use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, Query};
 
@@ -125,6 +133,10 @@ pub struct RestoreReport {
     pub not_replayed: Vec<ReplayLine>,
     /// The lines of the copies of the list that could not be read.
     pub unreadable_lines: usize,
+    /// Whether the lines that ran again left nobody who manages roles and decides who has which
+    /// role, where somebody did before them: the replay does not check it (ADR-0044, decision 8),
+    /// so it says so here and in the security log, and setup is open again.
+    pub nobody_decides_roles: bool,
     /// The entries of the security log that are gone, first and last.
     pub lost: Option<(i64, i64)>,
     /// What checking the restored security log found.
@@ -416,6 +428,22 @@ async fn finish(
     let lost = (present_head > backup_seq).then_some((backup_seq + 1, present_head));
     input.seal.restart(head, lost.unwrap_or((0, 0)))?;
     record(input, ids, restored, manifest, before, lost).await?;
+    if replay.nobody_decides_roles {
+        let storage = AuthStorage::new(
+            restored.clone(),
+            Arc::clone(&input.places.keys),
+            input.seal.clone(),
+        );
+        storage
+            .append_security_log(&SecurityEvent {
+                time: input.now,
+                person: None,
+                action: SecurityAction::RestoreLeftNobodyForRoles,
+                subject: None,
+                network: None,
+            })
+            .await?;
+    }
     let log = restored.verify_security_log(input.seal).await?;
     // The merged list replaces the data folder's only now that the restore went through.
     keep_merged(input, &replay.merged)?;
@@ -427,6 +455,7 @@ async fn finish(
         replayed: replay.replayed,
         not_replayed: replay.not_replayed,
         unreadable_lines: replay.unreadable,
+        nobody_decides_roles: replay.nobody_decides_roles,
         lost,
         log,
     })
@@ -505,6 +534,8 @@ struct Replay {
     not_replayed: Vec<ReplayLine>,
     /// How many lines of the copies could not be read.
     unreadable: usize,
+    /// Whether the lines that ran again left nobody who decides roles.
+    nobody_decides_roles: bool,
 }
 
 /// Keeps the merged replay list in the data folder.
@@ -549,20 +580,28 @@ async fn replay_newer(
     unreadable_lines += unreadable;
     lists.push(lines);
     let merged = replay::merge(lists);
+    let storage = AuthStorage::new(
+        restored.clone(),
+        Arc::clone(&input.places.keys),
+        input.seal.clone(),
+    );
     let mut replayed = Vec::new();
     let mut not_replayed = Vec::new();
+    let roles_before = storage.organization_state().await?;
     for line in merged.iter().filter(|line| line.moment > manifest.moment) {
-        if replay_line(restored, ids, line, input.now).await? {
+        if replay_line(&storage, ids, line, input.now).await? {
             replayed.push(line.clone());
         } else {
             not_replayed.push(line.clone());
         }
     }
+    let roles_after = storage.organization_state().await?;
     Ok(Replay {
         merged,
         replayed,
         not_replayed,
         unreadable: unreadable_lines,
+        nobody_decides_roles: ensure_a_manager_remains(&roles_before, &roles_after).is_err(),
     })
 }
 
@@ -575,9 +614,9 @@ enum TakeBack {
 }
 
 impl TakeBack {
-    /// What `line` takes back; `None` for a kind this program cannot run yet (a removal and a
-    /// switch-off come with *Remove a person*, a support access with support access), and for an
-    /// ID of another kind, which reading the line refused already.
+    /// What `line` takes back; `None` for a removal and a switch-off (`replay_person`), for a kind
+    /// this program cannot run yet (a support access comes with support access), and for an ID of
+    /// another kind, which reading the line refused already.
     fn of(line: &ReplayLine) -> Option<Self> {
         match line.kind {
             ReplayKind::AccessKey => line.id.parse().ok().map(Self::AccessKey),
@@ -597,27 +636,20 @@ impl TakeBack {
     }
 }
 
-/// Runs one line again; `false` for a line this program cannot run ([`TakeBack::of`]).
-async fn replay_line(
-    database: &Database,
+/// The event of a line that runs again: about `entity`, by the system, with the line as its change.
+fn replay_event(
     ids: &mut impl IdSource,
+    entity: EntityRef,
     line: &ReplayLine,
     now: Timestamp,
-) -> Result<bool, StoreError> {
-    let Some(target) = TakeBack::of(line) else {
-        return Ok(false);
-    };
-    let bad = || StoreError::Corrupt("the event of a line of the replay list");
-    let (kind, entity) = target.entity();
-    let event = DomainEvent {
-        id: EventId::generate(ids).map_err(|_| bad())?,
+) -> Result<DomainEvent, StoreError> {
+    Ok(DomainEvent {
+        id: EventId::generate(ids)
+            .map_err(|_| StoreError::Corrupt("the event of a line of the replay list"))?,
         time: now,
         actor: Actor::System,
         channel: Channel::System,
-        entity: EntityRef {
-            kind: EntityKind::new(kind).map_err(|_| bad())?,
-            id: entity,
-        },
+        entity,
         changes: vec![FieldChange {
             field: "replayed".to_owned(),
             before: None,
@@ -625,12 +657,100 @@ async fn replay_line(
         }],
         reason: None,
         run: None,
+    })
+}
+
+/// Runs one line again; `false` for a line this program cannot run ([`TakeBack::of`]).
+async fn replay_line(
+    storage: &AuthStorage,
+    ids: &mut impl IdSource,
+    line: &ReplayLine,
+    now: Timestamp,
+) -> Result<bool, StoreError> {
+    if matches!(line.kind, ReplayKind::Removal | ReplayKind::SwitchOff) {
+        return replay_person(storage, ids, line, now).await;
+    }
+    let Some(target) = TakeBack::of(line) else {
+        return Ok(false);
     };
-    database
+    let bad = || StoreError::Corrupt("the event of a line of the replay list");
+    let (kind, entity) = target.entity();
+    let event = replay_event(
+        ids,
+        EntityRef {
+            kind: EntityKind::new(kind).map_err(|_| bad())?,
+            id: entity,
+        },
+        line,
+        now,
+    )?;
+    storage
+        .database()
         .record_change(&event, async move |transaction| {
             take_back(transaction, target, now).await
         })
         .await?;
+    Ok(true)
+}
+
+/// Switches off or removes again the person a line names, through the one change of the program
+/// (`switch_off_in`, `remove_in`) as the replay list asks: at the moment of the line, with its
+/// comments choice, no switch-off before a removal and nothing done twice. The line names no
+/// administrator, so the standing names the person as who did it.
+async fn replay_person(
+    storage: &AuthStorage,
+    ids: &mut impl IdSource,
+    line: &ReplayLine,
+    now: Timestamp,
+) -> Result<bool, StoreError> {
+    let Ok(person) = line.id.parse::<UserId>() else {
+        return Ok(false);
+    };
+    let event = replay_event(
+        ids,
+        EntityRef {
+            kind: EntityKind::from(RecordKind::Person),
+            id: EntityId::from(person),
+        },
+        line,
+        now,
+    )?;
+    let at = line.moment;
+    match line.kind {
+        ReplayKind::SwitchOff => {
+            ChangeStore::record_change(storage, &event, move |transaction| {
+                Box::pin(async move {
+                    switch_off_in::<AuthStorage>(transaction, person, at, Asked::ByReplay)
+                        .await
+                        .map(|_| ())
+                })
+            })
+            .await?;
+        }
+        ReplayKind::Removal => {
+            let comments = line.choice.as_deref().and_then(RemovedTexts::from_code);
+            let removal = prepare_removal(storage, ids, person, at, comments, Asked::ByReplay)
+                .await
+                .map_err(|failure| match failure {
+                    NotPrepared::Store(error) => error,
+                    NotPrepared::NoFreeLabel | NotPrepared::NoChoice | NotPrepared::NoId(_) => {
+                        StoreError::Corrupt("the removal of a line of the replay list")
+                    }
+                })?;
+            ChangeStore::record_change(storage, &event, move |transaction| {
+                Box::pin(async move {
+                    remove_in::<AuthStorage, _>(transaction, &removal)
+                        .await
+                        .map(|_| ())
+                })
+            })
+            .await?;
+        }
+        ReplayKind::AccessKey
+        | ReplayKind::AiAppGrant
+        | ReplayKind::Passkey
+        | ReplayKind::SupportAccess => return Ok(false),
+    }
     Ok(true)
 }
 

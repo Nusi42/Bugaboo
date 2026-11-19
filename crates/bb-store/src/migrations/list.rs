@@ -300,4 +300,9 @@ pub(super) const ALL: &[Definition] = &[
         name: "ai_switches_kept",
         steps: || Ok(super::m0059_ai_switches_kept::steps()),
     },
+    Definition {
+        version: 60,
+        name: "standing_by_optional",
+        steps: || Ok(super::m0060_standing_by_optional::steps()),
+    },
 ];

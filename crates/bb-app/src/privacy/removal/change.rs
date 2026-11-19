@@ -12,7 +12,7 @@ use std::collections::BTreeSet;
 use bb_core::ErrorCode;
 use bb_core::backup::replay::ReplayKind;
 use bb_core::event::{EntityRef, RecordKind};
-use bb_core::id::{CommentId, IdSource, IssueId, JobId, UserId};
+use bb_core::id::{CommentId, IdError, IdSource, IssueId, JobId, UserId};
 use bb_core::keeping::{KeepKind, KeptUntil};
 use bb_core::oauth::GrantEnd;
 use bb_core::person::{HoldReason, PersonStanding, Standing, cleared_address};
@@ -36,7 +36,7 @@ use crate::auth::{
 };
 use crate::people::state_change;
 use crate::ports::KeepPeriods;
-use crate::privacy::replay::{line, taken_back_in};
+use crate::privacy::replay::{Asked, line, taken_back_in};
 use crate::settings::record_of;
 use crate::work_times::delete_work_times_in;
 
@@ -50,22 +50,10 @@ pub struct RemovePerson {
     pub comments: Option<RemovedTexts>,
 }
 
-/// Who asks for a removal, which decides what it checks first.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum RemovalAsked {
-    /// An administrator: only a switched-off person is removed, and only once.
-    ByAdministrator,
-    /// The replay list after a restore (ADR-0044, decision 8): no switch-off first, and a person
-    /// who is removed already is left as they are.
-    ByReplay,
-}
-
 /// Everything one removal needs, so the replay runs it with the values of its line.
 pub struct Removal<K> {
     /// The person.
     pub person: UserId,
-    /// The administrator who removes them.
-    pub by: UserId,
     /// When.
     pub at: Timestamp,
     /// The code of the tombstone, drawn by `former_user_label`.
@@ -76,8 +64,8 @@ pub struct Removal<K> {
     pub keep: K,
     /// Today, in the organization's zone: the legal hold starts no earlier.
     pub today: Date,
-    /// Who asks.
-    pub asked: RemovalAsked,
+    /// Who asks: an administrator, whom the standing names, or the replay.
+    pub asked: Asked,
     /// The ID of the job that finishes the removal (`privacy.finish-removal`), queued in its change.
     pub job: JobId,
 }
@@ -139,6 +127,35 @@ fn legal_hold<K: KeepPeriods>(
     }
 }
 
+/// Why a removal could not be prepared: the store failed (its error kept, so the replay of a
+/// restore reports the cause), no label was free, the setting of the comments holds no choice, or
+/// no ID could be made for its job.
+#[derive(Debug)]
+pub enum NotPrepared<E> {
+    /// The store failed.
+    Store(E),
+    /// Every label was taken.
+    NoFreeLabel,
+    /// The setting `privacy.removed-texts` holds no choice.
+    NoChoice,
+    /// No ID could be made for the job.
+    NoId(IdError),
+}
+
+impl<E> NotPrepared<E> {
+    /// The error of a use case.
+    fn into_app<S: AuthStore<Error = E>>(self) -> AppError {
+        match self {
+            Self::Store(error) => crate::auth::internal::<S>(&error),
+            Self::NoFreeLabel => AppError::Internal("no free label for a former user".to_owned()),
+            Self::NoChoice => {
+                AppError::Internal("the setting privacy.removed-texts holds no choice".to_owned())
+            }
+            Self::NoId(error) => AppError::Internal(error.to_string()),
+        }
+    }
+}
+
 /// Prepares a removal from what is read before its change: the label, drawn so that no removed
 /// person has it (the unique label refuses a draw that another removal took meanwhile), the keep
 /// periods, today in the organization's zone, the comments choice (`privacy.removed-texts` when
@@ -146,43 +163,39 @@ fn legal_hold<K: KeepPeriods>(
 /// person's name, address and handles are read inside the change (`remove_in`).
 ///
 /// # Errors
-/// The error of the store; an internal error when no label is free or the setting holds no choice.
+/// The error of the store, or no free label, or no choice in the setting ([`NotPrepared`]).
 pub async fn prepare_removal<S: AuthStore>(
     store: &S,
     ids: &mut impl IdSource,
     person: UserId,
-    by: UserId,
     at: Timestamp,
     comments: Option<RemovedTexts>,
-    asked: RemovalAsked,
-) -> Result<Removal<Layers>, AppError> {
-    let failed = |error| crate::auth::internal::<S>(&error);
+    asked: Asked,
+) -> Result<Removal<Layers>, NotPrepared<S::Error>> {
+    let failed = NotPrepared::Store;
     let taken: BTreeSet<String> = store
         .former_labels()
         .await
         .map_err(failed)?
         .into_iter()
         .collect();
-    let label = former_user_label(ids, &taken_in(&taken))
-        .ok_or_else(|| AppError::Internal("no free label for a former user".to_owned()))?;
+    let label = former_user_label(ids, &taken_in(&taken)).ok_or(NotPrepared::NoFreeLabel)?;
     let layers = store.setting_layers(None, None).await.map_err(failed)?;
     let comments = match comments {
         Some(choice) => choice,
         // The registry only takes the words of the choice, so another value is broken data.
-        None => RemovedTexts::from_code(&layers.text(&PRIVACY_REMOVED_TEXTS)).ok_or_else(|| {
-            AppError::Internal("the setting privacy.removed-texts holds no choice".to_owned())
-        })?,
+        None => RemovedTexts::from_code(&layers.text(&PRIVACY_REMOVED_TEXTS))
+            .ok_or(NotPrepared::NoChoice)?,
     };
     Ok(Removal {
         person,
-        by,
         at,
         label,
         comments,
         today: date_of(at, Region::of(&layers).zone()),
         keep: layers,
         asked,
-        job: JobId::generate(ids).map_err(|error| AppError::Internal(error.to_string()))?,
+        job: JobId::generate(ids).map_err(NotPrepared::NoId)?,
     })
 }
 
@@ -199,10 +212,9 @@ pub async fn remove_in<S: AuthStore, K: KeepPeriods>(
     let person = removal.person;
     let standing = S::standing_in(transaction, person).await?;
     match (removal.asked, standing.as_ref().map(|found| found.standing)) {
-        (RemovalAsked::ByReplay, Some(Standing::Removed)) => return Ok(Removed::default()),
-        (RemovalAsked::ByAdministrator, Some(Standing::SwitchedOff))
-        | (RemovalAsked::ByReplay, _) => {}
-        (RemovalAsked::ByAdministrator, _) => return Err(S::aborted()),
+        (Asked::ByReplay, Some(Standing::Removed)) => return Ok(Removed::default()),
+        (Asked::ByAdministrator(_), Some(Standing::SwitchedOff)) | (Asked::ByReplay, _) => {}
+        (Asked::ByAdministrator(_), _) => return Err(S::aborted()),
     }
     // A replay into a backup older than the account finds nobody to remove.
     let Some(words) = S::person_words(transaction, person).await? else {
@@ -267,7 +279,7 @@ pub async fn remove_in<S: AuthStore, K: KeepPeriods>(
             person,
             standing: Standing::Removed,
             since: removal.at,
-            by: removal.by,
+            by: removal.asked.by(),
             label: Some(removal.label.clone()),
             hold_reason: hold_name.as_ref().map(|_| HoldReason::WorkDays),
             hold_name,
@@ -326,12 +338,12 @@ pub async fn remove_person<S: AuthStore>(
         ctx.store(),
         &mut ctx.ids(),
         person,
-        actor.person.id,
         ctx.now(),
         input.comments,
-        RemovalAsked::ByAdministrator,
+        Asked::ByAdministrator(actor.person.id),
     )
-    .await?;
+    .await
+    .map_err(NotPrepared::into_app::<S>)?;
     let event = ctx.event(
         by(actor.person.id),
         entity(RecordKind::Person, person),

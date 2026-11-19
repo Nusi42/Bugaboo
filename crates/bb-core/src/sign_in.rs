@@ -199,6 +199,9 @@ words! {
         /// and are written again at the next change and before every backup, but until then a
         /// restore from a backup could undo what they stand for (ADR-0044, decision 8).
         ReplayListNotWritten => "replay_list.not_written",
+        /// The lines of the replay list that a restore ran again left nobody who manages roles
+        /// and decides who has which role, so setup is open again (ADR-0044, decision 8).
+        RestoreLeftNobodyForRoles => "backup.restore_left_nobody_for_roles",
         /// A person changed their own name; the event of the change holds the names (PRIV-06).
         OwnNameChanged => "person.own_name_changed",
         /// A person asked for a new e-mail address; it counts once its link is opened (PRIV-06).

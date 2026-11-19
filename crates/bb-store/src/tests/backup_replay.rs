@@ -1,6 +1,8 @@
 //! The list of what to do again after a restore (ADR-0044, decision 8): removals, switch-offs and
 //! keys taken back after the backup are done again, also when their line only waits in the database.
 
+use bb_core::person::Standing;
+
 use super::*;
 
 #[tokio::test]
@@ -12,13 +14,20 @@ async fn ops_07_a_restore_replays_removals_switch_offs_and_taken_back_keys_made_
         let storage = installation.storage(&database);
         let mut source = ids();
         let (ada, key) = a_key(&storage, &mut source).await?;
+        let bea = person(&mut source, "bea@example.test");
+        let bea_id = bea.id;
+        storage
+            .record_change(&event(&mut source, 2), move |tx| {
+                Box::pin(async move { AuthStorage::insert_person(tx, &bea, "hash", at(0)).await })
+            })
+            .await?;
         let moment: Timestamp = "2026-11-10T10:00:00Z".parse()?;
         let backup = database
             .create_backup(&installation.places, Purpose::Regular, moment)
             .await?;
         database.close().await;
-        // The lines a later change wrote (the writer comes with *Remove a person*): one of each
-        // kind after the backup, and one before it, which the backup holds already.
+        // The lines later changes wrote: one of each kind after the backup, and one before it,
+        // which the backup holds already.
         let later = |minutes: i64| moment.checked_add(SignedDuration::from_mins(minutes));
         let lines = [
             ReplayLine {
@@ -36,7 +45,7 @@ async fn ops_07_a_restore_replays_removals_switch_offs_and_taken_back_keys_made_
             ReplayLine {
                 moment: later(2)?,
                 kind: ReplayKind::SwitchOff,
-                id: ada.to_string(),
+                id: bea_id.to_string(),
                 choice: None,
             },
             ReplayLine {
@@ -61,11 +70,21 @@ async fn ops_07_a_restore_replays_removals_switch_offs_and_taken_back_keys_made_
             .await
             .map_err(failed)?;
         assert_eq!(report.unreadable_lines, 1);
-        assert_eq!(report.replayed, [lines[1].clone()]);
-        // A removal and a switch-off are named in the report until the program can run them.
-        assert_eq!(report.not_replayed, [lines[2].clone(), lines[3].clone()]);
+        assert_eq!(report.replayed, lines[1..].to_vec());
+        assert_eq!(report.not_replayed, Vec::<ReplayLine>::new());
         let restored = installation.open().await?;
         assert!(!has_key(&restored, key).await?, "the key stays taken back");
+        // The switch-off and the removal after the backup are done again.
+        let again = installation.storage(&restored);
+        let standing_of = async |person: UserId| {
+            bb_app::people::StandingStore::standing(&again, person)
+                .await
+                .map(|found| found.map(|standing| standing.standing))
+        };
+        assert_eq!(standing_of(bea_id).await?, Some(Standing::SwitchedOff));
+        assert_eq!(standing_of(ada).await?, Some(Standing::Removed));
+        let gone = bb_app::auth::AccountStore::account_by_email(&again, "ada@example.test").await?;
+        assert!(gone.is_none(), "the removed person's address is cleared");
         restored.close().await;
         Ok(())
     })
@@ -121,6 +140,102 @@ async fn priv_04_a_line_that_waits_in_the_database_is_run_by_a_restore() -> Test
         // The list in the data folder holds the line now.
         let kept = std::fs::read_to_string(&installation.places.replay_list)?;
         assert_eq!(bb_core::backup::replay::read(&kept).0, [line]);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn priv_04_a_restore_says_when_its_replay_leaves_nobody_who_decides_roles() -> TestResult {
+    use bb_app::access::PolicyStore as _;
+    use bb_core::access::{AppliesTo, Assignment, Role};
+    use bb_core::id::{AssignmentId, RoleId};
+    use bb_core::version::FIRST_VERSION;
+    use bb_policy::Permission;
+    each_database("priv_04_replay_nobody_decides_roles", async |db| {
+        let installation = Installation::new(db)?;
+        let database = installation.open().await?;
+        let storage = installation.storage(&database);
+        let mut source = ids();
+        // In the backup, Bea is the only one who decides roles. Later another administrator came
+        // and switched her off; the backup does not know that administrator.
+        let bea = person(&mut source, "bea@example.test");
+        let bea_id = bea.id;
+        let role = Role {
+            id: RoleId::generate(&mut source)?,
+            name: "Keeper".to_owned(),
+            starting: None,
+            position: 0,
+            two_step: false,
+            version: FIRST_VERSION,
+        };
+        let given = Assignment {
+            id: AssignmentId::generate(&mut source)?,
+            person: Some(bea_id),
+            group: None,
+            role: Some(role.id),
+            project: None,
+            applies_to: AppliesTo::Organization,
+            given_at: at(1),
+        };
+        storage
+            .record_change(&event(&mut source, 2), move |tx| {
+                Box::pin(async move {
+                    AuthStorage::insert_person(tx, &bea, "hash", at(0)).await?;
+                    AuthStorage::insert_role(
+                        tx,
+                        &role,
+                        &[Permission::ManageRoles, Permission::DecideRoles],
+                        &[],
+                        &[],
+                    )
+                    .await?;
+                    AuthStorage::insert_assignment(tx, &given).await
+                })
+            })
+            .await?;
+        let moment: Timestamp = "2026-11-10T10:00:00Z".parse()?;
+        let backup = database
+            .create_backup(&installation.places, Purpose::Regular, moment)
+            .await?;
+        database.close().await;
+        let line = ReplayLine {
+            moment: moment.checked_add(SignedDuration::from_mins(1))?,
+            kind: ReplayKind::SwitchOff,
+            id: bea_id.to_string(),
+            choice: None,
+        };
+        std::fs::write(
+            &installation.places.replay_list,
+            bb_core::backup::replay::write(std::slice::from_ref(&line)),
+        )?;
+        let report = installation
+            .restore(
+                &backup.path,
+                &[],
+                moment.checked_add(SignedDuration::from_mins(10))?,
+            )
+            .await
+            .map_err(failed)?;
+        assert_eq!(report.replayed, [line]);
+        assert!(report.nobody_decides_roles);
+        let restored = installation.open().await?;
+        let again = installation.storage(&restored);
+        // The standing says a restore did it, not an administrator.
+        let standing = bb_app::people::StandingStore::standing(&again, bea_id)
+            .await?
+            .ok_or("Bea has a standing")?;
+        assert_eq!(standing.standing, Standing::SwitchedOff);
+        assert_eq!(standing.by, None);
+        // The security log says so too.
+        let entries = restored.security_log_entries(0, 100).await?;
+        assert!(
+            entries
+                .iter()
+                .any(|entry| entry.action.as_str() == "backup.restore_left_nobody_for_roles"),
+            "{entries:?}"
+        );
+        restored.close().await;
         Ok(())
     })
     .await

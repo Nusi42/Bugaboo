@@ -10,7 +10,7 @@ use bb_core::person::{HoldReason, PersonStanding, Standing};
 use sea_query::{Cond, Expr, ExprTrait as _, OnConflict, Query, SelectStatement};
 
 use super::AuthStorage;
-use crate::db::{Row, StoredId as _, Transaction, to_micros};
+use crate::db::{Row, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
 use crate::schema::{PersonRow, PersonStandingRow};
 
@@ -75,7 +75,7 @@ pub(crate) fn read_standing(row: &Row) -> Result<Option<PersonStanding>, StoreEr
         person: row.id(PersonStandingRow::Person)?,
         standing: Standing::from_code(&state).ok_or_else(corrupt)?,
         since: row.time(PersonStandingRow::Since)?,
-        by: row.id(PersonStandingRow::By)?,
+        by: row.optional_id(PersonStandingRow::By)?,
         label: row.get(PersonStandingRow::Label)?,
         hold_name: row.get(PersonStandingRow::HoldName)?,
         hold_reason,
@@ -141,7 +141,7 @@ impl StandingStore for AuthStorage {
                 Expr::val(standing.person.stored()),
                 Expr::val(standing.standing.code()),
                 Expr::val(to_micros(standing.since)),
-                Expr::val(standing.by.stored()),
+                Expr::val(standing.by.map(StoredId::stored)),
                 Expr::val(standing.label.clone()),
                 Expr::val(standing.hold_name.clone()),
                 Expr::val(standing.hold_reason.map(HoldReason::code)),
@@ -155,6 +155,18 @@ impl StandingStore for AuthStorage {
             );
         transaction.execute(&insert).await?;
         Ok(())
+    }
+
+    async fn person_exists(
+        transaction: &mut Transaction,
+        person: UserId,
+    ) -> Result<bool, StoreError> {
+        let mut select = Query::select();
+        select
+            .expr(Expr::val(1))
+            .from(PersonRow::Table)
+            .and_where(Expr::col(PersonRow::Id).eq(person.stored()));
+        Ok(transaction.fetch_optional(&select).await?.is_some())
     }
 
     async fn clear_standing(

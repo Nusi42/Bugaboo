@@ -7,7 +7,7 @@ mod plan;
 mod store;
 
 pub use change::{
-    Removal, RemovalAsked, RemovePerson, Removed, prepare_removal, remove_in, remove_person,
+    NotPrepared, Removal, RemovePerson, Removed, prepare_removal, remove_in, remove_person,
 };
 pub use finish::{FINISH_REMOVAL_ISSUES, FinishRemoval};
 pub use plan::{KeptByLaw, PlanKind, RemovalPlan, RemovalPlanQuery, removal_plan};

@@ -216,6 +216,9 @@ fn say(report: &RestoreReport) {
             &message::restore_unreadable_lines(size_of(report.unreadable_lines as u64)).render(),
         );
     }
+    if report.nobody_decides_roles {
+        output::warning(&text(message::RESTORE_NOBODY_DECIDES_ROLES));
+    }
     if let Some((from, to)) = report.lost {
         output::line(
             &message::restore_lost(message::RestoreLost {

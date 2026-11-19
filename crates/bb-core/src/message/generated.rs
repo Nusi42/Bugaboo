@@ -5878,6 +5878,10 @@ pub const RELATION_KINDS_SEARCH: MessageKey = MessageKey::new("relation-kinds.se
 /// The message `removal.exports-go`.
 pub const REMOVAL_EXPORTS_GO: MessageKey = MessageKey::new("removal.exports-go");
 
+/// The message `restore.nobody-decides-roles`.
+pub const RESTORE_NOBODY_DECIDES_ROLES: MessageKey =
+    MessageKey::new("restore.nobody-decides-roles");
+
 /// The message `restore.reason-newer-format`.
 pub const RESTORE_REASON_NEWER_FORMAT: MessageKey = MessageKey::new("restore.reason-newer-format");
 

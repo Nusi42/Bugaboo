@@ -187,7 +187,7 @@ async fn priv_04_a_removed_person_is_former_user_everywhere_but_the_work_days_fo
         let on = ada
             .send("POST", &format!("/api/v1/people/{bob_id}/switch-on"), None)
             .await?;
-        assert_eq!(on.code(), "edit.version-changed", "{}", on.body);
+        assert_eq!(on.code(), "person.not-switched-off", "{}", on.body);
         Ok(())
     })
     .await

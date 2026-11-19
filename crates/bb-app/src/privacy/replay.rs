@@ -17,6 +17,7 @@ use std::io;
 use std::sync::Mutex;
 
 use bb_core::backup::replay::{self, ReplayKind, ReplayLine};
+use bb_core::id::UserId;
 use bb_core::sign_in::SecurityAction;
 use jiff::Timestamp;
 
@@ -34,6 +35,31 @@ pub trait ReplayFile: Send + Sync {
     /// The error of the file system, and [`io::ErrorKind::InvalidData`] when the list holds a line
     /// that cannot be read: such a list is left as it is for a person to look at.
     fn append<'a>(&'a self, lines: &'a str) -> BoxFuture<'a, io::Result<()>>;
+}
+
+/// Who asks for a switch-off or a removal, which decides what it checks first and whom the
+/// standing names as who did it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Asked {
+    /// An administrator: only an active person is switched off, only a switched-off person is
+    /// removed, each only once, and never the last person who decides roles.
+    ByAdministrator(UserId),
+    /// The replay list after a restore (ADR-0044, decision 8): the line runs again whatever the
+    /// restored data says (no switch-off before a removal, no check of who decides roles, which
+    /// the change passed when it was made), and a person it was done to already is left as they
+    /// are.
+    ByReplay,
+}
+
+impl Asked {
+    /// The administrator who asked; none for the replay, whose line names nobody.
+    #[must_use]
+    pub const fn by(self) -> Option<UserId> {
+        match self {
+            Self::ByAdministrator(by) => Some(by),
+            Self::ByReplay => None,
+        }
+    }
 }
 
 /// The text of a list with `lines` added, when the list can be read.
