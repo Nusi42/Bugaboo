@@ -4,9 +4,9 @@ The lead updates this file after every step (builder started, report in, review 
 
 ## Now
 
-- **Milestone:** M9, privacy, operations and the first release, is planned and decided ([`milestones/M9/`](milestones/M9/README.md)): the maintainer took every recommendation of M9-Q1 to Q21 on 2026-11-18, including three cuts (restore from the command line only; support access, `DIST-03`, moved to M14 as a V1 feature; M4-F61, M4-F63 and M4-F128 to a later operations package). ADR-0044 to ADR-0047 are accepted, ADR-0048 in part. WP-01 is done. Next: wave 1.
+- **Milestone:** M9, privacy, operations and the first release, is planned and decided ([`milestones/M9/`](milestones/M9/README.md)): the maintainer took every recommendation of M9-Q1 to Q21 on 2026-11-18, including three cuts (restore from the command line only; support access, `DIST-03`, moved to M14 as a V1 feature; M4-F61, M4-F63 and M4-F128 to a later operations package). ADR-0044 to ADR-0047 are accepted, ADR-0048 in part. Wave 1 is merged (WP-02 to WP-05). Next: wave 2.
 - **Done:** M0 to M8 (`m0-done` to `m8-done`; M8 tagged on 2026-11-17). Version 0.5.1 (ADR-0040: 144 of 225 features, the minor number stays 5, so the patch number rises). The M8 review page is published (link outside the repository).
-- **Wave:** M9 wave 0 (WP-01) is done; wave 1 (WP-02 to WP-05) is next, with WP-03's person links landing first. M8 is complete (all of its packages merged).
+- **Wave:** M9 waves 0 and 1 are merged (2026-11-19); wave 2 (WP-06 to WP-09) is building in `win2` to `win5`. M8 is complete (all of its packages merged).
 - **`main`:** fast-forwarded to the last green `WIN1`.
 
 ## Work packages (M9)
@@ -15,13 +15,13 @@ The lead updates this file after every step (builder started, report in, review 
 |----|------|-------|-----------------|-------|
 | WP-01 | Decision records, words, the UX gaps, the maintainer's answers | done (2026-11-18) | `win1` / `WIN1` (written in `win2`) | Wave 0; docs only |
 | WP-02 | Backup, and restore from the command line | merged (2026-11-19, two fix rounds; the second builder took over for the fixes) | `win2` / `WIN2` | Wave 1; Opus; migration 54; rebases onto WP-03's links |
-| WP-03 | The walk of a person's data, and *Download my data* | person links merged (2026-11-18, three fix rounds); the export building (a second Opus builder) | `win3` / `WIN3` | Wave 1; Opus; migration 55; its person links land first |
-| WP-04 | Keep and delete rules on the server | not started | `win4` / `WIN4` | Wave 1; Opus; migration 56; rebases onto WP-03's links |
+| WP-03 | The walk of a person's data, and *Download my data* | merged (2026-11-19; person links three fix rounds, *Download my data* two more; four Opus builders in turn) | `win3` / `WIN3` | Wave 1; Opus; migration 55; its person links land first |
+| WP-04 | Keep and delete rules on the server | merged (2026-11-19, three fix rounds; landed with WP-03 in one run) | `win4` / `WIN4` | Wave 1; Opus; migration 56; rebases onto WP-03's links |
 | WP-05 | The parts list, the notices and the VEX statements | merged (2026-11-18, two fix rounds; Sonnet) | `win5` / `WIN5` | Wave 1; Sonnet |
-| WP-06 | *Switch off* and *Remove a person* on the server | not started | `win3` / `WIN3` | Wave 2; Opus; migration 57 |
-| WP-07 | Upgrades: a backup before migrating, the way back, the upgrade test | not started | `win2` / `WIN2` | Wave 2; Opus |
-| WP-08 | Signed releases, updates, the support period, vulnerability handling, secure defaults | not started | `win5` / `WIN5` | Wave 2; Opus |
-| WP-09 | Correct your own data, and corrections by administrators | not started | `win4` / `WIN4` | Wave 2; Opus; migration 58 |
+| WP-06 | *Switch off* and *Remove a person* on the server | building (Opus) | `win3` / `WIN3` | Wave 2; Opus; migration 57 |
+| WP-07 | Upgrades: a backup before migrating, the way back, the upgrade test | building (Opus) | `win2` / `WIN2` | Wave 2; Opus |
+| WP-08 | Signed releases, updates, the support period, vulnerability handling, secure defaults | building (Opus) | `win5` / `WIN5` | Wave 2; Opus |
+| WP-09 | Correct your own data, and corrections by administrators | building (Opus) | `win4` / `WIN4` | Wave 2; Opus; migration 58 |
 | WP-10 | The privacy screens | not started | `win3` / `WIN3` | Wave 3; Opus |
 | WP-11 | The operations screens: *Backups* and *About* | not started | `win2` / `WIN2` | Wave 3; Sonnet |
 | WP-12 | *Support access* | moved to M14 (2026-11-18) | — | Draft kept in the M9 folder |
