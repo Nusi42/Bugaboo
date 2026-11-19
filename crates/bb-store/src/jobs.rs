@@ -791,3 +791,7 @@ mod tests {
         .await
     }
 }
+
+#[cfg(test)]
+#[path = "tests/jobs_hold.rs"]
+mod hold_tests;
