@@ -328,6 +328,23 @@ impl CommentStore for FakeStore {
         Ok(gone)
     }
 
+    async fn throw_away_comments(tx: &mut Tx, ids: &[CommentId]) -> Result<(), FakeError> {
+        tx.state.comments.retain(|found| !ids.contains(&found.id));
+        tx.state
+            .comment_versions
+            .retain(|version| !ids.contains(&version.comment));
+        tx.state
+            .mentions
+            .retain(|mention| !ids.contains(&mention.comment));
+        tx.state.attachments.retain(|attachment| {
+            !attachment
+                .comment
+                .as_ref()
+                .is_some_and(|comment| ids.contains(comment))
+        });
+        Ok(())
+    }
+
     async fn replace_mentions(
         tx: &mut Tx,
         comment: CommentId,

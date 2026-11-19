@@ -201,6 +201,47 @@ async fn delete_under(transaction: &mut Transaction, doomed: &Doomed) -> Result<
     Ok(())
 }
 
+/// Throws away the comments with these IDs for good (ADR-0029, amendment M9): their files (as
+/// [`delete_attachments`] deletes every file), the uploads still open for them and the
+/// notifications of their events, then the comments by the one deletion of comments
+/// ([`delete_comment_rows`]: their earlier texts, mentions and marks, the events that carry their
+/// text with their entries in the outbox and their rows of the history, and the comments). The
+/// issue keeps the event that says they were thrown away, which the change writes.
+pub(crate) async fn throw_away_comments(
+    transaction: &mut Transaction,
+    ids: Vec<Vec<u8>>,
+) -> Result<(), StoreError> {
+    let comments = ids_where(
+        CommentRow::Table,
+        CommentRow::Id,
+        Expr::col(CommentRow::Id).is_in(ids),
+    );
+    delete_attachments(
+        transaction,
+        &ids_where(
+            AttachmentRow::Table,
+            AttachmentRow::Id,
+            Expr::col(AttachmentRow::Comment).in_subquery(comments.clone()),
+        ),
+    )
+    .await?;
+    delete_where(
+        transaction,
+        UploadRow::Table,
+        Expr::col(UploadRow::Comment).in_subquery(comments.clone()),
+    )
+    .await?;
+    // A notification of a comment carries its text in its changes.
+    delete_where(
+        transaction,
+        NotificationRow::Table,
+        Expr::col(NotificationRow::Event)
+            .in_subquery(events_about(RecordKind::Comment, comments.clone())),
+    )
+    .await?;
+    delete_comment_rows(transaction, &comments).await
+}
+
 /// Deletes the rows that name the issues themselves, then the issues.
 async fn delete_named(transaction: &mut Transaction, doomed: &Doomed) -> Result<(), StoreError> {
     let named: [(TableRef, ColumnRef); 20] = [

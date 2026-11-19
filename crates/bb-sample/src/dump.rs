@@ -318,7 +318,14 @@ fn dump_event(labels: &mut Labels, event: &DomainEvent) -> DumpEvent {
                 }
             })
             .collect(),
-        reason: event.reason.clone(),
+        // The reason of an undo names its run, whose ID is random by design: the dump names the run
+        // by its label, as it names every other record.
+        reason: event.reason.as_deref().map(|reason| {
+            bb_core::run::undone_run(reason).map_or_else(
+                || reason.to_owned(),
+                |run| bb_core::run::undo_reason_named(&labels.label("run", run.to_bytes())),
+            )
+        }),
     }
 }
 

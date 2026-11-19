@@ -240,6 +240,17 @@ impl CommentStore for AuthStorage {
         Ok(transaction.execute(&update).await? > 0)
     }
 
+    async fn throw_away_comments(
+        transaction: &mut Transaction,
+        ids: &[CommentId],
+    ) -> Result<(), StoreError> {
+        crate::keeping::trash::throw_away_comments(
+            transaction,
+            ids.iter().map(|id| id.stored()).collect(),
+        )
+        .await
+    }
+
     async fn replace_mentions(
         transaction: &mut Transaction,
         comment: CommentId,

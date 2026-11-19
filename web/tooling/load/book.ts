@@ -36,6 +36,8 @@ export type {
 export interface BookWriter {
   readonly kept: (note: Kept) => void;
   readonly comment: (key: string) => void;
+  /** The comments of the issue with this readable ID went with a thrown-away attempt. */
+  readonly commentsThrownAway: (key: string) => void;
   /** A file was added to the issue with this readable ID. */
   readonly fileAdded: (key: string) => void;
   /** The person with this ID is a Guest: what they are told is judged by what a Guest may see. */
@@ -179,6 +181,11 @@ export function newBook(): BookWriter {
     },
     tookOver: () => {
       events.tookOver += 1;
+    },
+    commentsThrownAway: (key) => {
+      // Throwing work away takes the comments the agent wrote with it (ADR-0029, amendment M9).
+      const kept = notes.comments.filter((each) => each !== key);
+      notes.comments.splice(0, notes.comments.length, ...kept);
     },
     file: (issues) => ({
       issues,

@@ -227,6 +227,11 @@ async fn work_of_one(floor: Arc<Floor>, mut crew: Crew) -> Result<(), Failure> {
         }
         _ => {
             review(&mut crew, "throw-away", None).await?;
+            // Throwing away takes the comments the agent wrote in its attempts along, with the
+            // events that carry their text (ADR-0029, amendment M9).
+            book(&floor.book)?
+                .comments
+                .retain(|key| *key != crew.issue.key);
             // The undo wrote the old value back: one more version, kept by the person.
             let now = version_of(&mut crew).await?;
             for version in before + 2..=now {

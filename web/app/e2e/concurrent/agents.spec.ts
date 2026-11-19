@@ -37,7 +37,7 @@ test("ai_30_ten_people_and_their_agents_work_at_the_same_moments_and_each_sees_t
   // The person who lost access was refused after the loss, and every person sees the work of their
   // agent: the block of agent work and the mark of the short comment the agent wrote.
   expect(written.lost?.[0]?.kept_after).toBe(0);
-  await expectTheWorkOfTheAgents(pages);
+  await expectTheWorkOfTheAgents(pages, agents);
   const stopped = await expectTheWorkToHaveStopped(browser, server, look, admin, agents);
   await Promise.all([...pages, stopped].map((page) => page.context().close()));
 });

@@ -25,12 +25,23 @@ import { type BookWriter, type Work } from "./book.ts";
 // one issue at the same moment, and an agent goes on after its person lost access. The rules are
 // judged by `bb-load-check` (crates/bb-load-check/src/agents.rs).
 
+/** How the review of the crew goes, by the number of its person: 0 accepts, 1 sends back first, 2
+ * throws the attempt away. */
+export function reviewOf(crew: Crew): number {
+  return crew.number % 3;
+}
+
+/** Whether the work of the crew is thrown away, which takes the agent's comments along. */
+export function thrownAway(crew: Crew): boolean {
+  return reviewOf(crew) === 2;
+}
+
 /** One person and their agent: how the review goes depends on the number of the person. */
 async function workThrough(server: Instance, crew: Crew, book: BookWriter): Promise<void> {
   await handOver(crew, crew.issue, book);
   const before = await versionOf(crew);
   await attempt(server, crew, book, { asks: crew.number % 2 === 0, changes: true });
-  switch (crew.number % 3) {
+  switch (reviewOf(crew)) {
     case 0:
       await review(crew, "accept", null);
       break;
@@ -41,6 +52,7 @@ async function workThrough(server: Instance, crew: Crew, book: BookWriter): Prom
       break;
     default: {
       await review(crew, "throw-away", null);
+      book.commentsThrownAway(crew.issue.key);
       // The undo wrote the old value back: one more version, kept by the person.
       const now = await versionOf(crew);
       for (let version = before + 2; version <= now; version += 1) {

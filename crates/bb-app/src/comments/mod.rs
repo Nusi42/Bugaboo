@@ -12,6 +12,7 @@ mod read;
 mod records;
 mod resolve;
 mod store;
+mod thrown;
 mod types;
 mod write;
 

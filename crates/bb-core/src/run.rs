@@ -56,6 +56,12 @@ pub fn undo_reason(run: crate::id::RunId) -> String {
     format!("{UNDO_REASON}{run}")
 }
 
+/// The reason of an undo with the run named by `name` instead of its ID (a dump that labels IDs).
+#[must_use]
+pub fn undo_reason_named(name: &str) -> String {
+    format!("{UNDO_REASON}{name}")
+}
+
 /// The run an event is the undo of, read from its reason.
 #[must_use]
 pub fn undone_run(reason: &str) -> Option<crate::id::RunId> {

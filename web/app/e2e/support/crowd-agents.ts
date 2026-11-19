@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { type Browser, type Page, expect } from "@playwright/test";
 
-import { type Agents } from "../../../tooling/load/agents-run.ts";
+import { type Agents, thrownAway } from "../../../tooling/load/agents-run.ts";
 import { type ApiSession } from "./api.ts";
 import { type Instance } from "./server.ts";
 import { issueAddress } from "../../src/shared/paths.ts";
@@ -55,15 +55,25 @@ export function openIssuesOfCrews(
   );
 }
 
-/** Every person sees the block of agent work and the mark of the short comment their agent wrote. */
-export async function expectTheWorkOfTheAgents(pages: readonly Page[]): Promise<void> {
+/**
+ * Every person sees the block of agent work, and the mark of the short comment their agent wrote
+ * where the work was not thrown away (which takes the agent's comments along).
+ */
+export async function expectTheWorkOfTheAgents(
+  pages: readonly Page[],
+  agents: Agents,
+): Promise<void> {
   await Promise.all(
-    pages.map(async (page) => {
+    pages.map(async (page, at) => {
       await page.reload();
       await expect(
         page.getByRole("heading", { level: 2, name: t("agent-work.title"), exact: true }),
       ).toBeVisible();
-      await expect(page.getByText(/^Written by an agent/u).first()).toBeVisible();
+      const crew = agents.crews[at];
+      // Work that was thrown away took the agent's comments along; its agent work still shows.
+      if (crew === undefined || !thrownAway(crew)) {
+        await expect(page.getByText(/^Written by an agent/u).first()).toBeVisible();
+      }
     }),
   );
 }

@@ -51,6 +51,10 @@ pub trait CommentStore: IssueStore + 'static {
             deleted_at: Option<Timestamp>,
             version: Option<Version>
         ) -> bool;
+        /// Throws these comments away for good: their texts, earlier texts, mentions and marks, and
+        /// the events that carry their text (ADR-0029, amendment M9). The change writes the event of
+        /// the issue that says they were there.
+        fn throw_away_comments(ids: &[CommentId]) -> ();
         /// Makes these the mentions of a comment: the ones that stay keep the date they were read.
         fn replace_mentions(comment: CommentId, mentions: &[Mention]) -> ();
         /// Deletes every comment `author` wrote, in the trash or not, with its versions, mentions,

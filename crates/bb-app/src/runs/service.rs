@@ -120,7 +120,16 @@ impl<'a, 'c, S: AuthStore> RunsOf<'a, 'c, S> {
                 slot.insert(found.map(|(issue, held)| held.field_mask_for(Some(issue.issue_type))));
             }
         }
-        let mut plan = Self::plan(self.evaluation(run, &net).await?, &net);
+        // The run of an agent's attempt takes the comments the agent wrote in it along (ADR-0029,
+        // amendment M9): every event of such a run is the agent's.
+        let of_an_agent = self
+            .ctx
+            .store()
+            .many_changes_run(run)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .is_some_and(|found| found.agent.is_some());
+        let mut plan = Self::plan(self.evaluation(run, &net).await?, &net, of_an_agent);
         plan.versions = versions;
         let readable = |issue: &IssueId, field: &str, kind: UndoSkipKind| {
             masks
@@ -132,6 +141,8 @@ impl<'a, 'c, S: AuthStore> RunsOf<'a, 'c, S> {
             nets.retain(|net| readable(issue, &net.field, UndoSkipKind::NotUndoable));
         }
         plan.by_issue.retain(|_, nets| !nets.is_empty());
+        plan.thrown
+            .retain(|(_, issue)| masks.get(issue).is_some_and(Option::is_some));
         plan.skips.retain(|skip| {
             super::issue_of(&skip.entity)
                 .is_some_and(|issue| readable(&issue, &skip.field, skip.kind))
@@ -140,14 +151,34 @@ impl<'a, 'c, S: AuthStore> RunsOf<'a, 'c, S> {
     }
 
     /// The fields that go back, grouped by issue, and the fields that stay.
-    fn plan(evaluation: Evaluation, net: &NetOfRun) -> Plan {
+    fn plan(evaluation: Evaluation, net: &NetOfRun, of_an_agent: bool) -> Plan {
         let mut by_issue: BTreeMap<IssueId, Vec<Net>> = BTreeMap::new();
         let mut skips = evaluation.skips;
-        // A comment is named under its issue, which the event of its making says.
+        // A comment is named under its issue, which each event of a comment says.
         let comment_issues = comment_issues_of(net.changed());
+        // The comments an agent made in its run go with the undo. A comment it only edited or put
+        // into the trash stays, like any other: it may be a person's.
+        let thrown: Vec<(bb_core::id::EntityId, IssueId)> = if of_an_agent {
+            let made = comments_made_in(net.changed());
+            comment_issues
+                .iter()
+                .filter(|(comment, _)| made.contains(*comment))
+                .map(|(comment, issue)| (*comment, *issue))
+                .collect()
+        } else {
+            Vec::new()
+        };
+        let goes = |entity: &EntityRef| {
+            entity.kind.as_str() == RecordKind::Comment.code()
+                && thrown.iter().any(|(comment, _)| *comment == entity.id)
+        };
+        skips.retain(|skip| !goes(&skip.entity));
         let mut named_issues = std::collections::BTreeSet::new();
         for net in evaluation.back {
             if net.entity.kind.as_str() == RecordKind::Comment.code() {
+                if goes(&net.entity) {
+                    continue;
+                }
                 if let Some(issue) = comment_issues.get(&net.entity.id)
                     && named_issues.insert(*issue)
                 {
@@ -183,6 +214,7 @@ impl<'a, 'c, S: AuthStore> RunsOf<'a, 'c, S> {
             by_issue,
             versions: BTreeMap::new(),
             skips,
+            thrown,
             version: evaluation.version,
         }
     }
@@ -205,6 +237,17 @@ fn comment_issues_of<'a>(
         .collect()
 }
 
+/// The comments the run made: the event of its making is the run's, so their text had none before
+/// it. An edit has the earlier text before it, and the trash changes no text.
+fn comments_made_in<'a>(
+    nets: impl Iterator<Item = &'a Net>,
+) -> std::collections::BTreeSet<bb_core::id::EntityId> {
+    nets.filter(|net| net.entity.kind.as_str() == RecordKind::Comment.code())
+        .filter(|net| net.field == crate::member::comment::TEXT && net.before.is_none())
+        .map(|net| net.entity.id)
+        .collect()
+}
+
 /// Whether the reader may read the field of an issue: the one rule of the history.
 fn may_read(mask: &FieldMask, field: &str) -> bool {
     let probe = [FieldChange {
@@ -221,12 +264,18 @@ pub(crate) struct Plan {
     /// The version each issue had when the plan looked at it: the undo writes on it.
     versions: BTreeMap<IssueId, i64>,
     skips: Vec<UndoSkip>,
+    /// The comments an agent wrote in its run, each with its issue: they are thrown away.
+    thrown: Vec<(bb_core::id::EntityId, IssueId)>,
     version: UndoVersion,
 }
 
 impl Plan {
     pub(crate) fn goes_back(&self) -> u64 {
-        self.by_issue.values().map(|nets| nets.len() as u64).sum()
+        self.by_issue
+            .values()
+            .map(|nets| nets.len() as u64)
+            .sum::<u64>()
+            + self.thrown.len() as u64
     }
 
     fn preview(self) -> UndoPreview {
@@ -412,6 +461,21 @@ impl<S: AuthStore> RunsOf<'_, '_, S> {
                 }
             }
         }
+        if !plan.thrown.is_empty() && self.not_interrupted() {
+            match self
+                .ctx
+                .throw_away_comments(self.actor.person.id, &plan.thrown)
+                .await
+            {
+                Ok(()) => undone += plan.thrown.len() as u64,
+                Err(error) => {
+                    *self
+                        .interrupted
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(error);
+                }
+            }
+        }
         self.ctx.set_reason(None);
         let skipped = skips.len() as u64;
         Ok(UndoResult {
@@ -419,6 +483,14 @@ impl<S: AuthStore> RunsOf<'_, '_, S> {
             skips,
             skipped,
         })
+    }
+
+    /// Whether no error stopped the undo so far.
+    fn not_interrupted(&self) -> bool {
+        self.interrupted
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .is_none()
     }
 
     /// The error that stopped the undo half way, if one did.

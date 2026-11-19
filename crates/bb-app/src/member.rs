@@ -107,6 +107,9 @@ pub mod comment {
     pub const ISSUE: &str = "issue";
     pub(crate) const TEXT: &str = "text";
     pub(crate) const DELETED_AT: &str = crate::issues::member::DELETED_AT;
+    /// The member of the event of an issue that names the comments of an agent thrown away with
+    /// the undo of its run: their IDs, never their text (ADR-0029, amendment M9).
+    pub(crate) const THROWN_AWAY: &str = "comments_thrown_away";
 }
 
 /// The member of the event of a row of *Who has which role* that is taken away: the whole row.
