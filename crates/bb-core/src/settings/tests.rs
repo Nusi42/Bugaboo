@@ -294,3 +294,133 @@ fn priv_09_every_setting_of_the_time_topic_is_a_deliberate_choice_of_the_securit
         .collect();
     assert_eq!(keys, ["time.billable"]);
 }
+
+/// The settings that matter for security, with the value each starts with (COMP-04, ADR-0047
+/// decision 6). What is not a setting is proven where it lives: HTTPS on from the first start
+/// (`DEFAULT_TLS_MODE` of `bb-server`, a certificate of its own), the data folder for the server's
+/// account only (`sec_16_folders_are_for_the_owner_only_and_repaired_on_linux`), no account but the
+/// first administrator's (setup), and no support access (it does not exist before M14, ADR-0048
+/// decision 1). `docs/security/cra-requirements.md` names them all.
+const SAFE_STARTS: &[(&str, DefaultValue)] = &[
+    // Nobody makes an account without an invitation, and no domain may sign up by itself.
+    ("auth.sign-up-enabled", DefaultValue::Bool(false)),
+    ("auth.sign-up-domains", DefaultValue::Text("")),
+    // No e-mail leaves the server until an administrator sets up a mail server; when one is set,
+    // the connection is protected.
+    ("mail.enabled", DefaultValue::Bool(false)),
+    ("mail.security", DefaultValue::Text("starttls")),
+    // Nothing is sent to an AI provider, and names would not be either.
+    ("ai.enabled", DefaultValue::Bool(false)),
+    ("ai.send-names", DefaultValue::Bool(false)),
+    ("ai.address", DefaultValue::Text("")),
+    // When the assistant is switched on, it runs at most this many tools for one question.
+    ("assistant.look-ups-most", DefaultValue::Text("8")),
+    // AI apps and agents may be allowed, but none exists at the start: each is connected or made by
+    // a person, acts only with that person's rights, and its rules run out (ADR-0029, ADR-0042).
+    ("ai-apps.enabled", DefaultValue::Bool(true)),
+    ("agents.enabled", DefaultValue::Bool(true)),
+    ("agents.accept-by-itself", DefaultValue::Bool(false)),
+    ("agents.rules-never-run-out", DefaultValue::Bool(false)),
+    ("agents.rule-days", DefaultValue::Integer(30)),
+    // The most an agent may be given as its limits (ADR-0029, decision 9).
+    ("agents.maximum-changes-a-minute", DefaultValue::Integer(60)),
+    ("agents.maximum-issues-at-once", DefaultValue::Integer(5)),
+    (
+        "agents.maximum-attempts-on-one-issue",
+        DefaultValue::Integer(5),
+    ),
+    // No image is loaded from outside.
+    ("content.image-hosts", DefaultValue::Text("")),
+    // A file is at most 25 MB. No type is refused at the start: every file is served as a
+    // download, never shown as a page; the organization names the types it never accepts.
+    ("files.max-megabytes", DefaultValue::Integer(25)),
+    ("files.blocked-types", DefaultValue::Text("")),
+    // Two-step sign-in is offered to everyone; an administrator may make it a must.
+    ("security.two-step-required", DefaultValue::Bool(false)),
+    ("security.session-idle-minutes", DefaultValue::Integer(30)),
+    ("security.session-absolute-hours", DefaultValue::Integer(24)),
+    ("security.log-keep-days", DefaultValue::Integer(365)),
+    ("auth.access-key-default-days", DefaultValue::Integer(90)),
+    ("auth.access-key-longest-days", DefaultValue::Integer(365)),
+    // Only our contact is in `security.txt` until the organization names its own.
+    ("security.contact", DefaultValue::Text("")),
+];
+
+/// The settings under [`SECURITY_PREFIXES`] that do not matter for security, each with why.
+const NOT_SECURITY: &[(&str, &str)] = &[
+    (
+        "ai.provider",
+        "which AI provider; nothing is sent while ai.enabled is off",
+    ),
+    (
+        "ai.model",
+        "which model of the provider; nothing is sent while ai.enabled is off",
+    ),
+    (
+        "assistant.look-ups",
+        "a person's own number, which never goes above assistant.look-ups-most",
+    ),
+    (
+        "agents.hand-over-days",
+        "when a hand-over ends without an end of its own; it gives an agent no right",
+    ),
+    (
+        "mail.host",
+        "where e-mail goes; nothing is sent while mail.enabled is off",
+    ),
+    (
+        "mail.port",
+        "where e-mail goes; nothing is sent while mail.enabled is off",
+    ),
+    (
+        "mail.username",
+        "the sign-in at the mail server; nothing is sent while mail.enabled is off",
+    ),
+    (
+        "mail.from",
+        "the sender's address; nothing is sent while mail.enabled is off",
+    ),
+    (
+        "mail.short",
+        "how much an e-mail says, chosen with the mail server; nothing is sent while mail.enabled \
+         is off",
+    ),
+];
+
+/// The topics whose every setting is judged: in [`SAFE_STARTS`] or in [`NOT_SECURITY`].
+const SECURITY_PREFIXES: [&str; 9] = [
+    "auth.",
+    "security.",
+    "ai.",
+    "ai-apps.",
+    "agents.",
+    "mail.",
+    "assistant.",
+    "content.",
+    "files.",
+];
+
+#[test]
+fn comp_04_every_setting_that_matters_for_security_starts_safe() {
+    for (key, safe) in SAFE_STARTS {
+        let definition = find(key).unwrap_or_else(|| panic!("{key} is no setting"));
+        assert_eq!(definition.default(), *safe, "{key} starts unsafe");
+    }
+    for (key, reason) in NOT_SECURITY {
+        assert!(find(key).is_some(), "{key} is no setting");
+        assert!(!reason.is_empty(), "{key} needs a reason");
+    }
+    // A new setting of sign-in, security, AI, e-mail, content or files is judged here before it
+    // lands: every one of them is in exactly one of the two lists.
+    let safe: HashSet<&str> = SAFE_STARTS.iter().map(|(key, _)| *key).collect();
+    let not_security: HashSet<&str> = NOT_SECURITY.iter().map(|(key, _)| *key).collect();
+    for definition in registry() {
+        let key = definition.key();
+        if SECURITY_PREFIXES.iter().any(|start| key.starts_with(start)) {
+            assert!(
+                safe.contains(key) != not_security.contains(key),
+                "{key}: add it to SAFE_STARTS with its safe start, or to NOT_SECURITY with a reason"
+            );
+        }
+    }
+}

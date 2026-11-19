@@ -2197,6 +2197,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Bugaboo is not available right now. Please try again in a moment.",
     ),
     (
+        "error.setting.contact-not-an-address",
+        "Write one e-mail address, like security@example.org, or one https:// page, or leave it empty.",
+    ),
+    (
         "error.setting.hosts-not-bare",
         "Write only the host names, like images.example.com, without https:// and without a path.",
     ),
@@ -7179,6 +7183,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The time zone for the times you see. Match my device uses the time zone of your device.",
     ),
     ("setting.region.time-zone.name", "Time zone"),
+    (
+        "setting.security.contact.help",
+        "Where people report a security problem with this server: an e-mail address or an https:// page. It is named first in security.txt, before the address where problems in Bugaboo itself are reported. Leave it empty to name only that one.",
+    ),
+    (
+        "setting.security.contact.name",
+        "Contact for security reports",
+    ),
     (
         "setting.security.log-keep-days.help",
         "How many days the security log keeps its entries. Older entries are deleted once a day. A signed note of what was deleted stays, so you can still check that nobody changed the log.",

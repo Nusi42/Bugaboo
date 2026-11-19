@@ -109,6 +109,7 @@ mod workflows;
 mod working_hours;
 
 pub use admin::ProbeHandle;
+pub(crate) use auth::Info;
 pub use auth::{AuthHandle, request_info};
 pub(crate) use oauth::app_routes as oauth_app_routes;
 pub use oauth::origin_of;

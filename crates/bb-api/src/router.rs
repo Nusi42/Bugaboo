@@ -149,6 +149,10 @@ pub fn router(options: Options) -> Router {
     let app = Router::new()
         .route("/health/live", get(health_live))
         .route("/health/ready", get(health_ready))
+        .route(
+            bb_core::release::SECURITY_TXT_PATH,
+            get(crate::web::security_txt),
+        )
         .merge(api::routes(&limits).split_for_parts().0)
         .merge(api::oauth_app_routes())
         .fallback(fallback)

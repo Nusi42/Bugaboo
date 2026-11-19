@@ -108,6 +108,8 @@ error_codes! {
     SettingHostsNotBare => ("setting.hosts-not-bare", 400),
     /// A time zone that is not on the list of zones the server carries (M2-F72).
     SettingUnknownTimeZone => ("setting.unknown-time-zone", 400),
+    /// The contact for security reports is not one e-mail address or one `https://` page (COMP-03).
+    SettingContactNotAnAddress => ("setting.contact-not-an-address", 400),
     /// A move would let somebody take away a *No access* that applies to them (WP-08, M2-F23).
     MoveLiftsNoAccess => ("project.move-lifts-no-access", 409),
     /// A project cannot go inside itself or one of its own sub-projects.

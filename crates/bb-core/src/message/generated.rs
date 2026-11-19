@@ -2310,6 +2310,10 @@ pub const ERROR_SERVER_INTERNAL: MessageKey = MessageKey::new("error.server.inte
 /// The message `error.server.unavailable`.
 pub const ERROR_SERVER_UNAVAILABLE: MessageKey = MessageKey::new("error.server.unavailable");
 
+/// The message `error.setting.contact-not-an-address`.
+pub const ERROR_SETTING_CONTACT_NOT_AN_ADDRESS: MessageKey =
+    MessageKey::new("error.setting.contact-not-an-address");
+
 /// The message `error.setting.hosts-not-bare`.
 pub const ERROR_SETTING_HOSTS_NOT_BARE: MessageKey =
     MessageKey::new("error.setting.hosts-not-bare");
@@ -7818,6 +7822,14 @@ pub const SETTING_REGION_TIME_ZONE_HELP: MessageKey =
 /// The message `setting.region.time-zone.name`.
 pub const SETTING_REGION_TIME_ZONE_NAME: MessageKey =
     MessageKey::new("setting.region.time-zone.name");
+
+/// The message `setting.security.contact.help`.
+pub const SETTING_SECURITY_CONTACT_HELP: MessageKey =
+    MessageKey::new("setting.security.contact.help");
+
+/// The message `setting.security.contact.name`.
+pub const SETTING_SECURITY_CONTACT_NAME: MessageKey =
+    MessageKey::new("setting.security.contact.name");
 
 /// The message `setting.security.log-keep-days.help`.
 pub const SETTING_SECURITY_LOG_KEEP_DAYS_HELP: MessageKey =

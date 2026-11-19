@@ -263,6 +263,21 @@ async fn cfg_06_a_value_the_setting_does_not_accept_is_refused_and_nothing_is_wr
 }
 
 #[tokio::test]
+async fn comp_03_a_security_contact_that_is_no_address_is_refused_in_plain_words() -> Outcome {
+    let world = World::new().await?;
+    let key = "security.contact";
+    for value in ["security", "http://example.org/report"] {
+        let code = refused(change(&world, SettingsScope::Organization, key, text(value)).await);
+        assert_eq!(code, ErrorCode::SettingContactNotAnAddress, "{value}");
+    }
+    for value in ["security@example.org", "https://example.org/report", ""] {
+        let fine = change(&world, SettingsScope::Organization, key, text(value)).await;
+        assert!(fine.is_ok(), "{value}");
+    }
+    Ok(())
+}
+
+#[tokio::test]
 async fn sec_13_a_list_of_hosts_with_an_address_in_it_is_refused_in_plain_words() -> Outcome {
     let world = World::new().await?;
     for value in ["https://images.example.com", "images.example.com/path"] {

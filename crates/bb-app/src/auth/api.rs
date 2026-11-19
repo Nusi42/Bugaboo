@@ -164,6 +164,8 @@ use super::{
     themes, upload_theme,
 };
 
+use crate::settings::{SecurityTxt, SecurityTxtQuery, security_txt};
+
 use crate::backups::{
     BackupItem, Backups, CreateBackup, ListBackupsQuery, create_backup, list_backups,
 };

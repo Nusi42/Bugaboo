@@ -221,6 +221,8 @@ export const messages = {
     "Bugaboo does not know this time zone. Pick one from the list.",
   "error.setting.hosts-not-bare":
     "Write only the host names, like images.example.com, without https:// and without a path.",
+  "error.setting.contact-not-an-address":
+    "Write one e-mail address, like security@example.org, or one https:// page, or leave it empty.",
   "error.setting.locked": "An administrator locked this setting, so it cannot be changed here.",
   "error.backup.running":
     "A backup is being created right now. Wait until it is done, then try again.",

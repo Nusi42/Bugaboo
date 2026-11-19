@@ -250,6 +250,8 @@ macro_rules! each_use_case {
             image_hosts(ImageHostsQuery) -> Authorized<ImageHosts>;
             /// The same for the document, before anybody signs in.
             document_image_hosts(DocumentImagesQuery) -> ImageHosts;
+            /// The text of `security.txt`, before anybody signs in.
+            security_txt(SecurityTxtQuery) -> SecurityTxt;
             /// Saves the description of an issue under the edit lock the person holds.
             save_description(SaveDescription) -> Authorized<IssueView>;
             /// Puts an issue into the trash.

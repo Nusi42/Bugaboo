@@ -2,7 +2,14 @@
 
 use std::path::{Path, PathBuf};
 
+use axum::extract::State;
+use axum::http::header::{CACHE_CONTROL, CONTENT_TYPE};
+use axum::response::{IntoResponse as _, Response};
+use bb_app::settings::SecurityTxtQuery;
 use rust_embed::RustEmbed;
+
+use crate::api::{AuthHandle, Info};
+use crate::errors::ApiError;
 
 /// The file every page address falls back to (single-page app).
 pub(crate) const INDEX: &str = "index.html";
@@ -60,6 +67,24 @@ impl WebSource {
             content_type: content_type(path),
         })
     }
+}
+
+/// `/.well-known/security.txt` (RFC 9116; COMP-03, ADR-0047 decision 4): where security problems
+/// are reported, for anybody, signed in or not. Plain text; the security headers are the ones of
+/// every answer. Never kept by a cache: an administrator may change the contact at any time.
+pub(crate) async fn security_txt(
+    State(auth): State<AuthHandle>,
+    Info(info): Info,
+) -> Result<Response, ApiError> {
+    let found = auth.api()?.security_txt(info, SecurityTxtQuery).await?;
+    Ok((
+        [
+            (CONTENT_TYPE, "text/plain; charset=utf-8"),
+            (CACHE_CONTROL, crate::errors::NO_STORE),
+        ],
+        found.text,
+    )
+        .into_response())
 }
 
 async fn read_file(folder: &Path, path: &str) -> Option<Vec<u8>> {

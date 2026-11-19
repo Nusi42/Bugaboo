@@ -81,6 +81,9 @@ pub enum Format {
     /// A list of host names separated by commas, such as `images.example.com`: bare names, with an
     /// optional port, never an address with `https://` or a path.
     Hosts,
+    /// Where security problems are reported: empty, or one e-mail address or one `https://` page,
+    /// as `security.txt` takes it ([`crate::release::contact_address`]).
+    SecurityContact,
 }
 
 impl Format {
@@ -101,6 +104,9 @@ impl Format {
             Self::ShortcutKeys => are_shortcut_keys(text),
             Self::WindowSizes => are_window_sizes(text),
             Self::Hosts => are_hosts(text),
+            Self::SecurityContact => {
+                text.trim().is_empty() || crate::release::contact_address(text).is_some()
+            }
         }
     }
 
@@ -111,6 +117,7 @@ impl Format {
         match self {
             Self::TimeZone => ErrorCode::SettingUnknownTimeZone,
             Self::Hosts => ErrorCode::SettingHostsNotBare,
+            Self::SecurityContact => ErrorCode::SettingContactNotAnAddress,
             Self::Free
             | Self::Choices(_)
             | Self::Themes(_)
@@ -130,7 +137,8 @@ impl Format {
             | Self::PageAddress
             | Self::ShortcutKeys
             | Self::WindowSizes
-            | Self::Hosts => &[],
+            | Self::Hosts
+            | Self::SecurityContact => &[],
         }
     }
 }
@@ -335,6 +343,30 @@ mod tests {
         ] {
             assert!(!Format::PageAddress.accepts(bad), "{bad}");
         }
+    }
+
+    #[test]
+    fn comp_03_the_security_contact_is_empty_or_one_address() {
+        for good in [
+            "",
+            "security@example.org",
+            "mailto:security@example.org",
+            "https://example.org/report",
+        ] {
+            assert!(Format::SecurityContact.accepts(good), "{good}");
+        }
+        for bad in [
+            "http://example.org/report",
+            "security",
+            "a@example.org b@example.org",
+            "https://example.org\nContact: x",
+        ] {
+            assert!(!Format::SecurityContact.accepts(bad), "{bad}");
+        }
+        assert_eq!(
+            Format::SecurityContact.refusal(),
+            ErrorCode::SettingContactNotAnAddress
+        );
     }
 
     #[test]

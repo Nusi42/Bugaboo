@@ -7544,6 +7544,7 @@ export interface components {
       | "backup.running"
       | "setting.hosts-not-bare"
       | "setting.unknown-time-zone"
+      | "setting.contact-not-an-address"
       | "project.move-lifts-no-access"
       | "project.move-into-itself"
       | "project.too-deep"

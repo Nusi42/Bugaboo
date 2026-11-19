@@ -20,6 +20,7 @@
 mod accepted;
 mod image_hosts;
 mod layers;
+mod security_txt;
 mod store;
 
 use std::sync::Arc;
@@ -44,6 +45,7 @@ use serde_json::{Value, json};
 pub use image_hosts::{
     DocumentImagesQuery, ImageHosts, ImageHostsQuery, document_image_hosts, image_hosts,
 };
+pub use security_txt::{SecurityTxt, SecurityTxtQuery, security_txt};
 pub use store::SettingsStore;
 
 use crate::access::{Actor, ProjectLabel};

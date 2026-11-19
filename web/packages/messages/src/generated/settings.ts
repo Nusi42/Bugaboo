@@ -224,6 +224,9 @@ export const messages = {
   "setting.backups.folder.name": "Folder of the backups",
   "setting.backups.folder.help":
     "The folder on the computer of the server that backups go into. Leave it empty for the backups folder of the data folder. Only the account that runs Bugaboo may be able to open it.",
+  "setting.security.contact.name": "Contact for security reports",
+  "setting.security.contact.help":
+    "Where people report a security problem with this server: an e-mail address or an https:// page. It is named first in security.txt, before the address where problems in Bugaboo itself are reported. Leave it empty to name only that one.",
   "setting.files.max-megabytes.name": "Biggest file",
   "setting.files.max-megabytes.help":
     "The most megabytes one file added to an issue or a comment may have. A project can allow less than the organization, never more.",
