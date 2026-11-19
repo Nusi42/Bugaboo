@@ -827,6 +827,9 @@ pub const AI_AUTHOR_OUTSIDER: MessageKey = MessageKey::new("ai-author.outsider")
 /// The message `ai-saved.done`.
 pub const AI_SAVED_DONE: MessageKey = MessageKey::new("ai-saved.done");
 
+/// The message `ai-saved.nothing`.
+pub const AI_SAVED_NOTHING: MessageKey = MessageKey::new("ai-saved.nothing");
+
 /// The message `ai-saved.timer-stopped-empty`.
 pub const AI_SAVED_TIMER_STOPPED_EMPTY: MessageKey =
     MessageKey::new("ai-saved.timer-stopped-empty");

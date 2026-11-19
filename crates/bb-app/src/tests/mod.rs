@@ -30,6 +30,7 @@ mod ai_guide;
 mod ai_setup;
 mod ai_switches;
 mod ai_tools;
+mod ai_tools_answers;
 mod ai_tools_asked;
 mod ai_tools_preview;
 mod assistant;

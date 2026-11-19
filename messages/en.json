@@ -3333,6 +3333,7 @@
   "ai-saved.version": "Saved at version {version}.",
   "ai-saved.timer-stopped-empty": "The timer stopped. It ran for less than a minute, so no time was booked.",
   "ai-saved.done": "Saved.",
+  "ai-saved.nothing": "Nothing changed.",
   "ai-search.mistake": "{mistake} Write the search in the search language, such as title contains \"brakes\" or status group is not Done and priority is High.",
   "ai-author.member": "someone in the project",
   "ai-author.guest": "a Guest",

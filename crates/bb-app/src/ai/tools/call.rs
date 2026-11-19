@@ -147,6 +147,8 @@ pub(super) enum Saved {
     },
     /// Something saved that names no issue the actor may name.
     Done,
+    /// A change that changed nothing, so nothing was written.
+    Nothing,
 }
 
 impl Saved {
@@ -175,6 +177,7 @@ impl Saved {
             Self::TimerStoppedEmpty => Message::from(message::AI_SAVED_TIMER_STOPPED_EMPTY),
             Self::On { key } => message::ai_saved_on(key),
             Self::Done => Message::from(message::AI_SAVED_DONE),
+            Self::Nothing => Message::from(message::AI_SAVED_NOTHING),
         }
         .render()
     }

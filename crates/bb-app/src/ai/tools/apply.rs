@@ -72,6 +72,22 @@ fn issue_saved(written: &Authorized<IssueView>, new: bool) -> Result<Part, AppEr
     Ok(saved_issue(&read::masked(written)?, new).part())
 }
 
+/// What a change of an issue saved: nothing, when the write gave back the version the change was
+/// asked on, because a change that changes nothing writes nothing (`change_issue`).
+fn issue_changed(written: &Authorized<IssueView>, asked: i64) -> Result<Part, AppError> {
+    let value = read::masked(written)?;
+    Ok(changed_issue(&value, asked).part())
+}
+
+/// [`issue_changed`] from the masked value of the write.
+fn changed_issue(value: &Value, asked: i64) -> Saved {
+    if version_in(value) == Some(asked) {
+        Saved::Nothing
+    } else {
+        saved_issue(value, false)
+    }
+}
+
 /// [`issue_saved`] from the masked value of the write: without a readable ID the actor may name,
 /// the version stays, because *Undo* of fields is made on it.
 fn saved_issue(value: &Value, new: bool) -> Saved {
@@ -153,8 +169,10 @@ pub(super) fn update_issue<'a, S: AuthStore>(
 ) -> Boxed<'a, Result<Vec<Part>, AppError>> {
     Box::pin(async move {
         let mut shown = preview::update_issue(ctx, run).await?;
-        let changed = change_issue::<_, IssueView>(ctx, requests::update_issue(&run)?).await?;
-        shown.push(issue_saved(&changed, false)?);
+        let request = requests::update_issue(&run)?;
+        let asked = request.version;
+        let changed = change_issue::<_, IssueView>(ctx, request).await?;
+        shown.push(issue_changed(&changed, asked)?);
         Ok(shown)
     })
 }
@@ -166,8 +184,10 @@ pub(super) fn change_status<'a, S: AuthStore>(
 ) -> Boxed<'a, Result<Vec<Part>, AppError>> {
     Box::pin(async move {
         let mut shown = preview::change_status(ctx, run).await?;
-        let changed = change_issue::<_, IssueView>(ctx, requests::change_status(&run)?).await?;
-        shown.push(issue_saved(&changed, false)?);
+        let request = requests::change_status(&run)?;
+        let asked = request.version;
+        let changed = change_issue::<_, IssueView>(ctx, request).await?;
+        shown.push(issue_changed(&changed, asked)?);
         Ok(shown)
     })
 }
@@ -253,6 +273,21 @@ mod tests {
         assert_eq!(unnamed, Saved::Version { version: 5 });
         assert_eq!(unnamed.version_of_change(), Some(5));
         assert_eq!(saved_issue(&json!({}), false), Saved::Done);
+    }
+
+    #[test]
+    fn ai_21_a_change_at_the_version_it_was_asked_on_saved_nothing() {
+        let unchanged = changed_issue(&json!({"key": "WEB-1", "version": 4}), 4);
+        assert_eq!(unchanged, Saved::Nothing);
+        // Nothing was written, so there is nothing to undo.
+        assert_eq!(unchanged.version_of_change(), None);
+        assert_eq!(
+            changed_issue(&json!({"key": "WEB-1", "version": 5}), 4),
+            Saved::Issue {
+                key: "WEB-1".to_owned(),
+                version: 5
+            }
+        );
     }
 
     #[test]

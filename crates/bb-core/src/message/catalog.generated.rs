@@ -694,6 +694,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Saved: {issue} is now at version {version}.",
     ),
     ("ai-saved.new-issue", "Saved as {issue}, version {version}."),
+    ("ai-saved.nothing", "Nothing changed."),
     ("ai-saved.on", "Saved on {issue}."),
     (
         "ai-saved.timer-stopped-empty",
