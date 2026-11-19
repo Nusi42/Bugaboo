@@ -285,8 +285,20 @@ pub struct DownloadLink {
     pub expires_at: Timestamp,
 }
 
-/// The bytes of a link: the attachment, the target, the person and the end, in this order.
-const LINK_BYTES: usize = 16 + 1 + 16 + 8;
+/// What a signed link opens, written as its first byte: the server signs every kind of link with
+/// one key, so the byte keeps a link of one kind from ever being read as a link of another.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(u8)]
+pub enum SignedLink {
+    /// A file or its preview ([`DownloadLink`]).
+    File = 1,
+    /// The file of *Download my data* (`crate::data_export::ExportLink`).
+    Export = 2,
+}
+
+/// The bytes of a link: its kind, the attachment, the target, the person and the end, in this
+/// order.
+const LINK_BYTES: usize = 1 + 16 + 1 + 16 + 8;
 
 impl DownloadLink {
     /// The link of `attachment` for `person`, good for [`LINK_LIFETIME`] from `now`.
@@ -312,13 +324,14 @@ impl DownloadLink {
     #[must_use]
     pub fn to_bytes(&self) -> [u8; LINK_BYTES] {
         let mut bytes = [0_u8; LINK_BYTES];
-        bytes[..16].copy_from_slice(&self.attachment.to_bytes());
-        bytes[16] = match self.target {
+        bytes[0] = SignedLink::File as u8;
+        bytes[1..17].copy_from_slice(&self.attachment.to_bytes());
+        bytes[17] = match self.target {
             LinkTarget::File => 0,
             LinkTarget::Preview => 1,
         };
-        bytes[17..33].copy_from_slice(&self.person.to_bytes());
-        bytes[33..].copy_from_slice(&self.expires_at.as_microsecond().to_be_bytes());
+        bytes[18..34].copy_from_slice(&self.person.to_bytes());
+        bytes[34..].copy_from_slice(&self.expires_at.as_microsecond().to_be_bytes());
         bytes
     }
 
@@ -326,17 +339,20 @@ impl DownloadLink {
     #[must_use]
     pub fn from_bytes(bytes: &[u8]) -> Option<Self> {
         let bytes: &[u8; LINK_BYTES] = bytes.try_into().ok()?;
-        let target = match bytes[16] {
+        if bytes[0] != SignedLink::File as u8 {
+            return None;
+        }
+        let target = match bytes[17] {
             0 => LinkTarget::File,
             1 => LinkTarget::Preview,
             _ => return None,
         };
         Some(Self {
-            attachment: AttachmentId::from_bytes(bytes[..16].try_into().ok()?).ok()?,
+            attachment: AttachmentId::from_bytes(bytes[1..17].try_into().ok()?).ok()?,
             target,
-            person: UserId::from_bytes(bytes[17..33].try_into().ok()?).ok()?,
+            person: UserId::from_bytes(bytes[18..34].try_into().ok()?).ok()?,
             expires_at: Timestamp::from_microsecond(i64::from_be_bytes(
-                bytes[33..].try_into().ok()?,
+                bytes[34..].try_into().ok()?,
             ))
             .ok()?,
         })
@@ -444,8 +460,11 @@ mod tests {
         assert!(link.works_at("2027-03-01T10:04:59Z".parse().unwrap()));
         assert!(!link.works_at("2027-03-01T10:05:00Z".parse().unwrap()));
         let mut changed = link.to_bytes();
-        changed[16] = 7;
+        changed[17] = 7;
         assert_eq!(DownloadLink::from_bytes(&changed), None);
         assert_eq!(DownloadLink::from_bytes(&changed[1..]), None);
+        let mut other_kind = link.to_bytes();
+        other_kind[0] = SignedLink::Export as u8;
+        assert_eq!(DownloadLink::from_bytes(&other_kind), None);
     }
 }

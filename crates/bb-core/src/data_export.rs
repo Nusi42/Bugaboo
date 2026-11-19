@@ -4,7 +4,7 @@
 
 use jiff::{SignedDuration, Timestamp};
 
-use crate::files::LINK_LIFETIME;
+use crate::files::{LINK_LIFETIME, SignedLink};
 use crate::id::{DataExportId, UserId};
 use crate::personal::Entity;
 
@@ -90,7 +90,8 @@ impl DataExport {
 
 /// What the signed link of the download of an export says: which export, for whom, until when. The
 /// server signs these bytes like the links of files (`bb_auth::LinkKey`), good for the same
-/// [`LINK_LIFETIME`]; their length differs from a link of a file, so neither is read as the other.
+/// [`LINK_LIFETIME`]; their first byte names the kind ([`SignedLink`]), so neither is read as the
+/// other.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ExportLink {
     /// The export.
@@ -101,8 +102,8 @@ pub struct ExportLink {
     pub expires_at: Timestamp,
 }
 
-/// The bytes of a link: the export, the person and the end, in this order.
-const EXPORT_LINK_BYTES: usize = 16 + 16 + 8;
+/// The bytes of a link: its kind, the export, the person and the end, in this order.
+const EXPORT_LINK_BYTES: usize = 1 + 16 + 16 + 8;
 
 impl ExportLink {
     /// The link of `export` for `person`, good for [`LINK_LIFETIME`] from `now`; `None` when the
@@ -120,9 +121,10 @@ impl ExportLink {
     #[must_use]
     pub fn to_bytes(&self) -> [u8; EXPORT_LINK_BYTES] {
         let mut bytes = [0_u8; EXPORT_LINK_BYTES];
-        bytes[..16].copy_from_slice(&self.export.to_bytes());
-        bytes[16..32].copy_from_slice(&self.person.to_bytes());
-        bytes[32..].copy_from_slice(&self.expires_at.as_microsecond().to_be_bytes());
+        bytes[0] = SignedLink::Export as u8;
+        bytes[1..17].copy_from_slice(&self.export.to_bytes());
+        bytes[17..33].copy_from_slice(&self.person.to_bytes());
+        bytes[33..].copy_from_slice(&self.expires_at.as_microsecond().to_be_bytes());
         bytes
     }
 
@@ -130,11 +132,14 @@ impl ExportLink {
     #[must_use]
     pub fn from_bytes(bytes: &[u8]) -> Option<Self> {
         let bytes: &[u8; EXPORT_LINK_BYTES] = bytes.try_into().ok()?;
+        if bytes[0] != SignedLink::Export as u8 {
+            return None;
+        }
         Some(Self {
-            export: DataExportId::from_bytes(bytes[..16].try_into().ok()?).ok()?,
-            person: UserId::from_bytes(bytes[16..32].try_into().ok()?).ok()?,
+            export: DataExportId::from_bytes(bytes[1..17].try_into().ok()?).ok()?,
+            person: UserId::from_bytes(bytes[17..33].try_into().ok()?).ok()?,
             expires_at: Timestamp::from_microsecond(i64::from_be_bytes(
-                bytes[32..].try_into().ok()?,
+                bytes[33..].try_into().ok()?,
             ))
             .ok()?,
         })
@@ -163,6 +168,20 @@ mod tests {
         let bytes = link.to_bytes();
         assert_eq!(ExportLink::from_bytes(&bytes), Some(link));
         assert!(DownloadLink::from_bytes(&bytes).is_none());
+        // The same bytes with the kind of a link of a file are no link of an export, and a link of
+        // a file of any length is none either.
+        let mut other_kind = bytes;
+        other_kind[0] = SignedLink::File as u8;
+        assert!(ExportLink::from_bytes(&other_kind).is_none());
+        let file = DownloadLink::new(
+            crate::id::AttachmentId::generate(&mut ids).map_err(|error| error.to_string())?,
+            crate::files::LinkTarget::File,
+            person,
+            now,
+        )
+        .ok_or("a link of a file")?;
+        assert!(ExportLink::from_bytes(&file.to_bytes()).is_none());
+        assert!(ExportLink::from_bytes(&file.to_bytes()[1..]).is_none());
         assert!(link.works_at(now));
         let end = now
             .checked_add(LINK_LIFETIME)
