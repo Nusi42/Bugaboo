@@ -23,7 +23,7 @@ pub use crate::parts::{Counts, Kind, Topic};
 /// key's choice keeps; narrowing, the key form and the key's own checks all
 /// read this list.
 // The permissions of working hours, `OF_WORKING_HOURS` below, *Enter work times for others*
-// (ADR-0025, amendment M8) and *Download someone's data* (amendment M9): sixteen in all.
+// (ADR-0025, amendment M8) and *Download someone's data* (amendment M9).
 pub const NOT_FOR_KEYS: &[Permission] = &[
     Permission::ManageInvitations,
     Permission::ManagePeople,

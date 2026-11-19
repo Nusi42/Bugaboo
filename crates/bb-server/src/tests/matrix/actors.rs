@@ -554,6 +554,15 @@ mod tests {
     }
 
     #[test]
+    fn what_no_key_keeps_is_the_list_of_the_code() {
+        let in_the_code: BTreeSet<Permission> = bb_policy::NOT_FOR_KEYS.iter().copied().collect();
+        assert_eq!(
+            NOT_FOR_KEYS.into_iter().collect::<BTreeSet<_>>(),
+            in_the_code
+        );
+    }
+
+    #[test]
     fn the_actors_are_named_once_and_the_two_with_a_key_are_among_them() {
         let names: BTreeSet<String> = actors().into_iter().map(Actor::name).collect();
         assert_eq!(names.len(), actors().len());
