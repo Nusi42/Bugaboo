@@ -33,7 +33,7 @@ use crate::jobs::lease::HeldJob;
 use crate::member::data_export as member;
 use crate::privacy::walk::FoundRow;
 
-/// How many old exports a round of the daily job deletes at most; the next round deletes the rest.
+/// How many old exports the daily job reads at a time; it reads again until none is left.
 const OLD_EXPORTS_AT_A_TIME: u64 = 100;
 
 /// The field of an attachment that holds the hash of its file, and the one that holds its ID.
@@ -365,32 +365,40 @@ impl<S: AuthStore> Ctx<'_, S> {
             .now()
             .checked_sub(EXPORT_KEPT)
             .map_err(|error| AppError::Internal(error.to_string()))?;
-        let old = self
-            .store()
-            .exports_asked_before(before, OLD_EXPORTS_AT_A_TIME)
-            .await
-            .map_err(|error| internal::<S>(&error))?;
         let mut deleted = 0;
-        for export in old {
-            self.exports()
-                .delete(export.id)
-                .await
-                .map_err(|error| failed(&error))?;
-            let event = self.event(
-                EventActor::System,
-                entity(RecordKind::DataExport, export.id),
-                vec![set_to(member::STATE, json!(null))],
-            )?;
-            let id = export.id;
-            let gone = self
+        loop {
+            let old = self
                 .store()
-                .record_change(&event, move |transaction| {
-                    Box::pin(async move { S::delete_data_export(transaction, id).await })
-                })
+                .exports_asked_before(before, OLD_EXPORTS_AT_A_TIME)
                 .await
                 .map_err(|error| internal::<S>(&error))?;
-            deleted += u64::from(gone);
+            let short = u64::try_from(old.len()).unwrap_or(u64::MAX) < OLD_EXPORTS_AT_A_TIME;
+            for export in old {
+                deleted += u64::from(self.delete_old_export(export.id).await?);
+            }
+            if short {
+                return Ok(deleted);
+            }
         }
-        Ok(deleted)
+    }
+
+    /// Deletes one old export, the file first, then the record with its event. Answers whether the
+    /// record was still there.
+    async fn delete_old_export(&self, id: DataExportId) -> Result<bool, AppError> {
+        self.exports()
+            .delete(id)
+            .await
+            .map_err(|error| failed(&error))?;
+        let event = self.event(
+            EventActor::System,
+            entity(RecordKind::DataExport, id),
+            vec![set_to(member::STATE, json!(null))],
+        )?;
+        self.store()
+            .record_change(&event, move |transaction| {
+                Box::pin(async move { S::delete_data_export(transaction, id).await })
+            })
+            .await
+            .map_err(|error| internal::<S>(&error))
     }
 }
