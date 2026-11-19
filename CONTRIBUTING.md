@@ -54,6 +54,34 @@ The command prints where the file `sign-in.txt` is. It lists every person of the
 random password; sign in as the first person, an administrator. Without `--sample`,
 `cargo xtask dev` starts on an empty data folder and the setup wizard guides the first start.
 
+**The first build takes long.** It compiles several hundred crates: on a small computer, or on
+one with a single slow core, it can take an hour or more, and the builds that follow take seconds
+to minutes. The `target/` folder grows to many gigabytes once the tests and the browser modules
+are built, and a build that runs several compilers at once needs some gigabytes of memory; on a
+small machine `cargo build -j 1` is slower but needs less. `cargo xtask dev` builds a debug server
+and starts the browser app's development server, which is what you want while you change code. A
+release build (`cargo xtask build`) puts the browser app into one optimized program; it takes much
+longer and is only needed for a program you hand to others.
+
+#### Try it from another device
+
+`cargo xtask dev` listens on this computer only. To open Bugaboo from a phone or another computer
+on your network, build the browser app once and let a debug server serve it on your network
+address, with the address people will type:
+
+```sh
+cargo xtask wasm
+npm run build
+BUGABOO_PUBLIC_URL=https://192.168.1.20:47200 \
+  cargo run -p bb-server --bin bugaboo -- serve --web web/app/dist \
+  --address 0.0.0.0 --port 47200 --data-dir .work/lan-data
+```
+
+Use the address of your computer instead of `192.168.1.20` (on Windows PowerShell, set the
+variable first with `$env:BUGABOO_PUBLIC_URL = "https://192.168.1.20:47200"`). The server makes
+its own certificate, so the browser of the other device warns once before it opens the page. Build
+the browser app again with `npm run build` after you change it.
+
 Check and test your changes:
 
 ```sh
