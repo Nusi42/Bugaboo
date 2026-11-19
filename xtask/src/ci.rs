@@ -28,7 +28,8 @@ fn linux_only(step: Step) -> Step {
     }
 }
 
-/// A step that needs the browser app (the load run serves it) is skipped while `web/app` does not exist.
+/// A step that needs the browser app (the load run serves it, the upgrade test uses the helpers of
+/// its tests) is skipped while `web/app/package.json` is missing, and only then.
 fn needs_browser_app(root: &Path, step: Step) -> Step {
     if steps::web_app_exists(root) {
         step
@@ -88,6 +89,16 @@ pub(crate) fn plan(root: &Path) -> anyhow::Result<Vec<Step>> {
             root,
             Step::new("ten people at once", xtask.to_string_lossy(), &["load"]),
         ),
+        // A database made by the program of the previous milestone is upgraded and reads the same,
+        // on each database (TEST-UPGRADE); the old program is kept between runs.
+        needs_browser_app(
+            root,
+            Step::new(
+                "upgrade from the previous milestone",
+                xtask.to_string_lossy(),
+                &["upgrade-test"],
+            ),
+        ),
         linux_only(Step::new(
             "add the static Linux target",
             "rustup",
@@ -127,6 +138,7 @@ mod tests {
                 "build the bugaboo program",
                 "browser end-to-end tests",
                 "ten people at once",
+                "upgrade from the previous milestone",
                 "add the static Linux target",
                 "build the static Linux program"
             ]
@@ -145,8 +157,8 @@ mod tests {
         assert_eq!(
             skipped,
             [
-                true, false, false, false, false, false, false, true, false, true, true, on_linux,
-                on_linux
+                true, false, false, false, false, false, false, true, false, true, true, true,
+                on_linux, on_linux
             ]
         );
     }

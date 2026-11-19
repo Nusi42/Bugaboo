@@ -98,6 +98,7 @@ mod test_issue_ids;
 mod test_prompt_injection;
 pub(crate) mod test_sample_data;
 mod test_search_roundtrip;
+mod test_upgrade;
 mod test_uploads;
 mod test_workflows;
 mod test_working_time;
@@ -273,6 +274,7 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(test_issue_ids::TestIssueIds),
         Box::new(test_search_roundtrip::TestSearchRoundtrip),
         Box::new(test_sample_data::TestSampleData),
+        Box::new(test_upgrade::TestUpgrade),
         Box::new(test_uploads::TestUploads),
         Box::new(test_working_time::TestWorkingTime),
         Box::new(perf_n1::PerfN1),

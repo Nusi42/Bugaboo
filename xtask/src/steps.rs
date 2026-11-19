@@ -18,7 +18,7 @@ pub(crate) const WEB_DIST: &str = "dist";
 /// The name of the server program that `cargo build` makes (`[[bin]]` of bb-server).
 pub(crate) const SERVER_BINARY: &str = "bugaboo";
 /// The name of the sample program that `cargo build` makes (`[[bin]]` of bb-sample).
-const SAMPLE_BINARY: &str = "bb-sample";
+pub(crate) const SAMPLE_BINARY: &str = "bb-sample";
 /// The name of the program that judges a load run (`[[bin]]` of bb-load-check).
 const LOAD_CHECK_BINARY: &str = "bb-load-check";
 

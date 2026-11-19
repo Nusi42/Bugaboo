@@ -351,6 +351,20 @@ The first read has a measure of its own (`support/first-read.ts`, judged by `fir
 
 What the measure found shaped one rule of the query cache: the screen hears of a change of the cache in the turn it happens, not one timer later (`notifyManager.setScheduler(queueMicrotask)` in `shared/query-client.ts`). A change writes its new value and starts *Saving…* in one turn; with a timer between them the two reached the screen one frame apart, and what the change made larger grew twice (M8-F131).
 
+## The upgrade test
+
+The migrations of a release can only be proven against a real older database, so every release upgrades a database that the program of the previous milestone made, on SQLite and on PostgreSQL, and checks that it reads the same afterwards (ADR-0046, decision 5). `cargo xtask upgrade-test` (`xtask/src/upgrade.rs`) does it, and `cargo xtask ci` runs it as a step, before each release too:
+
+- **The previous milestone** is the newest tag `mN-done` before `HEAD`, which `git describe` finds; no tag is written down anywhere, so the test moves on by itself when the next milestone is tagged.
+- **One old program.** The sample program (`bb-sample`) of that tag is built once, with optimisations, in a `git worktree` under `.work/upgrade/` with a build folder of its own. Only the program is kept, in `target/upgrade/<tag>/`; the worktree and its build folder are deleted at once (about 1.3 GB), and so is the program of an older tag, so the disk keeps one file. Later runs find it there and build nothing.
+- **The old data.** On each database the old program makes the small sample organization, as `cargo xtask dataset sample` does (on PostgreSQL in the database `bbupgrade` of the throwaway cluster), with its sign-in file and its dump.
+- **The upgrade.** The driver `web/tooling/upgrade/main.ts` starts the program of `HEAD` on that data folder, on the port `upgradeTestServer`. The server finds the migrations it lacks by the set applied, makes the backup `before-upgrade` and runs them, or refuses to start, which fails the test.
+- **What reads the same.** Signed in as an administrator of the sample (and as the person with *HR* for the work days of everybody), the driver reads through the API the issues (the list and the count of the search), the comments and the time entries of every issue, the work days of every person, the away times of the person of the goal, the own themes and the agents, and holds each against the dump the old program wrote (`web/tooling/upgrade/judge.ts`, which names every count that differs and the part of an old dump that is missing). Besides the counts it holds a list of known records against the events of the dump (`web/tooling/upgrade/known.ts`), each found by its key: the first and the last issue whose title no other issue has, with its status; the comments of one such issue; the time entries of one such issue on one day; and one finished work day of one person, with its stretches. The run fails when the list of backups lacks the backup the upgrade made (recorded as made by the upgrade, and found in the folder), or when `bugaboo security-log verify` finds the log broken afterwards. The run is the acceptance test `ops_06_the_sample_of_the_previous_milestone_reads_the_same_after_the_upgrade`.
+
+What a start does when a migration fails, a backup cannot be made or the database is newer is tested in the store on both databases with a migration that fails only in the tests (`crates/bb-store/src/migrations/tests.rs`, `crates/bb-store/src/tests/upgrade.rs`), and the words and exit code of the stop in the server (`crates/bb-server/src/tests/upgrade.rs`).
+
+Enforced by: TEST-UPGRADE (`xtask/src/checks/test_upgrade.rs`: the upgrade test is there, asks Git for the tag and names none by hand, and `cargo xtask ci` runs it as a step that nothing switches off: alone in the list of steps or in `needs_browser_app`, which skips it only while `web/app/package.json` is missing).
+
 ## Local ports (ADR-0023)
 
 Your machine runs other Vite projects, so Bugaboo never uses default ports. All ports live in **`tools/dev/ports.json`** (single source); Vite, Playwright, the server and xtask read them from there, and every tool uses `strictPort`, so a busy port fails with a clear message instead of silently moving.
@@ -364,6 +378,7 @@ Your machine runs other Vite projects, so Bugaboo never uses default ports. All 
 | 4 | Vitest UI |
 | 10–29 | Parallel Playwright workers, one server and database each |
 | 30 | Load-test server |
+| 31 | Server of the upgrade test (`cargo xtask upgrade-test`) |
 | 40 | Throwaway PostgreSQL for tests (`cargo xtask db start`) |
 
 The offsets are inside a block of 100 ports. Each work folder `bugaboo.winN` has its own block, starting at 47200 + (N − 1) · 100 (`win1` 47200–47299, `win3` 47400–47499, up to `win9` 48000–48099), so folders that build and test at the same time never share a port; any other folder uses block 1 and `BUGABOO_PORT_BLOCK` names another one. The table above shows block 1: the server of the first folder is on 47200, of the third on 47400.

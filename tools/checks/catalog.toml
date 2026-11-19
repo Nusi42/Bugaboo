@@ -880,6 +880,20 @@ files = ["xtask/**", "crates/bb-store/**", "crates/bb-sample/**"]
 status = "active"
 
 [[check]]
+id = "TEST-UPGRADE"
+title = "Every release upgrades a database made by the program of the previous milestone, on both databases, and it reads the same afterwards"
+rule = "architecture §11, ADR-0046"
+tool = "xtask (the upgrade test is there, finds the previous milestone's tag from Git and names none by hand, and `cargo xtask ci` runs it as a step that nothing switches off); the run itself: `cargo xtask upgrade-test`, in ci and before each release"
+when = ["ci", "release"]
+files = [
+  "crates/bb-store/src/migrations/**",
+  "xtask/src/upgrade*",
+  "xtask/src/ci.rs",
+  "web/tooling/upgrade/**",
+]
+status = "active"
+
+[[check]]
 id = "TEST-CONCURRENT"
 title = "Ten people working at once: no lost text, no half-saved changes, locks expire, conflicts explained"
 rule = "architecture §11, ADR-0019"

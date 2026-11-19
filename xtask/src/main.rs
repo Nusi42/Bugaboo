@@ -44,6 +44,7 @@ mod steps;
 #[cfg(test)]
 mod testutil;
 mod tools;
+mod upgrade;
 mod wasm;
 mod web_code;
 
@@ -109,6 +110,9 @@ enum Command {
     /// Ten people work on the same issues through the API at speed, and the invariants of
     /// architecture §11 are checked afterwards (TEST-CONCURRENT). Both databases unless one is named.
     Load(load::Arguments),
+    /// Upgrade a database made by the program of the previous milestone with the program of HEAD,
+    /// on both databases, and check that it reads the same (TEST-UPGRADE, architecture §11).
+    UpgradeTest,
     /// Run the scenarios of the benchmarks on the large dataset and hold the numbers against
     /// their budgets (PERF-BENCH). Both databases unless one is named.
     Bench {
@@ -367,6 +371,7 @@ fn run() -> anyhow::Result<ExitCode> {
         )?)),
         Command::Nightly { install } => Ok(steps::exit_code(nightly::run(&repo, install)?)),
         Command::Load(arguments) => Ok(steps::exit_code(load::run(&repo, &arguments.request())?)),
+        Command::UpgradeTest => Ok(steps::exit_code(upgrade::run(&repo)?)),
         Command::Build { target } => Ok(steps::exit_code(build::run(
             repo.root(),
             target.as_deref(),
