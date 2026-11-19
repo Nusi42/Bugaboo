@@ -80,8 +80,9 @@ mod tests {
 
     /// A repository that holds the file of the fixture and the rules of Bugaboo's own
     /// `.gitleaks.toml` only: the default rules of gitleaks are switched off here, so a finding is
-    /// the rule for access keys and nothing else. The marker that lets the fixture stand in this
-    /// repository is cut off, or the scan would skip the line it is about.
+    /// one of Bugaboo's rules (access keys, minisign secret keys) and nothing else. The marker that
+    /// lets the fixture stand in this repository is cut off, or the scan would skip the line it is
+    /// about.
     fn repo_with_the_rule_of_bugaboo(temp: &TempDir, fixture: &str) {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
         let config = std::fs::read_to_string(root.join(".gitleaks.toml")).unwrap();
@@ -118,6 +119,27 @@ mod tests {
     fn good_example_things_that_only_look_like_access_keys_are_not_found() {
         let temp = TempDir::new("secrets-key-good");
         repo_with_the_rule_of_bugaboo(&temp, "good/not-a-key.txt");
+        assert!(scan(temp.path(), Scan::History).unwrap().is_empty());
+    }
+
+    #[test]
+    fn bad_example_a_minisign_secret_key_is_found_by_the_rules_of_bugaboo() {
+        let temp = TempDir::new("secrets-minisign-bad");
+        repo_with_the_rule_of_bugaboo(&temp, "bad/minisign-secret-key.txt");
+        let findings = scan(temp.path(), Scan::History).unwrap();
+        crate::testutil::assert_real_findings(&findings);
+        // Both first lines and both key lines, encrypted and not.
+        assert!(
+            findings[0].message.contains("leaks found: 4"),
+            "{}",
+            findings[0].message
+        );
+    }
+
+    #[test]
+    fn good_example_a_public_key_and_a_signature_of_minisign_are_not_found() {
+        let temp = TempDir::new("secrets-minisign-good");
+        repo_with_the_rule_of_bugaboo(&temp, "good/minisign-not-a-secret-key.txt");
         assert!(scan(temp.path(), Scan::History).unwrap().is_empty());
     }
 

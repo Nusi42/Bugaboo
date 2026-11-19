@@ -1578,6 +1578,12 @@ pub const CLI_ABOUT_SERVICE_UNINSTALL: MessageKey = MessageKey::new("cli.about.s
 /// The message `cli.about.setup`.
 pub const CLI_ABOUT_SETUP: MessageKey = MessageKey::new("cli.about.setup");
 
+/// The message `cli.about.update`.
+pub const CLI_ABOUT_UPDATE: MessageKey = MessageKey::new("cli.about.update");
+
+/// The message `cli.about.update-verify`.
+pub const CLI_ABOUT_UPDATE_VERIFY: MessageKey = MessageKey::new("cli.about.update-verify");
+
 /// The message `cli.help.address`.
 pub const CLI_HELP_ADDRESS: MessageKey = MessageKey::new("cli.help.address");
 
@@ -1647,6 +1653,9 @@ pub const CLI_HELP_TLS_CERT: MessageKey = MessageKey::new("cli.help.tls-cert");
 
 /// The message `cli.help.tls-key`.
 pub const CLI_HELP_TLS_KEY: MessageKey = MessageKey::new("cli.help.tls-key");
+
+/// The message `cli.help.update-file`.
+pub const CLI_HELP_UPDATE_FILE: MessageKey = MessageKey::new("cli.help.update-file");
 
 /// The message `cli.help.web`.
 pub const CLI_HELP_WEB: MessageKey = MessageKey::new("cli.help.web");
@@ -11223,6 +11232,125 @@ pub fn cli_no_data(path: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("cli.no-data"),
         vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `cli.update.changed`.
+#[must_use]
+pub fn cli_update_changed(file: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("cli.update.changed"),
+        vec![("file", Value::Text(file.to_string()))],
+    )
+}
+
+/// The message `cli.update.missing`.
+#[must_use]
+pub fn cli_update_missing(file: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("cli.update.missing"),
+        vec![("file", Value::Text(file.to_string()))],
+    )
+}
+
+/// The message `cli.update.no-release`.
+#[must_use]
+pub fn cli_update_no_release(file: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("cli.update.no-release"),
+        vec![("file", Value::Text(file.to_string()))],
+    )
+}
+
+/// The message `cli.update.not-listed`.
+#[must_use]
+pub fn cli_update_not_listed(
+    checksums: impl std::fmt::Display,
+    file: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("cli.update.not-listed"),
+        vec![
+            ("checksums", Value::Text(checksums.to_string())),
+            ("file", Value::Text(file.to_string())),
+        ],
+    )
+}
+
+/// The message `cli.update.older`.
+#[must_use]
+pub fn cli_update_older(
+    installed: impl std::fmt::Display,
+    version: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("cli.update.older"),
+        vec![
+            ("installed", Value::Text(installed.to_string())),
+            ("version", Value::Text(version.to_string())),
+        ],
+    )
+}
+
+/// The message `cli.update.other-checksum`.
+#[must_use]
+pub fn cli_update_other_checksum(
+    checksums: impl std::fmt::Display,
+    file: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("cli.update.other-checksum"),
+        vec![
+            ("checksums", Value::Text(checksums.to_string())),
+            ("file", Value::Text(file.to_string())),
+        ],
+    )
+}
+
+/// The message `cli.update.other-list`.
+#[must_use]
+pub fn cli_update_other_list(
+    checksums: impl std::fmt::Display,
+    file: impl std::fmt::Display,
+    version: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("cli.update.other-list"),
+        vec![
+            ("checksums", Value::Text(checksums.to_string())),
+            ("file", Value::Text(file.to_string())),
+            ("version", Value::Text(version.to_string())),
+        ],
+    )
+}
+
+/// The message `cli.update.signed`.
+#[must_use]
+pub fn cli_update_signed(file: impl std::fmt::Display, version: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("cli.update.signed"),
+        vec![
+            ("file", Value::Text(file.to_string())),
+            ("version", Value::Text(version.to_string())),
+        ],
+    )
+}
+
+/// The message `cli.update.unknown-key`.
+#[must_use]
+pub fn cli_update_unknown_key(file: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("cli.update.unknown-key"),
+        vec![("file", Value::Text(file.to_string()))],
+    )
+}
+
+/// The message `cli.update.unreadable-signature`.
+#[must_use]
+pub fn cli_update_unreadable_signature(file: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("cli.update.unreadable-signature"),
+        vec![("file", Value::Text(file.to_string()))],
     )
 }
 

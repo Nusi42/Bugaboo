@@ -22,6 +22,8 @@
 
 #![forbid(unsafe_code)]
 
+pub mod release;
+
 use std::error::Error;
 use std::fmt::Write as _;
 use std::fs::OpenOptions;

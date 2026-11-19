@@ -9,6 +9,21 @@ edition = "2024"
 rust-version = "1.97"
 publish = false
 license = "AGPL-3.0-or-later"
+# Where the code lives: `security.txt` names its reporting and policy pages from it.
+repository = "https://github.com/Nusi42/Bugaboo"
+
+# The release of the version above, written once (ADR-0047, decision 5): the program reads it when
+# it is compiled (`bb_core::release`) for *About*, `security.txt` and `bugaboo update verify`, and
+# `cargo xtask release` for the release notes and `SECURITY.md`. The date changes with the version.
+[workspace.metadata.release]
+# The day this version was released (YYYY-MM-DD).
+date = "2026-11-17"
+# The day the first release of this minor version (X.Y.0) came out: the support period counts
+# from it. It changes only with a new minor version.
+minor-date = "2026-11-11"
+# How many years each minor release from 1.0 on gets security fixes; a preview (0.x) gets them
+# only until the next release.
+support-years = 5
 
 # Zero warnings, zero errors: every lint below is a warning, and every check runs with
 # warnings denied (`cargo xtask check`). Exceptions need a narrow `#[allow(.., reason = "..")]`
@@ -65,6 +80,8 @@ lettre = { version = "0.11.24", default-features = false, features = [
 ] }
 known-folders = "1.4.2"
 mime_guess = "2.0.5"
+# Signs releases and makes their keys (xtask), and signs files for the tests (bb-testing); never shipped.
+minisign = "0.10.0"
 nix = { version = "0.31.3", default-features = false, features = ["user"] }
 proc-macro2 = "1.0.107"
 pulldown-cmark = { version = "0.13.6", default-features = false }
@@ -160,6 +177,14 @@ opt-level = 3
 opt-level = 3
 
 [profile.dev.package.sha1]
+opt-level = 3
+
+# `cargo xtask release sign` and `release keygen` open a secret key with scrypt (32 MiB, a million
+# rounds); unoptimised that took minutes in the debug build of xtask.
+[profile.dev.package.scrypt]
+opt-level = 3
+
+[profile.dev.package.salsa20]
 opt-level = 3
 
 # The theme file is read by three checks in one run, and the KDL of nine thousand lines took half a

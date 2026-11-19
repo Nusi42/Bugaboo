@@ -9,7 +9,8 @@
 //! difference. An entry the writer invents is a real finding for npm packages only: the crate list
 //! is cut to the `cargo tree` set when it is made, and the files are added to both sides from the
 //! list itself, so for crates and files only "missing" is a check. The signatures of the release
-//! folder are a later step of `cargo xtask release`.
+//! folder are a later step of `cargo xtask release`; what a finished folder must hold, and nothing
+//! more, is checked by `release::folder::problems` (`cargo xtask release check`).
 
 use std::collections::BTreeSet;
 use std::fs;
@@ -37,8 +38,8 @@ impl Check for DepSbom {
         let root = context.repo.root();
         let files = release::compose(root)?;
         let folder = release::work_folder(root)?;
-        release::write(&files, &folder)?;
         let version = &files.list.program.version;
+        release::write(&files, &folder, version)?;
         let read = |name: String| -> anyhow::Result<Value> {
             let path = folder.join(&name);
             serde_json::from_str(&fs::read_to_string(&path)?)

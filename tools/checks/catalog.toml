@@ -745,7 +745,7 @@ status = "planned"
 id = "DEP-SBOM"
 title = "The parts list (CycloneDX and SPDX) names every shipped crate and package with license and checksum, and fits its schemas"
 rule = "COMP-01, COMP-02"
-tool = "xtask (the parts list from the lockfiles, checked against both schemas)"
+tool = "xtask (the parts list from the lockfiles, checked against both schemas; at a release, `cargo xtask release sign` and `cargo xtask release check` hold the release folder to every file, its checksum and its signature)"
 when = ["ci", "release"]
 files = [
   "Cargo.lock",

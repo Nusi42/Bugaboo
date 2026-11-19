@@ -2,6 +2,20 @@
 
 To upgrade, stop Bugaboo, replace the program with the new version, and start it again. The new version changes the database to its own form by itself. Before it changes anything, it creates a backup, so there is always a way back.
 
+## Step by step
+
+1. Download the new program, its signature, `SHA256SUMS` and `SHA256SUMS.minisig` from the release page into one folder.
+2. Check it with the Bugaboo you have installed:
+
+   ```text
+   bugaboo update verify bugaboo-0.6.0-linux-x64
+   ```
+
+   Go on only when it says **Signed by Bugaboo**. When it warns that the version is older than yours, you are about to go back to an older version: stop, unless you mean to. More in [Check a download](verify-a-download.md).
+3. Stop Bugaboo: stop the service (`Bugaboo` on Windows, `bugaboo.service` on Linux), or press Ctrl+C where it runs in a window.
+4. Put the new program in place of the old one, with the same name.
+5. Start Bugaboo again.
+
 ## What happens at the start
 
 When the new version starts on the data of an older one:
@@ -29,7 +43,7 @@ Bugaboo writes the version that last started on the data folder into the file `v
 
 ## Before you upgrade
 
-- Read the release notes of the new version.
+- Read the release notes of the new version: they say what changed and what to look out for. Until 1.0, only the newest release gets security fixes, so keep up with the releases.
 - Create a backup of your own and keep it with the exported keys (`bugaboo keys export <folder>`), as for any change: [Backups and restore](backups.md).
 - Check that the drive of the data folder has room for one more backup. [How much room a backup takes](backups.md#how-much-room-a-backup-takes) says how to tell.
 

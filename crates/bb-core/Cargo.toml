@@ -6,6 +6,7 @@ edition.workspace = true
 rust-version.workspace = true
 publish.workspace = true
 license.workspace = true
+repository.workspace = true
 
 [features]
 # The data of the time zones, for what writes a moment in a named zone outside the server (the
@@ -29,6 +30,8 @@ canonical-text = ["dep:unicode-normalization"]
 [dependencies]
 bb-macros = { path = "../bb-macros" }
 jiff = { workspace = true }
+# Checks the signatures of a release (SEC-18, ADR-0047 decision 2); no dependencies of its own.
+minisign-verify = "0.3.0"
 serde = { workspace = true }
 serde_json = { workspace = true }
 serde_urlencoded = { workspace = true }
@@ -40,6 +43,8 @@ utoipa = { workspace = true, optional = true }
 uuid = { workspace = true, features = ["std"] }
 
 [dev-dependencies]
+# Signs files with keys made for the tests (SEC-18).
+bb-testing = { path = "../bb-testing" }
 unicode-normalization = { workspace = true }
 # The zones that the wording tests name (the server turns the same data on in bb-app).
 jiff = { workspace = true, features = ["tzdb-bundle-always"] }

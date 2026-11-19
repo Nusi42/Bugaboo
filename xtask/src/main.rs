@@ -93,6 +93,10 @@ enum Command {
         #[arg(long)]
         out: Option<PathBuf>,
     },
+    /// Build the release folder of this version (ADR-0047): the programs for Windows and, in WSL,
+    /// Linux, the parts list, the notices, the VEX statements and the notes; `sign`, `check` and
+    /// `keygen` sign it, check it and make the keys.
+    Release(release::Arguments),
     /// Build the WebAssembly modules of the browser (`bb-wasm` and `bb-wasm-search`, with `wasm-bindgen` and `wasm-opt`).
     Wasm,
     /// Everything CI runs: checks, tests, browser build, browser tests.
@@ -379,6 +383,9 @@ fn run() -> anyhow::Result<ExitCode> {
         Command::PartsList { out } => {
             release::run(repo.root(), out)?;
             Ok(ExitCode::SUCCESS)
+        }
+        Command::Release(arguments) => {
+            Ok(steps::exit_code(release::run_release(&repo, arguments)?))
         }
         Command::Wasm => Ok(steps::exit_code(wasm::run(repo.root())?)),
         Command::Ci => {

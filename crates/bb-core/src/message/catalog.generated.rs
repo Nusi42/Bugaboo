@@ -1343,6 +1343,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Answer a few questions and save the answers in the settings file",
     ),
     (
+        "cli.about.update",
+        "Check a downloaded release of Bugaboo before you install it",
+    ),
+    (
+        "cli.about.update-verify",
+        "Check the signature and the checksum of a downloaded file of a Bugaboo release with the keys of this installed program. It only reads: nothing is run or replaced",
+    ),
+    (
         "cli.database-url-password",
         "The database address on the command line has a password in it, and other people on this computer can read the command line, for example in the list of running programs. Put database_url in your settings file ({file}) or in the environment variable {variable} instead, and leave the option out.",
     ),
@@ -1431,12 +1439,56 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The private key file, for HTTPS mode files",
     ),
     (
+        "cli.help.update-file",
+        "The downloaded file. Its signature (the same name with .minisig) and the list SHA256SUMS with its signature must be in the same folder",
+    ),
+    (
         "cli.help.web",
         "Serve the browser app from this folder instead of the one built into the program",
     ),
     (
         "cli.no-data",
         "There is no Bugaboo data in {path}. Check the data folder in your settings.",
+    ),
+    (
+        "cli.update.changed",
+        "{file} was changed after it was signed. Do not install it.",
+    ),
+    (
+        "cli.update.missing",
+        "{file} cannot be read. Download it from the same release and put it in the same folder.",
+    ),
+    (
+        "cli.update.no-release",
+        "The signature of {file} names no release of Bugaboo. Do not install it.",
+    ),
+    (
+        "cli.update.not-listed",
+        "{file} is not in the list {checksums}. Do not install it.",
+    ),
+    (
+        "cli.update.older",
+        "Version {version} is older than version {installed}, which is installed here. Installing it would go back to an older version; do that only if you mean to.",
+    ),
+    (
+        "cli.update.other-checksum",
+        "The checksum of {file} is not the one in the list {checksums}. Do not install it.",
+    ),
+    (
+        "cli.update.other-list",
+        "The list {checksums} beside {file} is signed for another file or another release than version {version}. Do not install it.",
+    ),
+    (
+        "cli.update.signed",
+        "Signed by Bugaboo, version {version}: {file}",
+    ),
+    (
+        "cli.update.unknown-key",
+        "{file} is not signed with a key of Bugaboo. Do not install it.",
+    ),
+    (
+        "cli.update.unreadable-signature",
+        "The signature {file} is not a signature of a Bugaboo release. Do not install the file.",
     ),
     ("code-app.confirm", "Switch on"),
     ("code-app.confirm-code", "Code from the app"),

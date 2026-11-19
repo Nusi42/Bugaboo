@@ -1,7 +1,10 @@
 # Secret scan (SEC-SECRETS): the default rules of gitleaks, nothing switched off, and one rule of
 # our own for the access keys of Bugaboo (AUTH-07): `bb_`, 8 symbols, `_` and 52 symbols of the
 # alphabet of codes (digits and letters without i, l, o and u). `bb-auth` makes the keys in this
-# form (`access_key.rs`); the fixtures in `tools/checks/fixtures/SEC-SECRETS` show what it finds.
+# form (`access_key.rs`). Two more find a secret key of minisign, which signs the releases
+# (ADR-0047, decision 2): its first line, and the base64 line of the key itself, encrypted (`EdScB2`)
+# or not (`Ed`, two zero bytes, `B2`). The fixtures in `tools/checks/fixtures/SEC-SECRETS` show what
+# they find.
 [extend]
 useDefault = true
 
@@ -10,3 +13,15 @@ id = "bugaboo-access-key"
 description = "A Bugaboo access key"
 regex = '''\bbb_[0-9a-hjkmnp-tv-z]{8}_[0-9a-hjkmnp-tv-z]{52}\b'''
 keywords = ["bb_"]
+
+[[rules]]
+id = "minisign-secret-key-comment"
+description = "The first line of a minisign secret key"
+regex = '''untrusted comment: minisign (encrypted )?secret key'''
+keywords = ["minisign"]
+
+[[rules]]
+id = "minisign-secret-key"
+description = "A minisign secret key"
+regex = '''\bRW(RTY0Iy|QAAEIy)[A-Za-z0-9+/]{100,}={0,2}'''
+keywords = ["RWRTY0Iy", "RWQAAEIy"]

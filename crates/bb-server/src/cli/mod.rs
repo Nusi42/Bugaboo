@@ -8,6 +8,8 @@
 //! - `backup`, `backup list` and `restore` create, list and restore backups (`backup.rs`, OPS-07);
 //! - `search-index rebuild` builds the index of the text search again from the stored texts
 //!   (`search_index.rs`, M5 WP-05);
+//! - `update verify` checks a downloaded file of a release with the keys of the installed program
+//!   (`update.rs`, DIST-07);
 //! - `openapi` prints the description of the API.
 //!
 //! Every text a person reads, the help of each option included, comes from the message catalog.
@@ -20,6 +22,7 @@ mod secrets;
 mod serve;
 mod service;
 mod setup;
+mod update;
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -76,6 +79,11 @@ enum Command {
     Keys {
         #[command(subcommand)]
         command: KeysCommand,
+    },
+    #[command(about = text(message::CLI_ABOUT_UPDATE))]
+    Update {
+        #[command(subcommand)]
+        command: update::UpdateCommand,
     },
     /// Started by the server, never by a person: creates the preview of one file in a process of
     /// its own, with limits on pixels, time, size and memory (ADR-0032 §4). The file comes on the
@@ -264,6 +272,9 @@ async fn run(cli: Cli) -> ExitCode {
         } => secrets::import_keys(&store, &folder).await,
         Command::Backup(args) => backup::backup(&args).await,
         Command::Restore(args) => backup::restore(&args).await,
+        Command::Update {
+            command: update::UpdateCommand::Verify(args),
+        } => update::verify(&args),
         // Taken before the runtime is built (`start`), never here.
         Command::Preview(_) => return ExitCode::FAILURE,
     };

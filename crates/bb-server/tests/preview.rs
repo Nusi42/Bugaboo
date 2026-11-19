@@ -32,6 +32,7 @@ use known_folders as _;
 use nix as _;
 use rustls as _;
 use serde_json as _;
+use sha2 as _;
 use tokio_rustls as _;
 use toml as _;
 use tower as _;

@@ -26,6 +26,8 @@ bb-store = { path = "../bb-store" }
 clap = { workspace = true }
 getrandom = { workspace = true }
 jiff = { workspace = true }
+# The checksum of a downloaded release file, against its `SHA256SUMS` (`bugaboo update verify`, DIST-07).
+sha2 = { workspace = true }
 tokio = { workspace = true, features = [
   "macros",
   "net",

@@ -6,7 +6,6 @@
 //! `BEGIN GENERATED` and an `END GENERATED` comment of the page; the text around them is written by
 //! hand. DOC-GENERATED fails when a table differs from what this makes, so nobody edits one by hand.
 
-use anyhow::{Context as _, bail};
 use bb_core::access::{FieldLevel, PeopleLevel};
 use bb_core::fields::{BelongsTo, Field};
 use bb_core::message::{Message, MessageKey};
@@ -14,16 +13,14 @@ use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Permission, StartingRole};
 
 use super::Generated;
+#[cfg(test)]
+use super::{BEGIN, END};
 use crate::repo::Repo;
 use crate::source::read_text;
 
 /// The page that holds the tables.
 pub(crate) const PAGE: &str = "docs/architecture/07-cross-cutting.md";
 
-/// What stands before the name of a table in its first comment.
-const BEGIN: &str = "<!-- BEGIN GENERATED ";
-/// What stands before the name of a table in its last comment.
-const END: &str = "<!-- END GENERATED ";
 /// What the first comment says besides the name.
 const NOTE: &str =
     "by `cargo xtask gen roles` from bb-core and bb-policy; edit the code, not this table -->";
@@ -205,23 +202,7 @@ fn tables() -> [(&'static str, String); 5] {
 
 /// The page with the text between the comments of the table `name` replaced by `table`.
 fn replace_table(page: &str, name: &str, table: &str) -> anyhow::Result<String> {
-    let begin = format!("{BEGIN}{name} {NOTE}\n");
-    let end = format!("{END}{name} -->\n");
-    let start = page
-        .find(&format!("{BEGIN}{name} "))
-        .with_context(|| format!("{PAGE} has no `{BEGIN}{name} …` comment"))?;
-    let line_end = page[start..]
-        .find('\n')
-        .map(|offset| start + offset + 1)
-        .with_context(|| format!("{PAGE}: the comment of `{name}` is cut off"))?;
-    let Some(stop) = page[line_end..].find(&end).map(|offset| line_end + offset) else {
-        bail!("{PAGE} has no `{END}{name} -->` comment after the first one");
-    };
-    Ok(format!(
-        "{}{begin}\n{table}\n\n{}",
-        &page[..start],
-        &page[stop..]
-    ))
+    super::replace_part(PAGE, page, name, NOTE, table)
 }
 
 /// The page, with every table as the code says.

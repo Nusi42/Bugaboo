@@ -23,6 +23,7 @@ globset = { workspace = true }
 jiff = { workspace = true }
 jsonschema = { version = "0.61.2", default-features = false }
 kdl = { workspace = true }
+minisign = { workspace = true }
 pulldown-cmark = { workspace = true, features = ["html"] }
 serde = { workspace = true }
 serde_json = { workspace = true, features = ["preserve_order"] }

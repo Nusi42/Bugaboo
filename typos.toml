@@ -21,6 +21,16 @@ THM = "THM"
 ue = "ue"
 
 [default.extend-identifiers]
+# The public key of the minisign tool's own test vector, kept as test data (bb-core release tests).
+RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3 = "RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3"
+# How the base64 line of a minisign secret key starts, encrypted and not, also as the two endings
+# of the pattern (`.gitleaks.toml`), and a line cut short that only starts like one (the fixture
+# of SEC-SECRETS).
+RWRTY0Iy = "RWRTY0Iy"
+RWQAAEIy = "RWQAAEIy"
+RTY0Iy = "RTY0Iy"
+QAAEIy = "QAAEIy"
+RWRTY0IyAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA = "RWRTY0IyAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
 # The crate name flate2 (docs/third-party/README.md), not a misspelling of "flat".
 flate2 = "flate2"
 

@@ -12,6 +12,8 @@ When Bugaboo runs, create your own account: [Your first sign-in](../sign-in/firs
 
 Bugaboo backs itself up every night. How backups work and how to restore one: [Backups and restore](backups.md). How to upgrade to a new version, and how Bugaboo finds its way back when an upgrade fails: [Upgrade Bugaboo](upgrade.md).
 
+Check every download before you install it: [Check a download](verify-a-download.md). A new release replaces the old program: [Upgrade Bugaboo](upgrade.md).
+
 ## What the questions are about
 
 The command `bugaboo setup` asks these questions. Press Enter to accept the answer in brackets.

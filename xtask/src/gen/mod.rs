@@ -17,6 +17,7 @@ pub(crate) mod made_keys;
 pub(crate) mod messages;
 pub(crate) mod messages_rust;
 pub(crate) mod privacy;
+pub(crate) mod release;
 pub(crate) mod roles;
 pub(crate) mod search_reader;
 pub(crate) mod search_types;
@@ -36,6 +37,40 @@ use anyhow::Context as _;
 use crate::catalog::Catalog;
 use crate::docs;
 use crate::repo::Repo;
+
+/// What stands before the name of a generated part of a hand-written page in its first comment.
+pub(crate) const BEGIN: &str = "<!-- BEGIN GENERATED ";
+/// What stands before the name of a generated part in its last comment.
+pub(crate) const END: &str = "<!-- END GENERATED ";
+
+/// `page`, the text of the file `path`, with the text between the comments of its generated part
+/// `name` replaced by `body`; `note` is what the first comment says after the name (which command
+/// writes the part, from what). The text around the comments is left as it is.
+pub(crate) fn replace_part(
+    path: &str,
+    page: &str,
+    name: &str,
+    note: &str,
+    body: &str,
+) -> anyhow::Result<String> {
+    let begin = format!("{BEGIN}{name} {note}\n");
+    let end = format!("{END}{name} -->\n");
+    let start = page
+        .find(&format!("{BEGIN}{name} "))
+        .with_context(|| format!("{path} has no `{BEGIN}{name} …` comment"))?;
+    let line_end = page[start..]
+        .find('\n')
+        .map(|offset| start + offset + 1)
+        .with_context(|| format!("{path}: the comment of `{name}` is cut off"))?;
+    let Some(stop) = page[line_end..].find(&end).map(|offset| line_end + offset) else {
+        anyhow::bail!("{path} has no `{END}{name} -->` comment after the first one");
+    };
+    Ok(format!(
+        "{}{begin}\n{body}\n\n{}",
+        &page[..start],
+        &page[stop..]
+    ))
+}
 
 /// One file a generator produces.
 pub(crate) struct Generated {
@@ -89,7 +124,7 @@ pub(crate) const DOCS: &str = "docs";
 /// Every generator, once. A generated file in the repository is written by one of these;
 /// DOC-GENERATED compares all of them with the disk, `cargo xtask gen <name>` writes one, and
 /// META-COVERAGE counts their paths as generated.
-pub(crate) const GENERATORS: [Generator; 16] = [
+pub(crate) const GENERATORS: [Generator; 17] = [
     Generator {
         name: DOCS,
         help: "The commentable HTML pages from the Markdown sources and the check catalogue.",
@@ -143,6 +178,12 @@ pub(crate) const GENERATORS: [Generator; 16] = [
         help: "The test vectors of the wording of values (tools/testdata/value-words.json), from the code of bb-core that the server runs.",
         paths: || vec![word_vectors::OUTPUT],
         generate: |_, _| word_vectors::generate(),
+    },
+    Generator {
+        name: "release",
+        help: "The public keys and the supported versions in SECURITY.md, from bb_core::release and the release metadata of Cargo.toml.",
+        paths: || vec![release::PAGE],
+        generate: |repo, _| release::generate(repo),
     },
     Generator {
         name: "keep-rules",

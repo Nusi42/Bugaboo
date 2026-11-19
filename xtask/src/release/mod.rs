@@ -3,6 +3,11 @@
 //!
 //! All three are written from the lockfiles, the register and the accepted advisories, never by
 //! hand, and in a fixed order, so two runs of one commit write the same bytes.
+//!
+//! `cargo xtask release` puts them into the release folder with the programs and the notes
+//! (`assemble.rs`, `folder.rs`); `release sign` signs it and `release keygen` makes the keys
+//! (`sign.rs`); `release check` is the `release` part of DEP-SBOM (SEC-18, ADR-0047 decisions 1
+//! and 2).
 
 use std::fmt::Write as _;
 use std::fs;
@@ -11,10 +16,131 @@ use std::path::Path;
 use anyhow::Context as _;
 use bb_api_words::about;
 
+mod assemble;
+pub(crate) mod folder;
 pub(crate) mod formats;
 pub(crate) mod notices;
 pub(crate) mod parts_list;
+pub(crate) mod sign;
 pub(crate) mod vex;
+
+/// What `cargo xtask release` is told.
+#[derive(clap::Args)]
+pub(crate) struct Arguments {
+    #[command(subcommand)]
+    action: Option<Action>,
+    /// Inside WSL: build only the static Linux program, into the folder given with `--into`.
+    /// `cargo xtask release` on Windows runs this itself.
+    #[arg(long, requires = "into")]
+    linux: bool,
+    /// The release folder the Linux program goes into (with `--linux`).
+    #[arg(long)]
+    into: Option<std::path::PathBuf>,
+}
+
+#[derive(clap::Subcommand)]
+enum Action {
+    /// Sign every file of the release folder of this version. The secret key comes from `--key`
+    /// or `BUGABOO_RELEASE_KEY`, from a place outside the repository and every work folder; its
+    /// passphrase is asked for on the console.
+    Sign {
+        /// The secret key of the release.
+        #[arg(long)]
+        key: Option<std::path::PathBuf>,
+    },
+    /// Check the release folder of this version: every file, its checksum and its signature
+    /// against the keys the program carries (the `release` part of DEP-SBOM).
+    Check,
+    /// Make a key pair for signing releases: the secret key at `--out`, protected by a passphrase
+    /// asked for on the console, and the public key beside it (`<out>.pub`).
+    Keygen {
+        /// Where the secret key goes, outside the repository and every work folder.
+        #[arg(long)]
+        out: std::path::PathBuf,
+    },
+}
+
+/// The folder of the release of this version and the name of the release: `<version>`, or
+/// `<version>-test` for a test build ([`folder::Build::release_name`]).
+fn this_folder(repo: &crate::repo::Repo) -> anyhow::Result<(std::path::PathBuf, String)> {
+    let name = assemble::this_build(repo)?.release_name(bb_core::release::VERSION);
+    Ok((folder::release_root(repo.root())?.join(&name), name))
+}
+
+/// Says what is wrong with a release folder; whether nothing is.
+fn report(problems: &[String]) -> bool {
+    for problem in problems {
+        crate::output::error(problem);
+    }
+    problems.is_empty()
+}
+
+/// `cargo xtask release …`; whether it succeeded.
+pub(crate) fn run_release(repo: &crate::repo::Repo, arguments: Arguments) -> anyhow::Result<bool> {
+    match (arguments.action, arguments.linux, arguments.into) {
+        (None, true, Some(into)) => {
+            assemble::assemble_linux(repo, &into)?;
+            Ok(true)
+        }
+        (None, _, _) => {
+            let folder = assemble::assemble(repo)?;
+            crate::output::info(&format!(
+                "wrote the release folder {}; sign it with `cargo xtask release sign`",
+                folder.display()
+            ));
+            Ok(true)
+        }
+        (Some(Action::Sign { key }), _, _) => {
+            let build = assemble::this_build(repo)?;
+            if let Some(refusal) = sign::tag_refusal(build, bb_core::release::VERSION) {
+                anyhow::bail!(refusal);
+            }
+            let (folder, name) = this_folder(repo)?;
+            let key = sign::open_key(&sign::key_path(key)?, repo.root())?;
+            let public = sign::public_of(&key)?;
+            if let Some(refusal) = sign::key_refusal(build, &public) {
+                anyhow::bail!(refusal);
+            }
+            if !sign::is_ours(&public) {
+                crate::output::note(&format!(
+                    "the key {public} is not one of RELEASE_PUBLIC_KEYS, which are test keys: \
+                     installed programs will refuse these files"
+                ));
+            }
+            sign::sign_folder(&folder, &name, &key)?;
+            // Leaked once for the run of the command, as a key of the list is for the program.
+            let keys = [bb_core::release::ReleaseKey {
+                name: "signing",
+                public: public.leak(),
+            }];
+            let passed = report(&folder::problems(&folder, &name, &keys));
+            if passed {
+                crate::output::info(&format!("signed every file of {}", folder.display()));
+            }
+            Ok(passed)
+        }
+        (Some(Action::Check), _, _) => {
+            let (folder, name) = this_folder(repo)?;
+            let passed = report(&folder::problems_with_our_keys(&folder, &name));
+            if passed {
+                crate::output::info(&format!(
+                    "{} holds every file, each signed with a key of the program",
+                    folder.display()
+                ));
+            }
+            Ok(passed)
+        }
+        (Some(Action::Keygen { out }), _, _) => {
+            let public = sign::keygen(&out, repo.root(), None)?;
+            crate::output::info(&format!(
+                "wrote the secret key {} and its public key beside it. Put this public key into \
+                 RELEASE_PUBLIC_KEYS (crates/bb-core/src/release/signature.rs):\n{public}",
+                out.display()
+            ));
+            Ok(true)
+        }
+    }
+}
 
 /// The bytes as lower-case hexadecimal.
 pub(crate) fn hex(bytes: &[u8]) -> String {
@@ -77,11 +203,11 @@ fn write_about_files(
     write_file(folder, &name(about::NOTICES_END), &files.notices.text)
 }
 
-/// Writes the four files into `folder` under their release names, and nothing else.
-pub(crate) fn write(files: &Files, folder: &Path) -> anyhow::Result<()> {
-    let version = &files.list.program.version;
-    write_about_files(files, folder, |end| about::release_name(version, end))?;
-    write_file(folder, &formats::vex_name(version), &to_text(&files.vex))
+/// Writes the four files into `folder` under the names of the release named `release`, and
+/// nothing else.
+pub(crate) fn write(files: &Files, folder: &Path, release: &str) -> anyhow::Result<()> {
+    write_about_files(files, folder, |end| about::release_name(release, end))?;
+    write_file(folder, &formats::vex_name(release), &to_text(&files.vex))
 }
 
 /// Where `cargo xtask parts-list` and the check DEP-SBOM write the files: in the build folder.
@@ -152,7 +278,7 @@ pub(crate) fn run(root: &Path, out: Option<std::path::PathBuf>) -> anyhow::Resul
     for name in &files.notices.without_text {
         crate::output::info(&format!("no license file in the package of {name}"));
     }
-    write(&files, &folder)?;
+    write(&files, &folder, &files.list.program.version)?;
     crate::output::info(&format!(
         "wrote the parts list ({} parts), the notices and the VEX statements to {}",
         files.list.parts.len(),
