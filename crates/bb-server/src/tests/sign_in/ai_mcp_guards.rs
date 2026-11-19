@@ -122,6 +122,43 @@ async fn ai_20_a_message_over_the_limit_is_refused_by_its_length_before_it_is_re
 }
 
 #[tokio::test]
+async fn ai_20_a_message_that_is_not_json_by_its_type_is_refused() -> TestResult {
+    each_database("ai_20_media_type_http", async |db| {
+        let (rig, app) = Mcp::start(db).await?;
+        let (_site, mut ada) = Site::start(&rig, &app).await?;
+        ai_on(&rig).await?;
+        let mcp = Mcp::new(&app);
+        let signed = sign_in_app(&mcp, &mut ada, "Claude Code", "see-only", "see-only").await?;
+        let ping = json!({"jsonrpc":"2.0","id":1,"method":"ping"});
+        let refused = mcp
+            .post_with(
+                Some(&signed.access),
+                &[("content-type", "text/plain")],
+                ping.clone(),
+            )
+            .await?;
+        assert_eq!(refused.status, StatusCode::UNSUPPORTED_MEDIA_TYPE);
+        assert_eq!(
+            refused.json["error"]["code"],
+            json!(-32600),
+            "{}",
+            refused.json
+        );
+        // JSON with its character set, as the apps send it, is fine.
+        let fine = mcp
+            .post_with(
+                Some(&signed.access),
+                &[("content-type", "Application/JSON; charset=utf-8")],
+                ping,
+            )
+            .await?;
+        assert_eq!(fine.status, StatusCode::OK, "{}", fine.json);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn ai_20_a_page_of_another_website_is_turned_away() -> TestResult {
     each_database("ai_20_origin_http", async |db| {
         let (rig, app) = Mcp::start(db).await?;

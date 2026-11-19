@@ -232,6 +232,9 @@ pub(crate) fn no_store(response: &mut Response) {
         .insert(header::CACHE_CONTROL, HeaderValue::from_static(NO_STORE));
 }
 
+/// The media type of JSON, as the API and the MCP server write it and read it from a request.
+pub const JSON_TYPE: &str = "application/json";
+
 /// A JSON answer that no cache keeps, for the routes that answer in the words of another
 /// protocol than the problem of this API (OAuth, MCP).
 #[must_use]

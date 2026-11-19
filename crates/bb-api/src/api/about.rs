@@ -67,7 +67,7 @@ impl Kind {
 
     const fn media_type(self) -> &'static str {
         match self {
-            Self::CycloneDx | Self::Spdx => "application/json",
+            Self::CycloneDx | Self::Spdx => crate::JSON_TYPE,
             Self::Notices => "text/plain; charset=utf-8",
         }
     }

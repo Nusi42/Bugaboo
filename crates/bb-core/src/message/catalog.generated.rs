@@ -4143,6 +4143,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("mcp.error.not-json", "The message is not JSON."),
     (
+        "mcp.error.not-json-type",
+        "Send the message as application/json.",
+    ),
+    (
         "mcp.error.preview",
         "The argument preview is true or false.",
     ),

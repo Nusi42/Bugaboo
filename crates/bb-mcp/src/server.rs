@@ -130,6 +130,15 @@ async fn handle(State(state): State<McpState>, request: Request<Body>) -> Respon
     if parts.method == Method::POST && says_too_big(&parts) {
         return too_big();
     }
+    if parts.method == Method::POST && !is_json(&parts) {
+        return json_no_store(
+            StatusCode::UNSUPPORTED_MEDIA_TYPE,
+            &protocol::error_without_id(
+                Fault::InvalidRequest,
+                &sentence(message::MCP_ERROR_NOT_JSON_TYPE),
+            ),
+        );
+    }
     let info = request_info(&parts);
     let origin = state
         .options
@@ -197,6 +206,23 @@ fn says_too_big(parts: &Parts) -> bool {
         .and_then(|length| length.to_str().ok()?.trim().parse::<u64>().ok())
         .is_some_and(|length| {
             usize::try_from(length).map_or(true, |length| length > MCP_MESSAGE_BYTES_MAX)
+        })
+}
+
+/// The type of a message as JSON, like the API's: `application/json`, with or without parameters
+/// such as the character set. The MCP specification asks for no type, so a message without one is
+/// read; one that names another type is not.
+fn is_json(parts: &Parts) -> bool {
+    parts
+        .headers
+        .get_all(header::CONTENT_TYPE)
+        .iter()
+        .all(|value| {
+            value.to_str().is_ok_and(|text| {
+                text.split(';')
+                    .next()
+                    .is_some_and(|essence| essence.trim().eq_ignore_ascii_case(bb_api::JSON_TYPE))
+            })
         })
 }
 

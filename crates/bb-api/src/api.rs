@@ -169,11 +169,7 @@ async fn get_status() -> axum::Json<ServerStatus> {
     ))
 )]
 async fn get_openapi() -> Response {
-    (
-        [(header::CONTENT_TYPE, "application/json")],
-        openapi::json(),
-    )
-        .into_response()
+    ([(header::CONTENT_TYPE, crate::JSON_TYPE)], openapi::json()).into_response()
 }
 
 /// Every route of the API with its description. `limits` holds the per-network limit for the

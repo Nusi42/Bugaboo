@@ -4642,6 +4642,9 @@ pub const MCP_ERROR_NOT_AN_ADDRESS: MessageKey = MessageKey::new("mcp.error.not-
 /// The message `mcp.error.not-json`.
 pub const MCP_ERROR_NOT_JSON: MessageKey = MessageKey::new("mcp.error.not-json");
 
+/// The message `mcp.error.not-json-type`.
+pub const MCP_ERROR_NOT_JSON_TYPE: MessageKey = MessageKey::new("mcp.error.not-json-type");
+
 /// The message `mcp.error.preview`.
 pub const MCP_ERROR_PREVIEW: MessageKey = MessageKey::new("mcp.error.preview");
 

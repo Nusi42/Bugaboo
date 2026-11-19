@@ -3303,6 +3303,7 @@
   "mcp.error.no-prompt": "There is no such starting text.",
   "mcp.error.too-big": "The message is too big.",
   "mcp.error.not-json": "The message is not JSON.",
+  "mcp.error.not-json-type": "Send the message as application/json.",
   "mcp.error.not-a-request": "That is not a request.",
   "mcp.error.batch": "A message holds one request. Batches are not supported.",
   "mcp.error.method": "This server does not know that method.",

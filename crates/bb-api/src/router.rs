@@ -48,7 +48,7 @@ const COMPRESS_FROM_BYTES: u64 = 256;
 const JSON_COMPRESS_ABOVE_BYTES: u64 = 1024;
 /// The kinds of JSON answer that may be compressed. Another kind with `json` in its name is not
 /// an API answer and stays as it is.
-const JSON_TYPES: [&str; 2] = ["application/json", "application/problem+json"];
+const JSON_TYPES: [&str; 2] = [crate::JSON_TYPE, "application/problem+json"];
 /// The compression quality, written once in a file that the budget check of the first page
 /// (PERF-BUNDLE) reads too, so the size it measures is the size this server sends.
 const COMPRESSION_SETTINGS: &str = include_str!("../../../tools/dev/compression.json");
@@ -370,7 +370,7 @@ async fn health_ready(State(state): State<AppState>) -> Response {
 fn json(status: StatusCode, body: &str) -> Response {
     let mut response = (
         status,
-        [(header::CONTENT_TYPE, "application/json")],
+        [(header::CONTENT_TYPE, crate::JSON_TYPE)],
         body.to_owned(),
     )
         .into_response();
