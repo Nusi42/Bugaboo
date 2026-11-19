@@ -83,6 +83,23 @@ impl ExportStore for AuthStorage {
             .transpose()
     }
 
+    async fn exports_of_in(
+        transaction: &mut Transaction,
+        person: UserId,
+    ) -> Result<Vec<DataExportId>, StoreError> {
+        let mut select = Query::select();
+        select
+            .column(DataExportRow::Id)
+            .from(DataExportRow::Table)
+            .and_where(Expr::col(DataExportRow::Person).eq(person.stored()));
+        transaction
+            .fetch_all(&select)
+            .await?
+            .iter()
+            .map(|row| row.id::<DataExportId>(DataExportRow::Id))
+            .collect()
+    }
+
     async fn latest_export_of(
         &self,
         person: UserId,

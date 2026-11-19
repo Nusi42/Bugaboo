@@ -90,6 +90,23 @@ impl crate::privacy::replay::ReplayStore for FakeStore {
 }
 
 impl crate::privacy::removal::RemovalStore for FakeStore {
+    async fn reindex_removed_texts(
+        &self,
+        issues: &[bb_core::id::IssueId],
+        comments: &[bb_core::id::CommentId],
+    ) -> Result<(), FakeError> {
+        self.lock()
+            .state
+            .reindexed
+            .push((issues.to_vec(), comments.to_vec()));
+        Ok(())
+    }
+
+    async fn compact_removed_texts(&self) -> Result<(), FakeError> {
+        self.lock().state.compactions += 1;
+        Ok(())
+    }
+
     async fn person_words(
         tx: &mut Tx,
         person: UserId,

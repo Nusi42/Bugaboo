@@ -102,6 +102,10 @@ bb_core::words! {
         /// Deleting the files of *Download my data* and their records 7 days after they were asked
         /// for (ADR-0044, decision 2): `delete_old_exports`.
         DeleteOldExports => "privacy.delete-old-exports",
+        /// Finishing the removal of a person (ADR-0044, decision 6, M5-F52): queued in the change
+        /// that removes them; the payload names the comments, issues and exports it deleted, and
+        /// the job makes the full-text index forget the texts and deletes the files, in steps.
+        FinishRemoval => "privacy.finish-removal",
     }
 }
 
@@ -134,7 +138,8 @@ impl JobKind {
             | Self::RuleAboutToRunOut
             | Self::RuleMatches
             | Self::RulesGetAnEnd
-            | Self::DataExport => false,
+            | Self::DataExport
+            | Self::FinishRemoval => false,
         }
     }
 
@@ -169,6 +174,7 @@ impl JobKind {
             | Self::RuleMatches
             | Self::RulesGetAnEnd
             | Self::DataExport
+            | Self::FinishRemoval
             | Self::DeleteOldExports => Rhythm::FromTheStart,
         }
     }
@@ -462,6 +468,12 @@ impl<S: AuthStore> Ctx<'_, S> {
                     tracing::warn!(cause = %error, "a file of a person's data could not be written");
                     JobFailure::of(&error, FAILED, job)
                 }),
+            JobKind::FinishRemoval => Box::pin(self.run_finish_removal(&job.payload))
+                .await
+                .map_err(|error| {
+                    tracing::warn!(cause = %error, "a step of finishing a removal failed");
+                    JobFailure::of(&error, FAILED, job)
+                }),
             // The daily kinds go to `do_daily_job`; listed so that a new kind has to be placed.
             JobKind::PurgeDrafts
             | JobKind::DeleteOldExports
@@ -518,7 +530,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             | JobKind::RuleAboutToRunOut
             | JobKind::RuleMatches
             | JobKind::RulesGetAnEnd
-            | JobKind::DataExport => Err(misrouted(job, kind)),
+            | JobKind::DataExport
+            | JobKind::FinishRemoval => Err(misrouted(job, kind)),
         }
     }
 
@@ -536,6 +549,12 @@ impl<S: AuthStore> Ctx<'_, S> {
             Some(JobKind::MailSend) => self.mail_job_gave_up(&job.payload).await,
             Some(JobKind::PreviewFile) => self.preview_gave_up(&job.payload).await,
             Some(JobKind::DataExport) => self.export_gave_up(&job.payload).await,
+            // The removal itself is done; what is left is in the index and the files, and the
+            // dead job keeps its payload for whoever runs it again.
+            Some(JobKind::FinishRemoval) => {
+                tracing::error!("finishing a removal gave up; the job is on the dead-letter list");
+                Ok(())
+            }
             // The daily kinds come back by themselves and leave no work that people can see; a
             // new kind has to be placed in one of these arms.
             Some(

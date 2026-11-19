@@ -12,7 +12,7 @@ use std::collections::BTreeSet;
 use bb_core::ErrorCode;
 use bb_core::backup::replay::ReplayKind;
 use bb_core::event::{EntityRef, RecordKind};
-use bb_core::id::{CommentId, IdSource, IssueId, UserId};
+use bb_core::id::{CommentId, IdSource, IssueId, JobId, UserId};
 use bb_core::keeping::{KeepKind, KeptUntil};
 use bb_core::oauth::GrantEnd;
 use bb_core::person::{HoldReason, PersonStanding, Standing, cleared_address};
@@ -28,6 +28,7 @@ use jiff::Timestamp;
 use jiff::civil::Date;
 
 use super::Scrub;
+use super::finish::{FinishRemoval, queue_finish_in};
 use crate::agents::stop_agents_in;
 use crate::auth::{
     AppError, AuthStore, Ctx, Stops, TakenBack, by, change_failed, end_ways_in, entity,
@@ -77,6 +78,8 @@ pub struct Removal<K> {
     pub today: Date,
     /// Who asks.
     pub asked: RemovalAsked,
+    /// The ID of the job that finishes the removal (`privacy.finish-removal`), queued in its change.
+    pub job: JobId,
 }
 
 /// What a removal did that the work after it needs: the job that reindexes the texts, and the
@@ -138,8 +141,8 @@ fn legal_hold<K: KeepPeriods>(
 
 /// Prepares a removal from what is read before its change: the label, drawn so that no removed
 /// person has it (the unique label refuses a draw that another removal took meanwhile), the keep
-/// periods, today in the organization's zone and the comments choice (`privacy.removed-texts` when
-/// none is given). The use case and the replay both start here; the
+/// periods, today in the organization's zone, the comments choice (`privacy.removed-texts` when
+/// none is given) and the ID of its job. The use case and the replay both start here; the
 /// person's name, address and handles are read inside the change (`remove_in`).
 ///
 /// # Errors
@@ -179,6 +182,7 @@ pub async fn prepare_removal<S: AuthStore>(
         today: date_of(at, Region::of(&layers).zone()),
         keep: layers,
         asked,
+        job: JobId::generate(ids).map_err(|error| AppError::Internal(error.to_string()))?,
     })
 }
 
@@ -242,6 +246,8 @@ pub async fn remove_in<S: AuthStore, K: KeepPeriods>(
     // The rows that give the person roles go too, under the lock of every change of roles. Only a
     // switched-off person is removed, who counts as nobody among those who decide roles already.
     S::lock_policy(transaction).await?;
+    // The files of the exports go with their records, after the change (the job).
+    let exports = S::exports_of_in(transaction, person).await?;
     for (kind, links) in deleted_kinds() {
         // A shared search stays, with *Former user* as its maker (M5-F62).
         if !kept_when_shared(&kind) {
@@ -282,11 +288,18 @@ pub async fn remove_in<S: AuthStore, K: KeepPeriods>(
     let mut issues: Vec<IssueId> = comments.iter().map(|(_, issue)| *issue).collect();
     issues.sort_unstable();
     issues.dedup();
-    Ok(Removed {
+    let removed = Removed {
         comments: comments.into_iter().map(|(comment, _)| comment).collect(),
         issues,
         taken: Some(taken),
-    })
+    };
+    let left = FinishRemoval {
+        comments: removed.comments.clone(),
+        issues: removed.issues.clone(),
+        exports,
+    };
+    queue_finish_in::<S>(transaction, removal.job, &left, removal.at).await?;
+    Ok(removed)
 }
 
 /// Removes a switched-off person for good, with *Remove people* (ADR-0044, decision 6).

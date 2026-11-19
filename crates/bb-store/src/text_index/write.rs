@@ -19,10 +19,14 @@ use bb_core::text_index::TextSource;
 use bb_core::text_words::prepare_joined;
 use sea_query::{Expr, ExprTrait as _, Order, Query};
 
-use crate::db::{Reader, StoredId as _, Transaction, rows_per_insert};
+use crate::db::{
+    Database, Dialect, Reader, STATEMENT_ITEMS, StoredId as _, Transaction, rows_per_insert,
+};
 use crate::error::StoreError;
 use crate::locks::LockClass;
-use crate::schema::{AttachmentRow, CommentRow, FieldRow, FieldValueRow, IssueRow, TextIndexRow};
+use crate::schema::{
+    AttachmentRow, CommentRow, FieldRow, FieldValueRow, IssueRow, TextIndexExtra, TextIndexRow,
+};
 
 /// How many columns a row of the index binds when it is written.
 const WRITTEN_COLUMNS: usize = 4;
@@ -237,6 +241,61 @@ pub(crate) async fn reindex_issues(
         insert_rows(transaction, &rows).await?;
     }
     Ok(())
+}
+
+/// Deletes the rows of these comments, whatever issue they were on: a removal that deleted the
+/// comments makes the index forget them before their issues are made again.
+///
+/// # Errors
+/// Fails when the database fails.
+pub(crate) async fn forget_comments(
+    transaction: &mut Transaction,
+    comments: &[CommentId],
+) -> Result<(), StoreError> {
+    if comments.is_empty() {
+        return Ok(());
+    }
+    transaction.advisory_lock(LockClass::TextIndex, 0).await?;
+    for chunk in comments.chunks(STATEMENT_ITEMS) {
+        let mut delete = Query::delete();
+        delete
+            .from_table(TextIndexRow::Table)
+            .and_where(Expr::col(TextIndexRow::Source).eq(TextSource::Comment.code()))
+            .and_where(
+                Expr::col(TextIndexRow::SourceRef)
+                    .is_in(chunk.iter().map(|comment| comment.stored())),
+            );
+        transaction.execute(&delete).await?;
+    }
+    Ok(())
+}
+
+/// Lets SQLite go of the old text of the index after a removal (M5-F52): the index merges its
+/// segments into one, so no segment keeps the words of a deleted row, and the write-ahead log, which
+/// still holds the old pages, is folded back into the database and emptied
+/// (`Database::empty_write_ahead_log`). With `secure_delete` on every connection (`sqlite_open`),
+/// the pages freed meanwhile hold zeros. PostgreSQL has no such step: it keeps no segments, and the
+/// space of deleted rows is taken back by its own vacuum, which no step of a job can make overwrite
+/// them.
+///
+/// # Errors
+/// Fails when the database fails.
+pub(crate) async fn compact_text_index(database: &Database) -> Result<(), StoreError> {
+    if database.dialect() != Dialect::Sqlite {
+        return Ok(());
+    }
+    let mut transaction = database.begin().await?;
+    transaction.advisory_lock(LockClass::TextIndex, 0).await?;
+    // FTS5 takes its commands as a row of the column that has the name of the table.
+    let mut optimize = Query::insert();
+    optimize
+        .into_table(TextIndexExtra::Fts)
+        .columns([TextIndexExtra::Fts])
+        .values([Expr::val("optimize")])
+        .map_err(|_| StoreError::Corrupt("the command of the text index"))?;
+    transaction.execute(&optimize).await?;
+    transaction.commit().await?;
+    database.empty_write_ahead_log().await
 }
 
 /// Adds rows, as many to a statement as one may bind.

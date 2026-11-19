@@ -19,7 +19,7 @@ use crate::auth::AppError;
 use crate::people::{SwitchOn, switch_on};
 use crate::ports::ChangeStore as _;
 use crate::privacy::removal::{
-    Removal, RemovalAsked, RemovePerson, Removed, remove_in, remove_person,
+    FinishRemoval, Removal, RemovalAsked, RemovePerson, Removed, remove_in, remove_person,
 };
 
 /// The administrator removes `person`, with `comments` or the setting's choice.
@@ -199,6 +199,7 @@ async fn priv_04_a_replayed_removal_needs_no_switch_off_and_runs_once() -> Outco
         keep: world.ctx().setting_layers_of(None).await?,
         today: jiff::civil::date(2026, 11, 19),
         asked: RemovalAsked::ByReplay,
+        job: bb_core::id::JobId::generate(&mut SequentialIds::default()).map_err(text)?,
     });
     let event = world.ctx().event(
         crate::auth::by(ada),
@@ -268,6 +269,55 @@ async fn priv_04_the_legal_hold_name_has_its_reason_and_end() -> Outcome {
         Some(bb_core::person::HoldReason::WorkDays)
     );
     assert!(standing.hold_until.is_some_and(|until| until > today));
+    Ok(())
+}
+
+#[tokio::test]
+async fn priv_04_the_job_after_a_removal_forgets_the_texts_and_deletes_the_export_files() -> Outcome
+{
+    let world = World::new().await?;
+    let bob = world.person("bob@example.test").await?.person.id;
+    switched_off(&world, bob).await?;
+    let export = super::data_exports::ask_for(&world, &token(&world), bob, "Bob asked by letter")
+        .await?
+        .export
+        .id;
+    super::data_exports::run_jobs(&world).await?;
+    assert!(world.exports.bytes(export).is_some(), "the file is written");
+    let mut ids = SequentialIds::default();
+    two_comments(&world, &mut ids, bob)?;
+    let removed = removed(&world, bob, Some(RemovedTexts::Delete)).await?;
+    let waiting = world.store.read(|state| {
+        state
+            .jobs
+            .iter()
+            .filter(|job| job.kind.as_str() == "privacy.finish-removal")
+            .map(|job| job.payload.clone())
+            .collect::<Vec<_>>()
+    });
+    let [payload] = waiting.as_slice() else {
+        return Err(format!("one job finishes the removal: {waiting:?}").into());
+    };
+    let left: FinishRemoval = serde_json::from_value(payload.clone()).map_err(text)?;
+    assert_eq!(left.comments, removed.comments);
+    assert_eq!(left.issues, removed.issues);
+    assert_eq!(left.exports, vec![export]);
+    super::data_exports::run_jobs(&world).await?;
+    assert!(world.exports.bytes(export).is_none(), "the file is gone");
+    let (reindexed, compactions, left) = world.store.read(|state| {
+        (
+            state.reindexed.clone(),
+            state.compactions,
+            state
+                .jobs
+                .iter()
+                .filter(|job| job.kind.as_str() == "privacy.finish-removal")
+                .count(),
+        )
+    });
+    assert_eq!(reindexed, vec![(removed.issues, removed.comments)]);
+    assert_eq!(compactions, 1, "the old text is let go after the last step");
+    assert_eq!(left, 0);
     Ok(())
 }
 
@@ -374,6 +424,7 @@ async fn priv_04_the_legal_hold_ends_with_the_keep_period_of_the_last_work_day()
             keep: FixedEnd(until),
             today,
             asked: prepared.asked,
+            job: prepared.job,
         });
         let event = world.ctx().event(
             crate::auth::by(ada),

@@ -54,6 +54,16 @@ impl ExportStore for FakeStore {
             .cloned())
     }
 
+    async fn exports_of_in(tx: &mut Tx, person: UserId) -> Result<Vec<DataExportId>, FakeError> {
+        Ok(tx
+            .state
+            .data_exports
+            .iter()
+            .filter(|export| export.person == person)
+            .map(|export| export.id)
+            .collect())
+    }
+
     async fn latest_export_of(
         &self,
         person: UserId,

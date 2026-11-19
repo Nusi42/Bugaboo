@@ -8,13 +8,13 @@
 use std::future::Future;
 
 use bb_core::event::{EntityRef, RecordKind};
-use bb_core::id::UserId;
+use bb_core::id::{CommentId, IssueId, UserId};
 use bb_core::names::name_key;
 use bb_core::personal::{EntityMarks, Link};
 use bb_markdown::{MENTION_MARK, MENTION_TRAILING, is_in_mention};
 
 use crate::ports::ChangeStore;
-use crate::store_macros::writes;
+use crate::store_macros::{reads, writes};
 
 /// What the changes of events, the history and notifications are scrubbed of (M2-F75, M5-F63):
 /// the values of a change about one of these records lose their before and after, and so does
@@ -141,6 +141,17 @@ pub struct PersonWords {
 
 /// What the removal of a person needs from storage.
 pub trait RemovalStore: ChangeStore + 'static {
+    reads! {
+        /// Makes the full-text index forget the texts a removal deleted: the rows of `comments` go,
+        /// and the rows of `issues` are made again from what is stored now. The index follows the
+        /// stored texts, so this is no change of its own (the job `privacy.finish-removal`).
+        fn reindex_removed_texts(issues: &[IssueId], comments: &[CommentId]) -> ();
+        /// Lets the database go of the old text after the last step of a removal: on SQLite the
+        /// index merges its segments and the write-ahead log is folded back and emptied, so no
+        /// old page keeps a deleted text; on PostgreSQL nothing.
+        fn compact_removed_texts() -> ();
+    }
+
     writes! {
         /// The name, the address and the handles of `person`, read under the change; none for
         /// nobody (a replay into a backup older than the account).

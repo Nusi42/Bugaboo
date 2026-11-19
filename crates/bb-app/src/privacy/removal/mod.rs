@@ -2,11 +2,13 @@
 //! stays as *Former user* and what the law keeps until when, and the change that removes them.
 
 mod change;
+mod finish;
 mod plan;
 mod store;
 
 pub use change::{
     Removal, RemovalAsked, RemovePerson, Removed, prepare_removal, remove_in, remove_person,
 };
+pub use finish::{FINISH_REMOVAL_ISSUES, FinishRemoval};
 pub use plan::{KeptByLaw, PlanKind, RemovalPlan, RemovalPlanQuery, removal_plan};
 pub use store::{NAME_LETTERS_MIN, PersonWords, RemovalStore, Scrub};

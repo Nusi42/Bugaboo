@@ -267,6 +267,48 @@ async fn priv_04_a_removal_deletes_the_jobs_that_name_the_person_by_id_or_addres
 }
 
 #[tokio::test]
+async fn priv_04_the_full_text_index_forgets_the_removed_text() -> TestResult {
+    use bb_app::privacy::removal::RemovalStore as _;
+    use bb_core::id::CommentId;
+    use bb_core::text_index::TextSource;
+    const WORD: &str = "quixotically";
+    each_database("priv_04_removal_text_index", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = &fixture.storage;
+        let mut source = ids();
+        let world = crate::test_support::world(storage, &mut source, 1).await;
+        let issue = world.issues.first().ok_or("an issue")?.id;
+        let comment = CommentId::generate(&mut source)?;
+        let mut transaction = storage.database().begin().await?;
+        crate::text_index::index_text(
+            &mut transaction,
+            issue,
+            TextSource::Comment,
+            EntityId::from(comment),
+            &format!("{WORD} words of Lea"),
+        )
+        .await?;
+        transaction.commit().await?;
+        if let Some(found) = in_the_file(storage, WORD)? {
+            assert!(found, "the text is in the file before");
+        }
+        storage.reindex_removed_texts(&[issue], &[comment]).await?;
+        storage.compact_removed_texts().await?;
+        let mut rows = Query::select();
+        rows.expr(Expr::val(1))
+            .from(crate::schema::TextIndexRow::Table)
+            .and_where(Expr::col(crate::schema::TextIndexRow::Words).like(like::containing(WORD)));
+        assert!(storage.database().fetch_optional(&rows).await?.is_none());
+        // On SQLite no page of the file or of its write-ahead log keeps the old text.
+        if let Some(found) = in_the_file(storage, WORD)? {
+            assert!(!found, "the old text is still in the file");
+        }
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn priv_04_a_name_outside_ascii_is_scrubbed_in_any_capitals() -> TestResult {
     each_database("priv_04_removal_scrub_unicode", async |db| {
         let fixture = fixture(db).await?;
@@ -310,4 +352,22 @@ async fn priv_04_a_name_outside_ascii_is_scrubbed_in_any_capitals() -> TestResul
         Ok(())
     })
     .await
+}
+
+/// Whether the SQLite file or its write-ahead log holds `word` anywhere; none on PostgreSQL.
+fn in_the_file(storage: &AuthStorage, word: &str) -> Result<Option<bool>, std::io::Error> {
+    let Some(file) = storage.database().file() else {
+        return Ok(None);
+    };
+    let mut bytes = std::fs::read(&file)?;
+    let mut wal = file.into_os_string();
+    wal.push("-wal");
+    if let Ok(more) = std::fs::read(&wal) {
+        bytes.extend(more);
+    }
+    Ok(Some(
+        bytes
+            .windows(word.len())
+            .any(|window| window == word.as_bytes()),
+    ))
 }

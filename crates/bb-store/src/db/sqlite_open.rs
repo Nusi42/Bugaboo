@@ -1,5 +1,5 @@
-//! Opening the SQLite file: WAL mode, foreign keys on, a busy timeout, and a file that only its
-//! owner can read.
+//! Opening the SQLite file: WAL mode, foreign keys on, deleted rows overwritten, a busy timeout,
+//! and a file that only its owner can read.
 
 use std::time::Duration;
 
@@ -50,6 +50,10 @@ async fn open_sqlite_once(
         // more disk flush per commit than NORMAL does in WAL mode (M1-F23).
         .synchronous(SqliteSynchronous::Full)
         .foreign_keys(true)
+        // A deleted row leaves zeros, not its text, in the pages it freed: the removal of a person
+        // and every deleting job leave nothing readable in the file (M5-F52). On every connection,
+        // because SQLite keeps the switch per connection and any of them may delete.
+        .pragma("secure_delete", "on")
         .busy_timeout(busy_timeout);
     SqlitePoolOptions::new()
         .max_connections(SQLITE_MAX_CONNECTIONS)

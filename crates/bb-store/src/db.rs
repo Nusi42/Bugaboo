@@ -229,6 +229,23 @@ impl Database {
         Ok(true)
     }
 
+    /// Folds the write-ahead log of SQLite back into the database and empties it
+    /// (`wal_checkpoint(TRUNCATE)`), so no old page of a deleted row stays in it; nothing on
+    /// PostgreSQL. A reader that holds an old page keeps the log from being emptied this time: that
+    /// is said in the log of the server, and the next checkpoint writes over it.
+    pub(crate) async fn empty_write_ahead_log(&self) -> Result<(), StoreError> {
+        let Pool::Sqlite(pool) = &self.pool else {
+            return Ok(());
+        };
+        let (busy, _, _): (i64, i64, i64) = sqlx::query_as("PRAGMA wal_checkpoint(TRUNCATE)")
+            .fetch_one(pool)
+            .await?;
+        if busy != 0 {
+            tracing::warn!("the write-ahead log could not be emptied while a reader held it");
+        }
+        Ok(())
+    }
+
     /// The file of a SQLite database as it was opened, whether from an address or a path;
     /// `None` on PostgreSQL. The address is read once, by the database library, so nothing of
     /// its query (`?mode=…`) is ever taken for a part of the file's name.

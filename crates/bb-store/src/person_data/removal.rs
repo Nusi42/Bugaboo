@@ -4,7 +4,7 @@
 
 use bb_app::privacy::removal::{PersonWords, RemovalStore, Scrub};
 use bb_core::event::{DomainEvent, FieldChange};
-use bb_core::id::UserId;
+use bb_core::id::{CommentId, IssueId, UserId};
 use bb_core::personal::{Entity as _, EntityMarks, Link, LinkScope};
 use bb_core::whose::MADE_ONLY_BY_THEIR_OWNER;
 use sea_query::{Alias, Cond, Expr, ExprTrait as _, Iden, Order, Query, SelectStatement};
@@ -18,8 +18,24 @@ use crate::like;
 use crate::schema::{
     Event, HistoryEntryRow, Job, NotificationRow, PersonHandleRow, PersonRow, tables,
 };
+use crate::text_index::{compact_text_index, forget_comments, reindex_issues};
 
 impl RemovalStore for AuthStorage {
+    async fn reindex_removed_texts(
+        &self,
+        issues: &[IssueId],
+        comments: &[CommentId],
+    ) -> Result<(), StoreError> {
+        let mut transaction = self.database().begin().await?;
+        forget_comments(&mut transaction, comments).await?;
+        reindex_issues(&mut transaction, issues).await?;
+        transaction.commit().await
+    }
+
+    async fn compact_removed_texts(&self) -> Result<(), StoreError> {
+        compact_text_index(self.database()).await
+    }
+
     async fn person_words(
         transaction: &mut Transaction,
         person: UserId,

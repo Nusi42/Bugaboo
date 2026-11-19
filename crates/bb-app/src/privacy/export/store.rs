@@ -20,6 +20,9 @@ pub trait ExportStore: ChangeStore + 'static {
         /// The export of `person` that is still waiting for its file, if there is one: there is
         /// never more than one (ADR-0044, *Limits*).
         fn waiting_export_of(person: UserId) -> Option<DataExport> = waiting_export_of_in;
+        /// The exports of `person`'s data, whoever asked for them: the ones a removal deletes,
+        /// whose files go after it.
+        fn exports_of(person: UserId) -> Vec<DataExportId> = exports_of_in;
     }
 
     reads! {
