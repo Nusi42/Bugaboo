@@ -50,6 +50,9 @@ pub const ENDED_GRANT_KEEP_DAYS: i64 = 30;
 /// The `resource` a token is issued for: the path of the MCP server (RFC 8707). A token is refused
 /// anywhere else.
 pub const MCP_PATH: &str = "/mcp";
+/// The biggest message `/mcp` reads, in bytes (1 MiB). A request that says it is bigger is refused
+/// with `413` before its body is read.
+pub const MCP_MESSAGE_BYTES_MAX: usize = 1024 * 1024;
 /// The path of the protected-resource metadata (RFC 9728).
 pub const PROTECTED_RESOURCE_METADATA_PATH: &str = "/.well-known/oauth-protected-resource";
 /// The path of the authorization-server metadata (RFC 8414).

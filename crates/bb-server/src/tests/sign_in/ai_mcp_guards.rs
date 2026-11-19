@@ -87,6 +87,41 @@ async fn ai_20_a_batch_is_refused_and_so_is_an_empty_one() -> TestResult {
 }
 
 #[tokio::test]
+async fn ai_20_a_message_over_the_limit_is_refused_by_its_length_before_it_is_read() -> TestResult {
+    each_database("ai_20_too_big_http", async |db| {
+        let (rig, app) = Mcp::start(db).await?;
+        let (_site, mut ada) = Site::start(&rig, &app).await?;
+        ai_on(&rig).await?;
+        let mcp = Mcp::new(&app);
+        let signed = sign_in_app(&mcp, &mut ada, "Claude Code", "see-only", "see-only").await?;
+        let ping = json!({"jsonrpc":"2.0","id":1,"method":"ping"});
+        // The length the request says is judged before a byte of the body is read: a small body
+        // that says it is too big is refused all the same.
+        let over = (bb_core::oauth::MCP_MESSAGE_BYTES_MAX + 1).to_string();
+        let refused = mcp
+            .post_with(
+                Some(&signed.access),
+                &[("content-length", over.as_str())],
+                ping.clone(),
+            )
+            .await?;
+        assert_eq!(refused.status, StatusCode::PAYLOAD_TOO_LARGE);
+        assert_eq!(
+            refused.json["error"]["code"],
+            json!(-32600),
+            "{}",
+            refused.json
+        );
+        // The connection ends after the answer, so the rest of a body is never read into it.
+        assert_eq!(refused.header("connection"), "close");
+        let fine = mcp.post(Some(&signed.access), ping).await?;
+        assert_eq!(fine.status, StatusCode::OK);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn ai_20_a_page_of_another_website_is_turned_away() -> TestResult {
     each_database("ai_20_origin_http", async |db| {
         let (rig, app) = Mcp::start(db).await?;

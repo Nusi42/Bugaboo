@@ -24,15 +24,12 @@ use bb_api::{bearer_token, is_same_origin_of, json_no_store, request_info, with_
 use bb_app::auth::{AuthApi, McpIdentity, McpIdentityQuery, OAuthMetadataQuery, RequestInfo};
 use bb_core::ErrorCode;
 use bb_core::message;
-use bb_core::oauth::{MCP_PATH, PROTECTED_RESOURCE_METADATA_PATH};
+use bb_core::oauth::{MCP_MESSAGE_BYTES_MAX, MCP_PATH, PROTECTED_RESOURCE_METADATA_PATH};
 use serde_json::{Value, json};
 
 use crate::methods::{self, Caller, Failure};
 use crate::protocol::{self, Fault, Message, sentence};
 use crate::session::Sessions;
-
-/// The biggest message the server reads.
-const BODY_LIMIT_BYTES: usize = 1024 * 1024;
 
 /// What the MCP server needs from the server around it.
 #[derive(Clone)]
@@ -55,7 +52,7 @@ pub fn router(options: McpOptions) -> McpService {
     let sessions = Sessions::new(Arc::clone(&options.api));
     Router::new()
         .route(MCP_PATH, any(handle))
-        .layer(DefaultBodyLimit::max(BODY_LIMIT_BYTES))
+        .layer(DefaultBodyLimit::max(MCP_MESSAGE_BYTES_MAX))
         .with_state(McpState { options, sessions })
 }
 
@@ -128,6 +125,11 @@ struct Asked<'a> {
 
 async fn handle(State(state): State<McpState>, request: Request<Body>) -> Response {
     let (parts, body) = request.into_parts();
+    // A message that says it is too big is refused before a byte of it is read, so the app gets
+    // the answer instead of a connection closed under it.
+    if parts.method == Method::POST && says_too_big(&parts) {
+        return too_big();
+    }
     let info = request_info(&parts);
     let origin = state
         .options
@@ -150,14 +152,8 @@ async fn handle(State(state): State<McpState>, request: Request<Body>) -> Respon
         origin,
     };
     let bytes = if parts.method == Method::POST {
-        let Ok(bytes) = axum::body::to_bytes(body, BODY_LIMIT_BYTES).await else {
-            return json_no_store(
-                StatusCode::PAYLOAD_TOO_LARGE,
-                &protocol::error_without_id(
-                    Fault::InvalidRequest,
-                    &sentence(message::MCP_ERROR_TOO_BIG),
-                ),
-            );
+        let Ok(bytes) = axum::body::to_bytes(body, MCP_MESSAGE_BYTES_MAX).await else {
+            return too_big();
         };
         bytes
     } else {
@@ -191,6 +187,31 @@ async fn handle(State(state): State<McpState>, request: Request<Body>) -> Respon
             response
         }
     }
+}
+
+/// Whether the request says, in `Content-Length`, that its body is bigger than a message may be.
+fn says_too_big(parts: &Parts) -> bool {
+    parts
+        .headers
+        .get(header::CONTENT_LENGTH)
+        .and_then(|length| length.to_str().ok()?.trim().parse::<u64>().ok())
+        .is_some_and(|length| {
+            usize::try_from(length).map_or(true, |length| length > MCP_MESSAGE_BYTES_MAX)
+        })
+}
+
+/// The answer to a message over the limit: `413`, with the error of JSON-RPC. The connection is
+/// closed after it (`Connection: close`), so the app reads the answer before the rest of a body
+/// that was never read can reset it.
+fn too_big() -> Response {
+    let mut response = json_no_store(
+        StatusCode::PAYLOAD_TOO_LARGE,
+        &protocol::error_without_id(Fault::InvalidRequest, &sentence(message::MCP_ERROR_TOO_BIG)),
+    );
+    response
+        .headers_mut()
+        .insert(header::CONNECTION, HeaderValue::from_static("close"));
+    response
 }
 
 impl Asked<'_> {
