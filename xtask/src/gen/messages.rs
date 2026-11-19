@@ -273,6 +273,7 @@ pub(crate) fn output_paths() -> Vec<&'static str> {
         TYPES_OUTPUT,
         ALL_OUTPUT,
         messages_rust::OUTPUT,
+        messages_rust::CATALOG_OUTPUT,
         messages_rust::SEARCH_OUTPUT,
     ];
     paths.extend(PARTS.iter().map(|part| part.path));
@@ -507,6 +508,7 @@ fn generate_from(
     let made = made_keys();
     let made: Vec<&str> = made.iter().map(|made| made.key.as_str()).collect();
     let part_of = parts_of(messages.iter().map(|(key, _)| key.as_str()), sources, &made);
+    let sorted = messages_rust::Sorted::new(&all_messages);
     let mut generated = vec![
         Generated::new(
             TYPES_OUTPUT,
@@ -515,7 +517,11 @@ fn generate_from(
         Generated::new(ALL_OUTPUT, all_file()),
         Generated::new(
             messages_rust::OUTPUT,
-            messages_rust::generate(repo, &all_messages)?,
+            messages_rust::generate(repo, &sorted)?,
+        ),
+        Generated::new(
+            messages_rust::CATALOG_OUTPUT,
+            messages_rust::generate_catalog(repo, &sorted)?,
         ),
         Generated::new(
             messages_rust::SEARCH_OUTPUT,

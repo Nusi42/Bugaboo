@@ -1,17 +1,21 @@
 //! Messages: every text a person reads comes from `messages/en.json` by key (UX-07).
 //!
-//! `cargo xtask gen messages` writes `generated.rs` from the catalog: one constant per message
-//! without placeholders and one function per message with placeholders, with the placeholders as
-//! typed arguments. Code never writes a message key as text, so a key that does not exist does
-//! not compile (TXT-CATALOG finds keys that nothing uses). The same holds for the message that a
-//! word makes (`words!` with `messages`, [`derived_key!`](crate::derived_key)): the key is looked up
-//! in the catalog when the program is built, and one that is not there stops the build.
+//! `cargo xtask gen messages` writes `generated.rs` from the catalog (and the texts, sorted by key,
+//! into `catalog.generated.rs`): one constant per message without placeholders and one function
+//! per message with placeholders, with the placeholders as typed arguments. Code never writes a
+//! message key as text, so a key that does not exist does not compile (TXT-CATALOG finds keys that
+//! nothing uses). The same holds for the message that a word makes (`words!` with `messages`,
+//! [`derived_key!`](crate::derived_key)): the key is looked up in the catalog when the program is
+//! built, and one that is not there stops the build.
 
 use jiff::Timestamp;
 
+#[path = "catalog.generated.rs"]
+mod catalog;
 mod generated;
 mod render;
 
+use catalog::CATALOG;
 pub use generated::*;
 
 /// The key of one message in the catalog.

@@ -16,3 +16,7 @@ reason = "The tests of uploads, downloads and previews over HTTP, one flow after
 [[generated]]
 path = "crates/bb-core/src/message/generated.rs"
 reason = "Written by cargo xtask gen from the message catalog; never edited by hand."
+
+[[generated]]
+path = "crates/bb-core/src/message/catalog.generated.rs"
+reason = "The texts of the message catalog, sorted by key, written by cargo xtask gen beside generated.rs; never edited by hand."
