@@ -39,6 +39,8 @@ words! {
         SignUpLinks => "sign-up-links",
         /// The links that confirm a new e-mail address, with the address, until they run out.
         EmailChangeLinks => "e-mail-change-links",
+        /// The requests for agents of programs, answered or not (ADR-0029, amendment M9).
+        AgentRequests => "agent-requests",
         /// Text being written and not yet saved, and the notes of who is editing.
         Drafts => "drafts",
         /// Notifications in the app.
@@ -220,6 +222,11 @@ pub const KEEP_KINDS: &[KeepRule] = &[
         kind: KeepKind::EmailChangeLinks,
         group: KeepGroup::ByItself,
         period: Period::Fixed(Length::hours(crate::e_mail_change::LINK_HOURS)),
+    },
+    KeepRule {
+        kind: KeepKind::AgentRequests,
+        group: KeepGroup::ByItself,
+        period: Period::Fixed(Length::days(crate::agent_request::REQUEST_KEEP_DAYS)),
     },
     KeepRule {
         kind: KeepKind::Drafts,

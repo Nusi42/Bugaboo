@@ -188,6 +188,7 @@ pub(crate) struct State {
     /// The records of backups (OPS-07).
     pub(crate) backup_runs: Vec<bb_core::backup::run::BackupRun>,
     pub(crate) data_exports: Vec<bb_core::data_export::DataExport>,
+    pub(crate) agent_requests: Vec<bb_core::agent_request::AgentRequest>,
     pub(crate) walk: Vec<super::fake_exports::WalkedRow>,
     /// What the job that finishes a removal asked the index to forget, step by step.
     pub(crate) reindexed: Vec<(Vec<bb_core::id::IssueId>, Vec<bb_core::id::CommentId>)>,

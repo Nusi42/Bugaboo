@@ -64,6 +64,7 @@ macro_rules! stored_tables {
 }
 
 mod access;
+mod agent_requests;
 mod agent_work;
 mod agents;
 mod ai;
@@ -86,6 +87,7 @@ mod work_times;
 mod working_hours;
 
 pub(crate) use access::*;
+pub(crate) use agent_requests::*;
 pub(crate) use agent_work::*;
 pub(crate) use agents::*;
 pub(crate) use ai::*;
@@ -116,6 +118,7 @@ pub fn tables() -> Vec<StoredTable> {
     tables.extend(agent_work::tables());
     tables.extend(agents::tables());
     tables.extend(ai::tables());
+    tables.extend(agent_requests::tables());
     tables.extend(backups::tables());
     tables.extend(comments::tables());
     tables.extend(data_exports::tables());

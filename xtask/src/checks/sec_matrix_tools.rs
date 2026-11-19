@@ -83,12 +83,22 @@ pub(super) fn tool_findings(record: &str) -> Vec<Finding> {
                 format!("{place} was run through `{}`, not `mcp`.", line.entry),
             ));
         }
-        if line.audience != words::audience_of(tool.is_for_agents(), tool.is_for_people()) {
+        if line.audience
+            != words::audience_of(
+                tool.is_for_agents(),
+                tool.is_for_people(),
+                tool.is_for_programs(),
+            )
+        {
             found.push(Finding::at(
                 RECORD_PATH,
                 format!(
                     "{place} is for `{}`, but the record says `{}`: run the matrix again.",
-                    words::audience_of(tool.is_for_agents(), tool.is_for_people()),
+                    words::audience_of(
+                        tool.is_for_agents(),
+                        tool.is_for_people(),
+                        tool.is_for_programs(),
+                    ),
                     line.audience
                 ),
             ));
@@ -190,7 +200,11 @@ mod tests {
                 tool.code(),
                 words::ENTRY_MCP,
                 words::EFFECT_CHANGES,
-                words::audience_of(tool.is_for_agents(), tool.is_for_people()),
+                words::audience_of(
+                    tool.is_for_agents(),
+                    tool.is_for_people(),
+                    tool.is_for_programs(),
+                ),
                 answers.join(" ")
             );
         }

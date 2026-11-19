@@ -508,3 +508,8 @@ route = "GET /api/v1/people/{person}/removal-plan"
 property = "kept_by_law"
 whole_value = true
 reason = "One row for each row of the keep rules that keeps the person's records (work days, the security log, backups): a list fixed by `KEEP_KINDS`, not one that grows with data, and shown whole before a removal (ADR-0044, decision 6; M9-F50)."
+
+[[exempt]]
+route = "GET /api/v1/agents/requests"
+property = "requests"
+reason = "The requests for agents asked of one person in the last week are few, because a key or grant has at most three waiting and a request is deleted a week after it was asked; the answer shows at most 100 and says `truncated` (M9-F120)."

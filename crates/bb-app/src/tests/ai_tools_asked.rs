@@ -93,10 +93,11 @@ async fn ai_04_a_tool_is_offered_only_to_a_person_who_may_use_it_somewhere() -> 
         "start_timer" => json!({"issue": key}),
         _ => json!({"version": 0}),
     };
-    // The tools a person may be offered at all: every one but the tools of agents.
+    // The tools a person may be offered at all: every one but the tools of agents, and in a session
+    // (no key, no grant) not the tools of programs either.
     let people_tools: Vec<&str> = crate::ai::tools::registry::<super::fake::FakeStore>()
         .iter()
-        .filter(|spec| !spec.tool.is_for_agents())
+        .filter(|spec| !spec.tool.is_for_agents() && !spec.tool.is_for_programs())
         .map(ToolSpec::name)
         .collect();
     let changes_own = [

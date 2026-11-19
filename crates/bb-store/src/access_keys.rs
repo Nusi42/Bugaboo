@@ -58,6 +58,24 @@ fn read_key(row: &Row) -> Result<AccessKey, StoreError> {
     })
 }
 
+/// The access key with this ID, without its permissions and projects, inside a change.
+pub(crate) async fn access_key_in(
+    transaction: &mut Transaction,
+    id: AccessKeyId,
+) -> Result<Option<AccessKey>, StoreError> {
+    let mut select = Query::select();
+    select
+        .columns(key_columns())
+        .from(AccessKeyRow::Table)
+        .and_where(Expr::col(AccessKeyRow::Id).eq(id.stored()));
+    transaction
+        .fetch_optional(&select)
+        .await?
+        .as_ref()
+        .map(read_key)
+        .transpose()
+}
+
 /// The keys with their single permissions and their projects.
 async fn with_scope(
     database: &Database,

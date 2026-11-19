@@ -214,6 +214,17 @@ words! {
         /// An administrator corrected the e-mail address of the person the entry names; the event
         /// holds the reason and the keyed digests of the addresses.
         EmailCorrected => "person.e_mail_corrected",
+        /// A program asked the person for agents; the entry points to the request (ADR-0029,
+        /// amendment M9).
+        AgentsAskedFor => "agent_request.asked",
+        /// The person approved a request for agents with their password: its agents were made.
+        AgentRequestApproved => "agent_request.approved",
+        /// The person declined a request for agents.
+        AgentRequestDeclined => "agent_request.declined",
+        /// The program that asked collected the keys of an approved request.
+        AgentKeysCollected => "agent_request.collected",
+        /// Another credential tried to collect the keys of a request, and was refused.
+        AgentKeysRefused => "agent_request.collect_refused",
     }
 }
 

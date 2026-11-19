@@ -336,6 +336,60 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/agents/requests": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The requests for agents asked of the person in the last week, newest first. */
+    get: operations["listAgentRequests"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/agents/requests/approve": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Approves requests for agents with the password once: every agent of them is made in one change,
+     *     and their keys wait for the program that asked. When one cannot be made, none is.
+     */
+    post: operations["approveAgentRequests"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/agents/requests/{request}/decline": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Declines a request for agents: it ends, and nothing is made. */
+    post: operations["declineAgentRequest"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/agents/several": {
     parameters: {
       query?: never;
@@ -5910,6 +5964,40 @@ export interface components {
       /** @description Where its work is. It is not the status of the issue. */
       state: components["schemas"]["AgentWorkState"];
     };
+    /** @description A request for agents as its person sees it. */
+    AgentRequestBody: {
+      /** @description The agents it asks for. */
+      agents: components["schemas"]["AskedAgentBody"][];
+      /**
+       * Format: date-time
+       * @description When it was asked.
+       */
+      asked_at: string;
+      /** @description The name of the app or of the key that asked. */
+      asked_by: string;
+      /** @description Whether an AI app asked, not a key. */
+      by_app: boolean;
+      /** @description The ID of the request. */
+      id: string;
+      /** @description Why it asked. */
+      reason: string;
+      /** @description Where it stands. */
+      stands: components["schemas"]["RequestStands"];
+      /** @description Until when it waits for an answer, or for its keys once approved. */
+      waits_until: string;
+      /**
+       * @description The web address the app comes back to; none for a key and for an app on the person's
+       *     computer.
+       */
+      web_address?: string | null;
+    };
+    /** @description The requests for agents of a person, newest first. */
+    AgentRequestsBody: {
+      /** @description The requests of the last week, at most 100. */
+      requests: components["schemas"]["AgentRequestBody"][];
+      /** @description Whether there were more than the list shows. */
+      truncated: boolean;
+    };
     /**
      * @description Whether an agent may act.
      * @enum {string}
@@ -6036,6 +6124,13 @@ export interface components {
       /** @description The issues. */
       issues: components["schemas"]["ManyChangeTargetBody"][];
     };
+    /** @description The requests to approve, and the password, asked again once for all of them. */
+    ApproveAgentRequestsBody: {
+      /** @description The password of the person, asked again. */
+      password: string;
+      /** @description The IDs of the requests, as the person ticked them. */
+      requests: string[];
+    };
     /** @description *Approve plan*, or a note instead. */
     ApprovePlanBody: {
       /** @description A note that answers the plan instead of approving it. */
@@ -6050,6 +6145,20 @@ export interface components {
     AskSomeonesDataBody: {
       /** @description The reason, in the administrator's own words (at most 500 characters). */
       reason: string;
+    };
+    /** @description One agent a program asks for. */
+    AskedAgentBody: {
+      /** @description The agent the approval made; left out before. */
+      agent?: string | null;
+      /**
+       * Format: int64
+       * @description How many days its key should last; left out for the default of the organization.
+       */
+      key_days?: number | null;
+      /** @description The name the agent would have. */
+      name: string;
+      /** @description What it is for, in a few words. */
+      purpose: string;
     };
     /** @description A row of *Who has which role*: the fields that can be asked for. */
     AssignmentItem: {
@@ -8728,6 +8837,7 @@ export interface components {
       | "sessions"
       | "sign-up-links"
       | "e-mail-change-links"
+      | "agent-requests"
       | "drafts"
       | "notifications"
       | "trash"
@@ -9974,7 +10084,8 @@ export interface components {
       | "agent-stopped"
       | "export-ready"
       | "export-by-administrator"
-      | "details-corrected";
+      | "details-corrected"
+      | "agents-asked-for";
     /**
      * @description Which notifications a list shows: all, the unread ones, or the ones that mention the person.
      * @enum {string}
@@ -11358,6 +11469,7 @@ export interface components {
       | "assignment"
       | "comment"
       | "data-export"
+      | "agent-request"
       | "follower"
       | "group"
       | "invitation"
@@ -11519,6 +11631,11 @@ export interface components {
        */
       version: number;
     };
+    /**
+     * @description Where a request for agents stands: waiting, approved, declined, collected or ran out.
+     * @enum {string}
+     */
+    RequestStands: "waiting" | "approved" | "declined" | "collected" | "ran-out";
     /**
      * @description A change that needs nothing but the version of the record it is made on: giving a role its
      *     starting permissions back, throwing the timer away. One schema for all of them; its name is the
@@ -14576,6 +14693,95 @@ export interface operations {
       401: components["responses"]["NotSignedIn"];
       403: components["responses"]["Forbidden"];
       413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  listAgentRequests: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The requests, newest first. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AgentRequestsBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  approveAgentRequests: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ApproveAgentRequestsBody"];
+      };
+    };
+    responses: {
+      /** @description The requests, approved. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AgentRequestsBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  declineAgentRequest: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the request. */
+        request: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The request, declined. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AgentRequestBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];

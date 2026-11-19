@@ -532,6 +532,49 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "agents.renew-name",
         "Renew the standing rule {search} of {agent}",
     ),
+    ("agents.request-agent", "{name} ({purpose})"),
+    (
+        "agents.request-app-computer",
+        "An AI app on your own computer; it chose its name itself.",
+    ),
+    (
+        "agents.request-app-web",
+        "An AI app at {address}; it chose its name itself.",
+    ),
+    (
+        "agents.request-approved",
+        "Approved: {count, plural, one {# agent} other {# agents}} for {app}",
+    ),
+    (
+        "agents.request-collect-until",
+        "Its keys wait for the program until {moment}",
+    ),
+    (
+        "agents.request-decline-name",
+        "Decline the request of {app}",
+    ),
+    (
+        "agents.request-line",
+        "{app} asks for {count, plural, one {# agent} other {# agents}}",
+    ),
+    ("agents.request-tick", "Approve the request of {app}"),
+    (
+        "agents.request-until",
+        "Waits for your answer until {moment}",
+    ),
+    ("agents.requests", "Asked for by a program"),
+    (
+        "agents.requests-approve",
+        "{count, plural, =0 {Tick a request to approve it} one {Approve # request} other {Approve # requests}}",
+    ),
+    (
+        "agents.requests-intro",
+        "An app or a script with your key or your permission asks you for agents. Nothing is created until you approve with your password; then only that program collects the keys, once. A request waits a day.",
+    ),
+    (
+        "agents.requests-password-help",
+        "Your password, once for every request you ticked.",
+    ),
     ("agents.resume", "Resume"),
     ("agents.resume-name", "Resume {agent}"),
     ("agents.review", "Review"),
@@ -914,6 +957,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Ask the person a question. The work waits until they answer.",
     ),
     (
+        "ai-tool.ask-for-agents",
+        "Ask the person for agents, one for each part of the work, with a reason. Nothing is created until they approve in Bugaboo; then collect the keys with collect_agent_keys.",
+    ),
+    (
         "ai-tool.attach",
         "Attach a result to your attempt: an address such as a branch or a pull request, or a check that passed or failed.",
     ),
@@ -921,6 +968,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "ai-tool.changes-since",
         "List what changed in the issues you may see since the mark you got last time, with a new mark.",
+    ),
+    (
+        "ai-tool.collect-agent-keys",
+        "Collect the keys of the agents the person approved, once. Before that it says whether the request waits, was declined or ran out.",
     ),
     ("ai-tool.create-issue", "Create a new issue in a project."),
     (
@@ -3477,6 +3528,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "keep-group.name.by-itself",
         "Bugaboo deletes these by itself",
     ),
+    ("keep-kind.name.agent-requests", "Requests for agents"),
     ("keep-kind.name.app-grants", "Ended access of AI apps"),
     ("keep-kind.name.away-times", "Away times"),
     ("keep-kind.name.backups", "Backups"),
@@ -3500,6 +3552,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("keep-kind.name.trash", "Trash"),
     ("keep-kind.name.uploads", "Unfinished uploads"),
     ("keep-kind.name.work-days", "Working hours"),
+    (
+        "keep-kind.why.agent-requests",
+        "Showing you what a program asked for and what you answered; a request waits a day for your answer and a day for its keys",
+    ),
     ("keep-kind.why.app-grants", "Seeing which app had access"),
     (
         "keep-kind.why.away-times",
@@ -4303,6 +4359,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "notification.kind.agent-stopped",
         "An agent was stopped or paused",
     ),
+    (
+        "notification.kind.agents-asked-for",
+        "A program asks you for agents",
+    ),
     ("notification.kind.assigned", "An issue is assigned to you"),
     (
         "notification.kind.details-corrected",
@@ -4361,6 +4421,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "notifications.agent-stopped",
         "An agent of yours was stopped or paused. Look at My agents to see which one and why.",
+    ),
+    (
+        "notifications.agents-asked-for",
+        "A program asks you for agents. Approve or decline it on My agents",
     ),
     (
         "notifications.always-told",

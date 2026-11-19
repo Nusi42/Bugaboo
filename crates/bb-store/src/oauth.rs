@@ -154,6 +154,23 @@ async fn delete_secrets_of(
 }
 
 impl OAuthStore for AuthStorage {
+    async fn grant_in(
+        transaction: &mut Transaction,
+        id: GrantId,
+    ) -> Result<Option<OAuthGrant>, StoreError> {
+        let mut select = Query::select();
+        select
+            .columns(GRANT_COLUMNS)
+            .from(OAuthGrantRow::Table)
+            .and_where(Expr::col(OAuthGrantRow::Id).eq(id.stored()));
+        transaction
+            .fetch_optional(&select)
+            .await?
+            .as_ref()
+            .map(read_grant)
+            .transpose()
+    }
+
     async fn oauth_client(&self, id: OAuthClientId) -> Result<Option<OAuthClient>, StoreError> {
         let mut select = Query::select();
         select

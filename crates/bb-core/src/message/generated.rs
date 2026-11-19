@@ -645,6 +645,19 @@ pub const AGENTS_PAUSE: MessageKey = MessageKey::new("agents.pause");
 /// The message `agents.renew`.
 pub const AGENTS_RENEW: MessageKey = MessageKey::new("agents.renew");
 
+/// The message `agents.request-app-computer`.
+pub const AGENTS_REQUEST_APP_COMPUTER: MessageKey = MessageKey::new("agents.request-app-computer");
+
+/// The message `agents.requests`.
+pub const AGENTS_REQUESTS: MessageKey = MessageKey::new("agents.requests");
+
+/// The message `agents.requests-intro`.
+pub const AGENTS_REQUESTS_INTRO: MessageKey = MessageKey::new("agents.requests-intro");
+
+/// The message `agents.requests-password-help`.
+pub const AGENTS_REQUESTS_PASSWORD_HELP: MessageKey =
+    MessageKey::new("agents.requests-password-help");
+
 /// The message `agents.resume`.
 pub const AGENTS_RESUME: MessageKey = MessageKey::new("agents.resume");
 
@@ -1071,6 +1084,9 @@ pub const AI_TOOL_ADD_COMMENT: MessageKey = MessageKey::new("ai-tool.add-comment
 /// The message `ai-tool.ask`.
 pub const AI_TOOL_ASK: MessageKey = MessageKey::new("ai-tool.ask");
 
+/// The message `ai-tool.ask-for-agents`.
+pub const AI_TOOL_ASK_FOR_AGENTS: MessageKey = MessageKey::new("ai-tool.ask-for-agents");
+
 /// The message `ai-tool.attach`.
 pub const AI_TOOL_ATTACH: MessageKey = MessageKey::new("ai-tool.attach");
 
@@ -1079,6 +1095,9 @@ pub const AI_TOOL_CHANGE_STATUS: MessageKey = MessageKey::new("ai-tool.change-st
 
 /// The message `ai-tool.changes-since`.
 pub const AI_TOOL_CHANGES_SINCE: MessageKey = MessageKey::new("ai-tool.changes-since");
+
+/// The message `ai-tool.collect-agent-keys`.
+pub const AI_TOOL_COLLECT_AGENT_KEYS: MessageKey = MessageKey::new("ai-tool.collect-agent-keys");
 
 /// The message `ai-tool.create-issue`.
 pub const AI_TOOL_CREATE_ISSUE: MessageKey = MessageKey::new("ai-tool.create-issue");
@@ -3957,6 +3976,10 @@ pub const KEEP_GROUP_NAME_BY_AN_ADMINISTRATOR: MessageKey =
 /// The message `keep-group.name.by-itself`.
 pub const KEEP_GROUP_NAME_BY_ITSELF: MessageKey = MessageKey::new("keep-group.name.by-itself");
 
+/// The message `keep-kind.name.agent-requests`.
+pub const KEEP_KIND_NAME_AGENT_REQUESTS: MessageKey =
+    MessageKey::new("keep-kind.name.agent-requests");
+
 /// The message `keep-kind.name.app-grants`.
 pub const KEEP_KIND_NAME_APP_GRANTS: MessageKey = MessageKey::new("keep-kind.name.app-grants");
 
@@ -4010,6 +4033,10 @@ pub const KEEP_KIND_NAME_UPLOADS: MessageKey = MessageKey::new("keep-kind.name.u
 
 /// The message `keep-kind.name.work-days`.
 pub const KEEP_KIND_NAME_WORK_DAYS: MessageKey = MessageKey::new("keep-kind.name.work-days");
+
+/// The message `keep-kind.why.agent-requests`.
+pub const KEEP_KIND_WHY_AGENT_REQUESTS: MessageKey =
+    MessageKey::new("keep-kind.why.agent-requests");
 
 /// The message `keep-kind.why.app-grants`.
 pub const KEEP_KIND_WHY_APP_GRANTS: MessageKey = MessageKey::new("keep-kind.why.app-grants");
@@ -4893,6 +4920,10 @@ pub const NOTIFICATION_KIND_AGENT_GAVE_UP: MessageKey =
 pub const NOTIFICATION_KIND_AGENT_STOPPED: MessageKey =
     MessageKey::new("notification.kind.agent-stopped");
 
+/// The message `notification.kind.agents-asked-for`.
+pub const NOTIFICATION_KIND_AGENTS_ASKED_FOR: MessageKey =
+    MessageKey::new("notification.kind.agents-asked-for");
+
 /// The message `notification.kind.assigned`.
 pub const NOTIFICATION_KIND_ASSIGNED: MessageKey = MessageKey::new("notification.kind.assigned");
 
@@ -4962,6 +4993,10 @@ pub const NOTIFICATIONS_AGENT_GAVE_UP: MessageKey = MessageKey::new("notificatio
 
 /// The message `notifications.agent-stopped`.
 pub const NOTIFICATIONS_AGENT_STOPPED: MessageKey = MessageKey::new("notifications.agent-stopped");
+
+/// The message `notifications.agents-asked-for`.
+pub const NOTIFICATIONS_AGENTS_ASKED_FOR: MessageKey =
+    MessageKey::new("notifications.agents-asked-for");
 
 /// The message `notifications.by-mail`.
 pub const NOTIFICATIONS_BY_MAIL: MessageKey = MessageKey::new("notifications.by-mail");
@@ -10642,6 +10677,123 @@ pub fn agents_renew_name(values: AgentsRenewName<'_>) -> Message {
             ("agent", Value::Text(values.agent.to_string())),
             ("search", Value::Text(values.search.to_string())),
         ],
+    )
+}
+
+/// The values of the message `agents.request-agent`, by name.
+#[derive(Clone, Copy)]
+pub struct AgentsRequestAgent<'a> {
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+    /// The value of `{purpose}`.
+    pub purpose: &'a dyn std::fmt::Display,
+}
+
+/// The message `agents.request-agent`.
+#[must_use]
+pub fn agents_request_agent(values: AgentsRequestAgent<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agents.request-agent"),
+        vec![
+            ("name", Value::Text(values.name.to_string())),
+            ("purpose", Value::Text(values.purpose.to_string())),
+        ],
+    )
+}
+
+/// The message `agents.request-app-web`.
+#[must_use]
+pub fn agents_request_app_web(address: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agents.request-app-web"),
+        vec![("address", Value::Text(address.to_string()))],
+    )
+}
+
+/// The values of the message `agents.request-approved`, by name.
+#[derive(Clone, Copy)]
+pub struct AgentsRequestApproved<'a> {
+    /// The value of `{app}`.
+    pub app: &'a dyn std::fmt::Display,
+    /// The value of `{count}`.
+    pub count: i64,
+}
+
+/// The message `agents.request-approved`.
+#[must_use]
+pub fn agents_request_approved(values: AgentsRequestApproved<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agents.request-approved"),
+        vec![
+            ("app", Value::Text(values.app.to_string())),
+            ("count", Value::Number(values.count)),
+        ],
+    )
+}
+
+/// The message `agents.request-collect-until`.
+#[must_use]
+pub fn agents_request_collect_until(moment: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agents.request-collect-until"),
+        vec![("moment", Value::Text(moment.to_string()))],
+    )
+}
+
+/// The message `agents.request-decline-name`.
+#[must_use]
+pub fn agents_request_decline_name(app: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agents.request-decline-name"),
+        vec![("app", Value::Text(app.to_string()))],
+    )
+}
+
+/// The values of the message `agents.request-line`, by name.
+#[derive(Clone, Copy)]
+pub struct AgentsRequestLine<'a> {
+    /// The value of `{app}`.
+    pub app: &'a dyn std::fmt::Display,
+    /// The value of `{count}`.
+    pub count: i64,
+}
+
+/// The message `agents.request-line`.
+#[must_use]
+pub fn agents_request_line(values: AgentsRequestLine<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agents.request-line"),
+        vec![
+            ("app", Value::Text(values.app.to_string())),
+            ("count", Value::Number(values.count)),
+        ],
+    )
+}
+
+/// The message `agents.request-tick`.
+#[must_use]
+pub fn agents_request_tick(app: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agents.request-tick"),
+        vec![("app", Value::Text(app.to_string()))],
+    )
+}
+
+/// The message `agents.request-until`.
+#[must_use]
+pub fn agents_request_until(moment: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agents.request-until"),
+        vec![("moment", Value::Text(moment.to_string()))],
+    )
+}
+
+/// The message `agents.requests-approve`.
+#[must_use]
+pub fn agents_requests_approve(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agents.requests-approve"),
+        vec![("count", Value::Number(count))],
     )
 }
 

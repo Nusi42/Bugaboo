@@ -44,6 +44,7 @@ mod about;
 mod access_bodies;
 mod access_keys;
 mod admin;
+mod agent_requests;
 mod agent_work;
 mod agent_work_bodies;
 mod agents;
@@ -190,6 +191,7 @@ where
         .merge(my_agent_work::routes())
         .merge(agents::routes())
         .merge(several_agents::routes())
+        .merge(agent_requests::routes())
         .merge(second_step_gap::routes())
         .merge(admin::routes())
         .merge(backups::routes())

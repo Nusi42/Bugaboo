@@ -162,6 +162,15 @@ export interface MessageArguments {
   "agents.open-name": { issue: string | number };
   "agents.pause-name": { agent: string | number };
   "agents.renew-name": { agent: string | number; search: string | number };
+  "agents.request-agent": { name: string | number; purpose: string | number };
+  "agents.request-app-web": { address: string | number };
+  "agents.request-approved": { app: string | number; count: number };
+  "agents.request-collect-until": { moment: string | number };
+  "agents.request-decline-name": { app: string | number };
+  "agents.request-line": { app: string | number; count: number };
+  "agents.request-tick": { app: string | number };
+  "agents.request-until": { moment: string | number };
+  "agents.requests-approve": { count: number };
   "agents.resume-name": { agent: string | number };
   "agents.rule-days-help": { most: string | number; usual: string | number };
   "agents.rule-days-wrong": { most: string | number };

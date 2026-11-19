@@ -36,6 +36,7 @@ fn rows_of(list: &[crate::privacy::removal::PlanKind], marks: &EntityMarks) -> u
 #[tokio::test]
 async fn priv_04_the_plan_keeps_what_names_the_person_only_by_another_link() -> Outcome {
     use bb_core::agent::Agent;
+    use bb_core::agent_request::AgentRequest;
     use bb_core::notification::Notification;
     let world = World::new().await?;
     let bob = world.person("bob@example.test").await?.person.id;
@@ -49,6 +50,8 @@ async fn priv_04_the_plan_keeps_what_names_the_person_only_by_another_link() -> 
         // His own agent goes; an agent of somebody else that he made or is offered stays.
         walk.push(row::<Agent>(bob, Link::Holder));
         walk.push(row::<Agent>(bob, Link::Author));
+        // A request of a program for agents asked of Bob goes with his account.
+        walk.push(row::<AgentRequest>(bob, Link::Holder));
     }
     let plan = removal_plan(
         &world.ctx(),
@@ -63,5 +66,7 @@ async fn priv_04_the_plan_keeps_what_names_the_person_only_by_another_link() -> 
     assert_eq!(rows_of(&plan.kept_as_former_user, &Notification::MARKS), 2);
     assert_eq!(rows_of(&plan.deleted_now, &Agent::MARKS), 1);
     assert_eq!(rows_of(&plan.kept_as_former_user, &Agent::MARKS), 1);
+    assert_eq!(rows_of(&plan.deleted_now, &AgentRequest::MARKS), 1);
+    assert_eq!(rows_of(&plan.kept_as_former_user, &AgentRequest::MARKS), 0);
     Ok(())
 }

@@ -7,6 +7,7 @@ mod limits;
 mod manage;
 mod names;
 mod plan;
+mod request_store;
 mod several;
 mod store;
 mod types;
@@ -18,10 +19,17 @@ pub use manage::{
 };
 pub(crate) use manage::{agents_stopped, stop_agents_in};
 pub(crate) use names::AgentNames;
+pub use request_store::AgentRequestStore;
 pub use several::create_several_agents;
+pub use several::requests::{
+    agent_requests, approve_agent_requests, ask_for_agents, collect_agent_keys,
+    decline_agent_request,
+};
 pub use store::{AgentReach, AgentStore, AgentWorkStore, Hold};
 pub use types::{
-    AcceptAgent, AgentAction, AgentPage, AgentPosition, AgentQuery, AgentView, AgentsQuery,
-    ChangeAgent, CreateAgent, CreateSeveralAgents, CreatedAgent, CreatedAgents, HandAgent,
-    RenameAgent, SetAgentLimits, SeveralAgent, StopAllAgents, TakeBackOffer,
+    AcceptAgent, AgentAction, AgentAsked, AgentPage, AgentPosition, AgentQuery, AgentRequestPage,
+    AgentRequestView, AgentRequestsQuery, AgentView, AgentsQuery, ApproveAgentRequests,
+    AskForAgents, ChangeAgent, CollectAgentKeys, CollectedKey, CollectedKeys, CreateAgent,
+    CreateSeveralAgents, CreatedAgent, CreatedAgents, DeclineAgentRequest, HandAgent, RenameAgent,
+    SetAgentLimits, SeveralAgent, StopAllAgents, TakeBackOffer,
 };

@@ -96,6 +96,15 @@ pub struct AccessKey {
     pub agent: Option<AgentId>,
 }
 
+impl AccessKey {
+    /// Whether the key works at `now`: every key runs out, and a key that was taken back is not
+    /// stored any more.
+    #[must_use]
+    pub fn works_at(&self, now: Timestamp) -> bool {
+        now < self.expires_at
+    }
+}
+
 /// One permission of a key whose *What it may do* is single permissions.
 #[derive(Clone, Debug, PartialEq, Eq, Entity)]
 pub struct AccessKeyPermission {

@@ -104,6 +104,10 @@ table! {
     "lock_setting" => s::lock_setting_scenario,
     "create_agent" => super::agents::create_agent_scenario,
     "create_several_agents" => super::several_agents::create_several_agents_scenario,
+    "ask_for_agents" => super::agent_requests::ask_for_agents_scenario,
+    "approve_agent_requests" => super::agent_requests::approve_agent_requests_scenario,
+    "decline_agent_request" => super::agent_requests::decline_agent_request_scenario,
+    "collect_agent_keys" => super::agent_requests::collect_agent_keys_scenario,
     "hand_over" => super::agent_work_scenarios::hand_over_scenario,
     "create_standing_rule" => super::agent_work_rules::create_standing_rule_scenario,
     "change_standing_rule" => super::agent_work_rules::change_standing_rule_scenario,
@@ -311,7 +315,9 @@ async fn adr_0007_every_command_use_case_appends_its_event() -> Outcome {
             // is ready.
             // *Move the dates* of several issues opens its run, changes each issue (one event
             // for the one issue of this scenario) and closes the run.
-            "end_attempt" | "move_dates" => {
+            // An approval writes an event for each agent of the request (two in its scenario) and
+            // one for the request; a pickup one for each key and one for the request.
+            "end_attempt" | "move_dates" | "approve_agent_requests" | "collect_agent_keys" => {
                 assert_eq!(added, 3, "{name} appended {added} events");
             }
             // *Create several agents* writes an event for each agent and each key: two of each in

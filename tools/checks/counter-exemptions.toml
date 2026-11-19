@@ -462,3 +462,18 @@ reason = "The number of parts of the program. The parts are the same for everybo
 route = "GET /api/v1/people/{person}/removal-plan"
 property = "rows"
 reason = "How many records of each kind name the person who is about to be removed: only a holder of Remove people for the whole organization reads it, and the count is what the removal deletes or keeps, which that administrator has to see in full before deciding (ADR-0044, decision 6). It is the walk's count of one person's records, never a list of things the administrator may not see."
+
+[[exempt]]
+route = "GET /api/v1/agents/requests"
+property = "key_days"
+reason = "Not a count of things: the days a program asked the key of an agent to last; only the person the request is for may see the request, so it holds nothing the viewer may not see (ADR-0029, amendment M9)."
+
+[[exempt]]
+route = "POST /api/v1/agents/requests/approve"
+property = "key_days"
+reason = "Not a count of things: the days a program asked the key of an agent to last; only the person the request is for may see the request, so it holds nothing the viewer may not see (ADR-0029, amendment M9)."
+
+[[exempt]]
+route = "POST /api/v1/agents/requests/{request}/decline"
+property = "key_days"
+reason = "Not a count of things: the days a program asked the key of an agent to last; only the person the request is for may see the request, so it holds nothing the viewer may not see (ADR-0029, amendment M9)."

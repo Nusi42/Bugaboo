@@ -11,6 +11,7 @@ mod call;
 mod inputs;
 mod log;
 mod preview;
+mod programs;
 mod read;
 mod refused;
 mod registry;

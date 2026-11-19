@@ -515,3 +515,70 @@ async fn test_concurrent_ai_30_two_lists_at_once_stay_within_the_most_agents() -
     })
     .await
 }
+
+/// The keys an answer of `collect_agent_keys` holds.
+fn keys_in(answer: &super::ai_mcp_rig::Answer) -> usize {
+    answer.json.to_string().matches("bb_").count()
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn test_concurrent_ai_30_two_pickups_at_once_get_the_keys_once() -> TestResult {
+    each_database("test_concurrent_two_pickups", async |db| {
+        let (rig, app) = Mcp::start(db).await?;
+        let (_site, mut ada) = Site::start(&rig, &app).await?;
+        ai_on(&rig).await?;
+        let made = ada
+            .send(
+                "POST",
+                "/api/v1/access-keys",
+                Some(json!({
+                    "password": super::rig::PASSWORD,
+                    "name": "Script",
+                    "choice": "see-and-change",
+                })),
+            )
+            .await?;
+        let key = ok(&made)?["secret"].as_str().ok_or("no secret")?.to_owned();
+        let mcp = Mcp::new(&app);
+        let asked = call(
+            &mcp,
+            &key,
+            "ask_for_agents",
+            json!({"reason": "A team", "agents": [
+                {"name": "Planner", "purpose": "plans"},
+                {"name": "Builder", "purpose": "builds"},
+            ]}),
+        )
+        .await?;
+        assert!(kept(&asked), "{}", asked.json);
+        let listed = ada.send("GET", "/api/v1/agents/requests", None).await?;
+        let id = ok(&listed)?["requests"][0]["id"]
+            .as_str()
+            .ok_or("no request")?
+            .to_owned();
+        let approved = ada
+            .send(
+                "POST",
+                "/api/v1/agents/requests/approve",
+                Some(json!({"password": super::rig::PASSWORD, "requests": [id]})),
+            )
+            .await?;
+        ok(&approved)?;
+        let input = json!({"request": id});
+        let (one, other) = tokio::join!(
+            call(&mcp, &key, "collect_agent_keys", input.clone()),
+            call(&mcp, &key, "collect_agent_keys", input.clone()),
+        );
+        let held: Vec<usize> = [one?, other?].iter().map(keys_in).collect();
+        assert_eq!(
+            held.iter().filter(|&&keys| keys > 0).count(),
+            1,
+            "exactly one pickup answers keys: {held:?}"
+        );
+        assert_eq!(held.iter().sum::<usize>(), 2, "{held:?}");
+        let (agents, keys) = agents_and_keys(&mut ada).await?;
+        assert_eq!((agents, keys), (2, 2), "one key for each agent");
+        Ok(())
+    })
+    .await
+}

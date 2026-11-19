@@ -20,12 +20,12 @@ use serde_json::Value;
 use utoipa::PartialSchema;
 
 use super::inputs::{
-    AddCommentInput, AskInput, AttachInput, ChangeStatusInput, ChangesSinceInput, CreateIssueInput,
-    GetIssueInput, GetMyWorkInput, GiveUpInput, ListProjectsInput, LogTimeInput, ProposeInput,
-    ReportInput, SearchIssuesInput, StartTimerInput, StopTimerInput, SubmitInput, TakeInput,
-    UpdateIssueInput,
+    AddCommentInput, AskForAgentsInput, AskInput, AttachInput, ChangeStatusInput,
+    ChangesSinceInput, CollectAgentKeysInput, CreateIssueInput, GetIssueInput, GetMyWorkInput,
+    GiveUpInput, ListProjectsInput, LogTimeInput, ProposeInput, ReportInput, SearchIssuesInput,
+    StartTimerInput, StopTimerInput, SubmitInput, TakeInput, UpdateIssueInput,
 };
-use super::{agents, apply, preview, read};
+use super::{agents, apply, preview, programs, read};
 use crate::access::Actor;
 use crate::ai::Withheld;
 use crate::ai::context::Part;
@@ -208,7 +208,31 @@ fn changes<S: AuthStore>(
 pub fn registry<S: AuthStore>() -> Vec<ToolSpec<S>> {
     let mut all = Vec::from(tools_of_people::<S>());
     all.extend(tools_of_agents::<S>());
+    all.extend(tools_of_programs::<S>());
     all
+}
+
+/// The tools of programs (ADR-0029, amendment M9): asking the person for agents, and collecting
+/// the keys the person approved. The person must be able to create agents where the program counts.
+fn tools_of_programs<S: AuthStore>() -> [ToolSpec<S>; 2] {
+    [
+        changes(
+            Tool::AskForAgents,
+            "ask_for_agents",
+            schema_of::<AskForAgentsInput>,
+            programs::preview_ask_for_agents::<S>,
+            programs::apply_ask_for_agents::<S>,
+            Need::Holds(Permission::CreateAgents),
+        ),
+        changes(
+            Tool::CollectAgentKeys,
+            "collect_agent_keys",
+            schema_of::<CollectAgentKeysInput>,
+            programs::preview_collect_agent_keys::<S>,
+            programs::apply_collect_agent_keys::<S>,
+            Need::Holds(Permission::CreateAgents),
+        ),
+    ]
 }
 
 /// The tools every caller may be offered.

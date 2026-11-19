@@ -99,6 +99,9 @@ words! {
         /// An administrator corrected the person's name or e-mail address, with a reason
         /// (ADR-0044, decision 9). The person is always told: it cannot be switched off.
         DetailsCorrected => "details-corrected",
+        /// A program asks the person for agents; the request waits for *Approve* or *Decline*
+        /// (ADR-0029, amendment M9).
+        AgentsAskedFor => "agents-asked-for",
     }
     messages label = "notification.kind."
 }
@@ -217,7 +220,11 @@ impl NotificationKind {
             // The person whose data an administrator took is told whatever they chose (ADR-0044,
             // decision 4).
             // So is the person whose details an administrator corrected (decision 9).
-            (Self::ExportByAdministrator | Self::DetailsCorrected, _) => None,
+            // So is the person a program asks for agents: a request may lead to keys in their name
+            // (ADR-0029, amendment M9).
+            (Self::ExportByAdministrator | Self::DetailsCorrected | Self::AgentsAskedFor, _) => {
+                None
+            }
         }
     }
 }
@@ -353,6 +360,7 @@ mod tests {
         let always = [
             NotificationKind::ExportByAdministrator,
             NotificationKind::DetailsCorrected,
+            NotificationKind::AgentsAskedFor,
         ];
         assert_eq!(expected.len() + always.len(), NotificationKind::ALL.len());
         for (kind, (app, mail)) in expected {

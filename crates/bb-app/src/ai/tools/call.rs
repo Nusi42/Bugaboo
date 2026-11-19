@@ -262,7 +262,10 @@ fn may_call(actor: &Actor, granted: ToolScope, spec: &ToolSpec<impl AuthStore>) 
 /// Whether the tool is for this actor at all: a tool of agents only for an agent, and a tool about a
 /// person's own time (M7-Q7) never for an agent.
 fn offered_to(actor: &Actor, tool: bb_core::ai::Tool) -> bool {
-    if actor.agent().is_some() {
+    if tool.is_for_programs() {
+        // A program signs in with a person's key or an app's grant; the assistant has neither.
+        actor.key.is_some() && actor.agent().is_none()
+    } else if actor.agent().is_some() {
         !tool.is_for_people()
     } else {
         !tool.is_for_agents()

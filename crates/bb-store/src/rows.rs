@@ -2,12 +2,12 @@
 //! databases. Split from `db.rs`, which holds the pools, the transactions and the statements.
 
 use bb_core::id::{
-    AccessKeyId, AgentId, AgentNoteId, AgentWorkId, AssignmentId, AttachmentId, AttemptId,
-    AwayTimeId, BackupId, ChoiceId, CommentId, DataExportId, EditorId, EntityId, EventId, FieldId,
-    GrantId, GroupId, HandOverId, IdError, InvitationId, IssueId, IssueTypeId, JobId, LabelGroupId,
-    LabelId, LayoutId, LockToken, NotificationId, OAuthClientId, PasskeyId, ProjectId, RelationId,
-    RelationKindId, RoleId, RunId, SavedSearchId, SessionId, StandingRuleId, TagId, ThemeId,
-    TimeEntryId, ToolCallId, UploadId, UserId, WorkDayId, WorkflowId,
+    AccessKeyId, AgentId, AgentNoteId, AgentRequestId, AgentWorkId, AssignmentId, AttachmentId,
+    AttemptId, AwayTimeId, BackupId, ChoiceId, CommentId, DataExportId, EditorId, EntityId,
+    EventId, FieldId, GrantId, GroupId, HandOverId, IdError, InvitationId, IssueId, IssueTypeId,
+    JobId, LabelGroupId, LabelId, LayoutId, LockToken, NotificationId, OAuthClientId, PasskeyId,
+    ProjectId, RelationId, RelationKindId, RoleId, RunId, SavedSearchId, SessionId, StandingRuleId,
+    TagId, ThemeId, TimeEntryId, ToolCallId, UploadId, UserId, WorkDayId, WorkflowId,
 };
 use jiff::Timestamp;
 use sea_query::Iden;
@@ -157,6 +157,7 @@ stored_ids!(
     ThemeId => "an own theme ID",
     BackupId => "a backup ID",
     DataExportId => "a data export ID",
+    AgentRequestId => "a request for agents ID",
     WorkDayId => "a work day ID",
     AwayTimeId => "an away time ID",
     SessionId => "a session ID",

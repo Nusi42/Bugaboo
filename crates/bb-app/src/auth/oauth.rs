@@ -253,6 +253,15 @@ pub async fn authorization<S: AuthStore>(
     }))
 }
 
+/// The web address an app comes back to, of the addresses it registered: none for an app that
+/// runs on the person's own computer. The person sees it beside the name the app gave itself.
+pub(crate) fn web_address_of(addresses: &[String]) -> Option<String> {
+    addresses
+        .iter()
+        .find(|address| !on_this_computer(address))
+        .cloned()
+}
+
 /// Whether the address is on the person's own computer.
 fn on_this_computer(address: &str) -> bool {
     ReturnAddress::read(address).is_some_and(|read| read.kind() == ReturnKind::OnThisComputer)

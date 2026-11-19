@@ -2,7 +2,8 @@
 //! what they do; inputs that only read end in `Query` (ARCH-EVENTS).
 
 use bb_core::agent::{AgentLimits, AgentState, LimitKind};
-use bb_core::id::{AgentId, UserId};
+use bb_core::agent_request::{AgentRequest, AskedAgent, RequestStands};
+use bb_core::id::{AgentId, AgentRequestId, UserId};
 use bb_policy::{Masked, PersonRef};
 use jiff::Timestamp;
 
@@ -242,3 +243,134 @@ pub struct CreatedAgents {
 }
 
 impl Masked for CreatedAgents {}
+
+/// One agent a program asks for.
+#[derive(Clone, Debug)]
+pub struct AgentAsked {
+    /// The name the agent would have.
+    pub name: String,
+    /// What it is for, in a few words.
+    pub purpose: String,
+    /// How many days its key should last; none for the organization's default.
+    pub key_days: Option<i64>,
+}
+
+/// A program asks the person for agents (`ask_for_agents`): only a request is made.
+pub struct AskForAgents {
+    /// The access key or the token of the app that asks.
+    pub session_token: String,
+    /// Why it asks.
+    pub reason: String,
+    /// The agents it asks for, in order.
+    pub agents: Vec<AgentAsked>,
+}
+
+/// The requests for agents asked of the person.
+pub struct AgentRequestsQuery {
+    /// The secret of the session of the request.
+    pub session_token: String,
+}
+
+/// The person approves requests with the password once.
+pub struct ApproveAgentRequests {
+    /// The secret of the session of the request.
+    pub session_token: String,
+    /// The password, asked again.
+    pub password: String,
+    /// The requests, as the person ticked them.
+    pub requests: Vec<AgentRequestId>,
+}
+
+/// The person declines a request.
+pub struct DeclineAgentRequest {
+    /// The secret of the session of the request.
+    pub session_token: String,
+    /// The request.
+    pub id: AgentRequestId,
+}
+
+/// The program that asked collects the keys of an approved request (`collect_agent_keys`).
+pub struct CollectAgentKeys {
+    /// The access key or the token of the app that asked.
+    pub session_token: String,
+    /// The request.
+    pub id: AgentRequestId,
+}
+
+/// A request for agents as its person sees it.
+#[derive(Clone, Debug, serde::Serialize)]
+pub struct AgentRequestView {
+    /// The ID of the request.
+    pub id: AgentRequestId,
+    /// The name of the app or the key that asked.
+    pub asked_by: String,
+    /// Whether an AI app asked (by its grant), not a key.
+    pub by_app: bool,
+    /// The web address the app comes back to; none for a key and for an app on the person's
+    /// computer.
+    pub web_address: Option<String>,
+    /// Why it asked.
+    pub reason: String,
+    /// The agents it asks for, with the agents an approval made.
+    pub agents: Vec<AskedAgent>,
+    /// Where it stands now.
+    pub stands: RequestStands,
+    /// When it was asked.
+    pub asked_at: Timestamp,
+    /// Until when it waits for an answer, or for its keys once approved.
+    pub waits_until: Timestamp,
+}
+
+impl Masked for AgentRequestView {}
+
+impl AgentRequestView {
+    /// The request as its person sees it at `now`.
+    pub(crate) fn of(request: &AgentRequest, now: Timestamp) -> Self {
+        Self {
+            id: request.id,
+            asked_by: request.asked_by_name.clone(),
+            by_app: request.asked_by_grant.is_some(),
+            web_address: request.asked_from.clone(),
+            reason: request.reason.clone(),
+            agents: request.agents.clone(),
+            stands: request.stands_at(now),
+            asked_at: request.asked_at,
+            waits_until: request.waits_until(),
+        }
+    }
+}
+
+/// The requests for agents of a person, newest first.
+#[derive(Clone, Debug, serde::Serialize)]
+pub struct AgentRequestPage {
+    /// The requests.
+    pub items: Vec<AgentRequestView>,
+    /// Whether there were more than the list shows.
+    pub truncated: bool,
+}
+
+impl Masked for AgentRequestPage {}
+
+/// One key a pickup made. Not `Debug`: the secret is in it.
+#[derive(Clone, serde::Serialize)]
+pub struct CollectedKey {
+    /// The agent the key belongs to.
+    pub agent: Option<AgentId>,
+    /// The name of the key, which is the name of its agent.
+    pub name: String,
+    /// The whole key, shown once.
+    pub secret: String,
+}
+
+/// What a pickup answers: where the request stands, and the keys when it made them. Not `Debug`.
+#[derive(Clone, serde::Serialize)]
+pub struct CollectedKeys {
+    /// Where the request stands now.
+    pub stands: RequestStands,
+    /// The keys, once, when this pickup made them.
+    pub keys: Vec<CollectedKey>,
+    /// For a preview of an approved request: the names of the keys a pickup would make.
+    pub names: Vec<String>,
+}
+
+impl Masked for CollectedKeys {}

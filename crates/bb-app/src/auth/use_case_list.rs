@@ -538,6 +538,16 @@ macro_rules! each_use_case {
             create_agent(CreateAgent) -> Authorized<AgentView>;
             /// Makes several agents for the person, each with one key, with the password once.
             create_several_agents(CreateSeveralAgents) -> Authorized<CreatedAgents>;
+            /// A program asks the person for agents.
+            ask_for_agents(AskForAgents) -> Authorized<AgentRequestView>;
+            /// The program that asked collects the keys of an approved request.
+            collect_agent_keys(CollectAgentKeys) -> Authorized<CollectedKeys>;
+            /// Lists the requests for agents asked of the person.
+            agent_requests(AgentRequestsQuery) -> Authorized<AgentRequestPage>;
+            /// Approves requests for agents with the password once.
+            approve_agent_requests(ApproveAgentRequests) -> Authorized<AgentRequestPage>;
+            /// Declines a request for agents.
+            decline_agent_request(DeclineAgentRequest) -> Authorized<AgentRequestView>;
             /// Lists the person's own agents.
             my_agents(AgentsQuery) -> Authorized<AgentPage>;
             /// Lists every agent of the organization, for an administrator.

@@ -433,6 +433,17 @@ pub(super) fn agent_request(operation: &str) -> Option<Request> {
             "/api/v1/agents/several".into(),
             Some(json!({"password": wrong, "agents": [{"name": "Made by the matrix"}]})),
         ),
+        "listAgentRequests" => ("GET", "/api/v1/agents/requests".into(), None),
+        "approveAgentRequests" => (
+            "POST",
+            "/api/v1/agents/requests/approve".into(),
+            Some(json!({"password": wrong, "requests": [NOBODYS_RANDOM_ID]})),
+        ),
+        "declineAgentRequest" => (
+            "POST",
+            format!("/api/v1/agents/requests/{NOBODYS_RANDOM_ID}/decline"),
+            None,
+        ),
         "getAgent" => ("GET", format!("/api/v1/agents/{NOBODYS_RANDOM_ID}"), None),
         "changeAgent" => (
             "PATCH",

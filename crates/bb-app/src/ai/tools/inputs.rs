@@ -276,3 +276,34 @@ pub struct ProposeInput {
     /// The value you propose.
     pub value: serde_json::Value,
 }
+
+/// One agent you ask the person for.
+#[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct AskedAgentInput {
+    /// The name of the agent; unique among the person's agents.
+    pub name: String,
+    /// What it is for, in a few words, such as `plans` or `reviews`.
+    pub purpose: String,
+    /// How many days its key should last. Leave it out for the default of the organization.
+    pub key_days: Option<i64>,
+}
+
+/// Ask the person for agents, one for each part of the work. Nothing is made until they approve.
+#[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct AskForAgentsInput {
+    /// Why you ask, in a sentence the person reads.
+    pub reason: String,
+    /// The agents, in order.
+    #[schema(inline)]
+    pub agents: Vec<AskedAgentInput>,
+}
+
+/// Collect the keys of the agents the person approved, once.
+#[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct CollectAgentKeysInput {
+    /// The ID of the request, from the answer of `ask_for_agents`.
+    pub request: String,
+}

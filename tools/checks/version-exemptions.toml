@@ -345,3 +345,7 @@ reason = "*Remove a person* changes only the standing of a switched-off person, 
 [[exempt]]
 routes = ["POST /api/v1/agents/several"]
 reason = "It makes new agents and keys: there is no version to read before them. Two lists at the same moment are counted one after the other under the lock of the person's agents (ADR-0029, amendment M9)."
+
+[[exempt]]
+routes = ["POST /api/v1/agents/requests/approve", "POST /api/v1/agents/requests/{request}/decline"]
+reason = "A request is answered once: the change moves it only from the state waiting, inside the change, so a second answer at the same moment is refused instead of overwriting the first (ADR-0029, amendment M9)."

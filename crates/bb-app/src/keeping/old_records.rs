@@ -152,6 +152,7 @@ fn deleted_by_an_administrator(kind: KeepKind) -> Result<(&'static KeepRule, Wri
         | KeepKind::Sessions
         | KeepKind::SignUpLinks
         | KeepKind::EmailChangeLinks
+        | KeepKind::AgentRequests
         | KeepKind::Drafts
         | KeepKind::Notifications
         | KeepKind::Trash

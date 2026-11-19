@@ -91,6 +91,10 @@ words! {
         ChangesSince => "changes_since",
         /// An agent that works under a standing rule proposes a change to an issue the rule found.
         Propose => "propose",
+        /// A program asks its person for agents; nothing is made until the person approves.
+        AskForAgents => "ask_for_agents",
+        /// The program that asked collects the keys of the agents its person approved, once.
+        CollectAgentKeys => "collect_agent_keys",
     }
     messages description = "ai-tool.";
 }
@@ -111,6 +115,14 @@ impl Tool {
                 | Self::ChangesSince
                 | Self::Propose
         )
+    }
+
+    /// Whether only a program can use the tool: a person's access key or an app's grant, never an
+    /// agent (an agent never creates agents, ADR-0029 decision 3) and never the assistant (it only
+    /// proposes, and has no credential a pickup could be bound to). The one place that says it.
+    #[must_use]
+    pub const fn is_for_programs(self) -> bool {
+        matches!(self, Self::AskForAgents | Self::CollectAgentKeys)
     }
 
     /// Whether only a person can use the tool: it is about the person's own time (M7-Q7: what an

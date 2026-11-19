@@ -1,6 +1,7 @@
 //! Access keys, and the projects a person may choose for one.
 
 use bb_app::auth::{AccessKeyRecord, AccessKeyStore, ProjectChoice};
+use bb_core::access_key::AccessKey;
 use bb_core::id::{AccessKeyId, UserId};
 use bb_core::security_log::Digest;
 use jiff::Timestamp;
@@ -11,6 +12,13 @@ use crate::error::StoreError;
 use super::AuthStorage;
 
 impl AccessKeyStore for AuthStorage {
+    async fn access_key_in(
+        transaction: &mut Transaction,
+        id: AccessKeyId,
+    ) -> Result<Option<AccessKey>, StoreError> {
+        crate::access_keys::access_key_in(transaction, id).await
+    }
+
     async fn access_key_by_hash(
         &self,
         hash: &Digest,

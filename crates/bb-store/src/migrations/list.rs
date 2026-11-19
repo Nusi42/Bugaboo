@@ -305,4 +305,9 @@ pub(super) const ALL: &[Definition] = &[
         name: "standing_by_optional",
         steps: || Ok(super::m0060_standing_by_optional::steps()),
     },
+    Definition {
+        version: 61,
+        name: "agent_requests",
+        steps: || Ok(super::m0061_agent_requests::steps()),
+    },
 ];

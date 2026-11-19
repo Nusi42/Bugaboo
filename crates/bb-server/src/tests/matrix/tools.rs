@@ -70,6 +70,13 @@ fn example(tool: Tool, ground: &Ground<'_>) -> Value {
         Tool::Propose => json!({
             "rule": ground.rule, "issue": issue, "field": "labels", "value": ["bug"],
         }),
+        Tool::AskForAgents => json!({
+            "reason": "A team of the matrix",
+            "agents": [{"name": "Matrix planner", "purpose": "plans"}],
+        }),
+        // A request of nobody: only the credential that asked may collect, so every actor is told
+        // there is no such request.
+        Tool::CollectAgentKeys => json!({"request": super::examples::NOBODYS_RANDOM_ID}),
     }
 }
 
@@ -296,7 +303,11 @@ async fn lines(db: &bb_testing::TestDatabase) -> Result<Vec<String>, Failure> {
             spec.name(),
             words::ENTRY_MCP,
             spec.effect().code(),
-            words::audience_of(tool.is_for_agents(), tool.is_for_people()),
+            words::audience_of(
+                tool.is_for_agents(),
+                tool.is_for_people(),
+                tool.is_for_programs(),
+            ),
             answers.join(" ")
         ));
     }
@@ -304,7 +315,7 @@ async fn lines(db: &bb_testing::TestDatabase) -> Result<Vec<String>, Failure> {
 }
 
 /// What must hold whatever the tables say: nobody is turned away, a tool of agents is not for a
-/// person, a tool about a person's own time is not for an agent, and an agent without a way into the
+/// person, a tool about a person's own time or of programs is not for an agent, and an agent without a way into the
 /// issue changes nothing there.
 fn check(tool: Tool, effect: ToolEffect, name: &str, word: &str) -> Result<(), Failure> {
     let is_agent = name.starts_with(words::AGENT_PREFIX);
@@ -312,6 +323,7 @@ fn check(tool: Tool, effect: ToolEffect, name: &str, word: &str) -> Result<(), F
         words::NOBODY => word != words::NOT_SIGNED_IN,
         _ if tool.is_for_agents() && !is_agent => word != words::FORBIDDEN,
         _ if tool.is_for_people() && is_agent => word != words::FORBIDDEN,
+        _ if tool.is_for_programs() && is_agent => word != words::FORBIDDEN,
         words::AGENT_WITHOUT_WORK
         | words::AGENT_ON_ANOTHER_ISSUE
         | words::AGENT_IN_AN_AI_OFF_PROJECT => {

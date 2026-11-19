@@ -1,6 +1,7 @@
 //! The sign-in part of the in-memory store: people, sessions, the second step, invitations and
 //! access keys (the errors of a change and the settings of signing in are in `fake_auth_store.rs`).
 
+use bb_core::access_key::AccessKey;
 use bb_core::id::{AccessKeyId, InvitationId, PasskeyId, RoleId, SessionId, UserId};
 use bb_core::person::{KnownPerson, Person};
 use bb_core::security_log::Digest;
@@ -604,6 +605,15 @@ impl InvitationStore for FakeStore {
 }
 
 impl AccessKeyStore for FakeStore {
+    async fn access_key_in(tx: &mut Tx, id: AccessKeyId) -> Result<Option<AccessKey>, FakeError> {
+        Ok(tx
+            .state
+            .access_keys
+            .iter()
+            .find(|record| record.key.id == id)
+            .map(|record| record.key.clone()))
+    }
+
     async fn access_key_by_hash(
         &self,
         hash: &Digest,

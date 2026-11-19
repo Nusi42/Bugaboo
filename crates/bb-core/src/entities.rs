@@ -46,6 +46,7 @@ crate::entities! {
     crate::mark::TextMark,
     crate::comment::Comment,
     crate::data_export::DataExport,
+    crate::agent_request::AgentRequest,
     crate::sign_up_invitation::SignUpInvitation,
     crate::sign_up_invitation::SignUpMail,
     crate::e_mail_change::EmailChange,

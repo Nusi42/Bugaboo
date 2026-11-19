@@ -57,7 +57,7 @@ async fn changes(key: &str, ctx: &Ctx<'_, FakeStore>) -> Result<(), AppError> {
 }
 
 /// Agents off for the organization: the key of an agent is turned away whenever it is looked up.
-async fn agents_off(world: &World) -> Outcome {
+pub(super) async fn agents_off(world: &World) -> Outcome {
     change_setting(
         &world.ctx(),
         ChangeSetting {

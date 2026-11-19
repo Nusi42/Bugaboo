@@ -697,6 +697,7 @@ export const messages = {
   "notification.kind.export-ready": "Your data is ready",
   "notification.kind.export-by-administrator": "An administrator downloaded your data",
   "notification.kind.details-corrected": "An administrator corrected your name or e-mail address",
+  "notification.kind.agents-asked-for": "A program asks you for agents",
   "error.mail.rejected":
     "The mail server did not accept the e-mail. Check the user name and the password, and the address e-mails are sent from.",
   "error.mail.unavailable":
@@ -748,6 +749,8 @@ export const messages = {
   "notifications.export-by-administrator": "{who} created a file of all your data to download",
   "notifications.administrators-reason": "Why: {reason}",
   "notifications.details-corrected": "{who} corrected your name or e-mail address",
+  "notifications.agents-asked-for":
+    "A program asks you for agents. Approve or decline it on My agents",
   "notifications.run-failed": "Your change to many issues stopped before it was done",
   "notifications.issue-ids-failed":
     "Bugaboo could not give every issue of {project} its new ID. Open the project settings to try again",

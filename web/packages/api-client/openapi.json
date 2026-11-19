@@ -1184,6 +1184,156 @@
         "x-permission": "own-account"
       }
     },
+    "/api/v1/agents/requests": {
+      "get": {
+        "tags": ["agents"],
+        "summary": "The requests for agents asked of the person in the last week, newest first.",
+        "operationId": "listAgentRequests",
+        "responses": {
+          "200": {
+            "description": "The requests, newest first.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRequestsBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "own-account"
+      }
+    },
+    "/api/v1/agents/requests/approve": {
+      "post": {
+        "tags": ["agents"],
+        "summary": "Approves requests for agents with the password once: every agent of them is made in one change,\nand their keys wait for the program that asked. When one cannot be made, none is.",
+        "operationId": "approveAgentRequests",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveAgentRequestsBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The requests, approved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRequestsBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "own-account"
+      }
+    },
+    "/api/v1/agents/requests/{request}/decline": {
+      "post": {
+        "tags": ["agents"],
+        "summary": "Declines a request for agents: it ends, and nothing is made.",
+        "operationId": "declineAgentRequest",
+        "parameters": [
+          {
+            "name": "request",
+            "in": "path",
+            "description": "The ID of the request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The request, declined.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRequestBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "own-account"
+      }
+    },
     "/api/v1/agents/several": {
       "post": {
         "tags": ["agents"],
@@ -21200,6 +21350,80 @@
           }
         }
       },
+      "AgentRequestBody": {
+        "type": "object",
+        "description": "A request for agents as its person sees it.",
+        "required": [
+          "id",
+          "asked_by",
+          "by_app",
+          "reason",
+          "agents",
+          "stands",
+          "asked_at",
+          "waits_until"
+        ],
+        "properties": {
+          "agents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AskedAgentBody"
+            },
+            "description": "The agents it asks for."
+          },
+          "asked_at": {
+            "type": "string",
+            "description": "When it was asked.",
+            "format": "date-time"
+          },
+          "asked_by": {
+            "type": "string",
+            "description": "The name of the app or of the key that asked."
+          },
+          "by_app": {
+            "type": "boolean",
+            "description": "Whether an AI app asked, not a key."
+          },
+          "id": {
+            "type": "string",
+            "description": "The ID of the request."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why it asked."
+          },
+          "stands": {
+            "$ref": "#/components/schemas/RequestStands",
+            "description": "Where it stands."
+          },
+          "waits_until": {
+            "type": "string",
+            "description": "Until when it waits for an answer, or for its keys once approved."
+          },
+          "web_address": {
+            "type": ["string", "null"],
+            "description": "The web address the app comes back to; none for a key and for an app on the person's\ncomputer."
+          }
+        }
+      },
+      "AgentRequestsBody": {
+        "type": "object",
+        "description": "The requests for agents of a person, newest first.",
+        "required": ["requests", "truncated"],
+        "properties": {
+          "requests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentRequestBody"
+            },
+            "description": "The requests of the last week, at most 100."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "Whether there were more than the list shows."
+          }
+        }
+      },
       "AgentState": {
         "type": "string",
         "description": "Whether an agent may act.",
@@ -21445,6 +21669,24 @@
           }
         }
       },
+      "ApproveAgentRequestsBody": {
+        "type": "object",
+        "description": "The requests to approve, and the password, asked again once for all of them.",
+        "required": ["password", "requests"],
+        "properties": {
+          "password": {
+            "type": "string",
+            "description": "The password of the person, asked again."
+          },
+          "requests": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The IDs of the requests, as the person ticked them."
+          }
+        }
+      },
       "ApprovePlanBody": {
         "type": "object",
         "description": "*Approve plan*, or a note instead.",
@@ -21469,6 +21711,30 @@
           "reason": {
             "type": "string",
             "description": "The reason, in the administrator's own words (at most 500 characters)."
+          }
+        }
+      },
+      "AskedAgentBody": {
+        "type": "object",
+        "description": "One agent a program asks for.",
+        "required": ["name", "purpose"],
+        "properties": {
+          "agent": {
+            "type": ["string", "null"],
+            "description": "The agent the approval made; left out before."
+          },
+          "key_days": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "How many days its key should last; left out for the default of the organization."
+          },
+          "name": {
+            "type": "string",
+            "description": "The name the agent would have."
+          },
+          "purpose": {
+            "type": "string",
+            "description": "What it is for, in a few words."
           }
         }
       },
@@ -26714,6 +26980,7 @@
           "sessions",
           "sign-up-links",
           "e-mail-change-links",
+          "agent-requests",
           "drafts",
           "notifications",
           "trash",
@@ -29239,7 +29506,8 @@
           "agent-stopped",
           "export-ready",
           "export-by-administrator",
-          "details-corrected"
+          "details-corrected",
+          "agents-asked-for"
         ]
       },
       "NotificationTab": {
@@ -32052,6 +32320,7 @@
           "assignment",
           "comment",
           "data-export",
+          "agent-request",
           "follower",
           "group",
           "invitation",
@@ -32347,6 +32616,11 @@
             "description": "The version of the field the person looked at."
           }
         }
+      },
+      "RequestStands": {
+        "type": "string",
+        "description": "Where a request for agents stands: waiting, approved, declined, collected or ran out.",
+        "enum": ["waiting", "approved", "declined", "collected", "ran-out"]
       },
       "ResetRoleBody": {
         "type": "object",

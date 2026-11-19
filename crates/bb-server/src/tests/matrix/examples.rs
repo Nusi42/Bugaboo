@@ -120,6 +120,13 @@ const CHANGES_A_THEME_FOR_EVERYONE: &[Quirk] = &[
     Quirk::AtTheOrganization(Permission::ChangeOrganizationSettings),
 ];
 
+/// A route that names a thing nobody has and asks for the password again: it is not found for
+/// whoever is let in, or the password is wrong.
+const MISSING_THEN_PASSWORD: &[Quirk] = &[
+    Quirk::NamesAMissingThing,
+    Quirk::AlsoAnswers("auth.wrong-credentials"),
+];
+
 /// Every route of the API description, in the order of the description.
 pub(super) const EXAMPLES: &[Example] = &[
     Example::route("getServerStatus"),
@@ -248,25 +255,16 @@ pub(super) const EXAMPLES: &[Example] = &[
             Quirk::HeldInSomeProject(Permission::CreateAgents),
         ],
     ),
+    Example::route("listAgentRequests"),
+    Example::with("approveAgentRequests", MISSING_THEN_PASSWORD),
+    Example::with("declineAgentRequest", &[Quirk::NamesAMissingThing]),
     Example::with("getAgent", &[Quirk::NamesAMissingThing]),
     Example::with("changeAgent", &[Quirk::NamesAMissingThing]),
     Example::with("handAgent", &[Quirk::NamesAMissingThing]),
     Example::with("acceptAgent", &[Quirk::NamesAMissingThing]),
     Example::with("takeBackAgentOffer", &[Quirk::NamesAMissingThing]),
-    Example::with(
-        "createAgentKey",
-        &[
-            Quirk::NamesAMissingThing,
-            Quirk::AlsoAnswers("auth.wrong-credentials"),
-        ],
-    ),
-    Example::with(
-        "renewAgentKey",
-        &[
-            Quirk::NamesAMissingThing,
-            Quirk::AlsoAnswers("auth.wrong-credentials"),
-        ],
-    ),
+    Example::with("createAgentKey", MISSING_THEN_PASSWORD),
+    Example::with("renewAgentKey", MISSING_THEN_PASSWORD),
     Example::with("deleteAgentKey", &[Quirk::NamesAMissingThing]),
     Example::route("stopAllMyAgents"),
     Example::route("listMyAgentWork"),

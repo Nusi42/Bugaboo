@@ -169,16 +169,24 @@ pub mod sec_matrix {
     pub const AUDIENCE_AGENTS: &str = "agents";
     /// A `tool` line says whom the tool is for: people only (their own time).
     pub const AUDIENCE_PEOPLE: &str = "people";
+    /// A `tool` line says whom the tool is for: programs only (a person's key or an app's grant).
+    pub const AUDIENCE_PROGRAMS: &str = "programs";
     /// A `tool` line says whom the tool is for: everyone.
     pub const AUDIENCE_EVERYONE: &str = "everyone";
 
     /// Whom a tool is for, in the words of the record.
     #[must_use]
-    pub const fn audience_of(for_agents: bool, for_people: bool) -> &'static str {
+    pub const fn audience_of(
+        for_agents: bool,
+        for_people: bool,
+        for_programs: bool,
+    ) -> &'static str {
         if for_agents {
             AUDIENCE_AGENTS
         } else if for_people {
             AUDIENCE_PEOPLE
+        } else if for_programs {
+            AUDIENCE_PROGRAMS
         } else {
             AUDIENCE_EVERYONE
         }

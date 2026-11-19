@@ -43,6 +43,7 @@ const kindName = {
   "export-ready": "notification.kind.export-ready",
   "export-by-administrator": "notification.kind.export-by-administrator",
   "details-corrected": "notification.kind.details-corrected",
+  "agents-asked-for": "notification.kind.agents-asked-for",
 } as const satisfies Record<Kind, MessageKey>;
 
 /** The two ways of hearing of an event, with the words the column of each has. */

@@ -61,11 +61,13 @@ use crate::agent_work::{
 };
 use crate::agent_work::{MyAgentWork, MyAgentWorkQuery, my_agent_work};
 use crate::agents::{
-    AcceptAgent, AgentPage, AgentQuery, AgentView, AgentsQuery, ChangeAgent, CreateAgent,
-    CreateSeveralAgents, CreatedAgents, HandAgent, RenameAgent, SetAgentLimits, StopAllAgents,
-    TakeBackOffer, accept_agent, agent, change_agent, create_agent, create_several_agents,
-    hand_agent, my_agents, organization_agents, rename_agent, set_agent_limits, stop_all_agents,
-    take_back_offer,
+    AcceptAgent, AgentPage, AgentQuery, AgentRequestPage, AgentRequestView, AgentRequestsQuery,
+    AgentView, AgentsQuery, ApproveAgentRequests, AskForAgents, ChangeAgent, CollectAgentKeys,
+    CollectedKeys, CreateAgent, CreateSeveralAgents, CreatedAgents, DeclineAgentRequest, HandAgent,
+    RenameAgent, SetAgentLimits, StopAllAgents, TakeBackOffer, accept_agent, agent, agent_requests,
+    approve_agent_requests, ask_for_agents, change_agent, collect_agent_keys, create_agent,
+    create_several_agents, decline_agent_request, hand_agent, my_agents, organization_agents,
+    rename_agent, set_agent_limits, stop_all_agents, take_back_offer,
 };
 use crate::ai::assistant::{
     Applied, ApplyProposal, AskAssistantQuery, AssistantAnswer, AssistantStatus,
@@ -250,11 +252,12 @@ pub use invitations::{
     change_sign_up_policy, create_invitation, invitation_lookup, invitations, revoke_invitation,
     sign_up_policy,
 };
-pub(crate) use key_plan::{KeyWanted, key_end};
+pub(crate) use key_plan::{KeyWanted, key_end, key_end_in_days};
 #[cfg(any(test, feature = "testing"))]
 pub use limit::NoFailureLimit;
 pub use limit::{FailureLimit, NETWORK_KEY_PREFIX};
 pub(crate) use link_mail::{Capped, LinkMail, MailText};
+pub(crate) use oauth::web_address_of;
 pub use oauth::{authorization, connected_apps, decide_authorization, register_app, take_back};
 pub use oauth_admin::clean_old_grants;
 pub use oauth_admin::{

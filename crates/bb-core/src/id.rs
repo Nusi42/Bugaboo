@@ -315,6 +315,11 @@ define_ordered_id! {
 }
 
 define_ordered_id! {
+    /// The ID of a request for agents (ADR-0029, amendment M9).
+    AgentRequestId
+}
+
+define_ordered_id! {
     /// The ID of a file of *Download my data*; the file in `exports/` is named by it (PRIV-03).
     DataExportId
 }
@@ -529,6 +534,7 @@ into_entity_id!(
     WorkflowId,
     SavedSearchId,
     ThemeId,
+    AgentRequestId,
     DataExportId,
     CommentId,
     TimeEntryId,

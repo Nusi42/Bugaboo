@@ -166,6 +166,8 @@ words! {
         Comment => "comment",
         /// A file of *Download my data* (PRIV-03).
         DataExport => "data_export",
+        /// A request for agents of a program (ADR-0029, amendment M9).
+        AgentRequest => "agent_request",
         /// Who follows an issue (the record is the issue).
         Follower => "follower",
         /// A group of people.

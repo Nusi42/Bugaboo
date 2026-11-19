@@ -73,6 +73,7 @@ pub const fn whose(kind: RecordKind) -> Whose {
         K::ChangeRun => owner::<crate::many_changes::ManyChangeRun>("person"),
         K::Assignment => owner::<crate::access::Assignment>("person"),
         K::DataExport => owner::<crate::data_export::DataExport>("person"),
+        K::AgentRequest => owner::<crate::agent_request::AgentRequest>("person"),
         K::ConnectedApp => owner::<crate::oauth::OAuthGrant>("person"),
         K::Passkey => owner::<crate::sign_in::StoredPasskey>("person"),
         K::SavedSearch => owner::<crate::saved_search::SavedSearch>("maker"),

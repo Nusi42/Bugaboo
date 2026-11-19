@@ -44,7 +44,8 @@ const RECIPIENT: &[Link] = &[Link::Recipient];
 /// person is to a row that goes: sign-in, keys and grants, handle, settings, private saved
 /// searches, drafts, locks and the notes for and from them, the notifications they get and their
 /// follows, work times and the away times that are theirs, the agents they hold and their standing
-/// rules, the hand-overs they made, the rows that give them roles (their memberships end), the
+/// rules, the requests of programs for agents asked of them, the hand-overs they made, the rows
+/// that give them roles (their memberships end), the
 /// invitations they made or got (sign-in records of the account, used or not), and the files of
 /// *Download my data* made of them, and the jobs whose payload names them. A note of an edit goes
 /// where the person is its recipient; a note they caused for somebody else stays, like a
@@ -73,6 +74,7 @@ const DELETED: &[(EntityMarks, &[Link])] = &[
     deleted::<crate::work_times::record::ProjectShare>(SUBJECT),
     deleted::<crate::time::entry::Timer>(SUBJECT),
     deleted::<crate::agent::Agent>(HOLDER),
+    deleted::<crate::agent_request::AgentRequest>(HOLDER),
     deleted::<crate::agent_records::StandingRule>(AUTHOR),
     deleted::<crate::agent_records::HandOver>(&[Link::Actor]),
     deleted::<crate::access::Assignment>(HOLDER),

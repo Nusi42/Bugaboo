@@ -43,6 +43,7 @@ use crate::jobs::{JobKind, QueuedJob};
 use crate::member::{comment, follower};
 use crate::outbox_reader::read_all;
 
+mod agent_requests;
 mod agent_work;
 mod corrections;
 mod data_exports;
@@ -311,6 +312,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             RecordKind::HandOver => self.hand_over_event(round, event).await,
             RecordKind::DataExport => self.data_export_event(round, event).await,
             RecordKind::Person => self.person_event(round, event).await,
+            RecordKind::AgentRequest => self.agent_request_event(round, event).await,
             // The rest changes the setup of the organization or a person's own data; no follower
             // of an issue hears of it.
             RecordKind::AccessKey

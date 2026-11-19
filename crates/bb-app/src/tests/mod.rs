@@ -4,6 +4,8 @@
 
 mod agent_handoff;
 mod agent_limits;
+mod agent_requests;
+mod agent_requests_bound;
 mod agent_tools;
 mod agent_tools_more;
 mod agent_tools_writes;
@@ -48,6 +50,7 @@ mod event_members;
 mod events;
 mod failures;
 mod fake;
+mod fake_agent_requests;
 mod fake_agent_work;
 mod fake_agents;
 mod fake_ai;

@@ -46,7 +46,7 @@ use crate::relations::RelationStore;
 use crate::saved_searches::SavedSearchStore;
 use crate::search::SearchStore;
 use crate::settings::SettingsStore;
-use crate::store_macros::{reads, writes};
+use crate::store_macros::{queries, reads, writes};
 use crate::tags::TagStore;
 use crate::text_index::TextIndexStore;
 use crate::time::TimeStore;
@@ -325,6 +325,11 @@ pub trait InvitationStore: ChangeStore + 'static {
 
 /// Access keys, and the projects a person may choose for one. What the sign-in use cases need from storage for them.
 pub trait AccessKeyStore: ChangeStore + 'static {
+    queries! {
+        /// The access key with this ID, without what it may do and where.
+        fn access_key(id: AccessKeyId) -> Option<AccessKey> = access_key_in;
+    }
+
     reads! {
         /// The access key with this secret hash, with what it may do and where.
         fn access_key_by_hash(hash: &Digest) -> Option<AccessKeyRecord>;
@@ -403,6 +408,7 @@ pub trait AuthStore:
     + crate::privacy::replay::ReplayStore
     + crate::people::CorrectionStore
     + crate::privacy::removal::RemovalStore
+    + crate::agents::AgentRequestStore
     + 'static
 {
     /// Whether the error is a unique key that was used twice (for example the e-mail address of

@@ -3,6 +3,7 @@ import { Card, cardLook, partOf, part, useLayout } from "@bugaboo/ui";
 
 import { usePageTitle } from "../../shared/use-page.ts";
 import { QueryGate } from "../shell/index.ts";
+import { AgentRequests } from "./AgentRequests.tsx";
 import { agentsInOrder, waitingAgentsOf } from "./agent-state.ts";
 import { listedAgents, mayAct, useMyAgentList, useMyAgentWork, type MyWork } from "./agents.ts";
 import { MyAgentsBody } from "./MyAgentsBody.tsx";
@@ -34,6 +35,7 @@ export function MyAgentsPage() {
         intro={t("agents.intro")}
         actions={phone || running.length === 0 ? undefined : <StopAll agents={running} />}
       />
+      <AgentRequests />
       <QueryGate
         error={agents.error ?? work.error}
         data={listed === undefined || mine === undefined ? undefined : { listed, work: mine }}

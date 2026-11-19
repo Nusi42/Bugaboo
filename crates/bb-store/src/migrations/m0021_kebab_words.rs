@@ -89,6 +89,7 @@ mod tests {
             NotificationKind::ExportReady.code(),
             NotificationKind::ExportByAdministrator.code(),
             NotificationKind::DetailsCorrected.code(),
+            NotificationKind::AgentsAskedFor.code(),
         ];
         let renamed: Vec<&str> = hyphenated::<NotificationKind>()
             .into_iter()

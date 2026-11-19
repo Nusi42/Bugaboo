@@ -85,3 +85,27 @@ impl KeyWanted {
         }
     }
 }
+
+/// When a key made now stops working when it should last `days` (none for the default): the
+/// days a program asked for its agents' keys, read by the same rule as a moment a person typed.
+///
+/// # Errors
+/// `request.invalid` for days that are not allowed.
+pub(crate) fn key_end_in_days(
+    now: Timestamp,
+    days: Option<i64>,
+    settings: &AuthSettings,
+) -> Result<Timestamp, AppError> {
+    let picked = days
+        .map(|days| {
+            now.checked_add(bb_core::time::days(days))
+                .map_err(|_| AppError::Refused(ErrorCode::InvalidRequest))
+        })
+        .transpose()?;
+    expiry(
+        now,
+        picked,
+        settings.access_key_default_days,
+        settings.access_key_longest_days,
+    )
+}

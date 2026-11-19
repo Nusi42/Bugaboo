@@ -174,7 +174,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         // only ever one text.
         if !same_digest(&record.key.secret_hash, &hash)
             || record.key.prefix != secret.prefix()
-            || record.key.expires_at <= self.now()
+            || !record.key.works_at(self.now())
         {
             return Ok(None);
         }

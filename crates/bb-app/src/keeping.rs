@@ -57,6 +57,7 @@ impl JobKind {
                 KeepKind::Sessions,
                 KeepKind::SignUpLinks,
                 KeepKind::EmailChangeLinks,
+                KeepKind::AgentRequests,
             ],
             Self::PurgeDrafts => &[KeepKind::Drafts],
             Self::PurgeNotifications => &[KeepKind::Notifications],
@@ -184,7 +185,8 @@ impl<S: AuthStore> Ctx<'_, S> {
         let links = self
             .delete_old_sign_up_links()
             .await?
-            .and(self.delete_old_e_mail_changes().await?);
+            .and(self.delete_old_e_mail_changes().await?)
+            .and(self.delete_old_agent_requests().await?);
         let settings = self.settings().await?;
         let networks_before = self.keep_cutoff(KeepKind::IpAddresses).await?;
         let event = self.event(

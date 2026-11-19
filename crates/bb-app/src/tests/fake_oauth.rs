@@ -1,7 +1,9 @@
 //! The sign-in of AI apps in the in-memory store (AI-22, ADR-0042).
 
 use bb_core::id::{GrantId, OAuthClientId, UserId};
-use bb_core::oauth::{GrantEnd, OAuthClient, OAuthCode, OAuthToken, OAuthWebAddress, TokenKind};
+use bb_core::oauth::{
+    GrantEnd, OAuthClient, OAuthCode, OAuthGrant, OAuthToken, OAuthWebAddress, TokenKind,
+};
 use bb_core::security_log::Digest;
 use jiff::Timestamp;
 
@@ -36,6 +38,16 @@ fn end(state: &mut super::fake::State, id: GrantId, how: GrantEnd, at: Timestamp
 }
 
 impl OAuthStore for FakeStore {
+    async fn grant_in(tx: &mut Tx, id: GrantId) -> Result<Option<OAuthGrant>, FakeError> {
+        Ok(tx
+            .state
+            .oauth
+            .grants
+            .iter()
+            .find(|found| found.grant.id == id)
+            .map(|found| found.grant.clone()))
+    }
+
     async fn oauth_client(&self, id: OAuthClientId) -> Result<Option<OAuthClient>, FakeError> {
         Ok(self.read(|state| state.oauth.clients.iter().find(|c| c.id == id).cloned()))
     }

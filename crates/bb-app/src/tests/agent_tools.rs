@@ -389,13 +389,14 @@ async fn ai_36_the_tools_of_agents_are_offered_to_agents_and_to_nobody_else() ->
     for tool in registry::<FakeStore>().iter().map(|spec| spec.tool) {
         assert_eq!(
             agent.contains(&tool.code().to_owned()),
-            !tool.is_for_people(),
+            !tool.is_for_people() && !tool.is_for_programs(),
             "{} for the agent",
             tool.code()
         );
         assert_eq!(
             person.contains(&tool.code().to_owned()),
-            !tool.is_for_agents(),
+            // In a session (no key, no grant) the tools of programs are not offered either.
+            !tool.is_for_agents() && !tool.is_for_programs(),
             "{} for the person",
             tool.code()
         );

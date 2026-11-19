@@ -12,7 +12,7 @@ use bb_core::security_log::Digest;
 use jiff::Timestamp;
 
 use crate::ports::ChangeStore;
-use crate::store_macros::{reads, writes};
+use crate::store_macros::{queries, reads, writes};
 
 /// A grant with the projects it is limited to; none for every project of its person.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -45,6 +45,11 @@ pub struct OAuthCleaned {
 
 /// The records of apps, grants, codes and tokens.
 pub trait OAuthStore: ChangeStore + 'static {
+    queries! {
+        /// The grant with this ID, without its projects.
+        fn grant(id: GrantId) -> Option<OAuthGrant> = grant_in;
+    }
+
     reads! {
         /// The app with this ID.
         fn oauth_client(id: OAuthClientId) -> Option<OAuthClient>;

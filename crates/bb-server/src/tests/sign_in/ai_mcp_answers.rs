@@ -235,7 +235,8 @@ async fn ai_04_tools_list_offers_only_the_tools_a_person_may_use_somewhere() -> 
             (StartingRole::Hr, "hana", 0),
             (StartingRole::Viewer, "vic", 4),
             (StartingRole::Guest, "gus", 8),
-            (StartingRole::TeamMember, "tom", 11),
+            // A team member may create agents, so the tools of programs are offered too.
+            (StartingRole::TeamMember, "tom", 13),
         ] {
             let (mut person, _) = site.person(role, name).await?;
             let signed = sign_in_app(
@@ -594,6 +595,9 @@ const CHANGING: [&str; 7] = [
     "start_timer",
     "stop_timer",
 ];
+/// The tools of programs, offered to an app of a person who may create agents somewhere (ADR-0029,
+/// amendment M9).
+const OF_PROGRAMS: [&str; 2] = ["ask_for_agents", "collect_agent_keys"];
 
 /// The names of the tools `tools/list` offers to the token.
 async fn tool_names(
@@ -644,7 +648,7 @@ async fn ai_04_an_app_of_an_administrator_is_offered_the_tools_before_any_projec
         .await?;
         assert_eq!(
             tool_names(&mcp, &changing).await?,
-            [&READING[..], &CHANGING[..]].concat()
+            [&READING[..], &CHANGING[..], &OF_PROGRAMS[..]].concat()
         );
         Ok(())
     })
@@ -691,7 +695,7 @@ async fn ai_04_once_there_are_projects_they_decide_which_tools_an_app_is_offered
         .await?;
         assert_eq!(
             tool_names(&mcp, &adas).await?,
-            [&READING[..], &CHANGING[..]].concat()
+            [&READING[..], &CHANGING[..], &OF_PROGRAMS[..]].concat()
         );
         // Her only project kept from AI leaves her role for the whole organization nothing.
         ok(&ada

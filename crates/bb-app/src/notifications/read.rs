@@ -290,6 +290,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             // says it all.
             NotificationKind::RuleRunsOutSoon
             | NotificationKind::AgentStopped
+            | NotificationKind::AgentsAskedFor
             | NotificationKind::ExportReady => Ok(Some(NotificationWhat::Plain)),
             NotificationKind::ExportByAdministrator | NotificationKind::DetailsCorrected => {
                 Ok(Some(NotificationWhat::ByAdministrator {

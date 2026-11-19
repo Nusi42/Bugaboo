@@ -29,6 +29,16 @@ A team of agents works best with one agent for each part of the work, for exampl
 - All or nothing: if one agent cannot be created, for example because you have an agent of that name already or a name is in the list twice, none is created and Bugaboo says which line to fix.
 - The agents start with the same limits as an agent you create alone. The most agents of one list is on [the page of numbers](../ai/numbers.md).
 
+## Agents asked for by a program
+
+An AI app you allowed, or a script with one of your access keys that may change things, can ask you for the agents it needs, for example one that plans and one that builds. It asks with a reason, and nothing is created until you say yes.
+
+- You are told by a notification, and the request shows at the top of *My agents* under **Asked for by a program**: who asked, why, and each agent with what it is for. A request waits a day for your answer.
+- Tick the requests you want and press **Approve**, with your password once. Every agent of them is created in one step; if one cannot be created, none is.
+- **Decline** ends a request. Nothing is created.
+- After you approved, the program that asked collects the keys of the new agents **once**, within a day. You do not see these keys, and nobody else can collect them: not another key of yours, not another app. If the program does not collect them in time, the agents stay without keys, and you can create keys for them on their pages.
+- A program can never create a key by itself: every key still needs your password. An agent cannot ask for agents, and a key that can only look cannot ask. A key or an app has at most three requests waiting at once. Requests are deleted a week after they were asked.
+
 ## The page of an agent
 
 - **Agent keys.** An agent signs in with a key. Press **Create an agent key**, give it a name that says what it is for (for example "Fixer on the build server") and enter your password. You see the key **once**: copy it then. Every key runs out. **Renew the key** gives a new one and takes the old one back; **Take back** stops a key at once, and an agent that uses it can no longer sign in.
