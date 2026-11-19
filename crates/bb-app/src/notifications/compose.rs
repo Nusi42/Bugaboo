@@ -283,7 +283,10 @@ pub(crate) fn compose(
     let (subject, open) = match &first.issue {
         Some(issue) => (
             subject_of(&match (&issue.title, short) {
-                (Some(title), false) => message::mail_subject(issue.key.clone(), title),
+                (Some(title), false) => message::mail_subject(message::MailSubject {
+                    issue: &issue.key.clone(),
+                    title: &title,
+                }),
                 _ => message::mail_subject_short(issue.key.clone()),
             }),
             message::mail_open(format!("{public_url}{}", app_paths::issue(&issue.key))),
@@ -323,10 +326,10 @@ pub(crate) fn compose(
         text.push_str("\n\n");
     }
     text.push_str(
-        &message::mail_footer(
-            Message::from(message::NAV_NOTIFICATION_SETTINGS).render(),
-            Message::from(message::NAV_MY_SETTINGS).render(),
-        )
+        &message::mail_footer(message::MailFooter {
+            page: &Message::from(message::NAV_NOTIFICATION_SETTINGS).render(),
+            settings: &Message::from(message::NAV_MY_SETTINGS).render(),
+        })
         .render(),
     );
     text.push('\n');

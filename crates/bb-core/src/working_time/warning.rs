@@ -52,50 +52,63 @@ pub enum Warning {
 
 impl Warning {
     /// The sentence of the warning, for example *"10 hours 35 minutes worked. The rules allow 10
-    /// hours a day at most."* The words of the placeholders go in the order of the parameters of
-    /// the message function, which is the order of their names.
+    /// hours a day at most."* Each length goes to its placeholder by name.
     #[must_use]
     pub fn said(&self) -> Said {
         let length = |minutes: Minutes| length_sentence(minutes);
         match *self {
-            Self::LongDay { worked, most } => Said::with(
-                &message::working_time_warning_long_day("", ""),
-                vec![length(most), length(worked)],
+            Self::LongDay { worked, most } => said!(
+                message::working_time_warning_long_day,
+                message::WorkingTimeWarningLongDay {
+                    most: length(most),
+                    worked: length(worked),
+                }
             ),
             Self::ShortBreak {
                 worked,
                 breaks,
                 needed,
                 after,
-            } if breaks.get() == 0 => Said::with(
-                &message::working_time_warning_no_break("", "", ""),
-                vec![length(after), length(needed), length(worked)],
+            } if breaks.get() == 0 => said!(
+                message::working_time_warning_no_break,
+                message::WorkingTimeWarningNoBreak {
+                    after: length(after),
+                    needed: length(needed),
+                    worked: length(worked),
+                }
             ),
             Self::ShortBreak {
                 worked,
                 breaks,
                 needed,
                 after,
-            } => Said::with(
-                &message::working_time_warning_short_break("", "", "", ""),
-                vec![
-                    length(after),
-                    length(breaks),
-                    length(needed),
-                    length(worked),
-                ],
+            } => said!(
+                message::working_time_warning_short_break,
+                message::WorkingTimeWarningShortBreak {
+                    after: length(after),
+                    breaks: length(breaks),
+                    needed: length(needed),
+                    worked: length(worked),
+                }
             ),
             Self::LongStretch {
                 stretch,
                 most,
                 shortest,
-            } => Said::with(
-                &message::working_time_warning_long_stretch("", "", ""),
-                vec![length(most), length(shortest), length(stretch)],
+            } => said!(
+                message::working_time_warning_long_stretch,
+                message::WorkingTimeWarningLongStretch {
+                    most: length(most),
+                    shortest: length(shortest),
+                    stretch: length(stretch),
+                }
             ),
-            Self::ShortRest { rest, needed } => Said::with(
-                &message::working_time_warning_short_rest("", ""),
-                vec![length(needed), length(rest)],
+            Self::ShortRest { rest, needed } => said!(
+                message::working_time_warning_short_rest,
+                message::WorkingTimeWarningShortRest {
+                    needed: length(needed),
+                    rest: length(rest),
+                }
             ),
         }
     }

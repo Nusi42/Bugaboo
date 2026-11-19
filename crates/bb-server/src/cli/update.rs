@@ -68,10 +68,22 @@ impl Refused {
             Self::Signature(file, SignatureProblem::Changed) => message::cli_update_changed(file),
             Self::NoRelease(file) => message::cli_update_no_release(file),
             Self::OtherList(file, version) => {
-                message::cli_update_other_list(CHECKSUMS_FILE, file, version)
+                message::cli_update_other_list(message::CliUpdateOtherList {
+                    checksums: &CHECKSUMS_FILE,
+                    file: &file,
+                    version: &version,
+                })
             }
-            Self::NotListed(file) => message::cli_update_not_listed(file, CHECKSUMS_FILE),
-            Self::OtherChecksum(file) => message::cli_update_other_checksum(file, CHECKSUMS_FILE),
+            Self::NotListed(file) => message::cli_update_not_listed(message::CliUpdateNotListed {
+                checksums: &CHECKSUMS_FILE,
+                file: &file,
+            }),
+            Self::OtherChecksum(file) => {
+                message::cli_update_other_checksum(message::CliUpdateOtherChecksum {
+                    checksums: &CHECKSUMS_FILE,
+                    file: &file,
+                })
+            }
         }
     }
 }
@@ -81,11 +93,19 @@ pub(crate) fn verify(args: &VerifyArgs) -> anyhow::Result<()> {
     match check(&args.file, release::RELEASE_PUBLIC_KEYS, release::VERSION) {
         Ok(checked) => {
             output::line(
-                &message::cli_update_signed(&checked.signed.version, &checked.signed.file).render(),
+                &message::cli_update_signed(message::CliUpdateSigned {
+                    file: &checked.signed.file,
+                    version: &checked.signed.version,
+                })
+                .render(),
             );
             if checked.older {
                 output::warning(
-                    &message::cli_update_older(&checked.signed.version, release::VERSION).render(),
+                    &message::cli_update_older(message::CliUpdateOlder {
+                        installed: &release::VERSION,
+                        version: &checked.signed.version,
+                    })
+                    .render(),
                 );
             }
             Ok(())

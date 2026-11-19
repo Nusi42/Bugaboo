@@ -302,8 +302,11 @@ fn password_warning(given: &[(SettingName, String)], file: &str) -> Option<Strin
         .iter()
         .any(|(name, value)| *name == SettingName::DatabaseUrl && config::has_password(value))
         .then(|| {
-            message::cli_database_url_password(file, config::env_name(SettingName::DatabaseUrl))
-                .render()
+            message::cli_database_url_password(message::CliDatabaseUrlPassword {
+                file: &file,
+                variable: &config::env_name(SettingName::DatabaseUrl),
+            })
+            .render()
         })
 }
 

@@ -80,6 +80,7 @@ pub mod theme;
 pub mod time;
 pub mod version;
 pub mod whose;
+#[macro_use]
 pub mod wording;
 pub mod work_times;
 pub mod workflow;

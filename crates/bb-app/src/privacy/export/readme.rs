@@ -122,7 +122,13 @@ pub fn recipients(mail_on: bool, ai: Option<(&str, &str)>) -> Vec<String> {
         lines.push(words(message::EXPORT_README_RECIPIENT_MAIL));
     }
     if let Some((provider, country)) = ai {
-        lines.push(message::export_readme_recipient_ai(country, provider).render());
+        lines.push(
+            message::export_readme_recipient_ai(message::ExportReadmeRecipientAi {
+                country: &country,
+                provider: &provider,
+            })
+            .render(),
+        );
     }
     lines
 }

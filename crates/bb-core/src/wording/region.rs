@@ -211,7 +211,11 @@ impl Region {
     pub fn worded_for_mail(&self, kind: FieldType, value: &Value) -> Option<String> {
         let words = self.worded(kind, value)?;
         Some(if kind == FieldType::DateTime {
-            message::mail_date_time(words, &self.zone_name).render()
+            message::mail_date_time(message::MailDateTime {
+                moment: &words,
+                zone: &self.zone_name,
+            })
+            .render()
         } else {
             words
         })
@@ -235,16 +239,28 @@ impl Region {
         let zoned = moment.to_zoned(self.zone.clone());
         let (hour, minute) = (zoned.hour(), format!("{:02}", zoned.minute()));
         match self.clock {
-            Clock::TwentyFour => message::common_time_24(hour, minute).render(),
+            Clock::TwentyFour => message::common_time_24(message::CommonTime24 {
+                hour: &hour,
+                minute: &minute,
+            })
+            .render(),
             Clock::Twelve => {
                 let on_clock = match hour % HOURS_ON_A_CLOCK {
                     0 => HOURS_ON_A_CLOCK,
                     hour => hour,
                 };
                 if hour < HOURS_ON_A_CLOCK {
-                    message::common_time_am(on_clock, minute).render()
+                    message::common_time_am(message::CommonTimeAm {
+                        hour: &on_clock,
+                        minute: &minute,
+                    })
+                    .render()
                 } else {
-                    message::common_time_pm(on_clock, minute).render()
+                    message::common_time_pm(message::CommonTimePm {
+                        hour: &on_clock,
+                        minute: &minute,
+                    })
+                    .render()
                 }
             }
         }

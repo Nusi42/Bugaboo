@@ -165,17 +165,15 @@ impl LengthMistake {
         match self {
             Self::NotALength => Said::with(
                 &message::time_length_not_a_length(""),
-                vec![Said::text(mark.example())],
+                Said::text(mark.example()),
             ),
             Self::TooLong => Said::with(
                 &message::time_length_too_long(""),
-                vec![Said::text(
-                    (TIME_ENTRY_MINUTES_MAX.get() / MINUTES_PER_HOUR).to_string(),
-                )],
+                Said::text((TIME_ENTRY_MINUTES_MAX.get() / MINUTES_PER_HOUR).to_string()),
             ),
             Self::Zero => Said::with(
                 &message::time_length_zero(0),
-                vec![Said::Count(TIME_ENTRY_MINUTES_MIN.get())],
+                Said::Count(TIME_ENTRY_MINUTES_MIN.get()),
             ),
         }
     }

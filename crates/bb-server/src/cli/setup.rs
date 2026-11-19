@@ -198,10 +198,10 @@ fn execute(
         .is_some_and(config::has_password)
     {
         terminal.say(
-            &message::setup_database_url_password(
-                target.display(),
-                config::env_name(SettingName::DatabaseUrl),
-            )
+            &message::setup_database_url_password(message::SetupDatabaseUrlPassword {
+                file: &target.display(),
+                variable: &config::env_name(SettingName::DatabaseUrl),
+            })
             .render(),
         );
     }

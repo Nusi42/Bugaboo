@@ -159,23 +159,37 @@ impl ConfigError {
         let shown = |path: &Path| path.display().to_string();
         match self {
             Self::FileUnreadable { path, reason } => {
-                message::config_file_unreadable(shown(path), reason).render()
+                message::config_file_unreadable(message::ConfigFileUnreadable {
+                    path: &shown(path),
+                    reason: &reason,
+                })
+                .render()
             }
             Self::FileInvalid { path, reason } => {
-                message::config_file_invalid(shown(path), reason).render()
+                message::config_file_invalid(message::ConfigFileInvalid {
+                    path: &shown(path),
+                    reason: &reason,
+                })
+                .render()
             }
-            Self::UnknownKey { path, name } => message::config_file_unknown_key(
-                SettingName::ALL
-                    .iter()
-                    .map(|key| key.code())
-                    .collect::<Vec<_>>()
-                    .join(", "),
-                name,
-                shown(path),
-            )
-            .render(),
+            Self::UnknownKey { path, name } => {
+                message::config_file_unknown_key(message::ConfigFileUnknownKey {
+                    known: &(SettingName::ALL
+                        .iter()
+                        .map(|key| key.code())
+                        .collect::<Vec<_>>()
+                        .join(", ")),
+                    name: &name,
+                    path: &shown(path),
+                })
+                .render()
+            }
             Self::WrongType { path, name } => {
-                message::config_file_wrong_type(name, shown(path)).render()
+                message::config_file_wrong_type(message::ConfigFileWrongType {
+                    name: &name,
+                    path: &shown(path),
+                })
+                .render()
             }
             Self::PortMissing => Message::from(message::CONFIG_PORT_MISSING).render(),
             Self::PortInvalid(value) => message::config_port_invalid(value).render(),
@@ -194,7 +208,11 @@ impl ConfigError {
             Self::ProxyInvalid(value) => message::config_proxy_invalid(value).render(),
             Self::LogLevelInvalid(value) => message::config_log_level_invalid(value).render(),
             Self::NumberInvalid { name, value } => {
-                message::config_number_invalid(name.code(), value).render()
+                message::config_number_invalid(message::ConfigNumberInvalid {
+                    name: &name.code(),
+                    value: &value,
+                })
+                .render()
             }
         }
     }

@@ -171,8 +171,16 @@ impl Saved {
     /// The line the AI reads under the answer.
     fn sentence(&self) -> String {
         match self {
-            Self::NewIssue { key, version } => message::ai_saved_new_issue(key, version),
-            Self::Issue { key, version } => message::ai_saved_issue(key, version),
+            Self::NewIssue { key, version } => {
+                message::ai_saved_new_issue(message::AiSavedNewIssue {
+                    issue: &key,
+                    version: &version,
+                })
+            }
+            Self::Issue { key, version } => message::ai_saved_issue(message::AiSavedIssue {
+                issue: &key,
+                version: &version,
+            }),
             Self::Version { version } => message::ai_saved_version(version),
             Self::TimerStoppedEmpty => Message::from(message::AI_SAVED_TIMER_STOPPED_EMPTY),
             Self::On { key } => message::ai_saved_on(key),

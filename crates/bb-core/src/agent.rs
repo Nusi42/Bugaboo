@@ -74,9 +74,24 @@ impl LimitKind {
     pub fn sentence(self, agent: &str, limit: i64) -> crate::message::Message {
         use crate::message;
         match self {
-            Self::ChangesAMinute => message::agent_paused_changes_a_minute(agent, limit),
-            Self::IssuesAtOnce => message::agent_paused_issues_at_once(agent, limit),
-            Self::AttemptsOnOneIssue => message::agent_paused_attempts_on_one_issue(agent, limit),
+            Self::ChangesAMinute => {
+                message::agent_paused_changes_a_minute(message::AgentPausedChangesAMinute {
+                    agent: &agent,
+                    limit,
+                })
+            }
+            Self::IssuesAtOnce => {
+                message::agent_paused_issues_at_once(message::AgentPausedIssuesAtOnce {
+                    agent: &agent,
+                    limit,
+                })
+            }
+            Self::AttemptsOnOneIssue => message::agent_paused_attempts_on_one_issue(
+                message::AgentPausedAttemptsOnOneIssue {
+                    agent: &agent,
+                    limit,
+                },
+            ),
         }
     }
 }

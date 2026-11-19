@@ -174,10 +174,10 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
             Ok(MailText {
                 subject: Message::from(message::MAIL_SIGN_UP_SUBJECT),
-                text: message::mail_sign_up_text(
-                    self.app_address(&link.path(app_paths::INVITATION)),
-                    bb_core::sign_up_invitation::HOURS,
-                ),
+                text: message::mail_sign_up_text(message::MailSignUpText {
+                    address: &self.app_address(&link.path(app_paths::INVITATION)),
+                    hours: bb_core::sign_up_invitation::HOURS,
+                }),
             })
         })
         .await

@@ -95,7 +95,13 @@ pub(super) async fn backup(args: &BackupArgs) -> anyhow::Result<()> {
             output::line(&message::backups_none(folder.display()).render());
         }
         for (name, _, size) in found {
-            output::line(&message::backups_listed(name.to_string(), size_of(size)).render());
+            output::line(
+                &message::backups_listed(message::BackupsListed {
+                    name: &name.to_string(),
+                    size: &size_of(size),
+                })
+                .render(),
+            );
         }
         return Ok(());
     }
@@ -112,11 +118,11 @@ pub(super) async fn backup(args: &BackupArgs) -> anyhow::Result<()> {
     let storage = AuthStorage::new(store.database, store.keys, store.seal);
     record_made(&storage, &created.file, BackupMaker::CommandLine, now).await?;
     output::line(
-        &message::backups_created(
-            created.file.name.to_string(),
-            created.path.display(),
-            size_of(created.file.size),
-        )
+        &message::backups_created(message::BackupsCreated {
+            name: &created.file.name.to_string(),
+            path: &created.path.display(),
+            size: &size_of(created.file.size),
+        })
         .render(),
     );
     Ok(())
@@ -211,7 +217,13 @@ fn say(report: &RestoreReport) {
         );
     }
     if let Some((from, to)) = report.lost {
-        output::line(&message::restore_lost(from, to).render());
+        output::line(
+            &message::restore_lost(message::RestoreLost {
+                from: &from,
+                to: &to,
+            })
+            .render(),
+        );
     }
     if let Err(error) = summarize(&log_state(&Ok(report.log))) {
         output::warning(&format!("{error:#}"));
@@ -246,11 +258,24 @@ fn failed(args: &RestoreArgs, failure: &RestoreFailure) -> anyhow::Error {
     let path = args.file.display();
     if let Some(before) = &failure.before {
         let again = command_line("restore", &args.store, Some(before));
-        return anyhow!(message::restore_failed(before.display(), again, &failure.error).render());
+        return anyhow!(
+            message::restore_failed(message::RestoreFailed {
+                before: &before.display(),
+                command: &again,
+                reason: &failure.error
+            })
+            .render()
+        );
     }
     match &failure.error {
         StoreError::BackupRefused(problem) => {
-            anyhow!(message::restore_refused(path, reason(problem)).render())
+            anyhow!(
+                message::restore_refused(message::RestoreRefused {
+                    path: &path,
+                    reason: &reason(problem)
+                })
+                .render()
+            )
         }
         StoreError::KeysDoNotOpen | StoreError::BackupNotSealed => {
             let import = command_line(
@@ -261,9 +286,21 @@ fn failed(args: &RestoreArgs, failure: &RestoreFailure) -> anyhow::Error {
                 )),
             );
             if matches!(failure.error, StoreError::BackupNotSealed) {
-                anyhow!(message::restore_not_sealed(import, path).render())
+                anyhow!(
+                    message::restore_not_sealed(message::RestoreNotSealed {
+                        command: &import,
+                        path: &path
+                    })
+                    .render()
+                )
             } else {
-                anyhow!(message::restore_keys_do_not_open(import, path).render())
+                anyhow!(
+                    message::restore_keys_do_not_open(message::RestoreKeysDoNotOpen {
+                        command: &import,
+                        path: &path
+                    })
+                    .render()
+                )
             }
         }
         other => anyhow!("{other}"),

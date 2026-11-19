@@ -218,14 +218,20 @@ impl SampleError {
             Self::NameNotLetters(name) => message::sample_error_name_not_letters(name),
             Self::TooFewNames => message::sample_error_too_few_names(PEOPLE),
             Self::Random => plain(message::SAMPLE_ERROR_RANDOM),
-            Self::Folder { path, reason } => message::sample_error_folder(path.display(), reason),
+            Self::Folder { path, reason } => {
+                message::sample_error_folder(message::SampleErrorFolder {
+                    path: &path.display(),
+                    reason: &reason,
+                })
+            }
             Self::NotASampleFolder(path) => {
                 message::sample_error_not_a_sample_folder(path.display())
             }
             Self::Store(reason) => message::sample_error_store(reason),
-            Self::Step { step, reason } => {
-                message::sample_error_step(reason, step.message().render())
-            }
+            Self::Step { step, reason } => message::sample_error_step(message::SampleErrorStep {
+                reason: &reason,
+                step: &step.message().render(),
+            }),
             Self::SetupClosed => plain(message::SAMPLE_ERROR_SETUP_CLOSED),
             Self::SecretNotStored => plain(message::SAMPLE_ERROR_SECRET_NOT_STORED),
             Self::PersonMissing => plain(message::SAMPLE_ERROR_PERSON_MISSING),
@@ -233,7 +239,12 @@ impl SampleError {
             Self::KeyMissing => plain(message::SAMPLE_ERROR_KEY_MISSING),
             Self::NotMade(name) => message::sample_error_not_created(name),
             Self::LogNotAnchored => plain(message::SAMPLE_ERROR_LOG_NOT_ANCHORED),
-            Self::LogBroken { seq, reason } => message::sample_error_log_broken(reason, seq),
+            Self::LogBroken { seq, reason } => {
+                message::sample_error_log_broken(message::SampleErrorLogBroken {
+                    reason: &reason,
+                    seq: &seq,
+                })
+            }
             Self::Start(start) => message::sample_error_start(start),
             Self::DatabaseUrl(variable) => message::sample_error_database_url(variable),
             Self::Layout(reason) => message::sample_error_layout(reason),

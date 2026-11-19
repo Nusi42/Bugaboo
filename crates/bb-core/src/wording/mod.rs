@@ -14,8 +14,6 @@
 //! caller words those values (the server with [`Region`]) and hands the words in. The two ways of
 //! writing are held together by test vectors that this crate makes ([`vectors`]).
 
-use std::collections::BTreeMap;
-
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -23,107 +21,21 @@ use crate::edit::NoticeKind;
 use crate::fields::Field;
 use crate::history::{FileEvent, TimeEvent};
 use crate::issue::Priority;
-use crate::message::{self, Message, MessageKey};
+use crate::message;
 use crate::notification::NotificationKind;
 use crate::own_fields::FieldType;
 use crate::time::{MINUTES_PER_HOUR, Minutes};
 use crate::workflow::starter::STARTERS;
 
+#[macro_use]
+mod said;
 pub mod region;
 mod typed_length;
 pub mod vectors;
 
 pub use region::{Choices, Region};
+pub use said::Said;
 pub use typed_length::{length_read, time_entry_read};
-
-/// Some words: a text, a count, words that follow each other, or a message of the catalog with the
-/// words for its placeholders. In JSON a text is a string, a count a number, words that follow each
-/// other are a list, and a message is an object with its `key` and its `args` (`word_types.rs`
-/// writes the browser's type from this declaration).
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-#[serde(untagged)]
-pub enum Said {
-    /// Text that is not in the catalog: a name, a number, a text of a person.
-    Text(String),
-    /// A count that a plural of the catalog chooses its words by (`# hours`). Only a real count is
-    /// one: a text of digits (`0815`) stays a text.
-    Count(u32),
-    /// Words that follow each other without anything between them.
-    Parts(Vec<Said>),
-    /// A message of the catalog; the browser looks `key` up in its catalog.
-    Message {
-        /// The key of the message.
-        key: MessageKey,
-        /// The words for its placeholders, by the name of the placeholder.
-        args: BTreeMap<&'static str, Said>,
-    },
-}
-
-/// The empty text for each value of a call of [`said!`]: the typed function of the catalog is
-/// called with it, which checks the number of placeholders when the program is built.
-macro_rules! blank {
-    ($_value:expr) => {
-        ""
-    };
-}
-
-/// A message of the catalog with the words for its placeholders, given in the order of the
-/// parameters of the message function.
-macro_rules! said {
-    ($function:path, $($value:expr),+ $(,)?) => {
-        Said::with(&$function($(blank!($value)),+), vec![$($value),+])
-    };
-}
-
-impl Said {
-    /// A text that is not in the catalog.
-    #[must_use]
-    pub fn text(text: impl Into<String>) -> Self {
-        Self::Text(text.into())
-    }
-
-    /// A message without placeholders.
-    #[must_use]
-    pub const fn key(key: MessageKey) -> Self {
-        Self::Message {
-            key,
-            args: BTreeMap::new(),
-        }
-    }
-
-    /// A message with the words for its placeholders, in the order of the message function's
-    /// parameters (the typed function of the catalog gave `message` its names).
-    pub(crate) fn with(message: &Message, values: Vec<Self>) -> Self {
-        let names = message.arguments().iter().map(|(name, _)| *name);
-        Self::Message {
-            key: message.key(),
-            args: names.zip(values).collect(),
-        }
-    }
-
-    /// The English words, as the server writes them.
-    #[must_use]
-    pub fn render(&self) -> String {
-        match self {
-            Self::Text(text) => text.clone(),
-            Self::Count(count) => count.to_string(),
-            Self::Parts(parts) => parts.iter().map(Self::render).collect(),
-            Self::Message { key, args } => Message::with_arguments(
-                *key,
-                args.iter()
-                    .map(|(name, said)| {
-                        let value = match said {
-                            Self::Count(count) => message::Value::Number(i64::from(*count)),
-                            _ => message::Value::Text(said.render()),
-                        };
-                        (*name, value)
-                    })
-                    .collect(),
-            )
-            .render(),
-        }
-    }
-}
 
 /// What ends a sentence of Bugaboo in a line of an e-mail: the screen says it without.
 const SENTENCE_END: &str = ".";
@@ -151,11 +63,19 @@ pub fn list_said(items: &[String]) -> Option<Said> {
     match items {
         [] => None,
         [one] => Some(said(one)),
-        [first, second] => Some(said!(message::list_two, said(first), said(second))),
+        [first, second] => Some(said!(
+            message::list_two,
+            message::ListTwo {
+                first: said(first),
+                second: said(second)
+            }
+        )),
         [start @ .., last] => Some(said!(
             message::list_many,
-            said(last),
-            Said::text(start.join(", "))
+            message::ListMany {
+                last: said(last),
+                start: Said::text(start.join(", "))
+            }
         )),
     }
 }
@@ -211,15 +131,17 @@ pub fn length_sentence(length: Minutes) -> Said {
         length.get() % MINUTES_PER_HOUR,
     );
     let count = Said::Count;
-    let hours_said = Said::with(&message::time_length_hours(0), vec![count(hours)]);
-    let minutes_said = Said::with(&message::time_length_minutes(0), vec![count(minutes)]);
+    let hours_said = Said::with(&message::time_length_hours(0), count(hours));
+    let minutes_said = Said::with(&message::time_length_minutes(0), count(minutes));
     match (hours, minutes) {
         (0, _) => minutes_said,
         (_, 0) => hours_said,
         _ => said!(
             message::time_length_hours_and_minutes,
-            hours_said,
-            minutes_said
+            message::TimeLengthHoursAndMinutes {
+                hours: hours_said,
+                minutes: minutes_said
+            }
         ),
     }
 }
@@ -365,16 +287,40 @@ pub fn change_sentence(change: &Change) -> Said {
         && !is_nobody(change.after.as_ref());
     match (side(&change.before), side(&change.after)) {
         (_, Some(after)) if field == Some(Field::AssignedTo) && from_nobody => {
-            said!(message::history_assigned, after, who)
+            said!(
+                message::history_assigned,
+                message::HistoryAssigned { after, who }
+            )
         }
         (Some(before), Some(after)) => {
-            said!(message::history_changed, after, before, name, who)
+            said!(
+                message::history_changed,
+                message::HistoryChanged {
+                    after,
+                    before,
+                    field: name,
+                    who
+                }
+            )
         }
         // After a colon for every field: a field such as *Assigned to* ends in the word that
         // *set … to* would need.
-        (None, Some(after)) => said!(message::history_set, after, name, who),
-        (Some(_), None) => said!(message::history_cleared, name, who),
-        (None, None) => said!(message::history_changed_long_text, name, who),
+        (None, Some(after)) => said!(
+            message::history_set,
+            message::HistorySet {
+                after,
+                field: name,
+                who
+            }
+        ),
+        (Some(_), None) => said!(
+            message::history_cleared,
+            message::HistoryCleared { field: name, who }
+        ),
+        (None, None) => said!(
+            message::history_changed_long_text,
+            message::HistoryChangedLongText { field: name, who }
+        ),
     }
 }
 
@@ -407,15 +353,19 @@ fn dates_moved_sentence(who: &str, (start, due): (&Change, &Change)) -> Option<S
     let range = |start: &str, due: &str| {
         said!(
             message::history_date_range,
-            Said::text(due),
-            Said::text(start)
+            message::HistoryDateRange {
+                due: Said::text(due),
+                start: Said::text(start)
+            }
         )
     };
     Some(said!(
         message::history_dates_moved,
-        range(start.1, due.1),
-        range(start.0, due.0),
-        Said::text(who)
+        message::HistoryDatesMoved {
+            after: range(start.1, due.1),
+            before: range(start.0, due.0),
+            who: Said::text(who)
+        }
     ))
 }
 
@@ -484,12 +434,21 @@ fn file_words(who: &str, what: &FileChange) -> Said {
     let name = what.name.as_deref().map(Said::text);
     match (what.event, name) {
         (None, _) => said!(message::history_file_changed_unnamed, who),
-        (Some(FileEvent::Added), Some(name)) => said!(message::history_file_added, name, who),
+        (Some(FileEvent::Added), Some(name)) => said!(
+            message::history_file_added,
+            message::HistoryFileAdded { name, who }
+        ),
         (Some(FileEvent::Added), None) => said!(message::history_file_added_unnamed, who),
-        (Some(FileEvent::Deleted), Some(name)) => said!(message::history_file_deleted, name, who),
+        (Some(FileEvent::Deleted), Some(name)) => said!(
+            message::history_file_deleted,
+            message::HistoryFileDeleted { name, who }
+        ),
         (Some(FileEvent::Deleted), None) => said!(message::history_file_deleted_unnamed, who),
         (Some(FileEvent::Restored), Some(name)) => {
-            said!(message::history_file_restored, name, who)
+            said!(
+                message::history_file_restored,
+                message::HistoryFileRestored { name, who }
+            )
         }
         (Some(FileEvent::Restored), None) => said!(message::history_file_restored_unnamed, who),
     }
@@ -518,39 +477,37 @@ pub struct Time {
     pub what: TimeChange,
 }
 
-/// A message function with two placeholders, as [`said!`] calls it (with blanks, for their names).
-type TwoWords = fn(&'static str, &'static str) -> Message;
-
-/// A message function with one placeholder, as [`said!`] calls it.
-type OneWord = fn(&'static str) -> Message;
-
 /// The sentence of a time entry that was booked, changed or deleted: *Ana booked 1h 30m*. The
 /// length is written by the one writer of lengths ([`length_said`]); without it the sentence says
 /// only that time was booked.
 #[must_use]
 pub fn time_sentence(time: &Time) -> Said {
-    // The message with the length and the one without, for each event: the sentence is said in
-    // one place for each, which keeps the module of the browser small.
-    let (measured, unmeasured): (TwoWords, OneWord) = match time.what.event {
-        Some(TimeEvent::Booked) => (
-            message::history_time_booked,
-            message::history_time_booked_unmeasured,
-        ),
-        Some(TimeEvent::Deleted) => (
-            message::history_time_deleted,
-            message::history_time_deleted_unmeasured,
-        ),
-        // An event this version does not know says that booked time changed.
-        Some(TimeEvent::Changed) | None => (
-            message::history_time_changed,
-            message::history_time_changed_unmeasured,
-        ),
-    };
     let who = Said::text(&time.who);
-    match (time.what.event, time.what.minutes) {
-        // An event this version does not know says only that booked time changed, never a length.
-        (Some(_), Some(minutes)) => said!(measured, length_said(Minutes::new(minutes)), who),
-        (_, _) => said!(unmeasured, who),
+    // An event this version does not know says only that booked time changed, never a length.
+    let length = time
+        .what
+        .event
+        .and(time.what.minutes)
+        .map(|minutes| length_said(Minutes::new(minutes)));
+    match (time.what.event, length) {
+        (Some(TimeEvent::Booked), Some(length)) => said!(
+            message::history_time_booked,
+            message::HistoryTimeBooked { length, who }
+        ),
+        (Some(TimeEvent::Booked), None) => said!(message::history_time_booked_unmeasured, who),
+        (Some(TimeEvent::Deleted), Some(length)) => said!(
+            message::history_time_deleted,
+            message::HistoryTimeDeleted { length, who }
+        ),
+        (Some(TimeEvent::Deleted), None) => said!(message::history_time_deleted_unmeasured, who),
+        // An event this version does not know says that booked time changed.
+        (Some(TimeEvent::Changed) | None, Some(length)) => said!(
+            message::history_time_changed,
+            message::HistoryTimeChanged { length, who }
+        ),
+        (Some(TimeEvent::Changed) | None, None) => {
+            said!(message::history_time_changed_unmeasured, who)
+        }
     }
 }
 
@@ -705,8 +662,10 @@ pub fn notification_sentences(notice: &Notice) -> Vec<Said> {
                 .map_or_else(String::new, |day| day.date.clone());
             let mut said = vec![said!(
                 message::notifications_work_day_changed,
-                Said::text(date),
-                who()
+                message::NotificationsWorkDayChanged {
+                    date: Said::text(date),
+                    who: who()
+                }
             )];
             if let Some(reason) = notice.work_day.as_ref().and_then(|day| day.reason.as_ref()) {
                 said.push(said!(
@@ -740,13 +699,22 @@ fn work_times_sentence(notice: &Notice) -> Said {
     let days = Said::text(times.days.as_str());
     match times.event {
         WorkTimesEvent::AwayEntered => {
-            said!(message::notifications_work_times_away_entered, days, who)
+            said!(
+                message::notifications_work_times_away_entered,
+                message::NotificationsWorkTimesAwayEntered { days, who }
+            )
         }
         WorkTimesEvent::AwayChanged => {
-            said!(message::notifications_work_times_away_changed, days, who)
+            said!(
+                message::notifications_work_times_away_changed,
+                message::NotificationsWorkTimesAwayChanged { days, who }
+            )
         }
         WorkTimesEvent::AwayRemoved => {
-            said!(message::notifications_work_times_away_removed, days, who)
+            said!(
+                message::notifications_work_times_away_removed,
+                message::NotificationsWorkTimesAwayRemoved { days, who }
+            )
         }
         WorkTimesEvent::UsualChanged => said!(message::notifications_work_times_usual_changed, who),
     }

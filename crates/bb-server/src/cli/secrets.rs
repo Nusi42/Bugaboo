@@ -83,11 +83,17 @@ pub(super) fn command_line(command: &str, args: &StoreArgs, folder: Option<&Path
 fn how_to_run(command: &str, owner: &str) -> Message {
     #[cfg(windows)]
     {
-        message::keys_how_windows(command, owner)
+        message::keys_how_windows(message::KeysHowWindows {
+            command: &command,
+            owner: &owner,
+        })
     }
     #[cfg(not(windows))]
     {
-        message::keys_how_linux(command, owner)
+        message::keys_how_linux(message::KeysHowLinux {
+            command: &command,
+            owner: &owner,
+        })
     }
 }
 
@@ -104,13 +110,22 @@ pub(super) fn require_own_installation(
     if let Some(owner) = other_owner(data.root()) {
         let how = how_to_run(&command, &owner).render();
         return Err(anyhow!(
-            message::keys_not_owner(how, owner, data.root().display()).render()
+            message::keys_not_owner(message::KeysNotOwner {
+                how: &how,
+                owner: &owner,
+                path: &data.root().display()
+            })
+            .render()
         ));
     }
     if unusable_key(&data.keys()).is_some() {
         let how = how_to_run(&command, &account_name()).render();
         return Err(anyhow!(
-            message::keys_no_access(how, data.keys().display()).render()
+            message::keys_no_access(message::KeysNoAccess {
+                how: &how,
+                path: &data.keys().display()
+            })
+            .render()
         ));
     }
     Ok(())
@@ -171,7 +186,13 @@ pub(super) fn summarize(state: &LogState) -> anyhow::Result<()> {
                 &message::security_log_valid(i64::try_from(*entries).unwrap_or(i64::MAX)).render(),
             );
             if let Some((seq, hash)) = head {
-                output::line(&message::security_log_head(hash, seq).render());
+                output::line(
+                    &message::security_log_head(message::SecurityLogHead {
+                        hash: &hash,
+                        seq: &seq,
+                    })
+                    .render(),
+                );
             }
             if *entries > 0 && !anchored {
                 output::warning(&Message::from(message::SECURITY_LOG_UNANCHORED).render());
@@ -179,7 +200,11 @@ pub(super) fn summarize(state: &LogState) -> anyhow::Result<()> {
             Ok(())
         }
         LogState::Broken { seq, reason } => Err(anyhow!(
-            message::security_log_broken(Message::from(reason_key(*reason)).render(), seq).render()
+            message::security_log_broken(message::SecurityLogBroken {
+                reason: &Message::from(reason_key(*reason)).render(),
+                seq: &seq
+            })
+            .render()
         )),
         LogState::Unreadable => Err(anyhow!(
             Message::from(message::SECURITY_LOG_UNREADABLE).render()
@@ -250,7 +275,11 @@ pub(super) async fn import_keys(args: &StoreArgs, folder: &Path) -> anyhow::Resu
         let source = folder.join(name);
         if !source.is_file() {
             return Err(anyhow!(
-                message::keys_import_missing(folder.display(), name).render()
+                message::keys_import_missing(message::KeysImportMissing {
+                    file: &name,
+                    path: &folder.display()
+                })
+                .render()
             ));
         }
         incoming.push((name, std::fs::read(source).map_err(failed)?));
@@ -267,7 +296,13 @@ pub(super) async fn import_keys(args: &StoreArgs, folder: &Path) -> anyhow::Resu
                     return Err(anyhow!(message::keys_import_would_replace(name).render()));
                 }
                 Need::Unknown(reason) => {
-                    return Err(anyhow!(message::keys_import_unsure(name, reason).render()));
+                    return Err(anyhow!(
+                        message::keys_import_unsure(message::KeysImportUnsure {
+                            file: &name,
+                            reason: &reason
+                        })
+                        .render()
+                    ));
                 }
             },
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}

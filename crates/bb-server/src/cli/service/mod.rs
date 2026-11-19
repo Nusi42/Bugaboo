@@ -151,10 +151,10 @@ fn systemd_install(found: &Found, own_files: OwnFiles) -> anyhow::Result<()> {
     let data_dir = systemd::real_path(&found.settings.data_dir);
     if data_dir != found.settings.data_dir {
         output::line(
-            &message::service_data_folder_real(
-                found.settings.data_dir.display(),
-                data_dir.display(),
-            )
+            &message::service_data_folder_real(message::ServiceDataFolderReal {
+                path: &found.settings.data_dir.display(),
+                real: &data_dir.display(),
+            })
             .render(),
         );
     }
@@ -187,7 +187,13 @@ fn systemd_install(found: &Found, own_files: OwnFiles) -> anyhow::Result<()> {
 
 #[cfg(unix)]
 fn output_installed(found: &Found) {
-    output::line(&message::service_installed(systemd::USER, systemd::UNIT).render());
+    output::line(
+        &message::service_installed(message::ServiceInstalled {
+            account: &systemd::USER,
+            name: &systemd::UNIT,
+        })
+        .render(),
+    );
     tell_about_setup_code(&found.settings.data_dir);
 }
 

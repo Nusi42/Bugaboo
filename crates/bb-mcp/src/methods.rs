@@ -185,10 +185,10 @@ impl Caller<'_> {
             Err(AppError::Conflict(conflict)) => Ok(Err(format!(
                 "{} {}",
                 Message::from(ErrorCode::VersionChanged.message()).render(),
-                message::mcp_changed(
-                    conflict.fields.join(", "),
-                    conflict.version.unwrap_or_default().to_string()
-                )
+                message::mcp_changed(message::McpChanged {
+                    fields: &(conflict.fields.join(", ")),
+                    version: &conflict.version.unwrap_or_default().to_string()
+                })
                 .render()
             ))),
             Err(error @ (AppError::TakenOver { .. } | AppError::DayLeftOpen { .. })) => {

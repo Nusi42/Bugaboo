@@ -87,10 +87,14 @@ fn sec_18_a_signed_file_verifies_and_a_changed_byte_fails() {
     assert_eq!(checked.signed.version, "0.6.0");
     assert_eq!(checked.signed.file, PROGRAM);
     assert!(!checked.older);
-    let words = message::cli_update_signed("0.6.0", PROGRAM).render();
-    assert!(
-        words.contains("0.6.0") && words.contains(PROGRAM),
-        "{words}"
+    let words = message::cli_update_signed(message::CliUpdateSigned {
+        file: &PROGRAM,
+        version: &"0.6.0",
+    })
+    .render();
+    assert_eq!(
+        words,
+        format!("Signed by Bugaboo, version 0.6.0: {PROGRAM}")
     );
 
     fs::write(download.program(), b"the progran").unwrap();
@@ -158,9 +162,13 @@ fn dist_07_update_verify_warns_on_an_older_version() {
     let download = Download::new("0.5.1");
     let checked = download.check("0.6.0").unwrap();
     assert!(checked.older);
-    let warning = message::cli_update_older("0.5.1", "0.6.0").render();
+    let warning = message::cli_update_older(message::CliUpdateOlder {
+        installed: &"0.6.0",
+        version: &"0.5.1",
+    })
+    .render();
     assert!(
-        warning.contains("0.5.1") && warning.contains("0.6.0"),
+        warning.starts_with("Version 0.5.1 is older than version 0.6.0,"),
         "{warning}"
     );
     // The same version and a newer one are no downgrade.

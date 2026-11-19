@@ -89,16 +89,28 @@ impl DataFolderError {
     pub(crate) fn message(&self) -> String {
         match self {
             Self::Create { path, reason } => {
-                message::data_folder_create_failed(path.display(), reason).render()
+                message::data_folder_create_failed(message::DataFolderCreateFailed {
+                    path: &path.display(),
+                    reason: &reason,
+                })
+                .render()
             }
             Self::Protect { path, reason } => {
-                message::data_folder_protect_failed(path.display(), reason).render()
+                message::data_folder_protect_failed(message::DataFolderProtectFailed {
+                    path: &path.display(),
+                    reason: &reason,
+                })
+                .render()
             }
             Self::NotADataFolder { path } => {
                 message::data_folder_not_a_data_folder(path.display()).render()
             }
             Self::OwnCertificate { path } => {
-                message::data_folder_own_certificate(path.display(), TAKE_OVER_FLAG).render()
+                message::data_folder_own_certificate(message::DataFolderOwnCertificate {
+                    flag: &TAKE_OVER_FLAG,
+                    path: &path.display(),
+                })
+                .render()
             }
         }
     }

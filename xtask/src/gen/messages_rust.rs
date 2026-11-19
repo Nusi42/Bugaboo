@@ -1,9 +1,11 @@
 //! The Rust side of `cargo xtask gen messages`: constants and functions for the message keys in
 //! `bb-core` (UX-07, M0-F01).
 //!
-//! A message without placeholders becomes a constant (`SERVER_NOT_FOUND`), a message with
-//! placeholders becomes a function whose parameters are the placeholders, typed by what the
-//! message expects (`server_port_busy(port)`). TXT-CATALOG finds uses of keys by these names, so
+//! A message without placeholders becomes a constant (`SERVER_NOT_FOUND`), a message with one
+//! placeholder becomes a function whose parameter is the placeholder, typed by what the message
+//! expects (`server_port_busy(port)`), and a message with several takes them as the named fields of
+//! a struct of its own (`agent_work_summary(AgentWorkSummary { address, number })`), so a caller
+//! cannot put two values in each other's place. TXT-CATALOG finds uses of keys by these names, so
 //! the naming rule lives here once.
 
 use std::collections::BTreeMap;
@@ -137,6 +139,9 @@ pub(crate) fn generate_search_keys(
 }
 
 fn function(key: &str, found: &Placeholders) -> String {
+    if found.len() > 1 {
+        return function_of_values(key, found);
+    }
     let mut parameters = Vec::new();
     let mut values = Vec::new();
     for (name, kind) in found {
@@ -162,21 +167,62 @@ fn function(key: &str, found: &Placeholders) -> String {
     )
 }
 
+/// A message with several placeholders takes them as the named fields of a struct of its own
+/// ([`values_name`]), never as arguments in a row: every caller names each value, so two values of
+/// the same type cannot change places unseen (arguments in a row would be in the order of the
+/// names, which tells the caller nothing).
+fn function_of_values(key: &str, found: &Placeholders) -> String {
+    let borrows = found
+        .iter()
+        .any(|(_, kind)| matches!(kind, ArgKind::Text | ArgKind::Select));
+    let (lifetime, used) = if borrows { ("<'a>", "<'_>") } else { ("", "") };
+    let mut fields = String::new();
+    let mut values = Vec::new();
+    for (name, kind) in found {
+        let field = parameter_name(name);
+        let (rust_type, value) = match kind {
+            ArgKind::Text => (
+                "&'a dyn std::fmt::Display",
+                format!("Value::Text(values.{field}.to_string())"),
+            ),
+            ArgKind::Select => ("&'a str", format!("Value::Text(values.{field}.to_owned())")),
+            ArgKind::Number => ("i64", format!("Value::Number(values.{field})")),
+            ArgKind::Date => ("jiff::Timestamp", format!("Value::Date(values.{field})")),
+        };
+        let _ = write!(
+            fields,
+            "    /// The value of `{{{name}}}`.\n    pub {field}: {rust_type},\n"
+        );
+        values.push(format!("({name:?}, {value})"));
+    }
+    let values_type = values_name(key);
+    format!(
+        "\n/// The values of the message `{key}`, by name.\n#[derive(Clone, Copy)]\npub struct {values_type}{lifetime} {{\n{fields}}}\n\n\
+         /// The message `{key}`.\n#[must_use]\npub fn {}(values: {values_type}{used}) -> Message {{\n    \
+         Message::with_arguments(MessageKey::new({key:?}), vec![{}])\n}}\n",
+        function_name(key),
+        values.join(", ")
+    )
+}
+
+/// The name of the struct of the values of a message with several placeholders: the name of its
+/// function in upper camel case (`agent_work_summary` takes `AgentWorkSummary`).
+pub(crate) fn values_name(key: &str) -> String {
+    function_name(key)
+        .split('_')
+        .map(|part| {
+            let mut chars = part.chars();
+            chars.next().map_or_else(String::new, |first| {
+                first.to_ascii_uppercase().to_string() + chars.as_str()
+            })
+        })
+        .collect()
+}
+
 /// A placeholder name as a Rust parameter: `due-date` becomes `due_date`, and a Rust keyword
 /// gets a trailing underscore.
 fn parameter_name(name: &str) -> String {
-    let plain: String = name
-        .chars()
-        .map(|c| if c == '-' { '_' } else { c })
-        .collect();
-    if matches!(
-        plain.as_str(),
-        "type" | "match" | "ref" | "self" | "fn" | "loop" | "in" | "mod" | "use"
-    ) {
-        format!("{plain}_")
-    } else {
-        plain
-    }
+    bb_core::message::rust_name(name)
 }
 
 /// Runs `rustfmt` over generated code, so the file passes FMT-RUST without a second step.
@@ -268,6 +314,31 @@ mod tests {
         assert!(code.contains("pub const EXPECTED_FILTER"), "{code}");
         assert!(!code.contains("TITLE"), "{code}");
         assert!(code.find("EXPECTED_FILTER").unwrap() < code.find("UNKNOWN_FIELD").unwrap());
+    }
+
+    #[test]
+    fn a_message_with_several_placeholders_takes_its_values_by_name() {
+        let code = create(&[
+            ("a.ready", "Attempt {number} is ready: {address}"),
+            ("a.counts", "{a, number} of {b, number}"),
+        ])
+        .unwrap();
+        assert!(code.contains("pub struct AReady<'a> {"), "{code}");
+        assert!(
+            code.contains("pub address: &'a dyn std::fmt::Display,"),
+            "{code}"
+        );
+        assert!(
+            code.contains("pub fn a_ready(values: AReady<'_>) -> Message"),
+            "{code}"
+        );
+        // Numbers only: nothing is borrowed.
+        assert!(code.contains("pub struct ACounts {"), "{code}");
+        assert!(
+            code.contains("pub fn a_counts(values: ACounts) -> Message"),
+            "{code}"
+        );
+        assert_eq!(values_name("agent-work.summary"), "AgentWorkSummary");
     }
 
     #[test]

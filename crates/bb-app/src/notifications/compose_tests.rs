@@ -69,7 +69,12 @@ fn ntf_02_a_change_reads_as_the_history_reads_with_a_full_stop() {
         line(&change("title", None, Some(word("A new title")))),
         format!(
             "{}.",
-            message::history_set("A new title", "Title", "Ana").render()
+            message::history_set(message::HistorySet {
+                after: &("A new title"),
+                field: &"Title",
+                who: &"Ana"
+            })
+            .render()
         )
     );
 }
@@ -81,7 +86,12 @@ fn ntf_02_people_are_set_after_a_colon_and_nobody_is_a_word() {
         line(&change("assigned-to", None, people(vec![ana()]))),
         format!(
             "{}.",
-            message::history_set("Ana", "Assigned to", "Ana").render()
+            message::history_set(message::HistorySet {
+                after: &"Ana",
+                field: &("Assigned to"),
+                who: &"Ana"
+            })
+            .render()
         )
     );
     assert_eq!(
@@ -96,12 +106,23 @@ fn ntf_02_a_change_of_a_description_is_not_called_cleared() {
         line(&change("description", None, None)),
         format!(
             "{}.",
-            message::history_changed_long_text("Description", "Ana").render()
+            message::history_changed_long_text(message::HistoryChangedLongText {
+                field: &"Description",
+                who: &"Ana"
+            })
+            .render()
         )
     );
     assert_eq!(
         line(&change("title", Some(word("Old")), None)),
-        format!("{}.", message::history_cleared("Title", "Ana").render())
+        format!(
+            "{}.",
+            message::history_cleared(message::HistoryCleared {
+                field: &"Title",
+                who: &"Ana"
+            })
+            .render()
+        )
     );
 }
 
@@ -114,7 +135,15 @@ fn ntf_02_yes_no_and_lengths_of_time_are_words_not_code_values() {
             None,
             typed(FieldType::YesNo, json!(true))
         )),
-        format!("{}.", message::history_set("Yes", "Status", "Ana").render())
+        format!(
+            "{}.",
+            message::history_set(message::HistorySet {
+                after: &"Yes",
+                field: &"Status",
+                who: &"Ana"
+            })
+            .render()
+        )
     );
     assert_eq!(
         line(&change(

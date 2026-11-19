@@ -140,7 +140,11 @@ pub(crate) async fn bring_up_to_date(
             Ok(Upgrade::Upgraded { backup, migrations }) => {
                 tracing::info!(migrations = migrations.len(), "database upgraded");
                 output::line(
-                    &message::server_upgrade_backup(backup.path.display(), VERSION).render(),
+                    &message::server_upgrade_backup(message::ServerUpgradeBackup {
+                        path: &backup.path.display(),
+                        version: &VERSION,
+                    })
+                    .render(),
                 );
                 Some(backup)
             }
@@ -220,12 +224,18 @@ fn refused(error: StoreError, written: &Written) -> anyhow::Error {
         // The version written down is the newer program's only when it is another one.
         StoreError::SchemaTooNew { .. } => match written.version.as_deref() {
             Some(version) if version != VERSION => {
-                message::server_database_newer_version(VERSION, version)
+                message::server_database_newer_version(message::ServerDatabaseNewerVersion {
+                    own: &VERSION,
+                    version: &version,
+                })
             }
             _ => message::server_database_newer(VERSION),
         },
         StoreError::MigrationMismatch { version } => {
-            message::server_database_unknown_change(version, VERSION)
+            message::server_database_unknown_change(message::ServerDatabaseUnknownChange {
+                number: &version,
+                own: &VERSION,
+            })
         }
         other => return database_failed(&other),
     };
@@ -257,8 +267,12 @@ fn stopped(error: UpgradeError, written: &Written, data: &DataFolder) -> anyhow:
         UpgradeError::NotStarted(error) => return refused(error, written),
         UpgradeError::BackupFailed(reason) => format!(
             "{} {}",
-            message::server_upgrade_backup_failed(data.backups().display(), &reason, VERSION)
-                .render(),
+            message::server_upgrade_backup_failed(message::ServerUpgradeBackupFailed {
+                folder: &data.backups().display(),
+                reason: &reason,
+                version: &VERSION
+            })
+            .render(),
             way_back()
         ),
         UpgradeError::MigrationFailed {
@@ -267,7 +281,12 @@ fn stopped(error: UpgradeError, written: &Written, data: &DataFolder) -> anyhow:
             put_back: Ok(()),
         } => format!(
             "{} {}",
-            message::server_upgrade_failed(backup.display(), &error, VERSION).render(),
+            message::server_upgrade_failed(message::ServerUpgradeFailed {
+                path: &backup.display(),
+                reason: &error,
+                version: &VERSION
+            })
+            .render(),
             way_back()
         ),
         UpgradeError::MigrationFailed {
@@ -275,13 +294,14 @@ fn stopped(error: UpgradeError, written: &Written, data: &DataFolder) -> anyhow:
             backup,
             put_back: Err(problem),
         } => {
-            let words = message::server_upgrade_put_back_failed(
-                backup.display(),
-                &problem,
-                &error,
-                VERSION,
-            )
-            .render();
+            let words =
+                message::server_upgrade_put_back_failed(message::ServerUpgradePutBackFailed {
+                    path: &backup.display(),
+                    problem: &problem,
+                    reason: &error,
+                    version: &VERSION,
+                })
+                .render();
             // Nobody is told to start the program used before on it; an older backup is named.
             match interrupted {
                 Some(_) => format!("{words} {}", way_back()),

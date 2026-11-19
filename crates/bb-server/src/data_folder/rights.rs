@@ -88,8 +88,14 @@ impl DataFolder {
                 let part = Message::from(part).render();
                 let sentence = match access {
                     Access::Private => return None,
-                    Access::Open => message::data_folder_open(part, path.display()),
-                    Access::Unknown => message::data_folder_unknown(part, path.display()),
+                    Access::Open => message::data_folder_open(message::DataFolderOpen {
+                        part: &part,
+                        path: &path.display(),
+                    }),
+                    Access::Unknown => message::data_folder_unknown(message::DataFolderUnknown {
+                        part: &part,
+                        path: &path.display(),
+                    }),
                 };
                 Some((name, sentence.render()))
             })

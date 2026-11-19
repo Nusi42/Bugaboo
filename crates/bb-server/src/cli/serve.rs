@@ -201,7 +201,12 @@ fn announce_setup_code(notice: &SetupNotice) {
 fn save_setup_code(file: &Path, code: &str) -> Result<Message, Message> {
     write_private(file, format!("{code}\n").as_bytes(), Existing::Replace)
         .map(|()| message::server_setup_code_file(file.display()))
-        .map_err(|error| message::server_setup_code_file_failed(file.display(), error))
+        .map_err(|error| {
+            message::server_setup_code_file_failed(message::ServerSetupCodeFileFailed {
+                path: &file.display(),
+                reason: &error,
+            })
+        })
 }
 
 /// What the listener does with connections: HTTPS with the configured certificate, or plain
@@ -258,8 +263,16 @@ fn key_readable_warning(key: &Path) -> Option<String> {
 fn tls_message(error: &TlsError) -> String {
     let shown = |path: &Path| path.display().to_string();
     match error {
-        TlsError::Read { path, source } => message::tls_read_failed(shown(path), source).render(),
-        TlsError::Write { path, source } => message::tls_write_failed(shown(path), source).render(),
+        TlsError::Read { path, source } => message::tls_read_failed(message::TlsReadFailed {
+            path: &shown(path),
+            reason: &source,
+        })
+        .render(),
+        TlsError::Write { path, source } => message::tls_write_failed(message::TlsWriteFailed {
+            path: &shown(path),
+            reason: &source,
+        })
+        .render(),
         TlsError::NoCertificate { path } => message::tls_no_certificate(shown(path)).render(),
         TlsError::NoKey { path } => message::tls_no_key(shown(path)).render(),
         TlsError::Unusable { reason } => message::tls_unusable(reason).render(),

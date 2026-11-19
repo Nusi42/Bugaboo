@@ -218,7 +218,13 @@ pub(crate) async fn wire(
     // The master key gets an access list of its own on Windows (M1-F22), also a key file made
     // just now.
     protect_key_files(&data.keys()).map_err(|reason| {
-        anyhow!(message::data_folder_protect_failed(data.keys().display(), reason).render())
+        anyhow!(
+            message::data_folder_protect_failed(message::DataFolderProtectFailed {
+                path: &data.keys().display(),
+                reason: &reason
+            })
+            .render()
+        )
     })?;
     let seal = LogSeal::new(&keys, data.security_log_anchor());
     let csrf = CsrfKey::from_bytes(keys.csrf_key().to_bytes());

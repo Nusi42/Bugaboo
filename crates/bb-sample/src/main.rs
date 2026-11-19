@@ -90,11 +90,11 @@ async fn run(args: &Args, layout: &Layout) -> Result<String, SampleError> {
     sample.verify_security_log().await?;
     if let Some(report) = checked {
         // The dump of the sample names its own projects; the large dataset has the check instead.
-        let said = message::sample_large_checked(
-            format!("{:016x}", report.fingerprint),
-            report.issues,
-            report.sampled,
-        );
+        let said = message::sample_large_checked(message::SampleLargeChecked {
+            fingerprint: &(format!("{:016x}", report.fingerprint)),
+            issues: &report.issues,
+            sampled: &report.sampled,
+        });
         let _ = writeln!(std::io::stdout(), "{}", said.render());
         if let Some(problem) = report.problems.first() {
             return Err(SampleError::Large(format!(
@@ -106,12 +106,12 @@ async fn run(args: &Args, layout: &Layout) -> Result<String, SampleError> {
         output.write_dump(&sample.dump().await?.to_json()?)?;
     }
     output.write_sign_in(&sample.sign_in_text())?;
-    let done = message::sample_done(
-        output.sign_in_file().display(),
-        output.data_folder().display(),
-        sample.people().len(),
-        args.seed,
-    );
+    let done = message::sample_done(message::SampleDone {
+        file: &output.sign_in_file().display(),
+        folder: &output.data_folder().display(),
+        people: &sample.people().len(),
+        seed: &args.seed,
+    });
     sample.refresh_statistics().await?;
     sample.close().await;
     Ok(done.render())

@@ -623,10 +623,10 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
             Ok(MailText {
                 subject: Message::from(message::MAIL_E_MAIL_CHANGE_SUBJECT),
-                text: message::mail_e_mail_change_text(
-                    self.app_address(&made.path(app_paths::E_MAIL_CHANGE)),
-                    LINK_HOURS,
-                ),
+                text: message::mail_e_mail_change_text(message::MailEMailChangeText {
+                    address: &self.app_address(&made.path(app_paths::E_MAIL_CHANGE)),
+                    hours: LINK_HOURS,
+                }),
             })
         })
         .await
@@ -647,8 +647,18 @@ impl<S: AuthStore> Ctx<'_, S> {
         let moment = Region::of(&layers).moment(at);
         let sessions = self.app_address(app_paths::SESSIONS);
         let text = match changed_by {
-            ChangedBy::Themselves => message::mail_e_mail_changed_text(sessions, moment),
-            ChangedBy::Administrator => message::mail_e_mail_corrected_text(sessions, moment),
+            ChangedBy::Themselves => {
+                message::mail_e_mail_changed_text(message::MailEMailChangedText {
+                    address: &sessions,
+                    moment: &moment,
+                })
+            }
+            ChangedBy::Administrator => {
+                message::mail_e_mail_corrected_text(message::MailEMailCorrectedText {
+                    address: &sessions,
+                    moment: &moment,
+                })
+            }
         };
         let message = MailMessage {
             to: address.to_owned(),

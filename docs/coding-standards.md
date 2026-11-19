@@ -120,6 +120,7 @@ there. LINT-DRY (§7) catches copied blocks automatically; the rest is review.
   structured `tracing` for logs. Enforced by: SEC-PATTERNS (`unwrap`, `expect`, `panic!`, `todo!`,
   `unimplemented!`, `dbg!`), LINT-RUST (`println!`).
 - Use newtypes for IDs and units (`IssueId`, `Minutes`), never bare `i64` or `String`.
+- **A message with several placeholders takes its values by name.** `cargo xtask gen messages` gives such a message a struct of its own (`message::agent_work_summary(message::AgentWorkSummary { address: &address, number: &attempt.number })`) and `said!` takes the same names, so two values of one type cannot change places unseen; a message with one placeholder takes it as its one argument. Enforced by: DOC-GENERATED (the generated code is the generator's).
 - **Authorization is in the type system:** data can only leave the domain layer wrapped in
   a type that proves the policy engine checked it. Code that bypasses the check must not
   compile. (Details in the architecture doc.) Enforced by: ARCH-AUTHZ-ONLY.

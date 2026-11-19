@@ -2,7 +2,8 @@
 //!
 //! `cargo xtask gen messages` writes `generated.rs` from the catalog (and the texts, sorted by key,
 //! into `catalog.generated.rs`): one constant per message without placeholders and one function
-//! per message with placeholders, with the placeholders as typed arguments. Code never writes a
+//! per message with placeholders, with one placeholder as a typed argument and several as the
+//! named fields of a struct, so no two values can change places unseen. Code never writes a
 //! message key as text, so a key that does not exist does not compile (TXT-CATALOG finds keys that
 //! nothing uses). The same holds for the message that a word makes (`words!` with `messages`,
 //! [`derived_key!`](crate::derived_key)): the key is looked up in the catalog when the program is
@@ -17,6 +18,27 @@ mod render;
 
 use catalog::CATALOG;
 pub use generated::*;
+
+/// The words of Rust that a placeholder cannot be called as it is.
+const RUST_KEYWORDS: [&str; 9] = [
+    "type", "match", "ref", "self", "fn", "loop", "in", "mod", "use",
+];
+
+/// The name a placeholder has in Rust, as a parameter or a field of the generated code: `due-date`
+/// is `due_date`, and a keyword of Rust gets a trailing underscore. The one rule: `cargo xtask gen
+/// messages` writes the code by it, and [`crate::wording::Said`] finds a placeholder by it.
+#[must_use]
+pub fn rust_name(placeholder: &str) -> String {
+    let plain: String = placeholder
+        .chars()
+        .map(|c| if c == '-' { '_' } else { c })
+        .collect();
+    if RUST_KEYWORDS.contains(&plain.as_str()) {
+        format!("{plain}_")
+    } else {
+        plain
+    }
+}
 
 /// The key of one message in the catalog.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]

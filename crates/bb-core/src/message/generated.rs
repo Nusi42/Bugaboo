@@ -9707,29 +9707,44 @@ pub fn access_keys_delete_name(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `access-keys.expires-help`, by name.
+#[derive(Clone, Copy)]
+pub struct AccessKeysExpiresHelp<'a> {
+    /// The value of `{days}`.
+    pub days: i64,
+    /// The value of `{latest}`.
+    pub latest: &'a dyn std::fmt::Display,
+}
+
 /// The message `access-keys.expires-help`.
 #[must_use]
-pub fn access_keys_expires_help(days: i64, latest: impl std::fmt::Display) -> Message {
+pub fn access_keys_expires_help(values: AccessKeysExpiresHelp<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("access-keys.expires-help"),
         vec![
-            ("days", Value::Number(days)),
-            ("latest", Value::Text(latest.to_string())),
+            ("days", Value::Number(values.days)),
+            ("latest", Value::Text(values.latest.to_string())),
         ],
     )
 }
 
+/// The values of the message `access-keys.project-label`, by name.
+#[derive(Clone, Copy)]
+pub struct AccessKeysProjectLabel<'a> {
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+    /// The value of `{short_name}`.
+    pub short_name: &'a dyn std::fmt::Display,
+}
+
 /// The message `access-keys.project-label`.
 #[must_use]
-pub fn access_keys_project_label(
-    name: impl std::fmt::Display,
-    short_name: impl std::fmt::Display,
-) -> Message {
+pub fn access_keys_project_label(values: AccessKeysProjectLabel<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("access-keys.project-label"),
         vec![
-            ("name", Value::Text(name.to_string())),
-            ("short_name", Value::Text(short_name.to_string())),
+            ("name", Value::Text(values.name.to_string())),
+            ("short_name", Value::Text(values.short_name.to_string())),
         ],
     )
 }
@@ -9788,14 +9803,23 @@ pub fn access_keys_row_projects_some(names: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `access.cell-label`, by name.
+#[derive(Clone, Copy)]
+pub struct AccessCellLabel<'a> {
+    /// The value of `{role}`.
+    pub role: &'a dyn std::fmt::Display,
+    /// The value of `{subject}`.
+    pub subject: &'a dyn std::fmt::Display,
+}
+
 /// The message `access.cell-label`.
 #[must_use]
-pub fn access_cell_label(role: impl std::fmt::Display, subject: impl std::fmt::Display) -> Message {
+pub fn access_cell_label(values: AccessCellLabel<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("access.cell-label"),
         vec![
-            ("role", Value::Text(role.to_string())),
-            ("subject", Value::Text(subject.to_string())),
+            ("role", Value::Text(values.role.to_string())),
+            ("subject", Value::Text(values.subject.to_string())),
         ],
     )
 }
@@ -9818,68 +9842,107 @@ pub fn access_preview_heading(role: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `access.reset-label`, by name.
+#[derive(Clone, Copy)]
+pub struct AccessResetLabel<'a> {
+    /// The value of `{role}`.
+    pub role: &'a dyn std::fmt::Display,
+    /// The value of `{subject}`.
+    pub subject: &'a dyn std::fmt::Display,
+}
+
 /// The message `access.reset-label`.
 #[must_use]
-pub fn access_reset_label(
-    role: impl std::fmt::Display,
-    subject: impl std::fmt::Display,
-) -> Message {
+pub fn access_reset_label(values: AccessResetLabel<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("access.reset-label"),
         vec![
-            ("role", Value::Text(role.to_string())),
-            ("subject", Value::Text(subject.to_string())),
+            ("role", Value::Text(values.role.to_string())),
+            ("subject", Value::Text(values.subject.to_string())),
         ],
     )
+}
+
+/// The values of the message `agent-paused.attempts-on-one-issue`, by name.
+#[derive(Clone, Copy)]
+pub struct AgentPausedAttemptsOnOneIssue<'a> {
+    /// The value of `{agent}`.
+    pub agent: &'a dyn std::fmt::Display,
+    /// The value of `{limit}`.
+    pub limit: i64,
 }
 
 /// The message `agent-paused.attempts-on-one-issue`.
 #[must_use]
-pub fn agent_paused_attempts_on_one_issue(agent: impl std::fmt::Display, limit: i64) -> Message {
+pub fn agent_paused_attempts_on_one_issue(values: AgentPausedAttemptsOnOneIssue<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("agent-paused.attempts-on-one-issue"),
         vec![
-            ("agent", Value::Text(agent.to_string())),
-            ("limit", Value::Number(limit)),
+            ("agent", Value::Text(values.agent.to_string())),
+            ("limit", Value::Number(values.limit)),
         ],
     )
+}
+
+/// The values of the message `agent-paused.changes-a-minute`, by name.
+#[derive(Clone, Copy)]
+pub struct AgentPausedChangesAMinute<'a> {
+    /// The value of `{agent}`.
+    pub agent: &'a dyn std::fmt::Display,
+    /// The value of `{limit}`.
+    pub limit: i64,
 }
 
 /// The message `agent-paused.changes-a-minute`.
 #[must_use]
-pub fn agent_paused_changes_a_minute(agent: impl std::fmt::Display, limit: i64) -> Message {
+pub fn agent_paused_changes_a_minute(values: AgentPausedChangesAMinute<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("agent-paused.changes-a-minute"),
         vec![
-            ("agent", Value::Text(agent.to_string())),
-            ("limit", Value::Number(limit)),
+            ("agent", Value::Text(values.agent.to_string())),
+            ("limit", Value::Number(values.limit)),
         ],
     )
+}
+
+/// The values of the message `agent-paused.issues-at-once`, by name.
+#[derive(Clone, Copy)]
+pub struct AgentPausedIssuesAtOnce<'a> {
+    /// The value of `{agent}`.
+    pub agent: &'a dyn std::fmt::Display,
+    /// The value of `{limit}`.
+    pub limit: i64,
 }
 
 /// The message `agent-paused.issues-at-once`.
 #[must_use]
-pub fn agent_paused_issues_at_once(agent: impl std::fmt::Display, limit: i64) -> Message {
+pub fn agent_paused_issues_at_once(values: AgentPausedIssuesAtOnce<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("agent-paused.issues-at-once"),
         vec![
-            ("agent", Value::Text(agent.to_string())),
-            ("limit", Value::Number(limit)),
+            ("agent", Value::Text(values.agent.to_string())),
+            ("limit", Value::Number(values.limit)),
         ],
     )
 }
 
+/// The values of the message `agent-work.agent-of`, by name.
+#[derive(Clone, Copy)]
+pub struct AgentWorkAgentOf<'a> {
+    /// The value of `{agent}`.
+    pub agent: &'a dyn std::fmt::Display,
+    /// The value of `{person}`.
+    pub person: &'a dyn std::fmt::Display,
+}
+
 /// The message `agent-work.agent-of`.
 #[must_use]
-pub fn agent_work_agent_of(
-    agent: impl std::fmt::Display,
-    person: impl std::fmt::Display,
-) -> Message {
+pub fn agent_work_agent_of(values: AgentWorkAgentOf<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("agent-work.agent-of"),
         vec![
-            ("agent", Value::Text(agent.to_string())),
-            ("person", Value::Text(person.to_string())),
+            ("agent", Value::Text(values.agent.to_string())),
+            ("person", Value::Text(values.person.to_string())),
         ],
     )
 }
@@ -9965,44 +10028,65 @@ pub fn agent_work_ends(date: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `agent-work.fact-attempts`, by name.
+#[derive(Clone, Copy)]
+pub struct AgentWorkFactAttempts<'a> {
+    /// The value of `{most}`.
+    pub most: &'a dyn std::fmt::Display,
+    /// The value of `{number}`.
+    pub number: &'a dyn std::fmt::Display,
+}
+
 /// The message `agent-work.fact-attempts`.
 #[must_use]
-pub fn agent_work_fact_attempts(
-    most: impl std::fmt::Display,
-    number: impl std::fmt::Display,
-) -> Message {
+pub fn agent_work_fact_attempts(values: AgentWorkFactAttempts<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("agent-work.fact-attempts"),
         vec![
-            ("most", Value::Text(most.to_string())),
-            ("number", Value::Text(number.to_string())),
+            ("most", Value::Text(values.most.to_string())),
+            ("number", Value::Text(values.number.to_string())),
         ],
     )
+}
+
+/// The values of the message `agent-work.fact-of`, by name.
+#[derive(Clone, Copy)]
+pub struct AgentWorkFactOf<'a> {
+    /// The value of `{most}`.
+    pub most: &'a dyn std::fmt::Display,
+    /// The value of `{used}`.
+    pub used: &'a dyn std::fmt::Display,
 }
 
 /// The message `agent-work.fact-of`.
 #[must_use]
-pub fn agent_work_fact_of(most: impl std::fmt::Display, used: impl std::fmt::Display) -> Message {
+pub fn agent_work_fact_of(values: AgentWorkFactOf<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("agent-work.fact-of"),
         vec![
-            ("most", Value::Text(most.to_string())),
-            ("used", Value::Text(used.to_string())),
+            ("most", Value::Text(values.most.to_string())),
+            ("used", Value::Text(values.used.to_string())),
         ],
     )
 }
 
+/// The values of the message `agent-work.gave-up`, by name.
+#[derive(Clone, Copy)]
+pub struct AgentWorkGaveUp<'a> {
+    /// The value of `{agent}`.
+    pub agent: &'a dyn std::fmt::Display,
+    /// The value of `{reason}`.
+    pub reason: &'a dyn std::fmt::Display,
+}
+
 /// The message `agent-work.gave-up`.
 #[must_use]
-pub fn agent_work_gave_up(
-    agent: impl std::fmt::Display,
-    reason: impl std::fmt::Display,
-) -> Message {
+pub fn agent_work_gave_up(values: AgentWorkGaveUp<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("agent-work.gave-up"),
         vec![
-            ("agent", Value::Text(agent.to_string())),
-            ("reason", Value::Text(reason.to_string())),
+            ("agent", Value::Text(values.agent.to_string())),
+            ("reason", Value::Text(values.reason.to_string())),
         ],
     )
 }
@@ -10034,29 +10118,44 @@ pub fn agent_work_handed(count: i64) -> Message {
     )
 }
 
+/// The values of the message `agent-work.handed-over`, by name.
+#[derive(Clone, Copy)]
+pub struct AgentWorkHandedOver<'a> {
+    /// The value of `{date}`.
+    pub date: &'a dyn std::fmt::Display,
+    /// The value of `{person}`.
+    pub person: &'a dyn std::fmt::Display,
+}
+
 /// The message `agent-work.handed-over`.
 #[must_use]
-pub fn agent_work_handed_over(
-    date: impl std::fmt::Display,
-    person: impl std::fmt::Display,
-) -> Message {
+pub fn agent_work_handed_over(values: AgentWorkHandedOver<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("agent-work.handed-over"),
         vec![
-            ("date", Value::Text(date.to_string())),
-            ("person", Value::Text(person.to_string())),
+            ("date", Value::Text(values.date.to_string())),
+            ("person", Value::Text(values.person.to_string())),
         ],
     )
 }
 
+/// The values of the message `agent-work.mark`, by name.
+#[derive(Clone, Copy)]
+pub struct AgentWorkMark<'a> {
+    /// The value of `{agent}`.
+    pub agent: &'a dyn std::fmt::Display,
+    /// The value of `{state}`.
+    pub state: &'a dyn std::fmt::Display,
+}
+
 /// The message `agent-work.mark`.
 #[must_use]
-pub fn agent_work_mark(agent: impl std::fmt::Display, state: impl std::fmt::Display) -> Message {
+pub fn agent_work_mark(values: AgentWorkMark<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("agent-work.mark"),
         vec![
-            ("agent", Value::Text(agent.to_string())),
-            ("state", Value::Text(state.to_string())),
+            ("agent", Value::Text(values.agent.to_string())),
+            ("state", Value::Text(values.state.to_string())),
         ],
     )
 }
@@ -10070,17 +10169,23 @@ pub fn agent_work_missing_first(part: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `agent-work.missing-many`, by name.
+#[derive(Clone, Copy)]
+pub struct AgentWorkMissingMany<'a> {
+    /// The value of `{issue}`.
+    pub issue: &'a dyn std::fmt::Display,
+    /// The value of `{parts}`.
+    pub parts: &'a dyn std::fmt::Display,
+}
+
 /// The message `agent-work.missing-many`.
 #[must_use]
-pub fn agent_work_missing_many(
-    issue: impl std::fmt::Display,
-    parts: impl std::fmt::Display,
-) -> Message {
+pub fn agent_work_missing_many(values: AgentWorkMissingMany<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("agent-work.missing-many"),
         vec![
-            ("issue", Value::Text(issue.to_string())),
-            ("parts", Value::Text(parts.to_string())),
+            ("issue", Value::Text(values.issue.to_string())),
+            ("parts", Value::Text(values.parts.to_string())),
         ],
     )
 }
@@ -10166,19 +10271,26 @@ pub fn agent_work_review_throw_away(person: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `agent-work.review-title`, by name.
+#[derive(Clone, Copy)]
+pub struct AgentWorkReviewTitle<'a> {
+    /// The value of `{agent}`.
+    pub agent: &'a dyn std::fmt::Display,
+    /// The value of `{issue}`.
+    pub issue: &'a dyn std::fmt::Display,
+    /// The value of `{number}`.
+    pub number: &'a dyn std::fmt::Display,
+}
+
 /// The message `agent-work.review-title`.
 #[must_use]
-pub fn agent_work_review_title(
-    agent: impl std::fmt::Display,
-    issue: impl std::fmt::Display,
-    number: impl std::fmt::Display,
-) -> Message {
+pub fn agent_work_review_title(values: AgentWorkReviewTitle<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("agent-work.review-title"),
         vec![
-            ("agent", Value::Text(agent.to_string())),
-            ("issue", Value::Text(issue.to_string())),
-            ("number", Value::Text(number.to_string())),
+            ("agent", Value::Text(values.agent.to_string())),
+            ("issue", Value::Text(values.issue.to_string())),
+            ("number", Value::Text(values.number.to_string())),
         ],
     )
 }
@@ -10192,17 +10304,23 @@ pub fn agent_work_stays_assigned(people: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `agent-work.stopped-access-lost`, by name.
+#[derive(Clone, Copy)]
+pub struct AgentWorkStoppedAccessLost<'a> {
+    /// The value of `{agent}`.
+    pub agent: &'a dyn std::fmt::Display,
+    /// The value of `{person}`.
+    pub person: &'a dyn std::fmt::Display,
+}
+
 /// The message `agent-work.stopped-access-lost`.
 #[must_use]
-pub fn agent_work_stopped_access_lost(
-    agent: impl std::fmt::Display,
-    person: impl std::fmt::Display,
-) -> Message {
+pub fn agent_work_stopped_access_lost(values: AgentWorkStoppedAccessLost<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("agent-work.stopped-access-lost"),
         vec![
-            ("agent", Value::Text(agent.to_string())),
-            ("person", Value::Text(person.to_string())),
+            ("agent", Value::Text(values.agent.to_string())),
+            ("person", Value::Text(values.person.to_string())),
         ],
     )
 }
@@ -10234,44 +10352,69 @@ pub fn agent_work_stopped_ran_out(date: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `agent-work.summary`, by name.
+#[derive(Clone, Copy)]
+pub struct AgentWorkSummary<'a> {
+    /// The value of `{address}`.
+    pub address: &'a dyn std::fmt::Display,
+    /// The value of `{number}`.
+    pub number: &'a dyn std::fmt::Display,
+}
+
 /// The message `agent-work.summary`.
 #[must_use]
-pub fn agent_work_summary(
-    address: impl std::fmt::Display,
-    number: impl std::fmt::Display,
-) -> Message {
+pub fn agent_work_summary(values: AgentWorkSummary<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("agent-work.summary"),
         vec![
-            ("address", Value::Text(address.to_string())),
-            ("number", Value::Text(number.to_string())),
+            ("address", Value::Text(values.address.to_string())),
+            ("number", Value::Text(values.number.to_string())),
         ],
     )
+}
+
+/// The values of the message `agent-work.throw-away-back`, by name.
+#[derive(Clone, Copy)]
+pub struct AgentWorkThrowAwayBack<'a> {
+    /// The value of `{field}`.
+    pub field: &'a dyn std::fmt::Display,
+    /// The value of `{from}`.
+    pub from: &'a dyn std::fmt::Display,
+    /// The value of `{to}`.
+    pub to: &'a dyn std::fmt::Display,
 }
 
 /// The message `agent-work.throw-away-back`.
 #[must_use]
-pub fn agent_work_throw_away_back(
-    field: impl std::fmt::Display,
-    from: impl std::fmt::Display,
-    to: impl std::fmt::Display,
-) -> Message {
+pub fn agent_work_throw_away_back(values: AgentWorkThrowAwayBack<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("agent-work.throw-away-back"),
         vec![
-            ("field", Value::Text(field.to_string())),
-            ("from", Value::Text(from.to_string())),
-            ("to", Value::Text(to.to_string())),
+            ("field", Value::Text(values.field.to_string())),
+            ("from", Value::Text(values.from.to_string())),
+            ("to", Value::Text(values.to.to_string())),
         ],
     )
 }
 
+/// The values of the message `agent-work.throw-away-summary`, by name.
+#[derive(Clone, Copy)]
+pub struct AgentWorkThrowAwaySummary {
+    /// The value of `{back}`.
+    pub back: i64,
+    /// The value of `{stay}`.
+    pub stay: i64,
+}
+
 /// The message `agent-work.throw-away-summary`.
 #[must_use]
-pub fn agent_work_throw_away_summary(back: i64, stay: i64) -> Message {
+pub fn agent_work_throw_away_summary(values: AgentWorkThrowAwaySummary) -> Message {
     Message::with_arguments(
         MessageKey::new("agent-work.throw-away-summary"),
-        vec![("back", Value::Number(back)), ("stay", Value::Number(stay))],
+        vec![
+            ("back", Value::Number(values.back)),
+            ("stay", Value::Number(values.stay)),
+        ],
     )
 }
 
@@ -10293,14 +10436,23 @@ pub fn agents_accept_name(agent: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `agents.accepted-line`, by name.
+#[derive(Clone, Copy)]
+pub struct AgentsAcceptedLine<'a> {
+    /// The value of `{agent}`.
+    pub agent: &'a dyn std::fmt::Display,
+    /// The value of `{count}`.
+    pub count: i64,
+}
+
 /// The message `agents.accepted-line`.
 #[must_use]
-pub fn agents_accepted_line(agent: impl std::fmt::Display, count: i64) -> Message {
+pub fn agents_accepted_line(values: AgentsAcceptedLine<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("agents.accepted-line"),
         vec![
-            ("agent", Value::Text(agent.to_string())),
-            ("count", Value::Number(count)),
+            ("agent", Value::Text(values.agent.to_string())),
+            ("count", Value::Number(values.count)),
         ],
     )
 }
@@ -10431,14 +10583,23 @@ pub fn agents_pause_name(agent: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `agents.renew-name`, by name.
+#[derive(Clone, Copy)]
+pub struct AgentsRenewName<'a> {
+    /// The value of `{agent}`.
+    pub agent: &'a dyn std::fmt::Display,
+    /// The value of `{search}`.
+    pub search: &'a dyn std::fmt::Display,
+}
+
 /// The message `agents.renew-name`.
 #[must_use]
-pub fn agents_renew_name(agent: impl std::fmt::Display, search: impl std::fmt::Display) -> Message {
+pub fn agents_renew_name(values: AgentsRenewName<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("agents.renew-name"),
         vec![
-            ("agent", Value::Text(agent.to_string())),
-            ("search", Value::Text(search.to_string())),
+            ("agent", Value::Text(values.agent.to_string())),
+            ("search", Value::Text(values.search.to_string())),
         ],
     )
 }
@@ -10452,17 +10613,23 @@ pub fn agents_resume_name(agent: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `agents.rule-days-help`, by name.
+#[derive(Clone, Copy)]
+pub struct AgentsRuleDaysHelp<'a> {
+    /// The value of `{most}`.
+    pub most: &'a dyn std::fmt::Display,
+    /// The value of `{usual}`.
+    pub usual: &'a dyn std::fmt::Display,
+}
+
 /// The message `agents.rule-days-help`.
 #[must_use]
-pub fn agents_rule_days_help(
-    most: impl std::fmt::Display,
-    usual: impl std::fmt::Display,
-) -> Message {
+pub fn agents_rule_days_help(values: AgentsRuleDaysHelp<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("agents.rule-days-help"),
         vec![
-            ("most", Value::Text(most.to_string())),
-            ("usual", Value::Text(usual.to_string())),
+            ("most", Value::Text(values.most.to_string())),
+            ("usual", Value::Text(values.usual.to_string())),
         ],
     )
 }
@@ -10494,26 +10661,44 @@ pub fn agents_rule_ends_on(date: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `agents.rule-hand-over-help`, by name.
+#[derive(Clone, Copy)]
+pub struct AgentsRuleHandOverHelp<'a> {
+    /// The value of `{agent}`.
+    pub agent: &'a dyn std::fmt::Display,
+    /// The value of `{limit}`.
+    pub limit: i64,
+}
+
 /// The message `agents.rule-hand-over-help`.
 #[must_use]
-pub fn agents_rule_hand_over_help(agent: impl std::fmt::Display, limit: i64) -> Message {
+pub fn agents_rule_hand_over_help(values: AgentsRuleHandOverHelp<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("agents.rule-hand-over-help"),
         vec![
-            ("agent", Value::Text(agent.to_string())),
-            ("limit", Value::Number(limit)),
+            ("agent", Value::Text(values.agent.to_string())),
+            ("limit", Value::Number(values.limit)),
         ],
     )
 }
 
+/// The values of the message `agents.rule-line`, by name.
+#[derive(Clone, Copy)]
+pub struct AgentsRuleLine<'a> {
+    /// The value of `{agent}`.
+    pub agent: &'a dyn std::fmt::Display,
+    /// The value of `{search}`.
+    pub search: &'a dyn std::fmt::Display,
+}
+
 /// The message `agents.rule-line`.
 #[must_use]
-pub fn agents_rule_line(agent: impl std::fmt::Display, search: impl std::fmt::Display) -> Message {
+pub fn agents_rule_line(values: AgentsRuleLine<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("agents.rule-line"),
         vec![
-            ("agent", Value::Text(agent.to_string())),
-            ("search", Value::Text(search.to_string())),
+            ("agent", Value::Text(values.agent.to_string())),
+            ("search", Value::Text(values.search.to_string())),
         ],
     )
 }
@@ -10572,17 +10757,23 @@ pub fn agents_rule_search_named(search: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `agents.rule-stop-name`, by name.
+#[derive(Clone, Copy)]
+pub struct AgentsRuleStopName<'a> {
+    /// The value of `{agent}`.
+    pub agent: &'a dyn std::fmt::Display,
+    /// The value of `{search}`.
+    pub search: &'a dyn std::fmt::Display,
+}
+
 /// The message `agents.rule-stop-name`.
 #[must_use]
-pub fn agents_rule_stop_name(
-    agent: impl std::fmt::Display,
-    search: impl std::fmt::Display,
-) -> Message {
+pub fn agents_rule_stop_name(values: AgentsRuleStopName<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("agents.rule-stop-name"),
         vec![
-            ("agent", Value::Text(agent.to_string())),
-            ("search", Value::Text(search.to_string())),
+            ("agent", Value::Text(values.agent.to_string())),
+            ("search", Value::Text(values.search.to_string())),
         ],
     )
 }
@@ -10605,17 +10796,23 @@ pub fn agents_stop_title(agent: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `agents.waiting-button-name`, by name.
+#[derive(Clone, Copy)]
+pub struct AgentsWaitingButtonName<'a> {
+    /// The value of `{action}`.
+    pub action: &'a dyn std::fmt::Display,
+    /// The value of `{issue}`.
+    pub issue: &'a dyn std::fmt::Display,
+}
+
 /// The message `agents.waiting-button-name`.
 #[must_use]
-pub fn agents_waiting_button_name(
-    action: impl std::fmt::Display,
-    issue: impl std::fmt::Display,
-) -> Message {
+pub fn agents_waiting_button_name(values: AgentsWaitingButtonName<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("agents.waiting-button-name"),
         vec![
-            ("action", Value::Text(action.to_string())),
-            ("issue", Value::Text(issue.to_string())),
+            ("action", Value::Text(values.action.to_string())),
+            ("issue", Value::Text(values.issue.to_string())),
         ],
     )
 }
@@ -10647,19 +10844,26 @@ pub fn agents_waiting_review(agent: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `agents.waiting-rule`, by name.
+#[derive(Clone, Copy)]
+pub struct AgentsWaitingRule<'a> {
+    /// The value of `{agent}`.
+    pub agent: &'a dyn std::fmt::Display,
+    /// The value of `{count}`.
+    pub count: i64,
+    /// The value of `{search}`.
+    pub search: &'a dyn std::fmt::Display,
+}
+
 /// The message `agents.waiting-rule`.
 #[must_use]
-pub fn agents_waiting_rule(
-    agent: impl std::fmt::Display,
-    count: i64,
-    search: impl std::fmt::Display,
-) -> Message {
+pub fn agents_waiting_rule(values: AgentsWaitingRule<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("agents.waiting-rule"),
         vec![
-            ("agent", Value::Text(agent.to_string())),
-            ("count", Value::Number(count)),
-            ("search", Value::Text(search.to_string())),
+            ("agent", Value::Text(values.agent.to_string())),
+            ("count", Value::Number(values.count)),
+            ("search", Value::Text(values.search.to_string())),
         ],
     )
 }
@@ -10691,29 +10895,44 @@ pub fn ai_refused_field(field: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `ai-saved.issue`, by name.
+#[derive(Clone, Copy)]
+pub struct AiSavedIssue<'a> {
+    /// The value of `{issue}`.
+    pub issue: &'a dyn std::fmt::Display,
+    /// The value of `{version}`.
+    pub version: &'a dyn std::fmt::Display,
+}
+
 /// The message `ai-saved.issue`.
 #[must_use]
-pub fn ai_saved_issue(issue: impl std::fmt::Display, version: impl std::fmt::Display) -> Message {
+pub fn ai_saved_issue(values: AiSavedIssue<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("ai-saved.issue"),
         vec![
-            ("issue", Value::Text(issue.to_string())),
-            ("version", Value::Text(version.to_string())),
+            ("issue", Value::Text(values.issue.to_string())),
+            ("version", Value::Text(values.version.to_string())),
         ],
     )
 }
 
+/// The values of the message `ai-saved.new-issue`, by name.
+#[derive(Clone, Copy)]
+pub struct AiSavedNewIssue<'a> {
+    /// The value of `{issue}`.
+    pub issue: &'a dyn std::fmt::Display,
+    /// The value of `{version}`.
+    pub version: &'a dyn std::fmt::Display,
+}
+
 /// The message `ai-saved.new-issue`.
 #[must_use]
-pub fn ai_saved_new_issue(
-    issue: impl std::fmt::Display,
-    version: impl std::fmt::Display,
-) -> Message {
+pub fn ai_saved_new_issue(values: AiSavedNewIssue<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("ai-saved.new-issue"),
         vec![
-            ("issue", Value::Text(issue.to_string())),
-            ("version", Value::Text(version.to_string())),
+            ("issue", Value::Text(values.issue.to_string())),
+            ("version", Value::Text(values.version.to_string())),
         ],
     )
 }
@@ -10763,17 +10982,23 @@ pub fn ai_setup_address_remove_name(address: impl std::fmt::Display) -> Message 
     )
 }
 
+/// The values of the message `ai-setup.agreement-confirmed`, by name.
+#[derive(Clone, Copy)]
+pub struct AiSetupAgreementConfirmed<'a> {
+    /// The value of `{at}`.
+    pub at: &'a dyn std::fmt::Display,
+    /// The value of `{person}`.
+    pub person: &'a dyn std::fmt::Display,
+}
+
 /// The message `ai-setup.agreement-confirmed`.
 #[must_use]
-pub fn ai_setup_agreement_confirmed(
-    at: impl std::fmt::Display,
-    person: impl std::fmt::Display,
-) -> Message {
+pub fn ai_setup_agreement_confirmed(values: AiSetupAgreementConfirmed<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("ai-setup.agreement-confirmed"),
         vec![
-            ("at", Value::Text(at.to_string())),
-            ("person", Value::Text(person.to_string())),
+            ("at", Value::Text(values.at.to_string())),
+            ("person", Value::Text(values.person.to_string())),
         ],
     )
 }
@@ -10841,29 +11066,44 @@ pub fn assignments_picked(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `assignments.remove-name`, by name.
+#[derive(Clone, Copy)]
+pub struct AssignmentsRemoveName<'a> {
+    /// The value of `{what}`.
+    pub what: &'a dyn std::fmt::Display,
+    /// The value of `{who}`.
+    pub who: &'a dyn std::fmt::Display,
+}
+
 /// The message `assignments.remove-name`.
 #[must_use]
-pub fn assignments_remove_name(
-    what: impl std::fmt::Display,
-    who: impl std::fmt::Display,
-) -> Message {
+pub fn assignments_remove_name(values: AssignmentsRemoveName<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("assignments.remove-name"),
         vec![
-            ("what", Value::Text(what.to_string())),
-            ("who", Value::Text(who.to_string())),
+            ("what", Value::Text(values.what.to_string())),
+            ("who", Value::Text(values.who.to_string())),
         ],
     )
 }
 
+/// The values of the message `assignments.removed`, by name.
+#[derive(Clone, Copy)]
+pub struct AssignmentsRemoved<'a> {
+    /// The value of `{what}`.
+    pub what: &'a dyn std::fmt::Display,
+    /// The value of `{who}`.
+    pub who: &'a dyn std::fmt::Display,
+}
+
 /// The message `assignments.removed`.
 #[must_use]
-pub fn assignments_removed(what: impl std::fmt::Display, who: impl std::fmt::Display) -> Message {
+pub fn assignments_removed(values: AssignmentsRemoved<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("assignments.removed"),
         vec![
-            ("what", Value::Text(what.to_string())),
-            ("who", Value::Text(who.to_string())),
+            ("what", Value::Text(values.what.to_string())),
+            ("who", Value::Text(values.who.to_string())),
         ],
     )
 }
@@ -10895,19 +11135,26 @@ pub fn assistant_answered(count: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `assistant.card.change`, by name.
+#[derive(Clone, Copy)]
+pub struct AssistantCardChange<'a> {
+    /// The value of `{after}`.
+    pub after: &'a dyn std::fmt::Display,
+    /// The value of `{before}`.
+    pub before: &'a dyn std::fmt::Display,
+    /// The value of `{field}`.
+    pub field: &'a dyn std::fmt::Display,
+}
+
 /// The message `assistant.card.change`.
 #[must_use]
-pub fn assistant_card_change(
-    after: impl std::fmt::Display,
-    before: impl std::fmt::Display,
-    field: impl std::fmt::Display,
-) -> Message {
+pub fn assistant_card_change(values: AssistantCardChange<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("assistant.card.change"),
         vec![
-            ("after", Value::Text(after.to_string())),
-            ("before", Value::Text(before.to_string())),
-            ("field", Value::Text(field.to_string())),
+            ("after", Value::Text(values.after.to_string())),
+            ("before", Value::Text(values.before.to_string())),
+            ("field", Value::Text(values.field.to_string())),
         ],
     )
 }
@@ -10975,19 +11222,26 @@ pub fn backup_left(count: i64) -> Message {
     )
 }
 
+/// The values of the message `backups.created`, by name.
+#[derive(Clone, Copy)]
+pub struct BackupsCreated<'a> {
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+    /// The value of `{path}`.
+    pub path: &'a dyn std::fmt::Display,
+    /// The value of `{size}`.
+    pub size: &'a dyn std::fmt::Display,
+}
+
 /// The message `backups.created`.
 #[must_use]
-pub fn backups_created(
-    name: impl std::fmt::Display,
-    path: impl std::fmt::Display,
-    size: impl std::fmt::Display,
-) -> Message {
+pub fn backups_created(values: BackupsCreated<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("backups.created"),
         vec![
-            ("name", Value::Text(name.to_string())),
-            ("path", Value::Text(path.to_string())),
-            ("size", Value::Text(size.to_string())),
+            ("name", Value::Text(values.name.to_string())),
+            ("path", Value::Text(values.path.to_string())),
+            ("size", Value::Text(values.size.to_string())),
         ],
     )
 }
@@ -11010,14 +11264,23 @@ pub fn backups_folder_not_private(path: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `backups.listed`, by name.
+#[derive(Clone, Copy)]
+pub struct BackupsListed<'a> {
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+    /// The value of `{size}`.
+    pub size: &'a dyn std::fmt::Display,
+}
+
 /// The message `backups.listed`.
 #[must_use]
-pub fn backups_listed(name: impl std::fmt::Display, size: impl std::fmt::Display) -> Message {
+pub fn backups_listed(values: BackupsListed<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("backups.listed"),
         vec![
-            ("name", Value::Text(name.to_string())),
-            ("size", Value::Text(size.to_string())),
+            ("name", Value::Text(values.name.to_string())),
+            ("size", Value::Text(values.size.to_string())),
         ],
     )
 }
@@ -11049,34 +11312,49 @@ pub fn check_access_level_no_role(person: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `check-access.level.role-organization`, by name.
+#[derive(Clone, Copy)]
+pub struct CheckAccessLevelRoleOrganization<'a> {
+    /// The value of `{level}`.
+    pub level: &'a dyn std::fmt::Display,
+    /// The value of `{role}`.
+    pub role: &'a dyn std::fmt::Display,
+}
+
 /// The message `check-access.level.role-organization`.
 #[must_use]
 pub fn check_access_level_role_organization(
-    level: impl std::fmt::Display,
-    role: impl std::fmt::Display,
+    values: CheckAccessLevelRoleOrganization<'_>,
 ) -> Message {
     Message::with_arguments(
         MessageKey::new("check-access.level.role-organization"),
         vec![
-            ("level", Value::Text(level.to_string())),
-            ("role", Value::Text(role.to_string())),
+            ("level", Value::Text(values.level.to_string())),
+            ("role", Value::Text(values.role.to_string())),
         ],
     )
 }
 
+/// The values of the message `check-access.level.role-project`, by name.
+#[derive(Clone, Copy)]
+pub struct CheckAccessLevelRoleProject<'a> {
+    /// The value of `{level}`.
+    pub level: &'a dyn std::fmt::Display,
+    /// The value of `{project}`.
+    pub project: &'a dyn std::fmt::Display,
+    /// The value of `{role}`.
+    pub role: &'a dyn std::fmt::Display,
+}
+
 /// The message `check-access.level.role-project`.
 #[must_use]
-pub fn check_access_level_role_project(
-    level: impl std::fmt::Display,
-    project: impl std::fmt::Display,
-    role: impl std::fmt::Display,
-) -> Message {
+pub fn check_access_level_role_project(values: CheckAccessLevelRoleProject<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("check-access.level.role-project"),
         vec![
-            ("level", Value::Text(level.to_string())),
-            ("project", Value::Text(project.to_string())),
-            ("role", Value::Text(role.to_string())),
+            ("level", Value::Text(values.level.to_string())),
+            ("project", Value::Text(values.project.to_string())),
+            ("role", Value::Text(values.role.to_string())),
         ],
     )
 }
@@ -11099,49 +11377,70 @@ pub fn check_access_project_title(project: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `check-access.reason.blocked-group`, by name.
+#[derive(Clone, Copy)]
+pub struct CheckAccessReasonBlockedGroup<'a> {
+    /// The value of `{group}`.
+    pub group: &'a dyn std::fmt::Display,
+    /// The value of `{person}`.
+    pub person: &'a dyn std::fmt::Display,
+    /// The value of `{project}`.
+    pub project: &'a dyn std::fmt::Display,
+}
+
 /// The message `check-access.reason.blocked-group`.
 #[must_use]
-pub fn check_access_reason_blocked_group(
-    group: impl std::fmt::Display,
-    person: impl std::fmt::Display,
-    project: impl std::fmt::Display,
-) -> Message {
+pub fn check_access_reason_blocked_group(values: CheckAccessReasonBlockedGroup<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("check-access.reason.blocked-group"),
         vec![
-            ("group", Value::Text(group.to_string())),
-            ("person", Value::Text(person.to_string())),
-            ("project", Value::Text(project.to_string())),
+            ("group", Value::Text(values.group.to_string())),
+            ("person", Value::Text(values.person.to_string())),
+            ("project", Value::Text(values.project.to_string())),
         ],
     )
 }
 
+/// The values of the message `check-access.reason.blocked-person`, by name.
+#[derive(Clone, Copy)]
+pub struct CheckAccessReasonBlockedPerson<'a> {
+    /// The value of `{person}`.
+    pub person: &'a dyn std::fmt::Display,
+    /// The value of `{project}`.
+    pub project: &'a dyn std::fmt::Display,
+}
+
 /// The message `check-access.reason.blocked-person`.
 #[must_use]
-pub fn check_access_reason_blocked_person(
-    person: impl std::fmt::Display,
-    project: impl std::fmt::Display,
-) -> Message {
+pub fn check_access_reason_blocked_person(values: CheckAccessReasonBlockedPerson<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("check-access.reason.blocked-person"),
         vec![
-            ("person", Value::Text(person.to_string())),
-            ("project", Value::Text(project.to_string())),
+            ("person", Value::Text(values.person.to_string())),
+            ("project", Value::Text(values.project.to_string())),
         ],
     )
+}
+
+/// The values of the message `check-access.reason.inherited-project`, by name.
+#[derive(Clone, Copy)]
+pub struct CheckAccessReasonInheritedProject<'a> {
+    /// The value of `{place}`.
+    pub place: &'a dyn std::fmt::Display,
+    /// The value of `{project}`.
+    pub project: &'a dyn std::fmt::Display,
 }
 
 /// The message `check-access.reason.inherited-project`.
 #[must_use]
 pub fn check_access_reason_inherited_project(
-    place: impl std::fmt::Display,
-    project: impl std::fmt::Display,
+    values: CheckAccessReasonInheritedProject<'_>,
 ) -> Message {
     Message::with_arguments(
         MessageKey::new("check-access.reason.inherited-project"),
         vec![
-            ("place", Value::Text(place.to_string())),
-            ("project", Value::Text(project.to_string())),
+            ("place", Value::Text(values.place.to_string())),
+            ("project", Value::Text(values.project.to_string())),
         ],
     )
 }
@@ -11164,100 +11463,148 @@ pub fn check_access_reason_organization_only(role: impl std::fmt::Display) -> Me
     )
 }
 
+/// The values of the message `check-access.reason.role-group-organization`, by name.
+#[derive(Clone, Copy)]
+pub struct CheckAccessReasonRoleGroupOrganization<'a> {
+    /// The value of `{group}`.
+    pub group: &'a dyn std::fmt::Display,
+    /// The value of `{person}`.
+    pub person: &'a dyn std::fmt::Display,
+    /// The value of `{role}`.
+    pub role: &'a dyn std::fmt::Display,
+}
+
 /// The message `check-access.reason.role-group-organization`.
 #[must_use]
 pub fn check_access_reason_role_group_organization(
-    group: impl std::fmt::Display,
-    person: impl std::fmt::Display,
-    role: impl std::fmt::Display,
+    values: CheckAccessReasonRoleGroupOrganization<'_>,
 ) -> Message {
     Message::with_arguments(
         MessageKey::new("check-access.reason.role-group-organization"),
         vec![
-            ("group", Value::Text(group.to_string())),
-            ("person", Value::Text(person.to_string())),
-            ("role", Value::Text(role.to_string())),
+            ("group", Value::Text(values.group.to_string())),
+            ("person", Value::Text(values.person.to_string())),
+            ("role", Value::Text(values.role.to_string())),
         ],
     )
+}
+
+/// The values of the message `check-access.reason.role-group-project`, by name.
+#[derive(Clone, Copy)]
+pub struct CheckAccessReasonRoleGroupProject<'a> {
+    /// The value of `{group}`.
+    pub group: &'a dyn std::fmt::Display,
+    /// The value of `{person}`.
+    pub person: &'a dyn std::fmt::Display,
+    /// The value of `{project}`.
+    pub project: &'a dyn std::fmt::Display,
+    /// The value of `{role}`.
+    pub role: &'a dyn std::fmt::Display,
 }
 
 /// The message `check-access.reason.role-group-project`.
 #[must_use]
 pub fn check_access_reason_role_group_project(
-    group: impl std::fmt::Display,
-    person: impl std::fmt::Display,
-    project: impl std::fmt::Display,
-    role: impl std::fmt::Display,
+    values: CheckAccessReasonRoleGroupProject<'_>,
 ) -> Message {
     Message::with_arguments(
         MessageKey::new("check-access.reason.role-group-project"),
         vec![
-            ("group", Value::Text(group.to_string())),
-            ("person", Value::Text(person.to_string())),
-            ("project", Value::Text(project.to_string())),
-            ("role", Value::Text(role.to_string())),
+            ("group", Value::Text(values.group.to_string())),
+            ("person", Value::Text(values.person.to_string())),
+            ("project", Value::Text(values.project.to_string())),
+            ("role", Value::Text(values.role.to_string())),
         ],
     )
+}
+
+/// The values of the message `check-access.reason.role-person-organization`, by name.
+#[derive(Clone, Copy)]
+pub struct CheckAccessReasonRolePersonOrganization<'a> {
+    /// The value of `{person}`.
+    pub person: &'a dyn std::fmt::Display,
+    /// The value of `{role}`.
+    pub role: &'a dyn std::fmt::Display,
 }
 
 /// The message `check-access.reason.role-person-organization`.
 #[must_use]
 pub fn check_access_reason_role_person_organization(
-    person: impl std::fmt::Display,
-    role: impl std::fmt::Display,
+    values: CheckAccessReasonRolePersonOrganization<'_>,
 ) -> Message {
     Message::with_arguments(
         MessageKey::new("check-access.reason.role-person-organization"),
         vec![
-            ("person", Value::Text(person.to_string())),
-            ("role", Value::Text(role.to_string())),
+            ("person", Value::Text(values.person.to_string())),
+            ("role", Value::Text(values.role.to_string())),
         ],
     )
+}
+
+/// The values of the message `check-access.reason.role-person-project`, by name.
+#[derive(Clone, Copy)]
+pub struct CheckAccessReasonRolePersonProject<'a> {
+    /// The value of `{person}`.
+    pub person: &'a dyn std::fmt::Display,
+    /// The value of `{project}`.
+    pub project: &'a dyn std::fmt::Display,
+    /// The value of `{role}`.
+    pub role: &'a dyn std::fmt::Display,
 }
 
 /// The message `check-access.reason.role-person-project`.
 #[must_use]
 pub fn check_access_reason_role_person_project(
-    person: impl std::fmt::Display,
-    project: impl std::fmt::Display,
-    role: impl std::fmt::Display,
+    values: CheckAccessReasonRolePersonProject<'_>,
 ) -> Message {
     Message::with_arguments(
         MessageKey::new("check-access.reason.role-person-project"),
         vec![
-            ("person", Value::Text(person.to_string())),
-            ("project", Value::Text(project.to_string())),
-            ("role", Value::Text(role.to_string())),
+            ("person", Value::Text(values.person.to_string())),
+            ("project", Value::Text(values.project.to_string())),
+            ("role", Value::Text(values.role.to_string())),
         ],
     )
+}
+
+/// The values of the message `check-access.result-heading`, by name.
+#[derive(Clone, Copy)]
+pub struct CheckAccessResultHeading<'a> {
+    /// The value of `{person}`.
+    pub person: &'a dyn std::fmt::Display,
+    /// The value of `{place}`.
+    pub place: &'a dyn std::fmt::Display,
 }
 
 /// The message `check-access.result-heading`.
 #[must_use]
-pub fn check_access_result_heading(
-    person: impl std::fmt::Display,
-    place: impl std::fmt::Display,
-) -> Message {
+pub fn check_access_result_heading(values: CheckAccessResultHeading<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("check-access.result-heading"),
         vec![
-            ("person", Value::Text(person.to_string())),
-            ("place", Value::Text(place.to_string())),
+            ("person", Value::Text(values.person.to_string())),
+            ("place", Value::Text(values.place.to_string())),
         ],
     )
 }
 
+/// The values of the message `cli.database-url-password`, by name.
+#[derive(Clone, Copy)]
+pub struct CliDatabaseUrlPassword<'a> {
+    /// The value of `{file}`.
+    pub file: &'a dyn std::fmt::Display,
+    /// The value of `{variable}`.
+    pub variable: &'a dyn std::fmt::Display,
+}
+
 /// The message `cli.database-url-password`.
 #[must_use]
-pub fn cli_database_url_password(
-    file: impl std::fmt::Display,
-    variable: impl std::fmt::Display,
-) -> Message {
+pub fn cli_database_url_password(values: CliDatabaseUrlPassword<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("cli.database-url-password"),
         vec![
-            ("file", Value::Text(file.to_string())),
-            ("variable", Value::Text(variable.to_string())),
+            ("file", Value::Text(values.file.to_string())),
+            ("variable", Value::Text(values.variable.to_string())),
         ],
     )
 }
@@ -11307,76 +11654,110 @@ pub fn cli_update_no_release(file: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `cli.update.not-listed`, by name.
+#[derive(Clone, Copy)]
+pub struct CliUpdateNotListed<'a> {
+    /// The value of `{checksums}`.
+    pub checksums: &'a dyn std::fmt::Display,
+    /// The value of `{file}`.
+    pub file: &'a dyn std::fmt::Display,
+}
+
 /// The message `cli.update.not-listed`.
 #[must_use]
-pub fn cli_update_not_listed(
-    checksums: impl std::fmt::Display,
-    file: impl std::fmt::Display,
-) -> Message {
+pub fn cli_update_not_listed(values: CliUpdateNotListed<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("cli.update.not-listed"),
         vec![
-            ("checksums", Value::Text(checksums.to_string())),
-            ("file", Value::Text(file.to_string())),
+            ("checksums", Value::Text(values.checksums.to_string())),
+            ("file", Value::Text(values.file.to_string())),
         ],
     )
+}
+
+/// The values of the message `cli.update.older`, by name.
+#[derive(Clone, Copy)]
+pub struct CliUpdateOlder<'a> {
+    /// The value of `{installed}`.
+    pub installed: &'a dyn std::fmt::Display,
+    /// The value of `{version}`.
+    pub version: &'a dyn std::fmt::Display,
 }
 
 /// The message `cli.update.older`.
 #[must_use]
-pub fn cli_update_older(
-    installed: impl std::fmt::Display,
-    version: impl std::fmt::Display,
-) -> Message {
+pub fn cli_update_older(values: CliUpdateOlder<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("cli.update.older"),
         vec![
-            ("installed", Value::Text(installed.to_string())),
-            ("version", Value::Text(version.to_string())),
+            ("installed", Value::Text(values.installed.to_string())),
+            ("version", Value::Text(values.version.to_string())),
         ],
     )
+}
+
+/// The values of the message `cli.update.other-checksum`, by name.
+#[derive(Clone, Copy)]
+pub struct CliUpdateOtherChecksum<'a> {
+    /// The value of `{checksums}`.
+    pub checksums: &'a dyn std::fmt::Display,
+    /// The value of `{file}`.
+    pub file: &'a dyn std::fmt::Display,
 }
 
 /// The message `cli.update.other-checksum`.
 #[must_use]
-pub fn cli_update_other_checksum(
-    checksums: impl std::fmt::Display,
-    file: impl std::fmt::Display,
-) -> Message {
+pub fn cli_update_other_checksum(values: CliUpdateOtherChecksum<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("cli.update.other-checksum"),
         vec![
-            ("checksums", Value::Text(checksums.to_string())),
-            ("file", Value::Text(file.to_string())),
+            ("checksums", Value::Text(values.checksums.to_string())),
+            ("file", Value::Text(values.file.to_string())),
         ],
     )
+}
+
+/// The values of the message `cli.update.other-list`, by name.
+#[derive(Clone, Copy)]
+pub struct CliUpdateOtherList<'a> {
+    /// The value of `{checksums}`.
+    pub checksums: &'a dyn std::fmt::Display,
+    /// The value of `{file}`.
+    pub file: &'a dyn std::fmt::Display,
+    /// The value of `{version}`.
+    pub version: &'a dyn std::fmt::Display,
 }
 
 /// The message `cli.update.other-list`.
 #[must_use]
-pub fn cli_update_other_list(
-    checksums: impl std::fmt::Display,
-    file: impl std::fmt::Display,
-    version: impl std::fmt::Display,
-) -> Message {
+pub fn cli_update_other_list(values: CliUpdateOtherList<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("cli.update.other-list"),
         vec![
-            ("checksums", Value::Text(checksums.to_string())),
-            ("file", Value::Text(file.to_string())),
-            ("version", Value::Text(version.to_string())),
+            ("checksums", Value::Text(values.checksums.to_string())),
+            ("file", Value::Text(values.file.to_string())),
+            ("version", Value::Text(values.version.to_string())),
         ],
     )
 }
 
+/// The values of the message `cli.update.signed`, by name.
+#[derive(Clone, Copy)]
+pub struct CliUpdateSigned<'a> {
+    /// The value of `{file}`.
+    pub file: &'a dyn std::fmt::Display,
+    /// The value of `{version}`.
+    pub version: &'a dyn std::fmt::Display,
+}
+
 /// The message `cli.update.signed`.
 #[must_use]
-pub fn cli_update_signed(file: impl std::fmt::Display, version: impl std::fmt::Display) -> Message {
+pub fn cli_update_signed(values: CliUpdateSigned<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("cli.update.signed"),
         vec![
-            ("file", Value::Text(file.to_string())),
-            ("version", Value::Text(version.to_string())),
+            ("file", Value::Text(values.file.to_string())),
+            ("version", Value::Text(values.version.to_string())),
         ],
     )
 }
@@ -11399,29 +11780,44 @@ pub fn cli_update_unreadable_signature(file: impl std::fmt::Display) -> Message 
     )
 }
 
+/// The values of the message `comments.version-saved`, by name.
+#[derive(Clone, Copy)]
+pub struct CommentsVersionSaved<'a> {
+    /// The value of `{version}`.
+    pub version: &'a dyn std::fmt::Display,
+    /// The value of `{when}`.
+    pub when: &'a dyn std::fmt::Display,
+}
+
 /// The message `comments.version-saved`.
 #[must_use]
-pub fn comments_version_saved(
-    version: impl std::fmt::Display,
-    when: impl std::fmt::Display,
-) -> Message {
+pub fn comments_version_saved(values: CommentsVersionSaved<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("comments.version-saved"),
         vec![
-            ("version", Value::Text(version.to_string())),
-            ("when", Value::Text(when.to_string())),
+            ("version", Value::Text(values.version.to_string())),
+            ("when", Value::Text(values.when.to_string())),
         ],
     )
 }
 
+/// The values of the message `common.percent`, by name.
+#[derive(Clone, Copy)]
+pub struct CommonPercent<'a> {
+    /// The value of `{percent}`.
+    pub percent: &'a dyn std::fmt::Display,
+    /// The value of `{sign}`.
+    pub sign: &'a dyn std::fmt::Display,
+}
+
 /// The message `common.percent`.
 #[must_use]
-pub fn common_percent(percent: impl std::fmt::Display, sign: impl std::fmt::Display) -> Message {
+pub fn common_percent(values: CommonPercent<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("common.percent"),
         vec![
-            ("percent", Value::Text(percent.to_string())),
-            ("sign", Value::Text(sign.to_string())),
+            ("percent", Value::Text(values.percent.to_string())),
+            ("sign", Value::Text(values.sign.to_string())),
         ],
     )
 }
@@ -11453,53 +11849,86 @@ pub fn common_swipe_shown(actions: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `common.time-24`, by name.
+#[derive(Clone, Copy)]
+pub struct CommonTime24<'a> {
+    /// The value of `{hour}`.
+    pub hour: &'a dyn std::fmt::Display,
+    /// The value of `{minute}`.
+    pub minute: &'a dyn std::fmt::Display,
+}
+
 /// The message `common.time-24`.
 #[must_use]
-pub fn common_time_24(hour: impl std::fmt::Display, minute: impl std::fmt::Display) -> Message {
+pub fn common_time_24(values: CommonTime24<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("common.time-24"),
         vec![
-            ("hour", Value::Text(hour.to_string())),
-            ("minute", Value::Text(minute.to_string())),
+            ("hour", Value::Text(values.hour.to_string())),
+            ("minute", Value::Text(values.minute.to_string())),
         ],
     )
+}
+
+/// The values of the message `common.time-am`, by name.
+#[derive(Clone, Copy)]
+pub struct CommonTimeAm<'a> {
+    /// The value of `{hour}`.
+    pub hour: &'a dyn std::fmt::Display,
+    /// The value of `{minute}`.
+    pub minute: &'a dyn std::fmt::Display,
 }
 
 /// The message `common.time-am`.
 #[must_use]
-pub fn common_time_am(hour: impl std::fmt::Display, minute: impl std::fmt::Display) -> Message {
+pub fn common_time_am(values: CommonTimeAm<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("common.time-am"),
         vec![
-            ("hour", Value::Text(hour.to_string())),
-            ("minute", Value::Text(minute.to_string())),
+            ("hour", Value::Text(values.hour.to_string())),
+            ("minute", Value::Text(values.minute.to_string())),
         ],
     )
+}
+
+/// The values of the message `common.time-pm`, by name.
+#[derive(Clone, Copy)]
+pub struct CommonTimePm<'a> {
+    /// The value of `{hour}`.
+    pub hour: &'a dyn std::fmt::Display,
+    /// The value of `{minute}`.
+    pub minute: &'a dyn std::fmt::Display,
 }
 
 /// The message `common.time-pm`.
 #[must_use]
-pub fn common_time_pm(hour: impl std::fmt::Display, minute: impl std::fmt::Display) -> Message {
+pub fn common_time_pm(values: CommonTimePm<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("common.time-pm"),
         vec![
-            ("hour", Value::Text(hour.to_string())),
-            ("minute", Value::Text(minute.to_string())),
+            ("hour", Value::Text(values.hour.to_string())),
+            ("minute", Value::Text(values.minute.to_string())),
         ],
     )
 }
 
+/// The values of the message `common.weekday-date`, by name.
+#[derive(Clone, Copy)]
+pub struct CommonWeekdayDate<'a> {
+    /// The value of `{date}`.
+    pub date: &'a dyn std::fmt::Display,
+    /// The value of `{weekday}`.
+    pub weekday: &'a dyn std::fmt::Display,
+}
+
 /// The message `common.weekday-date`.
 #[must_use]
-pub fn common_weekday_date(
-    date: impl std::fmt::Display,
-    weekday: impl std::fmt::Display,
-) -> Message {
+pub fn common_weekday_date(values: CommonWeekdayDate<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("common.weekday-date"),
         vec![
-            ("date", Value::Text(date.to_string())),
-            ("weekday", Value::Text(weekday.to_string())),
+            ("date", Value::Text(values.date.to_string())),
+            ("weekday", Value::Text(values.weekday.to_string())),
         ],
     )
 }
@@ -11513,64 +11942,89 @@ pub fn config_address_invalid(value: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `config.file-invalid`, by name.
+#[derive(Clone, Copy)]
+pub struct ConfigFileInvalid<'a> {
+    /// The value of `{path}`.
+    pub path: &'a dyn std::fmt::Display,
+    /// The value of `{reason}`.
+    pub reason: &'a dyn std::fmt::Display,
+}
+
 /// The message `config.file-invalid`.
 #[must_use]
-pub fn config_file_invalid(
-    path: impl std::fmt::Display,
-    reason: impl std::fmt::Display,
-) -> Message {
+pub fn config_file_invalid(values: ConfigFileInvalid<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("config.file-invalid"),
         vec![
-            ("path", Value::Text(path.to_string())),
-            ("reason", Value::Text(reason.to_string())),
+            ("path", Value::Text(values.path.to_string())),
+            ("reason", Value::Text(values.reason.to_string())),
         ],
     )
+}
+
+/// The values of the message `config.file-unknown-key`, by name.
+#[derive(Clone, Copy)]
+pub struct ConfigFileUnknownKey<'a> {
+    /// The value of `{known}`.
+    pub known: &'a dyn std::fmt::Display,
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+    /// The value of `{path}`.
+    pub path: &'a dyn std::fmt::Display,
 }
 
 /// The message `config.file-unknown-key`.
 #[must_use]
-pub fn config_file_unknown_key(
-    known: impl std::fmt::Display,
-    name: impl std::fmt::Display,
-    path: impl std::fmt::Display,
-) -> Message {
+pub fn config_file_unknown_key(values: ConfigFileUnknownKey<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("config.file-unknown-key"),
         vec![
-            ("known", Value::Text(known.to_string())),
-            ("name", Value::Text(name.to_string())),
-            ("path", Value::Text(path.to_string())),
+            ("known", Value::Text(values.known.to_string())),
+            ("name", Value::Text(values.name.to_string())),
+            ("path", Value::Text(values.path.to_string())),
         ],
     )
+}
+
+/// The values of the message `config.file-unreadable`, by name.
+#[derive(Clone, Copy)]
+pub struct ConfigFileUnreadable<'a> {
+    /// The value of `{path}`.
+    pub path: &'a dyn std::fmt::Display,
+    /// The value of `{reason}`.
+    pub reason: &'a dyn std::fmt::Display,
 }
 
 /// The message `config.file-unreadable`.
 #[must_use]
-pub fn config_file_unreadable(
-    path: impl std::fmt::Display,
-    reason: impl std::fmt::Display,
-) -> Message {
+pub fn config_file_unreadable(values: ConfigFileUnreadable<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("config.file-unreadable"),
         vec![
-            ("path", Value::Text(path.to_string())),
-            ("reason", Value::Text(reason.to_string())),
+            ("path", Value::Text(values.path.to_string())),
+            ("reason", Value::Text(values.reason.to_string())),
         ],
     )
 }
 
+/// The values of the message `config.file-wrong-type`, by name.
+#[derive(Clone, Copy)]
+pub struct ConfigFileWrongType<'a> {
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+    /// The value of `{path}`.
+    pub path: &'a dyn std::fmt::Display,
+}
+
 /// The message `config.file-wrong-type`.
 #[must_use]
-pub fn config_file_wrong_type(
-    name: impl std::fmt::Display,
-    path: impl std::fmt::Display,
-) -> Message {
+pub fn config_file_wrong_type(values: ConfigFileWrongType<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("config.file-wrong-type"),
         vec![
-            ("name", Value::Text(name.to_string())),
-            ("path", Value::Text(path.to_string())),
+            ("name", Value::Text(values.name.to_string())),
+            ("path", Value::Text(values.path.to_string())),
         ],
     )
 }
@@ -11584,17 +12038,23 @@ pub fn config_log_level_invalid(value: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `config.number-invalid`, by name.
+#[derive(Clone, Copy)]
+pub struct ConfigNumberInvalid<'a> {
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+    /// The value of `{value}`.
+    pub value: &'a dyn std::fmt::Display,
+}
+
 /// The message `config.number-invalid`.
 #[must_use]
-pub fn config_number_invalid(
-    name: impl std::fmt::Display,
-    value: impl std::fmt::Display,
-) -> Message {
+pub fn config_number_invalid(values: ConfigNumberInvalid<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("config.number-invalid"),
         vec![
-            ("name", Value::Text(name.to_string())),
-            ("value", Value::Text(value.to_string())),
+            ("name", Value::Text(values.name.to_string())),
+            ("value", Value::Text(values.value.to_string())),
         ],
     )
 }
@@ -11653,14 +12113,23 @@ pub fn config_tls_off_public(address: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `conflict.change`, by name.
+#[derive(Clone, Copy)]
+pub struct ConflictChange<'a> {
+    /// The value of `{field}`.
+    pub field: &'a dyn std::fmt::Display,
+    /// The value of `{value}`.
+    pub value: &'a dyn std::fmt::Display,
+}
+
 /// The message `conflict.change`.
 #[must_use]
-pub fn conflict_change(field: impl std::fmt::Display, value: impl std::fmt::Display) -> Message {
+pub fn conflict_change(values: ConflictChange<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("conflict.change"),
         vec![
-            ("field", Value::Text(field.to_string())),
-            ("value", Value::Text(value.to_string())),
+            ("field", Value::Text(values.field.to_string())),
+            ("value", Value::Text(values.value.to_string())),
         ],
     )
 }
@@ -11674,38 +12143,53 @@ pub fn conflict_field_only(field: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `conflict.sentence`, by name.
+#[derive(Clone, Copy)]
+pub struct ConflictSentence<'a> {
+    /// The value of `{ago}`.
+    pub ago: &'a dyn std::fmt::Display,
+    /// The value of `{changes}`.
+    pub changes: &'a dyn std::fmt::Display,
+    /// The value of `{timed}`.
+    pub timed: &'a str,
+    /// The value of `{who}`.
+    pub who: &'a dyn std::fmt::Display,
+}
+
 /// The message `conflict.sentence`.
 #[must_use]
-pub fn conflict_sentence(
-    ago: impl std::fmt::Display,
-    changes: impl std::fmt::Display,
-    timed: &str,
-    who: impl std::fmt::Display,
-) -> Message {
+pub fn conflict_sentence(values: ConflictSentence<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("conflict.sentence"),
         vec![
-            ("ago", Value::Text(ago.to_string())),
-            ("changes", Value::Text(changes.to_string())),
-            ("timed", Value::Text(timed.to_owned())),
-            ("who", Value::Text(who.to_string())),
+            ("ago", Value::Text(values.ago.to_string())),
+            ("changes", Value::Text(values.changes.to_string())),
+            ("timed", Value::Text(values.timed.to_owned())),
+            ("who", Value::Text(values.who.to_string())),
         ],
     )
 }
 
+/// The values of the message `conflict.sentence-plain`, by name.
+#[derive(Clone, Copy)]
+pub struct ConflictSentencePlain<'a> {
+    /// The value of `{ago}`.
+    pub ago: &'a dyn std::fmt::Display,
+    /// The value of `{timed}`.
+    pub timed: &'a str,
+    /// The value of `{who}`.
+    pub who: &'a dyn std::fmt::Display,
+}
+
 /// The message `conflict.sentence-plain`.
 #[must_use]
-pub fn conflict_sentence_plain(
-    ago: impl std::fmt::Display,
-    timed: &str,
-    who: impl std::fmt::Display,
-) -> Message {
+pub fn conflict_sentence_plain(values: ConflictSentencePlain<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("conflict.sentence-plain"),
         vec![
-            ("ago", Value::Text(ago.to_string())),
-            ("timed", Value::Text(timed.to_owned())),
-            ("who", Value::Text(who.to_string())),
+            ("ago", Value::Text(values.ago.to_string())),
+            ("timed", Value::Text(values.timed.to_owned())),
+            ("who", Value::Text(values.who.to_string())),
         ],
     )
 }
@@ -11719,17 +12203,23 @@ pub fn connect_acts_as(app: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `connect.choice-help`, by name.
+#[derive(Clone, Copy)]
+pub struct ConnectChoiceHelp<'a> {
+    /// The value of `{choice}`.
+    pub choice: &'a dyn std::fmt::Display,
+    /// The value of `{what}`.
+    pub what: &'a dyn std::fmt::Display,
+}
+
 /// The message `connect.choice-help`.
 #[must_use]
-pub fn connect_choice_help(
-    choice: impl std::fmt::Display,
-    what: impl std::fmt::Display,
-) -> Message {
+pub fn connect_choice_help(values: ConnectChoiceHelp<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("connect.choice-help"),
         vec![
-            ("choice", Value::Text(choice.to_string())),
-            ("what", Value::Text(what.to_string())),
+            ("choice", Value::Text(values.choice.to_string())),
+            ("what", Value::Text(values.what.to_string())),
         ],
     )
 }
@@ -11761,17 +12251,23 @@ pub fn connected_apps_take_back_name(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `data-folder.create-failed`, by name.
+#[derive(Clone, Copy)]
+pub struct DataFolderCreateFailed<'a> {
+    /// The value of `{path}`.
+    pub path: &'a dyn std::fmt::Display,
+    /// The value of `{reason}`.
+    pub reason: &'a dyn std::fmt::Display,
+}
+
 /// The message `data-folder.create-failed`.
 #[must_use]
-pub fn data_folder_create_failed(
-    path: impl std::fmt::Display,
-    reason: impl std::fmt::Display,
-) -> Message {
+pub fn data_folder_create_failed(values: DataFolderCreateFailed<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("data-folder.create-failed"),
         vec![
-            ("path", Value::Text(path.to_string())),
-            ("reason", Value::Text(reason.to_string())),
+            ("path", Value::Text(values.path.to_string())),
+            ("reason", Value::Text(values.reason.to_string())),
         ],
     )
 }
@@ -11785,56 +12281,86 @@ pub fn data_folder_not_a_data_folder(path: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `data-folder.open`, by name.
+#[derive(Clone, Copy)]
+pub struct DataFolderOpen<'a> {
+    /// The value of `{part}`.
+    pub part: &'a dyn std::fmt::Display,
+    /// The value of `{path}`.
+    pub path: &'a dyn std::fmt::Display,
+}
+
 /// The message `data-folder.open`.
 #[must_use]
-pub fn data_folder_open(part: impl std::fmt::Display, path: impl std::fmt::Display) -> Message {
+pub fn data_folder_open(values: DataFolderOpen<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("data-folder.open"),
         vec![
-            ("part", Value::Text(part.to_string())),
-            ("path", Value::Text(path.to_string())),
+            ("part", Value::Text(values.part.to_string())),
+            ("path", Value::Text(values.path.to_string())),
         ],
     )
+}
+
+/// The values of the message `data-folder.own-certificate`, by name.
+#[derive(Clone, Copy)]
+pub struct DataFolderOwnCertificate<'a> {
+    /// The value of `{flag}`.
+    pub flag: &'a dyn std::fmt::Display,
+    /// The value of `{path}`.
+    pub path: &'a dyn std::fmt::Display,
 }
 
 /// The message `data-folder.own-certificate`.
 #[must_use]
-pub fn data_folder_own_certificate(
-    flag: impl std::fmt::Display,
-    path: impl std::fmt::Display,
-) -> Message {
+pub fn data_folder_own_certificate(values: DataFolderOwnCertificate<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("data-folder.own-certificate"),
         vec![
-            ("flag", Value::Text(flag.to_string())),
-            ("path", Value::Text(path.to_string())),
+            ("flag", Value::Text(values.flag.to_string())),
+            ("path", Value::Text(values.path.to_string())),
         ],
     )
+}
+
+/// The values of the message `data-folder.protect-failed`, by name.
+#[derive(Clone, Copy)]
+pub struct DataFolderProtectFailed<'a> {
+    /// The value of `{path}`.
+    pub path: &'a dyn std::fmt::Display,
+    /// The value of `{reason}`.
+    pub reason: &'a dyn std::fmt::Display,
 }
 
 /// The message `data-folder.protect-failed`.
 #[must_use]
-pub fn data_folder_protect_failed(
-    path: impl std::fmt::Display,
-    reason: impl std::fmt::Display,
-) -> Message {
+pub fn data_folder_protect_failed(values: DataFolderProtectFailed<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("data-folder.protect-failed"),
         vec![
-            ("path", Value::Text(path.to_string())),
-            ("reason", Value::Text(reason.to_string())),
+            ("path", Value::Text(values.path.to_string())),
+            ("reason", Value::Text(values.reason.to_string())),
         ],
     )
 }
 
+/// The values of the message `data-folder.unknown`, by name.
+#[derive(Clone, Copy)]
+pub struct DataFolderUnknown<'a> {
+    /// The value of `{part}`.
+    pub part: &'a dyn std::fmt::Display,
+    /// The value of `{path}`.
+    pub path: &'a dyn std::fmt::Display,
+}
+
 /// The message `data-folder.unknown`.
 #[must_use]
-pub fn data_folder_unknown(part: impl std::fmt::Display, path: impl std::fmt::Display) -> Message {
+pub fn data_folder_unknown(values: DataFolderUnknown<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("data-folder.unknown"),
         vec![
-            ("part", Value::Text(part.to_string())),
-            ("path", Value::Text(path.to_string())),
+            ("part", Value::Text(values.part.to_string())),
+            ("path", Value::Text(values.path.to_string())),
         ],
     )
 }
@@ -11857,14 +12383,23 @@ pub fn editing_draft_continue(when: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `editing.draft-found`, by name.
+#[derive(Clone, Copy)]
+pub struct EditingDraftFound<'a> {
+    /// The value of `{thing}`.
+    pub thing: &'a dyn std::fmt::Display,
+    /// The value of `{when}`.
+    pub when: &'a dyn std::fmt::Display,
+}
+
 /// The message `editing.draft-found`.
 #[must_use]
-pub fn editing_draft_found(thing: impl std::fmt::Display, when: impl std::fmt::Display) -> Message {
+pub fn editing_draft_found(values: EditingDraftFound<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("editing.draft-found"),
         vec![
-            ("thing", Value::Text(thing.to_string())),
-            ("when", Value::Text(when.to_string())),
+            ("thing", Value::Text(values.thing.to_string())),
+            ("when", Value::Text(values.when.to_string())),
         ],
     )
 }
@@ -11878,49 +12413,68 @@ pub fn editing_elsewhere(thing: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `editing.is-editing`, by name.
+#[derive(Clone, Copy)]
+pub struct EditingIsEditing<'a> {
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+    /// The value of `{since}`.
+    pub since: &'a dyn std::fmt::Display,
+    /// The value of `{thing}`.
+    pub thing: &'a dyn std::fmt::Display,
+}
+
 /// The message `editing.is-editing`.
 #[must_use]
-pub fn editing_is_editing(
-    name: impl std::fmt::Display,
-    since: impl std::fmt::Display,
-    thing: impl std::fmt::Display,
-) -> Message {
+pub fn editing_is_editing(values: EditingIsEditing<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("editing.is-editing"),
         vec![
-            ("name", Value::Text(name.to_string())),
-            ("since", Value::Text(since.to_string())),
-            ("thing", Value::Text(thing.to_string())),
+            ("name", Value::Text(values.name.to_string())),
+            ("since", Value::Text(values.since.to_string())),
+            ("thing", Value::Text(values.thing.to_string())),
         ],
     )
+}
+
+/// The values of the message `editing.is-editing-now`, by name.
+#[derive(Clone, Copy)]
+pub struct EditingIsEditingNow<'a> {
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+    /// The value of `{thing}`.
+    pub thing: &'a dyn std::fmt::Display,
 }
 
 /// The message `editing.is-editing-now`.
 #[must_use]
-pub fn editing_is_editing_now(
-    name: impl std::fmt::Display,
-    thing: impl std::fmt::Display,
-) -> Message {
+pub fn editing_is_editing_now(values: EditingIsEditingNow<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("editing.is-editing-now"),
         vec![
-            ("name", Value::Text(name.to_string())),
-            ("thing", Value::Text(thing.to_string())),
+            ("name", Value::Text(values.name.to_string())),
+            ("thing", Value::Text(values.thing.to_string())),
         ],
     )
 }
 
+/// The values of the message `editing.lost-changed`, by name.
+#[derive(Clone, Copy)]
+pub struct EditingLostChanged<'a> {
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+    /// The value of `{thing}`.
+    pub thing: &'a dyn std::fmt::Display,
+}
+
 /// The message `editing.lost-changed`.
 #[must_use]
-pub fn editing_lost_changed(
-    name: impl std::fmt::Display,
-    thing: impl std::fmt::Display,
-) -> Message {
+pub fn editing_lost_changed(values: EditingLostChanged<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("editing.lost-changed"),
         vec![
-            ("name", Value::Text(name.to_string())),
-            ("thing", Value::Text(thing.to_string())),
+            ("name", Value::Text(values.name.to_string())),
+            ("thing", Value::Text(values.thing.to_string())),
         ],
     )
 }
@@ -11943,17 +12497,23 @@ pub fn error_relation_kind_date_effect_most(most: impl std::fmt::Display) -> Mes
     )
 }
 
+/// The values of the message `error.request.limit-out-of-range`, by name.
+#[derive(Clone, Copy)]
+pub struct ErrorRequestLimitOutOfRange<'a> {
+    /// The value of `{least}`.
+    pub least: &'a dyn std::fmt::Display,
+    /// The value of `{most}`.
+    pub most: &'a dyn std::fmt::Display,
+}
+
 /// The message `error.request.limit-out-of-range`.
 #[must_use]
-pub fn error_request_limit_out_of_range(
-    least: impl std::fmt::Display,
-    most: impl std::fmt::Display,
-) -> Message {
+pub fn error_request_limit_out_of_range(values: ErrorRequestLimitOutOfRange<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("error.request.limit-out-of-range"),
         vec![
-            ("least", Value::Text(least.to_string())),
-            ("most", Value::Text(most.to_string())),
+            ("least", Value::Text(values.least.to_string())),
+            ("most", Value::Text(values.most.to_string())),
         ],
     )
 }
@@ -11994,17 +12554,23 @@ pub fn error_time_entry_too_short(minutes: i64) -> Message {
     )
 }
 
+/// The values of the message `error.with-support-code`, by name.
+#[derive(Clone, Copy)]
+pub struct ErrorWithSupportCode<'a> {
+    /// The value of `{code}`.
+    pub code: &'a dyn std::fmt::Display,
+    /// The value of `{message}`.
+    pub message: &'a dyn std::fmt::Display,
+}
+
 /// The message `error.with-support-code`.
 #[must_use]
-pub fn error_with_support_code(
-    code: impl std::fmt::Display,
-    message: impl std::fmt::Display,
-) -> Message {
+pub fn error_with_support_code(values: ErrorWithSupportCode<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("error.with-support-code"),
         vec![
-            ("code", Value::Text(code.to_string())),
-            ("message", Value::Text(message.to_string())),
+            ("code", Value::Text(values.code.to_string())),
+            ("message", Value::Text(values.message.to_string())),
         ],
     )
 }
@@ -12045,17 +12611,23 @@ pub fn export_readme_kept_for(period: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `export.readme.recipient-ai`, by name.
+#[derive(Clone, Copy)]
+pub struct ExportReadmeRecipientAi<'a> {
+    /// The value of `{country}`.
+    pub country: &'a dyn std::fmt::Display,
+    /// The value of `{provider}`.
+    pub provider: &'a dyn std::fmt::Display,
+}
+
 /// The message `export.readme.recipient-ai`.
 #[must_use]
-pub fn export_readme_recipient_ai(
-    country: impl std::fmt::Display,
-    provider: impl std::fmt::Display,
-) -> Message {
+pub fn export_readme_recipient_ai(values: ExportReadmeRecipientAi<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("export.readme.recipient-ai"),
         vec![
-            ("country", Value::Text(country.to_string())),
-            ("provider", Value::Text(provider.to_string())),
+            ("country", Value::Text(values.country.to_string())),
+            ("provider", Value::Text(values.provider.to_string())),
         ],
     )
 }
@@ -12204,14 +12776,23 @@ pub fn fields_combine_name(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `fields.combine-text`, by name.
+#[derive(Clone, Copy)]
+pub struct FieldsCombineText<'a> {
+    /// The value of `{into}`.
+    pub into: &'a dyn std::fmt::Display,
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+}
+
 /// The message `fields.combine-text`.
 #[must_use]
-pub fn fields_combine_text(into: impl std::fmt::Display, name: impl std::fmt::Display) -> Message {
+pub fn fields_combine_text(values: FieldsCombineText<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("fields.combine-text"),
         vec![
-            ("into", Value::Text(into.to_string())),
-            ("name", Value::Text(name.to_string())),
+            ("into", Value::Text(values.into.to_string())),
+            ("name", Value::Text(values.name.to_string())),
         ],
     )
 }
@@ -12333,19 +12914,26 @@ pub fn fields_value_of(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `files.added`, by name.
+#[derive(Clone, Copy)]
+pub struct FilesAdded<'a> {
+    /// The value of `{size}`.
+    pub size: &'a dyn std::fmt::Display,
+    /// The value of `{when}`.
+    pub when: &'a dyn std::fmt::Display,
+    /// The value of `{who}`.
+    pub who: &'a dyn std::fmt::Display,
+}
+
 /// The message `files.added`.
 #[must_use]
-pub fn files_added(
-    size: impl std::fmt::Display,
-    when: impl std::fmt::Display,
-    who: impl std::fmt::Display,
-) -> Message {
+pub fn files_added(values: FilesAdded<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("files.added"),
         vec![
-            ("size", Value::Text(size.to_string())),
-            ("when", Value::Text(when.to_string())),
-            ("who", Value::Text(who.to_string())),
+            ("size", Value::Text(values.size.to_string())),
+            ("when", Value::Text(values.when.to_string())),
+            ("who", Value::Text(values.who.to_string())),
         ],
     )
 }
@@ -12395,14 +12983,23 @@ pub fn files_lost(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `files.not-added`, by name.
+#[derive(Clone, Copy)]
+pub struct FilesNotAdded<'a> {
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+    /// The value of `{reason}`.
+    pub reason: &'a dyn std::fmt::Display,
+}
+
 /// The message `files.not-added`.
 #[must_use]
-pub fn files_not_added(name: impl std::fmt::Display, reason: impl std::fmt::Display) -> Message {
+pub fn files_not_added(values: FilesNotAdded<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("files.not-added"),
         vec![
-            ("name", Value::Text(name.to_string())),
-            ("reason", Value::Text(reason.to_string())),
+            ("name", Value::Text(values.name.to_string())),
+            ("reason", Value::Text(values.reason.to_string())),
         ],
     )
 }
@@ -12425,14 +13022,23 @@ pub fn files_sending(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `files.sent-of`, by name.
+#[derive(Clone, Copy)]
+pub struct FilesSentOf<'a> {
+    /// The value of `{sent}`.
+    pub sent: &'a dyn std::fmt::Display,
+    /// The value of `{size}`.
+    pub size: &'a dyn std::fmt::Display,
+}
+
 /// The message `files.sent-of`.
 #[must_use]
-pub fn files_sent_of(sent: impl std::fmt::Display, size: impl std::fmt::Display) -> Message {
+pub fn files_sent_of(values: FilesSentOf<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("files.sent-of"),
         vec![
-            ("sent", Value::Text(sent.to_string())),
-            ("size", Value::Text(size.to_string())),
+            ("sent", Value::Text(values.sent.to_string())),
+            ("size", Value::Text(values.size.to_string())),
         ],
     )
 }
@@ -12473,19 +13079,26 @@ pub fn files_waiting(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `first-run.step-of`, by name.
+#[derive(Clone, Copy)]
+pub struct FirstRunStepOf<'a> {
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+    /// The value of `{step}`.
+    pub step: &'a dyn std::fmt::Display,
+    /// The value of `{total}`.
+    pub total: &'a dyn std::fmt::Display,
+}
+
 /// The message `first-run.step-of`.
 #[must_use]
-pub fn first_run_step_of(
-    name: impl std::fmt::Display,
-    step: impl std::fmt::Display,
-    total: impl std::fmt::Display,
-) -> Message {
+pub fn first_run_step_of(values: FirstRunStepOf<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("first-run.step-of"),
         vec![
-            ("name", Value::Text(name.to_string())),
-            ("step", Value::Text(step.to_string())),
-            ("total", Value::Text(total.to_string())),
+            ("name", Value::Text(values.name.to_string())),
+            ("step", Value::Text(values.step.to_string())),
+            ("total", Value::Text(values.total.to_string())),
         ],
     )
 }
@@ -12517,14 +13130,23 @@ pub fn groups_add_name(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `groups.added`, by name.
+#[derive(Clone, Copy)]
+pub struct GroupsAdded<'a> {
+    /// The value of `{group}`.
+    pub group: &'a dyn std::fmt::Display,
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+}
+
 /// The message `groups.added`.
 #[must_use]
-pub fn groups_added(group: impl std::fmt::Display, name: impl std::fmt::Display) -> Message {
+pub fn groups_added(values: GroupsAdded<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("groups.added"),
         vec![
-            ("group", Value::Text(group.to_string())),
-            ("name", Value::Text(name.to_string())),
+            ("group", Value::Text(values.group.to_string())),
+            ("name", Value::Text(values.name.to_string())),
         ],
     )
 }
@@ -12574,14 +13196,23 @@ pub fn groups_remove_name(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `groups.removed`, by name.
+#[derive(Clone, Copy)]
+pub struct GroupsRemoved<'a> {
+    /// The value of `{group}`.
+    pub group: &'a dyn std::fmt::Display,
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+}
+
 /// The message `groups.removed`.
 #[must_use]
-pub fn groups_removed(group: impl std::fmt::Display, name: impl std::fmt::Display) -> Message {
+pub fn groups_removed(values: GroupsRemoved<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("groups.removed"),
         vec![
-            ("group", Value::Text(group.to_string())),
-            ("name", Value::Text(name.to_string())),
+            ("group", Value::Text(values.group.to_string())),
+            ("name", Value::Text(values.name.to_string())),
         ],
     )
 }
@@ -12640,113 +13271,179 @@ pub fn handle_rule_weekly(days: i64) -> Message {
     )
 }
 
+/// The values of the message `history.assigned`, by name.
+#[derive(Clone, Copy)]
+pub struct HistoryAssigned<'a> {
+    /// The value of `{after}`.
+    pub after: &'a dyn std::fmt::Display,
+    /// The value of `{who}`.
+    pub who: &'a dyn std::fmt::Display,
+}
+
 /// The message `history.assigned`.
 #[must_use]
-pub fn history_assigned(after: impl std::fmt::Display, who: impl std::fmt::Display) -> Message {
+pub fn history_assigned(values: HistoryAssigned<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("history.assigned"),
         vec![
-            ("after", Value::Text(after.to_string())),
-            ("who", Value::Text(who.to_string())),
+            ("after", Value::Text(values.after.to_string())),
+            ("who", Value::Text(values.who.to_string())),
         ],
     )
+}
+
+/// The values of the message `history.by`, by name.
+#[derive(Clone, Copy)]
+pub struct HistoryBy<'a> {
+    /// The value of `{when}`.
+    pub when: &'a dyn std::fmt::Display,
+    /// The value of `{who}`.
+    pub who: &'a dyn std::fmt::Display,
 }
 
 /// The message `history.by`.
 #[must_use]
-pub fn history_by(when: impl std::fmt::Display, who: impl std::fmt::Display) -> Message {
+pub fn history_by(values: HistoryBy<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("history.by"),
         vec![
-            ("when", Value::Text(when.to_string())),
-            ("who", Value::Text(who.to_string())),
+            ("when", Value::Text(values.when.to_string())),
+            ("who", Value::Text(values.who.to_string())),
         ],
     )
+}
+
+/// The values of the message `history.changed`, by name.
+#[derive(Clone, Copy)]
+pub struct HistoryChanged<'a> {
+    /// The value of `{after}`.
+    pub after: &'a dyn std::fmt::Display,
+    /// The value of `{before}`.
+    pub before: &'a dyn std::fmt::Display,
+    /// The value of `{field}`.
+    pub field: &'a dyn std::fmt::Display,
+    /// The value of `{who}`.
+    pub who: &'a dyn std::fmt::Display,
 }
 
 /// The message `history.changed`.
 #[must_use]
-pub fn history_changed(
-    after: impl std::fmt::Display,
-    before: impl std::fmt::Display,
-    field: impl std::fmt::Display,
-    who: impl std::fmt::Display,
-) -> Message {
+pub fn history_changed(values: HistoryChanged<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("history.changed"),
         vec![
-            ("after", Value::Text(after.to_string())),
-            ("before", Value::Text(before.to_string())),
-            ("field", Value::Text(field.to_string())),
-            ("who", Value::Text(who.to_string())),
+            ("after", Value::Text(values.after.to_string())),
+            ("before", Value::Text(values.before.to_string())),
+            ("field", Value::Text(values.field.to_string())),
+            ("who", Value::Text(values.who.to_string())),
         ],
     )
+}
+
+/// The values of the message `history.changed-long-text`, by name.
+#[derive(Clone, Copy)]
+pub struct HistoryChangedLongText<'a> {
+    /// The value of `{field}`.
+    pub field: &'a dyn std::fmt::Display,
+    /// The value of `{who}`.
+    pub who: &'a dyn std::fmt::Display,
 }
 
 /// The message `history.changed-long-text`.
 #[must_use]
-pub fn history_changed_long_text(
-    field: impl std::fmt::Display,
-    who: impl std::fmt::Display,
-) -> Message {
+pub fn history_changed_long_text(values: HistoryChangedLongText<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("history.changed-long-text"),
         vec![
-            ("field", Value::Text(field.to_string())),
-            ("who", Value::Text(who.to_string())),
+            ("field", Value::Text(values.field.to_string())),
+            ("who", Value::Text(values.who.to_string())),
         ],
     )
+}
+
+/// The values of the message `history.cleared`, by name.
+#[derive(Clone, Copy)]
+pub struct HistoryCleared<'a> {
+    /// The value of `{field}`.
+    pub field: &'a dyn std::fmt::Display,
+    /// The value of `{who}`.
+    pub who: &'a dyn std::fmt::Display,
 }
 
 /// The message `history.cleared`.
 #[must_use]
-pub fn history_cleared(field: impl std::fmt::Display, who: impl std::fmt::Display) -> Message {
+pub fn history_cleared(values: HistoryCleared<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("history.cleared"),
         vec![
-            ("field", Value::Text(field.to_string())),
-            ("who", Value::Text(who.to_string())),
+            ("field", Value::Text(values.field.to_string())),
+            ("who", Value::Text(values.who.to_string())),
         ],
     )
+}
+
+/// The values of the message `history.date-range`, by name.
+#[derive(Clone, Copy)]
+pub struct HistoryDateRange<'a> {
+    /// The value of `{due}`.
+    pub due: &'a dyn std::fmt::Display,
+    /// The value of `{start}`.
+    pub start: &'a dyn std::fmt::Display,
 }
 
 /// The message `history.date-range`.
 #[must_use]
-pub fn history_date_range(due: impl std::fmt::Display, start: impl std::fmt::Display) -> Message {
+pub fn history_date_range(values: HistoryDateRange<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("history.date-range"),
         vec![
-            ("due", Value::Text(due.to_string())),
-            ("start", Value::Text(start.to_string())),
+            ("due", Value::Text(values.due.to_string())),
+            ("start", Value::Text(values.start.to_string())),
         ],
     )
+}
+
+/// The values of the message `history.dates-moved`, by name.
+#[derive(Clone, Copy)]
+pub struct HistoryDatesMoved<'a> {
+    /// The value of `{after}`.
+    pub after: &'a dyn std::fmt::Display,
+    /// The value of `{before}`.
+    pub before: &'a dyn std::fmt::Display,
+    /// The value of `{who}`.
+    pub who: &'a dyn std::fmt::Display,
 }
 
 /// The message `history.dates-moved`.
 #[must_use]
-pub fn history_dates_moved(
-    after: impl std::fmt::Display,
-    before: impl std::fmt::Display,
-    who: impl std::fmt::Display,
-) -> Message {
+pub fn history_dates_moved(values: HistoryDatesMoved<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("history.dates-moved"),
         vec![
-            ("after", Value::Text(after.to_string())),
-            ("before", Value::Text(before.to_string())),
-            ("who", Value::Text(who.to_string())),
+            ("after", Value::Text(values.after.to_string())),
+            ("before", Value::Text(values.before.to_string())),
+            ("who", Value::Text(values.who.to_string())),
         ],
     )
 }
 
+/// The values of the message `history.file-added`, by name.
+#[derive(Clone, Copy)]
+pub struct HistoryFileAdded<'a> {
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+    /// The value of `{who}`.
+    pub who: &'a dyn std::fmt::Display,
+}
+
 /// The message `history.file-added`.
 #[must_use]
-pub fn history_file_added(name: impl std::fmt::Display, who: impl std::fmt::Display) -> Message {
+pub fn history_file_added(values: HistoryFileAdded<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("history.file-added"),
         vec![
-            ("name", Value::Text(name.to_string())),
-            ("who", Value::Text(who.to_string())),
+            ("name", Value::Text(values.name.to_string())),
+            ("who", Value::Text(values.who.to_string())),
         ],
     )
 }
@@ -12769,14 +13466,23 @@ pub fn history_file_changed_unnamed(who: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `history.file-deleted`, by name.
+#[derive(Clone, Copy)]
+pub struct HistoryFileDeleted<'a> {
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+    /// The value of `{who}`.
+    pub who: &'a dyn std::fmt::Display,
+}
+
 /// The message `history.file-deleted`.
 #[must_use]
-pub fn history_file_deleted(name: impl std::fmt::Display, who: impl std::fmt::Display) -> Message {
+pub fn history_file_deleted(values: HistoryFileDeleted<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("history.file-deleted"),
         vec![
-            ("name", Value::Text(name.to_string())),
-            ("who", Value::Text(who.to_string())),
+            ("name", Value::Text(values.name.to_string())),
+            ("who", Value::Text(values.who.to_string())),
         ],
     )
 }
@@ -12790,14 +13496,23 @@ pub fn history_file_deleted_unnamed(who: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `history.file-restored`, by name.
+#[derive(Clone, Copy)]
+pub struct HistoryFileRestored<'a> {
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+    /// The value of `{who}`.
+    pub who: &'a dyn std::fmt::Display,
+}
+
 /// The message `history.file-restored`.
 #[must_use]
-pub fn history_file_restored(name: impl std::fmt::Display, who: impl std::fmt::Display) -> Message {
+pub fn history_file_restored(values: HistoryFileRestored<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("history.file-restored"),
         vec![
-            ("name", Value::Text(name.to_string())),
-            ("who", Value::Text(who.to_string())),
+            ("name", Value::Text(values.name.to_string())),
+            ("who", Value::Text(values.who.to_string())),
         ],
     )
 }
@@ -12811,65 +13526,95 @@ pub fn history_file_restored_unnamed(who: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `history.relation-added`, by name.
+#[derive(Clone, Copy)]
+pub struct HistoryRelationAdded<'a> {
+    /// The value of `{issue}`.
+    pub issue: &'a dyn std::fmt::Display,
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+    /// The value of `{who}`.
+    pub who: &'a dyn std::fmt::Display,
+}
+
 /// The message `history.relation-added`.
 #[must_use]
-pub fn history_relation_added(
-    issue: impl std::fmt::Display,
-    name: impl std::fmt::Display,
-    who: impl std::fmt::Display,
-) -> Message {
+pub fn history_relation_added(values: HistoryRelationAdded<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("history.relation-added"),
         vec![
-            ("issue", Value::Text(issue.to_string())),
-            ("name", Value::Text(name.to_string())),
-            ("who", Value::Text(who.to_string())),
+            ("issue", Value::Text(values.issue.to_string())),
+            ("name", Value::Text(values.name.to_string())),
+            ("who", Value::Text(values.who.to_string())),
         ],
     )
+}
+
+/// The values of the message `history.relation-removed`, by name.
+#[derive(Clone, Copy)]
+pub struct HistoryRelationRemoved<'a> {
+    /// The value of `{issue}`.
+    pub issue: &'a dyn std::fmt::Display,
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+    /// The value of `{who}`.
+    pub who: &'a dyn std::fmt::Display,
 }
 
 /// The message `history.relation-removed`.
 #[must_use]
-pub fn history_relation_removed(
-    issue: impl std::fmt::Display,
-    name: impl std::fmt::Display,
-    who: impl std::fmt::Display,
-) -> Message {
+pub fn history_relation_removed(values: HistoryRelationRemoved<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("history.relation-removed"),
         vec![
-            ("issue", Value::Text(issue.to_string())),
-            ("name", Value::Text(name.to_string())),
-            ("who", Value::Text(who.to_string())),
+            ("issue", Value::Text(values.issue.to_string())),
+            ("name", Value::Text(values.name.to_string())),
+            ("who", Value::Text(values.who.to_string())),
         ],
     )
+}
+
+/// The values of the message `history.set`, by name.
+#[derive(Clone, Copy)]
+pub struct HistorySet<'a> {
+    /// The value of `{after}`.
+    pub after: &'a dyn std::fmt::Display,
+    /// The value of `{field}`.
+    pub field: &'a dyn std::fmt::Display,
+    /// The value of `{who}`.
+    pub who: &'a dyn std::fmt::Display,
 }
 
 /// The message `history.set`.
 #[must_use]
-pub fn history_set(
-    after: impl std::fmt::Display,
-    field: impl std::fmt::Display,
-    who: impl std::fmt::Display,
-) -> Message {
+pub fn history_set(values: HistorySet<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("history.set"),
         vec![
-            ("after", Value::Text(after.to_string())),
-            ("field", Value::Text(field.to_string())),
-            ("who", Value::Text(who.to_string())),
+            ("after", Value::Text(values.after.to_string())),
+            ("field", Value::Text(values.field.to_string())),
+            ("who", Value::Text(values.who.to_string())),
         ],
     )
 }
 
+/// The values of the message `history.time-booked`, by name.
+#[derive(Clone, Copy)]
+pub struct HistoryTimeBooked<'a> {
+    /// The value of `{length}`.
+    pub length: &'a dyn std::fmt::Display,
+    /// The value of `{who}`.
+    pub who: &'a dyn std::fmt::Display,
+}
+
 /// The message `history.time-booked`.
 #[must_use]
-pub fn history_time_booked(length: impl std::fmt::Display, who: impl std::fmt::Display) -> Message {
+pub fn history_time_booked(values: HistoryTimeBooked<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("history.time-booked"),
         vec![
-            ("length", Value::Text(length.to_string())),
-            ("who", Value::Text(who.to_string())),
+            ("length", Value::Text(values.length.to_string())),
+            ("who", Value::Text(values.who.to_string())),
         ],
     )
 }
@@ -12883,17 +13628,23 @@ pub fn history_time_booked_unmeasured(who: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `history.time-changed`, by name.
+#[derive(Clone, Copy)]
+pub struct HistoryTimeChanged<'a> {
+    /// The value of `{length}`.
+    pub length: &'a dyn std::fmt::Display,
+    /// The value of `{who}`.
+    pub who: &'a dyn std::fmt::Display,
+}
+
 /// The message `history.time-changed`.
 #[must_use]
-pub fn history_time_changed(
-    length: impl std::fmt::Display,
-    who: impl std::fmt::Display,
-) -> Message {
+pub fn history_time_changed(values: HistoryTimeChanged<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("history.time-changed"),
         vec![
-            ("length", Value::Text(length.to_string())),
-            ("who", Value::Text(who.to_string())),
+            ("length", Value::Text(values.length.to_string())),
+            ("who", Value::Text(values.who.to_string())),
         ],
     )
 }
@@ -12907,17 +13658,23 @@ pub fn history_time_changed_unmeasured(who: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `history.time-deleted`, by name.
+#[derive(Clone, Copy)]
+pub struct HistoryTimeDeleted<'a> {
+    /// The value of `{length}`.
+    pub length: &'a dyn std::fmt::Display,
+    /// The value of `{who}`.
+    pub who: &'a dyn std::fmt::Display,
+}
+
 /// The message `history.time-deleted`.
 #[must_use]
-pub fn history_time_deleted(
-    length: impl std::fmt::Display,
-    who: impl std::fmt::Display,
-) -> Message {
+pub fn history_time_deleted(values: HistoryTimeDeleted<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("history.time-deleted"),
         vec![
-            ("length", Value::Text(length.to_string())),
-            ("who", Value::Text(who.to_string())),
+            ("length", Value::Text(values.length.to_string())),
+            ("who", Value::Text(values.who.to_string())),
         ],
     )
 }
@@ -13066,14 +13823,23 @@ pub fn issues_change_title_of(title: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `issues.changed`, by name.
+#[derive(Clone, Copy)]
+pub struct IssuesChanged<'a> {
+    /// The value of `{field}`.
+    pub field: &'a dyn std::fmt::Display,
+    /// The value of `{value}`.
+    pub value: &'a dyn std::fmt::Display,
+}
+
 /// The message `issues.changed`.
 #[must_use]
-pub fn issues_changed(field: impl std::fmt::Display, value: impl std::fmt::Display) -> Message {
+pub fn issues_changed(values: IssuesChanged<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("issues.changed"),
         vec![
-            ("field", Value::Text(field.to_string())),
-            ("value", Value::Text(value.to_string())),
+            ("field", Value::Text(values.field.to_string())),
+            ("value", Value::Text(values.value.to_string())),
         ],
     )
 }
@@ -13096,19 +13862,26 @@ pub fn issues_changed_own(count: i64) -> Message {
     )
 }
 
+/// The values of the message `issues.changed-people`, by name.
+#[derive(Clone, Copy)]
+pub struct IssuesChangedPeople<'a> {
+    /// The value of `{count}`.
+    pub count: i64,
+    /// The value of `{field}`.
+    pub field: &'a dyn std::fmt::Display,
+    /// The value of `{names}`.
+    pub names: &'a dyn std::fmt::Display,
+}
+
 /// The message `issues.changed-people`.
 #[must_use]
-pub fn issues_changed_people(
-    count: i64,
-    field: impl std::fmt::Display,
-    names: impl std::fmt::Display,
-) -> Message {
+pub fn issues_changed_people(values: IssuesChangedPeople<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("issues.changed-people"),
         vec![
-            ("count", Value::Number(count)),
-            ("field", Value::Text(field.to_string())),
-            ("names", Value::Text(names.to_string())),
+            ("count", Value::Number(values.count)),
+            ("field", Value::Text(values.field.to_string())),
+            ("names", Value::Text(values.names.to_string())),
         ],
     )
 }
@@ -13203,27 +13976,47 @@ pub fn issues_count(count: i64) -> Message {
     )
 }
 
+/// The values of the message `issues.count-line`, by name.
+#[derive(Clone, Copy)]
+pub struct IssuesCountLine<'a> {
+    /// The value of `{scope}`.
+    pub scope: &'a dyn std::fmt::Display,
+    /// The value of `{shown}`.
+    pub shown: i64,
+    /// The value of `{total}`.
+    pub total: i64,
+}
+
 /// The message `issues.count-line`.
 #[must_use]
-pub fn issues_count_line(scope: impl std::fmt::Display, shown: i64, total: i64) -> Message {
+pub fn issues_count_line(values: IssuesCountLine<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("issues.count-line"),
         vec![
-            ("scope", Value::Text(scope.to_string())),
-            ("shown", Value::Number(shown)),
-            ("total", Value::Number(total)),
+            ("scope", Value::Text(values.scope.to_string())),
+            ("shown", Value::Number(values.shown)),
+            ("total", Value::Number(values.total)),
         ],
     )
 }
 
+/// The values of the message `issues.count-line-loading`, by name.
+#[derive(Clone, Copy)]
+pub struct IssuesCountLineLoading<'a> {
+    /// The value of `{scope}`.
+    pub scope: &'a dyn std::fmt::Display,
+    /// The value of `{total}`.
+    pub total: i64,
+}
+
 /// The message `issues.count-line-loading`.
 #[must_use]
-pub fn issues_count_line_loading(scope: impl std::fmt::Display, total: i64) -> Message {
+pub fn issues_count_line_loading(values: IssuesCountLineLoading<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("issues.count-line-loading"),
         vec![
-            ("scope", Value::Text(scope.to_string())),
-            ("total", Value::Number(total)),
+            ("scope", Value::Text(values.scope.to_string())),
+            ("total", Value::Number(values.total)),
         ],
     )
 }
@@ -13255,26 +14048,44 @@ pub fn issues_draft_found_form(when: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `issues.group-folded`, by name.
+#[derive(Clone, Copy)]
+pub struct IssuesGroupFolded<'a> {
+    /// The value of `{count}`.
+    pub count: i64,
+    /// The value of `{group}`.
+    pub group: &'a dyn std::fmt::Display,
+}
+
 /// The message `issues.group-folded`.
 #[must_use]
-pub fn issues_group_folded(count: i64, group: impl std::fmt::Display) -> Message {
+pub fn issues_group_folded(values: IssuesGroupFolded<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("issues.group-folded"),
         vec![
-            ("count", Value::Number(count)),
-            ("group", Value::Text(group.to_string())),
+            ("count", Value::Number(values.count)),
+            ("group", Value::Text(values.group.to_string())),
         ],
     )
 }
 
+/// The values of the message `issues.group-open`, by name.
+#[derive(Clone, Copy)]
+pub struct IssuesGroupOpen<'a> {
+    /// The value of `{count}`.
+    pub count: i64,
+    /// The value of `{group}`.
+    pub group: &'a dyn std::fmt::Display,
+}
+
 /// The message `issues.group-open`.
 #[must_use]
-pub fn issues_group_open(count: i64, group: impl std::fmt::Display) -> Message {
+pub fn issues_group_open(values: IssuesGroupOpen<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("issues.group-open"),
         vec![
-            ("count", Value::Number(count)),
-            ("group", Value::Text(group.to_string())),
+            ("count", Value::Number(values.count)),
+            ("group", Value::Text(values.group.to_string())),
         ],
     )
 }
@@ -13297,14 +14108,23 @@ pub fn issues_length_not_set(field: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `issues.length-range`, by name.
+#[derive(Clone, Copy)]
+pub struct IssuesLengthRange<'a> {
+    /// The value of `{from}`.
+    pub from: &'a dyn std::fmt::Display,
+    /// The value of `{to}`.
+    pub to: &'a dyn std::fmt::Display,
+}
+
 /// The message `issues.length-range`.
 #[must_use]
-pub fn issues_length_range(from: impl std::fmt::Display, to: impl std::fmt::Display) -> Message {
+pub fn issues_length_range(values: IssuesLengthRange<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("issues.length-range"),
         vec![
-            ("from", Value::Text(from.to_string())),
-            ("to", Value::Text(to.to_string())),
+            ("from", Value::Text(values.from.to_string())),
+            ("to", Value::Text(values.to.to_string())),
         ],
     )
 }
@@ -13345,17 +14165,23 @@ pub fn issues_read_only(field: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `issues.refused-at-field`, by name.
+#[derive(Clone, Copy)]
+pub struct IssuesRefusedAtField<'a> {
+    /// The value of `{field}`.
+    pub field: &'a dyn std::fmt::Display,
+    /// The value of `{reason}`.
+    pub reason: &'a dyn std::fmt::Display,
+}
+
 /// The message `issues.refused-at-field`.
 #[must_use]
-pub fn issues_refused_at_field(
-    field: impl std::fmt::Display,
-    reason: impl std::fmt::Display,
-) -> Message {
+pub fn issues_refused_at_field(values: IssuesRefusedAtField<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("issues.refused-at-field"),
         vec![
-            ("field", Value::Text(field.to_string())),
-            ("reason", Value::Text(reason.to_string())),
+            ("field", Value::Text(values.field.to_string())),
+            ("reason", Value::Text(values.reason.to_string())),
         ],
     )
 }
@@ -13432,14 +14258,23 @@ pub fn issues_time_factor_ask_other(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `issues.time-factor-days`, by name.
+#[derive(Clone, Copy)]
+pub struct IssuesTimeFactorDays<'a> {
+    /// The value of `{days}`.
+    pub days: i64,
+    /// The value of `{factor}`.
+    pub factor: &'a dyn std::fmt::Display,
+}
+
 /// The message `issues.time-factor-days`.
 #[must_use]
-pub fn issues_time_factor_days(days: i64, factor: impl std::fmt::Display) -> Message {
+pub fn issues_time_factor_days(values: IssuesTimeFactorDays<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("issues.time-factor-days"),
         vec![
-            ("days", Value::Number(days)),
-            ("factor", Value::Text(factor.to_string())),
+            ("days", Value::Number(values.days)),
+            ("factor", Value::Text(values.factor.to_string())),
         ],
     )
 }
@@ -13462,49 +14297,68 @@ pub fn issues_time_factor_not_a_factor(example: impl std::fmt::Display) -> Messa
     )
 }
 
+/// The values of the message `issues.time-factor-own`, by name.
+#[derive(Clone, Copy)]
+pub struct IssuesTimeFactorOwn<'a> {
+    /// The value of `{factor}`.
+    pub factor: &'a dyn std::fmt::Display,
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+}
+
 /// The message `issues.time-factor-own`.
 #[must_use]
-pub fn issues_time_factor_own(
-    factor: impl std::fmt::Display,
-    name: impl std::fmt::Display,
-) -> Message {
+pub fn issues_time_factor_own(values: IssuesTimeFactorOwn<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("issues.time-factor-own"),
         vec![
-            ("factor", Value::Text(factor.to_string())),
-            ("name", Value::Text(name.to_string())),
+            ("factor", Value::Text(values.factor.to_string())),
+            ("name", Value::Text(values.name.to_string())),
         ],
     )
+}
+
+/// The values of the message `issues.time-factor-set-by`, by name.
+#[derive(Clone, Copy)]
+pub struct IssuesTimeFactorSetBy<'a> {
+    /// The value of `{factor}`.
+    pub factor: &'a dyn std::fmt::Display,
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
 }
 
 /// The message `issues.time-factor-set-by`.
 #[must_use]
-pub fn issues_time_factor_set_by(
-    factor: impl std::fmt::Display,
-    name: impl std::fmt::Display,
-) -> Message {
+pub fn issues_time_factor_set_by(values: IssuesTimeFactorSetBy<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("issues.time-factor-set-by"),
         vec![
-            ("factor", Value::Text(factor.to_string())),
-            ("name", Value::Text(name.to_string())),
+            ("factor", Value::Text(values.factor.to_string())),
+            ("name", Value::Text(values.name.to_string())),
         ],
     )
 }
 
+/// The values of the message `issues.time-factor-sum`, by name.
+#[derive(Clone, Copy)]
+pub struct IssuesTimeFactorSum<'a> {
+    /// The value of `{estimate}`.
+    pub estimate: &'a dyn std::fmt::Display,
+    /// The value of `{factor}`.
+    pub factor: &'a dyn std::fmt::Display,
+    /// The value of `{total}`.
+    pub total: &'a dyn std::fmt::Display,
+}
+
 /// The message `issues.time-factor-sum`.
 #[must_use]
-pub fn issues_time_factor_sum(
-    estimate: impl std::fmt::Display,
-    factor: impl std::fmt::Display,
-    total: impl std::fmt::Display,
-) -> Message {
+pub fn issues_time_factor_sum(values: IssuesTimeFactorSum<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("issues.time-factor-sum"),
         vec![
-            ("estimate", Value::Text(estimate.to_string())),
-            ("factor", Value::Text(factor.to_string())),
-            ("total", Value::Text(total.to_string())),
+            ("estimate", Value::Text(values.estimate.to_string())),
+            ("factor", Value::Text(values.factor.to_string())),
+            ("total", Value::Text(values.total.to_string())),
         ],
     )
 }
@@ -13554,14 +14408,23 @@ pub fn issues_time_left_worked_out_short(length: impl std::fmt::Display) -> Mess
     )
 }
 
+/// The values of the message `issues.title-of`, by name.
+#[derive(Clone, Copy)]
+pub struct IssuesTitleOf<'a> {
+    /// The value of `{key}`.
+    pub key: &'a dyn std::fmt::Display,
+    /// The value of `{title}`.
+    pub title: &'a dyn std::fmt::Display,
+}
+
 /// The message `issues.title-of`.
 #[must_use]
-pub fn issues_title_of(key: impl std::fmt::Display, title: impl std::fmt::Display) -> Message {
+pub fn issues_title_of(values: IssuesTitleOf<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("issues.title-of"),
         vec![
-            ("key", Value::Text(key.to_string())),
-            ("title", Value::Text(title.to_string())),
+            ("key", Value::Text(values.key.to_string())),
+            ("title", Value::Text(values.title.to_string())),
         ],
     )
 }
@@ -13674,38 +14537,65 @@ pub fn keys_exported(path: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `keys.how-linux`, by name.
+#[derive(Clone, Copy)]
+pub struct KeysHowLinux<'a> {
+    /// The value of `{command}`.
+    pub command: &'a dyn std::fmt::Display,
+    /// The value of `{owner}`.
+    pub owner: &'a dyn std::fmt::Display,
+}
+
 /// The message `keys.how-linux`.
 #[must_use]
-pub fn keys_how_linux(command: impl std::fmt::Display, owner: impl std::fmt::Display) -> Message {
+pub fn keys_how_linux(values: KeysHowLinux<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("keys.how-linux"),
         vec![
-            ("command", Value::Text(command.to_string())),
-            ("owner", Value::Text(owner.to_string())),
+            ("command", Value::Text(values.command.to_string())),
+            ("owner", Value::Text(values.owner.to_string())),
         ],
     )
+}
+
+/// The values of the message `keys.how-windows`, by name.
+#[derive(Clone, Copy)]
+pub struct KeysHowWindows<'a> {
+    /// The value of `{command}`.
+    pub command: &'a dyn std::fmt::Display,
+    /// The value of `{owner}`.
+    pub owner: &'a dyn std::fmt::Display,
 }
 
 /// The message `keys.how-windows`.
 #[must_use]
-pub fn keys_how_windows(command: impl std::fmt::Display, owner: impl std::fmt::Display) -> Message {
+pub fn keys_how_windows(values: KeysHowWindows<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("keys.how-windows"),
         vec![
-            ("command", Value::Text(command.to_string())),
-            ("owner", Value::Text(owner.to_string())),
+            ("command", Value::Text(values.command.to_string())),
+            ("owner", Value::Text(values.owner.to_string())),
         ],
     )
 }
 
+/// The values of the message `keys.import-missing`, by name.
+#[derive(Clone, Copy)]
+pub struct KeysImportMissing<'a> {
+    /// The value of `{file}`.
+    pub file: &'a dyn std::fmt::Display,
+    /// The value of `{path}`.
+    pub path: &'a dyn std::fmt::Display,
+}
+
 /// The message `keys.import-missing`.
 #[must_use]
-pub fn keys_import_missing(file: impl std::fmt::Display, path: impl std::fmt::Display) -> Message {
+pub fn keys_import_missing(values: KeysImportMissing<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("keys.import-missing"),
         vec![
-            ("file", Value::Text(file.to_string())),
-            ("path", Value::Text(path.to_string())),
+            ("file", Value::Text(values.file.to_string())),
+            ("path", Value::Text(values.path.to_string())),
         ],
     )
 }
@@ -13719,14 +14609,23 @@ pub fn keys_import_server_running(path: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `keys.import-unsure`, by name.
+#[derive(Clone, Copy)]
+pub struct KeysImportUnsure<'a> {
+    /// The value of `{file}`.
+    pub file: &'a dyn std::fmt::Display,
+    /// The value of `{reason}`.
+    pub reason: &'a dyn std::fmt::Display,
+}
+
 /// The message `keys.import-unsure`.
 #[must_use]
-pub fn keys_import_unsure(file: impl std::fmt::Display, reason: impl std::fmt::Display) -> Message {
+pub fn keys_import_unsure(values: KeysImportUnsure<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("keys.import-unsure"),
         vec![
-            ("file", Value::Text(file.to_string())),
-            ("reason", Value::Text(reason.to_string())),
+            ("file", Value::Text(values.file.to_string())),
+            ("reason", Value::Text(values.reason.to_string())),
         ],
     )
 }
@@ -13749,31 +14648,47 @@ pub fn keys_imported(path: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `keys.no-access`, by name.
+#[derive(Clone, Copy)]
+pub struct KeysNoAccess<'a> {
+    /// The value of `{how}`.
+    pub how: &'a dyn std::fmt::Display,
+    /// The value of `{path}`.
+    pub path: &'a dyn std::fmt::Display,
+}
+
 /// The message `keys.no-access`.
 #[must_use]
-pub fn keys_no_access(how: impl std::fmt::Display, path: impl std::fmt::Display) -> Message {
+pub fn keys_no_access(values: KeysNoAccess<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("keys.no-access"),
         vec![
-            ("how", Value::Text(how.to_string())),
-            ("path", Value::Text(path.to_string())),
+            ("how", Value::Text(values.how.to_string())),
+            ("path", Value::Text(values.path.to_string())),
         ],
     )
 }
 
+/// The values of the message `keys.not-owner`, by name.
+#[derive(Clone, Copy)]
+pub struct KeysNotOwner<'a> {
+    /// The value of `{how}`.
+    pub how: &'a dyn std::fmt::Display,
+    /// The value of `{owner}`.
+    pub owner: &'a dyn std::fmt::Display,
+    /// The value of `{path}`.
+    pub path: &'a dyn std::fmt::Display,
+}
+
 /// The message `keys.not-owner`.
 #[must_use]
-pub fn keys_not_owner(
-    how: impl std::fmt::Display,
-    owner: impl std::fmt::Display,
-    path: impl std::fmt::Display,
-) -> Message {
+pub fn keys_not_owner(values: KeysNotOwner<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("keys.not-owner"),
         vec![
-            ("how", Value::Text(how.to_string())),
-            ("owner", Value::Text(owner.to_string())),
-            ("path", Value::Text(path.to_string())),
+            ("how", Value::Text(values.how.to_string())),
+            ("owner", Value::Text(values.owner.to_string())),
+            ("path", Value::Text(values.path.to_string())),
         ],
     )
 }
@@ -13787,32 +14702,44 @@ pub fn keys_rotated(secrets: i64) -> Message {
     )
 }
 
+/// The values of the message `labels.combine-dialog-text`, by name.
+#[derive(Clone, Copy)]
+pub struct LabelsCombineDialogText<'a> {
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+    /// The value of `{other}`.
+    pub other: &'a dyn std::fmt::Display,
+}
+
 /// The message `labels.combine-dialog-text`.
 #[must_use]
-pub fn labels_combine_dialog_text(
-    name: impl std::fmt::Display,
-    other: impl std::fmt::Display,
-) -> Message {
+pub fn labels_combine_dialog_text(values: LabelsCombineDialogText<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("labels.combine-dialog-text"),
         vec![
-            ("name", Value::Text(name.to_string())),
-            ("other", Value::Text(other.to_string())),
+            ("name", Value::Text(values.name.to_string())),
+            ("other", Value::Text(values.other.to_string())),
         ],
     )
 }
 
+/// The values of the message `labels.combine-dialog-title`, by name.
+#[derive(Clone, Copy)]
+pub struct LabelsCombineDialogTitle<'a> {
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+    /// The value of `{other}`.
+    pub other: &'a dyn std::fmt::Display,
+}
+
 /// The message `labels.combine-dialog-title`.
 #[must_use]
-pub fn labels_combine_dialog_title(
-    name: impl std::fmt::Display,
-    other: impl std::fmt::Display,
-) -> Message {
+pub fn labels_combine_dialog_title(values: LabelsCombineDialogTitle<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("labels.combine-dialog-title"),
         vec![
-            ("name", Value::Text(name.to_string())),
-            ("other", Value::Text(other.to_string())),
+            ("name", Value::Text(values.name.to_string())),
+            ("other", Value::Text(values.other.to_string())),
         ],
     )
 }
@@ -13862,17 +14789,23 @@ pub fn labels_label_taken_off(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `labels.preview-line`, by name.
+#[derive(Clone, Copy)]
+pub struct LabelsPreviewLine<'a> {
+    /// The value of `{after}`.
+    pub after: &'a dyn std::fmt::Display,
+    /// The value of `{before}`.
+    pub before: &'a dyn std::fmt::Display,
+}
+
 /// The message `labels.preview-line`.
 #[must_use]
-pub fn labels_preview_line(
-    after: impl std::fmt::Display,
-    before: impl std::fmt::Display,
-) -> Message {
+pub fn labels_preview_line(values: LabelsPreviewLine<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("labels.preview-line"),
         vec![
-            ("after", Value::Text(after.to_string())),
-            ("before", Value::Text(before.to_string())),
+            ("after", Value::Text(values.after.to_string())),
+            ("before", Value::Text(values.before.to_string())),
         ],
     )
 }
@@ -14030,32 +14963,44 @@ pub fn layouts_inherited_project(project: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `layouts.limited-form`, by name.
+#[derive(Clone, Copy)]
+pub struct LayoutsLimitedForm<'a> {
+    /// The value of `{field}`.
+    pub field: &'a dyn std::fmt::Display,
+    /// The value of `{roles}`.
+    pub roles: &'a dyn std::fmt::Display,
+}
+
 /// The message `layouts.limited-form`.
 #[must_use]
-pub fn layouts_limited_form(
-    field: impl std::fmt::Display,
-    roles: impl std::fmt::Display,
-) -> Message {
+pub fn layouts_limited_form(values: LayoutsLimitedForm<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("layouts.limited-form"),
         vec![
-            ("field", Value::Text(field.to_string())),
-            ("roles", Value::Text(roles.to_string())),
+            ("field", Value::Text(values.field.to_string())),
+            ("roles", Value::Text(values.roles.to_string())),
         ],
     )
 }
 
+/// The values of the message `layouts.limited-page`, by name.
+#[derive(Clone, Copy)]
+pub struct LayoutsLimitedPage<'a> {
+    /// The value of `{field}`.
+    pub field: &'a dyn std::fmt::Display,
+    /// The value of `{roles}`.
+    pub roles: &'a dyn std::fmt::Display,
+}
+
 /// The message `layouts.limited-page`.
 #[must_use]
-pub fn layouts_limited_page(
-    field: impl std::fmt::Display,
-    roles: impl std::fmt::Display,
-) -> Message {
+pub fn layouts_limited_page(values: LayoutsLimitedPage<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("layouts.limited-page"),
         vec![
-            ("field", Value::Text(field.to_string())),
-            ("roles", Value::Text(roles.to_string())),
+            ("field", Value::Text(values.field.to_string())),
+            ("roles", Value::Text(values.roles.to_string())),
         ],
     )
 }
@@ -14105,17 +15050,23 @@ pub fn layouts_section_down(number: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `layouts.section-named`, by name.
+#[derive(Clone, Copy)]
+pub struct LayoutsSectionNamed<'a> {
+    /// The value of `{number}`.
+    pub number: &'a dyn std::fmt::Display,
+    /// The value of `{title}`.
+    pub title: &'a dyn std::fmt::Display,
+}
+
 /// The message `layouts.section-named`.
 #[must_use]
-pub fn layouts_section_named(
-    number: impl std::fmt::Display,
-    title: impl std::fmt::Display,
-) -> Message {
+pub fn layouts_section_named(values: LayoutsSectionNamed<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("layouts.section-named"),
         vec![
-            ("number", Value::Text(number.to_string())),
-            ("title", Value::Text(title.to_string())),
+            ("number", Value::Text(values.number.to_string())),
+            ("title", Value::Text(values.title.to_string())),
         ],
     )
 }
@@ -14138,26 +15089,44 @@ pub fn layouts_section_up(number: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `list.many`, by name.
+#[derive(Clone, Copy)]
+pub struct ListMany<'a> {
+    /// The value of `{last}`.
+    pub last: &'a dyn std::fmt::Display,
+    /// The value of `{start}`.
+    pub start: &'a dyn std::fmt::Display,
+}
+
 /// The message `list.many`.
 #[must_use]
-pub fn list_many(last: impl std::fmt::Display, start: impl std::fmt::Display) -> Message {
+pub fn list_many(values: ListMany<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("list.many"),
         vec![
-            ("last", Value::Text(last.to_string())),
-            ("start", Value::Text(start.to_string())),
+            ("last", Value::Text(values.last.to_string())),
+            ("start", Value::Text(values.start.to_string())),
         ],
     )
 }
 
+/// The values of the message `list.two`, by name.
+#[derive(Clone, Copy)]
+pub struct ListTwo<'a> {
+    /// The value of `{first}`.
+    pub first: &'a dyn std::fmt::Display,
+    /// The value of `{second}`.
+    pub second: &'a dyn std::fmt::Display,
+}
+
 /// The message `list.two`.
 #[must_use]
-pub fn list_two(first: impl std::fmt::Display, second: impl std::fmt::Display) -> Message {
+pub fn list_two(values: ListTwo<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("list.two"),
         vec![
-            ("first", Value::Text(first.to_string())),
-            ("second", Value::Text(second.to_string())),
+            ("first", Value::Text(values.first.to_string())),
+            ("second", Value::Text(values.second.to_string())),
         ],
     )
 }
@@ -14189,14 +15158,23 @@ pub fn mail_server_test_wait(seconds: i64) -> Message {
     )
 }
 
+/// The values of the message `mail.date-time`, by name.
+#[derive(Clone, Copy)]
+pub struct MailDateTime<'a> {
+    /// The value of `{moment}`.
+    pub moment: &'a dyn std::fmt::Display,
+    /// The value of `{zone}`.
+    pub zone: &'a dyn std::fmt::Display,
+}
+
 /// The message `mail.date-time`.
 #[must_use]
-pub fn mail_date_time(moment: impl std::fmt::Display, zone: impl std::fmt::Display) -> Message {
+pub fn mail_date_time(values: MailDateTime<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("mail.date-time"),
         vec![
-            ("moment", Value::Text(moment.to_string())),
-            ("zone", Value::Text(zone.to_string())),
+            ("moment", Value::Text(values.moment.to_string())),
+            ("zone", Value::Text(values.zone.to_string())),
         ],
     )
 }
@@ -14210,56 +15188,86 @@ pub fn mail_e_mail_change_exists_text(address: impl std::fmt::Display) -> Messag
     )
 }
 
+/// The values of the message `mail.e-mail-change-text`, by name.
+#[derive(Clone, Copy)]
+pub struct MailEMailChangeText<'a> {
+    /// The value of `{address}`.
+    pub address: &'a dyn std::fmt::Display,
+    /// The value of `{hours}`.
+    pub hours: i64,
+}
+
 /// The message `mail.e-mail-change-text`.
 #[must_use]
-pub fn mail_e_mail_change_text(address: impl std::fmt::Display, hours: i64) -> Message {
+pub fn mail_e_mail_change_text(values: MailEMailChangeText<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("mail.e-mail-change-text"),
         vec![
-            ("address", Value::Text(address.to_string())),
-            ("hours", Value::Number(hours)),
+            ("address", Value::Text(values.address.to_string())),
+            ("hours", Value::Number(values.hours)),
         ],
     )
+}
+
+/// The values of the message `mail.e-mail-changed-text`, by name.
+#[derive(Clone, Copy)]
+pub struct MailEMailChangedText<'a> {
+    /// The value of `{address}`.
+    pub address: &'a dyn std::fmt::Display,
+    /// The value of `{moment}`.
+    pub moment: &'a dyn std::fmt::Display,
 }
 
 /// The message `mail.e-mail-changed-text`.
 #[must_use]
-pub fn mail_e_mail_changed_text(
-    address: impl std::fmt::Display,
-    moment: impl std::fmt::Display,
-) -> Message {
+pub fn mail_e_mail_changed_text(values: MailEMailChangedText<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("mail.e-mail-changed-text"),
         vec![
-            ("address", Value::Text(address.to_string())),
-            ("moment", Value::Text(moment.to_string())),
+            ("address", Value::Text(values.address.to_string())),
+            ("moment", Value::Text(values.moment.to_string())),
         ],
     )
+}
+
+/// The values of the message `mail.e-mail-corrected-text`, by name.
+#[derive(Clone, Copy)]
+pub struct MailEMailCorrectedText<'a> {
+    /// The value of `{address}`.
+    pub address: &'a dyn std::fmt::Display,
+    /// The value of `{moment}`.
+    pub moment: &'a dyn std::fmt::Display,
 }
 
 /// The message `mail.e-mail-corrected-text`.
 #[must_use]
-pub fn mail_e_mail_corrected_text(
-    address: impl std::fmt::Display,
-    moment: impl std::fmt::Display,
-) -> Message {
+pub fn mail_e_mail_corrected_text(values: MailEMailCorrectedText<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("mail.e-mail-corrected-text"),
         vec![
-            ("address", Value::Text(address.to_string())),
-            ("moment", Value::Text(moment.to_string())),
+            ("address", Value::Text(values.address.to_string())),
+            ("moment", Value::Text(values.moment.to_string())),
         ],
     )
 }
 
+/// The values of the message `mail.footer`, by name.
+#[derive(Clone, Copy)]
+pub struct MailFooter<'a> {
+    /// The value of `{page}`.
+    pub page: &'a dyn std::fmt::Display,
+    /// The value of `{settings}`.
+    pub settings: &'a dyn std::fmt::Display,
+}
+
 /// The message `mail.footer`.
 #[must_use]
-pub fn mail_footer(page: impl std::fmt::Display, settings: impl std::fmt::Display) -> Message {
+pub fn mail_footer(values: MailFooter<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("mail.footer"),
         vec![
-            ("page", Value::Text(page.to_string())),
-            ("settings", Value::Text(settings.to_string())),
+            ("page", Value::Text(values.page.to_string())),
+            ("settings", Value::Text(values.settings.to_string())),
         ],
     )
 }
@@ -14300,26 +15308,44 @@ pub fn mail_sign_up_exists_text(address: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `mail.sign-up-text`, by name.
+#[derive(Clone, Copy)]
+pub struct MailSignUpText<'a> {
+    /// The value of `{address}`.
+    pub address: &'a dyn std::fmt::Display,
+    /// The value of `{hours}`.
+    pub hours: i64,
+}
+
 /// The message `mail.sign-up-text`.
 #[must_use]
-pub fn mail_sign_up_text(address: impl std::fmt::Display, hours: i64) -> Message {
+pub fn mail_sign_up_text(values: MailSignUpText<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("mail.sign-up-text"),
         vec![
-            ("address", Value::Text(address.to_string())),
-            ("hours", Value::Number(hours)),
+            ("address", Value::Text(values.address.to_string())),
+            ("hours", Value::Number(values.hours)),
         ],
     )
 }
 
+/// The values of the message `mail.subject`, by name.
+#[derive(Clone, Copy)]
+pub struct MailSubject<'a> {
+    /// The value of `{issue}`.
+    pub issue: &'a dyn std::fmt::Display,
+    /// The value of `{title}`.
+    pub title: &'a dyn std::fmt::Display,
+}
+
 /// The message `mail.subject`.
 #[must_use]
-pub fn mail_subject(issue: impl std::fmt::Display, title: impl std::fmt::Display) -> Message {
+pub fn mail_subject(values: MailSubject<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("mail.subject"),
         vec![
-            ("issue", Value::Text(issue.to_string())),
-            ("title", Value::Text(title.to_string())),
+            ("issue", Value::Text(values.issue.to_string())),
+            ("title", Value::Text(values.title.to_string())),
         ],
     )
 }
@@ -14360,59 +15386,86 @@ pub fn many_changes_apply_delete(count: i64) -> Message {
     )
 }
 
+/// The values of the message `many-changes.change-and-status`, by name.
+#[derive(Clone, Copy)]
+pub struct ManyChangesChangeAndStatus<'a> {
+    /// The value of `{button}`.
+    pub button: &'a dyn std::fmt::Display,
+    /// The value of `{status}`.
+    pub status: &'a dyn std::fmt::Display,
+}
+
 /// The message `many-changes.change-and-status`.
 #[must_use]
-pub fn many_changes_change_and_status(
-    button: impl std::fmt::Display,
-    status: impl std::fmt::Display,
-) -> Message {
+pub fn many_changes_change_and_status(values: ManyChangesChangeAndStatus<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("many-changes.change-and-status"),
         vec![
-            ("button", Value::Text(button.to_string())),
-            ("status", Value::Text(status.to_string())),
+            ("button", Value::Text(values.button.to_string())),
+            ("status", Value::Text(values.status.to_string())),
         ],
     )
+}
+
+/// The values of the message `many-changes.line-relation`, by name.
+#[derive(Clone, Copy)]
+pub struct ManyChangesLineRelation<'a> {
+    /// The value of `{issue}`.
+    pub issue: &'a dyn std::fmt::Display,
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
 }
 
 /// The message `many-changes.line-relation`.
 #[must_use]
-pub fn many_changes_line_relation(
-    issue: impl std::fmt::Display,
-    name: impl std::fmt::Display,
-) -> Message {
+pub fn many_changes_line_relation(values: ManyChangesLineRelation<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("many-changes.line-relation"),
         vec![
-            ("issue", Value::Text(issue.to_string())),
-            ("name", Value::Text(name.to_string())),
+            ("issue", Value::Text(values.issue.to_string())),
+            ("name", Value::Text(values.name.to_string())),
         ],
     )
+}
+
+/// The values of the message `many-changes.note-type-not-used`, by name.
+#[derive(Clone, Copy)]
+pub struct ManyChangesNoteTypeNotUsed<'a> {
+    /// The value of `{project}`.
+    pub project: &'a dyn std::fmt::Display,
+    /// The value of `{type}`.
+    pub type_: &'a dyn std::fmt::Display,
 }
 
 /// The message `many-changes.note-type-not-used`.
 #[must_use]
-pub fn many_changes_note_type_not_used(
-    project: impl std::fmt::Display,
-    type_: impl std::fmt::Display,
-) -> Message {
+pub fn many_changes_note_type_not_used(values: ManyChangesNoteTypeNotUsed<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("many-changes.note-type-not-used"),
         vec![
-            ("project", Value::Text(project.to_string())),
-            ("type", Value::Text(type_.to_string())),
+            ("project", Value::Text(values.project.to_string())),
+            ("type", Value::Text(values.type_.to_string())),
         ],
     )
 }
 
+/// The values of the message `many-changes.progress`, by name.
+#[derive(Clone, Copy)]
+pub struct ManyChangesProgress {
+    /// The value of `{done}`.
+    pub done: i64,
+    /// The value of `{total}`.
+    pub total: i64,
+}
+
 /// The message `many-changes.progress`.
 #[must_use]
-pub fn many_changes_progress(done: i64, total: i64) -> Message {
+pub fn many_changes_progress(values: ManyChangesProgress) -> Message {
     Message::with_arguments(
         MessageKey::new("many-changes.progress"),
         vec![
-            ("done", Value::Number(done)),
-            ("total", Value::Number(total)),
+            ("done", Value::Number(values.done)),
+            ("total", Value::Number(values.total)),
         ],
     )
 }
@@ -14426,53 +15479,86 @@ pub fn many_changes_project_picked(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `many-changes.result-done`, by name.
+#[derive(Clone, Copy)]
+pub struct ManyChangesResultDone {
+    /// The value of `{changed}`.
+    pub changed: i64,
+    /// The value of `{skipped}`.
+    pub skipped: i64,
+}
+
 /// The message `many-changes.result-done`.
 #[must_use]
-pub fn many_changes_result_done(changed: i64, skipped: i64) -> Message {
+pub fn many_changes_result_done(values: ManyChangesResultDone) -> Message {
     Message::with_arguments(
         MessageKey::new("many-changes.result-done"),
         vec![
-            ("changed", Value::Number(changed)),
-            ("skipped", Value::Number(skipped)),
+            ("changed", Value::Number(values.changed)),
+            ("skipped", Value::Number(values.skipped)),
         ],
     )
+}
+
+/// The values of the message `many-changes.skipped-line`, by name.
+#[derive(Clone, Copy)]
+pub struct ManyChangesSkippedLine<'a> {
+    /// The value of `{issue}`.
+    pub issue: &'a dyn std::fmt::Display,
+    /// The value of `{reason}`.
+    pub reason: &'a dyn std::fmt::Display,
 }
 
 /// The message `many-changes.skipped-line`.
 #[must_use]
-pub fn many_changes_skipped_line(
-    issue: impl std::fmt::Display,
-    reason: impl std::fmt::Display,
-) -> Message {
+pub fn many_changes_skipped_line(values: ManyChangesSkippedLine<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("many-changes.skipped-line"),
         vec![
-            ("issue", Value::Text(issue.to_string())),
-            ("reason", Value::Text(reason.to_string())),
+            ("issue", Value::Text(values.issue.to_string())),
+            ("reason", Value::Text(values.reason.to_string())),
         ],
     )
+}
+
+/// The values of the message `many-changes.title`, by name.
+#[derive(Clone, Copy)]
+pub struct ManyChangesTitle<'a> {
+    /// The value of `{action}`.
+    pub action: &'a dyn std::fmt::Display,
+    /// The value of `{count}`.
+    pub count: i64,
 }
 
 /// The message `many-changes.title`.
 #[must_use]
-pub fn many_changes_title(action: impl std::fmt::Display, count: i64) -> Message {
+pub fn many_changes_title(values: ManyChangesTitle<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("many-changes.title"),
         vec![
-            ("action", Value::Text(action.to_string())),
-            ("count", Value::Number(count)),
+            ("action", Value::Text(values.action.to_string())),
+            ("count", Value::Number(values.count)),
         ],
     )
 }
 
+/// The values of the message `mcp.changed`, by name.
+#[derive(Clone, Copy)]
+pub struct McpChanged<'a> {
+    /// The value of `{fields}`.
+    pub fields: &'a dyn std::fmt::Display,
+    /// The value of `{version}`.
+    pub version: &'a dyn std::fmt::Display,
+}
+
 /// The message `mcp.changed`.
 #[must_use]
-pub fn mcp_changed(fields: impl std::fmt::Display, version: impl std::fmt::Display) -> Message {
+pub fn mcp_changed(values: McpChanged<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("mcp.changed"),
         vec![
-            ("fields", Value::Text(fields.to_string())),
-            ("version", Value::Text(version.to_string())),
+            ("fields", Value::Text(values.fields.to_string())),
+            ("version", Value::Text(values.version.to_string())),
         ],
     )
 }
@@ -14585,17 +15671,23 @@ pub fn notifications_let_go(who: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `notifications.locked-way`, by name.
+#[derive(Clone, Copy)]
+pub struct NotificationsLockedWay<'a> {
+    /// The value of `{value}`.
+    pub value: &'a dyn std::fmt::Display,
+    /// The value of `{way}`.
+    pub way: &'a dyn std::fmt::Display,
+}
+
 /// The message `notifications.locked-way`.
 #[must_use]
-pub fn notifications_locked_way(
-    value: impl std::fmt::Display,
-    way: impl std::fmt::Display,
-) -> Message {
+pub fn notifications_locked_way(values: NotificationsLockedWay<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("notifications.locked-way"),
         vec![
-            ("value", Value::Text(value.to_string())),
-            ("way", Value::Text(way.to_string())),
+            ("value", Value::Text(values.value.to_string())),
+            ("way", Value::Text(values.way.to_string())),
         ],
     )
 }
@@ -14645,17 +15737,23 @@ pub fn notifications_time_factor_changed(who: impl std::fmt::Display) -> Message
     )
 }
 
+/// The values of the message `notifications.work-day-changed`, by name.
+#[derive(Clone, Copy)]
+pub struct NotificationsWorkDayChanged<'a> {
+    /// The value of `{date}`.
+    pub date: &'a dyn std::fmt::Display,
+    /// The value of `{who}`.
+    pub who: &'a dyn std::fmt::Display,
+}
+
 /// The message `notifications.work-day-changed`.
 #[must_use]
-pub fn notifications_work_day_changed(
-    date: impl std::fmt::Display,
-    who: impl std::fmt::Display,
-) -> Message {
+pub fn notifications_work_day_changed(values: NotificationsWorkDayChanged<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("notifications.work-day-changed"),
         vec![
-            ("date", Value::Text(date.to_string())),
-            ("who", Value::Text(who.to_string())),
+            ("date", Value::Text(values.date.to_string())),
+            ("who", Value::Text(values.who.to_string())),
         ],
     )
 }
@@ -14669,47 +15767,71 @@ pub fn notifications_work_day_reason(reason: impl std::fmt::Display) -> Message 
     )
 }
 
+/// The values of the message `notifications.work-times-away-changed`, by name.
+#[derive(Clone, Copy)]
+pub struct NotificationsWorkTimesAwayChanged<'a> {
+    /// The value of `{days}`.
+    pub days: &'a dyn std::fmt::Display,
+    /// The value of `{who}`.
+    pub who: &'a dyn std::fmt::Display,
+}
+
 /// The message `notifications.work-times-away-changed`.
 #[must_use]
 pub fn notifications_work_times_away_changed(
-    days: impl std::fmt::Display,
-    who: impl std::fmt::Display,
+    values: NotificationsWorkTimesAwayChanged<'_>,
 ) -> Message {
     Message::with_arguments(
         MessageKey::new("notifications.work-times-away-changed"),
         vec![
-            ("days", Value::Text(days.to_string())),
-            ("who", Value::Text(who.to_string())),
+            ("days", Value::Text(values.days.to_string())),
+            ("who", Value::Text(values.who.to_string())),
         ],
     )
+}
+
+/// The values of the message `notifications.work-times-away-entered`, by name.
+#[derive(Clone, Copy)]
+pub struct NotificationsWorkTimesAwayEntered<'a> {
+    /// The value of `{days}`.
+    pub days: &'a dyn std::fmt::Display,
+    /// The value of `{who}`.
+    pub who: &'a dyn std::fmt::Display,
 }
 
 /// The message `notifications.work-times-away-entered`.
 #[must_use]
 pub fn notifications_work_times_away_entered(
-    days: impl std::fmt::Display,
-    who: impl std::fmt::Display,
+    values: NotificationsWorkTimesAwayEntered<'_>,
 ) -> Message {
     Message::with_arguments(
         MessageKey::new("notifications.work-times-away-entered"),
         vec![
-            ("days", Value::Text(days.to_string())),
-            ("who", Value::Text(who.to_string())),
+            ("days", Value::Text(values.days.to_string())),
+            ("who", Value::Text(values.who.to_string())),
         ],
     )
+}
+
+/// The values of the message `notifications.work-times-away-removed`, by name.
+#[derive(Clone, Copy)]
+pub struct NotificationsWorkTimesAwayRemoved<'a> {
+    /// The value of `{days}`.
+    pub days: &'a dyn std::fmt::Display,
+    /// The value of `{who}`.
+    pub who: &'a dyn std::fmt::Display,
 }
 
 /// The message `notifications.work-times-away-removed`.
 #[must_use]
 pub fn notifications_work_times_away_removed(
-    days: impl std::fmt::Display,
-    who: impl std::fmt::Display,
+    values: NotificationsWorkTimesAwayRemoved<'_>,
 ) -> Message {
     Message::with_arguments(
         MessageKey::new("notifications.work-times-away-removed"),
         vec![
-            ("days", Value::Text(days.to_string())),
-            ("who", Value::Text(who.to_string())),
+            ("days", Value::Text(values.days.to_string())),
+            ("who", Value::Text(values.who.to_string())),
         ],
     )
 }
@@ -14750,14 +15872,23 @@ pub fn old_work_days_delete_person_name(name: impl std::fmt::Display) -> Message
     )
 }
 
+/// The values of the message `old-work-days.delete-person-text`, by name.
+#[derive(Clone, Copy)]
+pub struct OldWorkDaysDeletePersonText<'a> {
+    /// The value of `{count}`.
+    pub count: i64,
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+}
+
 /// The message `old-work-days.delete-person-text`.
 #[must_use]
-pub fn old_work_days_delete_person_text(count: i64, name: impl std::fmt::Display) -> Message {
+pub fn old_work_days_delete_person_text(values: OldWorkDaysDeletePersonText<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("old-work-days.delete-person-text"),
         vec![
-            ("count", Value::Number(count)),
-            ("name", Value::Text(name.to_string())),
+            ("count", Value::Number(values.count)),
+            ("name", Value::Text(values.name.to_string())),
         ],
     )
 }
@@ -14789,15 +15920,26 @@ pub fn old_work_days_person_count(count: i64) -> Message {
     )
 }
 
+/// The values of the message `old-work-days.summary`, by name.
+#[derive(Clone, Copy)]
+pub struct OldWorkDaysSummary<'a> {
+    /// The value of `{count}`.
+    pub count: i64,
+    /// The value of `{date}`.
+    pub date: &'a dyn std::fmt::Display,
+    /// The value of `{years}`.
+    pub years: i64,
+}
+
 /// The message `old-work-days.summary`.
 #[must_use]
-pub fn old_work_days_summary(count: i64, date: impl std::fmt::Display, years: i64) -> Message {
+pub fn old_work_days_summary(values: OldWorkDaysSummary<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("old-work-days.summary"),
         vec![
-            ("count", Value::Number(count)),
-            ("date", Value::Text(date.to_string())),
-            ("years", Value::Number(years)),
+            ("count", Value::Number(values.count)),
+            ("date", Value::Text(values.date.to_string())),
+            ("years", Value::Number(values.years)),
         ],
     )
 }
@@ -14856,17 +15998,23 @@ pub fn passkeys_remove_title(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `people-visibility.intro`, by name.
+#[derive(Clone, Copy)]
+pub struct PeopleVisibilityIntro<'a> {
+    /// The value of `{example}`.
+    pub example: &'a dyn std::fmt::Display,
+    /// The value of `{someone}`.
+    pub someone: &'a dyn std::fmt::Display,
+}
+
 /// The message `people-visibility.intro`.
 #[must_use]
-pub fn people_visibility_intro(
-    example: impl std::fmt::Display,
-    someone: impl std::fmt::Display,
-) -> Message {
+pub fn people_visibility_intro(values: PeopleVisibilityIntro<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("people-visibility.intro"),
         vec![
-            ("example", Value::Text(example.to_string())),
-            ("someone", Value::Text(someone.to_string())),
+            ("example", Value::Text(values.example.to_string())),
+            ("someone", Value::Text(values.someone.to_string())),
         ],
     )
 }
@@ -14880,17 +16028,23 @@ pub fn people_visibility_intro_project(project: impl std::fmt::Display) -> Messa
     )
 }
 
+/// The values of the message `people-visibility.preview-hidden`, by name.
+#[derive(Clone, Copy)]
+pub struct PeopleVisibilityPreviewHidden<'a> {
+    /// The value of `{kinds}`.
+    pub kinds: &'a dyn std::fmt::Display,
+    /// The value of `{someone}`.
+    pub someone: &'a dyn std::fmt::Display,
+}
+
 /// The message `people-visibility.preview-hidden`.
 #[must_use]
-pub fn people_visibility_preview_hidden(
-    kinds: impl std::fmt::Display,
-    someone: impl std::fmt::Display,
-) -> Message {
+pub fn people_visibility_preview_hidden(values: PeopleVisibilityPreviewHidden<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("people-visibility.preview-hidden"),
         vec![
-            ("kinds", Value::Text(kinds.to_string())),
-            ("someone", Value::Text(someone.to_string())),
+            ("kinds", Value::Text(values.kinds.to_string())),
+            ("someone", Value::Text(values.someone.to_string())),
         ],
     )
 }
@@ -14904,17 +16058,23 @@ pub fn people_visibility_preview_names(kinds: impl std::fmt::Display) -> Message
     )
 }
 
+/// The values of the message `people-visibility.preview-role-only`, by name.
+#[derive(Clone, Copy)]
+pub struct PeopleVisibilityPreviewRoleOnly<'a> {
+    /// The value of `{example}`.
+    pub example: &'a dyn std::fmt::Display,
+    /// The value of `{kinds}`.
+    pub kinds: &'a dyn std::fmt::Display,
+}
+
 /// The message `people-visibility.preview-role-only`.
 #[must_use]
-pub fn people_visibility_preview_role_only(
-    example: impl std::fmt::Display,
-    kinds: impl std::fmt::Display,
-) -> Message {
+pub fn people_visibility_preview_role_only(values: PeopleVisibilityPreviewRoleOnly<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("people-visibility.preview-role-only"),
         vec![
-            ("example", Value::Text(example.to_string())),
-            ("kinds", Value::Text(kinds.to_string())),
+            ("example", Value::Text(values.example.to_string())),
+            ("kinds", Value::Text(values.kinds.to_string())),
         ],
     )
 }
@@ -14928,26 +16088,44 @@ pub fn people_visibility_project_title(project: impl std::fmt::Display) -> Messa
     )
 }
 
+/// The values of the message `people.in-groups`, by name.
+#[derive(Clone, Copy)]
+pub struct PeopleInGroups<'a> {
+    /// The value of `{count}`.
+    pub count: i64,
+    /// The value of `{groups}`.
+    pub groups: &'a dyn std::fmt::Display,
+}
+
 /// The message `people.in-groups`.
 #[must_use]
-pub fn people_in_groups(count: i64, groups: impl std::fmt::Display) -> Message {
+pub fn people_in_groups(values: PeopleInGroups<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("people.in-groups"),
         vec![
-            ("count", Value::Number(count)),
-            ("groups", Value::Text(groups.to_string())),
+            ("count", Value::Number(values.count)),
+            ("groups", Value::Text(values.groups.to_string())),
         ],
     )
 }
 
+/// The values of the message `person.agent-of`, by name.
+#[derive(Clone, Copy)]
+pub struct PersonAgentOf<'a> {
+    /// The value of `{agent}`.
+    pub agent: &'a dyn std::fmt::Display,
+    /// The value of `{person}`.
+    pub person: &'a dyn std::fmt::Display,
+}
+
 /// The message `person.agent-of`.
 #[must_use]
-pub fn person_agent_of(agent: impl std::fmt::Display, person: impl std::fmt::Display) -> Message {
+pub fn person_agent_of(values: PersonAgentOf<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("person.agent-of"),
         vec![
-            ("agent", Value::Text(agent.to_string())),
-            ("person", Value::Text(person.to_string())),
+            ("agent", Value::Text(values.agent.to_string())),
+            ("person", Value::Text(values.person.to_string())),
         ],
     )
 }
@@ -15006,14 +16184,23 @@ pub fn person_roles_none(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `person.via-app`, by name.
+#[derive(Clone, Copy)]
+pub struct PersonViaApp<'a> {
+    /// The value of `{app}`.
+    pub app: &'a dyn std::fmt::Display,
+    /// The value of `{who}`.
+    pub who: &'a dyn std::fmt::Display,
+}
+
 /// The message `person.via-app`.
 #[must_use]
-pub fn person_via_app(app: impl std::fmt::Display, who: impl std::fmt::Display) -> Message {
+pub fn person_via_app(values: PersonViaApp<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("person.via-app"),
         vec![
-            ("app", Value::Text(app.to_string())),
-            ("who", Value::Text(who.to_string())),
+            ("app", Value::Text(values.app.to_string())),
+            ("who", Value::Text(values.who.to_string())),
         ],
     )
 }
@@ -15027,19 +16214,26 @@ pub fn person_work_times_intro(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `plan-warning.away`, by name.
+#[derive(Clone, Copy)]
+pub struct PlanWarningAway<'a> {
+    /// The value of `{days}`.
+    pub days: &'a dyn std::fmt::Display,
+    /// The value of `{issue}`.
+    pub issue: &'a dyn std::fmt::Display,
+    /// The value of `{person}`.
+    pub person: &'a dyn std::fmt::Display,
+}
+
 /// The message `plan-warning.away`.
 #[must_use]
-pub fn plan_warning_away(
-    days: impl std::fmt::Display,
-    issue: impl std::fmt::Display,
-    person: impl std::fmt::Display,
-) -> Message {
+pub fn plan_warning_away(values: PlanWarningAway<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("plan-warning.away"),
         vec![
-            ("days", Value::Text(days.to_string())),
-            ("issue", Value::Text(issue.to_string())),
-            ("person", Value::Text(person.to_string())),
+            ("days", Value::Text(values.days.to_string())),
+            ("issue", Value::Text(values.issue.to_string())),
+            ("person", Value::Text(values.person.to_string())),
         ],
     )
 }
@@ -15053,139 +16247,200 @@ pub fn plan_warning_days_without_work(issue: impl std::fmt::Display) -> Message 
     )
 }
 
+/// The values of the message `plan-warning.delay`, by name.
+#[derive(Clone, Copy)]
+pub struct PlanWarningDelay<'a> {
+    /// The value of `{days}`.
+    pub days: i64,
+    /// The value of `{first}`.
+    pub first: &'a dyn std::fmt::Display,
+    /// The value of `{issue}`.
+    pub issue: &'a dyn std::fmt::Display,
+}
+
 /// The message `plan-warning.delay`.
 #[must_use]
-pub fn plan_warning_delay(
-    days: i64,
-    first: impl std::fmt::Display,
-    issue: impl std::fmt::Display,
-) -> Message {
+pub fn plan_warning_delay(values: PlanWarningDelay<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("plan-warning.delay"),
         vec![
-            ("days", Value::Number(days)),
-            ("first", Value::Text(first.to_string())),
-            ("issue", Value::Text(issue.to_string())),
+            ("days", Value::Number(values.days)),
+            ("first", Value::Text(values.first.to_string())),
+            ("issue", Value::Text(values.issue.to_string())),
         ],
     )
+}
+
+/// The values of the message `plan-warning.delay-goal`, by name.
+#[derive(Clone, Copy)]
+pub struct PlanWarningDelayGoal<'a> {
+    /// The value of `{days}`.
+    pub days: i64,
+    /// The value of `{goal}`.
+    pub goal: &'a dyn std::fmt::Display,
+    /// The value of `{sub_issue}`.
+    pub sub_issue: &'a dyn std::fmt::Display,
 }
 
 /// The message `plan-warning.delay-goal`.
 #[must_use]
-pub fn plan_warning_delay_goal(
-    days: i64,
-    goal: impl std::fmt::Display,
-    sub_issue: impl std::fmt::Display,
-) -> Message {
+pub fn plan_warning_delay_goal(values: PlanWarningDelayGoal<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("plan-warning.delay-goal"),
         vec![
-            ("days", Value::Number(days)),
-            ("goal", Value::Text(goal.to_string())),
-            ("sub_issue", Value::Text(sub_issue.to_string())),
+            ("days", Value::Number(values.days)),
+            ("goal", Value::Text(values.goal.to_string())),
+            ("sub_issue", Value::Text(values.sub_issue.to_string())),
         ],
     )
+}
+
+/// The values of the message `plan-warning.delay-goal-away`, by name.
+#[derive(Clone, Copy)]
+pub struct PlanWarningDelayGoalAway<'a> {
+    /// The value of `{away_days}`.
+    pub away_days: i64,
+    /// The value of `{goal}`.
+    pub goal: &'a dyn std::fmt::Display,
+    /// The value of `{person}`.
+    pub person: &'a dyn std::fmt::Display,
+    /// The value of `{sub_issue}`.
+    pub sub_issue: &'a dyn std::fmt::Display,
 }
 
 /// The message `plan-warning.delay-goal-away`.
 #[must_use]
-pub fn plan_warning_delay_goal_away(
-    away_days: i64,
-    goal: impl std::fmt::Display,
-    person: impl std::fmt::Display,
-    sub_issue: impl std::fmt::Display,
-) -> Message {
+pub fn plan_warning_delay_goal_away(values: PlanWarningDelayGoalAway<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("plan-warning.delay-goal-away"),
         vec![
-            ("away_days", Value::Number(away_days)),
-            ("goal", Value::Text(goal.to_string())),
-            ("person", Value::Text(person.to_string())),
-            ("sub_issue", Value::Text(sub_issue.to_string())),
+            ("away_days", Value::Number(values.away_days)),
+            ("goal", Value::Text(values.goal.to_string())),
+            ("person", Value::Text(values.person.to_string())),
+            ("sub_issue", Value::Text(values.sub_issue.to_string())),
         ],
     )
+}
+
+/// The values of the message `plan-warning.delay-goal-away-weeks`, by name.
+#[derive(Clone, Copy)]
+pub struct PlanWarningDelayGoalAwayWeeks<'a> {
+    /// The value of `{away_weeks}`.
+    pub away_weeks: i64,
+    /// The value of `{goal}`.
+    pub goal: &'a dyn std::fmt::Display,
+    /// The value of `{person}`.
+    pub person: &'a dyn std::fmt::Display,
+    /// The value of `{sub_issue}`.
+    pub sub_issue: &'a dyn std::fmt::Display,
 }
 
 /// The message `plan-warning.delay-goal-away-weeks`.
 #[must_use]
-pub fn plan_warning_delay_goal_away_weeks(
-    away_weeks: i64,
-    goal: impl std::fmt::Display,
-    person: impl std::fmt::Display,
-    sub_issue: impl std::fmt::Display,
-) -> Message {
+pub fn plan_warning_delay_goal_away_weeks(values: PlanWarningDelayGoalAwayWeeks<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("plan-warning.delay-goal-away-weeks"),
         vec![
-            ("away_weeks", Value::Number(away_weeks)),
-            ("goal", Value::Text(goal.to_string())),
-            ("person", Value::Text(person.to_string())),
-            ("sub_issue", Value::Text(sub_issue.to_string())),
+            ("away_weeks", Value::Number(values.away_weeks)),
+            ("goal", Value::Text(values.goal.to_string())),
+            ("person", Value::Text(values.person.to_string())),
+            ("sub_issue", Value::Text(values.sub_issue.to_string())),
         ],
     )
+}
+
+/// The values of the message `plan-warning.not-enough-days`, by name.
+#[derive(Clone, Copy)]
+pub struct PlanWarningNotEnoughDays<'a> {
+    /// The value of `{has}`.
+    pub has: i64,
+    /// The value of `{issue}`.
+    pub issue: &'a dyn std::fmt::Display,
+    /// The value of `{needs}`.
+    pub needs: i64,
 }
 
 /// The message `plan-warning.not-enough-days`.
 #[must_use]
-pub fn plan_warning_not_enough_days(
-    has: i64,
-    issue: impl std::fmt::Display,
-    needs: i64,
-) -> Message {
+pub fn plan_warning_not_enough_days(values: PlanWarningNotEnoughDays<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("plan-warning.not-enough-days"),
         vec![
-            ("has", Value::Number(has)),
-            ("issue", Value::Text(issue.to_string())),
-            ("needs", Value::Number(needs)),
+            ("has", Value::Number(values.has)),
+            ("issue", Value::Text(values.issue.to_string())),
+            ("needs", Value::Number(values.needs)),
         ],
     )
+}
+
+/// The values of the message `plan-warning.too-much-at-once`, by name.
+#[derive(Clone, Copy)]
+pub struct PlanWarningTooMuchAtOnce<'a> {
+    /// The value of `{can}`.
+    pub can: &'a dyn std::fmt::Display,
+    /// The value of `{day}`.
+    pub day: &'a dyn std::fmt::Display,
+    /// The value of `{person}`.
+    pub person: &'a dyn std::fmt::Display,
+    /// The value of `{planned}`.
+    pub planned: &'a dyn std::fmt::Display,
+    /// The value of `{project}`.
+    pub project: &'a dyn std::fmt::Display,
 }
 
 /// The message `plan-warning.too-much-at-once`.
 #[must_use]
-pub fn plan_warning_too_much_at_once(
-    can: impl std::fmt::Display,
-    day: impl std::fmt::Display,
-    person: impl std::fmt::Display,
-    planned: impl std::fmt::Display,
-    project: impl std::fmt::Display,
-) -> Message {
+pub fn plan_warning_too_much_at_once(values: PlanWarningTooMuchAtOnce<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("plan-warning.too-much-at-once"),
         vec![
-            ("can", Value::Text(can.to_string())),
-            ("day", Value::Text(day.to_string())),
-            ("person", Value::Text(person.to_string())),
-            ("planned", Value::Text(planned.to_string())),
-            ("project", Value::Text(project.to_string())),
+            ("can", Value::Text(values.can.to_string())),
+            ("day", Value::Text(values.day.to_string())),
+            ("person", Value::Text(values.person.to_string())),
+            ("planned", Value::Text(values.planned.to_string())),
+            ("project", Value::Text(values.project.to_string())),
         ],
     )
+}
+
+/// The values of the message `preview.line-changes`, by name.
+#[derive(Clone, Copy)]
+pub struct PreviewLineChanges<'a> {
+    /// The value of `{after}`.
+    pub after: &'a dyn std::fmt::Display,
+    /// The value of `{field}`.
+    pub field: &'a dyn std::fmt::Display,
 }
 
 /// The message `preview.line-changes`.
 #[must_use]
-pub fn preview_line_changes(
-    after: impl std::fmt::Display,
-    field: impl std::fmt::Display,
-) -> Message {
+pub fn preview_line_changes(values: PreviewLineChanges<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("preview.line-changes"),
         vec![
-            ("after", Value::Text(after.to_string())),
-            ("field", Value::Text(field.to_string())),
+            ("after", Value::Text(values.after.to_string())),
+            ("field", Value::Text(values.field.to_string())),
         ],
     )
 }
 
+/// The values of the message `preview.summary`, by name.
+#[derive(Clone, Copy)]
+pub struct PreviewSummary {
+    /// The value of `{changed}`.
+    pub changed: i64,
+    /// The value of `{skipped}`.
+    pub skipped: i64,
+}
+
 /// The message `preview.summary`.
 #[must_use]
-pub fn preview_summary(changed: i64, skipped: i64) -> Message {
+pub fn preview_summary(values: PreviewSummary) -> Message {
     Message::with_arguments(
         MessageKey::new("preview.summary"),
         vec![
-            ("changed", Value::Number(changed)),
-            ("skipped", Value::Number(skipped)),
+            ("changed", Value::Number(values.changed)),
+            ("skipped", Value::Number(values.skipped)),
         ],
     )
 }
@@ -15226,17 +16481,23 @@ pub fn project_members_share_of(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `project-members.share-set`, by name.
+#[derive(Clone, Copy)]
+pub struct ProjectMembersShareSet<'a> {
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+    /// The value of `{percent}`.
+    pub percent: &'a dyn std::fmt::Display,
+}
+
 /// The message `project-members.share-set`.
 #[must_use]
-pub fn project_members_share_set(
-    name: impl std::fmt::Display,
-    percent: impl std::fmt::Display,
-) -> Message {
+pub fn project_members_share_set(values: ProjectMembersShareSet<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("project-members.share-set"),
         vec![
-            ("name", Value::Text(name.to_string())),
-            ("percent", Value::Text(percent.to_string())),
+            ("name", Value::Text(values.name.to_string())),
+            ("percent", Value::Text(values.percent.to_string())),
         ],
     )
 }
@@ -15286,36 +16547,50 @@ pub fn projects_line_can_now(things: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `projects.line-field`, by name.
+#[derive(Clone, Copy)]
+pub struct ProjectsLineField<'a> {
+    /// The value of `{after}`.
+    pub after: &'a dyn std::fmt::Display,
+    /// The value of `{before}`.
+    pub before: &'a dyn std::fmt::Display,
+    /// The value of `{field}`.
+    pub field: &'a dyn std::fmt::Display,
+}
+
 /// The message `projects.line-field`.
 #[must_use]
-pub fn projects_line_field(
-    after: impl std::fmt::Display,
-    before: impl std::fmt::Display,
-    field: impl std::fmt::Display,
-) -> Message {
+pub fn projects_line_field(values: ProjectsLineField<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("projects.line-field"),
         vec![
-            ("after", Value::Text(after.to_string())),
-            ("before", Value::Text(before.to_string())),
-            ("field", Value::Text(field.to_string())),
+            ("after", Value::Text(values.after.to_string())),
+            ("before", Value::Text(values.before.to_string())),
+            ("field", Value::Text(values.field.to_string())),
         ],
     )
 }
 
+/// The values of the message `projects.line-fields-many`, by name.
+#[derive(Clone, Copy)]
+pub struct ProjectsLineFieldsMany<'a> {
+    /// The value of `{after}`.
+    pub after: &'a dyn std::fmt::Display,
+    /// The value of `{before}`.
+    pub before: &'a dyn std::fmt::Display,
+    /// The value of `{fields}`.
+    pub fields: &'a dyn std::fmt::Display,
+}
+
 /// The message `projects.line-fields-many`.
 #[must_use]
-pub fn projects_line_fields_many(
-    after: impl std::fmt::Display,
-    before: impl std::fmt::Display,
-    fields: impl std::fmt::Display,
-) -> Message {
+pub fn projects_line_fields_many(values: ProjectsLineFieldsMany<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("projects.line-fields-many"),
         vec![
-            ("after", Value::Text(after.to_string())),
-            ("before", Value::Text(before.to_string())),
-            ("fields", Value::Text(fields.to_string())),
+            ("after", Value::Text(values.after.to_string())),
+            ("before", Value::Text(values.before.to_string())),
+            ("fields", Value::Text(values.fields.to_string())),
         ],
     )
 }
@@ -15329,66 +16604,92 @@ pub fn projects_line_gains(roles: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `projects.line-lift`, by name.
+#[derive(Clone, Copy)]
+pub struct ProjectsLineLift<'a> {
+    /// The value of `{person}`.
+    pub person: &'a dyn std::fmt::Display,
+    /// The value of `{project}`.
+    pub project: &'a dyn std::fmt::Display,
+}
+
 /// The message `projects.line-lift`.
 #[must_use]
-pub fn projects_line_lift(
-    person: impl std::fmt::Display,
-    project: impl std::fmt::Display,
-) -> Message {
+pub fn projects_line_lift(values: ProjectsLineLift<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("projects.line-lift"),
         vec![
-            ("person", Value::Text(person.to_string())),
-            ("project", Value::Text(project.to_string())),
+            ("person", Value::Text(values.person.to_string())),
+            ("project", Value::Text(values.project.to_string())),
         ],
     )
+}
+
+/// The values of the message `projects.line-people`, by name.
+#[derive(Clone, Copy)]
+pub struct ProjectsLinePeople<'a> {
+    /// The value of `{after}`.
+    pub after: &'a dyn std::fmt::Display,
+    /// The value of `{before}`.
+    pub before: &'a dyn std::fmt::Display,
+    /// The value of `{kind}`.
+    pub kind: &'a dyn std::fmt::Display,
 }
 
 /// The message `projects.line-people`.
 #[must_use]
-pub fn projects_line_people(
-    after: impl std::fmt::Display,
-    before: impl std::fmt::Display,
-    kind: impl std::fmt::Display,
-) -> Message {
+pub fn projects_line_people(values: ProjectsLinePeople<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("projects.line-people"),
         vec![
-            ("after", Value::Text(after.to_string())),
-            ("before", Value::Text(before.to_string())),
-            ("kind", Value::Text(kind.to_string())),
+            ("after", Value::Text(values.after.to_string())),
+            ("before", Value::Text(values.before.to_string())),
+            ("kind", Value::Text(values.kind.to_string())),
         ],
     )
+}
+
+/// The values of the message `projects.line-people-many`, by name.
+#[derive(Clone, Copy)]
+pub struct ProjectsLinePeopleMany<'a> {
+    /// The value of `{after}`.
+    pub after: &'a dyn std::fmt::Display,
+    /// The value of `{before}`.
+    pub before: &'a dyn std::fmt::Display,
+    /// The value of `{kinds}`.
+    pub kinds: &'a dyn std::fmt::Display,
 }
 
 /// The message `projects.line-people-many`.
 #[must_use]
-pub fn projects_line_people_many(
-    after: impl std::fmt::Display,
-    before: impl std::fmt::Display,
-    kinds: impl std::fmt::Display,
-) -> Message {
+pub fn projects_line_people_many(values: ProjectsLinePeopleMany<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("projects.line-people-many"),
         vec![
-            ("after", Value::Text(after.to_string())),
-            ("before", Value::Text(before.to_string())),
-            ("kinds", Value::Text(kinds.to_string())),
+            ("after", Value::Text(values.after.to_string())),
+            ("before", Value::Text(values.before.to_string())),
+            ("kinds", Value::Text(values.kinds.to_string())),
         ],
     )
 }
 
+/// The values of the message `projects.line-roles`, by name.
+#[derive(Clone, Copy)]
+pub struct ProjectsLineRoles<'a> {
+    /// The value of `{after}`.
+    pub after: &'a dyn std::fmt::Display,
+    /// The value of `{before}`.
+    pub before: &'a dyn std::fmt::Display,
+}
+
 /// The message `projects.line-roles`.
 #[must_use]
-pub fn projects_line_roles(
-    after: impl std::fmt::Display,
-    before: impl std::fmt::Display,
-) -> Message {
+pub fn projects_line_roles(values: ProjectsLineRoles<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("projects.line-roles"),
         vec![
-            ("after", Value::Text(after.to_string())),
-            ("before", Value::Text(before.to_string())),
+            ("after", Value::Text(values.after.to_string())),
+            ("before", Value::Text(values.before.to_string())),
         ],
     )
 }
@@ -15429,14 +16730,23 @@ pub fn projects_offer_follow_button_for(name: impl std::fmt::Display) -> Message
     )
 }
 
+/// The values of the message `projects.offer-line`, by name.
+#[derive(Clone, Copy)]
+pub struct ProjectsOfferLine<'a> {
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+    /// The value of `{state}`.
+    pub state: &'a dyn std::fmt::Display,
+}
+
 /// The message `projects.offer-line`.
 #[must_use]
-pub fn projects_offer_line(name: impl std::fmt::Display, state: impl std::fmt::Display) -> Message {
+pub fn projects_offer_line(values: ProjectsOfferLine<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("projects.offer-line"),
         vec![
-            ("name", Value::Text(name.to_string())),
-            ("state", Value::Text(state.to_string())),
+            ("name", Value::Text(values.name.to_string())),
+            ("state", Value::Text(values.state.to_string())),
         ],
     )
 }
@@ -15495,19 +16805,26 @@ pub fn projects_toggle_name(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `related-issues.added`, by name.
+#[derive(Clone, Copy)]
+pub struct RelatedIssuesAdded<'a> {
+    /// The value of `{key}`.
+    pub key: &'a dyn std::fmt::Display,
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+    /// The value of `{other}`.
+    pub other: &'a dyn std::fmt::Display,
+}
+
 /// The message `related-issues.added`.
 #[must_use]
-pub fn related_issues_added(
-    key: impl std::fmt::Display,
-    name: impl std::fmt::Display,
-    other: impl std::fmt::Display,
-) -> Message {
+pub fn related_issues_added(values: RelatedIssuesAdded<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("related-issues.added"),
         vec![
-            ("key", Value::Text(key.to_string())),
-            ("name", Value::Text(name.to_string())),
-            ("other", Value::Text(other.to_string())),
+            ("key", Value::Text(values.key.to_string())),
+            ("name", Value::Text(values.name.to_string())),
+            ("other", Value::Text(values.other.to_string())),
         ],
     )
 }
@@ -15521,17 +16838,23 @@ pub fn related_issues_loop_is(issues: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `related-issues.take-away`, by name.
+#[derive(Clone, Copy)]
+pub struct RelatedIssuesTakeAway<'a> {
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+    /// The value of `{other}`.
+    pub other: &'a dyn std::fmt::Display,
+}
+
 /// The message `related-issues.take-away`.
 #[must_use]
-pub fn related_issues_take_away(
-    name: impl std::fmt::Display,
-    other: impl std::fmt::Display,
-) -> Message {
+pub fn related_issues_take_away(values: RelatedIssuesTakeAway<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("related-issues.take-away"),
         vec![
-            ("name", Value::Text(name.to_string())),
-            ("other", Value::Text(other.to_string())),
+            ("name", Value::Text(values.name.to_string())),
+            ("other", Value::Text(values.other.to_string())),
         ],
     )
 }
@@ -15554,17 +16877,23 @@ pub fn relation_kinds_date_effect_kinds(kinds: impl std::fmt::Display) -> Messag
     )
 }
 
+/// The values of the message `relation-kinds.reads`, by name.
+#[derive(Clone, Copy)]
+pub struct RelationKindsReads<'a> {
+    /// The value of `{backward}`.
+    pub backward: &'a dyn std::fmt::Display,
+    /// The value of `{forward}`.
+    pub forward: &'a dyn std::fmt::Display,
+}
+
 /// The message `relation-kinds.reads`.
 #[must_use]
-pub fn relation_kinds_reads(
-    backward: impl std::fmt::Display,
-    forward: impl std::fmt::Display,
-) -> Message {
+pub fn relation_kinds_reads(values: RelationKindsReads<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("relation-kinds.reads"),
         vec![
-            ("backward", Value::Text(backward.to_string())),
-            ("forward", Value::Text(forward.to_string())),
+            ("backward", Value::Text(values.backward.to_string())),
+            ("forward", Value::Text(values.forward.to_string())),
         ],
     )
 }
@@ -15596,46 +16925,68 @@ pub fn restore_done(moment: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `restore.failed`, by name.
+#[derive(Clone, Copy)]
+pub struct RestoreFailed<'a> {
+    /// The value of `{before}`.
+    pub before: &'a dyn std::fmt::Display,
+    /// The value of `{command}`.
+    pub command: &'a dyn std::fmt::Display,
+    /// The value of `{reason}`.
+    pub reason: &'a dyn std::fmt::Display,
+}
+
 /// The message `restore.failed`.
 #[must_use]
-pub fn restore_failed(
-    before: impl std::fmt::Display,
-    command: impl std::fmt::Display,
-    reason: impl std::fmt::Display,
-) -> Message {
+pub fn restore_failed(values: RestoreFailed<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("restore.failed"),
         vec![
-            ("before", Value::Text(before.to_string())),
-            ("command", Value::Text(command.to_string())),
-            ("reason", Value::Text(reason.to_string())),
+            ("before", Value::Text(values.before.to_string())),
+            ("command", Value::Text(values.command.to_string())),
+            ("reason", Value::Text(values.reason.to_string())),
         ],
     )
+}
+
+/// The values of the message `restore.keys-do-not-open`, by name.
+#[derive(Clone, Copy)]
+pub struct RestoreKeysDoNotOpen<'a> {
+    /// The value of `{command}`.
+    pub command: &'a dyn std::fmt::Display,
+    /// The value of `{path}`.
+    pub path: &'a dyn std::fmt::Display,
 }
 
 /// The message `restore.keys-do-not-open`.
 #[must_use]
-pub fn restore_keys_do_not_open(
-    command: impl std::fmt::Display,
-    path: impl std::fmt::Display,
-) -> Message {
+pub fn restore_keys_do_not_open(values: RestoreKeysDoNotOpen<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("restore.keys-do-not-open"),
         vec![
-            ("command", Value::Text(command.to_string())),
-            ("path", Value::Text(path.to_string())),
+            ("command", Value::Text(values.command.to_string())),
+            ("path", Value::Text(values.path.to_string())),
         ],
     )
 }
 
+/// The values of the message `restore.lost`, by name.
+#[derive(Clone, Copy)]
+pub struct RestoreLost<'a> {
+    /// The value of `{from}`.
+    pub from: &'a dyn std::fmt::Display,
+    /// The value of `{to}`.
+    pub to: &'a dyn std::fmt::Display,
+}
+
 /// The message `restore.lost`.
 #[must_use]
-pub fn restore_lost(from: impl std::fmt::Display, to: impl std::fmt::Display) -> Message {
+pub fn restore_lost(values: RestoreLost<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("restore.lost"),
         vec![
-            ("from", Value::Text(from.to_string())),
-            ("to", Value::Text(to.to_string())),
+            ("from", Value::Text(values.from.to_string())),
+            ("to", Value::Text(values.to.to_string())),
         ],
     )
 }
@@ -15658,17 +17009,23 @@ pub fn restore_not_replayed(line: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `restore.not-sealed`, by name.
+#[derive(Clone, Copy)]
+pub struct RestoreNotSealed<'a> {
+    /// The value of `{command}`.
+    pub command: &'a dyn std::fmt::Display,
+    /// The value of `{path}`.
+    pub path: &'a dyn std::fmt::Display,
+}
+
 /// The message `restore.not-sealed`.
 #[must_use]
-pub fn restore_not_sealed(
-    command: impl std::fmt::Display,
-    path: impl std::fmt::Display,
-) -> Message {
+pub fn restore_not_sealed(values: RestoreNotSealed<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("restore.not-sealed"),
         vec![
-            ("command", Value::Text(command.to_string())),
-            ("path", Value::Text(path.to_string())),
+            ("command", Value::Text(values.command.to_string())),
+            ("path", Value::Text(values.path.to_string())),
         ],
     )
 }
@@ -15736,14 +17093,23 @@ pub fn restore_reason_other_database(kind: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `restore.refused`, by name.
+#[derive(Clone, Copy)]
+pub struct RestoreRefused<'a> {
+    /// The value of `{path}`.
+    pub path: &'a dyn std::fmt::Display,
+    /// The value of `{reason}`.
+    pub reason: &'a dyn std::fmt::Display,
+}
+
 /// The message `restore.refused`.
 #[must_use]
-pub fn restore_refused(path: impl std::fmt::Display, reason: impl std::fmt::Display) -> Message {
+pub fn restore_refused(values: RestoreRefused<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("restore.refused"),
         vec![
-            ("path", Value::Text(path.to_string())),
-            ("reason", Value::Text(reason.to_string())),
+            ("path", Value::Text(values.path.to_string())),
+            ("reason", Value::Text(values.reason.to_string())),
         ],
     )
 }
@@ -15784,14 +17150,23 @@ pub fn restore_unreadable_lines(count: i64) -> Message {
     )
 }
 
+/// The values of the message `roles.badge-used`, by name.
+#[derive(Clone, Copy)]
+pub struct RolesBadgeUsed<'a> {
+    /// The value of `{badge}`.
+    pub badge: &'a dyn std::fmt::Display,
+    /// The value of `{used}`.
+    pub used: &'a dyn std::fmt::Display,
+}
+
 /// The message `roles.badge-used`.
 #[must_use]
-pub fn roles_badge_used(badge: impl std::fmt::Display, used: impl std::fmt::Display) -> Message {
+pub fn roles_badge_used(values: RolesBadgeUsed<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("roles.badge-used"),
         vec![
-            ("badge", Value::Text(badge.to_string())),
-            ("used", Value::Text(used.to_string())),
+            ("badge", Value::Text(values.badge.to_string())),
+            ("used", Value::Text(values.used.to_string())),
         ],
     )
 }
@@ -15832,14 +17207,23 @@ pub fn roles_from_project(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `roles.held`, by name.
+#[derive(Clone, Copy)]
+pub struct RolesHeld<'a> {
+    /// The value of `{place}`.
+    pub place: &'a dyn std::fmt::Display,
+    /// The value of `{role}`.
+    pub role: &'a dyn std::fmt::Display,
+}
+
 /// The message `roles.held`.
 #[must_use]
-pub fn roles_held(place: impl std::fmt::Display, role: impl std::fmt::Display) -> Message {
+pub fn roles_held(values: RolesHeld<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("roles.held"),
         vec![
-            ("place", Value::Text(place.to_string())),
-            ("role", Value::Text(role.to_string())),
+            ("place", Value::Text(values.place.to_string())),
+            ("role", Value::Text(values.role.to_string())),
         ],
     )
 }
@@ -15889,15 +17273,26 @@ pub fn roles_start_copy(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `roles.used`, by name.
+#[derive(Clone, Copy)]
+pub struct RolesUsed<'a> {
+    /// The value of `{groups}`.
+    pub groups: i64,
+    /// The value of `{people}`.
+    pub people: i64,
+    /// The value of `{places}`.
+    pub places: &'a dyn std::fmt::Display,
+}
+
 /// The message `roles.used`.
 #[must_use]
-pub fn roles_used(groups: i64, people: i64, places: impl std::fmt::Display) -> Message {
+pub fn roles_used(values: RolesUsed<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("roles.used"),
         vec![
-            ("groups", Value::Number(groups)),
-            ("people", Value::Number(people)),
-            ("places", Value::Text(places.to_string())),
+            ("groups", Value::Number(values.groups)),
+            ("people", Value::Number(values.people)),
+            ("places", Value::Text(values.places.to_string())),
         ],
     )
 }
@@ -15920,48 +17315,71 @@ pub fn roles_used_projects(count: i64) -> Message {
     )
 }
 
+/// The values of the message `runs.actor-plain`, by name.
+#[derive(Clone, Copy)]
+pub struct RunsActorPlain<'a> {
+    /// The value of `{person}`.
+    pub person: &'a dyn std::fmt::Display,
+    /// The value of `{span}`.
+    pub span: &'a dyn std::fmt::Display,
+}
+
 /// The message `runs.actor-plain`.
 #[must_use]
-pub fn runs_actor_plain(person: impl std::fmt::Display, span: impl std::fmt::Display) -> Message {
+pub fn runs_actor_plain(values: RunsActorPlain<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("runs.actor-plain"),
         vec![
-            ("person", Value::Text(person.to_string())),
-            ("span", Value::Text(span.to_string())),
+            ("person", Value::Text(values.person.to_string())),
+            ("span", Value::Text(values.span.to_string())),
         ],
     )
+}
+
+/// The values of the message `runs.actor-via`, by name.
+#[derive(Clone, Copy)]
+pub struct RunsActorVia<'a> {
+    /// The value of `{app}`.
+    pub app: &'a dyn std::fmt::Display,
+    /// The value of `{person}`.
+    pub person: &'a dyn std::fmt::Display,
+    /// The value of `{span}`.
+    pub span: &'a dyn std::fmt::Display,
 }
 
 /// The message `runs.actor-via`.
 #[must_use]
-pub fn runs_actor_via(
-    app: impl std::fmt::Display,
-    person: impl std::fmt::Display,
-    span: impl std::fmt::Display,
-) -> Message {
+pub fn runs_actor_via(values: RunsActorVia<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("runs.actor-via"),
         vec![
-            ("app", Value::Text(app.to_string())),
-            ("person", Value::Text(person.to_string())),
-            ("span", Value::Text(span.to_string())),
+            ("app", Value::Text(values.app.to_string())),
+            ("person", Value::Text(values.person.to_string())),
+            ("span", Value::Text(values.span.to_string())),
         ],
     )
 }
 
+/// The values of the message `runs.change-line`, by name.
+#[derive(Clone, Copy)]
+pub struct RunsChangeLine<'a> {
+    /// The value of `{after}`.
+    pub after: &'a dyn std::fmt::Display,
+    /// The value of `{before}`.
+    pub before: &'a dyn std::fmt::Display,
+    /// The value of `{field}`.
+    pub field: &'a dyn std::fmt::Display,
+}
+
 /// The message `runs.change-line`.
 #[must_use]
-pub fn runs_change_line(
-    after: impl std::fmt::Display,
-    before: impl std::fmt::Display,
-    field: impl std::fmt::Display,
-) -> Message {
+pub fn runs_change_line(values: RunsChangeLine<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("runs.change-line"),
         vec![
-            ("after", Value::Text(after.to_string())),
-            ("before", Value::Text(before.to_string())),
-            ("field", Value::Text(field.to_string())),
+            ("after", Value::Text(values.after.to_string())),
+            ("before", Value::Text(values.before.to_string())),
+            ("field", Value::Text(values.field.to_string())),
         ],
     )
 }
@@ -15993,14 +17411,23 @@ pub fn runs_outcome_kept_by(person: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `runs.question`, by name.
+#[derive(Clone, Copy)]
+pub struct RunsQuestion<'a> {
+    /// The value of `{app}`.
+    pub app: &'a dyn std::fmt::Display,
+    /// The value of `{person}`.
+    pub person: &'a dyn std::fmt::Display,
+}
+
 /// The message `runs.question`.
 #[must_use]
-pub fn runs_question(app: impl std::fmt::Display, person: impl std::fmt::Display) -> Message {
+pub fn runs_question(values: RunsQuestion<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("runs.question"),
         vec![
-            ("app", Value::Text(app.to_string())),
-            ("person", Value::Text(person.to_string())),
+            ("app", Value::Text(values.app.to_string())),
+            ("person", Value::Text(values.person.to_string())),
         ],
     )
 }
@@ -16023,34 +17450,47 @@ pub fn runs_skip_by(person: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `runs.skip-line`, by name.
+#[derive(Clone, Copy)]
+pub struct RunsSkipLine<'a> {
+    /// The value of `{field}`.
+    pub field: &'a dyn std::fmt::Display,
+    /// The value of `{issue}`.
+    pub issue: &'a dyn std::fmt::Display,
+    /// The value of `{reason}`.
+    pub reason: &'a dyn std::fmt::Display,
+}
+
 /// The message `runs.skip-line`.
 #[must_use]
-pub fn runs_skip_line(
-    field: impl std::fmt::Display,
-    issue: impl std::fmt::Display,
-    reason: impl std::fmt::Display,
-) -> Message {
+pub fn runs_skip_line(values: RunsSkipLine<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("runs.skip-line"),
         vec![
-            ("field", Value::Text(field.to_string())),
-            ("issue", Value::Text(issue.to_string())),
-            ("reason", Value::Text(reason.to_string())),
+            ("field", Value::Text(values.field.to_string())),
+            ("issue", Value::Text(values.issue.to_string())),
+            ("reason", Value::Text(values.reason.to_string())),
         ],
     )
 }
 
+/// The values of the message `runs.skip-line-comment`, by name.
+#[derive(Clone, Copy)]
+pub struct RunsSkipLineComment<'a> {
+    /// The value of `{issue}`.
+    pub issue: &'a dyn std::fmt::Display,
+    /// The value of `{reason}`.
+    pub reason: &'a dyn std::fmt::Display,
+}
+
 /// The message `runs.skip-line-comment`.
 #[must_use]
-pub fn runs_skip_line_comment(
-    issue: impl std::fmt::Display,
-    reason: impl std::fmt::Display,
-) -> Message {
+pub fn runs_skip_line_comment(values: RunsSkipLineComment<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("runs.skip-line-comment"),
         vec![
-            ("issue", Value::Text(issue.to_string())),
-            ("reason", Value::Text(reason.to_string())),
+            ("issue", Value::Text(values.issue.to_string())),
+            ("reason", Value::Text(values.reason.to_string())),
         ],
     )
 }
@@ -16073,41 +17513,65 @@ pub fn runs_skipped_title(count: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `runs.span`, by name.
+#[derive(Clone, Copy)]
+pub struct RunsSpan<'a> {
+    /// The value of `{from}`.
+    pub from: &'a dyn std::fmt::Display,
+    /// The value of `{to}`.
+    pub to: &'a dyn std::fmt::Display,
+}
+
 /// The message `runs.span`.
 #[must_use]
-pub fn runs_span(from: impl std::fmt::Display, to: impl std::fmt::Display) -> Message {
+pub fn runs_span(values: RunsSpan<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("runs.span"),
         vec![
-            ("from", Value::Text(from.to_string())),
-            ("to", Value::Text(to.to_string())),
+            ("from", Value::Text(values.from.to_string())),
+            ("to", Value::Text(values.to.to_string())),
         ],
     )
+}
+
+/// The values of the message `runs.state-undo-stopped`, by name.
+#[derive(Clone, Copy)]
+pub struct RunsStateUndoStopped<'a> {
+    /// The value of `{at}`.
+    pub at: &'a dyn std::fmt::Display,
+    /// The value of `{person}`.
+    pub person: &'a dyn std::fmt::Display,
 }
 
 /// The message `runs.state-undo-stopped`.
 #[must_use]
-pub fn runs_state_undo_stopped(
-    at: impl std::fmt::Display,
-    person: impl std::fmt::Display,
-) -> Message {
+pub fn runs_state_undo_stopped(values: RunsStateUndoStopped<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("runs.state-undo-stopped"),
         vec![
-            ("at", Value::Text(at.to_string())),
-            ("person", Value::Text(person.to_string())),
+            ("at", Value::Text(values.at.to_string())),
+            ("person", Value::Text(values.person.to_string())),
         ],
     )
 }
 
+/// The values of the message `runs.state-undone`, by name.
+#[derive(Clone, Copy)]
+pub struct RunsStateUndone<'a> {
+    /// The value of `{at}`.
+    pub at: &'a dyn std::fmt::Display,
+    /// The value of `{person}`.
+    pub person: &'a dyn std::fmt::Display,
+}
+
 /// The message `runs.state-undone`.
 #[must_use]
-pub fn runs_state_undone(at: impl std::fmt::Display, person: impl std::fmt::Display) -> Message {
+pub fn runs_state_undone(values: RunsStateUndone<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("runs.state-undone"),
         vec![
-            ("at", Value::Text(at.to_string())),
-            ("person", Value::Text(person.to_string())),
+            ("at", Value::Text(values.at.to_string())),
+            ("person", Value::Text(values.person.to_string())),
         ],
     )
 }
@@ -16121,33 +17585,50 @@ pub fn runs_title_app_session_named(app: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `runs.undone-message`, by name.
+#[derive(Clone, Copy)]
+pub struct RunsUndoneMessage {
+    /// The value of `{back}`.
+    pub back: i64,
+    /// The value of `{skipped}`.
+    pub skipped: i64,
+}
+
 /// The message `runs.undone-message`.
 #[must_use]
-pub fn runs_undone_message(back: i64, skipped: i64) -> Message {
+pub fn runs_undone_message(values: RunsUndoneMessage) -> Message {
     Message::with_arguments(
         MessageKey::new("runs.undone-message"),
         vec![
-            ("back", Value::Number(back)),
-            ("skipped", Value::Number(skipped)),
+            ("back", Value::Number(values.back)),
+            ("skipped", Value::Number(values.skipped)),
         ],
     )
 }
 
+/// The values of the message `sample.done`, by name.
+#[derive(Clone, Copy)]
+pub struct SampleDone<'a> {
+    /// The value of `{file}`.
+    pub file: &'a dyn std::fmt::Display,
+    /// The value of `{folder}`.
+    pub folder: &'a dyn std::fmt::Display,
+    /// The value of `{people}`.
+    pub people: &'a dyn std::fmt::Display,
+    /// The value of `{seed}`.
+    pub seed: &'a dyn std::fmt::Display,
+}
+
 /// The message `sample.done`.
 #[must_use]
-pub fn sample_done(
-    file: impl std::fmt::Display,
-    folder: impl std::fmt::Display,
-    people: impl std::fmt::Display,
-    seed: impl std::fmt::Display,
-) -> Message {
+pub fn sample_done(values: SampleDone<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("sample.done"),
         vec![
-            ("file", Value::Text(file.to_string())),
-            ("folder", Value::Text(folder.to_string())),
-            ("people", Value::Text(people.to_string())),
-            ("seed", Value::Text(seed.to_string())),
+            ("file", Value::Text(values.file.to_string())),
+            ("folder", Value::Text(values.folder.to_string())),
+            ("people", Value::Text(values.people.to_string())),
+            ("seed", Value::Text(values.seed.to_string())),
         ],
     )
 }
@@ -16161,17 +17642,23 @@ pub fn sample_error_database_url(variable: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `sample.error.folder`, by name.
+#[derive(Clone, Copy)]
+pub struct SampleErrorFolder<'a> {
+    /// The value of `{path}`.
+    pub path: &'a dyn std::fmt::Display,
+    /// The value of `{reason}`.
+    pub reason: &'a dyn std::fmt::Display,
+}
+
 /// The message `sample.error.folder`.
 #[must_use]
-pub fn sample_error_folder(
-    path: impl std::fmt::Display,
-    reason: impl std::fmt::Display,
-) -> Message {
+pub fn sample_error_folder(values: SampleErrorFolder<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("sample.error.folder"),
         vec![
-            ("path", Value::Text(path.to_string())),
-            ("reason", Value::Text(reason.to_string())),
+            ("path", Value::Text(values.path.to_string())),
+            ("reason", Value::Text(values.reason.to_string())),
         ],
     )
 }
@@ -16194,17 +17681,23 @@ pub fn sample_error_layout(reason: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `sample.error.log-broken`, by name.
+#[derive(Clone, Copy)]
+pub struct SampleErrorLogBroken<'a> {
+    /// The value of `{reason}`.
+    pub reason: &'a dyn std::fmt::Display,
+    /// The value of `{seq}`.
+    pub seq: &'a dyn std::fmt::Display,
+}
+
 /// The message `sample.error.log-broken`.
 #[must_use]
-pub fn sample_error_log_broken(
-    reason: impl std::fmt::Display,
-    seq: impl std::fmt::Display,
-) -> Message {
+pub fn sample_error_log_broken(values: SampleErrorLogBroken<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("sample.error.log-broken"),
         vec![
-            ("reason", Value::Text(reason.to_string())),
-            ("seq", Value::Text(seq.to_string())),
+            ("reason", Value::Text(values.reason.to_string())),
+            ("seq", Value::Text(values.seq.to_string())),
         ],
     )
 }
@@ -16254,14 +17747,23 @@ pub fn sample_error_start(start: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `sample.error.step`, by name.
+#[derive(Clone, Copy)]
+pub struct SampleErrorStep<'a> {
+    /// The value of `{reason}`.
+    pub reason: &'a dyn std::fmt::Display,
+    /// The value of `{step}`.
+    pub step: &'a dyn std::fmt::Display,
+}
+
 /// The message `sample.error.step`.
 #[must_use]
-pub fn sample_error_step(reason: impl std::fmt::Display, step: impl std::fmt::Display) -> Message {
+pub fn sample_error_step(values: SampleErrorStep<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("sample.error.step"),
         vec![
-            ("reason", Value::Text(reason.to_string())),
-            ("step", Value::Text(step.to_string())),
+            ("reason", Value::Text(values.reason.to_string())),
+            ("step", Value::Text(values.step.to_string())),
         ],
     )
 }
@@ -16284,19 +17786,26 @@ pub fn sample_error_too_few_names(people: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `sample.large-checked`, by name.
+#[derive(Clone, Copy)]
+pub struct SampleLargeChecked<'a> {
+    /// The value of `{fingerprint}`.
+    pub fingerprint: &'a dyn std::fmt::Display,
+    /// The value of `{issues}`.
+    pub issues: &'a dyn std::fmt::Display,
+    /// The value of `{sampled}`.
+    pub sampled: &'a dyn std::fmt::Display,
+}
+
 /// The message `sample.large-checked`.
 #[must_use]
-pub fn sample_large_checked(
-    fingerprint: impl std::fmt::Display,
-    issues: impl std::fmt::Display,
-    sampled: impl std::fmt::Display,
-) -> Message {
+pub fn sample_large_checked(values: SampleLargeChecked<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("sample.large-checked"),
         vec![
-            ("fingerprint", Value::Text(fingerprint.to_string())),
-            ("issues", Value::Text(issues.to_string())),
-            ("sampled", Value::Text(sampled.to_string())),
+            ("fingerprint", Value::Text(values.fingerprint.to_string())),
+            ("issues", Value::Text(values.issues.to_string())),
+            ("sampled", Value::Text(values.sampled.to_string())),
         ],
     )
 }
@@ -16355,17 +17864,23 @@ pub fn search_bar_change_filter_text(field: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `search.bar.compared`, by name.
+#[derive(Clone, Copy)]
+pub struct SearchBarCompared<'a> {
+    /// The value of `{comparison}`.
+    pub comparison: &'a dyn std::fmt::Display,
+    /// The value of `{value}`.
+    pub value: &'a dyn std::fmt::Display,
+}
+
 /// The message `search.bar.compared`.
 #[must_use]
-pub fn search_bar_compared(
-    comparison: impl std::fmt::Display,
-    value: impl std::fmt::Display,
-) -> Message {
+pub fn search_bar_compared(values: SearchBarCompared<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("search.bar.compared"),
         vec![
-            ("comparison", Value::Text(comparison.to_string())),
-            ("value", Value::Text(value.to_string())),
+            ("comparison", Value::Text(values.comparison.to_string())),
+            ("value", Value::Text(values.value.to_string())),
         ],
     )
 }
@@ -16379,19 +17894,26 @@ pub fn search_bar_contains(text: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `search.bar.duration-help`, by name.
+#[derive(Clone, Copy)]
+pub struct SearchBarDurationHelp<'a> {
+    /// The value of `{both}`.
+    pub both: &'a dyn std::fmt::Display,
+    /// The value of `{hours}`.
+    pub hours: &'a dyn std::fmt::Display,
+    /// The value of `{minutes}`.
+    pub minutes: &'a dyn std::fmt::Display,
+}
+
 /// The message `search.bar.duration-help`.
 #[must_use]
-pub fn search_bar_duration_help(
-    both: impl std::fmt::Display,
-    hours: impl std::fmt::Display,
-    minutes: impl std::fmt::Display,
-) -> Message {
+pub fn search_bar_duration_help(values: SearchBarDurationHelp<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("search.bar.duration-help"),
         vec![
-            ("both", Value::Text(both.to_string())),
-            ("hours", Value::Text(hours.to_string())),
-            ("minutes", Value::Text(minutes.to_string())),
+            ("both", Value::Text(values.both.to_string())),
+            ("hours", Value::Text(values.hours.to_string())),
+            ("minutes", Value::Text(values.minutes.to_string())),
         ],
     )
 }
@@ -16486,17 +18008,23 @@ pub fn search_bar_name_colon(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `search.bar.name-value`, by name.
+#[derive(Clone, Copy)]
+pub struct SearchBarNameValue<'a> {
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+    /// The value of `{value}`.
+    pub value: &'a dyn std::fmt::Display,
+}
+
 /// The message `search.bar.name-value`.
 #[must_use]
-pub fn search_bar_name_value(
-    name: impl std::fmt::Display,
-    value: impl std::fmt::Display,
-) -> Message {
+pub fn search_bar_name_value(values: SearchBarNameValue<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("search.bar.name-value"),
         vec![
-            ("name", Value::Text(name.to_string())),
-            ("value", Value::Text(value.to_string())),
+            ("name", Value::Text(values.name.to_string())),
+            ("value", Value::Text(values.value.to_string())),
         ],
     )
 }
@@ -16510,17 +18038,23 @@ pub fn search_bar_not(value: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `search.bar.not-a-duration`, by name.
+#[derive(Clone, Copy)]
+pub struct SearchBarNotADuration<'a> {
+    /// The value of `{both}`.
+    pub both: &'a dyn std::fmt::Display,
+    /// The value of `{hours}`.
+    pub hours: &'a dyn std::fmt::Display,
+}
+
 /// The message `search.bar.not-a-duration`.
 #[must_use]
-pub fn search_bar_not_a_duration(
-    both: impl std::fmt::Display,
-    hours: impl std::fmt::Display,
-) -> Message {
+pub fn search_bar_not_a_duration(values: SearchBarNotADuration<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("search.bar.not-a-duration"),
         vec![
-            ("both", Value::Text(both.to_string())),
-            ("hours", Value::Text(hours.to_string())),
+            ("both", Value::Text(values.both.to_string())),
+            ("hours", Value::Text(values.hours.to_string())),
         ],
     )
 }
@@ -16552,14 +18086,23 @@ pub fn search_bar_remove_filter(filter: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `search.bar.with-mistakes`, by name.
+#[derive(Clone, Copy)]
+pub struct SearchBarWithMistakes<'a> {
+    /// The value of `{count}`.
+    pub count: i64,
+    /// The value of `{filters}`.
+    pub filters: &'a dyn std::fmt::Display,
+}
+
 /// The message `search.bar.with-mistakes`.
 #[must_use]
-pub fn search_bar_with_mistakes(count: i64, filters: impl std::fmt::Display) -> Message {
+pub fn search_bar_with_mistakes(values: SearchBarWithMistakes<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("search.bar.with-mistakes"),
         vec![
-            ("count", Value::Number(count)),
-            ("filters", Value::Text(filters.to_string())),
+            ("count", Value::Number(values.count)),
+            ("filters", Value::Text(values.filters.to_string())),
         ],
     )
 }
@@ -16582,29 +18125,44 @@ pub fn search_count(count: i64) -> Message {
     )
 }
 
+/// The values of the message `search.found-issue`, by name.
+#[derive(Clone, Copy)]
+pub struct SearchFoundIssue<'a> {
+    /// The value of `{id}`.
+    pub id: &'a dyn std::fmt::Display,
+    /// The value of `{title}`.
+    pub title: &'a dyn std::fmt::Display,
+}
+
 /// The message `search.found-issue`.
 #[must_use]
-pub fn search_found_issue(id: impl std::fmt::Display, title: impl std::fmt::Display) -> Message {
+pub fn search_found_issue(values: SearchFoundIssue<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("search.found-issue"),
         vec![
-            ("id", Value::Text(id.to_string())),
-            ("title", Value::Text(title.to_string())),
+            ("id", Value::Text(values.id.to_string())),
+            ("title", Value::Text(values.title.to_string())),
         ],
     )
 }
 
+/// The values of the message `search.found-project`, by name.
+#[derive(Clone, Copy)]
+pub struct SearchFoundProject<'a> {
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+    /// The value of `{short}`.
+    pub short: &'a dyn std::fmt::Display,
+}
+
 /// The message `search.found-project`.
 #[must_use]
-pub fn search_found_project(
-    name: impl std::fmt::Display,
-    short: impl std::fmt::Display,
-) -> Message {
+pub fn search_found_project(values: SearchFoundProject<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("search.found-project"),
         vec![
-            ("name", Value::Text(name.to_string())),
-            ("short", Value::Text(short.to_string())),
+            ("name", Value::Text(values.name.to_string())),
+            ("short", Value::Text(values.short.to_string())),
         ],
     )
 }
@@ -16627,66 +18185,96 @@ pub fn search_made_by(person: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `search.mistake.expected-blocked-by`, by name.
+#[derive(Clone, Copy)]
+pub struct SearchMistakeExpectedBlockedBy<'a> {
+    /// The value of `{blocked}`.
+    pub blocked: &'a dyn std::fmt::Display,
+    /// The value of `{by}`.
+    pub by: &'a dyn std::fmt::Display,
+}
+
 /// The message `search.mistake.expected-blocked-by`.
 #[must_use]
-pub fn search_mistake_expected_blocked_by(
-    blocked: impl std::fmt::Display,
-    by: impl std::fmt::Display,
-) -> Message {
+pub fn search_mistake_expected_blocked_by(values: SearchMistakeExpectedBlockedBy<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("search.mistake.expected-blocked-by"),
         vec![
-            ("blocked", Value::Text(blocked.to_string())),
-            ("by", Value::Text(by.to_string())),
+            ("blocked", Value::Text(values.blocked.to_string())),
+            ("by", Value::Text(values.by.to_string())),
         ],
     )
+}
+
+/// The values of the message `search.mistake.expected-connected-to`, by name.
+#[derive(Clone, Copy)]
+pub struct SearchMistakeExpectedConnectedTo<'a> {
+    /// The value of `{connected}`.
+    pub connected: &'a dyn std::fmt::Display,
+    /// The value of `{to}`.
+    pub to: &'a dyn std::fmt::Display,
 }
 
 /// The message `search.mistake.expected-connected-to`.
 #[must_use]
 pub fn search_mistake_expected_connected_to(
-    connected: impl std::fmt::Display,
-    to: impl std::fmt::Display,
+    values: SearchMistakeExpectedConnectedTo<'_>,
 ) -> Message {
     Message::with_arguments(
         MessageKey::new("search.mistake.expected-connected-to"),
         vec![
-            ("connected", Value::Text(connected.to_string())),
-            ("to", Value::Text(to.to_string())),
+            ("connected", Value::Text(values.connected.to_string())),
+            ("to", Value::Text(values.to.to_string())),
         ],
     )
 }
 
+/// The values of the message `search.mistake.expected-continue`, by name.
+#[derive(Clone, Copy)]
+pub struct SearchMistakeExpectedContinue<'a> {
+    /// The value of `{and}`.
+    pub and: &'a dyn std::fmt::Display,
+    /// The value of `{by}`.
+    pub by: &'a dyn std::fmt::Display,
+    /// The value of `{or}`.
+    pub or: &'a dyn std::fmt::Display,
+    /// The value of `{sort}`.
+    pub sort: &'a dyn std::fmt::Display,
+}
+
 /// The message `search.mistake.expected-continue`.
 #[must_use]
-pub fn search_mistake_expected_continue(
-    and: impl std::fmt::Display,
-    by: impl std::fmt::Display,
-    or: impl std::fmt::Display,
-    sort: impl std::fmt::Display,
-) -> Message {
+pub fn search_mistake_expected_continue(values: SearchMistakeExpectedContinue<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("search.mistake.expected-continue"),
         vec![
-            ("and", Value::Text(and.to_string())),
-            ("by", Value::Text(by.to_string())),
-            ("or", Value::Text(or.to_string())),
-            ("sort", Value::Text(sort.to_string())),
+            ("and", Value::Text(values.and.to_string())),
+            ("by", Value::Text(values.by.to_string())),
+            ("or", Value::Text(values.or.to_string())),
+            ("sort", Value::Text(values.sort.to_string())),
         ],
     )
+}
+
+/// The values of the message `search.mistake.expected-continue-closing`, by name.
+#[derive(Clone, Copy)]
+pub struct SearchMistakeExpectedContinueClosing<'a> {
+    /// The value of `{and}`.
+    pub and: &'a dyn std::fmt::Display,
+    /// The value of `{or}`.
+    pub or: &'a dyn std::fmt::Display,
 }
 
 /// The message `search.mistake.expected-continue-closing`.
 #[must_use]
 pub fn search_mistake_expected_continue_closing(
-    and: impl std::fmt::Display,
-    or: impl std::fmt::Display,
+    values: SearchMistakeExpectedContinueClosing<'_>,
 ) -> Message {
     Message::with_arguments(
         MessageKey::new("search.mistake.expected-continue-closing"),
         vec![
-            ("and", Value::Text(and.to_string())),
-            ("or", Value::Text(or.to_string())),
+            ("and", Value::Text(values.and.to_string())),
+            ("or", Value::Text(values.or.to_string())),
         ],
     )
 }
@@ -16700,98 +18288,137 @@ pub fn search_mistake_expected_direction(directions: impl std::fmt::Display) -> 
     )
 }
 
+/// The values of the message `search.mistake.expected-duration`, by name.
+#[derive(Clone, Copy)]
+pub struct SearchMistakeExpectedDuration<'a> {
+    /// The value of `{hour}`.
+    pub hour: &'a dyn std::fmt::Display,
+    /// The value of `{hours}`.
+    pub hours: &'a dyn std::fmt::Display,
+    /// The value of `{minutes}`.
+    pub minutes: &'a dyn std::fmt::Display,
+}
+
 /// The message `search.mistake.expected-duration`.
 #[must_use]
-pub fn search_mistake_expected_duration(
-    hour: impl std::fmt::Display,
-    hours: impl std::fmt::Display,
-    minutes: impl std::fmt::Display,
-) -> Message {
+pub fn search_mistake_expected_duration(values: SearchMistakeExpectedDuration<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("search.mistake.expected-duration"),
         vec![
-            ("hour", Value::Text(hour.to_string())),
-            ("hours", Value::Text(hours.to_string())),
-            ("minutes", Value::Text(minutes.to_string())),
+            ("hour", Value::Text(values.hour.to_string())),
+            ("hours", Value::Text(values.hours.to_string())),
+            ("minutes", Value::Text(values.minutes.to_string())),
         ],
     )
+}
+
+/// The values of the message `search.mistake.expected-in`, by name.
+#[derive(Clone, Copy)]
+pub struct SearchMistakeExpectedIn<'a> {
+    /// The value of `{in}`.
+    pub in_: &'a dyn std::fmt::Display,
+    /// The value of `{last}`.
+    pub last: &'a dyn std::fmt::Display,
 }
 
 /// The message `search.mistake.expected-in`.
 #[must_use]
-pub fn search_mistake_expected_in(
-    in_: impl std::fmt::Display,
-    last: impl std::fmt::Display,
-) -> Message {
+pub fn search_mistake_expected_in(values: SearchMistakeExpectedIn<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("search.mistake.expected-in"),
         vec![
-            ("in", Value::Text(in_.to_string())),
-            ("last", Value::Text(last.to_string())),
+            ("in", Value::Text(values.in_.to_string())),
+            ("last", Value::Text(values.last.to_string())),
         ],
     )
+}
+
+/// The values of the message `search.mistake.expected-member-of`, by name.
+#[derive(Clone, Copy)]
+pub struct SearchMistakeExpectedMemberOf<'a> {
+    /// The value of `{member}`.
+    pub member: &'a dyn std::fmt::Display,
+    /// The value of `{of}`.
+    pub of: &'a dyn std::fmt::Display,
 }
 
 /// The message `search.mistake.expected-member-of`.
 #[must_use]
-pub fn search_mistake_expected_member_of(
-    member: impl std::fmt::Display,
-    of: impl std::fmt::Display,
-) -> Message {
+pub fn search_mistake_expected_member_of(values: SearchMistakeExpectedMemberOf<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("search.mistake.expected-member-of"),
         vec![
-            ("member", Value::Text(member.to_string())),
-            ("of", Value::Text(of.to_string())),
+            ("member", Value::Text(values.member.to_string())),
+            ("of", Value::Text(values.of.to_string())),
         ],
     )
+}
+
+/// The values of the message `search.mistake.expected-operator`, by name.
+#[derive(Clone, Copy)]
+pub struct SearchMistakeExpectedOperator<'a> {
+    /// The value of `{contains}`.
+    pub contains: &'a dyn std::fmt::Display,
+    /// The value of `{field}`.
+    pub field: &'a dyn std::fmt::Display,
+    /// The value of `{in}`.
+    pub in_: &'a dyn std::fmt::Display,
+    /// The value of `{is}`.
+    pub is: &'a dyn std::fmt::Display,
 }
 
 /// The message `search.mistake.expected-operator`.
 #[must_use]
-pub fn search_mistake_expected_operator(
-    contains: impl std::fmt::Display,
-    field: impl std::fmt::Display,
-    in_: impl std::fmt::Display,
-    is: impl std::fmt::Display,
-) -> Message {
+pub fn search_mistake_expected_operator(values: SearchMistakeExpectedOperator<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("search.mistake.expected-operator"),
         vec![
-            ("contains", Value::Text(contains.to_string())),
-            ("field", Value::Text(field.to_string())),
-            ("in", Value::Text(in_.to_string())),
-            ("is", Value::Text(is.to_string())),
+            ("contains", Value::Text(values.contains.to_string())),
+            ("field", Value::Text(values.field.to_string())),
+            ("in", Value::Text(values.in_.to_string())),
+            ("is", Value::Text(values.is.to_string())),
         ],
     )
+}
+
+/// The values of the message `search.mistake.expected-sort-by`, by name.
+#[derive(Clone, Copy)]
+pub struct SearchMistakeExpectedSortBy<'a> {
+    /// The value of `{by}`.
+    pub by: &'a dyn std::fmt::Display,
+    /// The value of `{sort}`.
+    pub sort: &'a dyn std::fmt::Display,
 }
 
 /// The message `search.mistake.expected-sort-by`.
 #[must_use]
-pub fn search_mistake_expected_sort_by(
-    by: impl std::fmt::Display,
-    sort: impl std::fmt::Display,
-) -> Message {
+pub fn search_mistake_expected_sort_by(values: SearchMistakeExpectedSortBy<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("search.mistake.expected-sort-by"),
         vec![
-            ("by", Value::Text(by.to_string())),
-            ("sort", Value::Text(sort.to_string())),
+            ("by", Value::Text(values.by.to_string())),
+            ("sort", Value::Text(values.sort.to_string())),
         ],
     )
 }
 
+/// The values of the message `search.mistake.expected-steps-word`, by name.
+#[derive(Clone, Copy)]
+pub struct SearchMistakeExpectedStepsWord<'a> {
+    /// The value of `{step}`.
+    pub step: &'a dyn std::fmt::Display,
+    /// The value of `{steps}`.
+    pub steps: &'a dyn std::fmt::Display,
+}
+
 /// The message `search.mistake.expected-steps-word`.
 #[must_use]
-pub fn search_mistake_expected_steps_word(
-    step: impl std::fmt::Display,
-    steps: impl std::fmt::Display,
-) -> Message {
+pub fn search_mistake_expected_steps_word(values: SearchMistakeExpectedStepsWord<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("search.mistake.expected-steps-word"),
         vec![
-            ("step", Value::Text(step.to_string())),
-            ("steps", Value::Text(steps.to_string())),
+            ("step", Value::Text(values.step.to_string())),
+            ("steps", Value::Text(values.steps.to_string())),
         ],
     )
 }
@@ -16823,17 +18450,23 @@ pub fn search_mistake_not_a_date(text: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `search.mistake.operator-not-allowed`, by name.
+#[derive(Clone, Copy)]
+pub struct SearchMistakeOperatorNotAllowed<'a> {
+    /// The value of `{field}`.
+    pub field: &'a dyn std::fmt::Display,
+    /// The value of `{operator}`.
+    pub operator: &'a dyn std::fmt::Display,
+}
+
 /// The message `search.mistake.operator-not-allowed`.
 #[must_use]
-pub fn search_mistake_operator_not_allowed(
-    field: impl std::fmt::Display,
-    operator: impl std::fmt::Display,
-) -> Message {
+pub fn search_mistake_operator_not_allowed(values: SearchMistakeOperatorNotAllowed<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("search.mistake.operator-not-allowed"),
         vec![
-            ("field", Value::Text(field.to_string())),
-            ("operator", Value::Text(operator.to_string())),
+            ("field", Value::Text(values.field.to_string())),
+            ("operator", Value::Text(values.operator.to_string())),
         ],
     )
 }
@@ -16892,34 +18525,49 @@ pub fn search_mistake_too_many_words(limit: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `search.mistake.unknown-choice`, by name.
+#[derive(Clone, Copy)]
+pub struct SearchMistakeUnknownChoice<'a> {
+    /// The value of `{field}`.
+    pub field: &'a dyn std::fmt::Display,
+    /// The value of `{value}`.
+    pub value: &'a dyn std::fmt::Display,
+}
+
 /// The message `search.mistake.unknown-choice`.
 #[must_use]
-pub fn search_mistake_unknown_choice(
-    field: impl std::fmt::Display,
-    value: impl std::fmt::Display,
-) -> Message {
+pub fn search_mistake_unknown_choice(values: SearchMistakeUnknownChoice<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("search.mistake.unknown-choice"),
         vec![
-            ("field", Value::Text(field.to_string())),
-            ("value", Value::Text(value.to_string())),
+            ("field", Value::Text(values.field.to_string())),
+            ("value", Value::Text(values.value.to_string())),
         ],
     )
+}
+
+/// The values of the message `search.mistake.unknown-choice-did-you-mean`, by name.
+#[derive(Clone, Copy)]
+pub struct SearchMistakeUnknownChoiceDidYouMean<'a> {
+    /// The value of `{field}`.
+    pub field: &'a dyn std::fmt::Display,
+    /// The value of `{suggestion}`.
+    pub suggestion: &'a dyn std::fmt::Display,
+    /// The value of `{value}`.
+    pub value: &'a dyn std::fmt::Display,
 }
 
 /// The message `search.mistake.unknown-choice-did-you-mean`.
 #[must_use]
 pub fn search_mistake_unknown_choice_did_you_mean(
-    field: impl std::fmt::Display,
-    suggestion: impl std::fmt::Display,
-    value: impl std::fmt::Display,
+    values: SearchMistakeUnknownChoiceDidYouMean<'_>,
 ) -> Message {
     Message::with_arguments(
         MessageKey::new("search.mistake.unknown-choice-did-you-mean"),
         vec![
-            ("field", Value::Text(field.to_string())),
-            ("suggestion", Value::Text(suggestion.to_string())),
-            ("value", Value::Text(value.to_string())),
+            ("field", Value::Text(values.field.to_string())),
+            ("suggestion", Value::Text(values.suggestion.to_string())),
+            ("value", Value::Text(values.value.to_string())),
         ],
     )
 }
@@ -16933,17 +18581,25 @@ pub fn search_mistake_unknown_field(field: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `search.mistake.unknown-field-did-you-mean`, by name.
+#[derive(Clone, Copy)]
+pub struct SearchMistakeUnknownFieldDidYouMean<'a> {
+    /// The value of `{field}`.
+    pub field: &'a dyn std::fmt::Display,
+    /// The value of `{suggestion}`.
+    pub suggestion: &'a dyn std::fmt::Display,
+}
+
 /// The message `search.mistake.unknown-field-did-you-mean`.
 #[must_use]
 pub fn search_mistake_unknown_field_did_you_mean(
-    field: impl std::fmt::Display,
-    suggestion: impl std::fmt::Display,
+    values: SearchMistakeUnknownFieldDidYouMean<'_>,
 ) -> Message {
     Message::with_arguments(
         MessageKey::new("search.mistake.unknown-field-did-you-mean"),
         vec![
-            ("field", Value::Text(field.to_string())),
-            ("suggestion", Value::Text(suggestion.to_string())),
+            ("field", Value::Text(values.field.to_string())),
+            ("suggestion", Value::Text(values.suggestion.to_string())),
         ],
     )
 }
@@ -16966,21 +18622,29 @@ pub fn search_mistake_wrong_date(field: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `search.mistake.wrong-duration`, by name.
+#[derive(Clone, Copy)]
+pub struct SearchMistakeWrongDuration<'a> {
+    /// The value of `{field}`.
+    pub field: &'a dyn std::fmt::Display,
+    /// The value of `{hour}`.
+    pub hour: &'a dyn std::fmt::Display,
+    /// The value of `{hours}`.
+    pub hours: &'a dyn std::fmt::Display,
+    /// The value of `{minutes}`.
+    pub minutes: &'a dyn std::fmt::Display,
+}
+
 /// The message `search.mistake.wrong-duration`.
 #[must_use]
-pub fn search_mistake_wrong_duration(
-    field: impl std::fmt::Display,
-    hour: impl std::fmt::Display,
-    hours: impl std::fmt::Display,
-    minutes: impl std::fmt::Display,
-) -> Message {
+pub fn search_mistake_wrong_duration(values: SearchMistakeWrongDuration<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("search.mistake.wrong-duration"),
         vec![
-            ("field", Value::Text(field.to_string())),
-            ("hour", Value::Text(hour.to_string())),
-            ("hours", Value::Text(hours.to_string())),
-            ("minutes", Value::Text(minutes.to_string())),
+            ("field", Value::Text(values.field.to_string())),
+            ("hour", Value::Text(values.hour.to_string())),
+            ("hours", Value::Text(values.hours.to_string())),
+            ("minutes", Value::Text(values.minutes.to_string())),
         ],
     )
 }
@@ -17003,17 +18667,23 @@ pub fn search_mistake_wrong_number(field: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `search.mistake.wrong-person`, by name.
+#[derive(Clone, Copy)]
+pub struct SearchMistakeWrongPerson<'a> {
+    /// The value of `{field}`.
+    pub field: &'a dyn std::fmt::Display,
+    /// The value of `{me}`.
+    pub me: &'a dyn std::fmt::Display,
+}
+
 /// The message `search.mistake.wrong-person`.
 #[must_use]
-pub fn search_mistake_wrong_person(
-    field: impl std::fmt::Display,
-    me: impl std::fmt::Display,
-) -> Message {
+pub fn search_mistake_wrong_person(values: SearchMistakeWrongPerson<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("search.mistake.wrong-person"),
         vec![
-            ("field", Value::Text(field.to_string())),
-            ("me", Value::Text(me.to_string())),
+            ("field", Value::Text(values.field.to_string())),
+            ("me", Value::Text(values.me.to_string())),
         ],
     )
 }
@@ -17054,26 +18724,44 @@ pub fn search_share_title(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `security-log.broken`, by name.
+#[derive(Clone, Copy)]
+pub struct SecurityLogBroken<'a> {
+    /// The value of `{reason}`.
+    pub reason: &'a dyn std::fmt::Display,
+    /// The value of `{seq}`.
+    pub seq: &'a dyn std::fmt::Display,
+}
+
 /// The message `security-log.broken`.
 #[must_use]
-pub fn security_log_broken(reason: impl std::fmt::Display, seq: impl std::fmt::Display) -> Message {
+pub fn security_log_broken(values: SecurityLogBroken<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("security-log.broken"),
         vec![
-            ("reason", Value::Text(reason.to_string())),
-            ("seq", Value::Text(seq.to_string())),
+            ("reason", Value::Text(values.reason.to_string())),
+            ("seq", Value::Text(values.seq.to_string())),
         ],
     )
 }
 
+/// The values of the message `security-log.head`, by name.
+#[derive(Clone, Copy)]
+pub struct SecurityLogHead<'a> {
+    /// The value of `{hash}`.
+    pub hash: &'a dyn std::fmt::Display,
+    /// The value of `{seq}`.
+    pub seq: &'a dyn std::fmt::Display,
+}
+
 /// The message `security-log.head`.
 #[must_use]
-pub fn security_log_head(hash: impl std::fmt::Display, seq: impl std::fmt::Display) -> Message {
+pub fn security_log_head(values: SecurityLogHead<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("security-log.head"),
         vec![
-            ("hash", Value::Text(hash.to_string())),
-            ("seq", Value::Text(seq.to_string())),
+            ("hash", Value::Text(values.hash.to_string())),
+            ("seq", Value::Text(values.seq.to_string())),
         ],
     )
 }
@@ -17096,26 +18784,44 @@ pub fn server_status_certificate_expired(date: impl std::fmt::Display) -> Messag
     )
 }
 
+/// The values of the message `server-status.certificate.soon`, by name.
+#[derive(Clone, Copy)]
+pub struct ServerStatusCertificateSoon<'a> {
+    /// The value of `{date}`.
+    pub date: &'a dyn std::fmt::Display,
+    /// The value of `{days}`.
+    pub days: i64,
+}
+
 /// The message `server-status.certificate.soon`.
 #[must_use]
-pub fn server_status_certificate_soon(date: impl std::fmt::Display, days: i64) -> Message {
+pub fn server_status_certificate_soon(values: ServerStatusCertificateSoon<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("server-status.certificate.soon"),
         vec![
-            ("date", Value::Text(date.to_string())),
-            ("days", Value::Number(days)),
+            ("date", Value::Text(values.date.to_string())),
+            ("days", Value::Number(values.days)),
         ],
     )
 }
 
+/// The values of the message `server-status.certificate.valid`, by name.
+#[derive(Clone, Copy)]
+pub struct ServerStatusCertificateValid<'a> {
+    /// The value of `{date}`.
+    pub date: &'a dyn std::fmt::Display,
+    /// The value of `{days}`.
+    pub days: i64,
+}
+
 /// The message `server-status.certificate.valid`.
 #[must_use]
-pub fn server_status_certificate_valid(date: impl std::fmt::Display, days: i64) -> Message {
+pub fn server_status_certificate_valid(values: ServerStatusCertificateValid<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("server-status.certificate.valid"),
         vec![
-            ("date", Value::Text(date.to_string())),
-            ("days", Value::Number(days)),
+            ("date", Value::Text(values.date.to_string())),
+            ("days", Value::Number(values.days)),
         ],
     )
 }
@@ -17138,15 +18844,26 @@ pub fn server_status_started(when: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `server-status.uptime`, by name.
+#[derive(Clone, Copy)]
+pub struct ServerStatusUptime {
+    /// The value of `{days}`.
+    pub days: i64,
+    /// The value of `{hours}`.
+    pub hours: i64,
+    /// The value of `{minutes}`.
+    pub minutes: i64,
+}
+
 /// The message `server-status.uptime`.
 #[must_use]
-pub fn server_status_uptime(days: i64, hours: i64, minutes: i64) -> Message {
+pub fn server_status_uptime(values: ServerStatusUptime) -> Message {
     Message::with_arguments(
         MessageKey::new("server-status.uptime"),
         vec![
-            ("days", Value::Number(days)),
-            ("hours", Value::Number(hours)),
-            ("minutes", Value::Number(minutes)),
+            ("days", Value::Number(values.days)),
+            ("hours", Value::Number(values.hours)),
+            ("minutes", Value::Number(values.minutes)),
         ],
     )
 }
@@ -17178,32 +18895,44 @@ pub fn server_database_newer(own: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `server.database-newer-version`, by name.
+#[derive(Clone, Copy)]
+pub struct ServerDatabaseNewerVersion<'a> {
+    /// The value of `{own}`.
+    pub own: &'a dyn std::fmt::Display,
+    /// The value of `{version}`.
+    pub version: &'a dyn std::fmt::Display,
+}
+
 /// The message `server.database-newer-version`.
 #[must_use]
-pub fn server_database_newer_version(
-    own: impl std::fmt::Display,
-    version: impl std::fmt::Display,
-) -> Message {
+pub fn server_database_newer_version(values: ServerDatabaseNewerVersion<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("server.database-newer-version"),
         vec![
-            ("own", Value::Text(own.to_string())),
-            ("version", Value::Text(version.to_string())),
+            ("own", Value::Text(values.own.to_string())),
+            ("version", Value::Text(values.version.to_string())),
         ],
     )
 }
 
+/// The values of the message `server.database-unknown-change`, by name.
+#[derive(Clone, Copy)]
+pub struct ServerDatabaseUnknownChange<'a> {
+    /// The value of `{number}`.
+    pub number: &'a dyn std::fmt::Display,
+    /// The value of `{own}`.
+    pub own: &'a dyn std::fmt::Display,
+}
+
 /// The message `server.database-unknown-change`.
 #[must_use]
-pub fn server_database_unknown_change(
-    number: impl std::fmt::Display,
-    own: impl std::fmt::Display,
-) -> Message {
+pub fn server_database_unknown_change(values: ServerDatabaseUnknownChange<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("server.database-unknown-change"),
         vec![
-            ("number", Value::Text(number.to_string())),
-            ("own", Value::Text(own.to_string())),
+            ("number", Value::Text(values.number.to_string())),
+            ("own", Value::Text(values.own.to_string())),
         ],
     )
 }
@@ -17271,66 +19000,92 @@ pub fn server_setup_code_file(path: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `server.setup-code-file-failed`, by name.
+#[derive(Clone, Copy)]
+pub struct ServerSetupCodeFileFailed<'a> {
+    /// The value of `{path}`.
+    pub path: &'a dyn std::fmt::Display,
+    /// The value of `{reason}`.
+    pub reason: &'a dyn std::fmt::Display,
+}
+
 /// The message `server.setup-code-file-failed`.
 #[must_use]
-pub fn server_setup_code_file_failed(
-    path: impl std::fmt::Display,
-    reason: impl std::fmt::Display,
-) -> Message {
+pub fn server_setup_code_file_failed(values: ServerSetupCodeFileFailed<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("server.setup-code-file-failed"),
         vec![
-            ("path", Value::Text(path.to_string())),
-            ("reason", Value::Text(reason.to_string())),
+            ("path", Value::Text(values.path.to_string())),
+            ("reason", Value::Text(values.reason.to_string())),
         ],
     )
+}
+
+/// The values of the message `server.upgrade-backup`, by name.
+#[derive(Clone, Copy)]
+pub struct ServerUpgradeBackup<'a> {
+    /// The value of `{path}`.
+    pub path: &'a dyn std::fmt::Display,
+    /// The value of `{version}`.
+    pub version: &'a dyn std::fmt::Display,
 }
 
 /// The message `server.upgrade-backup`.
 #[must_use]
-pub fn server_upgrade_backup(
-    path: impl std::fmt::Display,
-    version: impl std::fmt::Display,
-) -> Message {
+pub fn server_upgrade_backup(values: ServerUpgradeBackup<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("server.upgrade-backup"),
         vec![
-            ("path", Value::Text(path.to_string())),
-            ("version", Value::Text(version.to_string())),
+            ("path", Value::Text(values.path.to_string())),
+            ("version", Value::Text(values.version.to_string())),
         ],
     )
+}
+
+/// The values of the message `server.upgrade-backup-failed`, by name.
+#[derive(Clone, Copy)]
+pub struct ServerUpgradeBackupFailed<'a> {
+    /// The value of `{folder}`.
+    pub folder: &'a dyn std::fmt::Display,
+    /// The value of `{reason}`.
+    pub reason: &'a dyn std::fmt::Display,
+    /// The value of `{version}`.
+    pub version: &'a dyn std::fmt::Display,
 }
 
 /// The message `server.upgrade-backup-failed`.
 #[must_use]
-pub fn server_upgrade_backup_failed(
-    folder: impl std::fmt::Display,
-    reason: impl std::fmt::Display,
-    version: impl std::fmt::Display,
-) -> Message {
+pub fn server_upgrade_backup_failed(values: ServerUpgradeBackupFailed<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("server.upgrade-backup-failed"),
         vec![
-            ("folder", Value::Text(folder.to_string())),
-            ("reason", Value::Text(reason.to_string())),
-            ("version", Value::Text(version.to_string())),
+            ("folder", Value::Text(values.folder.to_string())),
+            ("reason", Value::Text(values.reason.to_string())),
+            ("version", Value::Text(values.version.to_string())),
         ],
     )
 }
 
+/// The values of the message `server.upgrade-failed`, by name.
+#[derive(Clone, Copy)]
+pub struct ServerUpgradeFailed<'a> {
+    /// The value of `{path}`.
+    pub path: &'a dyn std::fmt::Display,
+    /// The value of `{reason}`.
+    pub reason: &'a dyn std::fmt::Display,
+    /// The value of `{version}`.
+    pub version: &'a dyn std::fmt::Display,
+}
+
 /// The message `server.upgrade-failed`.
 #[must_use]
-pub fn server_upgrade_failed(
-    path: impl std::fmt::Display,
-    reason: impl std::fmt::Display,
-    version: impl std::fmt::Display,
-) -> Message {
+pub fn server_upgrade_failed(values: ServerUpgradeFailed<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("server.upgrade-failed"),
         vec![
-            ("path", Value::Text(path.to_string())),
-            ("reason", Value::Text(reason.to_string())),
-            ("version", Value::Text(version.to_string())),
+            ("path", Value::Text(values.path.to_string())),
+            ("reason", Value::Text(values.reason.to_string())),
+            ("version", Value::Text(values.version.to_string())),
         ],
     )
 }
@@ -17353,21 +19108,29 @@ pub fn server_upgrade_previous_version(version: impl std::fmt::Display) -> Messa
     )
 }
 
+/// The values of the message `server.upgrade-put-back-failed`, by name.
+#[derive(Clone, Copy)]
+pub struct ServerUpgradePutBackFailed<'a> {
+    /// The value of `{path}`.
+    pub path: &'a dyn std::fmt::Display,
+    /// The value of `{problem}`.
+    pub problem: &'a dyn std::fmt::Display,
+    /// The value of `{reason}`.
+    pub reason: &'a dyn std::fmt::Display,
+    /// The value of `{version}`.
+    pub version: &'a dyn std::fmt::Display,
+}
+
 /// The message `server.upgrade-put-back-failed`.
 #[must_use]
-pub fn server_upgrade_put_back_failed(
-    path: impl std::fmt::Display,
-    problem: impl std::fmt::Display,
-    reason: impl std::fmt::Display,
-    version: impl std::fmt::Display,
-) -> Message {
+pub fn server_upgrade_put_back_failed(values: ServerUpgradePutBackFailed<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("server.upgrade-put-back-failed"),
         vec![
-            ("path", Value::Text(path.to_string())),
-            ("problem", Value::Text(problem.to_string())),
-            ("reason", Value::Text(reason.to_string())),
-            ("version", Value::Text(version.to_string())),
+            ("path", Value::Text(values.path.to_string())),
+            ("problem", Value::Text(values.problem.to_string())),
+            ("reason", Value::Text(values.reason.to_string())),
+            ("version", Value::Text(values.version.to_string())),
         ],
     )
 }
@@ -17390,17 +19153,23 @@ pub fn service_answer_not_trusted(path: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `service.data-folder-real`, by name.
+#[derive(Clone, Copy)]
+pub struct ServiceDataFolderReal<'a> {
+    /// The value of `{path}`.
+    pub path: &'a dyn std::fmt::Display,
+    /// The value of `{real}`.
+    pub real: &'a dyn std::fmt::Display,
+}
+
 /// The message `service.data-folder-real`.
 #[must_use]
-pub fn service_data_folder_real(
-    path: impl std::fmt::Display,
-    real: impl std::fmt::Display,
-) -> Message {
+pub fn service_data_folder_real(values: ServiceDataFolderReal<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("service.data-folder-real"),
         vec![
-            ("path", Value::Text(path.to_string())),
-            ("real", Value::Text(real.to_string())),
+            ("path", Value::Text(values.path.to_string())),
+            ("real", Value::Text(values.real.to_string())),
         ],
     )
 }
@@ -17423,14 +19192,23 @@ pub fn service_failed(reason: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `service.installed`, by name.
+#[derive(Clone, Copy)]
+pub struct ServiceInstalled<'a> {
+    /// The value of `{account}`.
+    pub account: &'a dyn std::fmt::Display,
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+}
+
 /// The message `service.installed`.
 #[must_use]
-pub fn service_installed(account: impl std::fmt::Display, name: impl std::fmt::Display) -> Message {
+pub fn service_installed(values: ServiceInstalled<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("service.installed"),
         vec![
-            ("account", Value::Text(account.to_string())),
-            ("name", Value::Text(name.to_string())),
+            ("account", Value::Text(values.account.to_string())),
+            ("name", Value::Text(values.name.to_string())),
         ],
     )
 }
@@ -17525,14 +19303,23 @@ pub fn service_stop_timeout(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `sessions.device`, by name.
+#[derive(Clone, Copy)]
+pub struct SessionsDevice<'a> {
+    /// The value of `{browser}`.
+    pub browser: &'a dyn std::fmt::Display,
+    /// The value of `{system}`.
+    pub system: &'a dyn std::fmt::Display,
+}
+
 /// The message `sessions.device`.
 #[must_use]
-pub fn sessions_device(browser: impl std::fmt::Display, system: impl std::fmt::Display) -> Message {
+pub fn sessions_device(values: SessionsDevice<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("sessions.device"),
         vec![
-            ("browser", Value::Text(browser.to_string())),
-            ("system", Value::Text(system.to_string())),
+            ("browser", Value::Text(values.browser.to_string())),
+            ("system", Value::Text(values.system.to_string())),
         ],
     )
 }
@@ -17591,29 +19378,44 @@ pub fn setting_agents_project_follows_project_on(project: impl std::fmt::Display
     )
 }
 
+/// The values of the message `setting.ui.between`, by name.
+#[derive(Clone, Copy)]
+pub struct SettingUiBetween<'a> {
+    /// The value of `{least}`.
+    pub least: &'a dyn std::fmt::Display,
+    /// The value of `{most}`.
+    pub most: &'a dyn std::fmt::Display,
+}
+
 /// The message `setting.ui.between`.
 #[must_use]
-pub fn setting_ui_between(least: impl std::fmt::Display, most: impl std::fmt::Display) -> Message {
+pub fn setting_ui_between(values: SettingUiBetween<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("setting.ui.between"),
         vec![
-            ("least", Value::Text(least.to_string())),
-            ("most", Value::Text(most.to_string())),
+            ("least", Value::Text(values.least.to_string())),
+            ("most", Value::Text(values.most.to_string())),
         ],
     )
 }
 
+/// The values of the message `setting.ui.between-amounts`, by name.
+#[derive(Clone, Copy)]
+pub struct SettingUiBetweenAmounts<'a> {
+    /// The value of `{least}`.
+    pub least: &'a dyn std::fmt::Display,
+    /// The value of `{most}`.
+    pub most: &'a dyn std::fmt::Display,
+}
+
 /// The message `setting.ui.between-amounts`.
 #[must_use]
-pub fn setting_ui_between_amounts(
-    least: impl std::fmt::Display,
-    most: impl std::fmt::Display,
-) -> Message {
+pub fn setting_ui_between_amounts(values: SettingUiBetweenAmounts<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("setting.ui.between-amounts"),
         vec![
-            ("least", Value::Text(least.to_string())),
-            ("most", Value::Text(most.to_string())),
+            ("least", Value::Text(values.least.to_string())),
+            ("most", Value::Text(values.most.to_string())),
         ],
     )
 }
@@ -17690,17 +19492,23 @@ pub fn setup_ask_replace(path: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `setup.database-url-password`, by name.
+#[derive(Clone, Copy)]
+pub struct SetupDatabaseUrlPassword<'a> {
+    /// The value of `{file}`.
+    pub file: &'a dyn std::fmt::Display,
+    /// The value of `{variable}`.
+    pub variable: &'a dyn std::fmt::Display,
+}
+
 /// The message `setup.database-url-password`.
 #[must_use]
-pub fn setup_database_url_password(
-    file: impl std::fmt::Display,
-    variable: impl std::fmt::Display,
-) -> Message {
+pub fn setup_database_url_password(values: SetupDatabaseUrlPassword<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("setup.database-url-password"),
         vec![
-            ("file", Value::Text(file.to_string())),
-            ("variable", Value::Text(variable.to_string())),
+            ("file", Value::Text(values.file.to_string())),
+            ("variable", Value::Text(values.variable.to_string())),
         ],
     )
 }
@@ -17741,26 +19549,44 @@ pub fn shell_signed_in_as(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `shortcuts.conflict`, by name.
+#[derive(Clone, Copy)]
+pub struct ShortcutsConflict<'a> {
+    /// The value of `{action}`.
+    pub action: &'a dyn std::fmt::Display,
+    /// The value of `{keys}`.
+    pub keys: &'a dyn std::fmt::Display,
+}
+
 /// The message `shortcuts.conflict`.
 #[must_use]
-pub fn shortcuts_conflict(action: impl std::fmt::Display, keys: impl std::fmt::Display) -> Message {
+pub fn shortcuts_conflict(values: ShortcutsConflict<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("shortcuts.conflict"),
         vec![
-            ("action", Value::Text(action.to_string())),
-            ("keys", Value::Text(keys.to_string())),
+            ("action", Value::Text(values.action.to_string())),
+            ("keys", Value::Text(values.keys.to_string())),
         ],
     )
 }
 
+/// The values of the message `sign-up.check-text`, by name.
+#[derive(Clone, Copy)]
+pub struct SignUpCheckText<'a> {
+    /// The value of `{email}`.
+    pub email: &'a dyn std::fmt::Display,
+    /// The value of `{hours}`.
+    pub hours: i64,
+}
+
 /// The message `sign-up.check-text`.
 #[must_use]
-pub fn sign_up_check_text(email: impl std::fmt::Display, hours: i64) -> Message {
+pub fn sign_up_check_text(values: SignUpCheckText<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("sign-up.check-text"),
         vec![
-            ("email", Value::Text(email.to_string())),
-            ("hours", Value::Number(hours)),
+            ("email", Value::Text(values.email.to_string())),
+            ("hours", Value::Number(values.hours)),
         ],
     )
 }
@@ -17792,29 +19618,44 @@ pub fn sub_issues_added(key: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `sub-issues.not-part-of`, by name.
+#[derive(Clone, Copy)]
+pub struct SubIssuesNotPartOf<'a> {
+    /// The value of `{key}`.
+    pub key: &'a dyn std::fmt::Display,
+    /// The value of `{parent}`.
+    pub parent: &'a dyn std::fmt::Display,
+}
+
 /// The message `sub-issues.not-part-of`.
 #[must_use]
-pub fn sub_issues_not_part_of(
-    key: impl std::fmt::Display,
-    parent: impl std::fmt::Display,
-) -> Message {
+pub fn sub_issues_not_part_of(values: SubIssuesNotPartOf<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("sub-issues.not-part-of"),
         vec![
-            ("key", Value::Text(key.to_string())),
-            ("parent", Value::Text(parent.to_string())),
+            ("key", Value::Text(values.key.to_string())),
+            ("parent", Value::Text(values.parent.to_string())),
         ],
     )
 }
 
+/// The values of the message `sub-issues.progress`, by name.
+#[derive(Clone, Copy)]
+pub struct SubIssuesProgress<'a> {
+    /// The value of `{done}`.
+    pub done: &'a dyn std::fmt::Display,
+    /// The value of `{total}`.
+    pub total: &'a dyn std::fmt::Display,
+}
+
 /// The message `sub-issues.progress`.
 #[must_use]
-pub fn sub_issues_progress(done: impl std::fmt::Display, total: impl std::fmt::Display) -> Message {
+pub fn sub_issues_progress(values: SubIssuesProgress<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("sub-issues.progress"),
         vec![
-            ("done", Value::Text(done.to_string())),
-            ("total", Value::Text(total.to_string())),
+            ("done", Value::Text(values.done.to_string())),
+            ("total", Value::Text(values.total.to_string())),
         ],
     )
 }
@@ -17918,14 +19759,23 @@ pub fn theme_color_choice_mark(color: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `theme-editor.ask`, by name.
+#[derive(Clone, Copy)]
+pub struct ThemeEditorAsk<'a> {
+    /// The value of `{colors}`.
+    pub colors: &'a dyn std::fmt::Display,
+    /// The value of `{count}`.
+    pub count: i64,
+}
+
 /// The message `theme-editor.ask`.
 #[must_use]
-pub fn theme_editor_ask(colors: impl std::fmt::Display, count: i64) -> Message {
+pub fn theme_editor_ask(values: ThemeEditorAsk<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("theme-editor.ask"),
         vec![
-            ("colors", Value::Text(colors.to_string())),
-            ("count", Value::Number(count)),
+            ("colors", Value::Text(values.colors.to_string())),
+            ("count", Value::Number(values.count)),
         ],
     )
 }
@@ -17966,17 +19816,23 @@ pub fn theme_editor_copy_named(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `theme-editor.corners-bounds`, by name.
+#[derive(Clone, Copy)]
+pub struct ThemeEditorCornersBounds<'a> {
+    /// The value of `{max}`.
+    pub max: &'a dyn std::fmt::Display,
+    /// The value of `{min}`.
+    pub min: &'a dyn std::fmt::Display,
+}
+
 /// The message `theme-editor.corners-bounds`.
 #[must_use]
-pub fn theme_editor_corners_bounds(
-    max: impl std::fmt::Display,
-    min: impl std::fmt::Display,
-) -> Message {
+pub fn theme_editor_corners_bounds(values: ThemeEditorCornersBounds<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("theme-editor.corners-bounds"),
         vec![
-            ("max", Value::Text(max.to_string())),
-            ("min", Value::Text(min.to_string())),
+            ("max", Value::Text(values.max.to_string())),
+            ("min", Value::Text(values.min.to_string())),
         ],
     )
 }
@@ -17999,14 +19855,23 @@ pub fn theme_editor_delete_named(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `theme-editor.delete-organization`, by name.
+#[derive(Clone, Copy)]
+pub struct ThemeEditorDeleteOrganization<'a> {
+    /// The value of `{count}`.
+    pub count: i64,
+    /// The value of `{theme}`.
+    pub theme: &'a dyn std::fmt::Display,
+}
+
 /// The message `theme-editor.delete-organization`.
 #[must_use]
-pub fn theme_editor_delete_organization(count: i64, theme: impl std::fmt::Display) -> Message {
+pub fn theme_editor_delete_organization(values: ThemeEditorDeleteOrganization<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("theme-editor.delete-organization"),
         vec![
-            ("count", Value::Number(count)),
-            ("theme", Value::Text(theme.to_string())),
+            ("count", Value::Number(values.count)),
+            ("theme", Value::Text(values.theme.to_string())),
         ],
     )
 }
@@ -18029,14 +19894,23 @@ pub fn theme_editor_delete_title(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `theme-editor.delete-used`, by name.
+#[derive(Clone, Copy)]
+pub struct ThemeEditorDeleteUsed<'a> {
+    /// The value of `{count}`.
+    pub count: i64,
+    /// The value of `{theme}`.
+    pub theme: &'a dyn std::fmt::Display,
+}
+
 /// The message `theme-editor.delete-used`.
 #[must_use]
-pub fn theme_editor_delete_used(count: i64, theme: impl std::fmt::Display) -> Message {
+pub fn theme_editor_delete_used(values: ThemeEditorDeleteUsed<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("theme-editor.delete-used"),
         vec![
-            ("count", Value::Number(count)),
-            ("theme", Value::Text(theme.to_string())),
+            ("count", Value::Number(values.count)),
+            ("theme", Value::Text(values.theme.to_string())),
         ],
     )
 }
@@ -18050,70 +19924,110 @@ pub fn theme_editor_download_named(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `theme-editor.face`, by name.
+#[derive(Clone, Copy)]
+pub struct ThemeEditorFace<'a> {
+    /// The value of `{face}`.
+    pub face: &'a dyn std::fmt::Display,
+    /// The value of `{role}`.
+    pub role: &'a dyn std::fmt::Display,
+}
+
 /// The message `theme-editor.face`.
 #[must_use]
-pub fn theme_editor_face(face: impl std::fmt::Display, role: impl std::fmt::Display) -> Message {
+pub fn theme_editor_face(values: ThemeEditorFace<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("theme-editor.face"),
         vec![
-            ("face", Value::Text(face.to_string())),
-            ("role", Value::Text(role.to_string())),
+            ("face", Value::Text(values.face.to_string())),
+            ("role", Value::Text(values.role.to_string())),
         ],
     )
+}
+
+/// The values of the message `theme-editor.facts`, by name.
+#[derive(Clone, Copy)]
+pub struct ThemeEditorFacts<'a> {
+    /// The value of `{hard}`.
+    pub hard: i64,
+    /// The value of `{look}`.
+    pub look: &'a dyn std::fmt::Display,
+    /// The value of `{theme}`.
+    pub theme: &'a dyn std::fmt::Display,
 }
 
 /// The message `theme-editor.facts`.
 #[must_use]
-pub fn theme_editor_facts(
-    hard: i64,
-    look: impl std::fmt::Display,
-    theme: impl std::fmt::Display,
-) -> Message {
+pub fn theme_editor_facts(values: ThemeEditorFacts<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("theme-editor.facts"),
         vec![
-            ("hard", Value::Number(hard)),
-            ("look", Value::Text(look.to_string())),
-            ("theme", Value::Text(theme.to_string())),
+            ("hard", Value::Number(values.hard)),
+            ("look", Value::Text(values.look.to_string())),
+            ("theme", Value::Text(values.theme.to_string())),
         ],
     )
+}
+
+/// The values of the message `theme-editor.facts-unsaved`, by name.
+#[derive(Clone, Copy)]
+pub struct ThemeEditorFactsUnsaved<'a> {
+    /// The value of `{look}`.
+    pub look: &'a dyn std::fmt::Display,
+    /// The value of `{theme}`.
+    pub theme: &'a dyn std::fmt::Display,
 }
 
 /// The message `theme-editor.facts-unsaved`.
 #[must_use]
-pub fn theme_editor_facts_unsaved(
-    look: impl std::fmt::Display,
-    theme: impl std::fmt::Display,
-) -> Message {
+pub fn theme_editor_facts_unsaved(values: ThemeEditorFactsUnsaved<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("theme-editor.facts-unsaved"),
         vec![
-            ("look", Value::Text(look.to_string())),
-            ("theme", Value::Text(theme.to_string())),
+            ("look", Value::Text(values.look.to_string())),
+            ("theme", Value::Text(values.theme.to_string())),
         ],
     )
+}
+
+/// The values of the message `theme-editor.group-changed`, by name.
+#[derive(Clone, Copy)]
+pub struct ThemeEditorGroupChanged<'a> {
+    /// The value of `{count}`.
+    pub count: i64,
+    /// The value of `{theme}`.
+    pub theme: &'a dyn std::fmt::Display,
 }
 
 /// The message `theme-editor.group-changed`.
 #[must_use]
-pub fn theme_editor_group_changed(count: i64, theme: impl std::fmt::Display) -> Message {
+pub fn theme_editor_group_changed(values: ThemeEditorGroupChanged<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("theme-editor.group-changed"),
         vec![
-            ("count", Value::Number(count)),
-            ("theme", Value::Text(theme.to_string())),
+            ("count", Value::Number(values.count)),
+            ("theme", Value::Text(values.theme.to_string())),
         ],
     )
 }
 
+/// The values of the message `theme-editor.hard-color`, by name.
+#[derive(Clone, Copy)]
+pub struct ThemeEditorHardColor<'a> {
+    /// The value of `{color}`.
+    pub color: &'a dyn std::fmt::Display,
+    /// The value of `{count}`.
+    pub count: i64,
+}
+
 /// The message `theme-editor.hard-color`.
 #[must_use]
-pub fn theme_editor_hard_color(color: impl std::fmt::Display, count: i64) -> Message {
+pub fn theme_editor_hard_color(values: ThemeEditorHardColor<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("theme-editor.hard-color"),
         vec![
-            ("color", Value::Text(color.to_string())),
-            ("count", Value::Number(count)),
+            ("color", Value::Text(values.color.to_string())),
+            ("count", Value::Number(values.count)),
         ],
     )
 }
@@ -18136,17 +20050,23 @@ pub fn theme_editor_list_everyone_intro(place: impl std::fmt::Display) -> Messag
     )
 }
 
+/// The values of the message `theme-editor.order-upside-down`, by name.
+#[derive(Clone, Copy)]
+pub struct ThemeEditorOrderUpsideDown<'a> {
+    /// The value of `{louder}`.
+    pub louder: &'a dyn std::fmt::Display,
+    /// The value of `{quieter}`.
+    pub quieter: &'a dyn std::fmt::Display,
+}
+
 /// The message `theme-editor.order-upside-down`.
 #[must_use]
-pub fn theme_editor_order_upside_down(
-    louder: impl std::fmt::Display,
-    quieter: impl std::fmt::Display,
-) -> Message {
+pub fn theme_editor_order_upside_down(values: ThemeEditorOrderUpsideDown<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("theme-editor.order-upside-down"),
         vec![
-            ("louder", Value::Text(louder.to_string())),
-            ("quieter", Value::Text(quieter.to_string())),
+            ("louder", Value::Text(values.louder.to_string())),
+            ("quieter", Value::Text(values.quieter.to_string())),
         ],
     )
 }
@@ -18160,19 +20080,26 @@ pub fn theme_editor_pick(color: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `theme-editor.readability-details`, by name.
+#[derive(Clone, Copy)]
+pub struct ThemeEditorReadabilityDetails<'a> {
+    /// The value of `{easy}`.
+    pub easy: &'a dyn std::fmt::Display,
+    /// The value of `{ok}`.
+    pub ok: &'a dyn std::fmt::Display,
+    /// The value of `{total}`.
+    pub total: &'a dyn std::fmt::Display,
+}
+
 /// The message `theme-editor.readability-details`.
 #[must_use]
-pub fn theme_editor_readability_details(
-    easy: impl std::fmt::Display,
-    ok: impl std::fmt::Display,
-    total: impl std::fmt::Display,
-) -> Message {
+pub fn theme_editor_readability_details(values: ThemeEditorReadabilityDetails<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("theme-editor.readability-details"),
         vec![
-            ("easy", Value::Text(easy.to_string())),
-            ("ok", Value::Text(ok.to_string())),
-            ("total", Value::Text(total.to_string())),
+            ("easy", Value::Text(values.easy.to_string())),
+            ("ok", Value::Text(values.ok.to_string())),
+            ("total", Value::Text(values.total.to_string())),
         ],
     )
 }
@@ -18195,17 +20122,23 @@ pub fn theme_editor_readability_hard(count: i64) -> Message {
     )
 }
 
+/// The values of the message `theme-editor.refused-value`, by name.
+#[derive(Clone, Copy)]
+pub struct ThemeEditorRefusedValue<'a> {
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+    /// The value of `{reason}`.
+    pub reason: &'a dyn std::fmt::Display,
+}
+
 /// The message `theme-editor.refused-value`.
 #[must_use]
-pub fn theme_editor_refused_value(
-    name: impl std::fmt::Display,
-    reason: impl std::fmt::Display,
-) -> Message {
+pub fn theme_editor_refused_value(values: ThemeEditorRefusedValue<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("theme-editor.refused-value"),
         vec![
-            ("name", Value::Text(name.to_string())),
-            ("reason", Value::Text(reason.to_string())),
+            ("name", Value::Text(values.name.to_string())),
+            ("reason", Value::Text(values.reason.to_string())),
         ],
     )
 }
@@ -18228,14 +20161,23 @@ pub fn theme_editor_shadow_own(theme: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `theme-editor.shape-changed`, by name.
+#[derive(Clone, Copy)]
+pub struct ThemeEditorShapeChanged<'a> {
+    /// The value of `{count}`.
+    pub count: i64,
+    /// The value of `{theme}`.
+    pub theme: &'a dyn std::fmt::Display,
+}
+
 /// The message `theme-editor.shape-changed`.
 #[must_use]
-pub fn theme_editor_shape_changed(count: i64, theme: impl std::fmt::Display) -> Message {
+pub fn theme_editor_shape_changed(values: ThemeEditorShapeChanged<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("theme-editor.shape-changed"),
         vec![
-            ("count", Value::Number(count)),
-            ("theme", Value::Text(theme.to_string())),
+            ("count", Value::Number(values.count)),
+            ("theme", Value::Text(values.theme.to_string())),
         ],
     )
 }
@@ -18267,17 +20209,23 @@ pub fn theme_editor_use_built_in(theme: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `theme.device-resolved`, by name.
+#[derive(Clone, Copy)]
+pub struct ThemeDeviceResolved<'a> {
+    /// The value of `{device}`.
+    pub device: &'a dyn std::fmt::Display,
+    /// The value of `{theme}`.
+    pub theme: &'a dyn std::fmt::Display,
+}
+
 /// The message `theme.device-resolved`.
 #[must_use]
-pub fn theme_device_resolved(
-    device: impl std::fmt::Display,
-    theme: impl std::fmt::Display,
-) -> Message {
+pub fn theme_device_resolved(values: ThemeDeviceResolved<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("theme.device-resolved"),
         vec![
-            ("device", Value::Text(device.to_string())),
-            ("theme", Value::Text(theme.to_string())),
+            ("device", Value::Text(values.device.to_string())),
+            ("theme", Value::Text(values.theme.to_string())),
         ],
     )
 }
@@ -18327,44 +20275,65 @@ pub fn time_details_change_of(day: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `time.details.change-title`, by name.
+#[derive(Clone, Copy)]
+pub struct TimeDetailsChangeTitle<'a> {
+    /// The value of `{day}`.
+    pub day: &'a dyn std::fmt::Display,
+    /// The value of `{issue}`.
+    pub issue: &'a dyn std::fmt::Display,
+}
+
 /// The message `time.details.change-title`.
 #[must_use]
-pub fn time_details_change_title(
-    day: impl std::fmt::Display,
-    issue: impl std::fmt::Display,
-) -> Message {
+pub fn time_details_change_title(values: TimeDetailsChangeTitle<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("time.details.change-title"),
         vec![
-            ("day", Value::Text(day.to_string())),
-            ("issue", Value::Text(issue.to_string())),
+            ("day", Value::Text(values.day.to_string())),
+            ("issue", Value::Text(values.issue.to_string())),
         ],
     )
+}
+
+/// The values of the message `time.details.change-title-narrow`, by name.
+#[derive(Clone, Copy)]
+pub struct TimeDetailsChangeTitleNarrow<'a> {
+    /// The value of `{day}`.
+    pub day: &'a dyn std::fmt::Display,
+    /// The value of `{issue}`.
+    pub issue: &'a dyn std::fmt::Display,
 }
 
 /// The message `time.details.change-title-narrow`.
 #[must_use]
-pub fn time_details_change_title_narrow(
-    day: impl std::fmt::Display,
-    issue: impl std::fmt::Display,
-) -> Message {
+pub fn time_details_change_title_narrow(values: TimeDetailsChangeTitleNarrow<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("time.details.change-title-narrow"),
         vec![
-            ("day", Value::Text(day.to_string())),
-            ("issue", Value::Text(issue.to_string())),
+            ("day", Value::Text(values.day.to_string())),
+            ("issue", Value::Text(values.issue.to_string())),
         ],
     )
 }
 
+/// The values of the message `time.details.entry`, by name.
+#[derive(Clone, Copy)]
+pub struct TimeDetailsEntry<'a> {
+    /// The value of `{day}`.
+    pub day: &'a dyn std::fmt::Display,
+    /// The value of `{length}`.
+    pub length: &'a dyn std::fmt::Display,
+}
+
 /// The message `time.details.entry`.
 #[must_use]
-pub fn time_details_entry(day: impl std::fmt::Display, length: impl std::fmt::Display) -> Message {
+pub fn time_details_entry(values: TimeDetailsEntry<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("time.details.entry"),
         vec![
-            ("day", Value::Text(day.to_string())),
-            ("length", Value::Text(length.to_string())),
+            ("day", Value::Text(values.day.to_string())),
+            ("length", Value::Text(values.length.to_string())),
         ],
     )
 }
@@ -18378,19 +20347,26 @@ pub fn time_details_title(issue: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `time.entry.length-hint`, by name.
+#[derive(Clone, Copy)]
+pub struct TimeEntryLengthHint<'a> {
+    /// The value of `{colon}`.
+    pub colon: &'a dyn std::fmt::Display,
+    /// The value of `{decimal}`.
+    pub decimal: &'a dyn std::fmt::Display,
+    /// The value of `{short}`.
+    pub short: &'a dyn std::fmt::Display,
+}
+
 /// The message `time.entry.length-hint`.
 #[must_use]
-pub fn time_entry_length_hint(
-    colon: impl std::fmt::Display,
-    decimal: impl std::fmt::Display,
-    short: impl std::fmt::Display,
-) -> Message {
+pub fn time_entry_length_hint(values: TimeEntryLengthHint<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("time.entry.length-hint"),
         vec![
-            ("colon", Value::Text(colon.to_string())),
-            ("decimal", Value::Text(decimal.to_string())),
-            ("short", Value::Text(short.to_string())),
+            ("colon", Value::Text(values.colon.to_string())),
+            ("decimal", Value::Text(values.decimal.to_string())),
+            ("short", Value::Text(values.short.to_string())),
         ],
     )
 }
@@ -18413,17 +20389,23 @@ pub fn time_length_hours(hours: i64) -> Message {
     )
 }
 
+/// The values of the message `time.length.hours-and-minutes`, by name.
+#[derive(Clone, Copy)]
+pub struct TimeLengthHoursAndMinutes<'a> {
+    /// The value of `{hours}`.
+    pub hours: &'a dyn std::fmt::Display,
+    /// The value of `{minutes}`.
+    pub minutes: &'a dyn std::fmt::Display,
+}
+
 /// The message `time.length.hours-and-minutes`.
 #[must_use]
-pub fn time_length_hours_and_minutes(
-    hours: impl std::fmt::Display,
-    minutes: impl std::fmt::Display,
-) -> Message {
+pub fn time_length_hours_and_minutes(values: TimeLengthHoursAndMinutes<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("time.length.hours-and-minutes"),
         vec![
-            ("hours", Value::Text(hours.to_string())),
-            ("minutes", Value::Text(minutes.to_string())),
+            ("hours", Value::Text(values.hours.to_string())),
+            ("minutes", Value::Text(values.minutes.to_string())),
         ],
     )
 }
@@ -18500,17 +20482,23 @@ pub fn time_others_reading(person: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `time.others.week-of-person`, by name.
+#[derive(Clone, Copy)]
+pub struct TimeOthersWeekOfPerson<'a> {
+    /// The value of `{date}`.
+    pub date: &'a dyn std::fmt::Display,
+    /// The value of `{person}`.
+    pub person: &'a dyn std::fmt::Display,
+}
+
 /// The message `time.others.week-of-person`.
 #[must_use]
-pub fn time_others_week_of_person(
-    date: impl std::fmt::Display,
-    person: impl std::fmt::Display,
-) -> Message {
+pub fn time_others_week_of_person(values: TimeOthersWeekOfPerson<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("time.others.week-of-person"),
         vec![
-            ("date", Value::Text(date.to_string())),
-            ("person", Value::Text(person.to_string())),
+            ("date", Value::Text(values.date.to_string())),
+            ("person", Value::Text(values.person.to_string())),
         ],
     )
 }
@@ -18533,86 +20521,128 @@ pub fn time_sheet_breaks_as_times(example: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `time.sheet.cell-label`, by name.
+#[derive(Clone, Copy)]
+pub struct TimeSheetCellLabel<'a> {
+    /// The value of `{day}`.
+    pub day: &'a dyn std::fmt::Display,
+    /// The value of `{row}`.
+    pub row: &'a dyn std::fmt::Display,
+}
+
 /// The message `time.sheet.cell-label`.
 #[must_use]
-pub fn time_sheet_cell_label(day: impl std::fmt::Display, row: impl std::fmt::Display) -> Message {
+pub fn time_sheet_cell_label(values: TimeSheetCellLabel<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("time.sheet.cell-label"),
         vec![
-            ("day", Value::Text(day.to_string())),
-            ("row", Value::Text(row.to_string())),
+            ("day", Value::Text(values.day.to_string())),
+            ("row", Value::Text(values.row.to_string())),
         ],
     )
+}
+
+/// The values of the message `time.sheet.day-heading`, by name.
+#[derive(Clone, Copy)]
+pub struct TimeSheetDayHeading<'a> {
+    /// The value of `{day}`.
+    pub day: &'a dyn std::fmt::Display,
+    /// The value of `{weekday}`.
+    pub weekday: &'a dyn std::fmt::Display,
 }
 
 /// The message `time.sheet.day-heading`.
 #[must_use]
-pub fn time_sheet_day_heading(
-    day: impl std::fmt::Display,
-    weekday: impl std::fmt::Display,
-) -> Message {
+pub fn time_sheet_day_heading(values: TimeSheetDayHeading<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("time.sheet.day-heading"),
         vec![
-            ("day", Value::Text(day.to_string())),
-            ("weekday", Value::Text(weekday.to_string())),
+            ("day", Value::Text(values.day.to_string())),
+            ("weekday", Value::Text(values.weekday.to_string())),
         ],
     )
+}
+
+/// The values of the message `time.sheet.day-tab`, by name.
+#[derive(Clone, Copy)]
+pub struct TimeSheetDayTab<'a> {
+    /// The value of `{day}`.
+    pub day: &'a dyn std::fmt::Display,
+    /// The value of `{weekday}`.
+    pub weekday: &'a dyn std::fmt::Display,
 }
 
 /// The message `time.sheet.day-tab`.
 #[must_use]
-pub fn time_sheet_day_tab(day: impl std::fmt::Display, weekday: impl std::fmt::Display) -> Message {
+pub fn time_sheet_day_tab(values: TimeSheetDayTab<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("time.sheet.day-tab"),
         vec![
-            ("day", Value::Text(day.to_string())),
-            ("weekday", Value::Text(weekday.to_string())),
+            ("day", Value::Text(values.day.to_string())),
+            ("weekday", Value::Text(values.weekday.to_string())),
         ],
     )
+}
+
+/// The values of the message `time.sheet.day-tab-name`, by name.
+#[derive(Clone, Copy)]
+pub struct TimeSheetDayTabName<'a> {
+    /// The value of `{day}`.
+    pub day: &'a dyn std::fmt::Display,
+    /// The value of `{weekday}`.
+    pub weekday: &'a dyn std::fmt::Display,
 }
 
 /// The message `time.sheet.day-tab-name`.
 #[must_use]
-pub fn time_sheet_day_tab_name(
-    day: impl std::fmt::Display,
-    weekday: impl std::fmt::Display,
-) -> Message {
+pub fn time_sheet_day_tab_name(values: TimeSheetDayTabName<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("time.sheet.day-tab-name"),
         vec![
-            ("day", Value::Text(day.to_string())),
-            ("weekday", Value::Text(weekday.to_string())),
+            ("day", Value::Text(values.day.to_string())),
+            ("weekday", Value::Text(values.weekday.to_string())),
         ],
     )
+}
+
+/// The values of the message `time.sheet.day-tab-name-today`, by name.
+#[derive(Clone, Copy)]
+pub struct TimeSheetDayTabNameToday<'a> {
+    /// The value of `{day}`.
+    pub day: &'a dyn std::fmt::Display,
+    /// The value of `{weekday}`.
+    pub weekday: &'a dyn std::fmt::Display,
 }
 
 /// The message `time.sheet.day-tab-name-today`.
 #[must_use]
-pub fn time_sheet_day_tab_name_today(
-    day: impl std::fmt::Display,
-    weekday: impl std::fmt::Display,
-) -> Message {
+pub fn time_sheet_day_tab_name_today(values: TimeSheetDayTabNameToday<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("time.sheet.day-tab-name-today"),
         vec![
-            ("day", Value::Text(day.to_string())),
-            ("weekday", Value::Text(weekday.to_string())),
+            ("day", Value::Text(values.day.to_string())),
+            ("weekday", Value::Text(values.weekday.to_string())),
         ],
     )
 }
 
+/// The values of the message `time.sheet.day-tab-today`, by name.
+#[derive(Clone, Copy)]
+pub struct TimeSheetDayTabToday<'a> {
+    /// The value of `{day}`.
+    pub day: &'a dyn std::fmt::Display,
+    /// The value of `{weekday}`.
+    pub weekday: &'a dyn std::fmt::Display,
+}
+
 /// The message `time.sheet.day-tab-today`.
 #[must_use]
-pub fn time_sheet_day_tab_today(
-    day: impl std::fmt::Display,
-    weekday: impl std::fmt::Display,
-) -> Message {
+pub fn time_sheet_day_tab_today(values: TimeSheetDayTabToday<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("time.sheet.day-tab-today"),
         vec![
-            ("day", Value::Text(day.to_string())),
-            ("weekday", Value::Text(weekday.to_string())),
+            ("day", Value::Text(values.day.to_string())),
+            ("weekday", Value::Text(values.weekday.to_string())),
         ],
     )
 }
@@ -18653,17 +20683,23 @@ pub fn time_sheet_history_breaks(spans: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `time.sheet.history-by`, by name.
+#[derive(Clone, Copy)]
+pub struct TimeSheetHistoryBy<'a> {
+    /// The value of `{at}`.
+    pub at: &'a dyn std::fmt::Display,
+    /// The value of `{person}`.
+    pub person: &'a dyn std::fmt::Display,
+}
+
 /// The message `time.sheet.history-by`.
 #[must_use]
-pub fn time_sheet_history_by(
-    at: impl std::fmt::Display,
-    person: impl std::fmt::Display,
-) -> Message {
+pub fn time_sheet_history_by(values: TimeSheetHistoryBy<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("time.sheet.history-by"),
         vec![
-            ("at", Value::Text(at.to_string())),
-            ("person", Value::Text(person.to_string())),
+            ("at", Value::Text(values.at.to_string())),
+            ("person", Value::Text(values.person.to_string())),
         ],
     )
 }
@@ -18731,17 +20767,23 @@ pub fn time_sheet_negative_length(length: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `time.sheet.not-a-time`, by name.
+#[derive(Clone, Copy)]
+pub struct TimeSheetNotATime<'a> {
+    /// The value of `{afternoon}`.
+    pub afternoon: &'a dyn std::fmt::Display,
+    /// The value of `{morning}`.
+    pub morning: &'a dyn std::fmt::Display,
+}
+
 /// The message `time.sheet.not-a-time`.
 #[must_use]
-pub fn time_sheet_not_a_time(
-    afternoon: impl std::fmt::Display,
-    morning: impl std::fmt::Display,
-) -> Message {
+pub fn time_sheet_not_a_time(values: TimeSheetNotATime<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("time.sheet.not-a-time"),
         vec![
-            ("afternoon", Value::Text(afternoon.to_string())),
-            ("morning", Value::Text(morning.to_string())),
+            ("afternoon", Value::Text(values.afternoon.to_string())),
+            ("morning", Value::Text(values.morning.to_string())),
         ],
     )
 }
@@ -18755,32 +20797,44 @@ pub fn time_sheet_not_breaks(example: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `time.sheet.reason-change-end`, by name.
+#[derive(Clone, Copy)]
+pub struct TimeSheetReasonChangeEnd<'a> {
+    /// The value of `{after}`.
+    pub after: &'a dyn std::fmt::Display,
+    /// The value of `{before}`.
+    pub before: &'a dyn std::fmt::Display,
+}
+
 /// The message `time.sheet.reason-change-end`.
 #[must_use]
-pub fn time_sheet_reason_change_end(
-    after: impl std::fmt::Display,
-    before: impl std::fmt::Display,
-) -> Message {
+pub fn time_sheet_reason_change_end(values: TimeSheetReasonChangeEnd<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("time.sheet.reason-change-end"),
         vec![
-            ("after", Value::Text(after.to_string())),
-            ("before", Value::Text(before.to_string())),
+            ("after", Value::Text(values.after.to_string())),
+            ("before", Value::Text(values.before.to_string())),
         ],
     )
 }
 
+/// The values of the message `time.sheet.reason-change-start`, by name.
+#[derive(Clone, Copy)]
+pub struct TimeSheetReasonChangeStart<'a> {
+    /// The value of `{after}`.
+    pub after: &'a dyn std::fmt::Display,
+    /// The value of `{before}`.
+    pub before: &'a dyn std::fmt::Display,
+}
+
 /// The message `time.sheet.reason-change-start`.
 #[must_use]
-pub fn time_sheet_reason_change_start(
-    after: impl std::fmt::Display,
-    before: impl std::fmt::Display,
-) -> Message {
+pub fn time_sheet_reason_change_start(values: TimeSheetReasonChangeStart<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("time.sheet.reason-change-start"),
         vec![
-            ("after", Value::Text(after.to_string())),
-            ("before", Value::Text(before.to_string())),
+            ("after", Value::Text(values.after.to_string())),
+            ("before", Value::Text(values.before.to_string())),
         ],
     )
 }
@@ -18830,17 +20884,23 @@ pub fn time_sheet_reason_title(day: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `time.sheet.warning-of-day`, by name.
+#[derive(Clone, Copy)]
+pub struct TimeSheetWarningOfDay<'a> {
+    /// The value of `{day}`.
+    pub day: &'a dyn std::fmt::Display,
+    /// The value of `{sentence}`.
+    pub sentence: &'a dyn std::fmt::Display,
+}
+
 /// The message `time.sheet.warning-of-day`.
 #[must_use]
-pub fn time_sheet_warning_of_day(
-    day: impl std::fmt::Display,
-    sentence: impl std::fmt::Display,
-) -> Message {
+pub fn time_sheet_warning_of_day(values: TimeSheetWarningOfDay<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("time.sheet.warning-of-day"),
         vec![
-            ("day", Value::Text(day.to_string())),
-            ("sentence", Value::Text(sentence.to_string())),
+            ("day", Value::Text(values.day.to_string())),
+            ("sentence", Value::Text(values.sentence.to_string())),
         ],
     )
 }
@@ -18854,29 +20914,44 @@ pub fn time_sheet_week_of(date: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `time.start-time.not-a-time`, by name.
+#[derive(Clone, Copy)]
+pub struct TimeStartTimeNotATime<'a> {
+    /// The value of `{afternoon}`.
+    pub afternoon: &'a dyn std::fmt::Display,
+    /// The value of `{morning}`.
+    pub morning: &'a dyn std::fmt::Display,
+}
+
 /// The message `time.start-time.not-a-time`.
 #[must_use]
-pub fn time_start_time_not_a_time(
-    afternoon: impl std::fmt::Display,
-    morning: impl std::fmt::Display,
-) -> Message {
+pub fn time_start_time_not_a_time(values: TimeStartTimeNotATime<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("time.start-time.not-a-time"),
         vec![
-            ("afternoon", Value::Text(afternoon.to_string())),
-            ("morning", Value::Text(morning.to_string())),
+            ("afternoon", Value::Text(values.afternoon.to_string())),
+            ("morning", Value::Text(values.morning.to_string())),
         ],
     )
 }
 
+/// The values of the message `time.stop.nothing`, by name.
+#[derive(Clone, Copy)]
+pub struct TimeStopNothing<'a> {
+    /// The value of `{issue}`.
+    pub issue: &'a dyn std::fmt::Display,
+    /// The value of `{minutes}`.
+    pub minutes: i64,
+}
+
 /// The message `time.stop.nothing`.
 #[must_use]
-pub fn time_stop_nothing(issue: impl std::fmt::Display, minutes: i64) -> Message {
+pub fn time_stop_nothing(values: TimeStopNothing<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("time.stop.nothing"),
         vec![
-            ("issue", Value::Text(issue.to_string())),
-            ("minutes", Value::Number(minutes)),
+            ("issue", Value::Text(values.issue.to_string())),
+            ("minutes", Value::Number(values.minutes)),
         ],
     )
 }
@@ -18890,14 +20965,23 @@ pub fn time_stop_title(issue: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `time.stop.worked`, by name.
+#[derive(Clone, Copy)]
+pub struct TimeStopWorked<'a> {
+    /// The value of `{length}`.
+    pub length: &'a dyn std::fmt::Display,
+    /// The value of `{title}`.
+    pub title: &'a dyn std::fmt::Display,
+}
+
 /// The message `time.stop.worked`.
 #[must_use]
-pub fn time_stop_worked(length: impl std::fmt::Display, title: impl std::fmt::Display) -> Message {
+pub fn time_stop_worked(values: TimeStopWorked<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("time.stop.worked"),
         vec![
-            ("length", Value::Text(length.to_string())),
-            ("title", Value::Text(title.to_string())),
+            ("length", Value::Text(values.length.to_string())),
+            ("title", Value::Text(values.title.to_string())),
         ],
     )
 }
@@ -18920,14 +21004,23 @@ pub fn time_throw_away_title(issue: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `time.timer.menu-of`, by name.
+#[derive(Clone, Copy)]
+pub struct TimeTimerMenuOf<'a> {
+    /// The value of `{clock}`.
+    pub clock: &'a dyn std::fmt::Display,
+    /// The value of `{issue}`.
+    pub issue: &'a dyn std::fmt::Display,
+}
+
 /// The message `time.timer.menu-of`.
 #[must_use]
-pub fn time_timer_menu_of(clock: impl std::fmt::Display, issue: impl std::fmt::Display) -> Message {
+pub fn time_timer_menu_of(values: TimeTimerMenuOf<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("time.timer.menu-of"),
         vec![
-            ("clock", Value::Text(clock.to_string())),
-            ("issue", Value::Text(issue.to_string())),
+            ("clock", Value::Text(values.clock.to_string())),
+            ("issue", Value::Text(values.issue.to_string())),
         ],
     )
 }
@@ -18950,14 +21043,23 @@ pub fn time_timer_runs_long_on(issue: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `time.timer.saved`, by name.
+#[derive(Clone, Copy)]
+pub struct TimeTimerSaved<'a> {
+    /// The value of `{issue}`.
+    pub issue: &'a dyn std::fmt::Display,
+    /// The value of `{length}`.
+    pub length: &'a dyn std::fmt::Display,
+}
+
 /// The message `time.timer.saved`.
 #[must_use]
-pub fn time_timer_saved(issue: impl std::fmt::Display, length: impl std::fmt::Display) -> Message {
+pub fn time_timer_saved(values: TimeTimerSaved<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("time.timer.saved"),
         vec![
-            ("issue", Value::Text(issue.to_string())),
-            ("length", Value::Text(length.to_string())),
+            ("issue", Value::Text(values.issue.to_string())),
+            ("length", Value::Text(values.length.to_string())),
         ],
     )
 }
@@ -18971,31 +21073,47 @@ pub fn time_timer_stop_on(issue: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `time.timer.too-short`, by name.
+#[derive(Clone, Copy)]
+pub struct TimeTimerTooShort<'a> {
+    /// The value of `{issue}`.
+    pub issue: &'a dyn std::fmt::Display,
+    /// The value of `{minutes}`.
+    pub minutes: i64,
+}
+
 /// The message `time.timer.too-short`.
 #[must_use]
-pub fn time_timer_too_short(issue: impl std::fmt::Display, minutes: i64) -> Message {
+pub fn time_timer_too_short(values: TimeTimerTooShort<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("time.timer.too-short"),
         vec![
-            ("issue", Value::Text(issue.to_string())),
-            ("minutes", Value::Number(minutes)),
+            ("issue", Value::Text(values.issue.to_string())),
+            ("minutes", Value::Number(values.minutes)),
         ],
     )
 }
 
+/// The values of the message `time.work-day.done`, by name.
+#[derive(Clone, Copy)]
+pub struct TimeWorkDayDone<'a> {
+    /// The value of `{end}`.
+    pub end: &'a dyn std::fmt::Display,
+    /// The value of `{start}`.
+    pub start: &'a dyn std::fmt::Display,
+    /// The value of `{worked}`.
+    pub worked: &'a dyn std::fmt::Display,
+}
+
 /// The message `time.work-day.done`.
 #[must_use]
-pub fn time_work_day_done(
-    end: impl std::fmt::Display,
-    start: impl std::fmt::Display,
-    worked: impl std::fmt::Display,
-) -> Message {
+pub fn time_work_day_done(values: TimeWorkDayDone<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("time.work-day.done"),
         vec![
-            ("end", Value::Text(end.to_string())),
-            ("start", Value::Text(start.to_string())),
-            ("worked", Value::Text(worked.to_string())),
+            ("end", Value::Text(values.end.to_string())),
+            ("start", Value::Text(values.start.to_string())),
+            ("worked", Value::Text(values.worked.to_string())),
         ],
     )
 }
@@ -19009,17 +21127,23 @@ pub fn time_work_day_left_open(day: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `time.work-day.on-break`, by name.
+#[derive(Clone, Copy)]
+pub struct TimeWorkDayOnBreak<'a> {
+    /// The value of `{start}`.
+    pub start: &'a dyn std::fmt::Display,
+    /// The value of `{worked}`.
+    pub worked: &'a dyn std::fmt::Display,
+}
+
 /// The message `time.work-day.on-break`.
 #[must_use]
-pub fn time_work_day_on_break(
-    start: impl std::fmt::Display,
-    worked: impl std::fmt::Display,
-) -> Message {
+pub fn time_work_day_on_break(values: TimeWorkDayOnBreak<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("time.work-day.on-break"),
         vec![
-            ("start", Value::Text(start.to_string())),
-            ("worked", Value::Text(worked.to_string())),
+            ("start", Value::Text(values.start.to_string())),
+            ("worked", Value::Text(values.worked.to_string())),
         ],
     )
 }
@@ -19042,17 +21166,23 @@ pub fn time_work_day_open_title(day: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `time.work-day.since`, by name.
+#[derive(Clone, Copy)]
+pub struct TimeWorkDaySince<'a> {
+    /// The value of `{start}`.
+    pub start: &'a dyn std::fmt::Display,
+    /// The value of `{worked}`.
+    pub worked: &'a dyn std::fmt::Display,
+}
+
 /// The message `time.work-day.since`.
 #[must_use]
-pub fn time_work_day_since(
-    start: impl std::fmt::Display,
-    worked: impl std::fmt::Display,
-) -> Message {
+pub fn time_work_day_since(values: TimeWorkDaySince<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("time.work-day.since"),
         vec![
-            ("start", Value::Text(start.to_string())),
-            ("worked", Value::Text(worked.to_string())),
+            ("start", Value::Text(values.start.to_string())),
+            ("worked", Value::Text(values.worked.to_string())),
         ],
     )
 }
@@ -19129,31 +21259,47 @@ pub fn timeline_assigned(people: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `timeline.bar`, by name.
+#[derive(Clone, Copy)]
+pub struct TimelineBar<'a> {
+    /// The value of `{days}`.
+    pub days: &'a dyn std::fmt::Display,
+    /// The value of `{key}`.
+    pub key: &'a dyn std::fmt::Display,
+    /// The value of `{title}`.
+    pub title: &'a dyn std::fmt::Display,
+}
+
 /// The message `timeline.bar`.
 #[must_use]
-pub fn timeline_bar(
-    days: impl std::fmt::Display,
-    key: impl std::fmt::Display,
-    title: impl std::fmt::Display,
-) -> Message {
+pub fn timeline_bar(values: TimelineBar<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("timeline.bar"),
         vec![
-            ("days", Value::Text(days.to_string())),
-            ("key", Value::Text(key.to_string())),
-            ("title", Value::Text(title.to_string())),
+            ("days", Value::Text(values.days.to_string())),
+            ("key", Value::Text(values.key.to_string())),
+            ("title", Value::Text(values.title.to_string())),
         ],
     )
 }
 
+/// The values of the message `timeline.bar-with`, by name.
+#[derive(Clone, Copy)]
+pub struct TimelineBarWith<'a> {
+    /// The value of `{bar}`.
+    pub bar: &'a dyn std::fmt::Display,
+    /// The value of `{more}`.
+    pub more: &'a dyn std::fmt::Display,
+}
+
 /// The message `timeline.bar-with`.
 #[must_use]
-pub fn timeline_bar_with(bar: impl std::fmt::Display, more: impl std::fmt::Display) -> Message {
+pub fn timeline_bar_with(values: TimelineBarWith<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("timeline.bar-with"),
         vec![
-            ("bar", Value::Text(bar.to_string())),
-            ("more", Value::Text(more.to_string())),
+            ("bar", Value::Text(values.bar.to_string())),
+            ("more", Value::Text(values.more.to_string())),
         ],
     )
 }
@@ -19167,44 +21313,65 @@ pub fn timeline_card(key: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `timeline.dates-changed`, by name.
+#[derive(Clone, Copy)]
+pub struct TimelineDatesChanged<'a> {
+    /// The value of `{dates}`.
+    pub dates: &'a dyn std::fmt::Display,
+    /// The value of `{key}`.
+    pub key: &'a dyn std::fmt::Display,
+}
+
 /// The message `timeline.dates-changed`.
 #[must_use]
-pub fn timeline_dates_changed(
-    dates: impl std::fmt::Display,
-    key: impl std::fmt::Display,
-) -> Message {
+pub fn timeline_dates_changed(values: TimelineDatesChanged<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("timeline.dates-changed"),
         vec![
-            ("dates", Value::Text(dates.to_string())),
-            ("key", Value::Text(key.to_string())),
+            ("dates", Value::Text(values.dates.to_string())),
+            ("key", Value::Text(values.key.to_string())),
         ],
     )
+}
+
+/// The values of the message `timeline.days`, by name.
+#[derive(Clone, Copy)]
+pub struct TimelineDays<'a> {
+    /// The value of `{first}`.
+    pub first: &'a dyn std::fmt::Display,
+    /// The value of `{last}`.
+    pub last: &'a dyn std::fmt::Display,
 }
 
 /// The message `timeline.days`.
 #[must_use]
-pub fn timeline_days(first: impl std::fmt::Display, last: impl std::fmt::Display) -> Message {
+pub fn timeline_days(values: TimelineDays<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("timeline.days"),
         vec![
-            ("first", Value::Text(first.to_string())),
-            ("last", Value::Text(last.to_string())),
+            ("first", Value::Text(values.first.to_string())),
+            ("last", Value::Text(values.last.to_string())),
         ],
     )
 }
 
+/// The values of the message `timeline.dependency-made`, by name.
+#[derive(Clone, Copy)]
+pub struct TimelineDependencyMade<'a> {
+    /// The value of `{first}`.
+    pub first: &'a dyn std::fmt::Display,
+    /// The value of `{waiting}`.
+    pub waiting: &'a dyn std::fmt::Display,
+}
+
 /// The message `timeline.dependency-made`.
 #[must_use]
-pub fn timeline_dependency_made(
-    first: impl std::fmt::Display,
-    waiting: impl std::fmt::Display,
-) -> Message {
+pub fn timeline_dependency_made(values: TimelineDependencyMade<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("timeline.dependency-made"),
         vec![
-            ("first", Value::Text(first.to_string())),
-            ("waiting", Value::Text(waiting.to_string())),
+            ("first", Value::Text(values.first.to_string())),
+            ("waiting", Value::Text(values.waiting.to_string())),
         ],
     )
 }
@@ -19218,19 +21385,26 @@ pub fn timeline_drag_issue(key: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `timeline.effort-days`, by name.
+#[derive(Clone, Copy)]
+pub struct TimelineEffortDays<'a> {
+    /// The value of `{days}`.
+    pub days: i64,
+    /// The value of `{estimate}`.
+    pub estimate: &'a dyn std::fmt::Display,
+    /// The value of `{factor}`.
+    pub factor: &'a dyn std::fmt::Display,
+}
+
 /// The message `timeline.effort-days`.
 #[must_use]
-pub fn timeline_effort_days(
-    days: i64,
-    estimate: impl std::fmt::Display,
-    factor: impl std::fmt::Display,
-) -> Message {
+pub fn timeline_effort_days(values: TimelineEffortDays<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("timeline.effort-days"),
         vec![
-            ("days", Value::Number(days)),
-            ("estimate", Value::Text(estimate.to_string())),
-            ("factor", Value::Text(factor.to_string())),
+            ("days", Value::Number(values.days)),
+            ("estimate", Value::Text(values.estimate.to_string())),
+            ("factor", Value::Text(values.factor.to_string())),
         ],
     )
 }
@@ -19244,50 +21418,86 @@ pub fn timeline_give_to_name(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `timeline.given`, by name.
+#[derive(Clone, Copy)]
+pub struct TimelineGiven<'a> {
+    /// The value of `{key}`.
+    pub key: &'a dyn std::fmt::Display,
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+}
+
 /// The message `timeline.given`.
 #[must_use]
-pub fn timeline_given(key: impl std::fmt::Display, name: impl std::fmt::Display) -> Message {
+pub fn timeline_given(values: TimelineGiven<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("timeline.given"),
         vec![
-            ("key", Value::Text(key.to_string())),
-            ("name", Value::Text(name.to_string())),
+            ("key", Value::Text(values.key.to_string())),
+            ("name", Value::Text(values.name.to_string())),
         ],
     )
+}
+
+/// The values of the message `timeline.goal`, by name.
+#[derive(Clone, Copy)]
+pub struct TimelineGoal<'a> {
+    /// The value of `{days}`.
+    pub days: &'a dyn std::fmt::Display,
+    /// The value of `{key}`.
+    pub key: &'a dyn std::fmt::Display,
 }
 
 /// The message `timeline.goal`.
 #[must_use]
-pub fn timeline_goal(days: impl std::fmt::Display, key: impl std::fmt::Display) -> Message {
+pub fn timeline_goal(values: TimelineGoal<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("timeline.goal"),
         vec![
-            ("days", Value::Text(days.to_string())),
-            ("key", Value::Text(key.to_string())),
+            ("days", Value::Text(values.days.to_string())),
+            ("key", Value::Text(values.key.to_string())),
         ],
     )
+}
+
+/// The values of the message `timeline.goal-due`, by name.
+#[derive(Clone, Copy)]
+pub struct TimelineGoalDue<'a> {
+    /// The value of `{day}`.
+    pub day: &'a dyn std::fmt::Display,
+    /// The value of `{key}`.
+    pub key: &'a dyn std::fmt::Display,
 }
 
 /// The message `timeline.goal-due`.
 #[must_use]
-pub fn timeline_goal_due(day: impl std::fmt::Display, key: impl std::fmt::Display) -> Message {
+pub fn timeline_goal_due(values: TimelineGoalDue<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("timeline.goal-due"),
         vec![
-            ("day", Value::Text(day.to_string())),
-            ("key", Value::Text(key.to_string())),
+            ("day", Value::Text(values.day.to_string())),
+            ("key", Value::Text(values.key.to_string())),
         ],
     )
 }
 
+/// The values of the message `timeline.hatched-on`, by name.
+#[derive(Clone, Copy)]
+pub struct TimelineHatchedOn<'a> {
+    /// The value of `{days}`.
+    pub days: &'a dyn std::fmt::Display,
+    /// The value of `{what}`.
+    pub what: &'a dyn std::fmt::Display,
+}
+
 /// The message `timeline.hatched-on`.
 #[must_use]
-pub fn timeline_hatched_on(days: impl std::fmt::Display, what: impl std::fmt::Display) -> Message {
+pub fn timeline_hatched_on(values: TimelineHatchedOn<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("timeline.hatched-on"),
         vec![
-            ("days", Value::Text(days.to_string())),
-            ("what", Value::Text(what.to_string())),
+            ("days", Value::Text(values.days.to_string())),
+            ("what", Value::Text(values.what.to_string())),
         ],
     )
 }
@@ -19328,36 +21538,50 @@ pub fn timeline_moved_after(count: i64) -> Message {
     )
 }
 
+/// The values of the message `timeline.moved-earlier`, by name.
+#[derive(Clone, Copy)]
+pub struct TimelineMovedEarlier<'a> {
+    /// The value of `{amount}`.
+    pub amount: &'a dyn std::fmt::Display,
+    /// The value of `{dates}`.
+    pub dates: &'a dyn std::fmt::Display,
+    /// The value of `{key}`.
+    pub key: &'a dyn std::fmt::Display,
+}
+
 /// The message `timeline.moved-earlier`.
 #[must_use]
-pub fn timeline_moved_earlier(
-    amount: impl std::fmt::Display,
-    dates: impl std::fmt::Display,
-    key: impl std::fmt::Display,
-) -> Message {
+pub fn timeline_moved_earlier(values: TimelineMovedEarlier<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("timeline.moved-earlier"),
         vec![
-            ("amount", Value::Text(amount.to_string())),
-            ("dates", Value::Text(dates.to_string())),
-            ("key", Value::Text(key.to_string())),
+            ("amount", Value::Text(values.amount.to_string())),
+            ("dates", Value::Text(values.dates.to_string())),
+            ("key", Value::Text(values.key.to_string())),
         ],
     )
 }
 
+/// The values of the message `timeline.moved-later`, by name.
+#[derive(Clone, Copy)]
+pub struct TimelineMovedLater<'a> {
+    /// The value of `{amount}`.
+    pub amount: &'a dyn std::fmt::Display,
+    /// The value of `{dates}`.
+    pub dates: &'a dyn std::fmt::Display,
+    /// The value of `{key}`.
+    pub key: &'a dyn std::fmt::Display,
+}
+
 /// The message `timeline.moved-later`.
 #[must_use]
-pub fn timeline_moved_later(
-    amount: impl std::fmt::Display,
-    dates: impl std::fmt::Display,
-    key: impl std::fmt::Display,
-) -> Message {
+pub fn timeline_moved_later(values: TimelineMovedLater<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("timeline.moved-later"),
         vec![
-            ("amount", Value::Text(amount.to_string())),
-            ("dates", Value::Text(dates.to_string())),
-            ("key", Value::Text(key.to_string())),
+            ("amount", Value::Text(values.amount.to_string())),
+            ("dates", Value::Text(values.dates.to_string())),
+            ("key", Value::Text(values.key.to_string())),
         ],
     )
 }
@@ -19398,17 +21622,23 @@ pub fn timeline_other_chosen(key: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `timeline.person-more`, by name.
+#[derive(Clone, Copy)]
+pub struct TimelinePersonMore<'a> {
+    /// The value of `{count}`.
+    pub count: &'a dyn std::fmt::Display,
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+}
+
 /// The message `timeline.person-more`.
 #[must_use]
-pub fn timeline_person_more(
-    count: impl std::fmt::Display,
-    name: impl std::fmt::Display,
-) -> Message {
+pub fn timeline_person_more(values: TimelinePersonMore<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("timeline.person-more"),
         vec![
-            ("count", Value::Text(count.to_string())),
-            ("name", Value::Text(name.to_string())),
+            ("count", Value::Text(values.count.to_string())),
+            ("name", Value::Text(values.name.to_string())),
         ],
     )
 }
@@ -19449,29 +21679,44 @@ pub fn timeline_preview_before(days: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `timeline.preview-longer`, by name.
+#[derive(Clone, Copy)]
+pub struct TimelinePreviewLonger<'a> {
+    /// The value of `{day}`.
+    pub day: &'a dyn std::fmt::Display,
+    /// The value of `{key}`.
+    pub key: &'a dyn std::fmt::Display,
+}
+
 /// The message `timeline.preview-longer`.
 #[must_use]
-pub fn timeline_preview_longer(
-    day: impl std::fmt::Display,
-    key: impl std::fmt::Display,
-) -> Message {
+pub fn timeline_preview_longer(values: TimelinePreviewLonger<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("timeline.preview-longer"),
         vec![
-            ("day", Value::Text(day.to_string())),
-            ("key", Value::Text(key.to_string())),
+            ("day", Value::Text(values.day.to_string())),
+            ("key", Value::Text(values.key.to_string())),
         ],
     )
 }
 
+/// The values of the message `timeline.saved-both`, by name.
+#[derive(Clone, Copy)]
+pub struct TimelineSavedBoth<'a> {
+    /// The value of `{end}`.
+    pub end: &'a dyn std::fmt::Display,
+    /// The value of `{start}`.
+    pub start: &'a dyn std::fmt::Display,
+}
+
 /// The message `timeline.saved-both`.
 #[must_use]
-pub fn timeline_saved_both(end: impl std::fmt::Display, start: impl std::fmt::Display) -> Message {
+pub fn timeline_saved_both(values: TimelineSavedBoth<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("timeline.saved-both"),
         vec![
-            ("end", Value::Text(end.to_string())),
-            ("start", Value::Text(start.to_string())),
+            ("end", Value::Text(values.end.to_string())),
+            ("start", Value::Text(values.start.to_string())),
         ],
     )
 }
@@ -19494,44 +21739,65 @@ pub fn timeline_saved_start(start: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `timeline.scale-day`, by name.
+#[derive(Clone, Copy)]
+pub struct TimelineScaleDay<'a> {
+    /// The value of `{day}`.
+    pub day: &'a dyn std::fmt::Display,
+    /// The value of `{weekday}`.
+    pub weekday: &'a dyn std::fmt::Display,
+}
+
 /// The message `timeline.scale-day`.
 #[must_use]
-pub fn timeline_scale_day(day: impl std::fmt::Display, weekday: impl std::fmt::Display) -> Message {
+pub fn timeline_scale_day(values: TimelineScaleDay<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("timeline.scale-day"),
         vec![
-            ("day", Value::Text(day.to_string())),
-            ("weekday", Value::Text(weekday.to_string())),
+            ("day", Value::Text(values.day.to_string())),
+            ("weekday", Value::Text(values.weekday.to_string())),
         ],
     )
+}
+
+/// The values of the message `timeline.scale-month`, by name.
+#[derive(Clone, Copy)]
+pub struct TimelineScaleMonth<'a> {
+    /// The value of `{month}`.
+    pub month: &'a dyn std::fmt::Display,
+    /// The value of `{year}`.
+    pub year: &'a dyn std::fmt::Display,
 }
 
 /// The message `timeline.scale-month`.
 #[must_use]
-pub fn timeline_scale_month(
-    month: impl std::fmt::Display,
-    year: impl std::fmt::Display,
-) -> Message {
+pub fn timeline_scale_month(values: TimelineScaleMonth<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("timeline.scale-month"),
         vec![
-            ("month", Value::Text(month.to_string())),
-            ("year", Value::Text(year.to_string())),
+            ("month", Value::Text(values.month.to_string())),
+            ("year", Value::Text(values.year.to_string())),
         ],
     )
 }
 
+/// The values of the message `timeline.scale-quarter`, by name.
+#[derive(Clone, Copy)]
+pub struct TimelineScaleQuarter<'a> {
+    /// The value of `{quarter}`.
+    pub quarter: &'a dyn std::fmt::Display,
+    /// The value of `{year}`.
+    pub year: &'a dyn std::fmt::Display,
+}
+
 /// The message `timeline.scale-quarter`.
 #[must_use]
-pub fn timeline_scale_quarter(
-    quarter: impl std::fmt::Display,
-    year: impl std::fmt::Display,
-) -> Message {
+pub fn timeline_scale_quarter(values: TimelineScaleQuarter<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("timeline.scale-quarter"),
         vec![
-            ("quarter", Value::Text(quarter.to_string())),
-            ("year", Value::Text(year.to_string())),
+            ("quarter", Value::Text(values.quarter.to_string())),
+            ("year", Value::Text(values.year.to_string())),
         ],
     )
 }
@@ -19590,17 +21856,23 @@ pub fn timeline_warnings_of(count: i64) -> Message {
     )
 }
 
+/// The values of the message `timeline.work-share`, by name.
+#[derive(Clone, Copy)]
+pub struct TimelineWorkShare<'a> {
+    /// The value of `{project}`.
+    pub project: &'a dyn std::fmt::Display,
+    /// The value of `{share}`.
+    pub share: &'a dyn std::fmt::Display,
+}
+
 /// The message `timeline.work-share`.
 #[must_use]
-pub fn timeline_work_share(
-    project: impl std::fmt::Display,
-    share: impl std::fmt::Display,
-) -> Message {
+pub fn timeline_work_share(values: TimelineWorkShare<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("timeline.work-share"),
         vec![
-            ("project", Value::Text(project.to_string())),
-            ("share", Value::Text(share.to_string())),
+            ("project", Value::Text(values.project.to_string())),
+            ("share", Value::Text(values.share.to_string())),
         ],
     )
 }
@@ -19641,14 +21913,23 @@ pub fn tls_no_key(path: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `tls.read-failed`, by name.
+#[derive(Clone, Copy)]
+pub struct TlsReadFailed<'a> {
+    /// The value of `{path}`.
+    pub path: &'a dyn std::fmt::Display,
+    /// The value of `{reason}`.
+    pub reason: &'a dyn std::fmt::Display,
+}
+
 /// The message `tls.read-failed`.
 #[must_use]
-pub fn tls_read_failed(path: impl std::fmt::Display, reason: impl std::fmt::Display) -> Message {
+pub fn tls_read_failed(values: TlsReadFailed<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("tls.read-failed"),
         vec![
-            ("path", Value::Text(path.to_string())),
-            ("reason", Value::Text(reason.to_string())),
+            ("path", Value::Text(values.path.to_string())),
+            ("reason", Value::Text(values.reason.to_string())),
         ],
     )
 }
@@ -19662,14 +21943,23 @@ pub fn tls_unusable(reason: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `tls.write-failed`, by name.
+#[derive(Clone, Copy)]
+pub struct TlsWriteFailed<'a> {
+    /// The value of `{path}`.
+    pub path: &'a dyn std::fmt::Display,
+    /// The value of `{reason}`.
+    pub reason: &'a dyn std::fmt::Display,
+}
+
 /// The message `tls.write-failed`.
 #[must_use]
-pub fn tls_write_failed(path: impl std::fmt::Display, reason: impl std::fmt::Display) -> Message {
+pub fn tls_write_failed(values: TlsWriteFailed<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("tls.write-failed"),
         vec![
-            ("path", Value::Text(path.to_string())),
-            ("reason", Value::Text(reason.to_string())),
+            ("path", Value::Text(values.path.to_string())),
+            ("reason", Value::Text(values.reason.to_string())),
         ],
     )
 }
@@ -19764,41 +22054,65 @@ pub fn work_times_day_morning(date: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `work-times.day-run`, by name.
+#[derive(Clone, Copy)]
+pub struct WorkTimesDayRun<'a> {
+    /// The value of `{first}`.
+    pub first: &'a dyn std::fmt::Display,
+    /// The value of `{last}`.
+    pub last: &'a dyn std::fmt::Display,
+}
+
 /// The message `work-times.day-run`.
 #[must_use]
-pub fn work_times_day_run(first: impl std::fmt::Display, last: impl std::fmt::Display) -> Message {
+pub fn work_times_day_run(values: WorkTimesDayRun<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("work-times.day-run"),
         vec![
-            ("first", Value::Text(first.to_string())),
-            ("last", Value::Text(last.to_string())),
+            ("first", Value::Text(values.first.to_string())),
+            ("last", Value::Text(values.last.to_string())),
         ],
     )
+}
+
+/// The values of the message `work-times.days`, by name.
+#[derive(Clone, Copy)]
+pub struct WorkTimesDays<'a> {
+    /// The value of `{first}`.
+    pub first: &'a dyn std::fmt::Display,
+    /// The value of `{last}`.
+    pub last: &'a dyn std::fmt::Display,
 }
 
 /// The message `work-times.days`.
 #[must_use]
-pub fn work_times_days(first: impl std::fmt::Display, last: impl std::fmt::Display) -> Message {
+pub fn work_times_days(values: WorkTimesDays<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("work-times.days"),
         vec![
-            ("first", Value::Text(first.to_string())),
-            ("last", Value::Text(last.to_string())),
+            ("first", Value::Text(values.first.to_string())),
+            ("last", Value::Text(values.last.to_string())),
         ],
     )
 }
 
+/// The values of the message `work-times.holiday-on`, by name.
+#[derive(Clone, Copy)]
+pub struct WorkTimesHolidayOn<'a> {
+    /// The value of `{date}`.
+    pub date: &'a dyn std::fmt::Display,
+    /// The value of `{holiday}`.
+    pub holiday: &'a dyn std::fmt::Display,
+}
+
 /// The message `work-times.holiday-on`.
 #[must_use]
-pub fn work_times_holiday_on(
-    date: impl std::fmt::Display,
-    holiday: impl std::fmt::Display,
-) -> Message {
+pub fn work_times_holiday_on(values: WorkTimesHolidayOn<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("work-times.holiday-on"),
         vec![
-            ("date", Value::Text(date.to_string())),
-            ("holiday", Value::Text(holiday.to_string())),
+            ("date", Value::Text(values.date.to_string())),
+            ("holiday", Value::Text(values.holiday.to_string())),
         ],
     )
 }
@@ -19830,17 +22144,23 @@ pub fn work_times_intro_other(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `work-times.share`, by name.
+#[derive(Clone, Copy)]
+pub struct WorkTimesShare<'a> {
+    /// The value of `{percent}`.
+    pub percent: &'a dyn std::fmt::Display,
+    /// The value of `{project}`.
+    pub project: &'a dyn std::fmt::Display,
+}
+
 /// The message `work-times.share`.
 #[must_use]
-pub fn work_times_share(
-    percent: impl std::fmt::Display,
-    project: impl std::fmt::Display,
-) -> Message {
+pub fn work_times_share(values: WorkTimesShare<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("work-times.share"),
         vec![
-            ("percent", Value::Text(percent.to_string())),
-            ("project", Value::Text(project.to_string())),
+            ("percent", Value::Text(values.percent.to_string())),
+            ("project", Value::Text(values.project.to_string())),
         ],
     )
 }
@@ -19872,76 +22192,110 @@ pub fn work_times_told(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `work-times.usual-a-day`, by name.
+#[derive(Clone, Copy)]
+pub struct WorkTimesUsualADay<'a> {
+    /// The value of `{days}`.
+    pub days: &'a dyn std::fmt::Display,
+    /// The value of `{length}`.
+    pub length: &'a dyn std::fmt::Display,
+}
+
 /// The message `work-times.usual-a-day`.
 #[must_use]
-pub fn work_times_usual_a_day(
-    days: impl std::fmt::Display,
-    length: impl std::fmt::Display,
-) -> Message {
+pub fn work_times_usual_a_day(values: WorkTimesUsualADay<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("work-times.usual-a-day"),
         vec![
-            ("days", Value::Text(days.to_string())),
-            ("length", Value::Text(length.to_string())),
+            ("days", Value::Text(values.days.to_string())),
+            ("length", Value::Text(values.length.to_string())),
         ],
     )
+}
+
+/// The values of the message `work-times.usual-a-week`, by name.
+#[derive(Clone, Copy)]
+pub struct WorkTimesUsualAWeek<'a> {
+    /// The value of `{days}`.
+    pub days: &'a dyn std::fmt::Display,
+    /// The value of `{length}`.
+    pub length: &'a dyn std::fmt::Display,
 }
 
 /// The message `work-times.usual-a-week`.
 #[must_use]
-pub fn work_times_usual_a_week(
-    days: impl std::fmt::Display,
-    length: impl std::fmt::Display,
-) -> Message {
+pub fn work_times_usual_a_week(values: WorkTimesUsualAWeek<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("work-times.usual-a-week"),
         vec![
-            ("days", Value::Text(days.to_string())),
-            ("length", Value::Text(length.to_string())),
+            ("days", Value::Text(values.days.to_string())),
+            ("length", Value::Text(values.length.to_string())),
         ],
     )
+}
+
+/// The values of the message `workflows.arrow-label`, by name.
+#[derive(Clone, Copy)]
+pub struct WorkflowsArrowLabel<'a> {
+    /// The value of `{button}`.
+    pub button: &'a dyn std::fmt::Display,
+    /// The value of `{from}`.
+    pub from: &'a dyn std::fmt::Display,
+    /// The value of `{to}`.
+    pub to: &'a dyn std::fmt::Display,
 }
 
 /// The message `workflows.arrow-label`.
 #[must_use]
-pub fn workflows_arrow_label(
-    button: impl std::fmt::Display,
-    from: impl std::fmt::Display,
-    to: impl std::fmt::Display,
-) -> Message {
+pub fn workflows_arrow_label(values: WorkflowsArrowLabel<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("workflows.arrow-label"),
         vec![
-            ("button", Value::Text(button.to_string())),
-            ("from", Value::Text(from.to_string())),
-            ("to", Value::Text(to.to_string())),
+            ("button", Value::Text(values.button.to_string())),
+            ("from", Value::Text(values.from.to_string())),
+            ("to", Value::Text(values.to.to_string())),
         ],
     )
+}
+
+/// The values of the message `workflows.button-text`, by name.
+#[derive(Clone, Copy)]
+pub struct WorkflowsButtonText<'a> {
+    /// The value of `{from}`.
+    pub from: &'a dyn std::fmt::Display,
+    /// The value of `{to}`.
+    pub to: &'a dyn std::fmt::Display,
 }
 
 /// The message `workflows.button-text`.
 #[must_use]
-pub fn workflows_button_text(from: impl std::fmt::Display, to: impl std::fmt::Display) -> Message {
+pub fn workflows_button_text(values: WorkflowsButtonText<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("workflows.button-text"),
         vec![
-            ("from", Value::Text(from.to_string())),
-            ("to", Value::Text(to.to_string())),
+            ("from", Value::Text(values.from.to_string())),
+            ("to", Value::Text(values.to.to_string())),
         ],
     )
 }
 
+/// The values of the message `workflows.change-remove`, by name.
+#[derive(Clone, Copy)]
+pub struct WorkflowsChangeRemove<'a> {
+    /// The value of `{from}`.
+    pub from: &'a dyn std::fmt::Display,
+    /// The value of `{to}`.
+    pub to: &'a dyn std::fmt::Display,
+}
+
 /// The message `workflows.change-remove`.
 #[must_use]
-pub fn workflows_change_remove(
-    from: impl std::fmt::Display,
-    to: impl std::fmt::Display,
-) -> Message {
+pub fn workflows_change_remove(values: WorkflowsChangeRemove<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("workflows.change-remove"),
         vec![
-            ("from", Value::Text(from.to_string())),
-            ("to", Value::Text(to.to_string())),
+            ("from", Value::Text(values.from.to_string())),
+            ("to", Value::Text(values.to.to_string())),
         ],
     )
 }
@@ -19991,14 +22345,23 @@ pub fn workflows_project_title(project: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `workflows.publish-blocked`, by name.
+#[derive(Clone, Copy)]
+pub struct WorkflowsPublishBlocked<'a> {
+    /// The value of `{count}`.
+    pub count: i64,
+    /// The value of `{status}`.
+    pub status: &'a dyn std::fmt::Display,
+}
+
 /// The message `workflows.publish-blocked`.
 #[must_use]
-pub fn workflows_publish_blocked(count: i64, status: impl std::fmt::Display) -> Message {
+pub fn workflows_publish_blocked(values: WorkflowsPublishBlocked<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("workflows.publish-blocked"),
         vec![
-            ("count", Value::Number(count)),
-            ("status", Value::Text(status.to_string())),
+            ("count", Value::Number(values.count)),
+            ("status", Value::Text(values.status.to_string())),
         ],
     )
 }
@@ -20039,14 +22402,23 @@ pub fn workflows_publish_unseen(count: i64) -> Message {
     )
 }
 
+/// The values of the message `workflows.publish-where`, by name.
+#[derive(Clone, Copy)]
+pub struct WorkflowsPublishWhere<'a> {
+    /// The value of `{count}`.
+    pub count: i64,
+    /// The value of `{status}`.
+    pub status: &'a dyn std::fmt::Display,
+}
+
 /// The message `workflows.publish-where`.
 #[must_use]
-pub fn workflows_publish_where(count: i64, status: impl std::fmt::Display) -> Message {
+pub fn workflows_publish_where(values: WorkflowsPublishWhere<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("workflows.publish-where"),
         vec![
-            ("count", Value::Number(count)),
-            ("status", Value::Text(status.to_string())),
+            ("count", Value::Number(values.count)),
+            ("status", Value::Text(values.status.to_string())),
         ],
     )
 }
@@ -20069,14 +22441,23 @@ pub fn workflows_remove_condition(field: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `workflows.rules-intro`, by name.
+#[derive(Clone, Copy)]
+pub struct WorkflowsRulesIntro<'a> {
+    /// The value of `{from}`.
+    pub from: &'a dyn std::fmt::Display,
+    /// The value of `{to}`.
+    pub to: &'a dyn std::fmt::Display,
+}
+
 /// The message `workflows.rules-intro`.
 #[must_use]
-pub fn workflows_rules_intro(from: impl std::fmt::Display, to: impl std::fmt::Display) -> Message {
+pub fn workflows_rules_intro(values: WorkflowsRulesIntro<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("workflows.rules-intro"),
         vec![
-            ("from", Value::Text(from.to_string())),
-            ("to", Value::Text(to.to_string())),
+            ("from", Value::Text(values.from.to_string())),
+            ("to", Value::Text(values.to.to_string())),
         ],
     )
 }
@@ -20144,17 +22525,23 @@ pub fn workflows_try_needs(fields: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `workflows.try-on-field`, by name.
+#[derive(Clone, Copy)]
+pub struct WorkflowsTryOnField<'a> {
+    /// The value of `{field}`.
+    pub field: &'a dyn std::fmt::Display,
+    /// The value of `{reason}`.
+    pub reason: &'a dyn std::fmt::Display,
+}
+
 /// The message `workflows.try-on-field`.
 #[must_use]
-pub fn workflows_try_on_field(
-    field: impl std::fmt::Display,
-    reason: impl std::fmt::Display,
-) -> Message {
+pub fn workflows_try_on_field(values: WorkflowsTryOnField<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("workflows.try-on-field"),
         vec![
-            ("field", Value::Text(field.to_string())),
-            ("reason", Value::Text(reason.to_string())),
+            ("field", Value::Text(values.field.to_string())),
+            ("reason", Value::Text(values.reason.to_string())),
         ],
     )
 }
@@ -20177,17 +22564,23 @@ pub fn workflows_uses_organization(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `workflows.uses-project`, by name.
+#[derive(Clone, Copy)]
+pub struct WorkflowsUsesProject<'a> {
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+    /// The value of `{project}`.
+    pub project: &'a dyn std::fmt::Display,
+}
+
 /// The message `workflows.uses-project`.
 #[must_use]
-pub fn workflows_uses_project(
-    name: impl std::fmt::Display,
-    project: impl std::fmt::Display,
-) -> Message {
+pub fn workflows_uses_project(values: WorkflowsUsesProject<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("workflows.uses-project"),
         vec![
-            ("name", Value::Text(name.to_string())),
-            ("project", Value::Text(project.to_string())),
+            ("name", Value::Text(values.name.to_string())),
+            ("project", Value::Text(values.project.to_string())),
         ],
     )
 }
@@ -20201,100 +22594,140 @@ pub fn workflows_uses_starting(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `working-hours.who-not-allowed`, by name.
+#[derive(Clone, Copy)]
+pub struct WorkingHoursWhoNotAllowed<'a> {
+    /// The value of `{decide}`.
+    pub decide: &'a dyn std::fmt::Display,
+    /// The value of `{manage}`.
+    pub manage: &'a dyn std::fmt::Display,
+}
+
 /// The message `working-hours.who-not-allowed`.
 #[must_use]
-pub fn working_hours_who_not_allowed(
-    decide: impl std::fmt::Display,
-    manage: impl std::fmt::Display,
-) -> Message {
+pub fn working_hours_who_not_allowed(values: WorkingHoursWhoNotAllowed<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("working-hours.who-not-allowed"),
         vec![
-            ("decide", Value::Text(decide.to_string())),
-            ("manage", Value::Text(manage.to_string())),
+            ("decide", Value::Text(values.decide.to_string())),
+            ("manage", Value::Text(values.manage.to_string())),
         ],
     )
+}
+
+/// The values of the message `working-time.warning.long-day`, by name.
+#[derive(Clone, Copy)]
+pub struct WorkingTimeWarningLongDay<'a> {
+    /// The value of `{most}`.
+    pub most: &'a dyn std::fmt::Display,
+    /// The value of `{worked}`.
+    pub worked: &'a dyn std::fmt::Display,
 }
 
 /// The message `working-time.warning.long-day`.
 #[must_use]
-pub fn working_time_warning_long_day(
-    most: impl std::fmt::Display,
-    worked: impl std::fmt::Display,
-) -> Message {
+pub fn working_time_warning_long_day(values: WorkingTimeWarningLongDay<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("working-time.warning.long-day"),
         vec![
-            ("most", Value::Text(most.to_string())),
-            ("worked", Value::Text(worked.to_string())),
+            ("most", Value::Text(values.most.to_string())),
+            ("worked", Value::Text(values.worked.to_string())),
         ],
     )
+}
+
+/// The values of the message `working-time.warning.long-stretch`, by name.
+#[derive(Clone, Copy)]
+pub struct WorkingTimeWarningLongStretch<'a> {
+    /// The value of `{most}`.
+    pub most: &'a dyn std::fmt::Display,
+    /// The value of `{shortest}`.
+    pub shortest: &'a dyn std::fmt::Display,
+    /// The value of `{stretch}`.
+    pub stretch: &'a dyn std::fmt::Display,
 }
 
 /// The message `working-time.warning.long-stretch`.
 #[must_use]
-pub fn working_time_warning_long_stretch(
-    most: impl std::fmt::Display,
-    shortest: impl std::fmt::Display,
-    stretch: impl std::fmt::Display,
-) -> Message {
+pub fn working_time_warning_long_stretch(values: WorkingTimeWarningLongStretch<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("working-time.warning.long-stretch"),
         vec![
-            ("most", Value::Text(most.to_string())),
-            ("shortest", Value::Text(shortest.to_string())),
-            ("stretch", Value::Text(stretch.to_string())),
+            ("most", Value::Text(values.most.to_string())),
+            ("shortest", Value::Text(values.shortest.to_string())),
+            ("stretch", Value::Text(values.stretch.to_string())),
         ],
     )
+}
+
+/// The values of the message `working-time.warning.no-break`, by name.
+#[derive(Clone, Copy)]
+pub struct WorkingTimeWarningNoBreak<'a> {
+    /// The value of `{after}`.
+    pub after: &'a dyn std::fmt::Display,
+    /// The value of `{needed}`.
+    pub needed: &'a dyn std::fmt::Display,
+    /// The value of `{worked}`.
+    pub worked: &'a dyn std::fmt::Display,
 }
 
 /// The message `working-time.warning.no-break`.
 #[must_use]
-pub fn working_time_warning_no_break(
-    after: impl std::fmt::Display,
-    needed: impl std::fmt::Display,
-    worked: impl std::fmt::Display,
-) -> Message {
+pub fn working_time_warning_no_break(values: WorkingTimeWarningNoBreak<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("working-time.warning.no-break"),
         vec![
-            ("after", Value::Text(after.to_string())),
-            ("needed", Value::Text(needed.to_string())),
-            ("worked", Value::Text(worked.to_string())),
+            ("after", Value::Text(values.after.to_string())),
+            ("needed", Value::Text(values.needed.to_string())),
+            ("worked", Value::Text(values.worked.to_string())),
         ],
     )
+}
+
+/// The values of the message `working-time.warning.short-break`, by name.
+#[derive(Clone, Copy)]
+pub struct WorkingTimeWarningShortBreak<'a> {
+    /// The value of `{after}`.
+    pub after: &'a dyn std::fmt::Display,
+    /// The value of `{breaks}`.
+    pub breaks: &'a dyn std::fmt::Display,
+    /// The value of `{needed}`.
+    pub needed: &'a dyn std::fmt::Display,
+    /// The value of `{worked}`.
+    pub worked: &'a dyn std::fmt::Display,
 }
 
 /// The message `working-time.warning.short-break`.
 #[must_use]
-pub fn working_time_warning_short_break(
-    after: impl std::fmt::Display,
-    breaks: impl std::fmt::Display,
-    needed: impl std::fmt::Display,
-    worked: impl std::fmt::Display,
-) -> Message {
+pub fn working_time_warning_short_break(values: WorkingTimeWarningShortBreak<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("working-time.warning.short-break"),
         vec![
-            ("after", Value::Text(after.to_string())),
-            ("breaks", Value::Text(breaks.to_string())),
-            ("needed", Value::Text(needed.to_string())),
-            ("worked", Value::Text(worked.to_string())),
+            ("after", Value::Text(values.after.to_string())),
+            ("breaks", Value::Text(values.breaks.to_string())),
+            ("needed", Value::Text(values.needed.to_string())),
+            ("worked", Value::Text(values.worked.to_string())),
         ],
     )
 }
 
+/// The values of the message `working-time.warning.short-rest`, by name.
+#[derive(Clone, Copy)]
+pub struct WorkingTimeWarningShortRest<'a> {
+    /// The value of `{needed}`.
+    pub needed: &'a dyn std::fmt::Display,
+    /// The value of `{rest}`.
+    pub rest: &'a dyn std::fmt::Display,
+}
+
 /// The message `working-time.warning.short-rest`.
 #[must_use]
-pub fn working_time_warning_short_rest(
-    needed: impl std::fmt::Display,
-    rest: impl std::fmt::Display,
-) -> Message {
+pub fn working_time_warning_short_rest(values: WorkingTimeWarningShortRest<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("working-time.warning.short-rest"),
         vec![
-            ("needed", Value::Text(needed.to_string())),
-            ("rest", Value::Text(rest.to_string())),
+            ("needed", Value::Text(values.needed.to_string())),
+            ("rest", Value::Text(values.rest.to_string())),
         ],
     )
 }

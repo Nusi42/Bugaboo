@@ -126,7 +126,13 @@ pub(super) fn install(found: &Found, own_files: OwnFiles) -> anyhow::Result<()> 
     service
         .start::<&str>(&[])
         .map_err(|error| explain(&error))?;
-    output::line(&message::service_installed(account(), NAME).render());
+    output::line(
+        &message::service_installed(message::ServiceInstalled {
+            account: &account(),
+            name: &NAME,
+        })
+        .render(),
+    );
     tell_about_setup_code(&found.settings.data_dir);
     Ok(())
 }

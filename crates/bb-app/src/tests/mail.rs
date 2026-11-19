@@ -114,7 +114,13 @@ async fn ntf_02_an_e_mail_goes_when_mail_is_on_and_says_who_did_what_with_the_ad
     assert_eq!(server.password.as_str(), "a made-up mail password");
     assert!(mail.subject.contains("The login button does nothing"));
     // The e-mail says what the history of the issue says, with a full stop.
-    let said = message::history_changed("Done", "Open", "Status", "Bob Baker").render();
+    let said = message::history_changed(message::HistoryChanged {
+        after: &"Done",
+        before: &"Open",
+        field: &"Status",
+        who: &("Bob Baker"),
+    })
+    .render();
     assert!(mail.text.contains(&format!("{said}.")), "{}", mail.text);
     assert!(mail.text.contains(&format!("{PUBLIC_URL}/issues/")));
     Ok(())
