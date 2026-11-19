@@ -49,7 +49,7 @@ async fn assign(browser: &mut Browser, issue: &str, person: &str) -> Result<(), 
 }
 
 /// Saves a search as `browser`; its ID.
-async fn save_search(browser: &mut Browser, name: &str) -> Result<String, Failure> {
+pub(super) async fn save_search(browser: &mut Browser, name: &str) -> Result<String, Failure> {
     let saved = browser
         .send(
             "POST",
@@ -64,15 +64,16 @@ async fn save_search(browser: &mut Browser, name: &str) -> Result<String, Failur
 }
 
 /// What Bob leaves behind besides his comment and his work day: a notification he gets and one
-/// he causes for Ada, a private search, and a search shared with a group he is in.
-async fn bob_leaves_traces(
+/// he causes for Ada, a private search, and a search shared with a group he is in. The IDs of the
+/// shared search and of the group.
+pub(super) async fn bob_leaves_traces(
     site: &Site<'_>,
     rig: &Rig,
     ada: &mut Browser,
     bob: &mut Browser,
     issue: &str,
     bob_id: &str,
-) -> Result<(), Failure> {
+) -> Result<(String, String), Failure> {
     // A notification Bob gets, and one he causes for Ada.
     assign(ada, issue, bob_id).await?;
     assign(bob, issue, &site.org.admin.id.to_string()).await?;
@@ -102,7 +103,7 @@ async fn bob_leaves_traces(
     ] {
         assert!(reply.status.is_success(), "{}", reply.body);
     }
-    Ok(())
+    Ok((shared, group))
 }
 
 #[tokio::test]

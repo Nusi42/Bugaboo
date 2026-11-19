@@ -36,6 +36,7 @@ export const messages = {
   "agent-work.stopped-handed-on":
     "{agent} was given to another person, so its work on this issue stopped.",
   "agent-work.stopped-ran-out": "The hand-over ran out on {date}.",
+  "agent-work.stopped-ran-out-gone": "The hand-over ran out.",
   "agent-work.next-step":
     "Hand the issue over again, or work on it yourself: the issue still has its person.",
   "agent-work.hand-over-again": "Hand over again",
@@ -86,6 +87,7 @@ export const messages = {
   "agent-work.review-confirm-throw-away": "Throw away",
   "agent-work.proposals": "Proposals of standing rules",
   "agent-work.proposal-from": "From {agent}, by a standing rule",
+  "agent-work.proposal-from-former": "From the agent of a former user, by a standing rule",
   "agent-work.hand-over": "Hand over to an agent",
   "agent-work.hand-over-title": "Hand over {issue} to an agent",
   "agent-work.hand-over-title-many":

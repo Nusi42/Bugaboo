@@ -280,6 +280,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "agent-work.proposal-from",
         "From {agent}, by a standing rule",
     ),
+    (
+        "agent-work.proposal-from-former",
+        "From the agent of a former user, by a standing rule",
+    ),
     ("agent-work.proposals", "Proposals of standing rules"),
     ("agent-work.question-answer", "Your answer"),
     (
@@ -361,6 +365,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "agent-work.stopped-ran-out",
         "The hand-over ran out on {date}.",
     ),
+    ("agent-work.stopped-ran-out-gone", "The hand-over ran out."),
     (
         "agent-work.summary",
         "Attempt {number} is ready for review: {address}",

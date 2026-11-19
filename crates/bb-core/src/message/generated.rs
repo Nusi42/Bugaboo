@@ -338,6 +338,10 @@ pub const AGENT_WORK_POWER_CHANGE_STATUS: MessageKey =
 pub const AGENT_WORK_POWER_CREATE_SUB_ISSUES: MessageKey =
     MessageKey::new("agent-work.power-create-sub-issues");
 
+/// The message `agent-work.proposal-from-former`.
+pub const AGENT_WORK_PROPOSAL_FROM_FORMER: MessageKey =
+    MessageKey::new("agent-work.proposal-from-former");
+
 /// The message `agent-work.proposals`.
 pub const AGENT_WORK_PROPOSALS: MessageKey = MessageKey::new("agent-work.proposals");
 
@@ -442,6 +446,10 @@ pub const AGENT_WORK_STATE_WAITING_FOR_THE_AGENT: MessageKey =
 /// The message `agent-work.state.waiting-for-you`.
 pub const AGENT_WORK_STATE_WAITING_FOR_YOU: MessageKey =
     MessageKey::new("agent-work.state.waiting-for-you");
+
+/// The message `agent-work.stopped-ran-out-gone`.
+pub const AGENT_WORK_STOPPED_RAN_OUT_GONE: MessageKey =
+    MessageKey::new("agent-work.stopped-ran-out-gone");
 
 /// The message `agent-work.throw-away-list`.
 pub const AGENT_WORK_THROW_AWAY_LIST: MessageKey = MessageKey::new("agent-work.throw-away-list");

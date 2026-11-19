@@ -166,7 +166,7 @@ async fn ai_32_a_proposal_on_the_issue_names_its_agent_without_any_hand_over() -
     let world = World::with_ai_apps_and_agents().await?;
     let given = rule_world(&world).await?;
     let made = proposed(&world, &given, RuleField::Labels, json!("x")).await??;
-    assert_eq!(made.agent_name, "Fixer");
+    assert_eq!(made.agent_name.as_deref(), Some("Fixer"));
     let on_the_issue = crate::agent_work::issue_agent_work(
         &world.ctx(),
         crate::agent_work::AgentWorkQuery {
@@ -178,6 +178,32 @@ async fn ai_32_a_proposal_on_the_issue_names_its_agent_without_any_hand_over() -
     .into_value();
     assert!(on_the_issue.work.is_empty(), "a rule hands nothing over");
     assert_eq!(on_the_issue.proposals.len(), 1);
-    assert_eq!(on_the_issue.proposals[0].agent_name, "Fixer");
+    assert_eq!(
+        on_the_issue.proposals[0].agent_name.as_deref(),
+        Some("Fixer")
+    );
+    Ok(())
+}
+
+#[tokio::test]
+async fn ai_32_a_decided_proposal_of_an_agent_that_is_gone_is_shown_without_its_name() -> Outcome {
+    let world = World::with_ai_apps_and_agents().await?;
+    let given = rule_world(&world).await?;
+    let made = proposed(&world, &given, RuleField::Labels, json!("x")).await??;
+    // The agent goes, as with the removal of its person, and its proposal is decided after.
+    world.store.lock().state.agents.clear();
+    let decided = decide_proposal(
+        &world.ctx(),
+        DecideProposal {
+            session_token: given.team.session_token.clone(),
+            proposal: made.id,
+            apply: false,
+        },
+    )
+    .await?
+    .into_value();
+    assert_eq!(decided.id, made.id);
+    assert_eq!(decided.state, ProposalState::Discarded);
+    assert_eq!(decided.agent_name, None, "the screen names a Former user");
     Ok(())
 }

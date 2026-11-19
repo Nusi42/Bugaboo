@@ -293,6 +293,23 @@ impl GrantStore for super::fake::FakeStore {
             .is_some())
     }
 
+    async fn delete_open_proposals_of_agents_of(
+        tx: &mut Tx,
+        person: UserId,
+    ) -> Result<u64, FakeError> {
+        let agents: Vec<AgentId> = tx
+            .state
+            .agents
+            .iter()
+            .filter(|agent| agent.person == person)
+            .map(|agent| agent.id)
+            .collect();
+        let proposals = &mut tx.state.work.proposals;
+        let before = proposals.len();
+        proposals.retain(|p| !(p.state == ProposalState::Open && agents.contains(&p.agent)));
+        Ok(u64::try_from(before - proposals.len()).unwrap_or(u64::MAX))
+    }
+
     async fn reopen_proposal(tx: &mut Tx, id: AgentNoteId, by: UserId) -> Result<bool, FakeError> {
         Ok(tx
             .state

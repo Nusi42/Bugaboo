@@ -18,7 +18,7 @@ import { formatDateTime } from "../../shared/format.ts";
 import { detailsText } from "../../shared/list-text.ts";
 import { personName } from "../../shared/person.ts";
 import { WrittenBy } from "../../shared/WrittenBy.tsx";
-import { useAnswerQuestion, type Work } from "./agent-work.ts";
+import { agentName, useAnswerQuestion, type Work } from "./agent-work.ts";
 
 type Question = Work["questions"][number];
 
@@ -27,7 +27,7 @@ function AgentBubble({ work, text }: { readonly work: Work; readonly text: strin
   return (
     <div {...partOf(part.agentWorkBubble)}>
       <span {...partOf(part.agentWorkBubbleHead)}>
-        <span>{work.agent_name}</span>
+        <span>{agentName(work)}</span>
         {/* The name stands once, in front of the mark, which only says an agent wrote it. */}
         <WrittenBy mark={{ kind: "agent" }} />
       </span>

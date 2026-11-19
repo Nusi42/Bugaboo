@@ -263,18 +263,20 @@ pub(crate) struct WorkBody {
     pub(super) hand_over: String,
     /// The agent.
     pub(super) agent: String,
-    /// The name of the agent.
-    pub(super) agent_name: String,
+    /// The name of the agent; none when the agent went with the removal of its person, and the
+    /// screen names the person instead.
+    pub(super) agent_name: Option<String>,
     /// The person responsible for the agent, as *Who sees people* says for the reader.
     pub(super) agent_person: PersonRef,
     /// Who handed the issue over, as *Who sees people* says for the reader.
     pub(super) handed_over_by: PersonRef,
-    /// When the issue was handed over.
-    pub(super) handed_over_at: String,
-    /// When the hand-over ends.
-    pub(super) ends_at: String,
-    /// What the hand-over lets the agent spend.
-    pub(super) budget: WorkBudgetBody,
+    /// When the issue was handed over; none when the hand-over went with the removal of its
+    /// person.
+    pub(super) handed_over_at: Option<String>,
+    /// When the hand-over ends; none when it is gone.
+    pub(super) ends_at: Option<String>,
+    /// What the hand-over lets the agent spend; none when it is gone.
+    pub(super) budget: Option<WorkBudgetBody>,
     /// Where the work is. It is not the status of the issue.
     pub(super) state: AgentWorkState,
     /// Whether the hand-over still gives work.
@@ -311,9 +313,9 @@ impl From<&WorkView> for WorkBody {
             agent_name: work.agent_name.clone(),
             agent_person: work.agent_person.clone(),
             handed_over_by: work.handed_over_by.clone(),
-            handed_over_at: work.handed_over_at.to_string(),
-            ends_at: work.ends_at.to_string(),
-            budget: WorkBudgetBody::from(&work.budget),
+            handed_over_at: work.handed_over_at.map(|at| at.to_string()),
+            ends_at: work.ends_at.map(|at| at.to_string()),
+            budget: work.budget.as_ref().map(WorkBudgetBody::from),
             state: work.state,
             open: work.open,
             brief: work.brief.clone(),
@@ -359,8 +361,9 @@ pub(crate) struct ProposalBody {
     pub(super) rule: String,
     /// The agent.
     pub(super) agent: String,
-    /// The name of the agent.
-    pub(super) agent_name: String,
+    /// The name of the agent; none when the agent went with the removal of its person, and the
+    /// screen says it came from the agent of a *Former user*.
+    pub(super) agent_name: Option<String>,
     /// The field.
     pub(super) field: RuleField,
     /// The value now.

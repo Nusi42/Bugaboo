@@ -265,3 +265,49 @@ async fn priv_04_a_removal_deletes_the_jobs_that_name_the_person_by_id_or_addres
     })
     .await
 }
+
+#[tokio::test]
+async fn priv_04_a_name_outside_ascii_is_scrubbed_in_any_capitals() -> TestResult {
+    each_database("priv_04_removal_scrub_unicode", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = &fixture.storage;
+        let mut source = ids();
+        let ada = person(&mut source, "ada@example.test").id;
+        let issue = EntityId::from(IssueId::generate(&mut source)?);
+        // As typed and in capitals: the database folds neither, Rust folds both. A Cyrillic name
+        // keeps no letter the database can narrow by, so every row is read.
+        let titles = [
+            ("Özlem Çelik knows", "ask ÖZLEM ÇELIK"),
+            ("Юлия Ким knows", "ask ЮЛИЯ КИМ"),
+        ];
+        for (before, after) in titles {
+            let one = about(
+                &mut source,
+                ada,
+                RecordKind::Issue,
+                issue,
+                vec![change("title", json!(before), json!(after))],
+            );
+            ChangeStore::record_change(storage, &one, |_| Box::pin(async { Ok(()) })).await?;
+        }
+        let names = ["Özlem Çelik", "Юлия Ким"];
+        assert_eq!(
+            storage.columns_holding(&names).await?,
+            vec!["event.changes".to_owned()]
+        );
+        let scrub = Scrub {
+            names: names.iter().map(|name| (*name).to_owned()).collect(),
+            ..Scrub::default()
+        };
+        let scrubbed = ChangeStore::record_change(storage, &event(&mut source, 50), move |tx| {
+            Box::pin(async move { AuthStorage::scrub_changes(tx, ada, &scrub).await })
+        })
+        .await?;
+        assert_eq!(scrubbed, 2);
+        assert_eq!(storage.columns_holding(&names).await?, Vec::<String>::new());
+        let text = stored_changes(storage).await?.join("\n");
+        assert!(text.contains("title"), "{text}");
+        Ok(())
+    })
+    .await
+}

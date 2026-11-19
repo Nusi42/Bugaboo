@@ -62,11 +62,16 @@ export function WorkBrief({
             </p>
           ))
         : null}
-      <p {...partOf(part.muted)}>
-        <Facts
-          items={[{ key: "label", node: t("agent-work.budget-label") }, ...budgetFacts(work)]}
-        />
-      </p>
+      {work.budget === null || work.budget === undefined ? null : (
+        <p {...partOf(part.muted)}>
+          <Facts
+            items={[
+              { key: "label", node: t("agent-work.budget-label") },
+              ...budgetFacts({ budget: work.budget, attempts: work.attempts }),
+            ]}
+          />
+        </p>
+      )}
     </section>
   );
 }

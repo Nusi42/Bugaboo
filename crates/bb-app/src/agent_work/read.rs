@@ -141,11 +141,12 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(|error| internal::<S>(&error))?;
         let mut views = Vec::with_capacity(waiting.len());
         for proposal in waiting {
+            // The open proposals of an agent go with it at a removal; one that is decided stays, and
+            // its agent has no name any more.
             let agent_name = named
                 .iter()
                 .find(|found| found.id == proposal.agent)
-                .map(|found| found.name.clone())
-                .ok_or(AppError::Refused(bb_core::ErrorCode::NotFound))?;
+                .map(|found| found.name.clone());
             views.push(ProposalView {
                 id: proposal.id,
                 rule: proposal.rule,
@@ -168,15 +169,13 @@ impl<S: AuthStore> Ctx<'_, S> {
         details: &WorkDetails,
         agents: &[bb_core::agent::Agent],
     ) -> Result<WorkView, AppError> {
-        let hand_over: &HandOver = details
+        // A removal deletes the hand-overs and the agents of the person (ADR-0044, decision 6): the
+        // work stays as a record of the issue, with no brief and the person as *Former user*.
+        let hand_over: Option<&HandOver> = details
             .hand_overs
             .iter()
-            .find(|found| found.id == work.hand_over)
-            .ok_or_else(|| AppError::Internal("a piece of work without a hand-over".to_owned()))?;
-        let agent = agents
-            .iter()
-            .find(|found| found.id == work.agent)
-            .ok_or_else(|| AppError::Internal("a piece of work without an agent".to_owned()))?;
+            .find(|found| found.id == work.hand_over);
+        let agent = agents.iter().find(|found| found.id == work.agent);
         let person_of = |person| {
             self.person_ref(
                 viewer,
@@ -185,14 +184,15 @@ impl<S: AuthStore> Ctx<'_, S> {
                 person,
             )
         };
-        let agent_person = person_of(agent.person).await?;
-        let handed_over_by = person_of(hand_over.person).await?;
+        let agent_person = person_of(agent.map_or(work.person, |agent| agent.person)).await?;
+        let handed_over_by =
+            person_of(hand_over.map_or(work.person, |hand_over| hand_over.person)).await?;
         let questions: Vec<_> = details
             .questions
             .iter()
             .filter(|question| question.work == work.id)
             .collect();
-        let brief = brief_of(work, hand_over, details);
+        let brief = hand_over.map_or_else(Vec::new, |hand_over| brief_of(work, hand_over, details));
         let attempts = attempts_of(work, details);
         let mut question_views = Vec::new();
         for question in &questions {
@@ -238,19 +238,19 @@ impl<S: AuthStore> Ctx<'_, S> {
             id: work.id,
             hand_over: work.hand_over,
             agent: work.agent,
-            agent_name: agent.name.clone(),
+            agent_name: agent.map(|agent| agent.name.clone()),
             agent_person,
             handed_over_by,
-            handed_over_at: hand_over.made_at,
-            ends_at: hand_over.ends_at,
-            budget: WorkBudget {
+            handed_over_at: hand_over.map(|hand_over| hand_over.made_at),
+            ends_at: hand_over.map(|hand_over| hand_over.ends_at),
+            budget: hand_over.map(|hand_over| WorkBudget {
                 attempts: hand_over.budget_attempts,
                 minutes: hand_over.budget_minutes,
                 cost: hand_over.budget_cost,
                 plan_needs_approval: hand_over.plan_needs_approval,
-            },
+            }),
             state: work.state,
-            open: work.is_open_under(hand_over, self.now()),
+            open: hand_over.is_some_and(|hand_over| work.is_open_under(hand_over, self.now())),
             brief,
             attempts,
             questions: question_views,
@@ -300,10 +300,10 @@ pub async fn issue_agent_work<S: AuthStore>(
         .map_err(failed)?;
     let mut worked_on_by: Vec<WorkedOnBy> = Vec::new();
     for id in open_agents {
-        let agent = agents
-            .iter()
-            .find(|found| found.id == id)
-            .ok_or(AppError::Refused(bb_core::ErrorCode::NotFound))?;
+        // An agent that is gone works on nothing.
+        let Some(agent) = agents.iter().find(|found| found.id == id) else {
+            continue;
+        };
         worked_on_by.push(WorkedOnBy {
             agent: agent.id,
             name: agent.name.clone(),

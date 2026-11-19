@@ -60,7 +60,7 @@ async fn given(site: &Site<'_>, ada: &mut Browser) -> Result<Given, Failure> {
 }
 
 /// The agent with `key` takes the issue, so an attempt runs on it.
-async fn take(rig: &Rig, key: &str, issue: &str) -> Result<(), Failure> {
+pub(super) async fn take(rig: &Rig, key: &str, issue: &str) -> Result<(), Failure> {
     take_work(
         &rig.services.ctx(Rig::info()),
         TakeWork {

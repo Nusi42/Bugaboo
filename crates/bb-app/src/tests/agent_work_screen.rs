@@ -57,11 +57,12 @@ async fn ai_33_the_work_names_its_agent_the_person_and_who_handed_it_over() -> O
         .await?
         .into_value();
     let piece = &work.work[0];
-    assert_eq!(piece.agent_name, "Fixer");
+    assert_eq!(piece.agent_name.as_deref(), Some("Fixer"));
     assert_eq!(piece.agent_person, piece.handed_over_by);
-    assert_eq!(piece.budget.attempts, 5);
-    assert!(!piece.budget.plan_needs_approval);
-    assert_eq!(piece.ends_at, given.hand_over.ends_at);
+    let budget = piece.budget.as_ref().ok_or("a budget")?;
+    assert_eq!(budget.attempts, 5);
+    assert!(!budget.plan_needs_approval);
+    assert_eq!(piece.ends_at, Some(given.hand_over.ends_at));
     Ok(())
 }
 

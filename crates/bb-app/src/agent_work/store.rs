@@ -123,6 +123,10 @@ pub trait GrantStore: AgentWorkStore + 'static {
         /// Opens a proposal again that `by` applied or discarded and that could not be carried
         /// out; whether it was.
         fn reopen_proposal(id: AgentNoteId, by: UserId) -> bool;
+        /// Deletes the open proposals of the agents `person` is responsible for, which go with
+        /// the person's removal: nobody can decide a proposal of an agent that is gone. How many
+        /// went.
+        fn delete_open_proposals_of_agents_of(person: UserId) -> u64;
         /// Writes down that an issue came under a rule; whether it was new.
         fn insert_match(rule_match: &RuleMatch) -> bool;
         /// Ends every open hand-over and standing rule of an agent.

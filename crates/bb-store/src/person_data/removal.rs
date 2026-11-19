@@ -349,3 +349,79 @@ async fn rewrite<T: Iden + Copy + 'static>(
 #[cfg(test)]
 #[path = "removal_tests.rs"]
 mod tests;
+
+/// The name of the one value the sweep reads.
+#[cfg(any(test, feature = "testing"))]
+#[derive(Clone, Copy, Iden)]
+enum Swept {
+    Value,
+}
+
+/// The value the sweep read, as text: bytes that are not UTF-8 (SQLite casts a stored ID as it is)
+/// are read with the characters they cannot hold replaced.
+///
+/// # Errors
+/// The error of reading it as text, when it can be read neither way.
+#[cfg(any(test, feature = "testing"))]
+fn swept_text(row: &crate::rows::Row) -> Result<Option<String>, StoreError> {
+    row.get::<Option<String>>(Swept::Value).or_else(|error| {
+        row.get::<Option<Vec<u8>>>(Swept::Value)
+            .map(|bytes| bytes.map(|bytes| String::from_utf8_lossy(&bytes).into_owned()))
+            .map_err(|_| error)
+    })
+}
+
+#[cfg(any(test, feature = "testing"))]
+impl AuthStorage {
+    /// The columns (`table.column`) of every stored table that hold one of `texts` in some row,
+    /// folded as names are (`bb_core::names::name_key`): the sweep that proves a removal leaves no
+    /// name, handle or address behind. The database picks the candidates as a scrub does, and Rust
+    /// decides; a candidate that cannot be read as text counts as found, so the sweep fails rather
+    /// than overlooks.
+    ///
+    /// # Errors
+    /// Fails when the database fails.
+    pub async fn columns_holding(&self, texts: &[&str]) -> Result<Vec<String>, StoreError> {
+        use bb_core::names::name_key;
+        let folded: Vec<String> = texts.iter().map(|text| name_key(text)).collect();
+        let mut found = Vec::new();
+        for table in tables() {
+            for (column, _) in &table.columns {
+                let as_text = sea_query::Func::cast_as(
+                    Expr::col(Alias::new(column.as_str())),
+                    Alias::new("text"),
+                );
+                let mut select = Query::select();
+                select
+                    .expr_as(as_text.clone(), Swept::Value)
+                    .from(Alias::new(table.name.as_str()));
+                let mut any = Cond::any();
+                let mut narrowed = true;
+                for word in &folded {
+                    match like::may_hold_folded(as_text.clone(), word) {
+                        Some(may) => any = any.add(may),
+                        None => narrowed = false,
+                    }
+                }
+                if narrowed {
+                    select.cond_where(any);
+                }
+                let holds = self.database().fetch_all(&select).await?.iter().any(|row| {
+                    match swept_text(row) {
+                        Ok(value) => value.is_some_and(|value| {
+                            let value = name_key(&value);
+                            folded.iter().any(|word| value.contains(word.as_str()))
+                        }),
+                        Err(_) => true,
+                    }
+                });
+                if holds {
+                    found.push(format!("{}.{column}", table.name));
+                }
+            }
+        }
+        found.sort();
+        found.dedup();
+        Ok(found)
+    }
+}

@@ -40,7 +40,9 @@ function RuleProposal({
         state={stateOf(decide.isPending, decide.isError ? { error: decide.error } : null)}
         source={
           <span {...partOf(part.muted)}>
-            {t("agent-work.proposal-from", { agent: proposal.agent_name })}
+            {proposal.agent_name === null || proposal.agent_name === undefined
+              ? t("agent-work.proposal-from-former")
+              : t("agent-work.proposal-from", { agent: proposal.agent_name })}
           </span>
         }
         onApply={() => {

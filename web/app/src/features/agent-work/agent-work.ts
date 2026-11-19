@@ -5,6 +5,7 @@ import { agentWorkKeys } from "../../shared/agent-work-keys.ts";
 import { api } from "../../shared/api.ts";
 import { formatNumber } from "../../shared/format.ts";
 import { listText } from "../../shared/list-text.ts";
+import { personName } from "../../shared/person.ts";
 import { itemsOf, pageSize, usePaged } from "../../shared/paged.ts";
 import { refreshHistory, refreshIssues, refreshRoutes } from "../../shared/query-keys.ts";
 
@@ -179,6 +180,14 @@ export function runsOf(work: Work): readonly AttemptRun[] {
     );
 }
 
+/**
+ * The name of the agent of a piece of work, or its person when the agent went with the removal of
+ * that person (*Former user*).
+ */
+export function agentName(work: Work): string {
+  return work.agent_name ?? personName(work.agent_person);
+}
+
 /** Whether a plan waits for a person: approval is asked for, the plan is there, nothing else waits first. */
 export function planWaitsForYou(work: Work): boolean {
   const attempt = lastAttempt(work);
@@ -187,7 +196,7 @@ export function planWaitsForYou(work: Work): boolean {
   );
   return (
     work.open &&
-    work.budget.plan_needs_approval &&
+    work.budget?.plan_needs_approval === true &&
     !asking &&
     attempt !== undefined &&
     attempt.plan !== null &&

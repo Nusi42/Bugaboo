@@ -18,17 +18,21 @@ export function WorkHead({ work }: { readonly work: Work }) {
     <div {...partOf(part.agentWorkHead)}>
       <div {...partOf(part.agentWorkWho)}>
         <span>
-          {t("agent-work.agent-of", {
-            agent: work.agent_name,
-            person: personName(work.agent_person),
-          })}
+          {work.agent_name === null || work.agent_name === undefined
+            ? personName(work.agent_person)
+            : t("agent-work.agent-of", {
+                agent: work.agent_name,
+                person: personName(work.agent_person),
+              })}
         </span>
-        <span {...partOf(part.muted)}>
-          {t("agent-work.handed-over", {
-            person: personName(work.handed_over_by),
-            date: formatDate(work.handed_over_at),
-          })}
-        </span>
+        {work.handed_over_at === null || work.handed_over_at === undefined ? null : (
+          <span {...partOf(part.muted)}>
+            {t("agent-work.handed-over", {
+              person: personName(work.handed_over_by),
+              date: formatDate(work.handed_over_at),
+            })}
+          </span>
+        )}
       </div>
       <span {...partOf(part.agentWorkPill, { variants: [outcome ?? work.state] })}>
         {outcome === undefined ? agentStateText(work.state) : outcomeText(outcome)}

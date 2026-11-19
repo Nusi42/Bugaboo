@@ -4,7 +4,14 @@ import { Alert, alertTone, Button, buttonLook, partOf, part, Window } from "@bug
 
 import { messageOf } from "../../shared/errors.ts";
 import { windowLabels } from "../../shared/window-labels.ts";
-import { lastAttempt, useReviewWork, type Attempt, type Verdict, type Work } from "./agent-work.ts";
+import {
+  agentName,
+  lastAttempt,
+  useReviewWork,
+  type Attempt,
+  type Verdict,
+  type Work,
+} from "./agent-work.ts";
 import { Results } from "./Results.tsx";
 import { ReviewFields } from "./ReviewFields.tsx";
 import { useReviewDraft, type ReviewDraft } from "./use-review-draft.ts";
@@ -86,7 +93,7 @@ export function ReviewDialog(props: ReviewDialogProps) {
       labels={windowLabels()}
       title={t("agent-work.review-title", {
         number: attempt?.number ?? work.attempts.length,
-        agent: work.agent_name,
+        agent: agentName(work),
         issue,
       })}
       footer={

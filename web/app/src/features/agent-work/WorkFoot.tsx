@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { formatDate } from "../../shared/format.ts";
 import { personName } from "../../shared/person.ts";
-import type { Work } from "./agent-work.ts";
+import { agentName, type Work } from "./agent-work.ts";
 import { HandOverDialog } from "./HandOverDialog.tsx";
 import { outcomeOf } from "./outcome.ts";
 
@@ -20,14 +20,17 @@ function endedWithoutResult(work: Work): boolean {
 
 /** Why the work stopped, by the cause the server recorded: one sentence for the one real cause. */
 const stopWords: Readonly<Record<NonNullable<Work["stopped_for"]>, (work: Work) => string>> = {
-  "agent-stopped": (work) => t("agent-work.stopped-agent-stopped", { agent: work.agent_name }),
+  "agent-stopped": (work) => t("agent-work.stopped-agent-stopped", { agent: agentName(work) }),
   "access-lost": (work) =>
     t("agent-work.stopped-access-lost", {
       person: personName(work.agent_person),
-      agent: work.agent_name,
+      agent: agentName(work),
     }),
-  "handed-on": (work) => t("agent-work.stopped-handed-on", { agent: work.agent_name }),
-  "ran-out": (work) => t("agent-work.stopped-ran-out", { date: formatDate(work.ends_at) }),
+  "handed-on": (work) => t("agent-work.stopped-handed-on", { agent: agentName(work) }),
+  "ran-out": (work) =>
+    work.ends_at === null || work.ends_at === undefined
+      ? t("agent-work.stopped-ran-out-gone")
+      : t("agent-work.stopped-ran-out", { date: formatDate(work.ends_at) }),
 };
 
 /** Why the work ended, in words: who gave up and why, or the cause that stopped it; nothing for work that went on to a review. */
@@ -35,7 +38,7 @@ function WhyEnded({ work }: { readonly work: Work }) {
   if (work.gave_up !== null && work.gave_up !== undefined) {
     return (
       <p {...partOf(part.agentWorkWords)}>
-        {t("agent-work.gave-up", { agent: work.agent_name, reason: work.gave_up })}
+        {t("agent-work.gave-up", { agent: agentName(work), reason: work.gave_up })}
       </p>
     );
   }
@@ -93,7 +96,7 @@ export function WorkFoot({
     <>
       <WhyEnded work={work} />
       {isNewest ? <NextStep work={work} issue={issue} /> : null}
-      {work.open ? (
+      {work.open && work.ends_at !== null && work.ends_at !== undefined ? (
         <p {...partOf(part.muted)}>{t("agent-work.ends", { date: formatDate(work.ends_at) })}</p>
       ) : null}
     </>

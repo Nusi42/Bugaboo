@@ -3,6 +3,7 @@ import { Button, IssueId, partOf, part } from "@bugaboo/ui";
 import { useNavigate } from "@tanstack/react-router";
 
 import { issueAddress } from "../../shared/paths.ts";
+import { agentName } from "../agent-work/index.ts";
 import { agentNamed, type ListedAgent, type MyWorkItem } from "./agents.ts";
 import { AgentRow } from "./AgentRow.tsx";
 
@@ -27,7 +28,7 @@ export function WorkRow({
     return null;
   }
   const words = WAITS[waits];
-  const agent = agentNamed(agents, item.work.agent)?.name ?? item.work.agent_name;
+  const agent = agentNamed(agents, item.work.agent)?.name ?? agentName(item.work);
   const key = item.issue.readable_id;
   return (
     <AgentRow>

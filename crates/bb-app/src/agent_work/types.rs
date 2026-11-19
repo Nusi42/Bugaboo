@@ -172,18 +172,21 @@ pub struct WorkView {
     pub hand_over: HandOverId,
     /// The agent.
     pub agent: AgentId,
-    /// The name of the agent.
-    pub agent_name: String,
-    /// The person responsible for the agent, as the reader may see them.
+    /// The name of the agent; none when the agent is gone with the removal of its person.
+    pub agent_name: Option<String>,
+    /// The person responsible for the agent, as the reader may see them: the person of the work
+    /// when the agent is gone.
     pub agent_person: PersonRef,
-    /// Who handed the issue over, as the reader may see them.
+    /// Who handed the issue over, as the reader may see them: the person of the work when the
+    /// hand-over is gone.
     pub handed_over_by: PersonRef,
-    /// When the issue was handed over.
-    pub handed_over_at: Timestamp,
-    /// When the hand-over ends.
-    pub ends_at: Timestamp,
-    /// What the hand-over lets the agent spend.
-    pub budget: WorkBudget,
+    /// When the issue was handed over; none when the hand-over is gone with the removal of its
+    /// person.
+    pub handed_over_at: Option<Timestamp>,
+    /// When the hand-over ends; none when it is gone.
+    pub ends_at: Option<Timestamp>,
+    /// What the hand-over lets the agent spend; none when it is gone.
+    pub budget: Option<WorkBudget>,
     /// Where the work is.
     pub state: AgentWorkState,
     /// Whether the hand-over still gives work.
@@ -255,8 +258,9 @@ pub struct ProposalView {
     pub rule: StandingRuleId,
     /// The agent.
     pub agent: AgentId,
-    /// The name of the agent.
-    pub agent_name: String,
+    /// The name of the agent; none when the agent went with the removal of its person, and the
+    /// screen says it came from the agent of a *Former user*.
+    pub agent_name: Option<String>,
     /// The field.
     pub field: RuleField,
     /// The value now.

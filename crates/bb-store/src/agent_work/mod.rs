@@ -31,8 +31,8 @@ use crate::db::{Row, StoredId, Transaction, from_micros, to_micros};
 use crate::error::StoreError;
 use crate::locks::{LockClass, lock_key};
 use crate::schema::{
-    AttemptResultRow, AttemptRow, Computed, HandOverRow, IssueRow, IssueWorkRow, ProposalRow,
-    QuestionRow, ReviewRow, RuleMatchRow, StandingRuleRow,
+    AgentRow, AttemptResultRow, AttemptRow, Computed, HandOverRow, IssueRow, IssueWorkRow,
+    ProposalRow, QuestionRow, ReviewRow, RuleMatchRow, StandingRuleRow,
 };
 
 /// Keeps the work that is open: its state is not an end, no review closed it, and its hand-over

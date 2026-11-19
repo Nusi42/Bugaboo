@@ -13885,6 +13885,67 @@
         "x-permission": "remove-people"
       }
     },
+    "/api/v1/people/{person}/remove": {
+      "post": {
+        "tags": ["people"],
+        "summary": "Removes a switched-off person for good: deletes the account and what only serves it, keeps\nthe records of the organization shown as *Former user*, and the work days by law. Cannot be\nundone. Needs *Remove people*.",
+        "operationId": "removePerson",
+        "parameters": [
+          {
+            "name": "person",
+            "in": "path",
+            "description": "The ID of the person.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemoveBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "The person is removed."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "remove-people"
+      }
+    },
     "/api/v1/people/{person}/switch-off": {
       "post": {
         "tags": ["people"],
@@ -31425,17 +31486,7 @@
       "ProposalBody": {
         "type": "object",
         "description": "A change a standing rule proposes.",
-        "required": [
-          "id",
-          "rule",
-          "agent",
-          "agent_name",
-          "field",
-          "before",
-          "after",
-          "state",
-          "proposed_at"
-        ],
+        "required": ["id", "rule", "agent", "field", "before", "after", "state", "proposed_at"],
         "properties": {
           "after": {
             "type": "object",
@@ -31446,8 +31497,8 @@
             "description": "The agent."
           },
           "agent_name": {
-            "type": "string",
-            "description": "The name of the agent."
+            "type": ["string", "null"],
+            "description": "The name of the agent; none when the agent went with the removal of its person, and the\nscreen says it came from the agent of a *Former user*."
           },
           "before": {
             "type": "object",
@@ -32091,6 +32142,24 @@
             "description": "The person, as the viewer sees them."
           }
         }
+      },
+      "RemoveBody": {
+        "type": "object",
+        "description": "What *Remove a person* does with the person's comments.",
+        "properties": {
+          "comments": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RemovedTexts",
+                "description": "Keep the comments, shown as *Former user*, or delete them; left out, the choice the\nsetting `privacy.removed-texts` offers."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
       },
       "RemovedTexts": {
         "type": "string",
@@ -35867,12 +35936,8 @@
           "id",
           "hand_over",
           "agent",
-          "agent_name",
           "agent_person",
           "handed_over_by",
-          "handed_over_at",
-          "ends_at",
-          "budget",
           "state",
           "open",
           "brief",
@@ -35893,8 +35958,8 @@
             "description": "The agent."
           },
           "agent_name": {
-            "type": "string",
-            "description": "The name of the agent."
+            "type": ["string", "null"],
+            "description": "The name of the agent; none when the agent went with the removal of its person, and the\nscreen names the person instead."
           },
           "agent_person": {
             "$ref": "#/components/schemas/PersonRef",
@@ -35915,16 +35980,23 @@
             "description": "The note of the brief, then the answers to the questions."
           },
           "budget": {
-            "$ref": "#/components/schemas/WorkBudgetBody",
-            "description": "What the hand-over lets the agent spend."
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/WorkBudgetBody",
+                "description": "What the hand-over lets the agent spend; none when it is gone."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "choose_next_status": {
             "type": "boolean",
             "description": "Whether the issue keeps its status after an accept by itself and a person chooses the next\none."
           },
           "ends_at": {
-            "type": "string",
-            "description": "When the hand-over ends.",
+            "type": ["string", "null"],
+            "description": "When the hand-over ends; none when it is gone.",
             "format": "date-time"
           },
           "gave_up": {
@@ -35936,8 +36008,8 @@
             "description": "The hand-over."
           },
           "handed_over_at": {
-            "type": "string",
-            "description": "When the issue was handed over.",
+            "type": ["string", "null"],
+            "description": "When the issue was handed over; none when the hand-over went with the removal of its\nperson.",
             "format": "date-time"
           },
           "handed_over_by": {

@@ -1,8 +1,9 @@
-//! The example requests of the routes of *Switch off*, *Switch on* and the plan of *Remove a
-//! person* (PRIV-04).
+//! The example requests of the routes of *Switch off*, *Switch on*, the plan of *Remove a person*
+//! and the removal (PRIV-04).
 //!
 //! Each example names a person of its own, made for it by the administrator of the matrix, so every
-//! actor who is let in switches off (or on) somebody who is active (or switched off) at that moment.
+//! actor who is let in switches off (or on, or removes) somebody who is active (or switched off) at
+//! that moment.
 
 use bb_app::people::SwitchOff;
 use bb_testing::Failure;
@@ -23,6 +24,24 @@ async fn a_new_person(fixture: &Fixture<'_>) -> Result<bb_core::id::UserId, Fail
         .id)
 }
 
+/// A person of their own for one example, switched off by the administrator of the matrix.
+async fn a_switched_off_person(fixture: &Fixture<'_>) -> Result<bb_core::id::UserId, Failure> {
+    let person = a_new_person(fixture).await?;
+    fixture
+        .rig()
+        .api()
+        .switch_off(
+            Rig::info(),
+            SwitchOff {
+                session_token: fixture.admin_session().to_owned(),
+                person,
+            },
+        )
+        .await
+        .map_err(|error| error.to_string())?;
+    Ok(person)
+}
+
 pub(super) async fn people_state_request(
     fixture: &Fixture<'_>,
     operation: &str,
@@ -33,22 +52,22 @@ pub(super) async fn people_state_request(
             format!("/api/v1/people/{}/switch-off", a_new_person(fixture).await?),
             None,
         ),
-        "switchPersonOn" => {
-            let person = a_new_person(fixture).await?;
-            fixture
-                .rig()
-                .api()
-                .switch_off(
-                    Rig::info(),
-                    SwitchOff {
-                        session_token: fixture.admin_session().to_owned(),
-                        person,
-                    },
-                )
-                .await
-                .map_err(|error| error.to_string())?;
-            ("POST", format!("/api/v1/people/{person}/switch-on"), None)
-        }
+        "switchPersonOn" => (
+            "POST",
+            format!(
+                "/api/v1/people/{}/switch-on",
+                a_switched_off_person(fixture).await?
+            ),
+            None,
+        ),
+        "removePerson" => (
+            "POST",
+            format!(
+                "/api/v1/people/{}/remove",
+                a_switched_off_person(fixture).await?
+            ),
+            Some(serde_json::json!({})),
+        ),
         "getRemovalPlan" => (
             "GET",
             format!("/api/v1/people/{}/removal-plan", fixture.a_person()),

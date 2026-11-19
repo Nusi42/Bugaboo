@@ -3,6 +3,7 @@ import { IssueId, Link, partOf, part } from "@bugaboo/ui";
 
 import { AgentMark } from "../../shared/AgentMark.tsx";
 import { issueAddress } from "../../shared/paths.ts";
+import { agentName } from "../agent-work/index.ts";
 import type { MyWorkItem } from "./agents.ts";
 
 /** What an agent works on: each issue with the state of its work, as the mark and the words. */
@@ -22,7 +23,7 @@ export function WorkLines({ work }: { readonly work: readonly MyWorkItem[] }) {
             </Link>
             <span {...partOf(part.muted)}>
               {t("agents.work-state", { state: t(`agent-work.state.${item.work.state}`) })}
-              <AgentMark name={item.work.agent_name} state={item.work.state} />
+              <AgentMark name={agentName(item.work)} state={item.work.state} />
             </span>
           </li>
         ))}

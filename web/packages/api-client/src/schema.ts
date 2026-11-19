@@ -3916,6 +3916,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/people/{person}/remove": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Removes a switched-off person for good: deletes the account and what only serves it, keeps
+     *     the records of the organization shown as *Former user*, and the work days by law. Cannot be
+     *     undone. Needs *Remove people*.
+     */
+    post: operations["removePerson"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/people/{person}/switch-off": {
     parameters: {
       query?: never;
@@ -11062,8 +11083,11 @@ export interface components {
       after: Record<string, unknown>;
       /** @description The agent. */
       agent: string;
-      /** @description The name of the agent. */
-      agent_name: string;
+      /**
+       * @description The name of the agent; none when the agent went with the removal of its person, and the
+       *     screen says it came from the agent of a *Former user*.
+       */
+      agent_name?: string | null;
       /** @description The value now. */
       before: Record<string, unknown>;
       /** @description The field. */
@@ -11409,6 +11433,10 @@ export interface components {
       kept_by_law: components["schemas"]["KeptByLawBody"][];
       /** @description The person, as the viewer sees them. */
       person: components["schemas"]["PersonRef"];
+    };
+    /** @description What *Remove a person* does with the person's comments. */
+    RemoveBody: {
+      comments?: components["schemas"]["RemovedTexts"] | null;
     };
     /**
      * @description What Remove a person does with the comments the person wrote: keep them, shown as Former user, or delete them.
@@ -13435,16 +13463,18 @@ export interface components {
       accepted_by_itself: boolean;
       /** @description The agent. */
       agent: string;
-      /** @description The name of the agent. */
-      agent_name: string;
+      /**
+       * @description The name of the agent; none when the agent went with the removal of its person, and the
+       *     screen names the person instead.
+       */
+      agent_name?: string | null;
       /** @description The person responsible for the agent, as *Who sees people* says for the reader. */
       agent_person: components["schemas"]["PersonRef"];
       /** @description The attempts, oldest first. */
       attempts: components["schemas"]["AttemptBody"][];
       /** @description The note of the brief, then the answers to the questions. */
       brief: string[];
-      /** @description What the hand-over lets the agent spend. */
-      budget: components["schemas"]["WorkBudgetBody"];
+      budget?: components["schemas"]["WorkBudgetBody"] | null;
       /**
        * @description Whether the issue keeps its status after an accept by itself and a person chooses the next
        *     one.
@@ -13452,18 +13482,19 @@ export interface components {
       choose_next_status: boolean;
       /**
        * Format: date-time
-       * @description When the hand-over ends.
+       * @description When the hand-over ends; none when it is gone.
        */
-      ends_at: string;
+      ends_at?: string | null;
       /** @description Why the agent gave up. */
       gave_up?: string | null;
       /** @description The hand-over. */
       hand_over: string;
       /**
        * Format: date-time
-       * @description When the issue was handed over.
+       * @description When the issue was handed over; none when the hand-over went with the removal of its
+       *     person.
        */
-      handed_over_at: string;
+      handed_over_at?: string | null;
       /** @description Who handed the issue over, as *Who sees people* says for the reader. */
       handed_over_by: components["schemas"]["PersonRef"];
       /** @description The ID of the work. */
@@ -21714,6 +21745,40 @@ export interface operations {
       401: components["responses"]["NotSignedIn"];
       403: components["responses"]["Forbidden"];
       404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  removePerson: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the person. */
+        person: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RemoveBody"];
+      };
+    };
+    responses: {
+      /** @description The person is removed. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
+      413: components["responses"]["TooLarge"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];

@@ -3,6 +3,7 @@ import { Button, IssueId, partOf, part } from "@bugaboo/ui";
 import { useNavigate } from "@tanstack/react-router";
 
 import { issueAddress } from "../../shared/paths.ts";
+import { agentName } from "../agent-work/index.ts";
 import { type MyWorkItem } from "./agents.ts";
 import { Section } from "./Section.tsx";
 import { AgentRow } from "./AgentRow.tsx";
@@ -37,7 +38,7 @@ export function AcceptedByItself({ work }: { readonly work: readonly MyWorkItem[
               </span>
               <span {...partOf(part.muted)}>
                 {t("agents.accepted-line", {
-                  agent: item.work.agent_name,
+                  agent: agentName(item.work),
                   count: checksPassed(item),
                 })}
               </span>
