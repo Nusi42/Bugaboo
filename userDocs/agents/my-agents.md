@@ -19,6 +19,8 @@ Press **Create an agent**, give it a name and press **Create the agent**. You ne
 
 An agent is never *Assigned to* an issue: the issue keeps its person and says *worked on by* the agent.
 
+**One agent for each role, each with its own key.** If several programs work for you, for example one that fixes bugs and one that writes tests, create an agent for each and give each its own agent key. Everything an agent does is shown under its name, its limits count for it alone, and you can pause, stop or hand over one without the others. Programs that share one key all appear as the same agent, and only their own words could tell them apart.
+
 ## The page of an agent
 
 - **Agent keys.** An agent signs in with a key. Press **Create an agent key**, give it a name that says what it is for (for example "Fixer on the build server") and enter your password. You see the key **once**: copy it then. Every key runs out. **Renew the key** gives a new one and takes the old one back; **Take back** stops a key at once, and an agent that uses it can no longer sign in.

@@ -27,6 +27,18 @@ Claude Code runs on your own computer, so nobody has to set it up for it: it tel
 - You see the apps you allowed in *My settings*, under *Connected apps*, and press **Take back** to end one at once.
 - Your data goes where the app sends it. Bugaboo's agreement with the provider of the assistant does not cover it: an app such as Claude Code sends to its own vendor, under your organization's own agreement with that vendor.
 
+## Limits for programs that call `/mcp` themselves
+
+Claude Code and the other MCP apps wait by themselves. A program that sends its own HTTP requests to `/mcp` needs to know how Bugaboo says "wait":
+
+- One app or one key may call only so many times a minute, and one person only so many times over all their apps and keys. Every message to `/mcp` counts.
+- A **tool call** over the limit is answered with HTTP `200` and a result with `isError: true`, whose text says how many seconds to wait, and with the header `Retry-After`. Nothing of the call is done. The answer is a result so that the AI reads it and waits; a program reads `Retry-After` or `isError`, not only the status.
+- **Every other message** over the limit (`initialize`, `tools/list`, a read of a resource) is answered with HTTP `429` and `Retry-After`.
+- An **agent** is also held to a number of changes a minute, which its person may set. An agent that goes over it is **paused**, not told to wait: its person sees which limit it reached and presses *Resume*.
+- A message has a largest size; a bigger one is answered `413` before it is read. A message is sent as `application/json`; another type is answered `415`.
+
+How many calls and changes a minute, and how big a message may be, is on [the page of numbers](numbers.md).
+
 ## Agents are different
 
 An agent is not an app you sign in with. It has its own key and works on issues you hand over to it. See [Agents](../agents/README.md).
