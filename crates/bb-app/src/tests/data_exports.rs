@@ -16,6 +16,7 @@ use bb_core::people_kinds::PeopleKind;
 use bb_core::personal::{Entity as _, Link};
 use bb_core::sign_in::SecurityAction;
 use bb_core::technical::TechnicalName;
+use bb_policy::Permission;
 use jiff::SignedDuration;
 use zip::ZipArchive;
 
@@ -31,7 +32,7 @@ use crate::privacy::export::{
     my_data_export,
 };
 use crate::privacy::walk::{Cell, FoundRow, Value};
-use crate::roles::{SetPeopleLevel, set_level};
+use crate::roles::{ChangeRole, SetPeopleLevel, change_role, set_level};
 
 pub(super) async fn run_jobs(world: &World) -> Result<(), String> {
     while world.ctx().run_due_jobs().await.map_err(text)? > 0 {}
@@ -488,5 +489,62 @@ async fn priv_03_the_reason_of_an_administrators_export_has_a_length_it_may_not_
         Some(ErrorCode::InvalidRequest)
     );
     ask_for(world, &token(world), carol, &longest).await?;
+    Ok(())
+}
+
+/// Gives the role of Bob and Carol *Download someone's data*, or takes it away again.
+async fn may_download_someones_data(crew: &Crew, may: bool) -> Result<(), String> {
+    let known = crew
+        .world
+        .store
+        .lock()
+        .state
+        .roles
+        .iter()
+        .find(|known| known.role.id == crew.role)
+        .map(|known| (known.role.version, known.permissions.clone()))
+        .ok_or("the role is there")?;
+    let (version, mut permissions) = known;
+    permissions.remove(&Permission::DownloadSomeonesData);
+    if may {
+        permissions.insert(Permission::DownloadSomeonesData);
+    }
+    change_role(
+        &crew.world.ctx(),
+        ChangeRole {
+            session_token: token(&crew.world),
+            role: crew.role,
+            version,
+            name: None,
+            permissions: Some(permissions.into_iter().collect()),
+            two_step: None,
+        },
+    )
+    .await
+    .map(|_| ())
+    .map_err(text)
+}
+
+#[tokio::test]
+async fn priv_03_an_administrator_who_lost_download_someones_data_cannot_download_it() -> Outcome {
+    let crew = Crew::new().await?;
+    let (world, bob) = (&crew.world, crew.bob.session_token.as_str());
+    may_download_someones_data(&crew, true).await?;
+    let made = ask_for(world, bob, crew.carol.person.id, "Carol asked by letter").await?;
+    run_jobs(world).await?;
+    let token_of_bob = link(world, bob, made.export.id).await?;
+    may_download_someones_data(&crew, false).await?;
+    // Neither a new link nor the one Bob holds opens the file any more.
+    assert!(matches!(
+        link(world, bob, made.export.id).await,
+        Err(AppError::Refused(ErrorCode::NotFound))
+    ));
+    assert!(matches!(
+        download(world, bob, &token_of_bob).await,
+        Err(AppError::Refused(ErrorCode::NotFound))
+    ));
+    // With the permission back, the file is Bob's again.
+    may_download_someones_data(&crew, true).await?;
+    assert!(!download(world, bob, &token_of_bob).await?.is_empty());
     Ok(())
 }

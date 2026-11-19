@@ -111,20 +111,31 @@ impl<S: AuthStore> Ctx<'_, S> {
         })
     }
 
-    /// The export that `actor` asked for, when it is ready: the only one they may download.
+    /// The export that `actor` asked for, when it is ready: the only one they may download. One
+    /// they asked for somebody else is theirs only while they still hold *Download someone's data*.
     async fn ready_export_of(
         &self,
         actor: &Actor,
         export: DataExportId,
     ) -> Result<DataExport, AppError> {
-        self.store()
+        let found = self
+            .store()
             .data_export(export)
             .await
             .map_err(|error| internal::<S>(&error))?
             .filter(|export| {
                 export.state == ExportState::Ready && export.asked_by == actor.person.id
             })
-            .ok_or(AppError::Refused(ErrorCode::NotFound))
+            .ok_or(AppError::Refused(ErrorCode::NotFound))?;
+        if found.by_somebody_else()
+            && !self
+                .evaluation_of(actor, Place::Organization)
+                .await?
+                .allows(Permission::DownloadSomeonesData)
+        {
+            return Err(AppError::Refused(ErrorCode::NotFound));
+        }
+        Ok(found)
     }
 }
 
