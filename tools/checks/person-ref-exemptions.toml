@@ -238,4 +238,4 @@ reason = "The position of a page for the store holds the name of the last person
 file = "crates/bb-app/src/access/mod.rs"
 function = "person_ref"
 reads = 1
-reason = "The resolution of a person into a PersonRef for the viewer reads the name that the level Names allows."
+reason = "The resolution of a person into a PersonRef for the viewer reads the name that the level Names allows; a removed person's legal-hold name goes through the tombstone (FormerUser), not this read."

@@ -207,6 +207,8 @@ impl<S: AuthStore> Ctx<'_, S> {
         let _running = OneAtATime::take(&self.services.backup_running)
             .ok_or(AppError::Refused(ErrorCode::BackupRunning))?;
         let folder = self.backups_folder().await?;
+        // The backup takes a copy of the replay list: the lines that wait go into it first.
+        self.write_replay_list().await;
         let now = self.now();
         let created = self
             .services

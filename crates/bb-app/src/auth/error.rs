@@ -215,6 +215,14 @@ impl Stops {
         }
     }
 
+    /// What a change that stopped itself says; a duplicate key is an internal failure.
+    pub(crate) const fn aborted_as(code: ErrorCode) -> Self {
+        Self {
+            aborted: Some(code),
+            duplicate: None,
+        }
+    }
+
     /// Both say the same.
     pub(crate) const fn both(code: ErrorCode) -> Self {
         Self::new(code, code)

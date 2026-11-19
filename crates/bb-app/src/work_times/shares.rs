@@ -122,7 +122,7 @@ pub async fn set_share<S: AuthStore>(
     let place = ctx.project_place(&input.project).await?;
     let decider = ctx.require(&actor, Permission::DecideRoles, place).await?;
     let share = Share::new(input.percent).ok_or(ErrorCode::ShareInvalid)?;
-    if ctx.person_known(input.person).await?.is_none() {
+    if ctx.active_person(input.person).await?.is_none() {
         return Err(ErrorCode::NotFound.into());
     }
     let (person, project) = (input.person, project_of(place)?);

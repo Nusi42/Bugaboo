@@ -29,7 +29,14 @@ fn inputs_of(state: &State, person: UserId, place: Place) -> Option<Inputs> {
 
 fn organization_state_of(state: &State) -> Result<OrganizationState, FakeError> {
     // A row for nobody is broken data, here as in the store.
-    OrganizationState::of(&policy_of(state, None)).map_err(|_| FakeError::Failed)
+    let not_active = state
+        .standings
+        .iter()
+        .map(|standing| standing.person)
+        .collect();
+    OrganizationState::of(&policy_of(state, None))
+        .map(|organization| organization.without(&not_active))
+        .map_err(|_| FakeError::Failed)
 }
 
 impl PolicyStore for FakeStore {

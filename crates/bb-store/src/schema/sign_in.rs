@@ -16,6 +16,30 @@ pub(crate) enum PersonRow {
     CreatedAt,
 }
 
+/// The people who are not active: switched off or removed, with the tombstone of a removed person
+/// (PRIV-04, migration 57). An active person has no row.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum PersonStandingRow {
+    #[iden = "person_standing"]
+    Table,
+    Person,
+    Standing,
+    Since,
+    By,
+    Label,
+    HoldName,
+    HoldReason,
+    HoldUntil,
+}
+
+/// The lines of the replay list that wait for the file (ADR-0044, decision 8, migration 57).
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum ReplayWaitingRow {
+    #[iden = "replay_waiting"]
+    Table,
+    Line,
+}
+
 /// Columns that an earlier migration made and a later one took away. Old migrations keep their
 /// text (a changed migration is refused), so the name stays here; no entity stands behind it.
 #[derive(Clone, Copy, Iden)]
@@ -106,6 +130,19 @@ stored_tables! {
         NameKey => display_name,
         Email => email,
         CreatedAt => created_at,
+    },
+    ReplayWaitingRow => bb_core::backup::replay::WaitingReplayLine {
+        Line => line,
+    },
+    PersonStandingRow => bb_core::person::PersonStanding {
+        Person => person,
+        Standing => standing,
+        Since => since,
+        By => by,
+        Label => label,
+        HoldName => hold_name,
+        HoldReason => hold_reason,
+        HoldUntil => hold_until,
     },
     PasswordLogin => bb_core::sign_in::PasswordLogin {
         Person => person,

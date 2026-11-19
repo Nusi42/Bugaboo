@@ -12,7 +12,7 @@ use bb_core::access_key::AccessKey;
 use bb_core::event::EntityRef;
 use bb_core::id::{AccessKeyId, InvitationId, PasskeyId, ProjectId, RoleId, SessionId, UserId};
 use bb_core::network::NetworkPrefix;
-use bb_core::person::Person;
+use bb_core::person::{KnownPerson, Person};
 use bb_core::security_log::Digest;
 use bb_core::settings::SettingValue;
 use bb_core::sign_in::{
@@ -116,6 +116,18 @@ pub enum SearchIn {
     NameStarts,
 }
 
+/// Which people a page of people holds (ADR-0044, decisions 5 and 6). A removed person is in no
+/// page: what is left of them is a tombstone with no name to find.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PeopleOf {
+    /// The active people: what a pick of people offers. A switched-off person is offered nowhere.
+    Active,
+    /// The active and the switched-off people: the list of *Manage people*, where a switched-off
+    /// person is switched on again, and the names a search reads, which still find the issues of a
+    /// switched-off person.
+    NotRemoved,
+}
+
 /// Where a page of people ends: the name of the last one (as it is written) and their ID.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PeoplePosition {
@@ -164,18 +176,20 @@ pub trait AccountStore: ChangeStore + 'static {
         fn account_by_email(email: &str) -> Option<Account>;
         /// The person with this ID.
         fn person(id: UserId) -> Option<Person>;
-        /// The people with these IDs, in one read; an ID of nobody is left out.
-        fn people_of(ids: &[UserId]) -> Vec<Person>;
-        /// People by name (without regard to capitals, then by ID), after the position `after`
-        /// (the last one of the page before), at most `limit`. With `search`, only those whose
-        /// name holds the words, or, when it looks at the names and the addresses, whose address does
-        /// too.
+        /// The people with these IDs and their standing, in one read; an ID of nobody is left
+        /// out.
+        fn people_of(ids: &[UserId]) -> Vec<KnownPerson>;
+        /// People of `whom` by name (without regard to capitals, then by ID), with their standing,
+        /// after the position `after` (the last one of the page before), at most `limit`. With
+        /// `search`, only those whose name holds the words, or, when it looks at the names and the
+        /// addresses, whose address does too.
         fn people_page(
             search: Option<&str>,
             look_at: SearchIn,
+            whom: PeopleOf,
             after: Option<&PeoplePosition>,
             limit: u64
-        ) -> Vec<Person>;
+        ) -> Vec<KnownPerson>;
     }
 
     writes! {
@@ -189,7 +203,8 @@ pub trait AccountStore: ChangeStore + 'static {
 /// Sign-in sessions. What the sign-in use cases need from storage for them.
 pub trait SessionStore: ChangeStore + 'static {
     reads! {
-        /// The session with this secret hash and its person.
+        /// The session with this secret hash and its person; none when the person is not active
+        /// (switched off or removed), so their session opens nothing from the next request on.
         fn session_by_hash(hash: &Digest) -> Option<SessionRecord>;
         /// The sessions of a person, newest first.
         fn sessions_of(person: UserId) -> Vec<SignInSession>;
@@ -290,6 +305,9 @@ pub trait InvitationStore: ChangeStore + 'static {
         fn insert_invitation(invitation: &Invitation) -> ();
         /// Removes an invitation; `false` if there was none.
         fn delete_invitation(id: InvitationId) -> bool;
+        /// Takes back the invitations `person` made that were not used yet (*Switch off*); how
+        /// many.
+        fn delete_open_invitations_by(person: UserId) -> u64;
         /// Uses up an invitation if it is unused and has not run out; `false` otherwise.
         fn use_invitation(id: InvitationId, now: Timestamp) -> bool;
         /// Stores the hash of the setup code, replacing an older one.
@@ -378,6 +396,8 @@ pub trait AuthStore:
     + ToolCallStore
     + crate::privacy::export::ExportStore
     + crate::ports::PersonData
+    + crate::people::StandingStore
+    + crate::privacy::replay::ReplayStore
     + 'static
 {
     /// Whether the error is a unique key that was used twice (for example the e-mail address of

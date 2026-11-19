@@ -9,6 +9,7 @@
 use bb_core::ErrorCode;
 use bb_core::agent::{Agent, AgentState, MOST_AGENTS};
 use bb_core::agent_work::StopCause;
+use bb_core::backup::replay::ReplayKind;
 use bb_core::event::RecordKind;
 use bb_core::id::{AgentId, UserId};
 use bb_core::paging::{Cut, page_len, read_len};
@@ -25,6 +26,7 @@ use super::types::{
 use crate::auth::{AppError, AuthStore, Ctx, Done, Stops, change_failed, internal};
 use crate::auth::{entity, set_to};
 use crate::input::{clean_name, cursor_or_invalid};
+use crate::privacy::replay::taken_back_in;
 
 /// The event of a change to an agent that counted its version up.
 fn counted<S: AuthStore>(
@@ -565,26 +567,41 @@ pub async fn stop_all_agents<S: AuthStore>(
     let event = ctx.event(
         crate::auth::by(person),
         entity(RecordKind::Person, person),
-        vec![bb_core::event::FieldChange {
-            field: "agents".to_owned(),
-            before: Some(json!("running")),
-            after: Some(json!("stopped")),
-        }],
+        vec![agents_stopped()],
     )?;
     ctx.store()
         .record_change(&event, move |transaction| {
-            Box::pin(async move {
-                for agent in S::stop_agents_of(transaction, person).await? {
-                    S::end_offer_of(transaction, agent).await?;
-                    S::stop_work_of_agent(transaction, agent, StopCause::AgentStopped).await?;
-                    S::end_grants_of_agent(transaction, agent).await?;
-                }
-                Ok(())
-            })
+            Box::pin(async move { stop_agents_in::<S>(transaction, person).await.map(|_| ()) })
         })
         .await
         .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
     Ok(Done)
+}
+
+/// The change of a person's record that says their agents stopped: the event the agents' screens
+/// and notifications listen to (*Stop all my agents*, *Switch off*).
+#[must_use]
+pub(crate) fn agents_stopped() -> bb_core::event::FieldChange {
+    bb_core::event::FieldChange {
+        field: "agents".to_owned(),
+        before: Some(json!("running")),
+        after: Some(json!("stopped")),
+    }
+}
+
+/// Stops every agent of `person` that is not stopped yet, inside a change: its offer ends, its
+/// work stops, and its hand-overs and standing rules end (M7-F36). Returns the agents it stopped.
+pub(crate) async fn stop_agents_in<S: AuthStore>(
+    transaction: &mut S::Transaction,
+    person: UserId,
+) -> Result<Vec<AgentId>, S::Error> {
+    let stopped = S::stop_agents_of(transaction, person).await?;
+    for agent in &stopped {
+        S::end_offer_of(transaction, *agent).await?;
+        S::stop_work_of_agent(transaction, *agent, StopCause::AgentStopped).await?;
+        S::end_grants_of_agent(transaction, *agent).await?;
+    }
+    Ok(stopped)
 }
 
 /// Hands the agent to another person. The other person has to accept (`accept_agent`); until
@@ -604,7 +621,7 @@ pub async fn hand_agent<S: AuthStore>(
     if found.version != input.version || found.state == AgentState::Stopped {
         return Err(stale_agent(person, found.id));
     }
-    if ctx.person_known(input.to).await?.is_none() || input.to == person {
+    if ctx.active_person(input.to).await?.is_none() || input.to == person {
         return Err(AppError::Refused(ErrorCode::NotFound));
     }
     if ctx
@@ -739,6 +756,7 @@ pub async fn accept_agent<S: AuthStore>(
         found.version,
     )?;
     let (id, version) = (found.id, found.version);
+    let now = ctx.now();
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
@@ -748,7 +766,8 @@ pub async fn accept_agent<S: AuthStore>(
                 if usize::try_from(held).map_or(true, |held| held >= MOST_AGENTS) {
                     return Err(S::refused(Refusal::TooMuch));
                 }
-                S::delete_keys_of_agent(transaction, id).await?;
+                let keys = S::delete_keys_of_agent(transaction, id).await?;
+                taken_back_in::<S, _>(transaction, now, ReplayKind::AccessKey, &keys).await?;
                 // The work was handed over by the person who had the agent; it stops.
                 S::stop_work_of_agent(transaction, id, StopCause::HandedOn).await?;
                 S::end_grants_of_agent(transaction, id).await?;
@@ -761,5 +780,6 @@ pub async fn accept_agent<S: AuthStore>(
         })
         .await
         .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::VersionChanged)))?;
+    ctx.write_replay_list().await;
     Ok(Done)
 }

@@ -61,7 +61,7 @@ mod invitations;
 mod keys_and_editing;
 mod people;
 mod settings;
-mod sign_in;
+pub(crate) mod sign_in;
 
 pub(crate) use invitations::*;
 pub(crate) use keys_and_editing::*;

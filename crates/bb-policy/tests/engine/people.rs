@@ -215,6 +215,7 @@ fn priv_12_the_person_ref_is_the_tagged_union_of_architecture_7() {
 fn priv_13_a_removed_person_is_a_former_user_with_names_and_someone_otherwise() {
     let gone = FormerUser {
         label: "K7Q2".to_owned(),
+        held_name: None,
     };
     let removed = |id| Target {
         id,
@@ -427,6 +428,7 @@ fn time_10_a_removed_persons_work_days_keep_the_name_for_those_who_may_see_worki
     let ana = UserId::from_random([3; 16]);
     let former = FormerUser {
         label: "K7Q2".to_owned(),
+        held_name: Some("Ana Archer".to_owned()),
     };
     let removed = Target {
         id: ana,

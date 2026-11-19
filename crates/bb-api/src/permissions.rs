@@ -641,6 +641,7 @@ mod keep_rules;
 mod lookup;
 mod mail;
 mod oauth;
+mod people_state;
 mod relations;
 mod saved_searches;
 mod search_routes;

@@ -140,6 +140,25 @@ async fn priv_03_the_person_gets_an_e_mail_of_an_administrators_export_at_the_ad
 }
 
 #[tokio::test]
+async fn priv_03_a_switched_off_person_is_told_by_e_mail_of_an_administrators_export() -> Outcome {
+    let crew = Crew::new().await?;
+    mail_is_on(&crew).await?;
+    let world = &crew.world;
+    super::switch_off::switched_off(world, crew.carol.person.id).await?;
+    ask_for(world, &token(world), crew.carol.person.id, REASON).await?;
+    after_five_minutes(&crew).await?;
+    let sent = world.mailer.messages();
+    let to_carol: Vec<_> = sent
+        .iter()
+        .filter(|mail| mail.to == "carol@example.test")
+        .collect();
+    // The one message a switched-off person still gets, with the reason (ADR-0044, decision 4).
+    assert_eq!(to_carol.len(), 1, "{sent:?}");
+    assert!(to_carol[0].text.contains(REASON), "{}", to_carol[0].text);
+    Ok(())
+}
+
+#[tokio::test]
 async fn priv_03_an_e_mail_says_the_file_is_ready_under_its_own_subject() -> Outcome {
     let crew = Crew::new().await?;
     mail_is_on(&crew).await?;

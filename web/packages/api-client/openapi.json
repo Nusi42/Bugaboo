@@ -13540,6 +13540,99 @@
         "x-permission": "download-someones-data"
       }
     },
+    "/api/v1/people/{person}/switch-off": {
+      "post": {
+        "tags": ["people"],
+        "summary": "Switches a person off at once: their sessions end, their access keys and the grants of AI apps\nare taken back, their agents stop and the invitations they made are taken back. Their\nassignments stay. Needs *Manage people*.",
+        "operationId": "switchPersonOff",
+        "parameters": [
+          {
+            "name": "person",
+            "in": "path",
+            "description": "The ID of the person.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The person is switched off."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "manage-people"
+      }
+    },
+    "/api/v1/people/{person}/switch-on": {
+      "post": {
+        "tags": ["people"],
+        "summary": "Switches a switched-off person on again: they may sign in. What was taken back stays taken\nback. Needs *Manage people*.",
+        "operationId": "switchPersonOn",
+        "parameters": [
+          {
+            "name": "person",
+            "in": "path",
+            "description": "The ID of the person.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The person may sign in again."
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "manage-people"
+      }
+    },
     "/api/v1/people/{person}/work-days": {
       "get": {
         "tags": ["working-hours"],
@@ -30087,6 +30180,17 @@
               "$ref": "#/components/schemas/RoleAtRef"
             },
             "description": "The roles the person has through rows of their own, in the places where the viewer\ndecides who has which role."
+          },
+          "standing": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Standing",
+                "description": "Whether the person is active or switched off (ADR-0044, decision 5)."
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
@@ -33365,6 +33469,11 @@
             "description": "When it started (RFC 3339)."
           }
         }
+      },
+      "Standing": {
+        "type": "string",
+        "description": "Where a person stands: active, switched off (signs in to nothing and keeps every record) or removed (shown as Former user).",
+        "enum": ["active", "switched-off", "removed"]
       },
       "StandingBody": {
         "type": "object",

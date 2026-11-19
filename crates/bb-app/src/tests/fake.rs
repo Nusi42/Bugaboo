@@ -94,6 +94,10 @@ pub(crate) struct State {
     /// the run changed meanwhile).
     pub(crate) later_changes_keep_coming: bool,
     pub(crate) people: Vec<(Person, Option<String>)>,
+    /// The standings of the people who are not active (PRIV-04).
+    pub(crate) standings: Vec<bb_core::person::PersonStanding>,
+    /// The lines of the replay list that wait for its file (ADR-0044, decision 8).
+    pub(crate) replay_waiting: Vec<String>,
     pub(crate) sessions: Vec<SignInSession>,
     pub(crate) two_steps: Vec<TwoStep>,
     pub(crate) totp_secrets: Vec<(UserId, Vec<u8>)>,

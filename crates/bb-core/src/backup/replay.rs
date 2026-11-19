@@ -12,6 +12,7 @@ use core::fmt;
 use jiff::Timestamp;
 
 use crate::id::{AccessKeyId, GrantId, PasskeyId, UserId};
+use crate::personal::Entity;
 
 words! {
     /// What a line of the replay list stands for.
@@ -42,6 +43,18 @@ pub struct ReplayLine {
     pub id: String,
     /// The choice of a removal about the person's comments.
     pub choice: Option<String>,
+}
+
+/// A line of the replay list that is written in the change it stands for and waits there until it
+/// is in the file of the list: a line the file did not take is added again at the next write and
+/// before every backup, so a restore cannot undo a change whose line was lost (ADR-0044, decision
+/// 8).
+#[derive(Clone, Debug, PartialEq, Eq, Entity)]
+pub struct WaitingReplayLine {
+    /// The line as the list writes it: the moment, the kind and the ID (of a person, a key, a
+    /// grant or a passkey), and the choice of a removal. No name and no other value.
+    #[personal(category = "identity", basis = "legitimate_interests")]
+    pub line: String,
 }
 
 /// Whether `text` is one word of an ID or a choice: letters, digits and `-`.

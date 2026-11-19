@@ -29,6 +29,7 @@ mod oauth_types;
 mod request_session;
 mod second_factor;
 mod session;
+mod session_open;
 mod sign_up;
 mod store;
 mod types;
@@ -261,6 +262,7 @@ pub use second_factor::{
     passkey_second_step_options, passkey_sign_in, passkey_sign_in_options, remove_code_app,
     remove_passkey, renew_backup_codes, start_code_app, two_step,
 };
+pub(crate) use session::end_ways_in;
 pub(crate) use session::purge as purge_sessions;
 pub use session::{
     authenticate, end_session, passkey_second_step, second_step, second_step_gap, sessions,
@@ -269,8 +271,8 @@ pub use session::{
 pub use sign_up::{SignUpStore, sign_up};
 pub use store::{
     AccessKeyRecord, AccessKeyStore, Account, AccountStore, AuthSettings, AuthStore,
-    InvitationStore, PeoplePosition, SearchIn, SecondStepStore, SecurityEvent, SessionRecord,
-    SessionStore,
+    InvitationStore, PeopleOf, PeoplePosition, SearchIn, SecondStepStore, SecurityEvent,
+    SessionRecord, SessionStore,
 };
 pub use types::*;
 

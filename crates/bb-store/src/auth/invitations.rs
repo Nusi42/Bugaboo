@@ -141,6 +141,18 @@ impl InvitationStore for AuthStorage {
         Ok(transaction.execute(&delete).await? > 0)
     }
 
+    async fn delete_open_invitations_by(
+        transaction: &mut Transaction,
+        person: UserId,
+    ) -> Result<u64, StoreError> {
+        let mut delete = Query::delete();
+        delete
+            .from_table(InvitationColumns::Table)
+            .and_where(Expr::col(InvitationColumns::InvitedBy).eq(person.stored()))
+            .and_where(Expr::col(InvitationColumns::UsedAt).is_null());
+        transaction.execute(&delete).await
+    }
+
     async fn use_invitation(
         transaction: &mut Transaction,
         id: InvitationId,

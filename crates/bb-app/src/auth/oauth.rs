@@ -22,6 +22,7 @@ use bb_auth::{OAuthKind, OAuthSecret, is_pkce_challenge};
 use bb_core::ErrorCode;
 use bb_core::access_key::KeyChoice;
 use bb_core::ai::ToolCaller;
+use bb_core::backup::replay::ReplayKind;
 use bb_core::event::RecordKind;
 use bb_core::id::{GrantId, OAuthClientId, ProjectId};
 use bb_core::oauth::{
@@ -47,6 +48,7 @@ use super::store::AuthStore;
 use super::types::Done;
 use crate::access::Actor;
 use crate::input::clean_text;
+use crate::privacy::replay::taken_back_in;
 
 /// The purpose under which the failed tries of registration are counted per network.
 const REGISTERING: &str = "oauth-register";
@@ -452,7 +454,7 @@ pub async fn take_back<S: AuthStore>(ctx: &Ctx<'_, S>, input: TakeBack) -> Resul
         .record_change(&event, move |transaction| {
             Box::pin(async move {
                 if S::end_grant(transaction, id, GrantEnd::TakenBack, now).await? {
-                    Ok(())
+                    taken_back_in::<S, _>(transaction, now, ReplayKind::AiAppGrant, [id]).await
                 } else {
                     Err(S::aborted())
                 }
@@ -468,5 +470,6 @@ pub async fn take_back<S: AuthStore>(ctx: &Ctx<'_, S>, input: TakeBack) -> Resul
         Some(entity(RecordKind::ConnectedApp, id)),
     )
     .await;
+    ctx.write_replay_list().await;
     Ok(Done)
 }

@@ -134,7 +134,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 
     async fn match_rule(&self, rule: &RuleRecord) -> Result<(), AppError> {
         let failed = |error| internal::<S>(&error);
-        let Some(person) = self.person_known(rule.person).await? else {
+        let Some(person) = self.active_person(rule.person).await? else {
             return Ok(());
         };
         let agent_on = self.store().agent(rule.agent).await.map_err(failed)?;

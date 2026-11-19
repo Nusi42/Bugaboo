@@ -28,7 +28,7 @@ use super::readable::Looked;
 use super::request::{KeyedChoice, Names, ProjectLink, UnknownName};
 use super::target::{FieldTarget, target_of};
 use crate::access::{Actor, names_other_people};
-use crate::auth::{AppError, AuthStore, Ctx, SearchIn, internal};
+use crate::auth::{AppError, AuthStore, Ctx, PeopleOf, SearchIn, internal};
 use crate::issues::Where as IssueWhere;
 
 /// The most people read from the store in one page for a name in a search.
@@ -670,11 +670,21 @@ impl<S: AuthStore> Ctx<'_, S> {
             Matching::Start => (SearchIn::NameStarts, want as u64),
         };
         for read in 0..PEOPLE_PAGES_PER_NAME {
-            let page = self
+            // A switched-off person's name still finds their issues; a removed person has none.
+            let page: Vec<bb_core::person::Person> = self
                 .store()
-                .people_page(Some(text), look_at, after.as_ref(), per_page)
+                .people_page(
+                    Some(text),
+                    look_at,
+                    PeopleOf::NotRemoved,
+                    after.as_ref(),
+                    per_page,
+                )
                 .await
-                .map_err(|error| internal::<S>(&error))?;
+                .map_err(|error| internal::<S>(&error))?
+                .into_iter()
+                .map(|known| known.person)
+                .collect();
             found.extend(
                 page.iter()
                     .filter(|person| matching.holds(&person.display_name, text))

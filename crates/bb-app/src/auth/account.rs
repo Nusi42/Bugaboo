@@ -217,7 +217,7 @@ pub async fn complete_setup<S: AuthStore>(
                 S::insert_person(transaction, &stored_person, &hash, now).await?;
                 give_handle::<S>(transaction, &stored_person, now, &reserved).await?;
                 S::insert_assignment(transaction, &assignment).await?;
-                S::insert_session(transaction, &session).await
+                super::session::open_session_in::<S>(transaction, &session).await
             })
         })
         .await
@@ -316,7 +316,7 @@ pub async fn accept_invitation<S: AuthStore>(
                 }
                 S::insert_person(transaction, &stored_person, &hash, now).await?;
                 give_handle::<S>(transaction, &stored_person, now, &reserved).await?;
-                S::insert_session(transaction, &session).await
+                super::session::open_session_in::<S>(transaction, &session).await
             })
         })
         .await;
@@ -377,7 +377,7 @@ pub async fn change_password<S: AuthStore>(
                     now,
                 )
                 .await?;
-                S::insert_session(transaction, &session).await
+                super::session::open_session_in::<S>(transaction, &session).await
             })
         })
         .await

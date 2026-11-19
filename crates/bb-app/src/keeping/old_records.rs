@@ -255,6 +255,22 @@ fn name_of(person: &PersonRef) -> (bool, String) {
     }
 }
 
+/// Clears the legal-hold name of a removed person whose last kept work day is gone, in the change
+/// that deleted it: the name is kept for the work days and no longer (ADR-0044, decision 6). No job
+/// and no other route clears it.
+async fn clear_hold_after_last_day<S: AuthStore>(
+    transaction: &mut S::Transaction,
+    person: UserId,
+) -> Result<(), S::Error> {
+    if S::work_day_before_in(transaction, person, Date::MAX)
+        .await?
+        .is_none()
+    {
+        S::clear_legal_hold(transaction, person).await?;
+    }
+    Ok(())
+}
+
 /// *Delete them*: deletes the records of a kind of the group *by an administrator* that are past
 /// the keep period, of everybody or of one person, with everything that tells about them, and
 /// writes each person's deletion to the security log.
@@ -296,6 +312,11 @@ pub async fn delete_old_records<S: AuthStore>(
                     let step =
                         S::delete_old_records(transaction, kind, before, person, KEEP_STEP_ROWS)
                             .await?;
+                    if kind == KeepKind::WorkDays {
+                        for old in &step {
+                            clear_hold_after_last_day::<S>(transaction, old.person).await?;
+                        }
+                    }
                     let mut notes = Vec::with_capacity(step.len());
                     for old in &step {
                         let about = entity(RecordKind::Person, old.person);

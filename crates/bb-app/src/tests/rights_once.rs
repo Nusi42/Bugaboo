@@ -21,7 +21,11 @@ use crate::roles::{
     AssignRole, CreateRole, Given, SetFieldLevel, Subject, assign_role, create_role, set_level,
 };
 
-async fn role(world: &World, name: &str, permissions: Vec<Permission>) -> Result<RoleId, String> {
+pub(super) async fn role(
+    world: &World,
+    name: &str,
+    permissions: Vec<Permission>,
+) -> Result<RoleId, String> {
     Ok(create_role(
         &world.ctx(),
         CreateRole {
@@ -37,7 +41,7 @@ async fn role(world: &World, name: &str, permissions: Vec<Permission>) -> Result
     .id)
 }
 
-async fn give(
+pub(super) async fn give(
     world: &World,
     subject: Subject,
     role: RoleId,

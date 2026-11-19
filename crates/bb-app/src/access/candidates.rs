@@ -13,7 +13,9 @@ use bb_policy::{Authorized, Evaluation, Masked, PeopleContext, Permission, Perso
 use serde::Serialize;
 
 use super::Place;
-use crate::auth::{AppError, AuthStore, Ctx, PeoplePosition, SearchIn, if_there, internal};
+use crate::auth::{
+    AppError, AuthStore, Ctx, PeopleOf, PeoplePosition, SearchIn, if_there, internal,
+};
 use crate::people::write_cursor;
 
 /// List the people to choose from for *Check access*.
@@ -101,11 +103,20 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         let mut page: Vec<Person> = Vec::with_capacity(wanted.saturating_add(1));
         'batches: loop {
-            let batch = self
+            let batch: Vec<Person> = self
                 .store()
-                .people_page(search, SearchIn::Names, after.as_ref(), read_len(wanted))
+                .people_page(
+                    search,
+                    SearchIn::Names,
+                    PeopleOf::Active,
+                    after.as_ref(),
+                    read_len(wanted),
+                )
                 .await
-                .map_err(|error| internal::<S>(&error))?;
+                .map_err(|error| internal::<S>(&error))?
+                .into_iter()
+                .map(|known| known.person)
+                .collect();
             let full = batch.len() > wanted;
             if let (Members::WithRole, Place::Project(project)) = (members, place) {
                 // The rights of the whole batch are read together, so judging each person of it
@@ -161,12 +172,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         person: UserId,
         search: Option<&str>,
     ) -> Result<Vec<Person>, AppError> {
-        let Some(found) = self
-            .store()
-            .person(person)
-            .await
-            .map_err(|error| internal::<S>(&error))?
-        else {
+        let Some(found) = self.active_person(person).await? else {
             return Ok(Vec::new());
         };
         let name = found.display_name.to_lowercase();
@@ -212,7 +218,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
     }
 
-    /// Whether `viewer` (the evaluation of `actor`) may name a person that exists: themselves, or
+    /// Whether `viewer` (the evaluation of `actor`) may name a person who is active: themselves, or
     /// anybody when they are shown people by name (`names_other_people`, of the kind of the
     /// field). A viewer who is shown others only as a role has no ID to name them by, so one sent
     /// anyway is refused alike for a person who is there and one who is not. The part of
@@ -224,13 +230,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         kind: PeopleKind,
         person: UserId,
     ) -> Result<bool, AppError> {
+        // A switched-off or removed person is chosen nowhere; a value that names them already
+        // stays, because only a new value is checked (ADR-0044, decision 5).
         Ok((person == actor || names_other_people(viewer, kind))
-            && self
-                .store()
-                .person(person)
-                .await
-                .map_err(|error| internal::<S>(&error))?
-                .is_some())
+            && self.active_person(person).await?.is_some())
     }
 
     /// Whether `viewer` may name `person` in a field of an item of the project: the person exists

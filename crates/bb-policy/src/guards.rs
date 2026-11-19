@@ -133,6 +133,19 @@ impl OrganizationState {
             rows,
         })
     }
+
+    /// The state without the rows and memberships of `people`: the people who are switched off
+    /// or removed hold nothing that counts, so the last-administrator rule never counts on them
+    /// (ADR-0044, decision 5).
+    #[must_use]
+    pub fn without(mut self, people: &BTreeSet<UserId>) -> Self {
+        self.rows.retain(|(holder, _)| match holder {
+            Holder::Person(person) => !people.contains(person),
+            Holder::Group(_) => true,
+        });
+        self.members.retain(|(_, person)| !people.contains(person));
+        self
+    }
 }
 
 /// The people who hold both *Manage roles* and *Decide who has which role* for the whole

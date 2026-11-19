@@ -110,7 +110,7 @@ impl SessionStore for AuthStorage {
             return Ok(None);
         };
         let session = read_session(&row)?;
-        let Some(person) = self.person_by_id(session.person).await? else {
+        let Some(person) = self.active_person_by_id(session.person).await? else {
             return Ok(None);
         };
         Ok(Some(SessionRecord { session, person }))

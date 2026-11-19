@@ -83,6 +83,7 @@ mod oauth;
 mod offers;
 mod own_access;
 mod people;
+mod people_state;
 mod people_visibility;
 mod previews;
 mod projects;
@@ -226,6 +227,7 @@ where
         .merge(assistant::routes())
         .merge(handles::routes())
         .merge(people::routes())
+        .merge(people_state::routes())
         .merge(groups::routes())
         .merge(roles::routes())
         .merge(about::routes())

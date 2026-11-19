@@ -361,6 +361,11 @@ export const messages = {
   "setting.keeping.ip-address-days.name": "Days to keep IP addresses",
   "setting.keeping.ip-address-days.help":
     "How many days the shortened IP address a person signed in from is kept on their sign-in. After that it is deleted once a day.",
+  "setting.privacy.removed-texts.name": "Comments of a removed person",
+  "setting.privacy.removed-texts.help":
+    "What the window of Remove a person offers first for the comments the person wrote. The administrator who removes a person can choose otherwise each time.",
+  "setting.privacy.removed-texts.keep": "Keep their comments, shown as Former user",
+  "setting.privacy.removed-texts.delete": "Delete their comments",
   "setting.keeping.notification-days.name": "Days to keep notifications",
   "setting.keeping.notification-days.help":
     "How many days a notification is kept. Older notifications are deleted once a day.",

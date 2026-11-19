@@ -68,9 +68,20 @@ pub(super) fn request(client: OAuthClientId, scope: &str) -> AuthorizationReques
     }
 }
 
-/// The code an app gets after the person allowed it.
+/// The code an app gets after the administrator allowed it.
 pub(super) async fn allowed(
     world: &World,
+    client: OAuthClientId,
+    asked: &str,
+    given: KeyChoice,
+) -> Result<String, AppError> {
+    allowed_by(world, &token(world), client, asked, given).await
+}
+
+/// The code an app gets after the person of `session` allowed it.
+pub(super) async fn allowed_by(
+    world: &World,
+    session: &str,
     client: OAuthClientId,
     asked: &str,
     given: KeyChoice,
@@ -78,7 +89,7 @@ pub(super) async fn allowed(
     let answer = decide_authorization(
         &world.ctx(),
         DecideAuthorization {
-            session_token: token(world),
+            session_token: session.to_owned(),
             request: request(client, asked),
             allow: true,
             scope: given,

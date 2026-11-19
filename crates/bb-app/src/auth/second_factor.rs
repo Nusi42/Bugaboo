@@ -3,6 +3,7 @@
 
 use bb_auth::{ChallengeId, HumanCode, Purpose, TotpSecret};
 use bb_core::ErrorCode;
+use bb_core::backup::replay::ReplayKind;
 use bb_core::event::RecordKind;
 use bb_core::id::PasskeyId;
 use bb_core::sign_in::{SecurityAction, SessionStage, StoredPasskey, TotpStep, TwoStep};
@@ -20,6 +21,7 @@ use super::types::{
     Started, TwoStepQuery, TwoStepStatus,
 };
 use crate::input::clean_text;
+use crate::privacy::replay::taken_back_in;
 
 /// How many backup codes a person gets.
 pub const BACKUP_CODE_COUNT: usize = 10;
@@ -176,13 +178,8 @@ pub async fn passkey_sign_in<S: AuthStore>(
         Err(bb_auth::AuthError::Challenge | bb_auth::AuthError::Passkey) => None,
         Err(error) => return Err(error.into()),
     };
-    let (Some((used_id, data)), Some(person)) = (
-        used,
-        ctx.store()
-            .person(named.person)
-            .await
-            .map_err(|error| internal::<S>(&error))?,
-    ) else {
+    let (Some((used_id, data)), Some(person)) = (used, ctx.active_person(named.person).await?)
+    else {
         ctx.note(SecurityAction::PasskeySignInFailed, None, None)
             .await;
         return Err(rejected());
@@ -214,11 +211,13 @@ pub async fn passkey_sign_in<S: AuthStore>(
                 if let Some(old) = old {
                     S::delete_session(transaction, old).await?;
                 }
-                S::insert_session(transaction, &session).await
+                super::session::open_session_in::<S>(transaction, &session).await
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
+        .map_err(|error| {
+            change_failed::<S>(&error, Stops::aborted_as(ErrorCode::PasskeyRejected))
+        })?;
     ctx.note(
         SecurityAction::PasskeySignInSucceeded,
         Some(person.id),
@@ -524,11 +523,12 @@ pub async fn remove_passkey<S: AuthStore>(
         vec![changed("passkey")],
     )?;
     let store = ctx.store();
+    let now = ctx.now();
     store
         .record_change(&event, move |transaction| {
             Box::pin(async move {
                 if S::delete_passkey(transaction, person, id).await? {
-                    Ok(())
+                    taken_back_in::<S, _>(transaction, now, ReplayKind::Passkey, [id]).await
                 } else {
                     Err(S::aborted())
                 }
@@ -542,5 +542,6 @@ pub async fn remove_passkey<S: AuthStore>(
         Some(entity(RecordKind::Passkey, id)),
     )
     .await;
+    ctx.write_replay_list().await;
     Ok(Done)
 }

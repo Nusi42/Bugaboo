@@ -24,7 +24,7 @@ use bb_core::id::{CommentId, EntityId, IssueId, JobId, NotificationId, UserId};
 use bb_core::issue::Issue;
 use bb_core::many_changes::ManyChangeStatus;
 use bb_core::notification::{FIELDS_MAX, MailState, Notification, NotificationKind, Once, Via};
-use bb_core::person::Person;
+use bb_core::person::{KnownPerson, Person};
 use bb_core::settings::Layers;
 use bb_policy::Evaluation;
 use serde_json::json;
@@ -53,7 +53,7 @@ mod work_times;
 /// access.
 struct Round {
     /// The people looked up so far; `None` for a person who is not there.
-    people: HashMap<UserId, Option<Person>>,
+    people: HashMap<UserId, Option<KnownPerson>>,
     /// The values of the settings of the people looked up so far.
     layers: HashMap<UserId, Layers>,
     /// The values of the organization alone, read once: the base of everybody's layers.
@@ -143,15 +143,11 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         round: &mut Round,
         id: UserId,
-    ) -> Result<Option<Person>, AppError> {
+    ) -> Result<Option<KnownPerson>, AppError> {
         if let Some(known) = round.people.get(&id) {
             return Ok(known.clone());
         }
-        let found = self
-            .store()
-            .person(id)
-            .await
-            .map_err(|error| internal::<S>(&error))?;
+        let found = self.person_with_standing(id).await?;
         round.people.insert(id, found.clone());
         Ok(found)
     }
@@ -654,7 +650,14 @@ impl<S: AuthStore> Ctx<'_, S> {
             {
                 continue;
             }
-            let Some(person) = self.round_person(round, hear.person).await? else {
+            let Some(person) = self
+                .round_person(round, hear.person)
+                .await?
+                .filter(|known| {
+                    known.active() || hear.kinds.iter().flatten().any(|kind| known.hears(*kind))
+                })
+                .map(|known| known.person)
+            else {
                 continue;
             };
             let mut visible: Vec<FieldChange> = Vec::new();

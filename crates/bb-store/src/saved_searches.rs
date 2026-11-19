@@ -3,7 +3,6 @@
 
 use bb_app::saved_searches::{Reach, SavedSearchStore};
 use bb_core::id::{GroupId, ProjectId, SavedSearchId, UserId};
-use bb_core::person::Person;
 use bb_core::saved_search::{
     ProjectDefaultList, SavedSearch, SearchColumn, SearchShare, ShareKind, ShareTarget,
     TimelineOptions, ViewKind, Zoom,
@@ -12,13 +11,10 @@ use jiff::Timestamp;
 use sea_query::{Cond, Expr, ExprTrait as _, Order, Query, SelectStatement};
 
 use crate::auth::AuthStorage;
-use crate::auth::{person_columns, read_person};
 use crate::db::{Row, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
 use crate::locks::{LockClass, lock_key};
-use crate::schema::{
-    PersonRow, ProjectDefaultListRow, SavedSearchRow, SearchColumnRow, SearchShareRow,
-};
+use crate::schema::{ProjectDefaultListRow, SavedSearchRow, SearchColumnRow, SearchShareRow};
 
 fn search_select() -> SelectStatement {
     let mut select = Query::select();
@@ -388,23 +384,6 @@ impl SavedSearchStore for AuthStorage {
         }
         let mut transaction = self.database().begin_read().await?;
         crate::policy::load_policy(&mut transaction, crate::policy::Wanted::People(people)).await
-    }
-
-    async fn makers_of(&self, ids: &[UserId]) -> Result<Vec<Person>, StoreError> {
-        if ids.is_empty() {
-            return Ok(Vec::new());
-        }
-        let mut select = Query::select();
-        select
-            .columns(person_columns())
-            .from(PersonRow::Table)
-            .and_where(Expr::col(PersonRow::Id).is_in(stored_ids(ids)));
-        self.database()
-            .fetch_all(&select)
-            .await?
-            .iter()
-            .map(read_person)
-            .collect()
     }
 
     async fn lock_saved_searches_of(

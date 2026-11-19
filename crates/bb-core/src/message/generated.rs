@@ -7591,6 +7591,22 @@ pub const SETTING_PAGE_THEMES_INTRO: MessageKey = MessageKey::new("setting.page.
 pub const SETTING_PAGE_WORKING_HOURS_INTRO: MessageKey =
     MessageKey::new("setting.page.working-hours-intro");
 
+/// The message `setting.privacy.removed-texts.delete`.
+pub const SETTING_PRIVACY_REMOVED_TEXTS_DELETE: MessageKey =
+    MessageKey::new("setting.privacy.removed-texts.delete");
+
+/// The message `setting.privacy.removed-texts.help`.
+pub const SETTING_PRIVACY_REMOVED_TEXTS_HELP: MessageKey =
+    MessageKey::new("setting.privacy.removed-texts.help");
+
+/// The message `setting.privacy.removed-texts.keep`.
+pub const SETTING_PRIVACY_REMOVED_TEXTS_KEEP: MessageKey =
+    MessageKey::new("setting.privacy.removed-texts.keep");
+
+/// The message `setting.privacy.removed-texts.name`.
+pub const SETTING_PRIVACY_REMOVED_TEXTS_NAME: MessageKey =
+    MessageKey::new("setting.privacy.removed-texts.name");
+
 /// The message `setting.region.date-format.day-month-year`.
 pub const SETTING_REGION_DATE_FORMAT_DAY_MONTH_YEAR: MessageKey =
     MessageKey::new("setting.region.date-format.day-month-year");
@@ -26870,6 +26886,22 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "setting.page.working-hours-intro",
         "How working hours are checked and kept, and who sees what of them. Every change here is written to the security log.",
+    ),
+    (
+        "setting.privacy.removed-texts.delete",
+        "Delete their comments",
+    ),
+    (
+        "setting.privacy.removed-texts.help",
+        "What the window of Remove a person offers first for the comments the person wrote. The administrator who removes a person can choose otherwise each time.",
+    ),
+    (
+        "setting.privacy.removed-texts.keep",
+        "Keep their comments, shown as Former user",
+    ),
+    (
+        "setting.privacy.removed-texts.name",
+        "Comments of a removed person",
     ),
     (
         "setting.region.date-format.day-month-year",

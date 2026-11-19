@@ -2,7 +2,7 @@
 //! access keys (the errors of a change and the settings of signing in are in `fake_auth_store.rs`).
 
 use bb_core::id::{AccessKeyId, InvitationId, PasskeyId, RoleId, SessionId, UserId};
-use bb_core::person::Person;
+use bb_core::person::{KnownPerson, Person};
 use bb_core::security_log::Digest;
 use bb_core::settings::{SECURITY_TWO_STEP_REQUIRED, Scope, SettingValue};
 use bb_core::sign_in::{
@@ -12,8 +12,8 @@ use jiff::Timestamp;
 use zeroize::Zeroizing;
 
 use crate::auth::{
-    AccessKeyRecord, AccessKeyStore, Account, AccountStore, InvitationStore, PeoplePosition,
-    ProjectChoice, SearchIn, SecondStepStore, SessionRecord, SessionStore,
+    AccessKeyRecord, AccessKeyStore, Account, AccountStore, InvitationStore, PeopleOf,
+    PeoplePosition, ProjectChoice, SearchIn, SecondStepStore, SessionRecord, SessionStore,
 };
 
 use super::fake::*;
@@ -33,39 +33,62 @@ impl AccountStore for FakeStore {
     }
 
     async fn person(&self, id: UserId) -> Result<Option<Person>, FakeError> {
-        Ok(self.people_of(&[id]).await?.pop())
+        Ok(self.people_of(&[id]).await?.pop().map(|known| known.person))
     }
 
-    async fn people_of(&self, ids: &[UserId]) -> Result<Vec<Person>, FakeError> {
-        let all = self.read(|state| state.people.clone());
-        Ok(all
-            .into_iter()
-            .map(|(person, _)| person)
-            .filter(|person| ids.contains(&person.id))
-            .collect())
+    async fn people_of(&self, ids: &[UserId]) -> Result<Vec<KnownPerson>, FakeError> {
+        Ok(self.read(|state| {
+            state
+                .people
+                .iter()
+                .filter(|(person, _)| ids.contains(&person.id))
+                .map(|(person, _)| KnownPerson {
+                    person: person.clone(),
+                    standing: state
+                        .standings
+                        .iter()
+                        .find(|standing| standing.person == person.id)
+                        .cloned(),
+                })
+                .collect()
+        }))
     }
 
     async fn people_page(
         &self,
         search: Option<&str>,
         look_at: SearchIn,
+        whom: PeopleOf,
         after: Option<&PeoplePosition>,
         limit: u64,
-    ) -> Result<Vec<Person>, FakeError> {
+    ) -> Result<Vec<KnownPerson>, FakeError> {
         let key = |name: &str, id: UserId| (bb_core::names::name_key(name), id);
         Ok(self.read(|state| {
-            let mut people: Vec<Person> = state
+            let mut people: Vec<KnownPerson> = state
                 .people
                 .iter()
-                .map(|(person, _)| person.clone())
-                .filter(|person| super::fake_people::holds(person, search, look_at))
+                .map(|(person, _)| KnownPerson {
+                    person: person.clone(),
+                    standing: state
+                        .standings
+                        .iter()
+                        .find(|standing| standing.person == person.id)
+                        .cloned(),
+                })
+                .filter(|known| match (whom, &known.standing) {
+                    (_, None) => true,
+                    (PeopleOf::Active, Some(_)) => false,
+                    (PeopleOf::NotRemoved, Some(standing)) => !standing.removed(),
+                })
+                .filter(|known| super::fake_people::holds(&known.person, search, look_at))
                 .collect();
-            people.sort_by_key(|person| key(&person.display_name, person.id));
+            people.sort_by_key(|known| key(&known.person.display_name, known.person.id));
             people
                 .into_iter()
-                .filter(|person| {
+                .filter(|known| {
                     after.is_none_or(|position| {
-                        key(&person.display_name, person.id) > key(&position.name, position.id)
+                        key(&known.person.display_name, known.person.id)
+                            > key(&position.name, position.id)
                     })
                 })
                 .take(usize::try_from(limit).unwrap_or(usize::MAX))
@@ -115,6 +138,13 @@ impl SessionStore for FakeStore {
                 .sessions
                 .iter()
                 .find(|session| session.token_hash == *hash)?;
+            if state
+                .standings
+                .iter()
+                .any(|standing| standing.person == session.person)
+            {
+                return None;
+            }
             let person = state
                 .people
                 .iter()
@@ -509,6 +539,14 @@ impl InvitationStore for FakeStore {
             .invitations
             .retain(|invitation| invitation.id != id);
         Ok(tx.state.invitations.len() < before)
+    }
+
+    async fn delete_open_invitations_by(tx: &mut Tx, person: UserId) -> Result<u64, FakeError> {
+        let before = tx.state.invitations.len();
+        tx.state.invitations.retain(|invitation| {
+            invitation.invited_by != Some(person) || invitation.used_at.is_some()
+        });
+        Ok(u64::try_from(before - tx.state.invitations.len()).unwrap_or(u64::MAX))
     }
 
     async fn use_invitation(

@@ -25,6 +25,7 @@ mod examples_files;
 mod examples_issues;
 mod examples_layouts;
 mod examples_people;
+mod examples_people_state;
 mod examples_relations;
 mod examples_searches;
 mod examples_tags;

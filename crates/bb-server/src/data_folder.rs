@@ -525,7 +525,7 @@ pub(crate) fn write_private(
 }
 
 /// `write_private` with the writing left to `write`, so a failure can be tried.
-fn write_private_with(
+pub(crate) fn write_private_with(
     path: &Path,
     existing: Existing,
     write: impl FnOnce(&mut std::fs::File) -> std::io::Result<()>,

@@ -1,9 +1,9 @@
 //! People, their accounts and their passwords.
 
-use bb_app::auth::{Account, AccountStore, PeoplePosition, SearchIn};
+use bb_app::auth::{Account, AccountStore, PeopleOf, PeoplePosition, SearchIn};
 use bb_core::id::UserId;
 use bb_core::names::name_key;
-use bb_core::person::Person;
+use bb_core::person::{KnownPerson, Person};
 use jiff::Timestamp;
 use sea_query::{Cond, Expr, ExprTrait as _, Order, Query};
 
@@ -47,6 +47,26 @@ impl AuthStorage {
             .map(read_person)
             .transpose()
     }
+
+    /// The person with this ID while they are active; none when switched off or removed.
+    pub(super) async fn active_person_by_id(
+        &self,
+        id: UserId,
+    ) -> Result<Option<Person>, StoreError> {
+        let mut select = Query::select();
+        select
+            .columns(person_columns().map(|column| (PersonRow::Table, column)))
+            .from(PersonRow::Table)
+            .and_where(Expr::col((PersonRow::Table, PersonRow::Id)).eq(id.stored()));
+        super::standing::join_standing_rows(&mut select);
+        super::standing::only(&mut select, PeopleOf::Active);
+        self.database
+            .fetch_optional(&select)
+            .await?
+            .as_ref()
+            .map(read_person)
+            .transpose()
+    }
 }
 
 impl AccountStore for AuthStorage {
@@ -75,16 +95,23 @@ impl AccountStore for AuthStorage {
         self.person_by_id(id).await
     }
 
-    async fn people_of(&self, ids: &[UserId]) -> Result<Vec<Person>, StoreError> {
+    async fn people_of(&self, ids: &[UserId]) -> Result<Vec<KnownPerson>, StoreError> {
         let mut found = Vec::new();
         for chunk in ids.chunks(crate::db::BIND_LIMIT) {
             let mut select = Query::select();
             select
-                .columns(person_columns())
+                .columns(person_columns().map(|column| (PersonRow::Table, column)))
                 .from(PersonRow::Table)
-                .and_where(Expr::col(PersonRow::Id).is_in(chunk.iter().map(|id| id.stored())));
+                .and_where(
+                    Expr::col((PersonRow::Table, PersonRow::Id))
+                        .is_in(chunk.iter().map(|id| id.stored())),
+                );
+            super::standing::join_standing(&mut select);
             for row in &self.database.fetch_all(&select).await? {
-                found.push(read_person(row)?);
+                found.push(KnownPerson {
+                    person: read_person(row)?,
+                    standing: super::standing::read_standing(row)?,
+                });
             }
         }
         Ok(found)
@@ -94,33 +121,34 @@ impl AccountStore for AuthStorage {
         &self,
         search: Option<&str>,
         look_at: SearchIn,
+        whom: PeopleOf,
         after: Option<&PeoplePosition>,
         limit: u64,
-    ) -> Result<Vec<Person>, StoreError> {
+    ) -> Result<Vec<KnownPerson>, StoreError> {
         // By the stored name key (capitals and repeated spaces do not count, accents do), so the
         // search, the order and the position agree with each other on both databases.
-        let name = || Expr::col(PersonRow::NameKey);
+        let name = || Expr::col((PersonRow::Table, PersonRow::NameKey));
         let mut select = Query::select();
         select
-            .columns(person_columns())
+            .columns(person_columns().map(|column| (PersonRow::Table, column)))
             .from(PersonRow::Table)
-            .order_by(PersonRow::NameKey, Order::Asc)
-            .order_by(PersonRow::Id, Order::Asc)
+            .order_by((PersonRow::Table, PersonRow::NameKey), Order::Asc)
+            .order_by((PersonRow::Table, PersonRow::Id), Order::Asc)
             .limit(limit);
+        super::standing::join_standing(&mut select);
+        super::standing::only(&mut select, whom);
         if look_at == SearchIn::NameStarts {
             // The start as typed, by the one rule that made the keys.
             let start = name_key(search.unwrap_or_default());
-            select
-                .and_where(Expr::col(PersonRow::NameKey).like(crate::like::starting_with(&start)));
+            select.and_where(name().like(crate::like::starting_with(&start)));
         } else {
             // Every word of the search is held by the name (or, if asked for, by the address).
             for word in search.unwrap_or_default().split_whitespace() {
-                let mut any = Cond::any().add(
-                    Expr::col(PersonRow::NameKey).like(crate::like::containing(&name_key(word))),
-                );
+                let mut any =
+                    Cond::any().add(name().like(crate::like::containing(&name_key(word))));
                 if look_at == SearchIn::NamesAndAddresses {
                     any = any.add(crate::like::containing_any_case(
-                        Expr::col(PersonRow::Email),
+                        Expr::col((PersonRow::Table, PersonRow::Email)),
                         word,
                     ));
                 }
@@ -140,7 +168,12 @@ impl AccountStore for AuthStorage {
             .fetch_all(&select)
             .await?
             .iter()
-            .map(read_person)
+            .map(|row| {
+                Ok(KnownPerson {
+                    person: read_person(row)?,
+                    standing: super::standing::read_standing(row)?,
+                })
+            })
             .collect()
     }
 

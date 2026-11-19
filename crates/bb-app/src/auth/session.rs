@@ -12,9 +12,11 @@ use bb_auth::{
     looks_like_access_key,
 };
 use bb_core::ErrorCode;
+use bb_core::backup::replay::ReplayKind;
 use bb_core::event::{DomainEvent, RecordKind};
-use bb_core::id::{SessionId, UserId};
+use bb_core::id::{AccessKeyId, GrantId, SessionId, UserId};
 use bb_core::many_changes::{ManyChangeStatus, RunsToEnd};
+use bb_core::oauth::GrantEnd;
 use bb_core::sign_in::{SecurityAction, SessionStage};
 use bb_policy::{Authorized, Evaluation, Permission, Place};
 use jiff::Timestamp;
@@ -25,6 +27,8 @@ use super::ctx::Ctx;
 use super::error::{AppError, Stops, change_failed, internal};
 use super::events::{by, changed, entity, set_to};
 use super::limit::person_key;
+pub(crate) use super::session_open::open_session_in;
+use super::session_open::{follow_pending_in, follow_pending_or_signed_out};
 use super::store::{Account, AuthStore};
 use super::types::{
     AuthStatus, AuthenticateQuery, Authenticated, Done, EndSession, MAX_SESSIONS_LISTED,
@@ -32,6 +36,8 @@ use super::types::{
     SecondStepMethods, SessionEnded, SessionList, SessionView, SessionsQuery, SignIn, SignOut,
     SignOutEverywhere, Started, StatusQuery,
 };
+use crate::privacy::replay::taken_back_in;
+use crate::projects::Why;
 
 /// Long text in the key of a failure counter is cut here: the key only has to tell accounts
 /// apart, and a megabyte of "address" must not use memory.
@@ -174,7 +180,8 @@ pub(crate) async fn purge<S: AuthStore>(
 impl<S: AuthStore> Ctx<'_, S> {
     /// The account of an address and whether the password is its own. An address that is no
     /// address and a password that can never be one are answered like a wrong password, after
-    /// the same work.
+    /// the same work. So is the account of a switched-off or removed person, who signs in to
+    /// nothing (ADR-0044, decision 5): the answer tells nothing of the account.
     async fn check_credentials(
         &self,
         email: &str,
@@ -187,6 +194,12 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .await
                 .map_err(|error| internal::<S>(&error))?,
             None => None,
+        };
+        let account = match account {
+            Some(account) if self.active_person(account.person.id).await?.is_some() => {
+                Some(account)
+            }
+            _ => None,
         };
         // Text that can never be a password is refused before any work is done; this tells
         // nothing about the account.
@@ -282,11 +295,13 @@ pub async fn sign_in<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignIn) -> Result<St
                 if let Some(hash) = &rehash {
                     S::set_password(transaction, person_id, hash, now).await?;
                 }
-                S::insert_session(transaction, &session).await
+                open_session_in::<S>(transaction, &session).await
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
+        .map_err(|error| {
+            change_failed::<S>(&error, Stops::aborted_as(ErrorCode::WrongCredentials))
+        })?;
     let action = if methods.is_some() {
         SecurityAction::SignInSecondStepNeeded
     } else {
@@ -377,6 +392,8 @@ pub async fn second_step<S: AuthStore>(
     )?;
     let (store, session, pending_id) = (ctx.store(), new.session.clone(), pending.session.id);
     let person_id = person.id;
+    let why = Why::default();
+    let stopped = why.clone();
     let result = store
         .record_change(&event, move |transaction| {
             Box::pin(async move {
@@ -390,16 +407,15 @@ pub async fn second_step<S: AuthStore>(
                     (None, None) => false,
                 };
                 if !fresh {
-                    return Err(S::aborted());
+                    return Err(stopped.stop::<S>(ErrorCode::WrongSecondStepCode));
                 }
-                S::delete_session(transaction, pending_id).await?;
-                S::insert_session(transaction, &session).await
+                follow_pending_or_signed_out::<S>(transaction, pending_id, &session, &stopped).await
             })
         })
         .await;
     if let Err(error) = result {
-        let error = change_failed::<S>(&error, Stops::both(ErrorCode::WrongSecondStepCode));
-        if matches!(error, AppError::Refused(_)) {
+        let error = why.answer::<S>(&error, ErrorCode::WrongSecondStepCode);
+        if error == AppError::Refused(ErrorCode::WrongSecondStepCode) {
             ctx.second_step_failed(slot, &pending, SecurityAction::SecondStepFailed)
                 .await?;
         } else {
@@ -487,12 +503,11 @@ pub async fn passkey_second_step<S: AuthStore>(
         .record_change(&event, move |transaction| {
             Box::pin(async move {
                 S::use_passkey(transaction, used_id, data.as_deref(), now).await?;
-                S::delete_session(transaction, pending_id).await?;
-                S::insert_session(transaction, &session).await
+                follow_pending_in::<S>(transaction, pending_id, &session).await
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, Stops::NONE));
+        .map_err(|error| change_failed::<S>(&error, Stops::aborted_as(ErrorCode::NotSignedIn)));
     ctx.unless_internal(&slot, changed_session)?;
     ctx.second_step_done(slot, &pending);
     ctx.note(
@@ -558,52 +573,79 @@ pub async fn sign_out_everywhere<S: AuthStore>(
     )?;
     let now = ctx.now();
     let store = ctx.store();
-    let keys = store
+    let taken = store
         .record_change(&event, move |transaction| {
             Box::pin(async move {
-                S::delete_sessions_of(transaction, person, None).await?;
-                // What the person started in the background does not go on after they signed out
-                // everywhere (a lost device).
-                S::end_many_changes_runs(
-                    transaction,
-                    &RunsToEnd::OfPerson(person),
-                    ManyChangeStatus::Stopped,
-                    now,
-                )
-                .await?;
-                // What the person allowed AI apps ends in the same change, like their keys.
-                let grants = S::end_grants_of(
-                    transaction,
-                    person,
-                    bb_core::oauth::GrantEnd::SignedOutEverywhere,
-                    now,
-                )
-                .await?;
-                Ok((S::delete_access_keys_of(transaction, person).await?, grants))
+                end_ways_in::<S>(transaction, person, GrantEnd::SignedOutEverywhere, now).await
             })
         })
         .await
         .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
-    let (keys, grants) = keys;
     ctx.note(SecurityAction::SessionsEndedAll, Some(person), None)
         .await;
-    for grant in grants {
-        ctx.note(
-            SecurityAction::OAuthGrantEndedBySignOut,
-            Some(person),
-            Some(entity(RecordKind::ConnectedApp, grant)),
-        )
-        .await;
-    }
-    for key in keys {
-        ctx.note(
-            SecurityAction::AccessKeyDeleted,
-            Some(person),
-            Some(entity(RecordKind::AccessKey, key)),
-        )
-        .await;
-    }
+    ctx.note_taken_back(person, &taken).await;
     Ok(Done)
+}
+
+/// What ending every way in of a person took back: their access keys and the grants of AI apps.
+pub(crate) struct TakenBack {
+    keys: Vec<AccessKeyId>,
+    grants: Vec<GrantId>,
+    how: GrantEnd,
+}
+
+/// Ends every way in of `person` inside a change: their sessions, the changes to many issues they
+/// started in the background, the grants of AI apps (ended as `how`) and their access keys. A
+/// person who signs out everywhere (a lost device, a stolen key) does not want a script to go on,
+/// and a switched-off person signs in to nothing (ADR-0044, decision 5).
+pub(crate) async fn end_ways_in<S: AuthStore>(
+    transaction: &mut S::Transaction,
+    person: UserId,
+    how: GrantEnd,
+    now: Timestamp,
+) -> Result<TakenBack, S::Error> {
+    S::delete_sessions_of(transaction, person, None).await?;
+    S::end_many_changes_runs(
+        transaction,
+        &RunsToEnd::OfPerson(person),
+        ManyChangeStatus::Stopped,
+        now,
+    )
+    .await?;
+    let grants = S::end_grants_of(transaction, person, how, now).await?;
+    let keys = S::delete_access_keys_of(transaction, person).await?;
+    taken_back_in::<S, _>(transaction, now, ReplayKind::AiAppGrant, &grants).await?;
+    taken_back_in::<S, _>(transaction, now, ReplayKind::AccessKey, &keys).await?;
+    Ok(TakenBack { keys, grants, how })
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// Writes each key and grant that [`end_ways_in`] took back into the security log and the
+    /// replay list.
+    pub(crate) async fn note_taken_back(&self, person: UserId, taken: &TakenBack) {
+        let ended = if taken.how == GrantEnd::SignedOutEverywhere {
+            SecurityAction::OAuthGrantEndedBySignOut
+        } else {
+            SecurityAction::OAuthGrantTakenBack
+        };
+        for grant in &taken.grants {
+            self.note(
+                ended,
+                Some(person),
+                Some(entity(RecordKind::ConnectedApp, *grant)),
+            )
+            .await;
+        }
+        for key in &taken.keys {
+            self.note(
+                SecurityAction::AccessKeyDeleted,
+                Some(person),
+                Some(entity(RecordKind::AccessKey, *key)),
+            )
+            .await;
+        }
+        self.write_replay_list().await;
+    }
 }
 
 /// Ends one of the sessions of the signed-in person.

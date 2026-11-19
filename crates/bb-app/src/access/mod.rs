@@ -13,6 +13,7 @@ mod candidates;
 mod changers;
 mod handoff;
 mod own_loss;
+mod people_known;
 mod starting;
 mod store;
 mod together;
@@ -40,6 +41,7 @@ pub use candidates::{PeopleToCheckPage, PeopleToCheckQuery, people_to_check};
 pub use changers::{ChangingRole, WhoMayChange, WhoMayChangeQuery, who_may_change};
 pub(crate) use handoff::Handoff;
 pub use own_loss::{OwnChange, OwnLoss, OwnLossQuery, own_loss};
+pub(crate) use people_known::former_user;
 pub use starting::{CreateStartingRoles, create_starting_roles};
 pub use store::{PlaceLevels, PolicyStore, RoleRecord};
 pub use visibility::{
@@ -515,47 +517,6 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(!guards::anybody_manages_roles(&state))
     }
 
-    /// The person with this ID, looked up once for the request.
-    pub(crate) async fn person_known(&self, id: UserId) -> Result<Option<Person>, AppError> {
-        let known = locked(&self.known.people).get(&id).cloned();
-        if let Some(known) = known {
-            return Ok(known);
-        }
-        let found = self
-            .store()
-            .person(id)
-            .await
-            .map_err(|error| internal::<S>(&error))?;
-        locked(&self.known.people).insert(id, found.clone());
-        Ok(found)
-    }
-
-    /// Reads the people with these IDs in one go, so the lookups of each of them one by one
-    /// (`person_known`) find them read already.
-    pub(crate) async fn preload_people(&self, ids: &[UserId]) -> Result<(), AppError> {
-        let wanted: Vec<UserId> = {
-            let known = locked(&self.known.people);
-            ids.iter()
-                .copied()
-                .filter(|id| !known.contains_key(id))
-                .collect()
-        };
-        if wanted.is_empty() {
-            return Ok(());
-        }
-        let found = self
-            .store()
-            .people_of(&wanted)
-            .await
-            .map_err(|error| internal::<S>(&error))?;
-        let mut known = locked(&self.known.people);
-        for id in wanted {
-            let person = found.iter().find(|person| person.id == id).cloned();
-            known.insert(id, person);
-        }
-        Ok(())
-    }
-
     /// How `viewer` sees `person` as `kind` at `place` (PRIV-12): a name, the label of their
     /// first role there, or *Someone*. A person that does not exist is *Someone*.
     pub(crate) async fn person_ref(
@@ -565,14 +526,15 @@ impl<S: AuthStore> Ctx<'_, S> {
         context: PeopleContext,
         person: UserId,
     ) -> Result<PersonRef, AppError> {
-        let Some(found) = self.person_known(person).await? else {
+        let Some(found) = self.person_with_standing(person).await? else {
             return Ok(PersonRef::Someone);
         };
         // The role label is the person's own role at the place the viewer looks at. It is only
         // shown to a viewer who sees people by their role, so only then is it looked for: the
         // evaluation of the rights of each different person on a page was the biggest cost of a
         // page of notifications (M3-F113, PERF-01).
-        let role = if viewer.shows_role_label(kind, context, person) {
+        let former = former_user(&found);
+        let role = if former.is_none() && viewer.shows_role_label(kind, context, person) {
             self.role_label_of(person, viewer.place()).await?
         } else {
             None
@@ -582,10 +544,10 @@ impl<S: AuthStore> Ctx<'_, S> {
             kind,
             context,
             Target {
-                id: found.id,
-                name: &found.display_name,
+                id: found.person.id,
+                name: &found.person.display_name,
                 role: role.as_deref(),
-                removed: None,
+                removed: former.as_ref(),
             },
         ))
     }

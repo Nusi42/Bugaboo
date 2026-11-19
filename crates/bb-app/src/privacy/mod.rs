@@ -3,4 +3,5 @@
 //! *Remove a person* make of them.
 
 pub mod export;
+pub mod replay;
 pub mod walk;

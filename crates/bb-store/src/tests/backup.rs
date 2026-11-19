@@ -462,75 +462,6 @@ async fn has_key(database: &Database, key: AccessKeyId) -> Result<bool, StoreErr
 }
 
 #[tokio::test]
-async fn ops_07_a_restore_replays_removals_switch_offs_and_taken_back_keys_made_after_the_backup()
--> TestResult {
-    each_database("ops_07_replay", async |db| {
-        let installation = Installation::new(db)?;
-        let database = installation.open().await?;
-        let storage = installation.storage(&database);
-        let mut source = ids();
-        let (ada, key) = a_key(&storage, &mut source).await?;
-        let moment: Timestamp = "2026-11-10T10:00:00Z".parse()?;
-        let backup = database
-            .create_backup(&installation.places, Purpose::Regular, moment)
-            .await?;
-        database.close().await;
-        // The lines a later change wrote (the writer comes with *Remove a person*): one of each
-        // kind after the backup, and one before it, which the backup holds already.
-        let later = |minutes: i64| moment.checked_add(SignedDuration::from_mins(minutes));
-        let lines = [
-            ReplayLine {
-                moment: moment.checked_sub(SignedDuration::from_mins(5))?,
-                kind: ReplayKind::AccessKey,
-                id: AccessKeyId::generate(&mut source).to_string(),
-                choice: None,
-            },
-            ReplayLine {
-                moment: later(1)?,
-                kind: ReplayKind::AccessKey,
-                id: key.to_string(),
-                choice: None,
-            },
-            ReplayLine {
-                moment: later(2)?,
-                kind: ReplayKind::SwitchOff,
-                id: ada.to_string(),
-                choice: None,
-            },
-            ReplayLine {
-                moment: later(3)?,
-                kind: ReplayKind::Removal,
-                id: ada.to_string(),
-                choice: Some("keep".to_owned()),
-            },
-        ];
-        // A line whose ID is not a key's: it is counted as unreadable and stops nothing.
-        let unreadable = format!(
-            "{} access-key not-a-key
-",
-            later(4)?
-        );
-        std::fs::write(
-            &installation.places.replay_list,
-            bb_core::backup::replay::write(&lines) + &unreadable,
-        )?;
-        let report = installation
-            .restore(&backup.path, &[], later(10)?)
-            .await
-            .map_err(failed)?;
-        assert_eq!(report.unreadable_lines, 1);
-        assert_eq!(report.replayed, [lines[1].clone()]);
-        // A removal and a switch-off are named in the report until the program can run them.
-        assert_eq!(report.not_replayed, [lines[2].clone(), lines[3].clone()]);
-        let restored = installation.open().await?;
-        assert!(!has_key(&restored, key).await?, "the key stays taken back");
-        restored.close().await;
-        Ok(())
-    })
-    .await
-}
-
-#[tokio::test]
 async fn ops_07_every_restore_signs_everybody_out() -> TestResult {
     each_database("ops_07_sign_out", async |db| {
         let installation = Installation::new(db)?;
@@ -790,3 +721,6 @@ fn ops_07_a_backup_deletes_what_one_that_never_finished_left_behind() -> TestRes
 
 #[path = "backup_copy.rs"]
 mod copy;
+
+#[path = "backup_replay.rs"]
+mod replay;

@@ -230,6 +230,7 @@ Rules:
 | **Former user**          | How a removed person is shown everywhere after *Remove a person*: *Former user* and a random code of four signs (*Former user K7Q2*), the same in every place, so their work still reads | deleted user, anonymous user, ghost user |
 | **Switch off** / **Switch on** (a person) | End a person's sign-in at once (their sessions, access keys, connected apps and agents stop) while every record of theirs stays; *Switch on* gives the sign-in back. A person is switched off before *Remove a person* | deactivate, suspend, disable (in UI) |
 | **Download someone's data** | The permission to make the file of *Download my data* for another person; the person is told and the security log records it | — |
+| **Standing** (of a person) | Where a person stands: *active*, *switched off* or *removed*. The word *status* belongs to issues | status, state (of a person) |
 | **Remove people**        | The permission to use *Remove a person* | — |
 | **Data exports**         | The page that lists every file of *Download my data* that was made, by whom and for whom, and where an administrator makes one for somebody else | data dump (in UI) |
 | **Who sees people**      | Per role and per kind of people information: show people's *Names*, only their *Role* ("Someone (Team member)"), or nothing (*Hidden*: "Someone") | identity masking, pseudonymization (in UI) |

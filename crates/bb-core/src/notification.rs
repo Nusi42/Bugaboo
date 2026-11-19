@@ -133,6 +133,14 @@ words! {
 }
 
 impl NotificationKind {
+    /// Whether a switched-off person still hears of it: only of an administrator's export of their
+    /// data, which they are told of at the address on record (ADR-0044, decisions 4 and 5).
+    /// Everything else a switched-off person counts as nobody for.
+    #[must_use]
+    pub const fn reaches_a_switched_off_person(self) -> bool {
+        matches!(self, Self::ExportByAdministrator)
+    }
+
     /// The setting that says whether a person hears of this kind of event this way: one switch
     /// for each kind and way, with the starting values of M4-Q5 (ADR-0033 §1). The organization's
     /// value is the default of everybody; each person changes their own under *Customize*. `None`

@@ -6,7 +6,6 @@
 use std::future::Future;
 
 use bb_core::id::{GroupId, ProjectId, SavedSearchId, UserId};
-use bb_core::person::Person;
 use bb_core::saved_search::{
     ProjectDefaultList, SavedSearch, SearchColumn, SearchShare, ShareTarget,
 };
@@ -70,8 +69,6 @@ pub trait SavedSearchStore: ChangeStore + 'static {
         /// The rows of *Who has which role* of these people and of their groups, with the roles
         /// those name and no levels: what the labels of their roles need.
         fn policy_of_people(people: &[UserId]) -> bb_policy::Policy;
-        /// The people with these IDs that exist: the makers of a page.
-        fn makers_of(ids: &[UserId]) -> Vec<Person>;
     }
 
     writes! {

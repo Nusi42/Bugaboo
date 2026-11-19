@@ -12,37 +12,15 @@ use bb_policy::{Evaluation, PeopleContext, Place};
 use super::reach::{Reaching, Stored};
 use super::types::{SavedSearchView, ShareView};
 use crate::access::Actor;
-use crate::auth::{AppError, AuthStore, Ctx, internal, locked};
+use crate::auth::{AppError, AuthStore, Ctx, internal};
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// Looks up the people with these IDs in one read, for `person_ref` to find them without a
-    /// read each.
+    /// Looks up the makers in one read, for `person_ref` to find them without a read each.
     async fn preload_makers(&self, makers: &[UserId]) -> Result<(), AppError> {
-        let wanted: Vec<UserId> = {
-            let known = locked(&self.known.people);
-            let mut wanted: Vec<UserId> = makers
-                .iter()
-                .copied()
-                .filter(|maker| !known.contains_key(maker))
-                .collect();
-            wanted.sort();
-            wanted.dedup();
-            wanted
-        };
-        if wanted.is_empty() {
-            return Ok(());
-        }
-        let found = self
-            .store()
-            .makers_of(&wanted)
-            .await
-            .map_err(|error| internal::<S>(&error))?;
-        let mut known = locked(&self.known.people);
-        for id in wanted {
-            let person = found.iter().find(|person| person.id == id).cloned();
-            known.insert(id, person);
-        }
-        Ok(())
+        let mut wanted = makers.to_vec();
+        wanted.sort();
+        wanted.dedup();
+        self.preload_people(&wanted).await
     }
 
     /// One saved search as the actor sees it.

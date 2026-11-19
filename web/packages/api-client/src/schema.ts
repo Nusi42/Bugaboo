@@ -3795,6 +3795,47 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/people/{person}/switch-off": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Switches a person off at once: their sessions end, their access keys and the grants of AI apps
+     *     are taken back, their agents stop and the invitations they made are taken back. Their
+     *     assignments stay. Needs *Manage people*.
+     */
+    post: operations["switchPersonOff"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/people/{person}/switch-on": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Switches a switched-off person on again: they may sign in. What was taken back stays taken
+     *     back. Needs *Manage people*.
+     */
+    post: operations["switchPersonOn"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/people/{person}/work-days": {
     parameters: {
       query?: never;
@@ -10415,6 +10456,7 @@ export interface components {
        *     decides who has which role.
        */
       roles?: components["schemas"]["RoleAtRef"][] | null;
+      standing?: components["schemas"]["Standing"] | null;
     };
     /** @description How a person is shown to one viewer. */
     PersonRef:
@@ -12162,6 +12204,11 @@ export interface components {
       /** @description When it started (RFC 3339). */
       start: string;
     };
+    /**
+     * @description Where a person stands: active, switched off (signs in to nothing and keeps every record) or removed (shown as Former user).
+     * @enum {string}
+     */
+    Standing: "active" | "switched-off" | "removed";
     /** @description What a person has in one project. */
     StandingBody: {
       /** @description A *No access* holds the person back there. */
@@ -21238,6 +21285,63 @@ export interface operations {
         };
       };
       413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  switchPersonOff: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the person. */
+        person: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The person is switched off. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  switchPersonOn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the person. */
+        person: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The person may sign in again. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];

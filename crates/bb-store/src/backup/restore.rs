@@ -36,6 +36,7 @@ use sea_query::{Expr, ExprTrait as _, Query};
 use super::{BackupPlaces, CreatedBackup, archive, fill, io, seal, work_folder};
 use crate::anchor::{Anchored, LogSeal};
 use crate::auth::AuthStorage;
+use crate::auth::replay_waiting::waiting_lines;
 use crate::chain::Verification;
 use crate::db::{Database, StoredId as _, Transaction};
 use crate::error::StoreError;
@@ -171,6 +172,9 @@ async fn run(
         .await
         .map_err(early)?;
     let present = input.target.connect().await.map_err(early)?;
+    // The lines a change wrote and the file of the list does not hold yet are part of the list:
+    // read before the database that holds them is replaced (ADR-0044, decision 8).
+    let waiting = waiting_lines(&present).await;
     let created = present
         .create_backup(input.places, Purpose::BeforeRestore, input.now)
         .await;
@@ -184,7 +188,11 @@ async fn run(
         error,
         before: Some(before.path.clone()),
     };
-    let present_head = present_head.map_err(failed)?;
+    let present = Present {
+        head: present_head.map_err(failed)?,
+        waiting: waiting.map_err(failed)?,
+        before: before.clone(),
+    };
     put_back(
         input.target,
         &input.places.files,
@@ -195,16 +203,7 @@ async fn run(
     .await
     .map_err(failed)?;
     let restored = input.target.connect().await.map_err(failed)?;
-    let done = finish(
-        input,
-        ids,
-        &restored,
-        &manifest,
-        work,
-        &before,
-        present_head,
-    )
-    .await;
+    let done = finish(input, ids, &restored, &manifest, work, &present).await;
     input.target.release(&restored).await;
     done.map_err(failed)
 }
@@ -379,6 +378,16 @@ fn unreadable() -> StoreError {
     StoreError::Corrupt("the copy of a database")
 }
 
+/// What the restore read from the present database before it replaced it.
+struct Present {
+    /// The backup of the present.
+    before: CreatedBackup,
+    /// The newest entry of the security log it knew.
+    head: i64,
+    /// The lines of the replay list that waited in it for the file.
+    waiting: Vec<String>,
+}
+
 /// Everything after the database is back: migrations, sessions, the replay list, the anchor, the
 /// records and the check of the log.
 async fn finish(
@@ -387,14 +396,14 @@ async fn finish(
     restored: &Database,
     manifest: &Manifest,
     work: &Path,
-    before: &CreatedBackup,
-    present_head: i64,
+    present: &Present,
 ) -> Result<RestoreReport, StoreError> {
+    let (before, present_head) = (&present.before, present.head);
     let migrations_run = restored.migrate(input.now).await?;
     let mut sessions = Query::delete();
     sessions.from_table(SignInSession::Table);
     let sessions_ended = restored.execute(&sessions).await?;
-    let replay = replay_newer(input, ids, restored, manifest, work).await?;
+    let replay = replay_newer(input, ids, restored, manifest, work, &present.waiting).await?;
     let mut transaction = restored.begin_read().await?;
     let head = head_in(&mut transaction).await?;
     transaction.commit().await?;
@@ -509,14 +518,15 @@ fn keep_merged(input: &RestoreInput<'_>, merged: &[ReplayLine]) -> Result<(), St
     std::fs::write(&input.places.replay_list, replay::write(merged)).map_err(io)
 }
 
-/// Merges the copies of the replay list (the data folder's, the backup's and the ones given) and
-/// runs every line newer than the backup.
+/// Merges the copies of the replay list (the data folder's, the backup's, the ones given and the
+/// lines that waited in the present database) and runs every line newer than the backup.
 async fn replay_newer(
     input: &RestoreInput<'_>,
     ids: &mut impl IdSource,
     restored: &Database,
     manifest: &Manifest,
     work: &Path,
+    waiting: &[String],
 ) -> Result<Replay, StoreError> {
     let mut copies = vec![
         input.places.replay_list.clone(),
@@ -535,6 +545,12 @@ async fn replay_newer(
         unreadable_lines += unreadable;
         lists.push(lines);
     }
+    let (lines, unreadable) = replay::read(&waiting.join(
+        "
+",
+    ));
+    unreadable_lines += unreadable;
+    lists.push(lines);
     let merged = replay::merge(lists);
     let mut replayed = Vec::new();
     let mut not_replayed = Vec::new();

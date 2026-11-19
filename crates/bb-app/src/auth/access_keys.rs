@@ -23,6 +23,7 @@ use bb_auth::{AccessKeySecret, same_digest};
 use bb_core::ErrorCode;
 use bb_core::access_key::{AccessKey, KeyChoice, MOST_KEYS, MOST_PROJECTS};
 use bb_core::agent::MOST_AGENT_KEYS;
+use bb_core::backup::replay::ReplayKind;
 use bb_core::event::{DomainEvent, EntityRef, RecordKind};
 use bb_core::id::{AccessKeyId, AgentId, ProjectId, UserId};
 use bb_core::paging::{Cut, SkipCursor, page_len, read_len, read_time_cursor, write_time_cursor};
@@ -44,6 +45,7 @@ use super::types::{
 };
 use crate::access::{Actor, CredentialSource, KeyInUse};
 use crate::input::{clean_name, cursor_or_invalid};
+use crate::privacy::replay::taken_back_in;
 use crate::walk::{Walk, fill_past_hidden};
 
 /// The purpose under which guessing keys is counted per network (`Ctx::reserve_network`).
@@ -175,12 +177,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         {
             return Ok(None);
         }
-        let Some(owner) = self
-            .store()
-            .person(record.key.owner)
-            .await
-            .map_err(|error| internal::<S>(&error))?
-        else {
+        let Some(owner) = self.active_person(record.key.owner).await? else {
             return Ok(None);
         };
         Ok(Some((record, owner)))
@@ -365,10 +362,18 @@ async fn insert_key<S: AuthStore>(
         }
     }
     S::insert_access_key(transaction, stored).await?;
-    if let Some(old) = renews
-        && !S::delete_access_key(transaction, stored.key.owner, old).await?
-    {
-        return Err(S::aborted());
+    if let Some(old) = renews {
+        if !S::delete_access_key(transaction, stored.key.owner, old).await? {
+            return Err(S::aborted());
+        }
+        // The old key is taken back: a restore must not bring it back (ADR-0044, decision 8).
+        taken_back_in::<S, _>(
+            transaction,
+            stored.key.created_at,
+            ReplayKind::AccessKey,
+            [old],
+        )
+        .await?;
     }
     Ok(())
 }
@@ -470,6 +475,7 @@ pub async fn create_access_key<S: AuthStore>(
             }
         }
     };
+    ctx.write_replay_list().await;
     ctx.note(
         SecurityAction::AccessKeyCreated,
         Some(owner),
@@ -512,11 +518,12 @@ pub async fn delete_access_key<S: AuthStore>(
         entity(RecordKind::AccessKey, id),
         vec![super::events::changed("access_key")],
     )?;
+    let now = ctx.now();
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
                 if S::delete_access_key(transaction, owner, id).await? {
-                    Ok(())
+                    taken_back_in::<S, _>(transaction, now, ReplayKind::AccessKey, [id]).await
                 } else {
                     Err(S::aborted())
                 }
@@ -530,6 +537,7 @@ pub async fn delete_access_key<S: AuthStore>(
         Some(entity(RecordKind::AccessKey, id)),
     )
     .await;
+    ctx.write_replay_list().await;
     Ok(Done)
 }
 

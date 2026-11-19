@@ -266,10 +266,18 @@ impl<S: AuthStore> Ctx<'_, S> {
             // E-mail is off, or the mail server is not entered: nothing goes (PRIV-08).
             return finish(MailState::Never).await;
         };
-        let Some(person) = self.store().person(recipient).await.map_err(failed)? else {
+        let Some(known) = self.person_with_standing(recipient).await? else {
             return finish(MailState::Never).await;
         };
-        let (items, more) = self.mail_items(&person, issue, until).await?;
+        let (mut items, more) = self.mail_items(&known.person, issue, until).await?;
+        // What waited for a person who was switched off or removed since does not go, but what
+        // they still hear of (ADR-0044, decisions 4 and 5); the rest is not hinted at either.
+        items.retain(|item| known.hears(item.kind));
+        let more = more && known.active();
+        if items.is_empty() && !known.active() {
+            return finish(MailState::Never).await;
+        }
+        let person = known.person;
         let composed = compose(
             &items,
             more,

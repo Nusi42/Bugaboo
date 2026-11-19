@@ -172,6 +172,9 @@ impl Evaluation {
 pub struct FormerUser {
     /// The random code stored with the tombstone.
     pub label: String,
+    /// The name the legal-hold field keeps while the person's work days are kept: shown on
+    /// *Working hours of others* only (ADR-0035, decision 7). None once it is cleared.
+    pub held_name: Option<String>,
 }
 
 /// The person to show, with what the store knows of them.
@@ -204,10 +207,13 @@ pub fn resolve(
     let level = viewer.people_level(kind, context);
     if let Some(former) = target.removed {
         // The one place a removed person keeps their name (ADR-0035, decision 7).
-        if context == PeopleContext::WorkingHours && level == PeopleLevel::Names {
+        if let Some(name) = &former.held_name
+            && context == PeopleContext::WorkingHours
+            && level == PeopleLevel::Names
+        {
             return PersonRef::Name {
                 id: target.id,
-                name: target.name.to_owned(),
+                name: name.clone(),
             };
         }
         return if level == PeopleLevel::Names {

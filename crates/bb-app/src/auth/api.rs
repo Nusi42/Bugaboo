@@ -144,6 +144,8 @@ use crate::plan::{
     move_after_preview, set_time_factor, time_factor, timeline,
 };
 
+use crate::people::{SwitchOff, SwitchOn, switch_off, switch_on};
+
 use crate::privacy::export::{
     AskMyData, AskSomeonesData, DataExportsQuery, DownloadExportQuery, ExportLinkQuery,
     ExportLinkView, ExportPage, ExportView, MyDataExportQuery, ask_for_my_data,

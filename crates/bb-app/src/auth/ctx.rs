@@ -73,6 +73,8 @@ pub struct AuthServices<S> {
     pub(crate) backup_running: Arc<AtomicBool>,
     /// The files of *Download my data* (ADR-0044, decision 2).
     pub(crate) exports: Arc<dyn crate::privacy::export::ExportFiles>,
+    /// The replay list (ADR-0044, decision 8).
+    pub(crate) replay: Arc<dyn crate::privacy::replay::ReplayFile>,
     /// The key the links of downloads are signed under (ATT-07).
     pub(crate) links: LinkKey,
     pub(crate) mailer: Arc<dyn Mailer>,
@@ -125,6 +127,7 @@ impl<S> AuthServices<S> {
             backups: Arc::new(NoBackupFiles),
             backup_running: Arc::default(),
             exports: Arc::new(crate::privacy::export::NoExportFiles),
+            replay: Arc::new(crate::privacy::replay::ReplayInMemory::default()),
             links,
             mailer: Arc::new(NoMailer),
             ai: Arc::new(NoAiProvider),
@@ -158,6 +161,14 @@ impl<S> AuthServices<S> {
     #[must_use]
     pub fn with_exports(mut self, exports: Arc<dyn crate::privacy::export::ExportFiles>) -> Self {
         self.exports = exports;
+        self
+    }
+
+    /// Where the replay list is kept (ADR-0044, decision 8). Without it, the list is kept in
+    /// memory.
+    #[must_use]
+    pub fn with_replay_list(mut self, replay: Arc<dyn crate::privacy::replay::ReplayFile>) -> Self {
+        self.replay = replay;
         self
     }
 
@@ -296,7 +307,7 @@ pub(crate) type NamesRead<Id> = Mutex<Option<Arc<Vec<(Id, String)>>>>;
 #[derive(Default)]
 pub(crate) struct Known {
     /// The people looked up by ID; `None` for a person who is not there.
-    pub(crate) people: Mutex<HashMap<UserId, Option<bb_core::person::Person>>>,
+    pub(crate) people: Mutex<HashMap<UserId, Option<bb_core::person::KnownPerson>>>,
     /// The label of the first role of a person at a place, for a viewer who sees people by their
     /// role: filled for the people of a page in one read (`None` for a person with no role there).
     pub(crate) role_labels: Mutex<HashMap<(UserId, Place), Option<String>>>,

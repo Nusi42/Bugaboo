@@ -55,6 +55,12 @@ pub(crate) mod data_export {
     pub(crate) const REASON: &str = "reason";
 }
 
+/// The members of the events of a person's standing (PRIV-04).
+pub(crate) mod person {
+    /// *Active*, *switched off* or *removed*.
+    pub(crate) const STANDING: &str = "standing";
+}
+
 /// The members of a workflow.
 pub(crate) mod workflow {
     pub(crate) const NAME: &str = "name";

@@ -87,7 +87,13 @@ mod tests {
             let seal = crate::anchor::LogSeal::new(&keys, folder.path().join("head.log"));
             let storage = crate::AuthStorage::new(database.clone(), keys, seal);
             let found = storage
-                .people_page(Some("\u{f6}zil c"), SearchIn::NameStarts, None, 10)
+                .people_page(
+                    Some("\u{f6}zil c"),
+                    SearchIn::NameStarts,
+                    bb_app::auth::PeopleOf::NotRemoved,
+                    None,
+                    10,
+                )
                 .await?;
             assert_eq!(found.len(), 1);
             assert_eq!(

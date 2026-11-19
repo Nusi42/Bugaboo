@@ -14,16 +14,19 @@ use bb_core::access::{AppliesTo, Assignment};
 use bb_core::id::{AssignmentId, GroupId, RoleId, UserId};
 use bb_core::paging::{Cut, page_len, read_len};
 use bb_core::people_kinds::PeopleKind;
-use bb_core::person::Person;
+use bb_core::person::{KnownPerson, Person, Standing};
 use bb_policy::{
-    Authorized, Evaluation, Masked, PeopleContext, Permission, PersonRef, Place, Target, resolve,
+    Authorized, Evaluation, FormerUser, Masked, PeopleContext, Permission, PersonRef, Place,
+    Target, resolve,
 };
 use jiff::Timestamp;
 use serde::Serialize;
 
 use super::GroupView;
-use crate::access::{Actor, ProjectLabel};
-use crate::auth::{AppError, AuthStore, Ctx, PeoplePosition, SearchIn, if_there, internal};
+use crate::access::{Actor, ProjectLabel, former_user};
+use crate::auth::{
+    AppError, AuthStore, Ctx, PeopleOf, PeoplePosition, SearchIn, if_there, internal,
+};
 use crate::roles::RoleRef;
 
 /// List the people, a page at a time.
@@ -70,6 +73,8 @@ pub struct PersonLine {
     pub person: PersonRef,
     /// Their e-mail address.
     pub email: String,
+    /// Whether they are active or switched off (ADR-0044, decision 5).
+    pub standing: Standing,
     /// The groups they are in; `None` when the viewer may not see groups.
     pub groups: Option<Vec<GroupView>>,
     /// The rows of *Who has which role* of the person's own that the viewer may see.
@@ -200,7 +205,12 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// A person by name, to those who manage people (they always see names, M2-Q3). The place of
 /// the viewer's evaluation decides *Who sees people*; a viewer who does not see names gets the
 /// resolved reference, which is not a name.
-fn shown(viewer: &Evaluation, person: &Person, context: PeopleContext) -> PersonRef {
+fn shown(
+    viewer: &Evaluation,
+    person: &Person,
+    removed: Option<&FormerUser>,
+    context: PeopleContext,
+) -> PersonRef {
     resolve(
         viewer,
         PeopleKind::ProjectMembers,
@@ -209,7 +219,7 @@ fn shown(viewer: &Evaluation, person: &Person, context: PeopleContext) -> Person
             id: person.id,
             name: &person.display_name,
             role: None,
-            removed: None,
+            removed,
         },
     )
 }
@@ -260,9 +270,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         actor: &Actor,
         viewer: &Evaluation,
-        person: &Person,
+        known: &KnownPerson,
         wanted: Wanted,
     ) -> Result<PersonLine, AppError> {
+        let person = &known.person;
         let groups = if wanted.groups && viewer.allows(Permission::ManageGroups) {
             Some(
                 self.store()
@@ -286,9 +297,11 @@ impl<S: AuthStore> Ctx<'_, S> {
         } else {
             Vec::new()
         };
+        let former = former_user(known);
         Ok(PersonLine {
-            person: shown(viewer, person, PeopleContext::Management),
+            person: shown(viewer, person, former.as_ref(), PeopleContext::Management),
             email: person.email.clone(),
+            standing: known.standing(),
             groups,
             roles,
         })
@@ -314,6 +327,7 @@ pub async fn people<S: AuthStore>(
             .people_page(
                 input.search.as_deref(),
                 SearchIn::NamesAndAddresses,
+                PeopleOf::NotRemoved,
                 after.as_ref(),
                 read_len(len),
             )
@@ -321,7 +335,7 @@ pub async fn people<S: AuthStore>(
             .map_err(|error| internal::<S>(&error))?,
         len,
     );
-    let next_cursor = page.next_cursor(write_cursor);
+    let next_cursor = page.next_cursor(|last| write_cursor(&last.person));
     let mut items = Vec::with_capacity(page.items.len());
     for person in &page.items {
         let wanted = Wanted {
@@ -345,12 +359,7 @@ pub async fn person<S: AuthStore>(
     let access = ctx
         .require(&actor, Permission::ManagePeople, Place::Organization)
         .await?;
-    let found = ctx
-        .store()
-        .person(input.person)
-        .await
-        .map_err(|error| internal::<S>(&error))?
-        .ok_or(AppError::Refused(ErrorCode::NotFound))?;
+    let found = ctx.known_person_or_missing(input.person).await?;
     Ok(access.authorize(PersonDetail {
         line: ctx
             .person_line(
@@ -363,7 +372,7 @@ pub async fn person<S: AuthStore>(
                 },
             )
             .await?,
-        created_at: found.created_at,
+        created_at: found.person.created_at,
     }))
 }
 
@@ -374,7 +383,7 @@ fn person_choice(
     already_in: Option<bool>,
     context: PeopleContext,
 ) -> Option<ChoiceView> {
-    match shown(viewer, person, context) {
+    match shown(viewer, person, None, context) {
         PersonRef::Name { id, name } => Some(ChoiceView {
             id: id.to_string(),
             name,
@@ -434,9 +443,18 @@ impl<S: AuthStore> Ctx<'_, S> {
         let after = self.people_position(cursor).await?;
         let page = Cut::of(
             self.store()
-                .people_page(search, SearchIn::Names, after.as_ref(), read_len(len))
+                .people_page(
+                    search,
+                    SearchIn::Names,
+                    PeopleOf::Active,
+                    after.as_ref(),
+                    read_len(len),
+                )
                 .await
-                .map_err(|error| internal::<S>(&error))?,
+                .map_err(|error| internal::<S>(&error))?
+                .into_iter()
+                .map(|known| known.person)
+                .collect(),
             len,
         );
         let mut shown = Vec::new();

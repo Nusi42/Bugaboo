@@ -9,6 +9,8 @@
 
 mod group_page;
 mod list;
+mod standing;
+mod switch_off;
 mod used_by;
 
 pub use group_page::{GROUP_ROLES_MAX, GroupQuery, group};
@@ -17,6 +19,8 @@ pub use list::{
     AssignmentChoicesQuery, ChoiceKind, ChoicePage, ChoiceView, HeldRole, MemberChoicesQuery,
     PeopleQuery, PersonDetail, PersonLine, PersonPage, PersonQuery, member_choices, people, person,
 };
+pub use standing::StandingStore;
+pub use switch_off::{SwitchOff, SwitchOn, switch_off, switch_on};
 pub use used_by::{GroupDetail, GroupUsedBy, RoleUsedBy};
 
 use bb_core::ErrorCode;

@@ -10,6 +10,7 @@ mod log;
 mod log_file;
 mod output;
 mod probe;
+mod replay_list;
 mod system;
 mod upgrade;
 mod wiring;

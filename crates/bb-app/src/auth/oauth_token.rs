@@ -3,6 +3,7 @@
 //! ending the whole grant when a code or an old renewing token is used again.
 
 use bb_auth::{OAuthKind, OAuthSecret, pkce_proves};
+use bb_core::backup::replay::ReplayKind;
 use bb_core::event::RecordKind;
 use bb_core::id::GrantId;
 use bb_core::oauth::{
@@ -20,6 +21,7 @@ use super::events::{by, entity, set_to};
 use super::oauth_store::GrantRecord;
 use super::oauth_types::{TokenAnswer, TokenOutcome, TokenRequest};
 use super::store::AuthStore;
+use crate::privacy::replay::taken_back_in;
 
 /// The purpose under which the failed tries at the token endpoint are counted per network.
 const SWAPPING: &str = "oauth-token";
@@ -55,7 +57,14 @@ impl<S: AuthStore> Ctx<'_, S> {
         let ended = self
             .store()
             .record_change(&event, move |transaction| {
-                Box::pin(async move { S::end_grant(transaction, grant, how, now).await })
+                Box::pin(async move {
+                    let ended = S::end_grant(transaction, grant, how, now).await?;
+                    if ended {
+                        taken_back_in::<S, _>(transaction, now, ReplayKind::AiAppGrant, [grant])
+                            .await?;
+                    }
+                    Ok(ended)
+                })
             })
             .await
             .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
@@ -66,6 +75,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 Some(entity(RecordKind::ConnectedApp, grant)),
             )
             .await;
+            self.write_replay_list().await;
         }
         Ok(())
     }

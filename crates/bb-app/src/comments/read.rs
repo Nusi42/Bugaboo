@@ -104,8 +104,13 @@ pub async fn mention_choices<S: AuthStore>(
             .handle_choices(wanted.as_deref().unwrap_or_default(), PEOPLE_LOOK_AT)
             .await
             .map_err(failed)?;
+        let ids: Vec<_> = people.iter().map(|(person, _)| person.id).collect();
+        ctx.preload_people(&ids).await?;
         for (person, handle) in people {
-            if person.id != actor.person.id && ctx.person_sees_issue(person.id, &issue).await? {
+            if person.id != actor.person.id
+                && ctx.active_person(person.id).await?.is_some()
+                && ctx.person_sees_issue(person.id, &issue).await?
+            {
                 offered.push(MentionChoice {
                     target: bb_core::comment::MentionTarget::Person,
                     handle,

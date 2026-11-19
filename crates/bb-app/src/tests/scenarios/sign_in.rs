@@ -19,7 +19,7 @@ pub(crate) async fn sign_in_scenario(world: &World) -> Added {
 }
 
 /// Ada with a code app: set up and confirmed with the first code.
-async fn ada_with_a_code_app(world: &World) -> Result<(), String> {
+pub(crate) async fn ada_with_a_code_app(world: &World) -> Result<(), String> {
     let token = world.admin.session_token.clone();
     start_code_app(
         &world.ctx(),
@@ -44,7 +44,7 @@ async fn ada_with_a_code_app(world: &World) -> Result<(), String> {
 }
 
 /// The code of the code app of Ada at this moment.
-async fn code_now(world: &World) -> Result<String, String> {
+pub(crate) async fn code_now(world: &World) -> Result<String, String> {
     let secret = world
         .store
         .totp_secret(world.admin.person.id)
@@ -57,7 +57,7 @@ async fn code_now(world: &World) -> Result<String, String> {
 }
 
 /// Ada signs in with her password and still needs the second step.
-async fn ada_waits_for_the_second_step(world: &World) -> Result<Started, String> {
+pub(crate) async fn ada_waits_for_the_second_step(world: &World) -> Result<Started, String> {
     let started = sign_in(
         &world.ctx(),
         SignIn {

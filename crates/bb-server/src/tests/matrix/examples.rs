@@ -360,6 +360,8 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("askForMyData", &[Quirk::SessionOnly]),
     Example::with("getMyDataExport", &[Quirk::SessionOnly]),
     Example::with("askForSomeonesData", &[Quirk::SessionOnly]),
+    Example::route("switchPersonOff"),
+    Example::route("switchPersonOn"),
     Example::with("listDataExports", &[Quirk::SessionOnly]),
     Example::with(
         "getDataExportAddress",
@@ -728,6 +730,11 @@ pub(super) async fn request(
         return Ok(found);
     }
     if let Some(found) = super::examples_data_exports::data_export_request(fixture, operation)? {
+        return Ok(found);
+    }
+    if let Some(found) =
+        super::examples_people_state::people_state_request(fixture, operation).await?
+    {
         return Ok(found);
     }
     if let Some(found) =

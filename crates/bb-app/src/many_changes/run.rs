@@ -98,13 +98,8 @@ impl<S: AuthStore> Ctx<'_, S> {
         if run.status.is_over() {
             return Ok(());
         }
-        let Some(person) = self
-            .store()
-            .person(run.person)
-            .await
-            .map_err(|error| internal::<S>(&error))?
-        else {
-            // The person who asked is gone: nobody to change things as.
+        let Some(person) = self.active_person(run.person).await? else {
+            // The person who asked is gone or switched off: nobody to change things as.
             return self
                 .end_many_changes_run(id, ManyChangeStatus::Failed, EventActor::System)
                 .await;

@@ -323,3 +323,7 @@ reason = "Each asks for a new file of a person's data, a new record that nobody 
 [[exempt]]
 routes = ["POST /api/v1/admin/keep-rules/{kind}/delete-past"]
 reason = "*Delete them* deletes what is past its keep period, of a kind that only an administrator deletes (ADR-0045, decision 6), and names the date of the count it follows instead of a version: a deletion whose date the period no longer gives is refused (keeping.past-changed). It holds no text to overwrite, and asking twice deletes nothing more, as the deletion of old work days at DELETE /api/v1/work-days/old."
+
+[[exempt]]
+routes = ["POST /api/v1/people/{person}/switch-off", "POST /api/v1/people/{person}/switch-on"]
+reason = "*Switch off* and *Switch on* change only whether a person may sign in (ADR-0044, decision 5), with no text to overwrite; each needs the person in the other status and is refused (edit.version-changed) when somebody switched them first, so two administrators cannot overwrite each other unseen."

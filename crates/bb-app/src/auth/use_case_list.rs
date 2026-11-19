@@ -661,6 +661,10 @@ macro_rules! each_use_case {
             export_link(ExportLinkQuery) -> Authorized<ExportLinkView>;
             /// Sends the file of an export through its signed link.
             download_export(DownloadExportQuery) -> FileDownload;
+            /// Switches a person off at once (*Switch off*).
+            switch_off(SwitchOff) -> Done;
+            /// Switches a switched-off person on again (*Switch on*).
+            switch_on(SwitchOn) -> Done;
         }
     };
 }

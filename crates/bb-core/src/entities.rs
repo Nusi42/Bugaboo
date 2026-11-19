@@ -99,6 +99,8 @@ crate::entities! {
     crate::outbox::OutboxEntry,
     crate::outbox::OutboxPosition,
     crate::person::Person,
+    crate::person::PersonStanding,
+    crate::backup::replay::WaitingReplayLine,
     crate::project::Project,
     crate::project::ProjectAlias,
     crate::relation::IssueParent,

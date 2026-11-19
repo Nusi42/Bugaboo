@@ -464,11 +464,17 @@ async fn auth_03_the_code_app_secret_is_stored_encrypted_and_goes_away_with_the_
 /// The names of the people `search` finds by the start of the name, in the order of the list.
 async fn starting_with(storage: &AuthStorage, search: &str) -> Result<Vec<String>, StoreError> {
     let found = storage
-        .people_page(Some(search), bb_app::auth::SearchIn::NameStarts, None, 50)
+        .people_page(
+            Some(search),
+            bb_app::auth::SearchIn::NameStarts,
+            bb_app::auth::PeopleOf::NotRemoved,
+            None,
+            50,
+        )
         .await?;
     Ok(found
         .into_iter()
-        .map(|person| person.display_name)
+        .map(|known| known.person.display_name)
         .collect())
 }
 
@@ -502,11 +508,23 @@ async fn m5_f94_a_name_is_found_by_its_start_with_the_letters_it_has() -> TestRe
         );
         // A word of the name, as typed, is found the same way.
         let words = storage
-            .people_page(Some("\u{f6}ZIL"), bb_app::auth::SearchIn::Names, None, 50)
+            .people_page(
+                Some("\u{f6}ZIL"),
+                bb_app::auth::SearchIn::Names,
+                bb_app::auth::PeopleOf::NotRemoved,
+                None,
+                50,
+            )
             .await?;
         assert_eq!(words.len(), 1);
         let none = storage
-            .people_page(Some("ozil"), bb_app::auth::SearchIn::Names, None, 50)
+            .people_page(
+                Some("ozil"),
+                bb_app::auth::SearchIn::Names,
+                bb_app::auth::PeopleOf::NotRemoved,
+                None,
+                50,
+            )
             .await?;
         assert!(none.is_empty());
         // Accents count: the letter without its accent is another letter.

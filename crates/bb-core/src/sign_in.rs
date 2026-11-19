@@ -187,6 +187,18 @@ words! {
         DataExportForSomebodyElse => "data_export.for_somebody_else",
         /// The file of an export was downloaded.
         DataExportDownloaded => "data_export.downloaded",
+        /// An administrator switched a person off: their sessions, keys, AI app grants and agents
+        /// stopped (ADR-0044, decision 5).
+        PersonSwitchedOff => "person.switched_off",
+        /// An administrator switched a person on again: they may sign in.
+        PersonSwitchedOn => "person.switched_on",
+        /// An administrator removed a person; the entry names the person by ID, which reads as
+        /// their *Former user* label from then on (ADR-0044, decision 6).
+        PersonRemoved => "person.removed",
+        /// Lines of the replay list could not be written to its file: they wait in the database
+        /// and are written again at the next change and before every backup, but until then a
+        /// restore from a backup could undo what they stand for (ADR-0044, decision 8).
+        ReplayListNotWritten => "replay_list.not_written",
     }
 }
 

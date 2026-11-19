@@ -7,6 +7,7 @@ use axum::extract::State;
 use axum::response::Response;
 use bb_app::people::{PeopleQuery, PersonLine, PersonQuery};
 use bb_core::id::UserId;
+use bb_core::person::Standing;
 use bb_policy::{Masked, PersonRef};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -24,9 +25,10 @@ use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
 /// The fields of a person in a list that can be asked for, and which of them a list holds when
 /// the request names none: what the list needs.
-const PEOPLE_FIELDS: [FieldSpec; 4] = [
+const PEOPLE_FIELDS: [FieldSpec; 5] = [
     FieldSpec::by_default("person"),
     FieldSpec::by_default("email"),
+    FieldSpec::by_default("standing"),
     FieldSpec::on_request("groups"),
     FieldSpec::on_request("roles"),
 ];
@@ -43,6 +45,9 @@ pub(crate) struct PersonItem {
     /// The e-mail address. Only people who manage people see it.
     #[serde(skip_serializing_if = "Option::is_none")]
     email: Option<String>,
+    /// Whether the person is active or switched off (ADR-0044, decision 5).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    standing: Option<Standing>,
     /// The groups the person is in. Left out when the viewer may not see groups.
     #[serde(skip_serializing_if = "Option::is_none")]
     groups: Option<Vec<NamedRef>>,
@@ -59,6 +64,7 @@ impl From<&PersonLine> for PersonItem {
         Self {
             person: Some(line.person.clone()),
             email: Some(line.email.clone()),
+            standing: Some(line.standing),
             groups: line
                 .groups
                 .as_ref()
@@ -186,6 +192,7 @@ mod tests {
         let item = PersonItem {
             person: Some(PersonRef::Someone),
             email: Some("e".to_owned()),
+            standing: Some(Standing::Active),
             groups: Some(Vec::new()),
             roles: Some(Vec::new()),
         };

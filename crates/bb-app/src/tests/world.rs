@@ -58,6 +58,8 @@ pub(crate) struct World {
     pub(crate) ai: FakeAiProvider,
     /// The backup files, in memory.
     pub(crate) backups: Arc<super::fake_backups::MemoryBackups>,
+    /// The replay list, in memory.
+    pub(crate) replay: Arc<crate::privacy::replay::ReplayInMemory>,
     pub(crate) admin: Started,
 }
 
@@ -79,6 +81,7 @@ impl World {
         let mailer = FakeMailer::default();
         let ai = FakeAiProvider::default();
         let backups = Arc::new(super::fake_backups::MemoryBackups::default());
+        let replay = Arc::new(crate::privacy::replay::ReplayInMemory::default());
         let services = AuthServices::new(
             store.clone(),
             clock.clone(),
@@ -93,6 +96,7 @@ impl World {
         .with_mailer(Arc::new(mailer.clone()))
         .with_ai_provider(Arc::new(ai.clone()))
         .with_backups(backups.clone())
+        .with_replay_list(replay.clone())
         .with_public_url(PUBLIC_URL);
         Ok(Self {
             store,
@@ -103,6 +107,7 @@ impl World {
             mailer,
             ai,
             backups,
+            replay,
             // Replaced by `new`; a bare world has nobody.
             admin: Started {
                 session_token: String::new(),

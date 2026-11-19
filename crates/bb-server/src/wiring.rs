@@ -252,6 +252,9 @@ pub(crate) async fn wire(
     )
     .with_setup_code_file(Arc::new(SetupCodeOnDisk(data.setup_code_file())))
     .with_exports(Arc::new(bb_files::DiskExports::new(data.exports())))
+    .with_replay_list(Arc::new(crate::replay_list::ReplayListOnDisk::new(
+        data.replay_list(),
+    )))
     .with_files(Arc::new(DiskFiles::new(
         data.files(),
         PreviewCommand::of_this_program(PREVIEW_COMMAND)
@@ -293,6 +296,12 @@ pub(crate) async fn wire(
         .start_daily_jobs()
         .await
         .map_err(|error| anyhow!(error.to_string()))?;
+    // The lines of the replay list that a stop left waiting in the database go to its file now,
+    // not only with the next change (ADR-0044, decision 8).
+    services
+        .ctx(RequestInfo::default())
+        .write_replay_list()
+        .await;
     let services = Arc::new(services);
     let mcp = bb_mcp::router(bb_mcp::McpOptions {
         api: services.clone(),

@@ -232,6 +232,7 @@ fn priv_12_every_kind_and_level_shows_the_person_as_the_rule_says() {
                     }
                     let removed = bb_policy::FormerUser {
                         label: "K7Q2".to_owned(),
+                        held_name: None,
                     };
                     let gone = resolve(
                         &viewer,

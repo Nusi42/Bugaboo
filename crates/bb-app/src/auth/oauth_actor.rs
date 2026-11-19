@@ -119,7 +119,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         else {
             return Ok(None);
         };
-        let Some(owner) = self.person_known(found.grant.person).await? else {
+        let Some(owner) = self.active_person(found.grant.person).await? else {
             return Ok(None);
         };
         Ok(Some(WorkingToken {

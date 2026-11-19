@@ -88,6 +88,7 @@ mod m0053_issue_dates_index;
 mod m0054_backup_runs;
 mod m0055_data_exports;
 mod m0056_keeping;
+mod m0057_person_standing;
 #[cfg(test)]
 mod old_rows;
 mod record;
@@ -473,6 +474,11 @@ const ALL: &[Definition] = &[
         version: 56,
         name: "keeping",
         steps: || Ok(m0056_keeping::steps()),
+    },
+    Definition {
+        version: 57,
+        name: "person_standing",
+        steps: || Ok(m0057_person_standing::steps()),
     },
 ];
 
