@@ -488,6 +488,7 @@ pub(super) fn required_query(template: &str) -> Option<&'static str> {
         | "/api/v1/me/work-times"
         | "/api/v1/people/{person}/work-times" => Some("?from=2027-01-14&to=2027-01-15"),
         "/api/v1/me/work-days/booked" => Some("?date=2027-01-14"),
+        "/api/v1/admin/keep-rules/{kind}/would-delete" => Some("?count=10"),
         _ => None,
     }
 }

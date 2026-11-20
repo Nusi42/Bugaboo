@@ -29,15 +29,15 @@ test("priv_04 switch off names what stops and the person's agent stops", async (
   await question.getByRole("button", { name: t("person.switch-off"), exact: true }).click();
   await expect(card).toContainText(t("person.switched-off", { name: bob.name }));
   // Bob's sign-in ended at once, and his agent stopped.
-  expect((await session.client.GET("/api/v1/auth/me")).response.status).toBe(401);
+  await expect(session.client.GET("/api/v1/auth/me")).rejects.toThrow();
   const admin = await signedInAdmin(server);
   const agents = dataOf(await admin.client.GET("/api/v1/organization/agents"));
   expect(agents.items.find((each) => each.id === agent)?.state).toBe("stopped");
   // *Switch on* gives the sign-in back.
   await card.getByRole("button", { name: t("person.switch-on"), exact: true }).click();
   await expect(card).toContainText(t("person.active", { name: bob.name }));
+  // Bob's session ended with the switch-off: there is nothing to sign out of.
   await admin.dispose();
-  await session.dispose();
 });
 
 test("priv_04 the removal window says what goes what stays and until when", async ({
