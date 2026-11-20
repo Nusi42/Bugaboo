@@ -158,6 +158,18 @@ impl KeepRule {
             .map(|(least, _)| least)
     }
 
+    /// The stored settings as they would be with the row's period set to `value` (in the unit of its
+    /// setting): what a changed period would delete is counted with the same cutoff as the deleting
+    /// itself. `None` for a fixed period, for the rotation of backups, whose period is the work of
+    /// two settings, and for a value below the floor or above the most the setting allows.
+    #[must_use]
+    pub fn with_period(&self, layers: &Layers, value: i64) -> Option<Layers> {
+        match self.period {
+            Period::Setting { setting, .. } => layers.with_organization_number(setting, value),
+            Period::Fixed(_) | Period::Rotation { .. } => None,
+        }
+    }
+
     /// The moment before which a record of the kind is past its period, at `now`: what a job
     /// that deletes by itself looks for. `None` only at the start of time.
     #[must_use]

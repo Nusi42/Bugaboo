@@ -17,12 +17,14 @@
 //!   number of files, not a period, so it has no row.
 
 mod old_records;
+mod period_effect;
 mod rules;
 
 pub use old_records::{
     DeleteOldRecords, DeletedRecords, OLD_PEOPLE_MAX, OldCount, OldOfPerson, OldRecordStore,
     OldRecords, OldRecordsQuery, delete_old_records, old_records,
 };
+pub use period_effect::{PeriodEffect, PeriodEffectQuery, period_effect};
 pub use rules::{KeepRuleView, KeepRules, KeepRulesQuery, keep_rules};
 
 use bb_core::event::{Actor as EventActor, RecordKind};
@@ -115,8 +117,18 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// settings and zone.
     pub(crate) async fn keep_cutoff(&self, kind: KeepKind) -> Result<Timestamp, AppError> {
         let layers = self.setting_layers_of(None).await?;
+        self.keep_cutoff_with(kind, &layers)
+    }
+
+    /// [`Self::keep_cutoff`] with the settings `layers`, also as they would be after a change: the
+    /// one cutoff of a kind, for its job and for the count of what a changed period would delete.
+    pub(crate) fn keep_cutoff_with(
+        &self,
+        kind: KeepKind,
+        layers: &Layers,
+    ) -> Result<Timestamp, AppError> {
         rule(kind)
-            .cutoff(&layers, self.now(), Region::of(&layers).zone())
+            .cutoff(layers, self.now(), Region::of(layers).zone())
             .ok_or_else(|| AppError::Internal("a keep period that cannot be counted".to_owned()))
     }
 

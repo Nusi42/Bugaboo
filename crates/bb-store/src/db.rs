@@ -503,6 +503,19 @@ impl Reader for Transaction {
     }
 }
 
+/// The number a counting statement answers in its column `Computed::Total`: the one way a read
+/// takes a count, on the pool or in a transaction.
+pub(crate) async fn count_of(
+    reader: &mut impl Reader,
+    select: &SelectStatement,
+) -> Result<u64, StoreError> {
+    let count: i64 = match reader.fetch_optional(select).await? {
+        Some(row) => row.get(crate::schema::Computed::Total)?,
+        None => 0,
+    };
+    Ok(u64::try_from(count).unwrap_or(0))
+}
+
 /// Where a statement runs: on the pool, or inside a transaction. The two ways to run a
 /// statement are written once, here, for both databases.
 enum Connection<'c> {

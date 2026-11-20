@@ -190,3 +190,33 @@ fn priv_05_the_cutoff_counts_days_as_lengths_and_years_on_the_calendar() {
         Some("2027-03-01T12:00:00Z".parse().unwrap())
     );
 }
+
+#[test]
+fn priv_05_a_changed_period_is_counted_with_the_cutoff_of_the_deleting() {
+    let now: Timestamp = "2026-11-20T12:00:00Z".parse().unwrap();
+    let zone = TimeZone::UTC;
+    let notifications = rule(KeepKind::Notifications);
+    let stored = with(&KEEPING_NOTIFICATION_DAYS, 90);
+    // The period as it would be is the period of the same rule with the value saved.
+    let changed = notifications.with_period(&stored, 30).unwrap();
+    assert_eq!(
+        notifications.cutoff(&changed, now, &zone),
+        notifications.cutoff(&with(&KEEPING_NOTIFICATION_DAYS, 30), now, &zone)
+    );
+    assert_ne!(
+        notifications.cutoff(&changed, now, &zone),
+        notifications.cutoff(&stored, now, &zone)
+    );
+    // Below the floor, a fixed period and the rotation of backups have no changed period.
+    let floor = notifications.floor().unwrap();
+    assert!(notifications.with_period(&stored, floor - 1).is_none());
+    assert!(rule(KeepKind::Drafts).with_period(&stored, 3).is_none());
+    assert!(rule(KeepKind::Backups).with_period(&stored, 30).is_none());
+    // The lock of the organization stays as it was.
+    let mut locked = with(&KEEPING_NOTIFICATION_DAYS, 90);
+    for set in locked.organization.values_mut() {
+        set.locked = true;
+    }
+    let changed = notifications.with_period(&locked, 30).unwrap();
+    assert!(changed.organization.values().all(|set| set.locked));
+}

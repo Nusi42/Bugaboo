@@ -1,10 +1,11 @@
-//! The rules of *Keep and delete rules* as an administrator reads them (PRIV-05, ADR-0045,
-//! decision 2): every row of `KEEP_KINDS` with its group, the period in force with the
-//! organization's settings, the setting that changes it and its floor. The periods change through
-//! the settings routes that exist; this only reads.
+//! The rules of *Keep and delete rules* (PRIV-05, ADR-0045, decision 2): every row of `KEEP_KINDS`
+//! with its group, the period in force with the organization's settings, the setting that changes
+//! it and its floor. Every person who signs in may read them, because they have a right to know how
+//! long their data is kept (*My settings › My data*, GDPR Art. 15(1)(d)); only an administrator
+//! changes them, through the settings routes that exist. This only reads.
 
 use bb_core::keeping::{KEEP_KINDS, KeepGroup, KeepKind, Length};
-use bb_policy::{Authorized, Masked};
+use bb_policy::{Authorized, Masked, Place};
 
 use crate::auth::{AppError, AuthStore, Ctx};
 
@@ -44,12 +45,13 @@ impl Masked for KeepRules {}
 /// The rules with the periods in force.
 ///
 /// # Errors
-/// `access.forbidden` without *Change organization settings*.
+/// `auth.not-signed-in` without a session; an access key is refused, as for the person's own data.
 pub async fn keep_rules<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: KeepRulesQuery,
 ) -> Result<Authorized<KeepRules>, AppError> {
-    let (_, evaluation) = ctx.keeper(&input.session_token).await?;
+    let actor = ctx.session_actor(&input.session_token).await?;
+    let evaluation = ctx.evaluation_of(&actor, Place::Organization).await?;
     let layers = ctx.setting_layers_of(None).await?;
     let rules = KEEP_KINDS
         .iter()

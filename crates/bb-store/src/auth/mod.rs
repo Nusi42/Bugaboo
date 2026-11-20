@@ -17,6 +17,7 @@ pub(crate) mod standing;
 
 pub(crate) use accounts::{person_columns, read_person};
 use bb_core::version::Version;
+pub(crate) use sessions::{past_life, past_networks};
 use std::sync::Arc;
 
 use bb_app::auth::{AuthSettings, AuthStore, SecurityEvent};

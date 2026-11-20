@@ -8,6 +8,7 @@ use std::collections::BTreeMap;
 
 use bb_core::id::UserId;
 use bb_core::keeping::KeepKind;
+use jiff::Timestamp;
 use jiff::civil::Date;
 use sea_query::{Iden, Order, SelectStatement};
 
@@ -24,6 +25,10 @@ impl OldRecordStore for AuthStorage {
             KeepKind::TimeEntries => time::old::count(&mut reader, before, None).await,
             _ => Err(StoreError::Corrupt("a kind Bugaboo deletes by itself")),
         }
+    }
+
+    async fn count_past(&self, kind: KeepKind, before: Timestamp) -> Result<u64, StoreError> {
+        super::past::count_past(self.database(), kind, before).await
     }
 
     async fn delete_old_records(

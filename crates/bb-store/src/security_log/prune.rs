@@ -6,7 +6,7 @@ use sea_query::{Expr, ExprTrait as _, Order, Query};
 
 use crate::anchor::LogSeal;
 use crate::chain::{BLOCK_SIZE, START, Verifier};
-use crate::db::{Database, to_micros};
+use crate::db::{Database, Transaction, to_micros};
 use crate::error::{SecretProblem, StoreError};
 use crate::schema::{Computed, SecurityLog as Columns};
 
@@ -15,7 +15,93 @@ use super::checkpoint::{
 };
 use super::rows::{PAGE, last_entry, read_page};
 
+/// The oldest whole blocks of the log whose entries are all older than a cutoff: the one choice of
+/// what a prune deletes, and of what the count of a changed period counts.
+struct OldBlocks {
+    /// The first entry still in the log (after the checkpoint).
+    first: i64,
+    /// The newest entry, which always stays.
+    head: i64,
+    /// The cutoff: every entry of a block that goes is older.
+    before: Timestamp,
+    /// The size of a block, counted from the first entry of the log.
+    block_size: i64,
+}
+
+impl OldBlocks {
+    /// The last entry of the old blocks from the first one on, as many as fit in `most` entries
+    /// but always one when one is old; `None` when no block is old.
+    async fn last(
+        &self,
+        transaction: &mut Transaction,
+        most: i64,
+    ) -> Result<Option<i64>, StoreError> {
+        let block = Expr::col(Columns::Seq).sub(1_i64).div(self.block_size);
+        let mut blocks = Query::select();
+        blocks
+            .expr_as(block, Computed::Block)
+            .expr_as(Expr::col(Columns::Seq).min(), Computed::First)
+            .expr_as(Expr::col(Columns::Seq).max(), Computed::Last)
+            .expr_as(Expr::col(Columns::Time).max(), Computed::Newest)
+            .from(Columns::Table)
+            .add_group_by([Expr::col(Computed::Block)])
+            .order_by(Computed::Block, Order::Asc);
+        let mut next_first = self.first;
+        let mut delete_up_to = None;
+        for row in transaction.fetch_all(&blocks).await? {
+            let first: i64 = row.get(Computed::First)?;
+            let last: i64 = row.get(Computed::Last)?;
+            let newest: i64 = row.get(Computed::Newest)?;
+            let whole = first == next_first && last - first + 1 == self.block_size;
+            if !(whole && last < self.head && newest < to_micros(self.before)) {
+                break;
+            }
+            // A step deletes whole blocks up to its limit, and always the first old one.
+            if delete_up_to.is_some() && last - self.first + 1 > most {
+                break;
+            }
+            delete_up_to = Some(last);
+            next_first = last + 1;
+        }
+        Ok(delete_up_to)
+    }
+}
+
 impl Database {
+    /// How many entries a prune with the cutoff `before` would delete, without a limit: the count
+    /// of a changed keep period of the security log (ADR-0045, decision 2). Reads only.
+    ///
+    /// # Errors
+    /// Fails when the database fails.
+    pub(crate) async fn count_prunable(&self, before: Timestamp) -> Result<u64, StoreError> {
+        self.count_in_blocks(before, BLOCK_SIZE).await
+    }
+
+    /// [`Self::count_prunable`] with a block size, as [`Self::prune_in_blocks`] has one.
+    pub(crate) async fn count_in_blocks(
+        &self,
+        before: Timestamp,
+        block_size: i64,
+    ) -> Result<u64, StoreError> {
+        let mut transaction = self.begin_read().await?;
+        let checkpoint = read_checkpoint(&mut transaction).await?;
+        let Some((head, _)) = last_entry(&mut transaction).await? else {
+            return Ok(0);
+        };
+        let first = checkpoint
+            .as_ref()
+            .map_or(1, |checkpoint| checkpoint.seq + 1);
+        let old = OldBlocks {
+            first,
+            head,
+            before,
+            block_size,
+        };
+        let last = old.last(&mut transaction, i64::MAX).await?;
+        transaction.commit().await?;
+        Ok(last.map_or(0, |last| u64::try_from(last - first + 1).unwrap_or(0)))
+    }
+
     /// Deletes the oldest whole blocks whose entries are all older than `before`, as many as fit
     /// in `limit` entries but always one when one is old (one step of the purge, ADR-0045), and
     /// signs a checkpoint for what was deleted. At least one newer entry always stays. The blocks
@@ -57,39 +143,17 @@ impl Database {
         let Some((head, _)) = last_entry(&mut transaction).await? else {
             return Ok(0);
         };
-        let mut next_first = checkpoint
+        let step_first = checkpoint
             .as_ref()
             .map_or(1, |checkpoint| checkpoint.seq + 1);
-        let step_first = next_first;
         let most = i64::try_from(limit).unwrap_or(i64::MAX);
-
-        let block = Expr::col(Columns::Seq).sub(1_i64).div(block_size);
-        let mut blocks = Query::select();
-        blocks
-            .expr_as(block, Computed::Block)
-            .expr_as(Expr::col(Columns::Seq).min(), Computed::First)
-            .expr_as(Expr::col(Columns::Seq).max(), Computed::Last)
-            .expr_as(Expr::col(Columns::Time).max(), Computed::Newest)
-            .from(Columns::Table)
-            .add_group_by([Expr::col(Computed::Block)])
-            .order_by(Computed::Block, Order::Asc);
-        let mut delete_up_to = None;
-        for row in transaction.fetch_all(&blocks).await? {
-            let first: i64 = row.get(Computed::First)?;
-            let last: i64 = row.get(Computed::Last)?;
-            let newest: i64 = row.get(Computed::Newest)?;
-            let whole = first == next_first && last - first + 1 == block_size;
-            if !(whole && last < head && newest < to_micros(before)) {
-                break;
-            }
-            // A step deletes whole blocks up to its limit, and always the first old one.
-            if delete_up_to.is_some() && last - step_first + 1 > most {
-                break;
-            }
-            delete_up_to = Some(last);
-            next_first = last + 1;
-        }
-        let Some(last) = delete_up_to else {
+        let old = OldBlocks {
+            first: step_first,
+            head,
+            before,
+            block_size,
+        };
+        let Some(last) = old.last(&mut transaction, most).await? else {
             return Ok(0);
         };
 

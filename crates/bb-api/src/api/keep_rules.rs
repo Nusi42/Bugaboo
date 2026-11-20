@@ -1,14 +1,15 @@
 //! The routes of *Keep and delete rules* (PRIV-05, ADR-0045), below `/api/v1/admin/keep-rules`:
-//! the rules with the periods in force, and for a kind that an administrator deletes the count of
-//! what is past its period and *Delete them*, for everybody or for one person. All need *Change
-//! organization settings*, which no access key holds; the periods change through the settings
-//! routes that exist.
+//! the rules with the periods in force, which every person who signs in may read; what a changed
+//! period would delete, before it is saved; and for a kind that an administrator deletes the count
+//! of what is past its period and *Delete them*, for everybody or for one person. All but the rules
+//! need *Change organization settings*, which no access key holds; the periods change through the
+//! settings routes that exist.
 
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::keeping::{
     DeleteOldRecords, DeletedRecords, KeepRules, KeepRulesQuery, OldOfPerson, OldRecords,
-    OldRecordsQuery,
+    OldRecordsQuery, PeriodEffect, PeriodEffectQuery,
 };
 use bb_core::ErrorCode;
 use bb_core::id::UserId;
@@ -164,6 +165,37 @@ impl From<&DeletedRecords> for DeletedBody {
     }
 }
 
+/// What a changed keep period touches.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct PeriodEffectBody {
+    /// The kind of data.
+    kind: KeepKind,
+    /// Who deletes the records: Bugaboo within a day, or an administrator when they say so.
+    group: KeepGroup,
+    /// How many records are past the changed period.
+    records: u64,
+}
+
+impl Masked for PeriodEffectBody {}
+
+impl From<&PeriodEffect> for PeriodEffectBody {
+    fn from(effect: &PeriodEffect) -> Self {
+        Self {
+            kind: effect.kind,
+            group: effect.group,
+            records: effect.records,
+        }
+    }
+}
+
+/// The changed period to count with.
+#[derive(Deserialize, utoipa::IntoParams)]
+#[into_params(parameter_in = Query)]
+pub(crate) struct PeriodEffectParams {
+    /// The period as it would be saved, in the unit of the setting of the kind.
+    count: i64,
+}
+
 /// Whose old records to delete, and the date the count gave.
 #[derive(Deserialize, utoipa::IntoParams)]
 #[into_params(parameter_in = Query)]
@@ -299,6 +331,49 @@ async fn delete_past_keep_period(
     answer_authorized(&deleted.map(|deleted| DeletedBody::from(&deleted)))
 }
 
+/// How many records a changed keep period would delete (a kind Bugaboo deletes by itself, within a
+/// day) or leave past it (a kind an administrator deletes), counted now with the same cutoff as the
+/// deleting. Changes nothing. Only a kind whose period is one setting has an answer.
+#[utoipa::path(
+    get,
+    path = "/api/v1/admin/keep-rules/{kind}/would-delete",
+    operation_id = "countWouldDelete",
+    tag = "privacy",
+    params(
+        ("kind" = String, Path, description = "The kind of data, like notifications."),
+        PeriodEffectParams
+    ),
+    responses(
+        (status = 200, description = "The count.", body = PeriodEffectBody),
+        InvalidAnswer,
+        NotSignedInAnswer,
+        ForbiddenAnswer,
+        NotFoundAnswer
+    )
+)]
+async fn count_would_delete(
+    State(auth): State<AuthHandle>,
+    Info(info): Info,
+    Session(session_token): Session,
+    ApiPath(kind): ApiPath<String>,
+    params: Result<ApiQuery<PeriodEffectParams>, ApiError>,
+) -> Result<Response, ApiError> {
+    let read = kind_of(&kind).and_then(|kind| params.map(|ApiQuery(asked)| (kind, asked.count)));
+    let (kind, count) = auth.after_who_asks(&info, &session_token, read).await?;
+    let effect = auth
+        .api()?
+        .period_effect(
+            info,
+            PeriodEffectQuery {
+                session_token,
+                kind,
+                count,
+            },
+        )
+        .await?;
+    answer_authorized(&effect.map(|effect| PeriodEffectBody::from(&effect)))
+}
+
 /// The routes of the keep rules.
 pub(super) fn routes<S>() -> OpenApiRouter<S>
 where
@@ -308,5 +383,6 @@ where
     OpenApiRouter::new()
         .routes(routes!(list_keep_rules))
         .routes(routes!(count_past_keep_period))
+        .routes(routes!(count_would_delete))
         .routes(routes!(delete_past_keep_period))
 }

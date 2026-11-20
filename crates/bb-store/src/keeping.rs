@@ -4,6 +4,7 @@
 //! [`delete_limited`] the one way it deletes them.
 
 pub(crate) mod old_records;
+pub(crate) mod past;
 pub(crate) mod trash;
 
 use bb_core::event::RecordKind;
@@ -56,6 +57,18 @@ where
     delete
 }
 
+/// The rows that went into the trash before the cutoff `before`, by their column `deleted_at`: what
+/// a purge of the trash chooses (with what else it asks), and what the count of a changed period
+/// counts.
+pub(crate) fn trashed_before<C: Iden + Copy + 'static>(
+    deleted_at: C,
+    before: Timestamp,
+) -> Condition {
+    Condition::all()
+        .add(Expr::col(deleted_at).is_not_null())
+        .add(Expr::col(deleted_at).lt(to_micros(before)))
+}
+
 /// Chooses at most `limit` rows of `table` that went into the trash before `before` and match
 /// `also`, and holds them for the change, in one statement; their keys `key`, in order. The outer
 /// statement asks again that each row is in the trash: on PostgreSQL a row that somebody took out of
@@ -74,11 +87,7 @@ where
     T: IntoTableRef + Clone,
     C: Iden + Copy + 'static,
 {
-    let in_the_trash = || {
-        Condition::all()
-            .add(Expr::col(deleted_at).is_not_null())
-            .add(Expr::col(deleted_at).lt(to_micros(before)))
-    };
+    let in_the_trash = || trashed_before(deleted_at, before);
     let mut chosen = Query::select();
     chosen
         .column(key)

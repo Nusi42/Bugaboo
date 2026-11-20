@@ -64,6 +64,19 @@ impl OldRecordStore for FakeStore {
         }))
     }
 
+    async fn count_past(&self, kind: KeepKind, before: Timestamp) -> Result<u64, FakeError> {
+        // The fake keeps the notifications only of the kinds Bugaboo deletes by itself.
+        let count = self.read(|state| match kind {
+            KeepKind::Notifications => state
+                .notifications
+                .iter()
+                .filter(|row| row.at < before)
+                .count(),
+            _ => 0,
+        });
+        Ok(u64::try_from(count).unwrap_or(u64::MAX))
+    }
+
     async fn delete_old_records(
         tx: &mut Tx,
         kind: KeepKind,

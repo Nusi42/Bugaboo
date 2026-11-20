@@ -5,7 +5,9 @@
 use std::time::Duration;
 
 use bb_app::issues::IssueStore as _;
+use bb_app::keeping::OldRecordStore as _;
 use bb_app::ports::ChangeStore;
+use bb_core::keeping::KeepKind;
 use bb_testing::{TestResult, each_database};
 use sea_query::{Alias, Expr, ExprTrait as _, Query};
 
@@ -47,6 +49,10 @@ async fn priv_05_an_issue_taken_out_of_the_trash_while_the_purge_waits_is_kept()
             })
         })
         .await?;
+        // The count of a changed period finds the issue the purge would take, and only after its
+        // time in the trash.
+        assert_eq!(storage.count_past(KeepKind::Trash, at(100)).await?, 1);
+        assert_eq!(storage.count_past(KeepKind::Trash, at(30)).await?, 0);
         // A person takes the issue out of the trash; the change is not committed yet.
         let mut restoring = storage.database().begin().await?;
         assert!(AuthStorage::set_issue_deleted(&mut restoring, issue, None, at(50), None).await?);

@@ -1,18 +1,7 @@
 //! How much work an agent has: the numbers its limits are judged against.
 
 use super::*;
-
-/// The number a counting statement answers (the column `Computed::Total`).
-async fn count_of(
-    transaction: &mut Transaction,
-    select: &SelectStatement,
-) -> Result<u64, StoreError> {
-    let count: i64 = match transaction.fetch_optional(select).await? {
-        Some(row) => row.get(Computed::Total)?,
-        None => 0,
-    };
-    Ok(u64::try_from(count).unwrap_or(0))
-}
+use crate::db::count_of;
 
 /// How many issues the agent has an attempt running on now.
 pub(super) async fn working_issues(

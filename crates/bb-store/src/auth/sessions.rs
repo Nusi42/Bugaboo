@@ -99,6 +99,22 @@ fn read_session(row: &Row) -> Result<SignInSession, StoreError> {
     })
 }
 
+/// The active sessions started before `absolute_before`, past the longest life of a session: what
+/// the purge deletes of them, and what the count of a changed longest life counts.
+pub(crate) fn past_life(absolute_before: Timestamp) -> Condition {
+    Condition::all()
+        .add(Expr::col(SessionColumns::Stage).eq(SessionStage::Active.code()))
+        .add(Expr::col(SessionColumns::CreatedAt).lt(to_micros(absolute_before)))
+}
+
+/// The sessions started before the cutoff `before` that still hold their network: what the purge
+/// forgets, and what the count of a changed period counts.
+pub(crate) fn past_networks(before: Timestamp) -> Condition {
+    Condition::all()
+        .add(Expr::col(SessionColumns::CreatedAt).lt(to_micros(before)))
+        .add(Expr::col(SessionColumns::Network).is_not_null())
+}
+
 impl SessionStore for AuthStorage {
     async fn session_by_hash(&self, hash: &Digest) -> Result<Option<SessionRecord>, StoreError> {
         let mut select = Query::select();
@@ -215,20 +231,19 @@ impl SessionStore for AuthStorage {
         pending_before: Timestamp,
         limit: u64,
     ) -> Result<u64, StoreError> {
-        let active = Expr::col(SessionColumns::Stage)
-            .eq(SessionStage::Active.code())
-            .and(
-                Expr::col(SessionColumns::LastSeenAt)
-                    .lt(to_micros(idle_before))
-                    .or(Expr::col(SessionColumns::CreatedAt).lt(to_micros(absolute_before))),
-            );
-        let pending = Expr::col(SessionColumns::Stage)
-            .eq(SessionStage::SecondStepPending.code())
-            .and(Expr::col(SessionColumns::CreatedAt).lt(to_micros(pending_before)));
+        let idle = Condition::all()
+            .add(Expr::col(SessionColumns::Stage).eq(SessionStage::Active.code()))
+            .add(Expr::col(SessionColumns::LastSeenAt).lt(to_micros(idle_before)));
+        let pending = Condition::all()
+            .add(Expr::col(SessionColumns::Stage).eq(SessionStage::SecondStepPending.code()))
+            .add(Expr::col(SessionColumns::CreatedAt).lt(to_micros(pending_before)));
         let delete = delete_limited(
             SessionColumns::Table,
             &[SessionColumns::Id],
-            Condition::all().add(active.or(pending)),
+            Condition::any()
+                .add(idle)
+                .add(past_life(absolute_before))
+                .add(pending),
             limit,
         );
         transaction.execute(&delete).await
@@ -246,9 +261,7 @@ impl SessionStore for AuthStorage {
             .and_where(limited_rows(
                 SessionColumns::Table,
                 &[SessionColumns::Id],
-                Condition::all()
-                    .add(Expr::col(SessionColumns::CreatedAt).lt(to_micros(before)))
-                    .add(Expr::col(SessionColumns::Network).is_not_null()),
+                past_networks(before),
                 limit,
             ));
         transaction.execute(&update).await

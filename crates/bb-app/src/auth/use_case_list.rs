@@ -386,6 +386,8 @@ macro_rules! each_use_case {
             old_records(OldRecordsQuery) -> Authorized<OldRecords>;
             /// Deletes the records of a kind an administrator deletes that are past their keep period.
             delete_old_records(DeleteOldRecords) -> Authorized<DeletedRecords>;
+            /// How many records a changed keep period would delete, or leave past it.
+            period_effect(PeriodEffectQuery) -> Authorized<PeriodEffect>;
             /// Lists the saved searches a person made, or the ones shared with them.
             saved_searches(SearchesQuery) -> Authorized<SavedSearchPage>;
             /// Opens one saved search.

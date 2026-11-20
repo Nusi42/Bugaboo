@@ -3,15 +3,16 @@
 //! events that carry their note.
 
 use axum::Router;
+use bb_app::access::StartingRole;
 use bb_app::auth::RequestInfo;
 use bb_core::event::{EntityKind, RecordKind};
 use bb_core::time::SECONDS_PER_DAY;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
-use super::http::{ADA_EMAIL, Browser, Reply, rig_and_app};
-use super::issues_site::{Site, key_of, ok};
-use super::rig::Rig;
+use super::http::{ADA_EMAIL, Browser, Reply, called, rig_and_app};
+use super::issues_site::{Site, id_of, key_of, ok};
+use super::rig::{PASSWORD, Rig};
 use super::time_http::MY_ENTRIES;
 
 const RULES: &str = "/api/v1/admin/keep-rules";
@@ -190,6 +191,129 @@ async fn priv_05_delete_them_deletes_only_what_the_administrator_counted() -> Te
         // A date that is no date is refused.
         let wrong = delete(&mut ada, "soon").await?;
         assert_eq!(wrong.code(), "request.invalid", "{}", wrong.body);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn priv_05_every_person_reads_the_keep_rules_and_an_access_key_does_not() -> TestResult {
+    each_database("priv_05_rules_for_everyone", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut guest, _) = site.person(StartingRole::Guest, "gus").await?;
+        // A person without any permission of the organization reads the whole rules: how long
+        // their data is kept is theirs to know (GDPR Art. 15(1)(d)).
+        let rules = ok(&guest.send("GET", RULES, None).await?)?.clone();
+        let rows = rules["rules"].as_array().cloned().unwrap_or_default();
+        assert_eq!(rows.len(), bb_core::keeping::KEEP_KINDS.len());
+        let notifications = rows
+            .iter()
+            .find(|row| row["kind"] == "notifications")
+            .ok_or("no row of notifications")?;
+        assert_eq!(notifications["setting"], "keeping.notification-days");
+        // What a changed period would delete stays with the administrators.
+        let counted = guest
+            .send(
+                "GET",
+                &format!("{RULES}/notifications/would-delete?count=30"),
+                None,
+            )
+            .await?;
+        assert_eq!(counted.code(), "access.forbidden", "{}", counted.body);
+        // A key reads the person's own rights no more than their sign-in data.
+        let made = ada
+            .send(
+                "POST",
+                "/api/v1/access-keys",
+                Some(json!({"password": PASSWORD, "name": "Script", "choice": "see-only"})),
+            )
+            .await?;
+        let key = ok(&made)?["secret"].as_str().ok_or("no secret")?.to_owned();
+        let mut script = Browser::new(&app, &called());
+        let refused = script.script("GET", RULES, None, &key).await?;
+        assert_eq!(
+            refused.code(),
+            "auth.access-key-not-allowed",
+            "{}",
+            refused.body
+        );
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn priv_05_a_changed_period_says_what_it_would_delete_before_it_is_saved() -> TestResult {
+    each_database("priv_05_would_delete", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let booked = key_of(&site.create(&mut ada, "Printer jams").await?)?;
+        ok(&ada
+            .send(
+                "POST",
+                MY_ENTRIES,
+                Some(json!({"issue": booked, "date": "2027-01-14", "minutes": 30})),
+            )
+            .await?)?;
+        let trashed = id_of(&site.create(&mut ada, "Old paper").await?)?;
+        let deleted = ada
+            .send("DELETE", &format!("/api/v1/issues/{trashed}"), None)
+            .await?;
+        assert!(deleted.status.is_success(), "{}", deleted.body);
+        // Three years and three days later.
+        rig.clock.advance((3 * 366 + 3) * SECONDS_PER_DAY);
+        let mut ada = Browser::signed_in_as(&app, ADA_EMAIL).await?;
+        let would = async |browser: &mut Browser, kind: &str, count: i64| {
+            browser
+                .send(
+                    "GET",
+                    &format!("{RULES}/{kind}/would-delete?count={count}"),
+                    None,
+                )
+                .await
+        };
+        // The trash keeps 30 days: a period of 1 day would delete the issue within a day.
+        let trash = ok(&would(&mut ada, "trash", 1).await?)?.clone();
+        assert_eq!(
+            trash,
+            json!({"kind": "trash", "group": "by-itself", "records": 1})
+        );
+        assert_eq!(ok(&would(&mut ada, "trash", 3650).await?)?["records"], 0);
+        // A time entry of 2027 is past a period of 1 year, which an administrator deletes.
+        let entries = ok(&would(&mut ada, "time-entries", 1).await?)?.clone();
+        assert_eq!(entries["group"], "by-an-administrator");
+        assert_eq!(entries["records"], 1);
+        assert_eq!(
+            ok(&would(&mut ada, "time-entries", 10).await?)?["records"],
+            0
+        );
+        // Nothing was changed: the period and the records are as they were.
+        let rules = ok(&ada.send("GET", RULES, None).await?)?.clone();
+        let time = rules["rules"]
+            .as_array()
+            .and_then(|rows| rows.iter().find(|row| row["kind"] == "time-entries"))
+            .ok_or("no row of time entries")?;
+        assert_eq!(time["period"], json!({"count": 10, "unit": "years"}));
+        assert_eq!(
+            ok(&would(&mut ada, "time-entries", 1).await?)?["records"],
+            1
+        );
+        assert_eq!(ok(&would(&mut ada, "trash", 1).await?)?["records"], 1);
+        // Below the floor, a fixed period, the rotation of backups and an unknown kind.
+        assert_eq!(would(&mut ada, "trash", 0).await?.code(), "request.invalid");
+        assert_eq!(
+            would(&mut ada, "drafts", 3).await?.code(),
+            "resource.not-found"
+        );
+        assert_eq!(
+            would(&mut ada, "backups", 3).await?.code(),
+            "resource.not-found"
+        );
+        assert_eq!(
+            would(&mut ada, "nothing", 3).await?.code(),
+            "resource.not-found"
+        );
         Ok(())
     })
     .await

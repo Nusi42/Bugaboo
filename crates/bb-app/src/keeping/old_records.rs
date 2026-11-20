@@ -14,10 +14,12 @@ use bb_core::event::RecordKind;
 use bb_core::id::UserId;
 use bb_core::keeping::{KeepGroup, KeepKind, KeepRule, Length, Step, rule};
 use bb_core::people_kinds::PeopleKind;
+use bb_core::settings::Layers;
 use bb_core::sign_in::SecurityAction;
 use bb_core::time::day::date_of;
 use bb_core::wording::Region;
 use bb_policy::{Authorized, Evaluation, Masked, PeopleContext, Permission, PersonRef, Place};
+use jiff::Timestamp;
 use jiff::civil::Date;
 use serde_json::json;
 
@@ -49,6 +51,10 @@ pub trait OldRecordStore: ChangeStore + 'static {
         /// How many records of `kind` each person has with a date before `before`, by person; a
         /// person without such records is left out. Counted when asked: no job counts them.
         fn old_records(kind: KeepKind, before: Date) -> Vec<OldCount>;
+        /// How many records of `kind`, a kind of the group *by itself*, its job would delete with
+        /// the cutoff `before`: the rows its purge chooses, without a limit. Counted when an
+        /// administrator asks what a changed period would delete; no job counts.
+        fn count_past(kind: KeepKind, before: Timestamp) -> u64;
     }
 
     writes! {
@@ -191,11 +197,21 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// organization's zone.
     async fn kept_from_today(&self, row: &KeepRule) -> Result<(Length, Date), AppError> {
         let layers = self.setting_layers_of(None).await?;
-        let today = date_of(self.now(), Region::of(&layers).zone());
-        let before = row
-            .kept_from(&layers, today)
-            .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
+        let before = self.kept_from_today_with(row, &layers)?;
         Ok((row.length(&layers), before))
+    }
+
+    /// The first date still inside the period of `row` today with the settings `layers`, also as
+    /// they would be after a change: the one date of the count, of *Delete them* and of the count
+    /// of what a changed period would leave past it.
+    pub(super) fn kept_from_today_with(
+        &self,
+        row: &KeepRule,
+        layers: &Layers,
+    ) -> Result<Date, AppError> {
+        let today = date_of(self.now(), Region::of(layers).zone());
+        row.kept_from(layers, today)
+            .ok_or(AppError::Refused(ErrorCode::InvalidRequest))
     }
 }
 

@@ -3,7 +3,9 @@
 //! the encrypted code app secret).
 
 use bb_app::auth::{AccountStore, InvitationStore, SecondStepStore, SessionStore};
+use bb_app::keeping::OldRecordStore;
 use bb_core::id::IdSource;
+use bb_core::keeping::KeepKind;
 use bb_core::sign_in::{SetupCode, TotpStep, TwoStep};
 use bb_testing::{TestResult, each_database};
 
@@ -127,6 +129,10 @@ async fn sec_12_only_sessions_nobody_can_use_are_purged() -> TestResult {
             })
         })
         .await?;
+        // The count of a changed longest life finds the active session that is too old.
+        assert_eq!(storage.count_past(KeepKind::Sessions, at(200)).await?, 1);
+        // The networks of the sessions started before the cutoff, active or not.
+        assert_eq!(storage.count_past(KeepKind::IpAddresses, at(200)).await?, 2);
         let purged = change(&storage, &mut source, |tx| {
             Box::pin(
                 async move { AuthStorage::purge_sessions(tx, at(500), at(200), at(500), 10).await },
@@ -134,6 +140,7 @@ async fn sec_12_only_sessions_nobody_can_use_are_purged() -> TestResult {
         })
         .await?;
         assert_eq!(purged, 3);
+        assert_eq!(storage.count_past(KeepKind::Sessions, at(200)).await?, 0);
         let left: Vec<u8> = storage
             .sessions_of(id)
             .await?

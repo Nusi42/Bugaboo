@@ -630,7 +630,7 @@
             "$ref": "#/components/responses/Unavailable"
           }
         },
-        "x-permission": "change-organization-settings"
+        "x-permission": "own-account"
       }
     },
     "/api/v1/admin/keep-rules/{kind}/delete-past": {
@@ -747,6 +747,77 @@
           },
           "304": {
             "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "change-organization-settings"
+      }
+    },
+    "/api/v1/admin/keep-rules/{kind}/would-delete": {
+      "get": {
+        "tags": ["privacy"],
+        "summary": "How many records a changed keep period would delete (a kind Bugaboo deletes by itself, within a\nday) or leave past it (a kind an administrator deletes), counted now with the same cutoff as the\ndeleting. Changes nothing. Only a kind whose period is one setting has an answer.",
+        "operationId": "countWouldDelete",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "description": "The kind of data, like notifications.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "description": "The period as it would be saved, in the unit of the setting of the kind.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The count.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeriodEffectBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
           },
           "401": {
             "$ref": "#/components/responses/NotSignedIn"
@@ -31030,6 +31101,27 @@
           "set": {
             "$ref": "#/components/schemas/LevelPlaceBody",
             "description": "Where it was set."
+          }
+        }
+      },
+      "PeriodEffectBody": {
+        "type": "object",
+        "description": "What a changed keep period touches.",
+        "required": ["kind", "group", "records"],
+        "properties": {
+          "group": {
+            "$ref": "#/components/schemas/KeepGroup",
+            "description": "Who deletes the records: Bugaboo within a day, or an administrator when they say so."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/KeepKind",
+            "description": "The kind of data."
+          },
+          "records": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How many records are past the changed period.",
+            "minimum": 0
           }
         }
       },

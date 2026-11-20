@@ -63,6 +63,11 @@ pub(super) fn working_hours_request(
         // The keep rules, whose kinds an administrator deletes are work days and time entries.
         "listKeepRules" => ("GET", KEEP_RULES.into(), None),
         "countPastKeepPeriod" => ("GET", format!("{KEEP_RULES}/time-entries/past"), None),
+        "countWouldDelete" => (
+            "GET",
+            format!("{KEEP_RULES}/notifications/would-delete?count=30"),
+            None,
+        ),
         "deletePastKeepPeriod" => (
             "POST",
             format!("{KEEP_RULES}/time-entries/delete-past?before={date}"),

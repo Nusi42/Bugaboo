@@ -2710,6 +2710,11 @@ Worked-out days are shown, never stored: a date is stored only when a person or 
 </ul>
 <h3>Enforced by</h3>
 <p>ARCH-SETTINGS, ARCH-EVENTS, ARCH-PERMS, SEC-MATRIX, ARCH-DB-PARITY, PERF-N1, DOC-GENERATED; review (which group a new kind of data joins).</p>
+<h3>Amendment (M9, who reads the rules and what a change would delete)</h3>
+<ul>
+<li><strong>Every person reads the rules.</strong> <code>GET /api/v1/admin/keep-rules</code> answers every person who signs in with a session, not an access key or an agent: how long their data is kept is part of what GDPR Art. 15(1)(d) gives them, and <em>My settings › My data</em> shows it. The answer is the same for everybody, the setting and the floor of each row included, because a keep period is not secret. Changing a period and the counts stay with <em>Change organization settings</em>. Enforced by: SEC-MATRIX.</li>
+<li><strong>What a changed period would delete is counted with the cutoff of the deleting.</strong> <code>GET /api/v1/admin/keep-rules/{kind}/would-delete?count=…</code> counts, before a period is saved, the records the job of a kind of the first group would delete with the changed period, or the records of a kind of the second group that would be past it. The settings as they would be come from <code>KeepRule::with_period</code>, the cutoff from the same function as the job's (<code>keep_cutoff_with</code>, <code>kept_from_today_with</code>), and each count from the condition the purge of its kind deletes by (<code>bb-store</code>, <code>keeping/past.rs</code>), so the count and the deleting cannot drift apart. Only a kind whose period is one setting has a count: a fixed period is never changed, and the rotation of backups is the work of two settings on the page of backups. Enforced by: SEC-MATRIX, ARCH-DB-PARITY (the counts on both databases), review (no second cutoff).</li>
+</ul>
 
 <!-- 0046-backups-restore-and-upgrades.md -->
 <h2 id="adr-0046"><button class="sec" data-sec>§46</button>ADR-0046: Backups, restore and upgrades</h2>

@@ -168,6 +168,12 @@ impl Database {
     }
 }
 
+/// The notifications past their keep period at the cutoff `before`: what the purge deletes, and
+/// what the count of a changed period counts.
+pub(crate) fn past_notifications(before: Timestamp) -> Condition {
+    Condition::all().add(Expr::col(NotificationRow::At).lt(to_micros(before)))
+}
+
 impl NotificationStore for AuthStorage {
     async fn notification_events(&self, limit: u64) -> Result<Vec<(i64, DomainEvent)>, StoreError> {
         self.database().outbox_events(CONSUMER, limit).await
@@ -335,7 +341,7 @@ impl NotificationStore for AuthStorage {
         let delete = delete_limited(
             NotificationRow::Table,
             &[NotificationRow::Id],
-            Condition::all().add(Expr::col(NotificationRow::At).lt(to_micros(before))),
+            past_notifications(before),
             limit,
         );
         self.database().execute(&delete).await

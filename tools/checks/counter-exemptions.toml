@@ -274,6 +274,11 @@ property = "total"
 reason = "How many records of a kind an administrator deletes are past the keep period in total, for a holder of Change organization settings, who may see and delete every one of them (ADR-0045, decision 6). No record is named."
 
 [[exempt]]
+route = "GET /api/v1/admin/keep-rules/{kind}/would-delete"
+property = "records"
+reason = "How many records of a kind a changed keep period would delete or leave past it, for a holder of Change organization settings, who may see and delete every one of them: the page of the rules says it before the period is saved (ADR-0045, decision 2). No record and no person is named."
+
+[[exempt]]
 route = "POST /api/v1/admin/keep-rules/{kind}/delete-past"
 property = "deleted"
 reason = "How many records past their keep period the holder of Change organization settings just deleted, all of which they may see counted before (ADR-0045, decision 6)."

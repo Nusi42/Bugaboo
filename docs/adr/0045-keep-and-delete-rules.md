@@ -38,3 +38,8 @@ The maintainer's rule is that a keep period is a minimum: as long as data is rel
 ## Enforced by
 
 ARCH-SETTINGS, ARCH-EVENTS, ARCH-PERMS, SEC-MATRIX, ARCH-DB-PARITY, PERF-N1, DOC-GENERATED; review (which group a new kind of data joins).
+
+## Amendment (M9, who reads the rules and what a change would delete)
+
+- **Every person reads the rules.** `GET /api/v1/admin/keep-rules` answers every person who signs in with a session, not an access key or an agent: how long their data is kept is part of what GDPR Art. 15(1)(d) gives them, and *My settings › My data* shows it. The answer is the same for everybody, the setting and the floor of each row included, because a keep period is not secret. Changing a period and the counts stay with *Change organization settings*. Enforced by: SEC-MATRIX.
+- **What a changed period would delete is counted with the cutoff of the deleting.** `GET /api/v1/admin/keep-rules/{kind}/would-delete?count=…` counts, before a period is saved, the records the job of a kind of the first group would delete with the changed period, or the records of a kind of the second group that would be past it. The settings as they would be come from `KeepRule::with_period`, the cutoff from the same function as the job's (`keep_cutoff_with`, `kept_from_today_with`), and each count from the condition the purge of its kind deletes by (`bb-store`, `keeping/past.rs`), so the count and the deleting cannot drift apart. Only a kind whose period is one setting has a count: a fixed period is never changed, and the rotation of backups is the work of two settings on the page of backups. Enforced by: SEC-MATRIX, ARCH-DB-PARITY (the counts on both databases), review (no second cutoff).

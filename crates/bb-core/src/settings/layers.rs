@@ -167,6 +167,27 @@ impl Layers {
         setting.definition().cap_list(&self.text(setting))
     }
 
+    /// These layers with the organization's value of `setting` changed to `value`, its lock kept:
+    /// what would count if an administrator saved it. `None` for a value the setting refuses.
+    #[must_use]
+    pub fn with_organization_number(&self, setting: &Setting<Integer>, value: i64) -> Option<Self> {
+        let definition = setting.definition();
+        let value = SettingValue::Integer(value);
+        if !definition.accepts(&value) {
+            return None;
+        }
+        let mut changed = self.clone();
+        let locked = changed
+            .organization
+            .get(definition.key())
+            .is_some_and(|set| set.locked);
+        changed.organization.insert(
+            definition.key().to_owned(),
+            OrganizationValue { value, locked },
+        );
+        Some(changed)
+    }
+
     /// The value that would count if the layer of `scope` had no value of its own: what *Reset to
     /// default* shows. For the organization that is the default.
     #[must_use]

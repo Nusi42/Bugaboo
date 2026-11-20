@@ -332,13 +332,9 @@ async fn delete_named(transaction: &mut Transaction, doomed: &Doomed) -> Result<
     Ok(())
 }
 
-/// Chooses the issues to purge and holds them for the change ([`hold_trashed`]): issues of the
-/// trash without a time entry and without a running timer, each asked of the index of its issue.
-async fn hold(
-    transaction: &mut Transaction,
-    before: Timestamp,
-    limit: u64,
-) -> Result<Vec<Vec<u8>>, StoreError> {
+/// What an issue of the trash needs besides its age to be purged: no time entry and no running
+/// timer. The purge and the count of a changed period both ask it.
+pub(crate) fn may_go() -> Condition {
     let of_the_issue = |table: TableRef, column: ColumnRef| {
         let mut select = Query::select();
         select
@@ -347,7 +343,7 @@ async fn hold(
             .and_where(Expr::col(column).equals((IssueRow::Table, IssueRow::Id)));
         Expr::exists(select).not()
     };
-    let also = Cond::all()
+    Cond::all()
         .add(of_the_issue(
             TimeEntryRow::Table.into_table_ref(),
             (TimeEntryRow::Table, TimeEntryRow::Issue).into_column_ref(),
@@ -355,7 +351,17 @@ async fn hold(
         .add(of_the_issue(
             TimerRow::Table.into_table_ref(),
             (TimerRow::Table, TimerRow::Issue).into_column_ref(),
-        ));
+        ))
+}
+
+/// Chooses the issues to purge and holds them for the change ([`hold_trashed`]): issues of the
+/// trash without a time entry and without a running timer, each asked of the index of its issue.
+async fn hold(
+    transaction: &mut Transaction,
+    before: Timestamp,
+    limit: u64,
+) -> Result<Vec<Vec<u8>>, StoreError> {
+    let also = may_go();
     hold_trashed(
         transaction,
         IssueRow::Table,

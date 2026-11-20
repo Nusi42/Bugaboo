@@ -227,6 +227,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/admin/keep-rules/{kind}/would-delete": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * How many records a changed keep period would delete (a kind Bugaboo deletes by itself, within a
+     *     day) or leave past it (a kind an administrator deletes), counted now with the same cutoff as the
+     *     deleting. Changes nothing. Only a kind whose period is one setting has an answer.
+     */
+    get: operations["countWouldDelete"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/admin/status": {
     parameters: {
       query?: never;
@@ -10751,6 +10772,18 @@ export interface components {
       /** @description Where it was set. */
       set: components["schemas"]["LevelPlaceBody"];
     };
+    /** @description What a changed keep period touches. */
+    PeriodEffectBody: {
+      /** @description Who deletes the records: Bugaboo within a day, or an administrator when they say so. */
+      group: components["schemas"]["KeepGroup"];
+      /** @description The kind of data. */
+      kind: components["schemas"]["KeepKind"];
+      /**
+       * Format: int64
+       * @description How many records are past the changed period.
+       */
+      records: number;
+    };
     /**
      * @description One permission of the catalogue.
      * @enum {string}
@@ -14532,6 +14565,41 @@ export interface operations {
         };
       };
       304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  countWouldDelete: {
+    parameters: {
+      query: {
+        /** @description The period as it would be saved, in the unit of the setting of the kind. */
+        count: number;
+      };
+      header?: never;
+      path: {
+        /** @description The kind of data, like notifications. */
+        kind: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The count. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PeriodEffectBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      400: components["responses"]["BadRequest"];
       401: components["responses"]["NotSignedIn"];
       403: components["responses"]["Forbidden"];
       404: components["responses"]["NotFound"];

@@ -321,6 +321,8 @@ async fn priv_05_the_security_log_is_pruned_in_steps_of_whole_blocks() -> TestRe
         let database = open(db).await?;
         let (_folder, seal) = new_seal();
         append_many(&database, &seal, 8).await?;
+        // The count of a changed period finds every whole old block, without a step's limit.
+        assert_eq!(database.count_in_blocks(at(8), 3).await?, 6);
         // A step of 4 entries takes one block of 3; the next step takes the next block.
         assert_eq!(
             database
@@ -340,6 +342,7 @@ async fn priv_05_the_security_log_is_pruned_in_steps_of_whole_blocks() -> TestRe
                 .await?,
             0
         );
+        assert_eq!(database.count_in_blocks(at(8), 3).await?, 0);
         assert!(matches!(
             database.verify_security_log(&seal).await?,
             Verification::Valid { entries: 2, .. }
