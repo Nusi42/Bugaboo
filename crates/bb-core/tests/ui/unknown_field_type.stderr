@@ -2,7 +2,7 @@ error[E0080]: evaluation panicked: not a known FieldType word; see the list in b
  --> tests/ui/unknown_field_type.rs:8:31
   |
 8 |     #[person_for(field_type = "colleague", key = "field", link = "subject")]
-  |                               ^^^^^^^^^^^ evaluation of `<Note as bb_core::personal::Entity>::MARKS` failed inside this call
+  |                               ^^^^^^^^^^^ evaluation of `<Comment as bb_core::personal::Entity>::MARKS` failed inside this call
   |
 note: inside `bb_core::own_fields::FieldType::from_code_const`
  --> $RUST/core/src/panic.rs

@@ -68,5 +68,12 @@ async fn priv_04_the_plan_keeps_what_names_the_person_only_by_another_link() -> 
     assert_eq!(rows_of(&plan.kept_as_former_user, &Agent::MARKS), 1);
     assert_eq!(rows_of(&plan.deleted_now, &AgentRequest::MARKS), 1);
     assert_eq!(rows_of(&plan.kept_as_former_user, &AgentRequest::MARKS), 0);
+    // Each kind in its plain name, which the window writes before a colon and the count.
+    let titles: Vec<&str> = plan
+        .deleted_now
+        .iter()
+        .map(|kind| kind.title.as_str())
+        .collect();
+    assert_eq!(titles, ["Notifications", "Agents", "Requests for agents"]);
     Ok(())
 }

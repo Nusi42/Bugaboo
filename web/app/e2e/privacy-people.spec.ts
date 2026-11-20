@@ -59,6 +59,19 @@ test("priv_04 the removal window says what goes what stays and until when", asyn
       expect(window.getByRole("heading", { name: heading, exact: true })).toBeVisible(),
     ),
   );
+  // Each kind is named in plain words before its count, never by a sentence of the code.
+  const deleted = window
+    .getByRole("list", { name: t("removal.deleted-now") })
+    .getByRole("listitem");
+  await expect(deleted.first()).toBeVisible();
+  const lines = await Promise.all(
+    [t("removal.deleted-now"), t("removal.stays")].map((heading) =>
+      window.getByRole("list", { name: heading }).getByRole("listitem").allTextContents(),
+    ),
+  );
+  for (const line of lines.flat()) {
+    expect(line).toMatch(/^[^.:()]+: \d+ records?$/u);
+  }
   // Her work day is kept by law, until a day the window names.
   await expect(window.getByRole("list", { name: t("removal.kept-by-law") })).toContainText(
     t("keep-kind.name.work-days"),

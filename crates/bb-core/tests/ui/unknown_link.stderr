@@ -2,7 +2,7 @@ error[E0080]: evaluation panicked: not a known Link word; see the list in bb_cor
  --> tests/ui/unknown_link.rs:7:14
   |
 7 |     #[person(writer)]
-  |              ^^^^^^ evaluation of `<Note as bb_core::personal::Entity>::MARKS` failed inside this call
+  |              ^^^^^^ evaluation of `<Comment as bb_core::personal::Entity>::MARKS` failed inside this call
   |
 note: inside `bb_core::personal::Link::from_code_const`
  --> $RUST/core/src/panic.rs

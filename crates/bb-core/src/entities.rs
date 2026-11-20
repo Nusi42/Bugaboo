@@ -165,4 +165,24 @@ mod tests {
         let person = ALL.iter().find(|entity| entity.name() == "Person").unwrap();
         assert_eq!(person.personal_count(), 4);
     }
+
+    #[test]
+    fn priv_03_every_kind_that_names_a_person_has_a_plain_name_of_its_own() {
+        let mut seen = std::collections::HashSet::new();
+        for entity in ALL {
+            let names_a_person = !entity.person_links().links().is_empty();
+            let title = entity
+                .title()
+                .map(|key| crate::message::Message::from(key).render());
+            assert_eq!(title.is_some(), names_a_person, "{}", entity.name());
+            let Some(title) = title else { continue };
+            // A name a person reads in a list, before a colon and a count: short, no sentence.
+            assert!(
+                !title.is_empty() && !title.ends_with('.') && title.split(' ').count() <= 6,
+                "{}: {title}",
+                entity.name()
+            );
+            assert!(seen.insert(title.clone()), "{title} names two kinds");
+        }
+    }
 }

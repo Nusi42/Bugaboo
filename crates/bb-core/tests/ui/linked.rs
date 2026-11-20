@@ -3,8 +3,10 @@ use bb_core::id::{EntityId, FieldId, UserId};
 use bb_core::own_fields::FieldType;
 use bb_core::personal::{Entity, Link, LinkScope, PersonLink};
 
+// An entity that names a person needs the message `personal-kind.<its name>`, so the example
+// borrows the name of one that has it.
 #[derive(Entity)]
-pub struct Note {
+pub struct Comment {
     #[personal(category = "content", basis = "contract")]
     pub text: String,
     #[personal(category = "identity", basis = "legitimate_interests")]
@@ -41,8 +43,8 @@ pub struct Note {
 
 // The derive writes every link into the constant, in the order of the fields.
 fn main() {
-    let links = <Note as Entity>::MARKS.person_links();
-    assert_eq!(links.entity(), "Note");
+    let links = <Comment as Entity>::MARKS.person_links();
+    assert_eq!(links.entity(), "Comment");
     let person_in = |field_type| LinkScope::FieldType {
         key: "field",
         field_type,

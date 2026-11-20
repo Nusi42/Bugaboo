@@ -66,12 +66,21 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
     if let Some(error) = errors {
         return Err(error);
     }
+    // A kind of record that names a person is shown to people (*Download my data*, *Remove a
+    // person*) by a plain name of its own; `derived_key!` stops the build when it is missing.
+    let title = if links.is_empty() {
+        quote! {}
+    } else {
+        let word = kebab(&name);
+        quote! { .with_title(::bb_core::derived_key!("personal-kind.", #word)) }
+    };
     Ok(quote! {
         impl ::bb_core::personal::Entity for #entity {
             const MARKS: ::bb_core::personal::EntityMarks =
                 ::bb_core::personal::EntityMarks::new(#name, &[#(#marks),*])
                     .with_links(&[#(#links),*])
-                    .with_doc(#entity_doc);
+                    .with_doc(#entity_doc)
+                    #title;
         }
 
         // A field marked `#[not_personal]` must have a type that cannot hold personal data.
@@ -93,6 +102,21 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
             #(#person_assertions)*
         };
     })
+}
+
+/// The word of an entity in a message key: `OAuthGrant` is `oauth-grant`, `TwoStep` is
+/// `two-step`.
+fn kebab(name: &str) -> String {
+    let mut word = String::with_capacity(name.len() + 4);
+    let mut after_small = false;
+    for letter in name.chars() {
+        if letter.is_ascii_uppercase() && after_small {
+            word.push('-');
+        }
+        after_small = letter.is_ascii_lowercase() || letter.is_ascii_digit();
+        word.push(letter.to_ascii_lowercase());
+    }
+    word
 }
 
 /// The mark of one field, and for `#[not_personal]` the proof that its type may carry it.
@@ -294,4 +318,17 @@ fn holds_moment(ty: &syn::Type) -> bool {
                     if arguments.args.iter().any(|argument| matches!(argument,
                         syn::GenericArgument::Type(inner) if holds_moment(inner)))))
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::kebab;
+
+    #[test]
+    fn the_word_of_an_entity_joins_its_words_with_dashes() {
+        assert_eq!(kebab("Issue"), "issue");
+        assert_eq!(kebab("TwoStep"), "two-step");
+        assert_eq!(kebab("OAuthGrant"), "oauth-grant");
+        assert_eq!(kebab("SecurityLogEntry"), "security-log-entry");
+    }
 }

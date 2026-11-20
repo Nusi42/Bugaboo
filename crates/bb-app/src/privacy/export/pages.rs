@@ -27,9 +27,11 @@ pub(super) fn first_sentence<'a>(doc: &'a str, fallback: &'a str) -> &'a str {
     if line.is_empty() { fallback } else { line }
 }
 
-/// How a kind of record is named: the first sentence of its doc comment.
-pub(crate) fn title_of(marks: &EntityMarks) -> &'static str {
-    first_sentence(marks.doc(), marks.name())
+/// How a kind of record is named, in plain words: its message `personal-kind.…`. The walk finds
+/// only kinds that name a person, and each of them has one (`#[derive(Entity)]`), so the name of
+/// the struct is only the answer for a kind no list shows.
+pub(crate) fn title_of(marks: &EntityMarks) -> String {
+    marks.title().map_or_else(|| marks.name().to_owned(), words)
 }
 
 /// How a field is named: the first sentence of its doc comment.
@@ -109,7 +111,7 @@ fn cell(value: &Shown, region: &Region) -> String {
 /// The page of one kind of record: a table of its rows, a column for each field.
 #[must_use]
 pub(super) fn kind_page(kind: &ShapedKind, region: &Region) -> String {
-    let title = title_of(&kind.marks);
+    let title = &title_of(&kind.marks);
     let mut body = format!(
         "<p><a href=\"index.html\">{}</a></p><h1>{}</h1><table><tr><th>{}</th>",
         escape_text(&words(message::EXPORT_PAGE_ALL_KINDS)),
@@ -149,7 +151,7 @@ pub(super) struct IndexLine {
     /// The kind: the name of the table, and of its page.
     pub kind: String,
     /// How it is named.
-    pub title: &'static str,
+    pub title: String,
     /// How many rows.
     pub rows: usize,
 }
@@ -171,7 +173,7 @@ pub(super) fn index_page(lines: &[IndexLine]) -> String {
             body,
             "<tr><td><a href=\"{}.html\">{}</a></td><td>{}</td></tr>",
             escape_text(&line.kind),
-            escape_text(line.title),
+            escape_text(&line.title),
             line.rows
         );
     }

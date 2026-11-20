@@ -11,6 +11,7 @@
 
 mod links;
 
+use crate::message::MessageKey;
 use jiff::Timestamp;
 
 pub use links::{
@@ -243,6 +244,7 @@ pub struct EntityMarks {
     fields: &'static [FieldMark],
     links: &'static [PersonLink],
     doc: &'static str,
+    title: Option<MessageKey>,
 }
 
 impl EntityMarks {
@@ -255,6 +257,7 @@ impl EntityMarks {
             fields,
             links: &[],
             doc: "",
+            title: None,
         }
     }
 
@@ -271,6 +274,25 @@ impl EntityMarks {
     #[must_use]
     pub const fn with_doc(self, doc: &'static str) -> Self {
         Self { doc, ..self }
+    }
+
+    /// The same marks with the plain name of the kind of record. Written by `#[derive(Entity)]`
+    /// for every entity that names a person, as the message `personal-kind.<its name>`, so an
+    /// entity that names a person and has no such message does not compile.
+    #[doc(hidden)]
+    #[must_use]
+    pub const fn with_title(self, title: MessageKey) -> Self {
+        Self {
+            title: Some(title),
+            ..self
+        }
+    }
+
+    /// How a person names the kind of record (*Roles held*, *Password*), for *Download my data*
+    /// and *Remove a person*; none for an entity that names no person, which neither shows.
+    #[must_use]
+    pub const fn title(&self) -> Option<MessageKey> {
+        self.title
     }
 
     /// What the entity is, in the words of its doc comment; empty when it has none.

@@ -178,6 +178,18 @@ async fn priv_04_the_plan_names_what_goes_what_stays_and_until_when() -> TestRes
                 .as_str()
                 .is_some_and(|words| !words.is_empty())
         );
+        // Each kind in its plain name: no sentence of the code, no decision record.
+        let named = titles(&plan, "deleted_now");
+        assert!(named.iter().any(|title| title == "Sessions"), "{plan}");
+        assert!(
+            titles(&plan, "kept_as_former_user")
+                .iter()
+                .any(|title| title == "Comments"),
+            "{plan}"
+        );
+        for title in named.iter().chain(&titles(&plan, "kept_as_former_user")) {
+            assert!(!title.ends_with('.') && !title.contains("ADR"), "{title}");
+        }
         // No list names a table.
         let text = plan.to_string();
         for table in ["sign_in_session", "work_day", "comment\""] {

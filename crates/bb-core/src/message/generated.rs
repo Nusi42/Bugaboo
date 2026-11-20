@@ -5778,6 +5778,212 @@ pub const PERSON_SWITCH_OFF: MessageKey = MessageKey::new("person.switch-off");
 /// The message `person.switch-on`.
 pub const PERSON_SWITCH_ON: MessageKey = MessageKey::new("person.switch-on");
 
+/// The message `personal-kind.accepted-warning`.
+pub const PERSONAL_KIND_ACCEPTED_WARNING: MessageKey =
+    MessageKey::new("personal-kind.accepted-warning");
+
+/// The message `personal-kind.access-key`.
+pub const PERSONAL_KIND_ACCESS_KEY: MessageKey = MessageKey::new("personal-kind.access-key");
+
+/// The message `personal-kind.agent`.
+pub const PERSONAL_KIND_AGENT: MessageKey = MessageKey::new("personal-kind.agent");
+
+/// The message `personal-kind.agent-request`.
+pub const PERSONAL_KIND_AGENT_REQUEST: MessageKey = MessageKey::new("personal-kind.agent-request");
+
+/// The message `personal-kind.agreement`.
+pub const PERSONAL_KIND_AGREEMENT: MessageKey = MessageKey::new("personal-kind.agreement");
+
+/// The message `personal-kind.assigned-person`.
+pub const PERSONAL_KIND_ASSIGNED_PERSON: MessageKey =
+    MessageKey::new("personal-kind.assigned-person");
+
+/// The message `personal-kind.assignment`.
+pub const PERSONAL_KIND_ASSIGNMENT: MessageKey = MessageKey::new("personal-kind.assignment");
+
+/// The message `personal-kind.attachment`.
+pub const PERSONAL_KIND_ATTACHMENT: MessageKey = MessageKey::new("personal-kind.attachment");
+
+/// The message `personal-kind.away-time`.
+pub const PERSONAL_KIND_AWAY_TIME: MessageKey = MessageKey::new("personal-kind.away-time");
+
+/// The message `personal-kind.backup-code`.
+pub const PERSONAL_KIND_BACKUP_CODE: MessageKey = MessageKey::new("personal-kind.backup-code");
+
+/// The message `personal-kind.backup-run`.
+pub const PERSONAL_KIND_BACKUP_RUN: MessageKey = MessageKey::new("personal-kind.backup-run");
+
+/// The message `personal-kind.comment`.
+pub const PERSONAL_KIND_COMMENT: MessageKey = MessageKey::new("personal-kind.comment");
+
+/// The message `personal-kind.data-export`.
+pub const PERSONAL_KIND_DATA_EXPORT: MessageKey = MessageKey::new("personal-kind.data-export");
+
+/// The message `personal-kind.domain-event`.
+pub const PERSONAL_KIND_DOMAIN_EVENT: MessageKey = MessageKey::new("personal-kind.domain-event");
+
+/// The message `personal-kind.draft`.
+pub const PERSONAL_KIND_DRAFT: MessageKey = MessageKey::new("personal-kind.draft");
+
+/// The message `personal-kind.edit-lock`.
+pub const PERSONAL_KIND_EDIT_LOCK: MessageKey = MessageKey::new("personal-kind.edit-lock");
+
+/// The message `personal-kind.edit-notice`.
+pub const PERSONAL_KIND_EDIT_NOTICE: MessageKey = MessageKey::new("personal-kind.edit-notice");
+
+/// The message `personal-kind.email-change`.
+pub const PERSONAL_KIND_EMAIL_CHANGE: MessageKey = MessageKey::new("personal-kind.email-change");
+
+/// The message `personal-kind.follower`.
+pub const PERSONAL_KIND_FOLLOWER: MessageKey = MessageKey::new("personal-kind.follower");
+
+/// The message `personal-kind.group-member`.
+pub const PERSONAL_KIND_GROUP_MEMBER: MessageKey = MessageKey::new("personal-kind.group-member");
+
+/// The message `personal-kind.hand-over`.
+pub const PERSONAL_KIND_HAND_OVER: MessageKey = MessageKey::new("personal-kind.hand-over");
+
+/// The message `personal-kind.history-entry`.
+pub const PERSONAL_KIND_HISTORY_ENTRY: MessageKey = MessageKey::new("personal-kind.history-entry");
+
+/// The message `personal-kind.invitation`.
+pub const PERSONAL_KIND_INVITATION: MessageKey = MessageKey::new("personal-kind.invitation");
+
+/// The message `personal-kind.issue`.
+pub const PERSONAL_KIND_ISSUE: MessageKey = MessageKey::new("personal-kind.issue");
+
+/// The message `personal-kind.issue-label`.
+pub const PERSONAL_KIND_ISSUE_LABEL: MessageKey = MessageKey::new("personal-kind.issue-label");
+
+/// The message `personal-kind.issue-parent`.
+pub const PERSONAL_KIND_ISSUE_PARENT: MessageKey = MessageKey::new("personal-kind.issue-parent");
+
+/// The message `personal-kind.issue-tag`.
+pub const PERSONAL_KIND_ISSUE_TAG: MessageKey = MessageKey::new("personal-kind.issue-tag");
+
+/// The message `personal-kind.issue-time-factor`.
+pub const PERSONAL_KIND_ISSUE_TIME_FACTOR: MessageKey =
+    MessageKey::new("personal-kind.issue-time-factor");
+
+/// The message `personal-kind.issue-work`.
+pub const PERSONAL_KIND_ISSUE_WORK: MessageKey = MessageKey::new("personal-kind.issue-work");
+
+/// The message `personal-kind.job`.
+pub const PERSONAL_KIND_JOB: MessageKey = MessageKey::new("personal-kind.job");
+
+/// The message `personal-kind.legacy-administrator`.
+pub const PERSONAL_KIND_LEGACY_ADMINISTRATOR: MessageKey =
+    MessageKey::new("personal-kind.legacy-administrator");
+
+/// The message `personal-kind.many-change-run`.
+pub const PERSONAL_KIND_MANY_CHANGE_RUN: MessageKey =
+    MessageKey::new("personal-kind.many-change-run");
+
+/// The message `personal-kind.mention`.
+pub const PERSONAL_KIND_MENTION: MessageKey = MessageKey::new("personal-kind.mention");
+
+/// The message `personal-kind.notification`.
+pub const PERSONAL_KIND_NOTIFICATION: MessageKey = MessageKey::new("personal-kind.notification");
+
+/// The message `personal-kind.oauth-grant`.
+pub const PERSONAL_KIND_OAUTH_GRANT: MessageKey = MessageKey::new("personal-kind.oauth-grant");
+
+/// The message `personal-kind.oauth-web-address`.
+pub const PERSONAL_KIND_OAUTH_WEB_ADDRESS: MessageKey =
+    MessageKey::new("personal-kind.oauth-web-address");
+
+/// The message `personal-kind.own-theme`.
+pub const PERSONAL_KIND_OWN_THEME: MessageKey = MessageKey::new("personal-kind.own-theme");
+
+/// The message `personal-kind.password-login`.
+pub const PERSONAL_KIND_PASSWORD_LOGIN: MessageKey =
+    MessageKey::new("personal-kind.password-login");
+
+/// The message `personal-kind.person`.
+pub const PERSONAL_KIND_PERSON: MessageKey = MessageKey::new("personal-kind.person");
+
+/// The message `personal-kind.person-handle`.
+pub const PERSONAL_KIND_PERSON_HANDLE: MessageKey = MessageKey::new("personal-kind.person-handle");
+
+/// The message `personal-kind.person-setting-counter`.
+pub const PERSONAL_KIND_PERSON_SETTING_COUNTER: MessageKey =
+    MessageKey::new("personal-kind.person-setting-counter");
+
+/// The message `personal-kind.person-standing`.
+pub const PERSONAL_KIND_PERSON_STANDING: MessageKey =
+    MessageKey::new("personal-kind.person-standing");
+
+/// The message `personal-kind.project-share`.
+pub const PERSONAL_KIND_PROJECT_SHARE: MessageKey = MessageKey::new("personal-kind.project-share");
+
+/// The message `personal-kind.proposal`.
+pub const PERSONAL_KIND_PROPOSAL: MessageKey = MessageKey::new("personal-kind.proposal");
+
+/// The message `personal-kind.question`.
+pub const PERSONAL_KIND_QUESTION: MessageKey = MessageKey::new("personal-kind.question");
+
+/// The message `personal-kind.relation`.
+pub const PERSONAL_KIND_RELATION: MessageKey = MessageKey::new("personal-kind.relation");
+
+/// The message `personal-kind.review`.
+pub const PERSONAL_KIND_REVIEW: MessageKey = MessageKey::new("personal-kind.review");
+
+/// The message `personal-kind.saved-search`.
+pub const PERSONAL_KIND_SAVED_SEARCH: MessageKey = MessageKey::new("personal-kind.saved-search");
+
+/// The message `personal-kind.security-log-entry`.
+pub const PERSONAL_KIND_SECURITY_LOG_ENTRY: MessageKey =
+    MessageKey::new("personal-kind.security-log-entry");
+
+/// The message `personal-kind.sign-in-session`.
+pub const PERSONAL_KIND_SIGN_IN_SESSION: MessageKey =
+    MessageKey::new("personal-kind.sign-in-session");
+
+/// The message `personal-kind.sign-up-invitation`.
+pub const PERSONAL_KIND_SIGN_UP_INVITATION: MessageKey =
+    MessageKey::new("personal-kind.sign-up-invitation");
+
+/// The message `personal-kind.standing-rule`.
+pub const PERSONAL_KIND_STANDING_RULE: MessageKey = MessageKey::new("personal-kind.standing-rule");
+
+/// The message `personal-kind.stored-field-value`.
+pub const PERSONAL_KIND_STORED_FIELD_VALUE: MessageKey =
+    MessageKey::new("personal-kind.stored-field-value");
+
+/// The message `personal-kind.stored-passkey`.
+pub const PERSONAL_KIND_STORED_PASSKEY: MessageKey =
+    MessageKey::new("personal-kind.stored-passkey");
+
+/// The message `personal-kind.stored-person-setting`.
+pub const PERSONAL_KIND_STORED_PERSON_SETTING: MessageKey =
+    MessageKey::new("personal-kind.stored-person-setting");
+
+/// The message `personal-kind.time-entry`.
+pub const PERSONAL_KIND_TIME_ENTRY: MessageKey = MessageKey::new("personal-kind.time-entry");
+
+/// The message `personal-kind.time-entry-value`.
+pub const PERSONAL_KIND_TIME_ENTRY_VALUE: MessageKey =
+    MessageKey::new("personal-kind.time-entry-value");
+
+/// The message `personal-kind.timer`.
+pub const PERSONAL_KIND_TIMER: MessageKey = MessageKey::new("personal-kind.timer");
+
+/// The message `personal-kind.tool-call`.
+pub const PERSONAL_KIND_TOOL_CALL: MessageKey = MessageKey::new("personal-kind.tool-call");
+
+/// The message `personal-kind.two-step`.
+pub const PERSONAL_KIND_TWO_STEP: MessageKey = MessageKey::new("personal-kind.two-step");
+
+/// The message `personal-kind.upload`.
+pub const PERSONAL_KIND_UPLOAD: MessageKey = MessageKey::new("personal-kind.upload");
+
+/// The message `personal-kind.usual-work-day`.
+pub const PERSONAL_KIND_USUAL_WORK_DAY: MessageKey =
+    MessageKey::new("personal-kind.usual-work-day");
+
+/// The message `personal-kind.work-day`.
+pub const PERSONAL_KIND_WORK_DAY: MessageKey = MessageKey::new("personal-kind.work-day");
+
 /// The message `personal-purpose.activity`.
 pub const PERSONAL_PURPOSE_ACTIVITY: MessageKey = MessageKey::new("personal-purpose.activity");
 

@@ -3,7 +3,7 @@ use bb_core::id::{EntityId, UserId};
 use bb_core::personal::Entity;
 
 #[derive(Entity)]
-pub struct Note {
+pub struct Comment {
     #[personal(category = "identity", basis = "contract")]
     #[person_for(field_type = "colleague", key = "field", link = "subject")]
     pub value: Option<EntityId>,

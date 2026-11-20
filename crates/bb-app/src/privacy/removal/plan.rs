@@ -1,8 +1,8 @@
 //! The plan of *Remove a person* (PRIV-04, ADR-0044, decision 6): before anything happens, three
 //! lists, all read from the walk of the person's data (`PersonData`) and the keep periods
 //! (`KeepPeriods`): what is deleted now, what stays shown as *Former user*, and what is kept for
-//! its keep period and until when. Nothing in the plan names a table: a kind is named by the first
-//! sentence of its entity, as in *Download my data*.
+//! its keep period and until when. Nothing in the plan names a table: a kind is named by the plain
+//! name of its entity, as in *Download my data*.
 
 use std::collections::BTreeMap;
 
@@ -34,7 +34,7 @@ pub struct RemovalPlanQuery {
 /// One kind of record in a list of the plan, and how many of the person's rows it has.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct PlanKind {
-    /// The kind, in the words of its entity.
+    /// The kind, in its plain name (`personal-kind.…`).
     pub title: String,
     /// How many rows name the person.
     pub rows: u64,
@@ -124,7 +124,7 @@ pub async fn removal_plan<S: AuthStore>(
     let mut by_law: BTreeMap<KeepKind, u64> = BTreeMap::new();
     for kind in &kinds {
         let shown = |rows| PlanKind {
-            title: title_of(&kind.marks).to_owned(),
+            title: title_of(&kind.marks),
             rows,
         };
         // A kind of the account goes by the rows that are the person's own; the rows that name

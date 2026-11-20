@@ -105,6 +105,21 @@ fn priv_03_the_file_holds_readable_pages_and_the_same_rows_as_json() {
 }
 
 #[test]
+fn priv_03_each_kind_is_named_in_plain_words_on_its_page_the_first_page_and_the_readme() {
+    let file = written();
+    // The plain name of the kind, not the doc comment of its entity.
+    assert!(entry(&file, "comment.html").contains("<title>Comments</title>"));
+    assert!(entry(&file, "comment.html").contains("<h1>Comments</h1>"));
+    assert!(entry(&file, "index.html").contains("<a href=\"comment.html\">Comments</a>"));
+    assert!(
+        entry(&file, "README.txt").contains("== Comments (data/comment.json, comment.html) ==")
+    );
+    for (name, text) in &file {
+        assert!(!text.contains("(ISS-05)"), "{name} names a feature");
+    }
+}
+
+#[test]
 fn priv_03_the_pages_hold_no_script() {
     let file = written();
     for (name, text) in file.iter().filter(|(name, _)| {
