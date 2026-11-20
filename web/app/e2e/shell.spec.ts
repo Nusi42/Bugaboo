@@ -168,6 +168,7 @@ function ownTopics(): string[] {
     t("nav.sessions"),
     t("nav.access-keys"),
     t("nav.connected-apps"),
+    t("nav.my-data"),
     t("nav.about"),
   ];
 }
@@ -240,6 +241,8 @@ test("ux_01 Organization settings lists the topics that exist, by heading", asyn
     t("nav.mail-server"),
     t("nav.ai"),
     t("nav.organization-agents"),
+    t("nav.keep-rules"),
+    t("nav.data-exports"),
     t("nav.organization-security"),
     t("nav.backups"),
     t("nav.status"),
@@ -254,14 +257,11 @@ test("ux_01 an address of the settings that does not exist shows the page that i
 }) => {
   await signIn(page, cleo);
   // A person who may not invite people finds nothing at the address, like at one that is not there.
+  const notThere = page.getByRole("heading", { level: 1, name: t("page.not-found.title") });
   await page.goto(paths.people);
-  await expect(
-    page.getByRole("heading", { level: 1, name: t("page.not-found.title") }),
-  ).toBeVisible();
+  await expect(notThere).toBeVisible();
   await page.goto(`${paths.mySettings}/nothing-here`);
-  await expect(
-    page.getByRole("heading", { level: 1, name: t("page.not-found.title") }),
-  ).toBeVisible();
+  await expect(notThere).toBeVisible();
 });
 
 test("sec_01 the start page offers looking after the server only to people who may open organization settings", async ({
