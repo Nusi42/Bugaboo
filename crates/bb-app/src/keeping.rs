@@ -1,9 +1,10 @@
 //! Keeping and deleting (PRIV-05, ADR-0045, ADR-0017): every job that deletes what outlived its
 //! keep period runs through one shape. A round of such a job is one step: each part deletes at most
 //! [`KEEP_STEP_ROWS`] rows in one short write, so a write of people never waits long behind it
-//! (M4-F104), and when a part reached its limit the job queues its next step at once. Each job is
-//! safe to run again. [`JobKind::keeps`] says which rows of `bb_core::keeping::KEEP_KINDS` each job
-//! deletes; a row of the group *by an administrator* has no job.
+//! (M4-F104), and when a part reached its limit the job queues its next step after
+//! [`KEEP_STEP_PAUSE`]. Each job is safe to run again. [`JobKind::keeps`] says which rows of
+//! `bb_core::keeping::KEEP_KINDS` each job deletes; a row of the group *by an administrator* has no
+//! job.
 //!
 //! - `sessions.purge`: the sessions nobody can use any more, the links of finished sign-ups, the
 //!   links to new e-mail addresses that ran out, and the IP addresses of old sessions.
@@ -29,7 +30,7 @@ use bb_core::id::JobId;
 use bb_core::keeping::{KeepKind, KeptUntil, Step, rule};
 use bb_core::settings::{LOGS_SERVER_LOG_FILES, LOGS_SERVER_LOG_MEGABYTES, Layers};
 use bb_core::wording::Region;
-use jiff::Timestamp;
+use jiff::{SignedDuration, Timestamp};
 use serde_json::Value;
 
 use crate::auth::{
@@ -40,7 +41,13 @@ use crate::jobs::JobKind;
 use crate::ports::KeepPeriods;
 
 /// The most rows one part of a step of a deleting job deletes in one write (ADR-0045, decision 5).
-pub const KEEP_STEP_ROWS: u64 = 1000;
+/// Kept small, so the write is short: a thousand old notifications of the sample organization held
+/// SQLite's write lock for 70 to 250 ms, a hundred for under 10 ms.
+pub const KEEP_STEP_ROWS: u64 = 100;
+
+/// How long a deleting job waits before its next step: a large backlog (the first run after an
+/// upgrade or an import) is worked off beside the writes of people, not ahead of them.
+pub const KEEP_STEP_PAUSE: SignedDuration = SignedDuration::from_secs(3);
 
 /// The bytes in a megabyte, for the size of the server log.
 const MEGABYTE: u64 = 1_048_576;
@@ -114,8 +121,8 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// One step of the deleting job `kind`: the one shape of deleting by itself. When a part of
-    /// the step reached its limit, the next step is queued for now; the next daily round waits
-    /// already, so the step adds no second chain of rounds.
+    /// the step reached its limit, the next step is queued for after [`KEEP_STEP_PAUSE`]; the
+    /// next daily round waits already, so the step adds no second chain of rounds.
     pub(crate) async fn keep_step(&self, kind: JobKind) -> Result<Step, AppError> {
         let rows = |count: u64| Step::of(count, KEEP_STEP_ROWS);
         let step = match kind {
@@ -170,8 +177,12 @@ impl<S: AuthStore> Ctx<'_, S> {
         if step.more {
             let id = JobId::generate(&mut self.ids())
                 .map_err(|error| AppError::Internal(error.to_string()))?;
+            let now = self.now();
+            let after_the_pause = now
+                .checked_add(KEEP_STEP_PAUSE)
+                .map_err(|error| AppError::Internal(error.to_string()))?;
             self.store()
-                .queue_job(id, &kind.name()?, &Value::Null, self.now(), self.now())
+                .queue_job(id, &kind.name()?, &Value::Null, after_the_pause, now)
                 .await
                 .map_err(|error| internal::<S>(&error))?;
         }

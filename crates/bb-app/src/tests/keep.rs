@@ -269,8 +269,8 @@ fn dead_jobs(world: &World, count: usize) -> Result<(), String> {
 }
 
 #[tokio::test]
-async fn priv_05_each_purge_deletes_in_steps_and_queues_the_next_step() -> Outcome {
-    use crate::keeping::KEEP_STEP_ROWS;
+async fn priv_05_each_purge_deletes_in_steps_and_queues_the_next_step_after_a_pause() -> Outcome {
+    use crate::keeping::{KEEP_STEP_PAUSE, KEEP_STEP_ROWS};
 
     let world = World::new().await?;
     let many = usize::try_from(KEEP_STEP_ROWS)? * 2 + 5;
@@ -285,30 +285,46 @@ async fn priv_05_each_purge_deletes_in_steps_and_queues_the_next_step() -> Outco
             .filter(|job| job.state == JobState::Dead)
             .count()
     };
+    let purges = || -> Vec<jiff::Timestamp> {
+        let kind = JobKind::PurgeDeadJobs.name().ok();
+        world
+            .store
+            .lock()
+            .state
+            .jobs
+            .iter()
+            .filter(|job| Some(&job.kind) == kind.as_ref())
+            .map(|job| job.run_at)
+            .collect()
+    };
     world
         .clock
         .advance((days_of(&KEEPING_DEAD_JOB_DAYS) + 1) * SECONDS_PER_DAY);
-    // One step deletes one step's rows and queues the next step for now.
+    // One step deletes one step's rows and queues the next step after a pause, so the writes of
+    // people get the database between two steps.
     let step = world.ctx().keep_step(JobKind::PurgeDeadJobs).await?;
     assert_eq!((step.rows, step.more), (KEEP_STEP_ROWS, true));
-    assert_eq!(dead(), many - usize::try_from(KEEP_STEP_ROWS)?);
-    // The queued steps finish the work; the last one queues no further step.
+    let left = many - usize::try_from(KEEP_STEP_ROWS)?;
+    assert_eq!(dead(), left);
+    let next = world
+        .ctx()
+        .now()
+        .checked_add(KEEP_STEP_PAUSE)
+        .map_err(text)?;
+    assert_eq!(purges(), vec![next]);
+    // Before the pause is over, nothing more goes.
     run_jobs(&world).await?;
+    assert_eq!(dead(), left);
+    // Each pause lets one more step run; the last one queues no further step.
+    for _ in 0..many {
+        if dead() == 0 {
+            break;
+        }
+        world.clock.advance(KEEP_STEP_PAUSE.as_secs());
+        run_jobs(&world).await?;
+    }
     assert_eq!(dead(), 0);
-    let waiting = world
-        .store
-        .lock()
-        .state
-        .jobs
-        .iter()
-        .filter(|job| {
-            job.kind
-                == JobKind::PurgeDeadJobs
-                    .name()
-                    .unwrap_or_else(|_| job.kind.clone())
-        })
-        .count();
-    assert!(waiting <= 1, "at most the next daily round waits");
+    assert!(purges().len() <= 1, "at most the next daily round waits");
     Ok(())
 }
 
@@ -327,7 +343,10 @@ async fn priv_05_a_deletion_stopped_after_a_step_has_written_down_what_that_step
     let bea = UserId::from_random([9; 16]);
     let long_ago = jiff::civil::Date::new(2000, 1, 3)?;
     // The first step takes all of Ada's entries and some of Bea's.
-    let (of_ada, of_bea) = (KEEP_STEP_ROWS / 2 + 100, KEEP_STEP_ROWS / 2 + 100);
+    let (of_ada, of_bea) = (
+        KEEP_STEP_ROWS / 2 + KEEP_STEP_ROWS / 10,
+        KEEP_STEP_ROWS / 2 + KEEP_STEP_ROWS / 10,
+    );
     for _ in 0..of_ada {
         world.store.book(ada, long_ago, 30);
     }
