@@ -37,7 +37,7 @@ test("comp_01 About shows the version the support period and the parts list to d
   await expect(parts).toBeVisible();
   await expect(parts.getByRole("option").first()).toBeVisible();
   // Only a page of parts is read at first: *Show more* reads the rest.
-  await readPartsToTheEnd(page, parts, await lastPartName(server));
+  await readPartsToTheEnd(page, parts, about, await lastPartName(server));
   await expectGoodInEveryLook(page);
   await downloadEveryFile(page, about);
 });

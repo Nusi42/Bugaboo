@@ -3,6 +3,7 @@ import { t } from "@bugaboo/messages";
 import { expect, type Locator, type Page } from "@playwright/test";
 
 import { downloadMessages, OFFERED } from "../../src/features/about/index.ts";
+import { pageSize } from "../../src/shared/paged.ts";
 import { type ApiSession } from "./api.ts";
 import { signedInAdmin } from "./access.ts";
 import { inOrder } from "./sequence.ts";
@@ -44,24 +45,36 @@ async function lastPartFrom(
     : lastPartFrom(admin, page.next_cursor, name);
 }
 
-/** How far the wheel turns the page in one go. */
-const PAGE_SCROLL_PX = 4000;
+/** The address of a page of the parts. */
+const PARTS_ADDRESS = "/api/v1/about/parts";
 
-/** Reads the pages of the list of parts by pressing *Show more* until the last part is in the list. */
-export async function readPartsToTheEnd(page: Page, list: Locator, last: string): Promise<void> {
-  await expect
-    .poll(async () => {
-      const more = page.getByRole("button", { name: t("about.parts-more"), exact: true });
-      if (await more.isVisible()) {
-        await more.click();
-      } else {
-        // Every page is read: the rows are drawn only where they are in the window, so scroll the page down.
-        await list.hover();
-        await page.mouse.wheel(0, PAGE_SCROLL_PX);
-      }
-      return list.getByText(last, { exact: true }).count();
-    })
-    .toBeGreaterThan(0);
+/**
+ * Reads every page after the first by pressing *Show more parts*, once for each page the API gives (each press waits
+ * for the answer of its page), checks that the button is gone, then takes the last row into view with the keyboard
+ * (the rows are drawn only where they are in the window) and checks that it is the last part.
+ */
+export async function readPartsToTheEnd(
+  page: Page,
+  list: Locator,
+  about: About,
+  last: string,
+): Promise<void> {
+  const more = page.getByRole("button", { name: t("about.parts-more"), exact: true });
+  const later = Math.ceil(about.part_count / pageSize.usual) - 1;
+  expect(later, "the parts take more than one page").toBeGreaterThan(0);
+  await inOrder(
+    Array.from({ length: later }, () => async () => {
+      const answered = page.waitForResponse(
+        (answer) => answer.url().includes(PARTS_ADDRESS) && answer.request().method() === "GET",
+      );
+      await more.click();
+      await answered;
+    }),
+  );
+  await expect(more).toHaveCount(0);
+  await list.focus();
+  await page.keyboard.press("End");
+  await expect(list.getByText(last, { exact: true })).toBeVisible();
 }
 
 /** Presses each download button and checks that the browser saves the file under the name the server gives it. */
