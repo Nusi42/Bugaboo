@@ -6,7 +6,7 @@ The lead updates this file after every step (builder started, report in, review 
 
 - **Milestone:** M9, privacy, operations and the first release, is planned and decided ([`milestones/M9/`](milestones/M9/README.md)): the maintainer took every recommendation of M9-Q1 to Q21 on 2026-11-18, including three cuts (restore from the command line only; support access, `DIST-03`, moved to M14 as a V1 feature; M4-F61, M4-F63 and M4-F128 to a later operations package). ADR-0044 to ADR-0047 are accepted, ADR-0048 in part. Waves 1 and 2 are merged (WP-02 to WP-09). Next: wave 3.
 - **Done:** M0 to M8 (`m0-done` to `m8-done`; M8 tagged on 2026-11-17). Version 0.5.1 (ADR-0040: 144 of 225 features, the minor number stays 5, so the patch number rises). The M8 review page is published (link outside the repository).
-- **Wave:** M9 waves 0 and 1 are merged (2026-11-19); wave 2 (WP-06 to WP-09) is merged (2026-11-20). The tools for several agents and for agents that wait, hand over and undo are merged. Next: wave 3 (WP-10, WP-11, WP-13). The speed test of ten writers is within its budget again (M9-F87). M8 is complete (all of its packages merged).
+- **Wave:** M9 waves 0 and 1 are merged (2026-11-19); wave 2 (WP-06 to WP-09) is merged (2026-11-20). The tools for several agents and for agents that wait, hand over and undo are merged. Wave 3: WP-10 and WP-11 are building; WP-13 waits for *Windows Sandbox*. The speed test of ten writers is within its budget again (M9-F87). M8 is complete (all of its packages merged).
 - **`main`:** fast-forwarded to the last green `WIN1`.
 
 ## Work packages (M9)
@@ -22,8 +22,8 @@ The lead updates this file after every step (builder started, report in, review 
 | WP-07 | Upgrades: a backup before migrating, the way back, the upgrade test | merged (2026-11-19, two fix rounds; a second builder took over for the fixes) | `win2` / `WIN2` | Wave 2; Opus |
 | WP-08 | Signed releases, updates, the support period, vulnerability handling, secure defaults | merged (2026-11-19, two fix rounds; new installations start with AI apps and agents off, migration 59 keeps old ones on) | `win5` / `WIN5` | Wave 2; Opus |
 | WP-09 | Correct your own data, and corrections by administrators | merged (2026-11-19, two fix rounds; a second builder took over for the fixes; first-page budget raised to 260 KB by the maintainer) | `win4` / `WIN4` | Wave 2; Opus; migration 58 |
-| WP-10 | The privacy screens | not started | `win3` / `WIN3` | Wave 3; Opus |
-| WP-11 | The operations screens: *Backups* and *About* | not started | `win2` / `WIN2` | Wave 3; Sonnet |
+| WP-10 | The privacy screens | building (2026-11-20) | `win3` / `WIN3` | Wave 3; Opus |
+| WP-11 | The operations screens: *Backups* and *About* | building (2026-11-20) | `win2` / `WIN2` | Wave 3; Sonnet |
 | WP-12 | *Support access* | moved to M14 (2026-11-18) | — | Draft kept in the M9 folder |
 | WP-13 | Run as a service, proven on clean systems | not started | `win4` / `WIN4` | Wave 3; Opus; needs Windows Sandbox switched on |
 | WP-14 | The accessibility pass, the EN 301 549 report, the statement | not started | `win4` / `WIN4` | Wave 4; Opus |
