@@ -3,14 +3,14 @@ import { useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
 import { fieldList, linesFrom, pageSize, usePaged } from "../../shared/paged.ts";
-import { namedPerson, type NamedPerson } from "../../shared/person.ts";
+import { namedPerson, personName, type NamedPerson } from "../../shared/person.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
 
 /** A person in a list, as the server sends it: the fields can be missing. */
 export type ListItem = Schema<"PersonItem">;
 
 /** The fields the list and the page of a person need. */
-const SHOWN_FIELDS = fieldList<ListItem>(["person", "email", "groups", "roles"]);
+const SHOWN_FIELDS = fieldList<ListItem>(["person", "email", "standing", "groups", "roles"]);
 
 /** A person that has what a line of the list needs (the fields can be missing in an answer). */
 export interface PersonLine extends NamedPerson {
@@ -18,6 +18,8 @@ export interface PersonLine extends NamedPerson {
   /** The groups the person is in, when the viewer may see groups. */
   readonly groups: readonly Schema<"NamedRef">[] | null;
   readonly roles: readonly Schema<"RoleAtRef">[];
+  /** Whether the person may sign in, or is switched off (ADR-0044, decision 5). */
+  readonly standing: Schema<"Standing">;
 }
 
 /** The line of a person, or nothing for one that is not shown by name (nobody who may ask is). */
@@ -31,7 +33,14 @@ export function lineOf(item: ListItem): PersonLine | undefined {
     email: item.email ?? "",
     groups: item.groups ?? null,
     roles: item.roles ?? [],
+    standing: item.standing ?? "active",
   };
+}
+
+/** What the page of a person is called: their name, or *Former user K7Q2* once they are removed. */
+export function pageNameOf(item: ListItem): string | undefined {
+  const person = item.person ?? undefined;
+  return person?.shown === "name" || person?.shown === "former" ? personName(person) : undefined;
 }
 
 /** The lines of the pages read so far. */

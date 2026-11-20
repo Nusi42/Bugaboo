@@ -5,40 +5,54 @@ import { useMe } from "../../shared/use-me.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { paths } from "../../shared/paths.ts";
 import { NotFoundPage, QueryGate, useItemTrail } from "../shell/index.ts";
-import { lineOf, usePerson } from "./people.ts";
+import { lineOf, pageNameOf, usePerson } from "./people.ts";
 import { Corrections } from "./PersonCorrections.tsx";
-import { Facts, Groups, HeldRoles, WorkTimesEntry } from "./PersonSections.tsx";
+import { PersonState } from "./PersonState.tsx";
+import { Facts, FormerPerson, Groups, HeldRoles, WorkTimesEntry } from "./PersonSections.tsx";
 
 /**
  * The page of one person (SEC-02): their address, when they came, the groups they are in and the
  * roles they have, as far as the viewer may see them. Changing them is done where the rows are:
  * in *Groups* and in *Who has which role*. The name and the address of somebody else are corrected
- * here (PRIV-06); one's own are changed in *My settings › Profile*.
+ * here (PRIV-06); one's own are changed in *My settings › Profile*. Somebody else is switched off, switched on and
+ * removed here too (PRIV-04), and a removed person's page shows *Former user K7Q2* in place.
  */
 export function PersonPage({ id }: { readonly id: string }) {
   const found = usePerson(id);
   const own = useMe()?.id === id;
   const line = found.data === undefined ? undefined : lineOf(found.data.person);
+  const person = found.data?.person.person;
+  const former = person?.shown === "former" ? person.code : undefined;
   const shown =
-    found.data !== undefined && line !== undefined
-      ? { line, since: found.data.created_at }
+    found.data !== undefined && (line !== undefined || former !== undefined)
+      ? { line, former, since: found.data.created_at }
       : undefined;
-  usePageTitle(line?.name ?? t("nav.people"));
-  useItemTrail(paths.people, line?.name);
+  const title = found.data === undefined ? undefined : pageNameOf(found.data.person);
+  usePageTitle(title ?? t("nav.people"));
+  useItemTrail(paths.people, title);
   return (
     <QueryGate error={found.error} data={shown} notFound={<NotFoundPage />}>
-      {(person) => (
-        <div {...partOf(part.stack)}>
-          <Facts line={person.line} since={person.since} />
-          <Groups line={person.line} />
-          <HeldRoles
-            roles={person.line.roles}
-            none={t("person.roles-none", { name: person.line.name })}
-          />
-          <WorkTimesEntry id={id} name={person.line.name} />
-          {own ? null : <Corrections id={id} name={person.line.name} email={person.line.email} />}
-        </div>
-      )}
+      {(page) =>
+        page.line === undefined ? (
+          <FormerPerson code={page.former ?? ""} />
+        ) : (
+          <div {...partOf(part.stack)}>
+            <Facts line={page.line} since={page.since} />
+            <Groups line={page.line} />
+            <HeldRoles
+              roles={page.line.roles}
+              none={t("person.roles-none", { name: page.line.name })}
+            />
+            <WorkTimesEntry id={id} name={page.line.name} />
+            {own ? null : (
+              <>
+                <Corrections id={id} name={page.line.name} email={page.line.email} />
+                <PersonState id={id} name={page.line.name} standing={page.line.standing} />
+              </>
+            )}
+          </div>
+        )
+      }
     </QueryGate>
   );
 }

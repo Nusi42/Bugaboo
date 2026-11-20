@@ -1,5 +1,6 @@
 import { t } from "@bugaboo/messages";
 import { Form, SubmitButton, TextField, partOf, part } from "@bugaboo/ui";
+import type { ReactNode } from "react";
 
 import { type SettingBoxState } from "./use-setting-box.ts";
 
@@ -8,6 +9,8 @@ export interface SettingBoxProps extends SettingBoxState {
   readonly isLength?: boolean;
   /** What the number counts, in words, beside the box (*years*); the box holds the number only. */
   readonly unit?: string | undefined;
+  /** What the value typed would do, above the Save button (`SettingControlProps.noteFor`). */
+  readonly note?: ReactNode;
 }
 
 /**
@@ -23,6 +26,7 @@ export function SettingBox({
   source,
   isLength = false,
   unit,
+  note,
   onSubmit,
 }: SettingBoxProps) {
   const field = (
@@ -39,6 +43,7 @@ export function SettingBox({
     <Form onSubmit={onSubmit}>
       {isLength ? <span {...partOf(part.lengthBox)}>{field}</span> : field}
       {source === undefined ? null : <p {...partOf(part.settingsSource)}>{source}</p>}
+      {note}
       <div {...partOf(part.row)}>
         <SubmitButton>{t("common.save")}</SubmitButton>
       </div>

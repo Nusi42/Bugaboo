@@ -45,6 +45,10 @@ export const buttonShape = { wide: "wide", square: "square" } as const;
  */
 export const keepsRoom = "keeps-room";
 
+/** How a cell of a `DataTable` keeps its words: a name or a date on one line, an action at the end. */
+export const dataCellVariant = { name: "name", date: "date", action: "action" } as const;
+export type DataCellVariant = (typeof dataCellVariant)[keyof typeof dataCellVariant];
+
 /** What a button or a text field is doing that the theme file styles: waiting for an answer. */
 export const busyState = { busy: "busy" } as const;
 

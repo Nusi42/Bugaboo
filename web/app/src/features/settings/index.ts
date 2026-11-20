@@ -18,6 +18,11 @@ export { SignInRulesPage } from "./SignInRulesPage.tsx";
 export { ThemesPage } from "./ThemesPage.tsx";
 export { useThemeControl } from "./theme-control.tsx";
 export { WorkingHoursPage } from "./WorkingHoursPage.tsx";
+export { KeepRulesPage } from "./KeepRulesPage.tsx";
+export { DataExportsPage } from "./DataExportsPage.tsx";
+// *My data* shows the same rules as *Keep and delete rules*, read only.
+export { KeepRulesTables } from "./KeepRulesTables.tsx";
+export { keepRulesOptions } from "./keep-rules.ts";
 export { sourceInWords, wordsOf } from "./texts.ts";
 export { useOrganizationSettings } from "./organization.ts";
 export { SettingsFrame, TopicList, type TopicListProps } from "./SettingsFrame.tsx";

@@ -176,6 +176,26 @@ const organizationTopics: readonly Place[] = [
     listed: true,
   },
   {
+    // *Keep and delete rules* (PRIV-05, ADR-0045): the periods, what a change would delete, and *Delete them*.
+    path: paths.keepRules,
+    name: "nav.keep-rules",
+    icon: iconName.lock,
+    parent: paths.organizationSettings,
+    anyOf: ["change-organization-settings"],
+    group: "nav.group.privacy",
+    listed: true,
+  },
+  {
+    // *Data exports* (PRIV-03, ADR-0044, decision 4): who made which file of whose data, and why.
+    path: paths.dataExports,
+    name: "nav.data-exports",
+    icon: iconName.list,
+    parent: paths.organizationSettings,
+    anyOf: ["download-someones-data"],
+    group: "nav.group.privacy",
+    listed: true,
+  },
+  {
     path: paths.organizationSecurity,
     name: "nav.organization-security",
     icon: iconName.security,

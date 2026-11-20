@@ -367,8 +367,6 @@ export const messages = {
   "setting.privacy.removed-texts.name": "Comments of a removed person",
   "setting.privacy.removed-texts.help":
     "What the window of Remove a person offers first for the comments the person wrote. The administrator who removes a person can choose otherwise each time.",
-  "setting.privacy.removed-texts.keep": "Keep their comments, shown as Former user",
-  "setting.privacy.removed-texts.delete": "Delete their comments",
   "setting.keeping.notification-days.name": "Days to keep notifications",
   "setting.keeping.notification-days.help":
     "How many days a notification is kept. Older notifications are deleted once a day.",
@@ -387,6 +385,69 @@ export const messages = {
   "setting.logs.server-log-files.name": "Old server log files to keep",
   "setting.logs.server-log-files.help":
     "How many old files of the server log are kept next to the current one. Older ones are deleted.",
+  "keep-rules.no-fixed-end": "No fixed end; about {length} while a backup is created every day",
+  "keep-rules.intro":
+    "How long Bugaboo keeps each kind of data at least, and who deletes it then. A period is the shortest time a kind is kept, never below what the law or the kind needs.",
+  "keep-rules.col.kind": "Kind of data",
+  "keep-rules.col.period": "Kept for",
+  "keep-rules.col.then": "Then",
+  "keep-rules.col.why": "Why",
+  "keep-rules.periods": "Change a keep period",
+  "keep-rules.periods-intro": "Bugaboo says what a new period would delete before you save it.",
+  "keep-rules.would-delete": "With this period, Bugaboo deletes {records} within a day.",
+  "keep-rules.would-delete-none": "With this period, Bugaboo deletes nothing more.",
+  "keep-rules.would-be-past":
+    "With this period, {records} {count, plural, one {is} other {are}} past it. Bugaboo deletes nothing by itself.",
+  "keep-rules.would-be-past-none": "With this period, nothing is past it.",
+  "old-records.title": "{kind} past the keep period",
+  "old-records.intro": "Bugaboo counts them when you open this page.",
+  "old-records.none": "Nothing is older than the keep period.",
+  "old-records.summary":
+    "{records} {count, plural, one {is} other {are}} older than the keep period of {period}. These are the ones before {date}.",
+  "old-records.more-people":
+    "More people have old records than are listed here. Delete all of them at once to include them.",
+  "old-records.nothing-by-itself":
+    "Bugaboo deletes nothing by itself. Delete them when your organization no longer needs them.",
+  "old-records.delete": "Delete them",
+  "old-records.delete-all": "Delete them all",
+  "old-records.delete-all-title": "Delete {records}?",
+  "old-records.delete-all-text":
+    "This deletes {records} of everybody that {count, plural, one {is} other {are}} older than the keep period, with everything that tells about them. It cannot be taken back. The deletion is written to the security log.",
+  "old-records.delete-person-name": "Delete the old records of {name}",
+  "old-records.delete-person-title": "Delete the old records of {name}?",
+  "old-records.delete-person-text":
+    "This deletes {records} of {name} that {count, plural, one {is} other {are}} older than the keep period, with everything that tells about them. It cannot be taken back. The deletion is written to the security log.",
+  "old-records.deleted": "{records} {count, plural, one {was} other {were}} deleted.",
+  "data-exports.intro":
+    "Every file of Download my data: whose data it holds, who created it and why, the newest first. Each is deleted 7 days after it was asked for.",
+  "data-exports.list": "Files of people's data",
+  "data-exports.none": "No file was created yet.",
+  "data-exports.more": "Show more files",
+  "data-exports.col.person": "Whose data",
+  "data-exports.col.asked-by": "Created by",
+  "data-exports.col.reason": "Why",
+  "data-exports.col.asked-at": "Asked for",
+  "data-exports.col.file": "File",
+  "data-exports.col.deleted-at": "Deleted on",
+  "data-exports.col.actions": "Download",
+  "data-exports.own": "Asked for by the person",
+  "data-exports.file.waiting": "Being created",
+  "data-exports.file.ready": "Ready ({size})",
+  "data-exports.file.failed": "Could not be created",
+  "data-exports.download": "Download",
+  "data-exports.download-name": "Download the data of {name}",
+  "data-exports.someone": "Download someone's data",
+  "data-exports.window-intro":
+    "Bugaboo creates the file of this person's data, as their own Download my data would. The person is told by e-mail and in the app, and the security log records who created it and why.",
+  "data-exports.pick": "Whose data",
+  "data-exports.pick-search": "Search people",
+  "data-exports.pick-list": "People",
+  "data-exports.pick-nothing": "Nobody matches.",
+  "data-exports.pick-more": "Show more people",
+  "data-exports.reason": "Why",
+  "data-exports.reason-help": "In a few words, such as the person's request. The person is told.",
+  "data-exports.create": "Create the file",
+  "data-exports.pick-first": "Choose a person first.",
   "setting.working-hours.preset.name": "Working-time rules",
   "setting.working-hours.preset.help":
     "The rules each work day is checked against. Germany checks the numbers below, as the German Working Hours Act asks. No rules checks nothing.",
@@ -425,28 +486,6 @@ export const messages = {
   "setting.notifications.work-day-changed-by-mail.name": "Your work day was changed: by e-mail",
   "setting.notifications.work-day-changed-by-mail.help":
     "Sends you an e-mail when somebody else changes one of your work days, with the reason they gave. E-mail goes only when your organization has switched it on.",
-  "old-work-days.title": "Work days past the keep period",
-  "old-work-days.intro": "Bugaboo counts them when you open this page.",
-  "old-work-days.none": "No work day is older than the keep period.",
-  "old-work-days.summary":
-    "{count, plural, one {# work day is} other {# work days are}} older than the keep period of {years, plural, one {# year} other {# years}}. These are the days before {date}.",
-  "old-work-days.person-count": "{count, plural, one {# work day} other {# work days}}",
-  "old-work-days.more-people":
-    "More people have old work days than are listed here. Delete all of them at once to include them.",
-  "old-work-days.nothing-by-itself":
-    "Bugaboo deletes nothing by itself. Delete them when your organization no longer needs them.",
-  "old-work-days.delete": "Delete them",
-  "old-work-days.delete-all": "Delete them all",
-  "old-work-days.delete-all-title":
-    "Delete {count, plural, one {# old work day} other {# old work days}}?",
-  "old-work-days.delete-all-text":
-    "This deletes {count, plural, one {# work day} other {# work days}} of everybody that are older than the keep period, with their breaks and the history of their changes. It cannot be taken back. The deletion is written to the security log.",
-  "old-work-days.delete-person-name": "Delete the old work days of {name}",
-  "old-work-days.delete-person-title": "Delete the old work days of {name}?",
-  "old-work-days.delete-person-text":
-    "This deletes {count, plural, one {# work day} other {# work days}} of {name} that are older than the keep period, with their breaks and the history of their changes. It cannot be taken back. The deletion is written to the security log.",
-  "old-work-days.deleted":
-    "{count, plural, one {# work day was} other {# work days were}} deleted.",
   "working-hours.who-title": "Who sees working hours",
   "working-hours.who-intro":
     "Everybody sees their own. Other people's working hours are seen only by those who hold the permission to see them.",

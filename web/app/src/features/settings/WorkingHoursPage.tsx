@@ -2,7 +2,8 @@ import { t } from "@bugaboo/messages";
 import { Card } from "@bugaboo/ui";
 
 import { usePageTitle } from "../../shared/use-page.ts";
-import { OldWorkDays } from "./OldWorkDays.tsx";
+import { workDaysKind } from "./keep-rules.ts";
+import { OldRecords } from "./OldRecords.tsx";
 import { OrganizationTopic } from "./OrganizationTopic.tsx";
 import { WhoSeesWorkingHours } from "./WhoSeesWorkingHours.tsx";
 
@@ -25,7 +26,7 @@ export function WorkingHoursPage() {
       >
         <OrganizationTopic topics={TOPICS} searchable={false} />
       </Card>
-      <OldWorkDays />
+      <OldRecords kind={workDaysKind} />
       <WhoSeesWorkingHours />
     </>
   );

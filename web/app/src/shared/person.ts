@@ -62,6 +62,11 @@ export function personNameAt(position: Position, person: Person): string {
   return someoneName(position);
 }
 
+/** How a removed person is named: *Former user K7Q2*, the same label as everywhere. */
+export function formerName(code: string): string {
+  return personNameAt("start", { shown: "former", code });
+}
+
 /** How a person is named at the start of a sentence: by name, by their role, or as *Someone*. */
 export function personName(person: Person): string {
   return personNameAt("start", person);

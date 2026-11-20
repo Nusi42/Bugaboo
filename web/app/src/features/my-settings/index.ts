@@ -11,6 +11,7 @@ export { HandlePage } from "./HandlePage.tsx";
 export { ProfilePage } from "./ProfilePage.tsx";
 export { EmailChangePage } from "./EmailChangePage.tsx";
 export { ConnectedAppsPage } from "./connected-apps/ConnectedAppsPage.tsx";
+export { MyDataPage } from "./MyDataPage.tsx";
 export { ShortcutsPage } from "./shortcuts/ShortcutsPage.tsx";
 // What the consent step of an AI app shares with the choices of an access key (one definition).
 export { choiceName } from "./access-keys/choice.ts";

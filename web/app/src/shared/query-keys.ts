@@ -11,9 +11,7 @@ import { searchKeys } from "./search-keys.ts";
  * projects. (The keys of the queries that `api.query` makes for itself come from their options.)
  */
 export const queryKeys = {
-  about: {
-    parts: () => ["about", "parts"],
-  },
+  about: { parts: () => ["about", "parts"] },
   people: {
     all: ["people"],
     list: (search: string) => ["people", "list", search],
@@ -116,6 +114,10 @@ export const queryKeys = {
     all: ["followers"],
     state: (issue: string) => ["followers", "state", issue],
     list: (issue: string) => ["followers", "list", issue],
+  },
+  dataExports: {
+    /** The page-by-page list of the files of people's data; it starts with the route like `api.query` keys do. */
+    list: () => ["get", "/api/v1/admin/data-exports", "list"],
   },
   notifications: {
     /** A page-by-page list of notifications; it starts with the route like `api.query` keys do. */

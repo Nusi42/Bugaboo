@@ -85,6 +85,23 @@ function ProjectSettingsButton({ row }: { readonly row: NotificationRow }) {
   );
 }
 
+/** *Open My data* for the notification that the file of the reader's data is ready: the page offers the link too. */
+function MyDataButton({ row }: { readonly row: NotificationRow }) {
+  const navigate = useNavigate();
+  if (row.kind !== "export-ready") {
+    return null;
+  }
+  return (
+    <Button
+      onPress={() => {
+        void navigate({ href: paths.myData });
+      }}
+    >
+      {t("notifications.open-my-data")}
+    </Button>
+  );
+}
+
 /** The buttons of a notification: *Open*, the one for a renewal that gave up, and *Mark as read*. */
 function NotificationActions({
   row,
@@ -112,6 +129,7 @@ function NotificationActions({
         </Button>
       )}
       <ProjectSettingsButton row={row} />
+      <MyDataButton row={row} />
       {row.read ? null : (
         <Button
           look={buttonLook.quiet}

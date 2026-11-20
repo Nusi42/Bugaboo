@@ -72,6 +72,32 @@ macro_rules! words {
             $($(#[$variant_meta:meta])* $variant:ident => $word:literal),+ $(,)?
         }
         messages $method:ident = $prefix:literal;
+        messages $second:ident = $second_prefix:literal;
+        messages $third:ident = $third_prefix:literal $(;)?
+    ) => {
+        $crate::words! {
+            $(#[$meta])*
+            $vis enum $name {
+                $($(#[$variant_meta])* $variant => $word),+
+            }
+            messages $method = $prefix;
+            messages $second = $second_prefix
+        }
+
+        impl $name {
+            /// The third message that belongs to this word.
+            #[must_use]
+            $vis const fn $third(self) -> $crate::message::MessageKey {
+                match self { $(Self::$variant => $crate::derived_key!($third_prefix, $word)),+ }
+            }
+        }
+    };
+    (
+        $(#[$meta:meta])*
+        $vis:vis enum $name:ident {
+            $($(#[$variant_meta:meta])* $variant:ident => $word:literal),+ $(,)?
+        }
+        messages $method:ident = $prefix:literal;
         messages $second:ident = $second_prefix:literal $(;)?
     ) => {
         $crate::words! {

@@ -69,7 +69,8 @@ words! {
         TimeEntries => "time-entries",
     }
     messages name = "keep-kind.name.";
-    messages why = "keep-kind.why."
+    messages why = "keep-kind.why.";
+    messages count = "keep-kind.count."
 }
 
 words! {
@@ -81,7 +82,8 @@ words! {
         /// records, which only the organization can judge to be no longer needed.
         ByAnAdministrator => "by-an-administrator",
     }
-    messages name = "keep-group.name."
+    messages name = "keep-group.name.";
+    messages then = "keep-rules.then."
 }
 
 /// How long one kind of data is kept.

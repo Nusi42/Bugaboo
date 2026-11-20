@@ -175,6 +175,15 @@ export const ownPlaces: readonly Place[] = [
     listed: true,
   },
   {
+    // *My data* (PRIV-03, UX §4.13): the file of the person's data, how long each kind is kept, where it is corrected.
+    path: paths.myData,
+    name: "nav.my-data",
+    icon: iconName.lock,
+    parent: paths.mySettings,
+    group: "nav.group.privacy",
+    listed: true,
+  },
+  {
     path: paths.assistantSettings,
     name: "nav.assistant-settings",
     icon: iconName.assistant,

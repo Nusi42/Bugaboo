@@ -34,16 +34,22 @@ test("time_10 Delete them for one person leaves the days of the others", async (
   await createDays(colleague, ["2020-03-03"]);
   await signIn(page, ada);
   await page.goto(paths.workingHours);
-  const card = page.getByRole("region", { name: t("old-work-days.title") });
+  const card = page.getByRole("region", {
+    name: t("old-records.title", { kind: t("keep-kind.name.work-days") }),
+  });
   await expect(card.getByText(/^2 work days are older than the keep period/u)).toBeVisible();
   await card
-    .getByRole("button", { name: t("old-work-days.delete-person-name", { name: bob.name }) })
+    .getByRole("button", { name: t("old-records.delete-person-name", { name: bob.name }) })
     .click();
   await page
     .getByRole("alertdialog")
-    .getByRole("button", { name: t("old-work-days.delete"), exact: true })
+    .getByRole("button", { name: t("old-records.delete"), exact: true })
     .click();
-  await expect(card.getByText(t("old-work-days.deleted", { count: 1 }))).toBeVisible();
+  await expect(
+    card.getByText(
+      t("old-records.deleted", { records: t("keep-kind.count.work-days", { count: 1 }), count: 1 }),
+    ),
+  ).toBeVisible();
   // Bob's old day is gone, Ada's stays.
   expect(await daysOf(colleague, "2020-03-03")).toHaveLength(0);
   expect(await daysOf(admin, "2020-03-02")).toHaveLength(1);

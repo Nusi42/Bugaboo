@@ -41,6 +41,7 @@ export { assistantSettingsRoute } from "./assistant-pages.tsx";
 export { aboutRoute, backupsRoute } from "./operations-pages.tsx";
 export { myThemeRoute, themeRoute } from "./theme-pages.tsx";
 export { personWorkTimesRoute, projectMembersRoute, workTimesRoute } from "./work-times-pages.tsx";
+export { dataExportsRoute, keepRulesRoute, myDataRoute } from "./privacy-pages.tsx";
 
 export const homeRoute = createRoute({
   getParentRoute: () => appRoute,

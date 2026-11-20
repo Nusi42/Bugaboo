@@ -1,6 +1,7 @@
 import { timeZones } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { ChoiceGroup, SelectField, Switch } from "@bugaboo/ui";
+import type { ReactNode } from "react";
 
 import { type Setting, type SettingValue } from "../../shared/my-settings.ts";
 import { deviceTimeZone } from "../../shared/region.ts";
@@ -17,6 +18,11 @@ export interface SettingControlProps {
   readonly source?: string | undefined;
   /** The new value, to be shown at once and sent. */
   readonly onChange: (value: SettingValue) => void;
+  /**
+   * What the number typed would do, said above the Save button before it is saved (what a shorter keep period would
+   * delete, ADR-0045, decision 2); only a box of a whole number has it.
+   */
+  readonly noteFor?: ((value: number) => ReactNode) | undefined;
 }
 
 /** The time zones the server knows (M2-F72), for the person to choose from; the first is the device's own. */
@@ -32,7 +38,7 @@ function timeZoneChoices(): readonly { readonly value: string; readonly label: s
  * for a fixed list of choices, a list of time zones, a box for a number or a text. The keys of
  * shortcuts and the start page have pages of their own and are not drawn here.
  */
-export function SettingControl({ setting, onChange, help, source }: SettingControlProps) {
+export function SettingControl({ setting, onChange, help, source, noteFor }: SettingControlProps) {
   const value = setting.value;
   const kind = controlKindOf(setting);
   if (kind === "switch" && typeof value === "boolean") {
@@ -77,5 +83,5 @@ export function SettingControl({ setting, onChange, help, source }: SettingContr
     return <LengthControl key={String(value)} {...{ setting, onChange, help, source }} />;
   }
   // Keyed by the stored value, so the box shows the new value after a reset.
-  return <TypedControl key={String(value)} {...{ setting, onChange, help, source }} />;
+  return <TypedControl key={String(value)} {...{ setting, onChange, help, source, noteFor }} />;
 }

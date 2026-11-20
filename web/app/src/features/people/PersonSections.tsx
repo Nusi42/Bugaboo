@@ -10,6 +10,7 @@ import {
   paths,
   personWorkTimesAddress,
 } from "../../shared/paths.ts";
+import { formerName } from "../../shared/person.ts";
 import { usePermissions } from "../../shared/use-me.ts";
 import type { PersonLine } from "./people.ts";
 
@@ -120,6 +121,20 @@ export function Facts({ line, since }: { readonly line: PersonLine; readonly sin
           <dd {...partOf(part.definition)}>{formatDateTime(since)}</dd>
         </div>
       </dl>
+    </Card>
+  );
+}
+
+/**
+ * The page of a removed person, in place of what it showed (PRIV-04, ADR-0044, decision 6): *Former user K7Q2*, the
+ * same label as everywhere, and that the account is gone while the work still reads.
+ */
+export function FormerPerson({ code }: { readonly code: string }) {
+  const label = formerName(code);
+  return (
+    <Card heading={label} level={1} back={{ href: paths.people, label: t("person.back") }}>
+      <p {...partOf(part.text)}>{t("person.former-title")}</p>
+      <p {...partOf(part.muted)}>{t("person.former-text", { label })}</p>
     </Card>
   );
 }

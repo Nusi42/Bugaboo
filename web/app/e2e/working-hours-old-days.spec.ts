@@ -24,23 +24,34 @@ test("time_10 Delete them asks first and deletes only days older than the keep p
   await createDays(admin, ["2020-03-02", "2020-03-03", young]);
   await signIn(page, ada);
   await page.goto(paths.workingHours);
-  const card = page.getByRole("region", { name: t("old-work-days.title") });
+  const card = page.getByRole("region", {
+    name: t("old-records.title", { kind: t("keep-kind.name.work-days") }),
+  });
   await expect(
     card.getByText(/^2 work days are older than the keep period of 2 years/u),
   ).toBeVisible();
   // Nothing is deleted by asking: the question comes first, and *Cancel* leaves everything.
-  await card.getByRole("button", { name: t("old-work-days.delete-all"), exact: true }).click();
+  await card.getByRole("button", { name: t("old-records.delete-all"), exact: true }).click();
   const question = page.getByRole("alertdialog");
-  await expect(question).toContainText(t("old-work-days.delete-all-text", { count: 2 }));
+  await expect(question).toContainText(
+    t("old-records.delete-all-text", {
+      records: t("keep-kind.count.work-days", { count: 2 }),
+      count: 2,
+    }),
+  );
   await question.getByRole("button", { name: t("common.cancel"), exact: true }).click();
   await expect(card.getByText(/^2 work days are older/u)).toBeVisible();
-  await card.getByRole("button", { name: t("old-work-days.delete-all"), exact: true }).click();
+  await card.getByRole("button", { name: t("old-records.delete-all"), exact: true }).click();
   await page
     .getByRole("alertdialog")
-    .getByRole("button", { name: t("old-work-days.delete"), exact: true })
+    .getByRole("button", { name: t("old-records.delete"), exact: true })
     .click();
-  await expect(card.getByText(t("old-work-days.deleted", { count: 2 }))).toBeVisible();
-  await expect(card.getByText(t("old-work-days.none"))).toBeVisible();
+  await expect(
+    card.getByText(
+      t("old-records.deleted", { records: t("keep-kind.count.work-days", { count: 2 }), count: 2 }),
+    ),
+  ).toBeVisible();
+  await expect(card.getByText(t("old-records.none"))).toBeVisible();
   // The day younger than the keep period is still there.
   const kept = dataOf(
     await admin.client.GET("/api/v1/me/work-days", {

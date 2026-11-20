@@ -6740,10 +6740,10 @@ part "theme-list.facts" {
     font-size "$fs-sm"
 }
 
-// The table of the apps a person allowed (Connected apps): one row for each app, the columns side by side from a
-// tablet on; on a phone each row is a block under the other and each cell says what it is itself, so the head is not
-// shown.
-part "apps.table" {
+// A table of records (the apps a person allowed, the keep and delete rules, the data exports): one row for each record,
+// the columns side by side from a tablet on; on a phone each row is a block under the other and each cell says what it
+// is itself, so the head is not shown.
+part "data-table" {
     width "100%"
     border-collapse collapse
     media "(max-width: calc($bp-tablet - 1px))" {
@@ -6751,13 +6751,13 @@ part "apps.table" {
     }
 }
 
-part "apps.head" {
+part "data-table.head" {
     media "(max-width: calc($bp-tablet - 1px))" {
         display none
     }
 }
 
-part "apps.row" {
+part "data-table.row" {
     media "(max-width: calc($bp-tablet - 1px))" {
         display block
         padding "$space-2 0"
@@ -6765,13 +6765,13 @@ part "apps.row" {
     }
 }
 
-part "apps.row:last-child" {
+part "data-table.row:last-child" {
     media "(max-width: calc($bp-tablet - 1px))" {
         border-bottom 0
     }
 }
 
-part "apps.cell" {
+part "data-table.cell" {
     padding "$space-2 $space-3"
     text-align start
     vertical-align middle
@@ -6787,37 +6787,37 @@ part "apps.cell" {
     }
 }
 
-part "apps.row:last-child apps.cell" {
+part "data-table.row:last-child data-table.cell" {
     border-bottom 0
 }
 
-part "apps.cell[variant=head]" {
+part "data-table.cell[variant=head]" {
     color "$fg-muted"
     white-space nowrap
 }
 
-part "apps.body" {
+part "data-table.body" {
     media "(max-width: calc($bp-tablet - 1px))" {
         display block
     }
 }
 
 // The name of an app and a date stay on one line; a phone has the room.
-part "apps.cell[variant=name]" {
+part "data-table.cell[variant=name]" {
     white-space nowrap
     media "(max-width: calc($bp-tablet - 1px))" {
         white-space normal
     }
 }
 
-part "apps.cell[variant=date]" {
+part "data-table.cell[variant=date]" {
     white-space nowrap
     media "(max-width: calc($bp-tablet - 1px))" {
         white-space normal
     }
 }
 
-part "apps.cell[variant=action]" {
+part "data-table.cell[variant=action]" {
     text-align end
     white-space nowrap
     media "(max-width: calc($bp-tablet - 1px))" {
@@ -6826,7 +6826,7 @@ part "apps.cell[variant=action]" {
 }
 
 // What a cell is, said beside its words where the head of the table is not shown.
-part "apps.label" {
+part "data-table.label" {
     display none
     color "$fg-muted"
     media "(max-width: calc($bp-tablet - 1px))" {

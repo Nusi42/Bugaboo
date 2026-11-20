@@ -65,6 +65,10 @@ export const messages = {
   "nav.sign-in-rules": "Sign-in rules",
   "nav.organization-security": "Security",
   "nav.working-hours": "Working hours",
+  "nav.group.privacy": "Privacy",
+  "nav.my-data": "My data",
+  "nav.keep-rules": "Keep and delete rules",
+  "nav.data-exports": "Data exports",
   "nav.themes": "Themes",
   "nav.group.look-org": "Look",
   "appearance.mode.light": "Always light",
@@ -769,6 +773,80 @@ export const messages = {
   "starting-role.hr": "HR",
   "working-time.preset.germany": "Germany",
   "working-time.preset.no-rules": "No rules",
+  "keep-group.name.by-itself": "Bugaboo deletes these by itself",
+  "keep-group.name.by-an-administrator": "An administrator deletes these after their period",
+  "keep-length.hours": "{count, plural, one {# hour} other {# hours}}",
+  "keep-length.days": "{count, plural, one {# day} other {# days}}",
+  "keep-length.years": "{count, plural, one {# year} other {# years}}",
+  "keep-kind.name.ip-addresses": "IP addresses of sign-ins",
+  "keep-kind.why.ip-addresses": "Stopping attacks on signing in",
+  "keep-kind.name.sessions": "Sign-ins",
+  "keep-kind.why.sessions": "Staying signed in; a sign-in that ended is deleted at once",
+  "keep-kind.name.sign-up-links": "Sign-ups that were used or ran out",
+  "keep-kind.why.sign-up-links": "Saying that a sign-up was finished already",
+  "keep-kind.name.e-mail-change-links": "Links that confirm a new e-mail address",
+  "keep-kind.why.e-mail-change-links":
+    "Changing the e-mail address only after the new one is proved; a link that was opened is deleted at once",
+  "keep-kind.name.agent-requests": "Requests for agents",
+  "keep-kind.why.agent-requests":
+    "Showing you what a program asked for and what you answered; a request waits a day for your answer and a day for its keys",
+  "keep-kind.name.drafts": "Drafts",
+  "keep-kind.why.drafts": "Not losing text that was not saved",
+  "keep-kind.name.notifications": "Notifications",
+  "keep-kind.why.notifications": "Not needed longer",
+  "keep-kind.name.trash": "Trash",
+  "keep-kind.why.trash":
+    "Time to bring back what was deleted by mistake; an issue whose time entries must still be kept stays",
+  "keep-kind.name.uploads": "Unfinished uploads",
+  "keep-kind.why.uploads": "Time to finish an upload",
+  "keep-kind.name.dead-jobs": "Background work that failed",
+  "keep-kind.why.dead-jobs": "Seeing why it failed",
+  "keep-kind.name.app-grants": "Ended access of AI apps",
+  "keep-kind.why.app-grants": "Seeing which app had access",
+  "keep-kind.name.tool-calls": "Log of tool calls",
+  "keep-kind.why.tool-calls": "Seeing what the assistant and AI apps did",
+  "keep-kind.name.away-times": "Away times",
+  "keep-kind.why.away-times": "Planning; nobody needs them longer",
+  "keep-kind.name.security-log": "Security log",
+  "keep-kind.why.security-log": "Finding and explaining security problems",
+  "keep-kind.name.backups": "Backups",
+  "keep-kind.why.backups":
+    "Getting everything back after a loss; the newest backups of the days and weeks the settings of backups say are kept whatever their age, and a backup created before a restore is kept as long as the security log",
+  "keep-kind.name.data-exports": "Data exports",
+  "keep-kind.why.data-exports":
+    "Giving a person the file of Download my data; the record of the file goes with it",
+  "keep-kind.name.work-days": "Working hours",
+  "keep-kind.why.work-days": "German working-time recording",
+  "keep-kind.name.time-entries": "Time on issues",
+  "keep-kind.why.time-entries": "Accounting; your organization sets the period",
+  "keep-kind.count.ip-addresses": "{count, plural, one {# IP address} other {# IP addresses}}",
+  "keep-kind.count.sessions": "{count, plural, one {# sign-in} other {# sign-ins}}",
+  "keep-kind.count.sign-up-links": "{count, plural, one {# sign-up} other {# sign-ups}}",
+  "keep-kind.count.e-mail-change-links":
+    "{count, plural, one {# link to a new e-mail address} other {# links to new e-mail addresses}}",
+  "keep-kind.count.agent-requests":
+    "{count, plural, one {# request for an agent} other {# requests for agents}}",
+  "keep-kind.count.drafts": "{count, plural, one {# draft} other {# drafts}}",
+  "keep-kind.count.notifications": "{count, plural, one {# notification} other {# notifications}}",
+  "keep-kind.count.trash":
+    "{count, plural, one {# issue or file in the trash} other {# issues and files in the trash}}",
+  "keep-kind.count.uploads":
+    "{count, plural, one {# unfinished upload} other {# unfinished uploads}}",
+  "keep-kind.count.dead-jobs":
+    "{count, plural, one {# piece of background work that failed} other {# pieces of background work that failed}}",
+  "keep-kind.count.app-grants":
+    "{count, plural, one {# ended access of an AI app} other {# ended accesses of AI apps}}",
+  "keep-kind.count.tool-calls":
+    "{count, plural, one {# entry of the log of tool calls} other {# entries of the log of tool calls}}",
+  "keep-kind.count.away-times": "{count, plural, one {# away time} other {# away times}}",
+  "keep-kind.count.security-log":
+    "{count, plural, one {# entry of the security log} other {# entries of the security log}}",
+  "keep-kind.count.backups": "{count, plural, one {# backup} other {# backups}}",
+  "keep-kind.count.data-exports": "{count, plural, one {# data export} other {# data exports}}",
+  "keep-kind.count.work-days": "{count, plural, one {# work day} other {# work days}}",
+  "keep-kind.count.time-entries": "{count, plural, one {# time entry} other {# time entries}}",
+  "keep-rules.then.by-itself": "Deleted",
+  "keep-rules.then.by-an-administrator": "An administrator deletes them",
   "working-time.warning.long-day": "{worked} worked. The rules allow {most} a day at most.",
   "working-time.warning.short-break":
     "{worked} worked and only {breaks} of break. The rules ask for {needed} of break after {after} of work.",
@@ -849,6 +927,10 @@ export const messages = {
     "Download someone's data: create the file of Download my data for somebody else, always with a reason; the person is told",
   "permission.remove-people":
     "Remove people: remove a switched-off person for good, after seeing what is deleted, what stays as Former user and what the law keeps until when",
+  "removal.exports-go":
+    "Files of Download my data about this person, also one that was not fetched yet: give it to them first",
+  "removal.no-fixed-end":
+    "No fixed last day: {kind} are kept by their rotation, the newest of each day and week, whatever their age, and then deleted",
   "notification.kind.work-times-changed": "Your work times were changed",
   "notifications.work-times-away-entered": "{who} entered an away time for you: {days}",
   "notifications.work-times-away-changed": "{who} changed your away time: {days}",

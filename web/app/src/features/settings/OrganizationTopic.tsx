@@ -11,10 +11,18 @@ export interface OrganizationTopicProps {
   readonly helps?: SettingsFormProps["helps"];
   /** The controls a page draws itself for some settings (a theme with its samples). */
   readonly controls?: SettingsFormProps["controls"];
+  /** Hears that a change has been answered by the server, so a page reads again what follows from it. */
+  readonly onSettled?: () => void;
 }
 
 /** The organization's settings of one page, drawn by the generic form, with the lock for administrators. */
-export function OrganizationTopic({ topics, searchable, helps, controls }: OrganizationTopicProps) {
+export function OrganizationTopic({
+  topics,
+  searchable,
+  helps,
+  controls,
+  onSettled,
+}: OrganizationTopicProps) {
   const { settings, failed, edits } = useOrganizationSettings(topics);
   return (
     <QueryGate error={failed} data={settings} loading={null}>
@@ -28,10 +36,10 @@ export function OrganizationTopic({ topics, searchable, helps, controls }: Organ
           problem={edits.problem}
           actions={{
             onChange: (key, value) => {
-              edits.change({ kind: "change", key, value });
+              edits.change({ kind: "change", key, value }, onSettled);
             },
             onReset: (key) => {
-              edits.change({ kind: "reset", key });
+              edits.change({ kind: "reset", key }, onSettled);
             },
             onLock: (key, locked) => {
               edits.change({ kind: "lock", key, locked });

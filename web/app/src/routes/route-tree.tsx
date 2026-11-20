@@ -71,6 +71,9 @@ import {
   projectMembersRoute,
   workTimesRoute,
   themeRoute,
+  dataExportsRoute,
+  keepRulesRoute,
+  myDataRoute,
 } from "./app-pages.tsx";
 import { profileRoute, shortcutsRoute } from "./shortcuts-pages.tsx";
 import { eMailChangeRoute, invitationRoute, signUpRoute } from "./guest-pages.tsx";
@@ -139,6 +142,7 @@ export const routeTree = rootRoute.addChildren([
       sessionsRoute,
       accessKeysRoute,
       connectedAppsRoute,
+      myDataRoute,
       aboutRoute,
     ]),
     organizationSettingsRoute.addChildren([
@@ -162,6 +166,8 @@ export const routeTree = rootRoute.addChildren([
       checkAccessRoute,
       signInRulesRoute,
       workingHoursRoute,
+      keepRulesRoute,
+      dataExportsRoute,
       themesRoute,
       themeRoute,
       projectsRoute,

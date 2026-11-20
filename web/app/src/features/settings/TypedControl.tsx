@@ -10,7 +10,7 @@ import { useSettingBox } from "./use-setting-box.ts";
  * A text or a number the person types, saved with its own button; a number that counts years has its
  * unit beside the box, in words, so the box holds the number only.
  */
-export function TypedControl({ setting, onChange, help, source }: SettingControlProps) {
+export function TypedControl({ setting, onChange, help, source, noteFor }: SettingControlProps) {
   const bounds = setting.bounds ?? undefined;
   const number = setting.kind === "whole-number";
   const unitHere = number && unitWords(setting, 0) !== undefined;
@@ -38,5 +38,14 @@ export function TypedControl({ setting, onChange, help, source }: SettingControl
   });
   const count = wholeNumberIn(box.draft) ?? Number(setting.value);
   const unit = unitWords(setting, count);
-  return <SettingBox {...box} {...(unit === undefined ? {} : { unit })} />;
+  // The note speaks of a number the box accepts; of another it says nothing, and the box says what is wrong.
+  const inBounds = bounds === undefined || (count >= bounds.least && count <= bounds.most);
+  const note = number && inBounds ? noteFor?.(count) : undefined;
+  return (
+    <SettingBox
+      {...box}
+      {...(unit === undefined ? {} : { unit })}
+      {...(note === undefined ? {} : { note })}
+    />
+  );
 }

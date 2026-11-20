@@ -89,18 +89,20 @@ fn plan_keys() -> Vec<Made> {
     kinds.chain(others).chain(ways).collect()
 }
 
-/// The messages of *Keep and delete rules*: the name and the reason of each kind of data, the two
-/// groups and the units of a keep period.
+/// The messages of *Keep and delete rules*: the name, the reason and the count of each kind of
+/// data, the two groups with what happens in each, and the units of a keep period.
 fn keep_keys() -> Vec<Made> {
     let kinds = KeepKind::ALL.iter().flat_map(|kind| {
-        [kind.name(), kind.why()].map(|key| Made {
+        [kind.name(), kind.why(), kind.count()].map(|key| Made {
             key,
             word: format!("the kind of kept data `{}`", kind.code()),
         })
     });
-    let groups = KeepGroup::ALL.iter().map(|group| Made {
-        key: group.name(),
-        word: format!("the group of keep rules `{}`", group.code()),
+    let groups = KeepGroup::ALL.iter().flat_map(|group| {
+        [group.name(), group.then()].map(|key| Made {
+            key,
+            word: format!("the group of keep rules `{}`", group.code()),
+        })
     });
     let units = LengthUnit::ALL.iter().map(|unit| Made {
         key: unit.name(),

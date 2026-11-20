@@ -2136,6 +2136,84 @@ pub const COOKIE_CSRF_PURPOSE: MessageKey = MessageKey::new("cookie.csrf.purpose
 /// The message `cookie.session.purpose`.
 pub const COOKIE_SESSION_PURPOSE: MessageKey = MessageKey::new("cookie.session.purpose");
 
+/// The message `data-exports.col.actions`.
+pub const DATA_EXPORTS_COL_ACTIONS: MessageKey = MessageKey::new("data-exports.col.actions");
+
+/// The message `data-exports.col.asked-at`.
+pub const DATA_EXPORTS_COL_ASKED_AT: MessageKey = MessageKey::new("data-exports.col.asked-at");
+
+/// The message `data-exports.col.asked-by`.
+pub const DATA_EXPORTS_COL_ASKED_BY: MessageKey = MessageKey::new("data-exports.col.asked-by");
+
+/// The message `data-exports.col.deleted-at`.
+pub const DATA_EXPORTS_COL_DELETED_AT: MessageKey = MessageKey::new("data-exports.col.deleted-at");
+
+/// The message `data-exports.col.file`.
+pub const DATA_EXPORTS_COL_FILE: MessageKey = MessageKey::new("data-exports.col.file");
+
+/// The message `data-exports.col.person`.
+pub const DATA_EXPORTS_COL_PERSON: MessageKey = MessageKey::new("data-exports.col.person");
+
+/// The message `data-exports.col.reason`.
+pub const DATA_EXPORTS_COL_REASON: MessageKey = MessageKey::new("data-exports.col.reason");
+
+/// The message `data-exports.create`.
+pub const DATA_EXPORTS_CREATE: MessageKey = MessageKey::new("data-exports.create");
+
+/// The message `data-exports.download`.
+pub const DATA_EXPORTS_DOWNLOAD: MessageKey = MessageKey::new("data-exports.download");
+
+/// The message `data-exports.file.failed`.
+pub const DATA_EXPORTS_FILE_FAILED: MessageKey = MessageKey::new("data-exports.file.failed");
+
+/// The message `data-exports.file.waiting`.
+pub const DATA_EXPORTS_FILE_WAITING: MessageKey = MessageKey::new("data-exports.file.waiting");
+
+/// The message `data-exports.intro`.
+pub const DATA_EXPORTS_INTRO: MessageKey = MessageKey::new("data-exports.intro");
+
+/// The message `data-exports.list`.
+pub const DATA_EXPORTS_LIST: MessageKey = MessageKey::new("data-exports.list");
+
+/// The message `data-exports.more`.
+pub const DATA_EXPORTS_MORE: MessageKey = MessageKey::new("data-exports.more");
+
+/// The message `data-exports.none`.
+pub const DATA_EXPORTS_NONE: MessageKey = MessageKey::new("data-exports.none");
+
+/// The message `data-exports.own`.
+pub const DATA_EXPORTS_OWN: MessageKey = MessageKey::new("data-exports.own");
+
+/// The message `data-exports.pick`.
+pub const DATA_EXPORTS_PICK: MessageKey = MessageKey::new("data-exports.pick");
+
+/// The message `data-exports.pick-first`.
+pub const DATA_EXPORTS_PICK_FIRST: MessageKey = MessageKey::new("data-exports.pick-first");
+
+/// The message `data-exports.pick-list`.
+pub const DATA_EXPORTS_PICK_LIST: MessageKey = MessageKey::new("data-exports.pick-list");
+
+/// The message `data-exports.pick-more`.
+pub const DATA_EXPORTS_PICK_MORE: MessageKey = MessageKey::new("data-exports.pick-more");
+
+/// The message `data-exports.pick-nothing`.
+pub const DATA_EXPORTS_PICK_NOTHING: MessageKey = MessageKey::new("data-exports.pick-nothing");
+
+/// The message `data-exports.pick-search`.
+pub const DATA_EXPORTS_PICK_SEARCH: MessageKey = MessageKey::new("data-exports.pick-search");
+
+/// The message `data-exports.reason`.
+pub const DATA_EXPORTS_REASON: MessageKey = MessageKey::new("data-exports.reason");
+
+/// The message `data-exports.reason-help`.
+pub const DATA_EXPORTS_REASON_HELP: MessageKey = MessageKey::new("data-exports.reason-help");
+
+/// The message `data-exports.someone`.
+pub const DATA_EXPORTS_SOMEONE: MessageKey = MessageKey::new("data-exports.someone");
+
+/// The message `data-exports.window-intro`.
+pub const DATA_EXPORTS_WINDOW_INTRO: MessageKey = MessageKey::new("data-exports.window-intro");
+
 /// The message `data-folder.account-unknown`.
 pub const DATA_FOLDER_ACCOUNT_UNKNOWN: MessageKey = MessageKey::new("data-folder.account-unknown");
 
@@ -4214,6 +4292,42 @@ pub const KEEP_KIND_WHY_UPLOADS: MessageKey = MessageKey::new("keep-kind.why.upl
 /// The message `keep-kind.why.work-days`.
 pub const KEEP_KIND_WHY_WORK_DAYS: MessageKey = MessageKey::new("keep-kind.why.work-days");
 
+/// The message `keep-rules.col.kind`.
+pub const KEEP_RULES_COL_KIND: MessageKey = MessageKey::new("keep-rules.col.kind");
+
+/// The message `keep-rules.col.period`.
+pub const KEEP_RULES_COL_PERIOD: MessageKey = MessageKey::new("keep-rules.col.period");
+
+/// The message `keep-rules.col.then`.
+pub const KEEP_RULES_COL_THEN: MessageKey = MessageKey::new("keep-rules.col.then");
+
+/// The message `keep-rules.col.why`.
+pub const KEEP_RULES_COL_WHY: MessageKey = MessageKey::new("keep-rules.col.why");
+
+/// The message `keep-rules.intro`.
+pub const KEEP_RULES_INTRO: MessageKey = MessageKey::new("keep-rules.intro");
+
+/// The message `keep-rules.periods`.
+pub const KEEP_RULES_PERIODS: MessageKey = MessageKey::new("keep-rules.periods");
+
+/// The message `keep-rules.periods-intro`.
+pub const KEEP_RULES_PERIODS_INTRO: MessageKey = MessageKey::new("keep-rules.periods-intro");
+
+/// The message `keep-rules.then.by-an-administrator`.
+pub const KEEP_RULES_THEN_BY_AN_ADMINISTRATOR: MessageKey =
+    MessageKey::new("keep-rules.then.by-an-administrator");
+
+/// The message `keep-rules.then.by-itself`.
+pub const KEEP_RULES_THEN_BY_ITSELF: MessageKey = MessageKey::new("keep-rules.then.by-itself");
+
+/// The message `keep-rules.would-be-past-none`.
+pub const KEEP_RULES_WOULD_BE_PAST_NONE: MessageKey =
+    MessageKey::new("keep-rules.would-be-past-none");
+
+/// The message `keep-rules.would-delete-none`.
+pub const KEEP_RULES_WOULD_DELETE_NONE: MessageKey =
+    MessageKey::new("keep-rules.would-delete-none");
+
 /// The message `keys.database-placeholder`.
 pub const KEYS_DATABASE_PLACEHOLDER: MessageKey = MessageKey::new("keys.database-placeholder");
 
@@ -4891,6 +5005,51 @@ pub const MCP_RESOURCE_PROJECTS_HELP: MessageKey = MessageKey::new("mcp.resource
 /// The message `mcp.tool.preview-argument`.
 pub const MCP_TOOL_PREVIEW_ARGUMENT: MessageKey = MessageKey::new("mcp.tool.preview-argument");
 
+/// The message `my-data.correct-intro`.
+pub const MY_DATA_CORRECT_INTRO: MessageKey = MessageKey::new("my-data.correct-intro");
+
+/// The message `my-data.correct-others`.
+pub const MY_DATA_CORRECT_OTHERS: MessageKey = MessageKey::new("my-data.correct-others");
+
+/// The message `my-data.correct-profile`.
+pub const MY_DATA_CORRECT_PROFILE: MessageKey = MessageKey::new("my-data.correct-profile");
+
+/// The message `my-data.correct-settings`.
+pub const MY_DATA_CORRECT_SETTINGS: MessageKey = MessageKey::new("my-data.correct-settings");
+
+/// The message `my-data.correct-time`.
+pub const MY_DATA_CORRECT_TIME: MessageKey = MessageKey::new("my-data.correct-time");
+
+/// The message `my-data.correct-title`.
+pub const MY_DATA_CORRECT_TITLE: MessageKey = MessageKey::new("my-data.correct-title");
+
+/// The message `my-data.correct-work-times`.
+pub const MY_DATA_CORRECT_WORK_TIMES: MessageKey = MessageKey::new("my-data.correct-work-times");
+
+/// The message `my-data.download`.
+pub const MY_DATA_DOWNLOAD: MessageKey = MessageKey::new("my-data.download");
+
+/// The message `my-data.download-file`.
+pub const MY_DATA_DOWNLOAD_FILE: MessageKey = MessageKey::new("my-data.download-file");
+
+/// The message `my-data.download-intro`.
+pub const MY_DATA_DOWNLOAD_INTRO: MessageKey = MessageKey::new("my-data.download-intro");
+
+/// The message `my-data.failed`.
+pub const MY_DATA_FAILED: MessageKey = MessageKey::new("my-data.failed");
+
+/// The message `my-data.intro`.
+pub const MY_DATA_INTRO: MessageKey = MessageKey::new("my-data.intro");
+
+/// The message `my-data.making`.
+pub const MY_DATA_MAKING: MessageKey = MessageKey::new("my-data.making");
+
+/// The message `my-data.none`.
+pub const MY_DATA_NONE: MessageKey = MessageKey::new("my-data.none");
+
+/// The message `my-data.waiting`.
+pub const MY_DATA_WAITING: MessageKey = MessageKey::new("my-data.waiting");
+
 /// The message `nav.about`.
 pub const NAV_ABOUT: MessageKey = MessageKey::new("nav.about");
 
@@ -4915,6 +5074,9 @@ pub const NAV_CHECK_ACCESS: MessageKey = MessageKey::new("nav.check-access");
 /// The message `nav.connected-apps`.
 pub const NAV_CONNECTED_APPS: MessageKey = MessageKey::new("nav.connected-apps");
 
+/// The message `nav.data-exports`.
+pub const NAV_DATA_EXPORTS: MessageKey = MessageKey::new("nav.data-exports");
+
 /// The message `nav.field-permissions`.
 pub const NAV_FIELD_PERMISSIONS: MessageKey = MessageKey::new("nav.field-permissions");
 
@@ -4935,6 +5097,9 @@ pub const NAV_GROUP_LOOK_ORG: MessageKey = MessageKey::new("nav.group.look-org")
 
 /// The message `nav.group.people`.
 pub const NAV_GROUP_PEOPLE: MessageKey = MessageKey::new("nav.group.people");
+
+/// The message `nav.group.privacy`.
+pub const NAV_GROUP_PRIVACY: MessageKey = MessageKey::new("nav.group.privacy");
 
 /// The message `nav.group.sign-in`.
 pub const NAV_GROUP_SIGN_IN: MessageKey = MessageKey::new("nav.group.sign-in");
@@ -4957,6 +5122,9 @@ pub const NAV_HOME: MessageKey = MessageKey::new("nav.home");
 /// The message `nav.issue-types`.
 pub const NAV_ISSUE_TYPES: MessageKey = MessageKey::new("nav.issue-types");
 
+/// The message `nav.keep-rules`.
+pub const NAV_KEEP_RULES: MessageKey = MessageKey::new("nav.keep-rules");
+
 /// The message `nav.labels`.
 pub const NAV_LABELS: MessageKey = MessageKey::new("nav.labels");
 
@@ -4965,6 +5133,9 @@ pub const NAV_MAIL_SERVER: MessageKey = MessageKey::new("nav.mail-server");
 
 /// The message `nav.my-agents`.
 pub const NAV_MY_AGENTS: MessageKey = MessageKey::new("nav.my-agents");
+
+/// The message `nav.my-data`.
+pub const NAV_MY_DATA: MessageKey = MessageKey::new("nav.my-data");
 
 /// The message `nav.my-settings`.
 pub const NAV_MY_SETTINGS: MessageKey = MessageKey::new("nav.my-settings");
@@ -5203,6 +5374,9 @@ pub const NOTIFICATIONS_NOTHING_UNREAD: MessageKey =
 /// The message `notifications.open`.
 pub const NOTIFICATIONS_OPEN: MessageKey = MessageKey::new("notifications.open");
 
+/// The message `notifications.open-my-data`.
+pub const NOTIFICATIONS_OPEN_MY_DATA: MessageKey = MessageKey::new("notifications.open-my-data");
+
 /// The message `notifications.open-project-settings`.
 pub const NOTIFICATIONS_OPEN_PROJECT_SETTINGS: MessageKey =
     MessageKey::new("notifications.open-project-settings");
@@ -5236,27 +5410,24 @@ pub const NOTIFICATIONS_START_NOTHING: MessageKey = MessageKey::new("notificatio
 /// The message `notifications.title`.
 pub const NOTIFICATIONS_TITLE: MessageKey = MessageKey::new("notifications.title");
 
-/// The message `old-work-days.delete`.
-pub const OLD_WORK_DAYS_DELETE: MessageKey = MessageKey::new("old-work-days.delete");
+/// The message `old-records.delete`.
+pub const OLD_RECORDS_DELETE: MessageKey = MessageKey::new("old-records.delete");
 
-/// The message `old-work-days.delete-all`.
-pub const OLD_WORK_DAYS_DELETE_ALL: MessageKey = MessageKey::new("old-work-days.delete-all");
+/// The message `old-records.delete-all`.
+pub const OLD_RECORDS_DELETE_ALL: MessageKey = MessageKey::new("old-records.delete-all");
 
-/// The message `old-work-days.intro`.
-pub const OLD_WORK_DAYS_INTRO: MessageKey = MessageKey::new("old-work-days.intro");
+/// The message `old-records.intro`.
+pub const OLD_RECORDS_INTRO: MessageKey = MessageKey::new("old-records.intro");
 
-/// The message `old-work-days.more-people`.
-pub const OLD_WORK_DAYS_MORE_PEOPLE: MessageKey = MessageKey::new("old-work-days.more-people");
+/// The message `old-records.more-people`.
+pub const OLD_RECORDS_MORE_PEOPLE: MessageKey = MessageKey::new("old-records.more-people");
 
-/// The message `old-work-days.none`.
-pub const OLD_WORK_DAYS_NONE: MessageKey = MessageKey::new("old-work-days.none");
+/// The message `old-records.none`.
+pub const OLD_RECORDS_NONE: MessageKey = MessageKey::new("old-records.none");
 
-/// The message `old-work-days.nothing-by-itself`.
-pub const OLD_WORK_DAYS_NOTHING_BY_ITSELF: MessageKey =
-    MessageKey::new("old-work-days.nothing-by-itself");
-
-/// The message `old-work-days.title`.
-pub const OLD_WORK_DAYS_TITLE: MessageKey = MessageKey::new("old-work-days.title");
+/// The message `old-records.nothing-by-itself`.
+pub const OLD_RECORDS_NOTHING_BY_ITSELF: MessageKey =
+    MessageKey::new("old-records.nothing-by-itself");
 
 /// The message `own.ask-keep`.
 pub const OWN_ASK_KEEP: MessageKey = MessageKey::new("own.ask-keep");
@@ -5565,6 +5736,9 @@ pub const PERSON_CORRECTIONS: MessageKey = MessageKey::new("person.corrections")
 /// The message `person.email`.
 pub const PERSON_EMAIL: MessageKey = MessageKey::new("person.email");
 
+/// The message `person.former-title`.
+pub const PERSON_FORMER_TITLE: MessageKey = MessageKey::new("person.former-title");
+
 /// The message `person.groups`.
 pub const PERSON_GROUPS: MessageKey = MessageKey::new("person.groups");
 
@@ -5580,6 +5754,9 @@ pub const PERSON_REASON: MessageKey = MessageKey::new("person.reason");
 /// The message `person.reason-help`.
 pub const PERSON_REASON_HELP: MessageKey = MessageKey::new("person.reason-help");
 
+/// The message `person.remove`.
+pub const PERSON_REMOVE: MessageKey = MessageKey::new("person.remove");
+
 /// The message `person.roles`.
 pub const PERSON_ROLES: MessageKey = MessageKey::new("person.roles");
 
@@ -5594,6 +5771,15 @@ pub const PERSON_SOMEONE: MessageKey = MessageKey::new("person.someone");
 
 /// The message `person.someone-inside`.
 pub const PERSON_SOMEONE_INSIDE: MessageKey = MessageKey::new("person.someone-inside");
+
+/// The message `person.state-title`.
+pub const PERSON_STATE_TITLE: MessageKey = MessageKey::new("person.state-title");
+
+/// The message `person.switch-off`.
+pub const PERSON_SWITCH_OFF: MessageKey = MessageKey::new("person.switch-off");
+
+/// The message `person.switch-on`.
+pub const PERSON_SWITCH_ON: MessageKey = MessageKey::new("person.switch-on");
 
 /// The message `personal-purpose.activity`.
 pub const PERSONAL_PURPOSE_ACTIVITY: MessageKey = MessageKey::new("personal-purpose.activity");
@@ -6062,8 +6248,26 @@ pub const RELATION_KINDS_RETIRED: MessageKey = MessageKey::new("relation-kinds.r
 /// The message `relation-kinds.search`.
 pub const RELATION_KINDS_SEARCH: MessageKey = MessageKey::new("relation-kinds.search");
 
+/// The message `removal.deleted-now`.
+pub const REMOVAL_DELETED_NOW: MessageKey = MessageKey::new("removal.deleted-now");
+
 /// The message `removal.exports-go`.
 pub const REMOVAL_EXPORTS_GO: MessageKey = MessageKey::new("removal.exports-go");
+
+/// The message `removal.intro`.
+pub const REMOVAL_INTRO: MessageKey = MessageKey::new("removal.intro");
+
+/// The message `removal.kept-by-law`.
+pub const REMOVAL_KEPT_BY_LAW: MessageKey = MessageKey::new("removal.kept-by-law");
+
+/// The message `removal.nothing`.
+pub const REMOVAL_NOTHING: MessageKey = MessageKey::new("removal.nothing");
+
+/// The message `removal.stays`.
+pub const REMOVAL_STAYS: MessageKey = MessageKey::new("removal.stays");
+
+/// The message `removal.switch-off-button`.
+pub const REMOVAL_SWITCH_OFF_BUTTON: MessageKey = MessageKey::new("removal.switch-off-button");
 
 /// The message `restore.nobody-decides-roles`.
 pub const RESTORE_NOBODY_DECIDES_ROLES: MessageKey =
@@ -12757,6 +12961,24 @@ pub fn connected_apps_take_back_name(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `data-exports.download-name`.
+#[must_use]
+pub fn data_exports_download_name(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("data-exports.download-name"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `data-exports.file.ready`.
+#[must_use]
+pub fn data_exports_file_ready(size: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("data-exports.file.ready"),
+        vec![("size", Value::Text(size.to_string()))],
+    )
+}
+
 /// The values of the message `data-folder.create-failed`, by name.
 #[derive(Clone, Copy)]
 pub struct DataFolderCreateFailed<'a> {
@@ -15039,6 +15261,168 @@ pub fn issues_unassign_name(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `keep-kind.count.agent-requests`.
+#[must_use]
+pub fn keep_kind_count_agent_requests(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keep-kind.count.agent-requests"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `keep-kind.count.app-grants`.
+#[must_use]
+pub fn keep_kind_count_app_grants(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keep-kind.count.app-grants"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `keep-kind.count.away-times`.
+#[must_use]
+pub fn keep_kind_count_away_times(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keep-kind.count.away-times"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `keep-kind.count.backups`.
+#[must_use]
+pub fn keep_kind_count_backups(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keep-kind.count.backups"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `keep-kind.count.data-exports`.
+#[must_use]
+pub fn keep_kind_count_data_exports(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keep-kind.count.data-exports"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `keep-kind.count.dead-jobs`.
+#[must_use]
+pub fn keep_kind_count_dead_jobs(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keep-kind.count.dead-jobs"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `keep-kind.count.drafts`.
+#[must_use]
+pub fn keep_kind_count_drafts(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keep-kind.count.drafts"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `keep-kind.count.e-mail-change-links`.
+#[must_use]
+pub fn keep_kind_count_e_mail_change_links(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keep-kind.count.e-mail-change-links"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `keep-kind.count.ip-addresses`.
+#[must_use]
+pub fn keep_kind_count_ip_addresses(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keep-kind.count.ip-addresses"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `keep-kind.count.notifications`.
+#[must_use]
+pub fn keep_kind_count_notifications(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keep-kind.count.notifications"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `keep-kind.count.security-log`.
+#[must_use]
+pub fn keep_kind_count_security_log(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keep-kind.count.security-log"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `keep-kind.count.sessions`.
+#[must_use]
+pub fn keep_kind_count_sessions(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keep-kind.count.sessions"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `keep-kind.count.sign-up-links`.
+#[must_use]
+pub fn keep_kind_count_sign_up_links(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keep-kind.count.sign-up-links"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `keep-kind.count.time-entries`.
+#[must_use]
+pub fn keep_kind_count_time_entries(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keep-kind.count.time-entries"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `keep-kind.count.tool-calls`.
+#[must_use]
+pub fn keep_kind_count_tool_calls(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keep-kind.count.tool-calls"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `keep-kind.count.trash`.
+#[must_use]
+pub fn keep_kind_count_trash(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keep-kind.count.trash"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `keep-kind.count.uploads`.
+#[must_use]
+pub fn keep_kind_count_uploads(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keep-kind.count.uploads"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `keep-kind.count.work-days`.
+#[must_use]
+pub fn keep_kind_count_work_days(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keep-kind.count.work-days"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
 /// The message `keep-length.days`.
 #[must_use]
 pub fn keep_length_days(count: i64) -> Message {
@@ -15072,6 +15456,36 @@ pub fn keep_rules_no_fixed_end(length: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("keep-rules.no-fixed-end"),
         vec![("length", Value::Text(length.to_string()))],
+    )
+}
+
+/// The values of the message `keep-rules.would-be-past`, by name.
+#[derive(Clone, Copy)]
+pub struct KeepRulesWouldBePast<'a> {
+    /// The value of `{count}`.
+    pub count: i64,
+    /// The value of `{records}`.
+    pub records: &'a dyn std::fmt::Display,
+}
+
+/// The message `keep-rules.would-be-past`.
+#[must_use]
+pub fn keep_rules_would_be_past(values: KeepRulesWouldBePast<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keep-rules.would-be-past"),
+        vec![
+            ("count", Value::Number(values.count)),
+            ("records", Value::Text(values.records.to_string())),
+        ],
+    )
+}
+
+/// The message `keep-rules.would-delete`.
+#[must_use]
+pub fn keep_rules_would_delete(records: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("keep-rules.would-delete"),
+        vec![("records", Value::Text(records.to_string()))],
     )
 }
 
@@ -16146,6 +16560,30 @@ pub fn mcp_wait(seconds: i64) -> Message {
     )
 }
 
+/// The values of the message `my-data.ready`, by name.
+#[derive(Clone, Copy)]
+pub struct MyDataReady<'a> {
+    /// The value of `{date}`.
+    pub date: &'a dyn std::fmt::Display,
+    /// The value of `{size}`.
+    pub size: &'a dyn std::fmt::Display,
+    /// The value of `{until}`.
+    pub until: &'a dyn std::fmt::Display,
+}
+
+/// The message `my-data.ready`.
+#[must_use]
+pub fn my_data_ready(values: MyDataReady<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("my-data.ready"),
+        vec![
+            ("date", Value::Text(values.date.to_string())),
+            ("size", Value::Text(values.size.to_string())),
+            ("until", Value::Text(values.until.to_string())),
+        ],
+    )
+}
+
 /// The message `notifications.administrators-reason`.
 #[must_use]
 pub fn notifications_administrators_reason(reason: impl std::fmt::Display) -> Message {
@@ -16419,102 +16857,132 @@ pub fn notifications_work_times_usual_changed(who: impl std::fmt::Display) -> Me
     )
 }
 
-/// The message `old-work-days.delete-all-text`.
+/// The values of the message `old-records.delete-all-text`, by name.
+#[derive(Clone, Copy)]
+pub struct OldRecordsDeleteAllText<'a> {
+    /// The value of `{count}`.
+    pub count: i64,
+    /// The value of `{records}`.
+    pub records: &'a dyn std::fmt::Display,
+}
+
+/// The message `old-records.delete-all-text`.
 #[must_use]
-pub fn old_work_days_delete_all_text(count: i64) -> Message {
+pub fn old_records_delete_all_text(values: OldRecordsDeleteAllText<'_>) -> Message {
     Message::with_arguments(
-        MessageKey::new("old-work-days.delete-all-text"),
-        vec![("count", Value::Number(count))],
+        MessageKey::new("old-records.delete-all-text"),
+        vec![
+            ("count", Value::Number(values.count)),
+            ("records", Value::Text(values.records.to_string())),
+        ],
     )
 }
 
-/// The message `old-work-days.delete-all-title`.
+/// The message `old-records.delete-all-title`.
 #[must_use]
-pub fn old_work_days_delete_all_title(count: i64) -> Message {
+pub fn old_records_delete_all_title(records: impl std::fmt::Display) -> Message {
     Message::with_arguments(
-        MessageKey::new("old-work-days.delete-all-title"),
-        vec![("count", Value::Number(count))],
+        MessageKey::new("old-records.delete-all-title"),
+        vec![("records", Value::Text(records.to_string()))],
     )
 }
 
-/// The message `old-work-days.delete-person-name`.
+/// The message `old-records.delete-person-name`.
 #[must_use]
-pub fn old_work_days_delete_person_name(name: impl std::fmt::Display) -> Message {
+pub fn old_records_delete_person_name(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
-        MessageKey::new("old-work-days.delete-person-name"),
+        MessageKey::new("old-records.delete-person-name"),
         vec![("name", Value::Text(name.to_string()))],
     )
 }
 
-/// The values of the message `old-work-days.delete-person-text`, by name.
+/// The values of the message `old-records.delete-person-text`, by name.
 #[derive(Clone, Copy)]
-pub struct OldWorkDaysDeletePersonText<'a> {
+pub struct OldRecordsDeletePersonText<'a> {
     /// The value of `{count}`.
     pub count: i64,
     /// The value of `{name}`.
     pub name: &'a dyn std::fmt::Display,
+    /// The value of `{records}`.
+    pub records: &'a dyn std::fmt::Display,
 }
 
-/// The message `old-work-days.delete-person-text`.
+/// The message `old-records.delete-person-text`.
 #[must_use]
-pub fn old_work_days_delete_person_text(values: OldWorkDaysDeletePersonText<'_>) -> Message {
+pub fn old_records_delete_person_text(values: OldRecordsDeletePersonText<'_>) -> Message {
     Message::with_arguments(
-        MessageKey::new("old-work-days.delete-person-text"),
+        MessageKey::new("old-records.delete-person-text"),
         vec![
             ("count", Value::Number(values.count)),
             ("name", Value::Text(values.name.to_string())),
+            ("records", Value::Text(values.records.to_string())),
         ],
     )
 }
 
-/// The message `old-work-days.delete-person-title`.
+/// The message `old-records.delete-person-title`.
 #[must_use]
-pub fn old_work_days_delete_person_title(name: impl std::fmt::Display) -> Message {
+pub fn old_records_delete_person_title(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
-        MessageKey::new("old-work-days.delete-person-title"),
+        MessageKey::new("old-records.delete-person-title"),
         vec![("name", Value::Text(name.to_string()))],
     )
 }
 
-/// The message `old-work-days.deleted`.
-#[must_use]
-pub fn old_work_days_deleted(count: i64) -> Message {
-    Message::with_arguments(
-        MessageKey::new("old-work-days.deleted"),
-        vec![("count", Value::Number(count))],
-    )
-}
-
-/// The message `old-work-days.person-count`.
-#[must_use]
-pub fn old_work_days_person_count(count: i64) -> Message {
-    Message::with_arguments(
-        MessageKey::new("old-work-days.person-count"),
-        vec![("count", Value::Number(count))],
-    )
-}
-
-/// The values of the message `old-work-days.summary`, by name.
+/// The values of the message `old-records.deleted`, by name.
 #[derive(Clone, Copy)]
-pub struct OldWorkDaysSummary<'a> {
+pub struct OldRecordsDeleted<'a> {
+    /// The value of `{count}`.
+    pub count: i64,
+    /// The value of `{records}`.
+    pub records: &'a dyn std::fmt::Display,
+}
+
+/// The message `old-records.deleted`.
+#[must_use]
+pub fn old_records_deleted(values: OldRecordsDeleted<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("old-records.deleted"),
+        vec![
+            ("count", Value::Number(values.count)),
+            ("records", Value::Text(values.records.to_string())),
+        ],
+    )
+}
+
+/// The values of the message `old-records.summary`, by name.
+#[derive(Clone, Copy)]
+pub struct OldRecordsSummary<'a> {
     /// The value of `{count}`.
     pub count: i64,
     /// The value of `{date}`.
     pub date: &'a dyn std::fmt::Display,
-    /// The value of `{years}`.
-    pub years: i64,
+    /// The value of `{period}`.
+    pub period: &'a dyn std::fmt::Display,
+    /// The value of `{records}`.
+    pub records: &'a dyn std::fmt::Display,
 }
 
-/// The message `old-work-days.summary`.
+/// The message `old-records.summary`.
 #[must_use]
-pub fn old_work_days_summary(values: OldWorkDaysSummary<'_>) -> Message {
+pub fn old_records_summary(values: OldRecordsSummary<'_>) -> Message {
     Message::with_arguments(
-        MessageKey::new("old-work-days.summary"),
+        MessageKey::new("old-records.summary"),
         vec![
             ("count", Value::Number(values.count)),
             ("date", Value::Text(values.date.to_string())),
-            ("years", Value::Number(values.years)),
+            ("period", Value::Text(values.period.to_string())),
+            ("records", Value::Text(values.records.to_string())),
         ],
+    )
+}
+
+/// The message `old-records.title`.
+#[must_use]
+pub fn old_records_title(kind: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("old-records.title"),
+        vec![("kind", Value::Text(kind.to_string()))],
     )
 }
 
@@ -16683,6 +17151,15 @@ pub fn people_in_groups(values: PeopleInGroups<'_>) -> Message {
     )
 }
 
+/// The message `person.active`.
+#[must_use]
+pub fn person_active(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("person.active"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
 /// The values of the message `person.agent-of`, by name.
 #[derive(Clone, Copy)]
 pub struct PersonAgentOf<'a> {
@@ -16722,6 +17199,15 @@ pub fn person_former_inside(label: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `person.former-text`.
+#[must_use]
+pub fn person_former_text(label: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("person.former-text"),
+        vec![("label", Value::Text(label.to_string()))],
+    )
+}
+
 /// The message `person.groups-none`.
 #[must_use]
 pub fn person_groups_none(name: impl std::fmt::Display) -> Message {
@@ -16754,6 +17240,33 @@ pub fn person_role_inside(role: impl std::fmt::Display) -> Message {
 pub fn person_roles_none(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("person.roles-none"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `person.switch-off-text`.
+#[must_use]
+pub fn person_switch_off_text(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("person.switch-off-text"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `person.switch-off-title`.
+#[must_use]
+pub fn person_switch_off_title(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("person.switch-off-title"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `person.switched-off`.
+#[must_use]
+pub fn person_switched_off(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("person.switched-off"),
         vec![("name", Value::Text(name.to_string()))],
     )
 }
@@ -17472,12 +17985,114 @@ pub fn relation_kinds_reads(values: RelationKindsReads<'_>) -> Message {
     )
 }
 
+/// The message `removal.comments`.
+#[must_use]
+pub fn removal_comments(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("removal.comments"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `removal.confirm`.
+#[must_use]
+pub fn removal_confirm(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("removal.confirm"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
 /// The message `removal.no-fixed-end`.
 #[must_use]
 pub fn removal_no_fixed_end(kind: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("removal.no-fixed-end"),
         vec![("kind", Value::Text(kind.to_string()))],
+    )
+}
+
+/// The values of the message `removal.rows`, by name.
+#[derive(Clone, Copy)]
+pub struct RemovalRows<'a> {
+    /// The value of `{count}`.
+    pub count: i64,
+    /// The value of `{title}`.
+    pub title: &'a dyn std::fmt::Display,
+}
+
+/// The message `removal.rows`.
+#[must_use]
+pub fn removal_rows(values: RemovalRows<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("removal.rows"),
+        vec![
+            ("count", Value::Number(values.count)),
+            ("title", Value::Text(values.title.to_string())),
+        ],
+    )
+}
+
+/// The values of the message `removal.rows-until`, by name.
+#[derive(Clone, Copy)]
+pub struct RemovalRowsUntil<'a> {
+    /// The value of `{count}`.
+    pub count: i64,
+    /// The value of `{date}`.
+    pub date: &'a dyn std::fmt::Display,
+    /// The value of `{title}`.
+    pub title: &'a dyn std::fmt::Display,
+}
+
+/// The message `removal.rows-until`.
+#[must_use]
+pub fn removal_rows_until(values: RemovalRowsUntil<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("removal.rows-until"),
+        vec![
+            ("count", Value::Number(values.count)),
+            ("date", Value::Text(values.date.to_string())),
+            ("title", Value::Text(values.title.to_string())),
+        ],
+    )
+}
+
+/// The message `removal.switch-off-first`.
+#[must_use]
+pub fn removal_switch_off_first(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("removal.switch-off-first"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `removal.title`.
+#[must_use]
+pub fn removal_title(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("removal.title"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The values of the message `removal.until`, by name.
+#[derive(Clone, Copy)]
+pub struct RemovalUntil<'a> {
+    /// The value of `{date}`.
+    pub date: &'a dyn std::fmt::Display,
+    /// The value of `{title}`.
+    pub title: &'a dyn std::fmt::Display,
+}
+
+/// The message `removal.until`.
+#[must_use]
+pub fn removal_until(values: RemovalUntil<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("removal.until"),
+        vec![
+            ("date", Value::Text(values.date.to_string())),
+            ("title", Value::Text(values.title.to_string())),
+        ],
     )
 }
 

@@ -126,7 +126,7 @@ const PARTS: [Part; 41] = [
 /// The areas (first part of a key) that the browser shows: an allow-list, so a new area ships to the
 /// browser only when it is added here (M1-F12). A key outside these areas is for the server and its
 /// command line. A `t("…")` of the app with a key from another area is a type error.
-const BROWSER_AREAS: [&str; 119] = [
+const BROWSER_AREAS: [&str; 126] = [
     "about",
     "access",
     "access-keys",
@@ -146,9 +146,10 @@ const BROWSER_AREAS: [&str; 119] = [
     "code-app",
     "comments",
     "common",
+    "conflict",
     "connect",
     "connected-apps",
-    "conflict",
+    "data-exports",
     "data-folder",
     "editing",
     "error",
@@ -179,6 +180,10 @@ const BROWSER_AREAS: [&str; 119] = [
     "issue-type",
     "issue-types",
     "issues",
+    "keep-group",
+    "keep-kind",
+    "keep-length",
+    "keep-rules",
     "labels",
     "layout-kind",
     "layouts",
@@ -188,10 +193,11 @@ const BROWSER_AREAS: [&str; 119] = [
     "many-changes-skip",
     "many-changes-status",
     "markdown",
+    "my-data",
     "nav",
     "notification",
     "notifications",
-    "old-work-days",
+    "old-records",
     "own",
     "page",
     "panel",
@@ -212,6 +218,7 @@ const BROWSER_AREAS: [&str; 119] = [
     "projects",
     "related-issues",
     "relation-kinds",
+    "removal",
     "roles",
     "runs",
     "save",

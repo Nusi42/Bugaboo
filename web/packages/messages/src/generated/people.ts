@@ -45,6 +45,34 @@ export const messages = {
   "person.reason": "Reason",
   "person.reason-help": "In a few words. The person is told.",
   "person.corrected": "Corrected. The person is told.",
+  "person.state-title": "Sign-in and removal",
+  "person.active": "{name} can sign in.",
+  "person.switched-off":
+    "{name} is switched off: they cannot sign in, and every record of theirs stays.",
+  "person.switch-off": "Switch off",
+  "person.switch-off-title": "Switch off {name}?",
+  "person.switch-off-text":
+    "{name} can no longer sign in. Their sessions end at once, their access keys and connected apps are taken back, their agents stop and the invitations they sent are taken back. Every record stays, and so do the issues assigned to them.",
+  "person.switch-on": "Switch on",
+  "person.remove": "Remove this person…",
+  "person.former-title": "This person was removed",
+  "person.former-text":
+    "Their account is deleted. Their work still reads everywhere, shown as {label}.",
+  "removal.title": "Remove {name}",
+  "removal.intro":
+    "Removing a person is final and cannot be undone. Bugaboo does it in one change, as this window says.",
+  "removal.deleted-now": "Deleted now",
+  "removal.stays": "Stays, shown as Former user",
+  "removal.kept-by-law": "Kept by law, with the name, for the people who may see it",
+  "removal.rows": "{title}: {count, plural, one {# record} other {# records}}",
+  "removal.until": "{title}: until {date}",
+  "removal.rows-until": "{title}: {count, plural, one {# record} other {# records}}, until {date}",
+  "removal.nothing": "Nothing.",
+  "removal.comments": "Comments written by {name}",
+  "removal.switch-off-first":
+    "Only a switched-off person can be removed. Switch {name} off first: their sign-in ends at once.",
+  "removal.switch-off-button": "Switch off first",
+  "removal.confirm": "Remove {name}",
   "people.intro":
     "Everybody who has an account. Open a person to see the groups they are in and the roles they have.",
   "people.list-ask":
@@ -107,6 +135,8 @@ export const messages = {
   "groups.delete-title": "Delete the group {name}?",
   "groups.delete-text":
     "This deletes the group and takes away every role and every No access it was given. {members, plural, one {The # person in it stays} other {The # people in it stay}} and keep the roles they have in other ways. This cannot be taken back.",
+  "setting.privacy.removed-texts.keep": "Keep their comments, shown as Former user",
+  "setting.privacy.removed-texts.delete": "Delete their comments",
   "sign-up-policy.mail-off":
     "E-mail is off, so signing up without an invitation is closed. Set up e-mail first.",
   "sign-up-policy.mail-link": "Set up e-mail",

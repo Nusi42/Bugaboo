@@ -137,6 +137,29 @@ export const messages = {
   "handle.rule-weekly": "You can change it once in {days, plural, one {# day} other {# days}}.",
   "handle.rule-kept":
     "A handle you give up stays reserved for you. Comments written before still name you, but a new comment that uses it names nobody.",
+  "my-data.intro":
+    "What Bugaboo stores about you: a copy to download, how long each kind is kept, and where you correct it.",
+  "my-data.download-intro":
+    "One file with everything Bugaboo stores about you: pages you can read, and the same data as files other programs can read. Bugaboo tells you when it is ready.",
+  "my-data.download": "Download my data",
+  "my-data.making": "Creating the file…",
+  "my-data.none": "You have not asked for a file yet.",
+  "my-data.waiting":
+    "Bugaboo is creating your file. You can leave this page: you are told when it is ready.",
+  "my-data.ready": "Your file of {date} is ready ({size}). You can download it until {until}.",
+  "my-data.failed":
+    "Your file could not be created. Ask again; if it fails again, tell an administrator.",
+  "my-data.download-file": "Download the file",
+  "my-data.correct-title": "Where to correct it",
+  "my-data.correct-intro":
+    "Your data is yours to correct. Each kind is corrected where it is kept.",
+  "my-data.correct-profile": "Your name and e-mail address: Profile",
+  "my-data.correct-work-times": "Your usual work days, work hours and away times: Work times",
+  "my-data.correct-time":
+    "Your working hours and time on issues: Timesheet, with a reason for a past day",
+  "my-data.correct-settings": "Your choices of look, region and notifications: My settings",
+  "my-data.correct-others":
+    "Anything else: ask an administrator. They correct it with a reason, and you are told.",
   "setting.page.assistant-intro":
     "How much the assistant looks up in Bugaboo to answer your questions. This page is only about the assistant; agents and AI apps are not changed by it.",
 } as const;
