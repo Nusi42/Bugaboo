@@ -315,4 +315,9 @@ pub(super) const ALL: &[Definition] = &[
         name: "agent_switches",
         steps: || Ok(super::m0062_agent_switches::steps()),
     },
+    Definition {
+        version: 63,
+        name: "timer_by_issue",
+        steps: || Ok(super::m0063_timer_by_issue::steps()),
+    },
 ];
