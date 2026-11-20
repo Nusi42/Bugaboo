@@ -3063,6 +3063,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("history.changed-long-text", "{who} changed {field}"),
     ("history.cleared", "{who} cleared {field}"),
+    (
+        "history.comments-thrown-away",
+        "{who} threw away {count, plural, one {a comment} other {# comments}} an agent wrote in the run",
+    ),
     ("history.date-range", "{start}–{due}"),
     (
         "history.dates-moved",

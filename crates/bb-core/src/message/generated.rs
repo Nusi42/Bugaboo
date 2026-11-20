@@ -13759,6 +13759,27 @@ pub fn history_cleared(values: HistoryCleared<'_>) -> Message {
     )
 }
 
+/// The values of the message `history.comments-thrown-away`, by name.
+#[derive(Clone, Copy)]
+pub struct HistoryCommentsThrownAway<'a> {
+    /// The value of `{count}`.
+    pub count: i64,
+    /// The value of `{who}`.
+    pub who: &'a dyn std::fmt::Display,
+}
+
+/// The message `history.comments-thrown-away`.
+#[must_use]
+pub fn history_comments_thrown_away(values: HistoryCommentsThrownAway<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("history.comments-thrown-away"),
+        vec![
+            ("count", Value::Number(values.count)),
+            ("who", Value::Text(values.who.to_string())),
+        ],
+    )
+}
+
 /// The values of the message `history.date-range`, by name.
 #[derive(Clone, Copy)]
 pub struct HistoryDateRange<'a> {

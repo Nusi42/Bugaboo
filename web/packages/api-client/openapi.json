@@ -26182,6 +26182,12 @@
             "type": ["string", "null"],
             "description": "A comment: its ID."
           },
+          "count": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "Comments thrown away: how many.",
+            "minimum": 0
+          },
           "day": {
             "type": ["string", "null"],
             "description": "Time: the date of the entry, given to every reader but the person who booked it; `at` is\nthen that date at midnight and never the moment the entry was saved."
@@ -26321,7 +26327,7 @@
       "HistoryEntryKind": {
         "type": "string",
         "description": "What an item of the history is.",
-        "enum": ["comment", "change", "relation", "file", "time"]
+        "enum": ["comment", "change", "relation", "file", "time", "comments-thrown-away"]
       },
       "HistoryTab": {
         "type": "string",

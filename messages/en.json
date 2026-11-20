@@ -1708,6 +1708,7 @@
   "history.file-restored": "{who} brought back the file {name}",
   "history.relation-added": "{who} added a relation: this issue · {name} · {issue}",
   "history.relation-removed": "{who} took away a relation: this issue · {name} · {issue}",
+  "history.comments-thrown-away": "{who} threw away {count, plural, one {a comment} other {# comments}} an agent wrote in the run",
   "history.people-none": "nobody",
   "history.type-unknown": "another issue type",
   "comments.write": "Write a comment",

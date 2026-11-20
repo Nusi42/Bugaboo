@@ -13,6 +13,7 @@ mod records;
 mod resolve;
 mod store;
 mod thrown;
+pub(crate) use thrown::thrown_count;
 mod types;
 mod write;
 

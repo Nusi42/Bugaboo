@@ -223,6 +223,42 @@ async fn ai_35_throw_away_takes_the_comments_of_the_agent_and_keeps_that_they_we
 }
 
 #[tokio::test]
+async fn ai_35_the_history_says_the_comments_of_the_agent_were_thrown_away() -> Outcome {
+    let world = World::with_ai_apps_and_agents().await?;
+    let given = handed_title(&world).await?;
+    both_commented(&world, &given).await?;
+    throw_away(&world, &given).await?;
+    let page = crate::history::history(
+        &world.ctx(),
+        crate::history::HistoryQuery {
+            session_token: given.team.session_token.clone(),
+            issue: given.issue.to_string(),
+            tab: bb_core::history::HistoryTab::Everything,
+            cursor: None,
+            limit: 50,
+        },
+    )
+    .await?
+    .into_value();
+    let thrown: Vec<_> = page
+        .items
+        .iter()
+        .filter_map(|item| match item.what {
+            crate::history::HistoryWhat::CommentsThrownAway { count } => Some((count, item)),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(thrown.len(), 1, "{:?}", page.items);
+    let (count, item) = thrown[0];
+    // The agent's comment, and the short comment its attempt wrote when it ended.
+    assert_eq!(count, 2);
+    assert_eq!(item.run_mark, Some(crate::history::RunMarkKind::Undid));
+    let written = serde_json::to_string(&page.items)?;
+    assert!(!written.contains(AGENT_TEXT), "{written}");
+    Ok(())
+}
+
+#[tokio::test]
 async fn ai_35_throw_away_keeps_the_comments_of_people() -> Outcome {
     let world = World::with_ai_apps_and_agents().await?;
     let given = handed_title(&world).await?;

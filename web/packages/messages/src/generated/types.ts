@@ -391,6 +391,7 @@ export interface MessageArguments {
   };
   "history.changed-long-text": { field: string | number; who: string | number };
   "history.cleared": { field: string | number; who: string | number };
+  "history.comments-thrown-away": { count: number; who: string | number };
   "history.date-range": { due: string | number; start: string | number };
   "history.dates-moved": { after: string | number; before: string | number; who: string | number };
   "history.file-added": { name: string | number; who: string | number };

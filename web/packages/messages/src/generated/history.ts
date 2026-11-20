@@ -15,6 +15,8 @@ export const messages = {
   "history.by": "{who} · {when}",
   "history.relation-added": "{who} added a relation: this issue · {name} · {issue}",
   "history.relation-removed": "{who} took away a relation: this issue · {name} · {issue}",
+  "history.comments-thrown-away":
+    "{who} threw away {count, plural, one {a comment} other {# comments}} an agent wrote in the run",
   "comments.write": "Write a comment",
   "comments.write-help": "Type @ and a name to mention someone.",
   "comments.add": "Comment",

@@ -672,6 +672,8 @@ impl<S: AuthStore> Ctx<'_, S> {
                 } else if is_relation(row) {
                     self.relation_change(reading.actor, &mut reading.maker, issue.id, batch, row)
                         .await?
+                } else if let Some(count) = crate::comments::thrown_count(&row.changes) {
+                    Some(HistoryWhat::CommentsThrownAway { count })
                 } else {
                     self.field_changes(reading, issue.issue_type, batch, &row.changes)
                         .await?

@@ -176,6 +176,11 @@ export function useScrollTo<Element extends HTMLElement>(
   return element;
 }
 
+/** The sentence of the comments an agent wrote in a run, thrown away with the undo of the run: no text of them is kept. */
+export function thrownAwaySentence(entry: HistoryEntry): string {
+  return t("history.comments-thrown-away", { who: whoOf(entry), count: entry.count ?? 0 });
+}
+
 /** The sentence of a relation that was added or taken away. */
 export function relationSentence(entry: HistoryEntry): string {
   const message =

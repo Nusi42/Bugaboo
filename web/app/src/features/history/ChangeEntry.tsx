@@ -4,7 +4,7 @@ import { IssueId, partOf, part, SentenceWithValue } from "@bugaboo/ui";
 
 import { whenOf } from "./when.ts";
 import { WordingNotice } from "../../shared/with-wording.tsx";
-import { relationSentence, useScrollTo } from "./history.ts";
+import { relationSentence, thrownAwaySentence, useScrollTo } from "./history.ts";
 import { RunMark } from "./RunMark.tsx";
 import { ChangeLines } from "./ChangeLines.tsx";
 import { WordedItem } from "./WordedItem.tsx";
@@ -24,6 +24,7 @@ const worded: ReadonlySet<Schema<"HistoryEntryKind">> = new Set([
   "relation",
   "file",
   "time",
+  "comments-thrown-away",
 ]);
 
 /**
@@ -66,6 +67,8 @@ export function ChangeEntry({
                 >
                   {(id) => <IssueId id={id} />}
                 </SentenceWithValue>
+              ) : item.kind === "comments-thrown-away" ? (
+                <span>{thrownAwaySentence(item)}</span>
               ) : (
                 <WordedItem item={item} fields={timeFields} />
               )}

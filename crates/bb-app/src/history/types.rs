@@ -125,6 +125,12 @@ pub enum HistoryWhat {
         /// The issue at the other end.
         issue: IssueLine,
     },
+    /// The comments an agent wrote in a run were thrown away with the undo of the run (ADR-0029,
+    /// amendment M9): they were there, and nothing of their text is kept.
+    CommentsThrownAway {
+        /// How many.
+        count: u64,
+    },
     /// Time was booked on the issue, or an entry of time changed or was deleted (TIME-02).
     Time {
         /// What happened to the entry.

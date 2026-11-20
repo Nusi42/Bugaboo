@@ -29,7 +29,7 @@ const HISTORY_LIST: &str = "history";
 
 /// The fields of an item of the history that can be asked for. A row holds only the ones that
 /// belong to its kind.
-const HISTORY_FIELDS: [FieldSpec; 26] = [
+const HISTORY_FIELDS: [FieldSpec; 27] = [
     FieldSpec::by_default("event"),
     FieldSpec::by_default("at"),
     FieldSpec::by_default("by"),
@@ -56,6 +56,7 @@ const HISTORY_FIELDS: [FieldSpec; 26] = [
     FieldSpec::by_default("minutes"),
     FieldSpec::by_default("run_mark"),
     FieldSpec::by_default("run"),
+    FieldSpec::by_default("count"),
 ];
 
 /// What happened to a relation.
@@ -101,6 +102,8 @@ pub(crate) enum HistoryEntryKind {
     File,
     /// Time that was booked on the issue, or an entry of time that changed or was deleted.
     Time,
+    /// Comments an agent wrote in a run, thrown away with the undo of the run; no text is kept.
+    CommentsThrownAway,
 }
 
 /// One item of the history of an issue.
@@ -187,6 +190,9 @@ pub(crate) struct HistoryEntryItem {
     /// then that date at midnight and never the moment the entry was saved.
     #[serde(skip_serializing_if = "Option::is_none")]
     day: Option<String>,
+    /// Comments thrown away: how many.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    count: Option<u64>,
 }
 
 impl Masked for HistoryEntryItem {}
@@ -230,6 +236,7 @@ fn start(item: &HistoryItem, kind: HistoryEntryKind) -> HistoryEntryItem {
         time_event: None,
         minutes: None,
         day: None,
+        count: None,
     }
 }
 
@@ -258,6 +265,11 @@ fn items_of(row: &HistoryItem) -> Vec<HistoryEntryItem> {
                 item
             })
             .collect(),
+        HistoryWhat::CommentsThrownAway { count } => {
+            let mut item = start(row, HistoryEntryKind::CommentsThrownAway);
+            item.count = Some(*count);
+            vec![item]
+        }
         HistoryWhat::File { event, name } => {
             let mut item = start(row, HistoryEntryKind::File);
             item.file_event = Some(*event);
@@ -420,6 +432,7 @@ mod tests {
             time_event: Some(TimeEvent::Booked),
             minutes: Some(0),
             day: Some(String::new()),
+            count: Some(0),
         };
         crate::lean::assert_fields_are_the_keys_of(&HISTORY_FIELDS, &item);
     }

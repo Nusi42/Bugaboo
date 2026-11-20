@@ -8431,6 +8431,11 @@ export interface components {
       /** @description A comment: its ID. */
       comment?: string | null;
       /**
+       * Format: int64
+       * @description Comments thrown away: how many.
+       */
+      count?: number | null;
+      /**
        * @description Time: the date of the entry, given to every reader but the person who booked it; `at` is
        *     then that date at midnight and never the moment the entry was saved.
        */
@@ -8482,7 +8487,7 @@ export interface components {
      * @description What an item of the history is.
      * @enum {string}
      */
-    HistoryEntryKind: "comment" | "change" | "relation" | "file" | "time";
+    HistoryEntryKind: "comment" | "change" | "relation" | "file" | "time" | "comments-thrown-away";
     /**
      * @description Which rows of the history of an issue to list: everything, only the comments, or only the changes.
      * @enum {string}

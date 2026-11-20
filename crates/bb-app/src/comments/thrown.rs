@@ -4,12 +4,26 @@
 
 use std::collections::BTreeMap;
 
-use bb_core::event::RecordKind;
+use bb_core::event::{FieldChange, RecordKind};
 use bb_core::id::{CommentId, EntityId, IssueId, UserId};
 use serde_json::json;
 
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal, set_to};
+use crate::event_members::value_set;
 use crate::member::comment::THROWN_AWAY;
+
+/// How many comments of an agent an event of an issue says were thrown away; `None` for an event
+/// that says nothing of it.
+pub(crate) fn thrown_count(changes: &[FieldChange]) -> Option<u64> {
+    changes
+        .iter()
+        .any(|change| change.field == THROWN_AWAY)
+        .then(|| {
+            value_set(changes, THROWN_AWAY)
+                .and_then(serde_json::Value::as_array)
+                .map_or(0, |named| named.len() as u64)
+        })
+}
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// Throws the comments away, one change for each issue, as `person` (the event maker records

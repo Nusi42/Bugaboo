@@ -482,3 +482,8 @@ reason = "Not a count of things: the days a program asked the key of an agent to
 route = "GET /api/v1/agents/{agent}/history"
 property = "went_back"
 reason = "How many changes an undo of the agent's own run put back: only the person the run belongs to reads the history of their agent, and the undo counted only changes to issues that person may see, as Undo the run does (PRIV-13, ADR-0029, amendment M9)."
+
+[[exempt]]
+route = "GET /api/v1/issues/{issue}/history"
+property = "count"
+reason = "Counts only comments the reader may see: the comments an agent wrote on this issue in a run that was undone, which every reader of the issue's history saw before they were thrown away; the row names no text of them (ADR-0029, amendment M9)."
