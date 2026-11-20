@@ -32,7 +32,17 @@ bugaboo backup
 
 It says the name, the size and the folder of the new backup. `bugaboo backup list` lists the backups in the folder.
 
-People with *Change organization settings* can create one from *Organization settings › System › Backups* too. Every backup is written to the security log with its name, who created it and its checksum.
+People with *Change organization settings* can create one from the page *Organization settings › System › Backups* too (see "The Backups page" below). Every backup is written to the security log with its name, who created it and its checksum.
+
+## The Backups page
+
+Open *Organization settings*, then "Backups". It needs *Change organization settings*.
+
+- At the top it says where backups are and that each one holds all the data of the organization and its attached files, but no keys.
+- "Daily backups" has the same settings as above: whether Bugaboo creates a backup every day, and how many daily and weekly backups it keeps. A change is saved at once.
+- **Create a backup now** creates a backup while people go on working. The button says it is busy until the backup is there. The new backup then comes in at the top of the list, and nothing else on the page moves. If another backup is being created, the page says so: wait until it is done and try again.
+- "All backups" lists the backups newest first: the name, the moment, the size and who or what created it (the daily backup, a person, the command line, an upgrade, or a restore). The list has its own height and scrolls inside it. Click a backup to choose it.
+- "Restore a backup" shows the command that restores the chosen backup, with its name filled in. Copy it into the command line of the server. The page has no button that restores, because a restore needs the server to be stopped.
 
 ## Restore a backup
 
