@@ -44,6 +44,9 @@ async function lastPartFrom(
     : lastPartFrom(admin, page.next_cursor, name);
 }
 
+/** How far the wheel turns the page in one go. */
+const PAGE_SCROLL_PX = 4000;
+
 /** Reads the pages of the list of parts by pressing *Show more* until the last part is in the list. */
 export async function readPartsToTheEnd(page: Page, list: Locator, last: string): Promise<void> {
   await expect
@@ -51,8 +54,11 @@ export async function readPartsToTheEnd(page: Page, list: Locator, last: string)
       const more = page.getByRole("button", { name: t("about.parts-more"), exact: true });
       if (await more.isVisible()) {
         await more.click();
+      } else {
+        // Every page is read: the rows are drawn only where they are in the window, so scroll the page down.
+        await list.hover();
+        await page.mouse.wheel(0, PAGE_SCROLL_PX);
       }
-      await list.getByRole("option").last().scrollIntoViewIfNeeded();
       return list.getByText(last, { exact: true }).count();
     })
     .toBeGreaterThan(0);

@@ -45,7 +45,15 @@ pub(crate) fn plan(root: &Path) -> anyhow::Result<Vec<Step>> {
     let xtask = std::env::current_exe().context("could not find the running xtask program")?;
     let target = static_linux_target();
     Ok(vec![
-        // First: PERF-BUNDLE measures the build, so the checks need it.
+        // First of all: a debug program reads the files only if they were there when the first step compiled it
+        // (the embedding is decided then), and the program carries its parts list and notices (COMP-01), which
+        // About shows. They are written where it takes them in, as `cargo xtask build` does.
+        Step::new(
+            "put the parts list into the program",
+            xtask.to_string_lossy(),
+            &["parts-list", "--embed"],
+        ),
+        // Then: PERF-BUNDLE measures the build, so the checks need it.
         steps::web_build(root),
         Step::new("all checks", xtask.to_string_lossy(), &["check", "all"]),
         // One core, about five minutes: it runs beside the Rust tests and the steps up to the
@@ -81,13 +89,6 @@ pub(crate) fn plan(root: &Path) -> anyhow::Result<Vec<Step>> {
         Step::web(root, "browser unit tests", &["test"]),
         // The end-to-end tests start the program themselves (ADR-0023), some of them on a copy of
         // a fresh sample organization.
-        // The program carries its parts list and notices (COMP-01), which About shows: they are written
-        // where it takes them in before it is built, as `cargo xtask build` does.
-        Step::new(
-            "put the parts list into the program",
-            xtask.to_string_lossy(),
-            &["parts-list", "--embed"],
-        ),
         steps::server_build(Profile::Debug),
         Step::web(root, "browser end-to-end tests", &["run", "test:e2e"]).after_background(),
         // Ten people work on the same issues at speed for two minutes, on each database
@@ -134,6 +135,7 @@ mod tests {
         assert_eq!(
             names,
             [
+                "put the parts list into the program",
                 "build the browser app",
                 "all checks",
                 "create the sample organization",
@@ -142,7 +144,6 @@ mod tests {
                 "sample organization",
                 "large dataset",
                 "browser unit tests",
-                "put the parts list into the program",
                 "build the bugaboo program",
                 "browser end-to-end tests",
                 "ten people at once",
@@ -165,7 +166,7 @@ mod tests {
         assert_eq!(
             skipped,
             [
-                true, false, false, false, false, false, false, true, false, false, true, true,
+                false, true, false, false, false, false, false, false, true, false, true, true,
                 true, on_linux, on_linux
             ]
         );
