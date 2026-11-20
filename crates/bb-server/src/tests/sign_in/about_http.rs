@@ -49,13 +49,10 @@ async fn comp_01_about_answers_the_version_and_the_parts_to_signed_in_people_onl
             let parts = person.send("GET", PARTS, None).await?;
             assert_eq!(parts.status, StatusCode::OK, "{}", parts.body);
             assert!(parts.body["items"].is_array());
-            assert!(parts.body["next_cursor"].is_null());
-            assert_eq!(
-                parts.body["items"].as_array().map(Vec::len),
-                about.body["part_count"]
-                    .as_u64()
-                    .and_then(|count| usize::try_from(count).ok()),
-            );
+            // However many pages the parts take (none without a parts list, several with one), they
+            // add up to the count that About states.
+            let read = parts_to_the_end(person).await?;
+            assert_eq!(Some(read as u64), about.body["part_count"].as_u64());
             let named = person
                 .send("GET", &format!("{PARTS}?fields=name&limit=5"), None)
                 .await?;
@@ -86,6 +83,21 @@ async fn comp_01_about_answers_the_version_and_the_parts_to_signed_in_people_onl
         Ok(())
     })
     .await
+}
+
+/// The parts of every page, by following the cursor to the last page.
+async fn parts_to_the_end(person: &mut Browser) -> Result<usize, bb_testing::Failure> {
+    let mut read = 0;
+    let mut address = format!("{PARTS}?limit=100");
+    loop {
+        let page = person.send("GET", &address, None).await?;
+        assert_eq!(page.status, StatusCode::OK, "{}", page.body);
+        read += page.body["items"].as_array().map_or(0, Vec::len);
+        match page.body["next_cursor"].as_str() {
+            Some(cursor) => address = format!("{PARTS}?limit=100&cursor={cursor}"),
+            None => return Ok(read),
+        }
+    }
 }
 
 /// `[workspace.metadata.release]` of the workspace's `Cargo.toml`, read as TOML.

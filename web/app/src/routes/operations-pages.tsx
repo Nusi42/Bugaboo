@@ -6,7 +6,7 @@ import { OnlyWith } from "./OnlyWith.tsx";
 import { loadsScreen } from "./preload.ts";
 
 const BackupsScreen = lazyRouteComponent(() => import("../features/admin/index.ts"), "BackupsPage");
-const AboutScreen = lazyRouteComponent(() => import("../features/admin/index.ts"), "AboutPage");
+const AboutScreen = lazyRouteComponent(() => import("../features/about/index.ts"), "AboutPage");
 
 export const backupsRoute = createRoute({
   getParentRoute: () => organizationSettingsRoute,

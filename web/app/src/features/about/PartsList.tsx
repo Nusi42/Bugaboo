@@ -65,16 +65,14 @@ export function PartsList() {
       <Virtualizer layout={ListLayout}>
         <ListBox
           aria-label={t("about.parts")}
-          renderEmptyState={() => <p {...partOf(part.pickListFacts)}>{t("about.parts-none")}</p>}
+          renderEmptyState={() =>
+            parts.isError ? null : <p {...partOf(part.pickListFacts)}>{t("about.parts-none")}</p>
+          }
           {...partOf(part.pickList)}
         >
           <Collection items={rows}>
             {(each) => (
-              <ListBoxItem
-                id={each.id}
-                textValue={each.name}
-                {...partOf(part.pickListRow, { variants: ["read"] })}
-              >
+              <ListBoxItem id={each.id} textValue={each.name} {...partOf(part.pickListRow)}>
                 <span {...partOf(part.pickListName)}>{each.name}</span>
                 <span {...partOf(part.pickListFacts)}>{factsOf(each)}</span>
               </ListBoxItem>

@@ -1,7 +1,13 @@
 import { t } from "@bugaboo/messages";
 
 import { paths } from "../src/shared/paths.ts";
-import { aboutOf, downloadEveryFile, supportWords } from "./support/about-words.ts";
+import { supportText } from "../src/features/about/index.ts";
+import {
+  aboutOf,
+  downloadEveryFile,
+  lastPartName,
+  scrollPartsToTheEnd,
+} from "./support/about-words.ts";
 import { bob } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
@@ -24,11 +30,14 @@ test("comp_01 About shows the version the support period and the parts list to d
   await page.goto(paths.about);
   await expect(page.getByRole("heading", { level: 1, name: t("nav.about") })).toBeVisible();
   await expect(page.getByText(about.version, { exact: true })).toBeVisible();
-  await expect(page.getByText(supportWords(about.support_period), { exact: true })).toBeVisible();
+  await expect(page.getByText(supportText(about.support_period), { exact: true })).toBeVisible();
   await expect(page.getByText(about.license, { exact: true })).toBeVisible();
   // The parts, by name, version and license.
-  await expect(page.getByRole("listbox", { name: t("about.parts") })).toBeVisible();
-  await expect(page.getByRole("option").first()).toBeVisible();
+  const parts = page.getByRole("listbox", { name: t("about.parts") });
+  await expect(parts).toBeVisible();
+  await expect(parts.getByRole("option").first()).toBeVisible();
+  // Only a page of parts is read at first: the rest comes in as the end of the list is reached.
+  await scrollPartsToTheEnd(parts, await lastPartName(server));
   await expectGoodInEveryLook(page);
   await downloadEveryFile(page, about);
 });

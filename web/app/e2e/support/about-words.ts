@@ -1,8 +1,9 @@
 import { dataOf, type Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
-import { formatCalendarDay } from "../../src/shared/format.ts";
+import { downloadMessages, OFFERED } from "../../src/features/about/index.ts";
+import { type ApiSession } from "./api.ts";
 import { signedInAdmin } from "./access.ts";
 import { inOrder } from "./sequence.ts";
 import { type Instance } from "./server.ts";
@@ -18,29 +19,51 @@ export async function aboutOf(server: Instance): Promise<About> {
   return about;
 }
 
-/** The words About uses for the support period of a release: no last day is a preview. */
-export function supportWords(period: About["support_period"]): string {
-  const until = period.fixes_until;
-  return until === null || until === undefined
-    ? t("about.support-preview")
-    : t("about.support-until", { date: formatCalendarDay(until) });
+/** The name of the last part of the list, read through every page the server gives. */
+export async function lastPartName(server: Instance): Promise<string> {
+  const admin = await signedInAdmin(server);
+  const last = await lastPartFrom(admin, undefined, "");
+  await admin.dispose();
+  return last;
 }
 
-/** The three downloads, with the button each has. */
-const DOWNLOADS = [
-  ["cyclonedx", "about.download-cyclonedx"],
-  ["spdx", "about.download-spdx"],
-  ["notices", "about.download-notices"],
-] as const;
+/** The last part from the page at `cursor` on, by following the cursors. */
+async function lastPartFrom(
+  admin: ApiSession,
+  cursor: string | undefined,
+  before: string,
+): Promise<string> {
+  const page = dataOf(
+    await admin.client.GET("/api/v1/about/parts", {
+      params: { query: { limit: 100, ...(cursor === undefined ? {} : { cursor }) } },
+    }),
+  );
+  const name = page.items.at(-1)?.name ?? before;
+  return page.next_cursor === null || page.next_cursor === undefined
+    ? name
+    : lastPartFrom(admin, page.next_cursor, name);
+}
+
+/** Scrolls the list of parts to its end, so the pages after the first are read, until the last part is there. */
+export async function scrollPartsToTheEnd(list: Locator, last: string): Promise<void> {
+  await expect
+    .poll(async () => {
+      await list.evaluate((box) => {
+        box.scrollTop = box.scrollHeight;
+      });
+      return list.getByText(last, { exact: true }).count();
+    })
+    .toBeGreaterThan(0);
+}
 
 /** Presses each download button and checks that the browser saves the file under the name the server gives it. */
 export async function downloadEveryFile(page: Page, about: About): Promise<void> {
   await inOrder(
-    DOWNLOADS.map(([kind, message]) => async () => {
+    OFFERED.map((kind) => async () => {
       const file = about.files.find((each) => each.kind === kind);
       expect(file, `the build carries the ${kind} file`).toBeDefined();
       const saved = page.waitForEvent("download");
-      await page.getByRole("button", { name: t(message), exact: true }).click();
+      await page.getByRole("button", { name: t(downloadMessages[kind]), exact: true }).click();
       expect((await saved).suggestedFilename()).toBe(file?.name);
     }),
   );

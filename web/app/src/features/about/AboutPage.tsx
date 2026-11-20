@@ -6,17 +6,11 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
-import { downloadKinds, type DownloadKind } from "./about.ts";
+import { downloadKinds, downloadMessages } from "./about.ts";
 import { AboutFacts } from "./AboutFacts.tsx";
 import { PartsList } from "./PartsList.tsx";
 
 type About = Schema<"AboutBody">;
-
-const downloadMessages = {
-  cyclonedx: "about.download-cyclonedx",
-  spdx: "about.download-spdx",
-  notices: "about.download-notices",
-} as const satisfies Readonly<Record<DownloadKind, string>>;
 
 /** The parts list in both formats and the third-party notices, each saved by the browser. */
 function Downloads({ about }: { readonly about: About }) {

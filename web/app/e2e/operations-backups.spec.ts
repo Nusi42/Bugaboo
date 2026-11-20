@@ -77,7 +77,7 @@ test("ops_07 the backups page names the command that restores the chosen backup"
   const command = partIn(page, "key-box");
   // The newest backup is chosen at first.
   await expect(command).toHaveText(t("backup-page.restore-command", { name: newest }));
-  await page.getByRole("option", { name: new RegExp(older, "u") }).click();
+  await page.getByRole("option", { name: older }).click();
   await expect(command).toHaveText(t("backup-page.restore-command", { name: older }));
   // There is no button that restores: a backup is put back from the command line, with the server stopped.
   await expect(page.getByRole("button", { name: /restor/iu })).toHaveCount(0);
