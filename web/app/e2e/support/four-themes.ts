@@ -68,6 +68,10 @@ async function inChosen(
     chosen.map((theme) => async () => {
       await showTheme(page, theme, shot.appearance);
       await open();
+      if (shot.asWindow === true) {
+        // A window slides or fades in: the picture is taken when it has stopped, not through it.
+        await page.waitForTimeout(WINDOW_SETTLING_MS);
+      }
       await (shot.asWindow === true ? shootWindowAs : shotWholeAs)(
         page,
         `${shot.name}-${layout}`,
