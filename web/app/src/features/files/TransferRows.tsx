@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { Alert, alertTone, Button, buttonLook, partOf, part, SentenceWithName } from "@bugaboo/ui";
 
 import { useFileLimit } from "./files.ts";
-import { formatSize } from "./size.ts";
+import { formatSize } from "../../shared/file-size.ts";
 import { transfers, type Transfer } from "./transfers.ts";
 import { FileName } from "./FileName.tsx";
 

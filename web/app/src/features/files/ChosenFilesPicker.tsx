@@ -3,7 +3,7 @@ import { Button, buttonLook, FilePicker, partOf, part } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
 import { chosenKey, type ChosenFiles } from "./chosen-files.ts";
-import { formatSize } from "./size.ts";
+import { formatSize } from "../../shared/file-size.ts";
 import { FileName } from "./FileName.tsx";
 
 /** *Add files* under the box of a comment, and the list of what was chosen, each with *Take out*. */

@@ -3,7 +3,7 @@ import { t } from "@bugaboo/messages";
 
 import { formatDateTime } from "../../shared/format.ts";
 import { personNameInside } from "../../shared/person.ts";
-import { formatSize } from "./size.ts";
+import { formatSize } from "../../shared/file-size.ts";
 
 /** A file of an issue or a comment, as the reader sees it. */
 export type FileItem = Schema<"AttachmentItem">;

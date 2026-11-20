@@ -5,7 +5,7 @@ import { Button as PressableTile } from "react-aria-components";
 
 import { useIssueFiles } from "./files.ts";
 import { PreviewDialog } from "./PreviewDialog.tsx";
-import { extensionOf } from "./size.ts";
+import { extensionOf } from "../../shared/file-size.ts";
 import type { FileItem } from "./file-item.ts";
 
 /** The link to use: the one in the list, read again, because a link is good for five minutes only. */

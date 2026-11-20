@@ -2,7 +2,7 @@ import { ApiError } from "@bugaboo/api-client";
 import { describe, expect, it } from "vitest";
 
 import { course, delivery, done, fakeUploads, lostConnection, problem } from "./fake-uploads.ts";
-import { extensionOf, formatSize } from "./size.ts";
+import { extensionOf, formatSize } from "../../shared/file-size.ts";
 import { sendFile, waitsBetweenTries } from "./transfer.ts";
 
 const content = (): Blob => new Blob(["0123456789"]);
