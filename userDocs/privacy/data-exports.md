@@ -14,7 +14,7 @@ The person who asked for a file downloads it with **Download** while it is ready
 When a person asks for their data in another way, for example by letter, an administrator creates the same file for them:
 
 1. Choose **Download someone's data**. A window opens.
-2. Under *Whose data*, search for the person and choose them. You find the people you may see by name on *People*.
+2. Under *Whose data*, search for the person and choose them. The list offers the people you may see by name, as *Who sees people* says for your role; the permission *Download someone's data* is enough, *Manage people* is not needed.
 3. Under *Why*, give the reason in a few words, such as the person's request. A reason is always needed.
 4. Choose **Create the file**.
 

@@ -2,7 +2,8 @@ import { dataOf } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
 import { paths } from "../src/shared/paths.ts";
-import { ada, bob } from "./support/accounts.ts";
+import { giveRoleWithOnly, lea, roleId, setPeopleLevel, signedInAdmin } from "./support/access.ts";
+import { ada, bob, idOf } from "./support/accounts.ts";
 import { expect, refusal, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { recordRequests } from "./support/list-keys.ts";
@@ -79,6 +80,32 @@ test("priv_03 an administrator makes someone's export and it is listed in Data e
     .filter({ hasText: reason });
   await expect(row.getByRole("rowheader")).toHaveText(bob.name);
   await expect(row).toContainText(ada.name);
+});
+
+/** A role that holds *Download someone's data* and nothing else. */
+const EXPORTS_ONLY = "Exports only";
+
+test("m9_f90 a holder of Download someone's data alone picks the people whose data they may ask for", async ({
+  page,
+  server,
+}) => {
+  const admin = await signedInAdmin(server);
+  await giveRoleWithOnly(admin, await idOf(server, lea), EXPORTS_ONLY, ["download-someones-data"]);
+  // The administrator lets the role see project members by name, as *Who sees people* says.
+  await setPeopleLevel(
+    admin,
+    { role: await roleId(admin, EXPORTS_ONLY), kind: "project-members" },
+    "names",
+  );
+  await admin.dispose();
+  await signIn(page, lea);
+  await page.goto(paths.dataExports);
+  await page.getByRole("button", { name: t("data-exports.someone"), exact: true }).click();
+  const window = page.getByRole("dialog", { name: t("data-exports.someone") });
+  await window.getByRole("searchbox", { name: t("data-exports.pick-search") }).fill("Bob");
+  // Without Manage people, the picker still offers Bob, and no refusal stands in the window.
+  await expect(window.getByRole("radio", { name: bob.name })).toBeVisible();
+  await expect(window.getByText(t("error.access.forbidden"))).toBeHidden();
 });
 
 test("priv_05 the keep table shows both groups and a changed period says what it deletes first", async ({

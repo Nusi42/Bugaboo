@@ -687,6 +687,8 @@ macro_rules! each_use_case {
             my_data_export(MyDataExportQuery) -> Authorized<Option<ExportView>>;
             /// Lists every file of people's data, newest first.
             data_exports(DataExportsQuery) -> Authorized<ExportPage>;
+            /// Lists the people whose data the viewer may ask for, to choose one from.
+            export_people(ExportPeopleQuery) -> Authorized<ChoicePage>;
             /// Gives the signed link of the download of a ready file.
             export_link(ExportLinkQuery) -> Authorized<ExportLinkView>;
             /// Sends the file of an export through its signed link.

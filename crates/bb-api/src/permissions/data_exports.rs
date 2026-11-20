@@ -21,6 +21,11 @@ pub(super) const ROUTES: &[Route] = &[
         Answer::NeverStored,
     ),
     route(
+        "listPeopleOfDataExports",
+        Declared::Permission(Permission::DownloadSomeonesData),
+        Answer::NeverStored,
+    ),
+    route(
         "getDataExportAddress",
         Declared::SignedIn,
         Answer::NeverStored,

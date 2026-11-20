@@ -48,6 +48,7 @@ mod check_access_types;
 mod choice_numbers;
 mod corrections;
 mod data_export_notices;
+mod data_export_people;
 mod data_exports;
 mod editing;
 mod event_members;

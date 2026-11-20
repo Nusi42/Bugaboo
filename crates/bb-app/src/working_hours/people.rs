@@ -6,7 +6,7 @@
 use bb_policy::{Authorized, PeopleContext, Permission, Place};
 
 use super::types::PeopleOfHoursQuery;
-use crate::auth::{AppError, AuthStore, Ctx};
+use crate::auth::{AppError, AuthStore, Ctx, PeopleOf};
 use crate::people::ChoicePage;
 
 /// The people to choose from, by name, a page at a time.
@@ -29,7 +29,7 @@ pub async fn people_of_hours<S: AuthStore>(
     let page = ctx
         .people_choices(
             &access,
-            PeopleContext::WorkingHours,
+            (PeopleContext::WorkingHours, PeopleOf::Active),
             input.search.as_deref(),
             input.cursor.as_deref(),
             input.limit,

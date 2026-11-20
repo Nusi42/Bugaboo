@@ -78,20 +78,7 @@ export function useAssignments(project: string | null) {
 /** What a form of *Who has which role* chooses from. */
 export type ChoiceKind = SubjectKind | "role";
 
-/** One thing to choose: a person, a group or a role. */
-export interface Choice {
-  readonly id: string;
-  readonly name: string;
-}
-
-/** The choices in the pages read so far. */
-export function choicesOf(pages: readonly Schema<"Page_ChoiceItem">[] | undefined): Choice[] {
-  return linesFrom(pages, (item) =>
-    item.id === undefined || item.id === null || item.name === undefined || item.name === null
-      ? undefined
-      : { id: item.id, name: item.name },
-  );
-}
+export { choicesOf, type Choice } from "../../shared/choices.ts";
 
 /** The people, groups or roles a row can be made from, found by name, a page at a time. */
 export function useChoices(kind: ChoiceKind, project: string | null, search: string) {

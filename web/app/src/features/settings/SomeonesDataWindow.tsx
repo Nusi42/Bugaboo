@@ -21,16 +21,16 @@ import { messageOf } from "../../shared/errors.ts";
 import { pickerStatus, usePickerFrame } from "../../shared/picker-status.ts";
 import { useWindowProps } from "../../shared/use-window-props.ts";
 import { windowForms } from "../../shared/window-forms.ts";
-import { linesOf, usePeople } from "../people/index.ts";
-import { useAskSomeonesData } from "./data-exports.ts";
+import { choicesOf, type Choice } from "../../shared/choices.ts";
+import { useAskSomeonesData, useExportPeople } from "./data-exports.ts";
 
 /** A person to choose, by name. */
-interface Picked {
-  readonly id: string;
-  readonly name: string;
-}
+type Picked = Choice;
 
-/** Whose data: the people the administrator sees by name, found by the words typed (one person picker, M5-F135). */
+/**
+ * Whose data: the people the holder of *Download someone's data* may name, as *Who sees people* lets them, found by the
+ * words typed (one person picker, M5-F135). The permission brings this list; *Manage people* is not needed.
+ */
 function PersonPicker({
   picked,
   onPick,
@@ -39,8 +39,8 @@ function PersonPicker({
   readonly onPick: (person: Picked) => void;
 }) {
   const { words, group, frame } = usePickerFrame();
-  const found = usePeople(words);
-  const people = linesOf(found.data?.pages);
+  const found = useExportPeople(words);
+  const people = choicesOf(found.data?.pages);
   return (
     <SearchPicker
       legend={t("data-exports.pick")}

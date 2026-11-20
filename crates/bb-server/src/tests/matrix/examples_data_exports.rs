@@ -28,6 +28,7 @@ pub(super) fn data_export_request(
             Some(json!({"reason": "The person asked by letter"})),
         ),
         "listDataExports" => ("GET", "/api/v1/admin/data-exports".to_owned(), None),
+        "listPeopleOfDataExports" => ("GET", "/api/v1/data-exports/people".to_owned(), None),
         "getDataExportAddress" => (
             "GET",
             format!("/api/v1/data-exports/{NO_EXPORT}/address"),

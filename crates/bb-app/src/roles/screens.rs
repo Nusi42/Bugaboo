@@ -10,7 +10,7 @@ use serde::Serialize;
 
 use super::types::RoleRef;
 use super::{RoleView, view};
-use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::auth::{AppError, AuthStore, Ctx, PeopleOf, internal};
 use crate::people::{
     AssignmentChoicesQuery, ChoiceKind, ChoicePage, ChoiceView, GroupView, RoleUsedBy,
 };
@@ -132,7 +132,7 @@ pub async fn assignment_choices<S: AuthStore>(
         ChoiceKind::Person => {
             ctx.people_choices(
                 &access,
-                PeopleContext::Management,
+                (PeopleContext::Management, PeopleOf::Active),
                 input.search.as_deref(),
                 input.cursor.as_deref(),
                 input.limit,

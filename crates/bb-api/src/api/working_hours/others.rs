@@ -10,7 +10,6 @@ use bb_app::working_hours::{
     ChangeWorkDay, PeopleOfHoursQuery, WorkDayHistoryQuery, WorkDaysQuery, read_date,
 };
 use bb_core::id::UserId;
-use serde::Deserialize;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
@@ -20,7 +19,7 @@ use super::super::auth::{
     NotSignedInAnswer, Session, answer_authorized,
 };
 use super::super::date_range::{RangeParams, invalid, person_and_range};
-use super::super::groups::{ChoiceItem, choice_page};
+use super::super::groups::{ChoiceFilter, ChoiceItem, choice_page};
 use super::super::path_id;
 use super::{ChangeWorkDayBody, WorkDayBody, WorkDayHistoryBody, WorkDaysBody};
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
@@ -165,14 +164,6 @@ async fn work_day_history_of_person(
 
 const PEOPLE_LIST: &str = "work-day-people";
 
-/// What narrows the people to choose from.
-#[derive(Deserialize, utoipa::IntoParams)]
-#[into_params(parameter_in = Query)]
-pub(crate) struct PeopleSearch {
-    /// Words that every found name holds, without regard to capitals.
-    search: Option<String>,
-}
-
 /// The people whose working hours the reader may open, by name, a page at a time, to choose one
 /// from. Needs *See working hours of others*. Names and IDs only: no hours, no counts.
 #[utoipa::path(
@@ -180,7 +171,7 @@ pub(crate) struct PeopleSearch {
     path = "/api/v1/work-days/people",
     operation_id = "listPeopleOfWorkDays",
     tag = "working-hours",
-    params(ListParams, PeopleSearch),
+    params(ListParams, ChoiceFilter),
     responses(
         (status = 200, description = "The people to choose from.", body = Page<ChoiceItem>),
         InvalidAnswer,
@@ -193,7 +184,7 @@ async fn list_people_of_work_days(
     Info(info): Info,
     Session(session_token): Session,
     ApiQuery(params): ApiQuery<ListParams>,
-    ApiQuery(filter): ApiQuery<PeopleSearch>,
+    ApiQuery(filter): ApiQuery<ChoiceFilter>,
 ) -> Result<Response, ApiError> {
     let (cursor, bad_cursor) = params.start(PEOPLE_LIST);
     let found = auth

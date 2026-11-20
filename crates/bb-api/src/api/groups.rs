@@ -179,7 +179,7 @@ impl From<&ChoiceView> for ChoiceItem {
 #[into_params(parameter_in = Query)]
 pub(crate) struct ChoiceFilter {
     /// Words that every found name holds, without regard to capitals.
-    search: Option<String>,
+    pub(crate) search: Option<String>,
 }
 
 /// The fields of a choice, for the other routes that offer choices.

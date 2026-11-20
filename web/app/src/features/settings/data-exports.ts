@@ -24,6 +24,19 @@ export function useDataExports() {
   });
 }
 
+/** The people whose data the viewer may ask for, by name, found by the words typed, a page at a time. */
+export function useExportPeople(search: string) {
+  return usePaged({
+    queryKey: queryKeys.dataExports.people(search),
+    read: (after) =>
+      api.client.GET("/api/v1/data-exports/people", {
+        params: {
+          query: { limit: pageSize.short, ...(search === "" ? {} : { search }), ...after },
+        },
+      }),
+  });
+}
+
 /** *Download someone's data*: the file of a person's data, always with a reason; the list is read again after it. */
 export function useAskSomeonesData() {
   return useMutation({

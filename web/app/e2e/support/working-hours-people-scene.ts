@@ -1,6 +1,4 @@
-import { dataOf } from "@bugaboo/api-client";
-
-import { createPeopleWithRoles, giveRole, roleName, signedInAdmin } from "./access.ts";
+import { createPeopleWithRoles, giveRoleWithOnly, roleName, signedInAdmin } from "./access.ts";
 import { type ApiSession } from "./api.ts";
 import { bob, cleo, createPerson, ownId } from "./accounts.ts";
 import { type Instance } from "./server.ts";
@@ -10,17 +8,8 @@ import { prepareWorkingHours } from "./working-hours-scene.ts";
 const SETTINGS_ONLY = "Settings only";
 
 /** Makes the role *Settings only* and gives it to a person (by ID) for the whole organization. */
-export async function giveSettingsOnlyRole(admin: ApiSession, person: string): Promise<void> {
-  dataOf(
-    await admin.client.POST("/api/v1/roles", {
-      body: {
-        name: SETTINGS_ONLY,
-        permissions: ["change-organization-settings"],
-        two_step: false,
-      },
-    }),
-  );
-  await giveRole(admin, person, SETTINGS_ONLY, null);
+export function giveSettingsOnlyRole(admin: ApiSession, person: string): Promise<void> {
+  return giveRoleWithOnly(admin, person, SETTINGS_ONLY, ["change-organization-settings"]);
 }
 
 /**

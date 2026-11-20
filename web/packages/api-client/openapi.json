@@ -4949,6 +4949,82 @@
         "x-permission": "signed-in"
       }
     },
+    "/api/v1/data-exports/people": {
+      "get": {
+        "tags": ["privacy"],
+        "summary": "The people whose data the viewer may ask for, by name, a page at a time, to choose one from in\n*Download someone's data*. Needs that permission, not *Manage people*; people are named as *Who\nsees people* lets the viewer see them on a management screen, and one the viewer may not name is\nnot offered.",
+        "operationId": "listPeopleOfDataExports",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Fields"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
+              "maximum": 100,
+              "minimum": 1
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Words that every found name holds, without regard to capitals.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The people to choose from.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_ChoiceItem"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "download-someones-data"
+      }
+    },
     "/api/v1/data-exports/{export}/address": {
       "get": {
         "tags": ["privacy"],

@@ -38,6 +38,18 @@ pub struct DataExportsQuery {
     pub limit: u64,
 }
 
+/// Ask for the people whose data the viewer may ask for (*Download someone's data*).
+pub struct ExportPeopleQuery {
+    /// The secret of the session of the request.
+    pub session_token: String,
+    /// Words that every found person holds in their name.
+    pub search: Option<String>,
+    /// Where the page starts: the `next_cursor` of the page before.
+    pub cursor: Option<String>,
+    /// How many people the page holds at most.
+    pub limit: u32,
+}
+
 /// Ask for the signed link of the download of an export.
 pub struct ExportLinkQuery {
     /// The secret of the session of the request.

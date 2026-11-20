@@ -178,6 +178,21 @@ export async function giveRole(
   await give(admin, { person }, await roleId(admin, role), project, appliesTo);
 }
 
+/** Makes a role called `name` that holds only `permissions` and gives it to a person (by ID) for the whole organization. */
+export async function giveRoleWithOnly(
+  admin: ApiSession,
+  person: string,
+  name: string,
+  permissions: Schema<"NewRoleBody">["permissions"],
+): Promise<void> {
+  dataOf(
+    await admin.client.POST("/api/v1/roles", {
+      body: { name, permissions: [...permissions], two_step: false },
+    }),
+  );
+  await giveRole(admin, person, name, null);
+}
+
 /** Gives a person a role that is known by its ID (a role made a moment ago, among very many). */
 export function giveRoleById(admin: ApiSession, person: string, role: string): Promise<void> {
   return give(admin, { person }, role, null, "project-and-sub-projects");

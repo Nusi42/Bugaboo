@@ -418,7 +418,7 @@ pub async fn member_choices<S: AuthStore>(
     let page = ctx
         .people_choices(
             &access,
-            PeopleContext::Management,
+            (PeopleContext::Management, PeopleOf::Active),
             input.search.as_deref(),
             input.cursor.as_deref(),
             input.limit,
@@ -429,11 +429,11 @@ pub async fn member_choices<S: AuthStore>(
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// A page of people to choose from, by name, as the viewer may see them in `context`.
+    /// A page of `of` people to choose from, by name, as the viewer may see them in `context`.
     pub(crate) async fn people_choices(
         &self,
         viewer: &Evaluation,
-        context: PeopleContext,
+        (context, of): (PeopleContext, PeopleOf),
         search: Option<&str>,
         cursor: Option<&str>,
         limit: u32,
@@ -443,13 +443,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let after = self.people_position(cursor).await?;
         let page = Cut::of(
             self.store()
-                .people_page(
-                    search,
-                    SearchIn::Names,
-                    PeopleOf::Active,
-                    after.as_ref(),
-                    read_len(len),
-                )
+                .people_page(search, SearchIn::Names, of, after.as_ref(), read_len(len))
                 .await
                 .map_err(|error| internal::<S>(&error))?
                 .into_iter()

@@ -115,9 +115,10 @@ export const queryKeys = {
     state: (issue: string) => ["followers", "state", issue],
     list: (issue: string) => ["followers", "list", issue],
   },
+  /** The files of people's data, and the people *Download someone's data* offers; both start with the route like `api.query` keys do. */
   dataExports: {
-    /** The page-by-page list of the files of people's data; it starts with the route like `api.query` keys do. */
     list: () => ["get", "/api/v1/admin/data-exports", "list"],
+    people: (search: string) => ["get", "/api/v1/data-exports/people", "list", search],
   },
   notifications: {
     /** A page-by-page list of notifications; it starts with the route like `api.query` keys do. */

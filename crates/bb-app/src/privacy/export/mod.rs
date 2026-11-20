@@ -6,6 +6,7 @@ mod files;
 mod issue_fields;
 mod job;
 mod pages;
+mod people;
 mod readme;
 mod shape;
 mod store;
@@ -19,6 +20,7 @@ pub use ask::{
 pub use files::{ExportFiles, ExportSink, NoExportFiles};
 pub use issue_fields::field_of;
 pub(crate) use pages::title_of;
+pub use people::export_people;
 pub use readme::recipients;
 pub use shape::{ShapedCell, ShapedKind, ShapedRow, Shown, people_in, shape_row};
 pub use store::ExportStore;

@@ -364,7 +364,7 @@ fn carols_comment(bob: UserId, carol: UserId) -> WalkedRow {
 }
 
 /// Sets how the role of Bob and Carol sees people of `kind`.
-async fn see(crew: &Crew, kind: PeopleKind, level: PeopleLevel) -> Result<(), String> {
+pub(super) async fn see(crew: &Crew, kind: PeopleKind, level: PeopleLevel) -> Result<(), String> {
     set_level(
         &crew.world.ctx(),
         SetPeopleLevel {
@@ -528,7 +528,7 @@ async fn priv_03_the_reason_of_an_administrators_export_has_a_length_it_may_not_
 }
 
 /// Gives the role of Bob and Carol *Download someone's data*, or takes it away again.
-async fn may_download_someones_data(crew: &Crew, may: bool) -> Result<(), String> {
+pub(super) async fn may_download_someones_data(crew: &Crew, may: bool) -> Result<(), String> {
     let known = crew
         .world
         .store

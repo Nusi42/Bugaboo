@@ -371,6 +371,7 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::route("getRemovalPlan"),
     Example::route("removePerson"),
     Example::with("listDataExports", &[Quirk::SessionOnly]),
+    Example::with("listPeopleOfDataExports", &[Quirk::SessionOnly]),
     Example::with(
         "getDataExportAddress",
         &[Quirk::SessionOnly, Quirk::NamesAMissingThing],

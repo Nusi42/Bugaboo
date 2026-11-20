@@ -1512,6 +1512,28 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/data-exports/people": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The people whose data the viewer may ask for, by name, a page at a time, to choose one from in
+     *     *Download someone's data*. Needs that permission, not *Manage people*; people are named as *Who
+     *     sees people* lets the viewer see them on a management screen, and one the viewer may not name is
+     *     not offered.
+     */
+    get: operations["listPeopleOfDataExports"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/data-exports/{export}/address": {
     parameters: {
       query?: never;
@@ -17060,6 +17082,43 @@ export interface operations {
       304: components["responses"]["NotModified"];
       401: components["responses"]["NotSignedIn"];
       404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  listPeopleOfDataExports: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: components["parameters"]["Fields"];
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: components["parameters"]["Cursor"];
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
+        limit?: number;
+        /** @description Words that every found name holds, without regard to capitals. */
+        search?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The people to choose from. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_ChoiceItem"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];

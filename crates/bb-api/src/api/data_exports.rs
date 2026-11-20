@@ -8,8 +8,8 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse as _, Response};
 use bb_app::privacy::export::{
-    AskMyData, AskSomeonesData, DataExportsQuery, DownloadExportQuery, ExportLinkQuery, ExportView,
-    MyDataExportQuery,
+    AskMyData, AskSomeonesData, DataExportsQuery, DownloadExportQuery, ExportLinkQuery,
+    ExportPeopleQuery, ExportView, MyDataExportQuery,
 };
 use bb_core::data_export::ExportState;
 use bb_core::error_code::PROBLEM_CONTENT_TYPE;
@@ -23,16 +23,21 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
 use super::VERSION_PATH;
+use super::access_bodies::cursor_error;
 use super::auth::{
     AuthHandle, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer, NotSignedInAnswer, Session,
     answer, answer_authorized, problem_answers,
 };
 use super::files::{FileBytes, body_of, download_headers};
+use super::groups::{ChoiceFilter, ChoiceItem, choice_page};
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
 /// The name of the list of exports in its cursors.
 const EXPORTS_LIST: &str = "data-exports";
+
+/// The name of the list of people to choose from in its cursors.
+const PEOPLE_LIST: &str = "data-export-people";
 
 /// The fields of an export in the list.
 const ITEM_FIELDS: [FieldSpec; 9] = [
@@ -269,6 +274,48 @@ async fn list_data_exports(
     Ok(answer(Page::of_authorized(EXPORTS_LIST, &list, &fields)?))
 }
 
+/// The people whose data the viewer may ask for, by name, a page at a time, to choose one from in
+/// *Download someone's data*. Needs that permission, not *Manage people*; people are named as *Who
+/// sees people* lets the viewer see them on a management screen, and one the viewer may not name is
+/// not offered.
+#[utoipa::path(
+    get,
+    path = "/api/v1/data-exports/people",
+    operation_id = "listPeopleOfDataExports",
+    tag = "privacy",
+    params(ListParams, ChoiceFilter),
+    responses(
+        (status = 200, description = "The people to choose from.", body = Page<ChoiceItem>),
+        InvalidAnswer,
+        NotSignedInAnswer,
+        ForbiddenAnswer
+    )
+)]
+async fn list_people_of_data_exports(
+    State(auth): State<AuthHandle>,
+    Info(info): Info,
+    Session(session_token): Session,
+    ApiQuery(params): ApiQuery<ListParams>,
+    ApiQuery(filter): ApiQuery<ChoiceFilter>,
+) -> Result<Response, ApiError> {
+    let (cursor, bad_cursor) = params.start(PEOPLE_LIST);
+    let found = auth
+        .api()?
+        .export_people(
+            info,
+            ExportPeopleQuery {
+                session_token,
+                search: filter.search,
+                cursor,
+                limit: params.limit(),
+            },
+        )
+        .await
+        .map_err(cursor_error)?;
+    bad_cursor?;
+    choice_page(PEOPLE_LIST, &params, found)
+}
+
 /// The signed address that downloads the file of a ready export, for the person who asked for it.
 #[utoipa::path(
     get,
@@ -347,6 +394,7 @@ where
         .routes(routes!(ask_for_my_data, my_data_export))
         .routes(routes!(ask_for_someones_data))
         .routes(routes!(list_data_exports))
+        .routes(routes!(list_people_of_data_exports))
         .routes(routes!(data_export_address))
         .routes(routes!(download_data_export))
 }

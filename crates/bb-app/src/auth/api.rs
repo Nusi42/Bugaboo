@@ -161,8 +161,9 @@ use crate::privacy::removal::{
 
 use crate::privacy::export::{
     AskMyData, AskSomeonesData, DataExportsQuery, DownloadExportQuery, ExportLinkQuery,
-    ExportLinkView, ExportPage, ExportView, MyDataExportQuery, ask_for_my_data,
-    ask_for_someones_data, data_exports, download_export, export_link, my_data_export,
+    ExportLinkView, ExportPage, ExportPeopleQuery, ExportView, MyDataExportQuery, ask_for_my_data,
+    ask_for_someones_data, data_exports, download_export, export_link, export_people,
+    my_data_export,
 };
 
 use super::{
