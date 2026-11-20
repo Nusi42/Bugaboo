@@ -4,7 +4,7 @@
 
 ## Download my data
 
-Choose **Download my data**. Bugaboo creates the file in the background; for years of work the file is large, so this can take a while. You can leave the page. When the file is ready, Bugaboo tells you under *Notifications* and by e-mail.
+Choose **Download my data**. Bugaboo creates the file in the background; for years of work the file is large, so this can take a while. While it does, the button says **Creating the file** and the rest of the page stays where it is. You can leave the page. When the file is ready, Bugaboo tells you under *Notifications* and by e-mail; the notification has **Open My data**, and the page itself shows **Download the file**, with the size of the file and the day until which it is kept.
 
 You can ask for one file at a time. While one is being created, ask again when it is ready.
 
@@ -30,3 +30,11 @@ The download button gives you an address that works for a few minutes and only f
 ## When an administrator downloads your data
 
 An administrator with the permission *Download someone's data* can create the same file for you, for example when you asked for it by letter. They must always give a reason. You are told in the app and by e-mail, with the reason, and the security log records who did it and why.
+
+## What is kept and for how long
+
+Under the download, *My data* shows every kind of data Bugaboo keeps for a time, in two tables: what Bugaboo deletes by itself after its period, and what an administrator deletes after its period (working hours and time on issues). Each row says how long the kind is kept, what happens then and why. The periods are those of your organization; an administrator sets them on [Keep and delete rules](../privacy/keep-rules-page.md).
+
+## Where to correct it
+
+The last part of the page says where you correct each kind of your data: your name and e-mail address on [Profile](profile.md), your usual work days and away times on *Work times*, your working hours and time on issues on the timesheet (a past day with a reason), and your choices under *My settings*. Anything else an administrator corrects for you, with a reason; you are told.

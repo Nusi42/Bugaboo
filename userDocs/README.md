@@ -27,7 +27,7 @@ End-user and administrator documentation. It is written alongside the work on Bu
 - [People on the timeline](planning/people-on-the-timeline.md): the person on each bar, *Group by person*, days without work, *Plan by effort*, the card of a bar, plan warnings and the timeline on a phone
 - [Agents](agents/README.md): handing issues over, agent work on an issue, the review, and standing rules
 - [AI in Bugaboo](ai/README.md): [the AI guide](ai/literacy.md), [the assistant](ai/assistant.md), [AI apps](ai/ai-apps.md) and [the numbers](ai/numbers.md)
-- [Keep and delete rules](privacy/keep-and-delete.md): how long each kind of data is kept, and whether Bugaboo or an administrator deletes it then
+- [Privacy](privacy/README.md): [My data](my-settings/my-data.md), [keep and delete rules](privacy/keep-rules-page.md) with [the table of the periods](privacy/keep-and-delete.md), [data exports](privacy/data-exports.md), and [switching off and removing a person](privacy/remove-a-person.md)
 - [Cookies we use](cookies.md)
 
 Planned sections:
