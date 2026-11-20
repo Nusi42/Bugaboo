@@ -1,21 +1,29 @@
 //! The fields of an issue in the file of *Download my data* (ADR-0044, decision 3): the file never
 //! shows more than the screens would, so a field of an issue the person may not see on screen (an
 //! estimate hidden from a Guest, say) is left out of the issues they reported, as their role in the
-//! project of the issue, and for its type, says now.
+//! project of the issue, and for its type, says now. The same holds for the value of an own field
+//! of an issue, which the walk finds as a row of its own (a field of people that names the person):
+//! it is left out where the field is hidden from the person on that issue (M9-F25).
 
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use bb_core::fields::Field;
-use bb_core::id::{IssueTypeId, ProjectId, UserId};
-use bb_policy::{Evaluation, Place};
+use bb_core::event::RecordKind;
+use bb_core::fields::{Field, FieldKey};
+use bb_core::id::{FieldId, IssueId, IssueTypeId, ProjectId, UserId};
+use bb_policy::{Evaluation, FieldMask, Place};
 
-use crate::auth::{AppError, AuthStore, Ctx};
+use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::privacy::walk::{FoundRow, Value};
 
 /// The fields of an issue row that say where it is and of which type.
 const PROJECT: &str = "project";
 const ISSUE_TYPE: &str = "issue_type";
+
+/// The fields of a row of an own field's value that say of which item and which field it is.
+const ITEM_KIND: &str = "entity_kind";
+const ITEM: &str = "entity_id";
+const OWN_FIELD: &str = "field";
 
 /// The field of the catalogue a member of the issue holds: `estimated_time` holds *Estimated time*.
 /// A member that holds none (its ID, its code, when it was made) is no field a role can hide. The
@@ -39,7 +47,66 @@ pub(super) struct SeenInProjects {
     rights: HashMap<ProjectId, Arc<Evaluation>>,
 }
 
+/// The text a cell of the row holds.
+fn text_in<'a>(row: &'a FoundRow, field: &str) -> Option<&'a str> {
+    row.cells.iter().find_map(|cell| match &cell.value {
+        Value::Text(text) if cell.field == field => Some(text.as_str()),
+        _ => None,
+    })
+}
+
 impl<S: AuthStore> Ctx<'_, S> {
+    /// The mask of the fields `person` may see on an issue of `issue_type` in `project`, judged
+    /// once for each project of the file.
+    async fn mask_in(
+        &self,
+        person: UserId,
+        (project, issue_type): (ProjectId, Option<IssueTypeId>),
+        seen: &mut SeenInProjects,
+    ) -> Result<FieldMask, AppError> {
+        let rights = if let Some(known) = seen.rights.get(&project) {
+            known.clone()
+        } else {
+            let judged = self.evaluate(person, Place::Project(project)).await?;
+            seen.rights.insert(project, judged.clone());
+            judged
+        };
+        Ok(rights.field_mask_for(issue_type))
+    }
+
+    /// The row of an own field's value, unless it is the value of a field of an issue that is
+    /// hidden from `person` there: then none, as the screens show none. A value of a project, or
+    /// of an issue that is gone, stays as it is.
+    pub(super) async fn own_value_as_seen(
+        &self,
+        person: UserId,
+        row: FoundRow,
+        seen: &mut SeenInProjects,
+    ) -> Result<Option<FoundRow>, AppError> {
+        let of_issue = text_in(&row, ITEM_KIND) == Some(RecordKind::Issue.code());
+        let (Some(issue), Some(field)) = (
+            id_in::<IssueId>(&row, ITEM),
+            id_in::<FieldId>(&row, OWN_FIELD),
+        ) else {
+            return Ok(Some(row));
+        };
+        if !of_issue {
+            return Ok(Some(row));
+        }
+        let Some(found) = self
+            .store()
+            .issue(issue)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+        else {
+            return Ok(Some(row));
+        };
+        let mask = self
+            .mask_in(person, (found.project, Some(found.issue_type)), seen)
+            .await?;
+        Ok(mask.can_see(FieldKey::Own(field)).then_some(row))
+    }
+
     /// The issue row with only the fields `person` may see of it on screen. A row that does not say
     /// its project shows no field of the catalogue at all.
     pub(super) async fn issue_as_seen(
@@ -49,19 +116,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         seen: &mut SeenInProjects,
     ) -> Result<FoundRow, AppError> {
         let issue_type = id_in::<IssueTypeId>(&row, ISSUE_TYPE);
-        let rights = match id_in::<ProjectId>(&row, PROJECT) {
-            Some(project) => {
-                if let Some(known) = seen.rights.get(&project) {
-                    Some(known.clone())
-                } else {
-                    let judged = self.evaluate(person, Place::Project(project)).await?;
-                    seen.rights.insert(project, judged.clone());
-                    Some(judged)
-                }
-            }
+        let mask = match id_in::<ProjectId>(&row, PROJECT) {
+            Some(project) => Some(self.mask_in(person, (project, issue_type), seen).await?),
             None => None,
         };
-        let mask = rights.map(|rights| rights.field_mask_for(issue_type));
         row.cells.retain(|cell| match field_of(cell.field) {
             Some(field) => mask.as_ref().is_some_and(|mask| mask.can_see(field)),
             None => true,

@@ -9,12 +9,14 @@ use axum::http::StatusCode;
 use bb_app::access::StartingRole;
 use bb_files::fixtures::PDF;
 use bb_testing::{Failure, TestResult, each_database};
-use serde_json::Value;
+use serde_json::{Value, json};
 use zip::ZipArchive;
 
+use super::fields_http::create_field;
 use super::files_http::{run_jobs, upload};
 use super::http::{Browser, rig_and_app};
-use super::issues_site::{Site, key_of, ok};
+use super::issues_site::{ISSUES, Site, id_in, key_of, ok, version_of};
+use super::plan_privacy_http::field_level;
 use super::rig::Rig;
 
 const MY_EXPORT: &str = "/api/v1/me/data-export";
@@ -131,6 +133,59 @@ async fn priv_03_the_files_the_person_uploaded_are_in_the_file_with_their_bytes(
                 .iter()
                 .any(|row| row.to_string().contains(&mine)),
             "{attachments:?}"
+        );
+        Ok(())
+    })
+    .await
+}
+
+/// The kind of record of the values of own fields in the file.
+const OWN_VALUES: &str = "field_value";
+
+#[tokio::test]
+async fn m9_f25_a_value_of_an_own_field_hidden_from_the_person_is_not_in_their_file() -> TestResult
+{
+    each_database("m9_f25_hidden_own_value", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let reviewer = id_in(
+            &create_field(
+                &mut ada,
+                json!({"name": "Reviewer", "kind": "person", "applies_to": "issues"}),
+            )
+            .await?,
+        )?;
+        // Contributors may not see the field in ACME; team members may.
+        field_level(
+            &site,
+            &mut ada,
+            StartingRole::Contributor,
+            &reviewer,
+            "hidden",
+        )
+        .await?;
+        let (mut bob, bob_id) = site.person(StartingRole::TeamMember, "bob").await?;
+        let (mut lea, lea_id) = site.person(StartingRole::Contributor, "lea").await?;
+        for person in [bob_id, lea_id] {
+            let issue = key_of(&site.create(&mut ada, "Printer jams").await?)?;
+            let version = version_of(&mut ada, &issue).await?;
+            ok(&ada
+                .send(
+                    "PATCH",
+                    &format!("{ISSUES}/{issue}"),
+                    Some(json!({"version": version, "fields": { &reviewer: person.to_string() }})),
+                )
+                .await?)?;
+        }
+        // Bob sees the field, so the value that names him is in his file.
+        let mut bobs = my_file(&rig, &mut bob).await?;
+        assert_eq!(bobs.rows(OWN_VALUES)?.len(), 1, "{:?}", bobs.names());
+        // Lea may not see it on screen, so her file holds neither the value nor the kind.
+        let leas = my_file(&rig, &mut lea).await?;
+        assert!(
+            !leas.names().iter().any(|name| name.contains(OWN_VALUES)),
+            "{:?}",
+            leas.names()
         );
         Ok(())
     })

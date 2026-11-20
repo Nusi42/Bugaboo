@@ -16,8 +16,9 @@ use bb_core::id::{DataExportId, UserId};
 use bb_core::job::Job;
 use bb_core::keeping::KeepKind;
 use bb_core::message::Message;
+use bb_core::own_fields_value::StoredFieldValue;
 use bb_core::people_kinds::PeopleKind;
-use bb_core::personal::Link;
+use bb_core::personal::{Entity as _, Link};
 use bb_core::security_log::Digest;
 use bb_core::settings::MAIL_ENABLED;
 use bb_core::wording::Region;
@@ -227,6 +228,14 @@ impl<S: AuthStore> Ctx<'_, S> {
                 for row in page.rows {
                     let row = if found.kind == RecordKind::Issue.code() {
                         self.issue_as_seen(person, row, &mut in_projects).await?
+                    } else if found.marks == StoredFieldValue::MARKS {
+                        let Some(row) = self
+                            .own_value_as_seen(person, row, &mut in_projects)
+                            .await?
+                        else {
+                            continue;
+                        };
+                        row
                     } else {
                         row
                     };
@@ -234,6 +243,10 @@ impl<S: AuthStore> Ctx<'_, S> {
                 }
                 from = page.next;
                 self.hold_on(held).await?;
+            }
+            // A kind whose every row is hidden from the person is no kind of the file either.
+            if rows.is_empty() {
+                continue;
             }
             writer
                 .kind(&ShapedKind {
