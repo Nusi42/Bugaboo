@@ -253,8 +253,16 @@ pub(crate) fn write_embedded(files: &Files, folder: &Path) -> anyhow::Result<()>
 
 /// `cargo xtask parts-list`: makes the files, checks them against their schemas, and writes them
 /// into `out`, else into the work folder.
-pub(crate) fn run(root: &Path, out: Option<std::path::PathBuf>) -> anyhow::Result<()> {
+pub(crate) fn run(root: &Path, out: Option<std::path::PathBuf>, embed: bool) -> anyhow::Result<()> {
     let files = compose(root)?;
+    if embed {
+        write_embedded(&files, &root.join(EMBEDDED_FOLDER))?;
+        crate::output::info(&format!(
+            "put the parts list ({} parts) and the notices where the program takes them in",
+            files.list.parts.len()
+        ));
+        return Ok(());
+    }
     let folder = match out {
         Some(folder) => folder,
         None => work_folder(root)?,

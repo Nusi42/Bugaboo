@@ -23,6 +23,9 @@ pub const ABOUT_PART_NO_LICENSE: MessageKey = MessageKey::new("about.part-no-lic
 /// The message `about.parts`.
 pub const ABOUT_PARTS: MessageKey = MessageKey::new("about.parts");
 
+/// The message `about.parts-more`.
+pub const ABOUT_PARTS_MORE: MessageKey = MessageKey::new("about.parts-more");
+
 /// The message `about.parts-none`.
 pub const ABOUT_PARTS_NONE: MessageKey = MessageKey::new("about.parts-none");
 

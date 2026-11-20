@@ -90,8 +90,12 @@ enum Command {
     /// (COMP-01, COMP-02), into the folder given, else into `parts-list/` of the build folder.
     PartsList {
         /// Where to write the four files.
-        #[arg(long)]
+        #[arg(long, conflicts_with = "embed")]
         out: Option<PathBuf>,
+        /// Write the parts list and the notices where the program takes them in when it is compiled
+        /// (what `cargo xtask build` does first), so a debug build answers them too.
+        #[arg(long)]
+        embed: bool,
     },
     /// Build the release folder of this version (ADR-0047): the programs for Windows and, in WSL,
     /// Linux, the parts list, the notices, the VEX statements and the notes; `sign`, `check` and
@@ -380,8 +384,8 @@ fn run() -> anyhow::Result<ExitCode> {
             repo.root(),
             target.as_deref(),
         )?)),
-        Command::PartsList { out } => {
-            release::run(repo.root(), out)?;
+        Command::PartsList { out, embed } => {
+            release::run(repo.root(), out, embed)?;
             Ok(ExitCode::SUCCESS)
         }
         Command::Release(arguments) => {

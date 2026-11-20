@@ -4838,12 +4838,6 @@ textarea,
   overflow-wrap: anywhere;
 }
 
-[data-part="pick-list"] {
-  box-sizing: border-box;
-  height: var(--size-list-box);
-  overflow-y: auto;
-}
-
 [data-part="pick-list.row"] {
   cursor: default;
   border-inline-start: var(--size-edge) solid transparent;

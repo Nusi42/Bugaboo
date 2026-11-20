@@ -12,6 +12,7 @@ export const messages = {
   "about.support-until": "Security fixes until {date}",
   "about.license": "License",
   "about.parts": "Parts inside Bugaboo",
+  "about.parts-more": "Show more parts",
   "about.parts-count": "{count, plural, one {# part} other {# parts}}",
   "about.parts-none": "This build carries no list of its parts.",
   "about.part-facts": "{version}, {license}",

@@ -6,7 +6,7 @@ import {
   aboutOf,
   downloadEveryFile,
   lastPartName,
-  scrollPartsToTheEnd,
+  readPartsToTheEnd,
 } from "./support/about-words.ts";
 import { bob } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
@@ -36,8 +36,8 @@ test("comp_01 About shows the version the support period and the parts list to d
   const parts = page.getByRole("listbox", { name: t("about.parts") });
   await expect(parts).toBeVisible();
   await expect(parts.getByRole("option").first()).toBeVisible();
-  // Only a page of parts is read at first: the rest comes in as the end of the list is reached.
-  await scrollPartsToTheEnd(parts, await lastPartName(server));
+  // Only a page of parts is read at first: *Show more* reads the rest.
+  await readPartsToTheEnd(page, parts, await lastPartName(server));
   await expectGoodInEveryLook(page);
   await downloadEveryFile(page, about);
 });

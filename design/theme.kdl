@@ -295,8 +295,6 @@ tokens {
     // A question is a small fixed dialog, 440 wide (R10); the palette of quick search is wider.
     size "size-dialog" "440px"
     size "size-palette" "560px"
-    // A list of many rows in a box whose height does not change (the backups, the parts of a release).
-    size "size-list-box" "320px"
     size "size-icon" "20px"
     size "size-icon-small" "16px"
     size "size-dot" "8px"
@@ -6016,17 +6014,11 @@ part "people.person-facts" "pick-list.facts" {
     overflow-wrap anywhere
 }
 
-// ───────────── A list in a box of its own height ─────────────
+// ───────────── A list of rows to read or to choose from ─────────────
 
-// The backups and the parts of a release: a long list in a box whose height does not change, so a row that comes in at
-// the top, or a page read at the end, moves nothing outside the box (UX §6.4). The list draws only the rows that are in
-// the box; the box scrolls. Its look and its rows are those of the list of people (`people`, `people.person`).
-part "pick-list" {
-    box-sizing border-box
-    height "$size-list-box"
-    overflow-y auto
-}
-
+// The backups and the parts of a release stand in a page like the list of people (`people`, `people.person`): the list
+// is as high as all its rows, the one scroll box of the page scrolls it (UX §6.5), and it still draws only the rows that
+// are in the window. A list of pages ends in *Show more*.
 // A row has an edge at its start that stays clear until the row is chosen, so choosing moves nothing. A row that is only
 // read has nothing to press; one to choose from does.
 part "pick-list.row" {

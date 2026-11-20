@@ -44,13 +44,15 @@ async function lastPartFrom(
     : lastPartFrom(admin, page.next_cursor, name);
 }
 
-/** Scrolls the list of parts to its end, so the pages after the first are read, until the last part is there. */
-export async function scrollPartsToTheEnd(list: Locator, last: string): Promise<void> {
+/** Reads the pages of the list of parts by pressing *Show more* until the last part is in the list. */
+export async function readPartsToTheEnd(page: Page, list: Locator, last: string): Promise<void> {
   await expect
     .poll(async () => {
-      await list.evaluate((box) => {
-        box.scrollTop = box.scrollHeight;
-      });
+      const more = page.getByRole("button", { name: t("about.parts-more"), exact: true });
+      if (await more.isVisible()) {
+        await more.click();
+      }
+      await list.getByRole("option").last().scrollIntoViewIfNeeded();
       return list.getByText(last, { exact: true }).count();
     })
     .toBeGreaterThan(0);

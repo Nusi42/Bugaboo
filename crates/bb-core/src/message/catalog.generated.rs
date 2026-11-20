@@ -20,6 +20,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "about.parts-count",
         "{count, plural, one {# part} other {# parts}}",
     ),
+    ("about.parts-more", "Show more parts"),
     (
         "about.parts-none",
         "This build carries no list of its parts.",

@@ -25,11 +25,9 @@ function mainMenu(page: Page): Locator {
   return page.getByRole("navigation", { name: t("shell.menu"), exact: true });
 }
 
-/** Screens that come with later versions (a bare *New*): no entry yet. */
-const later = /^New$/u;
-
-/** Nothing in the menu is for a screen that does not exist yet. */
+/** Nothing in the menu is for a screen that comes with a later version (a bare *New*). */
 async function expectNoLaterScreens(menu: Locator): Promise<void> {
+  const later = /^New$/u;
   await expect(menu.getByRole("link", { name: later })).toHaveCount(0);
   await expect(menu.getByRole("button", { name: later })).toHaveCount(0);
 }
@@ -170,6 +168,7 @@ function ownTopics(): string[] {
     t("nav.sessions"),
     t("nav.access-keys"),
     t("nav.connected-apps"),
+    t("nav.about"),
   ];
 }
 
@@ -242,6 +241,7 @@ test("ux_01 Organization settings lists the topics that exist, by heading", asyn
     t("nav.ai"),
     t("nav.organization-agents"),
     t("nav.organization-security"),
+    t("nav.backups"),
     t("nav.status"),
   ]);
   await topics(page, t("nav.organization-settings")).last().click();

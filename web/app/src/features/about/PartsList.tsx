@@ -1,6 +1,6 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, partOf, part, useHoldWhileReading } from "@bugaboo/ui";
+import { Alert, alertTone, partOf, part, ShowMoreOf, useHoldWhileReading } from "@bugaboo/ui";
 import {
   Collection,
   ListBox,
@@ -81,6 +81,7 @@ export function PartsList() {
           <ListBoxLoadMoreItem onLoadMore={more} />
         </ListBox>
       </Virtualizer>
+      <ShowMoreOf label={t("about.parts-more")} list={parts} />
     </>
   );
 }

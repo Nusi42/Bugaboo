@@ -17,7 +17,7 @@ Bugaboo is free software under the AGPL-3.0-or-later license. The page names it 
 
 ## The parts inside
 
-"Parts inside Bugaboo" lists every part inside this release, with its version and its license. The list shows only the rows you see, so it stays quick however many parts there are; scroll to read on.
+"Parts inside Bugaboo" lists every part inside this release, with its version and its license. The list shows a page of parts at a time and stays quick however many parts there are; press "Show more parts" to read on.
 
 Above the list you can download:
 

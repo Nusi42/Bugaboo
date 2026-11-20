@@ -81,6 +81,13 @@ pub(crate) fn plan(root: &Path) -> anyhow::Result<Vec<Step>> {
         Step::web(root, "browser unit tests", &["test"]),
         // The end-to-end tests start the program themselves (ADR-0023), some of them on a copy of
         // a fresh sample organization.
+        // The program carries its parts list and notices (COMP-01), which About shows: they are written
+        // where it takes them in before it is built, as `cargo xtask build` does.
+        Step::new(
+            "put the parts list into the program",
+            xtask.to_string_lossy(),
+            &["parts-list", "--embed"],
+        ),
         steps::server_build(Profile::Debug),
         Step::web(root, "browser end-to-end tests", &["run", "test:e2e"]).after_background(),
         // Ten people work on the same issues at speed for two minutes, on each database
@@ -135,6 +142,7 @@ mod tests {
                 "sample organization",
                 "large dataset",
                 "browser unit tests",
+                "put the parts list into the program",
                 "build the bugaboo program",
                 "browser end-to-end tests",
                 "ten people at once",
@@ -157,8 +165,8 @@ mod tests {
         assert_eq!(
             skipped,
             [
-                true, false, false, false, false, false, false, true, false, true, true, true,
-                on_linux, on_linux
+                true, false, false, false, false, false, false, true, false, false, true, true,
+                true, on_linux, on_linux
             ]
         );
     }

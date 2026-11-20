@@ -320,7 +320,6 @@ export const tokenNames = [
   "size-viewport",
   "size-dialog",
   "size-palette",
-  "size-list-box",
   "size-icon",
   "size-icon-small",
   "size-dot",
