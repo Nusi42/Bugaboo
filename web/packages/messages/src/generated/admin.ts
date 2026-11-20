@@ -32,7 +32,7 @@ export const messages = {
   "backup-page.none": "There are no backups yet.",
   "backup-page.row-facts": "{size}, {maker}",
   "backup-page.maker.daily": "created by the daily backup",
-  "backup-page.maker.person": "created by a person",
+  "backup-page.maker.person": "created by {who}",
   "backup-page.maker.command-line": "created on the command line",
   "backup-page.maker.upgrade": "created before an upgrade",
   "backup-page.maker.before-restore": "created before a restore",

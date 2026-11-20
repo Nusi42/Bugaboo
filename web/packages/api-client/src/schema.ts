@@ -6518,8 +6518,7 @@ export interface components {
       maker: string;
       /** @description The name of the backup. */
       name: string;
-      /** @description The person who pressed *Create a backup now*. */
-      person?: string | null;
+      person?: components["schemas"]["PersonRef"] | null;
       /**
        * Format: int64
        * @description Its size in bytes.

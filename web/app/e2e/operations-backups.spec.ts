@@ -48,7 +48,7 @@ test("ops_07 an administrator makes a backup and it appears at the top without m
   // The new row is the first, and a person created it.
   const first = list.getByRole("option").first();
   await expect(first).toContainText(after.slice(0, 1).join(""));
-  await expect(first).toContainText(t("backup-page.maker.person"));
+  await expect(first).toContainText(t("backup-page.maker.person", { who: ada.name }));
   await expectGoodInEveryLook(page);
   await scene.admin.dispose();
 });

@@ -65,6 +65,13 @@ async fn ops_07_a_backup_now_is_recorded_with_its_line_in_the_security_log() -> 
     assert_eq!(list.runs[0].event, BackupEvent::Made);
     assert_eq!(list.runs[0].maker, BackupMaker::Person);
     assert_eq!(list.runs[0].person, Some(world.admin.person.id));
+    // The person who pressed the button is named once, the way *Who sees people* shows them.
+    assert_eq!(list.people.len(), 1);
+    assert_eq!(list.people[0].0, world.admin.person.id);
+    assert!(matches!(
+        list.people[0].1,
+        bb_policy::PersonRef::Name { .. }
+    ));
     let logged = world
         .store
         .lock()

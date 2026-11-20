@@ -9,7 +9,8 @@ use bb_app::backups::{BackupItem, Backups, CreateBackup, ListBackupsQuery};
 use bb_core::backup::name::Purpose;
 use bb_core::backup::run::BackupRun;
 use bb_core::hex;
-use bb_policy::Masked;
+use bb_core::id::UserId;
+use bb_policy::{Masked, PersonRef};
 use serde::Serialize;
 use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
@@ -61,8 +62,8 @@ pub(crate) struct BackupRunBody {
     checksum: String,
     /// `schedule`, `command-line`, `person` or `upgrade`.
     maker: String,
-    /// The person who pressed *Create a backup now*.
-    person: Option<String>,
+    /// The person who pressed *Create a backup now*, as the viewer may see them.
+    person: Option<PersonRef>,
     /// When it happened.
     at: String,
     /// For a restore: the first entry of the security log that is gone.
@@ -71,15 +72,20 @@ pub(crate) struct BackupRunBody {
     lost_to: Option<i64>,
 }
 
-impl From<&BackupRun> for BackupRunBody {
-    fn from(run: &BackupRun) -> Self {
+impl BackupRunBody {
+    fn of(run: &BackupRun, people: &[(UserId, PersonRef)]) -> Self {
         Self {
             event: run.event.code().to_owned(),
             name: run.name.to_string(),
             size: run.size,
             checksum: hex::encode(run.checksum.as_bytes()),
             maker: run.maker.code().to_owned(),
-            person: run.person.map(|person| person.to_string()),
+            person: run.person.and_then(|person| {
+                people
+                    .iter()
+                    .find(|(known, _)| *known == person)
+                    .map(|(_, shown)| shown.clone())
+            }),
             at: run.at.to_string(),
             lost_from: run.lost_from,
             lost_to: run.lost_to,
@@ -103,7 +109,11 @@ impl From<&Backups> for BackupsBody {
     fn from(backups: &Backups) -> Self {
         Self {
             files: backups.files.iter().map(BackupFileBody::from).collect(),
-            runs: backups.runs.iter().map(BackupRunBody::from).collect(),
+            runs: backups
+                .runs
+                .iter()
+                .map(|run| BackupRunBody::of(run, &backups.people))
+                .collect(),
         }
     }
 }

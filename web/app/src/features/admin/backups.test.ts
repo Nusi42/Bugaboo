@@ -60,6 +60,18 @@ describe("the rows of the list", () => {
   });
 });
 
+describe("the person of a row", () => {
+  it("is the person the record of the backup names", () => {
+    const person = { shown: "name", id: "u1", name: "Ada" } as const;
+    const body: Backups = {
+      files: [file("a.backup")],
+      runs: [{ ...run("a.backup", "person"), person }],
+    };
+    expect(backupRows(body)[0]?.person).toEqual(person);
+    expect(backupRows({ files: [file("a.backup")], runs: [] })[0]?.person).toBeNull();
+  });
+});
+
 describe("the backup a restore command is shown for", () => {
   const rows = backupRows({ files: [file("b.backup"), file("a.backup")], runs: [] });
 

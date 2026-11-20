@@ -2,6 +2,7 @@ import type { Schema } from "@bugaboo/api-client";
 import { t, type MessageKey } from "@bugaboo/messages";
 
 import { api } from "../../shared/api.ts";
+import { personNameInside, someoneName } from "../../shared/person.ts";
 
 type File = Schema<"BackupFileBody">;
 type Run = Schema<"BackupRunBody">;
@@ -50,11 +51,15 @@ export interface BackupRow {
   readonly moment: string;
   readonly size: number;
   readonly maker: Maker;
+  /** The person who created it, as the viewer may see them, when a person did. */
+  readonly person: Schema<"PersonRef"> | null;
 }
 
 /** The rows of the list, in the order of the server: newest first. */
 export function backupRows(backups: Backups): readonly BackupRow[] {
   return backups.files.map((file) => ({
+    person:
+      backups.runs.find((run) => run.event === MADE && run.name === file.name)?.person ?? null,
     name: file.name,
     moment: file.moment,
     size: file.size,
@@ -80,3 +85,12 @@ export function backupsOptions() {
 /** The step-by-step page of the user docs for a restore. */
 export const RESTORE_DOCS =
   "https://github.com/Nusi42/Bugaboo/blob/main/userDocs/install/backups.md#restore-a-backup";
+
+/** Who created a backup, in words: a person by the name the viewer may see them under, else the maker. */
+export function makerText(row: Readonly<BackupRow>): string {
+  return row.maker === "person"
+    ? t("backup-page.maker.person", {
+        who: row.person === null ? someoneName("inside") : personNameInside(row.person),
+      })
+    : t(makerMessages[row.maker]);
+}

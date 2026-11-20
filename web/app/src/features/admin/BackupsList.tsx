@@ -5,7 +5,7 @@ import { Collection, ListBox, ListBoxItem, ListLayout, Virtualizer } from "react
 
 import { formatDateTime } from "../../shared/format.ts";
 import { formatSize } from "../../shared/file-size.ts";
-import { makerMessages, type BackupRow } from "./backups.ts";
+import { makerText, type BackupRow } from "./backups.ts";
 
 /** The word of React Aria Components for a list box where one row is chosen. */
 const ONE_CHOSEN = "single";
@@ -64,7 +64,7 @@ export function BackupsList({ rows, chosen, onChoose }: Readonly<BackupsListProp
               <span {...partOf(part.pickListFacts)}>
                 {t("backup-page.row-facts", {
                   size: formatSize(row.size),
-                  maker: t(makerMessages[row.maker]),
+                  maker: makerText(row),
                 })}
               </span>
             </ListBoxItem>

@@ -231,6 +231,7 @@ export interface MessageArguments {
   "assistant.never-sent": { names: string | number };
   "assistant.question-limit": { count: number };
   "assistant.question-too-long": { count: number };
+  "backup-page.maker.person": { who: string | number };
   "backup-page.restore-command": { name: string | number };
   "backup-page.row-facts": { maker: string | number; size: string | number };
   "backup.left": { count: number };

@@ -1299,7 +1299,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "created on the command line",
     ),
     ("backup-page.maker.daily", "created by the daily backup"),
-    ("backup-page.maker.person", "created by a person"),
+    ("backup-page.maker.person", "created by {who}"),
     ("backup-page.maker.unknown", "maker not recorded"),
     ("backup-page.maker.upgrade", "created before an upgrade"),
     ("backup-page.none", "There are no backups yet."),

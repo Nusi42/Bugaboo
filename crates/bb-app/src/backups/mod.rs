@@ -18,8 +18,9 @@ use bb_core::error_code::ErrorCode;
 use bb_core::event::{Actor as EventActor, DomainEvent};
 use bb_core::id::{BackupId, UserId};
 use bb_core::network::NetworkPrefix;
+use bb_core::people_kinds::PeopleKind;
 use bb_core::settings::BACKUPS_FOLDER;
-use bb_policy::{Authorized, Masked, Permission, Place};
+use bb_policy::{Authorized, Masked, PeopleContext, Permission, PersonRef, Place};
 
 pub use ports::{BackupFile, BackupFiles, BackupStore, NoBackupFiles};
 
@@ -58,6 +59,9 @@ pub struct Backups {
     pub files: Vec<BackupItem>,
     /// The newest records of backups created and restored, newest first.
     pub runs: Vec<BackupRun>,
+    /// The people the records name, as the viewer may see them (*Who sees people*, and *Former
+    /// user* after a removal), once for each person.
+    pub people: Vec<(UserId, PersonRef)>,
 }
 
 impl Masked for Backups {}
@@ -98,7 +102,26 @@ pub async fn list_backups<S: AuthStore>(
         .backup_runs(LISTED_RUNS)
         .await
         .map_err(|error| internal::<S>(&error))?;
-    Ok(access.authorize(Backups { files, runs }))
+    let viewer = ctx.evaluation_of(&actor, Place::Organization).await?;
+    let mut people: Vec<(UserId, PersonRef)> = Vec::new();
+    for person in runs.iter().filter_map(|run| run.person) {
+        if people.iter().all(|(known, _)| *known != person) {
+            let shown = ctx
+                .person_ref(
+                    &viewer,
+                    PeopleKind::Authors,
+                    PeopleContext::Ordinary,
+                    person,
+                )
+                .await?;
+            people.push((person, shown));
+        }
+    }
+    Ok(access.authorize(Backups {
+        files,
+        runs,
+        people,
+    }))
 }
 
 /// *Create a backup now*: a backup while people go on working.

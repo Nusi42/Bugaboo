@@ -1513,9 +1513,6 @@ pub const BACKUP_PAGE_MAKER_COMMAND_LINE: MessageKey =
 /// The message `backup-page.maker.daily`.
 pub const BACKUP_PAGE_MAKER_DAILY: MessageKey = MessageKey::new("backup-page.maker.daily");
 
-/// The message `backup-page.maker.person`.
-pub const BACKUP_PAGE_MAKER_PERSON: MessageKey = MessageKey::new("backup-page.maker.person");
-
 /// The message `backup-page.maker.unknown`.
 pub const BACKUP_PAGE_MAKER_UNKNOWN: MessageKey = MessageKey::new("backup-page.maker.unknown");
 
@@ -11677,6 +11674,15 @@ pub fn assistant_question_too_long(count: i64) -> Message {
     Message::with_arguments(
         MessageKey::new("assistant.question-too-long"),
         vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `backup-page.maker.person`.
+#[must_use]
+pub fn backup_page_maker_person(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("backup-page.maker.person"),
+        vec![("who", Value::Text(who.to_string()))],
     )
 }
 
