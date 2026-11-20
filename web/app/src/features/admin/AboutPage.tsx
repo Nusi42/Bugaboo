@@ -42,12 +42,13 @@ export function AboutPage() {
   const about = useQuery(api.query.queryOptions("get", "/api/v1/about"));
   useHoldWhileReading(about.isLoading);
   return (
-    <Card heading={t("nav.about")} level={1} intro={t("about.intro")}>
-      {about.isError ? <Alert tone={alertTone.danger}>{messageOf(about.error)}</Alert> : null}
-      {about.data === undefined ? null : <AboutFacts about={about.data} />}
+    <div {...partOf(part.stack)}>
+      <Card heading={t("nav.about")} level={1} intro={t("about.intro")}>
+        {about.isError ? <Alert tone={alertTone.danger}>{messageOf(about.error)}</Alert> : null}
+        {about.data === undefined ? null : <AboutFacts about={about.data} />}
+      </Card>
       <Card
         heading={t("about.parts")}
-        level={2}
         intro={
           about.data === undefined
             ? undefined
@@ -57,6 +58,6 @@ export function AboutPage() {
         {about.data === undefined ? null : <Downloads about={about.data} />}
         {about.data === undefined ? null : <PartsList />}
       </Card>
-    </Card>
+    </div>
   );
 }

@@ -16,7 +16,7 @@ const SCHEDULE = "backups.daily,backups.keep-daily,backups.keep-weekly";
 /** How a backup is put back: the command for the chosen backup, and where the steps are. There is no button that restores. */
 function Restore({ name }: { readonly name: string | undefined }) {
   return (
-    <Card heading={t("backup-page.restore")} level={2} intro={t("backup-page.restore-intro")}>
+    <Card heading={t("backup-page.restore")} intro={t("backup-page.restore-intro")}>
       {name === undefined ? null : (
         <code {...partOf(part.keyBox, { variants: ["small"] })}>{restoreCommand(name)}</code>
       )}
@@ -38,16 +38,17 @@ export function BackupsPage() {
   const rows = backups.data === undefined ? [] : backupRows(backups.data);
   const chosen = chosenName(rows, picked);
   return (
-    <Card heading={t("nav.backups")} level={1} intro={t("backup-page.intro")}>
-      <Card heading={t("backup-page.daily")} level={2}>
+    <div {...partOf(part.stack)}>
+      <Card heading={t("nav.backups")} level={1} intro={t("backup-page.intro")} />
+      <Card heading={t("backup-page.daily")}>
         <OrganizationTopic topics={SCHEDULE} searchable={false} />
       </Card>
-      <Card heading={t("backup-page.list")} level={2}>
+      <Card heading={t("backup-page.list")}>
         <CreateBackup />
         {backups.isError ? <Alert tone={alertTone.danger}>{messageOf(backups.error)}</Alert> : null}
         <BackupsList rows={rows} chosen={chosen} onChoose={setPicked} />
       </Card>
       <Restore name={chosen} />
-    </Card>
+    </div>
   );
 }

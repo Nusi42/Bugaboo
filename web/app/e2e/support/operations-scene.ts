@@ -2,6 +2,7 @@ import { dataOf } from "@bugaboo/api-client";
 
 import { signedInAdmin } from "./access.ts";
 import { type ApiSession } from "./api.ts";
+import { type Movement } from "./movement.ts";
 import { inOrder } from "./sequence.ts";
 import { type Instance } from "./server.ts";
 
@@ -45,4 +46,15 @@ export function newestTwo(names: readonly string[]): {
     throw new Error("the scene holds fewer than two backups");
   }
   return { newest, older };
+}
+
+/** The words beside a button that come in the room they keep (the status of a change). */
+const STATUS_WORDS = "save-status.words";
+
+/** The parts that shifted while the measure ran, other than those inside the named landmark and the status words. */
+export function shiftsOutside(movement: Movement, landmark: string): readonly string[] {
+  return movement.shifts
+    .flatMap((shift) => shift.sources)
+    .filter((source) => source.part !== STATUS_WORDS && !source.within.includes(landmark))
+    .map((source) => source.part);
 }

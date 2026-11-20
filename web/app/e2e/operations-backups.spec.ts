@@ -6,9 +6,10 @@ import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareWeb } from "./support/issues.ts";
-import { expectStill, movementWhile, partLandmark } from "./support/movement.ts";
+import { movementWhile, partLandmark } from "./support/movement.ts";
 import {
   backupNames,
+  shiftsOutside,
   backupsScene,
   newestTwo,
   untilNextSecond,
@@ -17,6 +18,9 @@ import { partIn } from "./support/parts.ts";
 
 // Backups for an administrator (OPS-07, ADR-0046): the daily backup, Create a backup now, the list, and the
 // command that restores one. The same specs run on a computer and on a phone.
+
+/** The name of the landmark of the list. */
+const BOX = "the box of the backups";
 
 test.use({ preparation: { run: prepareWeb } });
 
@@ -33,16 +37,25 @@ test("ops_07 an administrator makes a backup and it appears at the top without m
   // The box of the list has its own height, so a row that comes in moves nothing outside it.
   const landmarks = [
     partLandmark("the heading", "card.header"),
-    partLandmark("the box of the backups", "pick-list"),
+    partLandmark(BOX, "pick-list"),
     partLandmark("the command", "key-box"),
   ];
+  // The person has the button in view when they press it: the test does not scroll the page under the measure.
+  const create = page.getByRole("button", { name: t("backup-page.create"), exact: true });
+  await create.scrollIntoViewIfNeeded();
   await untilNextSecond();
   const creating = await movementWhile(page, landmarks, async () => {
-    await page.getByRole("button", { name: t("backup-page.create"), exact: true }).click();
+    await create.click();
     await expect(page.getByText(t("backup-page.created"), { exact: true })).toBeVisible();
     await expect(list.getByRole("option")).toHaveCount(scene.names.length + 1);
   });
-  expectStill(creating);
+  // Nothing outside the box moved, went away, flashed or scrolled. The rows inside the box move down by the one
+  // that came in, and the words beside the button come in the room they keep; no other part shifted.
+  expect(creating.moved).toEqual([]);
+  expect(creating.vanished).toEqual([]);
+  expect(creating.scrolled).toEqual([]);
+  expect(creating.greyShapes).toBe(false);
+  expect(shiftsOutside(creating, BOX)).toEqual([]);
   const after = await backupNames(scene.admin);
   expect(after).toHaveLength(scene.names.length + 1);
   // The new row is the first, and a person created it.
