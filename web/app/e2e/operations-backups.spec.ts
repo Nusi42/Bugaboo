@@ -6,7 +6,7 @@ import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareWeb } from "./support/issues.ts";
-import { expectStill, movementWhile, partLandmark } from "./support/movement.ts";
+import { expectStill, landmarkOf, movementWhile, partLandmark } from "./support/movement.ts";
 import {
   backupNames,
   backupsScene,
@@ -21,6 +21,8 @@ import { partIn } from "./support/parts.ts";
 /** The names of the landmarks of the list, the command under it and the words beside the button. */
 const BOX = "the backups";
 const COMMAND = "the command";
+const CARD = "the card of the backups";
+const RESTORE = "the card of the restore";
 const STATUS = "the words beside the button";
 
 test.use({ preparation: { run: prepareWeb } });
@@ -36,22 +38,27 @@ test("ops_07 an administrator makes a backup and it appears at the top without m
   const list = page.getByRole("listbox", { name: t("backup-page.list") });
   await expect(list.getByRole("option")).toHaveCount(scene.names.length);
   // The list is as high as its rows: the new row makes it one row longer and pushes the command under it, once.
+  // The person has the button in view when they press it: the test does not scroll the page under the measure.
+  const create = page.getByRole("button", { name: t("backup-page.create"), exact: true });
+  await create.scrollIntoViewIfNeeded();
   const landmarks = [
     partLandmark("the heading", "card.header"),
     partLandmark(BOX, "pick-list"),
     partLandmark(COMMAND, "key-box"),
-    partLandmark(STATUS, "save-status"),
+    await landmarkOf(create.locator("xpath=.."), STATUS),
+    await landmarkOf(
+      partIn(page, "key-box").locator("xpath=ancestor::*[@data-part='card'][1]"),
+      RESTORE,
+    ),
+    await landmarkOf(list.locator("xpath=ancestor::*[@data-part='card'][1]"), CARD),
   ];
-  // The person has the button in view when they press it: the test does not scroll the page under the measure.
-  const create = page.getByRole("button", { name: t("backup-page.create"), exact: true });
-  await create.scrollIntoViewIfNeeded();
   await untilNextSecond();
   const creating = await movementWhile(page, landmarks, async () => {
     await create.click();
     await expect(page.getByText(t("backup-page.created"), { exact: true })).toBeVisible();
     await expect(list.getByRole("option")).toHaveCount(scene.names.length + 1);
   });
-  expectStill(creating, { grows: [BOX, STATUS], follows: [COMMAND] });
+  expectStill(creating, { grows: [BOX, CARD, STATUS], follows: [COMMAND, RESTORE] });
   const after = await backupNames(scene.admin);
   expect(after).toHaveLength(scene.names.length + 1);
   // The new row is the first, and a person created it.
