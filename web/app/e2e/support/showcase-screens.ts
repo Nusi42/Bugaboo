@@ -144,6 +144,11 @@ export const screens: readonly Screen[] = [
   organization("sign-in-rules", "the rules for signing in", at(paths.signInRules)),
   organization("themes", "the look of the whole organization", at(paths.themes)),
   organization("server-status", "how the server is doing", at(paths.status)),
+  organization(
+    "backups",
+    "the backups, the daily backup and how to restore one",
+    at(paths.backups),
+  ),
   mine("my-settings", "all the topics of the person themselves", paths.mySettings),
   mine("appearance", "the theme, size and spacing, with samples", paths.appearance),
   mine("region", "time zone, date and number formats", paths.region),
@@ -152,6 +157,7 @@ export const screens: readonly Screen[] = [
   mine("security", "password, code app, passkeys and backup codes", paths.security),
   mine("sessions", "the places where the person is signed in", paths.sessions),
   mine("access-keys", "access keys for scripts", paths.accessKeys),
+  mine("about", "the version, the support period and the parts inside", paths.about),
   screen(
     "project-issues",
     "administrator",

@@ -199,6 +199,8 @@ const visits: readonly Visit[] = [
     guest: false,
   },
   { address: paths.status, open: signedIn(paths.status), guest: false },
+  { address: paths.backups, open: signedIn(paths.backups), guest: false },
+  { address: paths.about, open: signedIn(paths.about), guest: false },
   { address: paths.projects, open: signedIn(paths.projects), guest: false },
   { address: paths.fieldPermissions, open: signedIn(paths.fieldPermissions), guest: false },
   { address: paths.peopleVisibility, open: signedIn(paths.peopleVisibility), guest: false },

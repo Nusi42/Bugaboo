@@ -11,6 +11,9 @@ import { searchKeys } from "./search-keys.ts";
  * projects. (The keys of the queries that `api.query` makes for itself come from their options.)
  */
 export const queryKeys = {
+  about: {
+    parts: () => ["about", "parts"],
+  },
   people: {
     all: ["people"],
     list: (search: string) => ["people", "list", search],

@@ -182,4 +182,13 @@ export const ownPlaces: readonly Place[] = [
     group: "nav.group.hearing",
     listed: true,
   },
+  {
+    // *About*: for everybody who is signed in, so it needs no permission (COMP-01, COMP-04).
+    path: paths.about,
+    name: "nav.about",
+    icon: iconName.info,
+    parent: paths.mySettings,
+    group: "nav.group.system",
+    listed: true,
+  },
 ];

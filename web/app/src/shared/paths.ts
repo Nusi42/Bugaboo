@@ -54,6 +54,8 @@ export const paths = {
   theme: "/settings/themes/$theme",
   workingHours: "/settings/working-hours",
   status: "/settings/status",
+  backups: "/settings/backups",
+  about: "/me/about",
   mailServer: "/settings/email",
   ai: "/settings/ai",
   organizationAgents: "/settings/agents",

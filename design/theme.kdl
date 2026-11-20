@@ -295,6 +295,8 @@ tokens {
     // A question is a small fixed dialog, 440 wide (R10); the palette of quick search is wider.
     size "size-dialog" "440px"
     size "size-palette" "560px"
+    // A list of many rows in a box whose height does not change (the backups, the parts of a release).
+    size "size-list-box" "320px"
     size "size-icon" "20px"
     size "size-icon-small" "16px"
     size "size-dot" "8px"
@@ -6005,6 +6007,63 @@ part "people.person-name" {
 }
 
 part "people.person-facts" {
+    color "$fg-muted"
+    font-size "$fs-base"
+    line-height "$lh-body"
+    overflow-wrap anywhere
+}
+
+// ───────────── A list in a box of its own height ─────────────
+
+// The backups and the parts of a release: a long list in a box whose height does not change, so a row that comes in at
+// the top, or a page read at the end, moves nothing outside the box (UX §6.4). The list draws only the rows that are in
+// the box; the box scrolls.
+part "pick-list" {
+    display block
+    box-sizing border-box
+    height "$size-list-box"
+    margin 0
+    padding-block 0
+    padding-inline "$ring-width"
+    overflow-y auto
+    use "surface-box"
+}
+
+// A row is as tall as its words need: the name, and under it the facts, each wrapping where the line ends.
+part "pick-list.row" {
+    use "pick-row"
+    border-bottom "$border-width solid $divider"
+    border-inline-start "$space-1 solid transparent"
+}
+
+// A row of a list that is only read has nothing to press.
+part "pick-list.row[variant=read]" {
+    cursor default
+}
+
+part "pick-list.row[hovered]" {
+    background "$bg-hover"
+}
+
+// The chosen row: tinted, with a line of the accent at its start, so the choice shows without its color.
+part "pick-list.row[selected]" {
+    background "$bg-selected"
+    border-inline-start-color "$accent"
+}
+
+part "pick-list.row[focus-visible]" {
+    use "ring-inside"
+}
+
+part "pick-list.name" {
+    font-size "$fs-md"
+    font-weight "$weight-regular"
+    line-height "$lh-body"
+    color "$fg"
+    overflow-wrap anywhere
+}
+
+part "pick-list.facts" {
     color "$fg-muted"
     font-size "$fs-base"
     line-height "$lh-body"

@@ -4829,6 +4829,67 @@ textarea,
   overflow-wrap: anywhere;
 }
 
+[data-part="pick-list"] {
+  display: block;
+  box-sizing: border-box;
+  height: var(--size-list-box);
+  margin: 0;
+  padding-block: 0;
+  padding-inline: var(--ring-width);
+  overflow-y: auto;
+  border: var(--border-width) solid var(--border-subtle);
+  border-radius: var(--r-ctl);
+  background: var(--bg-surface);
+}
+
+[data-part="pick-list.row"] {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-1);
+  box-sizing: border-box;
+  min-height: var(--size-control);
+  padding: var(--space-2) var(--space-3);
+  color: var(--fg);
+  text-decoration: none;
+  cursor: pointer;
+  border-bottom: var(--border-width) solid var(--divider);
+  border-inline-start: var(--space-1) solid transparent;
+}
+
+[data-part="pick-list.row"][data-variant~="read"] {
+  cursor: default;
+}
+
+[data-part="pick-list.row"][data-hovered] {
+  background: var(--bg-hover);
+}
+
+[data-part="pick-list.row"][data-selected] {
+  background: var(--bg-selected);
+  border-inline-start-color: var(--accent);
+}
+
+[data-part="pick-list.row"][data-focus-visible] {
+  outline: var(--ring-width) solid var(--accent);
+  outline-offset: calc(var(--ring-width) * -1);
+}
+
+[data-part="pick-list.name"] {
+  font-size: var(--fs-md);
+  font-weight: var(--weight-regular);
+  line-height: var(--lh-body);
+  color: var(--fg);
+  overflow-wrap: anywhere;
+}
+
+[data-part="pick-list.facts"] {
+  color: var(--fg-muted);
+  font-size: var(--fs-base);
+  line-height: var(--lh-body);
+  overflow-wrap: anywhere;
+}
+
 [data-part="roles.no-access"] {
   margin: 0;
   color: var(--danger);

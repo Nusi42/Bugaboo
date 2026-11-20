@@ -124,6 +124,8 @@ export const messages = {
   "nav.security": "Sign-in and security",
   "nav.sessions": "Where you're signed in",
   "nav.status": "Server status",
+  "nav.backups": "Backups",
+  "nav.about": "About",
   "nav.sign-out": "Sign out",
   "passkeys.cancelled": "The passkey was not used. You can try again.",
   "data-folder.not-a-data-folder":

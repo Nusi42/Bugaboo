@@ -72,6 +72,11 @@ describe("ux_01 the screens that exist", () => {
     expect(visible(["manage-issue-types"])).toContain(paths.organizationSettings);
     expect(visible(["manage-groups"])).not.toContain(paths.issueTypes);
     expect(mayOpen(paths.status, [])).toBe(false);
+    expect(mayOpen(paths.backups, [])).toBe(false);
+    expect(mayOpen(paths.backups, ["change-organization-settings"])).toBe(true);
+    expect(mayOpen(paths.backups, ["see-status"])).toBe(false);
+    // *About* is for everybody who is signed in.
+    expect(mayOpen(paths.about, [])).toBe(true);
     expect(mayOpen(paths.status, ["see-status"])).toBe(true);
   });
 
@@ -103,6 +108,7 @@ describe("ux_01 the topics of a settings screen", () => {
       paths.sessions,
       paths.accessKeys,
       paths.connectedApps,
+      paths.about,
     ]);
     expect(topicGroups(paths.organizationSettings, [])).toEqual([]);
     expect(
@@ -120,6 +126,7 @@ describe("ux_01 the topics of a settings screen", () => {
       paths.ai,
       paths.organizationAgents,
       paths.organizationSecurity,
+      paths.backups,
       paths.status,
     ]);
   });

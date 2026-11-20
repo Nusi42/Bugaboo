@@ -82,6 +82,9 @@ export type MessageKey =
   | keyof typeof workflows;
 
 export interface MessageArguments {
+  "about.part-facts": { license: string | number; version: string | number };
+  "about.parts-count": { count: number };
+  "about.support-until": { date: string | number };
   "access-keys.delete-name": { name: string | number };
   "access-keys.expires-help": { days: number; latest: string | number };
   "access-keys.project-label": { name: string | number; short_name: string | number };
@@ -228,6 +231,8 @@ export interface MessageArguments {
   "assistant.never-sent": { names: string | number };
   "assistant.question-limit": { count: number };
   "assistant.question-too-long": { count: number };
+  "backup-page.restore-command": { name: string | number };
+  "backup-page.row-facts": { maker: string | number; size: string | number };
   "backup.left": { count: number };
   "check-access.for-issue-type": { type: string | number };
   "check-access.level.no-role": { person: string | number };

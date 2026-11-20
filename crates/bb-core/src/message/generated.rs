@@ -2,6 +2,42 @@
 
 use super::{Message, MessageKey, Value};
 
+/// The message `about.download-cyclonedx`.
+pub const ABOUT_DOWNLOAD_CYCLONEDX: MessageKey = MessageKey::new("about.download-cyclonedx");
+
+/// The message `about.download-notices`.
+pub const ABOUT_DOWNLOAD_NOTICES: MessageKey = MessageKey::new("about.download-notices");
+
+/// The message `about.download-spdx`.
+pub const ABOUT_DOWNLOAD_SPDX: MessageKey = MessageKey::new("about.download-spdx");
+
+/// The message `about.intro`.
+pub const ABOUT_INTRO: MessageKey = MessageKey::new("about.intro");
+
+/// The message `about.license`.
+pub const ABOUT_LICENSE: MessageKey = MessageKey::new("about.license");
+
+/// The message `about.part-no-license`.
+pub const ABOUT_PART_NO_LICENSE: MessageKey = MessageKey::new("about.part-no-license");
+
+/// The message `about.parts`.
+pub const ABOUT_PARTS: MessageKey = MessageKey::new("about.parts");
+
+/// The message `about.parts-none`.
+pub const ABOUT_PARTS_NONE: MessageKey = MessageKey::new("about.parts-none");
+
+/// The message `about.released`.
+pub const ABOUT_RELEASED: MessageKey = MessageKey::new("about.released");
+
+/// The message `about.support`.
+pub const ABOUT_SUPPORT: MessageKey = MessageKey::new("about.support");
+
+/// The message `about.support-preview`.
+pub const ABOUT_SUPPORT_PREVIEW: MessageKey = MessageKey::new("about.support-preview");
+
+/// The message `about.version`.
+pub const ABOUT_VERSION: MessageKey = MessageKey::new("about.version");
+
 /// The message `access-keys.choice.everything`.
 pub const ACCESS_KEYS_CHOICE_EVERYTHING: MessageKey =
     MessageKey::new("access-keys.choice.everything");
@@ -1444,6 +1480,62 @@ pub const ASSISTANT_WORKING: MessageKey = MessageKey::new("assistant.working");
 
 /// The message `assistant.you`.
 pub const ASSISTANT_YOU: MessageKey = MessageKey::new("assistant.you");
+
+/// The message `backup-page.create`.
+pub const BACKUP_PAGE_CREATE: MessageKey = MessageKey::new("backup-page.create");
+
+/// The message `backup-page.create-help`.
+pub const BACKUP_PAGE_CREATE_HELP: MessageKey = MessageKey::new("backup-page.create-help");
+
+/// The message `backup-page.created`.
+pub const BACKUP_PAGE_CREATED: MessageKey = MessageKey::new("backup-page.created");
+
+/// The message `backup-page.creating`.
+pub const BACKUP_PAGE_CREATING: MessageKey = MessageKey::new("backup-page.creating");
+
+/// The message `backup-page.daily`.
+pub const BACKUP_PAGE_DAILY: MessageKey = MessageKey::new("backup-page.daily");
+
+/// The message `backup-page.intro`.
+pub const BACKUP_PAGE_INTRO: MessageKey = MessageKey::new("backup-page.intro");
+
+/// The message `backup-page.list`.
+pub const BACKUP_PAGE_LIST: MessageKey = MessageKey::new("backup-page.list");
+
+/// The message `backup-page.maker.before-restore`.
+pub const BACKUP_PAGE_MAKER_BEFORE_RESTORE: MessageKey =
+    MessageKey::new("backup-page.maker.before-restore");
+
+/// The message `backup-page.maker.command-line`.
+pub const BACKUP_PAGE_MAKER_COMMAND_LINE: MessageKey =
+    MessageKey::new("backup-page.maker.command-line");
+
+/// The message `backup-page.maker.daily`.
+pub const BACKUP_PAGE_MAKER_DAILY: MessageKey = MessageKey::new("backup-page.maker.daily");
+
+/// The message `backup-page.maker.person`.
+pub const BACKUP_PAGE_MAKER_PERSON: MessageKey = MessageKey::new("backup-page.maker.person");
+
+/// The message `backup-page.maker.unknown`.
+pub const BACKUP_PAGE_MAKER_UNKNOWN: MessageKey = MessageKey::new("backup-page.maker.unknown");
+
+/// The message `backup-page.maker.upgrade`.
+pub const BACKUP_PAGE_MAKER_UPGRADE: MessageKey = MessageKey::new("backup-page.maker.upgrade");
+
+/// The message `backup-page.none`.
+pub const BACKUP_PAGE_NONE: MessageKey = MessageKey::new("backup-page.none");
+
+/// The message `backup-page.not-created`.
+pub const BACKUP_PAGE_NOT_CREATED: MessageKey = MessageKey::new("backup-page.not-created");
+
+/// The message `backup-page.restore`.
+pub const BACKUP_PAGE_RESTORE: MessageKey = MessageKey::new("backup-page.restore");
+
+/// The message `backup-page.restore-docs`.
+pub const BACKUP_PAGE_RESTORE_DOCS: MessageKey = MessageKey::new("backup-page.restore-docs");
+
+/// The message `backup-page.restore-intro`.
+pub const BACKUP_PAGE_RESTORE_INTRO: MessageKey = MessageKey::new("backup-page.restore-intro");
 
 /// The message `backup.copied`.
 pub const BACKUP_COPIED: MessageKey = MessageKey::new("backup.copied");
@@ -4799,6 +4891,9 @@ pub const MCP_RESOURCE_PROJECTS_HELP: MessageKey = MessageKey::new("mcp.resource
 /// The message `mcp.tool.preview-argument`.
 pub const MCP_TOOL_PREVIEW_ARGUMENT: MessageKey = MessageKey::new("mcp.tool.preview-argument");
 
+/// The message `nav.about`.
+pub const NAV_ABOUT: MessageKey = MessageKey::new("nav.about");
+
 /// The message `nav.access-keys`.
 pub const NAV_ACCESS_KEYS: MessageKey = MessageKey::new("nav.access-keys");
 
@@ -4810,6 +4905,9 @@ pub const NAV_APPEARANCE: MessageKey = MessageKey::new("nav.appearance");
 
 /// The message `nav.assistant-settings`.
 pub const NAV_ASSISTANT_SETTINGS: MessageKey = MessageKey::new("nav.assistant-settings");
+
+/// The message `nav.backups`.
+pub const NAV_BACKUPS: MessageKey = MessageKey::new("nav.backups");
 
 /// The message `nav.check-access`.
 pub const NAV_CHECK_ACCESS: MessageKey = MessageKey::new("nav.check-access");
@@ -9806,6 +9904,45 @@ pub const WRITTEN_BY_APP_UNNAMED: MessageKey = MessageKey::new("written-by.app-u
 /// The message `written-by.assistant`.
 pub const WRITTEN_BY_ASSISTANT: MessageKey = MessageKey::new("written-by.assistant");
 
+/// The values of the message `about.part-facts`, by name.
+#[derive(Clone, Copy)]
+pub struct AboutPartFacts<'a> {
+    /// The value of `{license}`.
+    pub license: &'a dyn std::fmt::Display,
+    /// The value of `{version}`.
+    pub version: &'a dyn std::fmt::Display,
+}
+
+/// The message `about.part-facts`.
+#[must_use]
+pub fn about_part_facts(values: AboutPartFacts<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("about.part-facts"),
+        vec![
+            ("license", Value::Text(values.license.to_string())),
+            ("version", Value::Text(values.version.to_string())),
+        ],
+    )
+}
+
+/// The message `about.parts-count`.
+#[must_use]
+pub fn about_parts_count(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("about.parts-count"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `about.support-until`.
+#[must_use]
+pub fn about_support_until(date: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("about.support-until"),
+        vec![("date", Value::Text(date.to_string()))],
+    )
+}
+
 /// The message `access-keys.delete-name`.
 #[must_use]
 pub fn access_keys_delete_name(name: impl std::fmt::Display) -> Message {
@@ -11540,6 +11677,36 @@ pub fn assistant_question_too_long(count: i64) -> Message {
     Message::with_arguments(
         MessageKey::new("assistant.question-too-long"),
         vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `backup-page.restore-command`.
+#[must_use]
+pub fn backup_page_restore_command(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("backup-page.restore-command"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The values of the message `backup-page.row-facts`, by name.
+#[derive(Clone, Copy)]
+pub struct BackupPageRowFacts<'a> {
+    /// The value of `{maker}`.
+    pub maker: &'a dyn std::fmt::Display,
+    /// The value of `{size}`.
+    pub size: &'a dyn std::fmt::Display,
+}
+
+/// The message `backup-page.row-facts`.
+#[must_use]
+pub fn backup_page_row_facts(values: BackupPageRowFacts<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("backup-page.row-facts"),
+        vec![
+            ("maker", Value::Text(values.maker.to_string())),
+            ("size", Value::Text(values.size.to_string())),
+        ],
     )
 }
 
