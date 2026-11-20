@@ -2145,9 +2145,6 @@ pub const DATA_EXPORTS_COL_ASKED_AT: MessageKey = MessageKey::new("data-exports.
 /// The message `data-exports.col.asked-by`.
 pub const DATA_EXPORTS_COL_ASKED_BY: MessageKey = MessageKey::new("data-exports.col.asked-by");
 
-/// The message `data-exports.col.deleted-at`.
-pub const DATA_EXPORTS_COL_DELETED_AT: MessageKey = MessageKey::new("data-exports.col.deleted-at");
-
 /// The message `data-exports.col.file`.
 pub const DATA_EXPORTS_COL_FILE: MessageKey = MessageKey::new("data-exports.col.file");
 
@@ -12958,6 +12955,15 @@ pub fn connected_apps_take_back_name(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("connected-apps.take-back-name"),
         vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `data-exports.deleted-on`.
+#[must_use]
+pub fn data_exports_deleted_on(date: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("data-exports.deleted-on"),
+        vec![("date", Value::Text(date.to_string()))],
     )
 }
 

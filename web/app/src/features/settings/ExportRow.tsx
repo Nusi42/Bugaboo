@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { Button, DataCell, dataCellVariant, DataRow, DataRowHead, partOf, part } from "@bugaboo/ui";
 
 import { downloadExport, type DataExport } from "../../shared/data-export.ts";
-import { formatDate, formatDateTime } from "../../shared/format.ts";
+import { formatDate } from "../../shared/format.ts";
 import { personName } from "../../shared/person.ts";
 import { formatSize } from "../../shared/file-size.ts";
 
@@ -27,11 +27,15 @@ export function ExportRow({ item, mine }: { readonly item: DataExport; readonly 
         {item.reason ?? <span {...partOf(part.muted)}>{t("data-exports.own")}</span>}
       </DataCell>
       <DataCell label={t("data-exports.col.asked-at")} variant={dataCellVariant.date}>
-        {formatDateTime(item.asked_at)}
+        {formatDate(item.asked_at)}
       </DataCell>
-      <DataCell label={t("data-exports.col.file")}>{stateText(item)}</DataCell>
-      <DataCell label={t("data-exports.col.deleted-at")} variant={dataCellVariant.date}>
-        {formatDate(item.deleted_at)}
+      <DataCell label={t("data-exports.col.file")}>
+        <span {...partOf(part.startColumn)}>
+          <span>{stateText(item)}</span>
+          <span {...partOf(part.muted)}>
+            {t("data-exports.deleted-on", { date: formatDate(item.deleted_at) })}
+          </span>
+        </span>
       </DataCell>
       <DataCell variant={dataCellVariant.action}>
         {mine && item.status === "ready" ? (

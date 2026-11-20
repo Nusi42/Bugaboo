@@ -28,7 +28,6 @@ function columns() {
     t("data-exports.col.reason"),
     t("data-exports.col.asked-at"),
     t("data-exports.col.file"),
-    t("data-exports.col.deleted-at"),
     { hidden: t("data-exports.col.actions") },
   ];
 }

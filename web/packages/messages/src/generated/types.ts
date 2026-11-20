@@ -300,6 +300,7 @@ export interface MessageArguments {
   "connect.title": { app: string | number };
   "connect.where-web": { address: string | number };
   "connected-apps.take-back-name": { name: string | number };
+  "data-exports.deleted-on": { date: string | number };
   "data-exports.download-name": { name: string | number };
   "data-exports.file.ready": { size: string | number };
   "data-folder.create-failed": { path: string | number; reason: string | number };

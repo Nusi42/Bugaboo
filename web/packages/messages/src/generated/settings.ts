@@ -428,7 +428,7 @@ export const messages = {
   "data-exports.col.reason": "Why",
   "data-exports.col.asked-at": "Asked for",
   "data-exports.col.file": "File",
-  "data-exports.col.deleted-at": "Deleted on",
+  "data-exports.deleted-on": "Deleted on {date}",
   "data-exports.col.actions": "Download",
   "data-exports.own": "Asked for by the person",
   "data-exports.file.waiting": "Being created",

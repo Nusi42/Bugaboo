@@ -1,6 +1,7 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { Card, LinkRow, partOf, part } from "@bugaboo/ui";
+import type { ReactNode } from "react";
 
 import { heldText } from "../../shared/access-words.ts";
 import { formatDateTime } from "../../shared/format.ts";
@@ -107,34 +108,49 @@ export function WorkTimesEntry({ id, name }: { readonly id: string; readonly nam
   );
 }
 
-/** The address and the day the account was made. */
-export function Facts({ line, since }: { readonly line: PersonLine; readonly since: string }) {
+/**
+ * The head of a person's page: their name, or *Former user K7Q2* once they are removed, over what the page says first.
+ * One card for both, so a removal changes its words in place and the heading stays where it stood (UX §6.4).
+ */
+export function PersonHead({
+  name,
+  children,
+}: {
+  readonly name: string;
+  readonly children: ReactNode;
+}) {
   return (
-    <Card heading={line.name} level={1} back={{ href: paths.people, label: t("person.back") }}>
-      <dl {...partOf(part.facts)}>
-        <div {...partOf(part.fact)}>
-          <dt {...partOf(part.term)}>{t("person.email")}</dt>
-          <dd {...partOf(part.definition)}>{line.email}</dd>
-        </div>
-        <div {...partOf(part.fact)}>
-          <dt {...partOf(part.term)}>{t("person.since")}</dt>
-          <dd {...partOf(part.definition)}>{formatDateTime(since)}</dd>
-        </div>
-      </dl>
+    <Card heading={name} level={1} back={{ href: paths.people, label: t("person.back") }}>
+      {children}
     </Card>
   );
 }
 
+/** The address and the day the account was made. */
+export function Facts({ line, since }: { readonly line: PersonLine; readonly since: string }) {
+  return (
+    <dl {...partOf(part.facts)}>
+      <div {...partOf(part.fact)}>
+        <dt {...partOf(part.term)}>{t("person.email")}</dt>
+        <dd {...partOf(part.definition)}>{line.email}</dd>
+      </div>
+      <div {...partOf(part.fact)}>
+        <dt {...partOf(part.term)}>{t("person.since")}</dt>
+        <dd {...partOf(part.definition)}>{formatDateTime(since)}</dd>
+      </div>
+    </dl>
+  );
+}
+
 /**
- * The page of a removed person, in place of what it showed (PRIV-04, ADR-0044, decision 6): *Former user K7Q2*, the
- * same label as everywhere, and that the account is gone while the work still reads.
+ * What the page of a removed person says, in place of the facts (PRIV-04, ADR-0044, decision 6): the account is gone,
+ * and the work still reads with the same label as everywhere.
  */
 export function FormerPerson({ code }: { readonly code: string }) {
-  const label = formerName(code);
   return (
-    <Card heading={label} level={1} back={{ href: paths.people, label: t("person.back") }}>
+    <>
       <p {...partOf(part.text)}>{t("person.former-title")}</p>
-      <p {...partOf(part.muted)}>{t("person.former-text", { label })}</p>
-    </Card>
+      <p {...partOf(part.muted)}>{t("person.former-text", { label: formerName(code) })}</p>
+    </>
   );
 }

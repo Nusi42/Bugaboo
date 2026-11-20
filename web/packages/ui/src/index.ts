@@ -31,6 +31,7 @@ export {
 export { Button, type ButtonProps } from "./Button.tsx";
 export { Card, type CardProps } from "./Card.tsx";
 export { DataCell, DataRow, DataRowHead, DataTable } from "./DataTable.tsx";
+export { StatesInPlace } from "./StatesInPlace.tsx";
 export { DayScale, type DayScaleProps, type ScaleUnit } from "./DayScale.tsx";
 export { CellInput, type CellInputProps } from "./CellInput.tsx";
 export { gridColumnSelector } from "./grid-column.ts";

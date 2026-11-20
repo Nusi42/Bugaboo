@@ -38,10 +38,15 @@ test("Keep and delete rules with a period being changed", async ({ page }) => {
   await signIn(page, ada);
   await inFourChosenThemes(page, "keep-rules", MILESTONE, paths.appearance, async () => {
     await page.goto(paths.keepRules);
-    await page
-      .getByRole("textbox", { name: t("setting.keeping.notification-days.name") })
-      .fill("30");
-    await expect(page.getByText(t("keep-rules.would-delete-none"))).toBeVisible();
+    const box = page.getByRole("textbox", { name: t("setting.keeping.notification-days.name") });
+    await box.fill("30");
+    await expect(
+      page.locator("form").filter({ has: box }).getByText(t("keep-rules.would-delete-none")),
+    ).toBeVisible();
+    // The topic back at its top, so the picture shows its head unfolded.
+    await page.locator('[data-part="settings-topic"]').evaluate((element) => {
+      element.scrollTop = 0;
+    });
   });
 });
 

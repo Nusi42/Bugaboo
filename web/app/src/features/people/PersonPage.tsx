@@ -8,7 +8,14 @@ import { NotFoundPage, QueryGate, useItemTrail } from "../shell/index.ts";
 import { lineOf, pageNameOf, usePerson } from "./people.ts";
 import { Corrections } from "./PersonCorrections.tsx";
 import { PersonState } from "./PersonState.tsx";
-import { Facts, FormerPerson, Groups, HeldRoles, WorkTimesEntry } from "./PersonSections.tsx";
+import {
+  Facts,
+  FormerPerson,
+  Groups,
+  HeldRoles,
+  PersonHead,
+  WorkTimesEntry,
+} from "./PersonSections.tsx";
 
 /**
  * The page of one person (SEC-02): their address, when they came, the groups they are in and the
@@ -32,27 +39,33 @@ export function PersonPage({ id }: { readonly id: string }) {
   useItemTrail(paths.people, title);
   return (
     <QueryGate error={found.error} data={shown} notFound={<NotFoundPage />}>
-      {(page) =>
-        page.line === undefined ? (
-          <FormerPerson code={page.former ?? ""} />
-        ) : (
-          <div {...partOf(part.stack)}>
-            <Facts line={page.line} since={page.since} />
-            <Groups line={page.line} />
-            <HeldRoles
-              roles={page.line.roles}
-              none={t("person.roles-none", { name: page.line.name })}
-            />
-            <WorkTimesEntry id={id} name={page.line.name} />
-            {own ? null : (
-              <>
-                <Corrections id={id} name={page.line.name} email={page.line.email} />
-                <PersonState id={id} name={page.line.name} standing={page.line.standing} />
-              </>
+      {(page) => (
+        <div {...partOf(part.stack)}>
+          <PersonHead name={title ?? ""}>
+            {page.line === undefined ? (
+              <FormerPerson code={page.former ?? ""} />
+            ) : (
+              <Facts line={page.line} since={page.since} />
             )}
-          </div>
-        )
-      }
+          </PersonHead>
+          {page.line === undefined ? null : (
+            <>
+              <Groups line={page.line} />
+              <HeldRoles
+                roles={page.line.roles}
+                none={t("person.roles-none", { name: page.line.name })}
+              />
+              <WorkTimesEntry id={id} name={page.line.name} />
+              {own ? null : (
+                <>
+                  <Corrections id={id} name={page.line.name} email={page.line.email} />
+                  <PersonState id={id} name={page.line.name} standing={page.line.standing} />
+                </>
+              )}
+            </>
+          )}
+        </div>
+      )}
     </QueryGate>
   );
 }

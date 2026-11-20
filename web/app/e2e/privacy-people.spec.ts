@@ -85,14 +85,24 @@ test("priv_04 after removal the person reads Former user in place", async ({ pag
   await card.getByRole("button", { name: t("person.remove") }).click();
   const window = removalWindow(page, bob.name);
   const heading = page.getByRole("heading", { level: 1 });
-  const landmarks = [await landmarkOf(heading, "heading")];
+  // The page stands at its top behind the window, where the person reads it after the removal: the parts that go make
+  // it shorter than a place further down.
+  const headCard = page.locator('[data-part="card"]').first();
+  await headCard.evaluate((element) => {
+    element.scrollIntoView({ block: "end" });
+  });
+  await heading.evaluate((element) => {
+    element.scrollIntoView({ block: "end" });
+  });
+  // The card under the heading holds the facts, and then what a removed person's page says.
+  const landmarks = [await landmarkOf(heading, "heading"), await landmarkOf(headCard, "head")];
   const movement = await movementWhile(page, landmarks, async () => {
     await window.getByRole("button", { name: t("removal.confirm", { name: bob.name }) }).click();
     await expect(heading).toHaveText(/^Former user [A-Z0-9]{4}$/u);
   });
   await expect(window).toBeHidden();
   await expect(page.getByText(t("person.former-title"))).toBeVisible();
-  // The heading takes the new name where the old one stood.
-  expectStill(movement, { grows: ["heading"] });
+  // The heading takes the new name where the old one stood, and the card under it its new words.
+  expectStill(movement, { grows: ["heading", "head"] });
   await admin.dispose();
 });

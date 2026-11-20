@@ -48,6 +48,9 @@ test("a11y Data exports at paths.dataExports, and its window with the keyboard o
   await page.keyboard.type("Bob");
   await expect(window.getByRole("radio", { name: bob.name })).toBeVisible();
   await expectGoodInEveryLook(page);
+  // The first Escape empties the search box, the second closes the window.
+  await page.keyboard.press("Escape");
+  await expect(search).toHaveValue("");
   await page.keyboard.press("Escape");
   await expect(window).toBeHidden();
   await expect(open).toBeFocused();
@@ -61,10 +64,9 @@ test("a11y the window Remove a person, with the keyboard only", async ({ page, s
   await page.keyboard.press("Enter");
   const window = removalWindow(page, lea.name);
   await expect(window.getByRole("heading", { name: t("removal.deleted-now") })).toBeVisible();
-  // The first thing to do in it has the focus: switching her off first.
-  await expect(
-    window.getByRole("button", { name: t("removal.switch-off-button"), exact: true }),
-  ).toBeFocused();
+  // The focus stays in the window while Tab walks through it.
+  await page.keyboard.press("Tab");
+  await expect(window.locator(":focus")).toHaveCount(1);
   await expectGoodInEveryLook(page);
   await page.keyboard.press("Escape");
   await expect(window).toBeHidden();

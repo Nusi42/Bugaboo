@@ -4159,6 +4159,19 @@ textarea,
   font-weight: var(--weight-regular);
 }
 
+[data-part="states-in-place"] {
+  display: grid;
+}
+
+[data-part="states-in-place.state"] {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+
+[data-part="states-in-place.state"][data-state~="unseen"] {
+  visibility: hidden;
+}
+
 [data-part="save-status"][data-variant~="keeps-room"] {
   display: inline-grid;
   justify-items: end;

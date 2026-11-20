@@ -5403,6 +5403,22 @@ part "save-status[state=not-saved]" {
     font-weight "$weight-regular"
 }
 
+// The states of a part in place (the file of *Download my data*: none yet, being created, ready, failed): every state
+// stands in one cell, the ones not shown unseen, so the part is as large as the largest of them from the start and
+// nothing under it moves when the state changes (UX §6.4).
+part "states-in-place" {
+    display grid
+}
+
+part "states-in-place.state" {
+    grid-area "1 / 1"
+    min-width 0
+}
+
+part "states-in-place.state[state=unseen]" {
+    visibility hidden
+}
+
 // Words that keep their room: every word stands in one place, unseen, and gives it its width; the words of the state
 // stand over them. The place is as wide as the longest of them in any language and font, from the start (UX §6.4).
 part "save-status[variant=keeps-room]" {

@@ -4,7 +4,7 @@ import { expect, type Locator, type Page } from "@playwright/test";
 
 import { personAddress } from "../../src/shared/paths.ts";
 import { lea, signedInAdmin } from "./access.ts";
-import { idOf, signInThroughApi, type Person } from "./accounts.ts";
+import { signInThroughApi, type Person } from "./accounts.ts";
 import { type ApiSession } from "./api.ts";
 import { prepareWebWithAgents } from "./agents-scene.ts";
 import { type Instance } from "./server.ts";
@@ -42,9 +42,20 @@ export async function adminWithOldAndNewTime(server: Instance): Promise<ApiSessi
   return admin;
 }
 
-/** Opens the page of a person as the administrator: their ID from the server, their page by it. */
+/**
+ * Opens the page of a person as the administrator: their ID from the list of people, which also finds a person who is
+ * switched off and cannot sign in to say it themselves.
+ */
 export async function openPersonPage(page: Page, server: Instance, person: Person): Promise<void> {
-  await page.goto(personAddress(await idOf(server, person)));
+  const admin = await signedInAdmin(server);
+  const found = dataOf(
+    await admin.client.GET("/api/v1/people", { params: { query: { search: person.email } } }),
+  ).items[0]?.person;
+  await admin.dispose();
+  if (found?.shown !== "name") {
+    throw new TypeError(`${person.email} is not in the list of people.`);
+  }
+  await page.goto(personAddress(found.id));
   await expect(page.getByRole("heading", { level: 1, name: person.name })).toBeVisible();
 }
 
