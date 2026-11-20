@@ -108,6 +108,7 @@ describe("ux_01 the topics of a settings screen", () => {
       paths.sessions,
       paths.accessKeys,
       paths.connectedApps,
+      paths.myData,
       paths.about,
     ]);
     expect(topicGroups(paths.organizationSettings, [])).toEqual([]);
@@ -125,6 +126,7 @@ describe("ux_01 the topics of a settings screen", () => {
       paths.mailServer,
       paths.ai,
       paths.organizationAgents,
+      paths.keepRules,
       paths.organizationSecurity,
       paths.backups,
       paths.status,
