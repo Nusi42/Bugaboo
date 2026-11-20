@@ -1,6 +1,7 @@
 import { t } from "@bugaboo/messages";
 
 import { wholeNumberIn } from "../../shared/number.ts";
+import { useSettled } from "../../shared/use-later.ts";
 import { type SettingControlProps } from "./SettingControl.tsx";
 import { SettingBox } from "./SettingBox.tsx";
 import { unitWords } from "./texts.ts";
@@ -36,11 +37,15 @@ export function TypedControl({ setting, onChange, help, source, noteFor }: Setti
     },
     onChange,
   });
-  const count = wholeNumberIn(box.draft) ?? Number(setting.value);
-  const unit = unitWords(setting, count);
-  // The note speaks of a number the box accepts; of another it says nothing, and the box says what is wrong.
-  const inBounds = bounds === undefined || (count >= bounds.least && count <= bounds.most);
-  const note = number && inBounds ? noteFor?.(count) : undefined;
+  const typed = wholeNumberIn(box.draft);
+  const unit = unitWords(setting, typed ?? Number(setting.value));
+  // The note speaks of a changed number the box accepts, once the person stops typing; of the stored number or one the
+  // box does not take it says nothing, and the box says what is wrong.
+  const inBounds =
+    typed !== null && (bounds === undefined || (typed >= bounds.least && typed <= bounds.most));
+  const changed = inBounds && typed !== Number(setting.value) ? typed : undefined;
+  const settled = useSettled(changed);
+  const note = number ? noteFor?.(changed === undefined ? undefined : settled) : undefined;
   return (
     <SettingBox
       {...box}

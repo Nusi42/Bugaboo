@@ -11,6 +11,8 @@ export interface OrganizationTopicProps {
   readonly helps?: SettingsFormProps["helps"];
   /** The controls a page draws itself for some settings (a theme with its samples). */
   readonly controls?: SettingsFormProps["controls"];
+  /** What the number typed would do, for some boxes (see the settings form). */
+  readonly notes?: SettingsFormProps["notes"];
   /** Hears that a change has been answered by the server, so a page reads again what follows from it. */
   readonly onSettled?: () => void;
 }
@@ -21,6 +23,7 @@ export function OrganizationTopic({
   searchable,
   helps,
   controls,
+  notes,
   onSettled,
 }: OrganizationTopicProps) {
   const { settings, failed, edits } = useOrganizationSettings(topics);
@@ -32,6 +35,7 @@ export function OrganizationTopic({
           {...(searchable === undefined ? {} : { searchable })}
           {...(helps === undefined ? {} : { helps })}
           {...(controls === undefined ? {} : { controls })}
+          {...(notes === undefined ? {} : { notes })}
           saveState={edits.saveState}
           problem={edits.problem}
           actions={{

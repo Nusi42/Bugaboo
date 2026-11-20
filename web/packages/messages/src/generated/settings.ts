@@ -419,7 +419,7 @@ export const messages = {
     "This deletes {records} of {name} that {count, plural, one {is} other {are}} older than the keep period, with everything that tells about them. It cannot be taken back. The deletion is written to the security log.",
   "old-records.deleted": "{records} {count, plural, one {was} other {were}} deleted.",
   "data-exports.intro":
-    "Every file of Download my data: whose data it holds, who created it and why, the newest first. Each is deleted 7 days after it was asked for.",
+    "Every file of Download my data: whose data it holds, who created it and why, the newest first. Each is deleted {period} after it was asked for.",
   "data-exports.list": "Files of people's data",
   "data-exports.none": "No file was created yet.",
   "data-exports.more": "Show more files",

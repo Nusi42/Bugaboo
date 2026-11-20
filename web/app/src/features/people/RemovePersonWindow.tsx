@@ -30,6 +30,10 @@ export interface RemovePersonWindowProps {
   /** *Switch off first*: the same switch as on the page. */
   readonly onSwitchOff: () => void;
   readonly switching: boolean;
+  /** Whether the viewer holds *Manage people*, which switches a person off. */
+  readonly mayManage: boolean;
+  /** The refusal of the switch, shown in the window, where the person pressed it. */
+  readonly switchError: unknown;
   readonly onClose: () => void;
 }
 
@@ -57,12 +61,23 @@ function CommentsChoice({
   );
 }
 
-/** Only a switched-off person can be removed: the window says so and offers *Switch off first*. */
+/**
+ * Only a switched-off person can be removed: the window says so and offers *Switch off first* to a holder of *Manage
+ * people*; to anybody else it says who can, since the server would refuse the switch.
+ */
 function SwitchOffFirst({
   name,
   onSwitchOff,
   switching,
-}: Pick<RemovePersonWindowProps, "name" | "onSwitchOff" | "switching">) {
+  mayManage,
+  switchError,
+}: Pick<
+  RemovePersonWindowProps,
+  "name" | "onSwitchOff" | "switching" | "mayManage" | "switchError"
+>) {
+  if (!mayManage) {
+    return <Alert tone={alertTone.warning}>{t("removal.switch-off-by-others", { name })}</Alert>;
+  }
   return (
     <div {...partOf(part.stack)}>
       <Alert tone={alertTone.warning}>{t("removal.switch-off-first", { name })}</Alert>
@@ -71,6 +86,9 @@ function SwitchOffFirst({
           {t("removal.switch-off-button")}
         </Button>
       </div>
+      {switchError === null ? null : (
+        <Alert tone={alertTone.danger}>{messageOf(switchError)}</Alert>
+      )}
     </div>
   );
 }

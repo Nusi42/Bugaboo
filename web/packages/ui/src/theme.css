@@ -12565,6 +12565,7 @@ textarea,
 }
 
 [data-part="setting-head"] > [data-part="stack"] > [data-part="row"],
+[data-part="setting-head"] > [data-part="stack"] > [data-part="muted"],
 [data-part="setting-head"] > [data-part="stack"] [data-part="settings.help"],
 [data-part="setting-head"] > [data-part="stack"] [data-part="settings.source"],
 [data-part="setting-head"] > [data-part="stack"] [data-part="field.description"],

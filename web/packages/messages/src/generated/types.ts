@@ -303,6 +303,7 @@ export interface MessageArguments {
   "data-exports.deleted-on": { date: string | number };
   "data-exports.download-name": { name: string | number };
   "data-exports.file.ready": { size: string | number };
+  "data-exports.intro": { period: string | number };
   "data-folder.create-failed": { path: string | number; reason: string | number };
   "data-folder.not-a-data-folder": { path: string | number };
   "data-folder.open": { part: string | number; path: string | number };
@@ -571,6 +572,10 @@ export interface MessageArguments {
   "many-changes.result-done": { changed: number; skipped: number };
   "many-changes.skipped-line": { issue: string | number; reason: string | number };
   "many-changes.title": { action: string | number; count: number };
+  "my-data.correct-profile": { place: string | number };
+  "my-data.correct-settings": { place: string | number };
+  "my-data.correct-time": { place: string | number };
+  "my-data.correct-work-times": { place: string | number };
   "my-data.ready": { date: string | number; size: string | number; until: string | number };
   "notifications.administrators-reason": { reason: string | number };
   "notifications.always-told": { way: string | number };
@@ -720,6 +725,7 @@ export interface MessageArguments {
   "removal.no-fixed-end": { kind: string | number };
   "removal.rows": { count: number; title: string | number };
   "removal.rows-until": { count: number; date: string | number; title: string | number };
+  "removal.switch-off-by-others": { name: string | number };
   "removal.switch-off-first": { name: string | number };
   "removal.title": { name: string | number };
   "removal.until": { date: string | number; title: string | number };

@@ -79,3 +79,29 @@ describe("cfg_06 a page whose settings save in two ways", () => {
     expect(formOf([locked, switched])).not.toContain(t("setting.ui.saved-at-once"));
   });
 });
+
+/** A note that says what it was asked with: words of the test, not text for people. */
+function noteOf(value: number | undefined): string {
+  return `note of ${String(value)}`;
+}
+
+describe("priv_05 a box with a note of what its number would do", () => {
+  it("is the generic box, with its hint inside, and its note keeps its room for the stored number", () => {
+    const period = { ...locked, locked: false, key: "keep.notifications-days" };
+    const markup = renderToStaticMarkup(
+      <SettingsForm
+        settings={[period]}
+        actions={{ onChange: doNothing, onReset: doNothing }}
+        saveState={idle}
+        problem={null}
+        searchable={false}
+        notes={{ [period.key]: (value) => noteOf(value) }}
+      />,
+    );
+    // Nothing is counted for the number that is stored; the note is there, keeping its room.
+    expect(markup).toContain("note of undefined");
+    // The generic box, not a page's own control under a hint: the hint stands with the field.
+    expect(markup).not.toContain('data-part="settings.control"');
+    expect(markup).toContain(t("setting.security.session-idle-minutes.help"));
+  });
+});

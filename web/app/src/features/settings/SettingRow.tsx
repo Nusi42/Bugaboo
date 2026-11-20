@@ -5,7 +5,7 @@ import { type ReactNode } from "react";
 import { type Setting, type SettingValue } from "../../shared/my-settings.ts";
 import { isLockedBelow, type SettingActions } from "./setting-actions.ts";
 import { ControlWithHint } from "./ControlWithHint.tsx";
-import { SettingControl } from "./SettingControl.tsx";
+import { type NoteFor, SettingControl } from "./SettingControl.tsx";
 import { isBox, sourceNote, wordsOf } from "./texts.ts";
 
 /** A control a page draws for one setting instead of the generic one (a theme with its sample). */
@@ -21,6 +21,8 @@ export interface SettingRowProps {
   readonly actions: SettingActions;
   /** The page's own control for this setting, if it has one. */
   readonly control?: ControlRenderer | undefined;
+  /** What the number typed in the box would do, said above its Save button (`SettingControlProps.noteFor`). */
+  readonly noteFor?: NoteFor | undefined;
   /** The page's own explanation of the setting, for the state it is in, instead of the registry's. */
   readonly help?: string | undefined;
   /** The words *Saving…* and *Saved*: said for the setting changed last, and silent for the others. */
@@ -118,7 +120,7 @@ function RowActions({
  * administrator on the organization's level, the lock. A setting the organization locked is
  * shown read only and says so.
  */
-export function SettingRow({ setting, actions, control, help, saved }: SettingRowProps) {
+export function SettingRow({ setting, actions, control, noteFor, help, saved }: SettingRowProps) {
   const lockedBelow = isLockedBelow(setting, actions);
   const change = (value: SettingValue): void => {
     actions.onChange(setting.key, value);
@@ -139,6 +141,7 @@ export function SettingRow({ setting, actions, control, help, saved }: SettingRo
             onChange={change}
             help={wordsOf(setting.help_key)}
             source={sourceNote(setting)}
+            noteFor={noteFor}
           />
         ) : (
           <WithHint setting={setting} help={help}>

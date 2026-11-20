@@ -57,10 +57,18 @@ function WhereToCorrect() {
   return (
     <Card heading={t("my-data.correct-title")} intro={t("my-data.correct-intro")}>
       <ul {...partOf(part.list, { variants: ["snug"] })} aria-label={t("my-data.correct-title")}>
-        <LinkRow href={paths.profile}>{t("my-data.correct-profile")}</LinkRow>
-        <LinkRow href={paths.workTimes}>{t("my-data.correct-work-times")}</LinkRow>
-        <LinkRow href={paths.time}>{t("my-data.correct-time")}</LinkRow>
-        <LinkRow href={paths.mySettings}>{t("my-data.correct-settings")}</LinkRow>
+        <LinkRow href={paths.profile}>
+          {t("my-data.correct-profile", { place: t("nav.profile") })}
+        </LinkRow>
+        <LinkRow href={paths.workTimes}>
+          {t("my-data.correct-work-times", { place: t("nav.work-times") })}
+        </LinkRow>
+        <LinkRow href={paths.time}>
+          {t("my-data.correct-time", { place: t("nav.timesheet") })}
+        </LinkRow>
+        <LinkRow href={paths.mySettings}>
+          {t("my-data.correct-settings", { place: t("nav.my-settings") })}
+        </LinkRow>
       </ul>
       <p {...partOf(part.muted)}>{t("my-data.correct-others")}</p>
     </Card>

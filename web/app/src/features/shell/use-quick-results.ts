@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { useLater } from "../../shared/use-later.ts";
+import { useSettled } from "../../shared/use-later.ts";
 import { usePermissions } from "../../shared/use-me.ts";
 import { useSignOut } from "../../shared/use-sign-out.ts";
 import { actionsSource } from "./quick-search-actions.ts";
@@ -14,21 +14,6 @@ import {
 } from "./quick-search-sources.ts";
 
 const nothingYet: Collected = { groups: [], failed: false };
-
-/** How long the person has to stop typing before the server is asked (M5-Q10). */
-export const typingPauseMs = 250;
-
-/** The text once the person has stopped typing for [`typingPauseMs`]; at first it is the text itself. */
-function useSettled(text: string): string {
-  const later = useLater();
-  const [settled, setSettled] = useState(text);
-  useEffect(() => {
-    later.schedule(typingPauseMs, () => {
-      setSettled(text);
-    });
-  }, [text, later]);
-  return settled;
-}
 
 /** What sources found, and the words they were asked for. */
 interface Answered {
@@ -64,7 +49,7 @@ function useCollected(
 /** What quick search found, and whether the sources that ask the server have yet to answer for these words. */
 export interface QuickFound extends Collected {
   readonly waiting: boolean;
-  /** The person has stopped typing for [`typingPauseMs`]: the words are the ones the server is asked for. */
+  /** The person has stopped typing for [`typingPauseMs`](../../shared/use-later.ts): the words are the ones the server is asked for. */
   readonly quiet: boolean;
 }
 

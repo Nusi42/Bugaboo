@@ -1,7 +1,18 @@
 import { t } from "@bugaboo/messages";
-import { Button, DataCell, dataCellVariant, DataRow, DataRowHead, partOf, part } from "@bugaboo/ui";
+import {
+  Alert,
+  alertTone,
+  Button,
+  DataCell,
+  dataCellVariant,
+  DataRow,
+  DataRowHead,
+  partOf,
+  part,
+} from "@bugaboo/ui";
 
-import { downloadExport, type DataExport } from "../../shared/data-export.ts";
+import { type DataExport, useDownloadExport } from "../../shared/data-export.ts";
+import { messageOf } from "../../shared/errors.ts";
 import { formatDate } from "../../shared/format.ts";
 import { personName } from "../../shared/person.ts";
 import { formatSize } from "../../shared/file-size.ts";
@@ -17,6 +28,7 @@ function stateText(item: DataExport): string {
 /** One file: whose data, who made it and why, when, where it stands, and *Download* for the one who asked for it. */
 export function ExportRow({ item, mine }: { readonly item: DataExport; readonly mine: boolean }) {
   const whose = personName(item.person);
+  const download = useDownloadExport();
   return (
     <DataRow>
       <DataRowHead>
@@ -35,14 +47,18 @@ export function ExportRow({ item, mine }: { readonly item: DataExport; readonly 
           <span {...partOf(part.muted)}>
             {t("data-exports.deleted-on", { date: formatDate(item.deleted_at) })}
           </span>
+          {download.isError ? (
+            <Alert tone={alertTone.danger}>{messageOf(download.error)}</Alert>
+          ) : null}
         </span>
       </DataCell>
       <DataCell variant={dataCellVariant.action}>
         {mine && item.status === "ready" ? (
           <Button
             aria-label={t("data-exports.download-name", { name: whose })}
+            isPending={download.isPending}
             onPress={() => {
-              void downloadExport(item.id);
+              download.mutate(item.id);
             }}
           >
             {t("data-exports.download")}

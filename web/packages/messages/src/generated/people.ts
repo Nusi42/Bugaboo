@@ -72,6 +72,8 @@ export const messages = {
   "removal.switch-off-first":
     "Only a switched-off person can be removed. Switch {name} off first: their sign-in ends at once.",
   "removal.switch-off-button": "Switch off first",
+  "removal.switch-off-by-others":
+    "Only a switched-off person can be removed, and switching {name} off needs the permission Manage people, which you do not have. Ask somebody who has it.",
   "removal.confirm": "Remove {name}",
   "people.intro":
     "Everybody who has an account. Open a person to see the groups they are in and the roles they have.",

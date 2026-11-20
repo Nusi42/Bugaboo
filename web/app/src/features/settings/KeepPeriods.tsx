@@ -4,8 +4,7 @@ import { Card } from "@bugaboo/ui";
 import { refreshRoutes } from "../../shared/query-keys.ts";
 import type { DataKind, KeepRule } from "./keep-rules.ts";
 import { OrganizationTopic } from "./OrganizationTopic.tsx";
-import { SettingControl } from "./SettingControl.tsx";
-import type { ControlRenderer } from "./SettingRow.tsx";
+import type { NoteFor } from "./SettingControl.tsx";
 import { WouldDelete } from "./WouldDelete.tsx";
 
 /** The kinds whose period is one setting and has an end, by the key of that setting: those a box changes here. */
@@ -19,15 +18,9 @@ function changeable(rules: readonly KeepRule[]): ReadonlyMap<string, DataKind> {
   );
 }
 
-/** The box of the period of `kind`: the generic one, saying what the number typed would delete. */
-function periodControl(kind: DataKind): ControlRenderer {
-  return (setting, onChange) => (
-    <SettingControl
-      setting={setting}
-      onChange={onChange}
-      noteFor={(count) => <WouldDelete kind={kind} count={count} />}
-    />
-  );
+/** The note of the box of the period of `kind`: what the number typed would delete. */
+function periodNote(kind: DataKind): NoteFor {
+  return (count) => <WouldDelete kind={kind} count={count} />;
 }
 
 /**
@@ -36,15 +29,15 @@ function periodControl(kind: DataKind): ControlRenderer {
  */
 export function KeepPeriods({ rules }: { readonly rules: readonly KeepRule[] }) {
   const kinds = changeable(rules);
-  const controls = Object.fromEntries(
-    [...kinds].map((entry: readonly [string, DataKind]) => [entry[0], periodControl(entry[1])]),
+  const notes = Object.fromEntries(
+    [...kinds].map((entry: readonly [string, DataKind]) => [entry[0], periodNote(entry[1])]),
   );
   return (
     <Card heading={t("keep-rules.periods")} intro={t("keep-rules.periods-intro")}>
       <OrganizationTopic
         topics={[...kinds.keys()].join(",")}
         searchable={false}
-        controls={controls}
+        notes={notes}
         onSettled={() => {
           // The rules, the counts past a period and what a change would delete are read again.
           refreshRoutes(["/api/v1/admin/keep-rules"]);

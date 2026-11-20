@@ -3,8 +3,9 @@ import { t } from "@bugaboo/messages";
 
 import { paths } from "../src/shared/paths.ts";
 import { ada, bob } from "./support/accounts.ts";
-import { expect, test } from "./support/fixtures.ts";
+import { expect, refusal, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
+import { recordRequests } from "./support/list-keys.ts";
 import { expectStill, landmarkOf, movementWhile } from "./support/movement.ts";
 import { adminWithOldAndNewTime, preparePrivacy } from "./support/privacy.ts";
 
@@ -23,6 +24,8 @@ test("priv_03 a person downloads their data from My data and the page does not m
   const download = page.getByRole("region", { name: t("my-data.download"), exact: true });
   const correct = page.getByRole("region", { name: t("my-data.correct-title"), exact: true });
   await expect(correct).toBeVisible();
+  // The part of the file stands, in the size of all its states, before the button is pressed.
+  await expect(download.getByText(t("my-data.none"))).toBeVisible();
   const landmarks = [
     await landmarkOf(page.getByRole("heading", { level: 1 }), "heading"),
     await landmarkOf(download, "download"),
@@ -40,11 +43,17 @@ test("priv_03 a person downloads their data from My data and the page does not m
       download.getByRole("button", { name: t("my-data.download-file"), exact: true }),
     ).toBeVisible({ timeout: FILE_CREATED_MS });
   });
-  // Only the part of the file grows, once, and what stands under it is pushed by exactly that.
-  expectStill(movement, { grows: ["download"], follows: ["rules", "correct"] });
+  // The file is made and ready in the room the part had from the start: nothing grows or moves.
+  expectStill(movement);
   await expect(
     download.getByRole("button", { name: t("my-data.download"), exact: true }),
   ).toBeEnabled();
+  // A file the server no longer gives out is said in place, in plain words.
+  await page.route(/\/api\/v1\/data-exports\/[^/]+\/address$/u, (route) =>
+    route.fulfill(refusal(404, "resource.not-found")),
+  );
+  await download.getByRole("button", { name: t("my-data.download-file"), exact: true }).click();
+  await expect(download.getByText(t("error.resource.not-found"))).toBeVisible();
 });
 
 test("priv_03 an administrator makes someone's export and it is listed in Data exports", async ({
@@ -52,6 +61,10 @@ test("priv_03 an administrator makes someone's export and it is listed in Data e
 }) => {
   await signIn(page, ada);
   await page.goto(paths.dataExports);
+  // How long a file is kept comes from the keep rules.
+  await expect(
+    page.getByText(t("data-exports.intro", { period: t("keep-length.days", { count: 7 }) })),
+  ).toBeVisible();
   await page.getByRole("button", { name: t("data-exports.someone"), exact: true }).click();
   const window = page.getByRole("dialog", { name: t("data-exports.someone") });
   await window.getByRole("searchbox", { name: t("data-exports.pick-search") }).fill("Bob");
@@ -73,6 +86,9 @@ test("priv_05 the keep table shows both groups and a changed period says what it
   server,
 }) => {
   const admin = await adminWithOldAndNewTime(server);
+  // What a changed period would delete is counted for a changed period only, once the person stops typing.
+  const asked = recordRequests(page);
+  const counted = (): readonly string[] => asked.filter((url) => url.includes("/would-delete"));
   await signIn(page, ada);
   await page.goto(paths.keepRules);
   const itself = page.getByRole("table", { name: t("keep-group.name.by-itself") });
@@ -88,12 +104,18 @@ test("priv_05 the keep table shows both groups and a changed period says what it
   await expect(timeRow).toContainText(t("keep-length.years", { count: 10 }));
   // A shorter period says what it would leave past it before anything is saved.
   const years = page.getByRole("textbox", { name: t("setting.keeping.time-entry-years.name") });
+  await expect(years).toHaveValue("10");
+  expect(counted()).toEqual([]);
+  await years.pressSequentially("05");
   await years.fill("5");
   const past = t("keep-rules.would-be-past", {
     records: t("keep-kind.count.time-entries", { count: 1 }),
     count: 1,
   });
   await expect(page.getByText(past)).toBeVisible();
+  // Typed key by key, only the number the person stopped at was counted.
+  expect(counted()).toHaveLength(1);
+  expect(counted()[0]).toContain("count=5");
   await expect(timeRow).toContainText(t("keep-length.years", { count: 10 }));
   // Saved, the table shows the new period.
   await years.press("Enter");

@@ -1986,7 +1986,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("data-exports.file.waiting", "Being created"),
     (
         "data-exports.intro",
-        "Every file of Download my data: whose data it holds, who created it and why, the newest first. Each is deleted 7 days after it was asked for.",
+        "Every file of Download my data: whose data it holds, who created it and why, the newest first. Each is deleted {period} after it was asked for.",
     ),
     ("data-exports.list", "Files of people's data"),
     ("data-exports.more", "Show more files"),
@@ -4573,20 +4573,20 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "my-data.correct-profile",
-        "Your name and e-mail address: Profile",
+        "Your name and e-mail address: {place}",
     ),
     (
         "my-data.correct-settings",
-        "Your choices of look, region and notifications: My settings",
+        "Your choices of look, region and notifications: {place}",
     ),
     (
         "my-data.correct-time",
-        "Your working hours and time on issues: Timesheet, with a reason for a past day",
+        "Your working hours and time on issues: {place}, with a reason for a past day",
     ),
     ("my-data.correct-title", "Where to correct it"),
     (
         "my-data.correct-work-times",
-        "Your usual work days, work hours and away times: Work times",
+        "Your usual work days, work hours and away times: {place}",
     ),
     ("my-data.download", "Download my data"),
     ("my-data.download-file", "Download the file"),
@@ -5727,6 +5727,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("removal.stays", "Stays, shown as Former user"),
     ("removal.switch-off-button", "Switch off first"),
+    (
+        "removal.switch-off-by-others",
+        "Only a switched-off person can be removed, and switching {name} off needs the permission Manage people, which you do not have. Ask somebody who has it.",
+    ),
     (
         "removal.switch-off-first",
         "Only a switched-off person can be removed. Switch {name} off first: their sign-in ends at once.",

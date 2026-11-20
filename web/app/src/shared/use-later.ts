@@ -29,3 +29,18 @@ export function useLater(): Later {
   useEffect(() => later.cancel, [later]);
   return later;
 }
+
+/** How long the person has to stop typing before the server is asked (M5-Q10). */
+export const typingPauseMs = 250;
+
+/** The value once the person has stopped typing for [`typingPauseMs`]; at first it is the value itself. */
+export function useSettled<T>(value: T): T {
+  const later = useLater();
+  const [settled, setSettled] = useState(value);
+  useEffect(() => {
+    later.schedule(typingPauseMs, () => {
+      setSettled(value);
+    });
+  }, [value, later]);
+  return settled;
+}

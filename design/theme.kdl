@@ -18465,12 +18465,13 @@ part "list-row[variant=phone] alert" {
 // The frames of the control of a setting take the columns of its head (`setting-head`). These rules stand at the end, after
 // every rule of a field, a row, a group of choices and a hint, because they are more specific than those (stylelint
 // no-descending-specificity): the first line (the label, the name of a group of choices, or a control that is its own
-// label) takes the first cell by itself, and every other line spans the whole width under it.
+// label) takes the first cell by itself, and every other line spans the whole width under it (also the note of what a
+// number typed would do, a muted line of the stack).
 part "setting-head > stack > field" "setting-head > stack > length-box" "setting-head > stack > length-box > field" "setting-head > stack > settings.control > field" "setting-head > stack > settings.control > choice-group" {
     use "head-columns"
 }
 
-part "setting-head > stack > row" "setting-head > stack settings.help" "setting-head > stack settings.source" "setting-head > stack field.description" "setting-head > stack field.input" "setting-head > stack field.input-row" "setting-head > stack > field > field.error" "setting-head > stack > length-box > field > field.error" "setting-head > stack > settings.control > choice-group > choice-group.choices" {
+part "setting-head > stack > row" "setting-head > stack > muted" "setting-head > stack settings.help" "setting-head > stack settings.source" "setting-head > stack field.description" "setting-head > stack field.input" "setting-head > stack field.input-row" "setting-head > stack > field > field.error" "setting-head > stack > length-box > field > field.error" "setting-head > stack > settings.control > choice-group > choice-group.choices" {
     grid-column "1 / -1"
 }
 

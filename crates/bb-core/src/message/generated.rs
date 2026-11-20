@@ -2166,9 +2166,6 @@ pub const DATA_EXPORTS_FILE_FAILED: MessageKey = MessageKey::new("data-exports.f
 /// The message `data-exports.file.waiting`.
 pub const DATA_EXPORTS_FILE_WAITING: MessageKey = MessageKey::new("data-exports.file.waiting");
 
-/// The message `data-exports.intro`.
-pub const DATA_EXPORTS_INTRO: MessageKey = MessageKey::new("data-exports.intro");
-
 /// The message `data-exports.list`.
 pub const DATA_EXPORTS_LIST: MessageKey = MessageKey::new("data-exports.list");
 
@@ -5008,20 +5005,8 @@ pub const MY_DATA_CORRECT_INTRO: MessageKey = MessageKey::new("my-data.correct-i
 /// The message `my-data.correct-others`.
 pub const MY_DATA_CORRECT_OTHERS: MessageKey = MessageKey::new("my-data.correct-others");
 
-/// The message `my-data.correct-profile`.
-pub const MY_DATA_CORRECT_PROFILE: MessageKey = MessageKey::new("my-data.correct-profile");
-
-/// The message `my-data.correct-settings`.
-pub const MY_DATA_CORRECT_SETTINGS: MessageKey = MessageKey::new("my-data.correct-settings");
-
-/// The message `my-data.correct-time`.
-pub const MY_DATA_CORRECT_TIME: MessageKey = MessageKey::new("my-data.correct-time");
-
 /// The message `my-data.correct-title`.
 pub const MY_DATA_CORRECT_TITLE: MessageKey = MessageKey::new("my-data.correct-title");
-
-/// The message `my-data.correct-work-times`.
-pub const MY_DATA_CORRECT_WORK_TIMES: MessageKey = MessageKey::new("my-data.correct-work-times");
 
 /// The message `my-data.download`.
 pub const MY_DATA_DOWNLOAD: MessageKey = MessageKey::new("my-data.download");
@@ -13191,6 +13176,15 @@ pub fn data_exports_file_ready(size: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `data-exports.intro`.
+#[must_use]
+pub fn data_exports_intro(period: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("data-exports.intro"),
+        vec![("period", Value::Text(period.to_string()))],
+    )
+}
+
 /// The values of the message `data-folder.create-failed`, by name.
 #[derive(Clone, Copy)]
 pub struct DataFolderCreateFailed<'a> {
@@ -16772,6 +16766,42 @@ pub fn mcp_wait(seconds: i64) -> Message {
     )
 }
 
+/// The message `my-data.correct-profile`.
+#[must_use]
+pub fn my_data_correct_profile(place: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("my-data.correct-profile"),
+        vec![("place", Value::Text(place.to_string()))],
+    )
+}
+
+/// The message `my-data.correct-settings`.
+#[must_use]
+pub fn my_data_correct_settings(place: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("my-data.correct-settings"),
+        vec![("place", Value::Text(place.to_string()))],
+    )
+}
+
+/// The message `my-data.correct-time`.
+#[must_use]
+pub fn my_data_correct_time(place: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("my-data.correct-time"),
+        vec![("place", Value::Text(place.to_string()))],
+    )
+}
+
+/// The message `my-data.correct-work-times`.
+#[must_use]
+pub fn my_data_correct_work_times(place: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("my-data.correct-work-times"),
+        vec![("place", Value::Text(place.to_string()))],
+    )
+}
+
 /// The values of the message `my-data.ready`, by name.
 #[derive(Clone, Copy)]
 pub struct MyDataReady<'a> {
@@ -18266,6 +18296,15 @@ pub fn removal_rows_until(values: RemovalRowsUntil<'_>) -> Message {
             ("date", Value::Text(values.date.to_string())),
             ("title", Value::Text(values.title.to_string())),
         ],
+    )
+}
+
+/// The message `removal.switch-off-by-others`.
+#[must_use]
+pub fn removal_switch_off_by_others(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("removal.switch-off-by-others"),
+        vec![("name", Value::Text(name.to_string()))],
     )
 }
 

@@ -14,6 +14,7 @@ import { useState } from "react";
 
 import { type Setting } from "../../shared/my-settings.ts";
 import { isLockedBelow, type SettingActions } from "./setting-actions.ts";
+import { type NoteFor } from "./SettingControl.tsx";
 import { SettingRow, type ControlRenderer } from "./SettingRow.tsx";
 import { hasNoGenericControl, isBox, wordsOf } from "./texts.ts";
 import { saveLabels } from "../../shared/save-labels.ts";
@@ -30,6 +31,8 @@ export interface SettingsFormProps {
   readonly searchable?: boolean;
   /** Controls a page draws for some settings itself, by key (a theme with its sample). */
   readonly controls?: Readonly<Record<string, ControlRenderer>>;
+  /** What the number typed would do, said above the Save button of some boxes, by key (what a keep period deletes). */
+  readonly notes?: Readonly<Record<string, NoteFor>>;
   /** The explanation a page words itself for some settings, by key: one sentence for the state the setting is in. */
   readonly helps?: Readonly<Record<string, (setting: Setting) => string>>;
 }
@@ -110,6 +113,7 @@ export function SettingsForm({
   problem,
   searchable = true,
   controls,
+  notes,
   helps,
 }: SettingsFormProps) {
   const [query, setQuery] = useState("");
@@ -141,6 +145,7 @@ export function SettingsForm({
               setting={setting}
               actions={noted}
               control={controls?.[setting.key]}
+              noteFor={notes?.[setting.key]}
               help={helps?.[setting.key]?.(setting)}
               saved={savedOf(setting.key === last ? saveState : "idle")}
             />

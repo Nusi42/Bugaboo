@@ -9,6 +9,13 @@ import { LengthControl } from "./LengthControl.tsx";
 import { TypedControl } from "./TypedControl.tsx";
 import { controlKindOf, wordsOf } from "./texts.ts";
 
+/**
+ * What the number typed would do, said above the Save button before it is saved (what a shorter keep period would
+ * delete, ADR-0045, decision 2). It is asked with nothing while there is nothing to say (the stored number, or one the
+ * box does not take), and keeps its room then, so the Save button does not move.
+ */
+export type NoteFor = (value: number | undefined) => ReactNode;
+
 /** What a control needs: the setting, and what to do with a new value. */
 export interface SettingControlProps {
   readonly setting: Setting;
@@ -18,11 +25,8 @@ export interface SettingControlProps {
   readonly source?: string | undefined;
   /** The new value, to be shown at once and sent. */
   readonly onChange: (value: SettingValue) => void;
-  /**
-   * What the number typed would do, said above the Save button before it is saved (what a shorter keep period would
-   * delete, ADR-0045, decision 2); only a box of a whole number has it.
-   */
-  readonly noteFor?: ((value: number) => ReactNode) | undefined;
+  /** What the number typed would do; only a box of a whole number has it. */
+  readonly noteFor?: NoteFor | undefined;
 }
 
 /** The time zones the server knows (M2-F72), for the person to choose from; the first is the device's own. */

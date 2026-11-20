@@ -20,6 +20,14 @@ export function formatSize(bytes: number): string {
   }).format(bytes / step ** power);
 }
 
+/**
+ * The size with the widest words (`1,023 bytes`: the most bytes still written as bytes), for the room a size keeps
+ * before it is known.
+ */
+export function widestSize(): string {
+  return formatSize(step - 1);
+}
+
 /** The part of a name after its last dot in capitals (`REPORT.pdf` is `PDF`); nothing without one. */
 export function extensionOf(name: string): string {
   const dot = name.lastIndexOf(".");

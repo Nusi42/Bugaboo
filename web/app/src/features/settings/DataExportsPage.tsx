@@ -6,6 +6,7 @@ import {
   Card,
   cardLook,
   DataTable,
+  KeptRoom,
   ShowMoreOf,
   partOf,
   part,
@@ -16,7 +17,7 @@ import { messageOf } from "../../shared/errors.ts";
 import { itemsOf } from "../../shared/paged.ts";
 import { useMe } from "../../shared/use-me.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
-import { useDataExports } from "./data-exports.ts";
+import { useDataExports, useExportsKept } from "./data-exports.ts";
 import { ExportRow } from "./ExportRow.tsx";
 import { SomeonesDataWindow } from "./SomeonesDataWindow.tsx";
 
@@ -62,19 +63,33 @@ function ExportList() {
 }
 
 /**
+ * What the page is for, with how long a file is kept, read from the keep rules (no period is written in the browser);
+ * while they are read, the sentence keeps its room, so nothing under it moves.
+ */
+function useIntro() {
+  const period = useExportsKept();
+  return period === undefined ? (
+    <KeptRoom>{t("data-exports.intro", { period: "" })}</KeptRoom>
+  ) : (
+    t("data-exports.intro", { period })
+  );
+}
+
+/**
  * *Organization settings › Privacy › Data exports* (PRIV-03, ADR-0044, decision 4): who made which file of whose data,
  * when and why, newest first, for a holder of *Download someone's data*, with *Download someone's data* itself.
  */
 export function DataExportsPage() {
   usePageTitle(t("nav.data-exports"));
   const [asking, setAsking] = useState(false);
+  const intro = useIntro();
   return (
     <>
       <Card
         heading={t("nav.data-exports")}
         level={1}
         look={cardLook.pageHead}
-        intro={t("data-exports.intro")}
+        intro={intro}
         actions={
           <Button
             onPress={() => {

@@ -74,10 +74,11 @@ export function PersonState({ id, name, standing }: PersonStateProps) {
   const switching = useSwitch(id);
   const [removing, setRemoving] = useState(false);
   const mayRemove = held.includes("remove-people");
+  const mayManage = held.includes("manage-people");
   return (
     <Card heading={t("person.state-title")}>
       <div {...partOf(part.row)}>
-        {held.includes("manage-people") ? (
+        {mayManage ? (
           <SwitchButton
             name={name}
             standing={standing}
@@ -97,7 +98,7 @@ export function PersonState({ id, name, standing }: PersonStateProps) {
           </Button>
         ) : null}
       </div>
-      {switching.error === null ? null : (
+      {switching.error === null || removing ? null : (
         <Alert tone={alertTone.danger}>{messageOf(switching.error)}</Alert>
       )}
       <p {...partOf(part.text)}>{standingText(name, standing)}</p>
@@ -108,6 +109,8 @@ export function PersonState({ id, name, standing }: PersonStateProps) {
           standing={standing}
           onSwitchOff={switching.off}
           switching={switching.busy}
+          mayManage={mayManage}
+          switchError={switching.error}
           onClose={() => {
             setRemoving(false);
           }}
