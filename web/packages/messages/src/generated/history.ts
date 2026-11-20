@@ -12,7 +12,6 @@ export const messages = {
   "history.in-run": "Part of a run",
   "history.undid-run-link": "Run that was undone",
   "history.nothing": "Nothing here yet.",
-  "history.more": "Show earlier",
   "history.by": "{who} · {when}",
   "history.relation-added": "{who} added a relation: this issue · {name} · {issue}",
   "history.relation-removed": "{who} took away a relation: this issue · {name} · {issue}",

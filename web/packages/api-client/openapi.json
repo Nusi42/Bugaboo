@@ -1653,6 +1653,85 @@
         "x-permission": "own-account"
       }
     },
+    "/api/v1/agents/{agent}/history": {
+      "get": {
+        "tags": ["agents"],
+        "summary": "The history of an agent: its hand-overs to its person's other agents and its undos, newest\nfirst, a page at a time.",
+        "operationId": "listAgentHistory",
+        "parameters": [
+          {
+            "name": "agent",
+            "in": "path",
+            "description": "The ID of the agent.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/Fields"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
+              "maximum": 100,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "What the agent did, newest first.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_AgentHistoryItemBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "own-account"
+      }
+    },
     "/api/v1/agents/{agent}/keys": {
       "post": {
         "tags": ["agents"],
@@ -21228,6 +21307,55 @@
         ],
         "description": "One agent with its keys (at most `MOST_AGENT_KEYS`, newest first)."
       },
+      "AgentDeedKind": {
+        "type": "string",
+        "description": "What an agent did.",
+        "enum": ["hand-over", "undo"]
+      },
+      "AgentHistoryItemBody": {
+        "type": "object",
+        "description": "One entry of the history of an agent.",
+        "required": ["id", "kind", "at", "issues"],
+        "properties": {
+          "at": {
+            "type": "string",
+            "description": "When.",
+            "format": "date-time"
+          },
+          "id": {
+            "type": "string",
+            "description": "What the entry is known by: the ID of the hand-over, or of the event of the undo."
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IssueRef"
+            },
+            "description": "The issues: those a hand-over handed on, or the issue of the run that was undone; only\nthose the reader may see."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/AgentDeedKind",
+            "description": "What the agent did."
+          },
+          "to": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/NamedRef",
+                "description": "For a hand-over, the agent it handed the issues to; left out when the reader may not be told\nthat agent."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "went_back": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "For an undo, how many changes went back.",
+            "minimum": 0
+          }
+        }
+      },
       "AgentItem": {
         "type": "object",
         "description": "An agent in a list: the fields that can be asked for. An answer holds only those that were\nasked for.",
@@ -29913,6 +30041,24 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/AccessKeyItem"
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
+      "Page_AgentHistoryItemBody": {
+        "type": "object",
+        "description": "One page of a list: its items, and where the next page starts.",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentHistoryItemBody"
             },
             "description": "The items of this page."
           },

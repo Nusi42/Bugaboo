@@ -70,6 +70,17 @@ pub fn undone_run(reason: &str) -> Option<crate::id::RunId> {
 
 const UNDO_REASON: &str = "undo-run:";
 
+/// The reason of the one event an undo writes on its run (how many changes went back, what was
+/// kept and why): the mark that makes an event of a run the fact of an undo. The page of the run
+/// and the history of an agent find the undos of a run by it, and by nothing else.
+pub const RUN_UNDONE: &str = "run-undone";
+
+/// Whether an event of a run, with this reason, is the fact of an undo ([`RUN_UNDONE`]).
+#[must_use]
+pub fn is_undo_fact(reason: Option<&str>) -> bool {
+    reason == Some(RUN_UNDONE)
+}
+
 /// Who a run belongs to: the person who answers for it, with the app or the agent that acted for
 /// them. Never both.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

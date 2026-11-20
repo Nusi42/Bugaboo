@@ -399,8 +399,8 @@ pub async fn undo_run<S: AuthStore>(
                 .is_some_and(|before| before.interrupted);
             if done.undone > 0 || waiting {
                 let mut changes = vec![
-                    set_to("undone", serde_json::json!(done.undone)),
-                    set_to("kept", serde_json::json!(done.skipped)),
+                    set_to(super::outcome::UNDONE, serde_json::json!(done.undone)),
+                    set_to(super::outcome::KEPT, serde_json::json!(done.skipped)),
                 ];
                 if interrupt.is_some() {
                     changes.push(set_to(super::outcome::INTERRUPTED, serde_json::json!(true)));
@@ -411,11 +411,14 @@ pub async fn undo_run<S: AuthStore>(
                         serde_json::json!(skip.kind.code()),
                     )
                 }));
-                let event = ctx.event(
+                let mut event = ctx.event(
                     by_person(actor.person.id),
                     entity(RecordKind::ChangeRun, input.run),
                     changes,
                 )?;
+                // The mark of the fact of an undo, by which the page of the run and the history of
+                // an agent find it (`went_back`, `undos_by_agent`).
+                event.reason = Some(bb_core::run::RUN_UNDONE.to_owned());
                 ctx.store()
                     .record_change(&event, |_transaction| Box::pin(async { Ok(()) }))
                     .await

@@ -151,6 +151,10 @@ export interface MessageArguments {
   "agents.create-full": { most: number };
   "agents.decline-name": { agent: string | number };
   "agents.hand-title": { agent: string | number };
+  "agents.history-handed-over": { agent: string | number; issues: string | number };
+  "agents.history-handed-over-unseen": { agent: string | number };
+  "agents.history-undid": { count: number; issue: string | number };
+  "agents.history-undid-unseen": { count: number };
   "agents.key-renew-name": { name: string | number };
   "agents.key-renew-text": { name: string | number };
   "agents.key-take-back-name": { name: string | number };

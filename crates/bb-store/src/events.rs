@@ -686,7 +686,7 @@ pub(crate) fn event_columns() -> [Event; 10] {
 /// system `system` with no ID, and an agent `agent:` and the agent's ID, with the person
 /// responsible for it in the ID column, so what is kept and erased about a person finds the changes
 /// of their agents too (documented with the events in architecture §4, M7-F37).
-fn actor_columns(actor: Actor) -> (String, Option<Vec<u8>>) {
+pub(crate) fn actor_columns(actor: Actor) -> (String, Option<Vec<u8>>) {
     match actor {
         Actor::Person(person) => (ACTOR_PERSON.to_owned(), Some(person.stored())),
         Actor::Agent { agent, person } => (format!("{ACTOR_AGENT}{agent}"), Some(person.stored())),

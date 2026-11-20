@@ -24,6 +24,9 @@ mod fake;
 
 pub(crate) use marks::Marks;
 pub use marks::WrittenByView;
+#[cfg(test)]
+pub(crate) use outcome::UNDONE;
+pub(crate) use outcome::went_back;
 pub use outcome::{FieldOutcome, UndoneView};
 pub(crate) use own::issue_of;
 pub use records::RunRecordStore;

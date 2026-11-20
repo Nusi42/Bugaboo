@@ -488,7 +488,7 @@ async fn ai_38_two_undos_with_one_preview_put_back_once_and_record_one_undo() ->
         .events
         .iter()
         .filter(|event| event.entity.id == bb_core::id::EntityId::from(run))
-        .filter(|event| event.changes.iter().any(|change| change.field == "undone"))
+        .filter(|event| crate::runs::went_back(event).is_some())
         .count();
     assert_eq!(recorded, 1);
     Ok(())

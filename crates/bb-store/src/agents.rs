@@ -1,7 +1,7 @@
 //! The adapter of the port of agents (`bb_app::agents::AgentStore`): the records of agents, and
 //! the empty implementation of their work (AI-30, ADR-0029).
 
-use bb_app::agents::{AgentPosition, AgentStore};
+use bb_app::agents::{AgentPosition, AgentStore, HandOverByAgent, HistoryAfter, UndoByAgent};
 use bb_app::auth::AccessKeyRecord;
 use bb_core::agent::{Agent, AgentLimits, AgentState, AgentSwitches, LimitKind};
 use bb_core::id::{AccessKeyId, AgentId, UserId};
@@ -288,6 +288,30 @@ impl AgentStore for AuthStorage {
             .iter()
             .map(read_agent)
             .collect()
+    }
+
+    async fn hand_overs_by_agent(
+        &self,
+        agent: AgentId,
+        person: UserId,
+        after: HistoryAfter,
+        limit: u64,
+    ) -> Result<Vec<HandOverByAgent>, StoreError> {
+        self.database()
+            .hand_overs_by_agent(agent, person, after, limit)
+            .await
+    }
+
+    async fn undos_by_agent(
+        &self,
+        agent: AgentId,
+        person: UserId,
+        after: HistoryAfter,
+        limit: u64,
+    ) -> Result<Vec<UndoByAgent>, StoreError> {
+        self.database()
+            .undos_by_agent(agent, person, after, limit)
+            .await
     }
 
     async fn lock_agents_of(

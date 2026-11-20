@@ -146,8 +146,7 @@ async fn ai_38_an_undo_by_an_agent_is_recorded_as_done_by_the_agent() -> Outcome
         .iter()
         .rev()
         .find(|event| {
-            event.entity.kind.as_str() == "change_run"
-                && event.changes.iter().any(|change| change.field == "undone")
+            event.entity.kind.as_str() == "change_run" && crate::runs::went_back(event).is_some()
         })
         .ok_or("no event of the undo")?;
     assert!(matches!(

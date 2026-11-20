@@ -8,7 +8,8 @@ use std::future::Future;
 
 use bb_core::agent::{Agent, AgentLimits, AgentState, AgentSwitches, LimitKind};
 use bb_core::agent_work::Allowance;
-use bb_core::id::{AgentId, IssueId, ProjectId, UserId};
+use bb_core::event::DomainEvent;
+use bb_core::id::{AgentId, EntityId, HandOverId, IssueId, ProjectId, UserId};
 use jiff::Timestamp;
 
 use super::types::AgentPosition;
@@ -39,6 +40,33 @@ pub struct Hold {
     /// commenting and reporting need nothing.
     pub allowance: Allowance,
 }
+
+/// A hand-over an agent made (ADR-0029, amendment M9), with the issues it handed on.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HandOverByAgent {
+    /// The hand-over.
+    pub id: HandOverId,
+    /// The agent it was made to.
+    pub to: AgentId,
+    /// When it was made.
+    pub at: Timestamp,
+    /// The issues it handed on.
+    pub issues: Vec<IssueId>,
+}
+
+/// An undo an agent made of the run of one of its attempts: the event that records it on the run,
+/// and the issue of the attempt.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct UndoByAgent {
+    /// The event of the undo on the run.
+    pub event: DomainEvent,
+    /// The issue the attempt of the run was on, while its work is still there.
+    pub issue: Option<IssueId>,
+}
+
+/// Where a page of the history of an agent starts: after the entry made at this moment with this
+/// ID. Hand-overs and undos are one list, newest first and then by ID, so one position serves both.
+pub type HistoryAfter = Option<(Timestamp, EntityId)>;
 
 /// The work of agents, read as the policy needs it. The store of hand-overs and standing rules
 /// fills it (agent work); until then every agent has no work.
@@ -79,6 +107,12 @@ pub trait AgentStore: ChangeStore + AgentWorkStore + 'static {
         /// The agents handed to a person that they have not accepted yet and that are not stopped,
         /// by ID, at most `limit`.
         fn agents_offered_to(person: UserId, limit: u64) -> Vec<Agent>;
+        /// The hand-overs one agent made while it worked for `person`, newest first and then by ID,
+        /// after `after`, at most `limit`.
+        fn hand_overs_by_agent(agent: AgentId, person: UserId, after: HistoryAfter, limit: u64) -> Vec<HandOverByAgent>;
+        /// The undos one agent made of its runs while it worked for `person`, newest first and then
+        /// by ID, after `after`, at most `limit`.
+        fn undos_by_agent(agent: AgentId, person: UserId, after: HistoryAfter, limit: u64) -> Vec<UndoByAgent>;
     }
 
     writes! {

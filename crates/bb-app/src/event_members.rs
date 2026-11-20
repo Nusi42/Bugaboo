@@ -405,12 +405,16 @@ pub fn assignment_given(row: &Assignment) -> Vec<FieldChange> {
     ]
 }
 
-/// The text a change of an event sets `field` to, if it has one: the one reading of a member that
+/// The value a change of an event sets `field` to, if it has one: the one reading of a member that
 /// the readers of events need.
-pub(crate) fn text_set<'a>(changes: &'a [FieldChange], field: &str) -> Option<&'a str> {
+pub(crate) fn value_set<'a>(changes: &'a [FieldChange], field: &str) -> Option<&'a Value> {
     changes
         .iter()
         .find(|change| change.field == field)
         .and_then(|change| change.after.as_ref())
-        .and_then(Value::as_str)
+}
+
+/// The text a change of an event sets `field` to, if it has one.
+pub(crate) fn text_set<'a>(changes: &'a [FieldChange], field: &str) -> Option<&'a str> {
+    value_set(changes, field).and_then(Value::as_str)
 }

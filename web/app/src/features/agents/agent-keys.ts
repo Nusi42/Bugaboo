@@ -5,4 +5,6 @@ export const agentKeys = {
   organization: () => ["agents", "organization"],
   /** The standing rules of one agent, a page at a time. */
   rules: (agent: string) => ["agents", "rules", agent],
+  /** What one agent handed over and undid, a page at a time. */
+  history: (agent: string) => ["agents", "history", agent],
 };

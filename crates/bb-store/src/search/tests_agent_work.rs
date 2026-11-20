@@ -83,6 +83,18 @@ pub(super) async fn hand_over(
     issues: &[IssueId],
     ticked: (Vec<HandOverPower>, Vec<String>),
 ) -> Result<(HandOver, Vec<IssueWork>), crate::StoreError> {
+    hand_over_by(storage, made, (person, agent), issues, ticked, None).await
+}
+
+/// [`hand_over`], made by `by_agent` when an agent made it (one deeper than a person's).
+pub(super) async fn hand_over_by(
+    storage: &AuthStorage,
+    made: &mut Made,
+    (person, agent): (UserId, AgentId),
+    issues: &[IssueId],
+    ticked: (Vec<HandOverPower>, Vec<String>),
+    by_agent: Option<AgentId>,
+) -> Result<(HandOver, Vec<IssueWork>), crate::StoreError> {
     let record = HandOver {
         id: HandOverId::from_random(made.bytes()),
         agent,
@@ -95,8 +107,8 @@ pub(super) async fn hand_over(
         budget_cost: None,
         plan_needs_approval: false,
         accept_by_itself: false,
-        by_agent: None,
-        depth: 0,
+        by_agent,
+        depth: i64::from(by_agent.is_some()),
         state: GivingState::Open,
         ends_at: at(ENDS),
         made_at: at(0),

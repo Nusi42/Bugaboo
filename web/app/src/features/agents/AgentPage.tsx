@@ -5,13 +5,12 @@ import { QueryGate } from "../shell/index.ts";
 import { listedAgents, mayAct, useAgentRecord, type AgentRecord } from "./agents.ts";
 import { AgentHead } from "./AgentHead.tsx";
 import { AgentKeys } from "./AgentKeys.tsx";
-import { AgentRules } from "./AgentRules.tsx";
-import { AgentWorkCard } from "./AgentWorkCard.tsx";
 import { HandToPerson } from "./HandToPerson.tsx";
 import { LimitsAndSwitches } from "./LimitsAndSwitches.tsx";
+import { WorkRulesAndHistory } from "./WorkRulesAndHistory.tsx";
 
 /**
- * The page of an agent (UX §4.17): its person and state, its keys (each runs out), its limits and its switches, its work and its standing rules,
+ * The page of an agent (UX §4.17): its person and state, its keys (each runs out), its limits and its switches, its work and its standing rules, its history,
  * *Pause* and *Stop*, and *Hand to another person*.
  */
 export function AgentPage({ id }: { readonly id: string }) {
@@ -32,8 +31,7 @@ export function AgentPage({ id }: { readonly id: string }) {
               <AgentKeys agent={agent.id} keys={loaded.keys} stopped={!mayAct(agent)} />
             ) : null}
             <LimitsAndSwitches agent={agent} maximums={agent.yours ? loaded.maximums : undefined} />
-            <AgentWorkCard agent={agent} />
-            <AgentRules agent={agent} />
+            <WorkRulesAndHistory agent={agent} />
             {agent.yours ? <HandToPerson agent={agent} /> : null}
           </div>
         );

@@ -412,6 +412,7 @@ export const messages = {
   "related-issues.loop-is": "The loop: {issues}.",
   "related-issues.kind-field": "What the relation means",
   "history.title": "History",
+  "history.more": "Show earlier",
   "history.dates-moved": "{who} moved the dates from {before} to {after}",
   "history.date-range": "{start}–{due}",
   "history.changed": "{who} changed {field} from {before} to {after}",

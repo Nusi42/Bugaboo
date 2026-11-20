@@ -315,6 +315,8 @@ mod tests;
 #[cfg(test)]
 pub(super) mod tests_agent;
 #[cfg(test)]
+mod tests_agent_history;
+#[cfg(test)]
 mod tests_agent_work;
 #[cfg(test)]
 mod tests_agent_work_count;

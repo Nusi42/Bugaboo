@@ -7,7 +7,10 @@ use bb_core::agent_work::Allowance;
 use bb_core::id::{AccessKeyId, AgentId, IssueId, ProjectId, UserId};
 
 use super::fake::{FakeError, FakeStore, Tx};
-use crate::agents::{AgentPosition, AgentReach, AgentStore, AgentWorkStore, Hold};
+use crate::agents::{
+    AgentPosition, AgentReach, AgentStore, AgentWorkStore, HandOverByAgent, HistoryAfter, Hold,
+    UndoByAgent,
+};
 use crate::auth::AccessKeyRecord;
 
 /// Everything an agent has been given, the whole of it: what the fake keeps for the tests that
@@ -236,6 +239,38 @@ impl AgentStore for FakeStore {
                 limit,
             )
         }))
+    }
+
+    async fn hand_overs_by_agent(
+        &self,
+        agent: AgentId,
+        person: UserId,
+        after: HistoryAfter,
+        limit: u64,
+    ) -> Result<Vec<HandOverByAgent>, FakeError> {
+        Ok(super::fake_agent_history::hand_overs_by_agent(
+            &mut self.lock(),
+            agent,
+            person,
+            after,
+            limit,
+        ))
+    }
+
+    async fn undos_by_agent(
+        &self,
+        agent: AgentId,
+        person: UserId,
+        after: HistoryAfter,
+        limit: u64,
+    ) -> Result<Vec<UndoByAgent>, FakeError> {
+        Ok(super::fake_agent_history::undos_by_agent(
+            &mut self.lock(),
+            agent,
+            person,
+            after,
+            limit,
+        ))
     }
 
     async fn lock_agents_of(_tx: &mut Tx, _person: UserId) -> Result<(), FakeError> {

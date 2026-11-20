@@ -32,6 +32,11 @@ pub(super) const ROUTES: &[Route] = &[
     ),
     route("getAgent", Declared::SignedIn, Answer::NeverStored),
     route("changeAgent", Declared::OwnAccount, Answer::Ordinary),
+    route(
+        "listAgentHistory",
+        Declared::OwnAccount,
+        Answer::NeverStored,
+    ),
     route("handAgent", Declared::OwnAccount, Answer::Ordinary),
     route("acceptAgent", Declared::OwnAccount, Answer::Ordinary),
     route("takeBackAgentOffer", Declared::OwnAccount, Answer::Ordinary),

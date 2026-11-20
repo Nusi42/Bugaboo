@@ -3,6 +3,7 @@
 //! server on it; the files below are the tests.
 
 mod agent_handoff;
+mod agent_history;
 mod agent_limits;
 mod agent_requests;
 mod agent_requests_bound;
@@ -53,6 +54,7 @@ mod event_members;
 mod events;
 mod failures;
 mod fake;
+mod fake_agent_history;
 mod fake_agent_requests;
 mod fake_agent_work;
 mod fake_agents;

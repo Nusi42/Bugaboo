@@ -53,6 +53,7 @@ pub(super) fn agent_work_request(operation: &str) -> Option<Request> {
             format!("/api/v1/agents/{nobody}/standing-rules"),
             None,
         ),
+        "listAgentHistory" => ("GET", format!("/api/v1/agents/{nobody}/history"), None),
         "decideProposal" => (
             "POST",
             format!("/api/v1/proposals/{nobody}/decision"),

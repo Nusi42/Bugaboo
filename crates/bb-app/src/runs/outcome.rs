@@ -10,6 +10,7 @@ use jiff::Timestamp;
 use serde::Serialize;
 
 use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::event_members::value_set;
 
 /// Who undid a run, and when.
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -94,7 +95,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await?
             .into_iter()
             .map(|(_, event)| event)
-            .filter(|event| event.changes.iter().any(|change| change.field == "undone"))
+            .filter(|event| went_back(event).is_some())
             .collect())
     }
 
@@ -196,6 +197,22 @@ impl<S: AuthStore> Ctx<'_, S> {
 
 /// The field of the event of an undo that says it stopped half way.
 pub(super) const INTERRUPTED: &str = "interrupted";
+
+/// The field of the event of an undo that says how many changes went back.
+pub(crate) const UNDONE: &str = "undone";
+
+/// The field of the event of an undo that says how many changes stayed.
+pub(super) const KEPT: &str = "kept";
+
+/// How many changes an undo put back, read from its event on the run; `None` for an event of the
+/// run that is no undo (`bb_core::run::is_undo_fact`).
+pub(crate) fn went_back(event: &DomainEvent) -> Option<u64> {
+    bb_core::run::is_undo_fact(event.reason.as_deref()).then(|| {
+        value_set(&event.changes, UNDONE)
+            .and_then(serde_json::Value::as_u64)
+            .unwrap_or_default()
+    })
+}
 
 /// What the undos of a run wrote on it.
 pub(super) struct UndoFacts {

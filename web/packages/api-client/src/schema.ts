@@ -466,6 +466,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/agents/{agent}/history": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The history of an agent: its hand-overs to its person's other agents and its undos, newest
+     *     first, a page at a time.
+     */
+    get: operations["listAgentHistory"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/agents/{agent}/keys": {
     parameters: {
       query?: never;
@@ -5893,6 +5913,34 @@ export interface components {
       maximums?: components["schemas"]["AgentLimitsBody"] | null;
     };
     /**
+     * @description What an agent did.
+     * @enum {string}
+     */
+    AgentDeedKind: "hand-over" | "undo";
+    /** @description One entry of the history of an agent. */
+    AgentHistoryItemBody: {
+      /**
+       * Format: date-time
+       * @description When.
+       */
+      at: string;
+      /** @description What the entry is known by: the ID of the hand-over, or of the event of the undo. */
+      id: string;
+      /**
+       * @description The issues: those a hand-over handed on, or the issue of the run that was undone; only
+       *     those the reader may see.
+       */
+      issues: components["schemas"]["IssueRef"][];
+      /** @description What the agent did. */
+      kind: components["schemas"]["AgentDeedKind"];
+      to?: components["schemas"]["NamedRef"] | null;
+      /**
+       * Format: int64
+       * @description For an undo, how many changes went back.
+       */
+      went_back?: number | null;
+    };
+    /**
      * @description An agent in a list: the fields that can be asked for. An answer holds only those that were
      *     asked for.
      */
@@ -10285,6 +10333,13 @@ export interface components {
     Page_AccessKeyItem: {
       /** @description The items of this page. */
       items: components["schemas"]["AccessKeyItem"][];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
+    /** @description One page of a list: its items, and where the next page starts. */
+    Page_AgentHistoryItemBody: {
+      /** @description The items of this page. */
+      items: components["schemas"]["AgentHistoryItemBody"][];
       /** @description The cursor of the next page; `null` on the last page. */
       next_cursor: string | null;
     };
@@ -14978,6 +15033,45 @@ export interface operations {
         };
         content?: never;
       };
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  listAgentHistory: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: components["parameters"]["Fields"];
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: components["parameters"]["Cursor"];
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        /** @description The ID of the agent. */
+        agent: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description What the agent did, newest first. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_AgentHistoryItemBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      400: components["responses"]["BadRequest"];
       401: components["responses"]["NotSignedIn"];
       403: components["responses"]["Forbidden"];
       404: components["responses"]["NotFound"];

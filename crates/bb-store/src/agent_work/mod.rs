@@ -5,6 +5,7 @@
 mod counts;
 mod current;
 mod grants;
+mod history;
 #[cfg(any(test, feature = "testing"))]
 mod stored;
 mod work;

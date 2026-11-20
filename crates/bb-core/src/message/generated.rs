@@ -534,6 +534,13 @@ pub const AGENTS_HAND_TEXT: MessageKey = MessageKey::new("agents.hand-text");
 /// The message `agents.hand-waiting`.
 pub const AGENTS_HAND_WAITING: MessageKey = MessageKey::new("agents.hand-waiting");
 
+/// The message `agents.history-another-agent`.
+pub const AGENTS_HISTORY_ANOTHER_AGENT: MessageKey =
+    MessageKey::new("agents.history-another-agent");
+
+/// The message `agents.history-none`.
+pub const AGENTS_HISTORY_NONE: MessageKey = MessageKey::new("agents.history-none");
+
 /// The message `agents.intro`.
 pub const AGENTS_INTRO: MessageKey = MessageKey::new("agents.intro");
 
@@ -10591,6 +10598,66 @@ pub fn agents_hand_title(agent: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("agents.hand-title"),
         vec![("agent", Value::Text(agent.to_string()))],
+    )
+}
+
+/// The values of the message `agents.history-handed-over`, by name.
+#[derive(Clone, Copy)]
+pub struct AgentsHistoryHandedOver<'a> {
+    /// The value of `{agent}`.
+    pub agent: &'a dyn std::fmt::Display,
+    /// The value of `{issues}`.
+    pub issues: &'a dyn std::fmt::Display,
+}
+
+/// The message `agents.history-handed-over`.
+#[must_use]
+pub fn agents_history_handed_over(values: AgentsHistoryHandedOver<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agents.history-handed-over"),
+        vec![
+            ("agent", Value::Text(values.agent.to_string())),
+            ("issues", Value::Text(values.issues.to_string())),
+        ],
+    )
+}
+
+/// The message `agents.history-handed-over-unseen`.
+#[must_use]
+pub fn agents_history_handed_over_unseen(agent: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agents.history-handed-over-unseen"),
+        vec![("agent", Value::Text(agent.to_string()))],
+    )
+}
+
+/// The values of the message `agents.history-undid`, by name.
+#[derive(Clone, Copy)]
+pub struct AgentsHistoryUndid<'a> {
+    /// The value of `{count}`.
+    pub count: i64,
+    /// The value of `{issue}`.
+    pub issue: &'a dyn std::fmt::Display,
+}
+
+/// The message `agents.history-undid`.
+#[must_use]
+pub fn agents_history_undid(values: AgentsHistoryUndid<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agents.history-undid"),
+        vec![
+            ("count", Value::Number(values.count)),
+            ("issue", Value::Text(values.issue.to_string())),
+        ],
+    )
+}
+
+/// The message `agents.history-undid-unseen`.
+#[must_use]
+pub fn agents_history_undid_unseen(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("agents.history-undid-unseen"),
+        vec![("count", Value::Number(count))],
     )
 }
 

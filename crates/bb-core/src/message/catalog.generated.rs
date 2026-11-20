@@ -448,6 +448,27 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "agents.hand-waiting",
         "This agent is handed to another person, who has not accepted it yet.",
     ),
+    ("agents.history-another-agent", "another agent"),
+    (
+        "agents.history-handed-over",
+        "Handed {issues} over to {agent}",
+    ),
+    (
+        "agents.history-handed-over-unseen",
+        "Handed issues over to {agent}",
+    ),
+    (
+        "agents.history-none",
+        "It has not handed anything over or undone a run yet.",
+    ),
+    (
+        "agents.history-undid",
+        "Undid its run on {issue}: {count, plural, one {# change} other {# changes}} went back",
+    ),
+    (
+        "agents.history-undid-unseen",
+        "Undid one of its runs: {count, plural, one {# change} other {# changes}} went back",
+    ),
     (
         "agents.intro",
         "Your agents and what they work on. What waits for you comes first.",
