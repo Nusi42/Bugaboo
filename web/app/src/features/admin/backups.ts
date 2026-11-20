@@ -17,10 +17,9 @@ export type Maker =
   | "before-restore"
   | "unknown";
 
-/** The sentence part for each maker (the words are in the catalog). */
-export const makerMessages: Readonly<Record<Maker, MessageKey>> = {
+/** The sentence part for each maker but a person, who is named (the words are in the catalog). */
+const makerMessages: Readonly<Record<Exclude<Maker, "person">, MessageKey>> = {
   schedule: "backup-page.maker.daily",
-  person: "backup-page.maker.person",
   "command-line": "backup-page.maker.command-line",
   upgrade: "backup-page.maker.upgrade",
   "before-restore": "backup-page.maker.before-restore",
@@ -33,6 +32,11 @@ const recorded = ["schedule", "person", "command-line", "upgrade"] as const;
 /** The event of a record that a backup was made, as opposed to restored. */
 const MADE = "made";
 
+/** The record that a backup was created, if there is one: a file copied in by hand has none. */
+function recordOf(file: File, runs: readonly Run[]): Run | undefined {
+  return runs.find((run) => run.event === MADE && run.name === file.name);
+}
+
 /**
  * Who made a backup: a backup a restore made of what was there before says so; otherwise the record
  * of the backup with the same name. A file without a record (copied in by hand) has an unknown maker.
@@ -41,7 +45,7 @@ export function makerOf(file: File, runs: readonly Run[]): Maker {
   if (file.before_restore) {
     return "before-restore";
   }
-  const record = runs.find((run) => run.event === MADE && run.name === file.name);
+  const record = recordOf(file, runs);
   return recorded.find((maker) => maker === record?.maker) ?? "unknown";
 }
 
@@ -58,8 +62,7 @@ export interface BackupRow {
 /** The rows of the list, in the order of the server: newest first. */
 export function backupRows(backups: Backups): readonly BackupRow[] {
   return backups.files.map((file) => ({
-    person:
-      backups.runs.find((run) => run.event === MADE && run.name === file.name)?.person ?? null,
+    person: recordOf(file, backups.runs)?.person ?? null,
     name: file.name,
     moment: file.moment,
     size: file.size,
@@ -88,9 +91,9 @@ export const RESTORE_DOCS =
 
 /** Who created a backup, in words: a person by the name the viewer may see them under, else the maker. */
 export function makerText(row: Readonly<BackupRow>): string {
-  return row.maker === "person"
-    ? t("backup-page.maker.person", {
-        who: row.person === null ? someoneName("inside") : personNameInside(row.person),
-      })
-    : t(makerMessages[row.maker]);
+  if (row.maker === "person") {
+    const who = row.person === null ? someoneName("inside") : personNameInside(row.person);
+    return t("backup-page.maker.person", { who });
+  }
+  return t(makerMessages[row.maker]);
 }

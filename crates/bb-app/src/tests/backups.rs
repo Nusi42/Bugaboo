@@ -236,3 +236,104 @@ async fn ops_07_a_rotation_that_deletes_many_backups_queues_no_backup() -> Outco
     assert_eq!(world.store.lock().state.jobs.len(), jobs);
     Ok(())
 }
+
+/// A second administrator and the session of that person, who looks at the backups the first one
+/// created.
+async fn another_viewer(world: &World) -> Result<String, AppError> {
+    use bb_policy::StartingRole;
+
+    use super::scenarios_searches::with_role;
+
+    let ben = world.person("ben@example.test").await?;
+    with_role(world, &ben, StartingRole::Administrator, None)
+        .await
+        .map_err(AppError::Internal)?;
+    Ok(ben.session_token)
+}
+
+async fn backups_seen_by(
+    world: &World,
+    session_token: &str,
+) -> Result<crate::backups::Backups, AppError> {
+    Ok(list_backups(
+        &world.ctx(),
+        ListBackupsQuery {
+            session_token: session_token.to_owned(),
+        },
+    )
+    .await?
+    .into_value())
+}
+
+#[tokio::test]
+async fn priv_12_the_list_names_the_person_as_who_sees_people_says() -> Outcome {
+    use bb_core::access::PeopleLevel;
+    use bb_core::people_kinds::PeopleKind;
+    use bb_policy::{PersonRef, StartingRole};
+
+    use super::workflows_rules::starting_role;
+    use crate::roles::{SetPeopleLevel, set_level};
+
+    let world = World::new().await?;
+    let ben = another_viewer(&world).await?;
+    create_backup_scenario(&world).await?;
+    // By name at first.
+    let seen = backups_seen_by(&world, &ben).await?;
+    assert_eq!(seen.people.len(), 1);
+    assert!(matches!(seen.people[0].1, PersonRef::Name { .. }));
+    // When the role of the viewer is not told who people are, the backup was created by *Someone*.
+    let role = starting_role(&world, StartingRole::Administrator)
+        .await
+        .map_err(AppError::Internal)?;
+    set_level(
+        &world.ctx(),
+        SetPeopleLevel {
+            session_token: token(&world),
+            role,
+            project: None,
+            kind: PeopleKind::Authors,
+            level: Some(PeopleLevel::Hidden),
+        },
+    )
+    .await?;
+    let seen = backups_seen_by(&world, &ben).await?;
+    assert_eq!(seen.people[0].1, PersonRef::Someone);
+    Ok(())
+}
+
+#[tokio::test]
+async fn priv_12_a_person_who_was_removed_is_a_former_user_in_the_list() -> Outcome {
+    use bb_policy::PersonRef;
+
+    use crate::people::{SwitchOff, switch_off};
+    use crate::privacy::removal::{RemovePerson, remove_person};
+
+    let world = World::new().await?;
+    let ben = another_viewer(&world).await?;
+    create_backup_scenario(&world).await?;
+    let creator = world.admin.person.id;
+    switch_off(
+        &world.ctx(),
+        SwitchOff {
+            session_token: ben.clone(),
+            person: creator,
+        },
+    )
+    .await?;
+    remove_person(
+        &world.ctx(),
+        RemovePerson {
+            session_token: ben.clone(),
+            person: creator,
+            comments: None,
+        },
+    )
+    .await?;
+    let seen = backups_seen_by(&world, &ben).await?;
+    assert!(
+        matches!(seen.people[0].1, PersonRef::Former { .. }),
+        "{:?}",
+        seen.people
+    );
+    Ok(())
+}

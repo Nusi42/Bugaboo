@@ -15,6 +15,8 @@ export interface BackupsListProps {
   /** The name of the backup the restore command is shown for. */
   readonly chosen: string | undefined;
   readonly onChoose: (name: string) => void;
+  /** The list could not be read: it is not empty, so it does not say that there are no backups. */
+  readonly failed: boolean;
 }
 
 /** A row with the key the list chooses it by: its name. */
@@ -39,7 +41,7 @@ function nameOf(selection: Readonly<Selection>): string | undefined {
  * The backups, newest first, in a box of its own height that draws only the rows that are in it; one is chosen, and
  * the command that restores it stands under the list.
  */
-export function BackupsList({ rows, chosen, onChoose }: Readonly<BackupsListProps>) {
+export function BackupsList({ rows, chosen, onChoose, failed }: Readonly<BackupsListProps>) {
   return (
     <Virtualizer layout={ListLayout}>
       <ListBox
@@ -53,12 +55,18 @@ export function BackupsList({ rows, chosen, onChoose }: Readonly<BackupsListProp
             onChoose(name);
           }
         }}
-        renderEmptyState={() => <p {...partOf(part.pickListFacts)}>{t("backup-page.none")}</p>}
+        renderEmptyState={() =>
+          failed ? null : <p {...partOf(part.pickListFacts)}>{t("backup-page.none")}</p>
+        }
         {...partOf(part.pickList)}
       >
         <Collection items={rows.map((row) => choosable(row))}>
           {(row) => (
-            <ListBoxItem id={row.id} textValue={row.name} {...partOf(part.pickListRow)}>
+            <ListBoxItem
+              id={row.id}
+              textValue={row.name}
+              {...partOf(part.pickListRow, { variants: ["choose"] })}
+            >
               <span {...partOf(part.pickListName)}>{row.name}</span>
               <span {...partOf(part.pickListFacts)}>{formatDateTime(row.moment)}</span>
               <span {...partOf(part.pickListFacts)}>

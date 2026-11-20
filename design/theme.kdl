@@ -5943,7 +5943,7 @@ part "row-chevron" {
 // scroll box of its own (UX §6.5). It is as high as all its rows, and the main column scrolls it with the cards under it;
 // the list still draws only the rows that are in the window. A row is as tall as its words need (nothing is cut with
 // an ellipsis).
-part "people" {
+part "people" "pick-list" {
     display block
     margin 0
     padding-block 0
@@ -5968,11 +5968,14 @@ part "list-panel" {
 
 // A row of the list is as tall as its words: the name, the address and the groups and roles under it, each one
 // wrapping where the line ends, and the chevron at the end.
-part "people.person" {
+part "people.person" "pick-list.row" {
     use "pick-row"
+    border-bottom "$border-width solid $divider"
+}
+
+part "people.person" {
     position relative
     padding-inline-end "calc($space-3 + $size-icon-small + $space-2)"
-    border-bottom "$border-width solid $divider"
 }
 
 part "people.person-text" {
@@ -5990,15 +5993,15 @@ part "people.person row-chevron" {
     transform "translateY(-50%)"
 }
 
-part "people.person[hovered]" {
+part "people.person[hovered]" "pick-list.row[variant=choose][hovered]" {
     background "$bg-hover"
 }
 
-part "people.person[focus-visible]" {
+part "people.person[focus-visible]" "pick-list.row[focus-visible]" {
     use "ring-inside"
 }
 
-part "people.person-name" {
+part "people.person-name" "pick-list.name" {
     font-size "$fs-md"
     font-weight "$weight-regular"
     line-height "$lh-body"
@@ -6006,7 +6009,7 @@ part "people.person-name" {
     overflow-wrap anywhere
 }
 
-part "people.person-facts" {
+part "people.person-facts" "pick-list.facts" {
     color "$fg-muted"
     font-size "$fs-base"
     line-height "$lh-body"
@@ -6017,57 +6020,28 @@ part "people.person-facts" {
 
 // The backups and the parts of a release: a long list in a box whose height does not change, so a row that comes in at
 // the top, or a page read at the end, moves nothing outside the box (UX §6.4). The list draws only the rows that are in
-// the box; the box scrolls.
+// the box; the box scrolls. Its look and its rows are those of the list of people (`people`, `people.person`).
 part "pick-list" {
-    display block
     box-sizing border-box
     height "$size-list-box"
-    margin 0
-    padding-block 0
-    padding-inline "$ring-width"
     overflow-y auto
-    use "surface-box"
 }
 
-// A row is as tall as its words need: the name, and under it the facts, each wrapping where the line ends.
+// A row has an edge at its start that stays clear until the row is chosen, so choosing moves nothing. A row that is only
+// read has nothing to press; one to choose from does.
 part "pick-list.row" {
-    use "pick-row"
-    border-bottom "$border-width solid $divider"
-    border-inline-start "$space-1 solid transparent"
-}
-
-// A row of a list that is only read has nothing to press.
-part "pick-list.row[variant=read]" {
     cursor default
+    border-inline-start "$size-edge solid transparent"
 }
 
-part "pick-list.row[hovered]" {
-    background "$bg-hover"
+part "pick-list.row[variant=choose]" {
+    cursor pointer
 }
 
 // The chosen row: tinted, with a line of the accent at its start, so the choice shows without its color.
 part "pick-list.row[selected]" {
     background "$bg-selected"
     border-inline-start-color "$accent"
-}
-
-part "pick-list.row[focus-visible]" {
-    use "ring-inside"
-}
-
-part "pick-list.name" {
-    font-size "$fs-md"
-    font-weight "$weight-regular"
-    line-height "$lh-body"
-    color "$fg"
-    overflow-wrap anywhere
-}
-
-part "pick-list.facts" {
-    color "$fg-muted"
-    font-size "$fs-base"
-    line-height "$lh-body"
-    overflow-wrap anywhere
 }
 
 // ───────────── Roles ─────────────

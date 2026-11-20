@@ -102,13 +102,12 @@ pub async fn list_backups<S: AuthStore>(
         .backup_runs(LISTED_RUNS)
         .await
         .map_err(|error| internal::<S>(&error))?;
-    let viewer = ctx.evaluation_of(&actor, Place::Organization).await?;
     let mut people: Vec<(UserId, PersonRef)> = Vec::new();
     for person in runs.iter().filter_map(|run| run.person) {
         if people.iter().all(|(known, _)| *known != person) {
             let shown = ctx
                 .person_ref(
-                    &viewer,
+                    &access,
                     PeopleKind::Authors,
                     PeopleContext::Ordinary,
                     person,
