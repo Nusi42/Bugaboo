@@ -208,6 +208,14 @@ impl KeepRule {
     }
 }
 
+/// How long a session lives at most, from the hours of `security.session-absolute-hours`: the one
+/// length of the keep rule of sessions (what a changed period would delete) and of the purge that
+/// removes the sessions nobody can use any more, so both cut at the same moment.
+#[must_use]
+pub const fn session_life(absolute_hours: i64) -> Length {
+    Length::hours(absolute_hours)
+}
+
 /// Every kind of data that is deleted after a time, in the order of the page of the rules: first
 /// what Bugaboo deletes by itself, then what an administrator deletes (ADR-0045, decision 1).
 pub const KEEP_KINDS: &[KeepRule] = &[
@@ -224,7 +232,7 @@ pub const KEEP_KINDS: &[KeepRule] = &[
         group: KeepGroup::ByItself,
         period: Period::Setting {
             setting: &SECURITY_SESSION_ABSOLUTE_HOURS,
-            length: |layers| Length::hours(layers.number(&SECURITY_SESSION_ABSOLUTE_HOURS)),
+            length: |layers| session_life(layers.number(&SECURITY_SESSION_ABSOLUTE_HOURS)),
         },
     },
     KeepRule {

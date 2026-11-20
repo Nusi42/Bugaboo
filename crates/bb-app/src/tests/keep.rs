@@ -575,3 +575,26 @@ async fn priv_05_the_table_the_rules_and_the_port_agree_on_how_long_each_kind_is
     assert!(!bb_core::keeping::rule(bb_core::keeping::KeepKind::Backups).fixed_end());
     Ok(())
 }
+
+#[test]
+fn priv_05_the_purge_of_sessions_and_the_count_of_their_period_cut_at_the_same_moment() {
+    use bb_core::keeping::{KeepKind, rule};
+    use bb_core::settings::Layers;
+    use bb_core::settings::SECURITY_SESSION_ABSOLUTE_HOURS;
+    let layers = Layers::default();
+    let hours = layers.number(&SECURITY_SESSION_ABSOLUTE_HOURS);
+    let settings = crate::auth::AuthSettings {
+        session_idle_minutes: 30,
+        session_absolute_hours: hours,
+        sign_up_enabled: false,
+        sign_up_domains: String::new(),
+        access_key_default_days: 30,
+        access_key_longest_days: 365,
+    };
+    // A moment with a fraction of a second, as the clock of a server has.
+    let now: jiff::Timestamp = "2027-01-15T08:00:00.75Z".parse().unwrap();
+    let counted = rule(KeepKind::Sessions)
+        .cutoff(&layers, now, &jiff::tz::TimeZone::UTC)
+        .unwrap();
+    assert_eq!(crate::auth::life_ended_before(&settings, now), counted);
+}

@@ -273,6 +273,8 @@ pub use second_factor::{
     passkey_second_step_options, passkey_sign_in, passkey_sign_in_options, remove_code_app,
     remove_passkey, renew_backup_codes, start_code_app, two_step,
 };
+#[cfg(test)]
+pub(crate) use session::life_ended_before;
 pub(crate) use session::purge as purge_sessions;
 pub(crate) use session::{TakenBack, end_ways_in};
 pub use session::{

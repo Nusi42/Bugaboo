@@ -159,6 +159,17 @@ fn before(now: Timestamp, seconds: i64) -> Timestamp {
     Timestamp::from_second(now.as_second().saturating_sub(seconds)).unwrap_or(now)
 }
 
+/// The moment before which a session has lived its longest life: the cutoff of the keep rule of
+/// sessions (`bb_core::keeping::session_life`), to the fraction of a second.
+pub(crate) fn life_ended_before(
+    settings: &super::store::AuthSettings,
+    now: Timestamp,
+) -> Timestamp {
+    bb_core::keeping::session_life(settings.session_absolute_hours)
+        .before(now, &jiff::tz::TimeZone::UTC)
+        .unwrap_or(now)
+}
+
 /// Removes at most `limit` of the sessions nobody can use any more, inside a change that is
 /// happening anyway. Returns how many went.
 pub(crate) async fn purge<S: AuthStore>(
@@ -170,7 +181,7 @@ pub(crate) async fn purge<S: AuthStore>(
     S::purge_sessions(
         transaction,
         before(now, settings.session_idle_minutes.saturating_mul(60)),
-        before(now, settings.session_absolute_hours.saturating_mul(3600)),
+        life_ended_before(settings, now),
         before(now, super::request_session::PENDING_SECONDS),
         limit,
     )
