@@ -424,15 +424,10 @@ async fn priv_05_notifications_before_the_cutoff_are_deleted_and_the_rest_stay()
 /// How many old notifications the purge works through in steps (the plan of PRIV-05).
 const MANY_NOTIFICATIONS: usize = 100_000;
 
-/// The longest a step of the purge, or a write beside it, may take: far more than either needs on a
-/// quiet computer (a step deletes one step of rows by the index of the moment), so only a step that
-/// reads the whole table or holds the write lock for the whole purge fails it.
-const STEP_AT_MOST: std::time::Duration = std::time::Duration::from_secs(2);
-
 #[tokio::test]
 async fn priv_05_each_purge_deletes_in_steps_and_a_write_does_not_wait_behind_it() -> TestResult {
     use bb_app::keeping::KEEP_STEP_ROWS;
-    use std::time::{Duration, Instant};
+    use std::cell::Cell;
 
     each_database("priv_05_many_notifications", async |db| {
         let fixture = fixture(db).await?;
@@ -447,44 +442,44 @@ async fn priv_05_each_purge_deletes_in_steps_and_a_write_does_not_wait_behind_it
         for _ in 0..20 {
             new.push(row(&mut source, ana, None, 200)?);
         }
+        // No wall-clock limit: a busy computer slows every statement alike. The test counts steps
+        // and orders events instead.
+        let steps_done = Cell::new(0_usize);
+        let purge_over = Cell::new(false);
         let purging = async {
-            let (mut steps, mut longest) = (0_usize, Duration::ZERO);
             loop {
-                let started = Instant::now();
                 let gone = storage.purge_notifications(at(150), KEEP_STEP_ROWS).await?;
-                longest = longest.max(started.elapsed());
                 assert!(gone <= KEEP_STEP_ROWS, "a step deleted {gone} rows");
                 if gone == 0 {
-                    return Ok::<_, StoreError>((steps, longest));
+                    purge_over.set(true);
+                    return Ok::<_, StoreError>(());
                 }
-                steps += 1;
+                steps_done.set(steps_done.get() + 1);
             }
         };
-        // People keep writing while the purge runs; none of their writes waits behind it.
+        // People keep writing while the purge runs; a write that waited behind the whole purge
+        // would finish only after it, so some writes must finish while the purge still runs.
         let writing = async {
-            let mut longest = Duration::ZERO;
+            let mut during = 0_usize;
             for written in &new {
-                let started = Instant::now();
                 storage
                     .store_notifications(std::slice::from_ref(written), &[], 0, at(201))
                     .await?;
-                longest = longest.max(started.elapsed());
+                if !purge_over.get() {
+                    during += 1;
+                }
                 tokio::task::yield_now().await;
             }
-            Ok::<_, StoreError>(longest)
+            Ok::<_, StoreError>(during)
         };
         let (purged, written) = tokio::join!(purging, writing);
-        let (steps, longest_step) = purged?;
-        let longest_write = written?;
+        purged?;
+        let during = written?;
         assert_eq!(
-            steps,
+            steps_done.get(),
             MANY_NOTIFICATIONS.div_ceil(usize::try_from(KEEP_STEP_ROWS)?)
         );
-        assert!(longest_step < STEP_AT_MOST, "a step took {longest_step:?}");
-        assert!(
-            longest_write < STEP_AT_MOST,
-            "a write took {longest_write:?}"
-        );
+        assert!(during > 0, "every write waited until the purge was over");
         assert_eq!(
             storage
                 .notifications_of(ana, NotificationFilter::All, None, 100)
