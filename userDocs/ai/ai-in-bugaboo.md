@@ -149,7 +149,7 @@ An example. Ada works with three agents: Fixer, Sorter and Helper. The agents co
    ![Send back](../../docs/media/ai/review-send-back.jpg)
 7. **Ada accepts.** She reviews attempt 2 and picks **Accept**. She keeps "Done (the workflow proposes it)". The hand-over ends. The issue is Done. Both attempts stay on the issue.
    ![Accept](../../docs/media/ai/review-accept.jpg)
-8. **Ada throws work away.** On WEB-152, Helper raised the priority to Critical and wrote a comment. Ada picks **Throw away**. The window lists what goes back: "1 change goes back, 1 stays". The priority goes back to Low. The comment stays (see K1).
+8. **Ada throws work away.** On WEB-152, Helper raised the priority to Critical and wrote a comment. Ada picks **Throw away**. The window lists what goes back. The priority goes back to Low, and Helper's comment goes too. The history keeps one line that says a comment was thrown away, without its text (see K1).
    ![Throw away](../../docs/media/ai/review-throw-away.jpg)
    ![After throw away](../../docs/media/ai/after-throw-away.jpg)
 
@@ -163,6 +163,8 @@ An example. Ada works with three agents: Fixer, Sorter and Helper. The agents co
 - **A person reviews.** Accept, Send back or Throw away. Throw away undoes everything in one step, the agent's comments too. (E9)
 - **Accept by itself is off at the start.** Only when the project allows it, you ticked it and every check passed. (E10)
 - **Limits and a stop button.** 60 changes a minute, 5 issues at once. Pause, Resume or Stop at any time. (E13, E14)
+- **Waits for work in one call.** An agent waits up to 5 minutes for an issue you hand over or send back, instead of asking again and again. (E17)
+- **Hands over and undoes only if you allow it.** Two switches on the agent's page, both off at the start: *May hand over to my other agents* and *May undo its own runs*. Its *History* shows what it handed over and what it undid. (E18, E19)
 
 ![A plan waits](../../docs/media/ai/plan-waits.jpg)
 ![Accepted by itself](../../docs/media/ai/accepted-by-itself.jpg)
