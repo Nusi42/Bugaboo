@@ -6,7 +6,7 @@ The lead updates this file after every step (builder started, report in, review 
 
 - **Milestone:** M9, privacy, operations and the first release, is planned and decided ([`milestones/M9/`](milestones/M9/README.md)): the maintainer took every recommendation of M9-Q1 to Q21 on 2026-11-18, including three cuts (restore from the command line only; support access, `DIST-03`, moved to M14 as a V1 feature; M4-F61, M4-F63 and M4-F128 to a later operations package). ADR-0044 to ADR-0047 are accepted, ADR-0048 in part. Waves 1 and 2 are merged (WP-02 to WP-09). Next: wave 3.
 - **Done:** M0 to M8 (`m0-done` to `m8-done`; M8 tagged on 2026-11-17). Version 0.5.1 (ADR-0040: 144 of 225 features, the minor number stays 5, so the patch number rises). The M8 review page is published (link outside the repository).
-- **Wave:** M9 waves 0 and 1 are merged (2026-11-19); wave 2 (WP-06 to WP-09) is merged (2026-11-20). The tools for several agents are merged; agents that wait, hand over and undo are building in `win4`. The speed test of ten writers misses its budget since an earlier change (M9-F87). M8 is complete (all of its packages merged).
+- **Wave:** M9 waves 0 and 1 are merged (2026-11-19); wave 2 (WP-06 to WP-09) is merged (2026-11-20). The tools for several agents are merged; agents that wait, hand over and undo are building in `win4`. The speed test of ten writers is within its budget again (M9-F87). M8 is complete (all of its packages merged).
 - **`main`:** fast-forwarded to the last green `WIN1`.
 
 ## Work packages (M9)
