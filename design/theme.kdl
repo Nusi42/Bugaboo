@@ -8876,6 +8876,12 @@ part "files.drop[drop-target]" {
     use "marked"
 }
 
+// The place takes the keyboard focus for a drop with the keyboard (a button of React Aria that only a screen reader
+// reads): the ring is drawn around the whole place, which is what is seen (WCAG 2.4.7).
+part "files.drop[focus-visible]" {
+    use "ring"
+}
+
 part "files.row" {
     display flex
     flex-wrap wrap

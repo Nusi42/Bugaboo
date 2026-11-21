@@ -9035,6 +9035,18 @@ textarea,
   }
 }
 
+[data-part="files.drop"][data-focus-visible] {
+  outline: var(--ring-width) solid var(--accent);
+  outline-offset: var(--ring-offset);
+}
+
+@media (forced-colors: active) {
+  [data-part="files.drop"][data-focus-visible] {
+    outline-style: double;
+    outline-width: calc(var(--ring-width) * 2);
+  }
+}
+
 [data-part="files.row"] {
   display: flex;
   flex-wrap: wrap;
