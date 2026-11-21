@@ -21,6 +21,7 @@ use super::folder::{self, Build, LINUX, PLATFORMS, Platform};
 use crate::generate::release as parts;
 use crate::repo::Repo;
 use crate::steps::{self, Step};
+use crate::wsl;
 
 /// What the first comment of a part of the release notes says besides its name.
 const NOTE: &str = "by `cargo xtask release` from bb-core and Cargo.toml -->";
@@ -169,21 +170,22 @@ fn build_into(root: &Path, platform: Platform, folder: &Path, release: &str) -> 
     Ok(())
 }
 
-/// The step that runs `cargo xtask release --linux --into <folder>` in the default WSL
-/// distribution, from the same folder, with a build folder of its own (`target/wsl`), so the two
-/// systems never share compiled files.
-pub(crate) fn wsl_step(root: &Path, folder_in_wsl: &str) -> Step {
+/// The step that runs `cargo xtask release --linux --into <folder>` in WSL, from the same folder,
+/// with a build folder of its own (`target/wsl`), so the two systems never share compiled files.
+/// It runs in `distribution` when the checkout names one ([`wsl::build_distribution`]), else in
+/// the default distribution.
+pub(crate) fn wsl_step(root: &Path, distribution: Option<&str>, folder_in_wsl: &str) -> Step {
     let command = format!(
         "CARGO_TARGET_DIR=target/wsl cargo xtask release --linux --into '{}'",
         folder_in_wsl.replace('\'', r"'\''")
     );
-    let mut step = Step::new(
-        "build the Linux program in WSL",
-        "wsl.exe",
+    let mut step = Step::new("build the Linux program in WSL", wsl::PROGRAM, &[]);
+    step.args = wsl::arguments(
+        distribution,
         &[
             "--cd",
             &root.to_string_lossy(),
-            "--",
+            "--exec",
             "bash",
             "-lc",
             &command,
@@ -195,10 +197,13 @@ pub(crate) fn wsl_step(root: &Path, folder_in_wsl: &str) -> Step {
     step
 }
 
-/// The path of a Windows folder as WSL sees it.
-fn wsl_path(folder: &Path) -> anyhow::Result<String> {
-    let output = Command::new("wsl.exe")
-        .args(["wslpath", "-a", "-u"])
+/// The path of a Windows folder as the WSL `distribution` sees it (the default one for `None`).
+pub(crate) fn wsl_path(folder: &Path, distribution: Option<&str>) -> anyhow::Result<String> {
+    let output = Command::new(wsl::PROGRAM)
+        .args(wsl::arguments(
+            distribution,
+            &["--exec", "wslpath", "-a", "-u"],
+        ))
         .arg(folder)
         .output()
         .context("could not start wsl.exe: is WSL installed?")?;
@@ -226,7 +231,10 @@ pub(crate) fn assemble(repo: &Repo) -> anyhow::Result<PathBuf> {
         .with_context(|| format!("could not create {}", folder.display()))?;
     // The Linux program first: its build in WSL writes the files the program takes in too, and the
     // Windows build after it leaves them as the Windows program has them.
-    if !steps::run(root, &[wsl_step(root, &wsl_path(&folder)?)])?.passed {
+    let distribution = wsl::build_distribution(root);
+    let distribution = distribution.as_deref();
+    let in_wsl = wsl_path(&folder, distribution)?;
+    if !steps::run(root, &[wsl_step(root, distribution, &in_wsl)])?.passed {
         bail!("the Linux program could not be built in WSL");
     }
     build_into(root, PLATFORMS[0], &folder, &name)?;
@@ -281,14 +289,28 @@ mod tests {
 
     #[test]
     fn sec_18_the_linux_program_is_built_in_wsl_with_a_build_folder_of_its_own() {
-        let step = wsl_step(Path::new("C:/work/bugaboo"), "/mnt/c/work/it's");
+        let step = wsl_step(Path::new("C:/work/bugaboo"), None, "/mnt/c/work/it's");
         assert_eq!(step.program, "wsl.exe");
+        // Without a named distribution the default one builds: no `-d`.
+        assert_eq!(step.args[0], "--cd", "{:?}", step.args);
+        assert!(!step.args.iter().any(|argument| argument == "-d"));
         let command = step.args.last().unwrap();
         assert!(command.starts_with("CARGO_TARGET_DIR=target/wsl cargo xtask release --linux"));
         assert!(
             command.ends_with(r"--into '/mnt/c/work/it'\''s'"),
             "{command}"
         );
+    }
+
+    #[test]
+    fn sec_18_the_linux_program_is_built_in_the_distribution_the_checkout_names() {
+        let root = Path::new("C:/work/bugaboo");
+        let default = wsl_step(root, None, "/mnt/c/work/out");
+        let named = wsl_step(root, Some("builder"), "/mnt/c/work/out");
+        assert_eq!(named.program, "wsl.exe");
+        assert_eq!(named.args[..2], ["-d", "builder"]);
+        // Everything after the choice is the same command.
+        assert_eq!(named.args[2..], default.args[..]);
     }
 
     #[test]

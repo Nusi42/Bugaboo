@@ -67,6 +67,18 @@ and the notes say *test*.
    test build: the folder, every file and the version in every signature are
    named `<version>-test`. When the tag exists, it refuses a day of the
    release that is not the day of the tag's commit.
+
+   The Linux program is built in the computer's default WSL distribution.
+   When that one belongs to something else, name the distribution for
+   Bugaboo's builds in the ignored file `.env.local` of the checkout:
+
+   ```text
+   BUGABOO_WSL_DISTRIBUTION=<name>
+   ```
+
+   Every WSL call of the release then goes to it (`wsl.exe -d <name>`). It
+   needs Rust with the target `x86_64-unknown-linux-musl` and `musl-gcc`.
+   The name belongs to that computer and is never committed.
 6. *Maintainer:* sign it with the release key:
 
    ```text

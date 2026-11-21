@@ -47,6 +47,7 @@ mod tools;
 mod upgrade;
 mod wasm;
 mod web_code;
+mod wsl;
 
 use std::io::Read as _;
 use std::path::PathBuf;
