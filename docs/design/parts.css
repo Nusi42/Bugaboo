@@ -10657,12 +10657,13 @@ textarea,
 }
 
 [data-part="sheet.phone"] [data-part="tabs"] {
-  flex-wrap: nowrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--size-control), 1fr));
   gap: 0;
+  margin-inline: clamp(calc(-1 * var(--space-3)), calc((100% - 7 * var(--size-control)) / 2), 0%);
 }
 
 [data-part="sheet.phone"] [data-part="tab"] {
-  flex: 1 1 0;
   min-width: var(--size-control);
   padding-inline: var(--space-1);
   text-align: center;

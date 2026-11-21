@@ -17762,15 +17762,20 @@ part "sheet.phone" {
     gap "$space-4"
 }
 
-// The seven days are one row that fits the phone: each tab has the weekday over the number of the day.
+// The seven days are one row that fits the phone: each tab has the weekday over the number of the day, in columns of
+// one width. Where seven fingers are a little wider than the card's room (a phone of 360 px) the row reaches into the
+// padding of the card of the timesheet (`$space-3`), as far as that padding goes, so the seven still stand in one row. In a window narrower than that
+// (320 px, or a computer zoomed to 400 %) the last days go to a second row rather than out of the page (WCAG 1.4.10),
+// in the same columns as the row above.
 part "sheet.phone tabs" {
-    flex-wrap nowrap
+    display grid
+    grid-template-columns "repeat(auto-fit, minmax($size-control, 1fr))"
     gap 0
+    margin-inline "clamp(calc(-1 * $space-3), calc((100% - 7 * $size-control) / 2), 0%)"
 }
 
-// Seven tabs of a finger's width fit the narrowest phone side by side, with no gap between them (UX-02).
+// Seven tabs of a finger's width fit the narrowest phone (360 px) side by side, with no gap between them (UX-02).
 part "sheet.phone tab" {
-    flex "1 1 0"
     min-width "$size-control"
     padding-inline "$space-1"
     text-align center
