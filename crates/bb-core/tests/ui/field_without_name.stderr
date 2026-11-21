@@ -1,0 +1,41 @@
+error[E0080]: evaluation panicked: a message made from a word is not in messages/en.json; add it and run `cargo xtask gen messages`
+ --> tests/ui/field_without_name.rs:7:10
+  |
+7 | #[derive(Entity)]
+  |          ^^^^^^ evaluation of `<Draft as bb_core::personal::Entity>::MARKS::KEY` failed inside this call
+  |
+note: inside `MessageKey::__derived`
+ --> $RUST/core/src/panic.rs
+  |
+  |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: src/message/mod.rs
+  |
+  | /         assert!(
+  | |             in_catalog(key),
+  | |             "a message made from a word is not in messages/en.json; add it and run `cargo xtask gen messages`"
+  | |         );
+  | |_________- in this macro invocation
+
+note: erroneous constant encountered
+ --> tests/ui/field_without_name.rs:7:10
+  |
+7 | #[derive(Entity)]
+  |          ^^^^^^
+  |
+  = note: this note originates in the macro `::bb_core::derived_key` which comes from the expansion of the derive macro `Entity` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: erroneous constant encountered
+ --> tests/ui/field_without_name.rs:7:10
+  |
+7 | #[derive(Entity)]
+  |          ^^^^^^
+  |
+  = note: this note originates in the derive macro `Entity` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: erroneous constant encountered
+  --> tests/ui/field_without_name.rs:17:13
+   |
+17 |     let _ = <Draft as Entity>::MARKS;
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^

@@ -53,7 +53,7 @@ fn holiday_keys() -> Vec<Made> {
 
 /// The messages of the personal-data marks and links that *Download my data* writes: the purpose
 /// of each category, the name of each legal basis, what the person is to a row and the plain name
-/// of each kind of record that names a person.
+/// of each kind of record that names a person and the title of each of its columns.
 fn privacy_keys() -> Vec<Made> {
     let purposes = Category::ALL.iter().map(|category| Made {
         key: category.purpose(),
@@ -73,7 +73,24 @@ fn privacy_keys() -> Vec<Made> {
             word: format!("the kind of record `{}`", marks.name()),
         })
     });
-    purposes.chain(bases).chain(links).chain(kinds).collect()
+    let columns = bb_core::entities::ALL.iter().flat_map(|marks| {
+        marks.fields().iter().filter_map(|field| {
+            field.title().map(|key| Made {
+                key,
+                word: format!(
+                    "the column `{}` of the kind of record `{}`",
+                    field.name(),
+                    marks.name()
+                ),
+            })
+        })
+    });
+    purposes
+        .chain(bases)
+        .chain(links)
+        .chain(kinds)
+        .chain(columns)
+        .collect()
 }
 
 /// The messages of the plan of the timeline: the sentence of each kind of warning, the three sentences

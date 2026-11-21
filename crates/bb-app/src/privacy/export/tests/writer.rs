@@ -120,6 +120,22 @@ fn priv_03_each_kind_is_named_in_plain_words_on_its_page_the_first_page_and_the_
 }
 
 #[test]
+fn m9_f91_each_column_is_headed_by_its_plain_title_not_by_the_code_or_its_doc_comment() {
+    let file = written();
+    let page = entry(&file, "comment.html");
+    for header in ["Written by", "Text of the comment", "Written on"] {
+        assert!(page.contains(&format!("<th>{header}</th>")), "{page}");
+    }
+    for code in ["<th>author</th>", "<th>text</th>", "<th>created_at</th>"] {
+        assert!(!page.contains(code), "{page}");
+    }
+    assert!(!page.contains("in Markdown"), "a doc comment in a header");
+    let readme = entry(&file, "README.txt");
+    assert!(readme.contains("    author: Written by"), "{readme}");
+    assert!(readme.contains("    created_at: Written on"), "{readme}");
+}
+
+#[test]
 fn priv_03_the_pages_hold_no_script() {
     let file = written();
     for (name, text) in file.iter().filter(|(name, _)| {
@@ -180,7 +196,7 @@ fn priv_03_the_readme_gives_purpose_basis_keep_period_and_recipients_for_every_k
         1,
         "only the people of the organization"
     );
-    assert!(readme.contains("    text: The text, in Markdown."));
+    assert!(readme.contains("    text: Text of the comment"));
     assert!(
         kept_of(RecordKind::DataExport.code()).starts_with("7 "),
         "the files of exports are kept 7 days"
@@ -206,10 +222,7 @@ fn priv_03_the_readme_names_every_field_any_row_of_a_kind_holds() {
         .unwrap()
         .read_to_string(&mut readme)
         .unwrap();
-    assert!(
-        readme.contains("    text: The text, in Markdown."),
-        "{readme}"
-    );
+    assert!(readme.contains("    text: Text of the comment"), "{readme}");
 }
 
 #[test]

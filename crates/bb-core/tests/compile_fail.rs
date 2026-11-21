@@ -56,6 +56,7 @@ fn priv_02_unmarked_or_wrongly_marked_fields_do_not_compile_and_links_are_writte
     cases.pass("tests/ui/linked.rs");
     cases.compile_fail("tests/ui/unmarked_field.rs");
     cases.compile_fail("tests/ui/kind_without_name.rs");
+    cases.compile_fail("tests/ui/field_without_name.rs");
     cases.compile_fail("tests/ui/two_marks.rs");
     cases.compile_fail("tests/ui/kind_twice.rs");
     cases.compile_fail("tests/ui/missing_basis.rs");

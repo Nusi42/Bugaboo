@@ -155,6 +155,7 @@ pub struct FieldMark {
     by_kind: &'static [KindMark],
     moment: bool,
     doc: &'static str,
+    title: Option<MessageKey>,
 }
 
 impl FieldMark {
@@ -167,6 +168,7 @@ impl FieldMark {
             by_kind: &[],
             moment: false,
             doc: "",
+            title: None,
         }
     }
 
@@ -179,6 +181,7 @@ impl FieldMark {
             by_kind: &[],
             moment: false,
             doc: "",
+            title: None,
         }
     }
 
@@ -203,6 +206,25 @@ impl FieldMark {
     #[must_use]
     pub const fn with_doc(self, doc: &'static str) -> Self {
         Self { doc, ..self }
+    }
+
+    /// The same field with the plain title of its column in a data file. Written by
+    /// `#[derive(Entity)]` for every field of an entity that names a person, as the message
+    /// `personal-field.<entity>.<field>`, so such a field without that message does not compile.
+    #[doc(hidden)]
+    #[must_use]
+    pub const fn with_title(self, title: MessageKey) -> Self {
+        Self {
+            title: Some(title),
+            ..self
+        }
+    }
+
+    /// How a person names the field (*Made on*, *Person who holds the role*), the header of its
+    /// column in *Download my data*; none for a field of a kind of record that neither shows.
+    #[must_use]
+    pub const fn title(&self) -> Option<MessageKey> {
+        self.title
     }
 
     /// Whether the field holds a moment.

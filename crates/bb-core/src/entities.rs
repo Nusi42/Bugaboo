@@ -185,4 +185,35 @@ mod tests {
             assert!(seen.insert(title.clone()), "{title} names two kinds");
         }
     }
+
+    #[test]
+    fn priv_03_every_field_of_a_kind_that_names_a_person_has_a_plain_title_of_its_own() {
+        for entity in ALL {
+            let shown = entity.title().is_some();
+            let mut seen = std::collections::HashSet::new();
+            for field in entity.fields() {
+                let title = field
+                    .title()
+                    .map(|key| crate::message::Message::from(key).render());
+                // Only a kind that a list shows has column titles; the others have none.
+                assert_eq!(title.is_some(), shown, "{}.{}", entity.name(), field.name());
+                let Some(title) = title else { continue };
+                // A column header: short, no sentence, no name from the code.
+                assert!(
+                    !title.is_empty()
+                        && !title.ends_with('.')
+                        && !title.contains('_')
+                        && title.split(' ').count() <= 8,
+                    "{}.{}: {title}",
+                    entity.name(),
+                    field.name()
+                );
+                assert!(
+                    seen.insert(title.clone()),
+                    "{}: {title} titles two columns",
+                    entity.name()
+                );
+            }
+        }
+    }
 }

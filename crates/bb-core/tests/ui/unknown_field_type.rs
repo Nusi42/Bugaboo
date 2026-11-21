@@ -3,10 +3,10 @@ use bb_core::id::{EntityId, UserId};
 use bb_core::personal::Entity;
 
 #[derive(Entity)]
-pub struct Comment {
+pub struct StoredFieldValue {
     #[personal(category = "identity", basis = "contract")]
     #[person_for(field_type = "colleague", key = "field", link = "subject")]
-    pub value: Option<EntityId>,
+    pub value_ref: Option<EntityId>,
 }
 
 fn main() {

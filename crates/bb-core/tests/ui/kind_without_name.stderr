@@ -27,6 +27,14 @@ note: erroneous constant encountered
   = note: this note originates in the macro `::bb_core::derived_key` which comes from the expansion of the derive macro `Entity` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 note: erroneous constant encountered
+ --> tests/ui/kind_without_name.rs:6:10
+  |
+6 | #[derive(Entity)]
+  |          ^^^^^^
+  |
+  = note: this note originates in the derive macro `Entity` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: erroneous constant encountered
   --> tests/ui/kind_without_name.rs:14:13
    |
 14 |     let _ = <Note as Entity>::MARKS;

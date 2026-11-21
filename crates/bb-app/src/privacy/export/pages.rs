@@ -21,12 +21,6 @@ pub(super) fn words(key: MessageKey) -> String {
     Message::from(key).render()
 }
 
-/// The first sentence of a doc comment, or `fallback` when there is none.
-pub(super) fn first_sentence<'a>(doc: &'a str, fallback: &'a str) -> &'a str {
-    let line = doc.lines().next().unwrap_or("").trim();
-    if line.is_empty() { fallback } else { line }
-}
-
 /// How a kind of record is named, in plain words: its message `personal-kind.…`. The walk finds
 /// only kinds that name a person, and each of them has one (`#[derive(Entity)]`), so the name of
 /// the struct is only the answer for a kind no list shows.
@@ -34,9 +28,11 @@ pub(crate) fn title_of(marks: &EntityMarks) -> String {
     marks.title().map_or_else(|| marks.name().to_owned(), words)
 }
 
-/// How a field is named: the first sentence of its doc comment.
-pub(super) fn label_of(field: &FieldMark) -> &'static str {
-    first_sentence(field.doc(), field.name())
+/// How a field is named, in plain words: its message `personal-field.<entity>.<field>`, the header of its column.
+/// The walk finds only fields of kinds that name a person, and each of them has one
+/// (`#[derive(Entity)]`), so the name in the code is only the answer for a field no list shows.
+pub(super) fn label_of(field: &FieldMark) -> String {
+    field.title().map_or_else(|| field.name().to_owned(), words)
 }
 
 /// The style sheet of every page: the colour tokens of [`PAGE_THEME`] as variables, and the few
@@ -129,8 +125,8 @@ pub(super) fn kind_page(kind: &ShapedKind, region: &Region) -> String {
             .fields()
             .iter()
             .find(|mark| mark.name() == *field)
-            .map_or(*field, label_of);
-        let _ = write!(body, "<th>{}</th>", escape_text(label));
+            .map_or_else(|| (*field).to_owned(), label_of);
+        let _ = write!(body, "<th>{}</th>", escape_text(&label));
     }
     body.push_str("</tr>");
     for row in &kind.rows {

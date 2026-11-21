@@ -37,6 +37,7 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
     let name = entity.to_string();
     let entity_doc = doc_of(&input.attrs);
     let mut marks = Vec::new();
+    let mut field_names = Vec::new();
     let mut links = Vec::new();
     let mut assertions = Vec::new();
     let mut person_assertions = Vec::new();
@@ -53,6 +54,13 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
         match read {
             Ok(((mark, assertion), linked)) => {
                 marks.push(mark);
+                field_names.push(
+                    field
+                        .ident
+                        .as_ref()
+                        .map(ToString::to_string)
+                        .unwrap_or_default(),
+                );
                 assertions.extend(assertion);
                 links.extend(linked.links);
                 person_assertions.extend(linked.assertions);
@@ -67,13 +75,24 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
         return Err(error);
     }
     // A kind of record that names a person is shown to people (*Download my data*, *Remove a
-    // person*) by a plain name of its own; `derived_key!` stops the build when it is missing.
+    // person*) by a plain name of its own, and each of its fields by a plain title (the header of
+    // its column); `derived_key!` stops the build when one is missing.
     let title = if links.is_empty() {
         quote! {}
     } else {
         let word = kebab(&name);
         quote! { .with_title(::bb_core::derived_key!("personal-kind.", #word)) }
     };
+    if !links.is_empty() {
+        let prefix = format!("personal-field.{}.", kebab(&name));
+        marks = marks
+            .into_iter()
+            .zip(&field_names)
+            .map(|(mark, field)| {
+                quote! { #mark .with_title(::bb_core::derived_key!(#prefix, #field)) }
+            })
+            .collect();
+    }
     Ok(quote! {
         impl ::bb_core::personal::Entity for #entity {
             const MARKS: ::bb_core::personal::EntityMarks =
