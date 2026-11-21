@@ -1,5 +1,7 @@
-//! `bugaboo service install` and `uninstall` (OPS-03, OPS-04): Bugaboo as a service that starts
-//! with the computer and runs as an account of its own.
+//! `bugaboo service install`, `uninstall` and `status` (OPS-03, OPS-04): Bugaboo as a service
+//! that starts with the computer and runs as an account of its own. Both service managers start
+//! it again after a failure, but not after a start that stopped at an upgrade
+//! ([`bb_core::service::UPGRADE_STOPPED`]): that start would stop the same way.
 //!
 //! - Linux: a systemd unit and the user `bugaboo` (`systemd.rs`).
 //! - Windows: a Windows service that runs as its own virtual account `NT SERVICE\Bugaboo`, which
@@ -12,13 +14,13 @@
 mod systemd;
 #[cfg(windows)]
 mod windows;
+#[cfg(any(windows, test))]
+mod windows_rights;
 
 use std::path::{Path, PathBuf};
 
 use anyhow::anyhow;
-use bb_core::message;
-#[cfg(not(windows))]
-use bb_core::message::Message;
+use bb_core::message::{self, Message};
 
 use super::{ConfigArgs, InstallArgs, load_settings, program_folder};
 use crate::config::{DEFAULT_FILE, Settings};
@@ -29,7 +31,7 @@ use crate::output;
 
 /// The name of the service, as the system lists it.
 #[cfg(windows)]
-pub(super) const NAME: &str = "Bugaboo";
+pub(super) const NAME: &str = bb_core::service::WINDOWS_NAME;
 
 /// The account that runs the service: the one that owns the data folder of a service install.
 pub(super) fn account_name() -> String {
@@ -112,6 +114,101 @@ pub(super) fn uninstall() -> anyhow::Result<()> {
     }
 }
 
+/// How a service is, as `bugaboo service status` names it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum State {
+    NotInstalled,
+    Starting,
+    Running,
+    /// Stopped after a failure; systemd starts it again after the delay, as often as it fails.
+    #[cfg(any(unix, test))]
+    Restarting,
+    /// Ended without saying that it stopped (a crash). The Windows service manager starts it again
+    /// after the delay, but only [`bb_core::service::RESTARTS`] times a day, so it may stay
+    /// stopped.
+    #[cfg(any(windows, test))]
+    EndedUnexpectedly,
+    Stopping,
+    /// Stopped by a person or with the computer, with no failure.
+    Stopped,
+    /// Stopped at an upgrade, and not started again by the service manager.
+    StoppedAtUpgrade,
+    /// Stopped with this exit code.
+    Failed(u32),
+    /// Ended by this signal, which nobody asked for (Linux).
+    #[cfg(any(unix, test))]
+    Killed(u32),
+}
+
+impl State {
+    /// The state of a service that is not running and ended with `code`: one place for both
+    /// service managers.
+    pub(super) fn ended_with(code: u32) -> Self {
+        match code {
+            0 => Self::Stopped,
+            code if code == u32::from(bb_core::service::UPGRADE_STOPPED) => Self::StoppedAtUpgrade,
+            code => Self::Failed(code),
+        }
+    }
+
+    /// The sentence that names the state of the service `name`.
+    pub(super) fn sentence(self, name: &str) -> Message {
+        match self {
+            Self::NotInstalled => message::service_not_installed(name),
+            Self::Starting => message::service_state_starting(name),
+            Self::Running => message::service_state_running(name),
+            #[cfg(any(unix, test))]
+            Self::Restarting => message::service_state_restarting(name),
+            #[cfg(any(windows, test))]
+            Self::EndedUnexpectedly => {
+                message::service_state_ended_unexpectedly(message::ServiceStateEndedUnexpectedly {
+                    name: &name,
+                    restarts: &bb_core::service::RESTARTS,
+                })
+            }
+            Self::Stopping => message::service_state_stopping(name),
+            Self::Stopped => message::service_state_stopped(name),
+            Self::StoppedAtUpgrade => message::service_state_upgrade_stopped(name),
+            Self::Failed(code) => message::service_state_failed(message::ServiceStateFailed {
+                code: &code,
+                name: &name,
+            }),
+            #[cfg(any(unix, test))]
+            Self::Killed(signal) => message::service_state_killed(message::ServiceStateKilled {
+                name: &name,
+                signal: &signal,
+            }),
+        }
+    }
+}
+
+/// `bugaboo service status`: says how the service is. It needs no administrator rights.
+pub(super) fn status() -> anyhow::Result<()> {
+    #[cfg(windows)]
+    let (state, name) = (windows::state()?, NAME);
+    #[cfg(unix)]
+    let (state, name) = (systemd_state()?, systemd::UNIT);
+    #[cfg(not(any(windows, unix)))]
+    return unsupported();
+    #[cfg(any(windows, unix))]
+    {
+        output::line(&state.sentence(name).render());
+        Ok(())
+    }
+}
+
+/// The state of the unit, as `systemctl show` names it.
+#[cfg(unix)]
+fn systemd_state() -> anyhow::Result<State> {
+    let (program, arguments) = systemd::show_command();
+    let output = std::process::Command::new(program)
+        .args(arguments)
+        .output()
+        .map_err(|error| refused(&format!("{program}: {error}")))?;
+    systemd::state_of(&String::from_utf8_lossy(&output.stdout))
+        .ok_or_else(|| anyhow!(message::service_state_unknown(systemd::UNIT).render()))
+}
+
 /// `bugaboo service run`: started by the Windows service manager and never by a person.
 pub(super) fn run(args: &ConfigArgs) -> anyhow::Result<()> {
     #[cfg(windows)]
@@ -161,6 +258,7 @@ fn systemd_install(found: &Found, own_files: OwnFiles) -> anyhow::Result<()> {
     check_for_service(&data_dir, own_files)?;
     systemd::check_settings_file(&found.config, &data_dir)
         .map_err(|problem| anyhow!(problem.render()))?;
+    check_service_sees(&[&found.program, &found.config, &data_dir])?;
     let known_files = DataFolder::existing(&data_dir)
         .map(|data| data.known_files())
         .unwrap_or_default();
@@ -183,6 +281,28 @@ fn systemd_install(found: &Found, own_files: OwnFiles) -> anyhow::Result<()> {
     }
     output_installed(found);
     Ok(())
+}
+
+/// Refuses when the unit's hardening would hide the program, the settings file or the data
+/// folder from the service (a place in a home folder): the service could never start, and
+/// systemd would try again and again. systemd itself is asked, with the unit's own line.
+#[cfg(unix)]
+fn check_service_sees(paths: &[&Path]) -> anyhow::Result<()> {
+    let test = crate::system::program_on_path(systemd::TEST_PROGRAM).ok_or_else(|| {
+        anyhow!(message::service_program_not_found(systemd::TEST_PROGRAM).render())
+    })?;
+    let hidden = systemd::first_hidden(paths, |path| {
+        let (program, arguments) = systemd::sees_command(&test, path);
+        std::process::Command::new(program)
+            .args(arguments)
+            .output()
+            .is_ok_and(|output| output.status.success())
+    });
+    hidden.map_or(Ok(()), |path| {
+        Err(anyhow!(
+            message::service_home_hidden(path.display()).render()
+        ))
+    })
 }
 
 #[cfg(unix)]
@@ -249,4 +369,54 @@ fn run_command(program: &str, arguments: &[String]) -> anyhow::Result<()> {
 /// "The system refused", with what the system said.
 fn refused(reason: &str) -> anyhow::Error {
     anyhow!(message::service_failed(reason).render())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn ops_04_service_status_names_the_state() {
+        let states = [
+            State::NotInstalled,
+            State::Starting,
+            State::Running,
+            State::Restarting,
+            State::Stopping,
+            State::Stopped,
+            State::StoppedAtUpgrade,
+            State::Failed(3),
+            State::EndedUnexpectedly,
+            State::Killed(9),
+        ];
+        let sentences: Vec<String> = states
+            .iter()
+            .map(|state| state.sentence("Bugaboo").render())
+            .collect();
+        for (state, sentence) in states.iter().zip(&sentences) {
+            assert!(sentence.contains("Bugaboo"), "{state:?}: {sentence}");
+        }
+        // Every state has its own words.
+        let mut distinct = sentences.clone();
+        distinct.sort();
+        distinct.dedup();
+        assert_eq!(distinct.len(), sentences.len(), "{sentences:?}");
+        assert!(sentences[2].contains("is running"), "{}", sentences[2]);
+        assert!(sentences[6].contains("upgrade"), "{}", sentences[6]);
+        assert!(sentences[7].contains('3'), "{}", sentences[7]);
+        // A crash on Windows says how often Windows starts it again; a signal is named.
+        let restarts = bb_core::service::RESTARTS.to_string();
+        assert!(sentences[8].contains(&restarts), "{}", sentences[8]);
+        assert!(sentences[9].contains('9'), "{}", sentences[9]);
+    }
+
+    #[test]
+    fn ops_04_the_exit_code_of_a_stopped_service_names_its_state() {
+        assert_eq!(State::ended_with(0), State::Stopped);
+        assert_eq!(
+            State::ended_with(u32::from(bb_core::service::UPGRADE_STOPPED)),
+            State::StoppedAtUpgrade
+        );
+        assert_eq!(State::ended_with(1), State::Failed(1));
+    }
 }

@@ -1753,6 +1753,9 @@ pub const CLI_ABOUT_SERVICE: MessageKey = MessageKey::new("cli.about.service");
 /// The message `cli.about.service-install`.
 pub const CLI_ABOUT_SERVICE_INSTALL: MessageKey = MessageKey::new("cli.about.service-install");
 
+/// The message `cli.about.service-status`.
+pub const CLI_ABOUT_SERVICE_STATUS: MessageKey = MessageKey::new("cli.about.service-status");
+
 /// The message `cli.about.service-uninstall`.
 pub const CLI_ABOUT_SERVICE_UNINSTALL: MessageKey = MessageKey::new("cli.about.service-uninstall");
 
@@ -22402,6 +22405,27 @@ pub fn server_warning(message: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `service.account-cannot-read`, by name.
+#[derive(Clone, Copy)]
+pub struct ServiceAccountCannotRead<'a> {
+    /// The value of `{account}`.
+    pub account: &'a dyn std::fmt::Display,
+    /// The value of `{path}`.
+    pub path: &'a dyn std::fmt::Display,
+}
+
+/// The message `service.account-cannot-read`.
+#[must_use]
+pub fn service_account_cannot_read(values: ServiceAccountCannotRead<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.account-cannot-read"),
+        vec![
+            ("account", Value::Text(values.account.to_string())),
+            ("path", Value::Text(values.path.to_string())),
+        ],
+    )
+}
+
 /// The message `service.answer-not-trusted`.
 #[must_use]
 pub fn service_answer_not_trusted(path: impl std::fmt::Display) -> Message {
@@ -22447,6 +22471,15 @@ pub fn service_failed(reason: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("service.failed"),
         vec![("reason", Value::Text(reason.to_string()))],
+    )
+}
+
+/// The message `service.home-hidden`.
+#[must_use]
+pub fn service_home_hidden(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.home-hidden"),
+        vec![("path", Value::Text(path.to_string()))],
     )
 }
 
@@ -22549,6 +22582,132 @@ pub fn service_setup_code(path: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("service.setup-code"),
         vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The values of the message `service.state-ended-unexpectedly`, by name.
+#[derive(Clone, Copy)]
+pub struct ServiceStateEndedUnexpectedly<'a> {
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+    /// The value of `{restarts}`.
+    pub restarts: &'a dyn std::fmt::Display,
+}
+
+/// The message `service.state-ended-unexpectedly`.
+#[must_use]
+pub fn service_state_ended_unexpectedly(values: ServiceStateEndedUnexpectedly<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.state-ended-unexpectedly"),
+        vec![
+            ("name", Value::Text(values.name.to_string())),
+            ("restarts", Value::Text(values.restarts.to_string())),
+        ],
+    )
+}
+
+/// The values of the message `service.state-failed`, by name.
+#[derive(Clone, Copy)]
+pub struct ServiceStateFailed<'a> {
+    /// The value of `{code}`.
+    pub code: &'a dyn std::fmt::Display,
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+}
+
+/// The message `service.state-failed`.
+#[must_use]
+pub fn service_state_failed(values: ServiceStateFailed<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.state-failed"),
+        vec![
+            ("code", Value::Text(values.code.to_string())),
+            ("name", Value::Text(values.name.to_string())),
+        ],
+    )
+}
+
+/// The values of the message `service.state-killed`, by name.
+#[derive(Clone, Copy)]
+pub struct ServiceStateKilled<'a> {
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+    /// The value of `{signal}`.
+    pub signal: &'a dyn std::fmt::Display,
+}
+
+/// The message `service.state-killed`.
+#[must_use]
+pub fn service_state_killed(values: ServiceStateKilled<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.state-killed"),
+        vec![
+            ("name", Value::Text(values.name.to_string())),
+            ("signal", Value::Text(values.signal.to_string())),
+        ],
+    )
+}
+
+/// The message `service.state-restarting`.
+#[must_use]
+pub fn service_state_restarting(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.state-restarting"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `service.state-running`.
+#[must_use]
+pub fn service_state_running(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.state-running"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `service.state-starting`.
+#[must_use]
+pub fn service_state_starting(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.state-starting"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `service.state-stopped`.
+#[must_use]
+pub fn service_state_stopped(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.state-stopped"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `service.state-stopping`.
+#[must_use]
+pub fn service_state_stopping(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.state-stopping"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `service.state-unknown`.
+#[must_use]
+pub fn service_state_unknown(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.state-unknown"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `service.state-upgrade-stopped`.
+#[must_use]
+pub fn service_state_upgrade_stopped(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.state-upgrade-stopped"),
+        vec![("name", Value::Text(name.to_string()))],
     )
 }
 

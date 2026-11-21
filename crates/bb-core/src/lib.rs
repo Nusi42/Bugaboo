@@ -10,6 +10,7 @@ pub mod words;
 
 pub mod access;
 pub mod access_key;
+pub mod access_list;
 pub mod agent;
 pub mod agent_records;
 pub mod agent_request;
@@ -68,6 +69,7 @@ pub mod run;
 pub mod saved_search;
 pub mod secret;
 pub mod security_log;
+pub mod service;
 pub mod settings;
 pub mod sign_in;
 pub mod sign_up_invitation;

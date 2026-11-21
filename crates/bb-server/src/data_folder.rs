@@ -26,7 +26,7 @@
 use std::fmt;
 use std::path::{Path, PathBuf};
 
-mod rights;
+pub(crate) mod rights;
 
 use bb_core::message;
 
@@ -479,24 +479,10 @@ fn file_grants(sid: &str) -> Vec<String> {
     vec![format!("*{sid}:F"), format!("*{ADMINISTRATORS_SID}:R")]
 }
 
-/// The two runs of `icacls` that keep only `grants` on a path: the first removes every entry of
-/// the access list (`/reset`), the second removes inherited rights and grants `grants`. Bugaboo
-/// runs them itself (`restrict_to`), and the warning about an open part of a data folder writes
-/// them out for a person to run.
-#[cfg(windows)]
-fn restrict_arguments(grants: &[String]) -> [Vec<String>; 2] {
-    let mut grant = vec!["/inheritance:r".to_owned()];
-    for entry in grants {
-        grant.push("/grant:r".to_owned());
-        grant.push(entry.clone());
-    }
-    [vec!["/reset".to_owned()], grant]
-}
-
 /// Windows: removes every entry of the access list and inherited rights, then grants `grants`.
 #[cfg(windows)]
 fn restrict_to(path: &Path, grants: &[String]) -> Result<(), String> {
-    for arguments in restrict_arguments(grants) {
+    for arguments in bb_core::access_list::restrict_arguments(grants) {
         let output =
             std::process::Command::new(system_tool("icacls.exe").map_err(|said| said.render())?)
                 .arg(path)
@@ -728,20 +714,11 @@ pub(crate) fn open_to_others(_folder: &Path) -> bool {
 fn current_sid() -> Result<String, String> {
     let output =
         std::process::Command::new(system_tool("whoami.exe").map_err(|said| said.render())?)
-            .args(["/user", "/fo", "csv", "/nh"])
+            .args(bb_core::access_list::WHOAMI_ARGUMENTS)
             .output()
             .map_err(|error| error.to_string())?;
-    parse_sid(&String::from_utf8_lossy(&output.stdout))
+    bb_core::access_list::sid_in_whoami(&String::from_utf8_lossy(&output.stdout))
         .ok_or_else(|| message::Message::from(message::DATA_FOLDER_ACCOUNT_UNKNOWN).render())
-}
-
-/// The SID in the output `"DOMAIN\name","S-1-5-21-…"` of `whoami /user /fo csv /nh`.
-#[cfg(windows)]
-fn parse_sid(output: &str) -> Option<String> {
-    let last = output.trim().rsplit(',').next()?;
-    let sid = last.trim().trim_matches('"');
-    (sid.starts_with("S-1-") && sid.chars().all(|c| c.is_ascii_alphanumeric() || c == '-'))
-        .then(|| sid.to_owned())
 }
 
 #[cfg(test)]

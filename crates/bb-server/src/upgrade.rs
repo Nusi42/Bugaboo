@@ -18,11 +18,7 @@ use crate::data_folder::{DataFolder, Existing, write_private};
 use crate::output;
 use crate::wiring::database_failed;
 
-/// The exit code of a start that stopped at an upgrade: a database a newer program changed, one
-/// with a migration this program does not have or has in another form, a backup before an
-/// upgrade that failed, or a migration that failed and was undone by putting the backup back.
-/// Starting again would stop the same way, so a service must not restart on it.
-pub(crate) const UPGRADE_STOPPED: u8 = 65;
+pub(crate) use bb_core::service::UPGRADE_STOPPED;
 
 /// A start that stopped at an upgrade, with the words that say what happened and what to do.
 #[derive(Debug)]
@@ -319,6 +315,12 @@ fn stop(words: String) -> anyhow::Error {
         "the start stopped at the upgrade"
     );
     UpgradeStopped(words).into()
+}
+
+/// A start that stopped at an upgrade, for the tests of the code that reads its exit code.
+#[cfg(all(test, windows))]
+pub(crate) fn stopped_for_tests() -> anyhow::Error {
+    UpgradeStopped("stopped".to_owned()).into()
 }
 
 #[cfg(test)]

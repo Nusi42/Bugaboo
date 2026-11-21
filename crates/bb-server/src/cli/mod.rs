@@ -111,6 +111,8 @@ enum ServiceCommand {
     Install(InstallArgs),
     #[command(about = text(message::CLI_ABOUT_SERVICE_UNINSTALL))]
     Uninstall,
+    #[command(about = text(message::CLI_ABOUT_SERVICE_STATUS))]
+    Status,
     /// Started by the Windows service manager, never by a person.
     #[command(name = "run", hide = true)]
     Run(ConfigArgs),
@@ -255,6 +257,7 @@ async fn run(cli: Cli) -> ExitCode {
         Command::Service { command } => match command {
             ServiceCommand::Install(args) => service::install(&args),
             ServiceCommand::Uninstall => service::uninstall(),
+            ServiceCommand::Status => service::status(),
             ServiceCommand::Run(args) => service::run(&args),
         },
         Command::SecurityLog {
@@ -398,6 +401,7 @@ mod tests {
             "bugaboo service install --take-over-data-folder",
             "bugaboo service install --config bugaboo.toml --take-over-data-folder",
             "bugaboo service uninstall",
+            "bugaboo service status",
             "bugaboo security-log verify",
             "bugaboo security-log verify --data-dir data",
             "bugaboo rotate-key",

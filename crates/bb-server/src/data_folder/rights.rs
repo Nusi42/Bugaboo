@@ -139,7 +139,7 @@ fn windows_open_sentence(part: &str, path: &Path, sid: Option<&str>) -> Message 
         super::file_grants(sid)
     };
     let quoted = |word: &str| format!("\"{word}\"");
-    let command = super::restrict_arguments(&grants)
+    let command = bb_core::access_list::restrict_arguments(&grants)
         .map(|arguments| {
             std::iter::once(format!("icacls {}", quoted(&path.display().to_string())))
                 .chain(arguments.iter().map(|argument| {
@@ -187,7 +187,7 @@ fn file_access(path: &Path) -> Access {
 /// The access list of `path` as the text `icacls /save` writes (SDDL), found by asking the system
 /// tool, which writes it to a file in a folder of its own that goes away afterwards.
 #[cfg(windows)]
-fn access_list(path: &Path) -> Option<String> {
+pub(crate) fn access_list(path: &Path) -> Option<String> {
     let folder = tempfile::tempdir().ok()?;
     let saved = folder.path().join("access-list.txt");
     let output = std::process::Command::new(crate::system::system_tool("icacls.exe").ok()?)
@@ -203,12 +203,7 @@ fn access_list(path: &Path) -> Option<String> {
     if !output.status.success() {
         return None;
     }
-    // The tool writes UTF-16 with a byte order mark.
-    let units: Vec<u16> = bytes?
-        .chunks_exact(2)
-        .map(|pair| u16::from_le_bytes([pair[0], pair[1]]))
-        .collect();
-    Some(String::from_utf16_lossy(&units))
+    Some(bb_core::access_list::saved_text(&bytes?))
 }
 
 /// Anything else: nothing is known about access lists.
@@ -217,59 +212,11 @@ fn file_access(_path: &Path) -> Access {
     Access::Unknown
 }
 
-/// The accounts that stand for many people: everybody, all users of the computer, all accounts
-/// that signed in, anybody who comes over the network or sits at the computer, guests. Given as
-/// the short names SDDL uses and as SIDs. Domain Users and Domain Guests (`S-1-5-21-…-513` and
-/// `-514`) are recognised by their ending.
-#[cfg(any(windows, test))]
-const BROAD: [&str; 14] = [
-    "WD",
-    "BU",
-    "AU",
-    "IU",
-    "NU",
-    "BG",
-    "AN",
-    "S-1-1-0",
-    "S-1-5-32-545",
-    "S-1-5-11",
-    "S-1-5-4",
-    "S-1-5-2",
-    "S-1-5-7",
-    "S-1-5-32-546",
-];
-
-#[cfg(any(windows, test))]
-fn is_broad(who: &str) -> bool {
-    BROAD.contains(&who)
-        || (who.starts_with("S-1-5-21-") && (who.ends_with("-513") || who.ends_with("-514")))
-}
-
-/// What the SDDL text (the last line `icacls /save` wrote: `D:PAI(A;;FA;;;SY)…`) says: open when
-/// an entry allows something to one of the accounts that stand for many people, unknown when the
-/// text has no access list at all. An entry that only passes on to what is made inside (inherit
-/// only, `IO`) does not apply to the object itself, and a deny entry gives nothing.
+/// What the SDDL text says: open when an entry allows something to one of the accounts that stand
+/// for many people, unknown when the text has no access list at all.
 #[cfg(any(windows, test))]
 fn sddl_access(sddl: &str) -> Access {
-    let Some(list) = sddl
-        .lines()
-        .map(str::trim)
-        .rfind(|line| !line.is_empty())
-        .and_then(|line| line.strip_prefix("D:"))
-    else {
-        return Access::Unknown;
-    };
-    // Only the part before the system list (`S:`).
-    let list = list.split("S:").next().unwrap_or_default();
-    Access::of(list.split('(').skip(1).any(|entry| {
-        let entry = entry.split(')').next().unwrap_or_default();
-        let parts: Vec<&str> = entry.split(';').collect();
-        let (Some(kind), Some(flags), Some(who)) = (parts.first(), parts.get(1), parts.get(5))
-        else {
-            return false;
-        };
-        matches!(*kind, "A" | "OA") && !flags.contains("IO") && is_broad(who)
-    }))
+    bb_core::access_list::open_to_many(sddl).map_or(Access::Unknown, Access::of)
 }
 
 #[cfg(test)]

@@ -1539,6 +1539,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Install the service and start it",
     ),
     (
+        "cli.about.service-status",
+        "Say whether the service is installed, and whether it runs",
+    ),
+    (
         "cli.about.service-uninstall",
         "Stop the service and remove it. Your data stays where it is",
     ),
@@ -7660,6 +7664,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The browser app is not built yet. Run `cargo xtask build`, or pass --web <folder>.",
     ),
     (
+        "service.account-cannot-read",
+        "The account {account} that runs the service cannot read {path}, so the service could not start. Put the program and its settings file in a folder that every account of the computer may read, for example a folder in Program Files, not in your own user folder, and install from there.",
+    ),
+    (
         "service.answer-not-trusted",
         "The system named {path}, but root does not own it alone or other accounts can change it, so Bugaboo does not use it.",
     ),
@@ -7672,6 +7680,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The service {name} is installed already. Remove it first with: bugaboo service uninstall",
     ),
     ("service.failed", "The system refused: {reason}"),
+    (
+        "service.home-hidden",
+        "The service cannot see {path}: its unit hides the home folders from it (ProtectHome=yes), so it could never start. Put the program, its settings file and its data folder outside the home folders, as the install guide shows, and install from there.",
+    ),
     (
         "service.installed",
         "The service {name} is installed and started. It runs as the account {account} and starts with the computer.",
@@ -7719,6 +7731,34 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "service.setup-code",
         "Nobody has created an administrator yet. The setup code for the first administrator is saved in {path}. Read it there, and enter it in your browser.",
+    ),
+    (
+        "service.state-ended-unexpectedly",
+        "The service {name} ended unexpectedly. Windows starts it again after such an end, but at most {restarts} times a day, so it may be starting again or stay stopped. Its log says what failed.",
+    ),
+    (
+        "service.state-failed",
+        "The service {name} stopped with the exit code {code}. Its log says what failed.",
+    ),
+    (
+        "service.state-killed",
+        "The service {name} was ended by the signal {signal}, not by a stop that was asked for. Its log says what happened before.",
+    ),
+    (
+        "service.state-restarting",
+        "The service {name} stopped after a failure and starts again in a few seconds. Its log says what failed.",
+    ),
+    ("service.state-running", "The service {name} is running."),
+    ("service.state-starting", "The service {name} is starting."),
+    ("service.state-stopped", "The service {name} is stopped."),
+    ("service.state-stopping", "The service {name} is stopping."),
+    (
+        "service.state-unknown",
+        "The service manager did not say how the service {name} is.",
+    ),
+    (
+        "service.state-upgrade-stopped",
+        "The service {name} stopped at an upgrade and is not started again by itself, because it would stop the same way. Its log says what happened and what to do. Then start the service again.",
     ),
     (
         "service.stop-timeout",
