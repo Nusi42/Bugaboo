@@ -12494,6 +12494,12 @@ textarea,
   align-items: flex-start;
 }
 
+[data-part="app-layout"][data-variant~="phone"]
+  [data-part="item"][data-variant~="buttons-below"]
+  [data-part="access-keys.item-text"] {
+  flex-basis: auto;
+}
+
 [data-part="agents.actions"] {
   display: flex;
   flex-wrap: wrap;

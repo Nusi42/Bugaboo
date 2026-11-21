@@ -18400,6 +18400,12 @@ part "app-layout[variant=phone] item[variant=buttons-below]" "app-layout[variant
     align-items flex-start
 }
 
+// In that column the words of a key are as tall as their lines: the width they ask for beside the buttons
+// (`flex` with the basis of a list) would be their height there, an empty area above *Renew* (M9-F88).
+part "app-layout[variant=phone] item[variant=buttons-below] access-keys.item-text" {
+    flex-basis auto
+}
+
 part "agents.actions" {
     display flex
     flex-wrap wrap
