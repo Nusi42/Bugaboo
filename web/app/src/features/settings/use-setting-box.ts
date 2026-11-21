@@ -36,6 +36,23 @@ export interface SettingBoxState {
 }
 
 /**
+ * The text in a box and what is wrong with it. A new stored value (saved, or reset) is what the box shows from then on;
+ * the box stays the same element, so the focus stays in it after Enter saves (WCAG 2.4.3), where a box made anew for
+ * the new value would drop it.
+ */
+function useDraft(initial: string) {
+  const [draft, setDraft] = useState(initial);
+  const [problem, setProblem] = useState<string>();
+  const [stored, setStored] = useState(initial);
+  if (stored !== initial) {
+    setStored(initial);
+    setDraft(initial);
+    setProblem(undefined);
+  }
+  return { draft, setDraft, problem, setProblem };
+}
+
+/**
  * The state and the words every typed-in box shares: the draft, the problem, the hint and the check
  * of the bounds. A kind of box brings only its reader and its words.
  */
@@ -49,8 +66,7 @@ export function useSettingBox({
   read,
   onChange,
 }: SettingBoxSetup): SettingBoxState {
-  const [draft, setDraft] = useState(initial);
-  const [problem, setProblem] = useState<string>();
+  const { draft, setDraft, problem, setProblem } = useDraft(initial);
   const bounds = setting.bounds ?? undefined;
   // The hint is the explanation of the setting and, from the registry, the bounds it accepts: said once, never typed
   // into the explanation.

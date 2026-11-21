@@ -83,9 +83,7 @@ export function SettingControl({ setting, onChange, help, source, noteFor }: Set
     return null;
   }
   if (kind === "length") {
-    // Keyed by the stored value, so the box shows the new value after a reset.
-    return <LengthControl key={String(value)} {...{ setting, onChange, help, source }} />;
+    return <LengthControl {...{ setting, onChange, help, source }} />;
   }
-  // Keyed by the stored value, so the box shows the new value after a reset.
-  return <TypedControl key={String(value)} {...{ setting, onChange, help, source, noteFor }} />;
+  return <TypedControl {...{ setting, onChange, help, source, noteFor }} />;
 }
