@@ -11469,6 +11469,13 @@ textarea,
   --sticky-lift: inherit;
 }
 
+[data-part="pane"][data-variant~="folds"]
+  > [data-part="settings-topic"]:has([data-part="theme-editor.bar"]) {
+  scroll-padding-bottom: calc(
+    var(--size-control) + var(--space-3) * 2 + var(--border-width) + var(--ring-room)
+  );
+}
+
 [data-part="app-layout"]
   [data-part="pane"][data-variant~="folds"]
   [data-part="timeline-body"]

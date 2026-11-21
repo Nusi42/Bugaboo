@@ -17395,6 +17395,12 @@ part "pane[variant=folds][state=whole] > settings-topic" "app-layout pane[varian
     --sticky-lift inherit
 }
 
+// What the keyboard brings into view stops above the bar of the theme editor, which stays over the foot of the box that scrolls: a focused
+// group is never hidden under it (WCAG 2.4.11). The room is the bar's own: a control, its padding and its edge.
+part "pane[variant=folds] > settings-topic:has(theme-editor.bar)" {
+    scroll-padding-bottom "calc($size-control + $space-3 * 2 + $border-width + $ring-room)"
+}
+
 part "app-layout pane[variant=folds] timeline-body > timeline-side" {
     padding-block-start "$pane-head-end"
     media "print" {
