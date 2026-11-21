@@ -1,5 +1,14 @@
 import { t } from "@bugaboo/messages";
-import { Button, Icon, iconName, iconSize, partOf, part, SentenceWithName } from "@bugaboo/ui";
+import {
+  Button,
+  Icon,
+  iconName,
+  iconSize,
+  live,
+  partOf,
+  part,
+  SentenceWithName,
+} from "@bugaboo/ui";
 
 import { useFloatingNoteShows } from "../../shared/floating-note.ts";
 import { focusRestored } from "../../shared/focus.ts";
@@ -9,9 +18,6 @@ import { useShortcuts } from "../../shared/use-shortcuts.ts";
 import { AskedConflict } from "./AskedConflict.tsx";
 import { CONTENT_ID } from "./content-id.ts";
 import { useHold } from "./use-hold.ts";
-
-/** Words of the ARIA standard, not text for people. */
-const politeStatus = "status";
 
 /** Takes an action back and moves the focus to what is back, as the button that was pressed is gone. */
 function takeBack(offer: UndoOffer): void {
@@ -83,7 +89,7 @@ export function UndoHost({
       {...partOf(part.undoHost, {
         variants: [inFlow ? "in-flow" : "over-page", wide && "wide", besideNote && "beside-note"],
       })}
-      role={politeStatus}
+      role={live.status}
     >
       {offers
         .filter((offer) => offer.inline !== true)

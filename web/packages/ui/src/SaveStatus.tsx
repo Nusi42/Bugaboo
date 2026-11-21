@@ -1,3 +1,4 @@
+import { live } from "./live.ts";
 import { partOf } from "./parts.ts";
 import type { keepsRoom } from "./props.ts";
 import { part } from "./tokens.ts";
@@ -7,9 +8,6 @@ const wordedStates = ["saving", "saved", "not-saved"] as const;
 
 /** The three states a change can be in, and nothing before the first change (UX §6). */
 export type SaveState = "idle" | (typeof wordedStates)[number];
-
-/** Words of the ARIA standard, not text for people. */
-const politeStatus = "status";
 
 export interface SaveStatusProps {
   readonly state: SaveState;
@@ -38,7 +36,7 @@ export function SaveStatus({ state, labels, variant }: SaveStatusProps) {
           <span key={each} {...partOf(part.saveStatusRoom)} data-words={labels[each]} aria-hidden />
         ),
       )}
-      <span {...partOf(part.saveStatusWords)} role={politeStatus}>
+      <span {...partOf(part.saveStatusWords)} role={live.status}>
         {state === "idle" ? null : labels[state]}
       </span>
     </span>

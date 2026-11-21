@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Card, Link, partOf, part, useHoldWhileReading } from "@bugaboo/ui";
+import { Alert, alertTone, Card, Link, live, partOf, part, useHoldWhileReading } from "@bugaboo/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -13,15 +13,12 @@ import { CreateBackup } from "./CreateBackup.tsx";
 /** The settings of the schedule: every day on or off, and how many daily and weekly backups are kept. */
 const SCHEDULE = "backups.daily,backups.keep-daily,backups.keep-weekly";
 
-/** The word of ARIA for a region whose changes are announced when the person is idle. */
-const POLITE = "polite";
-
 /** How a backup is put back: the command for the chosen backup, and where the steps are. There is no button that restores. */
 function Restore({ name }: { readonly name: string | undefined }) {
   return (
     <Card heading={t("backup-page.restore")} intro={t("backup-page.restore-intro")}>
       {/* The command changes when another backup is chosen: a polite region says so to a screen reader. */}
-      <div aria-live={POLITE}>
+      <div aria-live={live.polite}>
         {name === undefined ? null : (
           <code {...partOf(part.keyBox, { variants: ["small"] })}>{restoreCommand(name)}</code>
         )}

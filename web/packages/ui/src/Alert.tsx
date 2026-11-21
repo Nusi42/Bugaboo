@@ -1,11 +1,9 @@
 import type { ReactNode } from "react";
 
+import { live } from "./live.ts";
 import { partOf } from "./parts.ts";
 import { alertTone, type AlertTone } from "./props.ts";
 import { part } from "./tokens.ts";
-
-/** Words of the ARIA standard, not text for people. */
-const roles = { alert: "alert", status: "status" } as const;
 
 export interface AlertProps {
   readonly children: ReactNode;
@@ -24,7 +22,7 @@ export function Alert({ children, tone = alertTone.info }: AlertProps) {
   return (
     <div
       {...partOf(part.alert, { variants: [tone] })}
-      role={tone === alertTone.danger ? roles.alert : roles.status}
+      role={tone === alertTone.danger ? live.alert : live.status}
     >
       {children}
     </div>
