@@ -168,7 +168,7 @@ As written in 04-milestones (M9), broken into steps. Steps 1 to 3 are tests of x
 15. **M9-Q15, support access:** as recommended, for M14 (see Q20). ADR-0048, decisions 2 to 6, planned for M14.
 16. **M9-Q16, `security.txt`:** the organization's contact first, then ours; it expires one year after the release. ADR-0047, decision 4; WP-08.
 17. **M9-Q17, clean computers:** Windows Sandbox (you switch it on once) and a throwaway WSL distribution in `.work/`. WP-13.
-18. **M9-Q18, screen reader:** machine checks in WP-14, and about an hour of yours with NVDA or Narrator on its checklist. WP-14.
+18. **M9-Q18, screen reader:** machine checks in WP-14, and about an hour of yours with NVDA or Narrator on its checklist. WP-14. **Changed on 2026-11-21:** the first release goes without a pass by a person with a screen reader. The report and the statement say plainly that the screens passed the automatic checks but were not yet tested by a person with a screen reader, and mark those criteria *Not tested by a person*; the checklist stays in `docs/accessibility/` as the way to make such a pass later.
 19. **M9-Q19, security review:** an Opus pass over each boundary before 0.6.0; a paid outside test before 1.0. WP-15.
 20. **M9-Q20, the cut:** all three cuts: restore from the command line only; support access (DIST-03) to M14 as a V1 feature; M4-F61, M4-F63 and M4-F128 to a later operations package. 04-milestones (M9, M14); the feature list (DIST-03); ADR-0048; the M4 follow-ups.
 21. **M9-Q21, what stays out:** the list below.
@@ -193,7 +193,7 @@ Each item keeps its place in the feature list and the plan:
 
 - **Before wave 3 (WP-13):** switch on the Windows feature *Windows Sandbox* (administrator rights and a restart). Until then WP-13 can prove only the WSL half.
 - **Before the release candidate (WP-15):** make the release key and the backup key with `cargo xtask release keygen`, keep both offline and apart with their passphrases, and hand over the two public keys; until then the candidate is signed with a test key and marked so.
-- **At the exit:** about an hour with NVDA or Narrator on WP-14's checklist; sign the release and publish it on GitHub; optionally repeat the install on a real clean PC.
+- **At the exit:** sign the release and publish it on GitHub; optionally repeat the install on a real clean PC.
 
 ## Risks
 
