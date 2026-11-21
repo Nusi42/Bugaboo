@@ -5,6 +5,7 @@ import { movementWhile, type Movement } from "./support/movement.ts";
 import { everyPartInView, readEverythingAgain } from "./support/read-again.ts";
 import { sampleAdministrator } from "./support/sample.ts";
 import {
+  EVERY_SCREEN_MS,
   everyGuestScreen,
   everyScreen,
   opened,
@@ -17,9 +18,6 @@ import { inOrder } from "./support/sequence.ts";
 // or makes way for grey shapes, and nothing scrolls.
 
 test.use({ sample: true });
-
-/** Every screen, one after the other, takes longer than an ordinary test. */
-const EVERY_SCREEN_MS = 900_000;
 
 /** What a read in the background did on one screen, where it did anything. */
 interface Found {

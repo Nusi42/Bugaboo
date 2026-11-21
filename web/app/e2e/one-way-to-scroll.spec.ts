@@ -5,6 +5,7 @@ import { screenValues } from "./support/every-screen.ts";
 import { addressWith, sendPassword, signIn } from "./support/flows.ts";
 import { sampleAdministrator, sampleWithCodeApp } from "./support/sample.ts";
 import {
+  EVERY_SCREEN_MS,
   everyGuestScreen,
   everyScreen,
   opened,
@@ -20,9 +21,6 @@ import { paths } from "../src/shared/paths.ts";
 // holds now.
 
 test.use({ sample: true });
-
-/** Every screen, one after the other, takes longer than an ordinary test. */
-const EVERY_SCREEN_MS = 900_000;
 
 /** A small phone (an iPhone SE with the browser's bars): lower than the low window of a computer. */
 const SMALL_PHONE = { width: 375, height: 548 } as const;

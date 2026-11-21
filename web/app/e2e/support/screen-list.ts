@@ -5,6 +5,9 @@ import { filled, paths, routeParam, type Path } from "../../src/shared/paths.ts"
 import { guestScreens, places } from "../../src/shared/places.ts";
 import { searchHref } from "../../src/shared/search-address.ts";
 
+/** How long a test may take that opens every screen, one after the other: longer than an ordinary test. */
+export const EVERY_SCREEN_MS = 900_000;
+
 /** One screen of the route table, at an address that opens it on the sample. */
 export interface ScreenAddress {
   /** The route, as the table of screens names it (`/settings/people/$person`), and the view it shows, if not its own. */

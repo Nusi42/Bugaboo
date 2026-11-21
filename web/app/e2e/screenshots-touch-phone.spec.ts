@@ -4,6 +4,7 @@ import { signIn } from "./support/flows.ts";
 import { sampleAdministrator } from "./support/sample.ts";
 import { screenshotFolder } from "./support/screenshots.ts";
 import { showTheme } from "./support/showcase.ts";
+import { EVERY_SCREEN_MS } from "./support/screen-list.ts";
 import { prepareTouchPictures, takeTouchPictures } from "./support/touch-pictures.ts";
 import { paths } from "../src/shared/paths.ts";
 import { viewports } from "../../tooling/viewports.ts";
@@ -14,9 +15,6 @@ import { viewports } from "../../tooling/viewports.ts";
 test.skip(screenshotFolder === undefined, "Set BB_SCREENSHOT_DIR to take the screenshots.");
 test.use({ sample: true });
 test.describe.configure({ mode: "serial" });
-
-/** Every screen in one theme takes longer than an ordinary test. */
-const EVERY_SCREEN_MS = 600_000;
 
 const devices = [
   { name: "phone", viewport: viewports.phoneForPictures },

@@ -1,10 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 
-import { screenValues } from "./every-screen.ts";
-import { everyGuestScreen, everyScreen, opened, type ScreenAddress } from "./screen-list.ts";
-import { signIn } from "./flows.ts";
-import { sampleAdministrator } from "./sample.ts";
-import { inOrder } from "./sequence.ts";
+import { measureEveryScreen, type ScreenFindings } from "./a11y-measures.ts";
+import { readerOnly } from "./reader-only.ts";
 import { type Instance } from "./server.ts";
 
 import { pixelsOf } from "./tokens.ts";
@@ -34,6 +31,12 @@ interface Size {
   readonly height: number;
 }
 
+/** A box on the page and where it is, in pixels. */
+interface Placed extends Size {
+  readonly left: number;
+  readonly top: number;
+}
+
 /** What the page says about one control a finger presses. */
 interface TargetFacts {
   readonly part: string;
@@ -46,7 +49,7 @@ interface TargetFacts {
    * The box a finger hits: the label around a box to tick or a choice (the label is pressed), the box of the row a
    * link of a row covers (`::after`, `link[variant=row]`), the box with an edge that the control fills, else its own.
    */
-  readonly hit: Size;
+  readonly hit: Placed;
   /** Hidden, covered by a window (`inert`), or a box that only a screen reader reads. */
   readonly unseen: boolean;
   /** A link that flows in a line of words: WCAG 2.5.8 leaves it out, the sentence keeps the room. */
@@ -74,9 +77,6 @@ const pressed = [
 
 /** How much less than the target a box may measure: the browser rounds sizes to parts of a pixel. */
 const ROUNDING_PX = 0.5;
-
-/** The smallest box that is drawn at all: what is smaller is a box only a screen reader reads. */
-const DRAWN_PX = 2;
 
 /** Where a control is and what it is; the facts of whether it is seen come from `seenOf`, in the same order. */
 type PlaceFacts = Omit<TargetFacts, "unseen" | "inSentence">;
@@ -110,7 +110,7 @@ function placesOf(page: Page): Promise<PlaceFacts[]> {
           within: named(around?.["part"], around?.["variant"]),
           name: target.getAttribute("aria-label") ?? (target.textContent ?? "").trim().slice(0, 40),
           box: { width: box.width, height: box.height },
-          hit: { width: hit.width, height: hit.height },
+          hit: { left: hit.left, top: hit.top, width: hit.width, height: hit.height },
         };
       }),
     pressed,
@@ -118,17 +118,18 @@ function placesOf(page: Page): Promise<PlaceFacts[]> {
 }
 
 /** Whether each control of the page is seen, and whether it is a link in a sentence, in the order of `placesOf`. */
-function seenOf(page: Page): Promise<Pick<TargetFacts, "unseen" | "inSentence">[]> {
+async function seenOf(page: Page): Promise<Pick<TargetFacts, "unseen" | "inSentence">[]> {
+  const hidden = await readerOnly(page, pressed);
   return page.evaluate(
-    ({ selector, drawn }: { readonly selector: string; readonly drawn: number }) =>
-      [...document.querySelectorAll<HTMLElement>(selector)].map((target) => {
+    ({
+      selector,
+      readerOnly: only,
+    }: {
+      readonly selector: string;
+      readonly readerOnly: readonly boolean[];
+    }) =>
+      [...document.querySelectorAll<HTMLElement>(selector)].map((target, at) => {
         const style = getComputedStyle(target);
-        const box = target.getBoundingClientRect();
-        // Only a screen reader reads a box that it, or a box around it, cuts away (`VisuallyHidden`, `hidden-text`).
-        let clipped = false;
-        for (let up: HTMLElement | null = target; up !== null; up = up.parentElement) {
-          clipped ||= getComputedStyle(up).clipPath === "inset(50%)";
-        }
         let words = false;
         for (const node of target.parentElement?.childNodes ?? []) {
           words ||= node.nodeType === Node.TEXT_NODE && (node.textContent ?? "").trim() !== "";
@@ -138,11 +139,11 @@ function seenOf(page: Page): Promise<Pick<TargetFacts, "unseen" | "inSentence">[
           unseen:
             target.closest("[inert], [aria-hidden='true']") !== null ||
             style.visibility !== "visible" ||
-            (!labelled && (box.width <= drawn || box.height <= drawn || clipped)),
+            (!labelled && only[at] === true),
           inSentence: target.tagName === "A" && style.display === "inline" && words,
         };
       }),
-    { selector: pressed, drawn: DRAWN_PX },
+    { selector: pressed, readerOnly: hidden },
   );
 }
 
@@ -180,29 +181,59 @@ export async function smallTargets(page: Page, least: number): Promise<SmallTarg
     }));
 }
 
-/** The small targets of one screen of the route table. */
-export interface ScreenTargets {
-  readonly screen: string;
-  readonly targets: readonly SmallTarget[];
+/** How far a point is from a box: none inside it. */
+function distanceTo(x: number, y: number, box: Placed): number {
+  const across = Math.max(box.left - x, 0, x - (box.left + box.width));
+  const down = Math.max(box.top - y, 0, y - (box.top + box.height));
+  return Math.hypot(across, down);
+}
+
+/** The middle of the box a finger or a pointer hits. */
+function middleOf(fact: TargetFacts): readonly [number, number] {
+  return [fact.hit.left + fact.hit.width / 2, fact.hit.top + fact.hit.height / 2];
+}
+
+/**
+ * The controls of the page smaller than `least` that also stand too close to another (WCAG 2.5.8 with a pointer): a
+ * small target counts when a circle of `least` around its middle meets another target, or the circle of another small
+ * one. A small target with that room around it, such as a short bar of the timeline alone in its row, is met.
+ */
+export async function crowdedTargets(page: Page, least: number): Promise<SmallTarget[]> {
+  const wanted = least - ROUNDING_PX;
+  const shown = (await factsOf(page)).filter((fact) => !fact.unseen && !fact.inSentence);
+  const small = (fact: TargetFacts): boolean => fact.hit.width < wanted || fact.hit.height < wanted;
+  return shown
+    .filter((fact) => small(fact))
+    .filter((fact) => {
+      const [x, y] = middleOf(fact);
+      return shown.some((other) => {
+        if (other === fact) {
+          return false;
+        }
+        const [otherX, otherY] = middleOf(other);
+        return small(other)
+          ? Math.hypot(x - otherX, y - otherY) < wanted
+          : distanceTo(x, y, other.hit) < wanted / 2;
+      });
+    })
+    .map(({ part, within, name, hit }) => ({
+      part,
+      within,
+      name,
+      width: Math.round(hit.width),
+      height: Math.round(hit.height),
+    }));
 }
 
 /** The least size of a target with touch that UX §7.4 and §8 write down: `size-control` with touch is at least it. */
 const TOUCH_PX = 44;
 
-/** The small targets of each screen, opened one after the other. */
-async function measured(
-  page: Page,
-  screens: readonly ScreenAddress[],
-  least: number,
-): Promise<ScreenTargets[]> {
-  const found: ScreenTargets[] = [];
-  await inOrder(
-    screens.map((screen) => async () => {
-      await opened(page, screen.address);
-      found.push({ screen: screen.path, targets: await smallTargets(page, least) });
-    }),
+/** Targets in words: the part of each, where it stands, its name and its size. */
+export function inWords(targets: readonly SmallTarget[]): string[] {
+  return targets.map(
+    (target) =>
+      `${target.part} in ${target.within} "${target.name}" (${String(target.width)} × ${String(target.height)})`,
   );
-  return found;
 }
 
 /**
@@ -213,12 +244,11 @@ async function measured(
 export async function smallTargetsOfEveryScreen(
   page: Page,
   server: Instance,
-): Promise<readonly ScreenTargets[]> {
-  const values = await screenValues(server);
+): Promise<readonly ScreenFindings[]> {
   await page.goto(paths.signIn);
   const least = await touchTarget(page);
   expect(least).toBeGreaterThanOrEqual(TOUCH_PX);
-  const guests = await measured(page, everyGuestScreen(), least);
-  await signIn(page, sampleAdministrator());
-  return [...guests, ...(await measured(page, everyScreen(values), least))];
+  return measureEveryScreen(page, server, async (opened) =>
+    inWords(await smallTargets(opened, least)),
+  );
 }

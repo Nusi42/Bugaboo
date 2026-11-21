@@ -1,4 +1,5 @@
 import { expect, test } from "./support/fixtures.ts";
+import { EVERY_SCREEN_MS } from "./support/screen-list.ts";
 import { smallTargetsOfEveryScreen } from "./support/touch-targets.ts";
 import { viewports } from "../../tooling/viewports.ts";
 
@@ -8,16 +9,13 @@ import { viewports } from "../../tooling/viewports.ts";
 
 test.use({ sample: true });
 
-/** Every screen, one after the other, takes longer than an ordinary test. */
-const EVERY_SCREEN_MS = 600_000;
-
 test("ux_02_every_control_has_a_touch_target_of_at_least_44_px_on_a_phone", async ({
   page,
   server,
 }) => {
   test.setTimeout(EVERY_SCREEN_MS);
   const found = await smallTargetsOfEveryScreen(page, server);
-  expect(found.filter((each) => each.targets.length > 0)).toEqual([]);
+  expect(found).toEqual([]);
 });
 
 test.describe("on a tablet", () => {
@@ -29,6 +27,6 @@ test.describe("on a tablet", () => {
   }) => {
     test.setTimeout(EVERY_SCREEN_MS);
     const found = await smallTargetsOfEveryScreen(page, server);
-    expect(found.filter((each) => each.targets.length > 0)).toEqual([]);
+    expect(found).toEqual([]);
   });
 });
