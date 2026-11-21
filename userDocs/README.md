@@ -29,6 +29,7 @@ End-user and administrator documentation. It is written alongside the work on Bu
 - [AI in Bugaboo](ai/README.md): [the AI guide](ai/literacy.md), [the assistant](ai/assistant.md), [AI apps](ai/ai-apps.md) and [the numbers](ai/numbers.md)
 - [Privacy](privacy/README.md): [My data](my-settings/my-data.md), [keep and delete rules](privacy/keep-rules-page.md) with [the table of the periods](privacy/keep-and-delete.md), [data exports](privacy/data-exports.md), and [switching off and removing a person](privacy/remove-a-person.md)
 - [Cookies we use](cookies.md)
+- [Accessibility statement](accessibility-statement.md): a model of the statement an organization publishes, with what Bugaboo meets
 
 Planned sections:
 

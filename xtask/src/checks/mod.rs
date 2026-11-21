@@ -4,6 +4,7 @@
 //! [`Check`] here, and add a failing and a passing example (`bad_example` / `good_example` tests
 //! or `tools/checks/fixtures/<ID>/`).
 
+mod a11y_report;
 mod api_spec;
 mod arch_ai_tools;
 pub(crate) mod arch_api_freeze;

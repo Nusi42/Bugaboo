@@ -1,0 +1,522 @@
+# The clauses of EN 301 549 V3.2.1 that the accessibility report answers, one row each (COMP-15,
+# docs/accessibility/en-301-549.md), and the criteria of WCAG 2.2 that the standard does not name yet.
+# TEST-A11Y fails when a clause has no row in the report, or a row no result or no evidence.
+# `screen_reader = true` marks a clause that only a person with a screen reader can tell is met; only such a clause may
+# say *Not tested by a person*.
+
+[[clause]]
+id = "5.1.2.1"
+title = "Closed functionality"
+
+[[clause]]
+id = "5.1.2.2"
+title = "Assistive technology"
+
+[[clause]]
+id = "5.1.3.1"
+title = "General (non-visual access)"
+
+[[clause]]
+id = "5.1.3.2"
+title = "Auditory output delivery including speech"
+
+[[clause]]
+id = "5.1.3.3"
+title = "Auditory output correlation"
+
+[[clause]]
+id = "5.1.3.4"
+title = "Speech output user control"
+
+[[clause]]
+id = "5.1.3.5"
+title = "Speech output automatic interruption"
+
+[[clause]]
+id = "5.1.3.6"
+title = "Speech output for non-text content"
+
+[[clause]]
+id = "5.1.3.7"
+title = "Speech output for video information"
+
+[[clause]]
+id = "5.1.3.8"
+title = "Masked entry"
+
+[[clause]]
+id = "5.1.3.9"
+title = "Private access to personal data"
+
+[[clause]]
+id = "5.1.3.10"
+title = "Non-interfering audio output"
+
+[[clause]]
+id = "5.1.3.11"
+title = "Private listening volume"
+
+[[clause]]
+id = "5.1.3.12"
+title = "Speaker volume"
+
+[[clause]]
+id = "5.1.3.13"
+title = "Volume reset"
+
+[[clause]]
+id = "5.1.3.14"
+title = "Spoken languages"
+
+[[clause]]
+id = "5.1.3.15"
+title = "Non-visual error identification"
+
+[[clause]]
+id = "5.1.3.16"
+title = "Receipts, tickets, and transactional outputs"
+
+[[clause]]
+id = "5.1.4"
+title = "Functionality closed to text enlargement"
+
+[[clause]]
+id = "5.1.5"
+title = "Visual output for auditory information"
+
+[[clause]]
+id = "5.1.6.1"
+title = "Operation without keyboard interface: closed functionality"
+
+[[clause]]
+id = "5.1.6.2"
+title = "Operation without keyboard interface: input focus"
+
+[[clause]]
+id = "5.2"
+title = "Activation of accessibility features"
+
+[[clause]]
+id = "5.3"
+title = "Biometrics"
+
+[[clause]]
+id = "5.4"
+title = "Preservation of accessibility information during conversion"
+
+[[clause]]
+id = "5.5.1"
+title = "Means of operation"
+
+[[clause]]
+id = "5.5.2"
+title = "Operable parts discernibility"
+
+[[clause]]
+id = "5.6.1"
+title = "Tactile or auditory status"
+
+[[clause]]
+id = "5.6.2"
+title = "Visual status"
+
+[[clause]]
+id = "5.7"
+title = "Key repeat"
+
+[[clause]]
+id = "5.8"
+title = "Double-strike key acceptance"
+
+[[clause]]
+id = "5.9"
+title = "Simultaneous user actions"
+
+[[clause]]
+id = "9.1.1.1"
+title = "Non-text content"
+screen_reader = true
+
+[[clause]]
+id = "9.1.2.1"
+title = "Audio-only and video-only (prerecorded)"
+
+[[clause]]
+id = "9.1.2.2"
+title = "Captions (prerecorded)"
+
+[[clause]]
+id = "9.1.2.3"
+title = "Audio description or media alternative (prerecorded)"
+
+[[clause]]
+id = "9.1.2.4"
+title = "Captions (live)"
+
+[[clause]]
+id = "9.1.2.5"
+title = "Audio description (prerecorded)"
+
+[[clause]]
+id = "9.1.3.1"
+title = "Info and relationships"
+screen_reader = true
+
+[[clause]]
+id = "9.1.3.2"
+title = "Meaningful sequence"
+screen_reader = true
+
+[[clause]]
+id = "9.1.3.3"
+title = "Sensory characteristics"
+
+[[clause]]
+id = "9.1.3.4"
+title = "Orientation"
+
+[[clause]]
+id = "9.1.3.5"
+title = "Identify input purpose"
+
+[[clause]]
+id = "9.1.4.1"
+title = "Use of colour"
+
+[[clause]]
+id = "9.1.4.2"
+title = "Audio control"
+
+[[clause]]
+id = "9.1.4.3"
+title = "Contrast (minimum)"
+
+[[clause]]
+id = "9.1.4.4"
+title = "Resize text"
+
+[[clause]]
+id = "9.1.4.5"
+title = "Images of text"
+
+[[clause]]
+id = "9.1.4.10"
+title = "Reflow"
+
+[[clause]]
+id = "9.1.4.11"
+title = "Non-text contrast"
+
+[[clause]]
+id = "9.1.4.12"
+title = "Text spacing"
+
+[[clause]]
+id = "9.1.4.13"
+title = "Content on hover or focus"
+
+[[clause]]
+id = "9.2.1.1"
+title = "Keyboard"
+
+[[clause]]
+id = "9.2.1.2"
+title = "No keyboard trap"
+
+[[clause]]
+id = "9.2.1.4"
+title = "Character key shortcuts"
+
+[[clause]]
+id = "9.2.2.1"
+title = "Timing adjustable"
+
+[[clause]]
+id = "9.2.2.2"
+title = "Pause, stop, hide"
+
+[[clause]]
+id = "9.2.3.1"
+title = "Three flashes or below threshold"
+
+[[clause]]
+id = "9.2.4.1"
+title = "Bypass blocks"
+
+[[clause]]
+id = "9.2.4.2"
+title = "Page titled"
+
+[[clause]]
+id = "9.2.4.3"
+title = "Focus order"
+
+[[clause]]
+id = "9.2.4.4"
+title = "Link purpose (in context)"
+
+[[clause]]
+id = "9.2.4.5"
+title = "Multiple ways"
+
+[[clause]]
+id = "9.2.4.6"
+title = "Headings and labels"
+
+[[clause]]
+id = "9.2.4.7"
+title = "Focus visible"
+
+[[clause]]
+id = "9.2.5.1"
+title = "Pointer gestures"
+
+[[clause]]
+id = "9.2.5.2"
+title = "Pointer cancellation"
+
+[[clause]]
+id = "9.2.5.3"
+title = "Label in name"
+
+[[clause]]
+id = "9.2.5.4"
+title = "Motion actuation"
+
+[[clause]]
+id = "9.3.1.1"
+title = "Language of page"
+
+[[clause]]
+id = "9.3.1.2"
+title = "Language of parts"
+
+[[clause]]
+id = "9.3.2.1"
+title = "On focus"
+
+[[clause]]
+id = "9.3.2.2"
+title = "On input"
+
+[[clause]]
+id = "9.3.2.3"
+title = "Consistent navigation"
+
+[[clause]]
+id = "9.3.2.4"
+title = "Consistent identification"
+
+[[clause]]
+id = "9.3.3.1"
+title = "Error identification"
+
+[[clause]]
+id = "9.3.3.2"
+title = "Labels or instructions"
+
+[[clause]]
+id = "9.3.3.3"
+title = "Error suggestion"
+
+[[clause]]
+id = "9.3.3.4"
+title = "Error prevention (legal, financial, data)"
+
+[[clause]]
+id = "9.4.1.1"
+title = "Parsing"
+
+[[clause]]
+id = "9.4.1.2"
+title = "Name, role, value"
+screen_reader = true
+
+[[clause]]
+id = "9.4.1.3"
+title = "Status messages"
+screen_reader = true
+
+[[clause]]
+id = "9.6"
+title = "WCAG conformance requirements"
+
+[[clause]]
+id = "WCAG 2.4.11"
+title = "Focus not obscured (minimum)"
+
+[[clause]]
+id = "WCAG 2.5.7"
+title = "Dragging movements"
+
+[[clause]]
+id = "WCAG 2.5.8"
+title = "Target size (minimum)"
+
+[[clause]]
+id = "WCAG 3.2.6"
+title = "Consistent help"
+
+[[clause]]
+id = "WCAG 3.3.7"
+title = "Redundant entry"
+
+[[clause]]
+id = "WCAG 3.3.8"
+title = "Accessible authentication (minimum)"
+
+[[clause]]
+id = "11.0"
+title = "Software: general"
+
+[[clause]]
+id = "11.1 to 11.4"
+title = "Software: the success criteria of WCAG for non-web software"
+
+[[clause]]
+id = "11.5.1"
+title = "Interoperability with assistive technology: closed functionality"
+
+[[clause]]
+id = "11.5.2.1"
+title = "Platform accessibility service support for software that provides a user interface"
+
+[[clause]]
+id = "11.5.2.2"
+title = "Platform accessibility service support for assistive technologies"
+
+[[clause]]
+id = "11.5.2.3"
+title = "Use of accessibility services"
+
+[[clause]]
+id = "11.5.2.4"
+title = "Assistive technology"
+
+[[clause]]
+id = "11.5.2.5"
+title = "Object information"
+
+[[clause]]
+id = "11.5.2.6"
+title = "Row, column, and headers"
+
+[[clause]]
+id = "11.5.2.7"
+title = "Values"
+
+[[clause]]
+id = "11.5.2.8"
+title = "Label relationships"
+
+[[clause]]
+id = "11.5.2.9"
+title = "Parent-child relationships"
+
+[[clause]]
+id = "11.5.2.10"
+title = "Text"
+
+[[clause]]
+id = "11.5.2.11"
+title = "List of available actions"
+
+[[clause]]
+id = "11.5.2.12"
+title = "Execution of available actions"
+
+[[clause]]
+id = "11.5.2.13"
+title = "Tracking of focus and selection attributes"
+
+[[clause]]
+id = "11.5.2.14"
+title = "Modification of focus and selection attributes"
+
+[[clause]]
+id = "11.5.2.15"
+title = "Change notification"
+
+[[clause]]
+id = "11.5.2.16"
+title = "Modifications of states and properties"
+
+[[clause]]
+id = "11.5.2.17"
+title = "Modifications of values and text"
+
+[[clause]]
+id = "11.6.1"
+title = "User control of accessibility features"
+
+[[clause]]
+id = "11.6.2"
+title = "No disruption of accessibility features"
+
+[[clause]]
+id = "11.7"
+title = "User preferences"
+
+[[clause]]
+id = "11.8.1"
+title = "Content technology"
+
+[[clause]]
+id = "11.8.2"
+title = "Accessible content creation"
+
+[[clause]]
+id = "11.8.3"
+title = "Preservation of accessibility information in transformations"
+
+[[clause]]
+id = "11.8.4"
+title = "Repair assistance"
+
+[[clause]]
+id = "11.8.5"
+title = "Templates"
+
+[[clause]]
+id = "12.1.1"
+title = "Accessibility and compatibility features"
+
+[[clause]]
+id = "12.1.2"
+title = "Accessible documentation"
+
+[[clause]]
+id = "12.2.2"
+title = "Information on accessibility and compatibility features"
+
+[[clause]]
+id = "12.2.3"
+title = "Effective communication"
+
+[[clause]]
+id = "12.2.4"
+title = "Accessible documentation (support services)"
+
+[[clause]]
+id = "4"
+title = "Functional performance statements"
+
+[[clause]]
+id = "6"
+title = "ICT with two-way voice communication"
+
+[[clause]]
+id = "7"
+title = "ICT with video capabilities"
+
+[[clause]]
+id = "8"
+title = "Hardware"
+
+[[clause]]
+id = "10"
+title = "Non-web documents"
+
+[[clause]]
+id = "13"
+title = "ICT providing relay or emergency service access"

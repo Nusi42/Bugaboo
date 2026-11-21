@@ -250,7 +250,11 @@ Accessibility Act most likely doesn't apply directly. *To be confirmed.* Public-
 customers will require EN 301 549 anyway.
 
 **How Bugaboo meets it.** WCAG 2.2 AA in every theme (UX-04), EN 301 549 and an
-accessibility statement template (COMP-15).
+accessibility statement template (COMP-15). The [EN 301 549 report](accessibility/en-301-549.md)
+answers every clause of the standard with a result and its evidence (a test or a reason); the
+[model statement](../userDocs/accessibility-statement.md) is drawn from it. Enforced by:
+TEST-A11Y (every clause of `tools/testdata/en-301-549.toml` has its row, and every test a row
+cites exists).
 
 **Key dates.** The Accessibility Act applies since **28 June 2025**.
 

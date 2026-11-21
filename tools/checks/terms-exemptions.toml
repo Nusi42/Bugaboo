@@ -106,6 +106,12 @@ phrases = ["screen lock"]
 reason = "The screen lock of the device. Not a Layout."
 
 [[allow]]
+term = "screen"
+at = ["userDocs/accessibility-statement.md"]
+phrases = ["screen reader"]
+reason = "A program that reads the page aloud to a person who cannot see it. Not a Layout."
+
+[[allow]]
 term = "challenge"
 at = [
   "api:schema ChallengeBody",

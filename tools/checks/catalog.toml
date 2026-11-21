@@ -822,14 +822,16 @@ status = "active"
 
 [[check]]
 id = "TEST-A11Y"
-title = "No accessibility violations on key screens in all four themes, and every drag of the timeline has a key"
-rule = "UX-04, UX design §4.7"
-tool = "Playwright + axe (web/app/e2e/a11y*.spec.ts); xtask checks that every address in paths.ts has an entry there, and that every kind the timeline drags is named in features/timeline/drag-kinds.ts with its typed way, no drag of the timeline writes a kind of its own, and a bar dragged with the pointer has its keys (keyMoveOf); the suite itself runs in cargo xtask ci"
+title = "No accessibility violations on key screens in all four themes, every drag of the timeline has a key, and the EN 301 549 report answers every clause"
+rule = "UX-04, UX design §4.7, COMP-15 (compliance.md §7)"
+tool = "Playwright + axe and the measures of reflow, zoom, text spacing, targets and the keyboard (web/app/e2e/a11y*.spec.ts); xtask checks that every address in paths.ts has an entry there, that every clause of tools/testdata/en-301-549.toml has a row in docs/accessibility/en-301-549.md with a result and its evidence, and that every test the report cites exists, and that every kind the timeline drags is named in features/timeline/drag-kinds.ts with its typed way, no drag of the timeline writes a kind of its own, and a bar dragged with the pointer has its keys (keyMoveOf); the suite itself runs in cargo xtask ci"
 when = ["commit", "ci"]
 files = [
   "web/app/src/shared/paths.ts",
   "web/app/e2e/a11y*.spec.ts",
   "web/app/src/features/timeline/**",
+  "docs/accessibility/en-301-549.md",
+  "tools/testdata/en-301-549.toml",
 ]
 status = "active"
 

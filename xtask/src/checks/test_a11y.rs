@@ -10,7 +10,10 @@
 //! drags is named in `drag-kinds.ts` together with the message of the typed way that does the same
 //! (`typed:`), a drag in the timeline takes its kind from there and never writes one of its own, and
 //! the timeline that drags a bar with the pointer also moves it with keys (`keyMoveOf`).
+//!
+//! The EN 301 549 report answers every clause of the standard (COMP-15): see `a11y_report`.
 
+use super::a11y_report::report_of;
 use super::web_source::code_of;
 use super::{Check, Context, Finding};
 use crate::docs::source::sorted_files;
@@ -18,7 +21,7 @@ use crate::docs::text::has_extension;
 use crate::source::read_text;
 
 const PATHS_FILE: &str = "web/app/src/shared/paths.ts";
-const SUITE_FOLDER: &str = "web/app/e2e";
+pub(crate) const SUITE_FOLDER: &str = "web/app/e2e";
 const SUITE_PREFIX: &str = "a11y";
 /// The feature of the timeline, whose drags each have a key.
 const TIMELINE_FOLDER: &str = "web/app/src/features/timeline";
@@ -47,6 +50,7 @@ impl Check for TestA11y {
         let timeline = timeline_files(repo)?;
         let messages = read_text(repo, MESSAGES_FILE)?;
         findings.extend(drags_have_keys(&timeline, &messages));
+        findings.extend(report_of(repo)?);
         Ok(findings)
     }
 }
