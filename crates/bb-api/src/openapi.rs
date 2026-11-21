@@ -527,6 +527,33 @@ pub fn operations() -> &'static [Operation] {
     })
 }
 
+/// The routes of the API description that have no row in the table, as `METHOD address`
+/// (`GET /api/v1/projects`). There should be none: ARCH-PERMS fails for each, and the permission
+/// matrix refuses to run while there is one, since `operations()` leaves such a route out and the
+/// matrix would never run it.
+#[must_use]
+pub fn undeclared_operations() -> Vec<String> {
+    undeclared_in(&mut document(), |id| {
+        crate::permissions::declared(id).is_some()
+    })
+}
+
+/// The routes of `document` whose operation ID is none or has no row according to `has_row`.
+fn undeclared_in(
+    document: &mut utoipa::openapi::OpenApi,
+    has_row: impl Fn(&str) -> bool,
+) -> Vec<String> {
+    let mut found = Vec::new();
+    for (path, item) in &mut document.paths.paths {
+        for (method, operation) in each_operation(item) {
+            if !operation.operation_id.as_deref().is_some_and(&has_row) {
+                found.push(format!("{method} {path}"));
+            }
+        }
+    }
+    found
+}
+
 /// The `ETag` header of an answer and the `304` answer to a read that already has it (PERF-03,
 /// `crate::etag`); ARCH-LEAN requires both on every `GET`.
 fn add_read_answers(operation: &mut OperationSpec) {
@@ -593,6 +620,21 @@ fn add_standard_answers(operation: &mut OperationSpec) {
 mod tests {
     use super::ordered::steady_text;
     use super::*;
+
+    #[test]
+    fn sec_01_every_route_of_the_description_has_a_row_in_the_table() {
+        assert_eq!(undeclared_operations(), Vec::<String>::new());
+    }
+
+    #[test]
+    fn sec_01_a_route_without_a_row_is_found_by_its_method_and_address() {
+        let first = operations()
+            .first()
+            .map(|route| (route.method.clone(), route.path.clone(), route.id.clone()))
+            .unwrap();
+        let found = undeclared_in(&mut document(), |id| id != first.2);
+        assert_eq!(found, [format!("{} {}", first.0, first.1)]);
+    }
 
     #[test]
     fn m3_f12_every_server_rendered_property_has_the_mark_and_no_other_has() {

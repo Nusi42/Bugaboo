@@ -12,6 +12,9 @@
 //!   project, and under a lead; the person who holds exactly the permission the route declares)
 //!   and, as soon as the API description has access keys, the two actors with a key (*See only*;
 //!   a key for another project);
+//! - every route of the description declares a permission (`x-permission`); the matrix test refuses
+//!   to run while a route has none, and this check names it, so the matrix never passes a route that
+//!   only ARCH-PERMS would refuse;
 //! - every route of the description has a line in the record with the permission it declares, and
 //!   was run by every actor of the record;
 //! - every route has a row in the table of example requests;
@@ -295,6 +298,14 @@ fn route_findings(
 ) -> Vec<Finding> {
     let mut found = Vec::new();
     let place = format!("{} {} ({})", route.method, route.path, route.operation);
+    if route.declared.is_empty() {
+        found.push(Finding::at(
+            SPEC_PATH,
+            format!(
+                "{place} declares no permission, so the matrix cannot say what it must answer.                  Add it to the table of routes in `bb-api`."
+            ),
+        ));
+    }
     if !rows.contains(route.operation.as_str()) {
         found.push(Finding::at(
             EXAMPLES_PATH,
@@ -558,6 +569,21 @@ mod tests {
         );
         assert_eq!(found.len(), 1, "{found:?}");
         assert!(found[0].contains("missing from the record"), "{found:?}");
+    }
+
+    #[test]
+    fn bad_example_a_route_that_declares_no_permission() {
+        let spec: Value =
+            serde_json::from_str(&fixture("bad", "route-without-permission.json")).unwrap();
+        let found = messages(
+            &spec,
+            Some(&fixture("good", "record.txt")),
+            &fixture("good", "examples.txt"),
+        );
+        assert!(
+            found.iter().any(|m| m.contains("declares no permission")),
+            "{found:?}"
+        );
     }
 
     #[test]

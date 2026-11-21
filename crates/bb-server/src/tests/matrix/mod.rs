@@ -15,6 +15,7 @@ mod actors;
 mod agent_actor;
 mod agent_switches;
 mod assistant;
+mod declared;
 mod delivery;
 mod examples;
 mod examples_agent_work;

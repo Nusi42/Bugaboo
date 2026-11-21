@@ -606,6 +606,7 @@ fn both_actors() -> Vec<Actor> {
 
 /// Runs every route as every actor; the record of what ran.
 pub(super) async fn run(rig: &Rig, actors: &[Actor]) -> Result<Record, Failure> {
+    super::declared::every_route_declares(&bb_api::openapi::undeclared_operations())?;
     // AI apps are off in the matrix: the sign-in of an app answers an actor who is let in that apps
     // are off, which is no refusal of a permission (the switch of the assistant no longer decides
     // this, WP-15). Agents are on, so their routes answer by the permissions alone; both start off
