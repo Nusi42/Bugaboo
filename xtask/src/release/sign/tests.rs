@@ -28,11 +28,149 @@ fn sec_18_signing_refuses_a_key_inside_the_repository_or_a_work_folder() {
     let other = work_folder();
     let key = other.path().join("deep/release.key");
     assert!(refuse_inside_a_folder_of_work(&key, &root).is_err());
-    assert!(keygen(&key, &root, Some("passphrase".to_owned())).is_err());
+    assert!(keygen(&key, &root).is_err());
     assert!(!key.exists(), "nothing is written where a key is refused");
-    // An offline place outside both is taken.
+    // A place outside both is taken.
     let outside = tempfile::tempdir().unwrap();
     refuse_inside_a_folder_of_work(&outside.path().join("release.key"), &root).unwrap();
+}
+
+/// A key folder reached through a link (on Windows a junction) is a place like any other: the
+/// key is made and opened there.
+#[cfg(windows)]
+#[test]
+fn sec_18_a_key_folder_behind_a_link_is_taken() {
+    let root = super::super::repository_root();
+    let place = tempfile::tempdir().unwrap();
+    let target = place.path().join("keys");
+    fs::create_dir(&target).unwrap();
+    let link = place.path().join("settings");
+    let made = std::process::Command::new("cmd.exe")
+        .args(["/C", "mklink", "/J"])
+        .arg(&link)
+        .arg(&target)
+        .output()
+        .unwrap();
+    assert!(made.status.success(), "{made:?}");
+    let out = link.join("release.key");
+    let public = keygen(&out, &root).unwrap();
+    assert!(target.join("release.key").is_file());
+    assert_eq!(public_of(&open_key(&out, &root).unwrap()).unwrap(), public);
+}
+
+#[test]
+fn sec_18_the_secret_key_is_its_owner_s_alone() {
+    let root = super::super::repository_root();
+    let offline = tempfile::tempdir().unwrap();
+    let out = offline.path().join("release.key");
+    keygen(&out, &root).unwrap();
+    assert!(!private::open_mode(0o600));
+    assert!(private::open_mode(0o640));
+    assert!(private::open_mode(0o604));
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt as _;
+        let mode = |path: &Path| fs::metadata(path).unwrap().permissions().mode() & 0o777;
+        assert_eq!(mode(&out), 0o600);
+        open_key(&out, &root).unwrap();
+        fs::set_permissions(&out, fs::Permissions::from_mode(0o644)).unwrap();
+        let refused = open_key(&out, &root).unwrap_err().to_string();
+        assert!(
+            refused.contains("can be read by other accounts"),
+            "{refused}"
+        );
+        assert!(refused.contains("chmod 600"), "{refused}");
+    }
+    #[cfg(windows)]
+    {
+        // Only the owner, nothing inherited from the folder.
+        let owner = private::current_sid().unwrap();
+        let sddl = private::access_list(&out).unwrap();
+        let entries = bb_core::access_list::access_entries(&sddl).unwrap();
+        assert!(!entries.is_empty(), "{sddl}");
+        assert!(entries.iter().all(|entry| entry.who == owner), "{sddl}");
+        assert!(sddl.contains("D:P"), "inheritance is off: {sddl}");
+        open_key(&out, &root).unwrap();
+        // The users of the computer may read it: refused, with the commands that close it.
+        let granted = std::process::Command::new("icacls.exe")
+            .arg(&out)
+            .args(["/grant", "*S-1-5-32-545:R"])
+            .output()
+            .unwrap();
+        assert!(granted.status.success());
+        let refused = open_key(&out, &root).unwrap_err().to_string();
+        assert!(
+            refused.contains("can be read by other accounts"),
+            "{refused}"
+        );
+        assert!(refused.contains("/inheritance:r"), "{refused}");
+    }
+}
+
+#[test]
+fn sec_18_a_damaged_key_without_a_passphrase_is_an_error_and_never_a_question() {
+    let plain = KeyPair::generate_unencrypted_keypair()
+        .unwrap()
+        .sk
+        .to_box(None)
+        .unwrap()
+        .into_string();
+    let locked = KeyPair::generate_encrypted_keypair(Some("old passphrase".to_owned()))
+        .unwrap()
+        .sk
+        .to_box(None)
+        .unwrap()
+        .into_string();
+    assert!(!has_passphrase(&plain));
+    assert!(has_passphrase(&locked));
+    // One character of the secret part changed: the KDF field still says "no passphrase", so
+    // reading it fails at once instead of asking on the console (which would wait forever here).
+    let mut lines: Vec<String> = plain.lines().map(str::to_owned).collect();
+    let key = &mut lines[1];
+    let at = key.len() / 2;
+    let changed = if &key[at..=at] == "A" { "B" } else { "A" };
+    key.replace_range(at..=at, changed);
+    let damaged = lines.join("\n");
+    assert!(!has_passphrase(&damaged));
+    assert!(key_of(&damaged, None).is_err());
+    // Text that is no key at all is an error too.
+    assert!(key_of("not a key", None).is_err());
+}
+
+#[test]
+fn sec_18_keygen_writes_a_key_without_a_passphrase_that_signs_without_asking() {
+    let root = super::super::repository_root();
+    let offline = tempfile::tempdir().unwrap();
+    let out = offline.path().join("release.key");
+    let public = keygen(&out, &root).unwrap();
+    // The key is not encrypted, so reading it asks nothing: a prompt would wait for the console
+    // and this test would never end.
+    let text = fs::read_to_string(&out).unwrap();
+    SecretKey::from_unencrypted_box(text.clone().into()).unwrap();
+    let key = open_key(&out, &root).unwrap();
+    assert_eq!(public_of(&key).unwrap(), public);
+    // What it signs verifies against the public key it printed.
+    let signature = minisign::sign(None, &key, &b"a file"[..], None, None).unwrap();
+    let printed = PublicKey::from_base64(&public).unwrap();
+    minisign::verify(
+        &printed,
+        &signature,
+        std::io::Cursor::new(b"a file"),
+        true,
+        false,
+        false,
+    )
+    .unwrap();
+}
+
+#[test]
+fn sec_18_an_older_key_with_a_passphrase_still_opens_with_it() {
+    let pair = KeyPair::generate_encrypted_keypair(Some("old passphrase".to_owned())).unwrap();
+    let text = pair.sk.to_box(None).unwrap().into_string();
+    assert!(SecretKey::from_unencrypted_box(text.clone().into()).is_err());
+    let key = key_of(&text, Some("old passphrase".to_owned())).unwrap();
+    assert_eq!(public_of(&key).unwrap(), pair.pk.to_base64());
+    assert!(key_of(&text, Some("wrong".to_owned())).is_err());
 }
 
 /// A release folder of `version` with a small stand-in for every file.
@@ -49,11 +187,11 @@ fn sec_18_the_release_folder_holds_every_file_and_a_signature_for_each() {
     let root = super::super::repository_root();
     let offline = tempfile::tempdir().unwrap();
     let out = offline.path().join("release.key");
-    let public = keygen(&out, &root, Some("passphrase".to_owned())).unwrap();
+    let public = keygen(&out, &root).unwrap();
     assert!(offline.path().join("release.key.pub").is_file());
     // A key is never written over.
-    assert!(keygen(&out, &root, Some("other".to_owned())).is_err());
-    let key = SecretKey::from_file(&out, Some("passphrase".to_owned())).unwrap();
+    assert!(keygen(&out, &root).is_err());
+    let key = open_key(&out, &root).unwrap();
     assert_eq!(public_of(&key).unwrap(), public);
     let keys = [ReleaseKey {
         name: "release",
@@ -129,8 +267,9 @@ fn sec_18_the_release_folder_holds_every_file_and_a_signature_for_each() {
 fn sec_18_a_file_that_does_not_belong_in_the_release_folder_is_named() {
     let offline = tempfile::tempdir().unwrap();
     let out = offline.path().join("release.key");
-    let public = keygen(&out, &super::super::repository_root(), Some("p".to_owned())).unwrap();
-    let key = SecretKey::from_file(&out, Some("p".to_owned())).unwrap();
+    let root = super::super::repository_root();
+    let public = keygen(&out, &root).unwrap();
+    let key = open_key(&out, &root).unwrap();
     let keys = [ReleaseKey {
         name: "release",
         public: public.leak(),

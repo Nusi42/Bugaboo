@@ -596,8 +596,9 @@ pub(crate) fn commit_time(root: &Path) -> String {
 }
 
 mod npm;
+pub(crate) use npm::base64_decode;
 #[cfg(test)]
-use npm::{base64_decode, integrity_checksum};
+use npm::integrity_checksum;
 pub(crate) use npm::{locked_not_dev, npm_closure, read_lock, workspace_dependencies};
 #[cfg(test)]
 use serde_json::Value;

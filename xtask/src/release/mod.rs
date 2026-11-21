@@ -40,8 +40,8 @@ pub(crate) struct Arguments {
 #[derive(clap::Subcommand)]
 enum Action {
     /// Sign every file of the release folder of this version. The secret key comes from `--key`
-    /// or `BUGABOO_RELEASE_KEY`, from a place outside the repository and every work folder; its
-    /// passphrase is asked for on the console.
+    /// or `BUGABOO_RELEASE_KEY`, from a place outside the repository and every work folder. A key
+    /// without a passphrase opens without a question; an older key with one asks for it.
     Sign {
         /// The secret key of the release.
         #[arg(long)]
@@ -50,8 +50,8 @@ enum Action {
     /// Check the release folder of this version: every file, its checksum and its signature
     /// against the keys the program carries (the `release` part of DEP-SBOM).
     Check,
-    /// Make a key pair for signing releases: the secret key at `--out`, protected by a passphrase
-    /// asked for on the console, and the public key beside it (`<out>.pub`).
+    /// Make a key pair for signing releases: the secret key at `--out`, without a passphrase
+    /// and without a question, and the public key beside it (`<out>.pub`).
     Keygen {
         /// Where the secret key goes, outside the repository and every work folder.
         #[arg(long)]
@@ -130,7 +130,7 @@ pub(crate) fn run_release(repo: &crate::repo::Repo, arguments: Arguments) -> any
             Ok(passed)
         }
         (Some(Action::Keygen { out }), _, _) => {
-            let public = sign::keygen(&out, repo.root(), None)?;
+            let public = sign::keygen(&out, repo.root())?;
             crate::output::info(&format!(
                 "wrote the secret key {} and its public key beside it. Put this public key into \
                  RELEASE_PUBLIC_KEYS (crates/bb-core/src/release/signature.rs):\n{public}",

@@ -232,7 +232,7 @@ pub(super) fn integrity_checksum(integrity: &str) -> Option<Checksum> {
 }
 
 /// Standard Base64, with or without padding.
-pub(super) fn base64_decode(text: &str) -> Option<Vec<u8>> {
+pub(crate) fn base64_decode(text: &str) -> Option<Vec<u8>> {
     let mut bytes = Vec::new();
     let mut bits = 0_u32;
     let mut count = 0;
