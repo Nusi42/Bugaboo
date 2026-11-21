@@ -3141,6 +3141,7 @@
   "keep-rules.periods-intro": "Bugaboo says what a new period would delete before you save it.",
   "keep-rules.would-delete": "With this period, Bugaboo deletes {records} within a day.",
   "keep-rules.would-delete-none": "With this period, Bugaboo deletes nothing more.",
+  "keep-rules.would-delete-hint": "Type another period to see what it would delete.",
   "keep-rules.would-be-past": "With this period, {records} {count, plural, one {is} other {are}} past it. Bugaboo deletes nothing by itself.",
   "keep-rules.would-be-past-none": "With this period, nothing is past it.",
   "old-records.title": "{kind} past the keep period",

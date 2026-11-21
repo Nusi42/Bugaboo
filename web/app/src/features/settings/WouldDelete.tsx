@@ -27,13 +27,13 @@ function effectText(effect: Schema<"PeriodEffectBody">): string {
     : t("keep-rules.would-be-past", { records, count: effect.records });
 }
 
-/** The words of the line: the count, the refusal of the server, or none yet. */
+/** The words of the line: the hint for the stored period, the count, the refusal of the server, or none yet. */
 function lineText(
   effect: { readonly data?: Schema<"PeriodEffectBody"> | undefined; readonly error: unknown },
   count: number | undefined,
 ): string | undefined {
   if (count === undefined) {
-    return undefined;
+    return t("keep-rules.would-delete-hint");
   }
   if (effect.error !== null) {
     return messageOf(effect.error);
@@ -43,9 +43,10 @@ function lineText(
 
 /**
  * What the period typed would delete, before it is saved: "With this period, Bugaboo deletes 312 notifications within a
- * day." It is counted only for a changed period (`count`), and the line keeps its room while there is nothing to say and
- * while the count is read, and shows the last count until the next is there, so nothing under it moves while the
- * person types (UX §6.4). A count the server refuses is said in its words.
+ * day." It is counted only for a changed period (`count`); under the stored period the line says how to see it, so the
+ * box has no empty line and the line is there from the start. While the first count is read the line keeps its room,
+ * and it shows the last count until the next is there, so nothing under it moves while the person types (UX §6.4). A
+ * count the server refuses is said in its words.
  */
 export function WouldDelete({
   kind,

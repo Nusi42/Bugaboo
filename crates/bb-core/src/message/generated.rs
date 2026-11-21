@@ -4318,6 +4318,10 @@ pub const KEEP_RULES_THEN_BY_ITSELF: MessageKey = MessageKey::new("keep-rules.th
 pub const KEEP_RULES_WOULD_BE_PAST_NONE: MessageKey =
     MessageKey::new("keep-rules.would-be-past-none");
 
+/// The message `keep-rules.would-delete-hint`.
+pub const KEEP_RULES_WOULD_DELETE_HINT: MessageKey =
+    MessageKey::new("keep-rules.would-delete-hint");
+
 /// The message `keep-rules.would-delete-none`.
 pub const KEEP_RULES_WOULD_DELETE_NONE: MessageKey =
     MessageKey::new("keep-rules.would-delete-none");

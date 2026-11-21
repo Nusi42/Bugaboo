@@ -3876,6 +3876,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "With this period, Bugaboo deletes {records} within a day.",
     ),
     (
+        "keep-rules.would-delete-hint",
+        "Type another period to see what it would delete.",
+    ),
+    (
         "keep-rules.would-delete-none",
         "With this period, Bugaboo deletes nothing more.",
     ),
