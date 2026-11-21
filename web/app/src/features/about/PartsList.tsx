@@ -1,14 +1,7 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { Alert, alertTone, partOf, part, ShowMoreOf, useHoldWhileReading } from "@bugaboo/ui";
-import {
-  Collection,
-  ListBox,
-  ListBoxItem,
-  ListBoxLoadMoreItem,
-  ListLayout,
-  Virtualizer,
-} from "react-aria-components";
+import { Collection, ListBox, ListBoxItem, ListLayout, Virtualizer } from "react-aria-components";
 
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
@@ -47,18 +40,14 @@ function rowOf(each: Readonly<Part>, at: number): ListedPart {
 }
 
 /**
- * The parts of this release by name, version and license, in a box of its own height that draws only the rows that
- * are in it and reads the next page as the end comes into view.
+ * The parts of this release by name, version and license, in a list that draws only the rows that are in the window.
+ * The next page is read with *Show more parts* only: a list that read it by itself as its end came into view pushed
+ * the button away from the keyboard focus, page after page (WCAG 2.4.11).
  */
 export function PartsList() {
   const parts = useParts();
   useHoldWhileReading(parts.isLoading);
   const rows = itemsOf(parts.data?.pages).map((each, at) => rowOf(each, at));
-  const more = (): void => {
-    if (parts.hasNextPage && !parts.isFetchingNextPage) {
-      void parts.fetchNextPage();
-    }
-  };
   return (
     <>
       {parts.isError ? <Alert tone={alertTone.danger}>{messageOf(parts.error)}</Alert> : null}
@@ -78,7 +67,6 @@ export function PartsList() {
               </ListBoxItem>
             )}
           </Collection>
-          <ListBoxLoadMoreItem onLoadMore={more} />
         </ListBox>
       </Virtualizer>
       <ShowMoreOf label={t("about.parts-more")} list={parts} />

@@ -5,8 +5,12 @@ import { supportText } from "../src/features/about/index.ts";
 import {
   aboutOf,
   downloadEveryFile,
+  laterPages,
   lastPartName,
+  morePartsButton,
+  pressMoreWithTheKeyboard,
   readPartsToTheEnd,
+  scrollUpAfterAMousePress,
 } from "./support/about-words.ts";
 import { bob } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
@@ -40,4 +44,25 @@ test("comp_01 About shows the version the support period and the parts list to d
   await readPartsToTheEnd(page, parts, about, await lastPartName(server));
   await expectGoodInEveryLook(page);
   await downloadEveryFile(page, about);
+});
+
+test("comp_15 Show more stays in view for the keyboard and leaves a mouse where it scrolled", async ({
+  page,
+  server,
+}) => {
+  expect(laterPages(await aboutOf(server)), "the parts take three pages at least").toBeGreaterThan(
+    1,
+  );
+  await signIn(page, bob);
+  await page.goto(paths.about);
+  const parts = page.getByRole("listbox", { name: t("about.parts") });
+  await expect(parts.getByRole("option").first()).toBeVisible();
+  // The keyboard: the button is in view when its page is there and the list has measured its rows.
+  await pressMoreWithTheKeyboard(page, parts);
+  await expect(morePartsButton(page)).toBeInViewport();
+  // The mouse: the page stays where the person scrolled it to while the list measures the rows it draws.
+  const scrolled = await scrollUpAfterAMousePress(page);
+  expect(scrolled.scrolled).toBeLessThan(scrolled.pressed);
+  expect(scrolled.settled).toBe(scrolled.scrolled);
+  await expect(morePartsButton(page)).not.toBeInViewport();
 });
