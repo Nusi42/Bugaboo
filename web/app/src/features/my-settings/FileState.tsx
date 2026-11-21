@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, StatesInPlace, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, Button, LiveStatus, StatesInPlace, partOf, part } from "@bugaboo/ui";
 
 import { type DataExport, useDownloadExport } from "../../shared/data-export.ts";
 import { messageOf } from "../../shared/errors.ts";
@@ -81,15 +81,18 @@ function ReadyFile({ item }: { readonly item: DataExport | null }) {
 /**
  * Where the newest file stands, in words, with *Download the file* while it is there. Every state stands in one place
  * (`StatesInPlace`), so the part keeps its size from the first read on: a file that is being created and then ready
- * moves nothing under it (UX §6.4).
+ * moves nothing under it (UX §6.4). The part is a status: a screen reader says the new state when it comes, *Creating
+ * the file…* and then that the file is ready, without moving the focus (WCAG 4.1.3).
  */
 export function FileState({ item }: { readonly item: DataExport | null }) {
   const current: FileShown = item?.status ?? "none";
   return (
-    <StatesInPlace
-      current={current}
-      states={FILE_STATES}
-      render={(state) => shownFor(state, item)}
-    />
+    <LiveStatus>
+      <StatesInPlace
+        current={current}
+        states={FILE_STATES}
+        render={(state) => shownFor(state, item)}
+      />
+    </LiveStatus>
   );
 }

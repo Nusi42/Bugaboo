@@ -37,7 +37,7 @@ const GRID_AND_PLAIN: [&str; 4] = ["row", "cell", "table", "grid"];
 
 /// The files that hold the role constants of other parts, with the reason: each gives a role to
 /// one element by a named constant of its own (an alert, a status line, a dialog, a list box).
-const ROLE_HOMES: [(&str, &str); 5] = [
+const ROLE_HOMES: [(&str, &str); 6] = [
     (
         "web/packages/ui/src/Alert.tsx",
         "the role of a message: alert or status",
@@ -49,6 +49,10 @@ const ROLE_HOMES: [(&str, &str); 5] = [
     (
         "web/packages/ui/src/SaveStatus.tsx",
         "the polite status of a save",
+    ),
+    (
+        "web/packages/ui/src/LiveStatus.tsx",
+        "the polite status of a part that changes in the background",
     ),
     (
         "web/packages/ui/src/ConfirmDialog.tsx",
