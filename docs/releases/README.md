@@ -15,17 +15,20 @@ keys are written once, in `RELEASE_PUBLIC_KEYS` of
 notes get them from there.
 
 1. *Maintainer:* make each key on a computer you trust, into a place outside
-   the repository and every work folder (an offline USB stick, one stick per
-   key):
+   the repository and every work folder:
 
    ```text
-   cargo xtask release keygen --out <stick 1>/bugaboo-release.key
-   cargo xtask release keygen --out <stick 2>/bugaboo-backup.key
+   cargo xtask release keygen --out <path>/bugaboo-release.key
+   cargo xtask release keygen --out <path>/bugaboo-backup.key
    ```
 
-   Each asks for a passphrase twice and prints the public key. Keep each
-   passphrase apart from its key. The command refuses a place inside a
-   repository or a work folder, and never writes over a key.
+   Each asks nothing and prints the public key. The keys have no passphrase.
+   The command refuses a place inside a repository or a work folder, never
+   writes over a key, and makes the secret key file readable by its owner
+   only; `release sign` refuses a key file that other accounts may read and
+   names the command that closes it. Keep the release key and the backup key
+   apart from each other and safe; if one may be known to somebody else,
+   replace it as *Replace a key* below says.
 2. Put the two public keys into `RELEASE_PUBLIC_KEYS` (`release` first,
    `backup` second), set `KEYS_ARE_FOR_TESTS` to `false`, and run
    `cargo xtask gen release`, which writes them into `SECURITY.md`.
@@ -64,10 +67,10 @@ and the notes say *test*.
    test build: the folder, every file and the version in every signature are
    named `<version>-test`. When the tag exists, it refuses a day of the
    release that is not the day of the tag's commit.
-6. *Maintainer:* sign it, with the stick of the release key plugged in:
+6. *Maintainer:* sign it with the release key:
 
    ```text
-   cargo xtask release sign --key <stick 1>/bugaboo-release.key
+   cargo xtask release sign --key <your key folder>/bugaboo-release.key
    ```
 
    It writes `SHA256SUMS` and a `.minisig` for every file and checks each.
