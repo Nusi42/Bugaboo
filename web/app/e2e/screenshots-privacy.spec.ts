@@ -7,7 +7,13 @@ import { ada, bob, idOf, signInThroughApi } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { inFourChosenThemes, inFourChosenThemesAsWindow } from "./support/four-themes.ts";
 import { signIn } from "./support/flows.ts";
-import { openPersonPage, preparePrivacy, removalWindow, stateCard } from "./support/privacy.ts";
+import {
+  FILE_CREATED_MS,
+  openPersonPage,
+  preparePrivacy,
+  removalWindow,
+  stateCard,
+} from "./support/privacy.ts";
 import { screenshotFolder } from "./support/screenshots.ts";
 
 // The privacy screens in the four themes, on a computer and a phone, for the review of the pictures. They are only
@@ -17,9 +23,6 @@ test.use({ preparation: { run: preparePrivacy } });
 
 /** Where the pictures go, below the folder the run was given. */
 const MILESTONE = "M9/privacy";
-
-/** The job writes the file of a person's data in the background. */
-const FILE_CREATED_MS = 60_000;
 
 test("My data with a file ready", async ({ page, server }) => {
   const session = await signInThroughApi(server, bob);

@@ -8,14 +8,11 @@ import { expect, refusal, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { recordRequests } from "./support/list-keys.ts";
 import { expectStill, landmarkOf, movementWhile } from "./support/movement.ts";
-import { adminWithOldAndNewTime, preparePrivacy } from "./support/privacy.ts";
+import { adminWithOldAndNewTime, FILE_CREATED_MS, preparePrivacy } from "./support/privacy.ts";
 
 // *My data*, *Data exports* and *Keep and delete rules* (PRIV-03, PRIV-05; UX §4.13, §5.7; ADR-0044, ADR-0045).
 
 test.use({ preparation: { run: preparePrivacy } });
-
-/** The job writes the file of a person's data in the background: seconds on a quiet computer. */
-const FILE_CREATED_MS = 60_000;
 
 test("priv_03 a person downloads their data from My data and the page does not move while it is made", async ({
   page,

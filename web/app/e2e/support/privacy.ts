@@ -10,6 +10,9 @@ import { prepareWebWithAgents } from "./agents-scene.ts";
 import { type Instance } from "./server.ts";
 import { createDays, daysAgo } from "./working-hours-scene.ts";
 
+/** The job writes the file of a person's data in the background: seconds on a quiet computer. */
+export const FILE_CREATED_MS = 60_000;
+
 /** A day long past every keep period of time entries: 2014, more than ten years before the tests run. */
 export const longAgo = "2014-03-03";
 
