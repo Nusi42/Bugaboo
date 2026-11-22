@@ -3,3 +3,8 @@ include = [{ path = "config.local.toml", optional = true }]
 
 [alias]
 xtask = "run --quiet --package xtask --"
+
+# The Windows programs carry the C runtime inside, so they start on a Windows without the Visual
+# C++ runtime installed (a clean computer has none; the try-out in Windows Sandbox showed it).
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]

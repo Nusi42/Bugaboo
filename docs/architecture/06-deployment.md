@@ -95,6 +95,8 @@ Folders that Bugaboo creates are readable by their owner only: mode `0700` on Li
 
 `cargo xtask build` builds the browser app and then the release program with the browser app inside (`rust-embed`); `--target` builds for another system. Windows x64 is built on the development PC. Static Linux programs (`x86_64-unknown-linux-musl`, `aarch64-unknown-linux-musl`) are built by `cargo xtask ci` on Linux machines (there is no hosted CI, ADR-0037). Windows ARM64 waits for the MSVC ARM64 tools (follow-up M1-F01). The program has no edition or model switch: differences between self-hosted and hosted come from the settings above only.
 
+The Windows programs carry the C runtime inside (`-C target-feature=+crt-static` under `[target.x86_64-pc-windows-msvc]` in `.cargo/config.toml`), so they start on a Windows without the Visual C++ runtime installed; a clean computer has none, as the try-out in Windows Sandbox showed. Cargo takes the flags of `target.<triple>.rustflags` instead of those of `build.rustflags`, and does not add them together, so a `build.rustflags` in a machine's own `.cargo/config.local.toml` is ignored for that target: flags a machine needs for Windows go into a `[target.x86_64-pc-windows-msvc]` table of that file, whose list Cargo joins to this one. The variable `RUSTFLAGS` replaces both, so a build with it names `+crt-static` itself or gets a program that needs the runtime installed.
+
 ## Served: we run it (hosted by Bugaboo)
 
 ```mermaid
