@@ -145,7 +145,8 @@ async fn handle(State(state): State<McpState>, request: Request<Body>) -> Respon
         .api
         .oauth_metadata(info.clone(), OAuthMetadataQuery)
         .await
-        .map_or_else(|_| info.origin_seen.clone(), |found| found.origin);
+        .map(|found| found.origin)
+        .unwrap_or_default();
     if from_another_site(&parts, &origin) {
         return json_no_store(
             StatusCode::FORBIDDEN,

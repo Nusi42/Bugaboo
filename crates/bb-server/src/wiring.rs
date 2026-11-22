@@ -245,9 +245,9 @@ pub(crate) async fn wire(
     }
     let name = Message::from(message::APP_NAME).render();
     if settings.public_url.is_empty() {
-        // Without it an AI app is told the address the request came to, which a name pointed at this
-        // machine can choose, and the page of another site is judged by that address too (ADR-0042).
-        tracing::warn!("no public address is set: AI apps are told the address a request came to");
+        // The sign-in of AI apps names the server only by it, never by the address a request names
+        // (ADR-0042): without it, apps cannot find the sign-in.
+        tracing::warn!("no public address is set: AI apps cannot find the sign-in");
     }
     // Passkeys are tied to a host name; a server reached by an IP address cannot offer them.
     let passkeys = RelyingParty::from_public_url(&settings.public_url, &name)

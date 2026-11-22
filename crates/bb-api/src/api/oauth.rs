@@ -15,7 +15,7 @@
 
 use axum::Router;
 use axum::extract::State;
-use axum::http::{HeaderMap, StatusCode, header};
+use axum::http::StatusCode;
 use axum::response::{IntoResponse as _, Response};
 use axum::routing::{get, post};
 use bb_app::auth::{
@@ -44,7 +44,6 @@ use super::auth::{
 use super::{body_ids, path_id};
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery, json_no_store, with_retry_after};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
-use crate::logging::Scheme;
 
 /// The fields of an app a person allowed that can be asked for.
 const APP_FIELDS: [FieldSpec; 7] = [
@@ -60,22 +59,6 @@ const APP_FIELDS: [FieldSpec; 7] = [
 const APPS_LIST: &str = "connected-apps";
 
 // ---- The routes of apps, outside `/api/v1` ----
-
-/// The address the request came to, for a server that does not know its public address.
-fn origin_seen(headers: &HeaderMap, scheme: Option<&Scheme>) -> String {
-    let host = headers
-        .get(header::HOST)
-        .and_then(|value| value.to_str().ok())
-        .unwrap_or_default();
-    format!("{}://{host}", scheme.map_or("http", |scheme| scheme.0))
-}
-
-/// The address a request came to, for the code that reads requests outside this crate (the MCP
-/// server).
-#[must_use]
-pub fn origin_of(parts: &axum::http::request::Parts) -> String {
-    origin_seen(&parts.headers, parts.extensions.get::<Scheme>())
-}
 
 /// The answer to an app that was turned away: the error of OAuth.
 fn oauth_error(problem: OAuthProblem) -> Response {

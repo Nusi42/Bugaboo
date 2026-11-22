@@ -263,8 +263,8 @@ pub async fn mcp_identity<S: AuthStore>(
     })
 }
 
-/// Where the sign-in of AI apps is: the public address of the server when it knows it, else the
-/// address the request came to.
+/// Where the sign-in of AI apps is: the public address of the server, never an address a request
+/// names.
 ///
 /// # Errors
 /// Never fails today; the type is the one of a use case.
@@ -279,15 +279,11 @@ pub async fn oauth_metadata<S: AuthStore>(
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// The address of this server as it is told to apps: the public address when the server knows
-    /// it, else the address the request came to, never with a slash at the end.
+    /// The address of this server as it is told to apps: its public address, never with a slash
+    /// at the end. Only the settings give it: the `Host` of a request names whatever its sender
+    /// chose.
     pub(crate) fn mcp_origin(&self) -> String {
-        let known = self.services.public_url.trim_end_matches('/');
-        if known.is_empty() {
-            self.request.origin_seen.trim_end_matches('/').to_owned()
-        } else {
-            known.to_owned()
-        }
+        self.services.public_url.trim_end_matches('/').to_owned()
     }
 
     /// The resource a token is for: the MCP server of this server. The one place that builds it.

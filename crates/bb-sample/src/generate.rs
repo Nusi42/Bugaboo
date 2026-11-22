@@ -354,6 +354,9 @@ pub async fn create<L: Later>(
         Arc::new(NoFailureLimit),
         Message::from(message::APP_NAME).render(),
     )
+    // An address of its own under the domain of its people: the server that opens the sample
+    // later is started with the address people reach it at.
+    .with_public_url(format!("https://{}", crate::people_plan::EMAIL_DOMAIN))
     // The files of the sample and their previews are made in this process: nobody attacks it, and
     // the program that would be the child is not this one.
     .with_files(Arc::new(DiskFiles::new(

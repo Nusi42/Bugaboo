@@ -379,3 +379,19 @@ async fn ai_22_an_access_key_is_turned_away_at_mcp_while_apps_are_off_and_an_age
     );
     Ok(())
 }
+
+#[tokio::test]
+async fn sec_12_the_sign_in_of_apps_names_only_the_public_address() -> Outcome {
+    let world = World::with_ai_apps_and_agents().await?;
+    ai_on(&world).await?;
+    // A request carries nothing that names the server: whatever `Host` it came with cannot reach
+    // the metadata, which only the settings fill.
+    let found = crate::auth::oauth_metadata(&world.ctx(), crate::auth::OAuthMetadataQuery).await?;
+    assert_eq!(found.origin, super::world::PUBLIC_URL.trim_end_matches('/'));
+    assert!(
+        found
+            .resource
+            .starts_with(super::world::PUBLIC_URL.trim_end_matches('/'))
+    );
+    Ok(())
+}

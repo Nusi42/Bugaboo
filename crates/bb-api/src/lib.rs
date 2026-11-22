@@ -29,7 +29,7 @@ mod web;
 
 pub use api::{
     AuthHandle, BODY_LIMIT_BYTES, ProbeHandle, TIME_LIMIT, VERSION_PATH, bearer_token,
-    is_same_origin_of, origin_of, request_info,
+    is_same_origin_of, request_info,
 };
 pub use errors::{ApiError, ApiJson, JSON_TYPE, json_no_store, with_retry_after};
 pub use failures::{

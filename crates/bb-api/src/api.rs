@@ -115,7 +115,6 @@ pub use admin::ProbeHandle;
 pub(crate) use auth::Info;
 pub use auth::{AuthHandle, request_info};
 pub(crate) use oauth::app_routes as oauth_app_routes;
-pub use oauth::origin_of;
 
 /// The first part of every API address.
 pub(crate) const API_PREFIX: &str = "api";

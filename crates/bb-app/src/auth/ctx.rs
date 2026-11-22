@@ -45,9 +45,6 @@ pub struct RequestInfo {
     /// The run the request works inside (a session of an AI app, an attempt of an agent): every
     /// event of the request carries it. Set by the way in that opened the run, never by a client.
     pub run: Option<RunId>,
-    /// The address the request came to (`https://bugaboo.example.com`), for the places that name
-    /// the server to somebody else (the sign-in of AI apps) when it does not know its public address.
-    pub origin_seen: String,
     /// The handle with which the call of a tool takes what the entry of its message left
     /// (`McpIdentity::handoff`); set by the MCP server for the calls of one message, never by a client.
     pub handoff: Option<String>,
@@ -232,7 +229,8 @@ impl<S> AuthServices<S> {
     }
 
     /// The address people reach the server at (`https://bugaboo.example.com`): the links in
-    /// e-mails start with it.
+    /// e-mails start with it, and the sign-in of AI apps names it. Every server is built with one;
+    /// the address a request names is never used in its place.
     #[must_use]
     pub fn with_public_url(mut self, public_url: impl Into<String>) -> Self {
         self.public_url = public_url.into();
