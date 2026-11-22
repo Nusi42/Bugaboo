@@ -6,7 +6,7 @@ The lead updates this file after every step (builder started, report in, review 
 
 - **Milestone:** M9, privacy, operations and the first release, is planned and decided ([`milestones/M9/`](milestones/M9/README.md)): the maintainer took every recommendation of M9-Q1 to Q21 on 2026-11-18, including three cuts (restore from the command line only; support access, `DIST-03`, moved to M14 as a V1 feature; M4-F61, M4-F63 and M4-F128 to a later operations package). ADR-0044 to ADR-0047 are accepted, ADR-0048 in part. Waves 1 and 2 are merged (WP-02 to WP-09). Next: wave 3.
 - **Done:** M0 to M8 (`m0-done` to `m8-done`; M8 tagged on 2026-11-17). Version 0.5.1 (ADR-0040: 144 of 225 features, the minor number stays 5, so the patch number rises). The M8 review page is published (link outside the repository).
-- **Wave:** M9 waves 0 and 1 are merged (2026-11-19); wave 2 (WP-06 to WP-09) is merged (2026-11-20). The tools for several agents and for agents that wait, hand over and undo are merged. Wave 3: WP-10 and WP-11 are merged; WP-13 is building. Wave 4: WP-14 is merged; the open points of the privacy screens (M9-F91, F92) are merged. The speed test of ten writers is within its budget again (M9-F87). M8 is complete (all of its packages merged).
+- **Wave:** M9 waves 0 and 1 are merged (2026-11-19); wave 2 (WP-06 to WP-09) is merged (2026-11-20). The tools for several agents and for agents that wait, hand over and undo are merged. Wave 3 is merged (WP-10, WP-11, WP-13). Wave 4: WP-14 is merged; the open points of the privacy screens (M9-F91, F92) are merged. The speed test of ten writers is within its budget again (M9-F87). M8 is complete (all of its packages merged).
 - **`main`:** fast-forwarded to the last green `WIN1`.
 
 ## Work packages (M9)
@@ -25,7 +25,7 @@ The lead updates this file after every step (builder started, report in, review 
 | WP-10 | The privacy screens | merged (2026-11-20; one fix round, then a rebase onto the operations screens; open points M9-F91 to F93) | `win3` / `WIN3` | Wave 3; Opus |
 | WP-11 | The operations screens: *Backups* and *About* | merged (2026-11-20; two fix rounds, then three for the ci: the settings lists, one scroll box, the parts list in the debug build) | `win2` / `WIN2` | Wave 3; Sonnet |
 | WP-12 | *Support access* | moved to M14 (2026-11-18) | — | Draft kept in the M9 folder |
-| WP-13 | Run as a service, proven on clean systems | building (2026-11-21; also lets the release build name its WSL distribution and makes release keys without a passphrase) | `win4` / `WIN4` | Wave 3; Opus |
+| WP-13 | Run as a service, proven on clean systems | merged (2026-11-22; one fix round; also keys without a passphrase, the real public keys, the WSL distribution of the release build, and no Windows code signing for 0.6.0, M9-F126) | `win4` / `WIN4` | Wave 3; Opus |
 | WP-14 | The accessibility pass, the EN 301 549 report, the statement | merged (2026-11-22; one fix round; open points M9-F130 to F136) | `win3` / `WIN3` | Wave 4; Opus |
 | WP-15 | Sample part 8, the long run, speed, the release candidate, the exit demo | not started | `win2` / `WIN2` | Wave 4; Opus; measures alone on a quiet computer |
 | WP-16 | Agents that wait for work, hand over and undo | merged (2026-11-20; two fix rounds, a second builder for the history of an agent and a third for the fixes) | `win4` / `WIN4` | Added 2026-11-19 from a tester's report; Opus; migration 62 |
@@ -84,7 +84,6 @@ Recorded with their target package in the follow-up tables of the milestone fold
 ## Open questions
 
 - **Done on 2026-11-21:** *Windows Sandbox* is switched on (M9-Q17), and the Linux release build has a WSL distribution to run in.
-- **For the maintainer, before the release candidate (WP-15):** make the release key and the backup key with `cargo xtask release keygen` once keys without a passphrase are merged (ADR-0047), and hand over the two public keys (M9-Q12).
 - **At the exit of M9:** signing and publishing 0.6.0. There is no pass with a screen reader by a person before the first release (the maintainer, 2026-11-21): the accessibility statement says the screens passed the automated checks and were not yet tried with a screen reader.
 - **Linux:** `cargo xtask ci` runs on Windows and in the WSL distribution of this computer (Ubuntu, without systemd), against both databases; the static Linux program is built there. A Linux service manager is proven in M9 in a throwaway WSL distribution with systemd (WP-13). The old question of M1 (no Linux installed) is closed.
 
