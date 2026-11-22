@@ -1,7 +1,9 @@
 # Secret scan (SEC-SECRETS): the default rules of gitleaks, nothing switched off, and one rule of
 # our own for the access keys of Bugaboo (AUTH-07): `bb_`, 8 symbols, `_` and 52 symbols of the
 # alphabet of codes (digits and letters without i, l, o and u). `bb-auth` makes the keys in this
-# form (`access_key.rs`). Two more find a secret key of minisign, which signs the releases
+# form (`access_key.rs`). One more finds the secrets of the sign-in of AI apps (ADR-0042): `bbc_`
+# (a code), `bba_` (an access token) or `bbr_` (a renewing token) and 43 symbols of base64url, the
+# 32 random bytes `bb-auth` writes (`oauth.rs`, `token.rs`). Two more find a secret key of minisign, which signs the releases
 # (ADR-0047, decision 2): its first line, and the base64 line of the key itself, encrypted (`EdScB2`)
 # or not (`Ed`, two zero bytes, `B2`). The fixtures in `tools/checks/fixtures/SEC-SECRETS` show what
 # they find.
@@ -13,6 +15,12 @@ id = "bugaboo-access-key"
 description = "A Bugaboo access key"
 regex = '''\bbb_[0-9a-hjkmnp-tv-z]{8}_[0-9a-hjkmnp-tv-z]{52}\b'''
 keywords = ["bb_"]
+
+[[rules]]
+id = "bugaboo-oauth-secret"
+description = "A code or a token of an AI app signed in to Bugaboo"
+regex = '''\bbb[acr]_[A-Za-z0-9_-]{43}(?:[^A-Za-z0-9_-]|$)'''
+keywords = ["bbc_", "bba_", "bbr_"]
 
 [[rules]]
 id = "minisign-secret-key-comment"

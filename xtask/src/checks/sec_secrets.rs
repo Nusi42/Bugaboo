@@ -123,6 +123,27 @@ mod tests {
     }
 
     #[test]
+    fn bad_example_the_secrets_of_ai_apps_are_found_by_the_rule_of_bugaboo() {
+        let temp = TempDir::new("secrets-oauth-bad");
+        repo_with_the_rule_of_bugaboo(&temp, "bad/oauth-secrets.txt");
+        let findings = scan(temp.path(), Scan::History).unwrap();
+        crate::testutil::assert_real_findings(&findings);
+        // The code, the access token and the renewing token.
+        assert!(
+            findings[0].message.contains("leaks found: 3"),
+            "{}",
+            findings[0].message
+        );
+    }
+
+    #[test]
+    fn good_example_things_that_only_look_like_secrets_of_ai_apps_are_not_found() {
+        let temp = TempDir::new("secrets-oauth-good");
+        repo_with_the_rule_of_bugaboo(&temp, "good/not-an-oauth-secret.txt");
+        assert!(scan(temp.path(), Scan::History).unwrap().is_empty());
+    }
+
+    #[test]
     fn bad_example_a_minisign_secret_key_is_found_by_the_rules_of_bugaboo() {
         let temp = TempDir::new("secrets-minisign-bad");
         repo_with_the_rule_of_bugaboo(&temp, "bad/minisign-secret-key.txt");
