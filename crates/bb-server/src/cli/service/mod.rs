@@ -77,8 +77,8 @@ fn find(args: &ConfigArgs) -> anyhow::Result<Found> {
 
 /// Refuses a place where somebody but the system and the administrators of the computer could
 /// change what the service runs as its own account: the program, its folder and every folder
-/// above it, and the folder of the settings file (whose file the install makes the service's
-/// alone), or a program inside the data folder, which the service itself may change.
+/// above it, and on Windows the folder of the settings file (whose file the install makes the
+/// service's alone), or a program inside the data folder, which the service itself may change.
 fn refuse_changeable(found: &Found, data_dir: &Path) -> anyhow::Result<()> {
     refusal(&found.program, &found.config, data_dir)
         .map_or(Ok(()), |said| Err(anyhow!(said.render())))
@@ -90,7 +90,11 @@ fn refusal(program: &Path, config: &Path, data_dir: &Path) -> Option<Message> {
         return Some(message::service_program_in_data(program.display()));
     }
     let mut chain = host_rights::program_chain(program);
-    chain.extend(host_rights::settings_folder(config));
+    // On Linux the folder of the settings file is judged with its own words by
+    // `systemd::check_settings_file`, which also refuses a link and a file in the data folder.
+    if cfg!(windows) {
+        chain.extend(host_rights::settings_folder(config));
+    }
     match host_rights::first_changeable(&chain, Besides::Nobody) {
         Verdict::Closed => None,
         Verdict::Open(path) => Some(changeable(&path)),
