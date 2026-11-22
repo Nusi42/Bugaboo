@@ -41,17 +41,17 @@ const DATABASE_FILE: &str = bb_store::DATABASE_FILE;
 const FILES: &str = bb_files::FILES_FOLDER;
 const EXPORTS: &str = bb_files::EXPORTS_FOLDER;
 const KEYS: &str = bb_store::KEYS_FOLDER;
-const BACKUPS: &str = "backups";
+const BACKUPS: &str = bb_core::data_folder::BACKUPS_FOLDER;
 const TLS: &str = "tls";
 const LOGS: &str = bb_store::LOGS_FOLDER;
 const ANCHOR_FILE: &str = bb_store::SECURITY_LOG_ANCHOR_FILE;
 #[cfg(windows)]
 const SERVER_LOG_FILE: &str = "server.log";
-const SETUP_CODE_FILE: &str = "setup-code.txt";
+const SETUP_CODE_FILE: &str = bb_core::data_folder::SETUP_CODE_FILE;
 const PRIVACY: &str = "privacy";
 const REPLAY_LIST: &str = "replay.list";
 const SERVER_LOCK: &str = "server.lock";
-const VERSION_FILE: &str = "version.txt";
+const VERSION_FILE: &str = bb_core::data_folder::VERSION_FILE;
 /// The folders `prepare` makes inside the data folder.
 pub(crate) const SUB_FOLDERS: [&str; 6] = [FILES, EXPORTS, KEYS, BACKUPS, TLS, LOGS];
 /// What the built-in database (SQLite) keeps next to its file.

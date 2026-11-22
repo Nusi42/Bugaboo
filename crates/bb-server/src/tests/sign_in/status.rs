@@ -156,7 +156,7 @@ async fn ops_08_ready_means_the_database_answers() -> TestResult {
         let rig = Rig::start(db).await?;
         let app = app_with_probe(&rig, None);
         let ready = || async {
-            let request = Request::get("/health/ready").body(Body::empty())?;
+            let request = Request::get(bb_api_words::health::READY).body(Body::empty())?;
             let response = app.clone().oneshot(request).await?;
             let status = response.status();
             let bytes = axum::body::to_bytes(response.into_body(), usize::MAX).await?;

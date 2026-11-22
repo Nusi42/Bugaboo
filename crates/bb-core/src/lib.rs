@@ -21,6 +21,7 @@ pub mod backup;
 pub mod comment;
 pub mod contrast;
 pub mod data_export;
+pub mod data_folder;
 pub mod e_mail_change;
 pub mod edit;
 pub mod entities;

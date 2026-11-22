@@ -224,7 +224,12 @@ mod api {
             .unwrap();
         assert_eq!(unknown.status(), StatusCode::TOO_MANY_REQUESTS);
         let page = app
-            .oneshot(request("GET", "/health/live", "198.51.100.1:4", None))
+            .oneshot(request(
+                "GET",
+                bb_api_words::health::LIVE,
+                "198.51.100.1:4",
+                None,
+            ))
             .await
             .unwrap();
         assert_eq!(page.status(), StatusCode::OK);

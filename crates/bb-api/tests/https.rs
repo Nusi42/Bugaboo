@@ -272,11 +272,11 @@ mod https {
         let other: IpAddr = "10.255.255.1".parse().unwrap();
 
         let trusted = start(false, Some(vec![loopback])).await;
-        let response = fetch(&trusted, false, &get("/health/live", "")).await;
+        let response = fetch(&trusted, false, &get(bb_api_words::health::LIVE, "")).await;
         assert!(String::from_utf8_lossy(&response).contains("200 OK"));
 
         let refused = start(false, Some(vec![other])).await;
-        let response = fetch(&refused, false, &get("/health/live", "")).await;
+        let response = fetch(&refused, false, &get(bb_api_words::health::LIVE, "")).await;
         assert!(
             response.is_empty(),
             "an address that is not trusted got an answer"
@@ -287,7 +287,7 @@ mod https {
     async fn sec_10_a_mapped_form_of_a_trusted_proxy_is_trusted() {
         let mapped: IpAddr = "::ffff:127.0.0.1".parse().unwrap();
         let server = start(false, Some(vec![mapped])).await;
-        let response = fetch(&server, false, &get("/health/live", "")).await;
+        let response = fetch(&server, false, &get(bb_api_words::health::LIVE, "")).await;
         assert!(String::from_utf8_lossy(&response).contains("200 OK"));
         // Behind a trusted proxy the connection counts as HTTPS: the full HSTS lifetime.
         assert!(head_of(&response).contains(&format!(
@@ -326,7 +326,7 @@ mod https {
         let small = fetch(
             &server,
             true,
-            &get("/health/ready", "Accept-Encoding: gzip, br\r\n"),
+            &get(bb_api_words::health::READY, "Accept-Encoding: gzip, br\r\n"),
         )
         .await;
         assert!(!head_of(&small).contains("content-encoding"));
@@ -355,7 +355,7 @@ Host: local",
         let first = TcpStream::connect(server.address).await.unwrap();
         let mut second = TcpStream::connect(server.address).await.unwrap();
         second
-            .write_all(get("/health/live", "").as_bytes())
+            .write_all(get(bb_api_words::health::LIVE, "").as_bytes())
             .await
             .unwrap();
         let mut out = Vec::new();

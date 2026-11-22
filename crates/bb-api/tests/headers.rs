@@ -82,19 +82,23 @@ mod headers {
         (Method::GET, "/", StatusCode::OK),
         (Method::GET, "/some/page", StatusCode::OK),
         (Method::GET, "/assets/app-1a2b.js", StatusCode::OK),
-        (Method::GET, "/health/live", StatusCode::OK),
+        (Method::GET, bb_api_words::health::LIVE, StatusCode::OK),
         (Method::GET, "/missing.js", StatusCode::NOT_FOUND),
         (Method::GET, "/assets/missing.js", StatusCode::NOT_FOUND),
         (Method::GET, "/api/anything", StatusCode::NOT_FOUND),
         (Method::GET, "/health/other", StatusCode::NOT_FOUND),
         (Method::POST, "/", StatusCode::METHOD_NOT_ALLOWED),
         (Method::POST, "/some/page", StatusCode::METHOD_NOT_ALLOWED),
-        (Method::POST, "/health/live", StatusCode::METHOD_NOT_ALLOWED),
+        (
+            Method::POST,
+            bb_api_words::health::LIVE,
+            StatusCode::METHOD_NOT_ALLOWED,
+        ),
         // A change without an origin is refused before the address is looked at; the headers stay.
         (Method::POST, "/api/x", StatusCode::FORBIDDEN),
         (Method::HEAD, "/", StatusCode::OK),
         (Method::HEAD, "/assets/app-1a2b.js", StatusCode::OK),
-        (Method::HEAD, "/health/live", StatusCode::OK),
+        (Method::HEAD, bb_api_words::health::LIVE, StatusCode::OK),
         (Method::HEAD, "/missing.js", StatusCode::NOT_FOUND),
         (Method::HEAD, "/api/anything", StatusCode::NOT_FOUND),
         (Method::HEAD, "/health/other", StatusCode::NOT_FOUND),
@@ -138,7 +142,7 @@ mod headers {
         let response = send(
             WebSource::Folder(dir.path().into()),
             Method::GET,
-            "/health/live",
+            bb_api_words::health::LIVE,
         )
         .await;
         assert_eq!(response.headers().get("cache-control").unwrap(), "no-store");

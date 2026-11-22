@@ -42,7 +42,11 @@ fn header_of<'a>(response: &'a Response, name: &str) -> &'a str {
 #[tokio::test]
 async fn dist_01_health_live_answers_ok_json() {
     let dir = app_folder();
-    let response = get_from(WebSource::Folder(dir.path().into()), "/health/live").await;
+    let response = get_from(
+        WebSource::Folder(dir.path().into()),
+        bb_api_words::health::LIVE,
+    )
+    .await;
     assert_eq!(response.status(), StatusCode::OK);
     assert_eq!(header_of(&response, "content-type"), "application/json");
     assert_eq!(body(response).await, r#"{"status":"ok"}"#);
@@ -53,14 +57,18 @@ async fn ops_08_health_ready_checks_the_data_folder() {
     let data = tempfile::tempdir().unwrap();
     let mut ready = options(WebSource::Folder("none".into()));
     ready.data_folder = data.path().to_path_buf();
-    let request = Request::get("/health/ready").body(Body::empty()).unwrap();
+    let request = Request::get(bb_api_words::health::READY)
+        .body(Body::empty())
+        .unwrap();
     let response = router(ready).oneshot(request).await.unwrap();
     assert_eq!(response.status(), StatusCode::OK);
     assert!(body(response).await.contains(r#""data_folder":"ok""#));
 
     let mut missing = options(WebSource::Folder("none".into()));
     missing.data_folder = data.path().join("not-there");
-    let request = Request::get("/health/ready").body(Body::empty()).unwrap();
+    let request = Request::get(bb_api_words::health::READY)
+        .body(Body::empty())
+        .unwrap();
     let response = router(missing).oneshot(request).await.unwrap();
     assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE);
     assert!(body(response).await.contains("unavailable"));

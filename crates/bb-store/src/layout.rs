@@ -3,7 +3,7 @@
 //! (`bb-sample`), so the two cannot disagree about where a database or a key lies.
 
 /// The built-in SQLite database, directly in the data folder.
-pub const DATABASE_FILE: &str = "bugaboo.db";
+pub use bb_core::data_folder::DATABASE_FILE;
 /// The folder with the key files (`MASTER_KEY_FILE` and the others).
 pub const KEYS_FOLDER: &str = "keys";
 /// The folder for what the security log keeps outside the database.

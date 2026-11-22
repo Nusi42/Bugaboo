@@ -363,3 +363,13 @@ pub mod about {
         format!("bugaboo-{version}{end}")
     }
 }
+
+/// The addresses that say whether a server is up, for service managers and the try-out of the
+/// install (`cargo xtask try-install`), which ask before anybody signs in.
+pub mod health {
+    /// Answers 200 while the server process runs.
+    pub const LIVE: &str = "/health/live";
+    /// Answers 200 when the server can serve: its data folder and its database are there; 503
+    /// when something is missing.
+    pub const READY: &str = "/health/ready";
+}

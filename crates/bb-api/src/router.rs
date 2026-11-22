@@ -147,8 +147,8 @@ pub fn router(options: Options) -> Router {
     let auth = state.auth.clone();
     let header_auth = auth.clone();
     let app = Router::new()
-        .route("/health/live", get(health_live))
-        .route("/health/ready", get(health_ready))
+        .route(bb_api_words::health::LIVE, get(health_live))
+        .route(bb_api_words::health::READY, get(health_ready))
         .route(
             bb_core::release::SECURITY_TXT_PATH,
             get(crate::web::security_txt),

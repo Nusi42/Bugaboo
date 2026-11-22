@@ -702,7 +702,13 @@ mod tests {
         ] {
             assert!(is_api(path), "{path}");
         }
-        for path in ["/", "/health/live", "/apiary", "/assets/api", "/issues/api"] {
+        for path in [
+            "/",
+            bb_api_words::health::LIVE,
+            "/apiary",
+            "/assets/api",
+            "/issues/api",
+        ] {
             assert!(!is_api(path), "{path}");
         }
     }
