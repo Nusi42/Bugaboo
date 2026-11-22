@@ -23,24 +23,22 @@ pub struct ReleaseKey {
 /// drops the bad one from this list (the step *Replace a key* of the release guide). Copied into
 /// `SECURITY.md` and the release notes by `cargo xtask gen release` and `cargo xtask release`.
 ///
-/// **These are test keys** (see [`KEYS_ARE_FOR_TESTS`]): their secret keys were thrown away when
-/// they were made. The real keys are made with `cargo xtask release keygen`, kept offline, and
-/// their public keys replace these before the first release that people install.
+/// These are the real keys, made with `cargo xtask release keygen` (see [`KEYS_ARE_FOR_TESTS`]).
 pub const RELEASE_PUBLIC_KEYS: &[ReleaseKey] = &[
     ReleaseKey {
         name: "release",
-        public: "RWRZmPMPzOsspbnI/J7vVDOJ1q3qHZ+oPwM23I6LcqYtReRagW+IsYe/",
+        public: "RWRj80xzx+o/0lgZdGYG/LB1xPfDN/Nxw+GFJiI0k7ofdUATvirpUB8Y",
     },
     ReleaseKey {
         name: "backup",
-        public: "RWRK0RL2nc9pmFKXiIWQtp+OIHiivdKULp6A7zjkGeiA/c8MMkyBZ5XD",
+        public: "RWTSVLiNDLni7T+d8XyvzayQo73d6ldQUfdAt/hZ9jKDACJfdy5JPEEP",
     },
 ];
 
 /// Whether [`RELEASE_PUBLIC_KEYS`] are test keys, which nobody can sign with. The release notes
 /// and `SECURITY.md` say so while it is `true`; it becomes `false` in the change that puts the real
 /// keys in.
-pub const KEYS_ARE_FOR_TESTS: bool = true;
+pub const KEYS_ARE_FOR_TESTS: bool = false;
 
 /// The name of the list of checksums of a release, beside its files.
 pub const CHECKSUMS_FILE: &str = "SHA256SUMS";

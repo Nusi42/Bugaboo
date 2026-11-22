@@ -43,10 +43,8 @@ The files of a release are signed with one of these public keys (minisign, Ed255
 
 | Key | Public key |
 |-----|------------|
-| release | `RWRZmPMPzOsspbnI/J7vVDOJ1q3qHZ+oPwM23I6LcqYtReRagW+IsYe/` |
-| backup | `RWRK0RL2nc9pmFKXiIWQtp+OIHiivdKULp6A7zjkGeiA/c8MMkyBZ5XD` |
-
-**These are test keys.** Nobody holds their secret keys, so no release is signed with them. The real keys replace them before the first release that people install.
+| release | `RWRj80xzx+o/0lgZdGYG/LB1xPfDN/Nxw+GFJiI0k7ofdUATvirpUB8Y` |
+| backup | `RWTSVLiNDLni7T+d8XyvzayQo73d6ldQUfdAt/hZ9jKDACJfdy5JPEEP` |
 
 Check a downloaded file with the Bugaboo you have installed (`bugaboo update verify <file>`), or with the minisign tool (`minisign -Vm <file> -P <public key>`).
 
