@@ -25,12 +25,14 @@ const ADDRESS: &str = "bob@example.test";
 /// The handle his name gave him.
 const HANDLE: &str = "bob.builder";
 
-/// Removes `person` as `browser`, with the `body` of the request.
+/// Removes `person` as `browser`, with the `body` of the request and the password of the tests
+/// typed again.
 pub(super) async fn remove(
     browser: &mut Browser,
     person: UserId,
-    body: Value,
+    mut body: Value,
 ) -> Result<Value, Failure> {
+    body["password"] = json!(super::rig::PASSWORD);
     let reply = browser
         .send(
             "POST",
@@ -269,9 +271,13 @@ async fn priv_04_work_times_go_in_the_change_that_removes_the_person() -> TestRe
             "the away time is found before"
         );
         switch_off(&mut ada, bob_id).await?;
-        // An empty body takes the setting's choice for the comments.
+        // A body without a choice for the comments takes the setting's choice.
         let done = ada
-            .send("POST", &format!("/api/v1/people/{bob_id}/remove"), None)
+            .send(
+                "POST",
+                &format!("/api/v1/people/{bob_id}/remove"),
+                Some(json!({"password": super::rig::PASSWORD})),
+            )
             .await?;
         assert_eq!(done.status.as_u16(), 204, "{}", done.body);
         // The walk finds nothing of the account left, the away time included: it went with the

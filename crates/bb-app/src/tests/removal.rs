@@ -14,7 +14,7 @@ use bb_core::settings::privacy::RemovedTexts;
 
 use super::scenarios::{Added, measured, text, token};
 use super::switch_off::switched_off;
-use super::world::{Outcome, World};
+use super::world::{OTHER_PASSWORD, Outcome, PASSWORD, World};
 use crate::auth::AppError;
 use crate::people::{SwitchOn, switch_on};
 use crate::ports::ChangeStore as _;
@@ -29,15 +29,43 @@ async fn removed(
     person: UserId,
     comments: Option<RemovedTexts>,
 ) -> Result<Removed, AppError> {
+    removed_typing(world, person, comments, PASSWORD).await
+}
+
+/// The administrator removes `person`, with `password` typed again.
+async fn removed_typing(
+    world: &World,
+    person: UserId,
+    comments: Option<RemovedTexts>,
+    password: &str,
+) -> Result<Removed, AppError> {
     remove_person(
         &world.ctx(),
         RemovePerson {
             session_token: token(world),
             person,
             comments,
+            password: password.to_owned(),
         },
     )
     .await
+}
+
+#[tokio::test]
+async fn sec_12_a_stolen_session_cannot_remove_a_person_without_the_password() -> Outcome {
+    let world = World::new().await?;
+    let bob = world.person("bob@example.test").await?.person.id;
+    switched_off(&world, bob).await?;
+    for typed in ["", OTHER_PASSWORD] {
+        let refused = removed_typing(&world, bob, None, typed).await;
+        assert_eq!(
+            refused.err().and_then(|error| error.code()),
+            Some(ErrorCode::WrongCredentials),
+            "{typed:?}"
+        );
+    }
+    removed_typing(&world, bob, None, PASSWORD).await?;
+    Ok(())
 }
 
 pub(crate) async fn remove_person_scenario(world: &World) -> Added {

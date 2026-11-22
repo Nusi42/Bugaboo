@@ -48,6 +48,8 @@ pub struct RemovePerson {
     pub person: UserId,
     /// What happens to the person's comments; none takes what `privacy.removed-texts` offers.
     pub comments: Option<RemovedTexts>,
+    /// The password of the person who removes, typed again: a removal cannot be undone.
+    pub password: String,
 }
 
 /// Everything one removal needs, so the replay runs it with the values of its line.
@@ -314,10 +316,12 @@ pub async fn remove_in<S: AuthStore, K: KeepPeriods>(
     Ok(removed)
 }
 
-/// Removes a switched-off person for good, with *Remove people* (ADR-0044, decision 6).
+/// Removes a switched-off person for good, with *Remove people* (ADR-0044, decision 6). The password
+/// is asked again, since a removal cannot be undone.
 ///
 /// # Errors
-/// `access.forbidden` without *Remove people* for the whole organization, `resource.not-found` for
+/// `access.forbidden` without *Remove people* for the whole organization,
+/// `auth.wrong-credentials` for a wrong password, `resource.not-found` for
 /// nobody or a person who is removed already, `person.not-switched-off` for an active person,
 /// and `edit.version-changed` for one switched on meanwhile.
 pub async fn remove_person<S: AuthStore>(
@@ -327,6 +331,7 @@ pub async fn remove_person<S: AuthStore>(
     let actor = ctx.actor(&input.session_token).await?;
     ctx.require(&actor, Permission::RemovePeople, Place::Organization)
         .await?;
+    ctx.confirm_password(&actor.person, input.password).await?;
     let person = input.person;
     let known = ctx.known_person_or_missing(person).await?;
     match known.standing() {

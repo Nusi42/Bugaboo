@@ -16,6 +16,7 @@ When a person asks for their data in another way, for example by letter, an admi
 1. Choose **Download someone's data**. A window opens.
 2. Under *Whose data*, search for the person and choose them. The list offers the people you may see by name, as *Who sees people* says for your role; the permission *Download someone's data* is enough, *Manage people* is not needed.
 3. Under *Why*, give the reason in a few words, such as the person's request. A reason is always needed.
-4. Choose **Create the file**.
+4. Type your password again, so that nobody who only sits at your browser can take the data of everybody.
+5. Choose **Create the file**.
 
 The file holds what the person's own *Download my data* holds, whatever else you may read. The person is told in the app and by e-mail, with your reason, also when they are switched off, and the security log records who created the file for whom and why. The new file stands at the top of the list.

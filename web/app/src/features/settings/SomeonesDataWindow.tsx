@@ -7,8 +7,6 @@ import {
   buttonLook,
   fieldKind,
   Form,
-  PickerOption,
-  SearchPicker,
   SubmitButton,
   TextField,
   Window,
@@ -18,65 +16,25 @@ import {
 import { useId, useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
-import { pickerStatus, usePickerFrame } from "../../shared/picker-status.ts";
+import { ConfirmPasswordField } from "../account/index.ts";
 import { useWindowProps } from "../../shared/use-window-props.ts";
 import { windowForms } from "../../shared/window-forms.ts";
-import { choicesOf, type Choice } from "../../shared/choices.ts";
-import { useAskSomeonesData, useExportPeople } from "./data-exports.ts";
-
-/** A person to choose, by name. */
-type Picked = Choice;
-
-/**
- * Whose data: the people the holder of *Download someone's data* may name, as *Who sees people* lets them, found by the
- * words typed (one person picker, M5-F135). The permission brings this list; *Manage people* is not needed.
- */
-function PersonPicker({
-  picked,
-  onPick,
-}: {
-  readonly picked: Picked | undefined;
-  readonly onPick: (person: Picked) => void;
-}) {
-  const { words, group, frame } = usePickerFrame();
-  const found = useExportPeople(words);
-  const people = choicesOf(found.data?.pages);
-  return (
-    <SearchPicker
-      legend={t("data-exports.pick")}
-      searchLabel={t("data-exports.pick-search")}
-      listLabel={t("data-exports.pick-list")}
-      {...frame}
-      {...pickerStatus(found, people.length, {
-        nothing: t("data-exports.pick-nothing"),
-        more: t("data-exports.pick-more"),
-      })}
-    >
-      {people.map((person) => (
-        <PickerOption
-          key={person.id}
-          group={group}
-          checked={picked?.id === person.id}
-          label={person.name}
-          onPick={() => {
-            onPick({ id: person.id, name: person.name });
-          }}
-        />
-      ))}
-    </SearchPicker>
-  );
-}
+import { useAskSomeonesData } from "./data-exports.ts";
+import { type Picked, PersonPicker } from "./SomeonesDataPicker.tsx";
 
 /** What the window asks: the person and the reason, until the server has taken the request. */
 function useSomeonesDataForm(onClose: () => void) {
   const [picked, setPicked] = useState<Picked>();
   const [reason, setReason] = useState("");
+  const [password, setPassword] = useState("");
   const [unpicked, setUnpicked] = useState(false);
   const ask = useAskSomeonesData();
   return {
     picked,
     reason,
     setReason,
+    password,
+    setPassword,
     unpicked,
     ask,
     pick: (person: Picked): void => {
@@ -88,7 +46,7 @@ function useSomeonesDataForm(onClose: () => void) {
         setUnpicked(true);
         return;
       }
-      ask.mutate({ person: picked.id, reason: reason.trim() }, { onSuccess: onClose });
+      ask.mutate({ person: picked.id, reason: reason.trim(), password }, { onSuccess: onClose });
     },
   };
 }
@@ -141,6 +99,7 @@ export function SomeonesDataWindow({ onClose }: { readonly onClose: () => void }
           value={form.reason}
           onChange={form.setReason}
         />
+        <ConfirmPasswordField value={form.password} onChange={form.setPassword} />
       </Form>
     </Window>
   );

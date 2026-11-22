@@ -18,6 +18,6 @@ A person's page (*Organization settings › People*, then the person) has the pa
 
 Choose what happens to the comments the person wrote: **Keep their comments, shown as Former user** (what your organization chose at the start) or **Delete their comments**.
 
-Only a switched-off person can be removed. If the person can still sign in, the window says so and offers **Switch off first**; the button **Remove** with the person's name waits until then.
+Only a switched-off person can be removed. If the person can still sign in, the window says so and offers **Switch off first**; the button **Remove** with the person's name waits until then, and until you have typed your password again, because a removal cannot be undone.
 
 After the removal the person's page shows *Former user* and the code of four signs in place of the name, the same label everywhere in Bugaboo. A file of *Download my data* about the person that was not fetched yet goes with the account: give it to the person first.

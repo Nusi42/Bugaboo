@@ -1,16 +1,6 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import {
-  Alert,
-  alertTone,
-  Button,
-  buttonLook,
-  ChoiceGroup,
-  choiceGroupLook,
-  Window,
-  partOf,
-  part,
-} from "@bugaboo/ui";
+import { Alert, alertTone, Button, buttonLook, Window, partOf, part } from "@bugaboo/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -18,10 +8,7 @@ import { messageOf } from "../../shared/errors.ts";
 import { useWindowProps } from "../../shared/use-window-props.ts";
 import { windowForms } from "../../shared/window-forms.ts";
 import { removalPlanOptions, useRemove } from "./person-state.ts";
-import { PlanLists } from "./RemovalPlanLists.tsx";
-
-/** What happens to the comments of a removed person (`RemovedTexts` of the API). */
-type CommentsChoiceValue = Schema<"RemovedTexts">;
+import { type CommentsChoiceValue, PlanLists, RemovalAnswers } from "./RemovalPlanLists.tsx";
 
 export interface RemovePersonWindowProps {
   readonly id: string;
@@ -35,30 +22,6 @@ export interface RemovePersonWindowProps {
   /** The refusal of the switch, shown in the window, where the person pressed it. */
   readonly switchError: unknown;
   readonly onClose: () => void;
-}
-
-/** The choice about the person's comments: keep them, shown as *Former user*, or delete them (ADR-0044, decision 7). */
-function CommentsChoice({
-  name,
-  value,
-  onChange,
-}: {
-  readonly name: string;
-  readonly value: CommentsChoiceValue;
-  readonly onChange: (value: CommentsChoiceValue) => void;
-}) {
-  return (
-    <ChoiceGroup
-      legend={t("removal.comments", { name })}
-      look={choiceGroupLook.radios}
-      choices={[
-        { value: "keep", label: t("setting.privacy.removed-texts.keep") },
-        { value: "delete", label: t("setting.privacy.removed-texts.delete") },
-      ]}
-      value={value}
-      onChange={onChange}
-    />
-  );
 }
 
 /**
@@ -93,6 +56,29 @@ function SwitchOffFirst({
   );
 }
 
+interface RemoveFooterProps {
+  readonly name: string;
+  /** Switched off, the plan read and the password typed. */
+  readonly ready: boolean;
+  readonly isPending: boolean;
+  readonly onClose: () => void;
+  readonly onRemove: () => void;
+}
+
+/** *Cancel*, and *Remove Malik Weber*, which waits until everything it needs is there. */
+function RemoveFooter({ name, ready, isPending, onClose, onRemove }: RemoveFooterProps) {
+  return (
+    <div {...partOf(part.windowFooterActions)}>
+      <Button look={buttonLook.quiet} onPress={onClose}>
+        {t("common.cancel")}
+      </Button>
+      <Button look={buttonLook.danger} isDisabled={!ready} isPending={isPending} onPress={onRemove}>
+        {t("removal.confirm", { name })}
+      </Button>
+    </div>
+  );
+}
+
 /**
  * The window of *Remove a person* (PRIV-04, UX §5.7, ADR-0044, decision 6): what is deleted now, what stays shown as
  * *Former user*, what the law keeps and until when, all read from the server's plan; the choice about the comments; and
@@ -103,9 +89,11 @@ export function RemovePersonWindow(props: RemovePersonWindowProps) {
   const windowProps = useWindowProps(windowForms.removePerson);
   const plan = useQuery(removalPlanOptions(id));
   const [chosen, setChosen] = useState<CommentsChoiceValue>();
+  const [password, setPassword] = useState("");
   const remove = useRemove(id);
   const comments = chosen ?? plan.data?.comments ?? "keep";
   const switchedOff = standing === "switched-off";
+  const problem = plan.error ?? remove.error;
   return (
     <Window
       {...windowProps}
@@ -118,32 +106,29 @@ export function RemovePersonWindow(props: RemovePersonWindowProps) {
         }
       }}
       footer={
-        <div {...partOf(part.windowFooterActions)}>
-          <Button look={buttonLook.quiet} onPress={onClose}>
-            {t("common.cancel")}
-          </Button>
-          <Button
-            look={buttonLook.danger}
-            isDisabled={!switchedOff || plan.data === undefined}
-            isPending={remove.isPending}
-            onPress={() => {
-              remove.mutate(comments, { onSuccess: onClose });
-            }}
-          >
-            {t("removal.confirm", { name })}
-          </Button>
-        </div>
+        <RemoveFooter
+          name={name}
+          ready={switchedOff && plan.data !== undefined && password !== ""}
+          isPending={remove.isPending}
+          onClose={onClose}
+          onRemove={() => {
+            remove.mutate({ comments, password }, { onSuccess: onClose });
+          }}
+        />
       }
     >
       <div {...partOf(part.stack)}>
         <p {...partOf(part.text)}>{t("removal.intro")}</p>
-        {plan.error === null ? null : (
-          <Alert tone={alertTone.danger}>{messageOf(plan.error)}</Alert>
-        )}
-        {remove.isError ? <Alert tone={alertTone.danger}>{messageOf(remove.error)}</Alert> : null}
+        {problem === null ? null : <Alert tone={alertTone.danger}>{messageOf(problem)}</Alert>}
         {switchedOff ? null : <SwitchOffFirst {...props} />}
         {plan.data === undefined ? null : <PlanLists plan={plan.data} />}
-        <CommentsChoice name={name} value={comments} onChange={setChosen} />
+        <RemovalAnswers
+          name={name}
+          comments={comments}
+          onComments={setChosen}
+          password={password}
+          onPassword={setPassword}
+        />
       </div>
     </Window>
   );

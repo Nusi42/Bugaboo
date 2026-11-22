@@ -58,7 +58,7 @@ test("Data exports with the file of somebody's data", async ({ page, server }) =
   dataOf(
     await admin.client.POST("/api/v1/people/{person}/data-export", {
       params: { path: { person: await idOf(server, bob) } },
-      body: { reason: "Bob asked for his data by e-mail" },
+      body: { reason: "Bob asked for his data by e-mail", password: ada.password },
     }),
   );
   await signIn(page, ada);

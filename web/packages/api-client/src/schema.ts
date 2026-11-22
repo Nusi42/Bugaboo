@@ -6245,6 +6245,11 @@ export interface components {
     };
     /** @description Why an administrator asks for somebody else's data; the person is told. */
     AskSomeonesDataBody: {
+      /**
+       * @description The password of the person who asks, typed again: without it the request is refused with
+       *     `auth.wrong-credentials`.
+       */
+      password?: string | null;
       /** @description The reason, in the administrator's own words (at most 500 characters). */
       reason: string;
     };
@@ -11722,6 +11727,11 @@ export interface components {
     /** @description What *Remove a person* does with the person's comments. */
     RemoveBody: {
       comments?: components["schemas"]["RemovedTexts"] | null;
+      /**
+       * @description The password of the person who removes, typed again: without it the removal is refused
+       *     with `auth.wrong-credentials`.
+       */
+      password?: string | null;
     };
     /**
      * @description What Remove a person does with the comments the person wrote: keep them, shown as Former user, or delete them.

@@ -640,6 +640,7 @@ async fn priv_04_a_switched_off_or_removed_person_keeps_their_name_and_address()
             session_token: token(world),
             person: bob,
             comments: None,
+            password: PASSWORD.to_owned(),
         },
     )
     .await?;

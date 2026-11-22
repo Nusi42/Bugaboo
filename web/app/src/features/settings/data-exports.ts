@@ -37,14 +37,21 @@ export function useExportPeople(search: string) {
   });
 }
 
-/** *Download someone's data*: the file of a person's data, always with a reason; the list is read again after it. */
+/** What *Download someone's data* sends: whose data, why, and the password again. */
+export interface SomeonesDataAsk {
+  readonly person: string;
+  readonly reason: string;
+  readonly password: string;
+}
+
+/** *Download someone's data*: the file of a person's data, always with a reason and the password; the list is read again after it. */
 export function useAskSomeonesData() {
   return useMutation({
-    mutationFn: async ({ person, reason }: { readonly person: string; readonly reason: string }) =>
+    mutationFn: async ({ person, reason, password }: SomeonesDataAsk) =>
       dataOf(
         await api.client.POST("/api/v1/people/{person}/data-export", {
           params: { path: { person } },
-          body: { reason },
+          body: { reason, password },
         }),
       ),
     onSuccess: () => {

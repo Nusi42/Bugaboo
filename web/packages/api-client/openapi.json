@@ -22006,6 +22006,10 @@
         "description": "Why an administrator asks for somebody else's data; the person is told.",
         "required": ["reason"],
         "properties": {
+          "password": {
+            "type": ["string", "null"],
+            "description": "The password of the person who asks, typed again: without it the request is refused with\n`auth.wrong-credentials`."
+          },
           "reason": {
             "type": "string",
             "description": "The reason, in the administrator's own words (at most 500 characters)."
@@ -32893,6 +32897,10 @@
                 "type": "null"
               }
             ]
+          },
+          "password": {
+            "type": ["string", "null"],
+            "description": "The password of the person who removes, typed again: without it the removal is refused\nwith `auth.wrong-credentials`."
           }
         },
         "additionalProperties": false

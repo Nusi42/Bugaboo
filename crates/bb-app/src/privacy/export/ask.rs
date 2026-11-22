@@ -169,7 +169,9 @@ pub async fn ask_for_my_data<S: AuthStore>(
 /// who asked for whom (the export it names holds why).
 ///
 /// # Errors
-/// `access.forbidden` without the permission, `resource.not-found` for a person who is not there,
+/// `access.forbidden` without the permission, `auth.wrong-credentials` for a wrong password (asked
+/// again, so a stolen session cannot take the data of everybody), `resource.not-found` for a person
+/// who is not there,
 /// `data-export.reason-needed` for an empty reason, `request.invalid` for one that is too long,
 /// `data-export.waiting` while a file of the person's data is being made.
 pub async fn ask_for_someones_data<S: AuthStore>(
@@ -184,6 +186,7 @@ pub async fn ask_for_someones_data<S: AuthStore>(
             Place::Organization,
         )
         .await?;
+    ctx.confirm_password(&actor.person, input.password).await?;
     let reason = given_reason(input.reason.as_deref(), ErrorCode::ExportReasonNeeded)?;
     let person = input.person.ok_or(AppError::Refused(ErrorCode::NotFound))?;
     if ctx.person_known(person).await?.is_none() {

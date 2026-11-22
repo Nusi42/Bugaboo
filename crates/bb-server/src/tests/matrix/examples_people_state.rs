@@ -66,7 +66,7 @@ pub(super) async fn people_state_request(
                 "/api/v1/people/{}/remove",
                 a_switched_off_person(fixture).await?
             ),
-            Some(serde_json::json!({})),
+            Some(serde_json::json!({"password": crate::sign_in_tests::rig::PASSWORD})),
         ),
         "getRemovalPlan" => (
             "GET",

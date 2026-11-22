@@ -50,13 +50,19 @@ export function removalPlanOptions(id: string) {
   });
 }
 
-/** *Remove a person*, with the choice about their comments; the page then shows *Former user* in place. */
+/** *Remove a person*, with the choice about their comments and the password again; the page then shows *Former user* in place. */
 export function useRemove(id: string) {
   return useMutation({
-    mutationFn: async (comments: Schema<"RemovedTexts">) => {
+    mutationFn: async ({
+      comments,
+      password,
+    }: {
+      readonly comments: Schema<"RemovedTexts">;
+      readonly password: string;
+    }) => {
       await api.client.POST("/api/v1/people/{person}/remove", {
         params: { path: { person: id } },
-        body: { comments },
+        body: { comments, password },
       });
     },
     onSuccess: () => {

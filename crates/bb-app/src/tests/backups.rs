@@ -326,6 +326,7 @@ async fn priv_12_a_person_who_was_removed_is_a_former_user_in_the_list() -> Outc
             session_token: ben.clone(),
             person: creator,
             comments: None,
+            password: super::world::PASSWORD.to_owned(),
         },
     )
     .await?;

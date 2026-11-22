@@ -220,6 +220,10 @@ pub(crate) struct RemoveBody {
     /// setting `privacy.removed-texts` offers.
     #[serde(default)]
     comments: Option<RemovedTexts>,
+    /// The password of the person who removes, typed again: without it the removal is refused
+    /// with `auth.wrong-credentials`.
+    #[serde(default)]
+    password: Option<String>,
 }
 
 /// Removes a switched-off person for good: deletes the account and what only serves it, keeps
@@ -256,16 +260,17 @@ async fn remove_person(
             serde_json::from_slice::<RemoveBody>(&bytes)
                 .map_err(|_| ApiError::new(ErrorCode::InvalidRequest))?
         };
-        Ok((path_id::<UserId>(&person)?, body.comments))
+        Ok((path_id::<UserId>(&person)?, body))
     });
-    let (person, comments) = auth.after_who_asks(&info, &session_token, read).await?;
+    let (person, body) = auth.after_who_asks(&info, &session_token, read).await?;
     auth.api()?
         .remove_person(
             info,
             RemovePerson {
                 session_token,
                 person,
-                comments,
+                comments: body.comments,
+                password: body.password.unwrap_or_default(),
             },
         )
         .await?;

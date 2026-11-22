@@ -25,7 +25,10 @@ pub(super) fn data_export_request(
         "askForSomeonesData" => (
             "POST",
             format!("/api/v1/people/{}/data-export", fixture.a_person()),
-            Some(json!({"reason": "The person asked by letter"})),
+            Some(json!({
+                "reason": "The person asked by letter",
+                "password": crate::sign_in_tests::rig::PASSWORD,
+            })),
         ),
         "listDataExports" => ("GET", "/api/v1/admin/data-exports".to_owned(), None),
         "listPeopleOfDataExports" => ("GET", "/api/v1/data-exports/people".to_owned(), None),

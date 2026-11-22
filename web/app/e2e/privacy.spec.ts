@@ -69,6 +69,12 @@ test("priv_03 an administrator makes someone's export and it is listed in Data e
   await window.getByRole("radio", { name: bob.name }).check();
   const reason = "Bob asked for his data by e-mail";
   await window.getByRole("textbox", { name: t("data-exports.reason") }).fill(reason);
+  // The password is asked again: a wrong one makes no file and says so.
+  const password = window.getByLabel(t("field.confirm-password"), { exact: true });
+  await password.fill("Not-The-Password-1");
+  await window.getByRole("button", { name: t("data-exports.create"), exact: true }).click();
+  await expect(window.getByText(t("error.auth.wrong-credentials"))).toBeVisible();
+  await password.fill(ada.password);
   await window.getByRole("button", { name: t("data-exports.create"), exact: true }).click();
   await expect(window).toBeHidden();
   const row = page

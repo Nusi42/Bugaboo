@@ -121,6 +121,10 @@ impl Masked for MyDataExportBody {}
 pub(crate) struct AskSomeonesDataBody {
     /// The reason, in the administrator's own words (at most 500 characters).
     reason: String,
+    /// The password of the person who asks, typed again: without it the request is refused with
+    /// `auth.wrong-credentials`.
+    #[serde(default)]
+    password: Option<String>,
 }
 
 /// The signed address that downloads a file of an export.
@@ -211,6 +215,7 @@ async fn ask_for_someones_data(
 ) -> Result<Response, ApiError> {
     // The ID and the body are read only once the session is known (the use case refuses them
     // then), so an access key hears that it may not come here, whatever it sent.
+    let read = body.ok().map(|ApiJson(body)| (body.reason, body.password));
     let asked = auth
         .api()?
         .ask_for_someones_data(
@@ -218,7 +223,8 @@ async fn ask_for_someones_data(
             AskSomeonesData {
                 session_token,
                 person: person.parse::<UserId>().ok(),
-                reason: body.ok().map(|ApiJson(body)| body.reason),
+                reason: read.as_ref().map(|(reason, _)| reason.clone()),
+                password: read.and_then(|(_, password)| password).unwrap_or_default(),
             },
         )
         .await?;

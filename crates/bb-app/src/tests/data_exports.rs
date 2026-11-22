@@ -24,7 +24,7 @@ use zip::ZipArchive;
 use super::fake_exports::WalkedRow;
 use super::notifications::Crew;
 use super::scenarios::{Added, measured, text, token};
-use super::world::{Outcome, World};
+use super::world::{OTHER_PASSWORD, Outcome, PASSWORD, World};
 use crate::auth::AppError;
 use crate::jobs::{JOB_ATTEMPTS_MAX, JobStore as _};
 use crate::privacy::export::{
@@ -57,16 +57,45 @@ pub(super) async fn ask_for(
     person: UserId,
     reason: &str,
 ) -> Result<ExportView, AppError> {
+    ask_typing(world, session, person, reason, PASSWORD).await
+}
+
+/// *Download someone's data*, with `password` typed again.
+async fn ask_typing(
+    world: &World,
+    session: &str,
+    person: UserId,
+    reason: &str,
+    password: &str,
+) -> Result<ExportView, AppError> {
     ask_for_someones_data(
         &world.ctx(),
         AskSomeonesData {
             session_token: session.to_owned(),
             person: Some(person),
             reason: Some(reason.to_owned()),
+            password: password.to_owned(),
         },
     )
     .await
     .map(crate::access::Authorized::into_value)
+}
+
+#[tokio::test]
+async fn sec_12_a_stolen_session_cannot_download_someones_data_without_the_password() -> Outcome {
+    let world = World::new().await?;
+    let bob = world.person("bob@example.test").await?.person.id;
+    let session = token(&world);
+    for typed in ["", OTHER_PASSWORD] {
+        let refused = ask_typing(&world, &session, bob, "Bob asked by letter", typed).await;
+        assert_eq!(
+            refused.err().and_then(|error| error.code()),
+            Some(ErrorCode::WrongCredentials),
+            "{typed:?}"
+        );
+    }
+    ask_typing(&world, &session, bob, "Bob asked by letter", PASSWORD).await?;
+    Ok(())
 }
 
 async fn state_of(world: &World, session: &str) -> Result<Option<ExportState>, String> {

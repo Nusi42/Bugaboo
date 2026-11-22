@@ -79,6 +79,7 @@ async fn priv_03_an_administrator_who_lost_download_someones_data_cannot_downloa
                     session_token: bob.session.clone(),
                     person: Some(carol.id),
                     reason: Some("Carol asked by letter".to_owned()),
+                    password: super::rig::PASSWORD.to_owned(),
                 },
             )
             .await?

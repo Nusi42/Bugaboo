@@ -1,8 +1,48 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { partOf, part } from "@bugaboo/ui";
+import { ChoiceGroup, choiceGroupLook, partOf, part } from "@bugaboo/ui";
 
 import { formatCalendarDay } from "../../shared/format.ts";
+import { ConfirmPasswordField } from "../account/index.ts";
+
+/** What happens to the comments of a removed person (`RemovedTexts` of the API). */
+export type CommentsChoiceValue = Schema<"RemovedTexts">;
+
+export interface RemovalAnswersProps {
+  readonly name: string;
+  readonly comments: CommentsChoiceValue;
+  readonly onComments: (value: CommentsChoiceValue) => void;
+  readonly password: string;
+  readonly onPassword: (value: string) => void;
+}
+
+/**
+ * What the person who removes answers: what happens to the comments, keep them shown as *Former user* or delete them
+ * (ADR-0044, decision 7), and the password again, since a removal cannot be undone.
+ */
+export function RemovalAnswers({
+  name,
+  comments,
+  onComments,
+  password,
+  onPassword,
+}: RemovalAnswersProps) {
+  return (
+    <>
+      <ChoiceGroup
+        legend={t("removal.comments", { name })}
+        look={choiceGroupLook.radios}
+        choices={[
+          { value: "keep", label: t("setting.privacy.removed-texts.keep") },
+          { value: "delete", label: t("setting.privacy.removed-texts.delete") },
+        ]}
+        value={comments}
+        onChange={onComments}
+      />
+      <ConfirmPasswordField value={password} onChange={onPassword} />
+    </>
+  );
+}
 
 type Plan = Schema<"RemovalPlanBody">;
 type KeptByLaw = Schema<"KeptByLawBody">;

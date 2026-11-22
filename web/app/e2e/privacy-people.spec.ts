@@ -80,6 +80,9 @@ test("priv_04 the removal window says what goes what stays and until when", asyn
     window.getByRole("radio", { name: t("setting.privacy.removed-texts.keep") }),
   ).toBeChecked();
   await window.getByRole("button", { name: t("removal.switch-off-button"), exact: true }).click();
+  // Removing asks for the password again.
+  await expect(remove).toBeDisabled();
+  await window.getByLabel(t("field.confirm-password"), { exact: true }).fill(ada.password);
   await expect(remove).toBeEnabled();
   await window.getByRole("button", { name: t("common.cancel"), exact: true }).click();
   await expect(window).toBeHidden();
@@ -109,6 +112,7 @@ test("priv_04 after removal the person reads Former user in place", async ({ pag
   });
   // The card under the heading holds the facts, and then what a removed person's page says.
   const landmarks = [await landmarkOf(heading, "heading"), await landmarkOf(headCard, "head")];
+  await window.getByLabel(t("field.confirm-password"), { exact: true }).fill(ada.password);
   const movement = await movementWhile(page, landmarks, async () => {
     await window.getByRole("button", { name: t("removal.confirm", { name: bob.name }) }).click();
     await expect(heading).toHaveText(/^Former user [A-Z0-9]{4}$/u);

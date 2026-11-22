@@ -20,6 +20,9 @@ pub struct AskSomeonesData {
     /// Why, in the administrator's own words; the person is told. None for a body that cannot be
     /// read, refused as not valid once the session is known.
     pub reason: Option<String>,
+    /// The password of the person who asks, typed again: a stolen session cannot take the data of
+    /// everybody.
+    pub password: String,
 }
 
 /// Ask where the newest file of one's own data stands.
