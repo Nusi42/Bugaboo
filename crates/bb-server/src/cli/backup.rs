@@ -325,3 +325,7 @@ fn failed(args: &RestoreArgs, failure: &RestoreFailure) -> anyhow::Error {
 #[cfg(test)]
 #[path = "../tests/backup.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "../tests/exit_demo_m9.rs"]
+mod exit_demo_m9;
