@@ -85,7 +85,8 @@ fn path_argument(path: &Path) -> String {
 }
 
 /// A word of a unit line, quoted so that spaces and special characters stay in it. systemd reads
-/// `"…"` with C escapes, and `%` starts a specifier, so it is written twice.
+/// `"…"` with C escapes, and `%` starts a specifier, so it is written twice; a line break is
+/// written as its escape, so it cannot end the line and start another.
 fn quote(value: &str) -> String {
     let mut quoted = String::from("\"");
     for character in value.chars() {
@@ -93,6 +94,8 @@ fn quote(value: &str) -> String {
             '"' => quoted.push_str("\\\""),
             '\\' => quoted.push_str("\\\\"),
             '%' => quoted.push_str("%%"),
+            '\n' => quoted.push_str("\\n"),
+            '\r' => quoted.push_str("\\r"),
             other => quoted.push(other),
         }
     }
@@ -100,10 +103,13 @@ fn quote(value: &str) -> String {
     quoted
 }
 
-/// The text of the unit file. Bugaboo may write only to its data folder, sees no home folders and
-/// no devices, holds no capabilities and never gains rights, opens only network and local
-/// sockets, and is started again when it fails, except after a start that stopped at an upgrade.
-/// The empty `CapabilityBoundingSet=` also means that it cannot listen on a port below 1024.
+/// The text of the unit file. Bugaboo may write only to its data folder, sees no home folders, no
+/// devices, no other processes and no settings of the kernel, holds no capabilities and never
+/// gains rights, makes its files for itself alone, opens only network and local sockets, runs
+/// only the system calls of a common service (one outside them fails instead of ending the
+/// process), and is started again when it fails, except after a start that stopped at an
+/// upgrade. The empty `CapabilityBoundingSet=` also means that it cannot listen on a port below
+/// 1024.
 pub(super) fn unit(installation: &Installation<'_>) -> String {
     let name = Message::from(message::APP_NAME).render();
     let program = quote(&path_argument(installation.program));
@@ -130,11 +136,30 @@ pub(super) fn unit(installation: &Installation<'_>) -> String {
          PrivateTmp=yes\n\
          PrivateDevices=yes\n\
          RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX\n\
+         UMask=0077\n\
+         ProtectKernelTunables=yes\n\
+         ProtectKernelModules=yes\n\
+         ProtectKernelLogs=yes\n\
+         ProtectControlGroups=yes\n\
+         ProtectClock=yes\n\
+         ProtectProc=invisible\n\
+         RestrictNamespaces=yes\n\
+         RestrictSUIDSGID=yes\n\
+         LockPersonality=yes\n\
+         MemoryDenyWriteExecute=yes\n\
+         SystemCallFilter=@system-service\n\
+         {SANDBOX_CALLS}\n\
+         SystemCallErrorNumber=EPERM\n\
          \n\
          [Install]\n\
          WantedBy=multi-user.target\n"
     )
 }
+
+/// The system calls the child that makes a preview needs to shut itself in (Landlock, ADR-0032),
+/// which `@system-service` leaves out.
+const SANDBOX_CALLS: &str =
+    "SystemCallFilter=landlock_create_ruleset landlock_add_rule landlock_restrict_self";
 
 /// The line of the unit that hides the home folders (`/home`, `/root` and `/run/user`, as
 /// systemd defines it) from the service; asked of systemd at install with the same line.

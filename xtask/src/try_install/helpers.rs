@@ -62,6 +62,9 @@ function Answers([int]$Seconds) {
 # the install's own `icacls /T` working; an entry for the service's own SID would be replaced by
 # the install's grant to it.
 $ServiceGroup = '*S-1-5-6'
+# The signed-in accounts (NT AUTHORITY\Authenticated Users), which a folder made directly on the
+# system drive lets change what is in it: the install must refuse a program folder they may change.
+$SignedIn = '*S-1-5-11'
 function ServicePid { [int](Get-CimInstance Win32_Service -Filter "Name='$Name'").ProcessId }
 function Step([string]$Id, [scriptblock]$Body) {
     $script:Skipped = $null

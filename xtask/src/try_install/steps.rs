@@ -37,6 +37,9 @@ pub(crate) enum TryStep {
     PreviousData,
     /// The program of the release takes the place of the previous one.
     Replace,
+    /// While every signed-in account may change the folder of the program, `bugaboo service
+    /// install` refuses and installs nothing.
+    RefuseOpen,
     /// The account of the service may no longer write into the folder of the backups, so the
     /// backup before the upgrade fails.
     BlockBackups,
@@ -63,12 +66,13 @@ pub(crate) enum TryStep {
 }
 
 /// The steps, in the order they run.
-pub(crate) const STEPS: [TryStep; 15] = [
+pub(crate) const STEPS: [TryStep; 16] = [
     TryStep::AppControl,
     TryStep::Verify,
     TryStep::PreviousSetup,
     TryStep::PreviousData,
     TryStep::Replace,
+    TryStep::RefuseOpen,
     TryStep::BlockBackups,
     TryStep::Install,
     TryStep::NoRestart,
@@ -101,6 +105,7 @@ impl TryStep {
             Self::PreviousSetup => "previous-setup",
             Self::PreviousData => "previous-data",
             Self::Replace => "replace",
+            Self::RefuseOpen => "refuse-open",
             Self::BlockBackups => "block-backups",
             Self::Install => "install",
             Self::NoRestart => "no-restart",
@@ -131,6 +136,9 @@ impl TryStep {
                 "$p = Start-Process -FilePath $Program -ArgumentList ('serve --config \"' + $Settings + '\"') -NoNewWindow -PassThru -RedirectStandardOutput (Join-Path $Here 'previous-serve.txt') -RedirectStandardError (Join-Path $Here 'previous-serve-errors.txt'); try { Answers 180 } finally { if (-not $p.HasExited) { Stop-Process -Id $p.Id -Force }; $p.WaitForExit() }; Must (Test-Path (Join-Path $Data $DatabaseFile)) 'the previous release made no database'"
             }
             Self::Replace => "Copy-Item $Next $Program -Force",
+            Self::RefuseOpen => {
+                "Run icacls.exe $Install /grant \"${SignedIn}:(OI)(CI)M\"; $old = $ErrorActionPreference; $ErrorActionPreference = 'Continue'; $said = (& $Program service install --config $Settings 2>&1 | ForEach-Object { \"$_\" }) -join ' '; $code = $LASTEXITCODE; $ErrorActionPreference = $old; Add-Content -Path $LogPath -Value \"> service install (refused)`n$said\" -Encoding utf8; Run icacls.exe $Install /remove:g $SignedIn; Must ($code -ne 0) 'a folder others can change was not refused'; Must ((Status) -eq $NotInstalled) 'the refused install left a service behind'"
+            }
             Self::BlockBackups => {
                 "Run icacls.exe (Join-Path $Data $Backups) /deny \"${ServiceGroup}:(WD,AD)\""
             }
@@ -172,6 +180,9 @@ impl TryStep {
                 "\"$program\" serve --config \"$settings\" >\"$here/previous-serve.txt\" 2>&1 & pid=$!; if ! answers 180; then kill \"$pid\"; false; fi; kill -INT \"$pid\"; wait \"$pid\" || true; [ -f \"$data/$database_file\" ]"
             }
             Self::Replace => "cp \"$next\" \"$program\"; chmod 755 \"$program\"",
+            Self::RefuseOpen => {
+                "chmod 777 \"$install\"; if \"$program\" service install --config \"$settings\"; then chmod 755 \"$install\"; echo 'a folder others can change was not refused' >&2; false; fi; chmod 755 \"$install\"; [ \"$(status)\" = \"$not_installed\" ]"
+            }
             Self::BlockBackups => "chmod 500 \"$data/$backups\"",
             Self::Install => "\"$program\" service install --config \"$settings\"",
             Self::NoRestart => {

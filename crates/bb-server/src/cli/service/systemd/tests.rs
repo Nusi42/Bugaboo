@@ -46,6 +46,19 @@ fn ops_04_the_unit_holds_the_hardening_lines() {
         "ReadWritePaths=\"/var/lib/bugaboo\"",
         "PrivateTmp=yes",
         "Restart=on-failure",
+        "UMask=0077",
+        "ProtectKernelTunables=yes",
+        "ProtectKernelModules=yes",
+        "ProtectKernelLogs=yes",
+        "ProtectControlGroups=yes",
+        "ProtectClock=yes",
+        "ProtectProc=invisible",
+        "RestrictNamespaces=yes",
+        "RestrictSUIDSGID=yes",
+        "LockPersonality=yes",
+        "MemoryDenyWriteExecute=yes",
+        "SystemCallFilter=@system-service",
+        "SystemCallErrorNumber=EPERM",
     ] {
         assert!(
             text.lines().any(|written| written == line),
@@ -148,6 +161,8 @@ ExecMainStatus={status}
 fn ops_04_paths_with_spaces_and_special_characters_stay_in_one_word() {
     assert_eq!(quote("/srv/my data"), "\"/srv/my data\"");
     assert_eq!(quote("50%"), "\"50%%\"");
+    // A line break would end the line of the unit and start one of somebody's choosing.
+    assert_eq!(quote("a\nb\rc"), "\"a\\nb\\rc\"");
     assert_eq!(quote("a\"b\\c"), "\"a\\\"b\\\\c\"");
 }
 
