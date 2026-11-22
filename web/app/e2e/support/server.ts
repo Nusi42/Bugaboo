@@ -1,7 +1,7 @@
 import { execFile, spawn } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { basename, join, resolve } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 
 import { repoRoot } from "../../../tooling/ports.ts";
@@ -22,6 +22,12 @@ export interface Instance {
    * from the outside, like an administrator would. Fails when the program says the log is broken.
    */
   readonly verifySecurityLog: () => Promise<string>;
+  /**
+   * Stops the server, restores the backup of that name from the backups folder of its data folder
+   * with `bugaboo restore`, as an administrator does (OPS-07), and starts the server again on the
+   * same data and port. Resolves to what the command said; fails when it failed.
+   */
+  readonly restore: (backup: string) => Promise<string>;
   /** Stops the server and deletes its data (unless the data folder was given to `startServer`). */
   readonly stop: () => Promise<void>;
 }
@@ -104,21 +110,68 @@ async function remove(folder: string, triesLeft = 20): Promise<void> {
   }
 }
 
+/** What a command of the program prints for a data folder; it fails when the command failed. */
+function command(executable: string, args: readonly string[], env: Settings = {}): Promise<string> {
+  return new Promise((done, failed) => {
+    const options = { env: { ...process.env, ...env } };
+    execFile(executable, [...args], options, (error: unknown, stdout: string, stderr: string) => {
+      if (error === null) {
+        done(stdout);
+      } else {
+        failed(new Error(`${stdout}${stderr}`));
+      }
+    });
+  });
+}
+
+/** Where the backup of that name lies in a data folder: the folder of the backups is the program's to name. */
+export function backupIn(dataDir: string, backup: string): string {
+  const found = readdirSync(dataDir, { recursive: true, encoding: "utf8" }).find(
+    (path) => basename(path) === backup,
+  );
+  if (found === undefined) {
+    throw new Error(`The data folder holds no backup ${backup}.`);
+  }
+  return join(dataDir, found);
+}
+
 /** What `bugaboo security-log verify` prints for a data folder; it fails when the log is broken. */
 function verifySecurityLog(executable: string, dataDir: string): Promise<string> {
-  return new Promise((done, failed) => {
-    execFile(
+  return command(executable, ["security-log", "verify", "--data-dir", dataDir]);
+}
+
+/** The program serving one data folder on one port, which a restore stops and starts again. */
+interface Serving {
+  /** Waits until the program answers. */
+  readonly ready: () => Promise<void>;
+  /** Ends the program. */
+  readonly end: () => Promise<void>;
+  /** Runs a command of the program on the data folder while the server is stopped, and starts it again. */
+  readonly whileStopped: (args: readonly string[]) => Promise<string>;
+}
+
+/** Starts the program on the data folder and keeps the one that runs. */
+function serving(executable: string, port: number, folder: string, env: Settings): Serving {
+  const serve = (): Launched =>
+    launch(
       executable,
-      ["security-log", "verify", "--data-dir", dataDir],
-      (error: unknown, stdout: string, stderr: string) => {
-        if (error === null) {
-          done(stdout);
-        } else {
-          failed(new Error(`${stdout}${stderr}`));
-        }
-      },
+      ["serve", "--port", String(port), "--data-dir", folder, "--web", appFolder()],
+      env,
     );
-  });
+  let server = serve();
+  const ready = (): Promise<void> => waitUntilReady(askLive(port), server);
+  return {
+    ready,
+    end: () => server.end(),
+    whileStopped: async (args) => {
+      await server.end();
+      const said = await command(executable, args, env).finally(() => {
+        server = serve();
+      });
+      await ready();
+      return said;
+    },
+  };
 }
 
 /**
@@ -148,11 +201,7 @@ export async function startServer(
   if (sample) {
     copySampleInto(folder);
   }
-  const server = launch(
-    executable,
-    ["serve", "--port", String(port), "--data-dir", folder, "--web", appFolder()],
-    { ...generousLimits, ...settings },
-  );
+  const server = serving(executable, port, folder, { ...generousLimits, ...settings });
   const origin = `https://localhost:${String(port)}`;
   const stop = async (): Promise<void> => {
     closePool(origin);
@@ -161,7 +210,7 @@ export async function startServer(
       await remove(folder);
     }
   };
-  await waitUntilReady(askLive(port), server).catch(async (error: unknown) => {
+  await server.ready().catch(async (error: unknown) => {
     await stop();
     throw error;
   });
@@ -170,6 +219,10 @@ export async function startServer(
     dataDir: folder,
     setupCode: () => readFileSync(join(folder, SETUP_CODE_FILE), "utf8").trim(),
     verifySecurityLog: () => verifySecurityLog(executable, folder),
+    restore: (backup) => {
+      closePool(origin);
+      return server.whileStopped(["restore", backupIn(folder, backup), "--data-dir", folder]);
+    },
     stop,
   };
 }

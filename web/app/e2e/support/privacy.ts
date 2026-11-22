@@ -45,21 +45,40 @@ export async function adminWithOldAndNewTime(server: Instance): Promise<ApiSessi
   return admin;
 }
 
+/** The ID of a person, from the list of people as an administrator reads it: a switched-off person is found too. */
+export async function idInPeople(admin: ApiSession, person: Person): Promise<string> {
+  const found = dataOf(
+    await admin.client.GET("/api/v1/people", { params: { query: { search: person.email } } }),
+  ).items[0]?.person;
+  if (found?.shown !== "name") {
+    throw new TypeError(`${person.email} is not in the list of people.`);
+  }
+  return found.id;
+}
+
 /**
  * Opens the page of a person as the administrator: their ID from the list of people, which also finds a person who is
  * switched off and cannot sign in to say it themselves.
  */
 export async function openPersonPage(page: Page, server: Instance, person: Person): Promise<void> {
   const admin = await signedInAdmin(server);
-  const found = dataOf(
-    await admin.client.GET("/api/v1/people", { params: { query: { search: person.email } } }),
-  ).items[0]?.person;
+  const id = await idInPeople(admin, person);
   await admin.dispose();
-  if (found?.shown !== "name") {
-    throw new TypeError(`${person.email} is not in the list of people.`);
-  }
-  await page.goto(personAddress(found.id));
+  await page.goto(personAddress(id));
   await expect(page.getByRole("heading", { level: 1, name: person.name })).toBeVisible();
+}
+
+/** Switches a person off, as an administrator does on their page. */
+export async function switchOffByApi(admin: ApiSession, person: string): Promise<void> {
+  await admin.client.POST("/api/v1/people/{person}/switch-off", { params: { path: { person } } });
+}
+
+/** Removes a switched-off person, with what the organization's setting offers for their comments. */
+export async function removeByApi(admin: ApiSession, person: string): Promise<void> {
+  await admin.client.POST("/api/v1/people/{person}/remove", {
+    params: { path: { person } },
+    body: {},
+  });
 }
 
 /** The card *Sign-in and removal* of a person's page. */

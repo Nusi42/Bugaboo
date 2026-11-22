@@ -12,18 +12,21 @@ mod days;
 mod facts;
 mod judge;
 mod plan;
+mod privacy;
+mod restored;
 
 pub use agents::{
     AgentEvent, AgentFacts, RunningFacts, UndoEvent, WorkFacts, agents_hold_the_rules,
 };
 pub use book::{
-    Accepted, Agented, AwayEntered, Book, Dayed, DraftEnd, Drafted, HandedOver, Kept, Lost, Moved,
-    MovedAfter, NamedByMove, Raced, Seen, Work,
+    Accepted, Agented, AwayEntered, BackedUp, Book, Dayed, DraftEnd, Drafted, HandedOver, Kept,
+    Left, Lost, Moved, MovedAfter, NamedByMove, Raced, Seen, Work,
 };
 pub use facts::{
-    AwayFacts, DayFacts, Facts, Failure, LockRow, NotificationFacts, gather, lock_rows,
+    AwayFacts, DayFacts, Facts, Failure, LeftFacts, LockRow, NotificationFacts, gather, lock_rows,
 };
 pub use judge::{Afterwards, judge, locks_beyond_lease};
+pub use restored::{check_restored, judge_restored};
 
 use bb_store::Database;
 

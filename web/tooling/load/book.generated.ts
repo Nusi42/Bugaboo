@@ -167,6 +167,24 @@ export interface MovedAfter {
   readonly kept: boolean;
 }
 
+/** The backup an administrator made through the route while the people worked (OPS-07): a restore of it holds every change that was kept before it was asked for. */
+export interface BackedUp {
+  /** The name of the backup file. */
+  readonly name: string;
+  /** How many of the changes the book kept had been answered before the backup was asked for: the first ones of `kept`. */
+  readonly kept_before: number;
+}
+
+/** A person an administrator switched off, or switched off and removed, while the others worked (PRIV-04). */
+export interface Left {
+  /** The ID of the person. */
+  readonly person: string;
+  /** Whether the person was removed after they were switched off. */
+  readonly removed: boolean;
+  /** Whether the save the person's open page sent after it was refused. */
+  readonly refused_at_next_save: boolean;
+}
+
 /** Everything the people did that counts, in the order it happened to each of them. */
 export interface Book {
   /** The issues of the run. */
@@ -211,4 +229,8 @@ export interface Book {
   readonly away?: readonly AwayEntered[];
   /** The moves after something that were applied while somebody changed an issue they move. */
   readonly moved_after?: readonly MovedAfter[];
+  /** The backup made while the people worked (architecture §11, "The long run"). */
+  readonly backup?: BackedUp;
+  /** The people who were switched off or removed while the others worked. */
+  readonly left?: readonly Left[];
 }

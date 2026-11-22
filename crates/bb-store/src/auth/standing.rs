@@ -202,3 +202,27 @@ impl StandingStore for AuthStorage {
 #[cfg(test)]
 #[path = "../tests/standing.rs"]
 mod tests;
+
+#[cfg(any(test, feature = "testing"))]
+impl crate::db::Database {
+    /// The standing of a person, read in a transaction of its own, and how many sessions they
+    /// have: what the judge of a run of many people (`bb-load-check`) holds a person who was
+    /// switched off or removed while the others worked to.
+    ///
+    /// # Errors
+    /// Fails when the database fails or a row is unreadable.
+    pub async fn stored_standing(
+        &self,
+        person: UserId,
+    ) -> Result<(Option<PersonStanding>, usize), StoreError> {
+        let mut transaction = self.begin_read().await?;
+        let standing = AuthStorage::standing_in(&mut transaction, person).await?;
+        let mut sessions = Query::select();
+        sessions
+            .column(crate::schema::SignInSession::Person)
+            .from(crate::schema::SignInSession::Table)
+            .and_where(Expr::col(crate::schema::SignInSession::Person).eq(person.stored()));
+        let count = transaction.fetch_all(&sessions).await?.len();
+        Ok((standing, count))
+    }
+}

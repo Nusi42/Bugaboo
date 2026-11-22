@@ -20,7 +20,7 @@ const PATTERN_SYMBOLS = /[.*+?^${}()|[\]\\]/gu;
 const CHANGING_PART = /(\d+|CHANGING)/u;
 
 /** A text with its symbols meaning themselves in a pattern. */
-function escaped(text: string): string {
+export function escaped(text: string): string {
   return text.replaceAll(PATTERN_SYMBOLS, String.raw`\$&`);
 }
 

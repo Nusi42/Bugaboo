@@ -209,6 +209,29 @@ pub struct MovedAfter {
     pub kept: bool,
 }
 
+/// The backup an administrator made through the route while the people worked (OPS-07): a restore
+/// of it holds every change that was kept before it was asked for.
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+pub struct BackedUp {
+    /// The name of the backup file.
+    pub name: String,
+    /// How many of the changes the book kept had been answered before the backup was asked for:
+    /// the first ones of `kept`.
+    pub kept_before: u64,
+}
+
+/// A person an administrator switched off, or switched off and removed, while the others worked
+/// (PRIV-04).
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+pub struct Left {
+    /// The ID of the person.
+    pub person: String,
+    /// Whether the person was removed after they were switched off.
+    pub removed: bool,
+    /// Whether the save the person's open page sent after it was refused.
+    pub refused_at_next_save: bool,
+}
+
 /// Everything the people did that counts, in the order it happened to each of them.
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct Book {
@@ -271,6 +294,12 @@ pub struct Book {
     /// The moves after something that were applied while somebody changed an issue they move.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub moved_after: Vec<MovedAfter>,
+    /// The backup made while the people worked (architecture §11, "The long run").
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub backup: Option<BackedUp>,
+    /// The people who were switched off or removed while the others worked.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub left: Vec<Left>,
 }
 
 impl Book {

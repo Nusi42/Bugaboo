@@ -1,13 +1,16 @@
-//! `cargo xtask load --people 10 [--minutes N] [--database sqlite|postgres]`: ten people work on
-//! the same issues through the API at speed, and the invariants of architecture §11 are checked
-//! afterwards (TEST-CONCURRENT).
+//! `cargo xtask load --people 10 [--minutes N | --long [LENGTH]] [--database sqlite|postgres]`: ten
+//! people work on the same issues through the API at speed, and the invariants of architecture §11
+//! are checked afterwards (TEST-CONCURRENT). `--long 2h` is the long run, made by hand at the exit
+//! of a milestone on a quiet computer.
 //!
 //! xtask builds the programs, starts the database of the run and runs the driver, a Node program
 //! (`tools/dev/load.json` names it). The driver starts the server of the load test on the port
 //! `loadTestServer` of `tools/dev/ports.json`, lets the people work and writes their book to a
 //! file. When the server has stopped, xtask runs `bb-load-check` on that book and the database of
-//! the run: the invariants are written there once, as they are for the test of the server.
-//! Without `--database` the run is made on both.
+//! the run: the invariants are written there once, as they are for the test of the server. Then it
+//! restores the backup the administrator made at the middle of the run into a second database with
+//! `bugaboo restore` and runs `bb-load-check --restored` on that copy (architecture §11, "The long
+//! run"). Without `--database` the run is made on both.
 
 mod layout;
 
@@ -15,9 +18,10 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::Context as _;
+use bb_core::data_folder::{BACKUPS_FOLDER, KEYS_FOLDER, PRIVACY_FOLDER};
 use bb_dev_words::database::{DatabaseKind, parse as parse_database};
 
-use crate::db;
+use crate::db::{self, SERVER_DATABASE_VARIABLE};
 use crate::output;
 use crate::repo::Repo;
 use crate::steps::{self, Profile};
@@ -31,11 +35,12 @@ pub(crate) struct Arguments {
     #[arg(long)]
     people: Option<u32>,
     /// How long they work, in minutes (default: the short run of tools/dev/load.json).
-    #[arg(long, conflicts_with = "nightly")]
+    #[arg(long, conflicts_with = "long")]
     minutes: Option<u32>,
-    /// The long run of the nightly job instead of the short one.
-    #[arg(long)]
-    nightly: bool,
+    /// The long run instead of the short one, for a length like `2h` or `90m` (default: the long
+    /// run of tools/dev/load.json).
+    #[arg(long, num_args = 0..=1, default_missing_value = "", value_parser = parse_length)]
+    long: Option<Length>,
     /// Only this database (default: both).
     #[arg(long, value_parser = parse_database)]
     database: Option<DatabaseKind>,
@@ -50,7 +55,7 @@ impl Arguments {
         Request {
             people: self.people,
             minutes: self.minutes,
-            nightly: self.nightly,
+            long: self.long,
             databases: self.database.into_iter().collect(),
             seed: self.seed,
         }
@@ -61,11 +66,38 @@ impl Arguments {
 pub(crate) struct Request {
     pub(crate) people: Option<u32>,
     pub(crate) minutes: Option<u32>,
-    /// The long run of the nightly job.
-    pub(crate) nightly: bool,
+    /// The long run, and how long it is.
+    pub(crate) long: Option<Length>,
     /// The databases to run on; both when empty.
     pub(crate) databases: Vec<DatabaseKind>,
     pub(crate) seed: Option<u64>,
+}
+
+/// How long the long run is.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Length {
+    /// The long run of tools/dev/load.json.
+    OfTheLayout,
+    /// This many minutes.
+    Minutes(u32),
+}
+
+/// The length of the long run: `2h`, `90m` or `90` minutes, or nothing for the one of the layout.
+fn parse_length(text: &str) -> Result<Length, String> {
+    if text.is_empty() {
+        return Ok(Length::OfTheLayout);
+    }
+    let (number, minutes_each) = match text.strip_suffix('h') {
+        Some(hours) => (hours, 60),
+        None => (text.strip_suffix('m').unwrap_or(text), 1),
+    };
+    number
+        .parse::<u32>()
+        .ok()
+        .and_then(|count| count.checked_mul(minutes_each))
+        .filter(|minutes| *minutes > 0)
+        .map(Length::Minutes)
+        .ok_or_else(|| format!("{text} is no length: write it like 2h, 90m or 90"))
 }
 
 /// The folder of one run: the data folder of the server and the book of the people. It goes away
@@ -93,6 +125,11 @@ impl RunFolder {
     fn book(&self) -> PathBuf {
         self.0.join("book.json")
     }
+
+    /// The data folder the backup of the run is restored into.
+    fn restored(&self) -> PathBuf {
+        self.0.join("restored")
+    }
 }
 
 impl Drop for RunFolder {
@@ -110,10 +147,10 @@ fn driver_arguments(
     folder: &RunFolder,
 ) -> Vec<String> {
     let people = request.people.unwrap_or(layout.people);
-    let minutes = if request.nightly {
-        layout.nightly_minutes
-    } else {
-        request.minutes.unwrap_or(layout.minutes)
+    let minutes = match request.long {
+        Some(Length::OfTheLayout) => layout.long_minutes,
+        Some(Length::Minutes(minutes)) => minutes,
+        None => request.minutes.unwrap_or(layout.minutes),
     };
     let mut arguments = vec![
         layout.driver.clone(),
@@ -158,24 +195,118 @@ fn run_driver(
         .success())
 }
 
-/// Judges the run: `bb-load-check` reads the book and the database of the run.
+/// Which database a judge reads: the one of the run, or the copy its backup was restored into.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Judged {
+    Run,
+    Restored,
+}
+
+/// Judges the run: `bb-load-check` reads the book and the database of the run, or with
+/// `--restored` the copy the backup of the run was restored into.
 fn run_check(
     root: &Path,
     folder: &RunFolder,
     checker: &Path,
     url: Option<&str>,
+    judged: Judged,
 ) -> anyhow::Result<bool> {
     let mut command = crate::tools::command(checker);
     command.arg("--book").arg(folder.book()).current_dir(root);
+    let data = match judged {
+        Judged::Run => folder.data(),
+        Judged::Restored => {
+            command.arg("--restored");
+            folder.restored()
+        }
+    };
     match url {
         Some(url) => command.arg("--database-url").arg(url),
-        None => command.arg("--data-dir").arg(folder.data()),
+        None => command.arg("--data-dir").arg(data),
     };
     Ok(command
         .status()
         .with_context(|| format!("could not start {}", checker.display()))?
         .success())
 }
+
+/// The name of the backup the book says was made at the middle of the run.
+fn backup_of(folder: &RunFolder) -> anyhow::Result<String> {
+    let book: serde_json::Value = serde_json::from_str(&fs::read_to_string(folder.book())?)
+        .context("the book of the run is not valid")?;
+    book["backup"]["name"]
+        .as_str()
+        .map(str::to_owned)
+        .context("the book of the run names no backup made while the people worked")
+}
+
+/// Copies the files of a folder of the data folder of the run (not its sub-folders) into the
+/// same folder of the copy: the built-in database, the keys that seal the backup, or the replay
+/// list.
+fn copy_files(from: &Path, to: &Path) -> anyhow::Result<()> {
+    fs::create_dir_all(to).with_context(|| format!("could not make {}", to.display()))?;
+    let Ok(entries) = fs::read_dir(from) else {
+        return Ok(());
+    };
+    for entry in entries {
+        let entry = entry?;
+        if entry.file_type()?.is_file() {
+            fs::copy(entry.path(), to.join(entry.file_name()))
+                .with_context(|| format!("could not copy {}", entry.path().display()))?;
+        }
+    }
+    Ok(())
+}
+
+/// Restores the backup of the run into a second database with `bugaboo restore`, as an
+/// administrator does onto the installation of the run: a copy of its data folder (without the
+/// files of its sub-folders but the keys and the replay list) and of its database (the file, or
+/// the PostgreSQL database `url`).
+fn restore(
+    root: &Path,
+    folder: &RunFolder,
+    server: &Path,
+    url: Option<&str>,
+) -> anyhow::Result<bool> {
+    let name = backup_of(folder)?;
+    let second = folder.restored();
+    // A copy of the installation of the run, as the one an administrator restores onto: its files
+    // (the built-in database among them), the keys and the replay list, and its other folders
+    // empty.
+    copy_files(&folder.data(), &second)?;
+    for entry in fs::read_dir(folder.data())? {
+        let entry = entry?;
+        if entry.file_type()?.is_dir() {
+            let part = entry.file_name();
+            let to = second.join(&part);
+            if part == KEYS_FOLDER || part == PRIVACY_FOLDER {
+                copy_files(&entry.path(), &to)?;
+            } else {
+                fs::create_dir_all(&to)
+                    .with_context(|| format!("could not make {}", to.display()))?;
+            }
+        }
+    }
+    let mut command = crate::tools::command(server);
+    command
+        .arg("restore")
+        .arg(folder.data().join(BACKUPS_FOLDER).join(name))
+        .arg("--data-dir")
+        .arg(&second)
+        .current_dir(root)
+        .env_remove(SERVER_DATABASE_VARIABLE);
+    if let Some(url) = url {
+        command.env(SERVER_DATABASE_VARIABLE, url);
+    }
+    Ok(command
+        .status()
+        .context("could not start the server program to restore the backup")?
+        .success())
+}
+
+/// What makes the second database of a run once it is over: none on SQLite, whose database is the
+/// file of the copy of the data folder.
+type SecondDatabase<'s> = &'s dyn Fn() -> anyhow::Result<Option<String>>;
 
 /// The programs a run uses.
 struct Programs {
@@ -197,17 +328,29 @@ fn run_on(
     let folder = RunFolder::create(database)?;
     let arguments = driver_arguments(layout, request, database, &folder);
     let root = repo.root();
+    // The run is judged, then its backup is restored into the second database and judged there.
+    // `second` makes that database once the run is over and nobody is connected to it any more
+    // (none on SQLite: the file of the copy of the data folder).
+    let judge = |url: Option<&str>, second: SecondDatabase<'_>| -> anyhow::Result<bool> {
+        if !(run_driver(root, layout, &arguments, &programs.server, url)?
+            && run_check(root, &folder, &programs.checker, url, Judged::Run)?)
+        {
+            return Ok(false);
+        }
+        let restored = second()?;
+        let restored = restored.as_deref();
+        Ok(restore(root, &folder, &programs.server, restored)?
+            && run_check(root, &folder, &programs.checker, restored, Judged::Restored)?)
+    };
     match database {
-        DatabaseKind::Sqlite => Ok(
-            run_driver(root, layout, &arguments, &programs.server, None)?
-                && run_check(root, &folder, &programs.checker, None)?,
-        ),
+        DatabaseKind::Sqlite => judge(None, &|| Ok(None)),
         DatabaseKind::Postgres => db::with_postgres(repo, |postgres| {
             let url = postgres.empty_database(&layout.database_name)?;
-            Ok(
-                run_driver(root, layout, &arguments, &programs.server, Some(&url))?
-                    && run_check(root, &folder, &programs.checker, Some(&url))?,
-            )
+            judge(Some(&url), &|| {
+                postgres
+                    .copy_of(&layout.database_name, &layout.restored_name)
+                    .map(Some)
+            })
         }),
     }
 }
@@ -252,7 +395,7 @@ mod tests {
 
     fn layout() -> Layout {
         Layout::parse(
-            r#"{"driver":"driver.ts","databaseVariable":"V","databaseName":"d","people":10,"minutes":2,"nightlyMinutes":30}"#,
+            r#"{"driver":"driver.ts","databaseVariable":"V","databaseName":"d","people":10,"minutes":2,"longMinutes":120,"restoredName":"r"}"#,
         )
         .unwrap()
     }
@@ -266,7 +409,7 @@ mod tests {
         Request {
             people,
             minutes,
-            nightly: false,
+            long: None,
             databases: Vec::new(),
             seed: None,
         }
@@ -318,11 +461,25 @@ mod tests {
     }
 
     #[test]
-    fn the_nightly_run_is_the_long_one() {
+    fn test_concurrent_the_long_run_is_two_hours_or_the_length_asked_for() {
         let mut asked = request(None, None);
-        asked.nightly = true;
+        asked.long = Some(Length::OfTheLayout);
         let arguments = driver_arguments(&layout(), &asked, DatabaseKind::Sqlite, &folder());
-        assert_eq!(arguments[4], "1800");
+        assert_eq!(arguments[4], "7200");
+        asked.long = Some(parse_length("90m").unwrap());
+        let arguments = driver_arguments(&layout(), &asked, DatabaseKind::Sqlite, &folder());
+        assert_eq!(arguments[4], "5400");
+    }
+
+    #[test]
+    fn a_length_is_read_in_hours_or_minutes() {
+        assert_eq!(parse_length("2h"), Ok(Length::Minutes(120)));
+        assert_eq!(parse_length("90m"), Ok(Length::Minutes(90)));
+        assert_eq!(parse_length("45"), Ok(Length::Minutes(45)));
+        assert_eq!(parse_length(""), Ok(Length::OfTheLayout));
+        for wrong in ["0h", "two hours", "h", "-1m"] {
+            assert!(parse_length(wrong).is_err(), "{wrong}");
+        }
     }
 
     #[test]
@@ -330,6 +487,6 @@ mod tests {
         let repo = Repo::discover().unwrap();
         let layout = Layout::load(repo.root()).unwrap();
         assert!(repo.root().join(&layout.driver).is_file());
-        assert!(layout.minutes < layout.nightly_minutes);
+        assert!(layout.minutes < layout.long_minutes);
     }
 }

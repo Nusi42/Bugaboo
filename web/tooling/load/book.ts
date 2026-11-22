@@ -5,11 +5,13 @@
 
 import type {
   Agented,
+  BackedUp,
   Book,
   Dayed,
   Drafted,
   HandedOver,
   Kept,
+  Left,
   Lost,
   Raced,
   Searched,
@@ -61,6 +63,10 @@ export interface BookWriter {
   readonly raced: (note: Raced) => void;
   /** A person lost access while their agent worked. */
   readonly lost: (note: Lost) => void;
+  /** A person was switched off, or removed, while the others worked. */
+  readonly left: (note: Left) => void;
+  /** The backup made while the people worked. */
+  readonly backedUp: (note: BackedUp) => void;
   /** A change that came second and was sent again on the newer version (*Use mine*). */
   readonly conflict: () => void;
   /** A person took the editing over (*Edit anyway*). */
@@ -83,6 +89,7 @@ export interface Counts {
   readonly searches: number;
   readonly timed: number;
   readonly days: number;
+  readonly left: number;
 }
 
 /** What the people wrote, as lists. */
@@ -102,6 +109,8 @@ interface Notes {
   readonly handed: HandedOver[];
   readonly races: Raced[];
   readonly lost: Lost[];
+  readonly left: Left[];
+  readonly backup: BackedUp[];
 }
 
 /** A writer that adds a note to a list. */
@@ -129,6 +138,8 @@ type Writers = Pick<
   | "handed"
   | "raced"
   | "lost"
+  | "left"
+  | "backedUp"
 >;
 
 /** Empty lists of what the people wrote, and the writers that add to them. */
@@ -149,6 +160,8 @@ function emptyNotes(): { readonly notes: Notes; readonly writers: Writers } {
     handed: [],
     races: [],
     lost: [],
+    left: [],
+    backup: [],
   };
   const writers: Writers = {
     kept: adder(notes.kept),
@@ -166,8 +179,33 @@ function emptyNotes(): { readonly notes: Notes; readonly writers: Writers } {
     handed: adder(notes.handed),
     raced: adder(notes.races),
     lost: adder(notes.lost),
+    left: adder(notes.left),
+    backedUp: adder(notes.backup),
   };
   return { notes, writers };
+}
+
+/** What the people wrote, as lists that are only read. */
+type ReadNotes = { readonly [K in keyof Notes]: readonly Notes[K][number][] };
+
+/** The counts of the summary of a run. */
+function countsOf(
+  notes: ReadNotes,
+  events: { readonly conflicts: number; readonly tookOver: number },
+): Counts {
+  return {
+    kept: notes.kept.length,
+    comments: notes.comments.length,
+    files: notes.files.length,
+    conflicts: events.conflicts,
+    refused: notes.drafted.filter((note) => note.ending === "refused").length,
+    tookOver: events.tookOver,
+    searches: notes.searched.length,
+    vanished: notes.drafted.filter((note) => note.ending === "vanished").length,
+    timed: notes.timed.length,
+    days: notes.days.length,
+    left: notes.left.length,
+  };
 }
 
 /** An empty book. */
@@ -204,18 +242,9 @@ export function newBook(): BookWriter {
       handed: notes.handed,
       races: notes.races,
       lost: notes.lost,
+      left: notes.left,
+      ...(notes.backup[0] === undefined ? {} : { backup: notes.backup[0] }),
     }),
-    counts: () => ({
-      kept: notes.kept.length,
-      comments: notes.comments.length,
-      files: notes.files.length,
-      conflicts: events.conflicts,
-      refused: notes.drafted.filter((note) => note.ending === "refused").length,
-      tookOver: events.tookOver,
-      searches: notes.searched.length,
-      vanished: notes.drafted.filter((note) => note.ending === "vanished").length,
-      timed: notes.timed.length,
-      days: notes.days.length,
-    }),
+    counts: () => countsOf(notes, events),
   };
 }

@@ -5,8 +5,8 @@ import { type Instance } from "../../app/e2e/support/server.ts";
 import { type BookWriter, newBook } from "./book.ts";
 import { prepare } from "./organization.ts";
 import { prepareAgents, workWithAgents } from "./agents-run.ts";
+import { prepareLeaving } from "./leaving.ts";
 import { type LoadOptions, QUIET_SECONDS } from "./options.ts";
-import { type Context } from "./context.ts";
 import { keepWorking } from "./person.ts";
 import { randomFrom } from "./random.ts";
 
@@ -17,7 +17,8 @@ function summary(book: BookWriter, options: LoadOptions): string {
     `${String(options.people)} people for ${String(options.seconds)} seconds on ${options.database}:`,
     `${String(count.kept)} changes kept, ${String(count.comments)} comments, ${String(count.files)} files, ${String(count.conflicts)} changes sent again after a conflict,`,
     `${String(count.refused)} refused saves kept as drafts, ${String(count.tookOver)} take-overs, ${String(count.vanished)} editors who vanished,`,
-    `${String(count.searches)} searches, ${String(count.timed)} stops of a timer that saved time, ${String(count.days)} changes of work days.`,
+    `${String(count.searches)} searches, ${String(count.timed)} stops of a timer that saved time, ${String(count.days)} changes of work days,`,
+    `a backup made while they worked, and ${String(count.left)} people who left.`,
   ].join("\n");
 }
 
@@ -41,6 +42,7 @@ export async function run(server: Instance, options: LoadOptions): Promise<strin
     throw new TypeError("A run needs an administrator.");
   }
   const agents = await prepareAgents(server, admin, sessions.slice(1, guestAt), book);
+  const leaving = await prepareLeaving(server, admin, issues, book);
   const started = Date.now();
   const deadline = started + options.seconds * msPerSecond;
   // Nobody starts to edit under a lock once the lease could outlast the run.
@@ -59,11 +61,15 @@ export async function run(server: Instance, options: LoadOptions): Promise<strin
         hiddenField,
         hiddenFromGuests,
         guest: number === guestAt,
-      } satisfies Context),
+      }),
     ),
   );
-  // The agents work at the same moments as their people.
-  await Promise.all([crowd, workWithAgents(server, admin, agents, book)]);
+  // The agents work at the same moments as their people, and people leave while they work.
+  await Promise.all([
+    crowd,
+    workWithAgents(server, admin, agents, book),
+    leaving(started, deadline),
+  ]);
   writeFileSync(options.bookFile, JSON.stringify(book.file([...issues, ...agents.issues])));
   await Promise.all(sessions.map((session) => session.dispose()));
   return summary(book, options);

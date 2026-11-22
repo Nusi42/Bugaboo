@@ -7,6 +7,7 @@ use bb_core::edit::{DraftTarget, EditWhat};
 use bb_core::event::{DomainEvent, EntityKind, EntityRef, RecordKind};
 use bb_core::fields::Field;
 use bb_core::id::{EntityId, IssueId, UserId};
+use bb_core::person::Standing;
 use bb_core::settings::Layers;
 use bb_core::technical::TechnicalName;
 use bb_core::working_time::{Rules, warnings};
@@ -88,6 +89,19 @@ pub struct NotificationFacts {
     pub fields: Vec<String>,
 }
 
+/// A person who left while the others worked, as the database holds them.
+#[derive(Debug)]
+pub struct LeftFacts {
+    /// The ID of the person.
+    pub person: String,
+    /// Their standing: none while they are active.
+    pub standing: Option<Standing>,
+    /// Whether they have the code of the tombstone.
+    pub labelled: bool,
+    /// How many sessions they have.
+    pub sessions: usize,
+}
+
 /// A lock row.
 #[derive(Debug)]
 pub struct LockRow {
@@ -125,6 +139,8 @@ pub struct Facts {
     pub agents: crate::agents::AgentFacts,
     /// The away times of the people the book names.
     pub away_times: Vec<AwayFacts>,
+    /// The people who left while the others worked.
+    pub left: Vec<LeftFacts>,
 }
 
 pub(crate) fn describe(what: &str, error: impl std::fmt::Display) -> Failure {
@@ -227,6 +243,22 @@ async fn away_times(database: &Database, book: &Book) -> Result<Vec<AwayFacts>, 
     Ok(found)
 }
 
+/// The people the book says left, as the database holds them.
+pub(crate) async fn who_left(database: &Database, book: &Book) -> Result<Vec<LeftFacts>, Failure> {
+    let mut found = Vec::new();
+    for left in &book.left {
+        let person: UserId = left.person.parse().map_err(|e| describe(&left.person, e))?;
+        let (standing, sessions) = database.stored_standing(person).await?;
+        found.push(LeftFacts {
+            person: left.person.clone(),
+            labelled: standing.as_ref().is_some_and(|each| each.label.is_some()),
+            standing: standing.map(|each| each.standing),
+            sessions,
+        });
+    }
+    Ok(found)
+}
+
 /// Reads what the rules look at: the issues of the book, every lock row and the drafts the book
 /// names.
 ///
@@ -299,6 +331,7 @@ pub async fn gather(database: &Database, book: &Book) -> Result<Facts, Failure> 
     facts.away_times = away_times(database, book).await?;
     facts.agents = crate::agents::gather(database, book).await?;
     facts.locks = lock_rows(database).await?;
+    facts.left = who_left(database, book).await?;
     for drafted in last_drafts(book) {
         if drafted.ending == DraftEnd::Saved {
             continue;

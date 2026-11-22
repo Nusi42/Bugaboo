@@ -28,6 +28,8 @@ use crate::repo::Repo;
 use crate::tools::{self, TOOLS_DIR, Tool};
 
 /// The tool entry (tools/dev/tools.toml) that provides PostgreSQL.
+/// The variable that gives the program of the server the address of its PostgreSQL database.
+pub(crate) const SERVER_DATABASE_VARIABLE: &str = "BUGABOO_DATABASE_URL";
 const TOOL: &str = "postgresql";
 /// The key in tools/dev/ports.json.
 const PORT_KEY: &str = "postgres";
@@ -424,6 +426,18 @@ impl Postgres<'_> {
             self.cluster.port,
             name,
         ))
+    }
+
+    /// A copy of the database `from` called `name` (an old one of the same name is thrown away),
+    /// and the address that opens it. Nobody may be connected to `from` while it is copied.
+    pub(crate) fn copy_of(&self, from: &str, name: &str) -> anyhow::Result<String> {
+        checked_name(from)?;
+        checked_name(name)?;
+        self.cluster
+            .psql(&format!("DROP DATABASE IF EXISTS \"{name}\" WITH (FORCE)"))?;
+        self.cluster
+            .psql(&format!("CREATE DATABASE \"{name}\" TEMPLATE \"{from}\""))?;
+        self.url_of(name)
     }
 }
 

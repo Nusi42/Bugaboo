@@ -24,8 +24,11 @@ pub(crate) struct Layout {
     pub(crate) people: u32,
     /// How long the short run takes, the one of `cargo xtask ci`.
     pub(crate) minutes: u32,
-    /// How long the nightly run takes: the nightly job passes it with `--minutes`.
-    pub(crate) nightly_minutes: u32,
+    /// How long the long run takes (`--long` without a length): the run made by hand at the exit of
+    /// a milestone (architecture §11, "The long run").
+    pub(crate) long_minutes: u32,
+    /// The name of the PostgreSQL database the backup of a run is restored into.
+    pub(crate) restored_name: String,
 }
 
 impl Layout {

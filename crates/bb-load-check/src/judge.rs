@@ -45,7 +45,7 @@ fn counting(from: i64, to: i64) -> Vec<i64> {
 }
 
 /// Every change of an issue came with one event, and the versions went up one at a time.
-fn events_and_versions(book: &Book, issue: &IssueFacts) -> Vec<String> {
+pub(crate) fn events_and_versions(book: &Book, issue: &IssueFacts) -> Vec<String> {
     let key = &issue.key;
     let mut kept: Vec<i64> = book
         .kept
@@ -70,18 +70,26 @@ fn events_and_versions(book: &Book, issue: &IssueFacts) -> Vec<String> {
             issue.event_versions, issue.version
         ));
     }
-    let written = book.comments.iter().filter(|each| *each == key).count();
-    if issue.comment_events != written {
-        found.push(format!(
-            "{key}: {} events for {written} comments written",
-            issue.comment_events
-        ));
-    }
     found
 }
 
+/// Every comment has its event.
+fn comments_have_events(book: &Book, issue: &IssueFacts) -> Option<String> {
+    let written = book
+        .comments
+        .iter()
+        .filter(|each| **each == issue.key)
+        .count();
+    (issue.comment_events != written).then(|| {
+        format!(
+            "{}: {} events for {written} comments written",
+            issue.key, issue.comment_events
+        )
+    })
+}
+
 /// The description is the text of the last save that was kept.
-fn last_description(book: &Book, issue: &IssueFacts) -> Option<String> {
+pub(crate) fn last_description(book: &Book, issue: &IssueFacts) -> Option<String> {
     let last = book
         .kept
         .iter()
@@ -113,7 +121,7 @@ fn last_kept<'a>(
 
 /// The title and the status are what the last change that set them set (M3-F93): a title or a
 /// status change that was lost or half saved is found. An issue nobody changed keeps what it had.
-fn titles_and_statuses(book: &Book, issue: &IssueFacts) -> Vec<String> {
+pub(crate) fn titles_and_statuses(book: &Book, issue: &IssueFacts) -> Vec<String> {
     let mut found = Vec::new();
     if let Some(title) = last_kept(book, issue, |each| each.title.as_ref())
         && *title != issue.title
@@ -370,6 +378,7 @@ pub fn judge(book: &Book, facts: &Facts, afterwards: &Afterwards) -> Vec<String>
     found.extend(days_are_kept_once(book, facts));
     for issue in &facts.issues {
         found.extend(events_and_versions(book, issue));
+        found.extend(comments_have_events(book, issue));
         found.extend(last_description(book, issue));
         found.extend(titles_and_statuses(book, issue));
         found.extend(files_are_kept(book, issue));
@@ -381,6 +390,7 @@ pub fn judge(book: &Book, facts: &Facts, afterwards: &Afterwards) -> Vec<String>
     found.extend(locks_are_gone(book, facts, afterwards));
     found.extend(crate::agents::agents_hold_the_rules(book, &facts.agents));
     found.extend(crate::plan::plans_hold_the_rules(book, facts));
+    found.extend(crate::privacy::who_left_stays_out(book, &facts.left));
     found
 }
 
@@ -540,6 +550,7 @@ mod tests {
             }],
             agents: crate::agents::AgentFacts::default(),
             away_times: Vec::new(),
+            left: Vec::new(),
         };
         (book, facts)
     }

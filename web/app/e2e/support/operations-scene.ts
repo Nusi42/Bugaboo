@@ -20,6 +20,11 @@ export async function backupNames(admin: ApiSession): Promise<readonly string[]>
   return dataOf(await admin.client.GET("/api/v1/admin/backups")).files.map((file) => file.name);
 }
 
+/** Makes a backup now, as *Make a backup now* does; its name. */
+export async function backUp(admin: ApiSession): Promise<string> {
+  return dataOf(await admin.client.POST("/api/v1/admin/backups")).name;
+}
+
 /** The administrator, and `count` more backups created through the API, each in a second of its own. */
 export async function backupsScene(
   server: Instance,
@@ -29,7 +34,7 @@ export async function backupsScene(
   await inOrder(
     Array.from({ length: count }, () => async () => {
       await untilNextSecond();
-      dataOf(await admin.client.POST("/api/v1/admin/backups"));
+      await backUp(admin);
     }),
   );
   return { admin, names: await backupNames(admin) };

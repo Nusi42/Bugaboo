@@ -899,8 +899,8 @@ status = "active"
 id = "TEST-CONCURRENT"
 title = "Ten people working at once: no lost text, no half-saved changes, locks expire, conflicts explained"
 rule = "architecture §11, ADR-0019"
-tool = "xtask (the browser scenarios of ten Playwright contexts, the invariants test on both databases and the short run of `cargo xtask load` in ci are there and not switched off); the runs themselves: Playwright, the Rust tests and `cargo xtask load --people 10`, short in ci, `--nightly` for 30 minutes"
-when = ["ci", "nightly"]
+tool = "xtask (the browser scenarios of ten Playwright contexts, the invariants test on both databases, the short run of `cargo xtask load` in ci, and the long run with its backup made while the people work and restored into a second database are there and not switched off); the runs themselves: Playwright, the Rust tests and `cargo xtask load --people 10`, short in ci, `--long 2h` by hand at the exit of a milestone on a quiet computer"
+when = ["ci", "nightly", "release"]
 files = ["crates/**", "web/**", "xtask/src/ci.rs", "xtask/src/load/**", "tools/dev/load.json"]
 status = "active"
 
