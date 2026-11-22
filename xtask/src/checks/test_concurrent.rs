@@ -45,8 +45,8 @@ const DRIVER_RUN: &str = "web/tooling/load/run.ts";
 const DRIVER_STEPS: &str = "prepareLeaving(";
 /// The file of the steps, which makes the backup through the route.
 const DRIVER_STEPS_FILE: &str = "web/tooling/load/leaving.ts";
-/// The route that makes a backup now.
-const BACKUP_ROUTE: &str = "\"/api/v1/admin/backups\"";
+/// What the steps call to make a backup now through the route (`support/operations-scene.ts`).
+const BACKUP_STEP: &str = "backUp(";
 /// The code of `cargo xtask load`, which restores the backup and judges the copy.
 const LOAD_CODE: &str = "xtask/src/load/mod.rs";
 /// What the code of `cargo xtask load` must hold to restore the backup and judge the copy.
@@ -277,7 +277,7 @@ fn long_run(run: &LongRun) -> Vec<Finding> {
             "`restoredName` must name the database the backup of a run is restored into.",
         ));
     }
-    if !run.driver.contains(DRIVER_STEPS) || !run.steps.contains(BACKUP_ROUTE) {
+    if !run.driver.contains(DRIVER_STEPS) || !run.steps.contains(BACKUP_STEP) {
         findings.push(Finding::at(
             DRIVER_STEPS_FILE,
             "The driver must make a backup through the route while the people work.",
@@ -448,7 +448,7 @@ mod tests {
         LongRun {
             layout: r#"{"longMinutes": 120, "restoredName": "bbloadrestored"}"#.to_owned(),
             driver: format!("await Promise.all([crowd, {DRIVER_STEPS}steps)]);"),
-            steps: format!("admin.client.POST({BACKUP_ROUTE})"),
+            steps: format!("name: await {BACKUP_STEP}steps.admin)"),
             load:
                 "command.arg(\"restore\"); run_check(root, folder, checker, url, Judged::Restored)"
                     .to_owned(),
@@ -466,7 +466,7 @@ mod tests {
         short.layout = r#"{"longMinutes": 30, "restoredName": ""}"#.to_owned();
         assert_eq!(long_run(&short).len(), 2);
         let mut no_backup = the_full_plan();
-        no_backup.steps = "// admin.client.POST(\"/api/v1/admin/backups\")".to_owned();
+        no_backup.steps = "// name: await backUp(steps.admin)".to_owned();
         no_backup.steps = strip_comments(&no_backup.steps);
         assert_eq!(long_run(&no_backup).len(), 1);
         let mut no_restore = the_full_plan();

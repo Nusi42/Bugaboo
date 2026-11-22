@@ -7,6 +7,7 @@ import { paths } from "../../src/shared/paths.ts";
 import { ada, ben, good, lea } from "./demo-m9-common.ts";
 import { signIn, signOut } from "./flows.ts";
 import { type Mailbox } from "./mailbox.ts";
+import { FILE_CREATED_MS } from "./privacy.ts";
 import { serverWord } from "./server-words.ts";
 import { textIn } from "./zip.ts";
 
@@ -20,13 +21,16 @@ const README = "README.txt";
 /** Why Ada asks for Ben's data. */
 const REASON = "Ben asked for his data by e-mail";
 
-/** Lea downloads the file of her data, which is ready in the sample, and reads its README. */
+/**
+ * Lea downloads the file of her data and reads its README. The sample made it; after the restore of
+ * step 4, whose backup holds the record but not the file, the job writes it again.
+ */
 async function leaDownloadsHerData(page: Page): Promise<void> {
   await signIn(page, lea());
   await page.goto(paths.myData);
   const download = page.getByRole("region", { name: t("my-data.download"), exact: true });
   const file = download.getByRole("button", { name: t("my-data.download-file"), exact: true });
-  await expect(file).toBeVisible();
+  await expect(file).toBeVisible({ timeout: FILE_CREATED_MS });
   await good(page, "05-lea-downloads-her-data");
   const saved = page.waitForEvent("download");
   await file.click();

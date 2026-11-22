@@ -4,7 +4,7 @@ import { expect, type Locator, type Page } from "@playwright/test";
 
 import { personAddress } from "../../src/shared/paths.ts";
 import { lea, signedInAdmin } from "./access.ts";
-import { signInThroughApi, type Person } from "./accounts.ts";
+import { ada, signInThroughApi, type Person } from "./accounts.ts";
 import { type ApiSession } from "./api.ts";
 import { prepareWebWithAgents } from "./agents-scene.ts";
 import { type Instance } from "./server.ts";
@@ -64,8 +64,13 @@ export async function openPersonPage(page: Page, server: Instance, person: Perso
   const admin = await signedInAdmin(server);
   const id = await idInPeople(admin, person);
   await admin.dispose();
+  await openPersonById(page, id, person.name);
+}
+
+/** Opens the page of the person with this ID and waits for their name as its heading. */
+export async function openPersonById(page: Page, id: string, name: string): Promise<void> {
   await page.goto(personAddress(id));
-  await expect(page.getByRole("heading", { level: 1, name: person.name })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
 }
 
 /** Switches a person off, as an administrator does on their page. */
@@ -73,11 +78,14 @@ export async function switchOffByApi(admin: ApiSession, person: string): Promise
   await admin.client.POST("/api/v1/people/{person}/switch-off", { params: { path: { person } } });
 }
 
-/** Removes a switched-off person, with what the organization's setting offers for their comments. */
+/**
+ * Removes a switched-off person, with what the organization's setting offers for their comments,
+ * as the administrator of the first start (`signedInAdmin`), whose password a removal asks for again.
+ */
 export async function removeByApi(admin: ApiSession, person: string): Promise<void> {
   await admin.client.POST("/api/v1/people/{person}/remove", {
     params: { path: { person } },
-    body: {},
+    body: { password: ada.password },
   });
 }
 

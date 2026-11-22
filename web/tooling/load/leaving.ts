@@ -4,6 +4,8 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { giveRole, roleName } from "../../app/e2e/support/access.ts";
 import { ada, createPerson, ownId } from "../../app/e2e/support/accounts.ts";
 import { type ApiSession } from "../../app/e2e/support/api.ts";
+import { backUp } from "../../app/e2e/support/operations-scene.ts";
+import { removeByApi, switchOffByApi } from "../../app/e2e/support/privacy.ts";
 import { type Instance } from "../../app/e2e/support/server.ts";
 import { type BookWriter, type Work } from "./book.ts";
 
@@ -73,14 +75,6 @@ function signedOut(error: unknown): boolean {
   return error instanceof ApiError && error.status === 401;
 }
 
-/** Switches a person off as the administrator does on their page. */
-async function switchOff(steps: Steps, person: string): Promise<void> {
-  // The answer has no body: the client refuses what is not done.
-  await steps.admin.client.POST("/api/v1/people/{person}/switch-off", {
-    params: { path: { person } },
-  });
-}
-
 /**
  * A person reads an issue (their page is open), is switched off, and saves a new title on what
  * they read: the save must be refused.
@@ -94,7 +88,7 @@ async function switchOffWhileThePageIsOpen(
     await person.client.GET("/api/v1/issues/{issue}", { params: { path: { issue: work.key } } }),
   );
   const id = await ownId(person);
-  await switchOff(steps, id);
+  await switchOffByApi(steps.admin, id);
   let refused = false;
   try {
     const title = "Saved after I was switched off";
@@ -115,7 +109,7 @@ async function switchOffWhileThePageIsOpen(
 /** A person who wrote a comment is switched off, refused at their next comment, and removed. */
 async function removeWhileTheyWork(steps: Steps, person: ApiSession, work: Work): Promise<void> {
   const id = await ownId(person);
-  await switchOff(steps, id);
+  await switchOffByApi(steps.admin, id);
   let refused = false;
   try {
     dataOf(
@@ -128,19 +122,14 @@ async function removeWhileTheyWork(steps: Steps, person: ApiSession, work: Work)
   } catch (error) {
     refused = signedOut(error);
   }
-  await steps.admin.client.POST("/api/v1/people/{person}/remove", {
-    params: { path: { person: id } },
-    // What the organization's setting offers for the comments: they stay as *Former user*.
-    body: {},
-  });
+  await removeByApi(steps.admin, id);
   steps.book.left({ person: id, removed: true, refused_at_next_save: refused });
 }
 
 /** A backup through the route, as *Make a backup now* asks for one; the book notes what came before. */
-async function backUp(steps: Steps): Promise<void> {
+async function backUpWhileTheyWork(steps: Steps): Promise<void> {
   const before = steps.book.counts().kept;
-  const made = dataOf(await steps.admin.client.POST("/api/v1/admin/backups"));
-  steps.book.backedUp({ name: made.name, kept_before: before });
+  steps.book.backedUp({ name: await backUp(steps.admin), kept_before: before });
 }
 
 /**
@@ -151,7 +140,7 @@ async function leaveWhileTheyWork(steps: Steps, leavers: Leavers, work: Work): P
   await until(steps, 1 / 4);
   await switchOffWhileThePageIsOpen(steps, leavers.off, work);
   await until(steps, 1 / 2);
-  await backUp(steps);
+  await backUpWhileTheyWork(steps);
   await until(steps, 3 / 4);
   await removeWhileTheyWork(steps, leavers.gone, work);
   await Promise.all([leavers.off.dispose(), leavers.gone.dispose()]);

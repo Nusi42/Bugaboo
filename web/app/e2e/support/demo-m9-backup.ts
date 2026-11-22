@@ -4,20 +4,11 @@ import { expect, type Page } from "@playwright/test";
 
 import { paths } from "../../src/shared/paths.ts";
 import { signInThroughApi, type ApiSession, type Instance } from "./accounts.ts";
-import {
-  ada,
-  adaThroughApi,
-  ben,
-  good,
-  idOfPerson,
-  lea,
-  noah,
-  openPersonOf,
-} from "./demo-m9-common.ts";
+import { ada, adaThroughApi, ben, good, lea, noah } from "./demo-m9-common.ts";
 import { keyOf, titleOf } from "./demo-m8-common.ts";
 import { signIn } from "./flows.ts";
 import { backupNames, untilNextSecond } from "./operations-scene.ts";
-import { stateCard, switchOffByApi } from "./privacy.ts";
+import { idInPeople, openPersonById, stateCard, switchOffByApi } from "./privacy.ts";
 
 // Step 4 of the exit demo of M9 (`m9-exit-demo.spec.ts`): Ada makes a backup from *Backups* while
 // two people save issues; an issue is changed and Ben is switched off; the server is stopped and
@@ -105,7 +96,7 @@ export async function aBackupMadeWhilePeopleWorkIsRestored(
     params: { path: { issue: key } },
     body: { version: before, title: CHANGED_TITLE },
   });
-  const benId = await idOfPerson(admin, ben());
+  const benId = await idInPeople(admin, ben());
   await switchOffByApi(admin, benId);
   // The service is stopped and the backup is restored from the command line.
   const said = await server.restore(backup);
@@ -126,7 +117,7 @@ export async function aBackupMadeWhilePeopleWorkIsRestored(
   await page.goto(paths.backups);
   await expect(page.getByText(t("backup-page.maker.before-restore")).first()).toBeVisible();
   await good(page, "04-the-backups-after-the-restore");
-  await openPersonOf(page, benId, ben().name);
+  await openPersonById(page, benId, ben().name);
   await expect(stateCard(page)).toContainText(t("person.switched-off", { name: ben().name }));
   await good(page, "04-ben-is-still-switched-off-after-the-restore");
 }

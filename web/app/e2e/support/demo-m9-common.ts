@@ -1,8 +1,6 @@
-import { dataOf } from "@bugaboo/api-client";
-import { expect, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
 
 import layout from "../../../../tools/dev/sample.json" with { type: "json" };
-import { personAddress } from "../../src/shared/paths.ts";
 import { signInThroughApi, type ApiSession, type Instance } from "./accounts.ts";
 import { goodWindowInFourThemes } from "./demo.ts";
 import { sampleNamed, type SamplePerson } from "./sample.ts";
@@ -52,21 +50,4 @@ export function hana(): SamplePerson {
 /** Ada, signed in at the other end of the API. */
 export function adaThroughApi(server: Instance): Promise<ApiSession> {
   return signInThroughApi(server, ada());
-}
-
-/** The ID of a person of the sample, from the list of people as an administrator reads it. */
-export async function idOfPerson(admin: ApiSession, person: SamplePerson): Promise<string> {
-  const found = dataOf(
-    await admin.client.GET("/api/v1/people", { params: { query: { search: person.email } } }),
-  ).items[0]?.person;
-  if (found?.shown !== "name") {
-    throw new TypeError(`${person.email} is not in the list of people.`);
-  }
-  return found.id;
-}
-
-/** Opens the page of a person of the sample as the administrator who is signed in on the page. */
-export async function openPersonOf(page: Page, id: string, name: string): Promise<void> {
-  await page.goto(personAddress(id));
-  await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
 }

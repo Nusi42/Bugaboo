@@ -4,10 +4,10 @@ import { expect, type Page } from "@playwright/test";
 import { filled, issueAddress, paths, routeParam } from "../../src/shared/paths.ts";
 import { type Instance } from "./accounts.ts";
 import { keyOf, titleOf } from "./demo-m8-common.ts";
-import { ada, adaThroughApi, ben, good, hana, idOfPerson, openPersonOf } from "./demo-m9-common.ts";
+import { ada, adaThroughApi, ben, good, hana } from "./demo-m9-common.ts";
 import { formerUser } from "./former-user.ts";
 import { signIn, signOut } from "./flows.ts";
-import { removalWindow, stateCard } from "./privacy.ts";
+import { idInPeople, openPersonById, removalWindow, stateCard } from "./privacy.ts";
 
 // Step 6 of the exit demo of M9 (`m9-exit-demo.spec.ts`): the window *Remove a person* says what
 // goes, what stays and that Ben's work days and his name for them are kept until their date; after it
@@ -21,7 +21,7 @@ const BENS_ISSUE = 3;
 async function adaRemovesBen(page: Page, id: string): Promise<void> {
   const name = ben().name;
   await signIn(page, ada());
-  await openPersonOf(page, id, name);
+  await openPersonById(page, id, name);
   await stateCard(page)
     .getByRole("button", { name: t("person.remove") })
     .click();
@@ -47,7 +47,7 @@ async function adaRemovesBen(page: Page, id: string): Promise<void> {
 /** Step 6: Ben is removed. */
 export async function benIsRemoved(page: Page, server: Instance): Promise<void> {
   const admin = await adaThroughApi(server);
-  const id = await idOfPerson(admin, ben());
+  const id = await idInPeople(admin, ben());
   const issue = await keyOf(admin, titleOf(BENS_ISSUE));
   await admin.dispose();
   await adaRemovesBen(page, id);
