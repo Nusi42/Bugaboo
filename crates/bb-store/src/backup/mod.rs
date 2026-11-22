@@ -10,6 +10,7 @@ mod archive;
 mod catalog;
 mod copy;
 mod fill;
+mod folder;
 mod restore;
 mod runs;
 mod seal;
@@ -31,6 +32,7 @@ use crate::db::{Database, Dialect};
 use crate::error::StoreError;
 use crate::keys::KeyRing;
 
+pub use folder::{Elsewhere, FolderBackups, FolderOf};
 pub(crate) use restore::put_back_before_upgrade;
 pub use restore::{RestoreFailure, RestoreInput, RestoreReport, RestoreTarget, restore};
 

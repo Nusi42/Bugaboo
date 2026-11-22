@@ -316,7 +316,7 @@ async fn ops_07_the_server_makes_no_backup_into_a_share_of_another_computer() ->
     let settings = load_settings(store.config.as_deref(), &store.settings(), false)?;
     let database = connect(&settings, &data).await?;
     let keys = Arc::new(KeyRing::open(&data.keys(), OpenMode::ExistingOnly)?);
-    let backups = crate::wiring::ServerBackups::new(database, data, keys);
+    let backups = crate::wiring::server_backups(database, data, keys);
     for share in ["\\\\fileserver\\backups", "//fileserver/backups"] {
         let refused = backups
             .create(Some(share.to_owned()), Purpose::Regular, Timestamp::now())

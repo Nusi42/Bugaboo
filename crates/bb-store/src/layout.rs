@@ -5,7 +5,7 @@
 /// The built-in SQLite database, directly in the data folder.
 pub use bb_core::data_folder::DATABASE_FILE;
 /// The folder with the key files (`MASTER_KEY_FILE` and the others).
-pub const KEYS_FOLDER: &str = "keys";
+pub use bb_core::data_folder::KEYS_FOLDER;
 /// The folder for what the security log keeps outside the database.
 pub const LOGS_FOLDER: &str = "logs";
 /// The file in [`LOGS_FOLDER`] where the security log writes down its end (SEC-15).

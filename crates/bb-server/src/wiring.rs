@@ -26,11 +26,8 @@ use bb_files::{DiskFiles, PreviewCommand};
 use bb_notify::SmtpMailer;
 use bb_store::{AuthStorage, Database, LogSeal};
 
-use bb_app::backups::{BackupFile, BackupFiles};
 use bb_app::ports::BoxFuture;
-use bb_core::backup::name::{BackupName, Purpose};
-use bb_core::backup::run::CreatedFile;
-use bb_store::backup::backups_in;
+use bb_store::backup::{FolderBackups, FolderOf};
 
 use crate::cli::backup::{backup_folder, places, record_made};
 use crate::config::{Settings, TlsMode};
@@ -116,30 +113,15 @@ pub(crate) fn database_failed(error: &impl std::fmt::Display) -> anyhow::Error {
 
 /// The backup files of the running server (OPS-07): created into the folder the setting names,
 /// or the backups folder of the data folder.
-pub(crate) struct ServerBackups {
+pub(crate) fn server_backups(
     database: Database,
     data: DataFolder,
     keys: Arc<bb_store::KeyRing>,
-}
-
-impl ServerBackups {
-    /// The backups of the installation in `data`, with its database and the keys that seal them.
-    pub(crate) const fn new(
-        database: Database,
-        data: DataFolder,
-        keys: Arc<bb_store::KeyRing>,
-    ) -> Self {
-        Self {
-            database,
-            data,
-            keys,
-        }
-    }
-
-    /// The folder of the backups: the one the setting names, refused when it lies on another
-    /// computer (the server would sign in there and copy the whole database there; ADR-0046), or
-    /// the backups folder of the data folder.
-    fn folder(&self, named: Option<&str>) -> std::io::Result<PathBuf> {
+) -> FolderBackups {
+    let places = places(&data, data.backups(), keys);
+    // A named folder is refused when it lies on another computer: the server would sign in there
+    // and copy the whole database there (ADR-0046).
+    let folder_of: FolderOf = Arc::new(move |named| {
         if let Some(named) = named
             && (!bb_core::settings::is_local_folder(named)
                 || crate::system::on_another_computer(std::path::Path::new(named)))
@@ -148,65 +130,12 @@ impl ServerBackups {
                 message::backups_folder_not_local(named).render(),
             ));
         }
-        backup_folder(&self.data, named.map(std::path::Path::new))
+        backup_folder(&data, named.map(std::path::Path::new))
             .map_err(|error| std::io::Error::other(error.to_string()))
-    }
-}
-
-impl BackupFiles for ServerBackups {
-    fn on_another_computer(&self, folder: &str) -> bool {
+    });
+    FolderBackups::new(database, places, folder_of).judging_elsewhere(Arc::new(|folder| {
         crate::system::on_another_computer(std::path::Path::new(folder))
-    }
-
-    fn create(
-        &self,
-        folder: Option<String>,
-        purpose: Purpose,
-        now: jiff::Timestamp,
-    ) -> BoxFuture<'_, std::io::Result<CreatedFile>> {
-        Box::pin(async move {
-            let places = places(
-                &self.data,
-                self.folder(folder.as_deref())?,
-                Arc::clone(&self.keys),
-            );
-            self.database
-                .create_backup(&places, purpose, now)
-                .await
-                .map(|created| created.file)
-                .map_err(|error| std::io::Error::other(error.to_string()))
-        })
-    }
-
-    fn list(&self, folder: Option<String>) -> BoxFuture<'_, std::io::Result<Vec<BackupFile>>> {
-        Box::pin(async move {
-            let found = backups_in(&self.folder(folder.as_deref())?)
-                .map_err(|error| std::io::Error::other(error.to_string()))?;
-            Ok(found
-                .into_iter()
-                .map(|(name, _, size)| BackupFile { name, size })
-                .collect())
-        })
-    }
-
-    fn delete(
-        &self,
-        folder: Option<String>,
-        name: BackupName,
-    ) -> BoxFuture<'_, std::io::Result<()>> {
-        Box::pin(async move {
-            std::fs::remove_file(self.folder(folder.as_deref())?.join(name.to_string()))
-        })
-    }
-
-    fn remove_leftovers(&self, folder: Option<String>) -> BoxFuture<'_, ()> {
-        Box::pin(async move {
-            match self.folder(folder.as_deref()) {
-                Ok(folder) => bb_store::backup::remove_leftovers(&folder),
-                Err(error) => tracing::warn!(cause = %error, "the backups folder is not there"),
-            }
-        })
-    }
+    }))
 }
 
 /// The stored data of an installation that exists, opened by the commands that look after it
@@ -327,7 +256,7 @@ pub(crate) async fn wire(
         data.replay_list(),
     )))
     .with_files(Arc::new(DiskFiles::new(data.files(), previews)))
-    .with_backups(Arc::new(ServerBackups::new(
+    .with_backups(Arc::new(server_backups(
         database.clone(),
         DataFolder::existing(data.root())
             .ok_or_else(|| anyhow!(message::cli_no_data(data.root().display()).render()))?,

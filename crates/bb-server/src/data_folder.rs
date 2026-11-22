@@ -48,8 +48,8 @@ const ANCHOR_FILE: &str = bb_store::SECURITY_LOG_ANCHOR_FILE;
 #[cfg(windows)]
 const SERVER_LOG_FILE: &str = "server.log";
 const SETUP_CODE_FILE: &str = bb_core::data_folder::SETUP_CODE_FILE;
-const PRIVACY: &str = "privacy";
-const REPLAY_LIST: &str = "replay.list";
+const PRIVACY: &str = bb_core::data_folder::PRIVACY_FOLDER;
+const REPLAY_LIST: &str = bb_core::data_folder::REPLAY_LIST_FILE;
 const SERVER_LOCK: &str = "server.lock";
 const VERSION_FILE: &str = bb_core::data_folder::VERSION_FILE;
 /// The folders `prepare` makes inside the data folder.

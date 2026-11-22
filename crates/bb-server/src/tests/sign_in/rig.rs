@@ -345,7 +345,7 @@ impl Rig {
         let data = crate::data_folder::DataFolder::existing(folder.path())
             .ok_or("the folder of the rig is gone")?;
         std::fs::create_dir_all(data.backups())?;
-        let services = services.with_backups(Arc::new(crate::wiring::ServerBackups::new(
+        let services = services.with_backups(Arc::new(crate::wiring::server_backups(
             database.clone(),
             data,
             keys,
