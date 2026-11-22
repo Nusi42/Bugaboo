@@ -6,10 +6,7 @@
 //! budget with the scenario, the number and the budget.
 
 use super::{Check, Context, Finding};
-use crate::bench_budgets::{
-    AGENT_SCENARIOS_PATH, BUDGETS_PATH, Budgets, SCENARIOS_PATH, TIMELINE_SCENARIOS_PATH, problems,
-    scenarios,
-};
+use crate::bench_budgets::{BUDGETS_PATH, Budgets, REGISTRY_PATHS, problems, scenarios};
 use crate::source::read_text;
 
 pub(crate) struct PerfBench;
@@ -21,15 +18,11 @@ impl Check for PerfBench {
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         let repo = context.repo;
-        evaluate(
-            &read_text(repo, BUDGETS_PATH)?,
-            &format!(
-                "{}\n{}\n{}",
-                read_text(repo, SCENARIOS_PATH)?,
-                read_text(repo, AGENT_SCENARIOS_PATH)?,
-                read_text(repo, TIMELINE_SCENARIOS_PATH)?
-            ),
-        )
+        let mut registry = Vec::new();
+        for path in REGISTRY_PATHS {
+            registry.push(read_text(repo, path)?);
+        }
+        evaluate(&read_text(repo, BUDGETS_PATH)?, &registry.join("\n"))
     }
 }
 

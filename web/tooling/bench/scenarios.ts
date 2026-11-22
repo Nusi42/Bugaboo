@@ -1,12 +1,12 @@
 import { pageSizeMax } from "@bugaboo/api-client";
 
-import { type ApiSession } from "../../app/e2e/support/api.ts";
-import { type Instance } from "../../app/e2e/support/server.ts";
+import { type ApiSession, type Instance } from "../../app/e2e/support/accounts.ts";
 import { previewStatus } from "../../app/e2e/support/many-changes.ts";
 import { listPage, pageReads } from "../../app/e2e/support/perf-reads.ts";
 import { NOTIFICATIONS_PAGE } from "../../app/e2e/support/perf-work.ts";
 import { timed } from "../../app/e2e/support/perf.ts";
 import { agentScenarios } from "./agent-scenarios.ts";
+import { privacyScenarios } from "./privacy-scenarios.ts";
 import { type BudgetName } from "./budgets.generated.ts";
 import { timelineScenarios } from "./timeline-scenarios.ts";
 
@@ -149,6 +149,7 @@ const COMPLEX = "statusGroup is not Done and priority is high";
 export const scenarios: readonly Scenario[] = [
   ...agentScenarios,
   ...timelineScenarios,
+  ...privacyScenarios,
   {
     name: "issue-page",
     budget: "page",

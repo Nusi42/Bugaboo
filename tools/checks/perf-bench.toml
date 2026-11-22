@@ -29,6 +29,12 @@ p95_ms = 300
 [budgets.preview]
 p95_ms = 8000
 
+# A name a scenario takes instead of a budget while its length is only written down: a new kind of
+# work whose budget waits for the numbers of a few milestones. A run tells the length and never fails
+# on it. Each entry has its reason; a name is never a budget and a written-down length at once.
+[written_down.backup]
+reason = "a backup of the 1 M dataset copies the whole database and every file while people work (OPS-07); its length is written down in architecture section 11 at each exit until a budget is decided"
+
 # A scenario that is over its budget on one database and is accepted for now (maintainer decision).
 # The nightly run tells it as a known gap and fails it only over its limit; the budget above stays as it is.
 # The limit must be above the budget of the scenario.

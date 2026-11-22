@@ -56,9 +56,9 @@ fn ensure_text_index(server: &Path, folder: &Path, url: Option<&str>) -> anyhow:
     command
         .args(["search-index", "rebuild", "--data-dir"])
         .arg(folder.join("data"))
-        .env_remove("BUGABOO_DATABASE_URL");
+        .env_remove(db::SERVER_DATABASE_VARIABLE);
     if let Some(url) = url {
-        command.env("BUGABOO_DATABASE_URL", url);
+        command.env(db::SERVER_DATABASE_VARIABLE, url);
     }
     let built = command
         .status()
@@ -104,12 +104,14 @@ fn table(budgets: &Budgets, database: DatabaseKind, result: &DriverResult) {
         result.build
     ));
     for (name, measured) in &result.scenarios {
+        let budget = budgets
+            .p95_ms(&measured.budget)
+            .map_or_else(|| "none yet".to_owned(), |allowed| format!("{allowed} ms"));
         output::info(&format!(
-            "  {name}: p50 {:.1}, p95 {:.1}, p99 {:.1}; budget {} ms ({}){}",
+            "  {name}: p50 {:.1}, p95 {:.1}, p99 {:.1}; budget {budget} ({}){}",
             measured.p50,
             measured.p95,
             measured.p99,
-            budgets.p95_ms(&measured.budget).unwrap_or_default(),
             measured.budget,
             measured
                 .cut_off()

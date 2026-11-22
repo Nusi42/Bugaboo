@@ -8,5 +8,8 @@ export const budgets = {
   timeline: { p95Ms: 300 },
 } as const;
 
-/** The name of a budget. */
-export type BudgetName = keyof typeof budgets;
+/** What a scenario names instead of a budget while its length is only written down. */
+export const writtenDown = ["backup"] as const;
+
+/** The name of a budget, or of a length that is only written down. */
+export type BudgetName = keyof typeof budgets | (typeof writtenDown)[number];

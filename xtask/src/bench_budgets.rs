@@ -20,6 +20,15 @@ pub(crate) const SCENARIOS_PATH: &str = "web/tooling/bench/scenarios.ts";
 pub(crate) const AGENT_SCENARIOS_PATH: &str = "web/tooling/bench/agent-scenarios.ts";
 /// Where the scenarios of the timeline are registered; `scenarios.ts` spreads them into its list.
 pub(crate) const TIMELINE_SCENARIOS_PATH: &str = "web/tooling/bench/timeline-scenarios.ts";
+/// Where the scenarios of privacy and operations are registered; `scenarios.ts` spreads them in.
+pub(crate) const PRIVACY_SCENARIOS_PATH: &str = "web/tooling/bench/privacy-scenarios.ts";
+/// Every file that registers scenarios: `scenarios.ts` and the lists it spreads.
+pub(crate) const REGISTRY_PATHS: [&str; 4] = [
+    SCENARIOS_PATH,
+    AGENT_SCENARIOS_PATH,
+    TIMELINE_SCENARIOS_PATH,
+    PRIVACY_SCENARIOS_PATH,
+];
 /// The TypeScript the budgets are written to.
 pub(crate) const OUTPUT: &str = "web/tooling/bench/budgets.generated.ts";
 
@@ -35,6 +44,16 @@ pub(crate) struct Budgets {
     /// The same, one entry for each scenario and database (made by [`Budgets::parse`]).
     #[serde(skip)]
     known_gaps: Vec<(String, KnownGap)>,
+    /// What a scenario may name instead of a budget while its length is only written down: a new
+    /// kind of work whose budget waits for the numbers of a few milestones, each with its reason.
+    #[serde(default)]
+    written_down: BTreeMap<String, WrittenDown>,
+}
+
+/// A name a scenario takes instead of a budget: its length is written down and held to nothing yet.
+#[derive(Debug, Deserialize)]
+struct WrittenDown {
+    reason: String,
 }
 
 /// How a scenario writes its known gaps: one for the database it names, or a table for each
@@ -139,6 +158,11 @@ impl Budgets {
     pub(crate) fn p95_ms(&self, name: &str) -> Option<f64> {
         self.limits.get(name).map(|budget| budget.p95_ms)
     }
+
+    /// Whether a scenario that names this has its length written down and no budget yet.
+    pub(crate) fn written_down(&self, name: &str) -> bool {
+        self.written_down.contains_key(name)
+    }
 }
 
 /// The scenarios a registry file lists: each is a `name: "…"` followed by its `budget: "…"`.
@@ -184,7 +208,7 @@ pub(crate) fn problems(budgets: &Budgets, listed: &[(Scenario, usize)]) -> Vec<(
     }
     for (at, (scenario, line)) in listed.iter().enumerate() {
         let place = format!("{SCENARIOS_PATH}:{line}");
-        if budgets.p95_ms(&scenario.budget).is_none() {
+        if budgets.p95_ms(&scenario.budget).is_none() && !budgets.written_down(&scenario.budget) {
             found.push((
                 place.clone(),
                 format!(
@@ -200,6 +224,14 @@ pub(crate) fn problems(budgets: &Budgets, listed: &[(Scenario, usize)]) -> Vec<(
             found.push((
                 place,
                 format!("The scenario {} is registered twice.", scenario.name),
+            ));
+        }
+    }
+    for (name, written) in &budgets.written_down {
+        if written.reason.trim().is_empty() || budgets.limits.contains_key(name) {
+            found.push((
+                BUDGETS_PATH.to_owned(),
+                format!("The length {name} that is only written down needs a reason and must not be a budget too."),
             ));
         }
     }
@@ -252,7 +284,18 @@ pub(crate) fn typescript(budgets: &Budgets) -> String {
     for (name, budget) in &budgets.limits {
         let _ = writeln!(text, "  {name}: {{ p95Ms: {} }},", budget.p95_ms);
     }
-    text.push_str("} as const;\n\n/** The name of a budget. */\nexport type BudgetName = keyof typeof budgets;\n");
+    text.push_str(
+        "} as const;\n\n/** What a scenario names instead of a budget while its length is only written down. */\nexport const writtenDown = [",
+    );
+    let names: Vec<String> = budgets
+        .written_down
+        .keys()
+        .map(|name| format!("\"{name}\""))
+        .collect();
+    text.push_str(&names.join(", "));
+    text.push_str(
+        "] as const;\n\n/** The name of a budget, or of a length that is only written down. */\nexport type BudgetName = keyof typeof budgets | (typeof writtenDown)[number];\n",
+    );
     text
 }
 
@@ -269,6 +312,13 @@ pub(crate) struct Judged {
 pub(crate) fn over(budgets: &Budgets, database: &str, run: &BTreeMap<String, Measured>) -> Judged {
     let mut judged = Judged::default();
     for (name, measured) in run {
+        if let Some(written) = budgets.written_down.get(&measured.budget) {
+            judged.known.push(format!(
+                "The scenario {name} took {:.1} ms at the 95th percentile, written down with no budget yet: {}",
+                measured.p95, written.reason
+            ));
+            continue;
+        }
         match budgets.p95_ms(&measured.budget) {
             None => judged.failures.push(format!(
                 "The scenario {name} has no budget: {} is not in {BUDGETS_PATH}.",
@@ -518,6 +568,37 @@ reason = \"x\"
         ))
         .unwrap();
         assert_eq!(problems(&stray, &scenarios(SOURCE)).len(), 1);
+    }
+
+    const WRITTEN_DOWN: &str = "[written_down.backup]\nreason = \"a new kind of work\"\n";
+
+    #[test]
+    fn a_length_that_is_written_down_is_told_and_never_fails_a_run() {
+        let budgets = Budgets::parse(&format!("{TOML}{WRITTEN_DOWN}")).unwrap();
+        let source =
+            format!("{SOURCE}  {{\n    name: \"backup-large\",\n    budget: \"backup\",\n  }},\n");
+        assert!(problems(&budgets, &scenarios(&source)).is_empty());
+        let run = BTreeMap::from([(
+            "backup-large".to_owned(),
+            Measured {
+                budget: "backup".to_owned(),
+                p95: 600_000.0,
+                ..Measured::default()
+            },
+        )]);
+        let judged = over(&budgets, "sqlite", &run);
+        assert!(judged.failures.is_empty());
+        assert_eq!(judged.known.len(), 1);
+        assert!(judged.known[0].contains("a new kind of work"), "{judged:?}");
+        let text = typescript(&budgets);
+        assert!(
+            text.contains("export const writtenDown = [\"backup\"] as const;"),
+            "{text}"
+        );
+        // Without its reason it is refused.
+        let bare =
+            Budgets::parse(&format!("{TOML}[written_down.backup]\nreason = \"\"\n")).unwrap();
+        assert_eq!(problems(&bare, &scenarios(&source)).len(), 1);
     }
 
     #[test]
