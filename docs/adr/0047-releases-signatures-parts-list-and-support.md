@@ -56,6 +56,12 @@ Today the repository has lockfiles, the register of direct dependencies, the lic
 - **The secret key file is its owner's alone.** `keygen` makes it so before anything goes into it: mode `0600` on Linux; on Windows an access list with only the owner and nothing inherited, set with `icacls` as the server sets the files of its data folder. `sign` refuses a key file that the group or everybody (Linux), or everybody, all users or all signed-in accounts (Windows) may read, and a file whose rights it cannot read, with the command that closes it. Only a key whose KDF field says it has a passphrase is opened with one; any other is read as a plain key, so a damaged key is an error and never a question.
 - Enforced by: review (`sec_18_keygen_writes_a_key_without_a_passphrase_that_signs_without_asking`, `sec_18_an_older_key_with_a_passphrase_still_opens_with_it`, `sec_18_the_secret_key_is_its_owner_s_alone`, `sec_18_a_damaged_key_without_a_passphrase_is_an_error_and_never_a_question`, `sec_18_signing_refuses_a_key_inside_the_repository_or_a_work_folder`, `sec_18_a_key_folder_behind_a_link_is_taken`).
 
+## Amendment (2026-11-22, older releases and the key on Windows)
+
+- **An older release fails the check** (this sharpens decision 8). `bugaboo update verify` ends with an error, not only a warning, when the file is a genuine release older than the installed one, so a script that looks at the exit code never takes a downgrade for an update; `--allow-older` lets it pass with the warning. Versions are compared by Semantic Versioning: with the same three numbers a pre-release such as `0.6.0-rc1` is older than `0.6.0`, and two pre-releases are compared part by part.
+- **The secret key on Windows** may be read by its owner, the system and the administrators of the computer only, as the mode `0600` on Linux: `sign` refuses an access list that gives anything to another account, not only to the groups that stand for many.
+- Enforced by: review (`sec_18_update_verify_fails_for_an_older_release_unless_it_is_allowed`, `sec_18_a_pre_release_is_older_than_its_release_by_semantic_versioning`, `sec_18_the_secret_key_is_its_owner_s_alone`).
+
 ## Alternatives considered
 
 - **Sigstore (cosign keyless):** needs a hosted build identity and the network at signing time; ADR-0037 has no hosted build. Not now.

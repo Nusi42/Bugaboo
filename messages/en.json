@@ -256,6 +256,8 @@
   "cli.help.update-file": "The downloaded file. Its signature (the same name with .minisig) and the list SHA256SUMS with its signature must be in the same folder",
   "cli.update.signed": "Signed by Bugaboo, version {version}: {file}",
   "cli.update.older": "Version {version} is older than version {installed}, which is installed here. Installing it would go back to an older version; do that only if you mean to.",
+  "cli.update.older-refused": "The file is signed by Bugaboo, but version {version} is older than version {installed}, which is installed here. Going back to an older version can undo fixes, also fixes of security. If you mean to go back, run the command again with {flag}.",
+  "cli.help.allow-older": "Accept a genuine release that is older than the installed one",
   "cli.update.missing": "{file} cannot be read. Download it from the same release and put it in the same folder.",
   "cli.update.unreadable-signature": "The signature {file} is not a signature of a Bugaboo release. Do not install the file.",
   "cli.update.unknown-key": "{file} is not signed with a key of Bugaboo. Do not install it.",

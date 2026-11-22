@@ -176,6 +176,26 @@ fn dist_07_update_verify_warns_on_an_older_version() {
     assert!(!Download::new("0.6.1").check("0.6.0").unwrap().older);
 }
 
+#[test]
+fn sec_18_update_verify_fails_for_an_older_release_unless_it_is_allowed() {
+    let args = |download: &Download, allow_older: bool| VerifyArgs {
+        file: download.program(),
+        allow_older,
+    };
+    let older = Download::new("0.5.1");
+    let refused = verify_with(&args(&older, false), &older.keys(), "0.6.0")
+        .unwrap_err()
+        .to_string();
+    assert!(refused.contains("--allow-older"), "{refused}");
+    assert!(refused.contains("0.5.1"), "{refused}");
+    assert!(verify_with(&args(&older, true), &older.keys(), "0.6.0").is_ok());
+    // A release candidate of the installed version is older than the version itself.
+    let candidate = Download::new("0.6.0-rc1");
+    assert!(verify_with(&args(&candidate, false), &candidate.keys(), "0.6.0").is_err());
+    let same = Download::new("0.6.0");
+    assert!(verify_with(&args(&same, false), &same.keys(), "0.6.0").is_ok());
+}
+
 /// Every file of a folder with its bytes and the time it was last changed.
 fn snapshot(folder: &Path) -> Vec<(String, Vec<u8>, SystemTime)> {
     let mut files: Vec<_> = fs::read_dir(folder)

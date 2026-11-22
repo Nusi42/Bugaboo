@@ -1771,6 +1771,9 @@ pub const CLI_ABOUT_UPDATE_VERIFY: MessageKey = MessageKey::new("cli.about.updat
 /// The message `cli.help.address`.
 pub const CLI_HELP_ADDRESS: MessageKey = MessageKey::new("cli.help.address");
 
+/// The message `cli.help.allow-older`.
+pub const CLI_HELP_ALLOW_OLDER: MessageKey = MessageKey::new("cli.help.allow-older");
+
 /// The message `cli.help.backup-to`.
 pub const CLI_HELP_BACKUP_TO: MessageKey = MessageKey::new("cli.help.backup-to");
 
@@ -14446,6 +14449,30 @@ pub fn cli_update_older(values: CliUpdateOlder<'_>) -> Message {
     Message::with_arguments(
         MessageKey::new("cli.update.older"),
         vec![
+            ("installed", Value::Text(values.installed.to_string())),
+            ("version", Value::Text(values.version.to_string())),
+        ],
+    )
+}
+
+/// The values of the message `cli.update.older-refused`, by name.
+#[derive(Clone, Copy)]
+pub struct CliUpdateOlderRefused<'a> {
+    /// The value of `{flag}`.
+    pub flag: &'a dyn std::fmt::Display,
+    /// The value of `{installed}`.
+    pub installed: &'a dyn std::fmt::Display,
+    /// The value of `{version}`.
+    pub version: &'a dyn std::fmt::Display,
+}
+
+/// The message `cli.update.older-refused`.
+#[must_use]
+pub fn cli_update_older_refused(values: CliUpdateOlderRefused<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("cli.update.older-refused"),
+        vec![
+            ("flag", Value::Text(values.flag.to_string())),
             ("installed", Value::Text(values.installed.to_string())),
             ("version", Value::Text(values.version.to_string())),
         ],

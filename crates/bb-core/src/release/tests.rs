@@ -151,6 +151,22 @@ fn dist_07_versions_are_compared_by_their_three_numbers() {
 }
 
 #[test]
+fn sec_18_a_pre_release_is_older_than_its_release_by_semantic_versioning() {
+    assert_eq!(is_older("0.6.0-rc1", "0.6.0"), Some(true));
+    assert_eq!(is_older("0.6.0", "0.6.0-rc1"), Some(false));
+    assert_eq!(is_older("0.6.0-rc1", "0.6.0-rc1"), Some(false));
+    // Part by part: numbers by value and below words, a shorter list below a longer one.
+    assert_eq!(is_older("1.0.0-rc.2", "1.0.0-rc.10"), Some(true));
+    assert_eq!(is_older("1.0.0-alpha", "1.0.0-beta"), Some(true));
+    assert_eq!(is_older("1.0.0-1", "1.0.0-alpha"), Some(true));
+    assert_eq!(is_older("1.0.0-alpha", "1.0.0-alpha.1"), Some(true));
+    assert_eq!(is_older("1.0.0-beta", "1.0.0-alpha.1"), Some(false));
+    // What follows a `+` does not count.
+    assert_eq!(is_older("1.0.0+build.5", "1.0.0"), Some(false));
+    assert_eq!(is_older("1.0.0-rc1+build", "1.0.0"), Some(true));
+}
+
+#[test]
 fn comp_04_a_preview_is_supported_until_the_next_release_and_1_0_for_years() {
     let day = date(2026, 12, 1);
     assert_eq!(

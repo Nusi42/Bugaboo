@@ -25,9 +25,12 @@ The installed program trusts only the keys it carries itself, so a download
 cannot bring a key of its own. It answers one of these:
 
 - **Signed by Bugaboo, version 0.6.0:** the file is genuine. Install it.
-- **Version … is older than version …, which is installed here:** the file
-  is genuine but older than what you run. Installing it would go back to an
-  older version; do that only if you mean to.
+- **… version … is older than version …, which is installed here:** the file
+  is genuine but older than what you run, and the command ends with an error,
+  so a script does not take it for an update. Installing it would go back to
+  an older version, which can undo fixes of security. If you mean to go back,
+  run the command again with `--allow-older`: it then says the file is signed
+  and warns. A test version such as `0.6.0-rc1` counts as older than `0.6.0`.
 - **… was changed after it was signed**, **… is not signed with a key of
   Bugaboo**, **… is not in the list SHA256SUMS** or **The checksum of … is
   not the one in the list:** do not install the file. Download it again from

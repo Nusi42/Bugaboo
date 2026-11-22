@@ -4,8 +4,9 @@
 //! It trusts only the keys it carries itself (`bb_core::release::RELEASE_PUBLIC_KEYS`), so a
 //! download cannot bring its own key. It checks the file's signature, the signature of the list
 //! `SHA256SUMS` beside it (signed as that list of the same release) and the file's checksum in
-//! that list, says which release the file is, and warns when that release is older than the
-//! installed one. It only reads: nothing is run, moved or replaced.
+//! that list, says which release the file is, and fails when that release is older than the
+//! installed one, unless `--allow-older` says that is meant. It only reads: nothing is run, moved
+//! or replaced.
 
 use std::path::{Path, PathBuf};
 
@@ -29,7 +30,12 @@ pub(crate) enum UpdateCommand {
 pub(crate) struct VerifyArgs {
     #[arg(help = text(message::CLI_HELP_UPDATE_FILE))]
     file: PathBuf,
+    #[arg(long = ALLOW_OLDER, help = text(message::CLI_HELP_ALLOW_OLDER))]
+    allow_older: bool,
 }
+
+/// The option that lets `update verify` pass a release older than the installed one.
+const ALLOW_OLDER: &str = "allow-older";
 
 /// A file that holds: the release it belongs to, and whether that is older than this program.
 #[derive(Debug, PartialEq, Eq)]
@@ -90,28 +96,43 @@ impl Refused {
 
 /// `bugaboo update verify <file>`: checks the file with the keys of this program.
 pub(crate) fn verify(args: &VerifyArgs) -> anyhow::Result<()> {
-    match check(&args.file, release::RELEASE_PUBLIC_KEYS, release::VERSION) {
-        Ok(checked) => {
-            output::line(
-                &message::cli_update_signed(message::CliUpdateSigned {
-                    file: &checked.signed.file,
-                    version: &checked.signed.version,
-                })
-                .render(),
-            );
-            if checked.older {
-                output::warning(
-                    &message::cli_update_older(message::CliUpdateOlder {
-                        installed: &release::VERSION,
-                        version: &checked.signed.version,
-                    })
-                    .render(),
-                );
-            }
-            Ok(())
-        }
-        Err(refused) => Err(anyhow!(refused.message().render())),
+    verify_with(args, release::RELEASE_PUBLIC_KEYS, release::VERSION).map(|_| ())
+}
+
+/// The same with the keys and the installed version given (the tests). A genuine release that is
+/// older than the installed one fails too, unless the person said they mean it: going back can
+/// undo fixes of security, and a script that only looks at the exit code must not take it for
+/// an update.
+fn verify_with(args: &VerifyArgs, keys: &[ReleaseKey], installed: &str) -> anyhow::Result<Checked> {
+    let checked = check(&args.file, keys, installed)
+        .map_err(|refused| anyhow!(refused.message().render()))?;
+    if checked.older && !args.allow_older {
+        return Err(anyhow!(
+            message::cli_update_older_refused(message::CliUpdateOlderRefused {
+                flag: &format!("--{ALLOW_OLDER}"),
+                installed: &installed,
+                version: &checked.signed.version,
+            })
+            .render()
+        ));
     }
+    output::line(
+        &message::cli_update_signed(message::CliUpdateSigned {
+            file: &checked.signed.file,
+            version: &checked.signed.version,
+        })
+        .render(),
+    );
+    if checked.older {
+        output::warning(
+            &message::cli_update_older(message::CliUpdateOlder {
+                installed: &installed,
+                version: &checked.signed.version,
+            })
+            .render(),
+        );
+    }
+    Ok(checked)
 }
 
 /// The name of a file as text, for the messages.

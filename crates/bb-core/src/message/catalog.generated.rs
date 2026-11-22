@@ -1567,6 +1567,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The address to listen on (default 127.0.0.1, this computer only)",
     ),
     (
+        "cli.help.allow-older",
+        "Accept a genuine release that is older than the installed one",
+    ),
+    (
         "cli.help.backup-to",
         "The folder to put the backup into, instead of the backups folder of the data folder. Only you may be able to open it",
     ),
@@ -1677,6 +1681,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "cli.update.older",
         "Version {version} is older than version {installed}, which is installed here. Installing it would go back to an older version; do that only if you mean to.",
+    ),
+    (
+        "cli.update.older-refused",
+        "The file is signed by Bugaboo, but version {version} is older than version {installed}, which is installed here. Going back to an older version can undo fixes, also fixes of security. If you mean to go back, run the command again with {flag}.",
     ),
     (
         "cli.update.other-checksum",
