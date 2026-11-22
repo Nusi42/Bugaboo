@@ -83,8 +83,8 @@ Recorded with their target package in the follow-up tables of the milestone fold
 
 ## Open questions
 
-- **Done by the maintainer on 2026-11-21:** *Windows Sandbox* is switched on (M9-Q17). The lead installed a WSL distribution of Bugaboo's own for the Linux release build, so the computer's default one is never touched.
-- **For the maintainer, before the release candidate (WP-15):** make the release key and the backup key with `cargo xtask release keygen` once keys without a passphrase are merged (the maintainer's choice of 2026-11-21, ADR-0047), keep the backup key apart from this computer and outside any cloud folder, and hand over the two public keys (M9-Q12).
+- **Done on 2026-11-21:** *Windows Sandbox* is switched on (M9-Q17), and the Linux release build has a WSL distribution to run in.
+- **For the maintainer, before the release candidate (WP-15):** make the release key and the backup key with `cargo xtask release keygen` once keys without a passphrase are merged (ADR-0047), and hand over the two public keys (M9-Q12).
 - **At the exit of M9:** signing and publishing 0.6.0. There is no pass with a screen reader by a person before the first release (the maintainer, 2026-11-21): the accessibility statement says the screens passed the automated checks and were not yet tried with a screen reader.
 - **Linux:** `cargo xtask ci` runs on Windows and in the WSL distribution of this computer (Ubuntu, without systemd), against both databases; the static Linux program is built there. A Linux service manager is proven in M9 in a throwaway WSL distribution with systemd (WP-13). The old question of M1 (no Linux installed) is closed.
 
