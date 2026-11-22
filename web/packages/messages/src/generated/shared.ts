@@ -845,8 +845,8 @@ export const messages = {
   "keep-kind.count.data-exports": "{count, plural, one {# data export} other {# data exports}}",
   "keep-kind.count.work-days": "{count, plural, one {# work day} other {# work days}}",
   "keep-kind.count.time-entries": "{count, plural, one {# time entry} other {# time entries}}",
-  "keep-rules.then.by-itself": "Deleted",
-  "keep-rules.then.by-an-administrator": "An administrator deletes them",
+  "keep-rules.then.by-itself": "Bugaboo deletes them",
+  "keep-rules.then.by-an-administrator": "an administrator deletes them",
   "working-time.warning.long-day": "{worked} worked. The rules allow {most} a day at most.",
   "working-time.warning.short-break":
     "{worked} worked and only {breaks} of break. The rules ask for {needed} of break after {after} of work.",

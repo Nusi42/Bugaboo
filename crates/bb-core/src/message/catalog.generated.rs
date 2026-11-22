@@ -3860,9 +3860,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "keep-rules.then.by-an-administrator",
-        "An administrator deletes them",
+        "an administrator deletes them",
     ),
-    ("keep-rules.then.by-itself", "Deleted"),
+    ("keep-rules.then.by-itself", "Bugaboo deletes them"),
     (
         "keep-rules.would-be-past",
         "With this period, {records} {count, plural, one {is} other {are}} past it. Bugaboo deletes nothing by itself.",
