@@ -32,11 +32,12 @@ use std::time::Duration;
 use bb_core::files::{BIGGEST_FILE_BYTES, MEGABYTE, PreviewKind};
 
 pub use limits::{
-    ChildAllocator, MAX_CHILD_ADDRESS_SPACE_BYTES, MAX_CHILD_MEMORY_BYTES, child_allocator,
+    ChildAllocator, MAX_CHILD_ADDRESS_SPACE_BYTES, MAX_CHILD_MEMORY_BYTES, SHUT_IN_REPORT,
+    child_allocator, lock_down, shut_in_in, shut_in_report,
 };
 // `create` is public in every build: the tests of the server run the child by hand to read how it
 // ended, and a re-export only for them would leave it an unreachable `pub` in the program's build.
-pub use spawn::{PreviewCommand, PreviewOutcome, create};
+pub use spawn::{PreviewCommand, PreviewOutcome, ShutInSeen, create};
 
 /// The longest side of a preview, in pixels. Big enough to see what a screenshot shows in the row
 /// of the *Files* block and in the larger view, small enough to send at once.
@@ -99,13 +100,21 @@ pub fn render(kind: PreviewKind, bytes: &[u8]) -> Result<Vec<u8>, PreviewRefusal
     made.unwrap_or(Err(PreviewRefusal::Unreadable))
 }
 
-/// What `bugaboo preview` does: limits its own memory (the child must not go on without that), reads
-/// the file from its standard input, writes the preview to its standard output, and answers the
-/// exit code of the process (see [`PreviewRefusal::exit_code`]).
+/// What `bugaboo preview` does: limits its own memory and shuts itself in (the child must not go on
+/// without that), tells the server on its standard error how far the kernel shut it in, reads the
+/// file from its standard input, writes the preview to its standard output, and answers the exit
+/// code of the process (see [`PreviewRefusal::exit_code`]).
 #[must_use]
 pub fn run(kind: PreviewKind, allocator: &ChildAllocator) -> i32 {
-    if limits::apply(allocator).is_err() {
+    let Ok(shut_in) = limits::apply(allocator) else {
         return 1;
+    };
+    if let Some(shut_in) = shut_in {
+        // A report that cannot be written leaves the server without one, and it says nothing.
+        let mut said = std::io::stderr().lock();
+        said.write_all(shut_in_report(shut_in).as_bytes())
+            .and_then(|()| said.flush())
+            .ok();
     }
     run_streams(kind, std::io::stdin().lock(), std::io::stdout().lock())
 }

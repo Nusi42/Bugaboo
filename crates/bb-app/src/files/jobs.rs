@@ -4,6 +4,7 @@
 use bb_core::files::{PreviewKind, PreviewStatus, UNFINISHED_KEPT};
 use bb_core::id::AttachmentId;
 use bb_core::keeping::{KeepKind, Step};
+use bb_core::settings::FILES_PDF_PREVIEWS;
 use serde_json::{Value, json};
 
 use crate::auth::{AppError, AuthStore, Ctx, internal};
@@ -86,6 +87,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         let state = match (file.preview, PreviewKind::of_media_type(&file.media_type)) {
             // Made before, for another attachment of this content, or tried and failed.
             (known @ (PreviewStatus::Ready | PreviewStatus::Without), _) => known,
+            // An organization may keep to pictures (ADR-0032 §4): a PDF gets no preview then.
+            (PreviewStatus::Pending, Some(PreviewKind::Pdf)) if !self.pdf_previews_on().await? => {
+                PreviewStatus::Without
+            }
             (PreviewStatus::Pending, Some(kind)) => {
                 // Made without the hold of the file, which the uploads and the clean-up of every
                 // file with the same first byte share: a preview may take seconds. The file store
@@ -109,6 +114,11 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await
             .map_err(|error| internal::<S>(&error))?;
         Ok(())
+    }
+
+    /// Whether the organization lets PDF files have previews.
+    async fn pdf_previews_on(&self) -> Result<bool, AppError> {
+        Ok(self.setting_layers_of(None).await?.yes(&FILES_PDF_PREVIEWS))
     }
 
     /// The end of a preview job that failed for good: the attachment has no preview, and the file

@@ -26572,6 +26572,17 @@
         "description": "Whether other accounts on this computer can change the program or its settings, or read the\nsettings or the private key of the HTTPS certificate. Bugaboo only looks.",
         "required": ["program", "settings_file", "tls_key"],
         "properties": {
+          "preview_child": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PreviewShutIn",
+                "description": "How far the kernel shut the child that makes previews in, as the last child said; nothing\nbefore the first preview and where the child is not shut in (Windows)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "program": {
             "$ref": "#/components/schemas/FolderAccess",
             "description": "The program, its folder and every folder above it."
@@ -31823,6 +31834,11 @@
             "description": "The issues, by their readable or internal IDs."
           }
         }
+      },
+      "PreviewShutIn": {
+        "type": "string",
+        "description": "How far the kernel shut the child that makes previews in: fully, partly (an older kernel) or not at all (no Landlock).",
+        "enum": ["fully", "partly", "not"]
       },
       "PreviewStatus": {
         "type": "string",

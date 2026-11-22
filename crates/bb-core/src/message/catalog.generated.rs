@@ -7602,6 +7602,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "server-status.host.open",
         "Other accounts on this computer can change or read these. Whoever can change the program or its settings can run code as Bugaboo. Give these rights only to the account that runs Bugaboo and the administrators, as the install guide shows.",
     ),
+    (
+        "server-status.host.preview-child",
+        "The kernel did not shut in the program that makes previews fully (Landlock is missing, older than Linux 6.10, or not allowed in this container). It still cannot start a program, write to a file or open a file or a connection, but code that a crafted file makes it run could delete or rename what the account of Bugaboo may change. Run Bugaboo on Linux 6.10 or later with Landlock, or switch previews of PDF files off.",
+    ),
     ("server-status.intro", "How this Bugaboo server is doing."),
     ("server-status.log", "Security log"),
     (
@@ -8149,6 +8153,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The most megabytes one file added to an issue or a comment may have. A project can allow less than the organization, never more.",
     ),
     ("setting.files.max-megabytes.name", "Biggest file"),
+    (
+        "setting.files.pdf-previews.help",
+        "Whether Bugaboo shows a small picture of the first page of a PDF file. Reading PDFs takes the largest part of the code that reads the files people add; switch this off to show previews of pictures only. A PDF file can still be downloaded.",
+    ),
+    ("setting.files.pdf-previews.name", "Previews of PDF files"),
     (
         "setting.issues.id-length.help",
         "How many letters and digits a random issue ID has after the dash. It grows by itself when the short ones run out.",

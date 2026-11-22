@@ -7,8 +7,10 @@ import { daysUntil, formatDate, formatDateTime, splitUptime } from "../../shared
 import { LogStatus } from "./LogStatus.tsx";
 import {
   CERTIFICATE_WARNING_DAYS,
+  type HostPart,
   openHostParts,
   openParts,
+  previewChildOpen,
   serverNow,
   unknownHostParts,
   unknownParts,
@@ -40,7 +42,7 @@ const partNames: Readonly<Record<keyof State["data_folder_open"], MessageKey>> =
   setup_code_file: "data-folder.part.setup-code-file",
 };
 
-const hostPartNames: Readonly<Record<keyof State["host_open"], MessageKey>> = {
+const hostPartNames: Readonly<Record<HostPart, MessageKey>> = {
   program: "host.part.program",
   settings_file: "host.part.settings-file",
   tls_key: "host.part.tls-key",
@@ -117,6 +119,27 @@ function Certificate({ certificate, nowMs }: CertificateProps) {
   return <span>{t("server-status.certificate.valid", { date, days })}</span>;
 }
 
+/**
+ * Who besides the server can change its program and settings, and whether the child that makes
+ * previews is shut in less than fully.
+ */
+function HostRights({ open }: { readonly open: State["host_open"] }) {
+  return (
+    <>
+      <Rights
+        opened={openHostParts(open)}
+        unknown={unknownHostParts(open)}
+        names={hostPartNames}
+        closed={t("server-status.host.closed")}
+        open={t("server-status.host.open")}
+      />
+      {previewChildOpen(open) ? (
+        <Alert tone={alertTone.warning}>{t("server-status.host.preview-child")}</Alert>
+      ) : null}
+    </>
+  );
+}
+
 /** The facts of the server: version, running time, database, certificate and security log. */
 export function StatusRows({ state }: { readonly state: State }) {
   return (
@@ -157,13 +180,7 @@ export function StatusRows({ state }: { readonly state: State }) {
         />
       </Fact>
       <Fact term={t("server-status.host")}>
-        <Rights
-          opened={openHostParts(state.host_open)}
-          unknown={unknownHostParts(state.host_open)}
-          names={hostPartNames}
-          closed={t("server-status.host.closed")}
-          open={t("server-status.host.open")}
-        />
+        <HostRights open={state.host_open} />
       </Fact>
     </dl>
   );

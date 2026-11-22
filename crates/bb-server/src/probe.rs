@@ -13,6 +13,7 @@ use bb_app::status::{
     ServerProbe, Snapshot,
 };
 use bb_core::security_log::Digest;
+use bb_files::preview::ShutInSeen;
 use bb_store::{BreakReason, Database, LogSeal, Verification};
 use jiff::Timestamp;
 use tokio::sync::Mutex;
@@ -106,6 +107,8 @@ pub(crate) struct Probe {
     host: Option<HostPaths>,
     /// Whether the database is reached over the network without a checked certificate.
     database_certificate_unchecked: bool,
+    /// What the children of previews said about how far the kernel shut them in.
+    preview_shut_in: Option<ShutInSeen>,
     log_checking: LogChecking,
     log_memory: Mutex<LogMemory>,
     rights_memory: Mutex<Option<(Instant, DataFolderRights, HostRights)>>,
@@ -132,6 +135,7 @@ impl Probe {
             data_folder,
             host: None,
             database_certificate_unchecked: false,
+            preview_shut_in: None,
             log_checking: LogChecking::default(),
             log_memory: Mutex::new(LogMemory::default()),
             rights_memory: Mutex::new(None),
@@ -144,6 +148,12 @@ impl Probe {
     /// key too.
     pub(crate) fn with_host(mut self, host: HostPaths) -> Self {
         self.host = Some(host);
+        self
+    }
+
+    /// The same probe, which shows how far the kernel shut the children of previews in.
+    pub(crate) fn with_preview_shut_in(mut self, seen: ShutInSeen) -> Self {
+        self.preview_shut_in = Some(seen);
         self
     }
 
@@ -287,7 +297,9 @@ impl ServerProbe for Probe {
                 .and_then(ServedCertificate::expires_at)
                 .and_then(|seconds| Timestamp::from_second(seconds).ok())
                 .map(|expires_at| CertificateState { expires_at });
-            let (data_folder, host) = self.check_rights().await;
+            let (data_folder, mut host) = self.check_rights().await;
+            // Not kept with the rights: a child reports at every preview.
+            host.preview_child = self.preview_shut_in.as_ref().and_then(ShutInSeen::last);
             Snapshot {
                 version: env!("CARGO_PKG_VERSION").to_owned(),
                 started_at: self.started_at,

@@ -6,6 +6,8 @@ type State = Schema<"ServerStatusBody">;
 type SecurityLog = Schema<"SecurityLogBody">;
 type DataFolderOpen = Schema<"DataFolderOpenBody">;
 type HostOpen = Schema<"HostOpenBody">;
+/** The parts of the host whose rights are read; the child of previews is judged on its own. */
+export type HostPart = Exclude<keyof HostOpen, "preview_child">;
 type PartAccess = DataFolderOpen["folder"];
 
 const MS_PER_SECOND = 1000;
@@ -34,7 +36,7 @@ const dataFolderParts: readonly (keyof DataFolderOpen)[] = [
   "setup_code_file",
 ];
 
-const hostParts: readonly (keyof HostOpen)[] = ["program", "settings_file", "tls_key"];
+const hostParts: readonly HostPart[] = ["program", "settings_file", "tls_key"];
 
 /** The parts whose rights are `wanted`, in the order they are shown. */
 function partsWith<K extends string>(
@@ -56,13 +58,18 @@ export function unknownParts(open: DataFolderOpen): readonly (keyof DataFolderOp
 }
 
 /** The program, its settings and its HTTPS key, when other accounts can change or read them. */
-export function openHostParts(open: HostOpen): readonly (keyof HostOpen)[] {
+export function openHostParts(open: HostOpen): readonly HostPart[] {
   return partsWith(open, hostParts, "open");
 }
 
 /** The same parts whose rights the server could not read. */
-export function unknownHostParts(open: HostOpen): readonly (keyof HostOpen)[] {
+export function unknownHostParts(open: HostOpen): readonly HostPart[] {
   return partsWith(open, hostParts, "unknown");
+}
+
+/** Whether the kernel shut the child that makes previews in less than fully (ADR-0032 §4). */
+export function previewChildOpen(open: HostOpen): boolean {
+  return open.preview_child === "partly" || open.preview_child === "not";
 }
 
 /**
@@ -96,6 +103,7 @@ export function levelOf(state: State, nowMs: number): Level {
     unknownParts(state.data_folder_open).length > 0 ||
     openHostParts(state.host_open).length > 0 ||
     unknownHostParts(state.host_open).length > 0 ||
+    previewChildOpen(state.host_open) ||
     database.certificate_unchecked ||
     (days !== null && days < CERTIFICATE_WARNING_DAYS)
   ) {

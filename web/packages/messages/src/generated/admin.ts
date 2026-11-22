@@ -92,6 +92,8 @@ export const messages = {
     "Only the account that runs Bugaboo and the administrators can change the program and its settings.",
   "server-status.host.open":
     "Other accounts on this computer can change or read these. Whoever can change the program or its settings can run code as Bugaboo. Give these rights only to the account that runs Bugaboo and the administrators, as the install guide shows.",
+  "server-status.host.preview-child":
+    "The kernel did not shut in the program that makes previews fully (Landlock is missing, older than Linux 6.10, or not allowed in this container). It still cannot start a program, write to a file or open a file or a connection, but code that a crafted file makes it run could delete or rename what the account of Bugaboo may change. Run Bugaboo on Linux 6.10 or later with Landlock, or switch previews of PDF files off.",
 } as const;
 
 register(messages);

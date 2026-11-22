@@ -8612,6 +8612,7 @@ export interface components {
      *     settings or the private key of the HTTPS certificate. Bugaboo only looks.
      */
     HostOpenBody: {
+      preview_child?: components["schemas"]["PreviewShutIn"] | null;
       /** @description The program, its folder and every folder above it. */
       program: components["schemas"]["FolderAccess"];
       /** @description The settings file and its folder. */
@@ -11140,6 +11141,11 @@ export interface components {
       /** @description The issues, by their readable or internal IDs. */
       issues: string[];
     };
+    /**
+     * @description How far the kernel shut the child that makes previews in: fully, partly (an older kernel) or not at all (no Landlock).
+     * @enum {string}
+     */
+    PreviewShutIn: "fully" | "partly" | "not";
     /**
      * @description Where the preview of a file is: on its way, there, or none (a type without one, or a file the preview could not be made of).
      * @enum {string}

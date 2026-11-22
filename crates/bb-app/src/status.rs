@@ -193,6 +193,9 @@ pub struct HostRights {
     pub settings_file: Access,
     /// The private key of a certificate of the operator's own.
     pub tls_key: Access,
+    /// How far the kernel shut the child that makes previews in, as the last child said: `None`
+    /// before the first preview, and on systems where the child is not shut in (ADR-0032 §4).
+    pub preview_child: Option<bb_core::files::ShutIn>,
 }
 
 impl HostRights {
@@ -203,6 +206,7 @@ impl HostRights {
             program: Access::Unknown,
             settings_file: Access::Unknown,
             tls_key: Access::Unknown,
+            preview_child: None,
         }
     }
 }

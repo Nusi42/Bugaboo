@@ -349,6 +349,10 @@ const SAFE_STARTS: &[(&str, DefaultValue)] = &[
 /// The settings under [`SECURITY_PREFIXES`] that do not matter for security, each with why.
 const NOT_SECURITY: &[(&str, &str)] = &[
     (
+        "files.pdf-previews",
+        "on as people expect a picture of a PDF; the reader of PDFs runs in a child that is limited and, on Linux, shut in (ADR-0032 §4); switching it off narrows what reads files further",
+    ),
+    (
         "ai.provider",
         "which AI provider; nothing is sent while ai.enabled is off",
     ),

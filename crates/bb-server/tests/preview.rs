@@ -221,6 +221,117 @@ mod preview {
         std::thread::sleep(Duration::from_secs(30));
     }
 
+    /// A child that shuts itself in as `bugaboo preview` does, and then tries to get out: it starts
+    /// a program, opens a socket of each kind and writes a file, and says on its standard output
+    /// how far it got, line by line, so the test sees that it reached every try.
+    #[test]
+    #[ignore = "plays a child of the tests that start it, never run by itself"]
+    fn child_that_tries_to_get_out() {
+        use std::io::Write as _;
+        let shut_in = bb_files::preview::lock_down().unwrap();
+        let mut out = std::io::stdout().lock();
+        let mut say = |line: String| {
+            writeln!(out, "{line}").unwrap();
+            out.flush().unwrap();
+        };
+        say(format!("shut-in={shut_in:?}"));
+        let started = std::process::Command::new(std::env::current_exe().unwrap())
+            .arg("--list")
+            .output()
+            .is_ok();
+        say(format!("started={started}"));
+        let tcp = std::net::TcpListener::bind("127.0.0.1:0").is_ok();
+        say(format!("tcp={tcp}"));
+        let udp = std::net::UdpSocket::bind("127.0.0.1:0").is_ok();
+        say(format!("udp={udp}"));
+        #[cfg(unix)]
+        {
+            let unix = std::os::unix::net::UnixDatagram::unbound().is_ok();
+            say(format!("unix={unix}"));
+        }
+        say("writing".to_owned());
+        // Writing a byte past the limit of the size of files ends the process (`SIGXFSZ`): then
+        // nothing more is said.
+        let wrote = std::fs::write(std::env::temp_dir().join("bugaboo-got-out.txt"), b"x").is_ok();
+        say(format!("wrote={wrote}"));
+    }
+
+    /// On Linux the child of a preview writes no file, opens no socket and starts no program,
+    /// whatever a crafted file makes it run (ADR-0032 §4): the limits of the system hold also where
+    /// the kernel has no Landlock, and the child must have reached every try for the test to count.
+    /// Root may start programs and lift its own limits, so starting a program is judged only for
+    /// any other account; the limits of open descriptors and of the size of files hold for root too.
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn att_04_the_child_of_a_preview_writes_no_file_and_starts_no_program() {
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--ignored",
+                "--exact",
+                "preview::child_that_tries_to_get_out",
+                "--nocapture",
+            ])
+            .output()
+            .unwrap();
+        let said = String::from_utf8_lossy(&output.stdout);
+        for reached in [
+            "shut-in=Some(",
+            "started=",
+            "tcp=",
+            "udp=",
+            "unix=",
+            "writing",
+        ] {
+            assert!(
+                said.contains(reached),
+                "the child did not reach {reached}: {said}"
+            );
+        }
+        for refused in ["tcp=false", "udp=false", "unix=false"] {
+            assert!(said.contains(refused), "{refused}: {said}");
+        }
+        assert!(!said.contains("wrote=true"), "{said}");
+        if nix::unistd::geteuid().as_raw() != 0 {
+            assert!(said.contains("started=false"), "{said}");
+        }
+    }
+
+    /// A child that says it was shut in only partly, as an older kernel makes it, and ends.
+    #[test]
+    #[ignore = "plays a child of the tests that start it, never run by itself"]
+    fn child_that_is_shut_in_partly() {
+        use std::io::Write as _;
+        let report = bb_files::preview::shut_in_report(bb_core::files::ShutIn::Partly);
+        std::io::stderr().write_all(report.as_bytes()).unwrap();
+    }
+
+    /// The server reads how far the kernel shut a child in from what it says on its standard error,
+    /// keeps the last answer for the status page, and does so for the real program as well: on
+    /// Linux it always tells, on other systems it has nothing to tell.
+    #[tokio::test]
+    async fn att_04_the_server_learns_how_far_the_child_of_a_preview_is_shut_in() {
+        let folder = tempfile::tempdir().unwrap();
+        let input = folder.path().join("small.png");
+        std::fs::write(&input, picture(20, 20, Format::Png)).unwrap();
+        let output = folder.path().join("small-preview.png");
+        let partly = this_test_as_a_child("child_that_is_shut_in_partly");
+        let seen = partly.shut_in_seen();
+        assert_eq!(seen.last(), None);
+        bb_files::preview::create(&partly, PreviewKind::Image, &input, &output)
+            .await
+            .unwrap();
+        assert_eq!(seen.last(), Some(bb_core::files::ShutIn::Partly));
+        let real = PreviewCommand::new(PROGRAM, &["preview"]);
+        let outcome = bb_files::preview::create(&real, PreviewKind::Image, &input, &output)
+            .await
+            .unwrap();
+        assert_eq!(outcome, PreviewOutcome::Created);
+        assert_eq!(
+            real.shut_in_seen().last().is_some(),
+            cfg!(target_os = "linux")
+        );
+    }
+
     /// A child that writes without end, as far as the other side reads.
     #[test]
     #[ignore = "plays a child of the tests that start it, never run by itself"]

@@ -418,6 +418,19 @@ settings! {
         list: (100, 16),
     }
 
+    /// Whether a PDF file gets a preview of its first page (ADR-0032 §4). The reader of PDFs is the
+    /// largest part of what reads the files people add, so an organization may keep to pictures;
+    /// a PDF can still be downloaded. On at the start.
+    FILES_PDF_PREVIEWS: Bool = {
+        key: "files.pdf-previews",
+        name: message::SETTING_FILES_PDF_PREVIEWS_NAME,
+        default: true,
+        levels: [Organization],
+        changed_by: Administrators,
+        help: message::SETTING_FILES_PDF_PREVIEWS_HELP,
+        lockable: false,
+    }
+
     /// How many symbols a random issue ID has when it is drawn; the length grows by itself when
     /// the short ones run out.
     ISSUES_ID_LENGTH: Integer = {

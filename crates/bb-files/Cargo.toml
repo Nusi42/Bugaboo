@@ -30,8 +30,10 @@ tokio = { workspace = true, features = ["fs", "io-util", "process", "rt", "sync"
 tracing = { workspace = true }
 
 # The child process of a preview limits its own memory (ADR-0032 section 4): the allocator `cap` on
-# every system, and on Linux the address space with the system call `setrlimit`.
+# every system, and on Linux the address space, processes, files and core dumps with the system
+# call `setrlimit`, and shuts itself in with Landlock: no file and no network.
 [target.'cfg(target_os = "linux")'.dependencies]
+landlock = "0.4.7"
 rlimit = "0.11.0"
 
 [dev-dependencies]

@@ -233,6 +233,9 @@ export const messages = {
   "setting.files.blocked-types.name": "Types of file that are never accepted",
   "setting.files.blocked-types.help":
     "File types the organization never accepts, as a list separated by commas, like exe, bat. A file is refused when its content or its name has one of these types.",
+  "setting.files.pdf-previews.name": "Previews of PDF files",
+  "setting.files.pdf-previews.help":
+    "Whether Bugaboo shows a small picture of the first page of a PDF file. Reading PDFs takes the largest part of the code that reads the files people add; switch this off to show previews of pictures only. A PDF file can still be downloaded.",
   "setting.issues.id-mode.name": "Issue IDs",
   "setting.issues.id-mode.help":
     "Random IDs (like WEB-K7Q2X) hide how many issues there are and how fast they come. Counting IDs (like WEB-142) are easy to say aloud. When you change this, every issue of the project gets a new ID; the old IDs keep working.",

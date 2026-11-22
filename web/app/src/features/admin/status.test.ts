@@ -7,6 +7,7 @@ import {
   isUnanchored,
   levelOf,
   openHostParts,
+  previewChildOpen,
   openParts,
   serverNow,
   unknownHostParts,
@@ -135,6 +136,20 @@ describe("sec_16 the program, its settings and the link to the database", () => 
     const unknown: State["host_open"] = { ...healthy().host_open, settings_file: "unknown" };
     expect(unknownHostParts(unknown)).toEqual(["settings_file"]);
     expect(levelOf({ ...healthy(), host_open: unknown }, NOW)).toBe("warning");
+  });
+
+  it("asks for a look when the kernel did not shut the child of previews in fully", () => {
+    expect(previewChildOpen(healthy().host_open)).toBe(false);
+    for (const shut of ["fully", null] as const) {
+      const open: State["host_open"] = { ...healthy().host_open, preview_child: shut };
+      expect(previewChildOpen(open)).toBe(false);
+      expect(levelOf({ ...healthy(), host_open: open }, NOW)).toBe("ok");
+    }
+    for (const shut of ["partly", "not"] as const) {
+      const open: State["host_open"] = { ...healthy().host_open, preview_child: shut };
+      expect(previewChildOpen(open)).toBe(true);
+      expect(levelOf({ ...healthy(), host_open: open }, NOW)).toBe("warning");
+    }
   });
 
   it("asks for a look when the database is reached without a checked certificate", () => {

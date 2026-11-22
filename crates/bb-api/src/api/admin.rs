@@ -10,6 +10,7 @@ use bb_app::status::{
     Snapshot,
 };
 use bb_core::ErrorCode;
+use bb_core::files::ShutIn;
 use bb_policy::Masked;
 use serde::Serialize;
 use utoipa::ToSchema;
@@ -260,6 +261,9 @@ struct HostOpenBody {
     settings_file: FolderAccess,
     /// The private key of a certificate of the operator's own.
     tls_key: FolderAccess,
+    /// How far the kernel shut the child that makes previews in, as the last child said; nothing
+    /// before the first preview and where the child is not shut in (Windows).
+    preview_child: Option<ShutIn>,
 }
 
 impl From<HostRights> for HostOpenBody {
@@ -268,6 +272,7 @@ impl From<HostRights> for HostOpenBody {
             program: rights.program.into(),
             settings_file: rights.settings_file.into(),
             tls_key: rights.tls_key.into(),
+            preview_child: rights.preview_child,
         }
     }
 }

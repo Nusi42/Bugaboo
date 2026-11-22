@@ -135,6 +135,7 @@ fn sec_16_a_settings_file_or_program_others_can_change_is_reported_at_start() {
             program: Access::Open,
             settings_file: Access::Open,
             tls_key: Access::Open,
+            preview_child: None,
         }
     );
     // A folder everybody may write to holds the program: refused for a service.

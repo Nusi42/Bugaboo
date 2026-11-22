@@ -299,6 +299,7 @@ impl HostLook {
             program: self.program.access(),
             settings_file: self.settings_file.access(),
             tls_key: self.tls_key.access(),
+            preview_child: None,
         }
     }
 

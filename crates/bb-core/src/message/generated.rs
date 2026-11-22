@@ -9355,6 +9355,10 @@ pub const SERVER_STATUS_HOST_CLOSED: MessageKey = MessageKey::new("server-status
 /// The message `server-status.host.open`.
 pub const SERVER_STATUS_HOST_OPEN: MessageKey = MessageKey::new("server-status.host.open");
 
+/// The message `server-status.host.preview-child`.
+pub const SERVER_STATUS_HOST_PREVIEW_CHILD: MessageKey =
+    MessageKey::new("server-status.host.preview-child");
+
 /// The message `server-status.intro`.
 pub const SERVER_STATUS_INTRO: MessageKey = MessageKey::new("server-status.intro");
 
@@ -9787,6 +9791,14 @@ pub const SETTING_FILES_MAX_MEGABYTES_HELP: MessageKey =
 /// The message `setting.files.max-megabytes.name`.
 pub const SETTING_FILES_MAX_MEGABYTES_NAME: MessageKey =
     MessageKey::new("setting.files.max-megabytes.name");
+
+/// The message `setting.files.pdf-previews.help`.
+pub const SETTING_FILES_PDF_PREVIEWS_HELP: MessageKey =
+    MessageKey::new("setting.files.pdf-previews.help");
+
+/// The message `setting.files.pdf-previews.name`.
+pub const SETTING_FILES_PDF_PREVIEWS_NAME: MessageKey =
+    MessageKey::new("setting.files.pdf-previews.name");
 
 /// The message `setting.issues.id-length.help`.
 pub const SETTING_ISSUES_ID_LENGTH_HELP: MessageKey =

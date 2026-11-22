@@ -6,16 +6,19 @@ use std::time::Duration;
 
 use bb_core::files::{PREVIEWS_PER_PERSON_MAX, PreviewStatus};
 use bb_core::notification::MAIL_BATCH_SECONDS;
+use bb_core::settings::{FILES_PDF_PREVIEWS, SettingValue};
 
+use super::fake_files::PDF_START;
 use super::mail::mail_is_on;
 use super::notifications::{Change, Crew, Status};
-use super::scenarios::{a_project, text};
+use super::scenarios::{a_project, text, token};
 use super::scenarios_files::{A_PICTURE, an_attachment};
 use super::scenarios_issues::an_issue;
 use super::world::{Outcome, World};
 use crate::auth::AppError;
 use crate::files::{AttachmentStore as _, FileStore as _};
 use crate::jobs::{JobKind, Lane};
+use crate::settings::{ChangeSetting, SettingsScope, change_setting};
 
 /// How long a short job may take while previews stall: far less than one preview may take.
 const SHORT_JOB_BUDGET: Duration = Duration::from_secs(5);
@@ -146,5 +149,43 @@ async fn att_04_a_person_who_adds_files_without_end_gets_no_preview_beyond_the_l
             .await?
             .is_some()
     );
+    Ok(())
+}
+
+#[tokio::test]
+async fn att_04_an_organization_may_keep_to_previews_of_pictures() -> Outcome {
+    let world = World::new().await?;
+    let project = a_project(&world, "ACME").await?;
+    let issue = an_issue(&world, project).await?;
+    let pdf = [PDF_START, b"1.7 a page"].concat();
+    let before = an_attachment(&world, issue, "manual.pdf", &pdf).await?;
+    run_lane_while_due(&world, Lane::Long).await?;
+    let preview_of = async |id| -> Result<PreviewStatus, String> {
+        Ok(world
+            .store
+            .attachment(id)
+            .await
+            .map_err(text)?
+            .ok_or("the attachment is there")?
+            .preview)
+    };
+    assert_eq!(preview_of(before).await?, PreviewStatus::Ready);
+    change_setting(
+        &world.ctx(),
+        ChangeSetting {
+            version: None,
+            session_token: token(&world),
+            scope: SettingsScope::Organization,
+            key: FILES_PDF_PREVIEWS.definition().key().to_owned(),
+            value: SettingValue::Bool(false),
+        },
+    )
+    .await?;
+    let pdf_after =
+        an_attachment(&world, issue, "other.pdf", &[pdf.as_slice(), b"2"].concat()).await?;
+    let picture = an_attachment(&world, issue, "shot.png", &picture(1)).await?;
+    run_lane_while_due(&world, Lane::Long).await?;
+    assert_eq!(preview_of(pdf_after).await?, PreviewStatus::Without);
+    assert_eq!(preview_of(picture).await?, PreviewStatus::Ready);
     Ok(())
 }

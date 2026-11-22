@@ -291,6 +291,9 @@ pub(crate) async fn wire(
     let seal = LogSeal::new(&keys, data.security_log_anchor());
     let csrf = CsrfKey::from_bytes(keys.csrf_key().to_bytes());
     let storage = AuthStorage::new(database.clone(), Arc::clone(&keys), seal.clone());
+    let previews = PreviewCommand::of_this_program(PREVIEW_COMMAND)
+        .map_err(|error| anyhow!(error.to_string()))?;
+    let preview_shut_in = previews.shut_in_seen();
     if let Some(backup) = backup {
         // Like every backup, the one before the upgrade has its record and its line in the
         // security log, written now that the database has the table for it.
@@ -323,11 +326,7 @@ pub(crate) async fn wire(
     .with_replay_list(Arc::new(crate::replay_list::ReplayListOnDisk::new(
         data.replay_list(),
     )))
-    .with_files(Arc::new(DiskFiles::new(
-        data.files(),
-        PreviewCommand::of_this_program(PREVIEW_COMMAND)
-            .map_err(|error| anyhow!(error.to_string()))?,
-    )))
+    .with_files(Arc::new(DiskFiles::new(data.files(), previews)))
     .with_backups(Arc::new(ServerBackups::new(
         database.clone(),
         DataFolder::existing(data.root())
@@ -353,6 +352,7 @@ pub(crate) async fn wire(
         data.root().to_path_buf(),
     )
     .with_host(host_paths(settings))
+    .with_preview_shut_in(preview_shut_in)
     .with_database_certificate_unchecked(certificate_unchecked(settings));
     // The first start: the starting roles (and the Administrator role of the people who were
     // administrators in M1), the issue types and kinds of relation, then the setup code.

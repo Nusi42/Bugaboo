@@ -146,6 +146,26 @@ words! {
     }
 }
 
+words! {
+    /// How far the kernel shut the child of a preview in, as the child tells the server before it
+    /// reads the file (ADR-0032 §4). On Linux the limits of the system (no process, no file
+    /// written, no new file or socket opened) hold in every case; this is about Landlock.
+    pub enum ShutIn {
+        /// Landlock takes away every right it was asked to.
+        Fully => "fully",
+        /// Landlock takes away only some of them: an older kernel.
+        Partly => "partly",
+        /// Landlock takes away nothing: a kernel without it, or a container that does not allow
+        /// it.
+        Not => "not",
+    }
+}
+
+words_in_api!(
+    ShutIn as "PreviewShutIn",
+    "How far the kernel shut the child that makes previews in: fully, partly (an older kernel) or not at all (no Landlock)."
+);
+
 impl PreviewKind {
     /// The kind of preview a file of this type gets, if it gets one (ADR-0032): pictures that
     /// browsers show everywhere, and PDF. Nothing else, and never SVG or HTML.

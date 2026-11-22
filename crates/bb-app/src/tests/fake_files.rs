@@ -320,6 +320,9 @@ struct Held {
     previews: HashMap<Digest, Vec<u8>>,
 }
 
+/// The first bytes of every PDF: a file that starts so is a PDF.
+pub(crate) const PDF_START: &[u8] = b"%PDF-";
+
 /// The first bytes of every PNG: a file that starts so is a picture.
 const PICTURE_START: &[u8] = b"\x89PNG";
 
@@ -419,6 +422,12 @@ impl FileStore for FakeFiles {
                 media_type: MediaType::new("application/vnd.microsoft.portable-executable")
                     .unwrap_or_else(MediaType::unknown),
                 extension: Some("exe".to_owned()),
+            };
+        }
+        if head.starts_with(PDF_START) {
+            return Sniffed {
+                media_type: MediaType::new("application/pdf").unwrap_or_else(MediaType::unknown),
+                extension: Some("pdf".to_owned()),
             };
         }
         if head.starts_with(PICTURE_START) {

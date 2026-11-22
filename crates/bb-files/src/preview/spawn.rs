@@ -1,22 +1,29 @@
 //! The server's side of a preview: runs `bugaboo preview` as a child process, gives it the bytes of
 //! the file on its standard input, waits for it for at most [`TIME_LIMIT`], and accepts only a small
 //! PNG on its standard output (ADR-0032 §4). The child gets nothing else: no environment, no path
-//! of the file, the folder of the previews as its working folder.
+//! of the file, the folder of the previews as its working folder. On its standard error it says how
+//! far the kernel shut it in; the command keeps the last answer for the status page
+//! ([`ShutInSeen`]) and logs it once when the child is not shut in fully.
 
 use std::ffi::OsString;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
+use std::sync::{Arc, Mutex, PoisonError};
 use std::time::Duration;
 
-use bb_core::files::PreviewKind;
+use bb_core::files::{PreviewKind, ShutIn};
 use tokio::io::{AsyncReadExt as _, AsyncWriteExt as _};
 use tokio::process::Command;
 
-use super::{MAX_OUTPUT_BYTES, TIME_LIMIT};
+use super::{MAX_OUTPUT_BYTES, TIME_LIMIT, shut_in_in};
 
 /// The first bytes of every PNG.
 const PNG_SIGNATURE: &[u8] = &[0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A];
+
+/// The most the server reads of what a child writes on its standard error: its report is one short
+/// line, and the rest is not read.
+const MAX_REPORT_BYTES: u64 = 256;
 
 /// On Windows a child of a service must not open a console window.
 #[cfg(windows)]
@@ -28,6 +35,36 @@ const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 pub struct PreviewCommand {
     runner: Runner,
     time_limit: Duration,
+    shut_in: ShutInSeen,
+}
+
+/// How far the kernel shut the children of one command in, by the report of the last child that
+/// gave one: `None` before the first, and on systems where the child is not shut in. Clones share
+/// what they hold.
+#[derive(Clone, Debug, Default)]
+pub struct ShutInSeen(Arc<Mutex<Option<ShutIn>>>);
+
+impl ShutInSeen {
+    /// The report of the last child that gave one.
+    #[must_use]
+    pub fn last(&self) -> Option<ShutIn> {
+        *self.0.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+
+    /// Keeps a report, and logs it once when it is new and the child was not shut in fully.
+    pub fn record(&self, shut_in: ShutIn) {
+        let before = self
+            .0
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .replace(shut_in);
+        if before != Some(shut_in) && shut_in != ShutIn::Fully {
+            tracing::warn!(
+                shut_in = shut_in.code(),
+                "the kernel did not shut the child of a preview in fully (Landlock): the limits of the system still hold"
+            );
+        }
+    }
 }
 
 /// Who creates the preview.
@@ -54,6 +91,7 @@ impl PreviewCommand {
                 arguments: arguments.iter().map(OsString::from).collect(),
             },
             time_limit: TIME_LIMIT,
+            shut_in: ShutInSeen::default(),
         }
     }
 
@@ -62,10 +100,11 @@ impl PreviewCommand {
     /// on pixels, size and output still hold, a crash is not survived).
     #[cfg(any(test, feature = "testing"))]
     #[must_use]
-    pub const fn in_process() -> Self {
+    pub fn in_process() -> Self {
         Self {
             runner: Runner::InProcess,
             time_limit: TIME_LIMIT,
+            shut_in: ShutInSeen::default(),
         }
     }
 
@@ -82,6 +121,13 @@ impl PreviewCommand {
     pub const fn within(mut self, time_limit: Duration) -> Self {
         self.time_limit = time_limit;
         self
+    }
+
+    /// What the children of this command said about how far they are shut in; it follows the
+    /// children started after it is taken.
+    #[must_use]
+    pub fn shut_in_seen(&self) -> ShutInSeen {
+        self.shut_in.clone()
     }
 }
 
@@ -111,7 +157,7 @@ pub async fn create(
     let (outcome, sent) = match &command.runner {
         Runner::Child { program, arguments } => {
             let work = output.parent().unwrap_or_else(|| Path::new("."));
-            run_child(program, arguments, command.time_limit, kind, input, work).await?
+            run_child(program, arguments, command, kind, input, work).await?
         }
         #[cfg(any(test, feature = "testing"))]
         Runner::InProcess => {
@@ -141,11 +187,12 @@ pub async fn create(
 }
 
 /// Starts the child with nothing of the server's, feeds it the file, collects what it sends (never
-/// more than [`MAX_OUTPUT_BYTES`] and one byte), and waits for it, for at most `time_limit`.
+/// more than [`MAX_OUTPUT_BYTES`] and one byte) and what it reports, and waits for it, for at most
+/// the time limit of the command.
 async fn run_child(
     program: &Path,
     arguments: &[OsString],
-    time_limit: Duration,
+    command: &PreviewCommand,
     kind: PreviewKind,
     input: &Path,
     work: &Path,
@@ -158,12 +205,12 @@ async fn run_child(
         .current_dir(work)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
-        .stderr(Stdio::null())
+        .stderr(Stdio::piped())
         .kill_on_drop(true);
     #[cfg(windows)]
     process.creation_flags(CREATE_NO_WINDOW);
     let mut child = process.spawn()?;
-    let (stdin, stdout) = (child.stdin.take(), child.stdout.take());
+    let (stdin, stdout, stderr) = (child.stdin.take(), child.stdout.take(), child.stderr.take());
     // The file goes to the child piece by piece, and the pipe is closed after it. A child that
     // ends before it has read everything makes this fail, which is not worth knowing.
     let feed = async {
@@ -185,11 +232,25 @@ async fn run_child(
         }
         sent
     };
+    // The report is one short line; the pipe is closed after the most that is read of it.
+    let report = async {
+        let mut said = Vec::new();
+        if let Some(stderr) = stderr {
+            stderr
+                .take(MAX_REPORT_BYTES)
+                .read_to_end(&mut said)
+                .await
+                .ok();
+        }
+        if let Some(shut_in) = shut_in_in(&String::from_utf8_lossy(&said)) {
+            command.shut_in.record(shut_in);
+        }
+    };
     let run = async {
-        let ((), sent) = tokio::join!(feed, collect);
+        let ((), sent, ()) = tokio::join!(feed, collect, report);
         (child.wait().await, sent)
     };
-    if let Ok((status, sent)) = tokio::time::timeout(time_limit, run).await {
+    if let Ok((status, sent)) = tokio::time::timeout(command.time_limit, run).await {
         return Ok((
             match status?.code() {
                 Some(0) => PreviewOutcome::Created,
