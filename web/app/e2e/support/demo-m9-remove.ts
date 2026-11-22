@@ -15,6 +15,9 @@ import { idInPeople, openPersonById, removalWindow, stateCard } from "./privacy.
 // Ben is *Former user* on his issues and comments, and Hana (*HR*) still sees his work days under his
 // name.
 
+/** The removal scrubs Ben's name from every change he made: seconds, longer on a busy computer. */
+const REMOVED_MS = 60_000;
+
 /** The days of a week. */
 const WEEK = 7;
 
@@ -43,7 +46,7 @@ async function adaRemovesBen(page: Page, id: string): Promise<void> {
   await window.getByLabel(t("field.confirm-password"), { exact: true }).fill(ada().password);
   await good(page, "06-the-window-says-what-goes-and-what-stays");
   await window.getByRole("button", { name: t("removal.confirm", { name }) }).click();
-  await expect(window).toBeHidden();
+  await expect(window).toBeHidden({ timeout: REMOVED_MS });
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(formerUser);
   await good(page, "06-ben-is-former-user");
 }
