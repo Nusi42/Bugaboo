@@ -520,7 +520,7 @@ async fn two_recipients_in_one_round(
 #[tokio::test]
 async fn sec_lm1_what_one_e_mail_of_a_round_may_name_never_reaches_the_next_one() -> Outcome {
     for ann_first in [true, false] {
-        let (ann, sam) = two_recipients_in_one_round(ann_first).await?;
+        let (ann, sam) = Box::pin(two_recipients_in_one_round(ann_first)).await?;
         assert!(ann.contains("papaya"), "ann knows the group: {ann}");
         // Sam got his e-mail (it names the issue), and it names neither label.
         assert!(sam.contains("OTHER-"), "sam got an e-mail: {sam}");

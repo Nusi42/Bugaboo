@@ -5,7 +5,7 @@
 //! of the app ([`Timestamp`]), which tests move by hand.
 
 use std::collections::HashMap;
-use std::hash::Hash;
+use std::hash::{BuildHasher as _, Hash, RandomState};
 use std::sync::{Mutex, PoisonError};
 use std::time::{Duration, Instant};
 
@@ -19,6 +19,10 @@ pub const PERIOD: Duration = Duration::from_mins(1);
 /// clients that are still within their minute are never thrown away. If it is still full, see
 /// [`Overflow`].
 pub const MAX_CLIENTS: usize = 100_000;
+
+/// How many counters the keys that do not fit in a full table are spread over (see
+/// [`Overflow::Spread`]).
+pub const OVERFLOW_BUCKETS: u64 = 1024;
 
 /// A full table is swept for expired counters at most this often.
 pub const SWEEP_EVERY: Duration = Duration::from_secs(1);
@@ -49,10 +53,12 @@ struct Entry<M> {
 }
 
 /// What a window does with a new key when its table is full of unexpired counters.
-pub enum Overflow<K> {
-    /// All such keys share one counter. Used for the general limit: a flood of invented clients
-    /// ends up sharing one limit, while the clients already counted keep theirs.
-    Share(K),
+pub enum Overflow {
+    /// Such keys are spread over [`OVERFLOW_BUCKETS`] counters by a hash keyed anew at each start,
+    /// so nobody can choose keys that share a counter with a given client. Used for the general
+    /// limits: a flood of invented clients limits itself, while a real client that arrives during
+    /// the flood shares its counter with few others, and the clients already counted keep theirs.
+    Spread,
     /// The new key is refused (counts as over the limit). Used for sign-in: fail closed.
     Refuse,
 }
@@ -62,13 +68,18 @@ pub struct Window<K, M = Instant> {
     limit: u32,
     /// How long a window lasts.
     period: Duration,
-    overflow: Overflow<K>,
+    overflow: Overflow,
+    /// Random for each start: which overflow counter a key falls into cannot be worked out
+    /// elsewhere.
+    hasher: RandomState,
     table: Mutex<Table<K, M>>,
 }
 
 /// The counters of one window.
 struct Table<K, M> {
     entries: HashMap<K, Entry<M>>,
+    /// The counters of the keys that did not fit, by bucket (at most [`OVERFLOW_BUCKETS`]).
+    spill: HashMap<u64, Entry<M>>,
     /// When expired entries were last swept out. A full table is swept at most once per
     /// [`SWEEP_EVERY`], so a flood cannot make every request scan 100,000 entries.
     last_sweep: Option<M>,
@@ -80,19 +91,21 @@ struct Table<K, M> {
 impl<K: Hash + Eq + Clone, M: Moment> Window<K, M> {
     /// A window of one minute that allows `limit` events per key.
     #[must_use]
-    pub fn new(limit: u32, overflow: Overflow<K>) -> Self {
+    pub fn new(limit: u32, overflow: Overflow) -> Self {
         Self::lasting(PERIOD, limit, overflow)
     }
 
     /// A window of the given length.
     #[must_use]
-    pub fn lasting(period: Duration, limit: u32, overflow: Overflow<K>) -> Self {
+    pub fn lasting(period: Duration, limit: u32, overflow: Overflow) -> Self {
         Self {
             limit,
             period,
             overflow,
+            hasher: RandomState::new(),
             table: Mutex::new(Table {
                 entries: HashMap::new(),
+                spill: HashMap::new(),
                 last_sweep: None,
                 #[cfg(test)]
                 sweeps: 0,
@@ -162,32 +175,48 @@ impl<K: Hash + Eq + Clone, M: Moment> Window<K, M> {
     /// The seconds to wait (at least one) when the key is over `limit`.
     pub fn hit_within(&self, key: K, now: M, limit: u32) -> Result<(), u64> {
         let mut table = self.lock();
-        let mut key = key;
         if table.entries.len() >= MAX_CLIENTS && !table.entries.contains_key(&key) {
             create_room(&mut table, now, self.period);
             if table.entries.len() >= MAX_CLIENTS {
-                match &self.overflow {
-                    Overflow::Share(shared) => key = shared.clone(),
-                    Overflow::Refuse => return Err(self.period.as_secs()),
-                }
+                return match self.overflow {
+                    Overflow::Spread => {
+                        let bucket = self.hasher.hash_one(&key) % OVERFLOW_BUCKETS;
+                        let entry = table.spill.entry(bucket).or_insert(Entry {
+                            started: now,
+                            count: 0,
+                        });
+                        count_in(entry, now, self.period, limit)
+                    }
+                    Overflow::Refuse => Err(self.period.as_secs()),
+                };
             }
         }
         let entry = table.entries.entry(key).or_insert(Entry {
             started: now,
             count: 0,
         });
-        if now.since(entry.started) >= self.period {
-            *entry = Entry {
-                started: now,
-                count: 0,
-            };
-        }
-        if entry.count >= limit {
-            return Err(seconds_left(entry.started, now, self.period));
-        }
-        entry.count += 1;
-        Ok(())
+        count_in(entry, now, self.period, limit)
     }
+}
+
+/// Counts one event in `entry`, starting a new window when its window is over.
+fn count_in<M: Moment>(
+    entry: &mut Entry<M>,
+    now: M,
+    period: Duration,
+    limit: u32,
+) -> Result<(), u64> {
+    if now.since(entry.started) >= period {
+        *entry = Entry {
+            started: now,
+            count: 0,
+        };
+    }
+    if entry.count >= limit {
+        return Err(seconds_left(entry.started, now, period));
+    }
+    entry.count += 1;
+    Ok(())
 }
 
 /// The seconds a key that started its window at `started` still has to wait: at least one.
@@ -241,15 +270,15 @@ mod tests {
 
     #[test]
     fn sec_14_a_full_table_never_forgets_counters_that_are_still_running() {
-        let window: Window<u32> = Window::new(1, Overflow::Share(u32::MAX));
+        let window: Window<u32> = Window::new(1, Overflow::Spread);
         let now = Instant::now();
         fill(&window, now);
         // A client already counted keeps its counter, also while the table is full.
         assert!(window.hit(7, now).is_err());
-        // New clients share one counter: the first passes, the next are over the limit.
+        // A new client is counted in its overflow counter: the second time it is over the limit.
         window.hit(u32::MAX - 1, now).unwrap();
-        assert!(window.hit(u32::MAX - 2, now).is_err());
-        assert!(window.table.lock().unwrap().entries.len() <= MAX_CLIENTS + 1);
+        assert!(window.hit(u32::MAX - 1, now).is_err());
+        assert!(window.table.lock().unwrap().entries.len() <= MAX_CLIENTS);
         assert!(window.hit(7, now).is_err());
         // Expired counters make room again.
         let later = now + PERIOD + Duration::from_secs(1);
@@ -258,8 +287,25 @@ mod tests {
     }
 
     #[test]
+    fn sec_14_a_full_table_spreads_new_clients_over_many_counters() {
+        let window: Window<u32> = Window::new(1, Overflow::Spread);
+        let now = Instant::now();
+        fill(&window, now);
+        // Two thousand new clients with an allowance of one each: with one shared counter only the
+        // first would pass; spread over the buckets, most of them do, and never more than there
+        // are buckets.
+        let base = u32::try_from(MAX_CLIENTS).unwrap();
+        let passed = (0..2000)
+            .filter(|new| window.hit(base + new, now).is_ok())
+            .count();
+        let buckets = usize::try_from(OVERFLOW_BUCKETS).unwrap();
+        assert!((buckets / 2..=buckets).contains(&passed), "{passed}");
+        assert!(window.table.lock().unwrap().spill.len() <= buckets);
+    }
+
+    #[test]
     fn sec_14_a_full_table_is_swept_at_most_once_a_second_not_on_every_request() {
-        let window: Window<u32> = Window::new(1, Overflow::Share(u32::MAX));
+        let window: Window<u32> = Window::new(1, Overflow::Spread);
         let now = Instant::now();
         fill(&window, now);
         for new in 0..1000 {

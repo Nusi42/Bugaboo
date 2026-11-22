@@ -16,11 +16,13 @@
 //!   only somebody who holds the key can use up its limit; guessing keys is limited by the failed
 //!   tries of the network in `bb-app`.
 //!
-//! Two sizes of "network" are used, each defined once. The sign-in cap and the failure keys use
-//! `bb_core::network::NetworkPrefix` (IPv4 `/24`, IPv6 `/48`: the shortened address the security
-//! log also keeps), so both mean the same group of clients. The limit on all requests is more
-//! generous and counts per client address (IPv6 by the `/64`, because one machine owns that many
-//! addresses). The client address is the one [`crate::logging`] works out from the connection
+//! The sign-in family counts by `bb_core::network::NetworkPrefix` (IPv4 `/24`, IPv6 `/48`: the
+//! shortened address the security log also keeps), the size the failure keys use too. The limit of
+//! all requests counts by `bb_core::network::ClientGroup`, defined once beside it: a public address
+//! by that same network, because one customer of a provider is given a whole `/48` and can move
+//! inside it at will, and an address of a network of its own (private, link-local, the shared range
+//! of providers, IPv6 unique-local by its `/64`) alone, so the people of a busy office do not share
+//! one allowance. The client address is the one [`crate::logging`] works out from the connection
 //! and, for a trusted proxy, its `X-Forwarded-For` entry (never the raw header). Going over a limit answers
 //! `429` with `Retry-After` and the message `error.rate-limit.exceeded`; it never locks anything
 //! for longer than the minute here (the growing wait for failures is in `crate::failures`).
@@ -41,7 +43,7 @@ use axum::response::{IntoResponse as _, Response};
 use bb_app::rate_window::{Overflow, Window};
 use bb_core::ErrorCode;
 use bb_core::id::UserId;
-use bb_core::network::NetworkPrefix;
+use bb_core::network::{ClientGroup, NetworkPrefix};
 use bb_core::security_log::Digest;
 
 use crate::errors::ApiError;
@@ -119,7 +121,7 @@ impl Default for LimitsConfig {
 
 /// All limits of the server.
 pub struct Limits {
-    requests: Window<IpAddr>,
+    requests: Window<ClientGroup>,
     sign_in_networks: Window<NetworkPrefix>,
     sign_up_networks: Window<NetworkPrefix>,
     sign_up_hours: Window<NetworkPrefix>,
@@ -133,16 +135,13 @@ impl Limits {
     #[must_use]
     pub fn new(config: LimitsConfig) -> Arc<Self> {
         Arc::new(Self {
-            requests: Window::new(config.requests_per_minute, Overflow::Share(OVERFLOW_CLIENT)),
+            requests: Window::new(config.requests_per_minute, Overflow::Spread),
             sign_in_networks: Window::new(config.sign_in_attempts_per_minute, Overflow::Refuse),
             sign_up_networks: Window::new(SIGN_UP_REQUESTS_PER_MINUTE, Overflow::Refuse),
             sign_up_hours: Window::lasting(HOUR, SIGN_UP_REQUESTS_PER_HOUR, Overflow::Refuse),
-            // Keys that do not fit in a full table share one counter: a flood of invented keys
-            // limits itself and not the keys that are counted already.
-            access_keys: Window::new(
-                config.access_key_requests_per_minute,
-                Overflow::Share(SHARED_KEY),
-            ),
+            // Keys that do not fit in a full table are spread over the overflow counters: a flood of
+            // invented keys limits itself and not the keys that are counted already.
+            access_keys: Window::new(config.access_key_requests_per_minute, Overflow::Spread),
             // A full table refuses a person it does not know yet: a search is not worth more
             // than the rest of the server.
             searches: Window::new(config.searches_per_minute, Overflow::Refuse),
@@ -159,7 +158,9 @@ impl Limits {
     }
 
     fn check_request_at(&self, client: IpAddr, now: Instant) -> Result<(), ApiError> {
-        self.requests.hit(network_of(client), now).map_err(too_many)
+        self.requests
+            .hit(ClientGroup::of(client), now)
+            .map_err(too_many)
     }
 
     /// Counts one request that came with the access key `key` (the hash of the key, or
@@ -238,27 +239,9 @@ fn too_many(seconds: u64) -> ApiError {
     ApiError::new(ErrorCode::TooManyRequests).with_retry_after(seconds)
 }
 
-/// Clients are counted by network: an IPv6 address by its `/64`, an IPv4 address (also in IPv6
-/// form) as it is.
-fn network_of(address: IpAddr) -> IpAddr {
-    match address.to_canonical() {
-        IpAddr::V6(v6) => {
-            let [a, b, c, d, ..] = v6.segments();
-            IpAddr::V6([a, b, c, d, 0, 0, 0, 0].into())
-        }
-        v4 @ IpAddr::V4(_) => v4,
-    }
-}
-
-/// The shared counter for clients that do not fit in a full table (an address no client has).
-const OVERFLOW_CLIENT: IpAddr = IpAddr::V6(std::net::Ipv6Addr::UNSPECIFIED);
-
 /// The counter that everything shares which starts like an access key and is none: it cannot
 /// use up the limit of a key that exists, because that has its own counter.
 pub(crate) const MALFORMED_KEY: Digest = Digest::new([0xFF; 32]);
-
-/// The counter that keys share when the table is full of counters that are still running.
-const SHARED_KEY: Digest = Digest::new([0x00; 32]);
 
 /// A request without a known client address (never the case behind the real listener) is
 /// counted with all others like it, so a wiring mistake limits instead of opening everything.
@@ -424,25 +407,47 @@ mod tests {
         let limits = limits(1, 1);
         let now = Instant::now();
         limits.check_request_at(ip("203.0.113.7"), now).unwrap();
-        limits.check_request_at(ip("203.0.113.8"), now).unwrap();
-        assert!(limits.check_request_at(ip("203.0.113.7"), now).is_err());
+        limits.check_request_at(ip("198.51.100.7"), now).unwrap();
+        assert!(limits.check_request_at(ip("203.0.113.8"), now).is_err());
     }
 
     #[test]
-    fn sec_14_ipv6_clients_are_counted_by_their_64_and_mapped_addresses_as_ipv4() {
+    fn sec_14_ipv6_clients_are_counted_by_their_48_and_mapped_addresses_as_ipv4() {
         let limits = limits(1, 1);
         let now = Instant::now();
         limits.check_request_at(ip("2001:db8:1:2::1"), now).unwrap();
+        // Another `/64` of the same `/48` is the same client: hopping inside it does not help.
         assert!(
             limits
-                .check_request_at(ip("2001:db8:1:2:ffff::9"), now)
+                .check_request_at(ip("2001:db8:1:ffff::9"), now)
                 .is_err()
         );
-        limits.check_request_at(ip("2001:db8:1:3::1"), now).unwrap();
+        limits.check_request_at(ip("2001:db8:2::1"), now).unwrap();
         limits
             .check_request_at(ip("::ffff:203.0.113.7"), now)
             .unwrap();
         assert!(limits.check_request_at(ip("203.0.113.7"), now).is_err());
+    }
+
+    #[test]
+    fn sec_14_the_clients_of_a_busy_private_network_each_have_their_own_allowance() {
+        let limits = limits(2, 2);
+        let now = Instant::now();
+        // An office behind one private `/24`: every client has the whole allowance.
+        for host in 1..=200 {
+            let client = ip(&format!("192.168.10.{host}"));
+            limits.check_request_at(client, now).unwrap();
+            limits.check_request_at(client, now).unwrap();
+        }
+        assert!(limits.check_request_at(ip("192.168.10.7"), now).is_err());
+        // Unique-local: the `/64` is one client.
+        limits.check_request_at(ip("fd00:1:2:3::1"), now).unwrap();
+        limits.check_request_at(ip("fd00:1:2:3::2"), now).unwrap();
+        assert!(limits.check_request_at(ip("fd00:1:2:3::3"), now).is_err());
+        // A public network is still one client.
+        limits.check_request_at(ip("203.0.113.7"), now).unwrap();
+        limits.check_request_at(ip("203.0.113.8"), now).unwrap();
+        assert!(limits.check_request_at(ip("203.0.113.9"), now).is_err());
     }
 
     #[test]

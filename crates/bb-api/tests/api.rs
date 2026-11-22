@@ -210,10 +210,10 @@ mod api {
         assert_eq!(body["code"], "rate-limit.exceeded");
         assert_eq!(body["message_key"], "error.rate-limit.exceeded");
 
-        // Another client is not affected; unknown API addresses count too; pages do not.
+        // Another network is not affected; unknown API addresses count too; pages do not.
         let other = app
             .clone()
-            .oneshot(request("GET", "/api/v1/status", "198.51.100.9:1", None))
+            .oneshot(request("GET", "/api/v1/status", "192.0.2.9:1", None))
             .await
             .unwrap();
         assert_eq!(other.status(), StatusCode::OK);
@@ -286,7 +286,7 @@ mod api {
                 "GET",
                 "/api/v1/status",
                 "10.0.0.5:2",
-                Some("8.8.8.8, 203.0.113.2"),
+                Some("8.8.8.8, 192.0.2.2"),
             ))
             .await
             .unwrap();
