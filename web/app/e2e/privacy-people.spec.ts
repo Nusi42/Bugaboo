@@ -113,6 +113,11 @@ test("priv_04 after removal the person reads Former user in place", async ({ pag
   // The card under the heading holds the facts, and then what a removed person's page says.
   const landmarks = [await landmarkOf(heading, "heading"), await landmarkOf(headCard, "head")];
   await window.getByLabel(t("field.confirm-password"), { exact: true }).fill(ada.password);
+  // Typing the password scrolled the window to its end; it goes back to its top, where the person
+  // reads it, so what the removal changes in the window is not taken for a jump.
+  await window.locator('[data-part="window.body"]').evaluate((element) => {
+    element.scrollTop = 0;
+  });
   const movement = await movementWhile(page, landmarks, async () => {
     await window.getByRole("button", { name: t("removal.confirm", { name: bob.name }) }).click();
     await expect(heading).toHaveText(/^Former user [A-Z0-9]{4}$/u);
