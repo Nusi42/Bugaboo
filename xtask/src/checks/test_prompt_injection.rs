@@ -17,7 +17,7 @@ use super::{Check, Context, Finding};
 const SET: &str = "crates/bb-app/src/tests/prompt_injection.rs";
 
 /// The tests of the set, in the order of the carriers of the orders.
-pub(super) const REQUIRED: [Required; 9] = [
+pub(super) const REQUIRED: [Required; 10] = [
     Required::anywhere(
         "prompt_injection_an_issue_description_that_orders_the_assistant_stays_data",
     )
@@ -41,6 +41,8 @@ pub(super) const REQUIRED: [Required; 9] = [
         "prompt_injection_a_request_to_send_another_issue_away_cannot_read_what_the_person_cannot_read",
     )
     .within(SET),
+    Required::anywhere("prompt_injection_an_earlier_answer_from_the_browser_stays_data")
+        .within(SET),
 ];
 
 pub(crate) struct TestPromptInjection;

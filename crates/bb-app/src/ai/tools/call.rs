@@ -20,7 +20,7 @@ use super::log::Called;
 use super::preview::{ProposedChange, as_saved, proposed_changes};
 use super::registry::{Need, Run, ToolSpec, registry};
 use crate::access::Actor;
-use crate::ai::context::{Part, PeopleMode, render};
+use crate::ai::context::{Part, PeopleMode, nonce, render};
 use crate::auth::{AppError, AuthStore, Ctx};
 
 /// Whether a call runs the tool or only says what it would do.
@@ -470,15 +470,6 @@ impl<S: AuthStore> Ctx<'_, S> {
             other => other,
         }
     }
-}
-
-/// A word that is new for every answer: both marker lines of a fence carry it, so a text cannot
-/// write a closing line before it knows the answer.
-fn nonce() -> Result<String, AppError> {
-    let mut bytes = [0_u8; 4];
-    getrandom::fill(&mut bytes).map_err(|error| AppError::Internal(error.to_string()))?;
-    let [a, b, c, d] = bytes;
-    Ok(format!("{a:02x}{b:02x}{c:02x}{d:02x}"))
 }
 
 impl<S: AuthStore> Ctx<'_, S> {

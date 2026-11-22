@@ -18,7 +18,7 @@ use super::system::SYSTEM;
 use super::{AssistantAnswer, ChatTurn, LookingAt};
 use crate::access::Actor;
 use crate::ai::call::AiState;
-use crate::ai::context::PeopleMode;
+use crate::ai::context::{AuthorKind, PeopleMode, fence, nonce, without_mentions};
 use crate::ai::tools::{ToolList, ToolListQuery, list_tools};
 use crate::ai::{AiPart, AiRequest, AiRole, AiToolCall, AiToolSpec, AiTurn, Withheld};
 use crate::auth::{AppError, AuthStore, Ctx};
@@ -74,16 +74,30 @@ fn looking_at_sentence(looking_at: &[LookingAt]) -> String {
 
 /// The turns of the request: the conversation so far, then the question. The browser may send them
 /// in any order, so they are put into the order the providers ask for: the first is the person's,
-/// and two of one speaker are one turn.
-fn conversation(input: &AskAssistantQuery) -> Vec<AiTurn> {
+/// and two of one speaker are one turn. An earlier answer of the assistant comes from the browser
+/// too, which anybody with the session can write, so it goes fenced as data written by the
+/// assistant: an instruction put into it is never read as the model's own words (AI-05).
+fn conversation(input: &AskAssistantQuery, people: PeopleMode) -> Result<Vec<AiTurn>, AppError> {
     let mut turns: Vec<AiTurn> = Vec::new();
+    let word = nonce()?;
     let said = input
         .turns
         .iter()
-        .map(|turn| (turn.from, turn.text.clone()))
+        .map(|turn| {
+            let text = without_mentions(&turn.text, people);
+            let text = match turn.from {
+                ChatFrom::Person => text.into_owned(),
+                ChatFrom::Assistant => fence(&text, AuthorKind::Assistant, &word),
+            };
+            (turn.from, text)
+        })
         .chain([(
             ChatFrom::Person,
-            format!("{}{}", input.text, looking_at_sentence(&input.looking_at)),
+            without_mentions(
+                &format!("{}{}", input.text, looking_at_sentence(&input.looking_at)),
+                people,
+            )
+            .into_owned(),
         )]);
     for (from, text) in said {
         let role = match from {
@@ -99,7 +113,7 @@ fn conversation(input: &AskAssistantQuery) -> Vec<AiTurn> {
             }),
         }
     }
-    turns
+    Ok(turns)
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -258,7 +272,7 @@ pub async fn ask_assistant<S: AuthStore>(
         effects,
         look_ups,
     );
-    let mut turns = conversation(&input);
+    let mut turns = conversation(&input, people)?;
     for round in 1.. {
         // The last round is given no tools, so the model has to answer with what it has.
         let last = round >= rounds;

@@ -20,6 +20,7 @@ use serde_json::Value;
 
 use bb_core::ai::AuthorKind;
 
+use super::PeopleMode;
 use super::fence::{READ_AS_DATA, fence};
 use crate::ai::Withheld;
 
@@ -66,6 +67,17 @@ pub enum PeopleAs {
         /// The label of each person's role.
         roles: HashMap<UserId, String>,
     },
+}
+
+impl PeopleAs {
+    /// The mode these people are written in.
+    #[must_use]
+    pub fn mode(&self) -> PeopleMode {
+        match self {
+            Self::AsSeen => PeopleMode::AsSeen,
+            Self::RoleOnly { .. } => PeopleMode::RoleOnly,
+        }
+    }
 }
 
 /// Takes the members of a masked view that hold a field kept from AI out of its JSON, and the
@@ -193,11 +205,12 @@ fn write_value(
             }
         }
         Value::String(text) => {
+            let text = without_mentions(text, people.mode());
             if member.is_some_and(|name| PLAIN_MEMBERS.contains(&name)) && !text.contains('\n') {
-                line(out, depth, member, text);
+                line(out, depth, member, &text);
             } else {
                 line(out, depth, member, "");
-                out.push_str(&fence(&without_mentions(text, people), author, nonce));
+                out.push_str(&fence(&text, author, nonce));
                 out.push('\n');
             }
         }
@@ -248,11 +261,12 @@ fn person_text(object: &serde_json::Map<String, Value>, people: &PeopleAs) -> Op
 
 /// A text a person wrote, as the AI reads it: when people go by role, every mention (`@ada.brandt`)
 /// becomes *someone*, so a handle, which is made from a name, does not reach an outside provider.
-/// The one place a text is made ready before it is fenced, so every text of every tool, and so the
-/// assistant, AI apps and agents, goes through it. A name typed as plain words cannot be told apart
-/// from other words and stays (*What goes where* says so).
-fn without_mentions<'a>(text: &'a str, people: &PeopleAs) -> Cow<'a, str> {
-    if matches!(people, PeopleAs::AsSeen) {
+/// Every string of every tool goes through it before it is written or fenced, and so do the
+/// question to the assistant and the turns before it, so the assistant, AI apps and agents all use
+/// it. A name typed as plain words cannot be told apart from other words and stays (*What goes
+/// where* says so).
+pub(crate) fn without_mentions(text: &str, mode: PeopleMode) -> Cow<'_, str> {
+    if mode == PeopleMode::AsSeen {
         return Cow::Borrowed(text);
     }
     let found = bb_markdown::mentions(text);
@@ -355,5 +369,17 @@ mod tests {
             "n0nc3",
         );
         assert!(text.contains("by: a A B\n"), "{text}");
+    }
+
+    #[test]
+    fn ai_04_a_mention_in_a_word_of_the_program_goes_as_someone_too() {
+        let value = json!({"key": "@ada.admin", "rule": "ask @bob.builder"});
+        let roles = PeopleAs::RoleOnly {
+            you: UserId::from_random([2; 16]),
+            roles: HashMap::new(),
+        };
+        let text = render(&[part(value, AuthorKind::Member)], &roles, "n0nc3");
+        assert!(text.contains("  key: someone\n"), "{text}");
+        assert!(text.contains("  rule: ask someone\n"), "{text}");
     }
 }

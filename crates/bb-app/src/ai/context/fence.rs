@@ -7,6 +7,8 @@
 
 use bb_core::ai::AuthorKind;
 
+use crate::auth::AppError;
+
 /// The shortest marker. A longer one is chosen when the text holds a long run of `=`.
 const MARKER_MIN: usize = 8;
 
@@ -26,6 +28,18 @@ fn marker_for(text: &str) -> String {
         }
     }
     "=".repeat(MARKER_MIN.max(longest + 1))
+}
+
+/// A word that is new for every answer: both marker lines of a fence carry it, so a text cannot
+/// write a closing line before it knows the answer.
+///
+/// # Errors
+/// An internal error when the system gives no random bytes.
+pub fn nonce() -> Result<String, AppError> {
+    let mut bytes = [0_u8; 4];
+    getrandom::fill(&mut bytes).map_err(|error| AppError::Internal(error.to_string()))?;
+    let [a, b, c, d] = bytes;
+    Ok(format!("{a:02x}{b:02x}{c:02x}{d:02x}"))
 }
 
 /// `text` inside a fence that names who wrote it: an opening line, the text as it is, a closing

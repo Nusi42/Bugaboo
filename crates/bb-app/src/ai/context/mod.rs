@@ -13,8 +13,9 @@ use bb_core::id::{ProjectId, UserId};
 use bb_policy::{Permission, Place};
 
 pub use bb_core::ai::AuthorKind;
+pub(crate) use build::without_mentions;
 pub use build::{Part, PeopleAs, drop_withheld, people_in, render};
-pub use fence::{READ_AS_DATA, fence};
+pub use fence::{READ_AS_DATA, fence, nonce};
 #[cfg(any(test, feature = "testing"))]
 pub use fence::{fenced_lines, only_inside_a_fence};
 
