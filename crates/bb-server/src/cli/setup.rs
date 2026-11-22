@@ -20,6 +20,7 @@ use crate::config::{
     self, ConfigError, DEFAULT_ADDRESS, DEFAULT_DATA_DIR, DEFAULT_FILE, DEFAULT_TLS_MODE,
     SettingName, Sources, TlsModeName,
 };
+use crate::data_folder::{Existing, write_private};
 use crate::output;
 
 /// The port the wizard suggests first (ADR-0023: Bugaboo has no default port; this is only a
@@ -462,9 +463,9 @@ fn suggested_port(answers: &Answers, port_is_free: &dyn Fn(IpAddr, u16) -> bool)
         .find(|port| port_is_free(address, *port))
 }
 
-/// Writes the settings file: all at once (a new file next to it replaces the old one) and, where
-/// the system has such a thing, readable by its owner only, because a database address can hold
-/// a password.
+/// Writes the settings file: all at once (a file made new beside it replaces the old one, never
+/// through a link somebody left there) and readable only by the account that writes it and, on
+/// Windows, the administrators of the computer, because a database address can hold a password.
 fn save(path: &Path, settings: &[(SettingName, String)]) -> anyhow::Result<()> {
     let mut table = toml::Table::new();
     for (name, value) in settings {
@@ -481,31 +482,8 @@ fn save(path: &Path, settings: &[(SettingName, String)]) -> anyhow::Result<()> {
     {
         std::fs::create_dir_all(folder).with_context(|| format!("{}", folder.display()))?;
     }
-    let mut temporary = path.as_os_str().to_owned();
-    temporary.push(".new");
-    let temporary = PathBuf::from(temporary);
-    write_private(&temporary, contents.as_bytes())
-        .and_then(|()| std::fs::rename(&temporary, path))
+    write_private(path, contents.as_bytes(), Existing::Replace)
         .with_context(|| format!("{}", path.display()))
-}
-
-#[cfg(unix)]
-fn write_private(path: &Path, bytes: &[u8]) -> io::Result<()> {
-    use std::io::Write as _;
-    use std::os::unix::fs::OpenOptionsExt as _;
-    let mut file = std::fs::OpenOptions::new()
-        .write(true)
-        .create(true)
-        .truncate(true)
-        .mode(0o600)
-        .open(path)?;
-    file.write_all(bytes)
-}
-
-/// On Windows the file takes the access list of its folder.
-#[cfg(not(unix))]
-fn write_private(path: &Path, bytes: &[u8]) -> io::Result<()> {
-    std::fs::write(path, bytes)
 }
 
 #[cfg(test)]

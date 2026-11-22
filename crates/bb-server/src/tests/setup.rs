@@ -407,3 +407,54 @@ fn ops_03_the_file_can_be_read_by_its_owner_only() -> TestResult {
     );
     Ok(())
 }
+
+#[cfg(unix)]
+#[test]
+fn ops_03_the_file_is_written_new_and_never_through_a_planted_link() -> TestResult {
+    use std::os::unix::fs::PermissionsExt as _;
+    let folder = tempfile::tempdir()?;
+    let target = folder.path().join("bugaboo.toml");
+    // Somebody left a link where a file next to the settings could be made, and an open file.
+    let elsewhere = folder.path().join("elsewhere.txt");
+    std::fs::write(&elsewhere, "untouched")?;
+    std::os::unix::fs::symlink(&elsewhere, folder.path().join("bugaboo.toml.new"))?;
+    execute(
+        &args("--non-interactive --port 47200"),
+        &mut Script::new(&[]),
+        &target,
+        &all_free,
+    )?;
+    assert_eq!(std::fs::read_to_string(&elsewhere)?, "untouched");
+    assert!(!std::fs::symlink_metadata(&target)?.file_type().is_symlink());
+    assert_eq!(
+        std::fs::metadata(&target)?.permissions().mode() & 0o777,
+        0o600
+    );
+    Ok(())
+}
+
+#[cfg(windows)]
+#[test]
+fn ops_03_the_file_can_be_read_by_its_owner_and_the_administrators_only_on_windows() -> TestResult {
+    let folder = tempfile::tempdir()?;
+    let target = folder.path().join("bugaboo.toml");
+    execute(
+        &args("--non-interactive --port 47200 --database-url postgres://user:secret@db/x"),
+        &mut Script::new(&[]),
+        &target,
+        &all_free,
+    )?;
+    let sddl = crate::data_folder::rights::access_list(&target).ok_or("no access list")?;
+    // Nothing inherited from the folder, and nobody but the account and the administrators.
+    assert!(sddl.contains("D:P"), "{sddl}");
+    let entries = bb_core::access_list::access_entries(&sddl).ok_or("unreadable")?;
+    let administrators = [bb_core::access_list::ADMINISTRATORS_SID, "BA"];
+    let others: Vec<&str> = entries
+        .iter()
+        .map(|entry| entry.who)
+        .filter(|who| !administrators.contains(who))
+        .collect();
+    assert_eq!(others.len(), 1, "{sddl}");
+    assert!(others[0].starts_with("S-1-5-21-"), "{sddl}");
+    Ok(())
+}
