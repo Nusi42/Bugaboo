@@ -84,6 +84,10 @@ pub enum Format {
     /// Where security problems are reported: empty, or one e-mail address or one `https://` page,
     /// as `security.txt` takes it ([`crate::release::contact_address`]).
     SecurityContact,
+    /// A folder on a disk of the server's own computer, or empty: never a share of another
+    /// computer (`\\server\share`, `//server/share`) or a path of the device namespace of
+    /// Windows (`\\?\`, `\\.\`) ([`is_local_folder`]).
+    LocalFolder,
 }
 
 impl Format {
@@ -107,6 +111,7 @@ impl Format {
             Self::SecurityContact => {
                 text.trim().is_empty() || crate::release::contact_address(text).is_some()
             }
+            Self::LocalFolder => text.trim().is_empty() || is_local_folder(text),
         }
     }
 
@@ -118,6 +123,7 @@ impl Format {
             Self::TimeZone => ErrorCode::SettingUnknownTimeZone,
             Self::Hosts => ErrorCode::SettingHostsNotBare,
             Self::SecurityContact => ErrorCode::SettingContactNotAnAddress,
+            Self::LocalFolder => ErrorCode::SettingFolderNotLocal,
             Self::Free
             | Self::Choices(_)
             | Self::Themes(_)
@@ -138,9 +144,29 @@ impl Format {
             | Self::ShortcutKeys
             | Self::WindowSizes
             | Self::Hosts
-            | Self::SecurityContact => &[],
+            | Self::SecurityContact
+            | Self::LocalFolder => &[],
         }
     }
+}
+
+/// How a path that names a share of another computer or the device namespace of Windows begins,
+/// once every backslash is read as a slash (`\\server\share`, `\\?\`, `\\.\`): the server
+/// would sign in there with its own account, and copy the whole database there.
+const NOT_LOCAL_START: &str = "//";
+
+/// Whether `text` names a folder by a path of this computer: not a share of another computer, not
+/// the device namespace of Windows, and no address with a scheme (one letter and a colon is the
+/// drive of a Windows path, not a scheme). Whether a drive of the path is itself a share of
+/// another computer only the system can tell; the server asks it when a backup runs.
+#[must_use]
+pub fn is_local_folder(text: &str) -> bool {
+    let text = text.trim();
+    let slashes_alike = text.replace('\\', "/");
+    let scheme = text
+        .split_once(':')
+        .is_some_and(|(before, _)| before.len() > 1);
+    !slashes_alike.starts_with(NOT_LOCAL_START) && !scheme && !text.chars().any(char::is_control)
 }
 
 /// `device`, or a zone of the list the server carries ([`zone::named`]): a name only shaped like
@@ -262,6 +288,36 @@ mod tests {
         Choice::new("light", message::THEME_DAYLIGHT),
         Choice::new("dark", message::THEME_DUSK),
     ];
+
+    #[test]
+    fn ops_07_the_folder_of_backups_is_on_this_computer() {
+        for local in [
+            "",
+            "D:\\Backups\\Bugaboo",
+            "C:/backups",
+            "/srv/backups/bugaboo",
+            "backups-elsewhere",
+        ] {
+            assert!(Format::LocalFolder.accepts(local), "{local}");
+        }
+        for remote in [
+            "\\\\fileserver\\backups",
+            "//fileserver/backups",
+            "\\\\?\\UNC\\fileserver\\backups",
+            "\\\\?\\C:\\backups",
+            "\\\\.\\PhysicalDrive0",
+            "/\\fileserver\\backups",
+            "smb://fileserver/backups",
+            "file:///srv/backups",
+            "/srv/backups\nsecond",
+        ] {
+            assert!(!Format::LocalFolder.accepts(remote), "{remote}");
+        }
+        assert_eq!(
+            Format::LocalFolder.refusal(),
+            ErrorCode::SettingFolderNotLocal
+        );
+    }
 
     #[test]
     fn cfg_04_a_choice_must_be_on_the_list() {

@@ -968,6 +968,8 @@
   "error.setting.unknown-time-zone": "Bugaboo does not know this time zone. Pick one from the list.",
   "error.setting.hosts-not-bare": "Write only the host names, like images.example.com, without https:// and without a path.",
   "error.setting.contact-not-an-address": "Write one e-mail address, like security@example.org, or one https:// page, or leave it empty.",
+  "error.setting.folder-not-local": "Choose a folder on a disk of the server itself, not a shared folder of another computer. To keep backups on another computer, copy them there, or run bugaboo backup --to on the server.",
+  "backups.folder-not-local": "The folder for backups {path} is a shared folder of another computer. Bugaboo makes backups only into a folder on a disk of the server itself: the server would sign in to the other computer and copy the whole database there. To keep backups on another computer, copy them there, or run bugaboo backup --to on the server.",
   "error.setting.locked": "An administrator locked this setting, so it cannot be changed here.",
   "error.backup.running": "A backup is being created right now. Wait until it is done, then try again.",
   "error.assignment.conflict": "This person or group already has a role here, so it cannot also have No access here, and the other way round. Take the other row away first.",

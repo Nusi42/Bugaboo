@@ -42,6 +42,13 @@ pub trait BackupFiles: Send + Sync {
     /// stopped while it copied): the copy beside a name and the empty file that held the name.
     /// What cannot be deleted stays for the next time.
     fn remove_leftovers(&self, folder: Option<String>) -> BoxFuture<'_, ()>;
+
+    /// Whether the system says that `folder` lies on a share of another computer (a mapped
+    /// network drive, a mounted share). `false` when it cannot tell.
+    fn on_another_computer(&self, folder: &str) -> bool {
+        let _ = folder;
+        false
+    }
 }
 
 /// No backup files: every call fails. What the services have until the server gives them the

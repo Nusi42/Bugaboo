@@ -19,7 +19,7 @@ use bb_core::event::{Actor as EventActor, DomainEvent};
 use bb_core::id::{BackupId, UserId};
 use bb_core::network::NetworkPrefix;
 use bb_core::people_kinds::PeopleKind;
-use bb_core::settings::BACKUPS_FOLDER;
+use bb_core::settings::{BACKUPS_FOLDER, SettingDefinition, SettingValue};
 use bb_policy::{Authorized, Masked, PeopleContext, Permission, PersonRef, Place};
 
 pub use ports::{BackupFile, BackupFiles, BackupStore, NoBackupFiles};
@@ -212,6 +212,29 @@ pub async fn record_backup_run<S: AuthStore>(
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
+    /// Refuses a folder for backups that the system says lies on a share of another computer (a
+    /// mapped network drive, a mounted share), which the format of the setting cannot see in the
+    /// text of the path; the server looks again when a backup runs (ADR-0046).
+    ///
+    /// # Errors
+    /// `setting.folder-not-local` for such a folder.
+    pub(crate) fn refuse_backups_elsewhere(
+        &self,
+        definition: &SettingDefinition,
+        value: &SettingValue,
+    ) -> Result<(), AppError> {
+        match value {
+            SettingValue::Text(folder)
+                if definition.key() == BACKUPS_FOLDER.definition().key()
+                    && !folder.trim().is_empty()
+                    && self.services.backups.on_another_computer(folder.trim()) =>
+            {
+                Err(AppError::Refused(ErrorCode::SettingFolderNotLocal))
+            }
+            _ => Ok(()),
+        }
+    }
+
     /// The folder the setting names, or `None` for the backups folder of the data folder.
     pub(crate) async fn backups_folder(&self) -> Result<Option<String>, AppError> {
         let layers = self.setting_layers_of(None).await?;

@@ -123,6 +123,9 @@ error_codes! {
     SettingUnknownTimeZone => ("setting.unknown-time-zone", 400),
     /// The contact for security reports is not one e-mail address or one `https://` page (COMP-03).
     SettingContactNotAnAddress => ("setting.contact-not-an-address", 400),
+    /// The folder for backups is a share of another computer, not a folder of the server's own
+    /// (ADR-0046, amendment of 2026-11-22).
+    SettingFolderNotLocal => ("setting.folder-not-local", 400),
     /// A move would let somebody take away a *No access* that applies to them (WP-08, M2-F23).
     MoveLiftsNoAccess => ("project.move-lifts-no-access", 409),
     /// A project cannot go inside itself or one of its own sub-projects.

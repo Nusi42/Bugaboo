@@ -307,3 +307,31 @@ async fn sec_16_a_restore_writes_the_replay_list_privately() -> TestResult {
     }
     Ok(())
 }
+
+#[tokio::test]
+async fn ops_07_the_server_makes_no_backup_into_a_share_of_another_computer() -> TestResult {
+    use bb_app::backups::BackupFiles as _;
+    let folder = tempfile::tempdir()?;
+    let (store, data) = installation(folder.path()).await?;
+    let settings = load_settings(store.config.as_deref(), &store.settings(), false)?;
+    let database = connect(&settings, &data).await?;
+    let keys = Arc::new(KeyRing::open(&data.keys(), OpenMode::ExistingOnly)?);
+    let backups = crate::wiring::ServerBackups::new(database, data, keys);
+    for share in ["\\\\fileserver\\backups", "//fileserver/backups"] {
+        let refused = backups
+            .create(Some(share.to_owned()), Purpose::Regular, Timestamp::now())
+            .await
+            .err()
+            .ok_or("a backup went to a share")?;
+        assert!(
+            refused.to_string().contains("another computer"),
+            "{refused}"
+        );
+    }
+    // A folder of this computer is not taken for a share.
+    assert!(!crate::system::on_another_computer(folder.path()));
+    assert!(!crate::system::on_another_computer(
+        &folder.path().join("not-there-yet")
+    ));
+    Ok(())
+}

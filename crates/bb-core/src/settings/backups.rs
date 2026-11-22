@@ -4,7 +4,7 @@
 //! like every other setting ([`super::registry`] lists them); administrators change them on
 //! *Organization settings › System › Backups*.
 
-use super::{Bool, ChangedBy, Integer, Level, Setting, SettingDefinition, Text, settings};
+use super::{Bool, ChangedBy, Format, Integer, Level, Setting, SettingDefinition, Text, settings};
 use crate::message;
 
 settings! {
@@ -58,7 +58,9 @@ settings! {
     }
 
     /// The folder backups go into, on the computer of the server; empty for the backups folder of
-    /// the data folder. It must be a folder that only the account of the server can open.
+    /// the data folder. It must be a folder that only the account of the server can open, on a
+    /// disk of the server itself: never a share of another computer, which the server would sign
+    /// in to with its own account and copy the whole database to (ADR-0046).
     BACKUPS_FOLDER: Text = {
         key: "backups.folder",
         name: message::SETTING_BACKUPS_FOLDER_NAME,
@@ -67,5 +69,6 @@ settings! {
         changed_by: Administrators,
         help: message::SETTING_BACKUPS_FOLDER_HELP,
         lockable: false,
+        format: Format::LocalFolder,
     }
 }

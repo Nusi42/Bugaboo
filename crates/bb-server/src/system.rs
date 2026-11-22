@@ -140,6 +140,74 @@ pub(crate) fn answer_of(program: &str, arguments: &[&str]) -> Option<String> {
         .then(|| String::from_utf8_lossy(&output.stdout).into_owned())
 }
 
+/// Whether the system says that `path` lies on a share of another computer: on Windows a path
+/// whose real form is a share (`\\?\UNC\…`, also behind a mapped drive letter), on Linux a folder
+/// of a network file system (NFS, SMB, CIFS, Ceph, AFS). A path that is not there yet is asked by
+/// the nearest folder above it that is. `false` when the system cannot tell.
+pub(crate) fn on_another_computer(path: &Path) -> bool {
+    let Some(existing) = path.ancestors().find(|part| part.exists()) else {
+        return false;
+    };
+    on_another_computer_at(existing)
+}
+
+/// Says in the log that the kind of a folder cannot be told, so it is taken for one of this
+/// computer.
+#[cfg(any(windows, target_os = "linux"))]
+fn kind_unknown(cause: &str) {
+    tracing::warn!(
+        cause,
+        "whether the folder lies on another computer cannot be told: it is taken for one of this computer"
+    );
+}
+
+#[cfg(windows)]
+fn on_another_computer_at(existing: &Path) -> bool {
+    match canonical(existing) {
+        Ok(real) => real.to_string_lossy().starts_with(SHARE),
+        Err(error) => {
+            kind_unknown(&error.to_string());
+            false
+        }
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn on_another_computer_at(existing: &Path) -> bool {
+    use nix::sys::statfs::{NFS_SUPER_MAGIC, SMB_SUPER_MAGIC, statfs};
+    /// The kinds of file system of another computer that `nix` has no name for: CIFS, SMB 2 and
+    /// later, Ceph and AFS, as the kernel numbers them (`linux/magic.h`). The C library gives the
+    /// number signed (glibc) or not (musl), so it is compared as an unsigned number.
+    const MORE_NETWORK_FILE_SYSTEMS: [u32; 4] =
+        [0xFF53_4D42, 0xFE53_4D42, 0x00C3_6400, 0x5346_414F];
+    /// A file system in user space (FUSE): `sshfs` reaches another computer, others do not, and
+    /// the kernel does not say which.
+    const FUSE: u32 = 0x6573_5546;
+    match statfs(existing) {
+        Ok(found) => {
+            let kind = found.filesystem_type();
+            let number = u64::try_from(kind.0).ok();
+            if number == Some(u64::from(FUSE)) {
+                kind_unknown("a file system in user space (FUSE)");
+            }
+            kind == NFS_SUPER_MAGIC
+                || kind == SMB_SUPER_MAGIC
+                || MORE_NETWORK_FILE_SYSTEMS
+                    .iter()
+                    .any(|known| number == Some(u64::from(*known)))
+        }
+        Err(error) => {
+            kind_unknown(&error.to_string());
+            false
+        }
+    }
+}
+
+#[cfg(not(any(windows, target_os = "linux")))]
+fn on_another_computer_at(_existing: &Path) -> bool {
+    false
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

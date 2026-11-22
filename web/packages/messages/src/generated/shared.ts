@@ -239,6 +239,8 @@ export const messages = {
     "Write only the host names, like images.example.com, without https:// and without a path.",
   "error.setting.contact-not-an-address":
     "Write one e-mail address, like security@example.org, or one https:// page, or leave it empty.",
+  "error.setting.folder-not-local":
+    "Choose a folder on a disk of the server itself, not a shared folder of another computer. To keep backups on another computer, copy them there, or run bugaboo backup --to on the server.",
   "error.setting.locked": "An administrator locked this setting, so it cannot be changed here.",
   "error.backup.running":
     "A backup is being created right now. Wait until it is done, then try again.",

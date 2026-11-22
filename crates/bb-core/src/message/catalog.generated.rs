@@ -1341,6 +1341,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The backup could not be created: {reason}",
     ),
     (
+        "backups.folder-not-local",
+        "The folder for backups {path} is a shared folder of another computer. Bugaboo makes backups only into a folder on a disk of the server itself: the server would sign in to the other computer and copy the whole database there. To keep backups on another computer, copy them there, or run bugaboo backup --to on the server.",
+    ),
+    (
         "backups.folder-not-private",
         "The folder {path} can be opened by other accounts on this computer. Choose a folder that only you can open, so the backup is not left where others can copy it.",
     ),
@@ -2476,6 +2480,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "error.setting.contact-not-an-address",
         "Write one e-mail address, like security@example.org, or one https:// page, or leave it empty.",
+    ),
+    (
+        "error.setting.folder-not-local",
+        "Choose a folder on a disk of the server itself, not a shared folder of another computer. To keep backups on another computer, copy them there, or run bugaboo backup --to on the server.",
     ),
     (
         "error.setting.hosts-not-bare",

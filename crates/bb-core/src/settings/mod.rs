@@ -54,7 +54,7 @@ pub use agents::{
 };
 
 pub use catalog::*;
-pub use format::{Choice, DEVICE, Format, is_host};
+pub use format::{Choice, DEVICE, Format, is_host, is_local_folder};
 pub use layers::{Layers, OrganizationValue, Resolved, Scope, Source};
 pub use region::{
     DATE_FORMAT_DAY_MONTH_YEAR, DATE_FORMAT_MONTH_DAY_YEAR, FIRST_DAY_SATURDAY, FIRST_DAY_SUNDAY,
@@ -77,7 +77,14 @@ words! {
 /// The topics whose settings change how people sign in or what keeps the organization safe, and the
 /// settings of working hours and of time (*Billable*), whose every change is recorded (PRIV-09,
 /// ADR-0035, decision 8), and the keep periods, whose shortening deletes data (ADR-0045).
-const SECURITY_TOPICS: [&str; 5] = ["security", "auth", "working-hours", "time", "keeping"];
+const SECURITY_TOPICS: [&str; 6] = [
+    "security",
+    "auth",
+    "working-hours",
+    "time",
+    "keeping",
+    "backups",
+];
 
 /// The least privileged group that may change a setting. Administrators can always change it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]

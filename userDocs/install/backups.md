@@ -14,7 +14,7 @@ The file is called `bugaboo-<moment>-<version>.backup`, for example `bugaboo-202
 
 ## Where backups go
 
-Backups go into the `backups` folder of the data folder. An administrator can name another folder in *Organization settings › System › Backups* (*Folder of the backups*), and `bugaboo backup --to <folder>` puts one backup somewhere else. The folder must be one that only the account that runs Bugaboo can open: Bugaboo refuses a folder that other accounts can open.
+Backups go into the `backups` folder of the data folder. An administrator can name another folder in *Organization settings › System › Backups* (*Folder of the backups*), and `bugaboo backup --to <folder>` puts one backup somewhere else. The folder must be one that only the account that runs Bugaboo can open: Bugaboo refuses a folder that other accounts can open. The folder of the settings must also be on a disk of the server itself: Bugaboo refuses a shared folder of another computer (`\\server\share`, `//server/share`, or a drive letter or a mount that leads to one, where the system tells), when it is saved and when a backup runs, because the server would sign in to the other computer with its own account and copy the whole database there. To keep backups on another computer, copy them there, or run `bugaboo backup --to <folder>` on the server, which is your choice as the person who runs the server. A change of the folder, like every setting of backups, is in the security log.
 
 Backups are as private as the data folder. Copy them to another disk or computer as well, so a broken disk does not take the data and the backups together.
 

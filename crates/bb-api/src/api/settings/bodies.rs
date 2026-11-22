@@ -284,9 +284,10 @@ impl From<&SettingView> for SettingBody {
                 DefaultValue::Text(_) => SettingType::Text,
             },
             format: match format {
-                // A contact for security reports is typed as text; the server refuses what is not
-                // one address, in plain words.
-                Format::Free | Format::SecurityContact => SettingFormat::Free,
+                // A contact for security reports and the folder of backups are typed as text; the
+                // server refuses what is not one address, or a share of another computer, in plain
+                // words.
+                Format::Free | Format::SecurityContact | Format::LocalFolder => SettingFormat::Free,
                 // The own themes a person may choose are listed by `listThemes`, each with its value.
                 Format::Choices(_) | Format::Themes(_) => SettingFormat::Choice,
                 Format::TimeZone => SettingFormat::TimeZone,

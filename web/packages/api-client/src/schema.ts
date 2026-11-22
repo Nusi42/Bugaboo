@@ -7835,6 +7835,7 @@ export interface components {
       | "setting.hosts-not-bare"
       | "setting.unknown-time-zone"
       | "setting.contact-not-an-address"
+      | "setting.folder-not-local"
       | "project.move-lifts-no-access"
       | "project.move-into-itself"
       | "project.too-deep"

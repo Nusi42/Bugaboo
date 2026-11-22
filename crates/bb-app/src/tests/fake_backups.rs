@@ -27,6 +27,10 @@ impl BackupStore for FakeStore {
     }
 }
 
+/// How a folder on a mapped network drive of the fake begins: the system would say it lies on
+/// another computer.
+pub(crate) const A_SHARE_BEHIND_A_DRIVE: &str = "Z:\\";
+
 /// Backup files kept in memory: a name and a size each.
 #[derive(Default)]
 pub(crate) struct MemoryBackups {
@@ -36,6 +40,10 @@ pub(crate) struct MemoryBackups {
 }
 
 impl BackupFiles for MemoryBackups {
+    fn on_another_computer(&self, folder: &str) -> bool {
+        folder.starts_with(A_SHARE_BEHIND_A_DRIVE)
+    }
+
     fn create(
         &self,
         _folder: Option<String>,

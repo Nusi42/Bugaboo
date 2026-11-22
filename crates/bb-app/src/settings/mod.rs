@@ -517,6 +517,7 @@ pub async fn change_setting<S: AuthStore>(
         return Err(ErrorCode::InvalidRequest.into());
     }
     refuse_unaccepted(definition, &input.value)?;
+    ctx.refuse_backups_elsewhere(definition, &input.value)?;
     // An own theme is a choice only of the scope that may use it.
     if let Some(ChoiceInForce::InsteadOf(_)) =
         ctx.theme_in_force(scope, definition, &input.value).await?

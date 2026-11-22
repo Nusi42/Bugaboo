@@ -136,13 +136,28 @@ impl ServerBackups {
         }
     }
 
+    /// The folder of the backups: the one the setting names, refused when it lies on another
+    /// computer (the server would sign in there and copy the whole database there; ADR-0046), or
+    /// the backups folder of the data folder.
     fn folder(&self, named: Option<&str>) -> std::io::Result<PathBuf> {
+        if let Some(named) = named
+            && (!bb_core::settings::is_local_folder(named)
+                || crate::system::on_another_computer(std::path::Path::new(named)))
+        {
+            return Err(std::io::Error::other(
+                message::backups_folder_not_local(named).render(),
+            ));
+        }
         backup_folder(&self.data, named.map(std::path::Path::new))
             .map_err(|error| std::io::Error::other(error.to_string()))
     }
 }
 
 impl BackupFiles for ServerBackups {
+    fn on_another_computer(&self, folder: &str) -> bool {
+        crate::system::on_another_computer(std::path::Path::new(folder))
+    }
+
     fn create(
         &self,
         folder: Option<String>,

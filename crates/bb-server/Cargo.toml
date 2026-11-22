@@ -54,7 +54,7 @@ base64ct = { workspace = true }
 # Asks the system who runs the program and what an account number is called, instead of reading
 # its files (coding-standards section 2, no fixed paths).
 [target.'cfg(unix)'.dependencies]
-nix = { workspace = true }
+nix = { workspace = true, features = ["fs"] }
 
 [dev-dependencies]
 argon2 = { workspace = true }

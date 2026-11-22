@@ -2587,6 +2587,10 @@ pub const ERROR_SERVER_UNAVAILABLE: MessageKey = MessageKey::new("error.server.u
 pub const ERROR_SETTING_CONTACT_NOT_AN_ADDRESS: MessageKey =
     MessageKey::new("error.setting.contact-not-an-address");
 
+/// The message `error.setting.folder-not-local`.
+pub const ERROR_SETTING_FOLDER_NOT_LOCAL: MessageKey =
+    MessageKey::new("error.setting.folder-not-local");
+
 /// The message `error.setting.hosts-not-bare`.
 pub const ERROR_SETTING_HOSTS_NOT_BARE: MessageKey =
     MessageKey::new("error.setting.hosts-not-bare");
@@ -14017,6 +14021,15 @@ pub fn backups_failed(reason: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("backups.failed"),
         vec![("reason", Value::Text(reason.to_string()))],
+    )
+}
+
+/// The message `backups.folder-not-local`.
+#[must_use]
+pub fn backups_folder_not_local(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("backups.folder-not-local"),
+        vec![("path", Value::Text(path.to_string()))],
     )
 }
 

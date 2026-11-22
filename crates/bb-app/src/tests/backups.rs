@@ -4,11 +4,11 @@
 use bb_core::backup::name::{BackupName, Purpose};
 use bb_core::backup::run::{BackupEvent, BackupMaker};
 use bb_core::error_code::ErrorCode;
-use bb_core::settings::{BACKUPS_DAILY, SettingValue};
+use bb_core::settings::{BACKUPS_DAILY, BACKUPS_FOLDER, SettingValue};
 use bb_core::sign_in::SecurityAction;
 use jiff::Timestamp;
 
-use super::fake_backups::MemoryBackups;
+use super::fake_backups::{A_SHARE_BEHIND_A_DRIVE, MemoryBackups};
 use super::scenarios::{Added, measured, token};
 use super::world::{Outcome, World};
 use crate::auth::AppError;
@@ -336,5 +336,55 @@ async fn priv_12_a_person_who_was_removed_is_a_former_user_in_the_list() -> Outc
         "{:?}",
         seen.people
     );
+    Ok(())
+}
+
+/// Changes the folder of the backups as the administrator.
+async fn set_folder(world: &World, folder: &str) -> Result<(), AppError> {
+    change_setting(
+        &world.ctx(),
+        ChangeSetting {
+            version: None,
+            session_token: token(world),
+            scope: SettingsScope::Organization,
+            key: BACKUPS_FOLDER.definition().key().to_owned(),
+            value: SettingValue::Text(folder.to_owned()),
+        },
+    )
+    .await
+    .map(|_| ())
+}
+
+#[tokio::test]
+async fn ops_07_the_folder_of_backups_is_on_this_computer_and_its_change_is_logged() -> Outcome {
+    let world = World::new().await?;
+    // A share of another computer, by its address or behind a drive letter, is refused.
+    for share in [
+        "\\\\fileserver\\backups",
+        "//fileserver/backups",
+        "\\\\?\\UNC\\fileserver\\backups",
+        &format!("{A_SHARE_BEHIND_A_DRIVE}backups"),
+    ] {
+        assert!(
+            matches!(
+                set_folder(&world, share).await,
+                Err(AppError::Refused(ErrorCode::SettingFolderNotLocal))
+            ),
+            "{share}"
+        );
+    }
+    let changes = |world: &World| {
+        world
+            .store
+            .lock()
+            .log
+            .iter()
+            .filter(|entry| entry.action == SecurityAction::SettingChanged)
+            .count()
+    };
+    assert_eq!(changes(&world), 0, "nothing was changed");
+    // A folder of this computer is taken, and the change is in the security log.
+    set_folder(&world, "D:\\Backups\\Bugaboo").await?;
+    assert_eq!(changes(&world), 1);
     Ok(())
 }
