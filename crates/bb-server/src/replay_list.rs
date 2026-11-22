@@ -40,11 +40,18 @@ fn append_to(path: &std::path::Path, writing: &Mutex<()>, lines: &str) -> std::i
         Err(error) => return Err(error),
     };
     let whole = appended(&text, lines)?;
+    write_list(path, whole.as_bytes())
+}
+
+/// Writes `whole` as the list at `path`: a private file, flushed to the disk and renamed into
+/// place, in a folder that is made private when it is missing. Appending and the merge of a
+/// restore both write the list here.
+pub(crate) fn write_list(path: &std::path::Path, whole: &[u8]) -> std::io::Result<()> {
     if let Some(folder) = path.parent() {
         create_private(folder).map_err(|error| std::io::Error::other(error.message()))?;
     }
     write_private_with(path, Existing::Replace, |file| {
-        std::io::Write::write_all(file, whole.as_bytes())?;
+        std::io::Write::write_all(file, whole)?;
         file.sync_all()
     })
 }

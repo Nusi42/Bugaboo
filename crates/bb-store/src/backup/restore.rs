@@ -543,10 +543,8 @@ fn keep_merged(input: &RestoreInput<'_>, merged: &[ReplayLine]) -> Result<(), St
     if merged.is_empty() {
         return Ok(());
     }
-    if let Some(folder) = input.places.replay_list.parent() {
-        std::fs::create_dir_all(folder).map_err(io)?;
-    }
-    std::fs::write(&input.places.replay_list, replay::write(merged)).map_err(io)
+    (input.places.write_replay_list)(&input.places.replay_list, replay::write(merged).as_bytes())
+        .map_err(io)
 }
 
 /// Merges the copies of the replay list (the data folder's, the backup's, the ones given and the

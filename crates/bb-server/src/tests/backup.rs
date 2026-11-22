@@ -257,3 +257,53 @@ async fn ops_07_a_failed_restore_puts_each_path_and_command_in_its_place() -> Te
     assert!(text.contains("run: ") && text.contains("restore"), "{text}");
     Ok(())
 }
+
+#[tokio::test]
+async fn sec_16_a_restore_writes_the_replay_list_privately() -> TestResult {
+    let folder = tempfile::tempdir()?;
+    let (store, data) = installation(folder.path()).await?;
+    backup(&backup_args(&store)).await?;
+    let file = backups_in(&data.backups())?[0].1.clone();
+    // A list that somebody opened to the other accounts of the computer.
+    let list = data.replay_list();
+    std::fs::create_dir_all(list.parent().ok_or("no folder")?)?;
+    std::fs::write(
+        &list,
+        "2026-11-02T10:00:00Z switch-off 0195f7a0-0000-4000-8000-000000000001\n",
+    )?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt as _;
+        std::fs::set_permissions(&list, std::fs::Permissions::from_mode(0o644))?;
+    }
+    #[cfg(windows)]
+    {
+        let output = std::process::Command::new("icacls")
+            .arg(&list)
+            .args(["/grant", "*S-1-5-32-545:R"])
+            .output()?;
+        assert!(output.status.success());
+    }
+    restore(&RestoreArgs {
+        store: store.clone(),
+        file,
+        replay_list: None,
+    })
+    .await?;
+    assert!(std::fs::read_to_string(&list)?.contains("switch-off"));
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt as _;
+        assert_eq!(std::fs::metadata(&list)?.permissions().mode() & 0o077, 0);
+    }
+    #[cfg(windows)]
+    {
+        let sddl = crate::data_folder::rights::access_list(&list).ok_or("no access list")?;
+        assert_eq!(
+            bb_core::access_list::open_to_many(&sddl),
+            Some(false),
+            "{sddl}"
+        );
+    }
+    Ok(())
+}

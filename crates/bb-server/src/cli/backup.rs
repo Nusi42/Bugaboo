@@ -63,6 +63,7 @@ pub(crate) fn places(data: &DataFolder, folder: PathBuf, keys: Arc<KeyRing>) -> 
         folder,
         files: data.files(),
         replay_list: data.replay_list(),
+        write_replay_list: Arc::new(crate::replay_list::write_list),
         file_paths: Arc::new(bb_files::stored_paths),
         keys,
     }

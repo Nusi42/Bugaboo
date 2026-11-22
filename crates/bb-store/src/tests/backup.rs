@@ -61,6 +61,12 @@ impl Installation {
             folder: folder.path().join("backups"),
             files,
             replay_list: folder.path().join("privacy").join("replay.list"),
+            write_replay_list: Arc::new(|path: &Path, bytes: &[u8]| {
+                if let Some(folder) = path.parent() {
+                    std::fs::create_dir_all(folder)?;
+                }
+                std::fs::write(path, bytes)
+            }),
             file_paths: Arc::new(|hash: &Digest| {
                 let name = hex::encode(hash.as_bytes());
                 vec![format!("content/{}/{name}", &name[..2])]

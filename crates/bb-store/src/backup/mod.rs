@@ -41,6 +41,11 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 /// parts: the file and its preview. The file adapter knows them; the store does not.
 pub type FilePaths = Arc<dyn Fn(&Digest) -> Vec<String> + Send + Sync>;
 
+/// Writes the whole replay list at a path for the account alone, made new and moved into place
+/// (with its folder when that is missing). The data folder knows how to make a file private; the
+/// store does not.
+pub type ReplayWriter = Arc<dyn Fn(&Path, &[u8]) -> std::io::Result<()> + Send + Sync>;
+
 /// Where a backup goes and what it copies besides the database.
 #[derive(Clone)]
 pub struct BackupPlaces {
@@ -52,6 +57,8 @@ pub struct BackupPlaces {
     /// The replay list of the data folder (ADR-0044, decision 8). A list that is not there is an
     /// empty one.
     pub replay_list: PathBuf,
+    /// How a restore writes the merged replay list.
+    pub write_replay_list: ReplayWriter,
     /// Where each stored file lies inside `files`.
     pub file_paths: FilePaths,
     /// The keys of the installation: a backup carries a seal and the check values of its master
