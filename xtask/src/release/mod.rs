@@ -15,7 +15,7 @@ use std::path::Path;
 use anyhow::Context as _;
 use bb_api_words::about;
 
-mod assemble;
+pub(crate) mod assemble;
 pub(crate) mod folder;
 pub(crate) mod formats;
 pub(crate) mod notices;

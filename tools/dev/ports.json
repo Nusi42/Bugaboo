@@ -15,6 +15,7 @@
     "e2eWorkersTo": 29,
     "loadTestServer": 30,
     "upgradeTestServer": 31,
+    "tryInstallServer": 32,
     "postgres": 40,
     "fullRunLock": 50
   }

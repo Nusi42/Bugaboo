@@ -7,7 +7,9 @@
 //! 2. Its sample program is built once, with optimisations, in a `git worktree` under `.work/`
 //!    with a build folder of its own. Only the program is kept, in `target/upgrade/<tag>/`; the
 //!    worktree and its build folder are deleted, and so is the program of an older tag. A later
-//!    run finds the program there and builds nothing.
+//!    run finds the program there and builds nothing. The try-out of the install
+//!    (`cargo xtask try-install`) takes the server program of the same tag the same way, for
+//!    Windows and, built in WSL, for Linux ([`OldProgram`]).
 //! 3. On each database the old program makes the small sample organization, the way
 //!    `cargo xtask dataset sample` does.
 //! 4. The driver `web/tooling/upgrade/main.ts` starts the program of `HEAD` on that data folder
@@ -27,8 +29,10 @@ use bb_dev_words::database::DatabaseKind;
 use crate::dataset::{self, Arguments, in_folder, load_layout, program_command};
 use crate::db;
 use crate::output;
+use crate::release::folder::{LINUX, Platform};
 use crate::repo::Repo;
-use crate::steps::{self, Profile, SAMPLE_BINARY};
+use crate::steps::{self, Profile, SAMPLE_BINARY, SERVER_BINARY};
+use crate::wsl;
 
 /// The tags that mark a finished milestone; the newest before `HEAD` is the previous milestone.
 pub(crate) const MILESTONE_TAGS: &str = "m*-done";
@@ -38,6 +42,9 @@ const PROGRAMS: &str = "target/upgrade";
 const WORK: &str = ".work/upgrade";
 /// The driver that starts the new program on the old data and reads it through the API.
 const DRIVER: &str = "web/tooling/upgrade/main.ts";
+/// How this checkout builds (the C runtime inside the Windows programs, for one): an old tag is
+/// built with the settings of `HEAD`, so its program starts where this one does.
+const BUILD_SETTINGS: &str = ".cargo/config.toml";
 /// The database of the throwaway cluster that holds the old sample on PostgreSQL.
 const DATABASE: &str = "bbupgrade";
 
@@ -70,27 +77,74 @@ fn kept_folder(root: &Path, tag: &str) -> PathBuf {
     in_folder(root, PROGRAMS).join(tag)
 }
 
+/// A program of an older tag that is kept: the sample program of the upgrade test, or the server
+/// program for the try-out of the install, for this system or (built in WSL) for Linux.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum OldProgram {
+    Sample,
+    Server,
+    LinuxServer,
+}
+
+impl OldProgram {
+    fn package(self) -> &'static str {
+        match self {
+            Self::Sample => SAMPLE_BINARY,
+            Self::Server | Self::LinuxServer => "bb-server",
+        }
+    }
+
+    /// The name of the kept file, inside the folder of its tag; the Linux program in a folder of
+    /// its own, since its name is the same as the server's without an ending.
+    fn kept_name(self) -> PathBuf {
+        match self {
+            Self::Sample => {
+                PathBuf::from(format!("{SAMPLE_BINARY}{}", std::env::consts::EXE_SUFFIX))
+            }
+            Self::Server => {
+                PathBuf::from(format!("{SERVER_BINARY}{}", std::env::consts::EXE_SUFFIX))
+            }
+            Self::LinuxServer => Path::new(LINUX.word).join(linux_name(LINUX)),
+        }
+    }
+}
+
+/// The name of the server program for `platform`.
+fn linux_name(platform: Platform) -> String {
+    format!("{SERVER_BINARY}{}", platform.end)
+}
+
 /// The file name of the sample program on this system.
+#[cfg(test)]
 fn program_name() -> String {
-    format!("{SAMPLE_BINARY}{}", std::env::consts::EXE_SUFFIX)
+    OldProgram::Sample
+        .kept_name()
+        .to_string_lossy()
+        .into_owned()
 }
 
 /// The old sample program of `tag`: the one kept, or built now. Everything else under
-/// [`PROGRAMS`] goes, so the disk keeps one file.
+/// [`PROGRAMS`] goes, so the disk keeps the programs of one tag.
 pub(crate) fn old_program(root: &Path, tag: &str) -> anyhow::Result<PathBuf> {
+    kept_program(root, tag, OldProgram::Sample)
+}
+
+/// The program `which` of `tag`: the one kept, or built now.
+pub(crate) fn kept_program(root: &Path, tag: &str, which: OldProgram) -> anyhow::Result<PathBuf> {
     let folder = kept_folder(root, tag);
-    let program = folder.join(program_name());
+    let program = folder.join(which.kept_name());
     keep_only(&in_folder(root, PROGRAMS), tag)?;
     if program.is_file() {
         output::info(&format!(
-            "upgrade test: the program of {tag} is kept in {}",
+            "the {} program of {tag} is kept in {}",
+            which.package(),
             folder.display()
         ));
         return Ok(program);
     }
     let work = in_folder(root, WORK).join("build");
     remove(&work)?;
-    let built = build_in_worktree(root, tag, &work, &folder);
+    let built = build_in_worktree(root, tag, &work, which, &program);
     // The worktree and its build folder go whether the build went well or not.
     let _ = git(
         root,
@@ -137,30 +191,88 @@ fn git(root: &Path, arguments: &[&str]) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Builds the sample program of `tag` in a worktree at `work`, with its own build folder inside
-/// it, and copies the program into `keep`.
-fn build_in_worktree(root: &Path, tag: &str, work: &Path, keep: &Path) -> anyhow::Result<()> {
+/// The command that builds `which` with optimisations in the worktree at `work`, with a build
+/// folder of its own inside it, and where the program then is. The Linux program is built in the
+/// WSL distribution of the checkout at `root` ([`wsl::build_distribution`]); `work_in_wsl` is the
+/// worktree as WSL names it.
+fn build_command(
+    root: &Path,
+    work: &Path,
+    work_in_wsl: Option<&str>,
+    which: OldProgram,
+) -> (Command, PathBuf) {
+    let target = work.join("target");
+    if let (OldProgram::LinuxServer, Some(in_wsl)) = (which, work_in_wsl) {
+        let triple = LINUX.target.unwrap_or_default();
+        let script = format!(
+            "CARGO_TARGET_DIR=target/wsl cargo build --release --locked --package {} --target {triple}",
+            which.package()
+        );
+        let mut command = Command::new(wsl::PROGRAM);
+        command.args(wsl::arguments(
+            wsl::build_distribution(root).as_deref(),
+            &["--cd", in_wsl, "--exec", "bash", "-lc", &script],
+        ));
+        let built = target
+            .join("wsl")
+            .join(triple)
+            .join("release")
+            .join(linux_name(LINUX));
+        return (command, built);
+    }
+    let mut command = Command::new(std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_owned()));
+    command
+        .args([
+            "build",
+            "--release",
+            "--locked",
+            "--package",
+            which.package(),
+        ])
+        .arg("--config")
+        .arg(root.join(BUILD_SETTINGS))
+        .env("CARGO_TARGET_DIR", &target)
+        .current_dir(work);
+    let name = which.kept_name();
+    let built = target
+        .join("release")
+        .join(name.file_name().unwrap_or_default());
+    (command, built)
+}
+
+/// Builds `which` of `tag` in a worktree at `work` and copies the program to `keep`.
+fn build_in_worktree(
+    root: &Path,
+    tag: &str,
+    work: &Path,
+    which: OldProgram,
+    keep: &Path,
+) -> anyhow::Result<()> {
     output::info(&format!(
-        "upgrade test: building the sample program of {tag} ..."
+        "building the {} program of {tag} ...",
+        which.package()
     ));
     git(
         root,
         &["worktree", "add", "--detach", &work.to_string_lossy(), tag],
     )?;
-    let target = work.join("target");
-    let status = Command::new(std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_owned()))
-        .args(["build", "--release", "--locked", "--package", SAMPLE_BINARY])
-        .env("CARGO_TARGET_DIR", &target)
-        .current_dir(work)
-        .status()
-        .context("could not run cargo")?;
+    let in_wsl = match which {
+        OldProgram::LinuxServer => Some(crate::release::assemble::wsl_path(
+            work,
+            wsl::build_distribution(root).as_deref(),
+        )?),
+        OldProgram::Sample | OldProgram::Server => None,
+    };
+    let (mut command, built) = build_command(root, work, in_wsl.as_deref(), which);
+    let status = command.status().context("could not start the build")?;
     if !status.success() {
-        bail!("the sample program of {tag} did not build");
+        bail!("the {} program of {tag} did not build", which.package());
     }
-    fs::create_dir_all(keep).with_context(|| format!("could not make {}", keep.display()))?;
-    let built = target.join("release").join(program_name());
-    keep_whole(&built, &keep.join(program_name()))
-        .with_context(|| format!("could not keep {}", built.display()))
+    if let Some(folder) = keep.parent() {
+        fs::create_dir_all(folder)
+            .with_context(|| format!("could not make {}", folder.display()))?;
+    }
+    keep_whole(&built, keep).with_context(|| format!("could not keep {}", built.display()))
 }
 
 /// What a program being copied carries after its name until the copy is whole.
@@ -274,6 +386,41 @@ mod tests {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
         let tag = previous_tag(&root).unwrap();
         assert!(tag.starts_with('m') && tag.ends_with("-done"), "{tag}");
+    }
+
+    #[test]
+    fn ops_04_the_old_linux_server_is_built_in_wsl_for_the_static_target() {
+        let root = tempfile::tempdir().unwrap();
+        let work = root.path().join("build");
+        let (command, built) = build_command(
+            root.path(),
+            &work,
+            Some("/mnt/c/work/build"),
+            OldProgram::LinuxServer,
+        );
+        assert_eq!(command.get_program(), wsl::PROGRAM);
+        let arguments: Vec<String> = command
+            .get_args()
+            .map(|argument| argument.to_string_lossy().into_owned())
+            .collect();
+        // No distribution is named in the folder's settings: the default one builds.
+        assert_eq!(arguments[..2], ["--cd", "/mnt/c/work/build"]);
+        let script = arguments.last().unwrap();
+        assert!(
+            script.contains("--package bb-server --target x86_64-unknown-linux-musl"),
+            "{script}"
+        );
+        assert!(
+            built.ends_with("x86_64-unknown-linux-musl/release/bugaboo"),
+            "{built:?}"
+        );
+        // The Windows server and the sample program are built by cargo itself.
+        let (command, built) = build_command(root.path(), &work, None, OldProgram::Server);
+        assert_ne!(command.get_program(), wsl::PROGRAM);
+        assert_eq!(
+            built.file_name(),
+            OldProgram::Server.kept_name().file_name()
+        );
     }
 
     #[test]

@@ -44,6 +44,7 @@ mod steps;
 #[cfg(test)]
 mod testutil;
 mod tools;
+mod try_install;
 mod upgrade;
 mod wasm;
 mod web_code;
@@ -122,6 +123,13 @@ enum Command {
     /// Upgrade a database made by the program of the previous milestone with the program of HEAD,
     /// on both databases, and check that it reads the same (TEST-UPGRADE, architecture §11).
     UpgradeTest,
+    /// Install, start, upgrade and remove the service for real on a clean system: Windows in
+    /// Windows Sandbox, or a fresh WSL distribution with systemd (OPS-04). Needs the release
+    /// folder of this version (`cargo xtask release`).
+    TryInstall {
+        #[arg(value_enum)]
+        system: try_install::System,
+    },
     /// Run the scenarios of the benchmarks on the large dataset and hold the numbers against
     /// their budgets (PERF-BENCH). Both databases unless one is named.
     Bench {
@@ -381,6 +389,7 @@ fn run() -> anyhow::Result<ExitCode> {
         Command::Nightly { install } => Ok(steps::exit_code(nightly::run(&repo, install)?)),
         Command::Load(arguments) => Ok(steps::exit_code(load::run(&repo, &arguments.request())?)),
         Command::UpgradeTest => Ok(steps::exit_code(upgrade::run(&repo)?)),
+        Command::TryInstall { system } => Ok(steps::exit_code(try_install::run(&repo, system)?)),
         Command::Build { target } => Ok(steps::exit_code(build::run(
             repo.root(),
             target.as_deref(),
