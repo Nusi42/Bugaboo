@@ -2,6 +2,7 @@
 //! web addresses apps may come back to, the daily clean-up, who a call to the MCP server is from, and
 //! where the sign-in is.
 
+use bb_auth::{looks_like_access_key, looks_like_oauth_access_token};
 use bb_core::ErrorCode;
 use bb_core::event::RecordKind;
 use bb_core::oauth::{MCP_PATH, MOST_WEB_ADDRESSES, OAuthWebAddress, ReturnAddress, ReturnKind};
@@ -220,6 +221,17 @@ pub async fn mcp_identity<S: AuthStore>(
     let apps_on = ctx.apps_may_sign_in().await?;
     if !apps_on && !ctx.agents_on_in_the_organization().await? {
         return Err(AppError::Refused(ErrorCode::NotSignedIn));
+    }
+    // Only an access key or the token of an app opens MCP. Anything else (the secret of a session
+    // too) is turned away before it is looked up, and counted as a guess of the network, as an
+    // unknown key or token is; while apps are off it is no guess, as for a token.
+    if !looks_like_access_key(&input.token) && !looks_like_oauth_access_token(&input.token) {
+        if !apps_on {
+            return Err(AppError::Refused(ErrorCode::NotSignedIn));
+        }
+        return Err(ctx
+            .credential_guessed(super::oauth_actor::GUESSING, SecurityAction::OAuthRefused)
+            .await);
     }
     let actor = ctx.actor(&input.token).await?;
     if !apps_on && actor.agent().is_none() {

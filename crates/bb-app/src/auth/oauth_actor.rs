@@ -22,7 +22,7 @@ use super::store::AuthStore;
 use crate::access::{Actor, CredentialSource, KeyInUse};
 
 /// The purpose under which guessing tokens is counted per network.
-const GUESSING: &str = "oauth-token-guess";
+pub(super) const GUESSING: &str = "oauth-token-guess";
 
 /// A token that works now: its grant, the projects of the grant, the name of its app and its person.
 struct WorkingToken {

@@ -251,11 +251,39 @@ where
 /// malformed escape is judged as written, and `.` and `..` parts are ignored, so no spelling
 /// of an API address ends up as a page or a 405.
 pub(crate) fn is_api(path: &str) -> bool {
+    starts_with_one_of(path, &[API_PREFIX])
+}
+
+/// Whether a request to the address counts against the limit of its network: the API, the MCP
+/// server and the routes where apps register and swap codes (SEC-14). Pages, files, health
+/// checks and the metadata documents are not counted.
+pub(crate) fn is_counted(path: &str) -> bool {
+    starts_with_one_of(
+        path,
+        &[
+            API_PREFIX,
+            first_part(bb_core::oauth::MCP_PATH),
+            first_part(bb_core::oauth::TOKEN_PATH),
+        ],
+    )
+}
+
+/// The first part of an address of the server (`/oauth/token` → `oauth`).
+fn first_part(path: &str) -> &str {
+    path.trim_start_matches('/')
+        .split('/')
+        .next()
+        .unwrap_or_default()
+}
+
+/// Whether the first part of the address is one of `parts`. Escapes are decoded first; an address
+/// with a malformed escape is judged as written, and `.` and `..` parts are ignored.
+fn starts_with_one_of(path: &str, parts: &[&str]) -> bool {
     let decoded = decode_path(path).unwrap_or_else(|| path.to_owned());
     decoded
         .split('/')
         .find(|part| !part.is_empty() && *part != "." && *part != "..")
-        .is_some_and(|first| first.eq_ignore_ascii_case(API_PREFIX))
+        .is_some_and(|first| parts.iter().any(|part| first.eq_ignore_ascii_case(part)))
 }
 
 /// The access key a request presents: `Authorization: Bearer bb_…`. Anything else in that header
@@ -481,6 +509,30 @@ mod tests {
         assert!(has_time_limit("/api/v1/assistant/apply"));
         assert!(!has_time_limit("/api/v1/assistant/questions"));
         assert!(!has_time_limit("/index.html"));
+    }
+
+    #[test]
+    fn sec_14_the_mcp_server_and_the_sign_in_of_apps_count_against_the_network() {
+        for path in [
+            "/api/v1/issues",
+            "/mcp",
+            "/MCP",
+            "/oauth/token",
+            "/oauth/register",
+            "/./oauth/%74oken",
+        ] {
+            assert!(is_counted(path), "{path}");
+        }
+        for path in [
+            "/",
+            "/assets/app.js",
+            "/health/live",
+            "/.well-known/oauth-authorization-server",
+            "/connect",
+            "/mcpx",
+        ] {
+            assert!(!is_counted(path), "{path}");
+        }
     }
 
     /// `wait_for_work` holds its answer for up to `WAIT_SECONDS_MOST` (ADR-0029, amendment M9):

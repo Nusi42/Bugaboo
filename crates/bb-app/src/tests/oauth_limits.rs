@@ -5,6 +5,7 @@
 use bb_core::ErrorCode;
 use bb_core::access_key::KeyChoice;
 use bb_core::oauth::{ENDED_GRANT_KEEP_DAYS, REGISTRATIONS_AN_HOUR};
+use bb_core::sign_in::SecurityAction;
 
 use super::oauth::{LOOPBACK, ai_on, issued, renew, signed_in};
 use super::scenarios::token;
@@ -93,6 +94,31 @@ async fn ai_22_the_secret_of_a_session_does_not_open_mcp() -> Outcome {
         refused.err(),
         Some(AppError::Refused(ErrorCode::NotSignedIn))
     );
+    Ok(())
+}
+
+#[tokio::test]
+async fn sec_14_a_token_at_mcp_that_is_no_key_and_no_token_of_an_app_is_a_counted_guess() -> Outcome
+{
+    let world = World::with_ai_apps_and_agents().await?;
+    ai_on(&world).await?;
+    // The secret of a session and anything else are turned away before they are looked up, and
+    // each is written down as a guess of the network, as an unknown token is.
+    for secret in [token(&world), "nonsense".to_owned()] {
+        let refused = mcp_identity(&world.ctx(), identity(&secret)).await;
+        assert_eq!(
+            refused.err(),
+            Some(AppError::Refused(ErrorCode::NotSignedIn))
+        );
+    }
+    let guesses = world
+        .store
+        .lock()
+        .log
+        .iter()
+        .filter(|entry| entry.action == SecurityAction::OAuthRefused && entry.person.is_none())
+        .count();
+    assert_eq!(guesses, 2);
     Ok(())
 }
 

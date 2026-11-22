@@ -3,7 +3,7 @@
 //! Four limits, all counted per minute, all kept in memory (a restart forgets them, which only
 //! ever lets a client try again sooner than a minute):
 //!
-//! - every request to `/api` counts against its **client network**;
+//! - every request to `/api`, `/mcp` and `/oauth` counts against its **client network**;
 //! - every try of the sign-in family counts against the client's **network** too, with a generous
 //!   cap against floods ([`limit_sign_in`], put on the sign-in routes);
 //! - **failed** tries are limited per account from a network, per person and per network in
@@ -254,14 +254,14 @@ fn client_of(request: &Request) -> IpAddr {
         .map_or(UNKNOWN_CLIENT, |ClientIp(address)| *address)
 }
 
-/// The middleware of the whole API: counts a request below `/api` against its client network.
-/// Pages, files and health checks are not counted.
+/// The middleware of the whole server: counts a request below `/api`, `/mcp` and `/oauth` against
+/// its client network. Pages, files and health checks are not counted.
 pub(crate) async fn limit_requests(
     State(limits): State<Arc<Limits>>,
     request: Request,
     next: Next,
 ) -> Response {
-    if !crate::api::is_api(request.uri().path()) {
+    if !crate::api::is_counted(request.uri().path()) {
         return next.run(request).await;
     }
     if let Err(error) = limits.check_request(client_of(&request)) {
