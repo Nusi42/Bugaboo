@@ -64,6 +64,18 @@ pub fn is_in_mention(character: char) -> bool {
 /// Characters, besides letters and digits, that a token must not follow (a path, an address).
 const NOT_BEFORE_A_TOKEN: [char; 7] = ['_', '@', '.', '/', ':', '-', '\\'];
 
+/// Where every mention of `text` is (byte ranges, in order), wherever it stands: in code as well,
+/// and past the number of tokens a rendering marks. For the places that must leave no handle
+/// behind, such as the text an AI provider outside reads (M7-Q5).
+#[must_use]
+pub fn mentions(text: &str) -> Vec<std::ops::Range<usize>> {
+    find(text, 0, usize::MAX)
+        .into_iter()
+        .filter(|token| token.kind == TokenKind::Mention)
+        .map(|token| token.start..token.end)
+        .collect()
+}
+
 /// The tokens of `text`, in order, never overlapping, at most `limit` of them. `base` is added to
 /// every place, so a piece of a bigger text can be searched.
 pub(crate) fn find(text: &str, base: usize, limit: usize) -> Vec<Token> {

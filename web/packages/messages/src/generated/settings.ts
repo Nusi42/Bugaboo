@@ -148,7 +148,7 @@ export const messages = {
   "ai-setup.where-none-off": "None",
   "ai-setup.where-off-more": "{names} and more",
   "ai-setup.where-note":
-    "Only what a person may read goes to the provider, and never what is marked Never sent to AI.",
+    "Only what a person may read goes to the provider, and never what is marked Never sent to AI. When people go as their role, a mention like @name goes as someone; a name typed as plain words cannot be told from other words and goes as it is.",
   "ai-setup.switch": "Switch on",
   "ai-setup.switch-needs-agreement": "Confirm the agreement above before AI is switched on.",
   "ai-setup.apps": "AI apps",

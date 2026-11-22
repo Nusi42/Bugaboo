@@ -10,6 +10,7 @@
 //! - **People are shown as M7-Q5 says**: as the person sees them, or, for an outside provider, as
 //!   their role (*a Team member*, *you*), never by name.
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 
 use bb_core::fields::FieldKey;
@@ -46,6 +47,10 @@ const PLAIN_MEMBERS: &[&str] = &[
 
 /// The longest a person's name is written in, in characters.
 const NAME_MAX: usize = 80;
+
+/// How a person is written who may not be named: one the reader cannot see, or a mention when
+/// people go by role.
+const SOMEONE: &str = "someone";
 
 /// How people are written in what the AI reads (M7-Q5).
 #[derive(Clone, Debug)]
@@ -192,7 +197,7 @@ fn write_value(
                 line(out, depth, member, text);
             } else {
                 line(out, depth, member, "");
-                out.push_str(&fence(text, author, nonce));
+                out.push_str(&fence(&without_mentions(text, people), author, nonce));
                 out.push('\n');
             }
         }
@@ -229,16 +234,40 @@ fn person_text(object: &serde_json::Map<String, Value>, people: &PeopleAs) -> Op
                 "you".to_owned()
             } else {
                 roles.get(&id).map_or_else(
-                    || "someone".to_owned(),
+                    || SOMEONE.to_owned(),
                     |role| format!("a {}", one_line(role)),
                 )
             }
         }
         ("role", _) => format!("a {}", one_line(object.get("role")?.as_str()?)),
-        ("someone", _) => "someone".to_owned(),
+        ("someone", _) => SOMEONE.to_owned(),
         ("former", _) => "a former user".to_owned(),
         _ => return None,
     })
+}
+
+/// A text a person wrote, as the AI reads it: when people go by role, every mention (`@ada.brandt`)
+/// becomes *someone*, so a handle, which is made from a name, does not reach an outside provider.
+/// The one place a text is made ready before it is fenced, so every text of every tool, and so the
+/// assistant, AI apps and agents, goes through it. A name typed as plain words cannot be told apart
+/// from other words and stays (*What goes where* says so).
+fn without_mentions<'a>(text: &'a str, people: &PeopleAs) -> Cow<'a, str> {
+    if matches!(people, PeopleAs::AsSeen) {
+        return Cow::Borrowed(text);
+    }
+    let found = bb_markdown::mentions(text);
+    if found.is_empty() {
+        return Cow::Borrowed(text);
+    }
+    let mut written = String::with_capacity(text.len());
+    let mut done = 0;
+    for mention in found {
+        written.push_str(&text[done..mention.start]);
+        written.push_str(SOMEONE);
+        done = mention.end;
+    }
+    written.push_str(&text[done..]);
+    Cow::Owned(written)
 }
 
 /// A text on one line: whatever is not a plain space (a new line, a tab, U+2028, U+2029, any other

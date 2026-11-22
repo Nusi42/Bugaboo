@@ -33,6 +33,7 @@ mod agents_offers;
 mod agents_order;
 mod agents_switches;
 mod ai_guide;
+mod ai_mentions;
 mod ai_setup;
 mod ai_switches;
 mod ai_tools;
