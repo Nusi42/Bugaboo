@@ -4,7 +4,7 @@ import { t } from "@bugaboo/messages";
 import { expect, type Page } from "@playwright/test";
 
 import { paths } from "../../src/shared/paths.ts";
-import { ada, ben, good, lea } from "./demo-m9-common.ts";
+import { ada, ben, good, type Instance, lea, withoutATimer } from "./demo-m9-common.ts";
 import { signIn, signOut } from "./flows.ts";
 import { type Mailbox } from "./mailbox.ts";
 import { FILE_CREATED_MS } from "./privacy.ts";
@@ -25,7 +25,9 @@ const REASON = "Ben asked for his data by e-mail";
  * Lea downloads the file of her data and reads its README. The sample made it; after the restore of
  * step 4, whose backup holds the record but not the file, the job writes it again.
  */
-async function leaDownloadsHerData(page: Page): Promise<void> {
+async function leaDownloadsHerData(page: Page, server: Instance): Promise<void> {
+  // The timer the sample left running on her issue is put away first: its note is not what the step is about.
+  await withoutATimer(server, lea());
   await signIn(page, lea());
   await page.goto(paths.myData);
   const download = page.getByRole("region", { name: t("my-data.download"), exact: true });
@@ -76,8 +78,9 @@ async function adaDownloadsBensData(page: Page, mailbox: Mailbox): Promise<void>
 /** Step 5: Lea downloads her data, and an administrator downloads Ben's. */
 export async function leaAndAnAdministratorDownloadData(
   page: Page,
+  server: Instance,
   mailbox: Mailbox,
 ): Promise<void> {
-  await leaDownloadsHerData(page);
+  await leaDownloadsHerData(page, server);
   await adaDownloadsBensData(page, mailbox);
 }

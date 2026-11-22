@@ -18,6 +18,9 @@ import { idInPeople, openPersonById, stateCard, switchOffByApi } from "./privacy
 /** A backup of the whole sample takes seconds, longer on a computer that does other work too. */
 const BACKUP_CREATED_MS = 60_000;
 
+/** An empty page, which asks the server for nothing while it is stopped. */
+const BLANK = "about:blank";
+
 /** What Ada changes after the backup, which the restore takes back. */
 const CHANGED_TITLE = "Changed after the backup";
 
@@ -28,7 +31,10 @@ async function issueRead(session: ApiSession, key: string) {
   ).issue;
 }
 
-/** Saves a new title on an issue again and again until `done` says stop; how many were kept. */
+/** The priorities a person sets on an issue in turn while the backup is made. */
+const PRIORITIES = ["high", "normal"] as const;
+
+/** Saves a new priority on an issue again and again until `done` says stop; how many were kept. */
 async function keepSaving(
   session: ApiSession,
   key: string,
@@ -41,7 +47,7 @@ async function keepSaving(
   const { version } = await issueRead(session, key);
   await session.client.PATCH("/api/v1/issues/{issue}", {
     params: { path: { issue: key } },
-    body: { version: version ?? 0, title: `${titleOf(0)} ${String(kept)}` },
+    body: { version: version ?? 0, priority: PRIORITIES[kept % PRIORITIES.length] ?? null },
   });
   return keepSaving(session, key, done, kept + 1);
 }
@@ -98,11 +104,12 @@ export async function aBackupMadeWhilePeopleWorkIsRestored(
   });
   const benId = await idInPeople(admin, ben());
   await switchOffByApi(admin, benId);
-  // The service is stopped and the backup is restored from the command line.
+  // Ada closes Bugaboo, the service is stopped and the backup is restored from the command line.
+  await page.goto(BLANK);
   const said = await server.restore(backup);
   expect(said).toContain(benId);
-  // Everybody was signed out: Ada's page goes to the sign-in page at its next request.
-  await page.reload();
+  // Everybody was signed out: Ada's next visit goes to the sign-in page.
+  await page.goto(paths.backups);
   await expect(page).toHaveURL(/\/sign-in/u);
   const restored = await adaThroughApi(server);
   // The change made after the backup is gone; Ben is still switched off.
@@ -119,5 +126,6 @@ export async function aBackupMadeWhilePeopleWorkIsRestored(
   await good(page, "04-the-backups-after-the-restore");
   await openPersonById(page, benId, ben().name);
   await expect(stateCard(page)).toContainText(t("person.switched-off", { name: ben().name }));
+  await stateCard(page).scrollIntoViewIfNeeded();
   await good(page, "04-ben-is-still-switched-off-after-the-restore");
 }

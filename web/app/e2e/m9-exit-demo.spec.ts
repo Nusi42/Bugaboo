@@ -18,6 +18,9 @@ let mailbox: Mailbox;
 
 test.use({
   sample: true,
+  // The e-mail to Ben waits two seconds for others, not five minutes, so it comes while step 5
+  // waits for it (mail_batch_seconds).
+  serverSettings: { BUGABOO_MAIL_BATCH_SECONDS: "2" },
   preparation: {
     run: async (server) => {
       // Ben is told by e-mail when an administrator downloads his data (step 5).
@@ -35,9 +38,12 @@ test("4. A backup made while people work is restored", async ({ page, server }) 
   await aBackupMadeWhilePeopleWorkIsRestored(page, server);
 });
 
-test("5. Lea downloads her data, and an administrator downloads Ben's", async ({ page }) => {
+test("5. Lea downloads her data, and an administrator downloads Ben's", async ({
+  page,
+  server,
+}) => {
   test.setTimeout(STEP_TIMEOUT_MS);
-  await leaAndAnAdministratorDownloadData(page, mailbox);
+  await leaAndAnAdministratorDownloadData(page, server, mailbox);
 });
 
 test("6. Ben is removed", async ({ page, server }) => {

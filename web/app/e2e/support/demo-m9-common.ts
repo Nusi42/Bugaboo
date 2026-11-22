@@ -2,11 +2,16 @@ import { type Page } from "@playwright/test";
 
 import layout from "../../../../tools/dev/sample.json" with { type: "json" };
 import { signInThroughApi, type ApiSession, type Instance } from "./accounts.ts";
+
+export type { Instance } from "./accounts.ts";
 import { goodWindowInFourThemes } from "./demo.ts";
 import { sampleNamed, type SamplePerson } from "./sample.ts";
 
 // What the steps of the exit demo of M9 share (`m9-exit-demo.spec.ts`): the pictures and the people of
 // the sample organization the steps name.
+
+/** The timers the sample left running are put away before a step that is not about them. */
+export { withoutATimer } from "./demo-m8-common.ts";
 
 /** How long a step of the demo may take: a step signs in, works and takes its pictures in four themes. */
 export const STEP_TIMEOUT_MS = 300_000;

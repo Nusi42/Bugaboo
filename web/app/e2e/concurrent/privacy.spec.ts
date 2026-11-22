@@ -76,8 +76,12 @@ test("priv_04_a_switched_off_persons_open_page_is_refused_at_its_next_save", asy
   // Ben is switched off while his page is open and the others change their fields.
   const off = switchOffByApi(admin, await idInPeople(admin, ben));
   await Promise.all([...ready.map((change) => change()), off]);
-  // His next save is refused: the page goes to the sign-in page and says why.
-  await changeField(page, bensEdit.label, bensEdit.choice);
+  // His next save is refused: the page goes to the sign-in page and says why (a read the page
+  // makes before his save is refused the same way).
+  await Promise.race([
+    changeField(page, bensEdit.label, bensEdit.choice).catch(() => false),
+    expect(page).toHaveURL(/\/sign-in\?reason=session-ended$/u),
+  ]);
   await expect(page).toHaveURL(/\/sign-in\?reason=session-ended$/u);
   await expect(page.getByText(t("error.auth.not-signed-in"))).toBeVisible();
   // The others' changes landed; his did not.
@@ -106,7 +110,9 @@ test("ops_07_ten_people_save_while_a_backup_is_made_and_every_save_up_to_its_mom
   const after = await versionOf(admin, issue);
   expect(after).toBe(1 + othersThanBen.length);
   await admin.dispose();
-  // The backup is restored with the server stopped, as an administrator does.
+  // Everybody closes Bugaboo, and the backup is restored with the server stopped, as an
+  // administrator does.
+  await Promise.all(browser.contexts().map((context) => context.close()));
   await server.restore(backup);
   const restored = await signedInAdmin(server);
   // Every save made before the backup was asked for is in it, as one consistent state.
