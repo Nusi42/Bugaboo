@@ -1,5 +1,7 @@
 //! The background job runner (ADR-0017): a worker that takes the jobs that are due from the queue
-//! in the database and does them, a few at a time, as long as there are some.
+//! in the database and does them, a few at a time, as long as there are some. It works the two
+//! lanes of the queue side by side (`bb_app::jobs::Lane`), so a short job such as an e-mail never
+//! waits behind a slow preview, export or backup.
 //!
 //! The queue, the lease and the retries are the store's (`bb-store`, behind the port `JobStore`);
 //! which use case does the work of which kind of job, and how long a round holds its jobs, is
@@ -13,6 +15,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use bb_app::auth::{AuthServices, AuthStore, RequestInfo};
+use bb_app::jobs::Lane;
 use tokio::task::{JoinHandle, JoinSet};
 use tokio::time::MissedTickBehavior;
 
@@ -77,6 +80,9 @@ where
         let mut beside = JoinSet::new();
         let mut retry_in = every;
         beside.spawn(rebuild(Arc::clone(&services), every));
+        // The long lane has a loop of its own, in a set that goes away with this task too.
+        let mut long_lane = JoinSet::new();
+        long_lane.spawn(work_lane(Arc::clone(&services), every, Lane::Long));
         let mut ticks = tokio::time::interval(every);
         ticks.set_missed_tick_behavior(MissedTickBehavior::Delay);
         loop {
@@ -99,21 +105,43 @@ where
                     retry_in = next_wait(retry_in);
                 }
             }
-            loop {
-                match services.ctx(RequestInfo::default()).run_due_jobs().await {
-                    Ok(0) => break,
-                    Ok(_) => {}
-                    Err(error) => {
-                        tracing::warn!(
-                            cause = %error,
-                            "the jobs could not be taken; the next round tries again"
-                        );
-                        break;
-                    }
+            // A long lane that stopped (a panic) is logged and started again.
+            while let Some(done) = long_lane.try_join_next() {
+                if let Err(error) = done {
+                    tracing::error!(cause = %error, "the long lane of the jobs stopped; it is started again");
                 }
+                long_lane.spawn(work_lane(Arc::clone(&services), every, Lane::Long));
             }
+            run_lane_while_due(&services, Lane::Short).await;
         }
     })
+}
+
+/// The loop of one lane: every `every`, its jobs as long as some are due.
+async fn work_lane<S: AuthStore>(services: Arc<AuthServices<S>>, every: Duration, lane: Lane) {
+    let mut ticks = tokio::time::interval(every);
+    ticks.set_missed_tick_behavior(MissedTickBehavior::Delay);
+    loop {
+        ticks.tick().await;
+        run_lane_while_due(&services, lane).await;
+    }
+}
+
+/// Runs the jobs of `lane` until none is due; a failure to take jobs waits for the next round.
+async fn run_lane_while_due<S: AuthStore>(services: &AuthServices<S>, lane: Lane) {
+    loop {
+        match services.ctx(RequestInfo::default()).run_lane(lane).await {
+            Ok(0) => break,
+            Ok(_) => {}
+            Err(error) => {
+                tracing::warn!(
+                    cause = %error,
+                    "the jobs could not be taken; the next round tries again"
+                );
+                break;
+            }
+        }
+    }
 }
 
 /// Makes the text index again if a migration asked for it, until it has gone through once; a failed

@@ -100,6 +100,7 @@ mod handles;
 mod hidden;
 mod history_cursor;
 mod history_known;
+mod job_lanes;
 mod keep;
 mod key_scope;
 mod keys;

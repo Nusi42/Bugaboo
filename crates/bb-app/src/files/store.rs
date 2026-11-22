@@ -9,7 +9,7 @@
 use std::future::Future;
 
 use bb_core::files::{Attachment, PreviewStatus, StoredFile, Upload};
-use bb_core::id::{AttachmentId, IssueId, UploadId};
+use bb_core::id::{AttachmentId, IssueId, UploadId, UserId};
 use bb_core::security_log::Digest;
 use jiff::Timestamp;
 
@@ -34,6 +34,8 @@ pub trait AttachmentStore: CommentStore + 'static {
         /// How many attachments an issue has, the ones in the trash too: they come back with
         /// *Undo* until the daily clean-up removes them, so they count toward the limit.
         fn attachment_count_of_issue(issue: IssueId) -> u64;
+        /// How many attachments `person` added from `since` on, the ones in the trash too.
+        fn attachments_added_since(person: UserId, since: Timestamp) -> u64;
         /// The attachments with these IDs that exist, the ones in the trash too: read once for a
         /// page of the history.
         fn attachments_by_ids(ids: &[AttachmentId]) -> Vec<Attachment>;

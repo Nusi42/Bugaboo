@@ -506,7 +506,13 @@ async fn priv_05_a_dead_job_loses_its_payload_after_its_period() -> TestResult {
             .queue_job(id, &kind, &json!({"recipient": "ana"}), at(100), at(100))
             .await?;
         let taken = storage
-            .lease_jobs(&worker, at(101), SignedDuration::from_secs(60), 5)
+            .lease_jobs(
+                &worker,
+                at(101),
+                SignedDuration::from_secs(60),
+                5,
+                &bb_app::jobs::LaneKinds::AllBut(Vec::new()),
+            )
             .await?;
         assert_eq!(taken.len(), 1);
         let failure = TechnicalName::new("job.failed")?;

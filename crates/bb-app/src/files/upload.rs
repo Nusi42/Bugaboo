@@ -11,9 +11,10 @@ use bb_core::ErrorCode;
 use bb_core::event::RecordKind;
 use bb_core::files::{
     ATTACHMENTS_PER_ISSUE_MAX, Attachment, MediaType, OPEN_UPLOADS_BYTES_MAX, OPEN_UPLOADS_MAX,
-    PART_BYTES, PreviewKind, PreviewStatus, StoredFile, Upload, clean_file_name,
+    PART_BYTES, PREVIEW_WINDOW, PREVIEWS_PER_PERSON_MAX, PreviewKind, PreviewStatus, StoredFile,
+    Upload, clean_file_name,
 };
-use bb_core::id::{AttachmentId, CommentId, JobId, ProjectId, UploadId};
+use bb_core::id::{AttachmentId, CommentId, JobId, ProjectId, UploadId, UserId};
 use bb_core::version::FIRST_VERSION;
 use bb_policy::{Authorized, Evaluation};
 use jiff::Timestamp;
@@ -308,6 +309,36 @@ fn first_preview_status(media_type: &MediaType) -> PreviewStatus {
     }
 }
 
+impl<S: AuthStore> Ctx<'_, S> {
+    /// The first status of the preview of an attachment that `person` adds: `wanted`, unless the
+    /// person added [`PREVIEWS_PER_PERSON_MAX`] files in the last [`PREVIEW_WINDOW`] already; then
+    /// none, so nobody can keep the previews of the others waiting. The file can still be
+    /// downloaded.
+    async fn preview_allowed(
+        &self,
+        person: UserId,
+        wanted: PreviewStatus,
+        now: Timestamp,
+    ) -> Result<PreviewStatus, AppError> {
+        if wanted != PreviewStatus::Pending {
+            return Ok(wanted);
+        }
+        let since = now
+            .checked_sub(PREVIEW_WINDOW)
+            .map_err(|error| AppError::Internal(error.to_string()))?;
+        let added = self
+            .store()
+            .attachments_added_since(person, since)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        Ok(if added >= PREVIEWS_PER_PERSON_MAX {
+            PreviewStatus::Without
+        } else {
+            PreviewStatus::Pending
+        })
+    }
+}
+
 /// The row of a file that has just been put together.
 fn stored_file_of(inspected: Inspected, now: Timestamp) -> StoredFile {
     let preview = first_preview_status(&inspected.sniffed.media_type);
@@ -397,7 +428,13 @@ pub async fn finish_upload<S: AuthStore>(
         added_by: actor.person.id,
         added_at: now,
         deleted_at: None,
-        preview: first_preview_status(&inspected.sniffed.media_type),
+        preview: ctx
+            .preview_allowed(
+                actor.person.id,
+                first_preview_status(&inspected.sniffed.media_type),
+                now,
+            )
+            .await?,
         version: FIRST_VERSION,
     };
     let job = JobId::generate(&mut ids).map_err(|error| AppError::Internal(error.to_string()))?;

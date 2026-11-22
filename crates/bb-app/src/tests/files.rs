@@ -12,7 +12,7 @@ use bb_core::security_log::Digest;
 use bb_core::settings::{FILES_BLOCKED_TYPES, FILES_MAX_MEGABYTES, SettingValue};
 
 use super::scenarios::{a_project, text, token};
-use super::scenarios_files::{A_FILE, an_attachment, an_upload};
+use super::scenarios_files::{A_FILE, A_PICTURE, an_attachment, an_upload};
 use super::scenarios_issues::an_issue;
 use super::world::{Outcome, World};
 use crate::auth::AppError;
@@ -578,9 +578,6 @@ impl World {
         Ok(())
     }
 }
-
-/// The first bytes of a PNG, which the in-memory store takes for a picture.
-const A_PICTURE: &[u8] = b"\x89PNG\r\n\x1a\nthe rest of a picture";
 
 async fn finish(
     world: &World,

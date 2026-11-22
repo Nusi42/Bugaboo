@@ -504,7 +504,13 @@ mod tests {
             run_updates_again(&database).await?;
             let worker = TechnicalName::new("worker.one")?;
             let taken = database
-                .lease_jobs(&worker, at(2), jiff::SignedDuration::from_secs(60), 5)
+                .lease_jobs(
+                    &worker,
+                    at(2),
+                    jiff::SignedDuration::from_secs(60),
+                    5,
+                    &bb_app::jobs::LaneKinds::AllBut(Vec::new()),
+                )
                 .await?;
             assert_eq!(taken.len(), 1);
             assert_eq!(taken[0].kind.as_str(), "many-changes.step");

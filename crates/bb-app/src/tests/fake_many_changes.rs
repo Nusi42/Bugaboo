@@ -40,6 +40,7 @@ impl JobStore for FakeStore {
         now: Timestamp,
         lease: SignedDuration,
         limit: u64,
+        kinds: &crate::jobs::LaneKinds,
     ) -> Result<Vec<Job>, FakeError> {
         let mut shared = self.lock();
         let mut taken = Vec::new();
@@ -52,6 +53,7 @@ impl JobStore for FakeStore {
                     && job.run_at <= now
                     && job.lease_until.is_none_or(|until| until <= now)
                     && job.attempts < job.max_attempts
+                    && kinds.takes(&job.kind)
             })
             .collect();
         due.sort_by_key(|job| (job.run_at, job.id));

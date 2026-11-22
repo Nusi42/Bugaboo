@@ -49,6 +49,15 @@ pub const DISK_KEPT_FREE_BYTES: u64 = 1024 * MEGABYTE;
 /// How long an unfinished upload is kept after its last part (ADR-0032): then it is deleted.
 pub const UNFINISHED_KEPT: SignedDuration = SignedDuration::from_hours(24);
 
+/// How many files one person may add in an hour that get a preview ([`PREVIEW_WINDOW`]): a
+/// preview is made by a child process and may take seconds, so somebody who adds files without
+/// end cannot keep the previews of everybody else waiting. A file beyond gets no preview; it can
+/// still be downloaded.
+pub const PREVIEWS_PER_PERSON_MAX: u64 = 60;
+
+/// The time over which [`PREVIEWS_PER_PERSON_MAX`] counts the files a person added.
+pub const PREVIEW_WINDOW: SignedDuration = SignedDuration::from_hours(1);
+
 /// How many files one issue holds at most, so the list of its files stays short enough to send at
 /// once and a full issue answers with a clear refusal (`limit.reached`).
 pub const ATTACHMENTS_PER_ISSUE_MAX: usize = 200;

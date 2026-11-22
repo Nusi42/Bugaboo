@@ -464,13 +464,25 @@ async fn priv_03_an_export_whose_job_runs_twice_is_finished_and_told_once() -> O
     let lease = SignedDuration::from_secs(1);
     let mut first = world
         .store
-        .lease_jobs(&worker("worker.first")?, world.ctx().now(), lease, 5)
+        .lease_jobs(
+            &worker("worker.first")?,
+            world.ctx().now(),
+            lease,
+            5,
+            &crate::jobs::Lane::Long.kinds()?,
+        )
         .await
         .map_err(text)?;
     world.clock.advance(2);
     let mut second = world
         .store
-        .lease_jobs(&worker("worker.second")?, world.ctx().now(), lease, 5)
+        .lease_jobs(
+            &worker("worker.second")?,
+            world.ctx().now(),
+            lease,
+            5,
+            &crate::jobs::Lane::Long.kinds()?,
+        )
         .await
         .map_err(text)?;
     let (first, second) = (

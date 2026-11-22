@@ -261,6 +261,27 @@ impl AttachmentStore for AuthStorage {
         }
     }
 
+    async fn attachments_added_since(
+        &self,
+        person: UserId,
+        since: Timestamp,
+    ) -> Result<u64, StoreError> {
+        let mut select = Query::select();
+        select
+            .expr_as(
+                Expr::col(AttachmentRow::Id).count(),
+                crate::schema::Computed::Total,
+            )
+            .from(AttachmentRow::Table)
+            .and_where(Expr::col(AttachmentRow::AddedBy).eq(person.stored()))
+            .and_where(Expr::col(AttachmentRow::AddedAt).gte(to_micros(since)));
+        match self.database().fetch_optional(&select).await? {
+            Some(row) => u64::try_from(row.get::<i64>(crate::schema::Computed::Total)?)
+                .map_err(|_| StoreError::Corrupt("a count")),
+            None => Ok(0),
+        }
+    }
+
     async fn try_insert_upload(
         &self,
         upload: &Upload,

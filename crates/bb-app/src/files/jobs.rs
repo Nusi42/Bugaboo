@@ -75,7 +75,6 @@ impl<S: AuthStore> Ctx<'_, S> {
             return Ok(());
         }
         let hash = attachment.file;
-        let _hold = self.files().hold(hash).await;
         let Some(file) = self
             .store()
             .stored_file(hash)
@@ -88,11 +87,15 @@ impl<S: AuthStore> Ctx<'_, S> {
             // Made before, for another attachment of this content, or tried and failed.
             (known @ (PreviewStatus::Ready | PreviewStatus::Without), _) => known,
             (PreviewStatus::Pending, Some(kind)) => {
+                // Made without the hold of the file, which the uploads and the clean-up of every
+                // file with the same first byte share: a preview may take seconds. The file store
+                // holds it for moving the preview into place, and the status is set under it.
                 let made = self
                     .files()
                     .create_preview(hash, kind)
                     .await
                     .map_err(|error| AppError::Internal(error.to_string()))?;
+                let _hold = self.files().hold(hash).await;
                 self.store()
                     .set_preview_status(hash, made)
                     .await

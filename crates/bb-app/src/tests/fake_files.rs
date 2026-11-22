@@ -87,6 +87,20 @@ impl AttachmentStore for FakeStore {
         }))
     }
 
+    async fn attachments_added_since(
+        &self,
+        person: bb_core::id::UserId,
+        since: Timestamp,
+    ) -> Result<u64, FakeError> {
+        Ok(self.read(|state| {
+            state
+                .attachments
+                .iter()
+                .filter(|attachment| attachment.added_by == person && attachment.added_at >= since)
+                .count() as u64
+        }))
+    }
+
     async fn attachment_count_of_issue(&self, issue: IssueId) -> Result<u64, FakeError> {
         let count = self.read(|state| {
             state
@@ -322,6 +336,8 @@ pub(crate) struct FakeFiles {
     full: Arc<std::sync::atomic::AtomicBool>,
     previews_made: Arc<std::sync::atomic::AtomicUsize>,
     gate: Arc<Mutex<Option<Gate>>>,
+    /// When set, every preview waits here until it is let go: a slow preview.
+    preview_gate: Arc<Mutex<Option<Gate>>>,
 }
 
 impl FakeFiles {
@@ -355,6 +371,30 @@ impl FakeFiles {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(gate.clone());
         gate
+    }
+
+    /// Makes every preview stop before it is made, until the gate lets it go: a preview as slow
+    /// as the test wants.
+    pub(crate) fn stall_previews(&self) -> Gate {
+        let gate = Gate::default();
+        *self
+            .preview_gate
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(gate.clone());
+        gate
+    }
+
+    /// Makes the preview of a stored file, or none for a file that is not there.
+    fn made_preview(&self, hash: Digest) -> PreviewStatus {
+        let mut held = self.held();
+        if held.files.contains_key(&hash) {
+            held.previews.insert(hash, b"a small picture".to_vec());
+            self.previews_made
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            PreviewStatus::Ready
+        } else {
+            PreviewStatus::Without
+        }
     }
 
     /// How many uploads are on their way.
@@ -499,16 +539,18 @@ impl FileStore for FakeFiles {
         hash: Digest,
         _kind: PreviewKind,
     ) -> BoxFuture<'_, io::Result<PreviewStatus>> {
-        let mut held = self.held();
-        let state = if held.files.contains_key(&hash) {
-            held.previews.insert(hash, b"a small picture".to_vec());
-            self.previews_made
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            PreviewStatus::Ready
-        } else {
-            PreviewStatus::Without
-        };
-        Box::pin(async move { Ok(state) })
+        let gate = self
+            .preview_gate
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .clone();
+        Box::pin(async move {
+            if let Some(gate) = gate {
+                gate.entered.notify_one();
+                gate.release.notified().await;
+            }
+            Ok(self.made_preview(hash))
+        })
     }
 
     fn delete(&self, hash: Digest) -> BoxFuture<'_, io::Result<()>> {

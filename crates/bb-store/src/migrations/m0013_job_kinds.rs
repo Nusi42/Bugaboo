@@ -49,7 +49,13 @@ mod tests {
             }
             let worker = TechnicalName::new("worker.one")?;
             let taken = database
-                .lease_jobs(&worker, at(1), jiff::SignedDuration::from_secs(60), 5)
+                .lease_jobs(
+                    &worker,
+                    at(1),
+                    jiff::SignedDuration::from_secs(60),
+                    5,
+                    &bb_app::jobs::LaneKinds::AllBut(Vec::new()),
+                )
                 .await?;
             assert_eq!(taken[0].kind.as_str(), "editing.purge-drafts");
             Ok(())

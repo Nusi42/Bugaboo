@@ -13,11 +13,12 @@ use std::io;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex, PoisonError};
 
+use bb_app::context::SystemIds;
 use bb_app::files::{ChunkReader, FileBody, FileHold, FileStore, Inspected, PartError, Sniffed};
 use bb_app::ports::BoxFuture;
 use bb_core::files::{DISK_KEPT_FREE_BYTES, LinkTarget, PreviewKind, PreviewStatus};
 use bb_core::hex;
-use bb_core::id::UploadId;
+use bb_core::id::{IdSource as _, UploadId};
 use bb_core::security_log::Digest;
 use sha2::{Digest as _, Sha256};
 use tokio::io::{AsyncReadExt as _, AsyncWriteExt as _};
@@ -30,6 +31,9 @@ const CONTENT: &str = "content";
 const PREVIEWS: &str = "previews";
 const PREVIEW_WORK: &str = "work";
 const PREVIEW_EXTENSION: &str = "png";
+
+/// How many random bytes name one attempt at a preview in the work folder.
+const ATTEMPT_NAME_BYTES: usize = 8;
 
 /// How many locks hold files apart: a hash is told by its first byte.
 const HOLDS: usize = 256;
@@ -318,16 +322,26 @@ impl FileStore for DiskFiles {
             if tokio::fs::metadata(&input).await.is_err() {
                 return Ok(PreviewStatus::Without);
             }
+            // A name of its own for each attempt: two attempts at the same file (a job taken again
+            // after its lease ran out) never write into each other's work file.
             let name = hex::encode(hash.as_bytes());
+            let attempt = hex::encode(&SystemIds.random()[..ATTEMPT_NAME_BYTES]);
             let work = self
                 .root
                 .join(PREVIEWS)
                 .join(PREVIEW_WORK)
-                .join(format!("{name}.{PREVIEW_EXTENSION}"));
+                .join(format!("{name}-{attempt}.{PREVIEW_EXTENSION}"));
             create_parent(&work).await?;
             let outcome = preview::create(&self.command, kind, &input, &work).await?;
             if outcome != PreviewOutcome::Created {
                 tracing::info!(?outcome, kind = kind.code(), "a file got no preview");
+                return Ok(PreviewStatus::Without);
+            }
+            // Only the move into place is held: the clean-up holds the file while it deletes, so a
+            // preview of a file that went meanwhile is thrown away instead of left behind.
+            let _hold = self.hold(hash).await;
+            if tokio::fs::metadata(&input).await.is_err() {
+                remove(&work).await?;
                 return Ok(PreviewStatus::Without);
             }
             let to = self.preview_path(hash);

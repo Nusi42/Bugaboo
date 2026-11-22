@@ -6,7 +6,10 @@
 //! nothing of them.
 
 mod daily;
+mod lane;
 pub(crate) mod lease;
+
+pub use lane::{Lane, LaneKinds};
 
 use std::future::Future;
 
@@ -295,12 +298,14 @@ pub struct QueuedJob {
 /// What a job needs from storage.
 pub trait JobStore: ChangeStore + 'static {
     reads! {
-        /// Takes up to `limit` jobs that are due and not leased, for `worker`, until `now + lease`.
+        /// Takes up to `limit` jobs of the kinds of a lane that are due and not leased, for
+        /// `worker`, until `now + lease`.
         fn lease_jobs(
             worker: &TechnicalName,
             now: Timestamp,
             lease: SignedDuration,
-            limit: u64
+            limit: u64,
+            kinds: &LaneKinds
         ) -> Vec<Job>;
         /// Reports a job as done; it leaves the queue. `false` when `worker` does not hold the
         /// lease any more.
@@ -640,67 +645,6 @@ impl<S: AuthStore> Ctx<'_, S> {
             self.queue_daily(&kind.name()?, at).await?;
         }
         Ok(())
-    }
-
-    /// Runs the due jobs once: takes up to [`JOBS_AT_A_TIME`] jobs for a worker that has a name of
-    /// its own for this round, does each, and reports it done or failed. Returns how many it took.
-    ///
-    /// # Errors
-    /// The error of the store while jobs are taken.
-    pub async fn run_due_jobs(&self) -> Result<usize, AppError> {
-        // The notifications come first, so the e-mail they make is queued before the jobs are
-        // taken.
-        if let Err(error) = self.catch_up_notifications().await {
-            tracing::warn!(cause = %error, "the notifications could not catch up");
-        }
-        // The index of the text search follows the changes within a round, and so is caught up
-        // after a start as soon as the first round runs (it has no daily job of its own).
-        if let Err(error) = self.catch_up_text_index().await {
-            tracing::warn!(cause = %error, "the text index could not catch up");
-        }
-        let worker = self.worker_name()?;
-        let jobs = self
-            .store()
-            .lease_jobs(&worker, self.now(), LEASE, JOBS_AT_A_TIME)
-            .await
-            .map_err(|error| internal::<S>(&error))?;
-        let taken = jobs.len();
-        for job in jobs {
-            // `true` when the worker still held the lease and the report counted.
-            // A job is one request (ADR-0025, decision 3): it gets a context of its own, so what
-            // one job looked up for one person is never there for the next job, for another.
-            let reported = match self.services.ctx(self.request.clone()).do_job(&job).await {
-                Ok(()) => self.store().complete_job(job.id, &worker).await,
-                Err(failure) => {
-                    let outcome = self
-                        .store()
-                        .fail_job(job.id, &worker, &failure.code, failure.kind, self.now())
-                        .await;
-                    if matches!(outcome, Ok(Some(FailureOutcome::Dead))) {
-                        self.job_gave_up(&job).await;
-                    }
-                    outcome.map(|found| found.is_some())
-                }
-            };
-            match reported {
-                Ok(true) => {}
-                // The lease ran out and another worker has the job: it reports, not this one.
-                Ok(false) => tracing::warn!("a job was reported after its lease ran out"),
-                Err(error) => {
-                    tracing::error!(cause = %S::describe(&error), "a job could not be reported");
-                }
-            }
-        }
-        Ok(taken)
-    }
-
-    /// The name a worker holds jobs under for one round: a new one each time, so two rounds, also
-    /// of two servers on one database, never report each other's jobs.
-    fn worker_name(&self) -> Result<TechnicalName, AppError> {
-        let id = JobId::generate(&mut self.ids())
-            .map_err(|error| AppError::Internal(error.to_string()))?;
-        TechnicalName::new(&format!("worker.{}", id.to_string().replace('-', "_")))
-            .map_err(|error| AppError::Internal(error.to_string()))
     }
 }
 

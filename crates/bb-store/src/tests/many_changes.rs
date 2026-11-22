@@ -74,7 +74,13 @@ async fn iss_09_a_run_and_its_job_are_saved_together_and_the_progress_is_counted
         // The job is leased once, with the payload that names the run.
         let worker = TechnicalName::new("worker.one")?;
         let leased = storage
-            .lease_jobs(&worker, at(2), SignedDuration::from_secs(60), 10)
+            .lease_jobs(
+                &worker,
+                at(2),
+                SignedDuration::from_secs(60),
+                10,
+                &bb_app::jobs::LaneKinds::AllBut(Vec::new()),
+            )
             .await?;
         assert_eq!(leased.len(), 1);
         assert_eq!(
@@ -85,7 +91,13 @@ async fn iss_09_a_run_and_its_job_are_saved_together_and_the_progress_is_counted
         let other = TechnicalName::new("worker.two")?;
         assert!(
             storage
-                .lease_jobs(&other, at(2), SignedDuration::from_secs(60), 10)
+                .lease_jobs(
+                    &other,
+                    at(2),
+                    SignedDuration::from_secs(60),
+                    10,
+                    &bb_app::jobs::LaneKinds::AllBut(Vec::new())
+                )
                 .await?
                 .is_empty()
         );
@@ -132,11 +144,23 @@ async fn iss_09_a_job_queued_on_its_own_waits_for_its_time() -> TestResult {
             .await?;
         let worker = TechnicalName::new("worker.one")?;
         let early = storage
-            .lease_jobs(&worker, at(10), SignedDuration::from_secs(60), 10)
+            .lease_jobs(
+                &worker,
+                at(10),
+                SignedDuration::from_secs(60),
+                10,
+                &bb_app::jobs::LaneKinds::AllBut(Vec::new()),
+            )
             .await?;
         assert!(early.is_empty());
         let due = storage
-            .lease_jobs(&worker, at(101), SignedDuration::from_secs(60), 10)
+            .lease_jobs(
+                &worker,
+                at(101),
+                SignedDuration::from_secs(60),
+                10,
+                &bb_app::jobs::LaneKinds::AllBut(Vec::new()),
+            )
             .await?;
         assert_eq!(due.len(), 1);
         let failure = TechnicalName::new("job.failed")?;

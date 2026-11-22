@@ -15,6 +15,9 @@ use crate::files::{
 /// The bytes of the file the scenarios upload.
 pub(crate) const A_FILE: &[u8] = b"The printer jams on page two.";
 
+/// The first bytes of a PNG, which the in-memory store takes for a picture.
+pub(crate) const A_PICTURE: &[u8] = b"\x89PNG\r\n\x1a\nthe rest of a picture";
+
 /// Starts an upload of `bytes` to the issue and sends all of them as one part; the ID of the upload.
 pub(crate) async fn an_upload(
     world: &World,

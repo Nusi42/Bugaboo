@@ -26,14 +26,17 @@ async fn adr_0017_only_the_worker_that_holds_a_job_keeps_it_longer() -> TestResu
         let (holder, other) = (name("worker-1"), name("worker-2"));
         let lease = SignedDuration::from_secs(60);
         assert_eq!(
-            database.lease_jobs(&holder, at(1), lease, 5).await?.len(),
+            database
+                .lease_jobs(&holder, at(1), lease, 5, &LaneKinds::AllBut(Vec::new()))
+                .await?
+                .len(),
             1
         );
         // The holder renews: past the first lease, nobody else may take the job.
         assert!(database.hold_job(id, &holder, at(200)).await?);
         assert!(
             database
-                .lease_jobs(&other, at(100), lease, 5)
+                .lease_jobs(&other, at(100), lease, 5, &LaneKinds::AllBut(Vec::new()))
                 .await?
                 .is_empty()
         );
