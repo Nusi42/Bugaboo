@@ -3,8 +3,12 @@
 //! with *Download someone's data* asks for somebody else's, always with a reason, and the security
 //! log records it. One export waits or runs per person at a time.
 
+use std::sync::{Arc, Mutex, PoisonError};
+
 use bb_core::ErrorCode;
-use bb_core::data_export::{DataExport, EXPORT_MEDIA_TYPE, ExportLink, ExportState};
+use bb_core::data_export::{
+    DataExport, EXPORT_ASKS_WINDOW, EXPORT_MEDIA_TYPE, ExportLink, ExportState, wait_for_ask,
+};
 use bb_core::event::RecordKind;
 use bb_core::id::{DataExportId, JobId, UserId};
 use bb_core::people_kinds::PeopleKind;
@@ -41,8 +45,14 @@ impl NewExport {
     /// Adds the export with its event and its job, in one change that holds the person's exports
     /// and refuses a second one while one waits. The one write of a new export, for the person's
     /// own and an administrator's (ARCH-EVENTS reads the call by its name).
+    /// At most [`EXPORT_ASKS_PER_DAY`](bb_core::data_export::EXPORT_ASKS_PER_DAY) a day for each person, whoever asks, counted from the
+    /// records of the exports in the same change, so the count holds across restarts and for every
+    /// server of the database: an ask that is refused leaves no record and counts for nothing.
     async fn record_change<S: AuthStore>(self, ctx: &Ctx<'_, S>) -> Result<DataExport, AppError> {
         let now = ctx.now();
+        let since = now
+            .checked_sub(EXPORT_ASKS_WINDOW)
+            .map_err(|error| AppError::Internal(error.to_string()))?;
         let export = DataExport {
             id: DataExportId::generate(&mut ctx.ids())
                 .map_err(|error| AppError::Internal(error.to_string()))?,
@@ -71,11 +81,18 @@ impl NewExport {
         let kind = JobKind::DataExport.name()?;
         let payload = json!({ EXPORT_KEY: export.id.to_string() });
         let why = Why::default();
-        let (stopped, adding) = (why.clone(), export.clone());
+        // The wait of an ask that the limit of the day refuses, told from inside the change.
+        let limited = Arc::new(Mutex::new(None::<u64>));
+        let (stopped, adding, waits) = (why.clone(), export.clone(), Arc::clone(&limited));
         ctx.store()
             .record_change(&event, move |transaction| {
                 Box::pin(async move {
                     S::lock_exports_of(transaction, adding.person).await?;
+                    let asked = S::export_asks_since_in(transaction, adding.person, since).await?;
+                    if let Some(wait) = wait_for_ask(&asked, now) {
+                        *waits.lock().unwrap_or_else(PoisonError::into_inner) = Some(wait);
+                        return Err(S::aborted());
+                    }
                     if S::waiting_export_of_in(transaction, adding.person)
                         .await?
                         .is_some()
@@ -87,7 +104,12 @@ impl NewExport {
                 })
             })
             .await
-            .map_err(|error| why.said_or_failed::<S>(&error))?;
+            .map_err(
+                |error| match *limited.lock().unwrap_or_else(PoisonError::into_inner) {
+                    Some(retry_after) => AppError::Limited { retry_after },
+                    None => why.said_or_failed::<S>(&error),
+                },
+            )?;
         Ok(export)
     }
 }
@@ -126,7 +148,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await
             .map_err(|error| internal::<S>(&error))?
             .filter(|export| {
-                export.state == ExportState::Ready && export.asked_by == actor.person.id
+                export.state == ExportState::Ready
+                    && export.asked_by == actor.person.id
+                    && export.kept_at(self.now())
             })
             .ok_or(AppError::Refused(ErrorCode::NotFound))?;
         if found.by_somebody_else()

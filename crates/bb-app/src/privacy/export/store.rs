@@ -23,6 +23,10 @@ pub trait ExportStore: ChangeStore + 'static {
         /// The exports of `person`'s data, whoever asked for them: the ones a removal deletes,
         /// whose files go after it.
         fn exports_of(person: UserId) -> Vec<DataExportId> = exports_of_in;
+        /// When the exports of `person`'s data that were asked for after `since` were asked for,
+        /// whoever asked: the asks that count against the limit of the day.
+        fn export_asks_since(person: UserId, since: Timestamp) -> Vec<Timestamp> =
+            export_asks_since_in;
     }
 
     reads! {

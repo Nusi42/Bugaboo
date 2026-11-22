@@ -8,7 +8,7 @@ use std::io::{Cursor, Read as _};
 use bb_core::ErrorCode;
 use bb_core::access::PeopleLevel;
 use bb_core::comment::Comment;
-use bb_core::data_export::ExportState;
+use bb_core::data_export::{EXPORT_ASKS_PER_DAY, EXPORT_ASKS_WINDOW, ExportState};
 use bb_core::files::LINK_LIFETIME;
 use bb_core::id::{DataExportId, UserId};
 use bb_core::notification::NotificationKind;
@@ -622,5 +622,114 @@ async fn priv_03_an_administrator_who_lost_download_someones_data_cannot_downloa
     // With the permission back, the file is Bob's again.
     may_download_someones_data(&crew, true).await?;
     assert!(!download(world, bob, &token_of_bob).await?.is_empty());
+    Ok(())
+}
+
+/// Moves every export of the world back by `length`, as if it had been asked for so much earlier.
+fn asked_earlier(world: &World, length: SignedDuration) -> Result<(), String> {
+    for export in &mut world.store.lock().state.data_exports {
+        export.asked_at = export.asked_at.checked_sub(length).map_err(text)?;
+    }
+    Ok(())
+}
+
+#[tokio::test]
+async fn priv_03_a_new_file_of_a_persons_data_replaces_the_older_ones() -> Outcome {
+    let crew = Crew::new().await?;
+    let (world, bob) = (&crew.world, crew.bob.session_token.as_str());
+    let first = ask_mine(world, bob).await?;
+    run_jobs(world).await?;
+    // An administrator's file of Bob's data is the administrator's, and stays.
+    let theirs = ask_for(world, &token(world), crew.bob.person.id, "asked by mail").await?;
+    run_jobs(world).await?;
+    // Within the day the older file stays: its record is one of the asks of the day.
+    let second = ask_mine(world, bob).await?;
+    run_jobs(world).await?;
+    assert!(world.exports.bytes(first.export.id).is_some());
+    // A day later the next file replaces the older ones of the same asker.
+    asked_earlier(world, EXPORT_ASKS_WINDOW)?;
+    let third = ask_mine(world, bob).await?;
+    run_jobs(world).await?;
+    assert!(world.exports.bytes(first.export.id).is_none());
+    assert!(world.exports.bytes(second.export.id).is_none());
+    assert!(world.exports.bytes(third.export.id).is_some());
+    assert!(world.exports.bytes(theirs.export.id).is_some());
+    let ids: Vec<DataExportId> = world
+        .store
+        .lock()
+        .state
+        .data_exports
+        .iter()
+        .map(|export| export.id)
+        .collect();
+    assert!(!ids.contains(&first.export.id) && !ids.contains(&second.export.id));
+    assert!(ids.contains(&third.export.id) && ids.contains(&theirs.export.id));
+    Ok(())
+}
+
+#[tokio::test]
+async fn priv_03_the_asks_of_a_day_are_counted_from_the_records_whoever_asks() -> Outcome {
+    // The world counts nothing in memory (its limits let everything through), so what stops the
+    // fourth ask is the count in the records: it holds across restarts and for every server.
+    let crew = Crew::new().await?;
+    let (world, bob) = (&crew.world, crew.bob.session_token.as_str());
+    for ask in 0..EXPORT_ASKS_PER_DAY {
+        if ask == 1 {
+            ask_for(world, &token(world), crew.bob.person.id, "asked by mail").await?;
+        } else {
+            ask_mine(world, bob).await?;
+        }
+        if ask == 0 {
+            // An ask that is refused while one waits leaves no record and counts for nothing.
+            assert_eq!(
+                refused(&ask_mine(world, bob).await),
+                Some(ErrorCode::ExportWaiting)
+            );
+        }
+        run_jobs(world).await?;
+    }
+    let wait = match ask_mine(world, bob).await {
+        Err(AppError::Limited { retry_after }) => retry_after,
+        other => return Err(format!("not limited, answered: {}", other.is_ok()).into()),
+    };
+    let day = u64::try_from(EXPORT_ASKS_WINDOW.as_secs()).map_err(text)?;
+    assert!(wait > 0 && wait <= day, "{wait}");
+    // The administrator's ask is refused the same way: the limit is the person's.
+    assert!(matches!(
+        ask_for(world, &token(world), crew.bob.person.id, "asked again").await,
+        Err(AppError::Limited { .. })
+    ));
+    // Once the asks are a day old, the person may ask again.
+    asked_earlier(world, EXPORT_ASKS_WINDOW)?;
+    ask_mine(world, bob).await?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn priv_03_a_file_past_its_keep_period_is_not_handed_out_before_it_is_deleted() -> Outcome {
+    let crew = Crew::new().await?;
+    let (world, bob) = (&crew.world, crew.bob.session_token.as_str());
+    let made = ask_mine(world, bob).await?;
+    run_jobs(world).await?;
+    let token_of_bob = link(world, bob, made.export.id).await?;
+    // The job that deletes old files has not run yet, but the file was asked for long ago.
+    asked_earlier(world, bb_core::data_export::EXPORT_KEPT)?;
+    assert!(matches!(
+        download(world, bob, &token_of_bob).await,
+        Err(AppError::Refused(ErrorCode::NotFound))
+    ));
+    assert!(link(world, bob, made.export.id).await.is_err());
+    Ok(())
+}
+
+#[tokio::test]
+async fn priv_03_no_file_is_written_when_the_disk_has_no_room() -> Outcome {
+    let crew = Crew::new().await?;
+    let (world, bob) = (&crew.world, crew.bob.session_token.as_str());
+    let made = ask_mine(world, bob).await?;
+    world.files.fill_up();
+    run_jobs(world).await?;
+    assert_ne!(state_of(world, bob).await?, Some(ExportState::Ready));
+    assert!(world.exports.bytes(made.export.id).is_none());
     Ok(())
 }

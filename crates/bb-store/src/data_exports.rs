@@ -100,6 +100,25 @@ impl ExportStore for AuthStorage {
             .collect()
     }
 
+    async fn export_asks_since_in(
+        transaction: &mut Transaction,
+        person: UserId,
+        since: Timestamp,
+    ) -> Result<Vec<Timestamp>, StoreError> {
+        let mut select = Query::select();
+        select
+            .column(DataExportRow::AskedAt)
+            .from(DataExportRow::Table)
+            .and_where(Expr::col(DataExportRow::Person).eq(person.stored()))
+            .and_where(Expr::col(DataExportRow::AskedAt).gt(to_micros(since)));
+        transaction
+            .fetch_all(&select)
+            .await?
+            .iter()
+            .map(|row| row.time(DataExportRow::AskedAt))
+            .collect()
+    }
+
     async fn latest_export_of(
         &self,
         person: UserId,

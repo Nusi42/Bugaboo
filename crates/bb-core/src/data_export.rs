@@ -15,6 +15,28 @@ pub const EXPORT_KEPT_DAYS: i64 = 7;
 /// The same as a length of time.
 pub const EXPORT_KEPT: SignedDuration = crate::time::days(EXPORT_KEPT_DAYS);
 
+/// How often a person's data may be asked for in a day, by the person and by administrators
+/// together: each file is written in full and takes room on the disk until it is deleted.
+pub const EXPORT_ASKS_PER_DAY: u32 = 3;
+
+/// The day the asks are counted in: the time before an ask in which [`EXPORT_ASKS_PER_DAY`] asks
+/// may have been made. The records of the exports are the count, so it holds across restarts and
+/// for every server of the database; the records of that time stay until it is over.
+pub const EXPORT_ASKS_WINDOW: SignedDuration = crate::time::days(1);
+
+/// How many seconds an ask at `now` has to wait, when the asks made at `asked` (the moments of the
+/// exports of the person in [`EXPORT_ASKS_WINDOW`] before `now`) leave none for the day: until the
+/// oldest of them is a day old, at least one second. `None` when the ask may be made.
+#[must_use]
+pub fn wait_for_ask(asked: &[Timestamp], now: Timestamp) -> Option<u64> {
+    if asked.len() < usize::try_from(EXPORT_ASKS_PER_DAY).unwrap_or(usize::MAX) {
+        return None;
+    }
+    let free_at = asked.iter().min()?.checked_add(EXPORT_ASKS_WINDOW).ok()?;
+    let seconds = free_at.duration_since(now).as_secs();
+    Some(u64::try_from(seconds).unwrap_or(0).max(1))
+}
+
 /// The type the file of an export is sent as.
 pub const EXPORT_MEDIA_TYPE: &str = "application/zip";
 
@@ -67,6 +89,26 @@ pub struct DataExport {
 }
 
 impl DataExport {
+    /// Whether the file of the export is still within its keep period at `now`: it is deleted
+    /// [`EXPORT_KEPT`] after it was asked for, and is not handed out after that, also while the
+    /// job that deletes it has not run yet.
+    #[must_use]
+    pub fn kept_at(&self, now: Timestamp) -> bool {
+        self.asked_less_than(EXPORT_KEPT, now)
+    }
+
+    /// Whether the export still counts against the asks of the day at `now`: it was asked for less
+    /// than [`EXPORT_ASKS_WINDOW`] before.
+    #[must_use]
+    pub fn counts_as_ask_at(&self, now: Timestamp) -> bool {
+        self.asked_less_than(EXPORT_ASKS_WINDOW, now)
+    }
+
+    /// Whether the export was asked for less than `length` before `now`.
+    fn asked_less_than(&self, length: SignedDuration, now: Timestamp) -> bool {
+        self.asked_at.checked_add(length).is_ok_and(|end| end > now)
+    }
+
     /// Whether an administrator asked for it for somebody else.
     #[must_use]
     pub fn by_somebody_else(&self) -> bool {
@@ -157,6 +199,25 @@ mod tests {
     use super::*;
     use crate::files::DownloadLink;
     use crate::id::SequentialIds;
+
+    #[test]
+    fn priv_03_a_fourth_ask_of_a_day_waits_until_the_first_is_a_day_old() {
+        let now = Timestamp::UNIX_EPOCH
+            .checked_add(SignedDuration::from_hours(100))
+            .unwrap_or(Timestamp::UNIX_EPOCH);
+        let hours_ago = |hours: i64| {
+            now.checked_sub(SignedDuration::from_hours(hours))
+                .unwrap_or(Timestamp::UNIX_EPOCH)
+        };
+        assert_eq!(wait_for_ask(&[], now), None);
+        assert_eq!(wait_for_ask(&[hours_ago(1), hours_ago(2)], now), None);
+        // Three asks in the day: the next waits for the oldest to be a day old.
+        let three = [hours_ago(1), hours_ago(20), hours_ago(3)];
+        assert_eq!(wait_for_ask(&three, now), Some(4 * 3600));
+        // One that is a day old exactly as the next comes waits a second at least.
+        let edge = [hours_ago(24), hours_ago(1), hours_ago(2)];
+        assert_eq!(wait_for_ask(&edge, now), Some(1));
+    }
 
     #[test]
     fn priv_03_the_link_of_an_export_reads_back_and_is_no_link_of_a_file() -> Result<(), String> {

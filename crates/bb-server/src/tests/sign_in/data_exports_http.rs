@@ -191,3 +191,34 @@ async fn m9_f25_a_value_of_an_own_field_hidden_from_the_person_is_not_in_their_f
     })
     .await
 }
+
+#[tokio::test]
+async fn priv_03_a_persons_data_is_asked_for_a_few_times_a_day_at_most() -> TestResult {
+    each_database("priv_03_asks_a_day", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (_site, mut ada) = Site::start(&rig, &app).await?;
+        for ask in 0..bb_core::data_export::EXPORT_ASKS_PER_DAY {
+            ok(&ada.send("POST", MY_EXPORT, None).await?)?;
+            if ask == 0 {
+                // An ask that is refused while one waits counts for nothing.
+                let waiting = ada.send("POST", MY_EXPORT, None).await?;
+                assert_eq!(waiting.code(), "data-export.waiting", "{}", waiting.body);
+            }
+            run_jobs(&rig).await?;
+        }
+        let refused = ada.send("POST", MY_EXPORT, None).await?;
+        assert_eq!(
+            refused.status,
+            StatusCode::TOO_MANY_REQUESTS,
+            "{}",
+            refused.body
+        );
+        // The files of the day stay: their records are the count of the asks of the day.
+        assert_eq!(
+            std::fs::read_dir(rig.folder.path().join(bb_files::EXPORTS_FOLDER))?.count(),
+            usize::try_from(bb_core::data_export::EXPORT_ASKS_PER_DAY)?
+        );
+        Ok(())
+    })
+    .await
+}

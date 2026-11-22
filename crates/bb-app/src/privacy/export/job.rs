@@ -151,6 +151,21 @@ impl<S: AuthStore> Ctx<'_, S> {
         ))
     }
 
+    /// Refuses to write on when the disk would be left with less than it keeps free after `bytes`
+    /// more: the file of an export may be as large as everything the person uploaded.
+    async fn has_room_for(&self, bytes: u64) -> Result<(), AppError> {
+        if self
+            .files()
+            .has_room(bytes)
+            .await
+            .map_err(|error| failed(&error))?
+        {
+            Ok(())
+        } else {
+            Err(AppError::Refused(bb_core::ErrorCode::FileNoRoom))
+        }
+    }
+
     /// Writes the bytes of the files the person uploaded into `files/`.
     async fn write_uploads(
         &self,
@@ -171,6 +186,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 );
                 continue;
             };
+            self.has_room_for(body.size).await?;
             writer
                 .start_upload(&upload.id)
                 .map_err(|error| failed(&error))?;
@@ -199,6 +215,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let viewer = self.evaluate(person, Place::Organization).await?;
         let kind = strictest_kind(&viewer);
         let region = Region::of(&self.setting_layers_of(Some(person)).await?);
+        self.has_room_for(0).await?;
         let sink = self
             .exports()
             .create(export.id, &held.attempt())
@@ -248,6 +265,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             if rows.is_empty() {
                 continue;
             }
+            self.has_room_for(0).await?;
             writer
                 .kind(&ShapedKind {
                     kind: found.kind,
@@ -345,6 +363,34 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await?
         {
             tracing::info!(export = %export.id, bytes, "a file of a person's data was written");
+            self.delete_older_exports(&export).await?;
+        }
+        Ok(())
+    }
+
+    /// Deletes the exports of the same person that the same person asked for before `newer`: only
+    /// the newest file is kept, so asking again does not fill the disk. The exports of the last day
+    /// stay until it is over, because their records are the count of the asks of the day
+    /// (at most [`EXPORT_ASKS_PER_DAY`](bb_core::data_export::EXPORT_ASKS_PER_DAY) of them).
+    async fn delete_older_exports(&self, newer: &DataExport) -> Result<(), AppError> {
+        let ids = self
+            .store()
+            .exports_of(newer.person)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        for id in ids.into_iter().filter(|id| *id != newer.id) {
+            let older = self
+                .store()
+                .data_export(id)
+                .await
+                .map_err(|error| internal::<S>(&error))?;
+            if older.is_some_and(|older| {
+                older.asked_by == newer.asked_by
+                    && older.state != ExportState::Waiting
+                    && !older.counts_as_ask_at(self.now())
+            }) {
+                self.delete_old_export(id).await?;
+            }
         }
         Ok(())
     }

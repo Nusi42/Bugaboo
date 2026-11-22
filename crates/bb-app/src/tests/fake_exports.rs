@@ -64,6 +64,20 @@ impl ExportStore for FakeStore {
             .collect())
     }
 
+    async fn export_asks_since_in(
+        tx: &mut Tx,
+        person: UserId,
+        since: Timestamp,
+    ) -> Result<Vec<Timestamp>, FakeError> {
+        Ok(tx
+            .state
+            .data_exports
+            .iter()
+            .filter(|export| export.person == person && export.asked_at > since)
+            .map(|export| export.asked_at)
+            .collect())
+    }
+
     async fn latest_export_of(
         &self,
         person: UserId,
