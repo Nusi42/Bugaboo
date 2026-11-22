@@ -31,6 +31,9 @@ words! {
         SignInFailed => "sign_in.failed",
         /// A sign-in was turned away because of too many failed tries.
         SignInLimited => "sign_in.limited",
+        /// An account took all its tries of the day from networks it never signed in from: those
+        /// are refused for the rest of the day. Written once a day for the account.
+        SignInCapped => "sign_in.capped",
         /// The password was right and the second step is still to do.
         SignInSecondStepNeeded => "sign_in.second_step_needed",
         /// The second step was done.

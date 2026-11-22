@@ -10170,7 +10170,7 @@ export interface components {
       work_times_last?: string | null;
     };
     /**
-     * @description What a notification is about: a mention, an assignment, activity on an issue the person follows, other changes to what they follow, the end of a run of many changes, a note about their editing, a timer that runs long, work of an agent, a file of their data, or a correction of their name or e-mail address.
+     * @description What a notification is about: a mention, an assignment, activity on an issue the person follows, other changes to what they follow, the end of a run of many changes, a note about their editing, a timer that runs long, work of an agent, a file of their data, a correction of their name or e-mail address, or sign-in to their account refused for the day.
      * @enum {string}
      */
     NotificationKind:
@@ -10193,7 +10193,8 @@ export interface components {
       | "export-ready"
       | "export-by-administrator"
       | "details-corrected"
-      | "agents-asked-for";
+      | "agents-asked-for"
+      | "sign-in-capped";
     /**
      * @description Which notifications a list shows: all, the unread ones, or the ones that mention the person.
      * @enum {string}

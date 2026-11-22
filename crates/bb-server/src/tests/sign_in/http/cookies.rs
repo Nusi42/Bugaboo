@@ -158,7 +158,7 @@ async fn sec_14_failed_sign_ins_are_turned_away_with_a_wait_and_the_answers_look
     each_database("sec_14_http_limit", async |db| {
         let (rig, app) = rig_and_app_with(db, Tries::Few).await?;
         let _browser = Browser::signed_in(&app, &rig).await?;
-        // Every try comes from another network, so only the account is limited here.
+        // Each browser is on a network of its own.
         let fresh = || Browser::new(&app, &called());
         let wrong = fresh().sign_in(ADA_EMAIL, "Wrong-Password-1").await?;
         let unknown = fresh()
@@ -172,17 +172,21 @@ async fn sec_14_failed_sign_ins_are_turned_away_with_a_wait_and_the_answers_look
         }
         assert_eq!(wrong.code(), "auth.wrong-credentials");
 
-        // Ada's account has two more tries; then even her right password waits.
-        for _ in 0..2 {
-            let reply = fresh().sign_in(ADA_EMAIL, "Wrong-Password-1").await?;
+        // Ada's account has three tries from one network; then even the right password waits there.
+        let mut guesser = fresh();
+        for _ in 0..3 {
+            let reply = guesser.sign_in(ADA_EMAIL, "Wrong-Password-1").await?;
             assert_eq!(reply.status, StatusCode::UNAUTHORIZED);
         }
-        let reply = fresh().sign_in(ADA_EMAIL, PASSWORD).await?;
+        let reply = guesser.sign_in(ADA_EMAIL, PASSWORD).await?;
         assert_eq!(reply.status, StatusCode::TOO_MANY_REQUESTS);
         assert_eq!(reply.code(), "rate-limit.exceeded");
         let wait: u64 = reply.header("retry-after").parse()?;
         assert!((1..=60).contains(&wait), "{wait}");
         assert_eq!(reply.header("content-type"), "application/problem+json");
+        // From her own network Ada gets in: the account alone only slows down.
+        let reply = fresh().sign_in(ADA_EMAIL, PASSWORD).await?;
+        assert_eq!(reply.status, StatusCode::OK);
         Ok(())
     })
     .await

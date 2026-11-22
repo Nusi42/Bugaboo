@@ -80,6 +80,9 @@ pub(super) enum Tries {
     Unreached,
     /// This many, for a test of one exact number.
     Exactly(u32),
+    /// A few a minute and a few a day at an account from networks it never signed in from, so the
+    /// test reaches the limit of the day quickly.
+    FewADay,
 }
 
 impl Tries {
@@ -87,9 +90,20 @@ impl Tries {
         match self {
             Self::Default => bb_api::DEFAULT_SIGN_IN_FAILURES_PER_MINUTE,
             Self::Roomy => 50,
-            Self::Few => 3,
+            Self::Few | Self::FewADay => 3,
             Self::Unreached => 100_000,
             Self::Exactly(tries) => tries,
+        }
+    }
+
+    /// The tries at an account a day from networks it never signed in from.
+    pub(super) const fn a_day(self) -> u32 {
+        match self {
+            Self::FewADay => 5,
+            Self::Unreached => u32::MAX,
+            Self::Default | Self::Roomy | Self::Few | Self::Exactly(_) => {
+                bb_api::ACCOUNT_TRIES_A_DAY
+            }
         }
     }
 }
@@ -317,7 +331,7 @@ impl Rig {
                 PasskeySupport::Missing => None,
             },
             csrf,
-            FailureLimits::new(shape.tries.per_minute()),
+            FailureLimits::with_tries_a_day(shape.tries.per_minute(), shape.tries.a_day()),
             "Bugaboo".to_owned(),
         )
         .with_mailer(Arc::new(mailer.clone()))
@@ -611,6 +625,18 @@ pub(super) fn secret_of(link_path: &str) -> String {
         .split_once('#')
         .map(|(_, secret)| secret.to_owned())
         .unwrap_or_default()
+}
+
+/// A request from `address`, which the limits count by its network; a request of [`Rig::info`]
+/// names none.
+pub(super) fn from(address: &str) -> Result<RequestInfo, Failure> {
+    Ok(RequestInfo {
+        network: Some(bb_core::network::NetworkPrefix::from_address(
+            address.parse()?,
+        )),
+        device: bb_auth::Device::default(),
+        ..RequestInfo::default()
+    })
 }
 
 /// The error code of a refused request, or `None` when it was not refused. A wait (429) or a

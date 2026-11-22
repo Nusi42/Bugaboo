@@ -16,6 +16,9 @@ pub(crate) mod person {
     pub(crate) const NAME: &str = "name";
     /// The e-mail address; an event keeps only its keyed digest.
     pub(crate) const EMAIL: &str = "email";
+    /// Sign-in from networks the account never signed in from was refused for the rest of the
+    /// day: the person is told (SEC-14).
+    pub(crate) const SIGN_IN_CAPPED: &str = "sign_in_capped";
 }
 
 /// The members of a project.

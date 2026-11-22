@@ -626,6 +626,7 @@ pub fn notification_sentences(notice: &Notice) -> Vec<Said> {
         NotificationKind::AgentStopped => one(Said::key(message::NOTIFICATIONS_AGENT_STOPPED)),
         NotificationKind::ExportReady => one(Said::key(message::NOTIFICATIONS_EXPORT_READY)),
         NotificationKind::AgentsAskedFor => one(Said::key(message::NOTIFICATIONS_AGENTS_ASKED_FOR)),
+        NotificationKind::SignInCapped => one(Said::key(message::NOTIFICATIONS_SIGN_IN_CAPPED)),
         NotificationKind::ExportByAdministrator | NotificationKind::DetailsCorrected => {
             let mut said = vec![if notice.kind == NotificationKind::DetailsCorrected {
                 said!(message::notifications_details_corrected, who())

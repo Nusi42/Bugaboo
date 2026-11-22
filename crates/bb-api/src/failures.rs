@@ -13,6 +13,11 @@
 //!   time of [`MAX_WAIT`]. Keys of a network (`bb_app::auth::NETWORK_KEY_PREFIX`) are shared by
 //!   many people and keep a window of a minute: they limit a flood, they do not grow.
 //! - A **tally** counts tries without a window (the wrong codes of one half-finished sign-in).
+//! - An **account that is over its allowance** from everywhere takes its tries **one at a time**, at
+//!   most one each [`TURN`], from the networks it never signed in from; a try that would wait
+//!   longer than [`LONGEST_TURN_WAIT`] for its turn is refused. Those networks together have
+//!   [`ACCOUNT_TRIES_A_DAY`] tries at the account a day. A network the account signed in from
+//!   before (kept for [`KNOWN_FOR`]) has neither: its person still gets in (M1-F27).
 //! - The keys are kept as keyed hashes in memory (a restart forgets them, which only lets a client
 //!   try again sooner). A table that is full of running counters refuses new keys (fail closed);
 //!   counters that are still running are never thrown away.
@@ -21,6 +26,8 @@ use std::collections::HashMap;
 use std::hash::{BuildHasher as _, RandomState};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::time::{Duration, Instant};
+
+use tokio::time::Instant as Turn;
 
 use bb_app::auth::{FailureLimit, NETWORK_KEY_PREFIX};
 
@@ -35,6 +42,16 @@ pub const MAX_WAIT: Duration = Duration::from_mins(15);
 const MAX_KEYS: usize = 100_000;
 /// A tally is forgotten after this long without a new try.
 const TALLY_FORGET: Duration = Duration::from_mins(10);
+/// How far apart the tries at an account that is over its allowance from many networks are: they are
+/// checked one at a time, at most one in this time from everywhere (M1-F27).
+const TURN: Duration = Duration::from_secs(1);
+/// The longest a try waits for its turn; one that would wait longer is refused.
+const LONGEST_TURN_WAIT: Duration = Duration::from_secs(30);
+/// The tries an account takes in a day from networks it never signed in from, when nothing else is
+/// set: far more than a person who forgot their password makes, far fewer than guessing needs.
+pub const ACCOUNT_TRIES_A_DAY: u32 = 1_000;
+/// How long a network an account signed in from is remembered as the person's own.
+const KNOWN_FOR: Duration = Duration::from_hours(90 * 24);
 
 struct Tracker {
     started: Instant,
@@ -63,6 +80,10 @@ struct Tables {
     tallies: HashMap<u64, (Instant, u32)>,
     /// The answers counted for a day: when the day began, and how many so far.
     dailies: HashMap<u64, (Instant, u32)>,
+    /// The next free turn of each account that is over its allowance.
+    turns: HashMap<u64, Turn>,
+    /// The pairs of an account and a network it signed in from, with the last time.
+    known: HashMap<u64, Instant>,
 }
 
 /// How long a day of answers lasts.
@@ -82,6 +103,8 @@ fn seconds_left(until: Instant, now: Instant) -> u64 {
 /// The limit on failed tries per account, person, network and half-finished sign-in.
 pub struct FailureLimits {
     limit: u32,
+    /// The tries an account takes in a day from networks it never signed in from.
+    tries_a_day: u32,
     tables: Mutex<Tables>,
     /// Random for each start, so the hash of an account name cannot be computed elsewhere.
     hasher: RandomState,
@@ -91,12 +114,22 @@ impl FailureLimits {
     /// A limit that allows `failures_per_minute` tries per key and window. `0` refuses every key.
     #[must_use]
     pub fn new(failures_per_minute: u32) -> Arc<Self> {
+        Self::with_tries_a_day(failures_per_minute, ACCOUNT_TRIES_A_DAY)
+    }
+
+    /// [`Self::new`], with `tries_a_day` tries at an account a day from networks it never signed in
+    /// from instead of [`ACCOUNT_TRIES_A_DAY`].
+    #[must_use]
+    pub fn with_tries_a_day(failures_per_minute: u32, tries_a_day: u32) -> Arc<Self> {
         Arc::new(Self {
             limit: failures_per_minute,
+            tries_a_day,
             tables: Mutex::new(Tables {
                 trackers: HashMap::new(),
                 tallies: HashMap::new(),
                 dailies: HashMap::new(),
+                turns: HashMap::new(),
+                known: HashMap::new(),
             }),
             hasher: RandomState::new(),
         })
@@ -175,6 +208,55 @@ impl FailureLimits {
         Ok(())
     }
 
+    /// The turn of `key`: the next free one, at `now` at the earliest. The one after it is a
+    /// [`TURN`] later.
+    ///
+    /// # Errors
+    /// The seconds the turn is away when that is more than [`LONGEST_TURN_WAIT`], or a second when
+    /// the table is full of turns still to come (fail closed).
+    fn take_turn(&self, key: &str, now: Turn) -> Result<Turn, u64> {
+        let key = self.key(key);
+        let mut tables = self.lock();
+        if tables.turns.len() >= MAX_KEYS && !tables.turns.contains_key(&key) {
+            tables.turns.retain(|_, next| *next > now);
+            if tables.turns.len() >= MAX_KEYS {
+                return Err(TURN.as_secs());
+            }
+        }
+        let next = tables.turns.entry(key).or_insert(now);
+        let turn = (*next).max(now);
+        let wait = turn.saturating_duration_since(now);
+        if wait > LONGEST_TURN_WAIT {
+            return Err(wait.as_secs());
+        }
+        *next = turn + TURN;
+        Ok(turn)
+    }
+
+    fn remember_at(&self, key: &str, now: Instant) {
+        let key = self.key(key);
+        let mut tables = self.lock();
+        if tables.known.len() >= MAX_KEYS && !tables.known.contains_key(&key) {
+            tables
+                .known
+                .retain(|_, last| now.saturating_duration_since(*last) < KNOWN_FOR);
+            if tables.known.len() >= MAX_KEYS {
+                // Full of networks people signed in from lately: this one is not remembered, which
+                // only matters while its account is under attack.
+                return;
+            }
+        }
+        tables.known.insert(key, now);
+    }
+
+    fn known_at(&self, key: &str, now: Instant) -> bool {
+        let key = self.key(key);
+        self.lock()
+            .known
+            .get(&key)
+            .is_some_and(|last| now.saturating_duration_since(*last) < KNOWN_FOR)
+    }
+
     fn tally_at(&self, key: &str, now: Instant) -> u32 {
         let key = self.key(key);
         let mut tables = self.lock();
@@ -231,6 +313,26 @@ impl FailureLimit for FailureLimits {
     fn forget(&self, key: &str) {
         let key = self.key(key);
         self.lock().tallies.remove(&key);
+    }
+
+    fn day_reserve(&self, key: &str) -> Result<(), u64> {
+        self.daily_reserve_at(key, self.tries_a_day, Instant::now())
+    }
+
+    fn wait_turn(&self, key: &str) -> bb_app::ports::BoxFuture<'_, Result<(), u64>> {
+        let turn = self.take_turn(key, Turn::now());
+        Box::pin(async move {
+            tokio::time::sleep_until(turn?).await;
+            Ok(())
+        })
+    }
+
+    fn signed_in_from(&self, pair: &str) {
+        self.remember_at(pair, Instant::now());
+    }
+
+    fn signed_in_before(&self, pair: &str) -> bool {
+        self.known_at(pair, Instant::now())
     }
 }
 
@@ -402,6 +504,85 @@ mod tests {
                 .reserve_at("new key", now + MAX_WAIT + secs(61))
                 .is_ok()
         );
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn sec_14_tries_at_an_account_under_attack_go_one_at_a_time_from_everywhere() {
+        let failures = FailureLimits::new(10);
+        let start = Turn::now();
+        // Twenty networks try at once: they are let through one a second, not all together.
+        let tries: Vec<_> = (0..20)
+            .map(|_| {
+                let failures = Arc::clone(&failures);
+                tokio::spawn(async move {
+                    failures
+                        .wait_turn("account:ada@example.test")
+                        .await
+                        .unwrap();
+                    Turn::now() - start
+                })
+            })
+            .collect();
+        let mut seconds = Vec::new();
+        for try_ in tries {
+            seconds.push(try_.await.unwrap().as_secs());
+        }
+        seconds.sort_unstable();
+        assert_eq!(seconds, (0..20).collect::<Vec<_>>());
+        // Another account has its own turns.
+        failures
+            .wait_turn("account:bob@example.test")
+            .await
+            .unwrap();
+        assert_eq!((Turn::now() - start).as_secs(), 19);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn sec_14_a_try_that_would_wait_too_long_for_its_turn_is_refused() {
+        let failures = FailureLimits::new(10);
+        let now = Turn::now();
+        let longest = LONGEST_TURN_WAIT.as_secs();
+        for _ in 0..=longest {
+            failures.take_turn("account:ada@example.test", now).unwrap();
+        }
+        assert_eq!(
+            failures.take_turn("account:ada@example.test", now),
+            Err(longest + 1)
+        );
+        // Once the turns have gone by, the account takes tries again.
+        assert!(
+            failures
+                .take_turn("account:ada@example.test", now + LONGEST_TURN_WAIT)
+                .is_ok()
+        );
+    }
+
+    #[test]
+    fn sec_14_a_network_an_account_signed_in_from_is_remembered_for_a_while() {
+        let failures = FailureLimits::new(10);
+        let now = Instant::now();
+        let pair = "account:ada@example.test:203.0.113.0";
+        assert!(!failures.known_at(pair, now));
+        failures.remember_at(pair, now);
+        assert!(failures.known_at(pair, now + KNOWN_FOR.saturating_sub(secs(1))));
+        assert!(!failures.known_at(pair, now + KNOWN_FOR));
+        assert!(!failures.known_at("account:ada@example.test:198.51.100.0", now));
+    }
+
+    #[test]
+    fn sec_14_an_account_takes_so_many_tries_a_day_from_networks_it_never_signed_in_from() {
+        let failures = FailureLimits::with_tries_a_day(10, 3);
+        for _ in 0..3 {
+            failures
+                .day_reserve("day:account:ada@example.test")
+                .unwrap();
+        }
+        assert!(
+            failures
+                .day_reserve("day:account:ada@example.test")
+                .is_err()
+        );
+        assert!(failures.day_reserve("day:account:bob@example.test").is_ok());
     }
 
     #[test]

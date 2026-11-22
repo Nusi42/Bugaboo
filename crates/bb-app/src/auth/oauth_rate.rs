@@ -76,15 +76,10 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// # Errors
     /// [`AppError::Limited`] with the seconds to wait.
     pub(crate) fn count_registration(&self) -> Result<(), AppError> {
-        let network = self
-            .request
-            .network
-            .as_ref()
-            .map_or_else(|| "unknown".to_owned(), ToString::to_string);
         self.services
             .call_rate
             .registrations
-            .hit(network, self.now())
+            .hit(self.network_key(), self.now())
             .map_err(|retry_after| AppError::Limited { retry_after })
     }
 

@@ -6,8 +6,9 @@
 //! - every request to `/api` counts against its **client network**;
 //! - every try of the sign-in family counts against the client's **network** too, with a generous
 //!   cap against floods ([`limit_sign_in`], put on the sign-in routes);
-//! - **failed** tries are limited per account, person and network in `crate::failures`
-//!   (`FailureLimits`): only failures count and a success clears them, so nobody can lock another
+//! - **failed** tries are limited per account from a network, per person and per network in
+//!   `crate::failures` (`FailureLimits`): only failures count and a success clears them, and the
+//!   account alone holds up only the networks it never signed in from, so nobody can lock another
 //!   person out by merely trying their address (M1-F27);
 //! - every request that comes with an **access key** counts against that key too
 //!   ([`limit_access_keys`]), besides the network, so one script that runs wild uses up its own

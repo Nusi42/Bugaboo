@@ -102,13 +102,17 @@ words! {
         /// A program asks the person for agents; the request waits for *Approve* or *Decline*
         /// (ADR-0029, amendment M9).
         AgentsAskedFor => "agents-asked-for",
+        /// Somebody tried to sign in to the person's account so often in a day that the tries from
+        /// networks it never signed in from are refused for the rest of the day (SEC-14). The
+        /// person is always told: it cannot be switched off.
+        SignInCapped => "sign-in-capped",
     }
     messages label = "notification.kind."
 }
 
 words_in_api!(
     NotificationKind,
-    "What a notification is about: a mention, an assignment, activity on an issue the person follows, other changes to what they follow, the end of a run of many changes, a note about their editing, a timer that runs long, work of an agent, a file of their data, or a correction of their name or e-mail address."
+    "What a notification is about: a mention, an assignment, activity on an issue the person follows, other changes to what they follow, the end of a run of many changes, a note about their editing, a timer that runs long, work of an agent, a file of their data, a correction of their name or e-mail address, or sign-in to their account refused for the day."
 );
 
 words! {
@@ -222,9 +226,14 @@ impl NotificationKind {
             // So is the person whose details an administrator corrected (decision 9).
             // So is the person a program asks for agents: a request may lead to keys in their name
             // (ADR-0029, amendment M9).
-            (Self::ExportByAdministrator | Self::DetailsCorrected | Self::AgentsAskedFor, _) => {
-                None
-            }
+            // So is the person whose account somebody tries to get into (SEC-14).
+            (
+                Self::ExportByAdministrator
+                | Self::DetailsCorrected
+                | Self::AgentsAskedFor
+                | Self::SignInCapped,
+                _,
+            ) => None,
         }
     }
 }
@@ -361,6 +370,7 @@ mod tests {
             NotificationKind::ExportByAdministrator,
             NotificationKind::DetailsCorrected,
             NotificationKind::AgentsAskedFor,
+            NotificationKind::SignInCapped,
         ];
         assert_eq!(expected.len() + always.len(), NotificationKind::ALL.len());
         for (kind, (app, mail)) in expected {

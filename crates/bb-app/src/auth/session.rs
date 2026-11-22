@@ -39,10 +39,6 @@ use super::types::{
 use crate::privacy::replay::taken_back_in;
 use crate::projects::Why;
 
-/// Long text in the key of a failure counter is cut here: the key only has to tell accounts
-/// apart, and a megabyte of "address" must not use memory.
-const KEY_CHARS: usize = 320;
-
 /// What the app needs to know before anybody signs in.
 ///
 /// # Errors
@@ -244,16 +240,7 @@ pub async fn sign_in<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignIn) -> Result<St
         password,
         previous_session,
     } = input;
-    let key = format!(
-        "account:{}",
-        email
-            .trim()
-            .to_lowercase()
-            .chars()
-            .take(KEY_CHARS)
-            .collect::<String>()
-    );
-    let slot = ctx.reserve(key)?;
+    let slot = ctx.reserve_account(&email).await?;
     let password = Zeroizing::new(password);
     let checked = ctx.check_credentials(&email, &password).await;
     let (account, verdict) = ctx.unless_internal(&slot, checked)?;

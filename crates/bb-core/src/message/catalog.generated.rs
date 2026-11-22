@@ -4718,6 +4718,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Your change to many issues has ended",
     ),
     (
+        "notification.kind.sign-in-capped",
+        "Sign-in to your account was refused for today",
+    ),
+    (
         "notification.kind.time-factor-changed",
         "Your time factor was changed",
     ),
@@ -4852,6 +4856,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("notifications.show-all", "Show all notifications"),
     ("notifications.show-result", "Show the result"),
+    (
+        "notifications.sign-in-capped",
+        "Somebody tried to sign in to your account very often today. Until tomorrow, Bugaboo refuses sign-in from networks you never signed in from; from the ones you use, you still get in. If it was not you, choose a new password",
+    ),
     ("notifications.start-nothing", "Nothing new."),
     (
         "notifications.taken-over",

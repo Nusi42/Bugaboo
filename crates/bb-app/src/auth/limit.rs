@@ -8,13 +8,16 @@ use super::ctx::Ctx;
 use super::error::{AppError, Stops, change_failed};
 use super::events::{changed, entity};
 use super::store::{AuthStore, SessionRecord};
+use crate::ports::BoxFuture;
 
 /// The limit on failed tries (SEC-14). A try is **reserved before it is checked** and counts as a
 /// failure from that moment, so requests that arrive at the same time cannot all slip through
 /// before the first failure is written down. A success gives the reservation back, so only real
 /// failures stay counted: nobody can lock another person out by merely trying their address
 /// (M1-F27). A key that keeps using up its allowance waits longer each time, up to a cap, and
-/// never for good. The HTTP layer implements it in memory.
+/// never for good. An account that is over its allowance from everywhere takes the tries from
+/// networks it never signed in from one at a time, and only so many a day; the networks it signed in
+/// from are not held up. The HTTP layer implements it in memory.
 pub trait FailureLimit: Send + Sync {
     /// Reserves one try of `key`. `Ok(true)` when this try used up the allowance (the next one
     /// waits).
@@ -46,6 +49,28 @@ pub trait FailureLimit: Send + Sync {
 
     /// Gives one reserved answer of the day of `key` back: the answer told nothing.
     fn daily_release(&self, key: &str);
+
+    /// Reserves one try of the day of the account behind `key` from a network it never signed in
+    /// from. [`Self::daily_release`] gives it back.
+    ///
+    /// # Errors
+    /// The seconds until the day ends, when the account has taken all its tries of the day.
+    fn day_reserve(&self, key: &str) -> Result<(), u64>;
+
+    /// Waits for the turn of the account `key`, which is over its allowance from everywhere: its
+    /// tries from networks it never signed in from are checked one at a time, a little apart, so
+    /// guessing from many networks at once gains nothing.
+    ///
+    /// # Errors
+    /// The seconds to wait, when the turn is too far away to wait for.
+    fn wait_turn(&self, key: &str) -> BoxFuture<'_, Result<(), u64>>;
+
+    /// Remembers that the account of `pair` (an account and a network) signed in from that network.
+    fn signed_in_from(&self, pair: &str);
+
+    /// Whether the account of `pair` signed in from its network lately: the person's own network,
+    /// which the account alone does not hold up (M1-F27).
+    fn signed_in_before(&self, pair: &str) -> bool;
 }
 
 /// A [`FailureLimit`] that lets every try through, for the places that have no failed tries and no
@@ -76,6 +101,20 @@ impl FailureLimit for NoFailureLimit {
     }
 
     fn forget(&self, _key: &str) {}
+
+    fn day_reserve(&self, _key: &str) -> Result<(), u64> {
+        Ok(())
+    }
+
+    fn wait_turn(&self, _key: &str) -> BoxFuture<'_, Result<(), u64>> {
+        Box::pin(std::future::ready(Ok(())))
+    }
+
+    fn signed_in_from(&self, _pair: &str) {}
+
+    fn signed_in_before(&self, _pair: &str) -> bool {
+        false
+    }
 }
 
 /// A reserved try (see [`FailureLimit`]).
@@ -83,6 +122,14 @@ impl FailureLimit for NoFailureLimit {
 pub(crate) struct Slot {
     key: String,
     network: Option<String>,
+    /// The account alone, when its try was counted (see [`Ctx::reserve_account`]).
+    account: Option<String>,
+    /// The try of the day of the account, when one was counted (a network it never signed in
+    /// from).
+    day: Option<String>,
+    /// Whether the key is an account from a network: a success remembers the network as one the
+    /// account signed in from.
+    from_network: bool,
     tipped: bool,
 }
 
@@ -102,8 +149,35 @@ pub(crate) fn person_key(person: UserId) -> String {
 /// The purpose of the tries that count against a person at sign-in.
 const PERSON_PURPOSE: &str = "person";
 
+/// What a request whose network is not known counts against.
+const UNKNOWN_NETWORK: &str = "unknown";
+
+/// The purpose of the tries of the day at an account from networks it never signed in from.
+const DAY_PURPOSE: &str = "day";
+
+/// The purpose of the one note a day that an account took all its tries of the day.
+const CAPPED_PURPOSE: &str = "capped";
+
+/// The key of the failed tries at the account of `email`: the address as typed, trimmed, in lower
+/// case and cut at [`KEY_CHARS`] characters.
+fn account_key(email: &str) -> String {
+    format!(
+        "account:{}",
+        email
+            .trim()
+            .to_lowercase()
+            .chars()
+            .take(KEY_CHARS)
+            .collect::<String>()
+    )
+}
+
+/// Long text in the key of a failure counter is cut here: the key only has to tell accounts
+/// apart, and a megabyte of "address" must not use memory.
+const KEY_CHARS: usize = 320;
+
 /// The one way a key of the limit is written: what the tries are for, and whom they count against.
-fn purpose_key(purpose: &str, counted_against: &impl std::fmt::Display) -> String {
+fn purpose_key(purpose: &str, counted_against: &(impl std::fmt::Display + ?Sized)) -> String {
     format!("{purpose}:{counted_against}")
 }
 
@@ -113,11 +187,13 @@ impl<S: AuthStore> Ctx<'_, S> {
     pub(crate) fn reserve(&self, key: String) -> Result<Slot, AppError> {
         let limiter = &self.services.limiter;
         let wait_error = |retry_after| AppError::Limited { retry_after };
+        // Only a request with a network counts against one (the server always knows it; a use
+        // case run without a request, like a test of the rules, does not).
         let network = self
             .request
             .network
-            .as_ref()
-            .map(|network| format!("{NETWORK_KEY_PREFIX}{network}"));
+            .is_some()
+            .then(|| format!("{NETWORK_KEY_PREFIX}{}", self.network_key()));
         let network_tipped = match &network {
             Some(network) => limiter.reserve(network).map_err(wait_error)?,
             None => false,
@@ -126,6 +202,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             Ok(tipped) => Ok(Slot {
                 key,
                 network,
+                account: None,
+                day: None,
+                from_network: false,
                 tipped: tipped || network_tipped,
             }),
             Err(wait) => {
@@ -142,15 +221,95 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// it counts as one and is never given back; the keys of a network keep a window of a minute
     /// and never grow.
     pub(crate) fn reserve_network(&self, purpose: &str) -> Result<Slot, AppError> {
-        let network = self
-            .request
-            .network
-            .as_ref()
-            .map_or_else(|| "unknown".to_owned(), ToString::to_string);
         self.reserve_alone(format!(
             "{NETWORK_KEY_PREFIX}{}",
-            purpose_key(purpose, &network)
+            purpose_key(purpose, &self.network_key())
         ))
+    }
+
+    /// The client network as the keys of the limits write it.
+    pub(crate) fn network_key(&self) -> String {
+        self.network_name()
+            .unwrap_or_else(|| UNKNOWN_NETWORK.to_owned())
+    }
+
+    /// Reserves a try at signing in to the account of `email`. The account **from this network**
+    /// is what is refused when it keeps failing, with the window that grows. The account alone
+    /// counts the tries from everywhere; when it is over its allowance, the tries from networks it
+    /// never signed in from wait their turn, one at a time, and those networks together have only
+    /// so many tries a day, after which they are refused, written down and the person is told. A
+    /// network the account signed in from is held up by neither: somebody who tries an address from
+    /// many networks cannot lock the person out, who still gets in from their own network (M1-F27).
+    pub(crate) async fn reserve_account(&self, email: &str) -> Result<Slot, AppError> {
+        let limiter = &self.services.limiter;
+        let account = account_key(email);
+        let mut slot = self.reserve(purpose_key(&account, &self.network_key()))?;
+        slot.from_network = true;
+        if !limiter.signed_in_before(&slot.key) {
+            let day = purpose_key(DAY_PURPOSE, &account);
+            if let Err(retry_after) = limiter.day_reserve(&day) {
+                self.slot_given_back(&slot);
+                self.account_capped(email, &account).await;
+                return Err(AppError::Limited { retry_after });
+            }
+            slot.day = Some(day);
+        }
+        match limiter.reserve(&account) {
+            // The account alone refuses nothing, so its last try is not written down as a limit.
+            Ok(_) => slot.account = Some(account),
+            Err(_) if slot.day.is_some() => {
+                if let Err(retry_after) = limiter.wait_turn(&account).await {
+                    self.slot_given_back(&slot);
+                    return Err(AppError::Limited { retry_after });
+                }
+            }
+            // The person's own network.
+            Err(_) => {}
+        }
+        Ok(slot)
+    }
+
+    /// The account of `email` took all its tries of the day from networks it never signed in from:
+    /// the first refusal of the day is written to the security log and told to the person, the
+    /// others are not, so a flood fills neither.
+    async fn account_capped(&self, email: &str, account: &str) {
+        let first_today = self
+            .services
+            .limiter
+            .daily_reserve(&purpose_key(CAPPED_PURPOSE, account), 1)
+            .is_ok();
+        if !first_today {
+            return;
+        }
+        let person = match self.store().account_by_email(email).await {
+            Ok(found) => found.map(|account| account.person.id),
+            Err(error) => {
+                // Written down without the person: the refusal stands either way.
+                tracing::warn!(cause = %S::describe(&error), "the account of a refused sign-in could not be read");
+                None
+            }
+        };
+        self.note(SecurityAction::SignInCapped, person, None).await;
+        if let Some(person) = person
+            && let Err(error) = self.tell_sign_in_capped(person).await
+        {
+            tracing::warn!(cause = %error, "the person could not be told that their sign-in was refused");
+        }
+    }
+
+    /// Tells the person that the sign-in to their account was refused for the day from networks it
+    /// never signed in from: an event of their record, which the notifications turn into a notice
+    /// they cannot switch off.
+    async fn tell_sign_in_capped(&self, person: UserId) -> Result<(), AppError> {
+        let event = self.event(
+            Actor::System,
+            entity(RecordKind::Person, person),
+            vec![changed(crate::member::person::SIGN_IN_CAPPED)],
+        )?;
+        self.store()
+            .record_change(&event, |_| Box::pin(async { Ok(()) }))
+            .await
+            .map_err(|error| change_failed::<S>(&error, Stops::NONE))
     }
 
     /// Reserves one answer of the day of a person for a purpose (`handle`): the answers that tell
@@ -200,6 +359,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(Slot {
             key,
             network: None,
+            account: None,
+            day: None,
+            from_network: false,
             tipped,
         })
     }
@@ -208,8 +370,11 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// it says nothing about the account (a request that was dropped stays counted).
     pub(crate) fn slot_given_back(&self, slot: &Slot) {
         self.services.limiter.release(&slot.key);
-        if let Some(network) = &slot.network {
-            self.services.limiter.release(network);
+        for shared in [&slot.network, &slot.account].into_iter().flatten() {
+            self.services.limiter.release(shared);
+        }
+        if let Some(day) = &slot.day {
+            self.services.limiter.daily_release(day);
         }
     }
 
@@ -232,12 +397,28 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
     }
 
-    /// The reserved try was no failure: the account is cleared, the network gets its try back.
+    /// The reserved try was no failure: its key is cleared; the network and the account alone,
+    /// which others share, get this try back (the failures of others there stay counted), and so
+    /// does the day of the account. An account remembers the network it signed in from.
     pub(crate) fn slot_succeeded(&self, slot: Slot) {
-        let Slot { key, network, .. } = slot;
-        self.services.limiter.clear(&key);
-        if let Some(network) = &network {
-            self.services.limiter.release(network);
+        let limiter = &self.services.limiter;
+        let Slot {
+            key,
+            network,
+            account,
+            day,
+            from_network,
+            ..
+        } = slot;
+        limiter.clear(&key);
+        for shared in [network, account].into_iter().flatten() {
+            limiter.release(&shared);
+        }
+        if let Some(day) = day {
+            limiter.daily_release(&day);
+        }
+        if from_network {
+            limiter.signed_in_from(&key);
         }
     }
 

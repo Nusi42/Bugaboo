@@ -64,6 +64,7 @@ export const notificationSettings = {
   "export-by-administrator": null,
   "details-corrected": null,
   "agents-asked-for": null,
+  "sign-in-capped": null,
 } as const;
 
 /** The most unread notifications the server counts: a count of this many means this many or more. */

@@ -2019,6 +2019,15 @@ Bold is the same kind of rule: the file has one <code>bold</code> list that name
 <li><em>Your data is ready</em> is changed under <em>Customize</em> like any other kind. The person waits for the file, so it is on by e-mail at the start.</li>
 <li><em>An administrator downloaded your data</em> has no setting: nobody can switch it off, not the person and not the organization, because the person must learn that somebody took their data (decision 4). <em>Customize</em> shows it as always on. It is told when the administrator asks for the file, so it reaches the person even when the job that writes the file fails. The administrator is shown as <em>Who sees people</em> lets the person see authors, never by name when that hides them. The e-mail goes to the address on record, like every e-mail of a notification; e-mail itself must be switched on, because without a mail server nothing can be sent. Enforced by: the tests of the notices of exports in <code>bb-app</code>.</li>
 </ul>
+<h3>Amendment (security fixes before the first release): a sign-in refused for the day</h3>
+<p>The limit on failed tries (SEC-14, ADR-0025) refuses sign-in to an account from networks it never signed in from once those networks have used the tries of a day at it. The person learns of it from one more kind of notification, built by the same reader from an event of their record (<code>sign_in_capped</code>, by the system) and checked again in the same way (decision 2). It is about no issue: its e-mail names the kind in its subject and links to <em>Notifications</em>.</p>
+<div class="tbl-wrap"><table class="dtable"><thead><tr><th>Event</th><th>In the app</th><th>By e-mail</th></tr></thead><tbody>
+<tr><td><em>Sign-in to your account was refused for today</em> (somebody tried to sign in to your account so often that tries from networks you never signed in from are refused until tomorrow)</td><td>always</td><td>always</td></tr>
+</tbody></table>
+</div>
+<ul>
+<li>It has no setting, like <em>An administrator downloaded your data</em>: somebody is trying to get into the person's account, and only the person can tell whether it was them. It is told once a day at most, with the first refusal.</li>
+</ul>
 <h3>Enforced by</h3>
 <p>SEC-MATRIX (the e-mail and notifications column), DOC-GENERATED and the browser test of the vectors (the wording amendment), ARCH-PERSON-REF, ARCH-EVENTS, DATA-MARKS, DATA-LOGS, DEP-REGISTER (<code>lettre</code>), the permission tests of M4 WP-06, and review (no other path sends mail).</p>
 

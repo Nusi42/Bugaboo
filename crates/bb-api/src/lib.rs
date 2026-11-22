@@ -32,7 +32,9 @@ pub use api::{
     is_same_origin_of, origin_of, request_info,
 };
 pub use errors::{ApiError, ApiJson, JSON_TYPE, json_no_store, with_retry_after};
-pub use failures::{DEFAULT_SIGN_IN_FAILURES_PER_MINUTE, FailureLimits, MAX_WAIT};
+pub use failures::{
+    ACCOUNT_TRIES_A_DAY, DEFAULT_SIGN_IN_FAILURES_PER_MINUTE, FailureLimits, MAX_WAIT,
+};
 pub use headers::{
     DOWNLOAD_POLICY, HSTS_MAX_AGE_SELF_SIGNED, HSTS_MAX_AGE_TRUSTED, HSTS_NAME, SECURITY_HEADERS,
     hsts_value,

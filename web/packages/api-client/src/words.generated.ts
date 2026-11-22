@@ -115,6 +115,7 @@ export const notificationKindWords = [
   "export-by-administrator",
   "details-corrected",
   "agents-asked-for",
+  "sign-in-capped",
 ] as const;
 
 /** Every word of `NotificationTab`, in the order the server lists them. */

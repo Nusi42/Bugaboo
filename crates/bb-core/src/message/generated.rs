@@ -5263,6 +5263,10 @@ pub const NOTIFICATION_KIND_RULE_RUNS_OUT_SOON: MessageKey =
 /// The message `notification.kind.run-ended`.
 pub const NOTIFICATION_KIND_RUN_ENDED: MessageKey = MessageKey::new("notification.kind.run-ended");
 
+/// The message `notification.kind.sign-in-capped`.
+pub const NOTIFICATION_KIND_SIGN_IN_CAPPED: MessageKey =
+    MessageKey::new("notification.kind.sign-in-capped");
+
 /// The message `notification.kind.time-factor-changed`.
 pub const NOTIFICATION_KIND_TIME_FACTOR_CHANGED: MessageKey =
     MessageKey::new("notification.kind.time-factor-changed");
@@ -5392,6 +5396,10 @@ pub const NOTIFICATIONS_SHOW_ALL: MessageKey = MessageKey::new("notifications.sh
 
 /// The message `notifications.show-result`.
 pub const NOTIFICATIONS_SHOW_RESULT: MessageKey = MessageKey::new("notifications.show-result");
+
+/// The message `notifications.sign-in-capped`.
+pub const NOTIFICATIONS_SIGN_IN_CAPPED: MessageKey =
+    MessageKey::new("notifications.sign-in-capped");
 
 /// The message `notifications.start-nothing`.
 pub const NOTIFICATIONS_START_NOTHING: MessageKey = MessageKey::new("notifications.start-nothing");

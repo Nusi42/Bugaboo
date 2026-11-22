@@ -11,7 +11,7 @@ use bb_core::sign_in::SecurityAction;
 use bb_testing::{Failure, TestResult, each_database};
 
 use super::http::ADA_EMAIL;
-use super::rig::{PASSWORD, Rig, Tries, refused};
+use super::rig::{PASSWORD, Rig, Tries, from, refused};
 
 async fn action_count(rig: &Rig, action: SecurityAction) -> Result<usize, bb_store::StoreError> {
     Ok(rig
@@ -238,6 +238,153 @@ async fn sec_14_only_failed_tries_count_and_a_success_clears_them() -> TestResul
 }
 
 #[tokio::test]
+async fn sec_14_tries_from_many_networks_never_lock_the_person_out() -> TestResult {
+    each_database("sec_14_person_not_locked_out", async |db| {
+        let rig = Rig::start_with(db, Tries::Few).await?;
+        rig.admin(ADA_EMAIL).await?;
+        let sign_in = async |info: RequestInfo, password: &str| {
+            rig.api()
+                .sign_in(
+                    info,
+                    SignIn {
+                        email: ADA_EMAIL.to_owned(),
+                        password: password.to_owned(),
+                        previous_session: None,
+                    },
+                )
+                .await
+        };
+        // Somebody tries Ada's address from several networks, each up to its allowance and one more.
+        for network in 1..=2 {
+            let attacker = format!("198.51.{network}.7");
+            for _ in 0..3 {
+                assert_eq!(
+                    refused(sign_in(from(&attacker)?, "Wrong-Password-1").await),
+                    Some(ErrorCode::WrongCredentials)
+                );
+            }
+            let over = sign_in(from(&attacker)?, PASSWORD).await;
+            assert!(matches!(over, Err(AppError::Limited { .. })), "{over:?}");
+        }
+        // The account is under attack, yet Ada with her password from a network of hers gets in:
+        // a try waits its turn, it is not refused.
+        sign_in(from("203.0.113.9")?, PASSWORD).await?;
+        // A new network waits its turn too, and its wrong try is checked as wrong.
+        assert_eq!(
+            refused(sign_in(from("192.0.2.1")?, "Wrong-Password-1").await),
+            Some(ErrorCode::WrongCredentials)
+        );
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn sec_14_guesses_from_many_networks_at_once_are_checked_one_at_a_time() -> TestResult {
+    each_database("sec_14_guesses_one_at_a_time", async |db| {
+        let rig = Rig::start_with(db, Tries::Few).await?;
+        rig.admin(ADA_EMAIL).await?;
+        let wrong = async |network: u32| {
+            let info = from(&format!("198.51.{network}.7"))?;
+            let reply = rig
+                .api()
+                .sign_in(
+                    info,
+                    SignIn {
+                        email: ADA_EMAIL.to_owned(),
+                        password: "Wrong-Password-1".to_owned(),
+                        previous_session: None,
+                    },
+                )
+                .await;
+            Ok::<_, Failure>(refused(reply))
+        };
+        // The account alone uses up its allowance.
+        for network in 0..3 {
+            assert_eq!(wrong(network).await?, Some(ErrorCode::WrongCredentials));
+        }
+        // Six networks guess at the same moment: one a second is checked, so the last waits about
+        // five seconds, and every guess is still answered as wrong.
+        let started = std::time::Instant::now();
+        let guesses = tokio::join!(
+            wrong(10),
+            wrong(11),
+            wrong(12),
+            wrong(13),
+            wrong(14),
+            wrong(15)
+        );
+        let guesses = [
+            guesses.0, guesses.1, guesses.2, guesses.3, guesses.4, guesses.5,
+        ];
+        for guess in guesses {
+            assert_eq!(guess?, Some(ErrorCode::WrongCredentials));
+        }
+        let took = started.elapsed();
+        assert!(took >= std::time::Duration::from_secs(5), "{took:?}");
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn sec_14_the_tries_of_a_day_run_out_for_strange_networks_and_the_person_still_gets_in()
+-> TestResult {
+    each_database("sec_14_day_of_an_account", async |db| {
+        let rig = Rig::start_with(db, Tries::FewADay).await?;
+        rig.admin(ADA_EMAIL).await?;
+        let sign_in = async |info: RequestInfo, password: &str| {
+            rig.api()
+                .sign_in(
+                    info,
+                    SignIn {
+                        email: ADA_EMAIL.to_owned(),
+                        password: password.to_owned(),
+                        previous_session: None,
+                    },
+                )
+                .await
+        };
+        // Ada signs in from her own network once.
+        sign_in(from("203.0.113.9")?, PASSWORD).await?;
+        // Five networks she never signed in from use up the tries of the day.
+        for network in 0..Tries::FewADay.a_day() {
+            assert_eq!(
+                refused(sign_in(from(&format!("198.51.{network}.7"))?, "Wrong-Password-1").await),
+                Some(ErrorCode::WrongCredentials)
+            );
+        }
+        // Then every network she never signed in from is refused, even with her password, ...
+        for network in [100, 101] {
+            let over = sign_in(from(&format!("198.51.{network}.7"))?, PASSWORD).await;
+            assert!(matches!(over, Err(AppError::Limited { .. })), "{over:?}");
+        }
+        // ... written down once, ...
+        assert_eq!(action_count(&rig, SecurityAction::SignInCapped).await?, 1);
+        // ... while from her own network she gets in, and is told.
+        let started = sign_in(from("203.0.113.9")?, PASSWORD).await?;
+        let told = bb_app::notifications::notifications(
+            &rig.services.ctx(Rig::info()),
+            bb_app::notifications::NotificationsQuery {
+                session_token: started.session_token,
+                filter: bb_core::notification::NotificationFilter::All,
+                cursor: None,
+                limit: 20,
+            },
+        )
+        .await?
+        .into_value();
+        let kinds: Vec<_> = told.items.iter().map(|item| item.kind).collect();
+        assert_eq!(
+            kinds,
+            [bb_core::notification::NotificationKind::SignInCapped]
+        );
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn auth_01_a_hash_made_with_other_parameters_is_renewed_at_the_next_sign_in() -> TestResult {
     each_database("auth_01_rehash", async |db| {
         use argon2::password_hash::PasswordHasher as _;
@@ -441,15 +588,6 @@ async fn sec_12_signing_in_again_ends_the_session_the_browser_still_had() -> Tes
 async fn auth_09_wrong_setup_codes_are_counted_per_network_not_for_everybody() -> TestResult {
     each_database("auth_09_setup_per_network", async |db| {
         let rig = Rig::start_with(db, Tries::Few).await?;
-        let from = |network: &str| -> Result<RequestInfo, Failure> {
-            Ok(RequestInfo {
-                network: Some(bb_core::network::NetworkPrefix::from_address(
-                    network.parse()?,
-                )),
-                device: bb_auth::Device::default(),
-                ..RequestInfo::default()
-            })
-        };
         let setup = |code: String| CompleteSetup {
             code,
             display_name: "Ada".to_owned(),

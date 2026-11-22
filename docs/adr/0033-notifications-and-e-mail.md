@@ -159,6 +159,16 @@ Work times and the time factor ([ADR-0030](0030-planning-with-people.md)) add tw
 - *Your data is ready* is changed under *Customize* like any other kind. The person waits for the file, so it is on by e-mail at the start.
 - *An administrator downloaded your data* has no setting: nobody can switch it off, not the person and not the organization, because the person must learn that somebody took their data (decision 4). *Customize* shows it as always on. It is told when the administrator asks for the file, so it reaches the person even when the job that writes the file fails. The administrator is shown as *Who sees people* lets the person see authors, never by name when that hides them. The e-mail goes to the address on record, like every e-mail of a notification; e-mail itself must be switched on, because without a mail server nothing can be sent. Enforced by: the tests of the notices of exports in `bb-app`.
 
+## Amendment (security fixes before the first release): a sign-in refused for the day
+
+The limit on failed tries (SEC-14, ADR-0025) refuses sign-in to an account from networks it never signed in from once those networks have used the tries of a day at it. The person learns of it from one more kind of notification, built by the same reader from an event of their record (`sign_in_capped`, by the system) and checked again in the same way (decision 2). It is about no issue: its e-mail names the kind in its subject and links to *Notifications*.
+
+| Event | In the app | By e-mail |
+|---|---|---|
+| *Sign-in to your account was refused for today* (somebody tried to sign in to your account so often that tries from networks you never signed in from are refused until tomorrow) | always | always |
+
+- It has no setting, like *An administrator downloaded your data*: somebody is trying to get into the person's account, and only the person can tell whether it was them. It is told once a day at most, with the first refusal.
+
 ## Enforced by
 
 SEC-MATRIX (the e-mail and notifications column), DOC-GENERATED and the browser test of the vectors (the wording amendment), ARCH-PERSON-REF, ARCH-EVENTS, DATA-MARKS, DATA-LOGS, DEP-REGISTER (`lettre`), the permission tests of M4 WP-06, and review (no other path sends mail).
