@@ -109,7 +109,14 @@ fn grant(data_dir: &std::path::Path, icacls: &std::path::Path) -> anyhow::Result
             .output()
             .context("icacls.exe")?;
         if !output.status.success() {
-            return Err(refused(String::from_utf8_lossy(&output.stdout).trim()));
+            // `icacls` names the path it could not change on its error stream, and only counts
+            // on its normal one.
+            let said = format!(
+                "{} {}",
+                String::from_utf8_lossy(&output.stderr).trim(),
+                String::from_utf8_lossy(&output.stdout).trim()
+            );
+            return Err(refused(said.trim()));
         }
     }
     Ok(())
