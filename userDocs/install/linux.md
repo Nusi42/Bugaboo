@@ -24,13 +24,21 @@ On a Linux computer with systemd, run this with administrator rights:
 sudo /opt/bugaboo/bugaboo service install
 ```
 
-This creates the user `bugaboo` (no password, no shell, no home folder) if it does not exist, gives it the data folder from your settings, installs the unit `bugaboo.service` and starts it. Your settings file stays where it is, the one `bugaboo setup` wrote or the one you name with `--config`. The service reads it, so the program, the settings file and the folders above them must be readable for the user `bugaboo`. Bugaboo lets only that user read the file, because it can hold a database password. For that the settings file must not be a link, must not be inside the data folder, and must be in a folder that belongs to root and that nobody else can write in, for example `/etc/bugaboo`: otherwise the install refuses and says why. If the data folder is a link, the service uses the folder it leads to. The unit lets Bugaboo write only into its data folder.
+This creates the user `bugaboo` (no password, no shell, no home folder) if it does not exist, gives it the data folder from your settings, installs the unit `bugaboo.service` and starts it. Your settings file stays where it is, the one `bugaboo setup` wrote or the one you name with `--config`. The service reads it, so the program, the settings file and the folders above them must be readable for the user `bugaboo`. Bugaboo lets only that user read the file, because it can hold a database password. For that the settings file must not be a link, must not be inside the data folder, and must be in a folder that belongs to root and that nobody else can write in, for example `/etc/bugaboo`: otherwise the install refuses and says why. If the data folder is a link, the service uses the folder it leads to.
+
+The unit keeps Bugaboo on a short leash. It may write only into its data folder, cannot see the home folders (`/home`, `/root`) or the hardware of the computer, holds no special rights and cannot gain any, and opens only connections to other computers and to programs on this one. So:
+
+- Keep the program, the settings file and the data folder outside the home folders, for example in `/opt/bugaboo`, `/etc/bugaboo` and `/var/lib/bugaboo`. The install asks systemd whether the service would see them, and refuses and says which one it would not.
+- Use a port of 1024 or above, such as the suggested 8443. A port below 1024 needs a right the service does not have; put a reverse proxy in front if people should reach Bugaboo on port 443.
+
+If Bugaboo fails while it runs, systemd starts it again after 10 seconds, as often as it fails (Windows stops after 3 times a day). It does not do so when Bugaboo stopped at an upgrade: starting again would stop the same way. `sudo journalctl -u bugaboo` shows what happened and what to do; fix that and run `sudo systemctl start bugaboo`. [Upgrade Bugaboo](upgrade.md) explains the messages.
 
 The service has no window, so the setup code is in the file `setup-code.txt` inside the data folder. Read it with `sudo cat`.
 
 Useful commands:
 
 ```text
+/opt/bugaboo/bugaboo service status
 sudo systemctl status bugaboo
 sudo journalctl -u bugaboo
 sudo /opt/bugaboo/bugaboo service uninstall

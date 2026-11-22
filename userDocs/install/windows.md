@@ -1,7 +1,9 @@
 # Install on Windows
 
-1. Put `bugaboo.exe` in a folder of its own, for example `C:\Bugaboo`.
-2. Open a terminal in that folder and run:
+Windows 11 with *Smart App Control* switched on (new computers start with it on) does not start `bugaboo.exe` yet: the program is not signed for Windows, and Windows says that a policy blocked it. Use a computer where Smart App Control is off, or wait for a release that is signed for Windows.
+
+1. Put `bugaboo.exe` in a folder of its own, for example `C:\Program Files\Bugaboo`. The program needs nothing else installed. If you want to run it as a service later, do not use a folder inside your own user folder (such as Downloads or Desktop): the service runs as an account of its own, which cannot read there.
+2. Open a terminal as an administrator (a folder in Program Files needs it) in that folder and run:
 
    ```text
    bugaboo setup
@@ -25,6 +27,18 @@ bugaboo service install
 ```
 
 Bugaboo is now a Windows service named "Bugaboo". It runs as its own account, `NT SERVICE\Bugaboo`, which has no password. Windows starts it with the computer.
+
+The install first checks that this account can run the program and read the settings file. If it cannot, for example because they are in your user folder, it says so and installs nothing: move both to a folder such as `C:\Program Files\Bugaboo` and install from there.
+
+If Bugaboo fails while it runs, Windows starts it again after 10 seconds, but at most 3 times a day: after the third failure in a day it stays stopped until you start it, and `bugaboo service status` says that it ended unexpectedly. Windows does not start it again at all when Bugaboo stopped at an upgrade: starting again would stop the same way. Then Bugaboo writes what happened and what to do into the file `logs\server.log` in the data folder; fix that and start the service again in the Services window. [Upgrade Bugaboo](upgrade.md) explains the messages.
+
+To see how the service is, run:
+
+```text
+bugaboo service status
+```
+
+It says whether the service is installed, whether it runs, and whether it stopped at an upgrade.
 
 The service has no window, so the setup code is in the file `setup-code.txt` inside the data folder. Open it with Notepad and copy the code.
 

@@ -4,7 +4,7 @@ WSL runs Linux inside Windows. Bugaboo works there like on [Linux](linux.md). Tw
 
 ## Switch systemd on
 
-A service needs systemd. In WSL 2, add these lines to the file `/etc/wsl.conf`, then run `wsl --shutdown` in a Windows terminal and open WSL again:
+A service needs systemd. Ubuntu for WSL has it switched on already. In another distribution, add these lines to the file `/etc/wsl.conf`, then run `wsl --shutdown` in a Windows terminal and open WSL again:
 
 ```text
 [boot]
