@@ -433,3 +433,42 @@ async fn sec_16_the_status_page_says_unknown_when_the_data_folder_cannot_be_look
     })
     .await
 }
+
+#[tokio::test]
+async fn sec_16_the_status_page_shows_a_program_others_can_change_and_a_database_link_unchecked()
+-> TestResult {
+    each_database("sec_16_status_host", async |db| {
+        let rig = Rig::start(db).await?;
+        let data = crate::data_folder::DataFolder::prepare(&rig.folder.path().join("data"))?;
+        // A program inside the data folder, which the account of the server can change.
+        let program = data.root().join("bugaboo");
+        std::fs::write(&program, "x")?;
+        let mut options = options(&rig, LimitsConfig::default());
+        options.probe = ProbeHandle::new(Arc::new(
+            Probe::new(
+                rig.database.clone(),
+                rig.seal.clone(),
+                RunningDatabase::Postgres,
+                None,
+                rig.services.log_writes(),
+                data.root().to_path_buf(),
+            )
+            .with_host(crate::probe::HostPaths {
+                program,
+                config: None,
+                tls_key: None,
+            })
+            .with_database_certificate_unchecked(true),
+        ));
+        let app = router(options);
+        let mut ada = Browser::signed_in(&app, &rig).await?;
+        let reply = ada.send("GET", STATUS, None).await?;
+        let open = &reply.body["host_open"];
+        assert_eq!(open["program"], "open");
+        assert_eq!(open["settings_file"], "private");
+        assert_eq!(open["tls_key"], "private");
+        assert_eq!(reply.body["database"]["certificate_unchecked"], true);
+        Ok(())
+    })
+    .await
+}

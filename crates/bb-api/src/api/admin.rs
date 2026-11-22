@@ -6,7 +6,8 @@ use axum::extract::State;
 use axum::response::Response;
 use bb_app::auth::SeeServerStatusQuery;
 use bb_app::status::{
-    Access, DataFolderRights, LogBreak, LogState, RunningDatabase, ServerProbe, Snapshot,
+    Access, DataFolderRights, HostRights, LogBreak, LogState, RunningDatabase, ServerProbe,
+    Snapshot,
 };
 use bb_core::ErrorCode;
 use bb_policy::Masked;
@@ -81,6 +82,9 @@ struct DatabaseBody {
     kind: DatabaseKind,
     /// Whether it answered.
     ok: bool,
+    /// Whether it is a PostgreSQL server reached over the network without checking its
+    /// certificate, so somebody in between could read or change what passes.
+    certificate_unchecked: bool,
 }
 
 /// The HTTPS certificate the server uses itself.
@@ -246,6 +250,28 @@ impl From<DataFolderRights> for DataFolderOpenBody {
     }
 }
 
+/// Whether other accounts on this computer can change the program or its settings, or read the
+/// settings or the private key of the HTTPS certificate. Bugaboo only looks.
+#[derive(Serialize, ToSchema)]
+struct HostOpenBody {
+    /// The program, its folder and every folder above it.
+    program: FolderAccess,
+    /// The settings file and its folder.
+    settings_file: FolderAccess,
+    /// The private key of a certificate of the operator's own.
+    tls_key: FolderAccess,
+}
+
+impl From<HostRights> for HostOpenBody {
+    fn from(rights: HostRights) -> Self {
+        Self {
+            program: rights.program.into(),
+            settings_file: rights.settings_file.into(),
+            tls_key: rights.tls_key.into(),
+        }
+    }
+}
+
 impl Masked for ServerStatusBody {}
 
 /// The status of the server, as the status page shows it.
@@ -266,6 +292,9 @@ struct ServerStatusBody {
     security_log: SecurityLogBody,
     /// What of the data folder other accounts on this computer can open.
     data_folder_open: DataFolderOpenBody,
+    /// Whether other accounts on this computer can change the program or its settings, or read
+    /// the settings or the HTTPS key.
+    host_open: HostOpenBody,
 }
 
 impl From<Snapshot> for ServerStatusBody {
@@ -277,6 +306,7 @@ impl From<Snapshot> for ServerStatusBody {
             database: DatabaseBody {
                 kind: snapshot.database.into(),
                 ok: snapshot.database_ok,
+                certificate_unchecked: snapshot.database_certificate_unchecked,
             },
             certificate: snapshot.certificate.map(|certificate| CertificateBody {
                 expires_at: certificate.expires_at.to_string(),
@@ -286,6 +316,7 @@ impl From<Snapshot> for ServerStatusBody {
                 ..snapshot.security_log.into()
             },
             data_folder_open: snapshot.data_folder.into(),
+            host_open: snapshot.host.into(),
         }
     }
 }

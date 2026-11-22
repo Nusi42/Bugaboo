@@ -5,9 +5,7 @@
 
 #[cfg(unix)]
 use std::ffi::OsStr;
-#[cfg(unix)]
-use std::path::Path;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[cfg(any(windows, test))]
 use bb_core::message::{self, Message};
@@ -29,6 +27,63 @@ fn in_system_folder(named: Option<PathBuf>, program: &str) -> Result<PathBuf, Me
         .filter(|folder| folder.is_absolute())
         .map(|folder| folder.join(program))
         .ok_or_else(|| message::system_folder_unknown(program))
+}
+
+/// The real path of `path` when it exists, with every link followed (on Windows also junctions
+/// and mapped drives), `..` resolved, and on Windows without the `\\?\` that the system puts in
+/// front (a share is `\\server\share` again), so it can be shown and handed to `icacls`; a path
+/// that is not there yet is only made absolute.
+pub(crate) fn real_path(path: &Path) -> PathBuf {
+    canonical(path)
+        .or_else(|_| std::path::absolute(path))
+        .unwrap_or_else(|_| path.to_path_buf())
+}
+
+/// The real path of `path` as [`real_path`] gives it, or why the system cannot find it.
+fn canonical(path: &Path) -> std::io::Result<PathBuf> {
+    let real = std::fs::canonicalize(path)?;
+    Ok(if cfg!(windows) {
+        PathBuf::from(plain_windows_path(&real.to_string_lossy()))
+    } else {
+        real
+    })
+}
+
+/// How Windows writes a path it looked up, and a share among them.
+const VERBATIM: &str = r"\\?\";
+const VERBATIM_SHARE: &str = r"\\?\UNC\";
+/// How a share begins as people write it.
+const SHARE: &str = r"\\";
+
+/// A path of Windows as people write it: `\\?\C:\x` is `C:\x` and `\\?\UNC\server\share` is
+/// `\\server\share`; any other form (a volume by its number) stays as it is.
+fn plain_windows_path(path: &str) -> String {
+    if let Some(share) = path.strip_prefix(VERBATIM_SHARE) {
+        format!("{SHARE}{share}")
+    } else if let Some(drive) = path
+        .strip_prefix(VERBATIM)
+        .filter(|rest| rest.as_bytes().get(1) == Some(&b':'))
+    {
+        drive.to_owned()
+    } else {
+        path.to_owned()
+    }
+}
+
+/// Whether `path` is `folder` or lies inside it, compared part by part, and on Windows, whose
+/// names of files do not care about case, without regard to case. Both are compared as given: a
+/// decision that counts gives real paths ([`real_path`]).
+pub(crate) fn lies_in(path: &Path, folder: &Path) -> bool {
+    if cfg!(windows) {
+        let parts = |of: &Path| -> Vec<String> {
+            of.components()
+                .map(|part| part.as_os_str().to_string_lossy().to_lowercase())
+                .collect()
+        };
+        parts(path).starts_with(&parts(folder))
+    } else {
+        path.starts_with(folder)
+    }
 }
 
 /// The number of the account that runs this program.
@@ -142,5 +197,30 @@ mod tests {
             assert!(account_exists("root"));
         }
         assert!(!account_exists("bb-no-such-account-x"));
+    }
+
+    #[test]
+    fn ops_04_a_real_path_of_windows_is_written_as_people_write_it() {
+        assert_eq!(
+            plain_windows_path(r"\\?\C:\Program Files\Bugaboo"),
+            r"C:\Program Files\Bugaboo"
+        );
+        assert_eq!(
+            plain_windows_path(r"\\?\UNC\server\share\data"),
+            r"\\server\share\data"
+        );
+        // A volume by its number has no other form, and a plain path stays as it is.
+        let volume = r"\\?\Volume{0b1c}\data";
+        assert_eq!(plain_windows_path(volume), volume);
+        assert_eq!(plain_windows_path(r"C:\data"), r"C:\data");
+    }
+
+    #[test]
+    fn ops_04_a_path_lies_in_a_folder_part_by_part_and_on_windows_whatever_the_case() {
+        let folder = Path::new("data");
+        assert!(lies_in(&folder.join("bugaboo"), folder));
+        assert!(lies_in(folder, folder));
+        assert!(!lies_in(Path::new("data-old/bugaboo"), folder));
+        assert_eq!(lies_in(Path::new("DATA/bugaboo"), folder), cfg!(windows));
     }
 }

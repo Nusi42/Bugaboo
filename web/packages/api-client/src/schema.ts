@@ -7553,6 +7553,11 @@ export interface components {
     };
     /** @description The database. */
     DatabaseBody: {
+      /**
+       * @description Whether it is a PostgreSQL server reached over the network without checking its
+       *     certificate, so somebody in between could read or change what passes.
+       */
+      certificate_unchecked: boolean;
       /** @description Which one it is. The address is never shown: it can hold a password. */
       kind: components["schemas"]["DatabaseKind"];
       /** @description Whether it answered. */
@@ -8601,6 +8606,18 @@ export interface components {
       | "de-st"
       | "de-sh"
       | "de-th";
+    /**
+     * @description Whether other accounts on this computer can change the program or its settings, or read the
+     *     settings or the private key of the HTTPS certificate. Bugaboo only looks.
+     */
+    HostOpenBody: {
+      /** @description The program, its folder and every folder above it. */
+      program: components["schemas"]["FolderAccess"];
+      /** @description The settings file and its folder. */
+      settings_file: components["schemas"]["FolderAccess"];
+      /** @description The private key of a certificate of the operator's own. */
+      tls_key: components["schemas"]["FolderAccess"];
+    };
     /** @description The hosts that images in text may come from, already split into one host for each item. */
     ImageHostsBody: {
       /** @description The hosts, such as `images.example.com`. Empty means no image from outside. */
@@ -12409,6 +12426,11 @@ export interface components {
       data_folder_open: components["schemas"]["DataFolderOpenBody"];
       /** @description The database. */
       database: components["schemas"]["DatabaseBody"];
+      /**
+       * @description Whether other accounts on this computer can change the program or its settings, or read
+       *     the settings or the HTTPS key.
+       */
+      host_open: components["schemas"]["HostOpenBody"];
       /** @description The check of the security log. */
       security_log: components["schemas"]["SecurityLogBody"];
       /**

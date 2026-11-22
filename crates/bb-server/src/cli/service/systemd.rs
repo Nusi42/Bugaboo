@@ -11,6 +11,8 @@ use bb_core::message::{self, Message};
 use bb_core::system_answer::folder_in_answer;
 
 use crate::data_folder::SUB_FOLDERS;
+use crate::host_rights::{Untrusted, untrusted};
+use crate::system::real_path;
 #[cfg(unix)]
 use crate::system::{answer_of, program_on_path};
 
@@ -174,53 +176,6 @@ pub(super) fn first_hidden<'a>(
     })
 }
 
-/// The real path of `path` when it exists, with every link in it followed (`..` and links in
-/// the middle included); a path that is not there yet stays as it is.
-pub(super) fn real_path(path: &Path) -> PathBuf {
-    std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf())
-}
-
-/// Why a path that root relies on is not trusted: the folder of the settings file, the folder for
-/// units, and the shell of the account with its folder.
-#[derive(Debug, PartialEq, Eq)]
-enum Untrusted {
-    /// The group or everybody may write to it, so they could replace what root relies on.
-    OthersCanWrite,
-    /// It belongs to somebody but root, who could replace it.
-    NotRoots,
-    /// It cannot be looked at, so nothing is known about who may change it.
-    #[cfg(unix)]
-    Unreadable,
-}
-
-/// Whether a path with this mode and owner (user number) is safe for root to rely on: root owns
-/// it and neither the group nor everybody may write to it.
-fn trust_of(mode: u32, owner: u32) -> Option<Untrusted> {
-    if mode & 0o022 != 0 {
-        Some(Untrusted::OthersCanWrite)
-    } else if owner != 0 {
-        Some(Untrusted::NotRoots)
-    } else {
-        None
-    }
-}
-
-/// Linux: the reason the path is not trusted, if it is not. A path that cannot be looked at is
-/// not trusted either.
-#[cfg(unix)]
-fn untrusted(path: &Path) -> Option<Untrusted> {
-    use std::os::unix::fs::MetadataExt as _;
-    match std::fs::metadata(path) {
-        Ok(data) => trust_of(data.mode(), data.uid()),
-        Err(_) => Some(Untrusted::Unreadable),
-    }
-}
-
-#[cfg(not(unix))]
-fn untrusted(_folder: &Path) -> Option<Untrusted> {
-    None
-}
-
 /// Whether the settings file may be given to the account of the service: it is a file and no
 /// link (a `chmod` would follow a link to whatever it points to), it is not inside the data
 /// folder (the service could replace it there; both are compared by their real paths, so `..`
@@ -231,14 +186,16 @@ pub(super) fn check_settings_file(config: &Path, data_dir: &Path) -> Result<(), 
     if std::fs::symlink_metadata(config).is_ok_and(|data| data.file_type().is_symlink()) {
         return Err(message::service_settings_is_link(shown));
     }
-    let config = real_path(config);
-    if config.starts_with(real_path(data_dir)) {
-        return Err(message::service_settings_in_data(config.display()));
+    if crate::host_rights::in_data_folder(config, data_dir) {
+        return Err(message::service_settings_in_data(
+            real_path(config).display(),
+        ));
     }
+    let config = real_path(config);
     let Some(folder) = config.parent() else {
         return Ok(());
     };
-    match untrusted(folder) {
+    match untrusted(folder, None) {
         Some(Untrusted::OthersCanWrite) => {
             Err(message::service_settings_folder_open(folder.display()))
         }
@@ -254,7 +211,7 @@ pub(super) fn check_settings_file(config: &Path, data_dir: &Path) -> Result<(), 
 /// by the group or by everybody. `path` is the real path, with every link followed.
 #[cfg(unix)]
 fn trusted(path: PathBuf) -> Result<PathBuf, Message> {
-    match untrusted(&path) {
+    match untrusted(&path, None) {
         None => Ok(path),
         Some(_) => Err(message::service_answer_not_trusted(path.display())),
     }

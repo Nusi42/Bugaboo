@@ -26,4 +26,6 @@ Bugaboo reads these settings when it starts, the strongest first: the command li
 | `searches_per_minute` | `BUGABOO_SEARCHES_PER_MINUTE` |
 | `mail_batch_seconds` | `BUGABOO_MAIL_BATCH_SECONDS` |
 
+A PostgreSQL server on another computer is reached safely only when Bugaboo checks its certificate: add `sslmode=verify-full` to `database_url`, as in `postgres://bugaboo@db.example.com/bugaboo?sslmode=verify-full`. `bugaboo setup` adds it for a server on another computer when the address says nothing about `sslmode`. Without it, somebody in between could read or change what passes, the password included, and Bugaboo warns at every start and on the status page. A server on this computer (`localhost`, `127.0.0.1` or a Unix socket) needs nothing.
+
 What each setting means is in [Install Bugaboo](README.md).

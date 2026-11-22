@@ -6,8 +6,10 @@ import {
   hasWriteFailures,
   isUnanchored,
   levelOf,
+  openHostParts,
   openParts,
   serverNow,
+  unknownHostParts,
   unknownParts,
 } from "./status.ts";
 
@@ -21,7 +23,7 @@ function healthy(): State {
     version: "0.0.0",
     started_at: "2026-10-05T08:00:00Z",
     uptime_seconds: 3600,
-    database: { kind: "built-in", ok: true },
+    database: { kind: "built-in", ok: true, certificate_unchecked: false },
     certificate: { expires_at: "2027-10-05T12:00:00Z" },
     security_log: {
       result: "valid",
@@ -38,6 +40,7 @@ function healthy(): State {
       backups: "private",
       setup_code_file: "private",
     },
+    host_open: { program: "private", settings_file: "private", tls_key: "private" },
   };
 }
 
@@ -57,9 +60,12 @@ describe("ops_08 how serious the state of the server is", () => {
   });
 
   it("is a problem when the database is silent, the log is broken or the certificate has run out", () => {
-    expect(levelOf({ ...healthy(), database: { kind: "built-in", ok: false } }, NOW)).toBe(
-      "problem",
-    );
+    expect(
+      levelOf(
+        { ...healthy(), database: { kind: "built-in", ok: false, certificate_unchecked: false } },
+        NOW,
+      ),
+    ).toBe("problem");
     const broken: State = {
       ...healthy(),
       security_log: { result: "broken", broken_seq: 7, reason: "gap", write_failures: 0 },
@@ -117,5 +123,25 @@ describe("sec_15 and ops_08 what the page makes of the server", () => {
     const state: State = { ...healthy(), certificate: null };
     expect(certificateDays(state, NOW)).toBeNull();
     expect(levelOf(state, NOW)).toBe("ok");
+  });
+});
+
+describe("sec_16 the program, its settings and the link to the database", () => {
+  it("asks for a look when other accounts can change the program or read its settings", () => {
+    const open: State["host_open"] = { ...healthy().host_open, program: "open" };
+    expect(openHostParts(healthy().host_open)).toEqual([]);
+    expect(openHostParts(open)).toEqual(["program"]);
+    expect(levelOf({ ...healthy(), host_open: open }, NOW)).toBe("warning");
+    const unknown: State["host_open"] = { ...healthy().host_open, settings_file: "unknown" };
+    expect(unknownHostParts(unknown)).toEqual(["settings_file"]);
+    expect(levelOf({ ...healthy(), host_open: unknown }, NOW)).toBe("warning");
+  });
+
+  it("asks for a look when the database is reached without a checked certificate", () => {
+    const state: State = {
+      ...healthy(),
+      database: { ...healthy().database, certificate_unchecked: true },
+    };
+    expect(levelOf(state, NOW)).toBe("warning");
   });
 });

@@ -24640,8 +24640,12 @@
       "DatabaseBody": {
         "type": "object",
         "description": "The database.",
-        "required": ["kind", "ok"],
+        "required": ["kind", "ok", "certificate_unchecked"],
         "properties": {
+          "certificate_unchecked": {
+            "type": "boolean",
+            "description": "Whether it is a PostgreSQL server reached over the network without checking its\ncertificate, so somebody in between could read or change what passes."
+          },
           "kind": {
             "$ref": "#/components/schemas/DatabaseKind",
             "description": "Which one it is. The address is never shown: it can hold a password."
@@ -26561,6 +26565,25 @@
           "de-sh",
           "de-th"
         ]
+      },
+      "HostOpenBody": {
+        "type": "object",
+        "description": "Whether other accounts on this computer can change the program or its settings, or read the\nsettings or the private key of the HTTPS certificate. Bugaboo only looks.",
+        "required": ["program", "settings_file", "tls_key"],
+        "properties": {
+          "program": {
+            "$ref": "#/components/schemas/FolderAccess",
+            "description": "The program, its folder and every folder above it."
+          },
+          "settings_file": {
+            "$ref": "#/components/schemas/FolderAccess",
+            "description": "The settings file and its folder."
+          },
+          "tls_key": {
+            "$ref": "#/components/schemas/FolderAccess",
+            "description": "The private key of a certificate of the operator's own."
+          }
+        }
       },
       "ImageHostsBody": {
         "type": "object",
@@ -34154,7 +34177,8 @@
           "uptime_seconds",
           "database",
           "security_log",
-          "data_folder_open"
+          "data_folder_open",
+          "host_open"
         ],
         "properties": {
           "certificate": {
@@ -34175,6 +34199,10 @@
           "database": {
             "$ref": "#/components/schemas/DatabaseBody",
             "description": "The database."
+          },
+          "host_open": {
+            "$ref": "#/components/schemas/HostOpenBody",
+            "description": "Whether other accounts on this computer can change the program or its settings, or read\nthe settings or the HTTPS key."
           },
           "security_log": {
             "$ref": "#/components/schemas/SecurityLogBody",

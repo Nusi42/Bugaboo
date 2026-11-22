@@ -3624,6 +3624,15 @@ pub const HOLIDAYS_REGION_NONE: MessageKey = MessageKey::new("holidays.region.no
 /// The message `home.admin`.
 pub const HOME_ADMIN: MessageKey = MessageKey::new("home.admin");
 
+/// The message `host.part.program`.
+pub const HOST_PART_PROGRAM: MessageKey = MessageKey::new("host.part.program");
+
+/// The message `host.part.settings-file`.
+pub const HOST_PART_SETTINGS_FILE: MessageKey = MessageKey::new("host.part.settings-file");
+
+/// The message `host.part.tls-key`.
+pub const HOST_PART_TLS_KEY: MessageKey = MessageKey::new("host.part.tls-key");
+
 /// The message `invitation.ask-again`.
 pub const INVITATION_ASK_AGAIN: MessageKey = MessageKey::new("invitation.ask-again");
 
@@ -9308,6 +9317,10 @@ pub const SERVER_STATUS_DATABASE: MessageKey = MessageKey::new("server-status.da
 pub const SERVER_STATUS_DATABASE_BUILT_IN: MessageKey =
     MessageKey::new("server-status.database.built-in");
 
+/// The message `server-status.database.certificate-unchecked`.
+pub const SERVER_STATUS_DATABASE_CERTIFICATE_UNCHECKED: MessageKey =
+    MessageKey::new("server-status.database.certificate-unchecked");
+
 /// The message `server-status.database.failed`.
 pub const SERVER_STATUS_DATABASE_FAILED: MessageKey =
     MessageKey::new("server-status.database.failed");
@@ -9322,6 +9335,15 @@ pub const SERVER_STATUS_DATABASE_POSTGRES: MessageKey =
 /// The message `server-status.database.sqlite`.
 pub const SERVER_STATUS_DATABASE_SQLITE: MessageKey =
     MessageKey::new("server-status.database.sqlite");
+
+/// The message `server-status.host`.
+pub const SERVER_STATUS_HOST: MessageKey = MessageKey::new("server-status.host");
+
+/// The message `server-status.host.closed`.
+pub const SERVER_STATUS_HOST_CLOSED: MessageKey = MessageKey::new("server-status.host.closed");
+
+/// The message `server-status.host.open`.
+pub const SERVER_STATUS_HOST_OPEN: MessageKey = MessageKey::new("server-status.host.open");
 
 /// The message `server-status.intro`.
 pub const SERVER_STATUS_INTRO: MessageKey = MessageKey::new("server-status.intro");
@@ -9355,6 +9377,10 @@ pub const SERVER_ABOUT: MessageKey = MessageKey::new("server.about");
 
 /// The message `server.database-built-in`.
 pub const SERVER_DATABASE_BUILT_IN: MessageKey = MessageKey::new("server.database-built-in");
+
+/// The message `server.database-certificate-unchecked`.
+pub const SERVER_DATABASE_CERTIFICATE_UNCHECKED: MessageKey =
+    MessageKey::new("server.database-certificate-unchecked");
 
 /// The message `server.database-postgres`.
 pub const SERVER_DATABASE_POSTGRES: MessageKey = MessageKey::new("server.database-postgres");
@@ -16531,6 +16557,48 @@ pub fn home_title(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `host.open`, by name.
+#[derive(Clone, Copy)]
+pub struct HostOpen<'a> {
+    /// The value of `{part}`.
+    pub part: &'a dyn std::fmt::Display,
+    /// The value of `{path}`.
+    pub path: &'a dyn std::fmt::Display,
+}
+
+/// The message `host.open`.
+#[must_use]
+pub fn host_open(values: HostOpen<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("host.open"),
+        vec![
+            ("part", Value::Text(values.part.to_string())),
+            ("path", Value::Text(values.path.to_string())),
+        ],
+    )
+}
+
+/// The values of the message `host.unknown`, by name.
+#[derive(Clone, Copy)]
+pub struct HostUnknown<'a> {
+    /// The value of `{part}`.
+    pub part: &'a dyn std::fmt::Display,
+    /// The value of `{path}`.
+    pub path: &'a dyn std::fmt::Display,
+}
+
+/// The message `host.unknown`.
+#[must_use]
+pub fn host_unknown(values: HostUnknown<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("host.unknown"),
+        vec![
+            ("part", Value::Text(values.part.to_string())),
+            ("path", Value::Text(values.path.to_string())),
+        ],
+    )
+}
+
 /// The message `invitation.intro`.
 #[must_use]
 pub fn invitation_intro(email: impl std::fmt::Display) -> Message {
@@ -22446,6 +22514,33 @@ pub fn service_answer_not_trusted(path: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `service.changeable`.
+#[must_use]
+pub fn service_changeable(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.changeable"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `service.changeable-unknown`.
+#[must_use]
+pub fn service_changeable_unknown(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.changeable-unknown"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `service.changeable-windows`.
+#[must_use]
+pub fn service_changeable_windows(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.changeable-windows"),
+        vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
 /// The values of the message `service.data-folder-real`, by name.
 #[derive(Clone, Copy)]
 pub struct ServiceDataFolderReal<'a> {
@@ -22530,6 +22625,15 @@ pub fn service_not_installed(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("service.not-installed"),
         vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `service.program-in-data`.
+#[must_use]
+pub fn service_program_in_data(path: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.program-in-data"),
+        vec![("path", Value::Text(path.to_string()))],
     )
 }
 
@@ -25311,15 +25415,6 @@ pub fn tls_generate_failed(reason: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("tls.generate-failed"),
         vec![("reason", Value::Text(reason.to_string()))],
-    )
-}
-
-/// The message `tls.key-readable`.
-#[must_use]
-pub fn tls_key_readable(path: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("tls.key-readable"),
-        vec![("path", Value::Text(path.to_string()))],
     )
 }
 

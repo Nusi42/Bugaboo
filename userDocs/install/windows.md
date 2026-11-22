@@ -28,7 +28,7 @@ bugaboo service install
 
 Bugaboo is now a Windows service named "Bugaboo". It runs as its own account, `NT SERVICE\Bugaboo`, which has no password. Windows starts it with the computer.
 
-The install first checks that this account can run the program and read the settings file. If it cannot, for example because they are in your user folder, it says so and installs nothing: move both to a folder such as `C:\Program Files\Bugaboo` and install from there.
+The install first checks that only the administrators of the computer can change the program, its folder, the folders above it and the folder of the settings file, and that this account can run the program. If not, for example because they are in your user folder or in a folder created directly on drive `C:`, it says which path and installs nothing: move both to a folder such as `C:\Program Files\Bugaboo` and install from there. Then it lets the account of the service read the settings file and the administrators change it, and nobody else. [Rights of the program and its settings](README.md#rights-of-the-program-and-its-settings) says why.
 
 If Bugaboo fails while it runs, Windows starts it again after 10 seconds, but at most 3 times a day: after the third failure in a day it stays stopped until you start it, and `bugaboo service status` says that it ended unexpectedly. Windows does not start it again at all when Bugaboo stopped at an upgrade: starting again would stop the same way. Then Bugaboo writes what happened and what to do into the file `logs\server.log` in the data folder; fix that and start the service again in the Services window. [Upgrade Bugaboo](upgrade.md) explains the messages.
 

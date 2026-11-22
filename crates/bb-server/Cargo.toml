@@ -47,6 +47,9 @@ windows-service = { workspace = true }
 known-folders = { workspace = true }
 # The access list of the data folder is saved to a temporary file and read back (SEC-16, M1-F65).
 tempfile = { workspace = true }
+# The script that reads the owners of the program and its folders goes to Windows PowerShell
+# encoded, so no quoting of a command line can change it (SEC-16).
+base64ct = { workspace = true }
 
 # Asks the system who runs the program and what an account number is called, instead of reading
 # its files (coding-standards section 2, no fixed paths).

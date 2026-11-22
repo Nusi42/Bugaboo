@@ -5,6 +5,8 @@ import { daysUntil } from "../../shared/format.ts";
 type State = Schema<"ServerStatusBody">;
 type SecurityLog = Schema<"SecurityLogBody">;
 type DataFolderOpen = Schema<"DataFolderOpenBody">;
+type HostOpen = Schema<"HostOpenBody">;
+type PartAccess = DataFolderOpen["folder"];
 
 const MS_PER_SECOND = 1000;
 
@@ -32,14 +34,35 @@ const dataFolderParts: readonly (keyof DataFolderOpen)[] = [
   "setup_code_file",
 ];
 
+const hostParts: readonly (keyof HostOpen)[] = ["program", "settings_file", "tls_key"];
+
+/** The parts whose rights are `wanted`, in the order they are shown. */
+function partsWith<K extends string>(
+  access: Readonly<Record<K, PartAccess>>,
+  parts: readonly K[],
+  wanted: PartAccess,
+): readonly K[] {
+  return parts.filter((part) => access[part] === wanted);
+}
+
 /** The parts of the data folder that other accounts on this computer can open (SEC-16, M1-F65). */
 export function openParts(open: DataFolderOpen): readonly (keyof DataFolderOpen)[] {
-  return dataFolderParts.filter((part) => open[part] === "open");
+  return partsWith(open, dataFolderParts, "open");
 }
 
 /** The parts whose rights the server could not read: never taken for private. */
 export function unknownParts(open: DataFolderOpen): readonly (keyof DataFolderOpen)[] {
-  return dataFolderParts.filter((part) => open[part] === "unknown");
+  return partsWith(open, dataFolderParts, "unknown");
+}
+
+/** The program, its settings and its HTTPS key, when other accounts can change or read them. */
+export function openHostParts(open: HostOpen): readonly (keyof HostOpen)[] {
+  return partsWith(open, hostParts, "open");
+}
+
+/** The same parts whose rights the server could not read. */
+export function unknownHostParts(open: HostOpen): readonly (keyof HostOpen)[] {
+  return partsWith(open, hostParts, "unknown");
 }
 
 /**
@@ -71,6 +94,9 @@ export function levelOf(state: State, nowMs: number): Level {
     hasWriteFailures(log) ||
     openParts(state.data_folder_open).length > 0 ||
     unknownParts(state.data_folder_open).length > 0 ||
+    openHostParts(state.host_open).length > 0 ||
+    unknownHostParts(state.host_open).length > 0 ||
+    database.certificate_unchecked ||
     (days !== null && days < CERTIFICATE_WARNING_DAYS)
   ) {
     return "warning";

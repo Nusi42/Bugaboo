@@ -12,7 +12,6 @@ use bb_api::tls::{ServedCertificate, TlsError, TlsSource, certificate_path, serv
 use bb_api::{
     HSTS_MAX_AGE_SELF_SIGNED, HSTS_MAX_AGE_TRUSTED, Incoming, ListenerOptions, Options, WebSource,
 };
-use bb_app::status::DataFolderRights;
 use bb_core::message::{self, Message};
 use tokio::net::TcpListener;
 
@@ -20,7 +19,7 @@ use super::{ServeArgs, load_settings, renewal};
 use crate::config::{Settings, TlsMode};
 use crate::data_folder::{DataFolder, Existing, write_private};
 use crate::wiring::Serving;
-use crate::{log, output, wiring};
+use crate::{host_rights, log, output, wiring};
 
 /// `bugaboo serve`: runs until Ctrl+C or the stop signal of the system.
 pub(super) async fn serve(args: ServeArgs) -> anyhow::Result<()> {
@@ -49,7 +48,11 @@ pub(super) async fn serve_settings(
         .ok_or_else(|| {
             anyhow::anyhow!(message::server_already_running(data.root().display()).render())
         })?;
-    report_open_parts(&data, data.rights(), &mut output::warning);
+    report_open_parts(data.open_parts(data.rights()), &mut output::warning);
+    report_open_parts(
+        host_rights::look(&wiring::host_paths(&settings).files(data.root())).open_parts(),
+        &mut output::warning,
+    );
     let (listener_options, certificate) = listener_options(&settings, &data)?;
     let hsts_max_age = hsts_max_age(&settings);
     // The database, the keys and the sign-in services come first: when one of them fails the
@@ -78,6 +81,10 @@ pub(super) async fn serve_settings(
         output::line(&message::server_self_signed(path.display()).render());
     }
     output::line(&database_line(settings.database_url.as_deref()));
+    if wiring::certificate_unchecked(&settings) {
+        tracing::warn!("the database is reached over the network without a checked certificate");
+        output::warning(&Message::from(message::SERVER_DATABASE_CERTIFICATE_UNCHECKED).render());
+    }
     let scheme = if settings.tls == TlsMode::Off {
         "http"
     } else {
@@ -125,16 +132,14 @@ pub(super) async fn serve_settings(
     Ok(())
 }
 
-/// Says what of an existing data folder other accounts on this computer can open, in the log and on
-/// the console (SEC-16, M1-F65): `say` gets one sentence for each part. Nothing is changed: a
-/// person may have set the rights on purpose. The status page shows the same. What cannot be
-/// read is reported too, because a check that cannot look must not say that all is well.
-fn report_open_parts(data: &DataFolder, rights: DataFolderRights, say: &mut dyn FnMut(&str)) {
-    for (part, sentence) in data.open_parts(rights) {
-        tracing::warn!(
-            part,
-            "a part of the data folder is open or could not be checked"
-        );
+/// Says what of an existing data folder, or of the program and its settings, other accounts on
+/// this computer can open or change, in the log and on the console (SEC-16, M1-F65): `say` gets
+/// one sentence for each part. Nothing is changed: a person may have set the rights on purpose.
+/// The status page shows the same. What cannot be read is reported too, because a check that
+/// cannot look must not say that all is well.
+fn report_open_parts(parts: Vec<(&'static str, String)>, say: &mut dyn FnMut(&str)) {
+    for (part, sentence) in parts {
+        tracing::warn!(part, "a part of the server is open or could not be checked");
         say(&sentence);
     }
 }
@@ -237,11 +242,7 @@ fn listener_options(
             names: settings.tls_names.clone(),
         },
         TlsMode::Files { cert, key } => {
-            // Windows folders carry their own access lists; there is no mode to read.
-            #[cfg(unix)]
-            if let Some(warning) = key_readable_warning(key) {
-                output::warning(&warning);
-            }
+            // Who may read the key is reported with the program and its settings at the start.
             TlsSource::Files {
                 cert: cert.clone(),
                 key: key.clone(),
@@ -256,14 +257,6 @@ fn listener_options(
         max_connections: settings.max_connections,
     };
     Ok((options, Some(Arc::new(served))))
-}
-
-/// A private key that other people on this Linux computer can read (group or world bits).
-#[cfg(unix)]
-fn key_readable_warning(key: &Path) -> Option<String> {
-    use std::os::unix::fs::PermissionsExt as _;
-    let mode = std::fs::metadata(key).ok()?.permissions().mode();
-    (mode & 0o077 != 0).then(|| message::tls_key_readable(key.display()).render())
 }
 
 fn tls_message(error: &TlsError) -> String {
@@ -335,6 +328,7 @@ fn shutdown_signal() -> anyhow::Result<impl Future<Output = ()> + Send + 'static
 mod tests {
     use super::*;
     use crate::config::{self, SettingName, Sources};
+    use bb_app::status::DataFolderRights;
 
     #[cfg(unix)]
     #[test]
@@ -344,9 +338,17 @@ mod tests {
         let key = folder.path().join("key.pem");
         std::fs::write(&key, "x").unwrap();
         std::fs::set_permissions(&key, std::fs::Permissions::from_mode(0o640)).unwrap();
-        assert!(key_readable_warning(&key).is_some());
+        let files = |key| host_rights::HostFiles {
+            program: folder.path(),
+            config: None,
+            data_dir: folder.path(),
+            tls_key: Some(key),
+        };
+        let told = host_rights::look(&files(&key)).open_parts();
+        assert!(told.iter().any(|(part, _)| *part == "tls key"), "{told:?}");
         std::fs::set_permissions(&key, std::fs::Permissions::from_mode(0o600)).unwrap();
-        assert!(key_readable_warning(&key).is_none());
+        let told = host_rights::look(&files(&key)).open_parts();
+        assert!(told.iter().all(|(part, _)| *part != "tls key"), "{told:?}");
     }
 
     #[test]
@@ -493,7 +495,7 @@ mod tests {
         let folder = tempfile::tempdir().unwrap();
         let data = DataFolder::prepare(&folder.path().join("data")).unwrap();
         let mut told = Vec::new();
-        report_open_parts(&data, DataFolderRights::default(), &mut |text| {
+        report_open_parts(data.open_parts(DataFolderRights::default()), &mut |text| {
             told.push(text.to_owned());
         });
         assert!(
@@ -506,7 +508,9 @@ mod tests {
             backups: bb_app::status::Access::Unknown,
             ..DataFolderRights::default()
         };
-        report_open_parts(&data, rights, &mut |text| told.push(text.to_owned()));
+        report_open_parts(data.open_parts(rights), &mut |text| {
+            told.push(text.to_owned());
+        });
         assert_eq!(told.len(), 2, "{told:?}");
         assert!(
             told[0].starts_with("The folder for attachments "),

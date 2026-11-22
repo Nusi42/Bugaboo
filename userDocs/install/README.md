@@ -62,6 +62,14 @@ When Bugaboo starts, it checks whether other accounts on the computer can open t
 
   The first command removes every entry that was added by hand, such as a right for everyone to read; the second keeps only the account that runs Bugaboo. `<account>` is the security identifier of that account, which the warning fills in, so copy the line from the warning. If Bugaboo cannot find out the account, the warning sends you to the *Security* tab of the properties instead.
 
+## Rights of the program and its settings
+
+Whoever can change the program, a file beside it, a folder above it or the settings file can get Bugaboo to run their own code, with the rights of Bugaboo and with its data. And the settings file can hold the password of the database. So only the account that runs Bugaboo and the administrators of the computer (root on Linux) may change them, and only they may read the settings file and the private key of your own certificate.
+
+- `bugaboo setup` writes the settings file so that only your account (and, on Windows, the administrators) can read it.
+- `bugaboo service install` refuses a program, a folder above it or a folder of the settings file that other accounts can change, and a program inside the data folder, and says which path it is. On Windows, put the program and its settings file in a folder of their own in Program Files: other accounts cannot change it. A folder created directly on drive `C:` lets every signed-in account change what is in it. On Linux, the program, its folder and every folder above it must belong to root and nobody else may write to them, as in `/opt/bugaboo`. On Windows the install then lets the account of the service read the settings file and the administrators change it, and nobody else.
+- At every start, and on the status page under *Program and settings rights*, Bugaboo says when other accounts can change the program or its settings, or read the settings file or the private key of your certificate. It changes nothing: take the rights of the other accounts away (on Linux `chown root:` and `chmod go-w`, for the key `chmod go-rwx`; on Windows on the *Security* tab of the properties) or move Bugaboo to a folder like the ones above.
+
 ## Your own certificate before the first start
 
 If you already have a certificate, put the files into a folder named `tls` inside the data folder before Bugaboo has ever started, and choose `files` in the questions above. When you then run `bugaboo service install`, Bugaboo refuses the folder, because it holds files that Bugaboo did not create, and the message names the flag `--take-over-data-folder`. Run the command again with that flag to let the service take the folder over. The flag takes over nothing else: a folder with any other files in it is still refused.

@@ -427,6 +427,8 @@ export interface MessageArguments {
   "history.time-deleted": { length: string | number; who: string | number };
   "history.time-deleted-unmeasured": { who: string | number };
   "home.title": { name: string | number };
+  "host.open": { part: string | number; path: string | number };
+  "host.unknown": { part: string | number; path: string | number };
   "invitation.intro": { email: string | number };
   "invitations.created": { email: string | number };
   "invitations.created-at": { when: string | number };

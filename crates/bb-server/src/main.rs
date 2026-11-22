@@ -5,6 +5,7 @@
 mod cli;
 mod config;
 mod data_folder;
+mod host_rights;
 mod log;
 #[cfg(any(windows, test))]
 mod log_file;

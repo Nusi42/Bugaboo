@@ -27,6 +27,7 @@ use crate::config::{DEFAULT_FILE, Settings};
 use crate::data_folder::DataFolder;
 #[cfg(unix)]
 use crate::data_folder::{OwnFiles, check_for_service};
+use crate::host_rights::{self, Besides, Verdict};
 use crate::output;
 
 /// The name of the service, as the system lists it.
@@ -72,6 +73,38 @@ fn find(args: &ConfigArgs) -> anyhow::Result<Found> {
         config,
         settings,
     })
+}
+
+/// Refuses a place where somebody but the system and the administrators of the computer could
+/// change what the service runs as its own account: the program, its folder and every folder
+/// above it, and the folder of the settings file (whose file the install makes the service's
+/// alone), or a program inside the data folder, which the service itself may change.
+fn refuse_changeable(found: &Found, data_dir: &Path) -> anyhow::Result<()> {
+    refusal(&found.program, &found.config, data_dir)
+        .map_or(Ok(()), |said| Err(anyhow!(said.render())))
+}
+
+/// Why the place of the program or the settings file is refused, if it is.
+fn refusal(program: &Path, config: &Path, data_dir: &Path) -> Option<Message> {
+    if host_rights::in_data_folder(program, data_dir) {
+        return Some(message::service_program_in_data(program.display()));
+    }
+    let mut chain = host_rights::program_chain(program);
+    chain.extend(host_rights::settings_folder(config));
+    match host_rights::first_changeable(&chain, Besides::Nobody) {
+        Verdict::Closed => None,
+        Verdict::Open(path) => Some(changeable(&path)),
+        Verdict::Unknown(path) => Some(message::service_changeable_unknown(path.display())),
+    }
+}
+
+/// The sentence for a path that others can change, with what to do on this system.
+fn changeable(path: &Path) -> Message {
+    if cfg!(windows) {
+        message::service_changeable_windows(path.display())
+    } else {
+        message::service_changeable(path.display())
+    }
 }
 
 /// Tells where the setup code of the first start is, when nobody has made an administrator yet.
@@ -245,7 +278,7 @@ fn systemd_install(found: &Found, own_files: OwnFiles) -> anyhow::Result<()> {
     };
     // `chown -h` changes a link and not the folder it leads to: the plan and the unit name the
     // real folder, and the person is told when that is another one.
-    let data_dir = systemd::real_path(&found.settings.data_dir);
+    let data_dir = crate::system::real_path(&found.settings.data_dir);
     if data_dir != found.settings.data_dir {
         output::line(
             &message::service_data_folder_real(message::ServiceDataFolderReal {
@@ -256,6 +289,7 @@ fn systemd_install(found: &Found, own_files: OwnFiles) -> anyhow::Result<()> {
         );
     }
     check_for_service(&data_dir, own_files)?;
+    refuse_changeable(found, &data_dir)?;
     systemd::check_settings_file(&found.config, &data_dir)
         .map_err(|problem| anyhow!(problem.render()))?;
     check_service_sees(&[&found.program, &found.config, &data_dir])?;
@@ -374,6 +408,28 @@ fn refused(reason: &str) -> anyhow::Error {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn ops_04_the_install_refuses_a_program_or_settings_others_can_change() {
+        // A folder of a person (Windows) or the shared folder for temporary files (Linux): the
+        // person or everybody could change what the service runs.
+        let temp = tempfile::tempdir().unwrap();
+        let program = temp.path().join("bugaboo");
+        let config = temp.path().join("bugaboo.toml");
+        let data = temp.path().join("data");
+        for path in [&program, &config] {
+            std::fs::write(path, "x").unwrap();
+        }
+        let said = refusal(&program, &config, &data).unwrap().render();
+        assert!(said.contains("can change"), "{said}");
+        assert!(said.contains("install again"), "{said}");
+        // A program inside the data folder is refused whatever its rights.
+        std::fs::create_dir_all(&data).unwrap();
+        let inside = data.join("bugaboo");
+        std::fs::write(&inside, "x").unwrap();
+        let said = refusal(&inside, &config, &data).unwrap().render();
+        assert!(said.contains("inside the data folder"), "{said}");
+    }
 
     #[test]
     fn ops_04_service_status_names_the_state() {

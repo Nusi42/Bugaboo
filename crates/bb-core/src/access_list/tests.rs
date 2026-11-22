@@ -174,3 +174,103 @@ fn sec_18_restricting_drops_every_entry_and_grants_only_the_given() {
         ]
     );
 }
+
+#[test]
+fn ops_04_an_owner_who_is_not_trusted_can_change_what_it_owns() {
+    const PERSON: &str = "S-1-5-21-1-2-3-1001";
+    // Only the system and the administrators have entries, but a person owns the file: the
+    // person may change the access list and give itself every right.
+    let closed = "x\nD:PAI(A;;FA;;;SY)(A;;FA;;;BA)(A;;0x1200a9;;;BU)";
+    for wanted in [
+        rights::CHANGE_FILE,
+        rights::CHANGE_FOLDER,
+        rights::REPLACE_BELOW,
+    ] {
+        assert_eq!(
+            changeable_by_others(closed, PERSON, &SYSTEM_ACCOUNTS, wanted),
+            Some(true)
+        );
+    }
+    // The installer of Windows, the system or the administrators as the owner change nothing.
+    for owner in [TRUSTED_INSTALLER_SID, "S-1-5-18", ADMINISTRATORS_SID] {
+        assert_eq!(
+            changeable_by_others(closed, owner, &SYSTEM_ACCOUNTS, rights::CHANGE_FILE),
+            Some(false),
+            "{owner}"
+        );
+    }
+    // The account that runs the program owns its own files, when the caller trusts it.
+    let trusted: Vec<&str> = SYSTEM_ACCOUNTS.iter().copied().chain([PERSON]).collect();
+    assert_eq!(
+        changeable_by_others(closed, PERSON, &trusted, rights::CHANGE_FILE),
+        Some(false)
+    );
+    // An entry for OWNER RIGHTS takes the owner's own right to change the access list away: the
+    // owner gets only what such entries give, by short name or by SID.
+    for owner_rights in ["OW", "S-1-3-4"] {
+        let limited = format!("x\nD:PAI(A;;FA;;;SY)(A;;FA;;;BA)(A;;0x1200a9;;;{owner_rights})");
+        assert_eq!(
+            changeable_by_others(&limited, PERSON, &SYSTEM_ACCOUNTS, rights::CHANGE_FILE),
+            Some(false),
+            "{owner_rights}"
+        );
+        let given = format!("x\nD:PAI(A;;FA;;;SY)(A;;FA;;;{owner_rights})");
+        assert_eq!(
+            changeable_by_others(&given, PERSON, &SYSTEM_ACCOUNTS, rights::CHANGE_FILE),
+            Some(true),
+            "{owner_rights}"
+        );
+        // What OWNER RIGHTS gives a trusted owner changes nothing.
+        assert_eq!(
+            changeable_by_others(
+                &given,
+                ADMINISTRATORS_SID,
+                &SYSTEM_ACCOUNTS,
+                rights::CHANGE_FILE
+            ),
+            Some(false),
+            "{owner_rights}"
+        );
+    }
+    // An entry for OWNER RIGHTS that only passes on to what is made inside does not apply.
+    let passed_on = "x\nD:PAI(A;;FA;;;SY)(A;OICIIO;0x1200a9;;;OW)";
+    assert_eq!(
+        changeable_by_others(passed_on, PERSON, &SYSTEM_ACCOUNTS, rights::CHANGE_FILE),
+        Some(true)
+    );
+    // Others with entries count as before, whoever owns it.
+    let open = format!("x\nD:PAI(A;;FA;;;SY)(A;;FA;;;{PERSON})");
+    assert_eq!(
+        changeable_by_others(&open, "S-1-5-18", &SYSTEM_ACCOUNTS, rights::CHANGE_FILE),
+        Some(true)
+    );
+    assert_eq!(
+        changeable_by_others("", "S-1-5-18", &SYSTEM_ACCOUNTS, rights::CHANGE_FILE),
+        None
+    );
+}
+
+#[test]
+fn ops_04_the_owners_are_read_line_by_line_and_paths_stay_text() {
+    let paths = [
+        r"C:\Program Files\Bugaboo".to_owned(),
+        r"C:\it's".to_owned(),
+    ];
+    let script = owners_script(&paths);
+    assert!(
+        script.contains(r"@('C:\Program Files\Bugaboo', 'C:\it''s')"),
+        "{script}"
+    );
+    let output = format!("{TRUSTED_INSTALLER_SID}\r\n-\r\n");
+    assert_eq!(
+        owners_in(&output, 2),
+        [Some(TRUSTED_INSTALLER_SID.to_owned()), None]
+    );
+    // Lines that are not SIDs are not owners, and a count that does not fit says nothing.
+    assert_eq!(
+        owners_in("S-1-5-18\nBUILTIN\\Administrators\n", 2),
+        [Some("S-1-5-18".to_owned()), None]
+    );
+    assert_eq!(owners_in("S-1-5-18\n", 2), [None, None]);
+    assert_eq!(owners_in("", 0), Vec::<Option<String>>::new());
+}

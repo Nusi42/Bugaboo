@@ -9,7 +9,7 @@ use std::time::{Duration, Instant};
 use bb_api::tls::ServedCertificate;
 use bb_app::ports::BoxFuture;
 use bb_app::status::{
-    CertificateState, DataFolderRights, LogBreak, LogState, LogWrites, RunningDatabase,
+    CertificateState, DataFolderRights, HostRights, LogBreak, LogState, LogWrites, RunningDatabase,
     ServerProbe, Snapshot,
 };
 use bb_core::security_log::Digest;
@@ -18,6 +18,7 @@ use jiff::Timestamp;
 use tokio::sync::Mutex;
 
 use crate::data_folder::DataFolder;
+use crate::host_rights::{self, HostFiles};
 
 /// How many bytes of the hash of the last log entry the status page shows: enough to compare it
 /// with a copy kept somewhere else, short enough to read out loud.
@@ -43,6 +44,26 @@ impl Default for LogChecking {
             keep: Duration::from_secs(5),
             full_every: Duration::from_hours(24),
             rights_keep: Duration::from_mins(1),
+        }
+    }
+}
+
+/// The files of the running server besides its data folder, whose rights the status page shows.
+#[derive(Clone, Debug)]
+pub(crate) struct HostPaths {
+    pub(crate) program: PathBuf,
+    pub(crate) config: Option<PathBuf>,
+    pub(crate) tls_key: Option<PathBuf>,
+}
+
+impl HostPaths {
+    /// The files as the look at their rights takes them, with the data folder.
+    pub(crate) fn files<'a>(&'a self, data_dir: &'a std::path::Path) -> HostFiles<'a> {
+        HostFiles {
+            program: &self.program,
+            config: self.config.as_deref(),
+            data_dir,
+            tls_key: self.tls_key.as_deref(),
         }
     }
 }
@@ -80,9 +101,14 @@ pub(crate) struct Probe {
     log_writes: Arc<LogWrites>,
     /// The data folder, whose rights the status page looks at every time.
     data_folder: PathBuf,
+    /// The program, its settings file and the private key of the HTTPS certificate, whose rights
+    /// the status page looks at too; `None` in tests that run no program of their own.
+    host: Option<HostPaths>,
+    /// Whether the database is reached over the network without a checked certificate.
+    database_certificate_unchecked: bool,
     log_checking: LogChecking,
     log_memory: Mutex<LogMemory>,
-    rights_memory: Mutex<Option<(Instant, DataFolderRights)>>,
+    rights_memory: Mutex<Option<(Instant, DataFolderRights, HostRights)>>,
     started: Instant,
     started_at: Timestamp,
 }
@@ -104,12 +130,28 @@ impl Probe {
             certificate,
             log_writes,
             data_folder,
+            host: None,
+            database_certificate_unchecked: false,
             log_checking: LogChecking::default(),
             log_memory: Mutex::new(LogMemory::default()),
             rights_memory: Mutex::new(None),
             started: Instant::now(),
             started_at: Timestamp::now(),
         }
+    }
+
+    /// The same probe, which looks at the rights of the program, its settings file and its HTTPS
+    /// key too.
+    pub(crate) fn with_host(mut self, host: HostPaths) -> Self {
+        self.host = Some(host);
+        self
+    }
+
+    /// The same probe, which says that the database is reached over the network without a
+    /// checked certificate.
+    pub(crate) fn with_database_certificate_unchecked(mut self, unverified: bool) -> Self {
+        self.database_certificate_unchecked = unverified;
+        self
     }
 
     /// The same probe with other times for reusing and for re-reading the log (the tests).
@@ -119,26 +161,31 @@ impl Probe {
         self
     }
 
-    /// What of the data folder other accounts can open. Looked at on a thread of its own (it reads
-    /// files and may start a system tool) and kept for a short time. A look that fails is
-    /// *unknown* for every part, never private.
-    async fn check_rights(&self) -> DataFolderRights {
+    /// What of the data folder, the program and its settings other accounts can open or change.
+    /// Looked at on a thread of its own (it reads files and may start a system tool) and kept for
+    /// a short time. A look that fails is *unknown* for every part, never private.
+    async fn check_rights(&self) -> (DataFolderRights, HostRights) {
         let mut memory = self.rights_memory.lock().await;
         let now = Instant::now();
-        if let Some((at, rights)) = *memory
+        if let Some((at, folder, host)) = *memory
             && now.duration_since(at) < self.log_checking.rights_keep
         {
-            return rights;
+            return (folder, host);
         }
         let folder = self.data_folder.clone();
-        let rights = tokio::task::spawn_blocking(move || {
-            DataFolder::existing(&folder)
-                .map_or_else(DataFolderRights::unknown, |data| data.rights())
+        let host = self.host.clone();
+        let (folder, host) = tokio::task::spawn_blocking(move || {
+            let data = DataFolder::existing(&folder)
+                .map_or_else(DataFolderRights::unknown, |data| data.rights());
+            let host = host.map_or_else(HostRights::default, |host| {
+                host_rights::look(&host.files(&folder)).rights()
+            });
+            (data, host)
         })
         .await
-        .unwrap_or_else(|_| DataFolderRights::unknown());
-        *memory = Some((now, rights));
-        rights
+        .unwrap_or_else(|_| (DataFolderRights::unknown(), HostRights::unknown()));
+        *memory = Some((now, folder, host));
+        (folder, host)
     }
 
     /// Checks the security log as the status page does: from the end of the last good check, and
@@ -240,6 +287,7 @@ impl ServerProbe for Probe {
                 .and_then(ServedCertificate::expires_at)
                 .and_then(|seconds| Timestamp::from_second(seconds).ok())
                 .map(|expires_at| CertificateState { expires_at });
+            let (data_folder, host) = self.check_rights().await;
             Snapshot {
                 version: env!("CARGO_PKG_VERSION").to_owned(),
                 started_at: self.started_at,
@@ -249,7 +297,9 @@ impl ServerProbe for Probe {
                 certificate,
                 security_log,
                 log_write_failures: self.log_writes.failed(),
-                data_folder: self.check_rights().await,
+                data_folder,
+                host,
+                database_certificate_unchecked: self.database_certificate_unchecked,
             }
         })
     }

@@ -3276,6 +3276,20 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "You can look after this server. Organization settings shows what you may do there.",
     ),
     ("home.title", "Welcome, {name}"),
+    (
+        "host.open",
+        "{part} relies on {path}, which other accounts on this computer can change or read. Whoever can change the program or its settings can run code as Bugaboo and read its data. Bugaboo leaves it as it is: give these rights only to the account that runs Bugaboo and the administrators, as the install guide shows under Rights of the program and its settings.",
+    ),
+    ("host.part.program", "The program"),
+    ("host.part.settings-file", "The settings file"),
+    (
+        "host.part.tls-key",
+        "The private key of the HTTPS certificate",
+    ),
+    (
+        "host.unknown",
+        "{part} relies on {path}, whose rights Bugaboo could not read. Check them yourself: only the account that runs Bugaboo and the administrators should be able to change it, or to read the settings and the key.",
+    ),
     ("invitation.ask-again", "Send me a new link"),
     (
         "invitation.incomplete",
@@ -7551,10 +7565,23 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "server-status.database.built-in",
         "The built-in database in the data folder",
     ),
+    (
+        "server-status.database.certificate-unchecked",
+        "Reached without checking the certificate of the database server: somebody in between could read or change what passes. Add sslmode=verify-full to the database address.",
+    ),
     ("server-status.database.failed", "Not answering."),
     ("server-status.database.ok", "Working."),
     ("server-status.database.postgres", "A PostgreSQL server"),
     ("server-status.database.sqlite", "A SQLite file"),
+    ("server-status.host", "Program and settings rights"),
+    (
+        "server-status.host.closed",
+        "Only the account that runs Bugaboo and the administrators can change the program and its settings.",
+    ),
+    (
+        "server-status.host.open",
+        "Other accounts on this computer can change or read these. Whoever can change the program or its settings can run code as Bugaboo. Give these rights only to the account that runs Bugaboo and the administrators, as the install guide shows.",
+    ),
     ("server-status.intro", "How this Bugaboo server is doing."),
     ("server-status.log", "Security log"),
     (
@@ -7581,6 +7608,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "server.database-built-in",
         "Database: built-in SQLite in the data folder.",
+    ),
+    (
+        "server.database-certificate-unchecked",
+        "The PostgreSQL database on another computer is reached without checking the certificate of the database server, so somebody in between could read or change what passes, the password included. Add sslmode=verify-full to the database address in the settings file, as the settings guide shows.",
     ),
     (
         "server.database-failed",
@@ -7684,6 +7715,18 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The system named {path}, but root does not own it alone or other accounts can change it, so Bugaboo does not use it.",
     ),
     (
+        "service.changeable",
+        "Other accounts than root can change {path}, and the service would run what they put there with its own rights. Give it to root (chown root:) and take away the right of the group and of others to write (chmod go-w), for the program, its folder and every folder above it, or move Bugaboo into a folder of root, and install again.",
+    ),
+    (
+        "service.changeable-unknown",
+        "Bugaboo could not read who can change {path}, so the service is not installed: it might run what somebody else put there. Check the rights of {path} and install again.",
+    ),
+    (
+        "service.changeable-windows",
+        "Other accounts than the administrators of this computer can change {path}, and the service would run what they put there with its own rights. Put the program and its settings file in a folder of their own in Program Files, or take those rights away on the Security tab of the folder, and install again.",
+    ),
+    (
         "service.data-folder-real",
         "The data folder {path} is a link. The service uses the folder it leads to: {real}.",
     ),
@@ -7715,6 +7758,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "service.not-installed",
         "The service {name} is not installed.",
+    ),
+    (
+        "service.program-in-data",
+        "The program {path} is inside the data folder, which the account of the service can change. Move the program out of the data folder and install from there.",
     ),
     (
         "service.program-not-found",
@@ -9744,10 +9791,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "tls.generate-failed",
         "Bugaboo could not create a certificate: {reason}",
-    ),
-    (
-        "tls.key-readable",
-        "The private key {path} can be read by other people on this computer. Let only the account that runs Bugaboo read it.",
     ),
     (
         "tls.no-certificate",

@@ -33,9 +33,9 @@ use bb_core::backup::run::CreatedFile;
 use bb_store::backup::backups_in;
 
 use crate::cli::backup::{backup_folder, places, record_made};
-use crate::config::Settings;
+use crate::config::{Settings, TlsMode};
 use crate::data_folder::{DataFolder, protect_key_files};
-use crate::probe::{Probe, database_kind};
+use crate::probe::{HostPaths, Probe, database_kind};
 use crate::upgrade::{UpToDate, bring_up_to_date};
 use bb_core::backup::run::BackupMaker;
 
@@ -84,6 +84,28 @@ impl SetupCodeFile for SetupCodeOnDisk {
             other => other,
         }
     }
+}
+
+/// The program, its settings file and the private key of a certificate of the operator's own:
+/// the files besides the data folder whose rights the start and the status page look at.
+pub(crate) fn host_paths(settings: &Settings) -> HostPaths {
+    HostPaths {
+        program: std::env::current_exe().unwrap_or_default(),
+        config: settings.config_file.clone(),
+        tls_key: match &settings.tls {
+            TlsMode::Files { key, .. } => Some(key.clone()),
+            TlsMode::SelfSigned | TlsMode::Off => None,
+        },
+    }
+}
+
+/// Whether the database of these settings is a PostgreSQL server reached over the network
+/// without a checked certificate.
+pub(crate) fn certificate_unchecked(settings: &Settings) -> bool {
+    settings
+        .database_url
+        .as_deref()
+        .is_some_and(bb_store::certificate_unchecked)
 }
 
 pub(crate) fn database_failed(error: &impl std::fmt::Display) -> anyhow::Error {
@@ -298,7 +320,9 @@ pub(crate) async fn wire(
         serving.certificate,
         services.log_writes(),
         data.root().to_path_buf(),
-    );
+    )
+    .with_host(host_paths(settings))
+    .with_database_certificate_unchecked(certificate_unchecked(settings));
     // The first start: the starting roles (and the Administrator role of the people who were
     // administrators in M1), the issue types and kinds of relation, then the setup code.
     let setup_code = first_start(&services)

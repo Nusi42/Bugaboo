@@ -5,7 +5,14 @@ import type { ReactNode } from "react";
 
 import { daysUntil, formatDate, formatDateTime, splitUptime } from "../../shared/format.ts";
 import { LogStatus } from "./LogStatus.tsx";
-import { CERTIFICATE_WARNING_DAYS, openParts, serverNow, unknownParts } from "./status.ts";
+import {
+  CERTIFICATE_WARNING_DAYS,
+  openHostParts,
+  openParts,
+  serverNow,
+  unknownHostParts,
+  unknownParts,
+} from "./status.ts";
 
 type State = Schema<"ServerStatusBody">;
 
@@ -33,40 +40,53 @@ const partNames: Readonly<Record<keyof State["data_folder_open"], MessageKey>> =
   setup_code_file: "data-folder.part.setup-code-file",
 };
 
-/** The parts of the data folder under a sentence that says why they are listed. */
-function Parts({
+const hostPartNames: Readonly<Record<keyof State["host_open"], MessageKey>> = {
+  program: "host.part.program",
+  settings_file: "host.part.settings-file",
+  tls_key: "host.part.tls-key",
+};
+
+/** Parts under a sentence that says why they are listed. */
+function Parts<K extends string>({
   parts,
+  names,
   heading,
 }: {
-  readonly parts: readonly (keyof State["data_folder_open"])[];
+  readonly parts: readonly K[];
+  readonly names: Readonly<Record<K, MessageKey>>;
   readonly heading: string;
 }) {
   return (
     <>
       <Alert tone={alertTone.warning}>{heading}</Alert>
       <ul {...partOf(part.list)}>
-        {parts.map((piece) => (
-          <li key={piece}>{t(partNames[piece])}</li>
-        ))}
+        {parts.map((piece) => {
+          const name: MessageKey = names[piece];
+          return <li key={piece}>{t(name)}</li>;
+        })}
       </ul>
     </>
   );
 }
 
-/** What of the data folder other accounts on this computer can open, or that nothing is. */
-function DataFolderRights({ open }: { readonly open: State["data_folder_open"] }) {
-  const opened = openParts(open);
-  const unknown = unknownParts(open);
+interface RightsProps<K extends string> {
+  readonly opened: readonly K[];
+  readonly unknown: readonly K[];
+  readonly names: Readonly<Record<K, MessageKey>>;
+  readonly closed: string;
+  readonly open: string;
+}
+
+/** What other accounts on this computer can open or change, or that nothing is. */
+function Rights<K extends string>({ opened, unknown, names, closed, open }: RightsProps<K>) {
   if (opened.length === 0 && unknown.length === 0) {
-    return <span>{t("server-status.data-folder.closed")}</span>;
+    return <span>{closed}</span>;
   }
   return (
     <>
-      {opened.length === 0 ? null : (
-        <Parts parts={opened} heading={t("server-status.data-folder.open")} />
-      )}
+      {opened.length === 0 ? null : <Parts parts={opened} names={names} heading={open} />}
       {unknown.length === 0 ? null : (
-        <Parts parts={unknown} heading={t("server-status.data-folder.unknown")} />
+        <Parts parts={unknown} names={names} heading={t("server-status.data-folder.unknown")} />
       )}
     </>
   );
@@ -115,6 +135,11 @@ export function StatusRows({ state }: { readonly state: State }) {
         ) : (
           <Alert tone={alertTone.danger}>{t("server-status.database.failed")}</Alert>
         )}
+        {state.database.certificate_unchecked ? (
+          <Alert tone={alertTone.warning}>
+            {t("server-status.database.certificate-unchecked")}
+          </Alert>
+        ) : null}
       </Fact>
       <Fact term={t("server-status.certificate")}>
         <Certificate certificate={state.certificate} nowMs={serverNow(state)} />
@@ -123,7 +148,22 @@ export function StatusRows({ state }: { readonly state: State }) {
         <LogStatus log={state.security_log} />
       </Fact>
       <Fact term={t("server-status.data-folder")}>
-        <DataFolderRights open={state.data_folder_open} />
+        <Rights
+          opened={openParts(state.data_folder_open)}
+          unknown={unknownParts(state.data_folder_open)}
+          names={partNames}
+          closed={t("server-status.data-folder.closed")}
+          open={t("server-status.data-folder.open")}
+        />
+      </Fact>
+      <Fact term={t("server-status.host")}>
+        <Rights
+          opened={openHostParts(state.host_open)}
+          unknown={unknownHostParts(state.host_open)}
+          names={hostPartNames}
+          closed={t("server-status.host.closed")}
+          open={t("server-status.host.open")}
+        />
       </Fact>
     </dl>
   );

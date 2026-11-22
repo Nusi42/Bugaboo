@@ -224,6 +224,10 @@ export const messages = {
     "The database address on the command line has a password in it, and other people on this computer can read the command line, for example in the list of running programs. This time the address is saved in {file}. Next time answer the database question of setup instead of using the option, or set the environment variable {variable}.",
   "data-folder.unknown":
     "{part} {path} could not be checked, because Bugaboo could not read its access rights. Check them yourself: other accounts on this computer should not be able to open it, unless you want that.",
+  "host.open":
+    "{part} relies on {path}, which other accounts on this computer can change or read. Whoever can change the program or its settings can run code as Bugaboo and read its data. Bugaboo leaves it as it is: give these rights only to the account that runs Bugaboo and the administrators, as the install guide shows under Rights of the program and its settings.",
+  "host.unknown":
+    "{part} relies on {path}, whose rights Bugaboo could not read. Check them yourself: only the account that runs Bugaboo and the administrators should be able to change it, or to read the settings and the key.",
   "error.access.would-lock-out":
     "That would leave nobody who can manage roles and decide who has which role for the whole organization. Keep at least one person who can do both.",
   "error.access.cannot-lift":

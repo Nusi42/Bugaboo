@@ -26,6 +26,7 @@ use crate::security_log::NewSecurityLogEntry;
 
 mod fixed;
 mod gate;
+mod peer;
 mod sqlite_open;
 mod statement;
 mod statements;
@@ -40,6 +41,7 @@ mod hooks;
 use gate::{Turn, WriterGate};
 #[cfg(any(test, feature = "testing"))]
 pub use hooks::UpkeepForTests;
+pub use peer::{certificate_unchecked, with_checked_certificate};
 #[cfg(unix)]
 use sqlite_open::create_private_file;
 use sqlite_open::{SQLITE_BUSY_TIMEOUT, open_sqlite};

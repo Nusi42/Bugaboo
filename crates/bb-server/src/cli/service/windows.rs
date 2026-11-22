@@ -32,9 +32,11 @@ use windows_service::service_dispatcher;
 use windows_service::service_manager::{ServiceManager, ServiceManagerAccess};
 
 use super::windows_rights::{Need, service_can, service_sid_in};
-use super::{Found, NAME, State, refused, tell_about_setup_code};
+use super::{Found, NAME, State, refuse_changeable, refused, tell_about_setup_code};
 use crate::cli::{ConfigArgs, load_settings, serve};
-use crate::data_folder::{ADMINISTRATORS_SID, DataFolder, OwnFiles, check_for_service};
+use crate::data_folder::{
+    ADMINISTRATORS_SID, DataFolder, OwnFiles, check_for_service, restrict_to,
+};
 use crate::system::system_tool;
 use crate::{log, output};
 
@@ -157,12 +159,27 @@ fn service_sid() -> anyhow::Result<String> {
         .ok_or_else(|| refused(String::from_utf8_lossy(&output.stdout).trim()))
 }
 
+/// The entries the settings file keeps: reading for the account of the service, full control for
+/// the administrators of the computer, nothing inherited from its folder. The file can hold the
+/// database password, so nobody else may read it.
+fn settings_grants(service_sid: &str) -> Vec<String> {
+    vec![
+        format!("*{service_sid}:R"),
+        format!("*{ADMINISTRATORS_SID}:F"),
+    ]
+}
+
+/// Gives the settings file to the account of the service to read, and to nobody else but the
+/// administrators.
+fn give_settings_to_service(found: &Found, service_sid: &str) -> anyhow::Result<()> {
+    restrict_to(&found.config, &settings_grants(service_sid)).map_err(|said| refused(&said))
+}
+
 /// Refuses when the account of the service cannot run the program or read the settings file.
-fn check_account_can_read(found: &Found) -> anyhow::Result<()> {
-    let sid = service_sid()?;
+fn check_account_can_read(found: &Found, sid: &str) -> anyhow::Result<()> {
     for (path, need) in [(&found.program, Need::Run), (&found.config, Need::Read)] {
         let readable = crate::data_folder::rights::access_list(path)
-            .is_some_and(|sddl| service_can(&sddl, &sid, need));
+            .is_some_and(|sddl| service_can(&sddl, sid, need));
         if !readable {
             return Err(anyhow!(
                 message::service_account_cannot_read(message::ServiceAccountCannotRead {
@@ -180,7 +197,10 @@ fn check_account_can_read(found: &Found) -> anyhow::Result<()> {
 pub(super) fn install(found: &Found, own_files: OwnFiles) -> anyhow::Result<()> {
     // What Windows names is asked before anything is created, so a failure leaves no half-made service.
     let icacls = system_tool("icacls.exe").map_err(|said| refused(&said.render()))?;
-    check_account_can_read(found)?;
+    refuse_changeable(found, &found.settings.data_dir)?;
+    let sid = service_sid()?;
+    give_settings_to_service(found, &sid)?;
+    check_account_can_read(found, &sid)?;
     let manager =
         ServiceManager::local_computer(None::<&str>, ServiceManagerAccess::CREATE_SERVICE)
             .map_err(|error| explain(&error))?;
@@ -421,6 +441,19 @@ fn serve_until_stopped(args: &ConfigArgs, stopped: oneshot::Receiver<()>) -> any
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn sec_16_the_install_gives_the_settings_file_to_the_service_and_the_administrators_only() {
+        let grants = settings_grants("S-1-5-80-1-2-3-4-5");
+        assert_eq!(
+            grants,
+            ["*S-1-5-80-1-2-3-4-5:R", &format!("*{ADMINISTRATORS_SID}:F")]
+        );
+        // Run as Bugaboo restricts its own files: every entry goes, nothing is inherited.
+        let [reset, grant] = bb_core::access_list::restrict_arguments(&grants);
+        assert_eq!(reset, ["/reset"]);
+        assert_eq!(grant[0], "/inheritance:r");
+    }
 
     #[test]
     fn ops_04_a_stopped_upgrade_does_not_restart_the_service() {

@@ -59,6 +59,8 @@ export const messages = {
   "server-status.database.postgres": "A PostgreSQL server",
   "server-status.database.ok": "Working.",
   "server-status.database.failed": "Not answering.",
+  "server-status.database.certificate-unchecked":
+    "Reached without checking the certificate of the database server: somebody in between could read or change what passes. Add sslmode=verify-full to the database address.",
   "server-status.certificate": "HTTPS certificate",
   "server-status.certificate.valid":
     "Valid until {date}, which is {days, plural, one {# day} other {# days}} from now.",
@@ -82,6 +84,14 @@ export const messages = {
     "Other accounts on this computer can open these. Bugaboo leaves them as they are, in case you set these rights on purpose. If nobody else should read them, remove the rights of the other accounts.",
   "server-status.data-folder.unknown":
     "Bugaboo could not read the rights of these, so it cannot say whether other accounts can open them. Check them yourself:",
+  "host.part.program": "The program",
+  "host.part.settings-file": "The settings file",
+  "host.part.tls-key": "The private key of the HTTPS certificate",
+  "server-status.host": "Program and settings rights",
+  "server-status.host.closed":
+    "Only the account that runs Bugaboo and the administrators can change the program and its settings.",
+  "server-status.host.open":
+    "Other accounts on this computer can change or read these. Whoever can change the program or its settings can run code as Bugaboo. Give these rights only to the account that runs Bugaboo and the administrators, as the install guide shows.",
 } as const;
 
 register(messages);

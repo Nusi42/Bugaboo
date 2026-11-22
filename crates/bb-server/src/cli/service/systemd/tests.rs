@@ -278,18 +278,6 @@ fn sec_16_a_settings_file_that_is_a_link_is_refused() {
     );
 }
 
-#[test]
-fn sec_16_the_folder_of_the_settings_file_must_be_root_s_and_closed() {
-    assert_eq!(trust_of(0o755, 0), None);
-    assert_eq!(trust_of(0o700, 0), None);
-    assert_eq!(trust_of(0o775, 0), Some(Untrusted::OthersCanWrite));
-    assert_eq!(trust_of(0o754, 0), None, "only writing counts, not reading");
-    assert_eq!(trust_of(0o777, 0), Some(Untrusted::OthersCanWrite));
-    assert_eq!(trust_of(0o755, 1000), Some(Untrusted::NotRoots));
-    // Somebody else's folder that is open as well is named for what is worse.
-    assert_eq!(trust_of(0o777, 1000), Some(Untrusted::OthersCanWrite));
-}
-
 #[cfg(unix)]
 #[test]
 fn sec_16_a_settings_file_in_a_folder_others_can_change_or_root_does_not_own_is_refused() {
@@ -377,8 +365,9 @@ fn sec_16_a_data_folder_that_is_a_link_is_planned_with_its_real_path() {
 
 #[test]
 fn sec_16_a_path_that_is_not_there_yet_stays_as_it_is() {
+    // Only made absolute, which a path of Linux already is there.
     let new = Path::new("/var/lib/not-there-yet/bugaboo");
-    assert_eq!(real_path(new), new);
+    assert_eq!(real_path(new), std::path::absolute(new).unwrap());
 }
 
 #[test]
@@ -465,7 +454,7 @@ fn ops_04_an_answer_that_root_does_not_own_alone_is_refused() {
 fn ops_04_a_path_that_cannot_be_looked_at_is_not_trusted() {
     let temp = tempfile::tempdir().unwrap();
     let missing = temp.path().join("not-there");
-    assert_eq!(untrusted(&missing), Some(Untrusted::Unreadable));
+    assert_eq!(untrusted(&missing, None), Some(Untrusted::Unreadable));
     assert!(trusted(missing).is_err());
 }
 

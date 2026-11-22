@@ -479,7 +479,7 @@ fn file_grants(sid: &str) -> Vec<String> {
 
 /// Windows: removes every entry of the access list and inherited rights, then grants `grants`.
 #[cfg(windows)]
-fn restrict_to(path: &Path, grants: &[String]) -> Result<(), String> {
+pub(crate) fn restrict_to(path: &Path, grants: &[String]) -> Result<(), String> {
     for arguments in bb_core::access_list::restrict_arguments(grants) {
         let output =
             std::process::Command::new(system_tool("icacls.exe").map_err(|said| said.render())?)
@@ -709,7 +709,7 @@ pub(crate) fn open_to_others(_folder: &Path) -> bool {
 /// The SID of the account that runs Bugaboo. Names can be translated, renamed or ambiguous;
 /// the SID is not.
 #[cfg(windows)]
-fn current_sid() -> Result<String, String> {
+pub(crate) fn current_sid() -> Result<String, String> {
     let output =
         std::process::Command::new(system_tool("whoami.exe").map_err(|said| said.render())?)
             .args(bb_core::access_list::WHOAMI_ARGUMENTS)

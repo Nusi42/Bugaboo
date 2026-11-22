@@ -182,6 +182,31 @@ impl DataFolderRights {
     }
 }
 
+/// Whether other accounts on this computer can change the program of the server or its settings
+/// file, or read the settings file or the private key of the HTTPS certificate. Bugaboo only
+/// looks, at every start and on the status page (SEC-16).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct HostRights {
+    /// The program, its folder and every folder above it.
+    pub program: Access,
+    /// The settings file and its folder.
+    pub settings_file: Access,
+    /// The private key of a certificate of the operator's own.
+    pub tls_key: Access,
+}
+
+impl HostRights {
+    /// Nothing could be read: every part is unknown.
+    #[must_use]
+    pub const fn unknown() -> Self {
+        Self {
+            program: Access::Unknown,
+            settings_file: Access::Unknown,
+            tls_key: Access::Unknown,
+        }
+    }
+}
+
 /// The HTTPS certificate in use.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct CertificateState {
@@ -211,6 +236,12 @@ pub struct Snapshot {
     pub log_write_failures: u64,
     /// Which parts of the data folder other accounts on this computer can open.
     pub data_folder: DataFolderRights,
+    /// Whether other accounts on this computer can change the program or its settings, or read
+    /// the settings or the HTTPS key.
+    pub host: HostRights,
+    /// Whether the server reaches its database over the network without checking the
+    /// certificate of the database server, so somebody in between could read or change it.
+    pub database_certificate_unchecked: bool,
 }
 
 /// Measures the server for the status page and for `/health/ready`.

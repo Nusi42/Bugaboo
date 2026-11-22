@@ -160,27 +160,39 @@ fn windows_open_sentence(part: &str, path: &Path, sid: Option<&str>) -> Message 
     })
 }
 
+/// The mode bits on Linux that make a part of the data folder too open: any right of the group or
+/// of everybody.
+const OPEN_BITS: u32 = 0o077;
+
 /// How open `path` is. A path that is not there is private.
 fn access_of(path: &Path) -> Access {
+    access_with(path, OPEN_BITS)
+}
+
+/// How open `path` is to other accounts on this computer: on Linux one of `open_bits` is set in
+/// its mode, on Windows its access list gives something to an account that stands for many
+/// people. A path that is not there is private; what cannot be read is unknown. The one reading
+/// of these rights, for the data folder and for the settings file and the HTTPS key.
+pub(crate) fn access_with(path: &Path, open_bits: u32) -> Access {
     if path.exists() {
-        file_access(path)
+        file_access(path, open_bits)
     } else {
         Access::Private
     }
 }
 
-/// Linux: a group or world bit is set.
+/// Linux: one of `open_bits` is set.
 #[cfg(unix)]
-fn file_access(path: &Path) -> Access {
+fn file_access(path: &Path, open_bits: u32) -> Access {
     use std::os::unix::fs::PermissionsExt as _;
     std::fs::metadata(path).map_or(Access::Unknown, |data| {
-        Access::of(data.permissions().mode() & 0o077 != 0)
+        Access::of(data.permissions().mode() & open_bits != 0)
     })
 }
 
 /// Windows: the access list gives something to everybody. What cannot be read is unknown.
 #[cfg(windows)]
-fn file_access(path: &Path) -> Access {
+fn file_access(path: &Path, _open_bits: u32) -> Access {
     access_list(path).map_or(Access::Unknown, |sddl| sddl_access(&sddl))
 }
 
@@ -206,9 +218,47 @@ pub(crate) fn access_list(path: &Path) -> Option<String> {
     Some(bb_core::access_list::saved_text(&bytes?))
 }
 
+/// The owners (SIDs) of `paths`, in their order, found by asking Windows PowerShell once for all
+/// of them (`icacls` does not show owners); `None` for each one whose owner cannot be read.
+#[cfg(windows)]
+pub(crate) fn owners(paths: &[PathBuf]) -> Vec<Option<String>> {
+    use base64ct::Encoding as _;
+    let texts: Vec<String> = paths
+        .iter()
+        .map(|path| path.display().to_string())
+        .collect();
+    let script = bb_core::access_list::owners_script(&texts);
+    // The script goes in encoded as PowerShell expects (UTF-16, base64), so no quoting of the
+    // command line can change it.
+    let bytes: Vec<u8> = script.encode_utf16().flat_map(u16::to_le_bytes).collect();
+    let output = crate::system::system_tool(POWERSHELL)
+        .ok()
+        .and_then(|program| {
+            std::process::Command::new(program)
+                .args(POWERSHELL_ARGUMENTS)
+                .arg(base64ct::Base64::encode_string(&bytes))
+                .output()
+                .ok()
+        });
+    output.filter(|output| output.status.success()).map_or_else(
+        || vec![None; paths.len()],
+        |output| {
+            bb_core::access_list::owners_in(&String::from_utf8_lossy(&output.stdout), paths.len())
+        },
+    )
+}
+
+/// Windows PowerShell, in the system folder of Windows.
+#[cfg(windows)]
+const POWERSHELL: &str = r"WindowsPowerShell\v1.0\powershell.exe";
+
+/// How Windows PowerShell is started: no profile, nothing asked, the script given encoded next.
+#[cfg(windows)]
+const POWERSHELL_ARGUMENTS: [&str; 3] = ["-NoProfile", "-NonInteractive", "-EncodedCommand"];
+
 /// Anything else: nothing is known about access lists.
 #[cfg(not(any(unix, windows)))]
-fn file_access(_path: &Path) -> Access {
+fn file_access(_path: &Path, _open_bits: u32) -> Access {
     Access::Unknown
 }
 

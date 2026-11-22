@@ -114,6 +114,9 @@ pub(crate) struct Settings {
     pub(crate) limits: LimitsConfig,
     /// How long changes to one issue are collected into one e-mail (M4-Q6).
     pub(crate) mail_batch: jiff::SignedDuration,
+    /// The settings file these settings were read from, when there is one: whose rights the
+    /// start and the status page look at (SEC-16).
+    pub(crate) config_file: Option<PathBuf>,
 }
 
 /// Where the settings come from.
@@ -285,7 +288,9 @@ pub(crate) fn resolve(sources: &Sources<'_>) -> Result<Settings, ConfigError> {
     for (key, value) in sources.cli {
         values.insert(*key, value.clone());
     }
-    settings_from(&values, sources.base)
+    let mut settings = settings_from(&values, sources.base)?;
+    settings.config_file = sources.file.map(|(path, _)| path.to_path_buf());
+    Ok(settings)
 }
 
 /// The port that [`resolve_without_port`] uses when no source names one. Nothing listens on it.
@@ -459,6 +464,7 @@ fn settings_from(
         header_timeout: Duration::from_secs(header_seconds),
         limits,
         mail_batch,
+        config_file: None,
     })
 }
 

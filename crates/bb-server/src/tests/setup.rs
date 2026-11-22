@@ -458,3 +458,32 @@ fn ops_03_the_file_can_be_read_by_its_owner_and_the_administrators_only_on_windo
     assert!(others[0].starts_with("S-1-5-21-"), "{sddl}");
     Ok(())
 }
+
+#[test]
+fn sec_16_a_database_on_another_computer_is_asked_to_check_its_certificate() -> TestResult {
+    let folder = tempfile::tempdir()?;
+    let target = folder.path().join("bugaboo.toml");
+    execute(
+        &args("--non-interactive --port 47200 --database-url postgres://db.example.test/bugaboo"),
+        &mut Script::new(&[]),
+        &target,
+        &all_free,
+    )?;
+    assert_eq!(
+        written(&target)?.database_url.as_deref(),
+        Some("postgres://db.example.test/bugaboo?sslmode=verify-full")
+    );
+    // A server on this computer, and what the person chose, stay as they are.
+    let local = folder.path().join("local.toml");
+    execute(
+        &args("--non-interactive --port 47200 --database-url postgres://localhost/bugaboo"),
+        &mut Script::new(&[]),
+        &local,
+        &all_free,
+    )?;
+    assert_eq!(
+        written(&local)?.database_url.as_deref(),
+        Some("postgres://localhost/bugaboo")
+    );
+    Ok(())
+}

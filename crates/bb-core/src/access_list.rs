@@ -1,6 +1,7 @@
 //! Reading and writing the access lists of Windows as text (SEC-16, SEC-18): what `icacls /save`
-//! writes (SDDL), the account in what `whoami /user` prints, and the two runs of `icacls` that
-//! keep only the entries given. The server (its data folder, its program, its settings and its
+//! writes (SDDL), the owner of a path as Windows PowerShell writes it (`icacls` does not show
+//! owners), the account in what `whoami /user` prints, and the two runs of `icacls` that keep only
+//! the entries given. The server (its data folder, its program, its settings and its
 //! service) and the release tools (the secret key of a release) read them here once; each runs
 //! the system tools itself, because this crate does no I/O.
 //!
@@ -256,6 +257,75 @@ pub fn allows_others(sddl: &str, trusted: &[&str], rights: u32) -> Option<bool> 
     })
 }
 
+/// The account that stands for the owner of an object in an access list (`OWNER RIGHTS`), as the
+/// short name SDDL uses and as its SID. An owner may always change the access list of what it owns
+/// and so give itself any right, unless an entry for OWNER RIGHTS applies to the object: then the
+/// owner gets only what such entries give.
+pub const OWNER_RIGHTS: [&str; 2] = ["OW", "S-1-3-4"];
+
+/// Whether an account that is not among `trusted` may use one of `rights` on an object with this
+/// access list and this owner (a SID): an entry allows it to such an account (as
+/// [`allows_others`]), or the owner is not trusted and may change the access list (`WRITE_DAC`),
+/// which an owner always may unless an entry for [`OWNER_RIGHTS`] applies to the object. An entry
+/// for OWNER RIGHTS gives its rights to the owner, so it counts only when the owner is not
+/// trusted. `None` when the text has no access list that can be read.
+#[must_use]
+pub fn changeable_by_others(
+    sddl: &str,
+    owner: &str,
+    trusted: &[&str],
+    rights: u32,
+) -> Option<bool> {
+    let owner_trusted = trusted.contains(&owner);
+    let mut also: Vec<&str> = trusted.to_vec();
+    if owner_trusted {
+        also.extend(OWNER_RIGHTS);
+    }
+    let by_entry = allows_others(sddl, &also, rights)?;
+    let owner_limited = access_entries(sddl)?
+        .iter()
+        .any(|entry| OWNER_RIGHTS.contains(&entry.who));
+    Some(by_entry || (!owner_trusted && !owner_limited && rights & rights::WRITE_DAC != 0))
+}
+
+/// The script for Windows PowerShell that writes the owner (a SID) of each of `paths`, one line
+/// each and in the same order, or `-` for a path whose owner cannot be read. `icacls` does not
+/// show owners. The paths are written into the script as quoted text, never as code.
+#[must_use]
+pub fn owners_script(paths: &[String]) -> String {
+    let quoted: Vec<String> = paths
+        .iter()
+        .map(|path| format!("'{}'", path.replace('\'', "''")))
+        .collect();
+    format!(
+        "$ErrorActionPreference = 'Stop'; foreach ($path in @({})) {{ try {{ (Get-Item -LiteralPath $path -Force).GetAccessControl('Owner').GetOwner([System.Security.Principal.SecurityIdentifier]).Value }} catch {{ '-' }} }}",
+        quoted.join(", ")
+    )
+}
+
+/// The owners in what [`owners_script`] wrote for `count` paths: the SID of each line, `None` for
+/// a line that holds none. Nothing is known when the number of lines is not `count`.
+#[must_use]
+pub fn owners_in(output: &str, count: usize) -> Vec<Option<String>> {
+    let lines: Vec<&str> = output
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        .collect();
+    if lines.len() != count {
+        return vec![None; count];
+    }
+    lines
+        .into_iter()
+        .map(|line| is_sid(line).then(|| line.to_owned()))
+        .collect()
+}
+
+/// Whether the text is a SID as Windows writes it (`S-1-…`, letters, digits and dashes only).
+fn is_sid(text: &str) -> bool {
+    text.starts_with("S-1-") && text.chars().all(|c| c.is_ascii_alphanumeric() || c == '-')
+}
+
 /// The text of the file `icacls /save` wrote, which is UTF-16 with a byte order mark.
 #[must_use]
 pub fn saved_text(bytes: &[u8]) -> String {
@@ -272,8 +342,7 @@ pub fn saved_text(bytes: &[u8]) -> String {
 pub fn sid_in_whoami(output: &str) -> Option<String> {
     let last = output.trim().rsplit(',').next()?;
     let sid = last.trim().trim_matches('"');
-    (sid.starts_with("S-1-") && sid.chars().all(|c| c.is_ascii_alphanumeric() || c == '-'))
-        .then(|| sid.to_owned())
+    is_sid(sid).then(|| sid.to_owned())
 }
 
 /// The arguments of `whoami.exe` that print the account running it in the form

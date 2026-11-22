@@ -144,6 +144,12 @@ impl Answers {
         .into_iter()
         // An empty answer is an answer that is no setting: the built-in database.
         .filter_map(|(name, value)| value.clone().filter(|value| !value.is_empty()).map(|value| (name, value)))
+        // A PostgreSQL server on another computer is asked to show a certificate that is checked,
+        // unless the person said how the link is protected (SEC-16).
+        .map(|(name, value)| match name {
+            SettingName::DatabaseUrl => (name, bb_store::with_checked_certificate(&value)),
+            _ => (name, value),
+        })
         .collect()
     }
 
