@@ -6,13 +6,18 @@ import { samplePeople, sampleTeamMember, sampleWithCodeApp } from "./support/sam
 import { codeApp } from "./support/totp.ts";
 import { paths } from "../src/shared/paths.ts";
 
+/** The people of the sample (architecture §11), and how many of them left in part 8. */
+const SAMPLE_PEOPLE = 50;
+const PEOPLE_WHO_LEFT = 2;
+
 test.use({ sample: true });
 test.describe.configure({ mode: "serial" });
 
 test("sample a Team member of the sample organization signs in with the password from the file", async ({
   page,
 }) => {
-  expect(samplePeople()).toHaveLength(50);
+  // The 50 people of the sample but the two who left (part 8), who cannot sign in.
+  expect(samplePeople()).toHaveLength(SAMPLE_PEOPLE - PEOPLE_WHO_LEFT);
   const member = sampleTeamMember();
   expect(member.email.endsWith("@bugaboo.example")).toBe(true);
   await sendPassword(page, member);
