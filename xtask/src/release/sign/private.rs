@@ -1,5 +1,6 @@
 //! The secret key file is its owner's alone (SEC-18, ADR-0047 decision 2): a key without a
-//! passphrase is kept by its place, so no other account of the computer may read it. `keygen`
+//! passphrase is kept by its place, so no other account of the computer may read it (the system
+//! and the administrators of the computer, who can take over any file, aside). `keygen`
 //! makes the file that way before anything goes into it; `sign` refuses a file other accounts may
 //! read, and says how to close it.
 //!
@@ -94,11 +95,18 @@ fn how_to_close(path: &Path) -> String {
     format!("`chmod {OWNER_ONLY_MODE:o} '{}'`", path.display())
 }
 
-/// Windows: the access list gives something to everybody, to all users or to all signed-in
-/// accounts of the computer.
+/// Windows: the access list gives something to an account that is not the owner, the system or
+/// the administrators of the computer, as the mode `0600` on Linux.
 #[cfg(windows)]
 fn open_to_others(path: &Path) -> Option<bool> {
-    bb_core::access_list::open_to_many(&access_list(path)?)
+    use bb_core::access_list::{SYSTEM_AND_ADMINISTRATORS, allows_others, rights};
+    let owner = current_sid().ok()?;
+    let trusted: Vec<&str> = SYSTEM_AND_ADMINISTRATORS
+        .iter()
+        .copied()
+        .chain([owner.as_str()])
+        .collect();
+    allows_others(&access_list(path)?, &trusted, rights::ALL)
 }
 
 /// The two `icacls` commands that keep only the owner, as `keygen` runs them.

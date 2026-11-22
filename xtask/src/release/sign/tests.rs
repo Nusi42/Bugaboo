@@ -104,6 +104,28 @@ fn sec_18_the_secret_key_is_its_owner_s_alone() {
             "{refused}"
         );
         assert!(refused.contains("/inheritance:r"), "{refused}");
+        // One other account is refused too, as with the mode `0600`; the system is not.
+        for (sid, accepted) in [("S-1-5-18", true), ("S-1-5-19", false)] {
+            let reset = std::process::Command::new("icacls.exe")
+                .arg(&out)
+                .args(["/remove:g", "*S-1-5-32-545"])
+                .output()
+                .unwrap();
+            assert!(reset.status.success());
+            let granted = std::process::Command::new("icacls.exe")
+                .arg(&out)
+                .args(["/grant", &format!("*{sid}:R")])
+                .output()
+                .unwrap();
+            assert!(granted.status.success());
+            assert_eq!(open_key(&out, &root).is_ok(), accepted, "{sid}");
+            let removed = std::process::Command::new("icacls.exe")
+                .arg(&out)
+                .args(["/remove:g", &format!("*{sid}")])
+                .output()
+                .unwrap();
+            assert!(removed.status.success());
+        }
     }
 }
 

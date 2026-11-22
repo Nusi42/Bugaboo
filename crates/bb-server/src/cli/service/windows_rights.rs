@@ -8,7 +8,7 @@
 //! folder), and an entry counts when it names the service's own SID or a group that every
 //! service account belongs to.
 
-use bb_core::access_list::access_entries;
+use bb_core::access_list::{access_entries, rights, rights_of};
 
 /// The groups every account of a service belongs to: everybody, the users of the computer, the
 /// accounts that signed in, the services, and all services (`NT SERVICE\ALL SERVICES`), as the
@@ -25,24 +25,6 @@ const SERVICE_GROUPS: [&str; 9] = [
     "S-1-5-80-0",
 ];
 
-/// The right to read the content of a file (`FILE_READ_DATA`).
-const READ_DATA: u32 = 0x1;
-/// The right to run a file as a program (`FILE_EXECUTE`).
-const EXECUTE: u32 = 0x20;
-
-/// The rights of the short names SDDL writes for files: all, read, execute and write, as files
-/// and as the generic rights that stand for them.
-const NAMED_RIGHTS: [(&str, u32); 8] = [
-    ("FA", 0x001F_01FF),
-    ("FR", 0x0012_0089),
-    ("FX", 0x0012_00A0),
-    ("FW", 0x0012_0116),
-    ("GA", 0x001F_01FF),
-    ("GR", 0x0012_0089),
-    ("GX", 0x0012_00A0),
-    ("GW", 0x0012_0116),
-];
-
 /// What the service does with a file.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum Need {
@@ -55,27 +37,10 @@ pub(super) enum Need {
 impl Need {
     fn rights(self) -> u32 {
         match self {
-            Self::Read => READ_DATA,
-            Self::Run => READ_DATA | EXECUTE,
+            Self::Read => rights::READ_DATA,
+            Self::Run => rights::READ_DATA | rights::EXECUTE,
         }
     }
-}
-
-/// The rights in the rights part of an SDDL entry: a number (`0x1200a9`) or short names of two
-/// letters each (`FRFX`); names that say nothing about reading or running count as none.
-fn rights_of(text: &str) -> u32 {
-    if let Some(number) = text.strip_prefix("0x").or_else(|| text.strip_prefix("0X")) {
-        return u32::from_str_radix(number, 16).unwrap_or(0);
-    }
-    text.as_bytes()
-        .chunks(2)
-        .filter_map(|pair| std::str::from_utf8(pair).ok())
-        .filter_map(|name| {
-            NAMED_RIGHTS
-                .iter()
-                .find_map(|(known, rights)| (*known == name).then_some(*rights))
-        })
-        .fold(0, |all, rights| all | rights)
 }
 
 /// Whether the access list in `sddl` lets the service whose SID is `service_sid` do `need`: the
@@ -89,11 +54,14 @@ pub(super) fn service_can(sddl: &str, service_sid: &str, need: Need) -> bool {
         .iter()
         .filter(|entry| entry.who == service_sid || SERVICE_GROUPS.contains(&entry.who))
         .fold((0, 0), |(allowed, denied), entry| {
-            let rights = rights_of(entry.rights);
+            // Rights that cannot be read give nothing and deny everything.
             if entry.allows {
-                (allowed | rights, denied)
+                (allowed | rights_of(entry.rights).unwrap_or(0), denied)
             } else {
-                (allowed, denied | rights)
+                (
+                    allowed,
+                    denied | rights_of(entry.rights).unwrap_or(rights::ALL),
+                )
             }
         });
     (allowed & !denied) & need.rights() == need.rights()

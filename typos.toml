@@ -46,5 +46,8 @@ pn = "pn"
 # The `/fo` (format) switch of Windows' whoami.exe, written in the data folder code.
 [type.rust.extend-words]
 fo = "fo"
+# The short name SDDL gives the administrators of the computer (`BA`), in the reader of access
+# lists (bb-core access_list.rs).
+BA = "BA"
 # The PDF filter `/FlateDecode` (zlib), written into the PDF that a test of previews builds.
 Flate = "Flate"
