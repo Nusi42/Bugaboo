@@ -48,6 +48,7 @@ use serde_json::Value;
 use super::{Check, Context, Finding};
 use crate::dataset::load_layout;
 use crate::source::read_text;
+use bb_core::person::Standing;
 use bb_core::text::CROCKFORD;
 use bb_dev_words::sample::{IssuePlan, Layout, OrganizationNames};
 
@@ -314,17 +315,24 @@ fn fictional(names: &NameList, label: &str, dump: &Value, problems: &mut Vec<Str
             ));
         }
     };
-    for person in people {
+    // A removed person has no name or address any more: the dump leaves them out (part 8).
+    let people: Vec<&Value> = people
+        .iter()
+        .filter(|person| person["standing"] != Standing::Removed.code())
+        .collect();
+    for person in &people {
         check_address(person["email"].as_str().unwrap_or(""));
     }
     for event in dump["events"].as_array().map_or(&[][..], Vec::as_slice) {
         for change in event["changes"].as_array().map_or(&[][..], Vec::as_slice) {
-            if change["field"] == "email" {
-                check_address(change["after"].as_str().unwrap_or(""));
+            // An address a removal emptied names nobody.
+            let address = change["after"].as_str().unwrap_or("");
+            if change["field"] == "email" && !address.is_empty() {
+                check_address(address);
             }
         }
     }
-    for person in people {
+    for person in &people {
         let name = person["name"].as_str().unwrap_or("");
         if !names.contains(name) {
             problems.push(format!(
@@ -358,9 +366,17 @@ fn the_organization(
         }
     }
     let roles = dump["roles"].as_array().map_or(&[][..], Vec::as_slice);
+    let people = dump["people"].as_array().map_or(&[][..], Vec::as_slice);
     for (key, wanted) in ROLE_MIX {
         let found = roles.iter().find(|role| role["starting"] == key);
-        match found.map(|role| role["held_by"].as_u64()) {
+        // A removed person holds no role any more, but was made with theirs (part 8).
+        let removed = people
+            .iter()
+            .filter(|person| {
+                person["standing"] == Standing::Removed.code() && person["role"] == key
+            })
+            .count() as u64;
+        match found.map(|role| role["held_by"].as_u64().map(|held| held + removed)) {
             None => problems.push(format!(
                 "{label}: the starting role {key} is not in the dump. The sample has the mix of roles of architecture §11."
             )),
@@ -547,6 +563,28 @@ mod tests {
         );
         // Every run says it, and nothing else is wrong.
         assert_eq!(found.len(), 2, "{found:?}");
+    }
+
+    #[test]
+    fn good_example_a_removed_person_has_no_name_and_still_counts_for_their_role() {
+        let dump = serde_json::json!({
+            "people": [
+                {"name": "Ada Brandt", "email": "ada.brandt@bugaboo.example", "role": "administrator", "standing": Standing::Active.code()},
+                {"name": "", "email": "", "role": "contributor", "standing": Standing::Removed.code()}
+            ],
+            "events": [{"changes": [{"field": "email", "after": ""}]}],
+            "roles": [{"starting": "contributor", "held_by": 7}]
+        });
+        let mut problems = Vec::new();
+        fictional(&names(), "run", &dump, &mut problems);
+        assert!(problems.is_empty(), "{problems:?}");
+        the_organization(&organization(), "run", &dump, &mut problems);
+        assert!(
+            !problems
+                .iter()
+                .any(|p| p.contains("contributor is held by")),
+            "{problems:?}"
+        );
     }
 
     #[test]
