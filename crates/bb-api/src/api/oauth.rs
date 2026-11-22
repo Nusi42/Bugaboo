@@ -321,6 +321,10 @@ pub(crate) struct DecisionBody {
     /// app counts in them and in their sub-projects.
     #[serde(default)]
     projects: Vec<String>,
+    /// The person's password, asked again for *Allow*: without it *Allow* is refused with
+    /// `auth.wrong-credentials`. *Cancel* needs none.
+    #[serde(default)]
+    password: Option<String>,
 }
 
 /// Where the browser goes next.
@@ -410,6 +414,7 @@ async fn decide_authorization(
                 allow: body.allow,
                 scope: body.scope,
                 projects,
+                password: body.password.unwrap_or_default(),
             },
         )
         .await?;

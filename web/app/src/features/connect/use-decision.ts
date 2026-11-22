@@ -13,6 +13,8 @@ export interface Decision {
   readonly scope: Schema<"KeyChoice">;
   /** The projects it is limited to; none for every project. */
   readonly projects: readonly string[];
+  /** The person's password, typed again for *Allow*; *Cancel* sends none. */
+  readonly password: string;
 }
 
 /** Sending the decision, and going back to the app with the answer. */
@@ -40,9 +42,9 @@ export function useDecision(request: ConnectRequest): Deciding {
     },
   });
   return {
-    send: ({ allow, scope, projects }) => {
+    send: ({ allow, scope, projects, password }) => {
       decide.mutate({
-        body: { request, allow, scope, projects: [...projects] },
+        body: { request, allow, scope, projects: [...projects], ...(allow ? { password } : {}) },
       });
     },
     problem: decide.isError ? messageOf(decide.error) : null,

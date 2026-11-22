@@ -16,6 +16,8 @@ export const messages = {
     "That code is not right. Check the code in your app, or use one of your backup codes.",
   "error.auth.wrong-setup-code":
     "That setup code is not right. Copy it again from the window where Bugaboo is running.",
+  "error.auth.password-needed":
+    "This step asks for your password, but you sign in without one, so it cannot be done with your account yet.",
   "error.auth.password-too-short":
     "Choose a password with at least 12 characters. Length matters more than special characters.",
   "error.auth.password-breached":

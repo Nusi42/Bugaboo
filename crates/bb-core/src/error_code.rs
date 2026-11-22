@@ -57,6 +57,9 @@ error_codes! {
     WrongSecondStepCode => ("auth.wrong-second-step-code", 401),
     /// The setup code of the first start is wrong.
     WrongSetupCode => ("auth.wrong-setup-code", 401),
+    /// A step asks for the password again, and the person has none: they sign in another way (a
+    /// passkey, company sign-in). Their password is not wrong, there is none to check.
+    PasswordNeeded => ("auth.password-needed", 403),
     /// The new password is shorter than 12 characters.
     PasswordTooShort => ("auth.password-too-short", 400),
     /// The new password is in the list of passwords that are tried first.

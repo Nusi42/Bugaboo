@@ -3,6 +3,7 @@ import { t } from "@bugaboo/messages";
 import { paths } from "../src/shared/paths.ts";
 import { ada, createAdmin } from "./support/accounts.ts";
 import {
+  allowAs,
   allowWebAddress,
   appAtTheDoor,
   catchTheAnswer,
@@ -83,7 +84,7 @@ test("a request nobody registered, and the list of connected apps", async ({ pag
     [app, second].map((each) => async () => {
       await page.goto(each.address);
       await catchTheAnswer(page, async () => {
-        await page.getByRole("button", { name: t("connect.allow"), exact: true }).click();
+        await allowAs(page, ada);
       });
     }),
   );

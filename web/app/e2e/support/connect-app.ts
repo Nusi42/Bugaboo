@@ -1,8 +1,9 @@
 import { createHash, randomBytes } from "node:crypto";
 
+import { t } from "@bugaboo/messages";
 import { request, type Page } from "@playwright/test";
 
-import { ada } from "./accounts.ts";
+import { ada, type Person } from "./accounts.ts";
 import { openSession } from "./api.ts";
 import { turnAiAppsAndAgentsOn } from "./organization.ts";
 import { type Instance } from "./server.ts";
@@ -134,6 +135,12 @@ export async function appAtTheDoor(
       };
     },
   };
+}
+
+/** *Allow* on the consent step, with the password of `person` typed again. */
+export async function allowAs(page: Page, person: Person): Promise<void> {
+  await page.getByLabel(t("field.confirm-password"), { exact: true }).fill(person.password);
+  await page.getByRole("button", { name: t("connect.allow"), exact: true }).click();
 }
 
 /**

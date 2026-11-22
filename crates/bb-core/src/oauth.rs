@@ -117,6 +117,8 @@ words! {
         TakenBack => "taken-back",
         /// The person signed out everywhere.
         SignedOutEverywhere => "signed-out-everywhere",
+        /// The person changed their password: what a stolen session allowed ends with it.
+        PasswordChanged => "password-changed",
         /// An old renewing token was used again: two parties held it.
         TokenReused => "token-reused",
         /// A code was used a second time.

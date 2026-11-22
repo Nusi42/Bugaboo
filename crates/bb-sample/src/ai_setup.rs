@@ -254,6 +254,7 @@ impl Maker<'_, '_> {
                     allow: true,
                     scope: KeyChoice::SeeOnly,
                     projects: Vec::new(),
+                    password: self.world.people[contributor].password.clone(),
                 },
             )
             .await,

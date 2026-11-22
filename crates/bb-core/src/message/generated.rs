@@ -2339,6 +2339,9 @@ pub const ERROR_AUTH_PASSKEY_REJECTED: MessageKey = MessageKey::new("error.auth.
 pub const ERROR_AUTH_PASSWORD_BREACHED: MessageKey =
     MessageKey::new("error.auth.password-breached");
 
+/// The message `error.auth.password-needed`.
+pub const ERROR_AUTH_PASSWORD_NEEDED: MessageKey = MessageKey::new("error.auth.password-needed");
+
 /// The message `error.auth.password-too-short`.
 pub const ERROR_AUTH_PASSWORD_TOO_SHORT: MessageKey =
     MessageKey::new("error.auth.password-too-short");

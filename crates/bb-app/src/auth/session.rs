@@ -553,8 +553,8 @@ pub async fn sign_out<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignOut) -> Result<
 /// Ends every session of the person, the one of the request included, deletes all their access
 /// keys and stops the changes to many issues they started in the background: a person who signs out
 /// everywhere (a lost device, a stolen key) does not want a script to go on. Each key that goes is
-/// written into the security log. A password change ends the other sessions and the runs, and
-/// leaves the keys.
+/// written into the security log. A password change ends the other sessions, the runs and the grants
+/// of AI apps, and leaves the keys.
 ///
 /// # Errors
 /// `auth.not-signed-in` without a session.
@@ -611,11 +611,27 @@ pub(crate) async fn end_ways_in<S: AuthStore>(
         now,
     )
     .await?;
+    let mut taken = end_grants_in::<S>(transaction, person, how, now).await?;
+    taken.keys = S::delete_access_keys_of(transaction, person).await?;
+    taken_back_in::<S, _>(transaction, now, ReplayKind::AccessKey, &taken.keys).await?;
+    Ok(taken)
+}
+
+/// Ends every grant of AI apps of `person` inside a change (ended as `how`) and puts them on the
+/// replay list; the person's keys stay.
+pub(crate) async fn end_grants_in<S: AuthStore>(
+    transaction: &mut S::Transaction,
+    person: UserId,
+    how: GrantEnd,
+    now: Timestamp,
+) -> Result<TakenBack, S::Error> {
     let grants = S::end_grants_of(transaction, person, how, now).await?;
-    let keys = S::delete_access_keys_of(transaction, person).await?;
     taken_back_in::<S, _>(transaction, now, ReplayKind::AiAppGrant, &grants).await?;
-    taken_back_in::<S, _>(transaction, now, ReplayKind::AccessKey, &keys).await?;
-    Ok(TakenBack { keys, grants, how })
+    Ok(TakenBack {
+        keys: Vec::new(),
+        grants,
+        how,
+    })
 }
 
 impl<S: AuthStore> Ctx<'_, S> {

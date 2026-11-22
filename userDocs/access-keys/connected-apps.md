@@ -12,7 +12,7 @@ This page is for AI apps that you sign in to Bugaboo from yourself. A script tha
    - **See only**: the app can look at what you can look at and change nothing. An app that asks for this only is shown the sentence and nothing to choose.
    - **See and change**: the app can also change what you may change, but it cannot manage people, roles or settings. This is offered only when the app asks for it, and you can always allow less than it asked. Both choices are explained on the page.
 4. If you want, tick the **projects** the app is for. It then works in those projects and in the projects inside them, and nowhere else. Tick none and it works in every project you can see.
-5. Press **Allow**. The app gets what it needs and you can go back to it. Press **Cancel** and the app is sent away with nothing.
+5. Type your password and press **Allow**. Bugaboo asks for it again so that nobody who only sits at your browser can connect an app of their own. The app gets what it needs and you can go back to it. Press **Cancel** and the app is sent away with nothing.
 
 The name on the page is the one the app gives itself. Bugaboo cannot check it, so allow only apps you started yourself. The page also says where the app runs: an app on your own computer says so, and an app on the web shows the web address it comes back to, which an administrator allowed.
 
@@ -31,4 +31,4 @@ The name on the page is the one the app gives itself. Bugaboo cannot check it, s
 
 Press **Take back** next to an app to end what it may do. It stops working at once and has to ask you again. What it already did stays as it is; if you want it undone, undo the run of that session.
 
-"Sign out everywhere" takes back every app as well, and so it does for your access keys.
+"Sign out everywhere" takes back every app as well, and so it does for your access keys. Changing your password takes back every app too, and leaves your access keys.

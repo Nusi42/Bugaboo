@@ -103,6 +103,9 @@ pub struct DecideAuthorization {
     pub scope: KeyChoice,
     /// The projects the grant counts in; none for every project the person can see.
     pub projects: Vec<ProjectId>,
+    /// The password of the person, asked again for *Allow*, so a stolen session cannot leave an
+    /// app behind that outlives it.
+    pub password: String,
 }
 
 /// Where the browser goes next: back to the app, with a code or with the refusal.

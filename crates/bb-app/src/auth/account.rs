@@ -10,6 +10,7 @@ use bb_core::ErrorCode;
 use bb_core::event::{Actor, RecordKind};
 use bb_core::id::{SessionId, UserId};
 use bb_core::many_changes::{ManyChangeStatus, RunsToEnd};
+use bb_core::oauth::GrantEnd;
 use bb_core::person::Person;
 use bb_core::sign_in::{SecurityAction, SessionStage, SetupCode};
 use serde_json::json;
@@ -337,8 +338,9 @@ pub async fn accept_invitation<S: AuthStore>(
     ctx.started(&new, &person, &settings, None)
 }
 
-/// Changes the password. The person types the current one again; all other sessions end and the
-/// session of the request gets a new secret.
+/// Changes the password. The person types the current one again; all other sessions and every grant
+/// of an AI app end (what a stolen session allowed ends with it), and the session of the request
+/// gets a new secret.
 ///
 /// # Errors
 /// `auth.wrong-credentials` for a wrong current password, the password errors for the new one.
@@ -364,7 +366,7 @@ pub async fn change_password<S: AuthStore>(
         vec![changed("password")],
     )?;
     let (store, session, person_id, now) = (ctx.store(), new.session.clone(), person.id, ctx.now());
-    store
+    let taken = store
         .record_change(&event, move |transaction| {
             Box::pin(async move {
                 S::set_password(transaction, person_id, &hash, now).await?;
@@ -377,12 +379,21 @@ pub async fn change_password<S: AuthStore>(
                     now,
                 )
                 .await?;
-                super::session::open_session_in::<S>(transaction, &session).await
+                let taken = super::session::end_grants_in::<S>(
+                    transaction,
+                    person_id,
+                    GrantEnd::PasswordChanged,
+                    now,
+                )
+                .await?;
+                super::session::open_session_in::<S>(transaction, &session).await?;
+                Ok(taken)
             })
         })
         .await
         .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
     ctx.note(SecurityAction::PasswordChanged, Some(person.id), None)
         .await;
+    ctx.note_taken_back(person.id, &taken).await;
     ctx.started(&new, &person, &settings, None)
 }

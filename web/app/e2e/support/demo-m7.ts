@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { expect, type Page } from "@playwright/test";
 
 import { paths } from "../../src/shared/paths.ts";
-import { appAtTheDoor, catchTheAnswer, codeOf } from "./connect-app.ts";
+import { allowAs, appAtTheDoor, catchTheAnswer, codeOf } from "./connect-app.ts";
 import { adaOfTheSample, anaOfTheSample, good } from "./demo-m7-common.ts";
 import { openIssueWithDetails, signIn, signOut } from "./flows.ts";
 import { type Instance } from "./server.ts";
@@ -45,7 +45,8 @@ async function toolText(server: Instance, token: string, name: string, args: obj
 /** Step 1: an MCP client connects as a Contributor and does not see what is hidden from Contributors. */
 export async function aContributorsAppSeesLessThanTheTeam(page: Page, server: Instance) {
   const door = await appAtTheDoor(server, "Claude Code", "see-only");
-  await signIn(page, anaOfTheSample());
+  const ana = anaOfTheSample();
+  await signIn(page, ana);
   await page.goto(door.address);
   // On a phone the buttons are under the page; the picture shows them.
   await page
@@ -53,7 +54,7 @@ export async function aContributorsAppSeesLessThanTheTeam(page: Page, server: In
     .scrollIntoViewIfNeeded();
   await good(page, "01-a-the-app-asks");
   const answer = await catchTheAnswer(page, async () => {
-    await page.getByRole("button", { name: t("connect.allow"), exact: true }).click();
+    await allowAs(page, ana);
   });
   const tokens = await door.exchange(codeOf(answer.toString()));
   const seen = await toolText(server, tokens.access, "get_issue", { issue: ISSUE });

@@ -2174,6 +2174,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "That password is on lists of passwords that are tried first. Please choose another one.",
     ),
     (
+        "error.auth.password-needed",
+        "This step asks for your password, but you sign in without one, so it cannot be done with your account yet.",
+    ),
+    (
         "error.auth.password-too-short",
         "Choose a password with at least 12 characters. Length matters more than special characters.",
     ),

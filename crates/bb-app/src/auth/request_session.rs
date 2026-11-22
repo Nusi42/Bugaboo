@@ -181,6 +181,10 @@ impl<S: AuthStore> Ctx<'_, S> {
 
     /// Checks the password a signed-in person types again before a sensitive change. Wrong
     /// guesses count against the person, like the second step.
+    ///
+    /// # Errors
+    /// `auth.wrong-credentials` for a wrong password; `auth.password-needed` for a person who has
+    /// none (a passkey, company sign-in), which is no wrong guess.
     pub(crate) async fn confirm_password(
         &self,
         person: &Person,
@@ -194,15 +198,21 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .account_by_email(&person.email)
                 .await
                 .map_err(|error| internal::<S>(&error))?;
-            let stored = account.and_then(|account| account.password_hash);
-            Ok(self
-                .services
-                .hasher
-                .verify(Zeroizing::new(password), stored)
-                .await?)
+            let Some(stored) = account.and_then(|account| account.password_hash) else {
+                return Ok(None);
+            };
+            Ok(Some(
+                self.services
+                    .hasher
+                    .verify(Zeroizing::new(password), Some(stored))
+                    .await?,
+            ))
         }
         .await;
-        let verdict = self.unless_internal(&slot, checked)?;
+        let Some(verdict) = self.unless_internal(&slot, checked)? else {
+            self.slot_given_back(&slot);
+            return Err(AppError::Refused(ErrorCode::PasswordNeeded));
+        };
         if verdict.matches {
             self.slot_succeeded(slot);
             Ok(())

@@ -13,7 +13,7 @@ AI apps are off at the start (an upgrade from an older version keeps them as the
    claude mcp add --transport http bugaboo https://your-bugaboo.example/mcp
    ```
 
-3. Start Claude Code and type `/mcp`. Bugaboo asks you to sign in: your browser opens the page "Claude Code wants to work with your account". Sign in if you are not, look at what it asks, and press **Allow**. Press **Cancel** and nothing is allowed.
+3. Start Claude Code and type `/mcp`. Bugaboo asks you to sign in: your browser opens the page "Claude Code wants to work with your account". Sign in if you are not, look at what it asks, type your password, and press **Allow**. Press **Cancel** and nothing is allowed.
 4. Back in Claude Code, ask something about your issues, for example "What is on my list in the project WEB?".
 
 Claude Code runs on your own computer, so nobody has to set it up for it: it tells Bugaboo who it is and the page sends the answer back to your computer. An app that runs on the web signs in only from a web address an administrator allowed.

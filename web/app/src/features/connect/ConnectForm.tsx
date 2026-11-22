@@ -14,6 +14,7 @@ import {
 import { useState } from "react";
 
 import { toggled } from "../../shared/toggled.ts";
+import { ConfirmPasswordField } from "../account/index.ts";
 import { choiceName } from "../my-settings/index.ts";
 import { ProjectsReach, type Reach } from "./ProjectsReach.tsx";
 import type { ConnectRequest } from "./request.ts";
@@ -112,18 +113,39 @@ function Buttons({ phone, isPending, leaving, waitsForProjects, onCancel }: Butt
   );
 }
 
-/** *Allow* and *Cancel*, with what the app may do and in which projects. */
+/** Where the app comes back to, and what the person should know before allowing it. */
+function Notes({ webAddress }: { readonly webAddress: string | null }) {
+  return (
+    <>
+      <p {...partOf(part.muted)}>
+        {webAddress === null
+          ? t("connect.where-computer")
+          : t("connect.where-web", { address: webAddress })}
+      </p>
+      <p {...partOf(part.muted)}>{t("connect.name-unchecked")}</p>
+      <p {...partOf(part.muted)}>{t("connect.take-back-note")}</p>
+    </>
+  );
+}
+
+/** *Allow* and *Cancel*, with what the app may do, in which projects, and the password again. */
 export function ConnectForm({ request, asked, webAddress, app }: ConnectFormProps) {
   const choices = offered(asked);
   const [scope, setScope] = useState<Scope>(choices[0] ?? "see-only");
   const [picked, setPicked] = useState<readonly string[]>([]);
   const [reach, setReach] = useState<Reach>("all");
+  const [password, setPassword] = useState("");
   const phone = useLayout() === "phone";
   const deciding = useDecision(request);
   return (
     <Form
       onSubmit={() => {
-        deciding.send({ allow: true, scope, projects: reach === "some" ? [...picked] : [] });
+        deciding.send({
+          allow: true,
+          scope,
+          projects: reach === "some" ? [...picked] : [],
+          password,
+        });
       }}
     >
       {phone ? <h2 {...partOf(part.cardHeading)}>{t("connect.title", { app })}</h2> : null}
@@ -137,13 +159,8 @@ export function ConnectForm({ request, asked, webAddress, app }: ConnectFormProp
           setPicked((now) => toggled(now, project, on));
         }}
       />
-      <p {...partOf(part.muted)}>
-        {webAddress === null
-          ? t("connect.where-computer")
-          : t("connect.where-web", { address: webAddress })}
-      </p>
-      <p {...partOf(part.muted)}>{t("connect.name-unchecked")}</p>
-      <p {...partOf(part.muted)}>{t("connect.take-back-note")}</p>
+      <Notes webAddress={webAddress} />
+      <ConfirmPasswordField value={password} onChange={setPassword} />
       {deciding.problem === null ? null : <Alert tone={alertTone.danger}>{deciding.problem}</Alert>}
       {deciding.leaving ? (
         <Alert tone={alertTone.success}>
@@ -156,7 +173,7 @@ export function ConnectForm({ request, asked, webAddress, app }: ConnectFormProp
         leaving={deciding.leaving}
         waitsForProjects={reach === "some" && picked.length === 0}
         onCancel={() => {
-          deciding.send({ allow: false, scope, projects: [] });
+          deciding.send({ allow: false, scope, projects: [], password: "" });
         }}
       />
     </Form>

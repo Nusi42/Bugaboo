@@ -3,7 +3,13 @@ import { type Page } from "@playwright/test";
 
 import { ada, createAdmin } from "./support/accounts.ts";
 import { expectGoodInEveryTheme } from "./support/checks.ts";
-import { appAtTheDoor, catchTheAnswer, codeOf, switchAiOn } from "./support/connect-app.ts";
+import {
+  allowAs,
+  appAtTheDoor,
+  catchTheAnswer,
+  codeOf,
+  switchAiOn,
+} from "./support/connect-app.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { fillSignIn, openFromMenu, signIn } from "./support/flows.ts";
 
@@ -49,8 +55,11 @@ test("ai_22 the person sees which app asks, allows it, and the app gets its code
     page.getByRole("radio", { name: t("access-keys.choice.see-and-change") }),
   ).toBeChecked();
   await expectGoodInEveryTheme(page);
+  // *Allow* asks for the password again: a wrong one allows nothing and says so.
+  await allowAs(page, { ...ada, password: "Not-The-Password-1" });
+  await expect(page.getByText(t("error.auth.wrong-credentials"))).toBeVisible();
   const answer = await catchTheAnswer(page, async () => {
-    await page.getByRole("button", { name: t("connect.allow"), exact: true }).click();
+    await allowAs(page, ada);
   });
   expect(answer.searchParams.get("state")).toBe("state-1");
   const tokens = await app.exchange(codeOf(answer.href));
@@ -62,7 +71,7 @@ test("ai_22 taking an app back ends what it may do at once", async ({ page, serv
   await signIn(page, ada);
   await page.goto(app.address);
   const answer = await catchTheAnswer(page, async () => {
-    await page.getByRole("button", { name: t("connect.allow"), exact: true }).click();
+    await allowAs(page, ada);
   });
   const tokens = await app.exchange(codeOf(answer.href));
   // The app is in the list, and taking it back ends it at once.
@@ -103,7 +112,7 @@ test("ai_22 the person may allow less than the app asked, and cancel sends the a
   await page.goto(app.address);
   await page.getByRole("radio", { name: t("access-keys.choice.see-only") }).check();
   const answer = await catchTheAnswer(page, async () => {
-    await page.getByRole("button", { name: t("connect.allow"), exact: true }).click();
+    await allowAs(page, ada);
   });
   const tokens = await app.exchange(codeOf(answer.href));
   const listed = await page.request.post(`${server.url}/mcp`, {

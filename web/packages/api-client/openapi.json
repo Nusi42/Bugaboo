@@ -24740,6 +24740,10 @@
             "type": "boolean",
             "description": "`true` for *Allow*, `false` for *Cancel*."
           },
+          "password": {
+            "type": ["string", "null"],
+            "description": "The person's password, asked again for *Allow*: without it *Allow* is refused with\n`auth.wrong-credentials`. *Cancel* needs none."
+          },
           "projects": {
             "type": "array",
             "items": {
@@ -25054,6 +25058,7 @@
           "auth.wrong-credentials",
           "auth.wrong-second-step-code",
           "auth.wrong-setup-code",
+          "auth.password-needed",
           "auth.password-too-short",
           "auth.password-breached",
           "auth.invitation-invalid",

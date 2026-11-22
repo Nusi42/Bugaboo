@@ -117,6 +117,7 @@ mod notifications_projects;
 mod oauth;
 mod oauth_calls;
 mod oauth_limits;
+mod oauth_password;
 mod oauth_scenarios;
 mod offers;
 mod offers_known_uses;

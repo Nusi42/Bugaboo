@@ -7613,6 +7613,11 @@ export interface components {
       /** @description `true` for *Allow*, `false` for *Cancel*. */
       allow: boolean;
       /**
+       * @description The person's password, asked again for *Allow*: without it *Allow* is refused with
+       *     `auth.wrong-credentials`. *Cancel* needs none.
+       */
+      password?: string | null;
+      /**
        * @description The projects the app is limited to; leave empty for every project the person can see. The
        *     app counts in them and in their sub-projects.
        */
@@ -7793,6 +7798,7 @@ export interface components {
       | "auth.wrong-credentials"
       | "auth.wrong-second-step-code"
       | "auth.wrong-setup-code"
+      | "auth.password-needed"
       | "auth.password-too-short"
       | "auth.password-breached"
       | "auth.invitation-invalid"

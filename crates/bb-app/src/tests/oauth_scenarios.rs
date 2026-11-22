@@ -38,6 +38,7 @@ pub(crate) async fn decide_authorization_scenario(world: &World) -> Added {
                 allow: true,
                 scope: KeyChoice::SeeOnly,
                 projects: Vec::new(),
+                password: super::world::PASSWORD.to_owned(),
             },
         ),
     )

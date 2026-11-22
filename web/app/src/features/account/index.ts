@@ -2,6 +2,7 @@
 import "@bugaboo/messages/parts/account";
 
 export { CodeAppSection } from "./CodeAppSection.tsx";
+export { ConfirmPasswordField } from "./ConfirmPasswordField.tsx";
 export { PasskeysSection } from "./PasskeysSection.tsx";
 export { SecurityPage } from "./SecurityPage.tsx";
 export { SessionsPage } from "./SessionsPage.tsx";

@@ -12,7 +12,7 @@ use serde_json::json;
 use super::ai_tools::call;
 use super::scenarios::{a_project, text, token};
 use super::scenarios_ai::a_local_model;
-use super::world::{Outcome, World};
+use super::world::{Outcome, PASSWORD, World};
 use crate::ai::tools::{ToolListQuery, call_tool, list_tools};
 use crate::ai::{ChangeAiSetup, change_ai_setup};
 use crate::auth::{
@@ -94,6 +94,7 @@ pub(super) async fn allowed_by(
             allow: true,
             scope: given,
             projects: Vec::new(),
+            password: PASSWORD.to_owned(),
         },
     )
     .await?
@@ -201,6 +202,7 @@ async fn ai_22_an_app_on_this_computer_registers_and_the_person_allows_it() -> O
             allow: false,
             scope: KeyChoice::SeeOnly,
             projects: Vec::new(),
+            password: PASSWORD.to_owned(),
         },
     )
     .await?
@@ -517,6 +519,7 @@ async fn ai_22_the_person_may_narrow_what_the_app_asked_and_never_widen_it() -> 
             allow: true,
             scope: KeyChoice::SeeAndChange,
             projects: Vec::new(),
+            password: PASSWORD.to_owned(),
         },
     )
     .await;
@@ -532,6 +535,7 @@ async fn ai_22_the_person_may_narrow_what_the_app_asked_and_never_widen_it() -> 
             allow: true,
             scope: KeyChoice::Everything,
             projects: Vec::new(),
+            password: PASSWORD.to_owned(),
         },
     )
     .await;
@@ -687,6 +691,7 @@ async fn ai_22_the_token_of_an_app_is_not_a_session() -> Outcome {
             allow: true,
             scope: KeyChoice::SeeOnly,
             projects: Vec::new(),
+            password: PASSWORD.to_owned(),
         },
     )
     .await;

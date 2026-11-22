@@ -292,11 +292,11 @@ fn chosen_projects(projects: &[ProjectId]) -> Result<Vec<ProjectId>, AppError> {
     Ok(projects)
 }
 
-/// The person says *Allow* or *Cancel*. *Allow* makes the grant and a code; either way the browser
-/// goes back to the app.
+/// The person says *Allow* or *Cancel*. *Allow* asks for the password again and makes the grant and
+/// a code; either way the browser goes back to the app.
 ///
 /// # Errors
-/// What [`authorization`] answers; `request.invalid` for a scope wider than the app asked, or one
+/// What [`authorization`] answers; `auth.wrong-credentials` for a wrong password; `request.invalid` for a scope wider than the app asked, or one
 /// an app cannot have, or too many projects or grants; `resource.not-found` for a project the
 /// person may not know about.
 pub async fn decide_authorization<S: AuthStore>(
@@ -313,6 +313,7 @@ pub async fn decide_authorization<S: AuthStore>(
     if !input.allow {
         return Ok(access.authorize(turned_down(&input.request)));
     }
+    ctx.confirm_password(&record.person, input.password).await?;
     // The person may narrow what the app asked and never widen it.
     if !input.scope.is_for_apps() || !asked.covers_choice(input.scope) {
         return Err(ErrorCode::InvalidRequest.into());

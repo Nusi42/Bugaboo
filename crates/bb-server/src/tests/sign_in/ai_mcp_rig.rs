@@ -237,7 +237,7 @@ pub(super) async fn sign_in_app_in(
         .send(
             "POST",
             "/api/v1/oauth/authorization",
-            Some(json!({"request": request, "allow": true, "scope": given, "projects": projects})),
+            Some(json!({"request": request, "allow": true, "scope": given, "projects": projects, "password": super::rig::PASSWORD})),
         )
         .await?;
     let redirect = decided.body["redirect_to"]
