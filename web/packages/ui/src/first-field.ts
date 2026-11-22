@@ -1,8 +1,5 @@
+import { FIELD, firstReachable } from "./focusable.ts";
 import { inPlace } from "./in-place.ts";
-
-/** The first thing a person types into or chooses in a form. */
-const FIRST_FIELD =
-  "input:not([type=hidden]):not(:disabled), textarea:not(:disabled), select:not(:disabled)";
 
 /** What names the element with this ID, for the search of its first box. */
 export function withId(id: string): string {
@@ -10,13 +7,14 @@ export function withId(id: string): string {
 }
 
 /**
- * Puts the focus on the first box of the element with this ID (WCAG 2.4.3): where a window opens,
+ * Puts the focus on the first box of the element with this ID that is in reach (WCAG 2.4.3): where a window opens,
  * and where the part of a window that was swapped for a form begins. Nothing happens where there
  * is no box, and the answer says whether there was one. The focus moves without scrolling to the box
  * (UX §6: nothing moves under the cursor).
  */
 export function focusFirstField(id: string): boolean {
-  const field = document.querySelector(withId(id))?.querySelector<HTMLElement>(FIRST_FIELD);
+  const form = document.querySelector<HTMLElement>(withId(id));
+  const field = form === null ? null : firstReachable(form, FIELD);
   field?.focus(inPlace);
-  return field !== undefined && field !== null;
+  return field !== null;
 }

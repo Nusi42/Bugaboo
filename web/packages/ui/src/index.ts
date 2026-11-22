@@ -164,6 +164,7 @@ export { ChoiceText } from "./ChoiceText.tsx";
 export { IssueId } from "./IssueId.tsx";
 export { factJoiner, factJoinerHeld, factJoinerLeading, factMark, factSeparator } from "./facts.ts";
 export { focusFirstField, withId } from "./first-field.ts";
+export { FIELD, PRESSABLE } from "./focusable.ts";
 export { inPlace } from "./in-place.ts";
 export { scrollBoxOf } from "./scroll-box.ts";
 export { composing, plainEnter } from "./plain-enter.ts";

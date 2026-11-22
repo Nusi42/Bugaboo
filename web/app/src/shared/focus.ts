@@ -1,4 +1,4 @@
-import { inPlace } from "@bugaboo/ui";
+import { FIELD, inPlace, PRESSABLE } from "@bugaboo/ui";
 import { useRouterState } from "@tanstack/react-router";
 import { useEffect, useRef, type RefObject } from "react";
 
@@ -52,11 +52,8 @@ export function usePageFocus(contentId: string): void {
   }, [pathname, contentId]);
 }
 
-/** What can be pressed in a row. */
-const PRESSABLE = "button, a[href]";
-
 /** What the focus may go to after the last row of a list: what can be pressed or typed into beside it. */
-const AFTER_THE_LIST = `${PRESSABLE}, input, select, textarea`;
+const AFTER_THE_LIST = `${PRESSABLE}, ${FIELD}`;
 
 /**
  * Where the focus goes when the row that has it goes away: the next row's button or link, else the

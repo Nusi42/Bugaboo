@@ -1,7 +1,8 @@
-import { useEffect, type ReactNode, type RefObject } from "react";
+import { useEffect, useRef, type ReactNode, type RefObject } from "react";
 
 import { focusFirstField } from "./first-field.ts";
 import { partOf } from "./parts.ts";
+import { useKeyboardScroll } from "./scroll-reach.ts";
 import { Skeleton } from "./Skeleton.tsx";
 import { isWaiting, windowPhase, type WindowPhase } from "./window-shape.ts";
 import { part } from "./tokens.ts";
@@ -27,6 +28,10 @@ export interface WindowBodyProps {
  */
 export function WindowBody({ id, phase, loadingLabel, dialog, children }: WindowBodyProps) {
   const loading = isWaiting(phase);
+  const body = useRef<HTMLDivElement>(null);
+  // A body that scrolls with nothing in it that takes the focus (only words, or a form not there yet) takes the focus
+  // itself, so the keyboard scrolls it; once it has the focus it keeps it until the focus leaves.
+  const reach = useKeyboardScroll(body);
   // The focus goes where the person types first, as a dialog does (WCAG 2.4.3), not to the buttons
   // of the title bar that stand before the form, once the form is there; a window with no box puts
   // it on the window itself.
@@ -41,7 +46,13 @@ export function WindowBody({ id, phase, loadingLabel, dialog, children }: Window
       <output {...partOf(part.visuallyHidden)}>
         {phase === windowPhase.loading ? loadingLabel : ""}
       </output>
-      <div id={id} {...partOf(part.windowBody)} aria-busy={loading}>
+      <div
+        ref={body}
+        id={id}
+        {...partOf(part.windowBody)}
+        aria-busy={loading}
+        {...(reach ? { tabIndex: 0 } : {})}
+      >
         {loading ? <Skeleton lines={LOADING_LINES} /> : null}
         <div {...partOf(part.windowForm, { states: [loading && "loading"] })}>{children}</div>
       </div>
