@@ -122,6 +122,17 @@ fn ops_04_others_who_can_change_a_program_are_found() {
         allows_others(root, &SYSTEM_ACCOUNTS, rights::CHANGE_FOLDER),
         Some(true)
     );
+    // A drive whose root the signed-in accounts may modify (Windows Sandbox): its folders cannot
+    // be replaced through that, and the root itself cannot be renamed.
+    let modified_root = "x\nD:(A;;FA;;;BA)(A;;FA;;;SY)(A;;0x1301bf;;;AU)(A;OICIIO;SDGXGWGR;;;AU)";
+    assert_eq!(
+        allows_others(modified_root, &SYSTEM_ACCOUNTS, rights::REPLACE_IN_ROOT),
+        Some(false)
+    );
+    assert_eq!(
+        allows_others(modified_root, &SYSTEM_ACCOUNTS, rights::REPLACE_BELOW),
+        Some(true)
+    );
     // One person with full control, or one who may change the access list or take it over.
     for rights_given in ["FA", "WD", "WO", "SD", "0x2", "0x4", "GW", "GA", "0xzz"] {
         let list = format!("x\nD:PAI(A;;FA;;;SY)(A;;{rights_given};;;{PERSON})");

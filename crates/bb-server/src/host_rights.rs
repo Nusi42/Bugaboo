@@ -20,13 +20,14 @@ use bb_core::message::{self, Message, MessageKey};
 use crate::system::{lies_in, real_path};
 
 /// What a path is to the file that is judged: the file itself, the folder that holds it (where a
-/// library beside a program is loaded from), or a folder further up (where only replacing a name
-/// counts).
+/// library beside a program is loaded from), a folder further up (where only replacing a name
+/// counts), or the root of the drive (which cannot itself be deleted or renamed).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Part {
     File,
     Folder,
     Above,
+    Root,
 }
 
 /// Whose rights are fine besides those of the system and the administrators.
@@ -78,7 +79,14 @@ pub(crate) fn program_chain(program: &Path) -> Vec<(PathBuf, Part)> {
     if let Some(folder) = folders.next() {
         chain.push((folder.to_path_buf(), Part::Folder));
     }
-    chain.extend(folders.map(|folder| (folder.to_path_buf(), Part::Above)));
+    chain.extend(folders.map(|folder| {
+        let part = if folder.parent().is_none() {
+            Part::Root
+        } else {
+            Part::Above
+        };
+        (folder.to_path_buf(), part)
+    }));
     chain
 }
 
@@ -245,6 +253,7 @@ fn changeable(path: &Path, part: Part, also: Option<&String>, owners: &Owners) -
         Part::File => rights::CHANGE_FILE,
         Part::Folder => rights::CHANGE_FOLDER,
         Part::Above => rights::REPLACE_BELOW,
+        Part::Root => rights::REPLACE_IN_ROOT,
     };
     changeable_by_others(
         &crate::data_folder::rights::access_list(path)?,

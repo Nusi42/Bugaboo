@@ -162,6 +162,9 @@ pub mod rights {
     /// What lets an account replace a folder further up, or what is in it: adding a new name
     /// there replaces nothing.
     pub const REPLACE_BELOW: u32 = DELETE_CHILD | DELETE | WRITE_DAC | WRITE_OWNER;
+    /// The same for the root of a drive, which cannot be deleted or renamed itself, so the right
+    /// to delete it gives nothing (Windows Sandbox lets every signed-in account modify `C:\`).
+    pub const REPLACE_IN_ROOT: u32 = DELETE_CHILD | WRITE_DAC | WRITE_OWNER;
 }
 
 /// The generic rights in a number, and the file rights each stands for.

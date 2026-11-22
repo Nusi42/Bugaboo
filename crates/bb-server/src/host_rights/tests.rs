@@ -8,9 +8,11 @@ fn ops_04_the_program_relies_on_itself_its_folder_and_every_folder_above() {
     let chain = program_chain(&program);
     assert_eq!(chain[0].1, Part::File);
     assert_eq!(chain[1].1, Part::Folder);
-    assert!(chain[2..].iter().all(|(_, part)| *part == Part::Above));
-    // Up to the root of the drive.
-    assert_eq!(chain.last().unwrap().0.parent(), None);
+    let (root, above) = chain[2..].split_last().unwrap();
+    assert!(above.iter().all(|(_, part)| *part == Part::Above));
+    // Up to the root of the drive, which is judged as a root.
+    assert_eq!(root.0.parent(), None);
+    assert_eq!(root.1, Part::Root);
     let settings = settings_chain(&program);
     assert_eq!(settings.len(), 2);
     assert_eq!(settings[1].1, Part::Folder);
