@@ -69,7 +69,8 @@ impl AiState {
                 ModelAddress::parse(&self.address)
                     .map(Some)
                     .map_err(|problem| match problem {
-                        bb_core::ai::AddressProblem::NotAnAddress => ErrorCode::AiAddressInvalid,
+                        bb_core::ai::AddressProblem::NotAnAddress
+                        | bb_core::ai::AddressProblem::NotCalled => ErrorCode::AiAddressInvalid,
                         bb_core::ai::AddressProblem::NotEncrypted => {
                             ErrorCode::AiAddressNotEncrypted
                         }

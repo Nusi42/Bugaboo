@@ -17,6 +17,10 @@ pub enum AddressProblem {
     NotAnAddress,
     /// It is an address on the internet that does not use HTTPS.
     NotEncrypted,
+    /// Its name resolves to an address the server never calls: a link-local one or another where
+    /// the metadata service of a cloud answers, an unspecified one, or, for a model judged to be on
+    /// the organization's own network, one on the internet.
+    NotCalled,
 }
 
 /// What a call needs of an address.
@@ -26,6 +30,9 @@ pub struct ModelEndpoint {
     pub base: String,
     /// Whether the connection is encrypted.
     pub encrypted: bool,
+    /// Whether the model was judged to be on the organization's own network, so every address its
+    /// name resolves to has to be there too (see [`judge_resolved`]).
+    pub local: bool,
 }
 
 /// A checked address of an OpenAI-compatible model.
@@ -94,6 +101,7 @@ impl ModelAddress {
         ModelEndpoint {
             base: self.base.clone(),
             encrypted: self.https,
+            local: self.local,
         }
     }
 }
@@ -130,6 +138,47 @@ fn is_local_host(host: &str) -> bool {
             .iter()
             .any(|suffix| lower.ends_with(suffix))
 }
+
+/// Judges the addresses the name of a provider resolved to, right before the server connects to
+/// them; the connection then goes to these addresses and no others, so a name cannot be judged on
+/// one answer of the resolver and reached on another. A name is judged by what it resolves to, not
+/// by how it is written: a link-local or an unspecified address is never called (one is enough to
+/// refuse them all), and a model judged to be on the organization's own network (`local`) must
+/// resolve only to addresses there, since its data may go without encryption and without the
+/// agreement an outside provider needs.
+///
+/// # Errors
+/// [`AddressProblem::NotCalled`] for such an address, and [`AddressProblem::NotAnAddress`] when the
+/// name resolved to nothing.
+pub fn judge_resolved(resolved: &[IpAddr], local: bool) -> Result<(), AddressProblem> {
+    if resolved.is_empty() {
+        return Err(AddressProblem::NotAnAddress);
+    }
+    let never = |address: &IpAddr| {
+        let address = address.to_canonical();
+        METADATA_SERVICES.contains(&address)
+            || match address {
+                IpAddr::V4(v4) => v4.is_link_local() || v4.is_unspecified() || v4.is_broadcast(),
+                IpAddr::V6(v6) => v6.is_unicast_link_local() || v6.is_unspecified(),
+            }
+    };
+    let on_own_network = |address: &IpAddr| match address.to_canonical() {
+        IpAddr::V4(v4) => is_private_v4(v4),
+        IpAddr::V6(v6) => is_private_v6(v6),
+    };
+    if resolved.iter().any(never) || (local && !resolved.iter().all(on_own_network)) {
+        return Err(AddressProblem::NotCalled);
+    }
+    Ok(())
+}
+
+/// The metadata services of clouds that answer outside the link-local ranges: the IPv6 address of
+/// Amazon's (`fd00:ec2::254`, in the range of the own network) and Alibaba's (`100.100.100.200`).
+/// They hand out the secrets of the machine, so the server never calls them, whatever the name.
+const METADATA_SERVICES: [IpAddr; 2] = [
+    IpAddr::V6(Ipv6Addr::new(0xfd00, 0x0ec2, 0, 0, 0, 0, 0, 0x0254)),
+    IpAddr::V4(Ipv4Addr::new(100, 100, 100, 200)),
+];
 
 fn is_private_v4(address: Ipv4Addr) -> bool {
     address.is_loopback() || address.is_private()
@@ -203,5 +252,45 @@ mod tests {
             );
         }
         assert!(ModelAddress::parse(&format!("https://{}", "a".repeat(400))).is_err());
+    }
+
+    fn ips(texts: &[&str]) -> Vec<IpAddr> {
+        texts.iter().map(|text| text.parse().unwrap()).collect()
+    }
+
+    #[test]
+    fn ai_01_a_name_is_judged_by_the_addresses_it_resolves_to() {
+        // A metadata service of a cloud, or nothing at all, is never called, whatever the name.
+        for resolved in [
+            &["169.254.169.254"][..],
+            &["fe80::1"],
+            &["0.0.0.0"],
+            &["::"],
+            &["::ffff:169.254.169.254"],
+            &["203.0.113.7", "169.254.169.254"],
+            &["fd00:ec2::254"],
+            &["100.100.100.200"],
+            &["::ffff:100.100.100.200"],
+        ] {
+            for local in [false, true] {
+                assert_eq!(
+                    judge_resolved(&ips(resolved), local),
+                    Err(AddressProblem::NotCalled),
+                    "{resolved:?}"
+                );
+            }
+        }
+        assert_eq!(
+            judge_resolved(&[], false),
+            Err(AddressProblem::NotAnAddress)
+        );
+        // A model judged local by its name (`http://gpu-box`) must be on the own network.
+        assert_eq!(
+            judge_resolved(&ips(&["192.168.0.5", "203.0.113.7"]), true),
+            Err(AddressProblem::NotCalled)
+        );
+        judge_resolved(&ips(&["192.168.0.5", "fd00::5", "127.0.0.1"]), true).unwrap();
+        // A provider on the internet may be anywhere but link-local or unspecified.
+        judge_resolved(&ips(&["203.0.113.7", "2001:db8::7"]), false).unwrap();
     }
 }

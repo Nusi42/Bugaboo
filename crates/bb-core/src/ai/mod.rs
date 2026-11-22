@@ -8,7 +8,7 @@ mod address;
 mod assistant;
 mod tools;
 
-pub use address::{ADDRESS_MAX, AddressProblem, ModelAddress, ModelEndpoint};
+pub use address::{ADDRESS_MAX, AddressProblem, ModelAddress, ModelEndpoint, judge_resolved};
 pub use assistant::{
     ChatFrom, LOOK_UPS_NO_LIMIT, LOOKING_AT_CHARS_MAX, LOOKING_AT_MAX, LookUps, LookingAtKind,
     PROPOSAL_INPUT_BYTES_MAX, PROPOSAL_LIFETIME_SECONDS, PROPOSALS_MAX, QUESTION_CHARS_MAX,

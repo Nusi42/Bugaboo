@@ -42,6 +42,7 @@ impl HttpAiProvider {
                 ],
                 body: anthropic::request_body(&target.model, request).to_string(),
                 encrypted: true,
+                local: false,
             }),
             ProviderKind::OpenAiCompatible => {
                 let endpoint = target.endpoint.as_ref()?;
@@ -57,6 +58,7 @@ impl HttpAiProvider {
                     headers,
                     body: openai::request_body(&target.model, request).to_string(),
                     encrypted: endpoint.encrypted,
+                    local: endpoint.local,
                 })
             }
         }
