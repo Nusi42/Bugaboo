@@ -20,4 +20,4 @@
 - [Cheapest capable model](cheapest-capable-model.md) — Opus plans/reviews, Sonnet builds to a plan, Haiku chores; trial through M8, count fix rounds
 - [Bench only when quiet](bench-only-when-quiet.md) — no speed measurement while other folders compile/test; builders wait for the lead's go
 - [Nothing moves under the cursor](nothing-moves-under-the-cursor.md) — a change moves only what changed; checked per screen with frame samples (M8 WP-13)
-- [WSL build distribution](wsl-build-distribution.md) — own Ubuntu for Linux release builds; default WSL distro is another project's, never touch
+- [Public repo: only what cloners need](public-repo-only-what-cloners-need.md) — no personal setup in ADRs, docs, STATUS or memory; it goes into CLAUDE.local.md
