@@ -394,6 +394,38 @@ impl OAuthStore for AuthStorage {
         Ok(())
     }
 
+    async fn push_out_unallowed_client(
+        transaction: &mut Transaction,
+        registered_since: Timestamp,
+    ) -> Result<bool, StoreError> {
+        let held = || {
+            let mut held = Query::select();
+            held.column(OAuthGrantRow::Client)
+                .from(OAuthGrantRow::Table);
+            held
+        };
+        let mut first = Query::select();
+        first
+            .column(OAuthClientRow::Id)
+            .from(OAuthClientRow::Table)
+            .and_where(Expr::col(OAuthClientRow::RegisteredAt).gte(to_micros(registered_since)))
+            .and_where(Expr::col(OAuthClientRow::Id).not_in_subquery(held()))
+            .order_by(OAuthClientRow::RegisteredAt, Order::Asc)
+            .order_by(OAuthClientRow::Id, Order::Asc)
+            .limit(1);
+        let Some(row) = transaction.fetch_optional(&first).await? else {
+            return Ok(false);
+        };
+        let id = row.id::<OAuthClientId>(OAuthClientRow::Id)?;
+        // Asked again in the delete: a grant made since the choice keeps its app.
+        let mut delete = Query::delete();
+        delete
+            .from_table(OAuthClientRow::Table)
+            .and_where(Expr::col(OAuthClientRow::Id).eq(id.stored()))
+            .and_where(Expr::col(OAuthClientRow::Id).not_in_subquery(held()));
+        Ok(transaction.execute(&delete).await? > 0)
+    }
+
     async fn insert_grant(
         transaction: &mut Transaction,
         record: &GrantRecord,
@@ -717,3 +749,7 @@ impl OAuthStore for AuthStorage {
         })
     }
 }
+
+#[cfg(test)]
+#[path = "tests/oauth.rs"]
+mod tests;

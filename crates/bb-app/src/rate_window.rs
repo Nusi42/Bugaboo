@@ -14,6 +14,9 @@ use jiff::Timestamp;
 /// How long a window lasts when nothing else is said.
 pub const PERIOD: Duration = Duration::from_mins(1);
 
+/// The window of the limits that count by the hour (signing up, the registrations of apps).
+pub const HOUR: Duration = Duration::from_hours(1);
+
 /// Each window remembers at most this many clients. A flood of invented addresses must not be
 /// able to use up the memory. When the table is full, expired entries go first; counters of
 /// clients that are still within their minute are never thrown away. If it is still full, see
@@ -143,6 +146,15 @@ impl<K: Hash + Eq + Clone, M: Moment> Window<K, M> {
     /// person lets work again starts from nothing.
     pub fn forget(&self, key: &K) {
         self.lock().entries.remove(key);
+    }
+
+    /// How many events the key has counted in its window now; none when its window is over.
+    pub fn count(&self, key: &K, now: M) -> u32 {
+        self.lock()
+            .entries
+            .get(key)
+            .filter(|entry| now.since(entry.started) < self.period)
+            .map_or(0, |entry| entry.count)
     }
 
     /// Counts one event.

@@ -165,8 +165,11 @@ words! {
         /// An AI app, or an access key used through MCP, made more calls than a grant or a person
         /// may in a minute, and the call was turned away.
         AiCallLimited => "ai_call.limited",
-        /// An AI app registered itself.
+        /// An AI app registered itself, the first one of an hour: the others of the hour are not
+        /// written one by one.
         OAuthClientRegistered => "oauth_client.registered",
+        /// The apps registered in an hour reached the cap of the server; the next wait for the hour.
+        OAuthRegistrationsCapped => "oauth_client.registrations_capped",
         /// A person pressed *Allow*: a grant was made for an AI app.
         OAuthGrantCreated => "oauth_grant.created",
         /// A person took an AI app's access back.

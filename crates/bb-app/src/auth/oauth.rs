@@ -27,8 +27,9 @@ use bb_core::event::RecordKind;
 use bb_core::id::{GrantId, OAuthClientId, ProjectId};
 use bb_core::oauth::{
     APP_NAME_LENGTH_MAX, GrantEnd, MOST_GRANT_PROJECTS, MOST_GRANTS, MOST_RETURN_ADDRESSES,
-    OAuthClient, OAuthCode, OAuthGrant, OAuthProblem, PKCE_METHOD, ReturnAddress, ReturnKind,
-    code_life, is_registered, with_query,
+    OAuthClient, OAuthCode, OAuthGrant, OAuthProblem, PKCE_METHOD,
+    REGISTRATIONS_AN_HOUR_FOR_THE_SERVER, ReturnAddress, ReturnKind, code_life, is_registered,
+    with_query,
 };
 use bb_core::sign_in::SecurityAction;
 use bb_core::time::days;
@@ -38,6 +39,7 @@ use serde_json::json;
 use super::ctx::Ctx;
 use super::error::{AppError, Stops, change_failed, internal};
 use super::events::{by, entity, set_to};
+use super::oauth_rate::Registration;
 use super::oauth_store::{GrantRecord, GrantWithApp};
 use super::oauth_types::{
     AuthorizationAnswer, AuthorizationQuery, AuthorizationRequest, AuthorizationView,
@@ -49,6 +51,7 @@ use super::types::Done;
 use crate::access::Actor;
 use crate::input::clean_text;
 use crate::privacy::replay::taken_back_in;
+use crate::rate_window::HOUR;
 
 /// The purpose under which the failed tries of registration are counted per network.
 const REGISTERING: &str = "oauth-register";
@@ -199,27 +202,61 @@ pub async fn register_app<S: AuthStore>(
             return Err(error);
         }
     };
-    if let Err(error) = ctx.count_registration() {
-        ctx.slot_given_back(&slot);
-        return Err(error);
-    }
-    // Anybody can register, so a registration is written to the security log and not to the history
-    // of the organization: it has no person and nothing a person did.
+    let counted = match ctx.count_registration() {
+        Ok(counted) => counted,
+        Err(error) => {
+            ctx.slot_given_back(&slot);
+            return Err(error);
+        }
+    };
+    // When the hour of the server is full, the new app takes the place of the first one of the
+    // hour that nobody allowed: a flood of registrations cannot keep a real app out, and only an
+    // hour of apps that people all allowed turns the next one away.
+    let pushes_out = matches!(counted, Registration::Full(_));
+    let registered_since = ctx
+        .now()
+        .checked_sub(HOUR)
+        .map_err(|error| AppError::Internal(error.to_string()))?;
     let stored = client.clone();
     let written = ctx
         .store()
         .record_changes(&[], move |transaction| {
-            Box::pin(async move { S::insert_oauth_client(transaction, &stored).await })
+            Box::pin(async move {
+                if pushes_out
+                    && !S::push_out_unallowed_client(transaction, registered_since).await?
+                {
+                    return Ok(false);
+                }
+                S::insert_oauth_client(transaction, &stored).await?;
+                Ok(true)
+            })
         })
         .await;
     ctx.slot_given_back(&slot);
-    written.map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
-    ctx.note(
-        SecurityAction::OAuthClientRegistered,
-        None,
-        Some(entity(RecordKind::OAuthClient, client.id)),
-    )
-    .await;
+    let written = written.map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
+    if let (false, Registration::Full(retry_after)) = (written, counted) {
+        ctx.give_back_registration();
+        return Err(AppError::Limited { retry_after });
+    }
+    // Anybody can register, so registrations go to the security log and not to the history of the
+    // organization: they have no person and nothing a person did. The log gets one entry an hour,
+    // for the first app of the hour, and one when the hour of the server is full, so a flood of
+    // registrations is found without filling the log.
+    let noted = match counted {
+        Registration::Counted(1) => Some(SecurityAction::OAuthClientRegistered),
+        Registration::Counted(REGISTRATIONS_AN_HOUR_FOR_THE_SERVER) => {
+            Some(SecurityAction::OAuthRegistrationsCapped)
+        }
+        _ => None,
+    };
+    if let Some(action) = noted {
+        ctx.note(
+            action,
+            None,
+            Some(entity(RecordKind::OAuthClient, client.id)),
+        )
+        .await;
+    }
     Ok(RegisterOutcome::Registered(RegisteredApp {
         client_id: client.id,
         name: client.name,

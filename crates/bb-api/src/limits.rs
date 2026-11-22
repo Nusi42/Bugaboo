@@ -35,12 +35,12 @@
 
 use std::net::{IpAddr, Ipv4Addr};
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use axum::extract::{Request, State};
 use axum::middleware::Next;
 use axum::response::{IntoResponse as _, Response};
-use bb_app::rate_window::{Overflow, Window};
+use bb_app::rate_window::{HOUR, Overflow, Window};
 use bb_core::ErrorCode;
 use bb_core::id::UserId;
 use bb_core::network::{ClientGroup, NetworkPrefix};
@@ -49,9 +49,6 @@ use bb_core::security_log::Digest;
 use crate::errors::ApiError;
 use crate::failures::DEFAULT_SIGN_IN_FAILURES_PER_MINUTE;
 use crate::logging::ClientIp;
-
-/// How long the hourly window of signing up lasts.
-const HOUR: Duration = Duration::from_hours(1);
 
 /// Requests of the whole API, per client network and minute, when nothing else is set.
 pub const DEFAULT_REQUESTS_PER_MINUTE: u32 = 600;
@@ -317,6 +314,8 @@ pub async fn limit_sign_up(
 
 #[cfg(test)]
 mod tests {
+    use std::time::Duration;
+
     use bb_app::rate_window::PERIOD;
 
     use super::*;

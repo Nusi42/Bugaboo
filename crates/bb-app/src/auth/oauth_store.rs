@@ -73,6 +73,10 @@ pub trait OAuthStore: ChangeStore + 'static {
     writes! {
         /// Adds an app.
         fn insert_oauth_client(client: &OAuthClient) -> ();
+        /// Deletes the app that registered first at `registered_since` or later and that no grant
+        /// belongs to, to make room for a new one when the hour of the server is full; says
+        /// whether one went.
+        fn push_out_unallowed_client(registered_since: Timestamp) -> bool;
         /// Adds a grant with its projects.
         fn insert_grant(record: &GrantRecord) -> ();
         /// Adds a code.

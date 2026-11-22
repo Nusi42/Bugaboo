@@ -174,10 +174,12 @@ pub async fn clean_old_grants<S: AuthStore>(
         now.checked_sub(days(count))
             .map_err(|error| AppError::Internal(error.to_string()))
     };
-    let (ended_before, registered_before) = (
-        back(bb_core::oauth::ENDED_GRANT_KEEP_DAYS)?,
-        back(bb_core::oauth::UNUSED_CLIENT_DAYS)?,
-    );
+    let ended_before = back(bb_core::oauth::ENDED_GRANT_KEEP_DAYS)?;
+    let registered_before = now
+        .checked_sub(jiff::SignedDuration::from_hours(
+            bb_core::oauth::UNUSED_CLIENT_HOURS,
+        ))
+        .map_err(|error| AppError::Internal(error.to_string()))?;
     let event = ctx.event(
         bb_core::event::Actor::System,
         crate::auth::events::fixed_entity(RecordKind::ConnectedApp, "clean")?,

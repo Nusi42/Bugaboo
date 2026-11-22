@@ -30,6 +30,12 @@ pub const CALLS_A_MINUTE_FOR_A_GRANT: u32 = 120;
 pub const CALLS_A_MINUTE_FOR_A_PERSON: u32 = 240;
 /// How many apps one network may register in an hour (RFC 7591 registration is open to anybody).
 pub const REGISTRATIONS_AN_HOUR: u32 = 20;
+/// How many apps the whole server takes in an hour, from all networks together: registration is
+/// open to anybody, so many networks together must not fill the database with apps.
+pub const REGISTRATIONS_AN_HOUR_FOR_THE_SERVER: u32 = 100;
+
+// Held in code: it takes five networks to fill the hour of the server, and no fewer.
+const _: () = assert!(REGISTRATIONS_AN_HOUR * 5 <= REGISTRATIONS_AN_HOUR_FOR_THE_SERVER);
 /// The most return addresses one app may register.
 pub const MOST_RETURN_ADDRESSES: usize = 5;
 /// The longest return address, in bytes.
@@ -42,8 +48,9 @@ pub const MOST_GRANTS: usize = 100;
 pub const MOST_GRANT_PROJECTS: usize = crate::access_key::MOST_PROJECTS;
 /// The most web addresses an administrator can allow.
 pub const MOST_WEB_ADDRESSES: usize = 200;
-/// Days after which an app that registered and was never allowed is forgotten.
-pub const UNUSED_CLIENT_DAYS: i64 = 7;
+/// Hours after which an app that registered and was never allowed is forgotten: an app asks its
+/// person at once, so a day is plenty. The daily clean-up deletes it at its first round after.
+pub const UNUSED_CLIENT_HOURS: i64 = 24;
 /// Days after which a grant that ended is deleted.
 pub const ENDED_GRANT_KEEP_DAYS: i64 = 30;
 

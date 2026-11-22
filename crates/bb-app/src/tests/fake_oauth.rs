@@ -155,6 +155,30 @@ impl OAuthStore for FakeStore {
         Ok(())
     }
 
+    async fn push_out_unallowed_client(
+        tx: &mut Tx,
+        registered_since: Timestamp,
+    ) -> Result<bool, FakeError> {
+        let oauth = &mut tx.state.oauth;
+        let first = oauth
+            .clients
+            .iter()
+            .filter(|client| {
+                client.registered_at >= registered_since
+                    && !oauth
+                        .grants
+                        .iter()
+                        .any(|found| found.grant.client == client.id)
+            })
+            .min_by_key(|client| (client.registered_at, client.id))
+            .map(|client| client.id);
+        let Some(first) = first else {
+            return Ok(false);
+        };
+        oauth.clients.retain(|client| client.id != first);
+        Ok(true)
+    }
+
     async fn insert_grant(tx: &mut Tx, record: &GrantRecord) -> Result<(), FakeError> {
         tx.state.oauth.grants.push(record.clone());
         Ok(())
