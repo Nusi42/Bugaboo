@@ -117,8 +117,16 @@ pub(super) async fn serve_settings(
     // the daily clearing of old drafts and catching up of the history (M3-F30, M3-F71).
     // When the server stops, every wait for work answers at once (ADR-0029, amendment M9).
     let waits = Arc::clone(&wired.jobs);
+    // A server that lost its hold on the database (a restore took it) stops as if asked to, and
+    // then fails, so a service manager starts it again and the new start waits for the restore.
+    let mut database_held = wired.server_hold;
+    let lost = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let told = Arc::clone(&lost);
     let shutdown = async move {
-        shutdown.await;
+        tokio::select! {
+            () = shutdown => {}
+            () = database_held.lost() => told.store(true, std::sync::atomic::Ordering::SeqCst),
+        }
         waits.end_waits();
     };
     let working = bb_jobs::spawn(wired.jobs, bb_jobs::POLL_EVERY);
@@ -128,6 +136,11 @@ pub(super) async fn serve_settings(
         timer.abort();
     }
     served?;
+    if lost.load(std::sync::atomic::Ordering::SeqCst) {
+        return Err(anyhow::anyhow!(
+            Message::from(message::SERVER_DATABASE_HOLD_LOST).render()
+        ));
+    }
     tracing::info!("server stopped");
     Ok(())
 }

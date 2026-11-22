@@ -84,6 +84,13 @@ Bugaboo reads these settings when it starts, the strongest first: the command li
          included, and Bugaboo warns at every start and on the status page. A server on this \
          computer (`localhost`, `127.0.0.1` or a Unix socket) needs nothing.\n",
     );
+    out.push_str(
+        "\n`database_url` must lead to the PostgreSQL server itself, or to a pooler of connections \
+         that gives each client a connection of its own for as long as it is connected. A pooler \
+         that hands connections to other clients between changes (as PgBouncer does in its most \
+         common setting) would let go of the hold that every running server keeps on its \
+         database, and `bugaboo restore` could not see that a server still uses it.\n",
+    );
     out.push_str("\nWhat each setting means is in [Install Bugaboo](README.md).\n");
     Ok(out)
 }

@@ -83,6 +83,10 @@ pub(crate) enum LockClass {
     /// change, do not both take the next place. Last in the order: an append comes at the end of
     /// its change, after its events.
     SecurityLog = 19,
+    /// A server that runs on the database (key 0), held shared by every server for as long as it
+    /// runs and taken alone by a restore (`db/server_hold.rs`, `ServerHold`). It lives with a connection of its
+    /// own, never in a transaction, so it is outside the order of the others.
+    ServerRunning = 20,
 }
 
 impl LockClass {
@@ -111,6 +115,7 @@ impl LockClass {
             Self::Themes => 16,
             Self::DataExports => 17,
             Self::SecurityLog => 18,
+            Self::ServerRunning => 19,
         }
     }
 }

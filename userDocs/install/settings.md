@@ -28,4 +28,6 @@ Bugaboo reads these settings when it starts, the strongest first: the command li
 
 A PostgreSQL server on another computer is reached safely only when Bugaboo checks its certificate: add `sslmode=verify-full` to `database_url`, as in `postgres://bugaboo@db.example.com/bugaboo?sslmode=verify-full`. `bugaboo setup` adds it for a server on another computer when the address says nothing about `sslmode`. Without it, somebody in between could read or change what passes, the password included, and Bugaboo warns at every start and on the status page. A server on this computer (`localhost`, `127.0.0.1` or a Unix socket) needs nothing.
 
+`database_url` must lead to the PostgreSQL server itself, or to a pooler of connections that gives each client a connection of its own for as long as it is connected. A pooler that hands connections to other clients between changes (as PgBouncer does in its most common setting) would let go of the hold that every running server keeps on its database, and `bugaboo restore` could not see that a server still uses it.
+
 What each setting means is in [Install Bugaboo](README.md).

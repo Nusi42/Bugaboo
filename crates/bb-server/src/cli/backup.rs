@@ -174,7 +174,18 @@ pub(super) async fn restore(args: &RestoreArgs) -> anyhow::Result<()> {
     let keys = Arc::new(KeyRing::open(&data.keys(), OpenMode::ExistingOnly)?);
     let seal = LogSeal::new(&keys, data.security_log_anchor());
     let more: Vec<PathBuf> = args.replay_list.iter().cloned().collect();
-    let target = RestoreTarget::of(connect(&settings, &data).await?).await;
+    let database = connect(&settings, &data).await?;
+    // A server on another computer that uses the same PostgreSQL database holds it too.
+    let Some(_alone) = database
+        .hold_alone()
+        .await
+        .map_err(|error| crate::wiring::database_failed(&error))?
+    else {
+        return Err(anyhow!(
+            Message::from(message::RESTORE_DATABASE_IN_USE).render()
+        ));
+    };
+    let target = RestoreTarget::of(database).await;
     let result = bb_store::backup::restore(
         RestoreInput {
             archive: &args.file,

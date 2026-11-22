@@ -6524,6 +6524,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The data that was there before is kept in the backup {path} for the keep period of the security log.",
     ),
     (
+        "restore.database-in-use",
+        "A Bugaboo server uses the database, perhaps on another computer. Stop every server that uses it, then run the restore again.",
+    ),
+    (
         "restore.done",
         "Restored the backup of {moment}. Every change after that moment is gone, password and role changes included, apart from what the replay list did again: tell the people concerned.",
     ),
@@ -7624,6 +7628,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "server.database-failed",
         "Bugaboo could not open its database: {reason}",
+    ),
+    (
+        "server.database-hold-lost",
+        "The server stopped: the connection that holds its database broke, and the hold could not be taken again, perhaps because a restore runs. Start the server again; it waits until the restore has ended.",
     ),
     (
         "server.database-newer",

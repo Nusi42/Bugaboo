@@ -272,6 +272,8 @@
   "backups.failed": "The backup could not be created: {reason}",
   "backups.folder-not-private": "The folder {path} can be opened by other accounts on this computer. Choose a folder that only you can open, so the backup is not left where others can copy it.",
   "restore.server-running": "A Bugaboo server uses the data folder {path}. Stop it, then run the restore again.",
+  "restore.database-in-use": "A Bugaboo server uses the database, perhaps on another computer. Stop every server that uses it, then run the restore again.",
+  "server.database-hold-lost": "The server stopped: the connection that holds its database broke, and the hold could not be taken again, perhaps because a restore runs. Start the server again; it waits until the restore has ended.",
   "restore.refused": "The backup {path} was not restored, and nothing was changed: {reason}.",
   "restore.reason-unreadable": "the file is not a backup of Bugaboo, or it cannot be read",
   "restore.reason-newer-format": "it was created by a newer Bugaboo",

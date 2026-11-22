@@ -1,5 +1,7 @@
 //! The tests of the database: opening it, its files, and the statistics SQLite plans with.
 
+use sea_query::{Expr, ExprTrait as _};
+
 use super::*;
 
 /// Many programs that start at the same moment on a brand-new SQLite file all get a working
@@ -201,4 +203,110 @@ async fn perf_01_writers_in_a_crowd_queue_in_order_and_none_runs_out_of_patience
         .clone();
     assert_eq!(order, (0..WRITERS).collect::<Vec<_>>());
     Ok(())
+}
+
+/// A restore needs the database alone: a server that runs on it, also on another computer, holds
+/// it shared, and the restore refuses until it stops (ADR-0046, decision 4). On SQLite the lock of
+/// the data folder does this, and the database answers that it is free.
+#[tokio::test]
+async fn ops_07_a_restore_finds_the_database_held_while_a_server_runs_on_it()
+-> bb_testing::TestResult {
+    bb_testing::each_database("ops_07_server_hold", async |db| {
+        let server = Database::connect(db.url()).await?;
+        let other_server = Database::connect(db.url()).await?;
+        let restore = Database::connect(db.url()).await?;
+        let held = server.hold_as_server().await?;
+        // Several servers share the database.
+        let also_held = other_server.hold_as_server().await?;
+        let postgres = server.dialect() == Dialect::Postgres;
+        assert_eq!(restore.hold_alone().await?.is_none(), postgres);
+        drop(held);
+        drop(also_held);
+        // Once every server has stopped, the restore holds it, and a server that starts waits.
+        let alone = restore.hold_alone().await?;
+        assert!(alone.is_some());
+        if postgres {
+            let waiting =
+                tokio::time::timeout(Duration::from_millis(300), server.hold_as_server()).await;
+            assert!(waiting.is_err(), "a server waits while the restore runs");
+        }
+        drop(alone);
+        let _held_again = server.hold_as_server().await?;
+        Ok(())
+    })
+    .await
+}
+
+/// Ends the connections of other clients that hold the lock of running servers on this database,
+/// as a broken link or a restart of the database server would. The lock is found by its class,
+/// which no lock on a table has (a table is named by its catalog, a number far above it).
+async fn end_holders(database: &Database) -> Result<(), StoreError> {
+    let column = |name: &str| Expr::col(sea_query::Alias::new(name));
+    // `pg_locks` shows the locks of every database of the server; only this one's count, so the
+    // tests of other databases go on undisturbed.
+    let mut this_database = SelectStatement::new();
+    this_database
+        .column(sea_query::Alias::new("oid"))
+        .from(sea_query::Alias::new("pg_database"))
+        .and_where(column("datname").eq(Func::cust(sea_query::Alias::new("current_database"))));
+    let mut select = SelectStatement::new();
+    select
+        .expr(Func::cust(sea_query::Alias::new("pg_terminate_backend")).arg(column("pid")))
+        .from(sea_query::Alias::new("pg_locks"))
+        .and_where(column("database").in_subquery(this_database))
+        .and_where(column("classid").eq(LockClass::ServerRunning as i32))
+        .and_where(column("pid").ne(Func::cust(sea_query::Alias::new("pg_backend_pid"))));
+    database.fetch_all(&select).await?;
+    Ok(())
+}
+
+/// The hold of a server lives on a connection of its own (ADR-0046, decision 4). When that
+/// connection breaks, the hold is taken again; when a restore took the database meanwhile, the
+/// server is told that it lost the hold and must stop. On SQLite there is no such connection.
+#[tokio::test]
+async fn ops_07_a_server_whose_hold_broke_takes_it_again_or_is_told_to_stop()
+-> bb_testing::TestResult {
+    bb_testing::each_database("ops_07_hold_broke", async |db| {
+        let server = Database::connect(db.url()).await?;
+        if server.dialect() != Dialect::Postgres {
+            return Ok(());
+        }
+        let restore = Database::connect(db.url()).await?;
+        // Broken while nobody else wants the database: taken again, and the server goes on.
+        let mut held = server
+            .hold_as_server_checking(Duration::from_millis(100))
+            .await?;
+        end_holders(&restore).await?;
+        tokio::time::sleep(Duration::from_millis(800)).await;
+        assert!(restore.hold_alone().await?.is_none(), "taken again");
+        assert!(
+            tokio::time::timeout(Duration::from_millis(300), held.lost())
+                .await
+                .is_err(),
+            "the server goes on"
+        );
+        drop(held);
+        // Broken while a restore takes the database: the server is told to stop.
+        let mut held = server
+            .hold_as_server_checking(Duration::from_secs(1))
+            .await?;
+        end_holders(&restore).await?;
+        let mut alone = None;
+        for _ in 0..50 {
+            alone = restore.hold_alone().await?;
+            if alone.is_some() {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        }
+        assert!(alone.is_some(), "the restore took the database");
+        assert!(
+            tokio::time::timeout(Duration::from_secs(10), held.lost())
+                .await
+                .is_ok(),
+            "the server was told to stop"
+        );
+        Ok(())
+    })
+    .await
 }

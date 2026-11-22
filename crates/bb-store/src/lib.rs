@@ -76,7 +76,9 @@ pub use auth::AuthStorage;
 pub use chain::{BreakReason, Verification};
 #[cfg(any(test, feature = "testing"))]
 pub use db::UpkeepForTests;
-pub use db::{Database, Dialect, Transaction, certificate_unchecked, with_checked_certificate};
+pub use db::{
+    Database, Dialect, ServerHold, Transaction, certificate_unchecked, with_checked_certificate,
+};
 pub use error::{SecretProblem, SettingProblem, StoreError};
 pub use jobs::{NewJob, backoff};
 pub use keys::{KEY_BACKUP_FILES, KeyRing, MASTER_KEY_FILE, MasterKey, OpenMode, SigningKey};

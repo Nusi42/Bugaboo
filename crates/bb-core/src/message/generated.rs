@@ -8301,6 +8301,9 @@ pub const REMOVAL_STAYS: MessageKey = MessageKey::new("removal.stays");
 /// The message `removal.switch-off-button`.
 pub const REMOVAL_SWITCH_OFF_BUTTON: MessageKey = MessageKey::new("removal.switch-off-button");
 
+/// The message `restore.database-in-use`.
+pub const RESTORE_DATABASE_IN_USE: MessageKey = MessageKey::new("restore.database-in-use");
+
 /// The message `restore.nobody-decides-roles`.
 pub const RESTORE_NOBODY_DECIDES_ROLES: MessageKey =
     MessageKey::new("restore.nobody-decides-roles");
@@ -9384,6 +9387,9 @@ pub const SERVER_DATABASE_BUILT_IN: MessageKey = MessageKey::new("server.databas
 /// The message `server.database-certificate-unchecked`.
 pub const SERVER_DATABASE_CERTIFICATE_UNCHECKED: MessageKey =
     MessageKey::new("server.database-certificate-unchecked");
+
+/// The message `server.database-hold-lost`.
+pub const SERVER_DATABASE_HOLD_LOST: MessageKey = MessageKey::new("server.database-hold-lost");
 
 /// The message `server.database-postgres`.
 pub const SERVER_DATABASE_POSTGRES: MessageKey = MessageKey::new("server.database-postgres");

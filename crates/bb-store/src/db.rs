@@ -6,17 +6,16 @@
 //! This is the only file that may wrap query text in `AssertSqlSafe`, and the only one that
 //! names the sqlx query functions (ARCH-SQL-EDGE).
 
-use std::future::Future;
 use std::str::FromStr as _;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 
 use bb_core::event::DomainEvent;
 use sea_query::{
-    PostgresQueryBuilder, SchemaStatementBuilder, SelectStatement, SqliteQueryBuilder,
+    Func, PostgresQueryBuilder, SchemaStatementBuilder, SelectStatement, SqliteQueryBuilder,
 };
-use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
+use sqlx::postgres::{PgConnectOptions, PgConnection, PgPoolOptions};
 use sqlx::sqlite::SqliteConnectOptions;
 use sqlx::{AssertSqlSafe, PgPool, Postgres, Sqlite, SqlitePool};
 
@@ -27,10 +26,13 @@ use crate::security_log::NewSecurityLogEntry;
 mod fixed;
 mod gate;
 mod peer;
+mod reader;
+mod server_hold;
 mod sqlite_open;
 mod statement;
 mod statements;
 mod statistics;
+mod timed;
 mod upkeep;
 
 pub(crate) use fixed::FixedSql;
@@ -42,9 +44,12 @@ use gate::{Turn, WriterGate};
 #[cfg(any(test, feature = "testing"))]
 pub use hooks::UpkeepForTests;
 pub use peer::{certificate_unchecked, with_checked_certificate};
+pub(crate) use reader::{Reader, count_of};
+pub use server_hold::ServerHold;
 #[cfg(unix)]
 use sqlite_open::create_private_file;
 use sqlite_open::{SQLITE_BUSY_TIMEOUT, open_sqlite};
+use timed::Timed;
 use upkeep::Upkeep;
 
 /// How many values one statement binds at most. SQLite allows 32,766 and PostgreSQL 65,535, so the
@@ -72,44 +77,6 @@ const SQLITE_INTERRUPT: &str = "9";
 
 /// How many steps of its virtual machine SQLite takes between two looks at the clock.
 const PROGRESS_STEPS: i32 = 1_000;
-
-/// A pooled SQLite connection while a timed read runs on it. If the read does not end normally (the
-/// future is dropped, a client went away) the read is told to stop at its next step and the
-/// connection is closed instead of going back to the pool, so no limit of a read that is gone can
-/// stop a later statement of anybody else.
-struct Timed {
-    connection: Option<sqlx::pool::PoolConnection<Sqlite>>,
-    cancelled: Arc<AtomicBool>,
-    finished: bool,
-}
-
-impl Timed {
-    fn new(connection: sqlx::pool::PoolConnection<Sqlite>) -> Self {
-        Self {
-            connection: Some(connection),
-            cancelled: Arc::default(),
-            finished: false,
-        }
-    }
-
-    /// The connection, which is there until the guard is dropped.
-    fn connection(&mut self) -> Result<&mut sqlx::pool::PoolConnection<Sqlite>, StoreError> {
-        self.connection
-            .as_mut()
-            .ok_or(StoreError::Corrupt("a connection"))
-    }
-}
-
-impl Drop for Timed {
-    fn drop(&mut self) {
-        if !self.finished {
-            self.cancelled.store(true, Ordering::Relaxed);
-            if let Some(connection) = self.connection.as_mut() {
-                connection.close_on_drop();
-            }
-        }
-    }
-}
 
 /// The two databases Bugaboo supports.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -468,61 +435,13 @@ impl Database {
     }
 }
 
-/// Something that runs the statements of a read: the pool (one statement, no snapshot) or a
-/// transaction (a snapshot, or a change that is open). A read is written once over this, so there
-/// is no pool version and no transaction version of it.
-pub(crate) trait Reader: Send {
-    /// Reads all rows of a query.
-    fn fetch_all(
-        &mut self,
-        select: &SelectStatement,
-    ) -> impl Future<Output = Result<Vec<Row>, StoreError>> + Send;
-
-    /// Reads the first row of a query, if there is one.
-    fn fetch_optional(
-        &mut self,
-        select: &SelectStatement,
-    ) -> impl Future<Output = Result<Option<Row>, StoreError>> + Send {
-        async move { Ok(self.fetch_all(select).await?.into_iter().next()) }
-    }
-}
-
-impl Reader for &Database {
-    fn fetch_all(
-        &mut self,
-        select: &SelectStatement,
-    ) -> impl Future<Output = Result<Vec<Row>, StoreError>> + Send {
-        Database::fetch_all(self, select)
-    }
-}
-
-impl Reader for Transaction {
-    fn fetch_all(
-        &mut self,
-        select: &SelectStatement,
-    ) -> impl Future<Output = Result<Vec<Row>, StoreError>> + Send {
-        Self::fetch_all(self, select)
-    }
-}
-
-/// The number a counting statement answers in its column `Computed::Total`: the one way a read
-/// takes a count, on the pool or in a transaction.
-pub(crate) async fn count_of(
-    reader: &mut impl Reader,
-    select: &SelectStatement,
-) -> Result<u64, StoreError> {
-    let count: i64 = match reader.fetch_optional(select).await? {
-        Some(row) => row.get(crate::schema::Computed::Total)?,
-        None => 0,
-    };
-    Ok(u64::try_from(count).unwrap_or(0))
-}
-
 /// Where a statement runs: on the pool, or inside a transaction. The two ways to run a
 /// statement are written once, here, for both databases.
 enum Connection<'c> {
     Pool(&'c Pool),
     Transaction(&'c mut TxInner),
+    /// A PostgreSQL connection of its own, outside the pool (the hold of a server).
+    Session(&'c mut PgConnection),
 }
 
 impl Connection<'_> {
@@ -546,6 +465,7 @@ impl Connection<'_> {
             Self::Transaction(TxInner::Postgres(transaction)) => {
                 run!(Dialect::Postgres, &mut **transaction)
             }
+            Self::Session(connection) => run!(Dialect::Postgres, connection),
         }
     }
 
@@ -569,6 +489,7 @@ impl Connection<'_> {
             Self::Transaction(TxInner::Postgres(transaction)) => {
                 run!(Dialect::Postgres, &mut **transaction, Row::Postgres)
             }
+            Self::Session(connection) => run!(Dialect::Postgres, connection, Row::Postgres),
         }
     }
 }
@@ -668,7 +589,7 @@ impl Transaction {
         if matches!(self.inner, TxInner::Postgres(_)) {
             let mut select = SelectStatement::new();
             select.expr(
-                sea_query::Func::cust(sea_query::Alias::new("pg_advisory_xact_lock"))
+                Func::cust(sea_query::Alias::new("pg_advisory_xact_lock"))
                     .arg(class as i32)
                     .arg(key),
             );
@@ -688,7 +609,7 @@ impl Transaction {
         if matches!(self.inner, TxInner::Postgres(_)) {
             let mut select = SelectStatement::new();
             select.expr(
-                sea_query::Func::cust(sea_query::Alias::new("pg_advisory_xact_lock_shared"))
+                Func::cust(sea_query::Alias::new("pg_advisory_xact_lock_shared"))
                     .arg(class as i32)
                     .arg(key),
             );
@@ -788,6 +709,29 @@ impl Database {
                 .fetch_optional(pool)
                 .await?,
         )
+    }
+}
+
+/// How the lock of a running server is asked for (`server_hold`). The SQL of every advisory lock
+/// is written in this file (ARCH-LOCK-ORDER); this one is taken outside a transaction.
+#[derive(Clone, Copy)]
+enum Ask {
+    /// By a server: shared, waiting for a restore to end.
+    Shared,
+    /// By a server that looks first, and by the watch of a hold that takes it again: shared, and
+    /// only when no restore holds it.
+    SharedIfFree,
+    /// By a restore: alone, and only when nobody holds it.
+    AloneIfFree,
+}
+
+impl Ask {
+    const fn function(self) -> &'static str {
+        match self {
+            Self::Shared => "pg_advisory_lock_shared",
+            Self::SharedIfFree => "pg_try_advisory_lock_shared",
+            Self::AloneIfFree => "pg_try_advisory_lock",
+        }
     }
 }
 

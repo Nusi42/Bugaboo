@@ -62,6 +62,8 @@ pub(crate) struct Wired {
     pub(crate) setup_code: Option<String>,
     /// The services the background job worker runs with (`bb-jobs`).
     pub(crate) jobs: Arc<AuthServices<AuthStorage>>,
+    /// The hold of this server on its database, which a restore needs alone (ADR-0046).
+    pub(crate) server_hold: bb_store::ServerHold,
 }
 
 /// How time passes for *Wait for work*: the timer of the server's runtime.
@@ -232,6 +234,20 @@ pub(crate) async fn connect(settings: &Settings, data: &DataFolder) -> anyhow::R
     .map_err(|error| database_failed(&error))
 }
 
+/// The database of a running server, with the hold the server keeps on it while it runs, so a
+/// restore from another computer refuses (ADR-0046).
+async fn connect_as_server(
+    settings: &Settings,
+    data: &DataFolder,
+) -> anyhow::Result<(Database, bb_store::ServerHold)> {
+    let database = connect(settings, data).await?;
+    let hold = database
+        .hold_as_server()
+        .await
+        .map_err(|error| database_failed(&error))?;
+    Ok((database, hold))
+}
+
 /// Opens everything the sign-in routes need.
 ///
 /// # Errors
@@ -243,7 +259,7 @@ pub(crate) async fn wire(
     data: &DataFolder,
     serving: Serving,
 ) -> anyhow::Result<Wired> {
-    let database = connect(settings, data).await?;
+    let (database, server_hold) = connect_as_server(settings, data).await?;
     let now = jiff::Timestamp::now();
     let UpToDate { keys, backup } = bring_up_to_date(&database, data, now).await?;
     // The master key gets an access list of its own on Windows (M1-F22), also a key file made
@@ -352,6 +368,7 @@ pub(crate) async fn wire(
         mcp,
         probe: ProbeHandle::new(Arc::new(probe)),
         setup_code,
+        server_hold,
     })
 }
 
