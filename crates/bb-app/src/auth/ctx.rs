@@ -95,6 +95,8 @@ pub struct AuthServices<S> {
     pub(crate) call_rate: super::oauth_rate::CallRate,
     /// The changes of agents in the last minute, for their limits (ADR-0029, decision 9).
     pub(crate) agent_rate: crate::agents::AgentRate,
+    /// The questions to the assistant of the last minute and those running, by person.
+    pub(crate) assistant_rate: crate::ai::assistant::AssistantRate,
     /// What `mcp_identity` left for the call of the tool of a message, by the handle only that message
     /// has (`access/handoff.rs`).
     pub(crate) agent_handoff: Mutex<HashMap<String, crate::access::Handoff>>,
@@ -144,6 +146,7 @@ impl<S> AuthServices<S> {
             test_ai_at: Mutex::default(),
             call_rate: super::oauth_rate::CallRate::default(),
             agent_rate: crate::agents::AgentRate::default(),
+            assistant_rate: crate::ai::assistant::AssistantRate::default(),
             agent_handoff: Mutex::default(),
             work_signal: crate::agent_work::WorkSignal::default(),
         }

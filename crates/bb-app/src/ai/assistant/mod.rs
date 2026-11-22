@@ -17,11 +17,14 @@ mod apply;
 mod ask;
 mod look_ups;
 mod people;
+mod rate;
 mod reference;
 mod status;
 mod step;
 mod system;
 mod words;
+
+pub(crate) use rate::AssistantRate;
 
 use bb_auth::looks_like_access_key;
 use bb_core::ErrorCode;

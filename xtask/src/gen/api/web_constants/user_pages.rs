@@ -331,8 +331,9 @@ fn days(days: i64) -> anyhow::Result<String> {
 /// The limits of the assistant, from the constants of `bb-core`.
 fn assistant_rows() -> anyhow::Result<Vec<Vec<String>>> {
     use bb_core::ai::{
-        PROPOSAL_LIFETIME_SECONDS, PROPOSALS_MAX, QUESTION_CHARS_MAX, TOOL_CALL_KEEP_DAYS,
-        TOOL_CALLS_AT_START, TURN_CHARS_MAX, TURNS_MAX,
+        PROPOSAL_LIFETIME_SECONDS, PROPOSALS_MAX, QUESTION_CHARS_MAX, QUESTIONS_A_MINUTE,
+        QUESTIONS_AT_ONCE, ROUNDS_MOST, TOOL_CALL_KEEP_DAYS, TOOL_CALLS_AT_START, TURN_CHARS_MAX,
+        TURNS_MAX,
     };
     let minutes = u128::try_from(PROPOSAL_LIFETIME_SECONDS / 60)
         .context("the life of a proposal is below zero")?;
@@ -352,8 +353,17 @@ fn assistant_rows() -> anyhow::Result<Vec<Vec<String>>> {
         (
             "The assistant looks things up at most",
             format!(
-                "{} for one question until an administrator sets another most (also *No limit*); you can choose a lower number in *My settings › Assistant*",
-                counted(TOOL_CALLS_AT_START as u128, "time", "times")
+                "{} for one question until an administrator sets another most (also *No limit*, which still stops after {} with the provider); you can choose a lower number in *My settings › Assistant*",
+                counted(TOOL_CALLS_AT_START as u128, "time", "times"),
+                counted(ROUNDS_MOST as u128, "round", "rounds")
+            ),
+        ),
+        (
+            "You ask the assistant at most",
+            format!(
+                "{} a minute, with at most {} running at the same time",
+                counted(u128::from(QUESTIONS_A_MINUTE), "question", "questions"),
+                QUESTIONS_AT_ONCE
             ),
         ),
         (

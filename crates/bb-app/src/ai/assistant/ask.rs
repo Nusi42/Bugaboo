@@ -17,6 +17,7 @@ use super::step::Tools;
 use super::system::SYSTEM;
 use super::{AssistantAnswer, ChatTurn, LookingAt};
 use crate::access::Actor;
+use crate::ai::call::AiState;
 use crate::ai::context::PeopleMode;
 use crate::ai::tools::{ToolList, ToolListQuery, list_tools};
 use crate::ai::{AiPart, AiRequest, AiRole, AiToolCall, AiToolSpec, AiTurn, Withheld};
@@ -145,6 +146,40 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 }
 
+impl<S: AuthStore> Ctx<'_, S> {
+    /// The settings of AI that count for a question: AI has to count for the organization and at
+    /// every project the panel looks at, and the first of them decides the provider.
+    ///
+    /// # Errors
+    /// `ai.off` where AI does not count, and what [`Self::projects_looked_at`] answers.
+    async fn assistant_state(
+        &self,
+        actor: &Actor,
+        looking_at: &[LookingAt],
+    ) -> Result<AiState, AppError> {
+        // Off for the organization: nothing else is read.
+        let mut state = self.ai_state_at(None).await?;
+        if !state.counts() {
+            return Err(ErrorCode::AiOff.into());
+        }
+        let withheld = self.withheld(ToolCaller::Assistant).await?;
+        let projects = self
+            .projects_looked_at(actor, looking_at, &withheld)
+            .await?;
+        for (at, project) in projects.iter().enumerate() {
+            let here = self.ai_state_at(Some(*project)).await?;
+            if !here.counts() {
+                return Err(ErrorCode::AiOff.into());
+            }
+            // The first place the panel looks at decides which provider settings count.
+            if at == 0 {
+                state = here;
+            }
+        }
+        Ok(state)
+    }
+}
+
 /// The tools as the model is shown them, and what each does.
 fn tools_of(
     list: &Authorized<ToolList>,
@@ -179,7 +214,8 @@ fn tools_of(
 /// proposes and saves nothing.
 ///
 /// # Errors
-/// `auth.access-key-not-allowed` for an access key, `request.invalid` for a question that is empty or over a limit, `resource.not-found` for
+/// `auth.access-key-not-allowed` for an access key, `request.invalid` for a question that is empty or over a limit,
+/// `rate-limit.exceeded` for a person who asked too much in this minute or has two questions running, `resource.not-found` for
 /// something the panel looks at that the person may not read, `ai.off` while AI does not count at a
 /// place, the errors of the provider (`ai.agreement-needed`, `ai.not-set-up`, `ai.unavailable`),
 /// and `ai.unavailable` when the model never gives an answer.
@@ -190,25 +226,12 @@ pub async fn ask_assistant<S: AuthStore>(
     session_only(&input.session_token)?;
     let actor = ctx.actor(&input.session_token).await?;
     check(&input)?;
-    // Off for the organization: nothing else is read.
-    let mut state = ctx.ai_state_at(None).await?;
-    if !state.counts() {
-        return Err(ErrorCode::AiOff.into());
-    }
-    let withheld = ctx.withheld(ToolCaller::Assistant).await?;
-    let projects = ctx
-        .projects_looked_at(&actor, &input.looking_at, &withheld)
-        .await?;
-    for (at, project) in projects.iter().enumerate() {
-        let here = ctx.ai_state_at(Some(*project)).await?;
-        if !here.counts() {
-            return Err(ErrorCode::AiOff.into());
-        }
-        // The first place the panel looks at decides which provider settings count.
-        if at == 0 {
-            state = here;
-        }
-    }
+    // Counted before anything is read; it runs until the answer is back or the client gave up.
+    let _running = ctx
+        .services
+        .assistant_rate
+        .start(actor.person.id, ctx.now())?;
+    let state = ctx.assistant_state(&actor, &input.looking_at).await?;
     let people = if state.names_sent(state.destination()?) {
         PeopleMode::AsSeen
     } else {
@@ -238,7 +261,7 @@ pub async fn ask_assistant<S: AuthStore>(
     let mut turns = conversation(&input);
     for round in 1.. {
         // The last round is given no tools, so the model has to answer with what it has.
-        let last = rounds.is_some_and(|most| round >= most);
+        let last = round >= rounds;
         let answer = ctx
             .call_provider(
                 &state,

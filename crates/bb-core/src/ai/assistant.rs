@@ -26,6 +26,18 @@ pub const LOOKING_AT_CHARS_MAX: usize = 500;
 /// gets a sentence for an answer and runs nothing.
 pub const TOOL_CALLS_AT_START: usize = 8;
 
+/// The most calls to the provider for one question, whatever the look-ups allow, *No limit* too: a
+/// model that never stops asking for tools is stopped here, and the question answers
+/// `ai.unavailable`. Far above what any setting but *No limit* gives (the highest choice is 50).
+pub const ROUNDS_MOST: usize = 200;
+
+/// The most questions one person asks the assistant in a minute (SEC-14): each one calls the
+/// provider, which charges for it.
+pub const QUESTIONS_A_MINUTE: u32 = 10;
+
+/// The most questions of one person that run at the same time.
+pub const QUESTIONS_AT_ONCE: usize = 2;
+
 /// The most proposals one answer carries.
 pub const PROPOSALS_MAX: usize = 10;
 
@@ -91,7 +103,7 @@ impl crate::personal::NotPersonal for ReferenceWord {}
 pub enum LookUps {
     /// At most this many tools.
     Most(usize),
-    /// No limit: nothing stops the look-ups of a question.
+    /// No limit: no setting stops the look-ups of a question; [`ROUNDS_MOST`] still does.
     NoLimit,
 }
 
@@ -124,13 +136,13 @@ impl LookUps {
         }
     }
 
-    /// The most calls to the provider for one question, or `None` for no limit: every round but the
-    /// last runs at least one tool, and the last is given none.
+    /// The most calls to the provider for one question: every round but the last runs at least one
+    /// tool, and the last is given none. Never above [`ROUNDS_MOST`], *No limit* included.
     #[must_use]
-    pub const fn rounds(self) -> Option<usize> {
+    pub const fn rounds(self) -> usize {
         match self {
-            Self::Most(most) => Some(most.saturating_add(1)),
-            Self::NoLimit => None,
+            Self::Most(most) if most < ROUNDS_MOST => most + 1,
+            Self::Most(_) | Self::NoLimit => ROUNDS_MOST,
         }
     }
 
@@ -167,9 +179,10 @@ mod look_up_tests {
     #[test]
     fn m7_wp15_no_limit_has_no_number_at_all() {
         assert_eq!(LookUps::NoLimit.calls(), None);
-        assert_eq!(LookUps::NoLimit.rounds(), None);
+        assert_eq!(LookUps::NoLimit.rounds(), ROUNDS_MOST);
         assert_eq!(LookUps::Most(1_000).calls(), Some(1_000));
-        assert_eq!(LookUps::Most(3).rounds(), Some(4));
+        assert_eq!(LookUps::Most(3).rounds(), 4);
+        assert_eq!(LookUps::Most(usize::MAX).rounds(), ROUNDS_MOST);
     }
 
     #[test]

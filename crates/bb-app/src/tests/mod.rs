@@ -41,6 +41,7 @@ mod ai_tools_answers;
 mod ai_tools_asked;
 mod ai_tools_preview;
 mod assistant;
+mod assistant_limits;
 mod assistant_look_ups;
 mod assistant_status;
 mod assistant_words;

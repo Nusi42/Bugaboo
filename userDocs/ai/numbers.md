@@ -32,13 +32,14 @@ These are the limits of agents and of the assistant, as Bugaboo works by them. A
 
 ## The assistant
 
-| What                                   | Number                                                                                                                                          |
-| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| A question to the assistant is at most | 4000 characters                                                                                                                                 |
-| A conversation keeps at most           | 20 turns                                                                                                                                        |
-| A turn is at most                      | 8000 characters                                                                                                                                 |
-| The assistant looks things up at most  | 8 times for one question until an administrator sets another most (also *No limit*); you can choose a lower number in *My settings › Assistant* |
-| The assistant proposes at most         | 10 changes at once; a proposal waits 10 minutes for *Apply*                                                                                     |
-| The calls of tools are kept for        | 90 days                                                                                                                                         |
+| What                                   | Number                                                                                                                                                                                                |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A question to the assistant is at most | 4000 characters                                                                                                                                                                                       |
+| A conversation keeps at most           | 20 turns                                                                                                                                                                                              |
+| A turn is at most                      | 8000 characters                                                                                                                                                                                       |
+| The assistant looks things up at most  | 8 times for one question until an administrator sets another most (also *No limit*, which still stops after 200 rounds with the provider); you can choose a lower number in *My settings › Assistant* |
+| You ask the assistant at most          | 10 questions a minute, with at most 2 running at the same time                                                                                                                                        |
+| The assistant proposes at most         | 10 changes at once; a proposal waits 10 minutes for *Apply*                                                                                                                                           |
+| The calls of tools are kept for        | 90 days                                                                                                                                                                                               |
 
 See [The AI guide](literacy.md) and [Agents](../agents/README.md).
