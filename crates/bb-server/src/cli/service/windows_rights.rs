@@ -28,7 +28,8 @@ const SERVICE_GROUPS: [&str; 9] = [
 /// What the service does with a file.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum Need {
-    /// Reads it (the settings file).
+    /// Reads it (a file of settings, which the install gives the service itself).
+    #[cfg(test)]
     Read,
     /// Runs it (the program).
     Run,
@@ -37,6 +38,7 @@ pub(super) enum Need {
 impl Need {
     fn rights(self) -> u32 {
         match self {
+            #[cfg(test)]
             Self::Read => rights::READ_DATA,
             Self::Run => rights::READ_DATA | rights::EXECUTE,
         }

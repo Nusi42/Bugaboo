@@ -22638,6 +22638,15 @@ pub fn service_failed(reason: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `service.half-made`.
+#[must_use]
+pub fn service_half_made(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("service.half-made"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
 /// The message `service.home-hidden`.
 #[must_use]
 pub fn service_home_hidden(path: impl std::fmt::Display) -> Message {

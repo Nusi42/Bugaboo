@@ -7764,6 +7764,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("service.failed", "The system refused: {reason}"),
     (
+        "service.half-made",
+        "The service {name} was created, but a later step of the install failed and the service could not be removed again. Remove it with bugaboo service uninstall, fix what the next line names, and install again.",
+    ),
+    (
         "service.home-hidden",
         "The service cannot see {path}: its unit hides the home folders from it (ProtectHome=yes), so it could never start. Put the program, its settings file and its data folder outside the home folders, as the install guide shows, and install from there.",
     ),

@@ -175,19 +175,39 @@ fn give_settings_to_service(found: &Found, service_sid: &str) -> anyhow::Result<
     restrict_to(&found.config, &settings_grants(service_sid)).map_err(|said| refused(&said))
 }
 
-/// Refuses when the account of the service cannot run the program or read the settings file.
+/// Refuses when the account of the service cannot run the program. The settings file is given to
+/// it by the install itself, once the service and so its account exist.
 fn check_account_can_read(found: &Found, sid: &str) -> anyhow::Result<()> {
-    for (path, need) in [(&found.program, Need::Run), (&found.config, Need::Read)] {
-        let readable = crate::data_folder::rights::access_list(path)
-            .is_some_and(|sddl| service_can(&sddl, sid, need));
-        if !readable {
-            return Err(anyhow!(
-                message::service_account_cannot_read(message::ServiceAccountCannotRead {
-                    account: &account(),
-                    path: &path.display(),
-                })
-                .render()
-            ));
+    let runnable = crate::data_folder::rights::access_list(&found.program)
+        .is_some_and(|sddl| service_can(&sddl, sid, Need::Run));
+    if runnable {
+        Ok(())
+    } else {
+        Err(anyhow!(
+            message::service_account_cannot_read(message::ServiceAccountCannotRead {
+                account: &account(),
+                path: &found.program.display(),
+            })
+            .render()
+        ))
+    }
+}
+
+/// One step of the install, or the deletion of the service.
+type Step<'a> = &'a dyn Fn() -> anyhow::Result<()>;
+
+/// Runs the steps that follow the creation of the service, in their order. When one fails, the
+/// steps after it are left out and the service is deleted again, so no half-made service stays
+/// behind; the answer is the failure of the step. A service that cannot be deleted then is named,
+/// with the command that removes it.
+fn finish_or_delete(steps: &[Step<'_>], delete: Step<'_>) -> anyhow::Result<()> {
+    for step in steps {
+        if let Err(failed) = step() {
+            if let Err(not_deleted) = delete() {
+                tracing::warn!(cause = %not_deleted, "a half-made service could not be deleted");
+                output::line(&message::service_half_made(NAME).render());
+            }
+            return Err(failed);
         }
     }
     Ok(())
@@ -199,7 +219,6 @@ pub(super) fn install(found: &Found, own_files: OwnFiles) -> anyhow::Result<()> 
     let icacls = system_tool("icacls.exe").map_err(|said| refused(&said.render()))?;
     refuse_changeable(found, &found.settings.data_dir)?;
     let sid = service_sid()?;
-    give_settings_to_service(found, &sid)?;
     check_account_can_read(found, &sid)?;
     let manager =
         ServiceManager::local_computer(None::<&str>, ServiceManagerAccess::CREATE_SERVICE)
@@ -209,19 +228,32 @@ pub(super) fn install(found: &Found, own_files: OwnFiles) -> anyhow::Result<()> 
     let service = manager
         .create_service(
             &info(found),
-            ServiceAccess::START | ServiceAccess::CHANGE_CONFIG,
+            ServiceAccess::START | ServiceAccess::CHANGE_CONFIG | ServiceAccess::DELETE,
         )
         .map_err(|error| explain(&error))?;
-    service
-        .set_description(Message::from(message::SERVER_ABOUT).render())
-        .map_err(|error| explain(&error))?;
-    service
-        .update_failure_actions(failure_actions())
-        .map_err(|error| explain(&error))?;
-    service
-        .set_failure_actions_on_non_crash_failures(FAILURE_ACTIONS_ON_REPORTED_STOPS)
-        .map_err(|error| explain(&error))?;
-    grant(&found.settings.data_dir, &icacls)?;
+    finish_or_delete(
+        &[
+            &|| {
+                service
+                    .set_description(Message::from(message::SERVER_ABOUT).render())
+                    .map_err(|error| explain(&error))
+            },
+            &|| {
+                service
+                    .update_failure_actions(failure_actions())
+                    .map_err(|error| explain(&error))
+            },
+            &|| {
+                service
+                    .set_failure_actions_on_non_crash_failures(FAILURE_ACTIONS_ON_REPORTED_STOPS)
+                    .map_err(|error| explain(&error))
+            },
+            &|| grant(&found.settings.data_dir, &icacls),
+            // The account of the service exists now, so its SID can be named in an access list.
+            &|| give_settings_to_service(found, &sid),
+        ],
+        &|| service.delete().map_err(|error| explain(&error)),
+    )?;
     service
         .start::<&str>(&[])
         .map_err(|error| explain(&error))?;
@@ -441,6 +473,40 @@ fn serve_until_stopped(args: &ConfigArgs, stopped: oneshot::Receiver<()>) -> any
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn ops_04_a_step_that_fails_after_the_service_exists_deletes_it_again() {
+        use std::cell::RefCell;
+        let done = RefCell::new(Vec::new());
+        let step = |name: &'static str, works: bool| {
+            let done = &done;
+            move || {
+                done.borrow_mut().push(name);
+                if works { Ok(()) } else { Err(anyhow!(name)) }
+            }
+        };
+        let (describe, grant, settings, delete) = (
+            step("describe", true),
+            step("grant", false),
+            step("settings", true),
+            step("delete", true),
+        );
+        let failed = finish_or_delete(&[&describe, &grant, &settings], &delete).unwrap_err();
+        assert_eq!(failed.to_string(), "grant");
+        // The steps after the failure are left out, and the service goes.
+        assert_eq!(*done.borrow(), ["describe", "grant", "delete"]);
+        // All steps work: nothing is deleted.
+        done.borrow_mut().clear();
+        let grant = step("grant", true);
+        finish_or_delete(&[&describe, &grant, &settings], &delete).unwrap();
+        assert_eq!(*done.borrow(), ["describe", "grant", "settings"]);
+        // A service that cannot be deleted keeps the failure of the step as the answer.
+        done.borrow_mut().clear();
+        let (grant, stuck) = (step("grant", false), step("delete", false));
+        let failed = finish_or_delete(&[&grant, &settings], &stuck).unwrap_err();
+        assert_eq!(failed.to_string(), "grant");
+        assert_eq!(*done.borrow(), ["grant", "delete"]);
+    }
 
     #[test]
     fn sec_16_the_install_gives_the_settings_file_to_the_service_and_the_administrators_only() {
