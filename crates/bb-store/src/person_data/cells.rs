@@ -16,6 +16,21 @@ pub(super) fn flag(at: usize) -> String {
     format!("person_link_{at}")
 }
 
+/// The name of the flag that says whether the row is one of an own field of the type of the link at
+/// `at` (`LinkScope::FieldType`): only then does the field of the link hold a person.
+pub(super) fn typed(at: usize) -> String {
+    format!("person_type_{at}")
+}
+
+/// Whether the flag `name` of the row is set.
+fn flag_set(row: &Row, name: &str) -> Result<bool, StoreError> {
+    let set: i64 = match row {
+        Row::Sqlite(row) => row.try_get(name)?,
+        Row::Postgres(row) => row.try_get(name)?,
+    };
+    Ok(set != 0)
+}
+
 /// One row: its cells in the order of the columns, and the links whose flag is set.
 pub(super) fn read_row(
     row: &Row,
@@ -23,13 +38,19 @@ pub(super) fn read_row(
     links: &[PersonLink],
 ) -> Result<FoundRow, StoreError> {
     let mut found = Vec::new();
+    // The links that hold a person in this row: every one, but a link of an own field's type only
+    // in the rows of a field of that type.
+    let mut holding = Vec::new();
     for (at, link) in links.iter().enumerate() {
-        let set: i64 = match row {
-            Row::Sqlite(row) => row.try_get(flag(at).as_str())?,
-            Row::Postgres(row) => row.try_get(flag(at).as_str())?,
-        };
-        if set != 0 {
+        if flag_set(row, &flag(at))? {
             found.extend(link.link());
+        }
+        let holds = match link.scope() {
+            LinkScope::FieldType { .. } => flag_set(row, &typed(at))?,
+            _ => true,
+        };
+        if holds {
+            holding.push(*link);
         }
     }
     found.dedup();
@@ -42,7 +63,7 @@ pub(super) fn read_row(
                 Raw::Number(micros) if holds_moment(table, field) => {
                     Value::Moment(from_micros(micros)?)
                 }
-                Raw::Bytes(bytes) if holds_person(table, links, field, column) => {
+                Raw::Bytes(bytes) if holds_person(table, &holding, field, column) => {
                     Value::Person(UserId::read(bytes)?)
                 }
                 other => other.walked(),
@@ -70,7 +91,8 @@ fn holds_moment(table: &StoredTable, field: &str) -> bool {
 }
 
 /// Whether `column` holds the ID of a person: the last column of a field that names a person in
-/// every row, or the column of a value of an own field of a type that holds people.
+/// every row, or the column of a value of an own field of a type that holds people, for the links
+/// that hold a person in the row.
 fn holds_person(table: &StoredTable, links: &[PersonLink], field: &str, column: &str) -> bool {
     links
         .iter()

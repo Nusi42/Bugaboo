@@ -98,13 +98,20 @@ impl PersonData for AuthStorage {
         for (column, _) in &table.columns {
             select.column(Alias::new(column.as_str()));
         }
-        // Which link names the person in each row, as a flag of its own.
+        // Which link names the person in each row, as a flag of its own; for a link that holds a
+        // person only in the rows of an own field of its type, whether the row is one of them.
         for (at, link) in links.iter().enumerate() {
             let names = link_names(table, &all, link, person)?;
             select.expr_as(
                 Expr::case(names, Expr::val(1_i64)).finally(Expr::val(0_i64)),
                 Alias::new(cells::flag(at)),
             );
+            if let Some(typed) = of_its_type(table, &all, link)? {
+                select.expr_as(
+                    Expr::case(typed, Expr::val(1_i64)).finally(Expr::val(0_i64)),
+                    Alias::new(cells::typed(at)),
+                );
+            }
         }
         // A fixed order, so the pages neither repeat nor skip a row of a snapshot.
         for (column, _) in &table.columns {
@@ -184,6 +191,25 @@ fn column(table: &StoredTable, field: &str, last: bool) -> Result<Alias, StoreEr
     found.map(|name| Alias::new(*name)).ok_or(UNSTORED_LINK)
 }
 
+/// For a link that holds a person only in the rows of an own field of its type, the condition for
+/// those rows; none for every other link.
+fn of_its_type(
+    table: &StoredTable,
+    all: &[StoredTable],
+    link: &PersonLink,
+) -> Result<Option<Cond>, StoreError> {
+    let LinkScope::FieldType { key, field_type } = link.scope() else {
+        return Ok(None);
+    };
+    Ok(Some(Cond::all().add(
+        Expr::col(column(table, key, false)?).in_subquery(ids_where(
+            all,
+            OWN_FIELD_TYPE,
+            field_type.code(),
+        )?),
+    )))
+}
+
 /// The condition for the rows of `table` in which the field of `link` names `person`.
 fn link_names(
     table: &StoredTable,
@@ -203,13 +229,12 @@ fn link_names(
             };
             record_names(all, &kind_column, &id_column, person)?
         }
-        LinkScope::FieldType { key, field_type } => Cond::all()
-            .add(Expr::col(column(table, field, false)?).eq(id))
-            .add(Expr::col(column(table, key, false)?).in_subquery(ids_where(
-                all,
-                OWN_FIELD_TYPE,
-                field_type.code(),
-            )?)),
+        LinkScope::FieldType { .. } => {
+            let typed = of_its_type(table, all, link)?.ok_or(StoreError::Corrupt("a link"))?;
+            Cond::all()
+                .add(Expr::col(column(table, field, false)?).eq(id))
+                .add(typed)
+        }
         LinkScope::Email => {
             let (people, of) = (table_of(all, PERSON_ADDRESS.marks)?, PERSON_ADDRESS);
             let mut address = Query::select();

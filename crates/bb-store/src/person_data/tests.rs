@@ -6,14 +6,18 @@ use bb_app::auth::{AccountStore as _, InvitationStore as _};
 use bb_app::fields::FieldStore as _;
 use bb_app::jobs::JobStore as _;
 use bb_app::ports::{ChangeStore, PersonData as _};
+use bb_app::time::TimeStore as _;
 use bb_app::working_hours::WorkingHoursStore as _;
 use bb_core::event::{Actor, EntityKind, EntityRef, FieldChange, RecordKind};
 use bb_core::fields::{Field, FieldKey};
-use bb_core::id::{EntityId, IdSource, InvitationId, IssueId, UserId, WorkDayId};
-use bb_core::own_fields::FieldType;
+use bb_core::id::{EntityId, IdSource, InvitationId, IssueId, TimeEntryId, UserId, WorkDayId};
+use bb_core::own_fields::{FieldFor, FieldType};
 use bb_core::own_fields_value::FieldValue;
 use bb_core::security_log::Digest;
 use bb_core::sign_in::Invitation;
+use bb_core::time::Minutes;
+use bb_core::time::entry::TimeEntry;
+use bb_core::version::FIRST_VERSION;
 use bb_core::working_time::Times;
 use bb_core::working_time::record::{StoredDay, WorkDay};
 use bb_testing::{TestResult, each_database};
@@ -254,4 +258,65 @@ async fn rows_say_what_she_is(storage: &AuthStorage, lea: UserId) -> Result<(), 
         Vec::new()
     );
     Ok(())
+}
+
+/// The choice of an own field of time entries (a cost center) on a person's time entry is read as
+/// the record it is, not as a person: only the rows of an own field that holds people hold one.
+#[tokio::test]
+async fn priv_03_a_choice_on_a_persons_time_entry_is_read_and_is_no_person() -> TestResult {
+    each_database("priv_03_choice_on_time_entry", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = &fixture.storage;
+        let mut source = ids();
+        let lea = person(&mut source, "lea@example.test");
+        let scene = world(storage, &mut source, 1).await;
+        let mut center = definition(&mut source, FieldType::PickOne, 0);
+        center.field.applies_to = FieldFor::TimeEntries;
+        let (field, choice) = (center.field.id, center.choices[0].id);
+        let entry = TimeEntry {
+            id: TimeEntryId::generate(&mut source)?,
+            person: lea.id,
+            issue: scene.issues[0].id,
+            date: at(1).to_zoned(jiff::tz::TimeZone::UTC).date(),
+            minutes: Minutes::new(30),
+            note: String::new(),
+            billable: false,
+            started_at: None,
+            created_at: at(1),
+            version: FIRST_VERSION,
+        };
+        let (stored_lea, stored_entry) = (lea.clone(), entry.clone());
+        ChangeStore::record_change(storage, &event(&mut source, 2), move |tx| {
+            Box::pin(async move {
+                AuthStorage::insert_person(tx, &stored_lea, "hash", at(1)).await?;
+                AuthStorage::insert_field(tx, &center).await?;
+                AuthStorage::insert_time_entry(tx, &stored_entry).await?;
+                AuthStorage::put_field_value(
+                    tx,
+                    EntityKind::from(RecordKind::TimeEntry),
+                    EntityId::from(stored_entry.id),
+                    field,
+                    &FieldValue::Ids(vec![choice.to_bytes()]).to_cells(),
+                )
+                .await
+            })
+        })
+        .await?;
+        // Every page of every kind of her rows reads; the value of the choice is no person.
+        for kind in storage.kinds_of(lea.id).await? {
+            let page = storage.person_rows(lea.id, &kind.kind, 0).await?;
+            for row in &page.rows {
+                for cell in &row.cells {
+                    assert!(
+                        !matches!(cell.value, bb_app::privacy::walk::Value::Person(person) if person != lea.id),
+                        "{}: {:?}",
+                        kind.kind,
+                        cell
+                    );
+                }
+            }
+        }
+        Ok(())
+    })
+    .await
 }
