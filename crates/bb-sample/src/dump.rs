@@ -10,9 +10,12 @@ use std::collections::{BTreeSet, HashMap};
 
 use bb_app::access::{LevelKind, PolicyStore as _, StartingRole};
 use bb_app::auth::{AccountStore as _, SecondStepStore as _};
+use bb_app::people::StandingStore as _;
+use bb_core::backup::run;
 use bb_core::event::{Actor, DomainEvent, EntityRef};
 use bb_core::fields::{Field, FieldKey};
 use bb_core::id::{EntityId, UserId};
+use bb_core::person::Standing;
 use bb_core::technical::TechnicalName;
 use serde::Serialize;
 
@@ -47,6 +50,9 @@ pub struct Dump {
 struct DumpPerson {
     name: String,
     email: String,
+    /// Active, switched off or removed (PRIV-04); a removed person's name and address are the
+    /// tombstone's, random by design, and left out.
+    standing: &'static str,
     role: &'static str,
     administrator: bool,
     code_app: bool,
@@ -156,30 +162,47 @@ impl Sample {
         let administrators = self.administrators().await?;
         let mut people = Vec::with_capacity(self.people.len());
         for made in &self.people {
-            let account = self
-                .storage
-                .account_by_email(&made.person.email)
-                .await?
-                .ok_or(SampleError::PersonMissing)?;
             // The label counts the person at the moment they first show up in the dump.
-            let _ = labels.label("person", account.person.id.to_bytes());
+            let _ = labels.label("person", made.id.to_bytes());
             let code_app = self
                 .storage
-                .two_step(account.person.id)
+                .two_step(made.id)
                 .await?
                 .is_some_and(|step| step.confirmed);
+            // A removed person has no name or address any more, only the random code of the
+            // tombstone, which is random by design: the dump says only that they were removed.
+            let standing = self
+                .storage
+                .standing(made.id)
+                .await?
+                .map_or(Standing::Active, |standing| standing.standing);
+            let (name, email, created_at) = if standing == Standing::Removed {
+                (String::new(), String::new(), String::new())
+            } else {
+                let person = self
+                    .storage
+                    .person(made.id)
+                    .await?
+                    .ok_or(SampleError::PersonMissing)?;
+                (
+                    person.display_name,
+                    person.email,
+                    person.created_at.to_string(),
+                )
+            };
             people.push(DumpPerson {
-                name: account.person.display_name,
-                email: account.person.email,
+                name,
+                email,
+                standing: standing.code(),
                 role: made.person.role.code(),
-                administrator: administrators.contains(&account.person.id),
+                administrator: administrators.contains(&made.id),
                 code_app,
                 access_key: made.access_key.is_some(),
                 time_zone: made.person.region.time_zone.clone(),
                 date_format: made.person.region.date_format.clone(),
                 number_format: made.person.region.number_format.clone(),
                 first_day: made.person.region.first_day.clone(),
-                created_at: account.person.created_at.to_string(),
+                created_at,
             });
         }
 
@@ -305,8 +328,12 @@ fn dump_event(labels: &mut Labels, event: &DomainEvent) -> DumpEvent {
                 // The people an issue is assigned to are a set: the order they are listed in comes
                 // from their random IDs, so the dump lists them by label.
                 let set = change.field == Field::AssignedTo.code();
+                // The size and the checksum of a backup file differ with the database and the keys
+                // that seal it, which are random by design.
+                let random = event.entity.kind.as_str() == run::ENTITY_KIND
+                    && [run::SIZE_FIELD, run::CHECKSUM_FIELD].contains(&change.field.as_str());
                 let mut value = |value: &Option<serde_json::Value>| {
-                    value.clone().map(|value| {
+                    value.clone().filter(|_| !random).map(|value| {
                         let value = labelled(labels, kind, value);
                         if set { sorted(value) } else { value }
                     })

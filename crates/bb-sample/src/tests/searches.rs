@@ -47,7 +47,13 @@ impl Later for Reading {
     async fn after_people(&mut self, world: &World<'_>) -> Result<(), SampleError> {
         Box::pin(self.everything.after_people(world)).await?;
         let step = |error: &dyn std::fmt::Display| SampleError::step(Step::SavedSearches, &error);
-        for made in world.people.iter().filter(|made| !made.person.code_app) {
+        // Who left cannot sign in any more (part 8).
+        let gone = self.everything.left_behind().gone;
+        for made in world
+            .people
+            .iter()
+            .filter(|made| !made.person.code_app && !gone.is_some_and(|gone| gone.left(made.id)))
+        {
             let ctx = world.services.ctx(world.request());
             let started = sign_in(
                 &ctx,

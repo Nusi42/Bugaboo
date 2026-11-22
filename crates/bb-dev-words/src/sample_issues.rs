@@ -299,6 +299,24 @@ pub(crate) mod tests {
             "time": made_time(work, asked, full),
             "ai": made_ai(&work.ai),
             "timeline": made_timeline(&work.timeline),
+            "privacy": made_privacy(&work.privacy),
+        })
+    }
+
+    /// The part `privacy` of a dump that has what the plan says.
+    fn made_privacy(plan: &crate::sample::PrivacyPlan) -> Value {
+        json!({
+            "switched_off": 1,
+            "removed": {
+                "count": 1,
+                "labelled": true,
+                "name_held_until_a_day": true,
+                "work_days": 1,
+                "comments": 1,
+            },
+            "export": { "person": plan.export_of, "state": "ready" },
+            "backups": plan.backups,
+            "backups_recorded": plan.backups,
         })
     }
 

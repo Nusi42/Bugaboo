@@ -136,6 +136,7 @@ impl Later for Everything {
         let (agent_keys, unchangeable) = maker.give_agents_work(&ai).await?;
         maker.work_hours(&calendar, self.issues, full).await?;
         self.left = maker.leave_states_behind().await?;
+        self.left.gone = Some(maker.let_people_go(&names.work.privacy).await?);
         self.left.work_since = Some(work_since);
         self.left.agent_keys = agent_keys;
         self.left.agent_work_unchangeable = unchangeable;

@@ -6929,6 +6929,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("sample.step.agents", "creating agents and giving them work"),
     ("sample.step.ai", "setting up AI and letting an app in"),
     ("sample.step.assignment", "giving a role"),
+    ("sample.step.backups", "creating a backup"),
     ("sample.step.change", "changing an issue"),
     ("sample.step.code-app", "setting up a code app"),
     ("sample.step.comment", "writing a comment"),
@@ -6971,6 +6972,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "sample.step.password-hasher",
         "creating the password hasher",
+    ),
+    (
+        "sample.step.privacy",
+        "switching people off, removing a person or creating an export of their data",
     ),
     ("sample.step.project", "creating a project"),
     ("sample.step.region", "choosing the region of a person"),

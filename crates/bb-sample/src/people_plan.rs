@@ -145,6 +145,12 @@ impl SamplePerson {
     pub const fn is_fixed(&self) -> bool {
         self.fixed
     }
+
+    /// Whether a demo names the person: one of the fixed people or a planner.
+    #[must_use]
+    pub fn named_in_demos(&self) -> bool {
+        self.fixed || is_a_planner(&self.email)
+    }
 }
 
 /// The 50 people of the seed. The first is the administrator who runs the demo; the rest come in

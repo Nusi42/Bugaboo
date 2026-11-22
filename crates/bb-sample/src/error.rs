@@ -90,6 +90,10 @@ pub enum Step {
     Ai,
     /// Making agents and giving them work.
     Agents,
+    /// Switching people off, removing a person and creating an export of a person's data.
+    Privacy,
+    /// Creating backups.
+    Backups,
 }
 
 impl Step {
@@ -134,6 +138,8 @@ impl Step {
             Self::Time => message::SAMPLE_STEP_TIME,
             Self::Ai => message::SAMPLE_STEP_AI,
             Self::Agents => message::SAMPLE_STEP_AGENTS,
+            Self::Privacy => message::SAMPLE_STEP_PRIVACY,
+            Self::Backups => message::SAMPLE_STEP_BACKUPS,
         })
     }
 }

@@ -10,7 +10,7 @@
 
 use std::fmt::{self, Write as _};
 use std::future::Future;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use bb_app::access::{Authorized, Masked};
@@ -24,15 +24,19 @@ use bb_app::first_start::first_start;
 use bb_app::settings::{ChangeSetting, SettingsScope, change_setting};
 use bb_auth::{CsrfKey, PasswordHasher, TotpSecret};
 use bb_core::access_key::KeyChoice;
+use bb_core::data_folder::{BACKUPS_FOLDER, PRIVACY_FOLDER, REPLAY_LIST_FILE};
 use bb_core::edit::{DraftTarget, EditWhat};
 use bb_core::id::UserId;
 use bb_core::message::{self, Message};
 use bb_core::settings::{
     REGION_DATE_FORMAT, REGION_FIRST_DAY, REGION_NUMBER_FORMAT, REGION_TIME_ZONE, SettingValue,
 };
-use bb_files::{DiskFiles, FILES_FOLDER, PreviewCommand};
+use bb_files::{
+    DiskExports, DiskFiles, EXPORTS_FOLDER, FILES_FOLDER, PreviewCommand, stored_paths,
+};
+use bb_store::backup::{BackupPlaces, FolderBackups, FolderOf};
 use bb_store::{
-    AuthStorage, DATABASE_FILE, Database, KEYS_FOLDER, LOGS_FOLDER, LogSeal,
+    AuthStorage, DATABASE_FILE, Database, KEYS_FOLDER, KeyRing, LOGS_FOLDER, LogSeal,
     SECURITY_LOG_ANCHOR_FILE, Verification,
 };
 use jiff::Timestamp;
@@ -42,6 +46,7 @@ use crate::error::{SampleError, Step};
 use crate::names::NameList;
 use crate::password::random_password;
 use crate::people_plan::{ACCESS_KEYS, SamplePerson, sample_people};
+use crate::privacy_work::Gone;
 
 /// The seed of the sample when nobody names another one.
 pub const DEFAULT_SEED: u64 = 42;
@@ -181,6 +186,8 @@ pub struct LeftBehind {
     pub agent_keys: Vec<AgentKey>,
     /// How many of the issues handed over to agents the person of the agent may not change.
     pub agent_work_unchangeable: u64,
+    /// The people who left (part 8): they cannot sign in, so `sign-in.txt` leaves them out.
+    pub gone: Option<Gone>,
 }
 
 /// The key of an agent, and whom it works for. It goes to `sign-in.txt` and nowhere else.
@@ -224,9 +231,16 @@ pub struct Sample {
     pub(crate) storage: AuthStorage,
     pub(crate) seal: LogSeal,
     pub(crate) left_behind: LeftBehind,
+    /// The data folder, which holds the files and the backups.
+    pub(crate) data_folder: PathBuf,
 }
 
 impl Sample {
+    /// The folder the backups of the sample are in.
+    pub(crate) fn backups_folder(&self) -> PathBuf {
+        self.data_folder.join(BACKUPS_FOLDER)
+    }
+
     /// The people, in the order they were made.
     #[must_use]
     pub fn people(&self) -> &[MadePerson] {
@@ -263,7 +277,12 @@ impl Sample {
             text.push_str(line);
             text.push('\n');
         }
-        for made in &self.people {
+        let gone = self.left_behind.gone;
+        for made in self
+            .people
+            .iter()
+            .filter(|made| !gone.is_some_and(|gone| gone.left(made.id)))
+        {
             text.push_str(&made.person.email);
             text.push('\t');
             text.push_str(&made.password);
@@ -343,6 +362,7 @@ pub async fn create<L: Later>(
         storage,
         seal,
         csrf,
+        keys,
     } = open(data_folder, target, first_moment).await?;
     let services = AuthServices::new(
         storage.clone(),
@@ -356,13 +376,8 @@ pub async fn create<L: Later>(
     )
     // An address of its own under the domain of its people: the server that opens the sample
     // later is started with the address people reach it at.
-    .with_public_url(format!("https://{}", crate::people_plan::EMAIL_DOMAIN))
-    // The files of the sample and their previews are made in this process: nobody attacks it, and
-    // the program that would be the child is not this one.
-    .with_files(Arc::new(DiskFiles::new(
-        data_folder.join(FILES_FOLDER),
-        PreviewCommand::in_process(),
-    )));
+    .with_public_url(format!("https://{}", crate::people_plan::EMAIL_DOMAIN));
+    let services = with_folders(services, data_folder, &database, keys);
     let api: &dyn AuthApi = &services;
 
     let mut made: Vec<MadePerson> = Vec::with_capacity(plan.len());
@@ -429,6 +444,7 @@ pub async fn create<L: Later>(
     sign_out(api, administrator_session).await?;
 
     Ok(Sample {
+        data_folder: data_folder.to_path_buf(),
         left_behind: later.left_behind(),
         options: *options,
         people: made,
@@ -604,6 +620,47 @@ struct Opened {
     storage: AuthStorage,
     seal: LogSeal,
     csrf: CsrfKey,
+    keys: Arc<KeyRing>,
+}
+
+/// The backups of the sample, in the backups folder of its data folder, as a server makes them.
+fn backups(data_folder: &Path, database: &Database, keys: Arc<KeyRing>) -> FolderBackups {
+    let folder = data_folder.join(BACKUPS_FOLDER);
+    let places = BackupPlaces {
+        folder: folder.clone(),
+        files: data_folder.join(FILES_FOLDER),
+        replay_list: data_folder.join(PRIVACY_FOLDER).join(REPLAY_LIST_FILE),
+        // Only a restore writes the replay list; the sample makes backups and restores none.
+        write_replay_list: Arc::new(|path: &Path, bytes: &[u8]| {
+            if let Some(folder) = path.parent() {
+                std::fs::create_dir_all(folder)?;
+            }
+            std::fs::write(path, bytes)
+        }),
+        file_paths: Arc::new(stored_paths),
+        keys,
+    };
+    let folder_of: FolderOf = Arc::new(move |_| Ok(folder.clone()));
+    FolderBackups::new(database.clone(), places, folder_of)
+}
+
+/// The services with the folders of `data_folder` a server keeps its files in.
+fn with_folders(
+    services: AuthServices<AuthStorage>,
+    data_folder: &Path,
+    database: &Database,
+    keys: Arc<KeyRing>,
+) -> AuthServices<AuthStorage> {
+    services
+        // The files of the sample and their previews are made in this process: nobody attacks it,
+        // and the program that would be the child is not this one.
+        .with_files(Arc::new(DiskFiles::new(
+            data_folder.join(FILES_FOLDER),
+            PreviewCommand::in_process(),
+        )))
+        // The files of *Download my data* and the backups of part 8, where a server keeps them.
+        .with_exports(Arc::new(DiskExports::new(data_folder.join(EXPORTS_FOLDER))))
+        .with_backups(Arc::new(backups(data_folder, database, keys)))
 }
 
 /// Opens (and migrates) the database and the keys in `data_folder`.
@@ -614,7 +671,14 @@ async fn open(
 ) -> Result<Opened, SampleError> {
     let keys_folder = data_folder.join(KEYS_FOLDER);
     let logs_folder = data_folder.join(LOGS_FOLDER);
-    for folder in [data_folder, &keys_folder, &logs_folder] {
+    let made = [
+        data_folder.to_path_buf(),
+        keys_folder.clone(),
+        logs_folder.clone(),
+        data_folder.join(EXPORTS_FOLDER),
+        data_folder.join(BACKUPS_FOLDER),
+    ];
+    for folder in &made {
         std::fs::create_dir_all(folder).map_err(|error| SampleError::folder(folder, &error))?;
     }
     let database = match target {
@@ -625,12 +689,13 @@ async fn open(
     let keys = Arc::new(database.open_keys(&keys_folder).await?);
     let seal = LogSeal::new(&keys, logs_folder.join(SECURITY_LOG_ANCHOR_FILE));
     let csrf = CsrfKey::from_bytes(keys.csrf_key().to_bytes());
-    let storage = AuthStorage::new(database.clone(), keys, seal.clone());
+    let storage = AuthStorage::new(database.clone(), Arc::clone(&keys), seal.clone());
     Ok(Opened {
         database,
         storage,
         seal,
         csrf,
+        keys,
     })
 }
 

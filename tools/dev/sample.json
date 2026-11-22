@@ -339,6 +339,12 @@
           ["Push notifications", "Release build"]
         ],
         "ownEstimate": { "issue": "Biometric sign-in", "takesMinutes": 720 }
+      },
+      "privacy": {
+        "$comment": "People who left, a finished export and backups (M9, part 8): an administrator switched one of the people who did the work off and removed another, who handed their work over in a comment ('handOver') first, whose comments stay as Former user and whose work days HR still sees under the legal-hold name; 'exportOf' asked for their own data and the file is ready; 'backups' backups were made in the last minutes before the end of the sample. Who leaves is drawn from the people who did the work, never a person the demos name.",
+        "exportOf": "Lea Fischer",
+        "handOver": "I am leaving the team at the end of the week. My notes on this are in the description.",
+        "backups": 2
       }
     }
   },

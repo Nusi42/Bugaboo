@@ -135,6 +135,22 @@ pub struct WorkPlan {
     pub ai: AiPlan,
     /// The plan of the goal *Mobile app 2.0* (M8, part 7).
     pub timeline: TimelinePlan,
+    /// People who left, a finished export and backups (M9, part 8).
+    pub privacy: PrivacyPlan,
+}
+
+/// People who left, a finished export of a person's data and backups (M9 part 8, PRIV-03,
+/// PRIV-04, OPS-07). Who leaves is drawn from the people who did the work, never a person the demos
+/// name.
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PrivacyPlan {
+    /// The name of the person whose own *Download my data* is finished.
+    pub export_of: String,
+    /// The comment in which the person who is removed hands their work over before they leave.
+    pub hand_over: String,
+    /// How many backups an administrator made in the last minutes before the end of the sample.
+    pub backups: u32,
 }
 
 /// The plan of a goal with people in the sample (M8 part 7): its issues with dates, estimates and

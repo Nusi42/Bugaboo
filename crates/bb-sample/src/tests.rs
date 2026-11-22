@@ -16,6 +16,7 @@ use serde_json::Value;
 
 mod ai;
 mod issues;
+mod privacy;
 mod searches;
 mod time;
 mod timeline;

@@ -15,6 +15,7 @@ pub mod sample;
 mod sample_ai;
 mod sample_issues;
 mod sample_large;
+mod sample_privacy;
 mod sample_time;
 mod sample_timeline;
 mod sample_work;

@@ -8580,6 +8580,9 @@ pub const SAMPLE_STEP_AI: MessageKey = MessageKey::new("sample.step.ai");
 /// The message `sample.step.assignment`.
 pub const SAMPLE_STEP_ASSIGNMENT: MessageKey = MessageKey::new("sample.step.assignment");
 
+/// The message `sample.step.backups`.
+pub const SAMPLE_STEP_BACKUPS: MessageKey = MessageKey::new("sample.step.backups");
+
 /// The message `sample.step.change`.
 pub const SAMPLE_STEP_CHANGE: MessageKey = MessageKey::new("sample.step.change");
 
@@ -8646,6 +8649,9 @@ pub const SAMPLE_STEP_NOTIFICATIONS: MessageKey = MessageKey::new("sample.step.n
 
 /// The message `sample.step.password-hasher`.
 pub const SAMPLE_STEP_PASSWORD_HASHER: MessageKey = MessageKey::new("sample.step.password-hasher");
+
+/// The message `sample.step.privacy`.
+pub const SAMPLE_STEP_PRIVACY: MessageKey = MessageKey::new("sample.step.privacy");
 
 /// The message `sample.step.project`.
 pub const SAMPLE_STEP_PROJECT: MessageKey = MessageKey::new("sample.step.project");

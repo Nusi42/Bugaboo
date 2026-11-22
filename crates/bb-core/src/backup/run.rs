@@ -15,6 +15,11 @@ use crate::sign_in::SecurityAction;
 // The name of a backup holds a moment and a version, nothing about a person.
 impl NotPersonal for BackupName {}
 
+/// The field of the event of a backup that holds the size of its file.
+pub const SIZE_FIELD: &str = "size";
+/// The field of the event of a backup that holds the checksum of its file.
+pub const CHECKSUM_FIELD: &str = "checksum";
+
 words! {
     /// What happened to a backup.
     pub enum BackupEvent {
@@ -157,9 +162,9 @@ impl BackupRun {
         let mut changes = vec![
             change("event", self.event.code().into()),
             change("name", self.name.to_string().into()),
-            change("size", self.size.into()),
+            change(SIZE_FIELD, self.size.into()),
             change(
-                "checksum",
+                CHECKSUM_FIELD,
                 crate::hex::encode(self.checksum.as_bytes()).into(),
             ),
             change("maker", self.maker.code().into()),

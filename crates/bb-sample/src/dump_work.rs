@@ -87,6 +87,8 @@ pub(crate) struct DumpWork {
     ai: crate::dump_ai::DumpAi,
     /// The plan of the goal with people.
     timeline: crate::dump_timeline::DumpTimeline,
+    /// The people who left, the export and the backups.
+    privacy: crate::dump_privacy::DumpPrivacy,
 }
 
 /// The role as the dump counts it: Administrators and Team members do the work of the team.
@@ -122,6 +124,7 @@ impl Sample {
         work.time = self.time_of(&roles, events, issues).await?;
         work.ai = self.ai_of(events).await?;
         work.timeline = self.timeline_of(issues).await?;
+        work.privacy = self.privacy_of(events).await?;
         Ok(work)
     }
 

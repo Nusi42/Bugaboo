@@ -1474,6 +1474,8 @@
   "sample.step.time": "recording working hours and time",
   "sample.step.ai": "setting up AI and letting an app in",
   "sample.step.agents": "creating agents and giving them work",
+  "sample.step.privacy": "switching people off, removing a person or creating an export of their data",
+  "sample.step.backups": "creating a backup",
   "sample.step.notifications": "reading or marking notifications",
   "sample.step.jobs": "running the jobs that were queued",
   "sample.step.dataset": "writing the large dataset",
