@@ -5550,6 +5550,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("personal-field.history-entry.run", "Run it was created in"),
     ("personal-field.history-entry.undid-run", "Run it undoes"),
+    ("personal-field.history-row-naming-person.event", "Event"),
+    ("personal-field.history-row-naming-person.issue", "Issue"),
+    (
+        "personal-field.history-row-naming-person.person",
+        "Person named",
+    ),
     ("personal-field.invitation.created-at", "Created on"),
     (
         "personal-field.invitation.email",
@@ -5781,6 +5787,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("personal-field.review.id", "Reference"),
     ("personal-field.review.note", "Note"),
     ("personal-field.review.work", "Work"),
+    ("personal-field.row-naming-person.person", "Person named"),
+    (
+        "personal-field.row-naming-person.row",
+        "Record that names them",
+    ),
     ("personal-field.saved-search.created-at", "Created on"),
     (
         "personal-field.saved-search.deleted-at",
@@ -6043,6 +6054,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("personal-kind.group-member", "Groups joined"),
     ("personal-kind.hand-over", "Hand-overs to agents"),
     ("personal-kind.history-entry", "History of issues"),
+    (
+        "personal-kind.history-row-naming-person",
+        "Where the history of issues names a person",
+    ),
     ("personal-kind.invitation", "Invitations"),
     ("personal-kind.issue", "Issues"),
     ("personal-kind.issue-label", "Labels on issues"),
@@ -6077,6 +6092,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("personal-kind.question", "Questions of agents"),
     ("personal-kind.relation", "Relations"),
     ("personal-kind.review", "Reviews of agent work"),
+    (
+        "personal-kind.row-naming-person",
+        "Where changes and background work name a person",
+    ),
     ("personal-kind.saved-search", "Saved searches"),
     (
         "personal-kind.security-log-entry",

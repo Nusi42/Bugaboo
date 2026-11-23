@@ -3,6 +3,7 @@
 use bb_app::agent_work::{GrantStore, RuleCursor};
 
 use super::*;
+use crate::walk_index::{Indexed, Written, index_rows};
 
 impl GrantStore for AuthStorage {
     async fn hand_over_in(
@@ -379,6 +380,8 @@ impl GrantStore for AuthStorage {
         transaction: &mut Transaction,
         proposal: &Proposal,
     ) -> Result<(), StoreError> {
+        let before = serde_json::to_string(&proposal.before)?;
+        let after = serde_json::to_string(&proposal.after)?;
         let mut insert = Query::insert();
         insert
             .into_table(ProposalRow::Table)
@@ -400,15 +403,19 @@ impl GrantStore for AuthStorage {
                 Expr::val(proposal.agent.stored()),
                 Expr::val(proposal.issue.stored()),
                 Expr::val(proposal.field.code()),
-                Expr::val(serde_json::to_string(&proposal.before)?),
-                Expr::val(serde_json::to_string(&proposal.after)?),
+                Expr::val(before.clone()),
+                Expr::val(after.clone()),
                 Expr::val(proposal.state.code()),
                 Expr::val(proposal.decided_by.map(StoredId::stored)),
                 Expr::val(to_micros(proposal.made_at)),
             ])
             .map_err(|_| StoreError::Corrupt("a proposal"))?;
         transaction.execute(&insert).await?;
-        Ok(())
+        let written = Written {
+            key: vec![proposal.id.stored()],
+            texts: vec![before.as_str(), after.as_str()],
+        };
+        index_rows(transaction, Indexed::Proposal, &[written]).await
     }
 
     async fn set_proposal_state(

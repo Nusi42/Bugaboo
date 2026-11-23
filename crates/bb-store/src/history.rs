@@ -23,6 +23,7 @@ use crate::db::{Row, StoredId, to_micros};
 use crate::error::StoreError;
 use crate::events::{consumer_name, outbox_move};
 use crate::schema::{Event, HistoryEntryRow, ManyChangeRunRow};
+use crate::walk_index::{Indexed, Written, index_rows};
 
 /// The name of the column that holds the moment a row is shown at to one reader.
 #[derive(Clone, Copy, Iden)]
@@ -170,6 +171,7 @@ impl HistoryStore for AuthStorage {
     ) -> Result<(), StoreError> {
         let mut transaction = self.database().begin().await?;
         for entry in entries {
+            let changes = serde_json::to_string(&entry.changes)?;
             let mut insert = Query::insert();
             insert
                 .into_table(HistoryEntryRow::Table)
@@ -201,7 +203,7 @@ impl HistoryStore for AuthStorage {
                     Expr::val(entry.record_kind.as_str()),
                     Expr::val(entry.run.map(StoredId::stored)),
                     Expr::val(entry.undid_run.map(StoredId::stored)),
-                    Expr::val(serde_json::to_string(&entry.changes)?),
+                    Expr::val(changes.clone()),
                     Expr::val(to_micros(shown_moment(entry))),
                     Expr::val(opaque_id(&entry.event.to_string())),
                 ])
@@ -211,7 +213,14 @@ impl HistoryStore for AuthStorage {
                         .do_nothing()
                         .to_owned(),
                 );
-            transaction.execute(&insert).await?;
+            // A row that was there already (the consumer read the event again) has its index.
+            if transaction.execute(&insert).await? > 0 {
+                let written = Written {
+                    key: vec![entry.event.stored(), entry.issue.stored()],
+                    texts: vec![changes.as_str()],
+                };
+                index_rows(&mut transaction, Indexed::History, &[written]).await?;
+            }
         }
         outbox_move(&mut transaction, &consumer_name(CONSUMER)?, position, now).await?;
         transaction.commit().await

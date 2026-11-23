@@ -27,6 +27,7 @@ use crate::events::{consumer_name, outbox_move};
 use crate::jobs::{NewJob, enqueue};
 use crate::keeping::delete_limited;
 use crate::schema::NotificationRow;
+use crate::walk_index::{Indexed, Written, index_rows};
 
 fn password_name() -> Result<TechnicalName, StoreError> {
     TechnicalName::new(PASSWORD_SECRET).map_err(|_| StoreError::Corrupt("the name of a secret"))
@@ -115,9 +116,13 @@ fn ids_of(ids: &[NotificationId]) -> Vec<Vec<u8>> {
 /// there already is left out (`Once`).
 async fn insert(transaction: &mut Transaction, rows: &[Notification]) -> Result<(), StoreError> {
     for chunk in rows.chunks(rows_per_insert(columns().len())) {
+        let changes = chunk
+            .iter()
+            .map(|row| serde_json::to_string(&row.changes))
+            .collect::<Result<Vec<String>, _>>()?;
         let mut insert = Query::insert();
         insert.into_table(NotificationRow::Table).columns(columns());
-        for row in chunk {
+        for (row, changes) in chunk.iter().zip(&changes) {
             insert
                 .values([
                     Expr::val(row.id.stored()),
@@ -129,18 +134,36 @@ async fn insert(transaction: &mut Transaction, rows: &[Notification]) -> Result<
                     Expr::val(row.record.map(StoredId::stored)),
                     Expr::val(row.by.map(StoredId::stored)),
                     Expr::val(to_micros(row.at)),
-                    Expr::val(serde_json::to_string(&row.changes)?),
+                    Expr::val(changes.clone()),
                     Expr::val(row.in_app),
                     Expr::val(row.mail.code()),
                 ])
                 .map_err(|_| StoreError::Corrupt("a notification"))?;
         }
-        insert.on_conflict(
-            OnConflict::columns([NotificationRow::Recipient, NotificationRow::Once])
-                .do_nothing()
-                .to_owned(),
-        );
-        transaction.execute(&insert).await?;
+        insert
+            .on_conflict(
+                OnConflict::columns([NotificationRow::Recipient, NotificationRow::Once])
+                    .do_nothing()
+                    .to_owned(),
+            )
+            .returning_col(NotificationRow::Id);
+        // Only the rows that were written get their index: one the person had is left out.
+        let stored: Vec<Vec<u8>> = transaction
+            .fetch_all(&insert)
+            .await?
+            .iter()
+            .map(|row| row.get(NotificationRow::Id))
+            .collect::<Result<_, _>>()?;
+        let written: Vec<Written<'_>> = chunk
+            .iter()
+            .zip(&changes)
+            .filter(|(row, _)| stored.contains(&row.id.stored()))
+            .map(|(row, changes)| Written {
+                key: vec![row.id.stored()],
+                texts: vec![changes.as_str()],
+            })
+            .collect();
+        index_rows(transaction, Indexed::Notification, &written).await?;
     }
     Ok(())
 }

@@ -21,6 +21,7 @@ use std::ops::ControlFlow;
 use crate::db::{Database, Row, StoredId, Transaction, from_micros, rows_per_insert, to_micros};
 use crate::error::StoreError;
 use crate::schema::{Event, Outbox, OutboxPosition};
+use crate::walk_index::{Indexed, Written, index_rows};
 
 /// The name of the counter row in the consumer positions that hands out outbox positions.
 pub(crate) const OUTBOX_HEAD: &str = "head";
@@ -632,7 +633,11 @@ pub(crate) async fn append_events(
             Outbox::EventId,
             Outbox::CreatedAt,
         ]);
-        for event in chunk {
+        let changes = chunk
+            .iter()
+            .map(|event| serde_json::to_string(&event.changes))
+            .collect::<Result<Vec<String>, _>>()?;
+        for (event, changes) in chunk.iter().zip(&changes) {
             let (actor_kind, actor_id) = actor_columns(event.actor);
             let mut values = vec![
                 Expr::val(event.id.stored()),
@@ -642,7 +647,7 @@ pub(crate) async fn append_events(
                 Expr::val(event.channel.code()),
                 Expr::val(event.entity.kind.as_str()),
                 Expr::val(event.entity.id.stored()),
-                Expr::val(serde_json::to_string(&event.changes)?),
+                Expr::val(changes.clone()),
                 Expr::val(event.reason.clone()),
             ];
             if with_run {
@@ -662,6 +667,15 @@ pub(crate) async fn append_events(
         }
         transaction.execute(&insert).await?;
         transaction.execute(&outbox).await?;
+        let written: Vec<Written<'_>> = chunk
+            .iter()
+            .zip(&changes)
+            .map(|(event, changes)| Written {
+                key: vec![event.id.stored()],
+                texts: vec![changes.as_str()],
+            })
+            .collect();
+        index_rows(transaction, Indexed::Event, &written).await?;
     }
     crate::text_marks::mark_texts(transaction, events).await
 }

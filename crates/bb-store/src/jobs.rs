@@ -21,6 +21,7 @@ use crate::error::StoreError;
 use crate::keeping::delete_limited;
 use crate::keeping::past::past_dead_jobs;
 use crate::schema::{Computed, Job as Columns};
+use crate::walk_index::{Indexed, Written, index_rows};
 
 /// The failure code of a job whose last lease ran out without an answer.
 const LEASE_EXPIRED: &str = "lease.expired";
@@ -357,6 +358,7 @@ pub(crate) async fn enqueue(
             "a job must be allowed to run at least once",
         ));
     }
+    let payload = serde_json::to_string(&job.payload)?;
     let mut insert = Query::insert();
     insert
         .into_table(Columns::Table)
@@ -364,7 +366,7 @@ pub(crate) async fn enqueue(
         .values([
             Expr::val(id.stored()),
             Expr::val(job.kind.as_str()),
-            Expr::val(serde_json::to_string(&job.payload)?),
+            Expr::val(payload.clone()),
             Expr::val(to_micros(job.run_at)),
             Expr::val(0_i64),
             Expr::val(i64::from(job.max_attempts)),
@@ -376,7 +378,11 @@ pub(crate) async fn enqueue(
         ])
         .map_err(|_| StoreError::Corrupt("a job"))?;
     transaction.execute(&insert).await?;
-    Ok(())
+    let written = Written {
+        key: vec![id.stored()],
+        texts: vec![payload.as_str()],
+    };
+    index_rows(transaction, Indexed::Job, &[written]).await
 }
 
 fn all_columns() -> [Columns; 11] {

@@ -128,6 +128,8 @@ crate::entities! {
     crate::tags::LabelGroup,
     crate::tags::Tag,
     crate::text_index::IndexedText,
+    crate::walk_index::HistoryRowNamingPerson,
+    crate::walk_index::RowNamingPerson,
     crate::tags::TagProject,
     crate::workflow::StoredChange,
     crate::workflow::StoredStatus,

@@ -320,4 +320,9 @@ pub(super) const ALL: &[Definition] = &[
         name: "timer_by_issue",
         steps: || Ok(super::m0063_timer_by_issue::steps()),
     },
+    Definition {
+        version: 64,
+        name: "walk_index",
+        steps: || Ok(super::m0064_walk_index::steps()),
+    },
 ];

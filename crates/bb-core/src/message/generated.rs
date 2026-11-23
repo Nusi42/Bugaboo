@@ -6469,6 +6469,18 @@ pub const PERSONAL_FIELD_HISTORY_ENTRY_RUN: MessageKey =
 pub const PERSONAL_FIELD_HISTORY_ENTRY_UNDID_RUN: MessageKey =
     MessageKey::new("personal-field.history-entry.undid-run");
 
+/// The message `personal-field.history-row-naming-person.event`.
+pub const PERSONAL_FIELD_HISTORY_ROW_NAMING_PERSON_EVENT: MessageKey =
+    MessageKey::new("personal-field.history-row-naming-person.event");
+
+/// The message `personal-field.history-row-naming-person.issue`.
+pub const PERSONAL_FIELD_HISTORY_ROW_NAMING_PERSON_ISSUE: MessageKey =
+    MessageKey::new("personal-field.history-row-naming-person.issue");
+
+/// The message `personal-field.history-row-naming-person.person`.
+pub const PERSONAL_FIELD_HISTORY_ROW_NAMING_PERSON_PERSON: MessageKey =
+    MessageKey::new("personal-field.history-row-naming-person.person");
+
 /// The message `personal-field.invitation.created-at`.
 pub const PERSONAL_FIELD_INVITATION_CREATED_AT: MessageKey =
     MessageKey::new("personal-field.invitation.created-at");
@@ -7130,6 +7142,14 @@ pub const PERSONAL_FIELD_REVIEW_NOTE: MessageKey = MessageKey::new("personal-fie
 /// The message `personal-field.review.work`.
 pub const PERSONAL_FIELD_REVIEW_WORK: MessageKey = MessageKey::new("personal-field.review.work");
 
+/// The message `personal-field.row-naming-person.person`.
+pub const PERSONAL_FIELD_ROW_NAMING_PERSON_PERSON: MessageKey =
+    MessageKey::new("personal-field.row-naming-person.person");
+
+/// The message `personal-field.row-naming-person.row`.
+pub const PERSONAL_FIELD_ROW_NAMING_PERSON_ROW: MessageKey =
+    MessageKey::new("personal-field.row-naming-person.row");
+
 /// The message `personal-field.saved-search.created-at`.
 pub const PERSONAL_FIELD_SAVED_SEARCH_CREATED_AT: MessageKey =
     MessageKey::new("personal-field.saved-search.created-at");
@@ -7682,6 +7702,10 @@ pub const PERSONAL_KIND_HAND_OVER: MessageKey = MessageKey::new("personal-kind.h
 /// The message `personal-kind.history-entry`.
 pub const PERSONAL_KIND_HISTORY_ENTRY: MessageKey = MessageKey::new("personal-kind.history-entry");
 
+/// The message `personal-kind.history-row-naming-person`.
+pub const PERSONAL_KIND_HISTORY_ROW_NAMING_PERSON: MessageKey =
+    MessageKey::new("personal-kind.history-row-naming-person");
+
 /// The message `personal-kind.invitation`.
 pub const PERSONAL_KIND_INVITATION: MessageKey = MessageKey::new("personal-kind.invitation");
 
@@ -7763,6 +7787,10 @@ pub const PERSONAL_KIND_RELATION: MessageKey = MessageKey::new("personal-kind.re
 
 /// The message `personal-kind.review`.
 pub const PERSONAL_KIND_REVIEW: MessageKey = MessageKey::new("personal-kind.review");
+
+/// The message `personal-kind.row-naming-person`.
+pub const PERSONAL_KIND_ROW_NAMING_PERSON: MessageKey =
+    MessageKey::new("personal-kind.row-naming-person");
 
 /// The message `personal-kind.saved-search`.
 pub const PERSONAL_KIND_SAVED_SEARCH: MessageKey = MessageKey::new("personal-kind.saved-search");

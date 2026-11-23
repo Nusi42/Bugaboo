@@ -83,6 +83,7 @@ pub mod text_words;
 pub mod theme;
 pub mod time;
 pub mod version;
+pub mod walk_index;
 pub mod whose;
 #[macro_use]
 pub mod wording;

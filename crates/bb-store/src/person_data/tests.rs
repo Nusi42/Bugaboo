@@ -24,6 +24,7 @@ use bb_testing::{TestResult, each_database};
 use serde_json::json;
 
 use super::*;
+use crate::db::FixedSql;
 use crate::test_support::{at, definition, event, fixture, ids, person, world};
 
 /// What the walk counts for `person`, by table.
@@ -218,8 +219,96 @@ fn priv_03_a_link_to_a_field_that_is_not_stored_is_an_error_not_a_miss() {
         columns: Vec::new(),
     };
     let person = UserId::generate(&mut ids());
-    assert!(names_the_person(comments, &all, person).unwrap().is_some());
-    assert!(names_the_person(&without_columns, &all, person).is_err());
+    assert!(
+        names_the_person(comments, &all, person, Dialect::Sqlite)
+            .unwrap()
+            .is_some()
+    );
+    assert!(names_the_person(&without_columns, &all, person, Dialect::Sqlite).is_err());
+}
+
+/// Whether the plan `lines` of a query reads `table` whole: on SQLite a step `SCAN <table>` (also
+/// through a whole index), on PostgreSQL a step `Seq Scan on <table>` although sequential scans
+/// were switched off, that is: no index of the table can answer the arm.
+fn reads_whole(lines: &[String], table: &str) -> bool {
+    lines.iter().any(|line| {
+        line == &format!("SCAN {table}")
+            || line.starts_with(&format!("SCAN {table} "))
+            || line.contains(&format!("Seq Scan on {table} "))
+    })
+}
+
+/// Every arm of the walk is answered by an index (M9-F144): the walk never reads a table whole,
+/// whichever way the table names the person. SQLite, which plans an empty table as a large one,
+/// takes any index that can answer; PostgreSQL plans by the statistics of real rows, so on its
+/// empty tables the test only finds an arm that no index can answer at all, and the plans on real
+/// rows are measured with the datasets (architecture §11).
+#[tokio::test]
+async fn priv_03_every_arm_of_the_walk_is_answered_by_an_index() -> TestResult {
+    each_database("priv_03_every_arm_has_an_index", async |db| {
+        let fixture = fixture(db).await?;
+        let database = fixture.storage.database();
+        let person = UserId::generate(&mut ids());
+        let all = tables();
+        let mut whole = Vec::new();
+        for table in &all {
+            let Some(arms) = names_the_person(table, &all, person, database.dialect())? else {
+                continue;
+            };
+            for (at, arm) in arms.into_iter().enumerate() {
+                let plan = database
+                    .plan_for_tests(&arms::counted(table, vec![arm]), false)
+                    .await?;
+                if reads_whole(&plan, &table.name) {
+                    whole.push(format!("{} (arm {at}): {plan:?}", table.name));
+                }
+            }
+        }
+        assert!(whole.is_empty(), "read whole: {whole:#?}");
+        Ok(())
+    })
+    .await
+}
+
+/// On a table with many rows and fresh statistics, PostgreSQL picks the index of the walk with its
+/// own settings, not only when sequential scans are switched off (the test above, whose tables are
+/// empty): 20,000 jobs, each naming another person, and every arm of the walk of the jobs asked for
+/// one person. SQLite plans by the indexes it has, which the test above shows.
+#[tokio::test]
+async fn priv_03_postgresql_picks_the_index_of_the_walk_on_a_seeded_table() -> TestResult {
+    each_database("priv_03_postgresql_picks_the_index", async |db| {
+        let fixture = fixture(db).await?;
+        let database = fixture.storage.database();
+        if database.dialect() != Dialect::Postgres {
+            return Ok(());
+        }
+        let mut transaction = database.begin().await?;
+        transaction
+            .execute_fixed(&FixedSql {
+                sqlite: Vec::new(),
+                postgres: vec![
+                "INSERT INTO job (id, kind, payload, run_at, attempts, max_attempts, state,                  created_at) SELECT decode(lpad(to_hex(i), 32, '0'), 'hex'), 'mail.send',                  '{}', 0, 0, 5, 'queued', 0 FROM generate_series(1, 20000) AS i",
+                "INSERT INTO job_names_person (\"row\", person) SELECT                  decode(lpad(to_hex(i), 32, '0'), 'hex'),                  decode(lpad(to_hex(i + 1000000), 32, '0'), 'hex')                  FROM generate_series(1, 20000) AS i",
+                "ANALYZE job",
+                    "ANALYZE job_names_person",
+                ],
+            })
+            .await?;
+        transaction.commit().await?;
+        let person = UserId::generate(&mut ids());
+        let all = tables();
+        let jobs = all.iter().find(|table| table.name == "job").ok_or(StoreError::Corrupt("job"))?;
+        let arms = names_the_person(jobs, &all, person, database.dialect())?.unwrap_or_default();
+        assert!(!arms.is_empty());
+        for (at, arm) in arms.into_iter().enumerate() {
+            let plan = database
+                .plan_for_tests(&arms::counted(jobs, vec![arm]), true)
+                .await?;
+            assert!(!reads_whole(&plan, "job"), "arm {at}: {plan:#?}");
+        }
+        Ok(())
+    })
+    .await
 }
 
 /// The rows of the walk: each with what the person is to it, the person as a person and the

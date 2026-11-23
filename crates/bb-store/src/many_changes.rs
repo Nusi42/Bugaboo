@@ -19,6 +19,7 @@ use crate::auth::AuthStorage;
 use crate::db::{Row, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
 use crate::schema::ManyChangeRunRow;
+use crate::walk_index::{Indexed, Written, index_rows};
 
 /// The statuses of a run that is not over.
 const NOT_OVER: [ManyChangeStatus; 2] = [ManyChangeStatus::Queued, ManyChangeStatus::Running];
@@ -152,6 +153,7 @@ impl ManyChangeStore for AuthStorage {
         transaction: &mut Transaction,
         run: &ManyChangeRun,
     ) -> Result<(), StoreError> {
+        let action = serde_json::to_string(&run.action)?;
         let mut insert = Query::insert();
         insert
             .into_table(ManyChangeRunRow::Table)
@@ -176,7 +178,7 @@ impl ManyChangeStore for AuthStorage {
                 Expr::val(run.person.stored()),
                 Expr::val(run.app.clone()),
                 Expr::val(run.agent.map(StoredId::stored)),
-                Expr::val(serde_json::to_string(&run.action)?),
+                Expr::val(action.clone()),
                 Expr::val(serde_json::to_string(&run.items)?),
                 Expr::val(run.status.code()),
                 Expr::val(run.done),
@@ -186,7 +188,12 @@ impl ManyChangeStore for AuthStorage {
                 Expr::val(run.finished_at.map(to_micros)),
             ])
             .map_err(|_| StoreError::Corrupt("a run"))?;
-        transaction.execute(&insert).await.map(|_| ())
+        transaction.execute(&insert).await?;
+        let written = Written {
+            key: vec![run.id.stored()],
+            texts: vec![action.as_str()],
+        };
+        index_rows(transaction, Indexed::ChangeRun, &[written]).await
     }
 }
 

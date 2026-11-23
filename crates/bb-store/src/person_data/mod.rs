@@ -2,7 +2,12 @@
 //! person, found by the links of the entity stored in it (`bb_core::personal::PersonLinks`) and
 //! nothing else. It is the only code that searches rows by person; it works the same on both
 //! databases, because every condition is built from the names in `schema` with the query builder.
+//!
+//! The rows of a table are found in arms (`arms.rs`): each arm is one condition that one index
+//! answers, and no row is in two arms, so the walk counts and pages without reading a table whole
+//! (M9-F144).
 
+mod arms;
 mod cells;
 mod removal;
 
@@ -11,40 +16,38 @@ use bb_app::privacy::walk::{FoundRow, KindOfRows, ROWS_PAGE, RowsPage};
 use bb_core::event::RecordKind;
 use bb_core::id::UserId;
 use bb_core::personal::{EntityMarks, Link, LinkScope, PersonLink};
+use bb_core::walk_index::is_index_of_the_walk;
 use bb_core::whose::{FieldOf, OWN_FIELD_TYPE, PERSON_ADDRESS, Whose, whose};
-use sea_query::{Alias, Cond, Expr, ExprTrait as _, Order, Query, SelectStatement};
+use sea_query::{Alias, Cond, Expr, ExprTrait as _, Query, SelectStatement};
 
 use crate::AuthStorage;
-use crate::db::StoredId as _;
+use crate::db::{Dialect, StoredId as _, Transaction};
 use crate::error::StoreError;
 use crate::like;
 use crate::schema::{Computed, StoredTable, tables};
+use crate::walk_index::{Indexed, may_name, member_of};
 
 impl PersonData for AuthStorage {
     async fn kinds_of(&self, person: UserId) -> Result<Vec<KindOfRows>, StoreError> {
         let all = tables();
+        let dialect = self.database().dialect();
         let mut kinds = Vec::new();
+        // One snapshot for every count, read without parallel workers.
+        let mut reads = self.database().begin_read_serial().await?;
         for table in &all {
-            let Some(condition) = names_the_person(table, &all, person)? else {
+            let Some(arms) = names_the_person(table, &all, person, dialect)? else {
                 continue;
             };
-            let mut select = Query::select();
-            select
-                .expr_as(Expr::cust("COUNT(*)"), Computed::Total)
-                .from(Alias::new(table.name.as_str()))
-                .cond_where(condition);
-            let rows: i64 = match self.database().fetch_optional(&select).await? {
-                Some(row) => row.get(Computed::Total)?,
-                None => 0,
-            };
+            let rows = walk_count(&mut reads, &arms::counted(table, arms)).await?;
             if rows > 0 {
                 kinds.push(KindOfRows {
                     kind: table.name.clone(),
                     marks: table.marks,
-                    rows: u64::try_from(rows).map_err(|_| StoreError::Corrupt("a count"))?,
+                    rows,
                 });
             }
         }
+        reads.commit().await?;
         Ok(kinds)
     }
 
@@ -55,22 +58,20 @@ impl PersonData for AuthStorage {
         links: &[Link],
     ) -> Result<u64, StoreError> {
         let all = tables();
+        let dialect = self.database().dialect();
         let Some(table) = all.iter().find(|table| table.name == kind) else {
             return Ok(0);
         };
-        let Some(any) = linked(table, &all, person, links)? else {
+        let arms = arms::arms(table, &all, person, dialect, |link| {
+            link.link().is_some_and(|what| links.contains(&what))
+        })?;
+        if arms.is_empty() {
             return Ok(0);
-        };
-        let mut select = Query::select();
-        select
-            .expr_as(Expr::cust("COUNT(*)"), Computed::Total)
-            .from(Alias::new(table.name.as_str()))
-            .cond_where(any);
-        let rows: i64 = match self.database().fetch_optional(&select).await? {
-            Some(row) => row.get(Computed::Total)?,
-            None => 0,
-        };
-        u64::try_from(rows).map_err(|_| StoreError::Corrupt("a count"))
+        }
+        let mut reads = self.database().begin_read_serial().await?;
+        let rows = walk_count(&mut reads, &arms::counted(table, arms)).await?;
+        reads.commit().await?;
+        Ok(rows)
     }
 
     async fn person_rows(
@@ -80,48 +81,45 @@ impl PersonData for AuthStorage {
         from: u64,
     ) -> Result<RowsPage, StoreError> {
         let all = tables();
+        let dialect = self.database().dialect();
         let Some(table) = all.iter().find(|table| table.name == kind) else {
             return Ok(RowsPage {
                 rows: Vec::new(),
                 next: None,
             });
         };
-        let Some(condition) = names_the_person(table, &all, person)? else {
+        let Some(arms) = names_the_person(table, &all, person, dialect)? else {
             return Ok(RowsPage {
                 rows: Vec::new(),
                 next: None,
             });
         };
         let links = table.marks.person_links().links();
-        let mut select = Query::select();
-        select.from(Alias::new(table.name.as_str()));
-        for (column, _) in &table.columns {
-            select.column(Alias::new(column.as_str()));
-        }
         // Which link names the person in each row, as a flag of its own; for a link that holds a
         // person only in the rows of an own field of its type, whether the row is one of them.
+        let mut flags = Vec::new();
         for (at, link) in links.iter().enumerate() {
-            let names = link_names(table, &all, link, person)?;
-            select.expr_as(
-                Expr::case(names, Expr::val(1_i64)).finally(Expr::val(0_i64)),
+            let names = link_names(table, &all, link, person, dialect)?;
+            flags.push((
+                Expr::case(names, Expr::val(1_i64))
+                    .finally(Expr::val(0_i64))
+                    .into(),
                 Alias::new(cells::flag(at)),
-            );
+            ));
             if let Some(typed) = of_its_type(table, &all, link)? {
-                select.expr_as(
-                    Expr::case(typed, Expr::val(1_i64)).finally(Expr::val(0_i64)),
+                flags.push((
+                    Expr::case(typed, Expr::val(1_i64))
+                        .finally(Expr::val(0_i64))
+                        .into(),
                     Alias::new(cells::typed(at)),
-                );
+                ));
             }
         }
-        // A fixed order, so the pages neither repeat nor skip a row of a snapshot.
-        for (column, _) in &table.columns {
-            select.order_by(Alias::new(column.as_str()), Order::Asc);
-        }
-        select
-            .cond_where(condition)
-            .limit(ROWS_PAGE + 1)
-            .offset(from);
-        let mut found = self.database().fetch_all(&select).await?;
+        let mut select = arms::rows(table, arms, &flags);
+        select.limit(ROWS_PAGE + 1).offset(from);
+        let mut reads = self.database().begin_read_serial().await?;
+        let mut found = reads.fetch_all(&select).await?;
+        reads.commit().await?;
         let more = u64::try_from(found.len()).unwrap_or(u64::MAX) > ROWS_PAGE;
         found.truncate(usize::try_from(ROWS_PAGE).unwrap_or(usize::MAX));
         let rows = found
@@ -135,6 +133,15 @@ impl PersonData for AuthStorage {
     }
 }
 
+/// The number a statement of [`arms::counted`] counts.
+async fn walk_count(reads: &mut Transaction, select: &SelectStatement) -> Result<u64, StoreError> {
+    let rows: i64 = match reads.fetch_optional(select).await? {
+        Some(row) => row.get(Computed::Total)?,
+        None => 0,
+    };
+    u64::try_from(rows).map_err(|_| StoreError::Corrupt("a count"))
+}
+
 /// The condition for the rows of `table` that name `person` by a link that is one of `links`;
 /// none when the table has none of the links.
 fn linked(
@@ -142,20 +149,21 @@ fn linked(
     all: &[StoredTable],
     person: UserId,
     links: &[Link],
+    dialect: Dialect,
 ) -> Result<Option<Cond>, StoreError> {
     let mut any = Cond::any();
     let mut some = false;
     for link in table.marks.person_links().links() {
         if link.link().is_some_and(|what| links.contains(&what)) {
-            any = any.add(link_names(table, all, link, person)?);
+            any = any.add(link_names(table, all, link, person, dialect)?);
             some = true;
         }
     }
     Ok(some.then_some(any))
 }
 
-/// The condition for the rows of `table` that name `person` by any link; none when the entity
-/// stored in it names nobody.
+/// The arms of the rows of `table` that name `person` by any link; none when the entity stored in
+/// it names nobody, or is the index of the walk itself.
 ///
 /// # Errors
 /// [`StoreError::Corrupt`] when a link cannot be turned into a condition (a field it names is not
@@ -164,16 +172,12 @@ fn names_the_person(
     table: &StoredTable,
     all: &[StoredTable],
     person: UserId,
-) -> Result<Option<Cond>, StoreError> {
-    let links = table.marks.person_links().links();
-    if links.is_empty() {
+    dialect: Dialect,
+) -> Result<Option<Vec<Cond>>, StoreError> {
+    if table.marks.person_links().links().is_empty() || is_index_of_the_walk(&table.marks) {
         return Ok(None);
     }
-    let mut any = Cond::any();
-    for link in links {
-        any = any.add(link_names(table, all, link, person)?);
-    }
-    Ok(Some(any))
+    arms::arms(table, all, person, dialect, |_| true).map(Some)
 }
 
 /// What a link that cannot be turned into a condition reports.
@@ -216,24 +220,47 @@ fn link_names(
     all: &[StoredTable],
     link: &PersonLink,
     person: UserId,
+    dialect: Dialect,
 ) -> Result<Cond, StoreError> {
+    Ok(link_parts(table, all, link, person, dialect)?
+        .into_iter()
+        .fold(Cond::any(), Cond::add))
+}
+
+/// The rows of `table` in which the field of `link` names `person`, in parts that one index each
+/// answers and that share no row: one part, or for a reference to a record one for each kind.
+fn link_parts(
+    table: &StoredTable,
+    all: &[StoredTable],
+    link: &PersonLink,
+    person: UserId,
+    dialect: Dialect,
+) -> Result<Vec<Cond>, StoreError> {
     let field = link.field();
     let id = person.stored();
     Ok(match link.scope() {
         // The ID is in the last column: the only one, or the one after the kind (an actor).
-        LinkScope::Every => Cond::all().add(Expr::col(column(table, field, true)?).eq(id)),
+        LinkScope::Every => vec![Cond::all().add(Expr::col(column(table, field, true)?).eq(id))],
         LinkScope::Record { kind } => {
             let (kind_column, id_column) = match kind {
                 None => (column(table, field, false)?, column(table, field, true)?),
                 Some(kind) => (column(table, kind, false)?, column(table, field, false)?),
             };
-            record_names(all, &kind_column, &id_column, person)?
+            record_parts(
+                all,
+                RecordKind::ALL,
+                &kind_column,
+                &id_column,
+                (person, dialect),
+            )?
         }
         LinkScope::FieldType { .. } => {
             let typed = of_its_type(table, all, link)?.ok_or(StoreError::Corrupt("a link"))?;
-            Cond::all()
-                .add(Expr::col(column(table, field, false)?).eq(id))
-                .add(typed)
+            vec![
+                Cond::all()
+                    .add(Expr::col(column(table, field, false)?).eq(id))
+                    .add(typed),
+            ]
         }
         LinkScope::Email => {
             let (people, of) = (table_of(all, PERSON_ADDRESS.marks)?, PERSON_ADDRESS);
@@ -242,25 +269,24 @@ fn link_names(
                 .column(column(people, of.value, false)?)
                 .from(Alias::new(people.name.as_str()))
                 .and_where(Expr::col(column(people, of.id, false)?).eq(id));
-            Cond::all().add(Expr::col(column(table, field, false)?).in_subquery(address))
+            vec![Cond::all().add(member_of(column(table, field, false)?, address, dialect))]
         }
         // The ID of a person is written into changes and JSON as its text, which no other value
-        // has.
-        LinkScope::Changes | LinkScope::Json => Cond::all().add(
-            Expr::col(column(table, field, false)?).like(like::containing(&person.to_string())),
-        ),
+        // has. The index of the walk names the rows that may hold it, so no table is read whole;
+        // the text decides, as it did without the index.
+        LinkScope::Changes | LinkScope::Json => {
+            let of = Indexed::of_table(&table.name).ok_or(UNINDEXED_LINK)?;
+            vec![Cond::all().add(may_name(of, id, dialect)).add(
+                Expr::col(column(table, field, false)?).like(like::containing(&person.to_string())),
+            )]
+        }
     })
 }
 
-/// The rows about a record that is `person` or belongs to them, as `whose` says for each kind.
-fn record_names(
-    all: &[StoredTable],
-    kind_column: &Alias,
-    id_column: &Alias,
-    person: UserId,
-) -> Result<Cond, StoreError> {
-    records_of_kinds(all, RecordKind::ALL, kind_column, id_column, person)
-}
+/// What a link into changes or JSON of a table without the index of the walk reports: the walk
+/// would have to read the whole table.
+const UNINDEXED_LINK: StoreError =
+    StoreError::Corrupt("a link of a person into changes or JSON of a table without an index");
 
 /// The rows about a record of one of `kinds` that is `person` or belongs to them, as `whose` says
 /// for each kind.
@@ -269,21 +295,36 @@ fn records_of_kinds(
     kinds: &[RecordKind],
     kind_column: &Alias,
     id_column: &Alias,
-    person: UserId,
+    person: (UserId, Dialect),
 ) -> Result<Cond, StoreError> {
-    let mut any = Cond::any();
+    Ok(record_parts(all, kinds, kind_column, id_column, person)?
+        .into_iter()
+        .fold(Cond::any(), Cond::add))
+}
+
+/// [`records_of_kinds`] in parts, one for each kind, which the index of the kind and the ID answers.
+fn record_parts(
+    all: &[StoredTable],
+    kinds: &[RecordKind],
+    kind_column: &Alias,
+    id_column: &Alias,
+    (person, dialect): (UserId, Dialect),
+) -> Result<Vec<Cond>, StoreError> {
+    let mut parts = Vec::new();
     for kind in kinds {
         let of_the_kind = Expr::col(kind_column.clone()).eq(kind.code());
         let the_record = match whose(*kind) {
             Whose::ThePerson => Expr::col(id_column.clone()).eq(person.stored()),
-            Whose::Owner { of } => {
-                Expr::col(id_column.clone()).in_subquery(ids_where(all, of, person.stored())?)
-            }
+            Whose::Owner { of } => member_of(
+                id_column.clone(),
+                ids_where(all, of, person.stored())?,
+                dialect,
+            ),
             Whose::Nobody => continue,
         };
-        any = any.add(Cond::all().add(of_the_kind).add(the_record));
+        parts.push(Cond::all().add(of_the_kind).add(the_record));
     }
-    Ok(any)
+    Ok(parts)
 }
 
 /// The IDs (the field `of.id`) of the rows of the entity of `of` whose field `of.value` is

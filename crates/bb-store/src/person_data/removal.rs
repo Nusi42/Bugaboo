@@ -11,7 +11,7 @@ use sea_query::{Alias, Cond, Expr, ExprTrait as _, Iden, Order, Query, SelectSta
 
 use super::{UNSTORED_LINK, column, linked, records_of_kinds, table_of};
 use crate::AuthStorage;
-use crate::db::{StoredId as _, Transaction};
+use crate::db::{Dialect, StoredId as _, Transaction};
 use crate::error::StoreError;
 use crate::events::ACTOR_PERSON;
 use crate::like;
@@ -76,7 +76,7 @@ impl RemovalStore for AuthStorage {
         let Some(table) = all.iter().find(|table| table.marks.name() == kind.name()) else {
             return Ok(0);
         };
-        let Some(any) = linked(table, &all, person, links)? else {
+        let Some(any) = linked(table, &all, person, links, transaction.dialect())? else {
             return Ok(0);
         };
         let mut delete = Query::delete();
@@ -108,7 +108,7 @@ impl RemovalStore for AuthStorage {
         person: UserId,
         scrub: &Scrub,
     ) -> Result<u64, StoreError> {
-        let about = events_about(person, scrub)?;
+        let about = events_about(person, scrub, transaction.dialect())?;
         let words = scrub.looked_for();
         let events = Scrubbed {
             table: Event::Table,
@@ -143,7 +143,11 @@ impl RemovalStore for AuthStorage {
 /// a record of one of its kinds that only their owner makes (`MADE_ONLY_BY_THEIR_OWNER`), which
 /// can be gone by now (the name of an access key they deleted). What the person did to the records
 /// of others (the roles they gave, the work times they edited) stays.
-fn events_about(person: UserId, scrub: &Scrub) -> Result<SelectStatement, StoreError> {
+fn events_about(
+    person: UserId,
+    scrub: &Scrub,
+    dialect: Dialect,
+) -> Result<SelectStatement, StoreError> {
     let all = tables();
     let events = table_of(&all, DomainEvent::MARKS)?;
     let record = events
@@ -155,7 +159,13 @@ fn events_about(person: UserId, scrub: &Scrub) -> Result<SelectStatement, StoreE
         .ok_or(UNSTORED_LINK)?;
     let kind_column = column(events, record.field(), false)?;
     let id_column = column(events, record.field(), true)?;
-    let mut any = records_of_kinds(&all, &scrub.kinds, &kind_column, &id_column, person)?;
+    let mut any = records_of_kinds(
+        &all,
+        &scrub.kinds,
+        &kind_column,
+        &id_column,
+        (person, dialect),
+    )?;
     for named in &scrub.records {
         any = any.add(
             Cond::all()

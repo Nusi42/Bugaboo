@@ -67,6 +67,7 @@ pub mod text_index;
 mod text_marks;
 mod themes;
 mod time;
+mod walk_index;
 mod work_times;
 mod workflows;
 mod working_hours;

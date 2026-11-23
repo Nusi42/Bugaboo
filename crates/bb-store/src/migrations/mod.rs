@@ -97,6 +97,7 @@ mod m0060_standing_by_optional;
 mod m0061_agent_requests;
 mod m0062_agent_switches;
 mod m0063_timer_by_issue;
+mod m0064_walk_index;
 
 pub(crate) use m0057_person_standing::VERSION as REPLAY_WAITING_FROM;
 #[cfg(test)]
@@ -139,6 +140,32 @@ pub(crate) enum Step {
     DropIndex(IndexDropStatement),
     /// Statements that only one database knows (a virtual table, a generated column).
     Sql(FixedSql),
+    /// Rows made by the code from the rows that are there, a page at a time.
+    Fill(Fill),
+}
+
+/// The fills of data that a migration runs (`Step::Fill`), each named once: the name is what the
+/// checksum of the migration takes.
+#[derive(Clone, Copy, Debug)]
+pub(crate) enum Fill {
+    /// The index of the walk of a person's data, from the rows that can name a person (migration
+    /// 64, `walk_index::fill`).
+    RowNamingPersons,
+}
+
+impl Fill {
+    /// The name the checksum takes.
+    const fn name(self) -> &'static str {
+        match self {
+            Self::RowNamingPersons => "walk-index",
+        }
+    }
+
+    async fn run(self, transaction: &mut Transaction) -> Result<(), StoreError> {
+        match self {
+            Self::RowNamingPersons => crate::walk_index::fill(transaction).await,
+        }
+    }
 }
 
 /// The statement of a [`Step::SeedAt`] for the moment the migration is applied.
@@ -202,6 +229,7 @@ impl Definition {
                     statement.build(PostgresQueryBuilder),
                 ],
                 Step::Sql(sql) => sql.texts(),
+                Step::Fill(fill) => [fill.name().to_owned(), fill.name().to_owned()],
             };
             for text in texts {
                 hasher.update(u64::try_from(text.len()).unwrap_or(u64::MAX).to_be_bytes());
@@ -441,6 +469,7 @@ async fn apply_next(
             Step::Rename(statement) => transaction.execute_schema(&statement).await?,
             Step::DropIndex(statement) => transaction.execute_schema(&statement).await?,
             Step::Sql(sql) => transaction.execute_fixed(&sql).await?,
+            Step::Fill(fill) => fill.run(transaction).await?,
         }
     }
     record(transaction, next, now).await?;

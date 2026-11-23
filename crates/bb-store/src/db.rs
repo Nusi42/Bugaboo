@@ -6,7 +6,6 @@
 //! This is the only file that may wrap query text in `AssertSqlSafe`, and the only one that
 //! names the sqlx query functions (ARCH-SQL-EDGE).
 
-use std::str::FromStr as _;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
@@ -16,8 +15,7 @@ use futures_util::{Stream, TryStreamExt as _};
 use sea_query::{
     Func, PostgresQueryBuilder, SchemaStatementBuilder, SelectStatement, SqliteQueryBuilder,
 };
-use sqlx::postgres::{PgConnectOptions, PgConnection, PgPoolOptions};
-use sqlx::sqlite::SqliteConnectOptions;
+use sqlx::postgres::PgConnection;
 use sqlx::{AssertSqlSafe, PgPool, Postgres, Sqlite, SqlitePool};
 
 use crate::error::StoreError;
@@ -26,6 +24,7 @@ use crate::security_log::NewSecurityLogEntry;
 
 mod fixed;
 mod gate;
+mod open;
 mod peer;
 mod reader;
 mod server_hold;
@@ -47,9 +46,6 @@ pub use hooks::UpkeepForTests;
 pub use peer::{certificate_unchecked, with_checked_certificate};
 pub(crate) use reader::{Reader, count_of};
 pub use server_hold::ServerHold;
-#[cfg(unix)]
-use sqlite_open::create_private_file;
-use sqlite_open::{SQLITE_BUSY_TIMEOUT, open_sqlite};
 use timed::Timed;
 use upkeep::Upkeep;
 
@@ -66,9 +62,6 @@ pub(crate) const STATEMENT_ITEMS: usize = BIND_LIMIT;
 pub(crate) const fn rows_per_insert(columns: usize) -> usize {
     BIND_LIMIT / columns
 }
-
-/// The most connections PostgreSQL gets when the number of processors is unknown.
-const POSTGRES_FALLBACK_CONNECTIONS: u32 = 8;
 
 /// The error code PostgreSQL gives a statement that `statement_timeout` stopped.
 const QUERY_CANCELED: &str = "57014";
@@ -110,74 +103,6 @@ pub struct Database {
 }
 
 impl Database {
-    /// Opens the database named by `url`: `sqlite:<file>` (made if missing) or
-    /// `postgres://…`. SQLite runs in WAL mode with foreign keys on and a busy timeout.
-    ///
-    /// # Errors
-    /// Fails for another kind of URL or when the database cannot be reached.
-    pub async fn connect(url: &str) -> Result<Self, StoreError> {
-        Self::connect_waiting(url, SQLITE_BUSY_TIMEOUT).await
-    }
-
-    async fn connect_waiting(url: &str, busy_timeout: Duration) -> Result<Self, StoreError> {
-        let pool = if url.starts_with("sqlite:") {
-            Pool::Sqlite(open_sqlite(SqliteConnectOptions::from_str(url)?, busy_timeout).await?)
-        } else if url.starts_with("postgres:") || url.starts_with("postgresql:") {
-            let options = PgConnectOptions::from_str(url)?;
-            let connections = std::thread::available_parallelism()
-                .map_or(POSTGRES_FALLBACK_CONNECTIONS, |count| {
-                    u32::try_from(count.get()).unwrap_or(POSTGRES_FALLBACK_CONNECTIONS)
-                });
-            Pool::Postgres(
-                PgPoolOptions::new()
-                    .max_connections(connections.max(2))
-                    .connect_with(options)
-                    .await?,
-            )
-        } else {
-            return Err(StoreError::UnsupportedDatabase);
-        };
-        Ok(Self {
-            pool,
-            statements: Arc::default(),
-            upkeep: Arc::default(),
-            writers: WriterGate::default(),
-        })
-    }
-
-    /// Opens the SQLite database in `file` (made if missing), the built-in database of the data
-    /// folder. The path is used as it is: it is not read as a URL.
-    ///
-    /// # Errors
-    /// Fails when the database cannot be opened.
-    pub async fn connect_file(file: &std::path::Path) -> Result<Self, StoreError> {
-        #[cfg(unix)]
-        create_private_file(file)?;
-        Ok(Self {
-            pool: Pool::Sqlite(
-                open_sqlite(
-                    SqliteConnectOptions::new().filename(file),
-                    SQLITE_BUSY_TIMEOUT,
-                )
-                .await?,
-            ),
-            statements: Arc::default(),
-            upkeep: Arc::default(),
-            writers: WriterGate::default(),
-        })
-    }
-
-    /// Opens the copy of a SQLite database that a backup holds, only to read it: nothing is
-    /// written into the file, not even the switch to WAL mode (ADR-0046).
-    pub(crate) async fn open_copy(file: &std::path::Path) -> Result<Self, StoreError> {
-        Ok(Self {
-            pool: Pool::Sqlite(sqlite_open::open_sqlite_copy(file).await?),
-            statements: Arc::default(),
-            upkeep: Arc::default(),
-            writers: WriterGate::default(),
-        })
-    }
-
     /// Copies the SQLite database into the new file `file` with `VACUUM INTO`, which reads one
     /// consistent state while writers go on, and then folds the write-ahead log, which grew
     /// meanwhile, back into the database (ADR-0046, decision 2). `false` on PostgreSQL, whose
@@ -334,6 +259,20 @@ impl Database {
                 ),
             },
         })
+    }
+
+    /// [`Self::begin_read`] for reads that many small looks into indexes answer (the arms of the
+    /// walk of a person's data): PostgreSQL starts no parallel workers in it, whose start takes
+    /// longer than such a read (about 25 ms against 2 ms for the events of a person on the dataset
+    /// of 50,000 issues). SQLite has none.
+    pub(crate) async fn begin_read_serial(&self) -> Result<Transaction, StoreError> {
+        let mut transaction = self.begin_read().await?;
+        if let TxInner::Postgres(inner) = &mut transaction.inner {
+            sqlx::query("SELECT set_config('max_parallel_workers_per_gather', '0', true)")
+                .execute(&mut **inner)
+                .await?;
+        }
+        Ok(transaction)
     }
 
     /// Runs a statement that changes nothing else but one row or a few, outside a transaction.
@@ -530,7 +469,7 @@ impl std::fmt::Debug for Transaction {
 
 impl Transaction {
     /// Which database this transaction runs on.
-    const fn dialect(&self) -> Dialect {
+    pub(crate) const fn dialect(&self) -> Dialect {
         match self.inner {
             TxInner::Sqlite(_) => Dialect::Sqlite,
             TxInner::Postgres(_) => Dialect::Postgres,
@@ -728,6 +667,47 @@ impl Database {
             sqlx::query(*text).execute(&mut *connection).await?;
         }
         Ok(())
+    }
+
+    /// The plan the database makes for `select`, a line for each step (test builds only): what a
+    /// test reads to see that an index answers a query. On PostgreSQL the plan is made with
+    /// `enable_seqscan` off unless `defaults`, so a table is read whole only when no index can
+    /// answer; with `defaults` the planner chooses by its own settings and statistics.
+    ///
+    /// # Errors
+    /// Fails when the database fails.
+    #[cfg(test)]
+    pub(crate) async fn plan_for_tests(
+        &self,
+        select: &SelectStatement,
+        defaults: bool,
+    ) -> Result<Vec<String>, StoreError> {
+        use sea_query_sqlx::SqlxBinder as _;
+        match &self.pool {
+            Pool::Sqlite(pool) => {
+                let (sql, values) = select.build_sqlx(SqliteQueryBuilder);
+                let rows: Vec<(i64, i64, i64, String)> =
+                    sqlx::query_as_with(AssertSqlSafe(format!("EXPLAIN QUERY PLAN {sql}")), values)
+                        .fetch_all(pool)
+                        .await?;
+                Ok(rows.into_iter().map(|(_, _, _, detail)| detail).collect())
+            }
+            Pool::Postgres(pool) => {
+                let (sql, values) = select.build_sqlx(PostgresQueryBuilder);
+                let mut transaction = pool.begin().await?;
+                if !defaults {
+                    sqlx::query("SET LOCAL enable_seqscan = off")
+                        .execute(&mut *transaction)
+                        .await?;
+                }
+                let rows: Vec<(String,)> =
+                    sqlx::query_as_with(AssertSqlSafe(format!("EXPLAIN {sql}")), values)
+                        .fetch_all(&mut *transaction)
+                        .await?;
+                transaction.rollback().await?;
+                Ok(rows.into_iter().map(|(line,)| line).collect())
+            }
+        }
     }
 
     /// The statistics SQLite keeps of an index, if any.
