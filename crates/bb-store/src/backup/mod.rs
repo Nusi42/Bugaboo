@@ -3,8 +3,8 @@
 //!
 //! What a backup is, is described once in [`bb_core::backup`]. Here is what touches the disk and
 //! the database: the copy of the database, one routine per database (`copy.rs`), the archive
-//! (`archive.rs`), the records of the backups made and restored (`runs.rs`) and the restore
-//! (`restore.rs`).
+//! (`archive.rs`), the folder the work is done in (`work.rs`), the records of the backups made and
+//! restored (`runs.rs`) and the restore (`restore.rs`).
 
 mod archive;
 mod catalog;
@@ -15,6 +15,7 @@ mod restore;
 mod runs;
 mod seal;
 mod value;
+mod work;
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -35,6 +36,7 @@ use crate::keys::KeyRing;
 pub use folder::{Elsewhere, FolderBackups, FolderOf};
 pub(crate) use restore::put_back_before_upgrade;
 pub use restore::{RestoreFailure, RestoreInput, RestoreReport, RestoreTarget, restore};
+use work::{OwnHold, WorkFolder};
 
 /// The version of Bugaboo that makes a backup, as its name and manifest say.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -89,23 +91,6 @@ const fn kind_of(dialect: Dialect) -> DatabaseKind {
         Dialect::Sqlite => DatabaseKind::Sqlite,
         Dialect::Postgres => DatabaseKind::Postgres,
     }
-}
-
-/// A new folder for the owner only, for the work of one backup or restore, beside `near`.
-fn work_folder(near: &Path, label: &str) -> Result<PathBuf, StoreError> {
-    let mut random = [0_u8; 8];
-    getrandom::fill(&mut random).map_err(|_| StoreError::Corrupt("no random bytes"))?;
-    let folder = near.join(format!(".{label}-{}", hex::encode(&random)));
-    let builder = std::fs::DirBuilder::new();
-    #[cfg(unix)]
-    let builder = {
-        use std::os::unix::fs::DirBuilderExt as _;
-        let mut builder = builder;
-        builder.mode(0o700);
-        builder
-    };
-    builder.create(&folder).map_err(io)?;
-    Ok(folder)
 }
 
 /// The backups in `folder` whose names this program reads, newest first.
@@ -234,10 +219,12 @@ const LEFTOVER_AFTER: std::time::Duration = std::time::Duration::from_hours(1);
 
 /// Deletes from `folder` what a backup that never finished left there: a copy `<name>.partial`
 /// and the empty file that held its name, once they have not changed for [`LEFTOVER_AFTER`]. An
-/// empty name whose copy is still written stays. Nothing else is touched, and a file that cannot
-/// be deleted is left for the next time. Only the server's daily round of backups calls it, so a
-/// backup made on the command line at the same time never loses its copy to another.
+/// empty name whose copy is still written stays; and the work folder of a backup whose program was
+/// killed, once nothing in it changed for as long. Nothing else is touched, and a file that cannot
+/// be deleted is left for the next time. Only the server's rounds of backups call it, so a backup
+/// made on the command line at the same time never loses its copy to another.
 pub fn remove_leftovers(folder: &Path) {
+    work::remove_stale(folder, LEFTOVER_AFTER);
     let Ok(entries) = std::fs::read_dir(folder) else {
         return;
     };
@@ -281,26 +268,40 @@ impl Database {
     /// Creates a backup in `places.folder` while people go on working (ADR-0046, decisions 1 and
     /// 2): the copy of the database, then the files it points to (a file uploaded after the copy
     /// is not in it, so nothing in the backup points to a missing file), and a copy of the replay
-    /// list. No key goes in. The file appears whole or not at all.
+    /// list. No key goes in. The file appears whole or not at all. The files are written on
+    /// blocking threads, never on a worker of the runtime.
     ///
     /// # Errors
     /// Fails when the database or a file cannot be read or the backup cannot be written; nothing
-    /// is left behind then.
+    /// is left behind then, nor when the future is dropped before it is done.
     pub async fn create_backup(
         &self,
         places: &BackupPlaces,
         purpose: Purpose,
         now: Timestamp,
     ) -> Result<CreatedBackup, StoreError> {
-        let work = work_folder(&places.folder, "backup")?;
-        let made = self.create_in(&work, places, purpose, now).await;
-        let _ = std::fs::remove_dir_all(&work);
+        let near = places.folder.clone();
+        let work = work::blocking(move || WorkFolder::new(&near)).await?;
+        let made = {
+            let _hold = OwnHold::of(&work);
+            self.create_in(&work, places, purpose, now).await
+        };
+        // The folder goes with its last holder anyway; a failure to wait for that here is no
+        // failure of the backup.
+        let removed = work::blocking(move || {
+            work.remove_now();
+            Ok(())
+        })
+        .await;
+        if let Err(error) = removed {
+            tracing::warn!(cause = %error, "the work folder of a backup was not deleted at once");
+        }
         made
     }
 
     async fn create_in(
         &self,
-        work: &Path,
+        work: &Arc<WorkFolder>,
         places: &BackupPlaces,
         purpose: Purpose,
         now: Timestamp,
@@ -308,83 +309,110 @@ impl Database {
         // The name the backup is made for; it is placed under it or a second or two before.
         let name = BackupName::new(purpose, now, VERSION);
         let kind = kind_of(self.dialect());
-        let database =
-            MemberName::parse(kind.member()).map_err(|_| StoreError::Corrupt("a member"))?;
-        let copy = work.join(kind.member());
-        let copied = self.copy_into(&copy).await?;
-        let replay = work.join(member::REPLAY_LIST);
-        match std::fs::copy(&places.replay_list, &replay) {
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
-                std::fs::write(&replay, b"").map_err(io)?;
-            }
-            other => {
-                other.map_err(io)?;
-            }
-        }
-        let mut sources = vec![
-            archive::Source {
-                name: database,
-                path: copy,
-            },
-            archive::Source {
-                name: MemberName::parse(member::REPLAY_LIST)
-                    .map_err(|_| StoreError::Corrupt("a member"))?,
-                path: replay,
-            },
-        ];
-        for hash in &copied.files {
-            for path in (places.file_paths)(hash) {
-                let source = path
-                    .split('/')
-                    .fold(places.files.clone(), |folder, part| folder.join(part));
-                let member = MemberName::of_file(&path)
-                    .map_err(|_| StoreError::Corrupt("the path of a stored file"))?;
-                if source.is_file() {
-                    sources.push(archive::Source {
-                        name: member,
-                        path: source,
-                    });
-                } else {
-                    // A file the database points to and the disk does not have (taken away while
-                    // the backup ran, or lost before): the backup goes on without it, and says so.
-                    tracing::warn!(
-                        file = %hex::encode(hash.as_bytes()),
-                        "a stored file is missing and is not in the backup"
-                    );
-                }
-            }
-        }
-        let mut manifest = Manifest {
-            format: FORMAT,
-            version: name.version.clone(),
-            database: kind,
-            moment: name.moment,
-            migrations: copied
-                .migrations
-                .iter()
-                .map(|record| AppliedMigration {
-                    version: record.version,
-                    name: record.name.as_str().to_owned(),
-                    checksum: hex::encode(record.checksum.as_bytes()),
-                })
-                .collect(),
-            security_log_head: copied.log_head.map(|(seq, hash)| LogHead::new(seq, &hash)),
-            keys: seal::key_checks(&places.keys)?,
-            members: Vec::new(),
-        };
-        let partial = work.join(format!("archive{EXTENSION}"));
-        let (size, checksum) = archive::write(&partial, &mut manifest, &sources, &places.keys)?;
-        let (name, target) = place_under_free_name(&partial, &places.folder, purpose, name.moment)?;
-        Ok(CreatedBackup {
-            file: CreatedFile {
-                name,
-                size,
-                checksum,
-            },
-            path: target,
-            log_head: copied.log_head,
-        })
+        let copy = work.path().join(kind.member());
+        let copied = self.copy_into(&copy, work).await?;
+        let (work, places) = (Arc::clone(work), places.clone());
+        work::blocking(move || archive_and_place(&work, &places, &copied, &name, kind)).await
     }
+}
+
+/// The archive in the work folder `work`, while it is written and until it is placed.
+fn staged_archive(work: &Path) -> PathBuf {
+    work.join(format!("archive{EXTENSION}"))
+}
+
+/// The rest of a backup once its copy of the database is in `work`: the replay list and the files
+/// beside it, the archive with its manifest, and the archive moved into the folder of the backups.
+/// Blocking.
+fn archive_and_place(
+    work: &WorkFolder,
+    places: &BackupPlaces,
+    copied: &copy::Copied,
+    name: &BackupName,
+    kind: DatabaseKind,
+) -> Result<CreatedBackup, StoreError> {
+    let member_name =
+        |text: &str| MemberName::parse(text).map_err(|_| StoreError::Corrupt("a member"));
+    let replay = work.path().join(member::REPLAY_LIST);
+    match std::fs::copy(&places.replay_list, &replay) {
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            std::fs::write(&replay, b"").map_err(io)?;
+        }
+        other => {
+            other.map_err(io)?;
+        }
+    }
+    let mut sources = vec![
+        archive::Source {
+            name: member_name(kind.member())?,
+            path: work.path().join(kind.member()),
+            measured: copied.measured,
+        },
+        archive::Source {
+            name: member_name(member::REPLAY_LIST)?,
+            path: replay,
+            measured: None,
+        },
+    ];
+    for hash in &copied.files {
+        for path in (places.file_paths)(hash) {
+            let source = path
+                .split('/')
+                .fold(places.files.clone(), |folder, part| folder.join(part));
+            let member = MemberName::of_file(&path)
+                .map_err(|_| StoreError::Corrupt("the path of a stored file"))?;
+            if source.is_file() {
+                sources.push(archive::Source {
+                    name: member,
+                    path: source,
+                    measured: None,
+                });
+            } else {
+                // A file the database points to and the disk does not have (taken away while
+                // the backup ran, or lost before): the backup goes on without it, and says so.
+                tracing::warn!(
+                    file = %hex::encode(hash.as_bytes()),
+                    "a stored file is missing and is not in the backup"
+                );
+            }
+        }
+    }
+    let mut manifest = Manifest {
+        format: FORMAT,
+        version: name.version.clone(),
+        database: kind,
+        moment: name.moment,
+        migrations: copied
+            .migrations
+            .iter()
+            .map(|record| AppliedMigration {
+                version: record.version,
+                name: record.name.as_str().to_owned(),
+                checksum: hex::encode(record.checksum.as_bytes()),
+            })
+            .collect(),
+        security_log_head: copied.log_head.map(|(seq, hash)| LogHead::new(seq, &hash)),
+        keys: seal::key_checks(&places.keys)?,
+        members: Vec::new(),
+    };
+    let partial = staged_archive(work.path());
+    let (size, checksum) = archive::write(&partial, &mut manifest, &sources, &places.keys)?;
+    if work.let_go() {
+        // Stopped while the archive was written: nobody records it, and a second backup may be
+        // under way for the same job.
+        return Err(io(std::io::Error::other("the backup was stopped")));
+    }
+    let purpose = name.purpose;
+    let (name, target) = place_under_free_name(&partial, &places.folder, purpose, name.moment)?;
+    Ok(CreatedBackup {
+        file: CreatedFile {
+            name,
+            size,
+            checksum,
+        },
+        path: target,
+        log_head: copied.log_head,
+    })
 }
 
 #[cfg(test)]

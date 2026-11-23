@@ -12,8 +12,10 @@ use bb_core::backup::name::{BackupName, Purpose};
 use bb_core::backup::run::CreatedFile;
 use jiff::Timestamp;
 
-use super::{BackupPlaces, backups_in, remove_leftovers};
+use super::work::blocking;
+use super::{BackupPlaces, backups_in, io, remove_leftovers};
 use crate::db::Database;
+use crate::error::StoreError;
 
 /// The folder a backup goes into: the folder the setting `backups.folder` names (`Some`), or the
 /// backups folder of the data folder (`None`). The caller decides whether a named folder may be
@@ -55,9 +57,25 @@ impl FolderBackups {
         }
     }
 
-    fn folder(&self, named: Option<&str>) -> std::io::Result<PathBuf> {
-        (self.folder_of)(named)
+    /// The folder of the backups; the system is asked on a blocking thread (whether a named folder
+    /// lies on another computer can take a while).
+    async fn folder(&self, named: Option<String>) -> std::io::Result<PathBuf> {
+        let folder_of = Arc::clone(&self.folder_of);
+        on_disk(move || folder_of(named.as_deref())).await
     }
+}
+
+/// Runs file work on a blocking thread of the runtime ([`blocking`]), with the errors of the port.
+async fn on_disk<T: Send + 'static>(
+    work: impl FnOnce() -> std::io::Result<T> + Send + 'static,
+) -> std::io::Result<T> {
+    blocking(move || work().map_err(io))
+        .await
+        .map_err(|error| plain(&error))
+}
+
+fn plain(error: &StoreError) -> std::io::Error {
+    std::io::Error::other(error.to_string())
 }
 
 impl BackupFiles for FolderBackups {
@@ -75,21 +93,21 @@ impl BackupFiles for FolderBackups {
     ) -> BoxFuture<'_, std::io::Result<CreatedFile>> {
         Box::pin(async move {
             let places = BackupPlaces {
-                folder: self.folder(folder.as_deref())?,
+                folder: self.folder(folder).await?,
                 ..self.places.clone()
             };
             self.database
                 .create_backup(&places, purpose, now)
                 .await
                 .map(|created| created.file)
-                .map_err(|error| std::io::Error::other(error.to_string()))
+                .map_err(|error| plain(&error))
         })
     }
 
     fn list(&self, folder: Option<String>) -> BoxFuture<'_, std::io::Result<Vec<BackupFile>>> {
         Box::pin(async move {
-            let found = backups_in(&self.folder(folder.as_deref())?)
-                .map_err(|error| std::io::Error::other(error.to_string()))?;
+            let folder = self.folder(folder).await?;
+            let found = on_disk(move || backups_in(&folder).map_err(|error| plain(&error))).await?;
             Ok(found
                 .into_iter()
                 .map(|(name, _, size)| BackupFile { name, size })
@@ -103,14 +121,24 @@ impl BackupFiles for FolderBackups {
         name: BackupName,
     ) -> BoxFuture<'_, std::io::Result<()>> {
         Box::pin(async move {
-            std::fs::remove_file(self.folder(folder.as_deref())?.join(name.to_string()))
+            let file = self.folder(folder).await?.join(name.to_string());
+            on_disk(move || std::fs::remove_file(file)).await
         })
     }
 
     fn remove_leftovers(&self, folder: Option<String>) -> BoxFuture<'_, ()> {
         Box::pin(async move {
-            match self.folder(folder.as_deref()) {
-                Ok(folder) => remove_leftovers(&folder),
+            match self.folder(folder).await {
+                Ok(folder) => {
+                    let removed = on_disk(move || {
+                        remove_leftovers(&folder);
+                        Ok(())
+                    })
+                    .await;
+                    if let Err(error) = removed {
+                        tracing::warn!(cause = %error, "what a backup left behind stays");
+                    }
+                }
                 Err(error) => tracing::warn!(cause = %error, "the backups folder is not there"),
             }
         })

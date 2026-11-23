@@ -29,6 +29,8 @@ bb-core = { path = "../bb-core", features = ["canonical-text"] }
 bb-searchlang = { path = "../bb-searchlang" }
 bb-policy = { path = "../bb-policy" }
 chacha20poly1305 = { workspace = true }
+# Reads the rows of the copy of a backup as PostgreSQL sends them (`TryStreamExt::try_next`).
+futures-util = { workspace = true }
 getrandom = { workspace = true }
 hmac = { workspace = true }
 jiff = { workspace = true }
@@ -39,7 +41,7 @@ sha2 = { workspace = true }
 sqlx = { workspace = true, features = ["postgres", "runtime-tokio", "sqlite", "tls-rustls"] }
 # The backup file (ADR-0046); the extended attributes of files are not kept.
 tar.workspace = true
-tokio = { workspace = true, features = ["rt", "time", "sync"] }
+tokio = { workspace = true, features = ["rt", "time", "sync", "macros"] }
 tracing = { workspace = true }
 zeroize = { workspace = true }
 

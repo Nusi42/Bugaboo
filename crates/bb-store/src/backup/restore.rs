@@ -41,7 +41,8 @@ use bb_policy::guards::ensure_a_manager_remains;
 use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, Query};
 
-use super::{BackupPlaces, CreatedBackup, archive, fill, io, seal, work_folder};
+use super::work::new_folder;
+use super::{BackupPlaces, CreatedBackup, archive, fill, io, seal};
 use crate::anchor::{Anchored, LogSeal};
 use crate::auth::AuthStorage;
 use crate::auth::replay_waiting::waiting_lines_of_any_version;
@@ -169,7 +170,7 @@ pub async fn restore(
     input: RestoreInput<'_>,
     ids: &mut impl IdSource,
 ) -> Result<RestoreReport, RestoreFailure> {
-    let work = work_folder(&input.places.folder, "restore").map_err(early)?;
+    let work = new_folder(&input.places.folder, "restore").map_err(early)?;
     let result = run(&input, ids, &work).await;
     let _ = std::fs::remove_dir_all(&work);
     result
@@ -309,7 +310,7 @@ pub(crate) async fn put_back_before_upgrade(
     now: Timestamp,
 ) -> Result<(), StoreError> {
     let target = RestoreTarget::of(database.clone()).await;
-    let work = work_folder(&places.folder, "restore")?;
+    let work = new_folder(&places.folder, "restore")?;
     let result = put_back_checked(archive, &target, places, now, &work).await;
     let _ = std::fs::remove_dir_all(&work);
     result

@@ -32,6 +32,9 @@ const MEMBER_MODE: u32 = 0o600;
 pub(crate) struct Source {
     pub(crate) name: MemberName,
     pub(crate) path: PathBuf,
+    /// Its size and SHA-256 when the writer of the file counted them already (the copy of
+    /// PostgreSQL), so a large file is not read once more only to count them.
+    pub(crate) measured: Option<(u64, Digest)>,
 }
 
 fn io(error: std::io::Error) -> StoreError {
@@ -43,14 +46,14 @@ fn refused(problem: BackupProblem) -> StoreError {
 }
 
 /// A writer that counts and hashes what goes through it.
-struct Counting<W> {
+pub(crate) struct Counting<W> {
     inner: W,
     hasher: Sha256,
     size: u64,
 }
 
 impl<W> Counting<W> {
-    fn new(inner: W) -> Self {
+    pub(crate) fn new(inner: W) -> Self {
         Self {
             inner,
             hasher: Sha256::new(),
@@ -58,7 +61,7 @@ impl<W> Counting<W> {
         }
     }
 
-    fn finish(self) -> (W, u64, Digest) {
+    pub(crate) fn finish(self) -> (W, u64, Digest) {
         (
             self.inner,
             self.size,
@@ -122,7 +125,10 @@ pub(crate) fn write(
     manifest.members = sources
         .iter()
         .map(|source| {
-            let (size, digest) = measure(&source.path)?;
+            let (size, digest) = match source.measured {
+                Some(measured) => measured,
+                None => measure(&source.path)?,
+            };
             Ok(Member::new(&source.name, size, &digest))
         })
         .collect::<Result<_, StoreError>>()?;

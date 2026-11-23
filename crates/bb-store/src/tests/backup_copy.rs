@@ -10,7 +10,7 @@ use super::*;
 /// A copy of the backup at `archive` with its copy of the database changed by `change`, at
 /// `into`: every member's size and checksum is counted again, and the copy is sealed with
 /// `keys` again, so only the change is wrong.
-fn changed_backup(
+pub(super) fn changed_backup(
     keys: &KeyRing,
     archive: &Path,
     into: &Path,
@@ -24,6 +24,7 @@ fn changed_backup(
         sources.push(archive::Source {
             path: archive::extracted(work.path(), &name),
             name,
+            measured: None,
         });
     }
     let database = archive::extracted(

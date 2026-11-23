@@ -39,10 +39,12 @@ fn written(folder: &Path) -> PathBuf {
         Source {
             name: MemberName::parse(member::DATABASE_SQLITE).unwrap(),
             path: database,
+            measured: None,
         },
         Source {
             name: MemberName::of_file("content/ab/abcd").unwrap(),
             path: file,
+            measured: None,
         },
     ];
     write(&archive, &mut manifest(), &sources, &keys(folder)).unwrap();

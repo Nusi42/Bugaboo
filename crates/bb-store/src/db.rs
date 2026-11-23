@@ -12,6 +12,7 @@ use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 
 use bb_core::event::DomainEvent;
+use futures_util::{Stream, TryStreamExt as _};
 use sea_query::{
     Func, PostgresQueryBuilder, SchemaStatementBuilder, SelectStatement, SqliteQueryBuilder,
 };
@@ -574,6 +575,40 @@ impl Transaction {
         statement: impl Into<Statement<'a>>,
     ) -> Result<Option<Row>, StoreError> {
         Ok(self.fetch_all(statement).await?.into_iter().next())
+    }
+
+    /// The rows of a query of PostgreSQL as the database sends them, inside the transaction, so a
+    /// table of any size is read in one statement and never held in memory whole (the copy of a
+    /// backup, ADR-0046). The database waits while the rows are not taken.
+    pub(crate) fn stream_rows(
+        &mut self,
+        statement: &SelectStatement,
+    ) -> Result<impl Stream<Item = Result<Row, StoreError>> + Send + '_, StoreError> {
+        let statement = Statement::from(statement);
+        self.statements.record(&statement, self.dialect());
+        let TxInner::Postgres(transaction) = &mut self.inner else {
+            return Err(StoreError::UnsupportedDatabase);
+        };
+        let (sql, values) = statement.build(Dialect::Postgres);
+        Ok(sqlx::query_with(AssertSqlSafe(sql), values)
+            .fetch(&mut **transaction)
+            .map_ok(Row::Postgres)
+            .map_err(StoreError::from))
+    }
+
+    /// Lifts the limits of time that the role or the database of PostgreSQL may set
+    /// (`statement_timeout`, `idle_in_transaction_session_timeout`) for this transaction alone:
+    /// the copy of a backup reads each table in one statement, which takes as long as the table
+    /// is large, and waits for the disk between pieces (ADR-0046). SQLite sets none.
+    pub(crate) async fn without_time_limits(&mut self) -> Result<(), StoreError> {
+        if let TxInner::Postgres(transaction) = &mut self.inner {
+            sqlx::query(
+                "SELECT set_config('statement_timeout', '0', true),                  set_config('idle_in_transaction_session_timeout', '0', true)",
+            )
+            .execute(&mut **transaction)
+            .await?;
+        }
+        Ok(())
     }
 
     /// Takes a lock that lasts until the end of the transaction, so processes that do the same

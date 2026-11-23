@@ -717,6 +717,7 @@ dependencies = [
  "bb-searchlang",
  "bb-testing",
  "chacha20poly1305",
+ "futures-util",
  "getrandom 0.4.3",
  "hmac 0.13.0",
  "jiff",
