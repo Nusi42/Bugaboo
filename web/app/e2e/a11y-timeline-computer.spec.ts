@@ -5,6 +5,7 @@ import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { openPlan, planned, prepareTimeline, pressOf } from "./support/timeline.ts";
+import { besideTheNames, scrollUnderTheNames } from "./support/timeline-edge.ts";
 
 // The accessibility suite for the timeline on a computer (TEST-A11Y, UX §4.7): the chart, the card
 // of a selected bar and the window *Set dates…*, each reached with the keyboard only, in the four
@@ -32,4 +33,18 @@ test("a11y the timeline and the card of a bar, with the keyboard only", async ({
   await expectGoodInEveryLook(page);
   await page.keyboard.press("Escape");
   await expect(window).toBeHidden();
+});
+
+test("a11y a bar that takes the focus under the names of the rows comes out beside them", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await openPlan(page);
+  const bar = pressOf(page, planned.found);
+  // The chart scrolled sideways so far that the bar stands under the names of the rows, which stay in place.
+  await scrollUnderTheNames(bar);
+  await expect.poll(() => besideTheNames(bar)).toBe(false);
+  // Focused, it is scrolled out from under them (WCAG 2.4.11).
+  await bar.focus();
+  await expect.poll(() => besideTheNames(bar)).toBe(true);
 });

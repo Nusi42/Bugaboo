@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 /**
  * What the edge of the days on screen cuts on the chart (UX §4.7): the label of a bar that is on
@@ -62,4 +62,26 @@ export async function scrollAUnitInPartUnderTheNames(page: Page): Promise<void> 
       }
     }
   }, UNDER_THE_NAMES_PX);
+}
+
+/** Scrolls the chart sideways until this element starts at the start of its box: under the names of the rows. */
+export async function scrollUnderTheNames(element: Locator): Promise<void> {
+  await element.evaluate((inner) => {
+    const box = inner.closest('[data-part="timeline-scroll"]');
+    box?.scrollBy({ left: inner.getBoundingClientRect().left - box.getBoundingClientRect().left });
+  });
+}
+
+/** Whether this element of the chart starts where the names of the rows end, or after: none of it is under them. */
+export function besideTheNames(element: Locator): Promise<boolean> {
+  return element.evaluate((inner) => {
+    const names = inner
+      .closest('[data-part="timeline-scroll"]')
+      ?.querySelector('[data-part="timeline-head.corner"]');
+    return (
+      names !== null &&
+      names !== undefined &&
+      inner.getBoundingClientRect().left >= names.getBoundingClientRect().right
+    );
+  });
 }

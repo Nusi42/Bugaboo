@@ -3467,11 +3467,14 @@ part "timeline-body" {
 }
 
 // The chart takes all the room its column has, also below its last row: the box ends where the side ends (UX §6.5).
+// What the keyboard brings into view stops beside the names of the rows, which stay at the start of the box: a focused
+// bar is never hidden under them (WCAG 2.4.11).
 part "timeline-scroll" {
     position relative
     flex "1 1 auto"
     min-height "$size-list-scroll-least"
     overflow auto
+    scroll-padding-inline-start "$size-timeline-names"
     border "$border-width solid $border"
     border-radius "$r-card"
     background "$bg-raised"
