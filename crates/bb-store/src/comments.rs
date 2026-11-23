@@ -18,9 +18,57 @@ use crate::db::{Row, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
 use crate::keeping::{delete_events, events_about};
 use crate::schema::{
-    AttachmentRow, CommentRow, CommentVersionRow, MentionRow, NotificationRow, TextMarkRow,
-    UploadRow,
+    AttachmentRow, CommentRow, CommentVersionRow, MentionRow, NotificationRow, RemovalPendingRow,
+    TextMarkRow, UploadRow,
 };
+
+/// The IDs of the comments in the trash: no search finds one, also while the full-text index
+/// still holds its rows (the change of a removal puts every comment that goes into the trash at
+/// once, [`hide_comments_of`], and the index forgets them as its job deletes them). The index of
+/// migration 64 answers it.
+pub(crate) fn trashed_comments() -> SelectStatement {
+    let mut select = Query::select();
+    select
+        .column(CommentRow::Id)
+        .from(CommentRow::Table)
+        .and_where(Expr::col(CommentRow::DeletedAt).is_not_null());
+    select
+}
+
+/// The IDs of the comments that go with a removal that is not finished (ADR-0044, decision 6):
+/// they stay in the trash, where the change of the removal put them, until its job deletes them.
+fn going_comments() -> SelectStatement {
+    let mut select = Query::select();
+    select
+        .column((CommentRow::Table, CommentRow::Id))
+        .from(CommentRow::Table)
+        .inner_join(
+            RemovalPendingRow::Table,
+            Expr::col((RemovalPendingRow::Table, RemovalPendingRow::Person))
+                .equals((CommentRow::Table, CommentRow::Author)),
+        )
+        .and_where(Expr::col((RemovalPendingRow::Table, RemovalPendingRow::CommentsGo)).eq(true));
+    select
+}
+
+/// Puts every comment of `author` that is not in the trash into it at `at` (the change of a
+/// removal whose comments go); how many. One statement through the index of the author.
+///
+/// # Errors
+/// Fails when the database fails.
+pub(crate) async fn hide_comments_of(
+    transaction: &mut Transaction,
+    author: UserId,
+    at: Timestamp,
+) -> Result<u64, StoreError> {
+    let mut update = Query::update();
+    update
+        .table(CommentRow::Table)
+        .value(CommentRow::DeletedAt, to_micros(at))
+        .and_where(Expr::col(CommentRow::Author).eq(author.stored()))
+        .and_where(Expr::col(CommentRow::DeletedAt).is_null());
+    transaction.execute(&update).await
+}
 
 fn comment_select() -> SelectStatement {
     let mut select = Query::select();
@@ -237,6 +285,10 @@ impl CommentStore for AuthStorage {
         } else {
             Expr::col(CommentRow::DeletedAt).is_not_null()
         });
+        // A comment that goes with a removal stays in the trash until the removal deletes it.
+        if deleted_at.is_none() {
+            update.and_where(Expr::col(CommentRow::Id).not_in_subquery(going_comments()));
+        }
         Ok(transaction.execute(&update).await? > 0)
     }
 
@@ -301,12 +353,14 @@ impl CommentStore for AuthStorage {
     async fn delete_comments_of(
         transaction: &mut Transaction,
         author: UserId,
+        limit: u64,
     ) -> Result<Vec<(CommentId, IssueId)>, StoreError> {
         let mut held = Query::select();
         held.columns([CommentRow::Id, CommentRow::Issue])
             .from(CommentRow::Table)
             .and_where(Expr::col(CommentRow::Author).eq(author.stored()))
-            .order_by(CommentRow::Id, Order::Asc);
+            .order_by(CommentRow::Id, Order::Asc)
+            .limit(limit);
         let mut gone = Vec::new();
         for row in transaction.fetch_all(&held).await? {
             gone.push((
@@ -317,12 +371,14 @@ impl CommentStore for AuthStorage {
         if gone.is_empty() {
             return Ok(gone);
         }
+        // The comments of this call, by their IDs: the author may have more than `limit`.
+        let ids: Vec<Vec<u8>> = gone.iter().map(|(comment, _)| comment.stored()).collect();
         let comments = || {
             let mut select = Query::select();
             select
                 .column(CommentRow::Id)
                 .from(CommentRow::Table)
-                .and_where(Expr::col(CommentRow::Author).eq(author.stored()));
+                .and_where(Expr::col(CommentRow::Id).is_in(ids.clone()));
             select
         };
         // A file stays with its issue when the comment it came with goes.

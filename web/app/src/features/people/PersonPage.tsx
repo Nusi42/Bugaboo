@@ -32,7 +32,7 @@ export function PersonPage({ id }: { readonly id: string }) {
   const former = person?.shown === "former" ? person.code : undefined;
   const shown =
     found.data !== undefined && (line !== undefined || former !== undefined)
-      ? { line, former, since: found.data.created_at }
+      ? { line, former, since: found.data.created_at, removing: found.data.removing }
       : undefined;
   const title = found.data === undefined ? undefined : pageNameOf(found.data.person);
   usePageTitle(title ?? t("nav.people"));
@@ -43,7 +43,7 @@ export function PersonPage({ id }: { readonly id: string }) {
         <div {...partOf(part.stack)}>
           <PersonHead name={title ?? ""}>
             {page.line === undefined ? (
-              <FormerPerson code={page.former ?? ""} />
+              <FormerPerson code={page.former ?? ""} removing={page.removing} />
             ) : (
               <Facts line={page.line} since={page.since} />
             )}

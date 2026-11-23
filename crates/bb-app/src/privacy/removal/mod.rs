@@ -7,8 +7,9 @@ mod plan;
 mod store;
 
 pub use change::{
-    NotPrepared, Removal, RemovePerson, Removed, prepare_removal, remove_in, remove_person,
+    NotPrepared, Removal, RemovePerson, Removed, SealedWords, prepare_removal, remove_in,
+    remove_person,
 };
-pub use finish::{FINISH_REMOVAL_ISSUES, FinishRemoval};
+pub use finish::{EarlierFinish, FINISH_REMOVAL_COMMENTS, FinishRemoval, FinishStep};
 pub use plan::{KeptByLaw, PlanKind, RemovalPlan, RemovalPlanQuery, removal_plan};
-pub use store::{NAME_LETTERS_MIN, PersonWords, RemovalStore, Scrub};
+pub use store::{NAME_LETTERS_MIN, PersonWords, RemovalStore, Scrub, ScrubPlace, ScrubbedTable};

@@ -78,6 +78,7 @@ mod offers_http;
 mod removal_http;
 mod removal_others_http;
 mod removal_plan_http;
+mod removal_steps_http;
 mod rules_hand_over_http;
 mod switch_off_http;
 mod themes_http;

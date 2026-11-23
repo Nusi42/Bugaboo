@@ -5776,6 +5776,9 @@ pub const PERSON_REASON_HELP: MessageKey = MessageKey::new("person.reason-help")
 /// The message `person.remove`.
 pub const PERSON_REMOVE: MessageKey = MessageKey::new("person.remove");
 
+/// The message `person.removing-title`.
+pub const PERSON_REMOVING_TITLE: MessageKey = MessageKey::new("person.removing-title");
+
 /// The message `person.roles`.
 pub const PERSON_ROLES: MessageKey = MessageKey::new("person.roles");
 
@@ -6953,6 +6956,30 @@ pub const PERSONAL_FIELD_PASSWORD_LOGIN_HASH: MessageKey =
 pub const PERSONAL_FIELD_PASSWORD_LOGIN_PERSON: MessageKey =
     MessageKey::new("personal-field.password-login.person");
 
+/// The message `personal-field.pending-removal.comments-go`.
+pub const PERSONAL_FIELD_PENDING_REMOVAL_COMMENTS_GO: MessageKey =
+    MessageKey::new("personal-field.pending-removal.comments-go");
+
+/// The message `personal-field.pending-removal.created-at`.
+pub const PERSONAL_FIELD_PENDING_REMOVAL_CREATED_AT: MessageKey =
+    MessageKey::new("personal-field.pending-removal.created-at");
+
+/// The message `personal-field.pending-removal.job`.
+pub const PERSONAL_FIELD_PENDING_REMOVAL_JOB: MessageKey =
+    MessageKey::new("personal-field.pending-removal.job");
+
+/// The message `personal-field.pending-removal.person`.
+pub const PERSONAL_FIELD_PENDING_REMOVAL_PERSON: MessageKey =
+    MessageKey::new("personal-field.pending-removal.person");
+
+/// The message `personal-field.pending-removal.step`.
+pub const PERSONAL_FIELD_PENDING_REMOVAL_STEP: MessageKey =
+    MessageKey::new("personal-field.pending-removal.step");
+
+/// The message `personal-field.pending-removal.updated-at`.
+pub const PERSONAL_FIELD_PENDING_REMOVAL_UPDATED_AT: MessageKey =
+    MessageKey::new("personal-field.pending-removal.updated-at");
+
 /// The message `personal-field.person-handle.changed-at`.
 pub const PERSONAL_FIELD_PERSON_HANDLE_CHANGED_AT: MessageKey =
     MessageKey::new("personal-field.person-handle.changed-at");
@@ -7758,6 +7785,10 @@ pub const PERSONAL_KIND_OWN_THEME: MessageKey = MessageKey::new("personal-kind.o
 /// The message `personal-kind.password-login`.
 pub const PERSONAL_KIND_PASSWORD_LOGIN: MessageKey =
     MessageKey::new("personal-kind.password-login");
+
+/// The message `personal-kind.pending-removal`.
+pub const PERSONAL_KIND_PENDING_REMOVAL: MessageKey =
+    MessageKey::new("personal-kind.pending-removal");
 
 /// The message `personal-kind.person`.
 pub const PERSONAL_KIND_PERSON: MessageKey = MessageKey::new("personal-kind.person");
@@ -9404,6 +9435,13 @@ pub const SERVER_STATUS_LOG: MessageKey = MessageKey::new("server-status.log");
 
 /// The message `server-status.refresh`.
 pub const SERVER_STATUS_REFRESH: MessageKey = MessageKey::new("server-status.refresh");
+
+/// The message `server-status.removals`.
+pub const SERVER_STATUS_REMOVALS: MessageKey = MessageKey::new("server-status.removals");
+
+/// The message `server-status.removals.none-stopped`.
+pub const SERVER_STATUS_REMOVALS_NONE_STOPPED: MessageKey =
+    MessageKey::new("server-status.removals.none-stopped");
 
 /// The message `server-status.running`.
 pub const SERVER_STATUS_RUNNING: MessageKey = MessageKey::new("server-status.running");
@@ -19454,6 +19492,15 @@ pub fn person_groups_none(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `person.removing-text`.
+#[must_use]
+pub fn person_removing_text(label: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("person.removing-text"),
+        vec![("label", Value::Text(label.to_string()))],
+    )
+}
+
 /// The message `person.role`.
 #[must_use]
 pub fn person_role(role: impl std::fmt::Display) -> Message {
@@ -22266,6 +22313,15 @@ pub fn server_status_certificate_valid(values: ServerStatusCertificateValid<'_>)
 pub fn server_status_log_failures(count: i64) -> Message {
     Message::with_arguments(
         MessageKey::new("server-status.log-failures"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `server-status.removals.stopped`.
+#[must_use]
+pub fn server_status_removals_stopped(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("server-status.removals.stopped"),
         vec![("count", Value::Number(count))],
     )
 }

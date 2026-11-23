@@ -1,8 +1,9 @@
 //! *Remove a person* against the in-memory store (PRIV-04, ADR-0044, decisions 6 to 8): only a
-//! switched-off person is removed, and only once; the person becomes a tombstone with a label and
-//! no name or address; the changes are scrubbed of their records and values; the comments go only
-//! when asked; and the line of the replay list waits after the change. A replay needs no
-//! switch-off and leaves a removed person as they are.
+//! switched-off person is removed, and only once; the change records the decision and queues the
+//! job that finishes it, step by step and again after a restart; the person becomes a tombstone
+//! with a label and, once the job is done, no name or address; the changes are scrubbed of their
+//! records and values; the comments go only when asked; and the line of the replay list waits
+//! after the change. A replay needs no switch-off and leaves a removed person as they are.
 
 use bb_core::ErrorCode;
 use bb_core::backup::replay::{self, ReplayKind};
@@ -19,12 +20,12 @@ use crate::auth::AppError;
 use crate::people::{SwitchOn, switch_on};
 use crate::ports::ChangeStore as _;
 use crate::privacy::removal::{
-    FinishRemoval, Removal, RemovePerson, Removed, remove_in, remove_person,
+    FinishRemoval, FinishStep, Removal, RemovePerson, Removed, remove_in, remove_person,
 };
 use crate::privacy::replay::Asked;
 
 /// The administrator removes `person`, with `comments` or the setting's choice.
-async fn removed(
+pub(super) async fn removed(
     world: &World,
     person: UserId,
     comments: Option<RemovedTexts>,
@@ -89,7 +90,11 @@ fn comment(ids: &mut impl IdSource, issue: IssueId, author: UserId) -> Comment {
 }
 
 /// Bob and Ada each wrote a comment on one issue.
-fn two_comments(world: &World, ids: &mut SequentialIds, bob: UserId) -> Result<(), String> {
+pub(super) fn two_comments(
+    world: &World,
+    ids: &mut SequentialIds,
+    bob: UserId,
+) -> Result<(), String> {
     let issue = IssueId::generate(ids).map_err(text)?;
     let ada = world.admin.person.id;
     let mut shared = world.store.lock();
@@ -136,17 +141,46 @@ async fn priv_04_only_a_switched_off_person_is_removed_and_only_once() -> Outcom
     Ok(())
 }
 
+/// Whether Bugaboo still removes what was `person`'s, as the page of the person says it.
+pub(super) async fn removing(world: &World, person: UserId) -> Result<bool, AppError> {
+    crate::people::person(
+        &world.ctx(),
+        crate::people::PersonQuery {
+            session_token: token(world),
+            person,
+        },
+    )
+    .await
+    .map(|found| found.into_value().removing)
+}
+
 #[tokio::test]
 async fn priv_04_a_removed_person_is_a_tombstone_with_no_name_or_address() -> Outcome {
     let world = World::new().await?;
     let bob = world.person("bob@example.test").await?.person.id;
     switched_off(&world, bob).await?;
     removed(&world, bob, None).await?;
-    let (person, standing, scrubs) = world.store.read(|state| {
+    // The change answers at once: the account is closed, and the job goes on with the rest.
+    assert!(
+        removing(&world, bob).await?,
+        "removing… until the job is done"
+    );
+    let scrubs = world.store.read(|state| state.scrubs.clone());
+    // The change scrubs the changes about the person's records, through them, before they go.
+    let first = &scrubs.first().ok_or("the changes are scrubbed")?.1;
+    assert!(first.kinds.contains(&RecordKind::Person));
+    assert!(first.kinds.contains(&RecordKind::AccessKey));
+    assert!(!first.kinds.contains(&RecordKind::SavedSearch));
+    assert!(!first.kinds.contains(&RecordKind::WorkDay));
+    assert!(!first.records.is_empty());
+    assert!(first.names.is_empty(), "the words are the job's");
+    super::data_exports::run_jobs(&world).await?;
+    assert!(!removing(&world, bob).await?);
+    let (person, standing, words) = world.store.read(|state| {
         (
             state.people.iter().find(|(p, _)| p.id == bob).cloned(),
             state.standings.iter().find(|s| s.person == bob).cloned(),
-            state.scrubs.clone(),
+            state.word_scrubs.clone(),
         )
     });
     let (person, _) = person.ok_or("Bob's record stays")?;
@@ -157,15 +191,83 @@ async fn priv_04_a_removed_person_is_a_tombstone_with_no_name_or_address() -> Ou
     assert_eq!(person.email, bb_core::person::cleared_address(&label));
     // No work days: no legal hold.
     assert_eq!(standing.hold_name, None);
-    // The changes are scrubbed of the person's records, their settings, name and address.
-    let first = &scrubs.first().ok_or("the changes are scrubbed")?.1;
-    assert!(first.kinds.contains(&RecordKind::Person));
-    assert!(first.kinds.contains(&RecordKind::AccessKey));
-    assert!(!first.kinds.contains(&RecordKind::SavedSearch));
-    assert!(!first.kinds.contains(&RecordKind::WorkDay));
-    assert!(!first.records.is_empty());
-    assert!(first.names.contains(&"Bob Builder".to_owned()));
-    assert!(first.addresses.contains(&"bob@example.test".to_owned()));
+    // The job scrubbed every table of his name and address, a table a step here.
+    let tables: Vec<_> = words.iter().map(|(_, place)| place.table).collect();
+    assert_eq!(
+        tables,
+        crate::privacy::removal::ScrubbedTable::ALL.to_vec(),
+        "each table once"
+    );
+    let (scrub, _) = words.first().ok_or("the words are scrubbed")?;
+    assert!(scrub.names.contains(&"Bob Builder".to_owned()));
+    assert!(scrub.addresses.contains(&"bob@example.test".to_owned()));
+    Ok(())
+}
+
+/// The row of the removal of `person` that is not finished.
+pub(super) fn pending_of(
+    world: &World,
+    person: UserId,
+) -> Option<bb_core::removal::PendingRemoval> {
+    world.store.read(|state| {
+        state
+            .pending_removals
+            .iter()
+            .find(|(pending, _)| pending.person == person)
+            .map(|(pending, _)| pending.clone())
+    })
+}
+
+/// The jobs that finish a removal and wait now, with their payloads.
+pub(super) fn finishing(world: &World) -> Vec<serde_json::Value> {
+    world.store.read(|state| {
+        state
+            .jobs
+            .iter()
+            .filter(|job| job.kind.as_str() == "privacy.finish-removal")
+            .map(|job| job.payload.clone())
+            .collect()
+    })
+}
+
+#[tokio::test]
+async fn priv_04_a_removal_goes_on_after_a_restart_from_its_last_step() -> Outcome {
+    let world = World::new().await?;
+    let bob = world.person("bob@example.test").await?.person.id;
+    switched_off(&world, bob).await?;
+    removed(&world, bob, None).await?;
+    // A round of the queue runs the one step that is due; the next waits with its place.
+    world.ctx().run_due_jobs().await.map_err(text)?;
+    world.ctx().run_due_jobs().await.map_err(text)?;
+    let [waiting] = finishing(&world)
+        .try_into()
+        .map_err(|left| format!("{left:?}"))?;
+    let left: FinishRemoval = serde_json::from_value(waiting.clone()).map_err(text)?;
+    assert!(matches!(left.step, FinishStep::Scrub(_)), "{left:?}");
+    assert!(removing(&world, bob).await?);
+    // The server stopped after it queued the next step but before it was done with this one: the
+    // step runs twice. Nothing is lost and nothing breaks; the person ends removed once.
+    {
+        let mut shared = world.store.lock();
+        let copy = shared
+            .state
+            .jobs
+            .iter()
+            .find(|job| job.kind.as_str() == "privacy.finish-removal")
+            .cloned()
+            .ok_or("the step waits")?;
+        let mut again = copy.clone();
+        again.id = bb_core::id::JobId::generate(&mut SequentialIds::default()).map_err(text)?;
+        shared.state.jobs.push(again);
+    }
+    super::data_exports::run_jobs(&world).await?;
+    assert!(!removing(&world, bob).await?);
+    assert!(finishing(&world).is_empty(), "nothing is left to do");
+    let compactions = world.store.read(|state| state.compactions);
+    assert!(
+        compactions >= 1,
+        "the old text is let go after the last step"
+    );
     Ok(())
 }
 
@@ -204,13 +306,22 @@ async fn priv_04_delete_their_comments_deletes_comments_and_nothing_else() -> Ou
     switched_off(&world, carol).await?;
     // Kept, shown as *Former user*.
     removed(&world, carol, Some(RemovedTexts::Keep)).await?;
+    super::data_exports::run_jobs(&world).await?;
     assert_eq!(comments_by(&world, carol), 1);
-    let gone = removed(&world, bob, Some(RemovedTexts::Delete)).await?;
-    assert_eq!(gone.comments.len(), 1);
-    assert_eq!(gone.issues.len(), 1);
+    removed(&world, bob, Some(RemovedTexts::Delete)).await?;
+    // The comments go in the job, which then lets the index forget them.
+    assert_eq!(comments_by(&world, bob), 1, "the change only queues it");
+    super::data_exports::run_jobs(&world).await?;
     assert_eq!(comments_by(&world, bob), 0);
     assert_eq!(comments_by(&world, carol), 1);
     assert_eq!(comments_by(&world, ada), 2);
+    let reindexed = world.store.read(|state| state.reindexed.clone());
+    assert!(
+        reindexed
+            .iter()
+            .any(|(issues, comments)| issues.len() == 1 && comments.len() == 1),
+        "{reindexed:?}"
+    );
     Ok(())
 }
 
@@ -219,16 +330,18 @@ async fn priv_04_a_replayed_removal_needs_no_switch_off_and_runs_once() -> Outco
     let world = World::new().await?;
     let bob = world.person("bob@example.test").await?.person.id;
     let ada = world.admin.person.id;
-    let removal = std::sync::Arc::new(Removal {
-        person: bob,
-        at: world.ctx().now(),
-        label: "K7Q2".to_owned(),
-        comments: RemovedTexts::Keep,
-        keep: world.ctx().setting_layers_of(None).await?,
-        today: jiff::civil::date(2026, 11, 19),
-        asked: Asked::ByReplay,
-        job: bb_core::id::JobId::generate(&mut SequentialIds::default()).map_err(text)?,
-    });
+    let removal = std::sync::Arc::new(
+        crate::privacy::removal::prepare_removal(
+            &world.store,
+            &mut SequentialIds::default(),
+            bob,
+            world.ctx().now(),
+            Some(RemovedTexts::Keep),
+            Asked::ByReplay,
+        )
+        .await
+        .map_err(|failure| format!("{failure:?}"))?,
+    );
     let event = world.ctx().event(
         crate::auth::by(ada),
         crate::auth::entity(RecordKind::Person, bob),
@@ -314,38 +427,25 @@ async fn priv_04_the_job_after_a_removal_forgets_the_texts_and_deletes_the_expor
     assert!(world.exports.bytes(export).is_some(), "the file is written");
     let mut ids = SequentialIds::default();
     two_comments(&world, &mut ids, bob)?;
-    let removed = removed(&world, bob, Some(RemovedTexts::Delete)).await?;
-    let waiting = world.store.read(|state| {
-        state
-            .jobs
-            .iter()
-            .filter(|job| job.kind.as_str() == "privacy.finish-removal")
-            .map(|job| job.payload.clone())
-            .collect::<Vec<_>>()
-    });
+    removed(&world, bob, Some(RemovedTexts::Delete)).await?;
+    let waiting = finishing(&world);
     let [payload] = waiting.as_slice() else {
         return Err(format!("one job finishes the removal: {waiting:?}").into());
     };
     let left: FinishRemoval = serde_json::from_value(payload.clone()).map_err(text)?;
-    assert_eq!(left.comments, removed.comments);
-    assert_eq!(left.issues, removed.issues);
-    assert_eq!(left.exports, vec![export]);
+    assert_eq!(left.person, bob);
+    assert_eq!(left.step, FinishStep::Files(vec![export]));
+    let pending = pending_of(&world, bob).ok_or("the removal is recorded as not finished")?;
+    assert!(pending.comments_go);
     super::data_exports::run_jobs(&world).await?;
     assert!(world.exports.bytes(export).is_none(), "the file is gone");
-    let (reindexed, compactions, left) = world.store.read(|state| {
-        (
-            state.reindexed.clone(),
-            state.compactions,
-            state
-                .jobs
-                .iter()
-                .filter(|job| job.kind.as_str() == "privacy.finish-removal")
-                .count(),
-        )
-    });
-    assert_eq!(reindexed, vec![(removed.issues, removed.comments)]);
+    let (reindexed, compactions) = world
+        .store
+        .read(|state| (state.reindexed.clone(), state.compactions));
+    let forgotten: usize = reindexed.iter().map(|(_, comments)| comments.len()).sum();
+    assert_eq!(forgotten, 1, "the index forgets his comment");
     assert_eq!(compactions, 1, "the old text is let go after the last step");
-    assert_eq!(left, 0);
+    assert!(finishing(&world).is_empty());
     Ok(())
 }
 
@@ -452,6 +552,7 @@ async fn priv_04_the_legal_hold_ends_with_the_keep_period_of_the_last_work_day()
             today,
             asked: prepared.asked,
             job: prepared.job,
+            words: prepared.words,
         });
         let event = world.ctx().event(
             crate::auth::by(ada),

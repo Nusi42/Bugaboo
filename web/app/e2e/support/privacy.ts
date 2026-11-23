@@ -1,6 +1,6 @@
 import { dataOf } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { expect, type Locator, type Page } from "@playwright/test";
+import { expect, type Locator, type Page, type Route } from "@playwright/test";
 
 import { personAddress } from "../../src/shared/paths.ts";
 import { lea, signedInAdmin } from "./access.ts";
@@ -97,4 +97,15 @@ export function stateCard(page: Page): Locator {
 /** The window of *Remove a person* for the person called `name`. */
 export function removalWindow(page: Page, name: string): Locator {
   return page.getByRole("dialog", { name: t("removal.title", { name }) });
+}
+
+/**
+ * Answers the page of a person as the server does, but with the removal still going on: the job of a removal is done in
+ * a moment on the small organization of a test, so a picture of *removing…* holds the answer.
+ */
+export async function stillRemoving(route: Route): Promise<void> {
+  const found = await route.fetch();
+  const body: unknown = await found.json();
+  const person = typeof body === "object" && body !== null ? body : {};
+  await route.fulfill({ response: found, json: { ...person, removing: true } });
 }

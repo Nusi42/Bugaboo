@@ -57,9 +57,10 @@ pub trait CommentStore: IssueStore + 'static {
         fn throw_away_comments(ids: &[CommentId]) -> ();
         /// Makes these the mentions of a comment: the ones that stay keep the date they were read.
         fn replace_mentions(comment: CommentId, mentions: &[Mention]) -> ();
-        /// Deletes every comment `author` wrote, in the trash or not, with its versions, mentions,
-        /// marks of text, events and what was made of them; a file attached to one stays with its
-        /// issue (ADR-0044, decision 7). The comments that went, each with its issue.
-        fn delete_comments_of(author: UserId) -> Vec<(CommentId, IssueId)>;
+        /// Deletes the first `limit` comments `author` wrote (oldest first), in the trash or not,
+        /// with their versions, mentions, marks of text, events and what was made of them; a file
+        /// attached to one stays with its issue (ADR-0044, decision 7). The comments that went,
+        /// each with its issue: fewer than `limit` when none is left.
+        fn delete_comments_of(author: UserId, limit: u64) -> Vec<(CommentId, IssueId)>;
     }
 }

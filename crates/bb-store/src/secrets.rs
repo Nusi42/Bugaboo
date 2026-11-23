@@ -182,49 +182,9 @@ impl Database {
         value: &[u8],
         now: Timestamp,
     ) -> Result<(), StoreError> {
-        let secret_key = Zeroizing::new(random_bytes::<KEY_LENGTH>()?);
-        let nonce = random_bytes::<NONCE_LENGTH>()?;
-        let wrapped_nonce = random_bytes::<NONCE_LENGTH>()?;
-        let secret = StoredSecret {
-            name: name.clone(),
-            key_id: master.id().clone(),
-            wrapped_key: seal(
-                master.bytes(),
-                &wrapped_nonce,
-                &context(KEY_LABEL, name, Some(master.id())),
-                secret_key.as_slice(),
-            )?,
-            wrapped_nonce: wrapped_nonce.to_vec(),
-            nonce: nonce.to_vec(),
-            ciphertext: seal(
-                &secret_key,
-                &nonce,
-                &context(VALUE_LABEL, name, None),
-                value,
-            )?,
-            updated_at: now,
-        };
+        let secret = sealed_secret(master, name, value, now)?;
         let mut transaction = self.begin().await?;
-        let mut delete = Query::delete();
-        delete
-            .from_table(Columns::Table)
-            .and_where(Expr::col(Columns::Name).eq(name.as_str()));
-        transaction.execute(&delete).await?;
-        let mut insert = Query::insert();
-        insert
-            .into_table(Columns::Table)
-            .columns(all_columns())
-            .values([
-                Expr::val(secret.name.as_str()),
-                Expr::val(secret.key_id.as_str()),
-                Expr::val(secret.wrapped_key.clone()),
-                Expr::val(secret.wrapped_nonce.clone()),
-                Expr::val(secret.nonce.clone()),
-                Expr::val(secret.ciphertext.clone()),
-                Expr::val(to_micros(secret.updated_at)),
-            ])
-            .map_err(|_| StoreError::Corrupt("a secret"))?;
-        transaction.execute(&insert).await?;
+        write_secret(&mut transaction, &secret).await?;
         transaction.commit().await
     }
 
@@ -390,6 +350,71 @@ impl Database {
             })
             .collect()
     }
+}
+
+/// `value` sealed as the secret `name`: encrypted with a fresh key of its own, which `master` wraps.
+/// The one sealing of a secret; [`write_secret`] stores it.
+///
+/// # Errors
+/// Fails when the system gives no secure random bytes.
+pub(crate) fn sealed_secret(
+    master: &MasterKey,
+    name: &TechnicalName,
+    value: &[u8],
+    now: Timestamp,
+) -> Result<StoredSecret, StoreError> {
+    let secret_key = Zeroizing::new(random_bytes::<KEY_LENGTH>()?);
+    let nonce = random_bytes::<NONCE_LENGTH>()?;
+    let wrapped_nonce = random_bytes::<NONCE_LENGTH>()?;
+    Ok(StoredSecret {
+        name: name.clone(),
+        key_id: master.id().clone(),
+        wrapped_key: seal(
+            master.bytes(),
+            &wrapped_nonce,
+            &context(KEY_LABEL, name, Some(master.id())),
+            secret_key.as_slice(),
+        )?,
+        wrapped_nonce: wrapped_nonce.to_vec(),
+        nonce: nonce.to_vec(),
+        ciphertext: seal(
+            &secret_key,
+            &nonce,
+            &context(VALUE_LABEL, name, None),
+            value,
+        )?,
+        updated_at: now,
+    })
+}
+
+/// Stores a sealed secret inside a change, replacing the one with the same name.
+///
+/// # Errors
+/// Fails when the database fails.
+pub(crate) async fn write_secret(
+    transaction: &mut Transaction,
+    secret: &StoredSecret,
+) -> Result<(), StoreError> {
+    let mut delete = Query::delete();
+    delete
+        .from_table(Columns::Table)
+        .and_where(Expr::col(Columns::Name).eq(secret.name.as_str()));
+    transaction.execute(&delete).await?;
+    let mut insert = Query::insert();
+    insert
+        .into_table(Columns::Table)
+        .columns(all_columns())
+        .values([
+            Expr::val(secret.name.as_str()),
+            Expr::val(secret.key_id.as_str()),
+            Expr::val(secret.wrapped_key.clone()),
+            Expr::val(secret.wrapped_nonce.clone()),
+            Expr::val(secret.nonce.clone()),
+            Expr::val(secret.ciphertext.clone()),
+            Expr::val(to_micros(secret.updated_at)),
+        ])
+        .map_err(|_| StoreError::Corrupt("a secret"))?;
+    transaction.execute(&insert).await.map(|_| ())
 }
 
 /// Wraps the key of `secret` with `newest`, but only if the row is still exactly the one that was

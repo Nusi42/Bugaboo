@@ -6,6 +6,7 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use bb_app::agent_work::Pause;
 use bb_app::backups::{BackupFile, BackupFiles, KeepLease};
 use bb_app::ports::BoxFuture;
 use bb_core::backup::name::{BackupName, Purpose};
@@ -74,24 +75,13 @@ async fn on_disk<T: Send + 'static>(
         .map_err(|error| plain(&error))
 }
 
-/// Runs `work` while the lease of its job is renewed every `keep.every`; stops it (drops it, and
-/// with it its work folder) when another worker holds the job now.
-async fn while_kept<T>(work: impl Future<Output = T>, keep: KeepLease<'_>) -> std::io::Result<T> {
-    let mut renewals = tokio::time::interval(keep.every);
-    // The first tick comes at once; the lease was taken just now.
-    renewals.tick().await;
-    tokio::pin!(work);
-    loop {
-        tokio::select! {
-            done = &mut work => return Ok(done),
-            _ = renewals.tick() => {
-                if !(keep.renew)().await {
-                    return Err(std::io::Error::other(
-                        "another worker holds the job of the backup now",
-                    ));
-                }
-            }
-        }
+/// How time passes for the work of the server: the timer of its runtime (a backup that keeps the
+/// lease of its job, *Wait for work*).
+pub struct RuntimePause;
+
+impl Pause for RuntimePause {
+    fn pause(&self, length: std::time::Duration) -> BoxFuture<'static, ()> {
+        Box::pin(tokio::time::sleep(length))
     }
 }
 
@@ -121,7 +111,11 @@ impl BackupFiles for FolderBackups {
             // Boxed: the backup holds the state of the copy across many awaits.
             let made = Box::pin(self.database.create_backup(&places, purpose, now));
             let made = match keep {
-                Some(keep) => while_kept(made, keep).await?,
+                // Stopped (dropped, and with it its work folder) when another worker holds the
+                // job now.
+                Some(keep) => keep.while_kept(made, &RuntimePause).await.ok_or_else(|| {
+                    std::io::Error::other("another worker holds the job of the backup now")
+                })?,
                 None => made.await,
             };
             made.map(|created| created.file)

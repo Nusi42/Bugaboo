@@ -638,6 +638,7 @@ export interface MessageArguments {
   "person.former-inside": { label: string | number };
   "person.former-text": { label: string | number };
   "person.groups-none": { name: string | number };
+  "person.removing-text": { label: string | number };
   "person.role": { role: string | number };
   "person.role-inside": { role: string | number };
   "person.roles-none": { name: string | number };
@@ -865,6 +866,7 @@ export interface MessageArguments {
   "server-status.certificate.soon": { date: string | number; days: number };
   "server-status.certificate.valid": { date: string | number; days: number };
   "server-status.log-failures": { count: number };
+  "server-status.removals.stopped": { count: number };
   "server-status.started": { when: string | number };
   "server-status.uptime": { days: number; hours: number; minutes: number };
   "sessions.device": { browser: string | number; system: string | number };

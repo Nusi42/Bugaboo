@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   certificateDays,
+  hasStoppedRemovals,
   hasWriteFailures,
   isUnanchored,
   levelOf,
@@ -42,12 +43,20 @@ function healthy(): State {
       setup_code_file: "private",
     },
     host_open: { program: "private", settings_file: "private", tls_key: "private" },
+    removals_stopped: 0,
   };
 }
 
 describe("ops_08 how serious the state of the server is", () => {
   it("is fine when everything is fine", () => {
     expect(levelOf(healthy(), NOW)).toBe("ok");
+  });
+
+  it("priv_04 asks for a look while a removal of a person has stopped", () => {
+    const stopped: State = { ...healthy(), removals_stopped: 1 };
+    expect(hasStoppedRemovals(stopped)).toBe(true);
+    expect(levelOf(stopped, NOW)).toBe("warning");
+    expect(hasStoppedRemovals(healthy())).toBe(false);
   });
 
   it("asks for a look when the certificate ends soon, or nothing vouches for the log", () => {

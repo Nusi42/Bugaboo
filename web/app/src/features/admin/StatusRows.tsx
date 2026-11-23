@@ -7,6 +7,7 @@ import { daysUntil, formatDate, formatDateTime, splitUptime } from "../../shared
 import { LogStatus } from "./LogStatus.tsx";
 import {
   CERTIFICATE_WARNING_DAYS,
+  hasStoppedRemovals,
   type HostPart,
   openHostParts,
   openParts,
@@ -140,6 +141,17 @@ function HostRights({ open }: { readonly open: State["host_open"] }) {
   );
 }
 
+/** Whether removals of people stopped before they were finished (ADR-0044, decision 6). */
+function Removals({ state }: { readonly state: State }) {
+  return hasStoppedRemovals(state) ? (
+    <Alert tone={alertTone.warning}>
+      {t("server-status.removals.stopped", { count: state.removals_stopped })}
+    </Alert>
+  ) : (
+    <span>{t("server-status.removals.none-stopped")}</span>
+  );
+}
+
 /** The facts of the server: version, running time, database, certificate and security log. */
 export function StatusRows({ state }: { readonly state: State }) {
   return (
@@ -181,6 +193,9 @@ export function StatusRows({ state }: { readonly state: State }) {
       </Fact>
       <Fact term={t("server-status.host")}>
         <HostRights open={state.host_open} />
+      </Fact>
+      <Fact term={t("server-status.removals")}>
+        <Removals state={state} />
       </Fact>
     </dl>
   );

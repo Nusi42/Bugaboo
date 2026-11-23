@@ -58,9 +58,12 @@ export const messages = {
   "person.former-title": "This person was removed",
   "person.former-text":
     "Their account is deleted. Their work still reads everywhere, shown as {label}.",
+  "person.removing-title": "Bugaboo is removing this person",
+  "person.removing-text":
+    "Their account is closed and their work shows as {label} everywhere. Bugaboo is still taking their name out of the history; this page changes when it is done.",
   "removal.title": "Remove {name}",
   "removal.intro":
-    "Removing a person is final and cannot be undone. Bugaboo does it in one change, as this window says.",
+    "Removing a person is final and cannot be undone. Their account closes at once; then Bugaboo takes their name out of the history, which takes a few minutes in a large organization.",
   "removal.deleted-now": "Deleted now",
   "removal.stays": "Stays, shown as Former user",
   "removal.kept-by-law": "Kept by law, with the name, for the people who may see it",

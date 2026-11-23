@@ -492,3 +492,8 @@ reason = "How many changes an undo of the agent's own run put back: only the per
 route = "GET /api/v1/issues/{issue}/history"
 property = "count"
 reason = "Counts only comments the reader may see: the comments an agent wrote on this issue in a run that was undone, which every reader of the issue's history saw before they were thrown away; the row names no text of them (ADR-0029, amendment M9)."
+
+[[exempt]]
+route = "GET /api/v1/admin/status"
+property = "removals_stopped"
+reason = "The number of removals of people whose job stopped, shown only to people with See how the server is doing; it names nobody and counts work of the server, not records the viewer could not see (ADR-0044, decision 6)."

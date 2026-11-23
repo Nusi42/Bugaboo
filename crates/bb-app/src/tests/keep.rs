@@ -231,7 +231,7 @@ fn priv_05_every_kind_of_data_has_one_row_and_one_group() {
             }
         }
     }
-    // A daily job without a row deletes nothing past a keep period: these three only.
+    // A daily job without a row deletes nothing past a keep period: these four only.
     let without_rows: BTreeSet<_> = JobKind::daily()
         .filter(|kind| kind.keeps().is_empty())
         .collect();
@@ -241,6 +241,7 @@ fn priv_05_every_kind_of_data_has_one_row_and_one_group() {
             JobKind::CatchUpHistory,
             JobKind::RefreshStatistics,
             JobKind::RotateServerLog,
+            JobKind::ResumeRemovals,
         ])
     );
 }

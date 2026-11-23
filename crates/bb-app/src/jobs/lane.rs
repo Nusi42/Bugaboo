@@ -1,7 +1,7 @@
 //! The two lanes of the queue (ADR-0017, amendment of 2026-11-22): a preview, the file of
-//! *Download my data* and the daily backup may take seconds or minutes each, so they are taken
-//! apart from everything else, and an e-mail, a step of an agent, a removal or a clean-up never
-//! waits behind them. The runner works both lanes side by side.
+//! *Download my data*, the daily backup and the thousands of steps that finish a removal may take
+//! seconds or minutes in all, so they are taken apart from everything else, and an e-mail, a step
+//! of an agent or a clean-up never waits behind them. The runner works both lanes side by side.
 
 use bb_core::id::JobId;
 use bb_core::job::FailureOutcome;
@@ -16,7 +16,7 @@ pub enum Lane {
     /// The jobs that are done in a moment: e-mail, agents, privacy, keep periods, steps of many
     /// changes. A kind that this program does not know runs here too, so it is reported.
     Short,
-    /// The jobs that may take long: previews, exports, backups.
+    /// The jobs that may take long: previews, exports, backups, the steps that finish a removal.
     Long,
 }
 
@@ -45,9 +45,11 @@ impl JobKind {
     #[must_use]
     pub const fn lane(self) -> Lane {
         match self {
-            Self::PreviewFile | Self::DataExport | Self::BackupsDaily | Self::BackupNow => {
-                Lane::Long
-            }
+            Self::PreviewFile
+            | Self::DataExport
+            | Self::BackupsDaily
+            | Self::BackupNow
+            | Self::FinishRemoval => Lane::Long,
             Self::ManyChangesStep
             | Self::RenewIds
             | Self::PurgeDrafts
@@ -68,8 +70,8 @@ impl JobKind {
             | Self::RuleAboutToRunOut
             | Self::RuleMatches
             | Self::RulesGetAnEnd
-            | Self::DeleteOldExports
-            | Self::FinishRemoval => Lane::Short,
+            | Self::ResumeRemovals
+            | Self::DeleteOldExports => Lane::Short,
         }
     }
 }
@@ -200,6 +202,7 @@ mod tests {
             JobKind::DataExport,
             JobKind::BackupsDaily,
             JobKind::BackupNow,
+            JobKind::FinishRemoval,
         ] {
             assert_eq!(slow.lane(), Lane::Long);
         }

@@ -146,11 +146,22 @@ export function Facts({ line, since }: { readonly line: PersonLine; readonly sin
  * What the page of a removed person says, in place of the facts (PRIV-04, ADR-0044, decision 6): the account is gone,
  * and the work still reads with the same label as everywhere.
  */
-export function FormerPerson({ code }: { readonly code: string }) {
+export function FormerPerson({
+  code,
+  removing,
+}: {
+  readonly code: string;
+  readonly removing: boolean;
+}) {
+  const label = formerName(code);
   return (
     <>
-      <p {...partOf(part.text)}>{t("person.former-title")}</p>
-      <p {...partOf(part.muted)}>{t("person.former-text", { label: formerName(code) })}</p>
+      <p {...partOf(part.text)}>
+        {removing ? t("person.removing-title") : t("person.former-title")}
+      </p>
+      <p {...partOf(part.muted)}>
+        {removing ? t("person.removing-text", { label }) : t("person.former-text", { label })}
+      </p>
     </>
   );
 }

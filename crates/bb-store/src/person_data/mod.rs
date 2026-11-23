@@ -289,20 +289,7 @@ const UNINDEXED_LINK: StoreError =
     StoreError::Corrupt("a link of a person into changes or JSON of a table without an index");
 
 /// The rows about a record of one of `kinds` that is `person` or belongs to them, as `whose` says
-/// for each kind.
-fn records_of_kinds(
-    all: &[StoredTable],
-    kinds: &[RecordKind],
-    kind_column: &Alias,
-    id_column: &Alias,
-    person: (UserId, Dialect),
-) -> Result<Cond, StoreError> {
-    Ok(record_parts(all, kinds, kind_column, id_column, person)?
-        .into_iter()
-        .fold(Cond::any(), Cond::add))
-}
-
-/// [`records_of_kinds`] in parts, one for each kind, which the index of the kind and the ID answers.
+/// for each kind: a part for each kind, which the index of the kind and the ID answers.
 fn record_parts(
     all: &[StoredTable],
     kinds: &[RecordKind],

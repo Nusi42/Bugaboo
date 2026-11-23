@@ -14,7 +14,7 @@ use bb_core::access::{AppliesTo, Assignment};
 use bb_core::id::{AssignmentId, GroupId, RoleId, UserId};
 use bb_core::paging::{Cut, page_len, read_len};
 use bb_core::people_kinds::PeopleKind;
-use bb_core::person::{KnownPerson, Person, Standing};
+use bb_core::person::{KnownPerson, Person, PersonStanding, Standing};
 use bb_policy::{
     Authorized, Evaluation, FormerUser, Masked, PeopleContext, Permission, PersonRef, Place,
     Target, resolve,
@@ -101,6 +101,9 @@ pub struct PersonDetail {
     pub line: PersonLine,
     /// When the account was made.
     pub created_at: Timestamp,
+    /// Whether Bugaboo still removes what was the person's: a removed person whose removal's job
+    /// has not finished yet (ADR-0044, decision 6). False for everybody else.
+    pub removing: bool,
 }
 
 impl Masked for PersonDetail {}
@@ -373,6 +376,13 @@ pub async fn person<S: AuthStore>(
             )
             .await?,
         created_at: found.person.created_at,
+        removing: found.standing.as_ref().is_some_and(PersonStanding::removed)
+            && ctx
+                .store()
+                .pending_removal(input.person)
+                .await
+                .map_err(|error| internal::<S>(&error))?
+                .is_some(),
     }))
 }
 

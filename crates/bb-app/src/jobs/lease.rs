@@ -29,7 +29,7 @@ impl HeldJob {
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// How a backup made by `job` keeps the lease of the job while it works: renewed every half
+    /// How work of `job` that may take longer than [`LEASE`] (a backup) keeps the lease of the job while it works: renewed every half
     /// of [`LEASE`]. `None` for a job run by hand, which holds no lease.
     pub(crate) fn keep_lease<'a>(&'a self, job: &Job) -> Option<KeepLease<'a>> {
         let worker = job.lease_owner.clone()?;
@@ -41,6 +41,26 @@ impl<S: AuthStore> Ctx<'_, S> {
                 Box::pin(async move { self.renew_lease(id, &worker).await })
             }),
         })
+    }
+
+    /// Runs `work` of `job` while the job keeps its lease ([`Ctx::keep_lease`]) on the timer of the
+    /// server; a job run by hand, or a server that gave no timer, just runs it.
+    ///
+    /// # Errors
+    /// An internal error when another worker holds the job now: `work` was stopped, so the job is
+    /// never done twice at once.
+    pub(crate) async fn while_kept<T>(
+        &self,
+        job: &Job,
+        work: impl Future<Output = T>,
+    ) -> Result<T, AppError> {
+        match (self.keep_lease(job), self.services.work_signal.pause()) {
+            (Some(keep), Some(pause)) => keep
+                .while_kept(work, pause)
+                .await
+                .ok_or_else(|| AppError::Internal("another worker holds the job now".to_owned())),
+            _ => Ok(work.await),
+        }
     }
 
     /// Renews the lease of a job for [`LEASE`] from now; `false` when another worker holds it. A

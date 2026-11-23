@@ -1,8 +1,14 @@
-//! The change of *Remove a person* (PRIV-04, ADR-0044, decisions 6 to 8): one change deletes the
-//! account and everything that only serves it, through each module's own function and, for the
-//! rest, by the walk's conditions; scrubs the copies of the person's values in the changes; clears
-//! the name and the address, keeping the name in the legal-hold field while work days are kept;
-//! makes the person a tombstone with its label; and writes the line of the replay list.
+//! The change of *Remove a person* (PRIV-04, ADR-0044, decisions 6 to 8): one change records the
+//! decision and closes the account: it deletes everything that only serves the account, through
+//! each module's own function and, for the rest, by the walk's conditions; scrubs the changes about
+//! the person's records; clears the name and the address, keeping the name in the legal-hold field
+//! while work days are kept; makes the person a tombstone with its label; writes the line of the
+//! replay list; puts the comments that go into the trash, so nobody reads, finds or exports them
+//! from then on; writes the row of the removal that is not finished with the person's name, handles
+//! and address sealed as a secret of their own; and queues the job that does what grows with the
+//! organization (`finish.rs`): deleting those comments and scrubbing the words from the changes.
+//! Every part of the change looks rows up by the person, so it stays short however large the
+//! organization is (M9-F51).
 //!
 //! [`remove_in`] is the change itself, so a replay after a restore runs the same steps with the
 //! values of its line, with no session and no switch-off first.
@@ -12,11 +18,12 @@ use std::collections::BTreeSet;
 use bb_core::ErrorCode;
 use bb_core::backup::replay::ReplayKind;
 use bb_core::event::{EntityRef, RecordKind};
-use bb_core::id::{CommentId, IdError, IdSource, IssueId, JobId, UserId};
+use bb_core::id::{IdError, IdSource, JobId, UserId};
 use bb_core::keeping::{KeepKind, KeptUntil};
 use bb_core::oauth::GrantEnd;
 use bb_core::person::{HoldReason, PersonStanding, Standing, cleared_address};
 use bb_core::removal::{AtRemoval, at_removal, deleted_kinds, kept_when_shared};
+use bb_core::secret::StoredSecret;
 use bb_core::settings::privacy::{PRIVACY_REMOVED_TEXTS, RemovedTexts};
 use bb_core::settings::{Layers, Level, Scope, registry};
 use bb_core::sign_in::SecurityAction;
@@ -27,8 +34,8 @@ use bb_policy::{Permission, Place, former_user_label, taken_in};
 use jiff::Timestamp;
 use jiff::civil::Date;
 
-use super::Scrub;
-use super::finish::{FinishRemoval, queue_finish_in};
+use super::finish::first_step;
+use super::{PersonWords, Scrub};
 use crate::agents::stop_agents_in;
 use crate::auth::{
     AppError, AuthStore, Ctx, Stops, TakenBack, by, change_failed, end_ways_in, entity,
@@ -70,16 +77,25 @@ pub struct Removal<K> {
     pub asked: Asked,
     /// The ID of the job that finishes the removal (`privacy.finish-removal`), queued in its change.
     pub job: JobId,
+    /// The person's words as they were read before the change, sealed; none for nobody (a replay
+    /// into a backup older than the account).
+    pub words: Option<SealedWords>,
 }
 
-/// What a removal did that the work after it needs: the job that reindexes the texts, and the
-/// security log.
+/// The name, the address and the handles of a person and the secret they are sealed in
+/// (`RemovalStore::seal_removal_words`): the change of the removal stores the secret only while
+/// the person's record still says the same.
+#[derive(Clone, Debug)]
+pub struct SealedWords {
+    /// The words, as they were read.
+    pub words: PersonWords,
+    /// The same, sealed.
+    pub secret: StoredSecret,
+}
+
+/// What the change of a removal did that the request still needs: the security log.
 #[derive(Debug, Default)]
 pub struct Removed {
-    /// The comments it deleted.
-    pub comments: Vec<CommentId>,
-    /// The issues whose texts changed: their comments went.
-    pub issues: Vec<IssueId>,
     /// The ways in it ended; none when it found the person removed already.
     pub(crate) taken: Option<TakenBack>,
 }
@@ -161,8 +177,9 @@ impl<E> NotPrepared<E> {
 /// Prepares a removal from what is read before its change: the label, drawn so that no removed
 /// person has it (the unique label refuses a draw that another removal took meanwhile), the keep
 /// periods, today in the organization's zone, the comments choice (`privacy.removed-texts` when
-/// none is given) and the ID of its job. The use case and the replay both start here; the
-/// person's name, address and handles are read inside the change (`remove_in`).
+/// none is given), the ID of its job and the person's words, sealed (the key files are no part of a
+/// change). The use case and the replay both start here; the change reads the words again and
+/// stores the secret only when they are the same (`remove_in`).
 ///
 /// # Errors
 /// The error of the store, or no free label, or no choice in the setting ([`NotPrepared`]).
@@ -189,6 +206,20 @@ pub async fn prepare_removal<S: AuthStore>(
         None => RemovedTexts::from_code(&layers.text(&PRIVACY_REMOVED_TEXTS))
             .ok_or(NotPrepared::NoChoice)?,
     };
+    let words = match store
+        .read_snapshot(move |transaction| Box::pin(S::person_words(transaction, person)))
+        .await
+        .map_err(failed)?
+    {
+        Some(words) => Some(SealedWords {
+            secret: store
+                .seal_removal_words(person, &words, at)
+                .await
+                .map_err(failed)?,
+            words,
+        }),
+        None => None,
+    };
     Ok(Removal {
         person,
         at,
@@ -198,6 +229,7 @@ pub async fn prepare_removal<S: AuthStore>(
         keep: layers,
         asked,
         job: JobId::generate(ids).map_err(NotPrepared::NoId)?,
+        words,
     })
 }
 
@@ -205,8 +237,9 @@ pub async fn prepare_removal<S: AuthStore>(
 /// case and the replay call.
 ///
 /// # Errors
-/// Aborts for a person who is removed already or not switched off (unless the replay asks);
-/// otherwise the error of the store.
+/// Aborts for a person who is removed already or not switched off (unless the replay asks), and
+/// for one whose name, address or handles changed since the removal was prepared; otherwise the
+/// error of the store.
 pub async fn remove_in<S: AuthStore, K: KeepPeriods>(
     transaction: &mut S::Transaction,
     removal: &Removal<K>,
@@ -222,19 +255,24 @@ pub async fn remove_in<S: AuthStore, K: KeepPeriods>(
     let Some(words) = S::person_words(transaction, person).await? else {
         return Ok(Removed::default());
     };
+    let sealed = removal
+        .words
+        .as_ref()
+        .filter(|sealed| sealed.words == words)
+        .ok_or_else(S::aborted)?;
     let last_work_day = S::work_day_before_in(transaction, person, Date::MAX)
         .await?
         .map(|day| day.day.date);
     let hold = legal_hold(removal, &words.name, last_work_day);
-    // The changes about the person's records are found through those records, so before they go.
-    let scrub = Scrub {
+    // The changes about the person's records are found through those records, so before they go;
+    // the person's index of each table finds them, so this stays short. The changes that hold the
+    // name, a handle or the address anywhere are the job's: only reading every row finds them.
+    let records = Scrub {
         kinds: scrubbed_kinds(),
         records: own_settings(person).map_err(|_| S::aborted())?,
-        names: vec![words.name.clone()],
-        handles: words.handles.clone(),
-        addresses: vec![words.address.clone()],
+        ..Scrub::default()
     };
-    S::scrub_changes(transaction, person, &scrub).await?;
+    S::scrub_records(transaction, person, &records).await?;
     let taken = end_ways_in::<S>(transaction, person, GrantEnd::TakenBack, removal.at).await?;
     stop_agents_in::<S>(transaction, person).await?;
     // Stopping leaves the proposals of the agents open; nobody could decide them once they go.
@@ -254,7 +292,7 @@ pub async fn remove_in<S: AuthStore, K: KeepPeriods>(
             .collect(),
         ..Scrub::default()
     };
-    S::scrub_changes(transaction, person, &searches).await?;
+    S::scrub_records(transaction, person, &searches).await?;
     S::delete_two_step(transaction, person).await?;
     S::delete_grants_of(transaction, person).await?;
     // The rows that give the person roles go too, under the lock of every change of roles. Only a
@@ -269,10 +307,6 @@ pub async fn remove_in<S: AuthStore, K: KeepPeriods>(
         }
     }
     S::delete_jobs_with_address(transaction, &words.address).await?;
-    let comments = match removal.comments {
-        RemovedTexts::Delete => S::delete_comments_of(transaction, person).await?,
-        RemovedTexts::Keep => Vec::new(),
-    };
     S::clear_person(transaction, person, &cleared_address(&removal.label)).await?;
     let (hold_name, hold_until) = hold.map_or((None, None), |(name, until)| (Some(name), until));
     S::set_standing(
@@ -299,21 +333,26 @@ pub async fn remove_in<S: AuthStore, K: KeepPeriods>(
         )],
     )
     .await?;
-    let mut issues: Vec<IssueId> = comments.iter().map(|(_, issue)| *issue).collect();
-    issues.sort_unstable();
-    issues.dedup();
-    let removed = Removed {
-        comments: comments.into_iter().map(|(comment, _)| comment).collect(),
-        issues,
-        taken: Some(taken),
-    };
-    let left = FinishRemoval {
-        comments: removed.comments.clone(),
-        issues: removed.issues.clone(),
-        exports,
-    };
-    queue_finish_in::<S>(transaction, removal.job, &left, removal.at).await?;
-    Ok(removed)
+    let comments_go = removal.comments == RemovedTexts::Delete;
+    if comments_go {
+        S::hide_comments_of(transaction, person, removal.at).await?;
+    }
+    let (pending, payload) = first_step(person, comments_go, exports, removal.job, removal.at)
+        .map_err(|_| S::aborted())?;
+    S::start_removal(transaction, &pending, &sealed.secret).await?;
+    let kind = crate::jobs::JobKind::FinishRemoval
+        .name()
+        .map_err(|_| S::aborted())?;
+    S::enqueue_job(
+        transaction,
+        removal.job,
+        &kind,
+        &payload,
+        removal.at,
+        removal.at,
+    )
+    .await?;
+    Ok(Removed { taken: Some(taken) })
 }
 
 /// Removes a switched-off person for good, with *Remove people* (ADR-0044, decision 6). The password

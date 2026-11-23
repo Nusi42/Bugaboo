@@ -25,6 +25,9 @@ pub trait HistoryStore: IssueStore + 'static {
         /// Stores the rows made from events, each once (a row that is there already is left as it
         /// is), and records that the consumer has finished everything up to `position`. A
         /// consumer that stops half way reads the same events again and makes the same rows.
+        /// A row is made from its event as it is stored when the consumer reads it: the scrub of a
+        /// removal scrubs the events first and catches the history up before it scrubs the
+        /// history (`privacy::removal::finish`), so no row is written behind it.
         fn store_history(entries: &[HistoryEntry], position: i64, now: Timestamp) -> ();
         /// The name of the AI app behind each of these events, for those that were made in a
         /// session of an app: the event names its run, and the run the app. Events of nobody's app

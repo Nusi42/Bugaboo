@@ -66,7 +66,10 @@ export function usePeople(search: string) {
   });
 }
 
-/** One person with their groups and roles. */
+/** How often the page of a person who is being removed asks again: the job takes seconds to minutes. */
+const REMOVING_READ_MS = 2000;
+
+/** One person with their groups and roles; while they are being removed, read again every few seconds. */
 export function usePerson(id: string) {
   return useQuery({
     queryKey: queryKeys.people.one(id),
@@ -76,5 +79,9 @@ export function usePerson(id: string) {
           params: { path: { person: id } },
         }),
       ),
+    // While Bugaboo still removes the person, the page asks again, so it shows the end of it.
+    refetchInterval: (
+      query: Readonly<{ state: Readonly<{ data: Schema<"PersonDetailBody"> | undefined }> }>,
+    ) => (query.state.data?.removing === true ? REMOVING_READ_MS : false),
   });
 }

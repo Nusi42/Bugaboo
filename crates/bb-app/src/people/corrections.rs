@@ -478,13 +478,13 @@ impl<S: AuthStore> Ctx<'_, S> {
         session_token: String,
         person: UserId,
     ) -> Result<Authorized<PersonDetail>, AppError> {
-        super::person(
+        Box::pin(super::person(
             self,
             PersonQuery {
                 session_token,
                 person,
             },
-        )
+        ))
         .await
     }
 }

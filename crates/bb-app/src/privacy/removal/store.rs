@@ -3,18 +3,24 @@
 //! the walk's conditions (`PersonData`), so the removal never searches rows by person a second way.
 //!
 //! Like the other ports, **writes** are associated functions that run inside `record_change`, so
-//! the removal and its domain event are committed together (ARCH-EVENTS).
+//! the removal and its domain event are committed together (ARCH-EVENTS). The scrub of the changes
+//! is no such write: it goes through whole tables, so the job of the removal runs it in steps, each
+//! its own short change (`scrub_step`).
 
 use std::future::Future;
 
 use bb_core::event::{EntityRef, RecordKind};
-use bb_core::id::{CommentId, IssueId, UserId};
+use bb_core::id::{CommentId, IssueId, JobId, UserId};
 use bb_core::names::name_key;
 use bb_core::personal::{EntityMarks, Link};
+use bb_core::removal::PendingRemoval;
+use bb_core::secret::StoredSecret;
 use bb_markdown::{MENTION_MARK, MENTION_TRAILING, is_in_mention};
+use jiff::Timestamp;
+use serde::{Deserialize, Serialize};
 
 use crate::ports::ChangeStore;
-use crate::store_macros::{reads, writes};
+use crate::store_macros::{queries, reads, writes};
 
 /// What the changes of events, the history and notifications are scrubbed of (M2-F75, M5-F63):
 /// the values of a change about one of these records lose their before and after, and so does
@@ -127,9 +133,50 @@ fn holds_whole(text: &str, found: &str, inside: fn(char) -> bool, trailing: &[ch
     })
 }
 
-/// What the person's records say of them, read inside the change that removes them: the texts no
-/// change may keep afterwards.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+bb_core::words! {
+    /// The tables whose changes the scrub of a removal goes through, in this order.
+    #[derive(Default)]
+    pub enum ScrubbedTable {
+        /// The events, with their reasons.
+        #[default]
+        Events => "events",
+        /// The history of the issues.
+        History => "history",
+        /// The notifications.
+        Notifications => "notifications",
+    }
+}
+
+impl ScrubbedTable {
+    /// The table after this one; none after the last.
+    #[must_use]
+    pub const fn next(self) -> Option<Self> {
+        match self {
+            Self::Events => Some(Self::History),
+            Self::History => Some(Self::Notifications),
+            Self::Notifications => None,
+        }
+    }
+}
+
+/// Where the scrub of the changes of a removal goes on (ADR-0044, decision 6): the table, and the
+/// key of the last row of it that a step looked at, each column as hexadecimal digits; empty at the
+/// start of the table. It is the payload of the job, so a step that stopped is done again from
+/// here.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ScrubPlace {
+    /// The table.
+    pub table: ScrubbedTable,
+    /// The key of the last row looked at.
+    #[serde(default)]
+    pub after: Vec<String>,
+}
+
+/// What the person's records say of them, read when the removal is prepared and again inside its
+/// change: the texts no change may keep afterwards. The removal keeps them sealed as a stored
+/// secret of their own until its job has scrubbed them from the changes
+/// (`RemovalStore::seal_removal_words`); no payload of a job holds them.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PersonWords {
     /// The name, which the legal-hold field keeps while work days are kept.
     pub name: String,
@@ -150,12 +197,58 @@ pub trait RemovalStore: ChangeStore + 'static {
         /// index merges its segments and the write-ahead log is folded back and emptied, so no
         /// old page keeps a deleted text; on PostgreSQL nothing.
         fn compact_removed_texts() -> ();
+        /// One step of the scrub of the changes of the events, the history and the notifications
+        /// of the words of `scrub` (`Scrub::looked_for`): the next rows of the table of `from`, a
+        /// page of
+        /// `SCRUB_STEP_ROWS` read by key outside any change, and the rows of them that change
+        /// written in one short change, so a writer waits for one step at most. Where the next step
+        /// goes on; none after the last row of the last table. Safe to run again: a row scrubbed
+        /// once has nothing left to scrub.
+        fn scrub_step(scrub: &Scrub, from: &ScrubPlace) -> Option<ScrubPlace>;
+        /// The words of the removal of `person`, encrypted with a key of their own that the newest
+        /// master key wraps (`bb-store`, `secrets`): what the change of the removal stores with its
+        /// row (`start_removal`), so that only the key files open it and the last step, which
+        /// deletes the secret with its key, leaves nothing that opens a copy.
+        fn seal_removal_words(person: UserId, words: &PersonWords, at: Timestamp) -> StoredSecret;
+        /// The words of the removal of `person` that is not finished, opened; none when no secret
+        /// of it is stored.
+        fn removal_words(person: UserId) -> Option<PersonWords>;
+        /// The removals that stopped: their job gave up (it is on the dead-letter list) or is gone.
+        /// `privacy.resume-removals` gives each a new job, and the status page counts them.
+        fn stopped_removals() -> Vec<PendingRemoval>;
+    }
+
+    queries! {
+        /// The removal of `person` that is not finished: a person is being removed exactly while
+        /// it exists (*removing…*).
+        fn pending_removal(person: UserId) -> Option<PendingRemoval> = pending_removal_in;
     }
 
     writes! {
         /// The name, the address and the handles of `person`, read under the change; none for
         /// nobody (a replay into a backup older than the account).
         fn person_words(person: UserId) -> Option<PersonWords>;
+        /// Records a removal that is not finished: its row and the secret of its words, in the
+        /// change of the removal.
+        fn start_removal(pending: &PendingRemoval, words: &StoredSecret) -> ();
+        /// Gives the removal of `person` its next step `step` and the job `to` that does it, only
+        /// while `from` is the job of the removal; whether it did. A step that runs twice (its
+        /// worker lost the lease after the step was done) finds another job and queues nothing.
+        fn move_removal(
+            person: UserId,
+            from: JobId,
+            to: JobId,
+            step: &str,
+            at: Timestamp
+        ) -> bool;
+        /// Ends the removal of `person`, only while `job` is its job: deletes its row and the
+        /// secret of its words with its key; whether it did.
+        fn end_removal(person: UserId, job: JobId) -> bool;
+        /// Puts every comment of `author` that is not in the trash into it at `at`, in the change
+        /// of a removal whose comments go: hidden from every read, search and export at once (the
+        /// trash is), and kept from being restored while the removal goes on; the job deletes them;
+        /// how many.
+        fn hide_comments_of(author: UserId, at: Timestamp) -> u64;
         /// Deletes the rows of the entity of `kind` that name `person` by a link that is one of
         /// `links`, found by the walk's conditions; how many went. An entity that is not stored
         /// deletes nothing.
@@ -163,9 +256,11 @@ pub trait RemovalStore: ChangeStore + 'static {
         /// Deletes the jobs whose payload holds `address` (in any case), waiting or dead: a payload
         /// that names the person only by the address (a queued e-mail); how many went.
         fn delete_jobs_with_address(address: &str) -> u64;
-        /// Scrubs the changes of the events, the history and the notifications of what `scrub`
-        /// names, about `person`; how many rows changed.
-        fn scrub_changes(person: UserId, scrub: &Scrub) -> u64;
+        /// Scrubs every value of the changes of the events, the history and the notifications
+        /// about a record that `scrub` names (`Scrub::kinds`, `Scrub::records`), about `person`,
+        /// found through the records and the index of each table; how many rows changed. The
+        /// words of `scrub` are the job's (`scrub_step`).
+        fn scrub_records(person: UserId, scrub: &Scrub) -> u64;
     }
 }
 

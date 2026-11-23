@@ -441,6 +441,37 @@ mod test_support {
     }
 
     /// A project, a type and the issues the tests put tags and labels on.
+    /// Removes `person` as the replay of a restore does (no switch-off first), with `comments`,
+    /// at `at(100)`.
+    pub(crate) async fn removed(
+        storage: &AuthStorage,
+        source: &mut impl IdSource,
+        person: UserId,
+        comments: bb_core::settings::privacy::RemovedTexts,
+    ) -> Result<
+        bb_app::privacy::removal::Removal<bb_core::settings::Layers>,
+        Box<dyn std::error::Error + Send + Sync>,
+    > {
+        use bb_app::privacy::removal::{prepare_removal, remove_in};
+        let removal = prepare_removal(
+            storage,
+            source,
+            person,
+            at(100),
+            Some(comments),
+            bb_app::privacy::replay::Asked::ByReplay,
+        )
+        .await
+        .map_err(|failure| format!("{failure:?}"))?;
+        let change = Arc::new(removal);
+        let running = Arc::clone(&change);
+        ChangeStore::record_change(storage, &event(source, 100), move |tx| {
+            Box::pin(async move { remove_in::<AuthStorage, _>(tx, &running).await.map(|_| ()) })
+        })
+        .await?;
+        Arc::try_unwrap(change).map_err(|_| "the removal is still in use".into())
+    }
+
     pub(crate) struct World {
         pub(crate) project: ProjectId,
         pub(crate) issues: Vec<Issue>,

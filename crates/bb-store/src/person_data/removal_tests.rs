@@ -4,6 +4,7 @@
 
 use bb_app::auth::{AccountStore as _, InvitationStore as _};
 use bb_app::ports::ChangeStore;
+use bb_app::privacy::removal::RemovalStore as _;
 use bb_core::event::{Actor, EntityKind, EntityRef, FieldChange, RecordKind};
 use bb_core::id::{EntityId, IdSource, InvitationId, IssueId, UserId};
 use bb_core::personal::Entity as _;
@@ -159,6 +160,7 @@ async fn priv_04_a_removal_deletes_by_link_and_scrubs_the_changes() -> TestResul
             handles: vec!["lea.lind".to_owned()],
             addresses: vec!["lea@example.test".to_owned()],
         };
+        let records = scrub.clone();
         let (deleted, scrubbed) =
             ChangeStore::record_change(storage, &event(&mut source, 50), move |tx| {
                 Box::pin(async move {
@@ -169,14 +171,17 @@ async fn priv_04_a_removal_deletes_by_link_and_scrubs_the_changes() -> TestResul
                         &[Link::Author, Link::Recipient],
                     )
                     .await?;
-                    let scrubbed = AuthStorage::scrub_changes(tx, lea_id, &scrub).await?;
+                    let scrubbed = AuthStorage::scrub_records(tx, lea_id, &records).await?;
                     Ok((deleted, scrubbed))
                 })
             })
             .await?;
         // The invitation she made and the one to her address go.
         assert_eq!(deleted, 2);
-        assert_eq!(scrubbed, 4);
+        // The change about her record, her setting and the key she made, found through them.
+        assert_eq!(scrubbed, 3);
+        // Her name, handle and address anywhere else go in the steps of the job.
+        scrubbed_in_steps(storage, &scrub).await?;
         let text = stored_changes(storage).await?.join("\n");
         for gone in [
             "Lea L.",
@@ -341,14 +346,91 @@ async fn priv_04_a_name_outside_ascii_is_scrubbed_in_any_capitals() -> TestResul
             names: names.iter().map(|name| (*name).to_owned()).collect(),
             ..Scrub::default()
         };
-        let scrubbed = ChangeStore::record_change(storage, &event(&mut source, 50), move |tx| {
-            Box::pin(async move { AuthStorage::scrub_changes(tx, ada, &scrub).await })
-        })
-        .await?;
-        assert_eq!(scrubbed, 2);
+        // One step for each table, which holds fewer rows than a step reads.
+        assert_eq!(
+            scrubbed_in_steps(storage, &scrub).await?,
+            ScrubbedTable::ALL.len()
+        );
         assert_eq!(storage.columns_holding(&names).await?, Vec::<String>::new());
         let text = stored_changes(storage).await?.join("\n");
         assert!(text.contains("title"), "{text}");
+        Ok(())
+    })
+    .await
+}
+
+/// Scrubs the words of `scrub` step by step from the start, as the job of a removal does; how
+/// many steps it took.
+async fn scrubbed_in_steps(storage: &AuthStorage, scrub: &Scrub) -> Result<usize, StoreError> {
+    let mut place = Some(ScrubPlace::default());
+    let mut steps = 0;
+    while let Some(from) = place {
+        place = storage.scrub_step(scrub, &from).await?;
+        steps += 1;
+    }
+    Ok(steps)
+}
+
+#[tokio::test]
+async fn priv_04_the_scrub_goes_in_steps_and_writes_land_between_them() -> TestResult {
+    each_database("priv_04_scrub_in_steps", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = &fixture.storage;
+        let mut source = ids();
+        let ada = person(&mut source, "ada@example.test").id;
+        let issue = EntityId::from(IssueId::generate(&mut source)?);
+        // Two steps of events that name her and three more: the events take three steps.
+        let rows = usize::try_from(2 * SCRUB_STEP_ROWS).unwrap_or(usize::MAX) + 3;
+        let many: Vec<_> = (0..rows)
+            .map(|_| {
+                about(
+                    &mut source,
+                    ada,
+                    RecordKind::Issue,
+                    issue,
+                    vec![change("title", json!("old"), json!("ask Lea Lind"))],
+                )
+            })
+            .collect();
+        ChangeStore::record_changes(storage, &many, |_| Box::pin(async { Ok(()) })).await?;
+        let scrub = Scrub {
+            names: vec!["Lea Lind".to_owned()],
+            ..Scrub::default()
+        };
+        // People go on writing while the job scrubs: each step is its own short change, so their
+        // changes land between the steps, not after the last one.
+        let scrubbing = scrubbed_in_steps(storage, &scrub);
+        let writing = async {
+            let mut landed = 0_usize;
+            let mut writes = ids();
+            for second in 0..50 {
+                let one = event(&mut writes, 100 + second);
+                ChangeStore::record_change(storage, &one, |_| Box::pin(async { Ok(()) })).await?;
+                landed += 1;
+            }
+            Ok::<_, StoreError>(landed)
+        };
+        let (steps, landed) = tokio::try_join!(scrubbing, writing)?;
+        assert_eq!(
+            steps,
+            3 + 2,
+            "three steps of events, one each of the history and notifications"
+        );
+        assert_eq!(landed, 50);
+        assert_eq!(
+            storage.columns_holding(&["Lea Lind"]).await?,
+            Vec::<String>::new()
+        );
+        // Run again from the start, the scrub finds nothing left.
+        scrubbed_in_steps(storage, &scrub).await?;
+        assert_eq!(
+            stored_changes(storage)
+                .await?
+                .iter()
+                .filter(|text| text.contains("old"))
+                .count(),
+            rows
+        );
         Ok(())
     })
     .await

@@ -26,8 +26,7 @@ use bb_files::{DiskFiles, PreviewCommand};
 use bb_notify::SmtpMailer;
 use bb_store::{AuthStorage, Database, LogSeal};
 
-use bb_app::ports::BoxFuture;
-use bb_store::backup::{FolderBackups, FolderOf};
+use bb_store::backup::{FolderBackups, FolderOf, RuntimePause};
 
 use crate::cli::backup::{backup_folder, places, record_made};
 use crate::config::{Settings, TlsMode};
@@ -61,15 +60,6 @@ pub(crate) struct Wired {
     pub(crate) jobs: Arc<AuthServices<AuthStorage>>,
     /// The hold of this server on its database, which a restore needs alone (ADR-0046).
     pub(crate) server_hold: bb_store::ServerHold,
-}
-
-/// How time passes for *Wait for work*: the timer of the server's runtime.
-struct RuntimePause;
-
-impl bb_app::agent_work::Pause for RuntimePause {
-    fn pause(&self, length: std::time::Duration) -> BoxFuture<'static, ()> {
-        Box::pin(tokio::time::sleep(length))
-    }
 }
 
 /// The setup code file of a server without a console, as the use case that makes the first

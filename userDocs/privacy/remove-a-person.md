@@ -20,4 +20,6 @@ Choose what happens to the comments the person wrote: **Keep their comments, sho
 
 Only a switched-off person can be removed. If the person can still sign in, the window says so and offers **Switch off first**; the button **Remove** with the person's name waits until then, and until you have typed your password again, because a removal cannot be undone.
 
-After the removal the person's page shows *Former user* and the code of four signs in place of the name, the same label everywhere in Bugaboo. A file of *Download my data* about the person that was not fetched yet goes with the account: give it to the person first.
+After the removal the person's page shows *Former user* and the code of four signs in place of the name, the same label everywhere in Bugaboo. Their account is closed at once. If you chose to delete their comments, nobody sees or finds them from then on. Bugaboo then takes their name, handles and e-mail address out of the history and the notifications in the background and deletes those comments; in a large organization this takes a few minutes. Meanwhile the page says **Bugaboo is removing this person**; it changes by itself to **This person was removed** when it is done. People can go on working all the while. If the work stops halfway, the status page of the server says so, and Bugaboo tries again every day until it is done.
+
+A file of *Download my data* about the person that was not fetched yet goes with the account: give it to the person first.

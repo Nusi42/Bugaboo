@@ -15,14 +15,23 @@ use crate::auth::{past_life, past_networks};
 use crate::db::{Database, count_of, to_micros};
 use crate::error::StoreError;
 use crate::notifications::past_notifications;
-use crate::schema::{AttachmentRow, Computed, IssueRow, Job, NotificationRow, SignInSession};
+use crate::schema::{
+    AttachmentRow, Computed, IssueRow, Job, NotificationRow, RemovalPendingRow, SignInSession,
+};
 
 /// The jobs that gave up before the cutoff `before`: what the purge deletes, and what the count of
 /// a changed period counts.
 pub(crate) fn past_dead_jobs(before: Timestamp) -> Condition {
+    // The dead job of a removal that is not finished stays: it is what the status page and the
+    // job that resumes the removal look at (ADR-0044, decision 6).
+    let mut removals = Query::select();
+    removals
+        .column(RemovalPendingRow::Job)
+        .from(RemovalPendingRow::Table);
     Condition::all()
         .add(Expr::col(Job::State).eq(JobState::Dead.code()))
         .add(Expr::col(Job::RunAt).lt(to_micros(before)))
+        .add(Expr::col(Job::Id).not_in_subquery(removals))
 }
 
 /// How many rows of `table` match `condition`.

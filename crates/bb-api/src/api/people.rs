@@ -92,6 +92,9 @@ pub(crate) struct PersonDetailBody {
     person: PersonItem,
     /// When the account was made.
     created_at: String,
+    /// Whether Bugaboo still removes what was the person's: true from the removal until its job
+    /// has taken their name out of the history, false for everybody else.
+    removing: bool,
 }
 
 impl Masked for PersonDetailBody {}
@@ -101,6 +104,7 @@ impl From<PersonDetail> for PersonDetailBody {
         Self {
             person: PersonItem::from(&detail.line),
             created_at: detail.created_at.to_string(),
+            removing: detail.removing,
         }
     }
 }

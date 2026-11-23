@@ -155,8 +155,15 @@ impl JobStore for FakeStore {
     }
 
     async fn purge_dead_jobs(&self, before: Timestamp, limit: u64) -> Result<u64, FakeError> {
-        Ok(remove_at_most(&mut self.lock().state.jobs, limit, |job| {
-            job.state == JobState::Dead && job.run_at < before
+        let mut shared = self.lock();
+        let kept: Vec<JobId> = shared
+            .state
+            .pending_removals
+            .iter()
+            .map(|(pending, _)| pending.job)
+            .collect();
+        Ok(remove_at_most(&mut shared.state.jobs, limit, |job| {
+            job.state == JobState::Dead && job.run_at < before && !kept.contains(&job.id)
         }))
     }
 

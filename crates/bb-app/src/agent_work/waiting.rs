@@ -159,6 +159,11 @@ impl WorkSignal {
         })
     }
 
+    /// How time passes on the server's runtime; `None` when the server gave none.
+    pub(crate) fn pause(&self) -> Option<&dyn Pause> {
+        self.pause.as_deref()
+    }
+
     /// How many calls wait now.
     #[must_use]
     pub fn waiting_now(&self) -> usize {

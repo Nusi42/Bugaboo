@@ -53,7 +53,7 @@ pub(super) async fn switch_off(browser: &mut Browser, person: UserId) -> Result<
 }
 
 /// Writes a comment on `issue` as `browser`.
-async fn comment(browser: &mut Browser, issue: &str, text: &str) -> Result<(), Failure> {
+pub(super) async fn comment(browser: &mut Browser, issue: &str, text: &str) -> Result<(), Failure> {
     ok(&browser
         .send(
             "POST",
@@ -65,7 +65,7 @@ async fn comment(browser: &mut Browser, issue: &str, text: &str) -> Result<(), F
 }
 
 /// The comments of `issue`, as `browser` sees them.
-async fn comments(browser: &mut Browser, issue: &str) -> Result<String, Failure> {
+pub(super) async fn comments(browser: &mut Browser, issue: &str) -> Result<String, Failure> {
     Ok(ok(&browser
         .send(
             "GET",
@@ -143,7 +143,15 @@ async fn priv_04_a_removed_person_is_former_user_everywhere_but_the_work_days_fo
         assert_eq!(refused["code"], "access.forbidden", "{refused}");
         let done = remove(&mut ada, bob_id, json!({"comments": "keep"})).await?;
         assert_eq!(done["status"], 204, "{done}");
+        // The removal answered at once; its job goes on, and his page says so until it is done.
+        let page = format!("/api/v1/people/{bob_id}");
+        let reply = ada.send("GET", &page, None).await?;
+        let removing = ok(&reply)?;
+        assert_eq!(removing["removing"], true, "{removing}");
         rig.run_jobs().await?;
+        let reply = ada.send("GET", &page, None).await?;
+        let removed = ok(&reply)?;
+        assert_eq!(removed["removing"], false, "{removed}");
         // His comment stays, shown as Former user.
         let shown = comments(&mut ada, &issue).await?;
         assert!(shown.contains("Bob's comment"), "{shown}");
@@ -208,6 +216,8 @@ async fn priv_04_delete_their_comments_deletes_comments_and_nothing_else() -> Te
         switch_off(&mut ada, bob_id).await?;
         let done = remove(&mut ada, bob_id, json!({"comments": "delete"})).await?;
         assert_eq!(done["status"], 204, "{done}");
+        // The comments go in the job that finishes the removal.
+        rig.run_jobs().await?;
         let shown = comments(&mut ada, &issue).await?;
         assert!(!shown.contains("Bob's words"), "{shown}");
         assert!(shown.contains("Ada's words"), "{shown}");
@@ -281,7 +291,10 @@ async fn priv_04_work_times_go_in_the_change_that_removes_the_person() -> TestRe
             .await?;
         assert_eq!(done.status.as_u16(), 204, "{}", done.body);
         // The walk finds nothing of the account left, the away time included: it went with the
-        // change that removed him.
+        // change that removed him. Only the job that finishes the removal names him, until it is
+        // done.
+        assert_eq!(left_to_delete(&rig, bob_id).await?, vec!["job".to_owned()]);
+        rig.run_jobs().await?;
         assert_eq!(left_to_delete(&rig, bob_id).await?, Vec::<String>::new());
         Ok(())
     })

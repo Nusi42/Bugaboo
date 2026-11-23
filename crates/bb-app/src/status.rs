@@ -246,6 +246,9 @@ pub struct Snapshot {
     /// Whether the server reaches its database over the network without checking the
     /// certificate of the database server, so somebody in between could read or change it.
     pub database_certificate_unchecked: bool,
+    /// How many removals of people stopped before they were finished (their job gave up or is
+    /// gone): the daily job `privacy.resume-removals` gives each a new job (ADR-0044, decision 6).
+    pub removals_stopped: u64,
 }
 
 /// Measures the server for the status page and for `/health/ready`.

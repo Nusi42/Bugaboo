@@ -5247,6 +5247,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("person.reason", "Reason"),
     ("person.reason-help", "In a few words. The person is told."),
     ("person.remove", "Remove this person…"),
+    (
+        "person.removing-text",
+        "Their account is closed and their work shows as {label} everywhere. Bugaboo is still taking their name out of the history; this page changes when it is done.",
+    ),
+    ("person.removing-title", "Bugaboo is removing this person"),
     ("person.role", "Someone ({role})"),
     ("person.role-inside", "someone ({role})"),
     ("person.roles", "Roles"),
@@ -5713,6 +5718,18 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("personal-field.password-login.hash", "Password (scrambled)"),
     ("personal-field.password-login.person", "Person"),
+    ("personal-field.pending-removal.comments-go", "Comments go"),
+    ("personal-field.pending-removal.created-at", "Removed on"),
+    (
+        "personal-field.pending-removal.job",
+        "Work of the next step",
+    ),
+    (
+        "personal-field.pending-removal.person",
+        "Person being removed",
+    ),
+    ("personal-field.pending-removal.step", "Next step"),
+    ("personal-field.pending-removal.updated-at", "Last step on"),
     (
         "personal-field.person-handle.changed-at",
         "Created or taken up on",
@@ -6056,7 +6073,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("personal-kind.history-entry", "History of issues"),
     (
         "personal-kind.history-row-naming-person",
-        "Where the history of issues names a person",
+        "History naming a person",
     ),
     ("personal-kind.invitation", "Invitations"),
     ("personal-kind.issue", "Issues"),
@@ -6080,6 +6097,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("personal-kind.own-theme", "Own themes"),
     ("personal-kind.password-login", "Password"),
+    (
+        "personal-kind.pending-removal",
+        "Removals that are being finished",
+    ),
     ("personal-kind.person", "Account"),
     ("personal-kind.person-handle", "Handles"),
     (
@@ -6092,10 +6113,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("personal-kind.question", "Questions of agents"),
     ("personal-kind.relation", "Relations"),
     ("personal-kind.review", "Reviews of agent work"),
-    (
-        "personal-kind.row-naming-person",
-        "Where changes and background work name a person",
-    ),
+    ("personal-kind.row-naming-person", "Changes naming a person"),
     ("personal-kind.saved-search", "Saved searches"),
     (
         "personal-kind.security-log-entry",
@@ -6519,7 +6537,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "removal.intro",
-        "Removing a person is final and cannot be undone. Bugaboo does it in one change, as this window says.",
+        "Removing a person is final and cannot be undone. Their account closes at once; then Bugaboo takes their name out of the history, which takes a few minutes in a large organization.",
     ),
     (
         "removal.kept-by-law",
@@ -7641,6 +7659,15 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "{count, plural, one {# entry} other {# entries}} of the security log could not be written since the server started. Check that the disk is not full and that the account that runs Bugaboo can write in the data folder, then look at the server log.",
     ),
     ("server-status.refresh", "Check again"),
+    ("server-status.removals", "Removals of people"),
+    (
+        "server-status.removals.none-stopped",
+        "No removal of a person stopped before it was finished.",
+    ),
+    (
+        "server-status.removals.stopped",
+        "{count, plural, one {# removal of a person} other {# removals of people}} stopped before {count, plural, one {it was} other {they were}} finished: a name may still stand in the history and in notifications. Bugaboo tries again every day and at every start. If the number stays, look at the server log.",
+    ),
     ("server-status.running", "Running for"),
     ("server-status.started", "Started {when}"),
     ("server-status.state.ok", "All good"),

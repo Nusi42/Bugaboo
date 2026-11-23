@@ -12,8 +12,14 @@
 //! each of them in an arm of its own (`person_data/arms.rs`), and one arm without an index reads
 //! its whole table. The notifications get an index by their event, which the change of a removal
 //! looks them up by (M9-F51).
+//!
+//! Last, the table of the removals that are not finished (`removal_pending`, ADR-0044, decision 6):
+//! the job that finishes a removal goes by its row, and a person is being removed while it exists.
+//! It is new and empty: a removal of an earlier version was finished by its change.
 
-use sea_query::{ForeignKey, ForeignKeyAction, Iden, Index, Table, TableCreateStatement};
+use sea_query::{
+    ColumnDef, ForeignKey, ForeignKeyAction, Iden, Index, Table, TableCreateStatement,
+};
 
 use super::{Fill, Step, id_column};
 use crate::schema::{
@@ -22,8 +28,8 @@ use crate::schema::{
     Event, EventNamesPerson, HandOverRow, HistoryEntryRow, HistoryNamesPerson, Invitation,
     IssueLabelRow, IssueParentRow, IssueRow, IssueTagRow, IssueWorkRow, Job, JobNamesPerson,
     ManyChangeRunRow, NotificationNamesPerson, NotificationRow, OAuthWebAddressRow, OwnThemeRow,
-    PersonStandingRow, ProposalNamesPerson, ProposalRow, QuestionRow, RelationRow, ReviewRow,
-    SecurityLog, StandingRuleRow, TimeFactorRow, ToolCallRow,
+    PersonRow, PersonStandingRow, ProposalNamesPerson, ProposalRow, QuestionRow, RelationRow,
+    RemovalPendingRow, ReviewRow, SecurityLog, StandingRuleRow, TimeFactorRow, ToolCallRow,
 };
 
 /// The two steps of the index of a table keyed by one ID: the table and its index by person.
@@ -276,6 +282,13 @@ pub(super) fn steps() -> Vec<Step> {
         NotificationRow::Table,
         NotificationRow::Event
     ));
+    // The comments in the trash, which no search finds: the comments of a removal wait there
+    // until its job deletes them.
+    steps.push(by_person!(
+        "comment_in_trash",
+        CommentRow::Table,
+        CommentRow::DeletedAt
+    ));
     steps.extend(index_of(
         Table::create().table(EventNamesPerson::Table),
         EventNamesPerson::Table,
@@ -340,5 +353,39 @@ pub(super) fn steps() -> Vec<Step> {
             .to_owned(),
     ));
     steps.push(Step::Fill(Fill::RowNamingPersons));
+    steps.push(pending_removals());
     steps
+}
+
+/// The table of the removals that are not finished: one row for each, from the change of the
+/// removal to the last step of its job.
+fn pending_removals() -> Step {
+    Step::Table(
+        Table::create()
+            .table(RemovalPendingRow::Table)
+            .col(id_column(RemovalPendingRow::Person).primary_key())
+            .col(
+                ColumnDef::new(RemovalPendingRow::CommentsGo)
+                    .boolean()
+                    .not_null(),
+            )
+            .col(id_column(RemovalPendingRow::Job))
+            .col(ColumnDef::new(RemovalPendingRow::Step).text().not_null())
+            .col(
+                ColumnDef::new(RemovalPendingRow::CreatedAt)
+                    .big_integer()
+                    .not_null(),
+            )
+            .col(
+                ColumnDef::new(RemovalPendingRow::UpdatedAt)
+                    .big_integer()
+                    .not_null(),
+            )
+            .foreign_key(
+                ForeignKey::create()
+                    .from(RemovalPendingRow::Table, RemovalPendingRow::Person)
+                    .to(PersonRow::Table, PersonRow::Id),
+            )
+            .to_owned(),
+    )
 }

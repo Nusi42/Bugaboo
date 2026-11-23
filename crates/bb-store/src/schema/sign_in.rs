@@ -32,6 +32,20 @@ pub(crate) enum PersonStandingRow {
     HoldUntil,
 }
 
+/// The removals that are not finished (ADR-0044, decision 6, migration 64): one row for each,
+/// from the change of the removal to the last step of its job.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum RemovalPendingRow {
+    #[iden = "removal_pending"]
+    Table,
+    Person,
+    CommentsGo,
+    Job,
+    Step,
+    CreatedAt,
+    UpdatedAt,
+}
+
 /// The lines of the replay list that wait for the file (ADR-0044, decision 8, migration 57).
 #[derive(Clone, Copy, Iden)]
 pub(crate) enum ReplayWaitingRow {
@@ -133,6 +147,14 @@ stored_tables! {
     },
     ReplayWaitingRow => bb_core::backup::replay::WaitingReplayLine {
         Line => line,
+    },
+    RemovalPendingRow => bb_core::removal::PendingRemoval {
+        Person => person,
+        CommentsGo => comments_go,
+        Job => job,
+        Step => step,
+        CreatedAt => created_at,
+        UpdatedAt => updated_at,
     },
     PersonStandingRow => bb_core::person::PersonStanding {
         Person => person,

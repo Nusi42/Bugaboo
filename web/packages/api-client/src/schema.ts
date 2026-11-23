@@ -10964,6 +10964,11 @@ export interface components {
       created_at: string;
       /** @description The person, with their e-mail address, groups and roles. */
       person: components["schemas"]["PersonItem"];
+      /**
+       * @description Whether Bugaboo still removes what was the person's: true from the removal until its job
+       *     has taken their name out of the history, false for everybody else.
+       */
+      removing: boolean;
     };
     /**
      * @description A person in a list, or on the page of one: the fields that can be asked for. An answer holds
@@ -12458,6 +12463,12 @@ export interface components {
        *     the settings or the HTTPS key.
        */
       host_open: components["schemas"]["HostOpenBody"];
+      /**
+       * Format: int64
+       * @description How many removals of people stopped before they were finished; Bugaboo tries each again
+       *     every day and at every start.
+       */
+      removals_stopped: number;
       /** @description The check of the security log. */
       security_log: components["schemas"]["SecurityLogBody"];
       /**

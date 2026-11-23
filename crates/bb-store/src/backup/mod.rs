@@ -33,7 +33,7 @@ use crate::db::{Database, Dialect};
 use crate::error::StoreError;
 use crate::keys::KeyRing;
 
-pub use folder::{Elsewhere, FolderBackups, FolderOf};
+pub use folder::{Elsewhere, FolderBackups, FolderOf, RuntimePause};
 pub(crate) use restore::put_back_before_upgrade;
 pub use restore::{RestoreFailure, RestoreInput, RestoreReport, RestoreTarget, restore};
 use work::{OwnHold, WorkFolder};

@@ -20,7 +20,7 @@ use crate::ai::tools::ToolAnswer;
 use crate::auth::AppError;
 
 /// The time of the test's runtime, as a server gives the time of its own.
-pub(super) struct RuntimePause;
+pub(crate) struct RuntimePause;
 
 impl crate::agent_work::Pause for RuntimePause {
     fn pause(&self, length: Duration) -> crate::ports::BoxFuture<'static, ()> {

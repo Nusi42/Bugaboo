@@ -98,6 +98,15 @@ impl Indexed {
         }
     }
 
+    /// The column of the changes of a table that has them (the events, the history, the
+    /// notifications): the first of its texts.
+    pub(crate) fn changes(self) -> Alias {
+        self.texts()
+            .into_iter()
+            .next()
+            .unwrap_or_else(|| name(&Event::Changes))
+    }
+
     /// The table of the index.
     fn index(self) -> Alias {
         match self {

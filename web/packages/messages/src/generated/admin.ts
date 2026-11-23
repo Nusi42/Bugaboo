@@ -72,6 +72,10 @@ export const messages = {
   "server-status.certificate.none":
     "Not shown. Either another program in front of Bugaboo handles HTTPS, or the certificate file cannot be read.",
   "server-status.log": "Security log",
+  "server-status.removals": "Removals of people",
+  "server-status.removals.none-stopped": "No removal of a person stopped before it was finished.",
+  "server-status.removals.stopped":
+    "{count, plural, one {# removal of a person} other {# removals of people}} stopped before {count, plural, one {it was} other {they were}} finished: a name may still stand in the history and in notifications. Bugaboo tries again every day and at every start. If the number stays, look at the server log.",
   "server-status.log-failures":
     "{count, plural, one {# entry} other {# entries}} of the security log could not be written since the server started. Check that the disk is not full and that the account that runs Bugaboo can write in the data folder, then look at the server log.",
   "data-folder.part.folder": "The data folder",

@@ -1,7 +1,7 @@
 import { dataOf } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
-import { paths } from "../src/shared/paths.ts";
+import { paths, personAddress } from "../src/shared/paths.ts";
 import { lea, signedInAdmin } from "./support/access.ts";
 import { ada, bob, idOf, signInThroughApi } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
@@ -9,10 +9,14 @@ import { inFourChosenThemes, inFourChosenThemesAsWindow } from "./support/four-t
 import { signIn } from "./support/flows.ts";
 import {
   FILE_CREATED_MS,
+  idInPeople,
   openPersonPage,
   preparePrivacy,
   removalWindow,
+  removeByApi,
   stateCard,
+  stillRemoving,
+  switchOffByApi,
 } from "./support/privacy.ts";
 import { screenshotFolder } from "./support/screenshots.ts";
 
@@ -86,5 +90,25 @@ test("A person's page with Sign-in and removal, and the window Remove a person",
     await expect(
       removalWindow(page, lea.name).getByRole("heading", { name: t("removal.kept-by-law") }),
     ).toBeVisible();
+  });
+});
+
+test("A removed person's page while Bugaboo removes them, and after", async ({ page, server }) => {
+  const admin = await signedInAdmin(server);
+  const id = await idInPeople(admin, bob);
+  await switchOffByApi(admin, id);
+  await removeByApi(admin, id);
+  await admin.dispose();
+  await signIn(page, ada);
+  // The job of the removal is done in a moment here; the answer is held at *removing* for the picture.
+  await page.route(`**/api/v1/people/${id}`, stillRemoving);
+  await inFourChosenThemes(page, "person-removing", MILESTONE, paths.appearance, async () => {
+    await page.goto(personAddress(id));
+    await expect(page.getByText(t("person.removing-title"), { exact: true })).toBeVisible();
+  });
+  await page.unroute(`**/api/v1/people/${id}`);
+  await inFourChosenThemes(page, "person-removed", MILESTONE, paths.appearance, async () => {
+    await page.goto(personAddress(id));
+    await expect(page.getByText(t("person.former-title"), { exact: true })).toBeVisible();
   });
 });

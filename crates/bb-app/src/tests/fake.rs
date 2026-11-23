@@ -101,6 +101,11 @@ pub(crate) struct State {
     /// What each removal asked the changes to be scrubbed of, with its person (PRIV-04): the
     /// in-memory store keeps its events outside the state, so a test reads the request.
     pub(crate) scrubs: Vec<(UserId, crate::privacy::removal::Scrub)>,
+    /// The steps of the scrub of words a removal's job ran, each with the place it began at.
+    pub(crate) word_scrubs: Vec<(
+        crate::privacy::removal::Scrub,
+        crate::privacy::removal::ScrubPlace,
+    )>,
     pub(crate) sessions: Vec<SignInSession>,
     pub(crate) two_steps: Vec<TwoStep>,
     pub(crate) totp_secrets: Vec<(UserId, Vec<u8>)>,
@@ -194,6 +199,12 @@ pub(crate) struct State {
     pub(crate) reindexed: Vec<(Vec<bb_core::id::IssueId>, Vec<bb_core::id::CommentId>)>,
     /// How often the job that finishes a removal let go of the old text.
     pub(crate) compactions: u32,
+    /// The removals that are not finished, each with its words as the fake seals them (in the
+    /// clear: the in-memory store has no key files; the sealing is tested on both databases).
+    pub(crate) pending_removals: Vec<(
+        bb_core::removal::PendingRemoval,
+        bb_core::secret::StoredSecret,
+    )>,
     pub(crate) search_columns: Vec<bb_core::saved_search::SearchColumn>,
     pub(crate) search_shares: Vec<bb_core::saved_search::SearchShare>,
     pub(crate) default_lists: Vec<bb_core::saved_search::ProjectDefaultList>,

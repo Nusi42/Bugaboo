@@ -89,6 +89,11 @@ export function certificateDays(state: State, nowMs: number): number | null {
     : daysUntil(certificate.expires_at, nowMs);
 }
 
+/** Whether removals of people stopped before they were finished: a warning (ADR-0044). */
+export function hasStoppedRemovals(state: State): boolean {
+  return state.removals_stopped > 0;
+}
+
 /** How serious the state is at `nowMs`. */
 export function levelOf(state: State, nowMs: number): Level {
   const days = certificateDays(state, nowMs);
@@ -105,6 +110,7 @@ export function levelOf(state: State, nowMs: number): Level {
     unknownHostParts(state.host_open).length > 0 ||
     previewChildOpen(state.host_open) ||
     database.certificate_unchecked ||
+    hasStoppedRemovals(state) ||
     (days !== null && days < CERTIFICATE_WARNING_DAYS)
   ) {
     return "warning";

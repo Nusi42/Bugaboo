@@ -312,6 +312,8 @@ impl ServerProbe for Probe {
                 data_folder,
                 host,
                 database_certificate_unchecked: self.database_certificate_unchecked,
+                // A database that does not answer is shown as such above.
+                removals_stopped: self.database.stopped_removal_count().await.unwrap_or(0),
             }
         })
     }

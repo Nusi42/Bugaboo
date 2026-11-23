@@ -4,6 +4,9 @@
 //! organization, which shows the person as *Former user* from then on. Every kind that is not named
 //! here is kept: deleting a record of the organization has to be decided, never fallen into.
 
+use jiff::Timestamp;
+
+use crate::id::{JobId, UserId};
 use crate::keeping::KeepKind;
 use crate::personal::{Entity, EntityMarks, Link};
 
@@ -85,6 +88,42 @@ const DELETED: &[(EntityMarks, &[Link])] = &[
     // them only by the address is found by it (`RemovalStore::delete_jobs_with_address`).
     deleted::<crate::job::Job>(SUBJECT),
 ];
+
+/// A removal that is not finished yet (ADR-0044, decision 6): the change of the removal writes it
+/// and the job `privacy.finish-removal` deletes it with its last step, so a person is being removed
+/// exactly while this row exists. The name, the address and the handles the job still scrubs from
+/// the changes are no part of it: they are a stored secret of their own (`privacy.removal.<ID>`),
+/// encrypted with a key of their own, which goes with the row. While the row exists, the comments that go are already hidden (in the trash, kept from being
+/// restored and from every search), but the person's name, handles and address may still stand in
+/// the changes of the events, the history and the notifications that name them only by those
+/// words: the job scrubs them a page of each table at a time, right after the change, without
+/// undue delay (GDPR Art. 17(1)). A job that gives up is tried again every day, and the status page
+/// counts the removal until it is finished.
+#[derive(Clone, Debug, PartialEq, Eq, Entity)]
+pub struct PendingRemoval {
+    /// The person who is being removed.
+    #[personal(category = "identity", basis = "legal_obligation")]
+    #[person(subject)]
+    pub person: UserId,
+    /// Whether the person's comments go (the choice of the removal); they are hidden from the
+    /// change of the removal on, and deleted by the job.
+    #[not_personal]
+    pub comments_go: bool,
+    /// The job that does the next step; only this job may do it, so a step that runs twice never
+    /// queues a second chain.
+    #[not_personal]
+    pub job: JobId,
+    /// The next step, as the payload of the job writes it: IDs and a place in a table, no word of
+    /// the person.
+    #[personal(category = "technical", basis = "legal_obligation")]
+    pub step: String,
+    /// When the person was removed.
+    #[personal(category = "activity", basis = "legal_obligation")]
+    pub created_at: Timestamp,
+    /// When the last step ended.
+    #[not_personal]
+    pub updated_at: Timestamp,
+}
 
 /// Every kind a removal deletes rows of, each with what the person is to a row that goes.
 pub fn deleted_kinds() -> impl Iterator<Item = (EntityMarks, &'static [Link])> {

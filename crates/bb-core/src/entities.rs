@@ -108,6 +108,7 @@ crate::entities! {
     crate::relation::IssueParent,
     crate::relation::Relation,
     crate::relation::RelationKind,
+    crate::removal::PendingRemoval,
     crate::secret::StoredSecret,
     crate::security_log::SecurityLogCheckpoint,
     crate::security_log::SecurityLogEntry,

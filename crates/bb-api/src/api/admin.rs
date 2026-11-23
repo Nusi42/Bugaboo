@@ -300,6 +300,9 @@ struct ServerStatusBody {
     /// Whether other accounts on this computer can change the program or its settings, or read
     /// the settings or the HTTPS key.
     host_open: HostOpenBody,
+    /// How many removals of people stopped before they were finished; Bugaboo tries each again
+    /// every day and at every start.
+    removals_stopped: u64,
 }
 
 impl From<Snapshot> for ServerStatusBody {
@@ -322,6 +325,7 @@ impl From<Snapshot> for ServerStatusBody {
             },
             data_folder_open: snapshot.data_folder.into(),
             host_open: snapshot.host.into(),
+            removals_stopped: snapshot.removals_stopped,
         }
     }
 }

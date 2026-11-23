@@ -109,10 +109,14 @@ bb_core::words! {
         /// Deleting the files of *Download my data* and their records 7 days after they were asked
         /// for (ADR-0044, decision 2): `delete_old_exports`.
         DeleteOldExports => "privacy.delete-old-exports",
-        /// Finishing the removal of a person (ADR-0044, decision 6, M5-F52): queued in the change
-        /// that removes them; the payload names the comments, issues and exports it deleted, and
-        /// the job makes the full-text index forget the texts and deletes the files, in steps.
+        /// Finishing the removal of a person (ADR-0044, decision 6, M9-F51): queued in the change
+        /// that removes them and by each step for the next; the payload names the person and the
+        /// step, and the job deletes the files of the exports and the comments that go, scrubs the
+        /// person's words from the changes and ends the removal, a short change a step.
         FinishRemoval => "privacy.finish-removal",
+        /// Giving each removal whose job gave up or is gone a new job from the step its row keeps
+        /// (ADR-0044, decision 6): `Ctx::resume_removals`.
+        ResumeRemovals => "privacy.resume-removals",
     }
 }
 
@@ -134,6 +138,7 @@ impl JobKind {
             | Self::DeleteOldAwayTimes
             | Self::BackupsDaily
             | Self::DeleteOldExports
+            | Self::ResumeRemovals
             | Self::RotateServerLog => true,
             Self::ManyChangesStep
             | Self::RenewIds
@@ -184,6 +189,7 @@ impl JobKind {
             | Self::DataExport
             | Self::BackupNow
             | Self::FinishRemoval
+            | Self::ResumeRemovals
             | Self::DeleteOldExports => Rhythm::FromTheStart,
         }
     }
@@ -486,7 +492,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                     JobFailure::of(&error, FAILED, job)
                 }),
             JobKind::BackupNow => self.do_backup_now(job).await,
-            JobKind::FinishRemoval => Box::pin(self.run_finish_removal(&job.payload))
+            JobKind::FinishRemoval => Box::pin(self.run_finish_removal(job))
                 .await
                 .map_err(|error| {
                     tracing::warn!(cause = %error, "a step of finishing a removal failed");
@@ -505,6 +511,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             | JobKind::CleanUpFiles
             | JobKind::CleanOldGrants
             | JobKind::RefreshStatistics
+            | JobKind::ResumeRemovals
             | JobKind::BackupsDaily => Err(misrouted(job, kind)),
         }
     }
@@ -552,6 +559,18 @@ impl<S: AuthStore> Ctx<'_, S> {
                 tracing::warn!(cause = %error, "the history could not catch up");
                 JobFailure::of(&error, FAILED, job)
             }),
+            JobKind::ResumeRemovals => Box::pin(self.run_daily(JobKind::ResumeRemovals, async {
+                self.resume_removals().await.map(|resumed| {
+                    if resumed > 0 {
+                        tracing::warn!(resumed, "removals that had stopped go on with a new job");
+                    }
+                })
+            }))
+            .await
+            .map_err(|error| {
+                tracing::warn!(cause = %error, "the removals that stopped could not go on");
+                JobFailure::of(&error, FAILED, job)
+            }),
             JobKind::RotateServerLog => self.rotate_server_log_daily(job).await,
             JobKind::RefreshStatistics => self.refresh_statistics_daily(job).await,
             JobKind::BackupsDaily => self.backups_daily(job).await,
@@ -593,10 +612,12 @@ impl<S: AuthStore> Ctx<'_, S> {
                 );
                 Ok(())
             }
-            // The removal itself is done; what is left is in the index and the files, and the
-            // dead job keeps its payload for whoever runs it again.
+            // The removal stays recorded as not finished: the dead job is kept while it is, the
+            // status page counts it, and `privacy.resume-removals` gives it a new job.
             Some(JobKind::FinishRemoval) => {
-                tracing::error!("finishing a removal gave up; the job is on the dead-letter list");
+                tracing::error!(
+                    "finishing a removal gave up; it goes on with the next round of privacy.resume-removals"
+                );
                 Ok(())
             }
             // The daily kinds come back by themselves and leave no work that people can see; a
@@ -614,6 +635,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 | JobKind::CleanOldGrants
                 | JobKind::RefreshStatistics
                 | JobKind::BackupsDaily
+                | JobKind::ResumeRemovals
                 | JobKind::DeleteOldExports),
             ) => {
                 debug_assert!(kind.is_daily(), "the job kind {kind:?} is not a daily one");

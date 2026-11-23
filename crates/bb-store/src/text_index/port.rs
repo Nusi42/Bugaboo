@@ -29,6 +29,7 @@ use sea_query::{Alias, BinOper, Expr, ExprTrait as _, Func, Query, SelectStateme
 
 use bb_app::search::WithheldText;
 
+use crate::comments::trashed_comments;
 use crate::db::{Dialect, StoredId as _};
 use crate::schema::{TextIndexExtra, TextIndexRow};
 
@@ -181,8 +182,15 @@ fn lookups(words: &[SearchWord]) -> Vec<Lookup<'_>> {
         .collect()
 }
 
-/// The condition that a row is from the scope.
+/// The condition that a row is from the scope, and of no comment in the trash
+/// (`comments::trashed_comments`): the comments a removal hid stay in the index until its job
+/// deletes them.
 fn in_scope(scope: TextScope) -> SimpleExpr {
+    of_scope(scope).and(Expr::col(TextIndexRow::SourceRef).not_in_subquery(trashed_comments()))
+}
+
+/// The condition that a row is from the scope.
+fn of_scope(scope: TextScope) -> SimpleExpr {
     match scope {
         TextScope::Everywhere => everywhere_but(WithheldText::default()),
         TextScope::EverywhereBut(withheld) => everywhere_but(withheld),

@@ -291,10 +291,18 @@ impl CommentStore for FakeStore {
         deleted_at: Option<Timestamp>,
         version: Option<Version>,
     ) -> Result<bool, FakeError> {
+        let going: Vec<UserId> = tx
+            .state
+            .pending_removals
+            .iter()
+            .filter(|(pending, _)| pending.comments_go)
+            .map(|(pending, _)| pending.person)
+            .collect();
         let Some(found) = tx.state.comments.iter_mut().find(|found| {
             found.id == id
                 && found.deleted_at.is_some() != deleted_at.is_some()
                 && version.is_none_or(|version| found.version == version.get())
+                && (deleted_at.is_some() || !going.contains(&found.author))
         }) else {
             return Ok(false);
         };
@@ -306,14 +314,17 @@ impl CommentStore for FakeStore {
     async fn delete_comments_of(
         tx: &mut Tx,
         author: UserId,
+        limit: u64,
     ) -> Result<Vec<(CommentId, IssueId)>, FakeError> {
-        let gone: Vec<(CommentId, IssueId)> = tx
+        let mut gone: Vec<(CommentId, IssueId)> = tx
             .state
             .comments
             .iter()
             .filter(|comment| comment.author == author)
             .map(|comment| (comment.id, comment.issue))
             .collect();
+        gone.sort_unstable();
+        gone.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
         let goes = |id: &CommentId| gone.iter().any(|(gone, _)| gone == id);
         for attachment in &mut tx.state.attachments {
             if attachment.comment.as_ref().is_some_and(goes) {
