@@ -178,7 +178,7 @@ use crate::settings::{SecurityTxt, SecurityTxtQuery, security_txt};
 use crate::keeping::{PeriodEffect, PeriodEffectQuery, period_effect};
 
 use crate::backups::{
-    BackupItem, Backups, CreateBackup, ListBackupsQuery, create_backup, list_backups,
+    AskedBackup, Backups, CreateBackup, ListBackupsQuery, create_backup, list_backups,
 };
 
 each_use_case!(use_cases);

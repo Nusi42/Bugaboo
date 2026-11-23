@@ -1499,6 +1499,9 @@ pub const BACKUP_PAGE_CREATING: MessageKey = MessageKey::new("backup-page.creati
 /// The message `backup-page.daily`.
 pub const BACKUP_PAGE_DAILY: MessageKey = MessageKey::new("backup-page.daily");
 
+/// The message `backup-page.failed`.
+pub const BACKUP_PAGE_FAILED: MessageKey = MessageKey::new("backup-page.failed");
+
 /// The message `backup-page.intro`.
 pub const BACKUP_PAGE_INTRO: MessageKey = MessageKey::new("backup-page.intro");
 

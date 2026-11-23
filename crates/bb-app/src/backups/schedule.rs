@@ -14,6 +14,7 @@ use bb_core::settings::{
 use bb_core::wording::region::Region;
 use jiff::tz::TimeZone;
 
+use super::KeepLease;
 use crate::auth::{AppError, AuthStore, Ctx};
 
 /// What a round of the schedule did.
@@ -27,14 +28,20 @@ pub(crate) struct Round {
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// Creates the backup of the day when the setting is on, and deletes what the rotation no
-    /// longer keeps.
-    pub(crate) async fn backup_round(&self) -> Result<Round, AppError> {
+    /// longer keeps; with `keep`, the job of the round keeps its lease while the backup is made.
+    pub(crate) async fn backup_round<'k>(
+        &'k self,
+        keep: Option<KeepLease<'k>>,
+    ) -> Result<Round, AppError> {
         self.remove_backup_leftovers().await?;
         let layers = self.setting_layers_of(None).await?;
         let mut round = Round::default();
         if layers.yes(&BACKUPS_DAILY) {
-            let created = self.created_backup(BackupMaker::Schedule, None).await?;
-            self.record_run(&created).await?;
+            let id = self.new_backup_id()?;
+            let created = self
+                .created_backup(id, BackupMaker::Schedule, None, keep)
+                .await?;
+            self.record_run(&created, None).await?;
             round.created = true;
         }
         // What the rotation no longer keeps goes through the one shape of deleting (ADR-0045).
@@ -44,9 +51,10 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// Removes what backups that never finished left in the backups folder of the data folder
-    /// and in the one the setting names. Only this round does it: a backup made on the command
-    /// line beside the server must never lose its copy to another backup.
-    async fn remove_backup_leftovers(&self) -> Result<(), AppError> {
+    /// and in the one the setting names. Only the backups of the server do it, the daily backup
+    /// job and the backup asked for with the button, each before it starts; never the command
+    /// line, and the work folder of a backup that still runs stays (ADR-0046).
+    pub(super) async fn remove_backup_leftovers(&self) -> Result<(), AppError> {
         let named = self.backups_folder().await?;
         let backups = &self.services.backups;
         backups.remove_leftovers(None).await;

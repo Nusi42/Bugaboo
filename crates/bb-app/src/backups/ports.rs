@@ -17,16 +17,28 @@ pub struct BackupFile {
     pub size: u64,
 }
 
+/// What a backup made by a job asks while it works, so the job keeps its lease (ADR-0017): a copy
+/// of a large database takes longer than any fixed lease, and another server must not take the
+/// job and make a second backup meanwhile.
+pub struct KeepLease<'a> {
+    /// How often the lease is renewed: well within its length.
+    pub every: std::time::Duration,
+    /// Renews the lease; `false` when another worker holds the job now, and the backup stops.
+    pub renew: Box<dyn Fn() -> BoxFuture<'a, bool> + Send + Sync + 'a>,
+}
+
 /// The backup files. `folder` is the folder the setting `backups.folder` names, or `None` for the
 /// backups folder of the data folder.
 pub trait BackupFiles: Send + Sync {
-    /// Creates a backup into the folder while people go on working (ADR-0046, decision 2).
-    fn create(
-        &self,
+    /// Creates a backup into the folder while people go on working (ADR-0046, decision 2); with
+    /// `keep`, the lease of the job that makes it is renewed while it works.
+    fn create<'a>(
+        &'a self,
         folder: Option<String>,
         purpose: Purpose,
         now: Timestamp,
-    ) -> BoxFuture<'_, std::io::Result<CreatedFile>>;
+        keep: Option<KeepLease<'a>>,
+    ) -> BoxFuture<'a, std::io::Result<CreatedFile>>;
 
     /// The backups in the folder whose names Bugaboo reads, newest first.
     fn list(&self, folder: Option<String>) -> BoxFuture<'_, std::io::Result<Vec<BackupFile>>>;
@@ -63,12 +75,13 @@ fn none<T>() -> std::io::Result<T> {
 }
 
 impl BackupFiles for NoBackupFiles {
-    fn create(
-        &self,
+    fn create<'a>(
+        &'a self,
         _folder: Option<String>,
         _purpose: Purpose,
         _now: Timestamp,
-    ) -> BoxFuture<'_, std::io::Result<CreatedFile>> {
+        _keep: Option<KeepLease<'a>>,
+    ) -> BoxFuture<'a, std::io::Result<CreatedFile>> {
         Box::pin(async { none() })
     }
 
@@ -99,5 +112,8 @@ pub trait BackupStore: ChangeStore + 'static {
     writes! {
         /// Adds the record of a backup.
         fn insert_backup_run(run: &BackupRun) -> ();
+        /// Holds the asks for a backup until the end of the change: two asks at the same moment
+        /// cannot both find no backup asked for that is not made yet.
+        fn lock_backup_asks() -> ();
     }
 }

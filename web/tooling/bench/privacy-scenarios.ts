@@ -1,8 +1,7 @@
 import { rmSync } from "node:fs";
 
-import { dataOf } from "@bugaboo/api-client";
-
 import { ownId } from "../../app/e2e/support/accounts.ts";
+import { backUp } from "../../app/e2e/support/operations-scene.ts";
 import { timed } from "../../app/e2e/support/perf.ts";
 import { backupIn } from "../../app/e2e/support/server.ts";
 import { type Context, type Scenario } from "./scenarios.ts";
@@ -31,12 +30,13 @@ async function personDataWalk(context: Context): Promise<number> {
 }
 
 /**
- * A backup of the whole dataset made through the route, as *Create a backup now* does (OPS-07). The
- * file is deleted after each run, so the dataset does not grow with the runs.
+ * A backup of the whole dataset asked for through the route, as *Create a backup now* does
+ * (OPS-07), from the ask until the list says it is made. The file is deleted after each run, so the
+ * dataset does not grow with the runs.
  */
 async function backupLarge(context: Context): Promise<number> {
-  const made = await timed(() => context.session.client.POST("/api/v1/admin/backups"));
-  rmSync(backupIn(context.agent.server.dataDir, dataOf(made.value).name));
+  const made = await timed(() => backUp(context.session));
+  rmSync(backupIn(context.agent.server.dataDir, made.value));
   return made.ms;
 }
 

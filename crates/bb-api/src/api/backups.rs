@@ -2,12 +2,16 @@
 //! backup now*. Both need *Change organization settings* and a session; an access key or an agent
 //! is turned away. A backup is restored from the command line of the server, with the server
 //! stopped (`bugaboo restore <file>`): there is no route that restores.
+//!
+//! *Create a backup now* answers `202` at once: the long lane of the jobs makes the backup, and the
+//! list says while it runs (`asked`), then shows the backup and its record, or that it failed.
 
 use axum::extract::State;
+use axum::http::StatusCode;
 use axum::response::Response;
-use bb_app::backups::{BackupItem, Backups, CreateBackup, ListBackupsQuery};
+use bb_app::backups::{AskedBackup, BackupItem, Backups, CreateBackup, ListBackupsQuery};
 use bb_core::backup::name::Purpose;
-use bb_core::backup::run::BackupRun;
+use bb_core::backup::run::{AskedBackupState, BackupRun};
 use bb_core::hex;
 use bb_core::id::UserId;
 use bb_policy::{Masked, PersonRef};
@@ -93,6 +97,25 @@ impl BackupRunBody {
     }
 }
 
+/// A backup asked for with *Create a backup now* that is not made yet.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct AskedBackupBody {
+    /// `running` while its job waits or works; `failed` when the job gave up and no backup was
+    /// made since.
+    status: AskedBackupState,
+    /// When it was asked for.
+    asked_at: String,
+}
+
+impl From<&AskedBackup> for AskedBackupBody {
+    fn from(asked: &AskedBackup) -> Self {
+        Self {
+            status: asked.state,
+            asked_at: asked.asked_at.to_string(),
+        }
+    }
+}
+
 /// The backups and the newest records.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct BackupsBody {
@@ -100,10 +123,15 @@ pub(crate) struct BackupsBody {
     files: Vec<BackupFileBody>,
     /// The newest records of backups created and restored, newest first.
     runs: Vec<BackupRunBody>,
+    /// The backup asked for with *Create a backup now* that is not made yet; `null` when none is
+    /// running and the last one asked for did not fail.
+    #[schema(required = true)]
+    asked: Option<AskedBackupBody>,
 }
 
 impl Masked for BackupsBody {}
 impl Masked for BackupFileBody {}
+impl Masked for AskedBackupBody {}
 
 impl From<&Backups> for BackupsBody {
     fn from(backups: &Backups) -> Self {
@@ -114,6 +142,7 @@ impl From<&Backups> for BackupsBody {
                 .iter()
                 .map(|run| BackupRunBody::of(run, &backups.people))
                 .collect(),
+            asked: backups.asked.as_ref().map(AskedBackupBody::from),
         }
     }
 }
@@ -142,15 +171,16 @@ async fn list_backups(
     answer_authorized(&backups.map(|backups| BackupsBody::from(&backups)))
 }
 
-/// Creates a backup now, while people go on working. Needs *Change organization settings*, from a
-/// session.
+/// Asks for a backup now, which is made in the background while people go on working; the answer
+/// comes at once. The list of backups says while it runs (`asked`), and shows the backup when it is
+/// made, or that it failed. Needs *Change organization settings*, from a session.
 #[utoipa::path(
     post,
     path = "/api/v1/admin/backups",
     operation_id = "createBackup",
     tag = "admin",
     responses(
-        (status = 200, description = "The backup that was created.", body = BackupFileBody),
+        (status = 202, description = "The backup is asked for and being made.", body = AskedBackupBody),
         (status = 409, description = "A backup is being created already (backup.running).", body = bb_core::Problem, content_type = "application/problem+json"),
         NotSignedInAnswer,
         ForbiddenAnswer
@@ -161,11 +191,13 @@ async fn create_backup(
     Info(info): Info,
     Session(session_token): Session,
 ) -> Result<Response, ApiError> {
-    let created = auth
+    let asked = auth
         .api()?
         .create_backup(info, CreateBackup { session_token })
         .await?;
-    answer_authorized(&created.map(|item| BackupFileBody::from(&item)))
+    let mut answer = answer_authorized(&asked.map(|asked| AskedBackupBody::from(&asked)))?;
+    *answer.status_mut() = StatusCode::ACCEPTED;
+    Ok(answer)
 }
 
 /// The routes of backups.

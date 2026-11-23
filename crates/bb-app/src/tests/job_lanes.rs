@@ -7,6 +7,7 @@ use std::time::Duration;
 use bb_core::files::{PREVIEWS_PER_PERSON_MAX, PreviewStatus};
 use bb_core::notification::MAIL_BATCH_SECONDS;
 use bb_core::settings::{FILES_PDF_PREVIEWS, SettingValue};
+use bb_core::technical::TechnicalName;
 
 use super::fake_files::PDF_START;
 use super::mail::mail_is_on;
@@ -17,7 +18,7 @@ use super::scenarios_issues::an_issue;
 use super::world::{Outcome, World};
 use crate::auth::AppError;
 use crate::files::{AttachmentStore as _, FileStore as _};
-use crate::jobs::{JobKind, Lane};
+use crate::jobs::{JobKind, JobStore as _, LEASE, Lane};
 use crate::settings::{ChangeSetting, SettingsScope, change_setting};
 
 /// How long a short job may take while previews stall: far less than one preview may take.
@@ -112,6 +113,42 @@ async fn att_04_a_slow_preview_does_not_hold_the_files_of_others() -> Outcome {
         .map_err(text)?
         .ok_or("the attachment is there")?;
     assert_eq!(attachment.preview, PreviewStatus::Ready);
+    Ok(())
+}
+
+#[tokio::test]
+async fn adr_0017_a_long_job_taken_by_another_worker_while_it_waited_is_left_to_it() -> Outcome {
+    let world = World::new().await?;
+    let project = a_project(&world, "ACME").await?;
+    let issue = an_issue(&world, project).await?;
+    for number in 0..2 {
+        an_attachment(&world, issue, &format!("{number}.png"), &picture(number)).await?;
+    }
+    let gate = world.files.stall_previews();
+    let ctx = world.ctx();
+    let long = ctx.run_lane(Lane::Long);
+    tokio::pin!(long);
+    tokio::select! {
+        biased;
+        () = gate.entered.notified() => {}
+        _ = &mut long => return Err("the preview did not stall".into()),
+    }
+    // The first preview takes longer than the lease, and another worker takes the jobs this one
+    // holds: the second waits behind the first.
+    world.clock.advance(LEASE.as_secs() + 1);
+    let other = TechnicalName::new("worker.other")?;
+    let taken = world
+        .store
+        .lease_jobs(&other, ctx.now(), LEASE, 5, &Lane::Long.kinds()?)
+        .await
+        .map_err(text)?;
+    assert!(taken.len() >= 2, "the other worker took both previews");
+    gate.release.notify_one();
+    // A worker that started the second preview would stall at the gate again.
+    tokio::time::timeout(SHORT_JOB_BUDGET, long)
+        .await
+        .map_err(|_| "the worker started a job that another worker holds")??;
+    assert_eq!(world.files.previews_made(), 1);
     Ok(())
 }
 

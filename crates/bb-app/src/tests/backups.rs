@@ -2,17 +2,21 @@
 //! event and its line in the security log, and the schedule with the clock moved.
 
 use bb_core::backup::name::{BackupName, Purpose};
-use bb_core::backup::run::{BackupEvent, BackupMaker};
+use bb_core::backup::run::{AskedBackupState, BackupEvent, BackupMaker};
 use bb_core::error_code::ErrorCode;
 use bb_core::settings::{BACKUPS_DAILY, BACKUPS_FOLDER, SettingValue};
 use bb_core::sign_in::SecurityAction;
 use jiff::Timestamp;
 
+use super::data_exports::run_jobs;
 use super::fake_backups::{A_SHARE_BEHIND_A_DRIVE, MemoryBackups};
 use super::scenarios::{Added, measured, token};
 use super::world::{Outcome, World};
 use crate::auth::AppError;
-use crate::backups::{BackupFile, CreateBackup, ListBackupsQuery, create_backup, list_backups};
+use crate::backups::{
+    BackupFile, Backups, CreateBackup, ListBackupsQuery, create_backup, list_backups,
+};
+use crate::jobs::JobKind;
 use crate::settings::{ChangeSetting, SettingsScope, change_setting};
 
 /// The seconds of a day.
@@ -31,6 +35,25 @@ pub(crate) async fn create_backup_scenario(world: &World) -> Added {
     .await
 }
 
+/// A backup asked for with the button, and the jobs run as a server runs them.
+async fn backed_up(world: &World) -> Outcome {
+    create_backup_scenario(world).await?;
+    run_jobs(world).await?;
+    Ok(())
+}
+
+/// The list of backups, as the administrator sees it.
+async fn listed(world: &World) -> Result<Backups, AppError> {
+    Ok(list_backups(
+        &world.ctx(),
+        ListBackupsQuery {
+            session_token: token(world),
+        },
+    )
+    .await?
+    .into_value())
+}
+
 fn names(backups: &MemoryBackups) -> Vec<BackupName> {
     backups
         .files
@@ -42,25 +65,84 @@ fn names(backups: &MemoryBackups) -> Vec<BackupName> {
 }
 
 #[tokio::test]
-async fn ops_07_a_backup_now_is_recorded_with_its_line_in_the_security_log() -> Outcome {
+async fn ops_07_a_backup_now_answers_at_once_and_the_list_says_while_it_runs() -> Outcome {
     let world = World::new().await?;
-    let created = create_backup(
+    let asked = create_backup(
         &world.ctx(),
         CreateBackup {
             session_token: token(&world),
         },
     )
-    .await?;
-    let list = list_backups(
-        &world.ctx(),
-        ListBackupsQuery {
-            session_token: token(&world),
-        },
-    )
-    .await?;
-    let list = list.into_value();
+    .await?
+    .into_value();
+    assert_eq!(asked.state, AskedBackupState::Running);
+    // Nothing is made in the request: the job of the long lane makes it.
+    let list = listed(&world).await?;
+    assert!(list.files.is_empty());
+    assert_eq!(list.asked, Some(asked));
+    let job = world
+        .store
+        .lock()
+        .state
+        .jobs
+        .iter()
+        .find(|job| job.kind.as_str() == JobKind::BackupNow.code())
+        .cloned()
+        .ok_or("no job makes the backup")?;
+    assert_eq!(
+        job.payload["person"],
+        serde_json::json!(world.admin.person.id.to_string())
+    );
+    run_jobs(&world).await?;
+    let list = listed(&world).await?;
     assert_eq!(list.files.len(), 1);
-    assert_eq!(list.files[0].name, created.into_value().name);
+    assert_eq!(list.asked, None);
+    // The record has the ID the ask named in its event, so the two events tell one story.
+    assert_eq!(
+        job.payload["backup"],
+        serde_json::json!(list.runs[0].id.to_string())
+    );
+    // A job that runs again after the backup was recorded makes no second one (ADR-0017).
+    world.ctx().run_backup_now(&job).await?;
+    assert_eq!(listed(&world).await?.files.len(), 1);
+    Ok(())
+}
+
+#[tokio::test]
+async fn ops_07_a_backup_now_that_failed_is_named_until_a_backup_is_made() -> Outcome {
+    let world = World::new().await?;
+    world
+        .backups
+        .broken
+        .store(true, std::sync::atomic::Ordering::SeqCst);
+    create_backup_scenario(&world).await?;
+    run_jobs(&world).await?;
+    // The person is told at once: the job is not tried again for the length of a whole copy.
+    let failed = listed(&world)
+        .await?
+        .asked
+        .ok_or("the failure is not named")?;
+    assert_eq!(failed.state, AskedBackupState::Failed);
+    assert!(listed(&world).await?.files.is_empty());
+    // They may ask again, and once a backup is made the failure is no longer named.
+    world
+        .backups
+        .broken
+        .store(false, std::sync::atomic::Ordering::SeqCst);
+    world.clock.advance(1);
+    backed_up(&world).await?;
+    let list = listed(&world).await?;
+    assert_eq!(list.asked, None);
+    assert_eq!(list.files.len(), 1);
+    Ok(())
+}
+
+#[tokio::test]
+async fn ops_07_a_backup_now_is_recorded_with_its_line_in_the_security_log() -> Outcome {
+    let world = World::new().await?;
+    backed_up(&world).await?;
+    let list = listed(&world).await?;
+    assert_eq!(list.files.len(), 1);
     assert_eq!(list.runs.len(), 1);
     assert_eq!(list.runs[0].event, BackupEvent::Made);
     assert_eq!(list.runs[0].maker, BackupMaker::Person);
@@ -108,9 +190,16 @@ async fn ops_07_one_backup_is_made_at_a_time() -> Outcome {
         .services
         .backup_running
         .store(false, std::sync::atomic::Ordering::SeqCst);
-    // Once it is done, the next one goes ahead, and lets the mark go again after it.
+    // Once it is done, the next one goes ahead; a second ask while it waits is turned away.
     ask().await?;
+    assert!(matches!(
+        ask().await,
+        Err(AppError::Refused(ErrorCode::BackupRunning))
+    ));
+    run_jobs(&world).await?;
+    world.clock.advance(1);
     ask().await?;
+    run_jobs(&world).await?;
     assert_eq!(world.store.lock().state.backup_runs.len(), 2);
     Ok(())
 }
@@ -130,7 +219,7 @@ async fn ops_07_the_schedule_keeps_seven_daily_and_four_weekly_backups() -> Outc
         },
     )
     .await?;
-    assert!(!world.ctx().backup_round().await?.created);
+    assert!(!world.ctx().backup_round(None).await?.created);
     // Every round, and only the round, first removes what a backup that never finished left.
     let cleaned = world
         .backups
@@ -151,7 +240,7 @@ async fn ops_07_the_schedule_keeps_seven_daily_and_four_weekly_backups() -> Outc
     )
     .await?;
     for _ in 0..40 {
-        world.ctx().backup_round().await?;
+        world.ctx().backup_round(None).await?;
         world.clock.advance(DAY);
     }
     let kept = names(&world.backups);
@@ -194,10 +283,10 @@ async fn ops_07_the_backup_before_a_restore_stays_for_the_keep_period_of_the_sec
     };
     // Far past the seven days and four weeks of the rotation, inside the 365 days of the log.
     world.clock.advance(100 * DAY);
-    world.ctx().backup_round().await?;
+    world.ctx().backup_round(None).await?;
     assert!(before_restore(&world), "it stays inside the keep period");
     world.clock.advance(300 * DAY);
-    world.ctx().backup_round().await?;
+    world.ctx().backup_round(None).await?;
     assert!(!before_restore(&world), "it goes after the keep period");
     Ok(())
 }
@@ -251,10 +340,7 @@ async fn another_viewer(world: &World) -> Result<String, AppError> {
     Ok(ben.session_token)
 }
 
-async fn backups_seen_by(
-    world: &World,
-    session_token: &str,
-) -> Result<crate::backups::Backups, AppError> {
+async fn backups_seen_by(world: &World, session_token: &str) -> Result<Backups, AppError> {
     Ok(list_backups(
         &world.ctx(),
         ListBackupsQuery {
@@ -276,7 +362,7 @@ async fn priv_12_the_list_names_the_person_as_who_sees_people_says() -> Outcome 
 
     let world = World::new().await?;
     let ben = another_viewer(&world).await?;
-    create_backup_scenario(&world).await?;
+    backed_up(&world).await?;
     // By name at first.
     let seen = backups_seen_by(&world, &ben).await?;
     assert_eq!(seen.people.len(), 1);
@@ -310,7 +396,7 @@ async fn priv_12_a_person_who_was_removed_is_a_former_user_in_the_list() -> Outc
 
     let world = World::new().await?;
     let ben = another_viewer(&world).await?;
-    create_backup_scenario(&world).await?;
+    backed_up(&world).await?;
     let creator = world.admin.person.id;
     switch_off(
         &world.ctx(),

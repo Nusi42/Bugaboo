@@ -8,7 +8,7 @@ use jiff::{SignedDuration, Timestamp};
 use serde_json::Value;
 
 use super::fake::{FakeError, FakeStore, Tx, remove_at_most};
-use crate::jobs::{JOB_ATTEMPTS_MAX, JobStore};
+use crate::jobs::{JOB_ATTEMPTS_MAX, JobKind, JobStore};
 use crate::many_changes::ManyChangeStore;
 
 pub(super) fn job(
@@ -142,6 +142,16 @@ impl JobStore for FakeStore {
             .jobs
             .iter()
             .any(|job| job.kind == *kind && job.state == JobState::Queued && job.run_at > after))
+    }
+
+    async fn newest_job_in(tx: &mut Tx, kind: JobKind) -> Result<Option<Job>, FakeError> {
+        Ok(tx
+            .state
+            .jobs
+            .iter()
+            .filter(|job| job.kind.as_str() == kind.code())
+            .max_by_key(|job| job.created_at)
+            .cloned())
     }
 
     async fn purge_dead_jobs(&self, before: Timestamp, limit: u64) -> Result<u64, FakeError> {

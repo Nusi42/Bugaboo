@@ -1287,6 +1287,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("backup-page.creating", "Creating…"),
     ("backup-page.daily", "Daily backups"),
     (
+        "backup-page.failed",
+        "The backup could not be created. Try again; if it fails again, the log of the server says why.",
+    ),
+    (
         "backup-page.intro",
         "Backups are files in the backups folder on the computer of the server. Each one holds all the organization's data and its attached files, but no keys.",
     ),

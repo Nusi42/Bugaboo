@@ -377,6 +377,7 @@
   "backup-page.create-help": "People can go on working while the backup is created.",
   "backup-page.creating": "Creating…",
   "backup-page.created": "Created",
+  "backup-page.failed": "The backup could not be created. Try again; if it fails again, the log of the server says why.",
   "backup-page.not-created": "Not created",
   "backup-page.list": "All backups",
   "backup-page.none": "There are no backups yet.",

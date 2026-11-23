@@ -1,7 +1,7 @@
 import type { Schema } from "@bugaboo/api-client";
 import { describe, expect, it } from "vitest";
 
-import { backupRows, chosenName, makerOf } from "./backups.ts";
+import { backupRows, chosenName, createState, makerOf } from "./backups.ts";
 
 type File = Schema<"BackupFileBody">;
 type Run = Schema<"BackupRunBody">;
@@ -55,7 +55,7 @@ describe("who made a backup", () => {
 
 describe("the rows of the list", () => {
   it("keep the order of the server, which is newest first", () => {
-    const body: Backups = { files: [file("b.backup"), file("a.backup")], runs: [] };
+    const body: Backups = { files: [file("b.backup"), file("a.backup")], runs: [], asked: null };
     expect(backupRows(body).map((row) => row.name)).toEqual(["b.backup", "a.backup"]);
   });
 });
@@ -66,14 +66,15 @@ describe("the person of a row", () => {
     const body: Backups = {
       files: [file("a.backup")],
       runs: [{ ...run("a.backup", "person"), person }],
+      asked: null,
     };
     expect(backupRows(body)[0]?.person).toEqual(person);
-    expect(backupRows({ files: [file("a.backup")], runs: [] })[0]?.person).toBeNull();
+    expect(backupRows({ files: [file("a.backup")], runs: [], asked: null })[0]?.person).toBeNull();
   });
 });
 
 describe("the backup a restore command is shown for", () => {
-  const rows = backupRows({ files: [file("b.backup"), file("a.backup")], runs: [] });
+  const rows = backupRows({ files: [file("b.backup"), file("a.backup")], runs: [], asked: null });
 
   it("is the chosen one while it is in the list", () => {
     expect(chosenName(rows, "a.backup")).toBe("a.backup");
@@ -86,5 +87,29 @@ describe("the backup a restore command is shown for", () => {
 
   it("is nothing when there is no backup", () => {
     expect(chosenName([], null)).toBeUndefined();
+  });
+});
+
+describe("the words beside Create a backup now", () => {
+  const idle = { isPending: false, isError: false, isSuccess: false };
+  const running = { status: "running", asked_at: "2026-11-18T03:15:00Z" } as const;
+  const failed = { ...running, status: "failed" } as const;
+
+  it("say creating while the ask is sent and while the server makes the backup", () => {
+    expect(createState(null, { ...idle, isPending: true })).toBe("saving");
+    expect(createState(running, { ...idle, isSuccess: true })).toBe("saving");
+    // Also after a reload, when this page did not ask.
+    expect(createState(running, idle)).toBe("saving");
+  });
+
+  it("say created once the backup this page asked for is there", () => {
+    expect(createState(null, { ...idle, isSuccess: true })).toBe("saved");
+    expect(createState(null, idle)).toBe("idle");
+  });
+
+  it("say not created when the ask is refused or the backup failed", () => {
+    expect(createState(null, { ...idle, isError: true })).toBe("not-saved");
+    expect(createState(failed, idle)).toBe("not-saved");
+    expect(createState(failed, { ...idle, isSuccess: true })).toBe("not-saved");
   });
 });

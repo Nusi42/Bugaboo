@@ -26,7 +26,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// The daily round of `backups.daily` (OPS-07).
     pub(super) async fn backups_daily(&self, job: &Job) -> Result<(), JobFailure> {
         Box::pin(self.run_daily(JobKind::BackupsDaily, async {
-            self.backup_round().await.map(|round| {
+            self.backup_round(self.keep_lease(job)).await.map(|round| {
                 tracing::info!(
                     created = round.created,
                     deleted = round.deleted,

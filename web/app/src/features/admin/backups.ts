@@ -1,5 +1,7 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t, type MessageKey } from "@bugaboo/messages";
+import type { SaveState } from "@bugaboo/ui";
+import { useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
 import { personNameInside, someoneName } from "../../shared/person.ts";
@@ -7,6 +9,11 @@ import { personNameInside, someoneName } from "../../shared/person.ts";
 type File = Schema<"BackupFileBody">;
 type Run = Schema<"BackupRunBody">;
 export type Backups = Schema<"BackupsBody">;
+/** A backup asked for with *Create a backup now* that is not made yet. */
+export type Asked = Schema<"AskedBackupBody">;
+
+/** How often the page asks again while a backup is being made: the server makes it within seconds to minutes. */
+const RUNNING_READ_MS = 2000;
 
 /** Who or what made a backup, in the words the server records, plus the two cases it does not record. */
 export type Maker =
@@ -83,6 +90,44 @@ export function restoreCommand(name: string): string {
 /** The query of the list of backups. */
 export function backupsOptions() {
   return api.query.queryOptions("get", "/api/v1/admin/backups");
+}
+
+/** Whether a backup that was asked for is being made. */
+export function isRunning(asked: Asked | null | undefined): boolean {
+  return asked?.status === "running";
+}
+
+/**
+ * The list of backups, read again every few seconds while a backup that was asked for is being made, so the page
+ * shows it as soon as it is there; then it stops asking.
+ */
+export function useBackups() {
+  return useQuery({
+    ...backupsOptions(),
+    refetchInterval: (query: Readonly<{ state: Readonly<{ data: Backups | undefined }> }>) =>
+      isRunning(query.state.data?.asked) ? RUNNING_READ_MS : false,
+  });
+}
+
+/** Where the ask of *Create a backup now* stands in this page. */
+export interface AskState {
+  readonly isPending: boolean;
+  readonly isError: boolean;
+  readonly isSuccess: boolean;
+}
+
+/**
+ * What the words beside *Create a backup now* say: creating while the ask is sent or the server makes the backup,
+ * not created when the ask was refused or the backup failed, created when this page asked and the backup is there.
+ */
+export function createState(asked: Asked | null, ask: AskState): SaveState {
+  if (ask.isPending || isRunning(asked)) {
+    return "saving";
+  }
+  if (ask.isError || asked?.status === "failed") {
+    return "not-saved";
+  }
+  return ask.isSuccess ? "saved" : "idle";
 }
 
 /** The step-by-step page of the user docs for a restore. */

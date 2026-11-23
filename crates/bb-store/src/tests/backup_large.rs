@@ -335,3 +335,69 @@ async fn ops_07_a_copy_the_older_program_wrote_in_batches_still_restores() -> Te
     })
     .await
 }
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn adr_0017_a_backup_of_a_job_keeps_its_lease_and_stops_when_another_worker_has_it()
+-> TestResult {
+    use std::sync::atomic::AtomicUsize;
+
+    use bb_app::backups::{BackupFiles as _, KeepLease};
+
+    each_database("adr_0017_backup_lease", async |db| {
+        let installation = Installation::new(db)?;
+        let database = installation.open().await?;
+        fill(&database).await?;
+        let folder = installation.places.folder.clone();
+        let named = folder.clone();
+        let backups = FolderBackups::new(
+            database.clone(),
+            installation.places.clone(),
+            Arc::new(move |_| Ok(named.clone())),
+        );
+        let renewed = AtomicUsize::new(0);
+        let renewals = &renewed;
+        let keep = |held: bool| KeepLease {
+            every: Duration::from_millis(1),
+            renew: Box::new(move || {
+                renewals.fetch_add(1, Ordering::SeqCst);
+                Box::pin(async move { held })
+            }),
+        };
+        // While the worker holds the job, the lease is renewed and the backup is made.
+        backups
+            .create(None, Purpose::Regular, at(10), Some(keep(true)))
+            .await?;
+        assert!(renewed.load(Ordering::SeqCst) > 0, "the lease was renewed");
+        assert_eq!(backups_in(&folder)?.len(), 1);
+        // Once another worker has it, the backup stops and leaves nothing.
+        let lost = backups
+            .create(None, Purpose::Regular, at(20), Some(keep(false)))
+            .await;
+        assert!(lost.is_err());
+        let_go(&folder).await?;
+        assert_eq!(backups_in(&folder)?.len(), 1);
+        // Lost while a blocking thread writes the archive: the thread finishes, and the archive
+        // never appears among the backups, where nobody would record it.
+        let watched = folder.clone();
+        let lost = backups
+            .create(
+                None,
+                Purpose::Regular,
+                at(30),
+                Some(KeepLease {
+                    every: Duration::from_millis(1),
+                    renew: Box::new(move || {
+                        let held = !archiving(&watched).unwrap_or(false);
+                        Box::pin(async move { held })
+                    }),
+                }),
+            )
+            .await;
+        assert!(lost.is_err());
+        let_go(&folder).await?;
+        assert_eq!(backups_in(&folder)?.len(), 1);
+        database.close().await;
+        Ok(())
+    })
+    .await
+}

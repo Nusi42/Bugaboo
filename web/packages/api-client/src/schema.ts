@@ -142,8 +142,9 @@ export interface paths {
     get: operations["listBackups"];
     put?: never;
     /**
-     * Creates a backup now, while people go on working. Needs *Change organization settings*, from a
-     *     session.
+     * Asks for a backup now, which is made in the background while people go on working; the answer
+     *     comes at once. The list of backups says while it runs (`asked`), and shows the backup when it is
+     *     made, or that it failed. Needs *Change organization settings*, from a session.
      */
     post: operations["createBackup"];
     delete?: never;
@@ -6267,6 +6268,24 @@ export interface components {
       /** @description What it is for, in a few words. */
       purpose: string;
     };
+    /** @description A backup asked for with *Create a backup now* that is not made yet. */
+    AskedBackupBody: {
+      /**
+       * Format: date-time
+       * @description When it was asked for.
+       */
+      asked_at: string;
+      /**
+       * @description `running` while its job waits or works; `failed` when the job gave up and no backup was
+       *     made since.
+       */
+      status: components["schemas"]["AskedBackupStatus"];
+    };
+    /**
+     * @description Where a backup asked for with *Create a backup now* stands until it is made: running, or failed.
+     * @enum {string}
+     */
+    AskedBackupStatus: "running" | "failed";
     /** @description A row of *Who has which role*: the fields that can be asked for. */
     AssignmentItem: {
       applies_to?: components["schemas"]["AppliesTo"] | null;
@@ -6575,6 +6594,7 @@ export interface components {
     };
     /** @description The backups and the newest records. */
     BackupsBody: {
+      asked: components["schemas"]["AskedBackupBody"] | null;
       /** @description The backup files, newest first. */
       files: components["schemas"]["BackupFileBody"][];
       /** @description The newest records of backups created and restored, newest first. */
@@ -14476,13 +14496,13 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description The backup that was created. */
-      200: {
+      /** @description The backup is asked for and being made. */
+      202: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["BackupFileBody"];
+          "application/json": components["schemas"]["AskedBackupBody"];
         };
       };
       401: components["responses"]["NotSignedIn"];

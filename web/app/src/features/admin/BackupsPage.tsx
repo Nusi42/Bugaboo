@@ -1,12 +1,11 @@
 import { t } from "@bugaboo/messages";
 import { Alert, alertTone, Card, Link, live, partOf, part, useHoldWhileReading } from "@bugaboo/ui";
-import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { OrganizationTopic } from "../settings/index.ts";
-import { backupRows, backupsOptions, chosenName, RESTORE_DOCS, restoreCommand } from "./backups.ts";
+import { backupRows, chosenName, RESTORE_DOCS, restoreCommand, useBackups } from "./backups.ts";
 import { BackupsList } from "./BackupsList.tsx";
 import { CreateBackup } from "./CreateBackup.tsx";
 
@@ -35,7 +34,7 @@ function Restore({ name }: { readonly name: string | undefined }) {
 /** *Organization settings › Backups* (OPS-07): the daily backup, *Create a backup now*, the backups, and how to restore one. */
 export function BackupsPage() {
   usePageTitle(t("nav.backups"));
-  const backups = useQuery(backupsOptions());
+  const backups = useBackups();
   useHoldWhileReading(backups.isLoading);
   const [picked, setPicked] = useState<string | null>(null);
   const rows = backups.data === undefined ? [] : backupRows(backups.data);
@@ -47,7 +46,7 @@ export function BackupsPage() {
         <OrganizationTopic topics={SCHEDULE} searchable={false} />
       </Card>
       <Card heading={t("backup-page.list")}>
-        <CreateBackup />
+        <CreateBackup asked={backups.data?.asked ?? null} />
         {backups.isError ? <Alert tone={alertTone.danger}>{messageOf(backups.error)}</Alert> : null}
         <BackupsList rows={rows} chosen={chosen} onChoose={setPicked} failed={backups.isError} />
       </Card>

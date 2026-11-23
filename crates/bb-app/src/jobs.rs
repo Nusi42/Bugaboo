@@ -23,7 +23,7 @@ use serde_json::Value;
 
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::ports::ChangeStore;
-use crate::store_macros::{reads, writes};
+use crate::store_macros::{queries, reads, writes};
 
 /// How many starts a job gets before it goes to the dead-letter list.
 pub const JOB_ATTEMPTS_MAX: u32 = 5;
@@ -98,6 +98,10 @@ bb_core::words! {
         /// Creating the backup of the day and deleting the ones the schedule no longer keeps
         /// (OPS-07, ADR-0046 decision 3): `backups::schedule`.
         BackupsDaily => "backups.daily",
+        /// Making the backup a person asked for with *Create a backup now* (OPS-07, ADR-0046
+        /// decision 3): queued in the change that asks for it; the payload names the backup and
+        /// the person. The request answers at once, and the list of backups says when it is made.
+        BackupNow => "backups.now",
         /// Writing the file of *Download my data* (ADR-0044, decision 2): queued in the change that
         /// asks for it; the payload names the export, and one that waits no more leaves it nothing
         /// to do.
@@ -142,6 +146,7 @@ impl JobKind {
             | Self::RuleMatches
             | Self::RulesGetAnEnd
             | Self::DataExport
+            | Self::BackupNow
             | Self::FinishRemoval => false,
         }
     }
@@ -177,6 +182,7 @@ impl JobKind {
             | Self::RuleMatches
             | Self::RulesGetAnEnd
             | Self::DataExport
+            | Self::BackupNow
             | Self::FinishRemoval
             | Self::DeleteOldExports => Rhythm::FromTheStart,
         }
@@ -259,7 +265,7 @@ impl Rhythm {
 
 /// How long a worker holds the jobs it took before another may take them: a step of a job is far
 /// shorter, and a worker that stops loses its jobs to another after this.
-const LEASE: SignedDuration = SignedDuration::from_secs(120);
+pub(crate) const LEASE: SignedDuration = SignedDuration::from_secs(120);
 
 /// How many jobs a round takes.
 const JOBS_AT_A_TIME: u64 = 5;
@@ -297,6 +303,12 @@ pub struct QueuedJob {
 
 /// What a job needs from storage.
 pub trait JobStore: ChangeStore + 'static {
+    queries! {
+        /// The job of this kind that was queued last, waiting, worked on or dead; a job that was
+        /// done has left the queue.
+        fn newest_job(kind: JobKind) -> Option<Job> = newest_job_in;
+    }
+
     reads! {
         /// Takes up to `limit` jobs of the kinds of a lane that are due and not leased, for
         /// `worker`, until `now + lease`.
@@ -473,6 +485,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                     tracing::warn!(cause = %error, "a file of a person's data could not be written");
                     JobFailure::of(&error, FAILED, job)
                 }),
+            JobKind::BackupNow => self.do_backup_now(job).await,
             JobKind::FinishRemoval => Box::pin(self.run_finish_removal(&job.payload))
                 .await
                 .map_err(|error| {
@@ -494,6 +507,24 @@ impl<S: AuthStore> Ctx<'_, S> {
             | JobKind::RefreshStatistics
             | JobKind::BackupsDaily => Err(misrouted(job, kind)),
         }
+    }
+
+    /// The job `backups.now`: the backup a person asked for (ADR-0046, amendment of 2026-11-23).
+    async fn do_backup_now(&self, job: &Job) -> Result<(), JobFailure> {
+        Box::pin(self.run_backup_now(job)).await.map_err(|error| {
+            tracing::warn!(cause = %error, "a backup that was asked for could not be created");
+            // A person waits for it: they are told it failed and may ask again, instead of
+            // waiting for the tries of a whole copy of the database. Only a backup of the
+            // schedule that runs on this server meanwhile is waited for.
+            let failure = JobFailure::of(&error, FAILED, job);
+            match error {
+                AppError::Refused(bb_core::ErrorCode::BackupRunning) => failure,
+                _ => JobFailure {
+                    kind: FailureKind::Permanent,
+                    ..failure
+                },
+            }
+        })
     }
 
     /// The daily jobs (the kinds for which [`JobKind::is_daily`] is true): the jobs that delete what
@@ -536,6 +567,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             | JobKind::RuleMatches
             | JobKind::RulesGetAnEnd
             | JobKind::DataExport
+            | JobKind::BackupNow
             | JobKind::FinishRemoval => Err(misrouted(job, kind)),
         }
     }
@@ -554,6 +586,13 @@ impl<S: AuthStore> Ctx<'_, S> {
             Some(JobKind::MailSend) => self.mail_job_gave_up(&job.payload).await,
             Some(JobKind::PreviewFile) => self.preview_gave_up(&job.payload).await,
             Some(JobKind::DataExport) => self.export_gave_up(&job.payload).await,
+            // The dead job is the failure the list of backups shows; nothing was made.
+            Some(JobKind::BackupNow) => {
+                tracing::error!(
+                    "a backup that was asked for gave up; the job is on the dead-letter list"
+                );
+                Ok(())
+            }
             // The removal itself is done; what is left is in the index and the files, and the
             // dead job keeps its payload for whoever runs it again.
             Some(JobKind::FinishRemoval) => {

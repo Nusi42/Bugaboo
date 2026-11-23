@@ -45,7 +45,9 @@ impl JobKind {
     #[must_use]
     pub const fn lane(self) -> Lane {
         match self {
-            Self::PreviewFile | Self::DataExport | Self::BackupsDaily => Lane::Long,
+            Self::PreviewFile | Self::DataExport | Self::BackupsDaily | Self::BackupNow => {
+                Lane::Long
+            }
             Self::ManyChangesStep
             | Self::RenewIds
             | Self::PurgeDrafts
@@ -109,8 +111,10 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// Runs the due jobs of one lane once: takes up to [`JOBS_AT_A_TIME`] of its jobs for a worker
-    /// that has a name of its own for this round, does each, and reports it done or failed.
-    /// Returns how many it took.
+    /// that has a name of its own for this round, does each, and reports it done or failed. The
+    /// jobs are done one after another, so a job renews its lease right before it starts: one that
+    /// waited behind a long job longer than [`LEASE`] and was taken by another worker meanwhile is
+    /// left to that worker, never done twice. Returns how many it took.
     ///
     /// # Errors
     /// The error of the store while jobs are taken.
@@ -134,7 +138,12 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await
             .map_err(|error| internal::<S>(&error))?;
         let taken = jobs.len();
-        for job in jobs {
+        for (place, job) in jobs.into_iter().enumerate() {
+            // The first job was taken just now.
+            if place > 0 && !self.renew_lease(job.id, &worker).await {
+                tracing::info!("a job is left to the worker that took it while it waited");
+                continue;
+            }
             // `true` when the worker still held the lease and the report counted.
             // A job is one request (ADR-0025, decision 3): it gets a context of its own, so what
             // one job looked up for one person is never there for the next job, for another.
@@ -190,6 +199,7 @@ mod tests {
             JobKind::PreviewFile,
             JobKind::DataExport,
             JobKind::BackupsDaily,
+            JobKind::BackupNow,
         ] {
             assert_eq!(slow.lane(), Lane::Long);
         }

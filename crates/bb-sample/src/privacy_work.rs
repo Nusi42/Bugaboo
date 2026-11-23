@@ -188,6 +188,8 @@ impl Maker<'_, '_> {
             )
             .await
             .map_err(failed(Step::Backups))?;
+            // The button only asks; the job of the long lane makes the backup, as on a server.
+            world.run_the_jobs().await?;
         }
         Ok(gone)
     }

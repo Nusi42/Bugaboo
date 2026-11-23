@@ -1,6 +1,6 @@
-//! The lease of a job that may work longer than [`LEASE`] (the file of *Download my data*): its
-//! worker renews it while it works, so a worker that stops still loses the job to another within
-//! [`LEASE`].
+//! The lease of a job that may work longer than [`LEASE`] (the file of *Download my data*, a
+//! backup): its worker renews it while it works, so a worker that stops still loses the job to
+//! another within [`LEASE`].
 
 use bb_core::id::JobId;
 use bb_core::job::Job;
@@ -9,6 +9,7 @@ use jiff::Timestamp;
 
 use super::LEASE;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::backups::KeepLease;
 
 /// The lease a worker holds on the job it runs, renewed when half of it has passed.
 pub(crate) struct HeldJob {
@@ -28,6 +29,35 @@ impl HeldJob {
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
+    /// How a backup made by `job` keeps the lease of the job while it works: renewed every half
+    /// of [`LEASE`]. `None` for a job run by hand, which holds no lease.
+    pub(crate) fn keep_lease<'a>(&'a self, job: &Job) -> Option<KeepLease<'a>> {
+        let worker = job.lease_owner.clone()?;
+        let id = job.id;
+        Some(KeepLease {
+            every: (LEASE / 2).unsigned_abs(),
+            renew: Box::new(move || {
+                let worker = worker.clone();
+                Box::pin(async move { self.renew_lease(id, &worker).await })
+            }),
+        })
+    }
+
+    /// Renews the lease of a job for [`LEASE`] from now; `false` when another worker holds it. A
+    /// store that fails this time is tried again at the next renewal.
+    pub(super) async fn renew_lease(&self, id: JobId, worker: &TechnicalName) -> bool {
+        let Ok(until) = self.now().checked_add(LEASE) else {
+            return true;
+        };
+        match self.store().hold_job(id, worker, until).await {
+            Ok(held) => held,
+            Err(error) => {
+                tracing::warn!(cause = %S::describe(&error), "the lease of a job could not be renewed");
+                true
+            }
+        }
+    }
+
     /// The lease on `job`, as the worker took it now.
     pub(crate) fn held(&self, job: &Job) -> HeldJob {
         HeldJob {

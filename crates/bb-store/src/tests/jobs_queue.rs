@@ -365,3 +365,77 @@ async fn adr_0017_each_lane_takes_only_its_kinds() -> TestResult {
     })
     .await
 }
+
+#[tokio::test]
+async fn ops_07_the_newest_job_of_a_kind_is_found_waiting_or_dead() -> TestResult {
+    // The list of backups says from it whether a backup asked for runs or failed.
+    each_database("ops_07_newest_job", async |db| {
+        let database = open(db).await?;
+        let kind = name("mail.send");
+        assert_eq!(database.newest_job(&kind).await?, None);
+        let mut source = ids();
+        let (older, newer) = (JobId::generate(&mut source)?, JobId::generate(&mut source)?);
+        database.enqueue_job(older, &mail(at(0), 5), at(0)).await?;
+        database.enqueue_job(newer, &mail(at(0), 5), at(5)).await?;
+        let found = database.newest_job(&kind).await?.ok_or("no job")?;
+        assert_eq!((found.id, found.state), (newer, JobState::Queued));
+        let worker = name("worker-1");
+        database
+            .lease_jobs(&worker, at(10), LEASE, 2, &any())
+            .await?;
+        database
+            .fail_job(
+                newer,
+                &worker,
+                &name("job.failed"),
+                FailureKind::Permanent,
+                at(11),
+            )
+            .await?;
+        let found = database.newest_job(&kind).await?.ok_or("no job")?;
+        assert_eq!((found.id, found.state), (newer, JobState::Dead));
+        assert_eq!(database.newest_job(&name("files.preview")).await?, None);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn ops_07_a_second_ask_for_a_backup_waits_for_the_first_and_sees_its_job() -> TestResult {
+    use bb_app::backups::BackupStore as _;
+
+    use crate::auth::AuthStorage;
+
+    /// How long the second ask is watched while the first holds the asks.
+    const WATCHED: std::time::Duration = std::time::Duration::from_millis(300);
+    each_database("ops_07_backup_asks", async |db| {
+        let database = open(db).await?;
+        let kind = name(JobKind::BackupNow.code());
+        let mut first = database.begin().await?;
+        AuthStorage::lock_backup_asks(&mut first).await?;
+        assert_eq!(newest_job_in(&mut first, kind.as_str()).await?, None);
+        let other = database.clone();
+        let second = tokio::spawn(async move {
+            let mut second = other.begin().await?;
+            AuthStorage::lock_backup_asks(&mut second).await?;
+            let seen = newest_job_in(&mut second, JobKind::BackupNow.code()).await?;
+            second.commit().await?;
+            Ok::<_, StoreError>(seen)
+        });
+        tokio::time::sleep(WATCHED).await;
+        assert!(!second.is_finished(), "the second ask did not wait");
+        let id = JobId::generate(&mut ids())?;
+        let job = NewJob {
+            kind,
+            payload: serde_json::json!({}),
+            run_at: at(0),
+            max_attempts: 1,
+        };
+        enqueue(&mut first, id, &job, at(0)).await?;
+        first.commit().await?;
+        let seen = second.await??.ok_or("the second ask saw no job")?;
+        assert_eq!(seen.id, id);
+        Ok(())
+    })
+    .await
+}

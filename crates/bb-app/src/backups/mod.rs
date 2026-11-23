@@ -3,6 +3,10 @@
 //! and keeps the newest of seven days and four weeks. Restoring is a command of the server, with
 //! the server stopped; no use case restores.
 //!
+//! *Create a backup now* only asks: the job `backups.now` of the long lane makes the backup
+//! (ADR-0017), because a copy of a large organization takes far longer than a request may. The
+//! list says while it runs and when it failed; the backup and its record appear when it is made.
+//!
 //! The bytes are the business of the port [`BackupFiles`] (the server copies the database and the
 //! files); the records go through [`BackupStore`] with their event, and every backup writes its
 //! line to the security log.
@@ -13,18 +17,35 @@ mod schedule;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use bb_core::backup::name::{BackupName, Purpose};
-use bb_core::backup::run::{BackupEvent, BackupMaker, BackupRun};
+use bb_core::backup::run::{
+    AskedBackupState, BackupEvent, BackupMaker, BackupRun, asked_changes, entity_of,
+};
 use bb_core::error_code::ErrorCode;
 use bb_core::event::{Actor as EventActor, DomainEvent};
-use bb_core::id::{BackupId, UserId};
+use bb_core::id::{BackupId, JobId, UserId};
+use bb_core::job::{Job, JobState};
 use bb_core::network::NetworkPrefix;
 use bb_core::people_kinds::PeopleKind;
 use bb_core::settings::{BACKUPS_FOLDER, SettingDefinition, SettingValue};
 use bb_policy::{Authorized, Masked, PeopleContext, Permission, PersonRef, Place};
+use jiff::Timestamp;
+use serde_json::{Value, json};
 
-pub use ports::{BackupFile, BackupFiles, BackupStore, NoBackupFiles};
+pub use ports::{BackupFile, BackupFiles, BackupStore, KeepLease, NoBackupFiles};
 
 use crate::auth::{AppError, AuthStore, Ctx, SecurityEvent, Stops, by, change_failed, internal};
+use crate::jobs::JobKind;
+use crate::projects::Why;
+
+/// The keys of the payload of the job that makes a backup asked for (`backups.now`).
+mod payload {
+    /// The ID its record gets, the one the event of the ask names.
+    pub(super) const BACKUP: &str = "backup";
+    /// The person who asked.
+    pub(super) const PERSON: &str = "person";
+    /// The network the person asked from, for the line of the security log.
+    pub(super) const NETWORK: &str = "network";
+}
 
 /// How many records of backups the list shows.
 const LISTED_RUNS: u64 = 50;
@@ -52,6 +73,15 @@ pub struct BackupItem {
     pub size: u64,
 }
 
+/// A backup asked for with *Create a backup now* that is not made yet.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct AskedBackup {
+    /// Whether it runs or failed.
+    pub state: AskedBackupState,
+    /// When it was asked for.
+    pub asked_at: Timestamp,
+}
+
 /// The backups and their records.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Backups {
@@ -62,10 +92,14 @@ pub struct Backups {
     /// The people the records name, as the viewer may see them (*Who sees people*, and *Former
     /// user* after a removal), once for each person.
     pub people: Vec<(UserId, PersonRef)>,
+    /// The backup asked for with the button that is not made yet: while its job waits or works,
+    /// and after it failed until a backup is made. `None` otherwise.
+    pub asked: Option<AskedBackup>,
 }
 
 impl Masked for Backups {}
 impl Masked for BackupItem {}
+impl Masked for AskedBackup {}
 
 /// The list of backups, for *Organization settings › System › Backups*.
 ///
@@ -102,6 +136,7 @@ pub async fn list_backups<S: AuthStore>(
         .backup_runs(LISTED_RUNS)
         .await
         .map_err(|error| internal::<S>(&error))?;
+    let asked = ctx.asked_backup(&runs).await?;
     let mut people: Vec<(UserId, PersonRef)> = Vec::new();
     for person in runs.iter().filter_map(|run| run.person) {
         if people.iter().all(|(known, _)| *known != person) {
@@ -120,18 +155,22 @@ pub async fn list_backups<S: AuthStore>(
         files,
         runs,
         people,
+        asked,
     }))
 }
 
-/// *Create a backup now*: a backup while people go on working.
+/// *Create a backup now*: asks for a backup, which the long lane of the jobs makes while people go
+/// on working (`backups.now`, ADR-0017). The answer comes at once; the list of backups says while
+/// it runs, and shows the backup when it is made or that it failed.
 ///
 /// # Errors
 /// `auth.access-key-not-allowed` for an access key or an agent, `access.forbidden` without
-/// *Change organization settings*, an internal error when the backup could not be created.
+/// *Change organization settings*, `backup.running` while a backup asked for is not made yet or
+/// this server makes one.
 pub async fn create_backup<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: CreateBackup,
-) -> Result<Authorized<BackupItem>, AppError> {
+) -> Result<Authorized<AskedBackup>, AppError> {
     let actor = ctx.session_actor(&input.session_token).await?;
     let access = ctx
         .require(
@@ -140,11 +179,47 @@ pub async fn create_backup<S: AuthStore>(
             Place::Organization,
         )
         .await?;
-    let created = ctx
-        .created_backup(BackupMaker::Person, Some(actor.person.id))
-        .await?;
-    ctx.record_run(&created).await?;
-    Ok(access.authorize(created.item))
+    if ctx.services.backup_running.load(Ordering::Acquire) {
+        return Err(AppError::Refused(ErrorCode::BackupRunning));
+    }
+    let now = ctx.now();
+    let id = ctx.new_backup_id()?;
+    let person = actor.person.id;
+    let entity = entity_of(id).map_err(|error| AppError::Internal(error.to_string()))?;
+    let event = ctx.event(by(person), entity, asked_changes(BackupMaker::Person))?;
+    let job =
+        JobId::generate(&mut ctx.ids()).map_err(|error| AppError::Internal(error.to_string()))?;
+    let kind = JobKind::BackupNow.name()?;
+    let mut asked = json!({
+        payload::BACKUP: id.to_string(),
+        payload::PERSON: person.to_string(),
+    });
+    if let Some(network) = &ctx.request.network {
+        asked[payload::NETWORK] = json!(network.as_str());
+    }
+    let why = Why::default();
+    let stopped = why.clone();
+    ctx.store()
+        .record_change(&event, move |transaction| {
+            Box::pin(async move {
+                // Looked at inside the change, under its lock, so two asks at the same moment
+                // never both queue a backup.
+                S::lock_backup_asks(transaction).await?;
+                let newest = S::newest_job_in(transaction, JobKind::BackupNow).await?;
+                if asked_of(newest, &[])
+                    .is_some_and(|asked| asked.state == AskedBackupState::Running)
+                {
+                    return Err(stopped.stop::<S>(ErrorCode::BackupRunning));
+                }
+                S::enqueue_job(transaction, job, &kind, &asked, now, now).await
+            })
+        })
+        .await
+        .map_err(|error| why.said_or_failed::<S>(&error))?;
+    Ok(access.authorize(AskedBackup {
+        state: AskedBackupState::Running,
+        asked_at: now,
+    }))
 }
 
 /// The mark that a backup of this server is being made, taken back when it is dropped.
@@ -168,7 +243,6 @@ impl Drop for OneAtATime<'_> {
 
 /// A backup that was created, with its record and the event that records it.
 pub(crate) struct Created {
-    pub(crate) item: BackupItem,
     pub(crate) run: BackupRun,
     pub(crate) event: DomainEvent,
 }
@@ -211,6 +285,25 @@ pub async fn record_backup_run<S: AuthStore>(
     Ok(Recorded { line, written })
 }
 
+/// Where the backup asked for with the button stands, from the newest job of `backups.now` and the
+/// records `runs` (see [`Backups::asked`]).
+fn asked_of(newest: Option<Job>, runs: &[BackupRun]) -> Option<AskedBackup> {
+    newest.and_then(|job| {
+        let made_since = runs
+            .iter()
+            .any(|run| run.event == BackupEvent::Made && run.at >= job.created_at);
+        let state = match job.state {
+            JobState::Queued => AskedBackupState::Running,
+            JobState::Dead if !made_since => AskedBackupState::Failed,
+            JobState::Dead => return None,
+        };
+        Some(AskedBackup {
+            state,
+            asked_at: job.created_at,
+        })
+    })
+}
+
 impl<S: AuthStore> Ctx<'_, S> {
     /// Refuses a folder for backups that the system says lies on a share of another computer (a
     /// mapped network drive, a mounted share), which the format of the setting cannot see in the
@@ -242,12 +335,59 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok((!folder.trim().is_empty()).then(|| folder.trim().to_owned()))
     }
 
-    /// Creates a backup, and the record and event that the caller writes with `record_run`. One
-    /// backup is made at a time: while one is made, the button and the schedule are turned away.
-    pub(crate) async fn created_backup(
-        &self,
+    /// A new ID for the record of a backup.
+    pub(crate) fn new_backup_id(&self) -> Result<BackupId, AppError> {
+        BackupId::generate(&mut self.ids()).map_err(|error| AppError::Internal(error.to_string()))
+    }
+
+    /// The backup asked for with the button that is not made yet (see [`Backups::asked`]): the
+    /// newest job of `backups.now` while it waits or works, or when it died after the newest of
+    /// `runs` was made.
+    async fn asked_backup(&self, runs: &[BackupRun]) -> Result<Option<AskedBackup>, AppError> {
+        let newest = self
+            .store()
+            .newest_job(JobKind::BackupNow)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        Ok(asked_of(newest, runs))
+    }
+
+    /// The job `backups.now`: makes the backup a person asked for, with the ID the ask gave it.
+    /// A job that runs again after its backup was recorded does nothing.
+    pub(crate) async fn run_backup_now(&self, job: &Job) -> Result<(), AppError> {
+        let text = |key: &str| job.payload.get(key).and_then(Value::as_str);
+        let unreadable = || AppError::Refused(ErrorCode::InvalidRequest);
+        let id: BackupId = text(payload::BACKUP)
+            .and_then(|id| id.parse().ok())
+            .ok_or_else(unreadable)?;
+        let person: UserId = text(payload::PERSON)
+            .and_then(|id| id.parse().ok())
+            .ok_or_else(unreadable)?;
+        let network = text(payload::NETWORK).and_then(NetworkPrefix::from_stored);
+        let recorded = self
+            .store()
+            .backup_runs(LISTED_RUNS)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        if recorded.iter().any(|run| run.id == id) {
+            return Ok(());
+        }
+        self.remove_backup_leftovers().await?;
+        let created = self
+            .created_backup(id, BackupMaker::Person, Some(person), self.keep_lease(job))
+            .await?;
+        self.record_run(&created, network).await
+    }
+
+    /// Creates a backup with the record `id`, and the record and event that the caller writes with
+    /// `record_run`; with `keep`, the job that makes it keeps its lease meanwhile. One backup is
+    /// made at a time on a server: while one is made, the button and the schedule are turned away.
+    pub(crate) async fn created_backup<'k>(
+        &'k self,
+        id: BackupId,
         maker: BackupMaker,
         person: Option<UserId>,
+        keep: Option<KeepLease<'k>>,
     ) -> Result<Created, AppError> {
         let _running = OneAtATime::take(&self.services.backup_running)
             .ok_or(AppError::Refused(ErrorCode::BackupRunning))?;
@@ -258,37 +398,28 @@ impl<S: AuthStore> Ctx<'_, S> {
         let created = self
             .services
             .backups
-            .create(folder, Purpose::Regular, now)
+            .create(folder, Purpose::Regular, now, keep)
             .await
-            .map_err(|error| AppError::Internal(error.to_string()))?;
-        let id = BackupId::generate(&mut self.ids())
             .map_err(|error| AppError::Internal(error.to_string()))?;
         let run = BackupRun::new(id, BackupEvent::Made, &created, maker, person, now);
         let entity = run
             .entity()
             .map_err(|error| AppError::Internal(error.to_string()))?;
         let event = self.event(person.map_or(EventActor::System, by), entity, run.changes())?;
-        Ok(Created {
-            item: BackupItem {
-                name: created.name,
-                size: created.size,
-            },
-            run,
-            event,
-        })
+        Ok(Created { run, event })
     }
 
-    /// Records a backup this server created, with [`record_backup_run`]; a line of the security
-    /// log that could not be written is counted and reported like every other (`note`).
-    pub(crate) async fn record_run(&self, created: &Created) -> Result<(), AppError> {
-        let recorded = record_backup_run(
-            self.store(),
-            &created.run,
-            &created.event,
-            self.request.network.clone(),
-        )
-        .await
-        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
+    /// Records a backup this server created, with [`record_backup_run`], its line of the security
+    /// log naming `network`; a line that could not be written is counted and reported like every
+    /// other (`note`).
+    pub(crate) async fn record_run(
+        &self,
+        created: &Created,
+        network: Option<NetworkPrefix>,
+    ) -> Result<(), AppError> {
+        let recorded = record_backup_run(self.store(), &created.run, &created.event, network)
+            .await
+            .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
         self.log_written(&recorded.line, recorded.written);
         Ok(())
     }

@@ -668,7 +668,7 @@ macro_rules! each_use_case {
             /// Lists the backups and their records.
             list_backups(ListBackupsQuery) -> Authorized<Backups>;
             /// Creates a backup now.
-            create_backup(CreateBackup) -> Authorized<BackupItem>;
+            create_backup(CreateBackup) -> Authorized<AskedBackup>;
             /// Changes the name of the person, at once.
             change_my_name(ChangeMyName) -> Authorized<MyName>;
             /// Asks for a new e-mail address: a link goes to it.

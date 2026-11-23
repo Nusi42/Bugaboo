@@ -15,6 +15,17 @@ use crate::sign_in::SecurityAction;
 // The name of a backup holds a moment and a version, nothing about a person.
 impl NotPersonal for BackupName {}
 
+/// The field of the event of a backup that says what happened to it.
+pub const EVENT_FIELD: &str = "event";
+
+/// The field of the event of a backup that says who or what made it.
+pub const MAKER_FIELD: &str = "maker";
+
+/// What the event of a backup asked for with the button says happened: it was asked for, and the
+/// long lane of the jobs makes it (ADR-0046, decision 3). The record of the same ID follows when it
+/// is made.
+pub const ASKED: &str = "asked";
+
 /// The field of the event of a backup that holds the size of its file.
 pub const SIZE_FIELD: &str = "size";
 /// The field of the event of a backup that holds the checksum of its file.
@@ -29,6 +40,21 @@ words! {
         Restored => "restored",
     }
 }
+
+words! {
+    /// Where a backup asked for with the button stands until it is made (ADR-0046, decision 3).
+    pub enum AskedBackupState {
+        /// Asked for; the job that makes it waits or works.
+        Running => "running",
+        /// The job gave up; no backup was made. The person may ask again.
+        Failed => "failed",
+    }
+}
+
+words_in_api!(
+    AskedBackupState as "AskedBackupStatus",
+    "Where a backup asked for with *Create a backup now* stands until it is made: running, or failed."
+);
 
 words! {
     /// Who or what made a backup or ran a restore.
@@ -135,10 +161,7 @@ impl BackupRun {
     /// # Errors
     /// Never: the kind is a plain word (by the tests).
     pub fn entity(&self) -> Result<EntityRef, InvalidKind> {
-        Ok(EntityRef {
-            kind: EntityKind::new(ENTITY_KIND)?,
-            id: EntityId::from(self.id),
-        })
+        entity_of(self.id)
     }
 
     /// The action of the line of the security log that the backup or restore writes.
@@ -160,14 +183,14 @@ impl BackupRun {
             after: Some(after),
         };
         let mut changes = vec![
-            change("event", self.event.code().into()),
+            change(EVENT_FIELD, self.event.code().into()),
             change("name", self.name.to_string().into()),
             change(SIZE_FIELD, self.size.into()),
             change(
                 CHECKSUM_FIELD,
                 crate::hex::encode(self.checksum.as_bytes()).into(),
             ),
-            change("maker", self.maker.code().into()),
+            change(MAKER_FIELD, self.maker.code().into()),
         ];
         if let (Some(from), Some(to)) = (self.lost_from, self.lost_to) {
             changes.push(change("lost_from", from.into()));
@@ -198,4 +221,28 @@ impl BackupRun {
             run: None,
         })
     }
+}
+
+/// What the events and the security log name the backup with this ID by.
+///
+/// # Errors
+/// Never: the kind is a plain word (by the tests).
+pub fn entity_of(id: BackupId) -> Result<EntityRef, InvalidKind> {
+    Ok(EntityRef {
+        kind: EntityKind::new(ENTITY_KIND)?,
+        id: EntityId::from(id),
+    })
+}
+
+/// What the event of asking for a backup says: that it was asked for, and by whom.
+#[must_use]
+pub fn asked_changes(maker: BackupMaker) -> Vec<FieldChange> {
+    [(EVENT_FIELD, ASKED), (MAKER_FIELD, maker.code())]
+        .into_iter()
+        .map(|(field, after)| FieldChange {
+            field: field.to_owned(),
+            before: None,
+            after: Some(after.into()),
+        })
+        .collect()
 }

@@ -83,6 +83,9 @@ pub(crate) enum LockClass {
     /// change, do not both take the next place. Last in the order: an append comes at the end of
     /// its change, after its events.
     SecurityLog = 19,
+    /// Asking for a backup with *Create a backup now* (key 0): two asks at the same moment cannot
+    /// both find no backup asked for that is not made yet.
+    BackupAsks = 21,
     /// A server that runs on the database (key 0), held shared by every server for as long as it
     /// runs and taken alone by a restore (`db/server_hold.rs`, `ServerHold`). It lives with a connection of its
     /// own, never in a transaction, so it is outside the order of the others.
@@ -114,8 +117,9 @@ impl LockClass {
             Self::AgentTaking => 15,
             Self::Themes => 16,
             Self::DataExports => 17,
-            Self::SecurityLog => 18,
-            Self::ServerRunning => 19,
+            Self::BackupAsks => 18,
+            Self::SecurityLog => 19,
+            Self::ServerRunning => 20,
         }
     }
 }
@@ -190,7 +194,7 @@ pub(crate) fn lock_key(id: [u8; 16]) -> i32 {
 mod tests {
     use super::*;
 
-    const ORDER: [LockClass; 19] = [
+    const ORDER: [LockClass; 20] = [
         LockClass::Migration,
         LockClass::Policy,
         LockClass::TagsAndLabels,
@@ -209,6 +213,7 @@ mod tests {
         LockClass::AgentTaking,
         LockClass::Themes,
         LockClass::DataExports,
+        LockClass::BackupAsks,
         LockClass::SecurityLog,
     ];
 

@@ -319,7 +319,12 @@ async fn ops_07_the_server_makes_no_backup_into_a_share_of_another_computer() ->
     let backups = crate::wiring::server_backups(database, data, keys);
     for share in ["\\\\fileserver\\backups", "//fileserver/backups"] {
         let refused = backups
-            .create(Some(share.to_owned()), Purpose::Regular, Timestamp::now())
+            .create(
+                Some(share.to_owned()),
+                Purpose::Regular,
+                Timestamp::now(),
+                None,
+            )
             .await
             .err()
             .ok_or("a backup went to a share")?;

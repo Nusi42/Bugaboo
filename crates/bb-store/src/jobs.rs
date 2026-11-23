@@ -7,7 +7,7 @@
 //! the job again. Every start counts as an attempt; failed jobs wait longer each time
 //! ([`backoff`]) and, after the last attempt, go to the dead-letter list.
 
-use bb_app::jobs::{JOB_ATTEMPTS_MAX, JobStore, LaneKinds};
+use bb_app::jobs::{JOB_ATTEMPTS_MAX, JobKind, JobStore, LaneKinds};
 use bb_core::id::JobId;
 use bb_core::job::{FailureKind, FailureOutcome, Job, JobState};
 use bb_core::technical::TechnicalName;
@@ -139,19 +139,7 @@ impl Database {
             .value(Columns::LeaseUntil, to_micros(lease_end))
             .value(Columns::Attempts, Expr::col(Columns::Attempts).add(1_i64))
             .and_where(Expr::col(Columns::Id).in_subquery(due))
-            .returning(Query::returning().columns([
-                Columns::Id,
-                Columns::Kind,
-                Columns::Payload,
-                Columns::RunAt,
-                Columns::Attempts,
-                Columns::MaxAttempts,
-                Columns::State,
-                Columns::LeaseOwner,
-                Columns::LeaseUntil,
-                Columns::LastFailure,
-                Columns::CreatedAt,
-            ]));
+            .returning(Query::returning().columns(JOB_COLUMNS));
         let mut transaction = self.begin().await?;
         let rows = transaction.fetch_all(&take).await?;
         transaction.commit().await?;
@@ -306,6 +294,17 @@ impl Database {
         self.execute(&delete).await
     }
 
+    /// The job of this kind that was queued last, waiting, worked on or dead.
+    ///
+    /// # Errors
+    /// Fails when the database fails.
+    pub async fn newest_job(&self, kind: &TechnicalName) -> Result<Option<Job>, StoreError> {
+        let mut transaction = self.begin_read().await?;
+        let found = newest_job_in(&mut transaction, kind.as_str()).await?;
+        transaction.commit().await?;
+        Ok(found)
+    }
+
     /// Whether a job of this kind waits in the queue (not dead) for a time after `after`.
     ///
     /// # Errors
@@ -406,6 +405,42 @@ fn technical(row: &Row, column: Columns) -> Result<Option<TechnicalName>, StoreE
         .transpose()
 }
 
+/// The job of this kind that was queued last, inside `transaction`.
+async fn newest_job_in(
+    transaction: &mut Transaction,
+    kind: &str,
+) -> Result<Option<Job>, StoreError> {
+    let mut select = Query::select();
+    select
+        .columns(JOB_COLUMNS)
+        .from(Columns::Table)
+        .and_where(Expr::col(Columns::Kind).eq(kind))
+        .order_by(Columns::CreatedAt, Order::Desc)
+        .order_by(Columns::Id, Order::Desc)
+        .limit(1);
+    transaction
+        .fetch_optional(&select)
+        .await?
+        .as_ref()
+        .map(read_job)
+        .transpose()
+}
+
+/// The columns [`read_job`] reads.
+const JOB_COLUMNS: [Columns; 11] = [
+    Columns::Id,
+    Columns::Kind,
+    Columns::Payload,
+    Columns::RunAt,
+    Columns::Attempts,
+    Columns::MaxAttempts,
+    Columns::State,
+    Columns::LeaseOwner,
+    Columns::LeaseUntil,
+    Columns::LastFailure,
+    Columns::CreatedAt,
+];
+
 fn read_job(row: &Row) -> Result<Job, StoreError> {
     Ok(Job {
         id: row.id(Columns::Id)?,
@@ -479,6 +514,13 @@ impl JobStore for AuthStorage {
         after: Timestamp,
     ) -> Result<bool, StoreError> {
         self.database().later_job_waits(kind, after).await
+    }
+
+    async fn newest_job_in(
+        transaction: &mut Transaction,
+        kind: JobKind,
+    ) -> Result<Option<Job>, StoreError> {
+        newest_job_in(transaction, kind.code()).await
     }
 
     async fn purge_dead_jobs(&self, before: Timestamp, limit: u64) -> Result<u64, StoreError> {

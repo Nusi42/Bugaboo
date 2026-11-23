@@ -1,6 +1,7 @@
 //! The backups part of the in-memory store (OPS-07), and backup files kept in memory.
 
 use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use bb_core::backup::name::{BackupName, Purpose};
 use bb_core::backup::run::{BackupRun, CreatedFile};
@@ -8,7 +9,7 @@ use bb_core::security_log::Digest;
 use jiff::Timestamp;
 
 use super::fake::{FakeError, FakeStore, Tx};
-use crate::backups::{BackupFile, BackupFiles, BackupStore};
+use crate::backups::{BackupFile, BackupFiles, BackupStore, KeepLease};
 use crate::ports::BoxFuture;
 
 impl BackupStore for FakeStore {
@@ -25,6 +26,10 @@ impl BackupStore for FakeStore {
         tx.state.backup_runs.push(run.clone());
         Ok(())
     }
+
+    async fn lock_backup_asks(_tx: &mut Tx) -> Result<(), FakeError> {
+        Ok(())
+    }
 }
 
 /// How a folder on a mapped network drive of the fake begins: the system would say it lies on
@@ -37,6 +42,8 @@ pub(crate) struct MemoryBackups {
     pub(crate) files: Mutex<Vec<BackupFile>>,
     /// The folders whose leftovers were removed, in order.
     pub(crate) cleaned: Mutex<Vec<Option<String>>>,
+    /// Whether a backup fails (the disk is full).
+    pub(crate) broken: AtomicBool,
 }
 
 impl BackupFiles for MemoryBackups {
@@ -44,12 +51,16 @@ impl BackupFiles for MemoryBackups {
         folder.starts_with(A_SHARE_BEHIND_A_DRIVE)
     }
 
-    fn create(
-        &self,
+    fn create<'a>(
+        &'a self,
         _folder: Option<String>,
         purpose: Purpose,
         now: Timestamp,
-    ) -> BoxFuture<'_, std::io::Result<CreatedFile>> {
+        _keep: Option<KeepLease<'a>>,
+    ) -> BoxFuture<'a, std::io::Result<CreatedFile>> {
+        if self.broken.load(Ordering::SeqCst) {
+            return Box::pin(async { Err(std::io::Error::other("the disk is full")) });
+        }
         let name = BackupName::new(purpose, now, "0.6.0");
         let mut files = self
             .files

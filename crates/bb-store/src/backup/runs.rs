@@ -11,6 +11,7 @@ use sea_query::{Expr, Order, Query};
 use crate::auth::AuthStorage;
 use crate::db::{Database, Row, StoredId as _, Transaction, to_micros};
 use crate::error::StoreError;
+use crate::locks::LockClass;
 use crate::schema::BackupRunRow as Columns;
 
 const COLUMNS: [Columns; 10] = [
@@ -94,5 +95,9 @@ impl bb_app::backups::BackupStore for AuthStorage {
         run: &BackupRun,
     ) -> Result<(), StoreError> {
         insert(transaction, run).await
+    }
+
+    async fn lock_backup_asks(transaction: &mut Transaction) -> Result<(), StoreError> {
+        transaction.advisory_lock(LockClass::BackupAsks, 0).await
     }
 }

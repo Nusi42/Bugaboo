@@ -481,15 +481,15 @@
       },
       "post": {
         "tags": ["admin"],
-        "summary": "Creates a backup now, while people go on working. Needs *Change organization settings*, from a\nsession.",
+        "summary": "Asks for a backup now, which is made in the background while people go on working; the answer\ncomes at once. The list of backups says while it runs (`asked`), and shows the backup when it is\nmade, or that it failed. Needs *Change organization settings*, from a session.",
         "operationId": "createBackup",
         "responses": {
-          "200": {
-            "description": "The backup that was created.",
+          "202": {
+            "description": "The backup is asked for and being made.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BackupFileBody"
+                  "$ref": "#/components/schemas/AskedBackupBody"
                 }
               }
             }
@@ -22040,6 +22040,27 @@
           }
         }
       },
+      "AskedBackupBody": {
+        "type": "object",
+        "description": "A backup asked for with *Create a backup now* that is not made yet.",
+        "required": ["status", "asked_at"],
+        "properties": {
+          "asked_at": {
+            "type": "string",
+            "description": "When it was asked for.",
+            "format": "date-time"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AskedBackupStatus",
+            "description": "`running` while its job waits or works; `failed` when the job gave up and no backup was\nmade since."
+          }
+        }
+      },
+      "AskedBackupStatus": {
+        "type": "string",
+        "description": "Where a backup asked for with *Create a backup now* stands until it is made: running, or failed.",
+        "enum": ["running", "failed"]
+      },
       "AssignmentItem": {
         "type": "object",
         "description": "A row of *Who has which role*: the fields that can be asked for.",
@@ -22678,8 +22699,19 @@
       "BackupsBody": {
         "type": "object",
         "description": "The backups and the newest records.",
-        "required": ["files", "runs"],
+        "required": ["files", "runs", "asked"],
         "properties": {
+          "asked": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AskedBackupBody",
+                "description": "The backup asked for with *Create a backup now* that is not made yet; `null` when none is\nrunning and the last one asked for did not fail."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "files": {
             "type": "array",
             "items": {

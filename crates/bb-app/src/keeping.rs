@@ -91,6 +91,7 @@ impl JobKind {
             | Self::RuleMatches
             | Self::RulesGetAnEnd
             | Self::DataExport
+            | Self::BackupNow
             | Self::FinishRemoval => &[],
         }
     }
@@ -179,6 +180,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             | JobKind::RuleMatches
             | JobKind::RulesGetAnEnd
             | JobKind::DataExport
+            | JobKind::BackupNow
             | JobKind::FinishRemoval => {
                 return Err(AppError::Internal(format!(
                     "the job kind {} deletes nothing past a keep period",
