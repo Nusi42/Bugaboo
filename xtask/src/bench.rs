@@ -104,6 +104,13 @@ fn table(budgets: &Budgets, database: DatabaseKind, result: &DriverResult) {
         result.build
     ));
     for (name, measured) in &result.scenarios {
+        if let Some(failed) = &measured.failed {
+            output::info(&format!(
+                "  {name}: failed after {} counted runs: {failed}",
+                measured.made
+            ));
+            continue;
+        }
         let budget = budgets
             .p95_ms(&measured.budget)
             .map_or_else(|| "none yet".to_owned(), |allowed| format!("{allowed} ms"));

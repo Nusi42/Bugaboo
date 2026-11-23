@@ -8,6 +8,8 @@
 //! history and the notifications are then read from the events by the code a server runs.
 
 use bb_app::context::Clock as _;
+use bb_app::settings::{ChangeSetting, SettingsScope, change_setting};
+use bb_core::settings::{BACKUPS_DAILY, SettingValue};
 use bb_core::time::SECONDS_PER_DAY;
 use bb_dev_words::sample::{FieldPlan, IssuePlan, Layout};
 
@@ -135,8 +137,32 @@ impl Later for Large {
         .await?;
         self.agent_keys =
             crate::large_agents::give_work(world, &org, &plan, &names.work.ai).await?;
-        Ok(())
+        switch_off_daily_backups(world).await
     }
+}
+
+/// Switches *Create a backup every day* off, as an administrator does on *Backups*. A server that
+/// starts on the dataset queues the backup of the day a few minutes after its start, and a copy of
+/// the whole dataset beside the first scenarios of the benchmarks would measure the backup, not
+/// them. A backup is measured on its own (*backup-large*), and the long run asks for its own.
+/// The administrator signs in again: the history moved the clock past the end of the first
+/// session.
+async fn switch_off_daily_backups(world: &World<'_>) -> Result<(), SampleError> {
+    let token = world.session_of(world.administrator()?).await?;
+    world.tick();
+    change_setting(
+        &world.services.ctx(world.request()),
+        ChangeSetting {
+            version: None,
+            session_token: token,
+            scope: SettingsScope::Organization,
+            key: BACKUPS_DAILY.definition().key().to_owned(),
+            value: SettingValue::Bool(false),
+        },
+    )
+    .await
+    .map(|_| ())
+    .map_err(|error| SampleError::step(Step::Settings, &error))
 }
 
 /// Makes the own field *Cost code* for every issue and hides it from Contributors, who may not

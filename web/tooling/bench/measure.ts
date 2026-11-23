@@ -67,8 +67,18 @@ class Tally {
   }
 }
 
+/** The words of an error, for the numbers of a scenario that failed. */
+function wordsOf(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 /**
  * Runs a scenario: the warm-up, then the counted runs; what they took, summed up.
+ *
+ * A run that fails for any other reason (a request without an answer, an error of the server) ends
+ * the scenario: it is written down as failed, with the words of the error and the runs made until
+ * then, and the driver goes on with the next scenario, so one scenario never costs the numbers of
+ * the others.
  *
  * A search that the server stops for taking too long counts as the time it really took (at least
  * the limit, which the server owns and this file does not name). Once `TOO_SLOW_IN_A_ROW` runs in a row are too
@@ -84,7 +94,15 @@ export async function measure<C>(
   const tally = new Tally();
   const rounds = (count: number, counted: boolean) =>
     Array.from({ length: count }, (_, round) => () => tally.run(scenario, context, round, counted));
-  await inOrder([...rounds(scenario.warmUp ?? WARM_UP, false), ...rounds(scenario.runs, true)]);
+  try {
+    await inOrder([...rounds(scenario.warmUp ?? WARM_UP, false), ...rounds(scenario.runs, true)]);
+  } catch (error) {
+    return {
+      budget: scenario.budget,
+      made: tally.times.length - tally.skipped,
+      failed: wordsOf(error),
+    };
+  }
   const { median, p95, p99, slowest } = summary(tally.times);
   return {
     budget: scenario.budget,

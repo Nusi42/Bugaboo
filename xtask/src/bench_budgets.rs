@@ -98,6 +98,7 @@ pub(crate) struct Measured {
     pub(crate) budget: String,
     #[serde(default)]
     pub(crate) p50: f64,
+    #[serde(default)]
     pub(crate) p95: f64,
     #[serde(default)]
     pub(crate) p99: f64,
@@ -109,6 +110,10 @@ pub(crate) struct Measured {
     pub(crate) too_slow: u32,
     #[serde(default)]
     pub(crate) skipped: u32,
+    /// The words of the error that ended the scenario, when a run failed; the driver went on with
+    /// the next scenario.
+    #[serde(default)]
+    pub(crate) failed: Option<String>,
 }
 
 impl Measured {
@@ -312,6 +317,13 @@ pub(crate) struct Judged {
 pub(crate) fn over(budgets: &Budgets, database: &str, run: &BTreeMap<String, Measured>) -> Judged {
     let mut judged = Judged::default();
     for (name, measured) in run {
+        if let Some(failed) = &measured.failed {
+            judged.failures.push(format!(
+                "The scenario {name} failed after {} counted runs: {failed}",
+                measured.made
+            ));
+            continue;
+        }
         if let Some(written) = budgets.written_down.get(&measured.budget) {
             judged.known.push(format!(
                 "The scenario {name} took {:.1} ms at the 95th percentile, written down with no budget yet: {}",
@@ -403,6 +415,37 @@ p95_ms = 1
         assert_eq!(problems(&zero, &scenarios(SOURCE)).len(), 1);
         let twice = SOURCE.replace("issue-page", "search");
         assert_eq!(problems(&budgets(), &scenarios(&twice)).len(), 1);
+    }
+
+    #[test]
+    fn perf_bench_a_scenario_that_failed_fails_the_run_and_the_others_are_judged() {
+        let run = BTreeMap::from([
+            (
+                "backup-large".to_owned(),
+                Measured {
+                    budget: "page".to_owned(),
+                    made: 2,
+                    failed: Some("no answer within 35 s".to_owned()),
+                    ..Measured::default()
+                },
+            ),
+            (
+                "issue-page".to_owned(),
+                Measured {
+                    budget: "page".to_owned(),
+                    p95: 12.0,
+                    ..Measured::default()
+                },
+            ),
+        ]);
+        let found = over(&budgets(), "sqlite", &run);
+        assert_eq!(
+            found.failures,
+            ["The scenario backup-large failed after 2 counted runs: no answer within 35 s"]
+        );
+        let read: Measured =
+            serde_json::from_str(r#"{"budget":"page","made":2,"failed":"no answer"}"#).unwrap();
+        assert_eq!(read.failed.as_deref(), Some("no answer"));
     }
 
     #[test]
