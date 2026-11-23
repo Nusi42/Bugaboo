@@ -410,6 +410,7 @@ On screens the AI is always *the assistant*, *an AI app* or *an agent*: never *b
 | Manufacturer        | Us, as the maker of the software under the CRA, in both models        |
 | Person links        | What a person is to a row that names them (`author`, `recipient`, `subject`, `actor`, `holder`), declared beside the personal-data marks of each entity (ADR-0044) |
 | Walk of a person's data | `PersonData`: the one way to find every row that names one person, read by *Download my data*, *Remove a person* and the removal plan (ADR-0044) |
+| Index of the walk   | The tables `…_names_person`: for each row of the events, the history, the notifications, the jobs, the runs of many changes and the proposals of agents whose changes or JSON hold the ID of a person, the row and the person, written with the row; the walk finds those rows through it (ADR-0044) |
 | Legal-hold name     | The one place a removed person's name is kept: on the tombstone, with its reason and end date, read only where ADR-0035, decision 7, shows it, and cleared when an administrator deletes the person's last kept work days (ADR-0044) |
 | Replay list         | The file `privacy/replay.list` in the data folder: one line for each removal (with its choice about comments), switch-off and key, grant, passkey or support access taken back, which a restore of an older backup runs again (ADR-0044, ADR-0046) |
 | Release folder      | What `cargo xtask release` writes for one version: the programs, checksums, signatures, parts lists, notices, VEX file and release notes (ADR-0047) |
