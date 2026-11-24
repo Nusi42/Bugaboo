@@ -31,6 +31,16 @@ export function useThisWeek(): string {
   return weekFirstOf(personToday(region, useNow()), region.firstDay);
 }
 
+/**
+ * The first date of the week an address asks for: the week of today without one, and for any date the
+ * week it is in, as the person counts weeks, so a week never starts on another day than their first day.
+ */
+export function useWeekShown(week: string | undefined): string {
+  const region = useRegion();
+  const thisWeek = useThisWeek();
+  return week === undefined ? thisWeek : weekFirstOf(week, region.firstDay);
+}
+
 /** The seven days of the week that starts on `first`, and its first and last date. */
 export function rangeOf(first: string) {
   const days = weekDaysOf(first);

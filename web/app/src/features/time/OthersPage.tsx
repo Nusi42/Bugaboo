@@ -6,12 +6,12 @@ import { WordingNotice } from "../../shared/with-wording.tsx";
 import { useOthersTrail } from "./others-trail.ts";
 import { OtherWeek } from "./OtherWeek.tsx";
 import { PeoplePicker } from "./PeoplePicker.tsx";
-import { useThisWeek } from "./use-week.ts";
+import { useWeekShown } from "./use-week.ts";
 
 export interface OthersPageProps {
   /** The ID of the person whose week is open, from the address; none while nobody is chosen. */
   readonly person: string | undefined;
-  /** The first date of the week, from the address; the week of today without it. */
+  /** A date of the week, from the address; the week of today without it. */
   readonly week: string | undefined;
   readonly onWeek: (first: string) => void;
   readonly onPerson: (person: string) => void;
@@ -24,8 +24,7 @@ export interface OthersPageProps {
  */
 export function OthersPage({ person, week, onWeek, onPerson }: OthersPageProps) {
   usePageTitle(t("time.others.title"));
-  const thisWeek = useThisWeek();
-  const first = week ?? thisWeek;
+  const first = useWeekShown(week);
   useOthersTrail();
   return (
     <Card heading={t("time.others.title")} level={1}>

@@ -1,15 +1,13 @@
 import { t } from "@bugaboo/messages";
 import { Card, partOf, part, ReadingHold } from "@bugaboo/ui";
 
-import { personToday, weekFirstOf } from "../../shared/clock.ts";
-import { useRegion } from "../../shared/region.ts";
-import { useNow } from "../../shared/use-now.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { WordingNotice } from "../../shared/with-wording.tsx";
 import { OwnSheet } from "./Sheet.tsx";
+import { useWeekShown } from "./use-week.ts";
 
 export interface TimesheetPageProps {
-  /** The first date of the week shown, from the address; the week of today without it. */
+  /** A date of the week shown, from the address; the week of today without it. */
   readonly week: string | undefined;
   readonly onWeek: (first: string) => void;
 }
@@ -20,9 +18,7 @@ export interface TimesheetPageProps {
  */
 export function TimesheetPage({ week, onWeek }: TimesheetPageProps) {
   usePageTitle(t("time.sheet.title"));
-  const region = useRegion();
-  const now = useNow();
-  const first = week ?? weekFirstOf(personToday(region, now), region.firstDay);
+  const first = useWeekShown(week);
   // The week, its words and the person's region come with reads of their own: the page shows once all are read, so the
   // card does not widen for the grid and no time is first written in the device's way (UX §6.4).
   return (

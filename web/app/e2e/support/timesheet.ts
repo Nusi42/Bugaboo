@@ -3,7 +3,7 @@ import { t } from "@bugaboo/messages";
 import { expect, type Locator, type Page } from "@playwright/test";
 
 import { weekDaysOf, weekdayName, weekFirstOf } from "../../src/shared/clock.ts";
-import { addDays } from "../../src/shared/format.ts";
+import { addDays, formatCalendarDay } from "../../src/shared/format.ts";
 import { paths } from "../../src/shared/paths.ts";
 import { type ApiSession, thisDevice } from "./api.ts";
 import { type MadeIssue } from "./issues.ts";
@@ -27,6 +27,10 @@ export function weekOf(day: string): string {
 export function sheetAt(first: string): string {
   return `${paths.time}?week=${first}`;
 }
+
+/** What the bar of the week says of the week that starts on `first`. */
+export const weekBarText = (first: string) =>
+  t("time.sheet.week-of", { date: formatCalendarDay(first) });
 
 /** The column of a day in the grid of the week it is in (Monday is 0). */
 export function columnOf(day: string): number {

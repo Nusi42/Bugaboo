@@ -7,8 +7,8 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { ben, hana } from "./support/hr.ts";
 import { setOrganizationSwitch } from "./support/organization.ts";
-import { sheetAt, tabThrough } from "./support/timesheet.ts";
-import { anaWorked, PAST, prepareTimesheet } from "./support/timesheet-data.ts";
+import { sheetAt, tabThrough, weekBarText } from "./support/timesheet.ts";
+import { anaWorked, FRIDAY, PAST, prepareTimesheet } from "./support/timesheet-data.ts";
 
 // Working hours of others (TIME-12, PRIV-09, ADR-0035, decision 8): the page is for a holder of
 // See working hours of others; everybody else is answered as if it did not exist. While Totals
@@ -66,6 +66,20 @@ test("time_12 hr sees anas week and with totals only only the week total", async
     page.getByRole("button", { name: t("time.others.change"), exact: true }),
   ).toHaveCount(0);
   await expect(page.getByText(t("time.sheet.start"), { exact: true })).toHaveCount(0);
+});
+
+test("time_12 a week asked for by any of its days opens on its first day, on every sheet", async ({
+  page,
+  server,
+}) => {
+  const anaId = await anaWorked(server);
+  await signIn(page, hana);
+  const first = weekBarText(PAST);
+  // The address of a week names its first day, but a link may name any day of it (here a Friday).
+  await page.goto(`/time/people/${anaId}?week=${FRIDAY}`);
+  await expect(page.getByText(first, { exact: true })).toBeVisible();
+  await page.goto(sheetAt(FRIDAY));
+  await expect(page.getByText(first, { exact: true })).toBeVisible();
 });
 
 test("time_12 with totals only the page is reached by keyboard and has no box to type in", async ({
