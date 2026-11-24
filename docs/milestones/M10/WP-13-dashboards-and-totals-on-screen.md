@@ -9,7 +9,7 @@
 
 ## Where
 
-- **Owns:** `web/app/src/features/dashboards/**` (new, a lazy chunk: the list *Mine* / *Shared with me*, the dashboard, the grid, *Change* mode, *Add box* with previews, each kind of box, *Share*, *Save a copy*), the shared chart parts in `web/packages/ui/src/` (a bar chart and a number, each with its table), the section *Dashboards* in `web/app/src/features/shell/` and the address `/d/<id>` in `paths.ts`, *Home* as the person's dashboard in `web/app/src/features/home/` (if M10-Q14 takes it), the totals row of a grouped list in `web/app/src/features/issues/` (the list's group footer only) and the totals in a board column's header (`web/app/src/features/board/`, the header only, after WP-10 lands), the parts `dashboard-box`, `chart-bar` in `design/theme.kdl`, `userDocs/dashboards/` (new folder).
+- **Owns:** `web/app/src/features/dashboards/**` (new, a lazy chunk: the list *Mine* / *Shared with me*, the dashboard, the grid, *Change* mode, *Add box* with previews, each kind of box, *Share*, *Save a copy*), the shared chart parts in `web/packages/ui/src/` (a bar chart and a number, each with its table), the section *Dashboards* in `web/app/src/features/shell/` and the address `/d/<id>` in `paths.ts`, *Home* as the person's dashboard in `web/app/src/features/home/`, the totals row of a grouped list in `web/app/src/features/issues/` (the list's group footer only) and the totals in a board column's header (`web/app/src/features/board/`, the header only, after WP-10 lands), the parts `dashboard-box`, `chart-bar` in `design/theme.kdl`, `userDocs/dashboards/` (new folder).
 - **Reuses, does not copy:** the *Share* window of saved searches, the list of results, the timeline's drawing for *Small timeline* (read-only), the timer's block, the history's sentences for *Recent changes*, the drag helper and the shared list of drag kinds.
 - **Shared files, one entry each:** `paths.ts`, `messages/en.json`, the shell's sections (WP-09 adds *Pinned*), `design/theme.kdl` (its own parts).
 
@@ -20,7 +20,7 @@
 - **Charts** (M10-Q13): horizontal bars with the value written at each bar, or one large number; each has a *Show as table* that is also what screen readers read. A chart by a person field is in the order of names; there is no sort by size for it. Colors come from the theme's chart tokens and choice colors; a bar is never told apart by color alone.
 - **What a viewer sees** is what the route answers: a box left out is not drawn and the grid closes up. The header says who made a shared dashboard (as *Who sees people* says) and has *Save a copy*.
 - **Totals on screen** (M10-Q15): a list grouped by a field shows under each group a quiet totals row (count, and the lengths and number fields that are columns of the list), from WP-03's route; a board column's header shows its count and, when chosen in *Customize*, a sum. A total with fewer values than issues says "over 9 of 14 issues".
-- ***Home*** (M10-Q14, taken; ADR-0050, decision 6): *Customize* on *Home* is the dashboard's *Change*; its first boxes are today's blocks. The first cut if the screens run late (M10-Q21).
+- ***Home*** (M10-Q14, taken; ADR-0050, decision 6): *Mentions* and *Recently opened* stay fixed blocks at the top (not boxes); below them the person's boxes, at first "My timer", "My open issues" and "Due soon"; *Customize* on *Home* is the dashboard's *Change*. The first cut if the screens run late (M10-Q21).
 - **The phone:** boxes in one column in their order on the computer (row, then column); *Change* mode offers *Move up* / *Move down* instead of drag.
 
 ## Tasks
@@ -29,7 +29,7 @@
 2. The list of dashboards, the dashboard, the grid, *Change* mode with drag, corner and the typed ways.
 3. *Add box*, the previews, each kind of box.
 4. Charts and tables in `packages/ui`.
-5. *Share* and *Save a copy*; *Home* (if taken).
+5. *Share* and *Save a copy*; *Home*.
 6. The totals row of grouped lists and the board column's totals.
 7. User docs; pictures in the four themes on computer and phone, looked at against UX §1.1, §7 and §6.4 before the push; the report names them.
 

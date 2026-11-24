@@ -1,34 +1,34 @@
 # WP-08 — *E-mail me this search*
 
-**Wave 2 · Folder / branch:** `bugaboo.win4` / `WIN4` · **Model:** Opus (data leaving by e-mail, a scheduled job run as the person, keep and removal rules)
+**Wave 2 · Folder / branch:** `bugaboo.win4` / `WIN4` · **Model:** Opus (data leaving by e-mail, a job run as the person at set hours, keep and removal rules)
 **Features:** QRY-07 (owner, server and screens). ADR-0033 and ADR-0034 amendments (WP-01); answers M10-Q16, Q20.
 
 ## Goal
 
-On any saved search a person may open, *E-mail me this search* sets a schedule: on chosen weekdays at a chosen hour of their time zone, Bugaboo runs the search as them and sends them a plain-text e-mail with what it finds. The e-mail follows the organization's e-mail rules. A person sees and stops their schedules in *Notification settings*. A schedule stops when the person is switched off or can no longer open the search, and is deleted when the person is removed.
+On any saved search a person may open, *E-mail me this search* makes an e-mailed search: on chosen weekdays at a chosen hour of their time zone, Bugaboo runs the search as them and sends them a plain-text e-mail with what it finds. The e-mail follows the organization's e-mail rules. A person sees and stops their e-mailed searches in *Notification settings*. An e-mailed search pauses when the person is switched off or can no longer open the search, and is deleted when the person is removed.
 
 ## Where
 
-- **Owns:** `crates/bb-core/src/search_mail.rs` (new: the schedule, its limits), `crates/bb-app/src/search_mail/**` (new: set, change, stop, the job that sends), the e-mail's text in `crates/bb-app/src/notifications/mail.rs` (one more kind of e-mail, written by the one plain-text writer of ADR-0033), `crates/bb-store/src/search_mail.rs` (new), migration **68** (`crates/bb-store/src/migrations/m0068_search_mail.rs`: `search_mail_schedule`), the job kind `search-mail.send` (`bb_app::jobs::JobKind`), the setting `search-mail.allowed` (organization, on at the start) in `crates/bb-core/src/settings/catalog.rs`, `crates/bb-api/src/api/search_mail.rs` (new), the window *E-mail me this search* in the saved search's menu (`web/app/src/features/search/`, the menu entry and a new `SearchMailWindow.tsx`), the list *E-mailed searches* under *My settings › Notification settings* (`web/app/src/features/notifications/`), the keep entry and the removal part, `userDocs/notifications/e-mailed-searches.md` (new).
+- **Owns:** `crates/bb-core/src/search_mail.rs` (new: the e-mailed search, its limits), `crates/bb-app/src/search_mail/**` (new: set, change, stop, the job that sends), the e-mail's text in `crates/bb-app/src/notifications/mail.rs` (one more kind of e-mail, written by the one plain-text writer of ADR-0033), `crates/bb-store/src/search_mail.rs` (new), migration **68** (`crates/bb-store/src/migrations/m0068_search_mail.rs`: `search_mail_schedule`), the job kind `search-mail.send` (`bb_app::jobs::JobKind`), the setting `search-mail.allowed` (organization, on at the start) in `crates/bb-core/src/settings/catalog.rs`, `crates/bb-api/src/api/search_mail.rs` (new), the window *E-mail me this search* in the saved search's menu (`web/app/src/features/search/`, the menu entry and a new `SearchMailWindow.tsx`), the list *E-mailed searches* under *My settings › Notification settings* (`web/app/src/features/notifications/`), the keep entry and the removal part, `userDocs/notifications/e-mailed-searches.md` (new).
 - **Shared files, one entry each:** `catalog.rs`, `migrations/mod.rs` and `list.rs`, `router.rs`, `JobKind`, the keep list, the walk of a person's data, `messages/en.json`, `paths.ts`.
 - **Does not touch:** saved searches' record (read), notification rows of events.
 
 ## What is decided
 
-- **To the person only** (M10-Q16): a schedule sends to the address of the person who set it, never to anyone else; there is no field for another address.
-- **When:** chosen weekdays (at least one) and a whole hour, in the person's time zone (*Region*); the job finds the schedules due each hour and sends each as its own `search-mail.send` job, spread over the hour by a fixed offset per schedule so 500 people at 8:00 do not run at once.
-- **What:** the search runs as the person at sending time, with their rights then (QRY-05); the e-mail holds the saved search's name, at most 50 issues by its sort (ID, title, status, a link), "and 120 more" when there are more (a count of what the person sees), and a link to the search and to the schedule. Plain text only, the rules of ADR-0033, decision 3: no picture, no attachment, the links first, control and direction characters removed. *Short e-mails* on: no titles and no search name, only IDs, statuses and links.
-- ***Only when something is new or changed*** (on at the start): nothing is sent when no issue found is new or changed since the last e-mail of this schedule. The schedule keeps only the time of its last e-mail, never the issues.
-- **Stops** (M10-Q16): the job sends nothing and pauses the schedule when the person is switched off, when the search no longer opens for them (deleted, unshared, no longer checks), or when e-mail or `search-mail.allowed` is off; the person sees "Sends nothing: you can no longer open this search" in their list (UX design §4.13). A paused schedule starts again only by the person.
-- **Limits:** at most 20 schedules per person, counted inside the change. The link in the e-mail opens Bugaboo (sign-in needed); no token in the e-mail changes anything.
-- **AI apps and agents** (M10-Q20): no tool sets a schedule; the routes take a session only.
+- **To the person only** (M10-Q16): an e-mailed search goes to the address of the person who set it, never to anyone else; there is no field for another address.
+- **When:** chosen weekdays (at least one) and a whole hour, in the person's time zone (*Region*); the job finds the e-mailed searches due each hour and sends each as its own `search-mail.send` job, spread over the hour by a fixed offset per e-mailed search so 500 people at 8:00 do not run at once.
+- **What:** the search runs as the person at sending time, with their rights then (QRY-05); the e-mail holds the saved search's name, at most 50 issues by its sort (ID, title, status, a link), "and 120 more" when there are more (a count of what the person sees), and a link to the search and to the e-mailed search. Plain text only, the rules of ADR-0033, decision 3: no picture, no attachment, the links first, control and direction characters removed. *Short e-mails* on: no titles and no search name, only IDs, statuses and links.
+- ***Only when something is new or changed*** (on at the start): nothing is sent when no issue found is new or changed since its last e-mail. The e-mailed search keeps only the time of its last e-mail, never the issues.
+- **Pauses** (M10-Q16; ADR-0033, amendment 2026-11-24, decision 5): the job sends nothing while it is paused. Two pauses end by themselves: while e-mail or `search-mail.allowed` is off; sending goes on when it is on again. Two wait for the person: when the person is switched off, and when the search no longer opens for them (deleted, unshared, no longer checks); the person sees "Sends nothing: you can no longer open this search" in their list (UX design §4.13), and only the person starts it again.
+- **Limits:** at most 20 e-mailed searches per person, counted inside the change. The link in the e-mail opens Bugaboo (sign-in needed); no token in the e-mail changes anything.
+- **AI apps and agents** (M10-Q20): no tool sets an e-mailed search; the routes take a session only.
 
 ## Tasks
 
 1. Write the acceptance tests below.
-2. The schedule, its limits; migration 68 on both databases; marks and the person link.
+2. The e-mailed search, its limits; migration 68 on both databases; marks and the person link.
 3. The hourly finder and the job: run as the person, the e-mail's text, *Short e-mails*, *Only when something is new or changed*, the pauses.
-4. The setting `search-mail.allowed`; keep and removal (deleted at *Remove a person*; schedules of a deleted search deleted with it).
+4. The setting `search-mail.allowed`; keep and removal (deleted at *Remove a person*; the e-mailed searches of a deleted search deleted with it).
 5. The window and the list, with pictures in the four themes on computer and phone, looked at against UX §1.1 before the push.
 6. User docs; ADR-0033 and ADR-0034 *Enforced by* lines; architecture §12 and *Personal data in M10*.
 
@@ -48,7 +48,7 @@ On any saved search a person may open, *E-mail me this search* sets a schedule: 
 - `qry_07_e_mail_me_this_search_sets_and_stops_a_schedule` (browser, computer and phone).
 - `priv_04_removal_deletes_the_persons_schedules`.
 - `priv_03_download_my_data_holds_the_persons_schedules`.
-- SEC-MATRIX: every schedule route, for every starting role and an access key, both databases.
+- SEC-MATRIX: every route of e-mailed searches, for every starting role and an access key, both databases.
 
 ## Checks
 
@@ -64,7 +64,7 @@ Code review with the SSOT/DRY/ODR gate: one plain-text writer for every e-mail, 
 
 ## Personal data
 
-The schedule names its person and their choice of days and hour (marked, linked to the person). The e-mail sends issue data to the person's own address, outside Bugaboo: the user doc says so, *Short e-mails* limits it, and the record of processing (PRIV-07, M14) will list it. Deleted at *Remove a person*; in *Download my data*.
+An e-mailed search names its person and their choice of days and hour (marked, linked to the person). The e-mail sends issue data to the person's own address, outside Bugaboo: the user doc says so, *Short e-mails* limits it, and the record of processing (PRIV-07, M14) will list it. Deleted at *Remove a person*; in *Download my data*.
 
 ## Depends on
 

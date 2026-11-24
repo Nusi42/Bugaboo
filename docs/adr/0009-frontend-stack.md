@@ -33,8 +33,8 @@ Decision M5-Q11: long lists draw only the rows that can be seen with the `Virtua
 The maintainer took the recommendation of M10-Q10 of [the M10 plan](../milestones/M10/README.md). A force layout keeps moving while it settles, which breaks *Nothing moves under the cursor* (UX design §6.4), and gives a different picture each time, which a visual test cannot compare. Decided:
 
 1. **d3-force is not added.** The relation map is laid out by a component of our own, on the shared primitives, like the timeline, the calendar and the charts.
-2. **Columns by steps away.** The starting issue stands in the middle; the issues it waits for and its parents stand in columns to the left, the ones that wait for it and its children to the right, one column per step away, and the kinds without a direction by their first step. Inside a column the issues have a fixed order, so the same answer always gives the same picture.
-3. **Nothing moves by itself.** The picture is drawn once from the answer; it changes only when the person changes the steps, the *Kinds shown* or the issue in the middle (*Put in the middle*).
+2. **Columns by steps away.** The starting issue stands on the left; to its right stands one column for each step away, whatever the kind or the direction of the relation that reaches an issue (the line and its word tell those). Inside a column the issues stand in one fixed order: by kind of relation, then by Issue ID. So the same answer always gives the same picture. This is the one home of the map's layout; the UX design and the plan point here.
+3. **Nothing moves by itself.** The picture is drawn once from the answer; it changes only when the person changes the steps, the *Kinds shown* or the start (*Put in the middle* makes another issue the start).
 
 Enforced by (additional): DEP-UNUSED and DEP-REGISTER (no layout library is added), review (UX design §6.4: the map is measured for movement like every new screen).
 

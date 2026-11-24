@@ -73,7 +73,7 @@ Rules:
 | **Choice**               | One of the values a *Pick one* or *Pick several* field offers (*Critical*, *Major*), with its color and icon | enum value, list item (in UI) |
 | **Choice colors**        | The twelve colors a choice, a label or a tag can have, by their plain names: *Pink, Blue, Green, Orange, Purple, Teal, Coral, Yellow, Sky blue, Lime, Gray, Sand*. Each reads well in every theme and is told apart from the others at a glance | category color, color 1 (in UI) |
 | **Combine with another choice** | Move every issue from one choice, tag or label to another, then retire the first one | merge (in UI) |
-| **Retire**               | Stop offering a choice, label, issue type or field for new issues while old issues keep it | archive, deprecate (in UI) |
+| **Retire**               | Stop offering a choice, label, issue type, field, kind of relation or release for new issues while old issues keep it | archive, deprecate (in UI) |
 | **Look** (of a field)    | How a field's value is shown: *Badge, Pill, Plain text, Progress bar, Avatar* | display style, renderer |
 | **Label group**          | A named group of labels (*area*, *platform*); a bare *Group* always means people | category (for labels) |
 | **Label group to pick one from** | A label group of which an issue can have only one label (*area: login* or *area: billing*); the screens say *Pick one* on its switch | pick one group, exclusive group, mutually exclusive |
@@ -150,7 +150,7 @@ Rules:
 | **Small timeline**       | The box that shows the timeline of a search, one page, with nothing dragged | Gantt snippet, mini Gantt (in UI) |
 | **Recent changes**       | The box with the newest changes to the issues a search finds, as the history writes them; never the work of one person | activity feed, activity stream (in UI) |
 | **Share dashboards**     | The permission to share dashboards with a group or a project       | publish dashboard (in UI)          |
-| **Pinned** / **Pin to sidebar** / **Unpin** | Your own short list in the sidebar, in your order: the projects, saved searches and dashboards you pinned with *Pin to sidebar*, at most 30 | favorites, starred (in UI) |
+| **Pinned** / **Pin to sidebar** / **Unpin** | Your own short list in the sidebar, in your order: the projects, saved searches and dashboards you pinned with *Pin to sidebar*, at most 30 (ADR-0050, decision 12) | favorites, starred (in UI) |
 | **E-mail me this search** | Getting a saved search by e-mail, on the weekdays and at the hour you choose, sent only to you | subscribe (in UI) |
 | **E-mailed search**      | One saved search that you get by e-mail; your list of them is in *Notification settings* | subscription, mail schedule (in UI) |
 | **Quick search**         | The search box for everything, `Ctrl+K`                            | command palette, omnibox           |

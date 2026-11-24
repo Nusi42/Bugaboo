@@ -141,7 +141,7 @@
     </div></div></div></div>
     <ul>
       <li><b>Sidebar:</b> search, the main sections, pinned items, the project tree, the running timer and settings. It can be narrowed to icons.</li>
-      <li><b>Pinned</b> (CFG-05): the projects, saved searches and dashboards a person pinned, in their own order; nobody else sees them. A project, a saved search and a dashboard each have <i>Pin to sidebar</i> in their <i>More</i> menu, and <i>Unpin</i> once pinned. The order changes by dragging a line, or with <i>Move up</i> and <i>Move down</i> in its menu. At most 30 pins; the 31st says <i>"You can pin 30 things. Unpin one first."</i> With more than 8 pins the section shows 8 and <i>Show all pinned</i>, so the sidebar still fits a window 600 px high (§4.9). Something the person can no longer open is left out of the section without a word, and comes back if they may open it again. Documents can be pinned once they exist; an organization does not pin for everybody.</li>
+      <li><b>Pinned</b> (CFG-05; the rules are ADR-0050, decision 12): the projects, saved searches and dashboards a person pinned, in their own order; nobody else sees them. A project, a saved search and a dashboard each have <i>Pin to sidebar</i> in their <i>More</i> menu, and <i>Unpin</i> once pinned. The order changes by dragging a line, or with <i>Move up</i> and <i>Move down</i> in its menu. At most 30 pins; the 31st says <i>"You can pin 30 things. Unpin one first."</i> With more than 8 pins the section shows 8 and <i>Show all pinned</i>, so the sidebar still fits a window 600 px high (§4.9). Something the person can no longer open is left out of the section without a word, and comes back if they may open it again. Documents can be pinned once they exist; an organization does not pin for everybody.</li>
       <li><b>Top bar:</b> where you are (<i>ACME › Website › Issues</i>), the <b>Show as</b> switch (<i>List · Board · Timeline · Calendar · Map</i>), and buttons for <i>Customize</i>, <i>Share</i>, <i>Export</i> and <i>Save search</i>.</li>
       <li><b>Opening an issue:</b> in the <b>focus view</b> by default (§3.4), which gives the issue most of the screen. People who prefer to keep the list in view can choose the <b>side panel view</b> instead (My settings › Appearance, or the button in the issue header). Beside the list the side panel is a box of its own, at most as high as the window: it keeps its place under the top bar while the page scrolls, and what does not fit scrolls inside it under its title, with the shadow where more follows.</li>
       <li><b>Assistant:</b> an <i>Assistant</i> button in the top bar opens a panel on the right. If the side panel is also open, the two share the space as tabs.</li>
@@ -252,9 +252,9 @@
       <li><b>My issues</b>: assigned to me, grouped by <i>Not started / In progress / Done recently</i>.</li>
       <li><b>Mentions</b>: where someone mentioned me, unread first.</li>
       <li><b>Recently opened</b> issues and documents.</li>
-      <li><b>Due soon</b>: issues and releases due in the next 7 days.</li>
+      <li><b>Due soon</b>: issues and <i>Planned</i> releases due in the next 7 days.</li>
     </ul>
-    <p><b>Home is the person's own dashboard</b> (§4.10, CFG-03): each block is a box of a dashboard, made of the same ready-made boxes, and it starts with the blocks above. <i>Customize</i> on Home is the dashboard's <i>Change</i>: move, resize, remove and <i>Add box</i>, with the same keys. Home is never shared and has no <i>Save a copy</i>. <i>Due soon</i> lists the issues due in the next 7 days and the releases whose <i>Release date</i> falls in them, both only where the person may see them.</p>
+    <p><b>Home is the person's own dashboard</b> (§4.10, CFG-03; ADR-0050, decision 6): <i>Mentions</i> and <i>Recently opened</i> stay fixed blocks at the top; they are not boxes and cannot be removed. Below them stand the person's boxes, which start as the ready-made boxes <i>"My timer"</i> (the timer), <i>"My open issues"</i> (my issues) and <i>"Due soon"</i>. <i>Customize</i> on Home is the dashboard's <i>Change</i> for those boxes: move, resize, remove and <i>Add box</i>, with the same keys. Home is never shared and has no <i>Save a copy</i>. <i>Due soon</i> lists the issues due in the next 7 days and the <i>Planned</i> releases whose <i>Release date</i> falls in them, both only where the person may see them.</p>
     <div class="demo"><div class="frame"><div class="frame-cap">Computer · Customize on Home</div><div class="frame-body"><div class="scr">
       <div class="tb"><b>Home</b><span class="muted">Changing your Home</span><div class="u-margin-left-auto--display-flex--gap-6px"><span class="btn sm">Add box</span><span class="btn sm primary">Done</span></div></div>
       <div class="grid2">
@@ -301,7 +301,7 @@
       <li><b>The Search page</b> (M5): <i>Search</i> in the sidebar opens the same list over every project you can see, with a <i>Project</i> column. A project's list is this page with <i>Project: Website</i> filled in; removing that filter widens it to all projects.</li>
       <li><b>Empty and error states</b> (M5): no issue matches → <i>"No issues match this search."</i> with <i>Remove all filters</i>; the search took too long → <i>"This search takes too long. Add a filter, for example a project or a status."</i>; a mistake in Advanced search → the list keeps the last results at full contrast, under a blue note (§6.1) that says they are the last ones, until the search is fixed (no dashed edge: it would look like a place to drop something); when there is no earlier list (the address itself has the mistake) there is no head and no such note, only the mistake.</li>
       <li><b>A changed saved search</b> says <i>Changed, not saved</i> and offers <i>Undo changes</i> next to <i>Save</i>.</li>
-      <li><b>Totals</b> (QRY-08): <i>Show totals</i> under <i>Customize</i> adds a totals line at the end of each group and one for the whole list: the number of issues, and the sums of <i>Estimated time</i>, <i>Time left</i>, <i>Time spent</i> and the own number fields that are columns. A total counts only the issues and the values the person may see: a field they may not read on an issue adds nothing for that issue, and no line says that something was left out. The totals are read again with the list, in place (§6.4). See the frame below.</li>
+      <li><b>Totals</b> (QRY-08): <i>Show totals</i> under <i>Customize</i> adds a totals line at the end of each group and one for the whole list: the number of issues, and the sums of <i>Estimated time</i>, <i>Time left</i>, <i>Time spent</i> and the own number fields that are columns. A total counts only the issues and the values the person may see: a field they may not read on an issue adds nothing for that issue, and a total with fewer values than issues says <i>over 9 of 14 issues</i>, which does not tell an empty value from a hidden one (ADR-0050, decision 7). The totals are read again with the list, in place (§6.4). See the frame below.</li>
       <li><b>On a phone</b> (M5): the list shows one card per issue (status icon, ID, title, priority, assigned person); columns are not offered. The page shows its title, <i>New issue</i> and <i>Filters</i>; <i>Group by</i> is in the <i>Filters</i> sheet (<i>Spacing</i> is the person's, in <i>My settings › Appearance</i>) and the colour legend opens from a small <i>Legend</i> button (owner decision, 2026-10-29). Opening an issue opens its full page (§3.4).</li>
     </ul>
     <div class="demo"><div class="frame narrow u-flex-basis-360px"><div class="frame-cap">Computer · totals of a grouped list</div><div class="frame-body"><div class="scr u-padding-12px--display-flex--flex-direction-column--gap-8px">
@@ -319,7 +319,7 @@
       <div class="df"><span class="btn sm">Cancel</span><span class="btn sm primary">E-mail me this search</span></div></div></div></div></div></div>
     <ul>
       <li><b><i>E-mail me this search</i></b> (QRY-07) is in the <i>More</i> menu of a saved search. It goes to the person only, never to others. Choose the weekdays and the hour, in the person's own time zone. <i>Only when something is new or changed</i> is on at the start.</li>
-      <li>The e-mail is plain text, run as the person when it is sent: at most 50 issues, then <i>"and 120 more"</i> with the link to the search. It follows <i>Short e-mails</i> (no titles), and it needs e-mail to be switched on for the organization; an organization may switch the feature off. Each e-mail ends with a link to the schedule in Bugaboo, where it is stopped (signing in is needed).</li>
+      <li>The e-mail is plain text, run as the person when it is sent: at most 50 issues, then <i>"and 120 more"</i> with the link to the search. It follows <i>Short e-mails</i> (no titles and no name of the search), and it needs e-mail to be switched on for the organization; an organization may switch the feature off. Each e-mail ends with a link to the e-mailed search in Bugaboo, where it is stopped (signing in is needed).</li>
       <li>A person has at most 20 e-mailed searches; they are listed under <i>My settings › Notification settings</i> (§4.13). One stops when the person is switched off or can no longer open the search, and is deleted when the person is removed.</li>
     </ul>
 
@@ -788,7 +788,7 @@ sort by priority, highest first</div>
       <li><b>Changing it:</b> <i>Change</i> shows the grid; a box is placed by dragging its title and resized by dragging its corner. Each box has a menu with <i>Move</i>, <i>Resize</i> and <i>Remove</i>; <i>Move</i> and <i>Resize</i> then take the arrow keys, <i>Enter</i> keeps the place and <i>Escape</i> goes back. Every change offers <i>Undo</i>; <i>Done</i> ends changing. Only the box that is moved or resized moves, and the others make room once, when it is put down (§6.4).</li>
       <li><b>Sharing</b> (M10-Q12): private when it is made; <i>Share</i> shares it with groups and projects like a saved search, which needs the permission <i>Share dashboards</i>. Each box runs as the person who looks at it. A box whose search does not check for that person is left out, and the grid closes up, so no gap tells of it. Only the maker changes it; others <i>Save a copy</i>.</li>
       <li>Home is the person's own dashboard (§4.1). A dashboard shows what it read, and reads again on a change of its own, when the window gets the focus and with <i>Refresh</i>.</li>
-      <li>Phones show the boxes stacked in one column, in the order of the grid (left to right, top to bottom); a dashboard is changed on a computer.</li>
+      <li>Phones show the boxes stacked in one column, in the order of the grid (left to right, top to bottom); on a phone <i>Change</i> moves a box with <i>Move up</i> and <i>Move down</i> instead of a drag (ADR-0050, decision 3).</li>
     </ul>
     <div class="demo"><div class="frame narrow u-flex-basis-360px"><div class="frame-cap">Computer · Dashboards</div><div class="frame-body"><div class="scr">
       <div class="tb"><b>Dashboards</b><span class="btn sm primary u-margin-left-auto">Create a dashboard</span></div>
@@ -814,8 +814,8 @@ sort by priority, highest first</div>
     <div class="demo"><div class="frame"><div class="frame-cap">Computer · Add box, with previews</div><div class="frame-body"><div class="scr"><div class="dialog-demo u-margin-10px-auto"><div class="dh">Add box</div><div class="db">
       <div class="cards-pick">
         <div class="on"><b>Open bugs by priority</b><span class="muted u-font-size-11px">Numbers and chart · bars by priority</span></div>
-        <div><b>My open issues</b><span class="muted u-font-size-11px">Search results · 5 rows</span></div>
-        <div><b>Due soon</b><span class="muted u-font-size-11px">Search results · issues and releases, next 7 days</span></div>
+        <div><b>My open issues</b><span class="muted u-font-size-11px">Search results · 10 rows</span></div>
+        <div><b>Due soon</b><span class="muted u-font-size-11px">Search results · issues and planned releases, next 7 days</span></div>
         <div><b>Issues by status group</b><span class="muted u-font-size-11px">Numbers and chart · three bars</span></div>
         <div><b>Progress of a release</b><span class="muted u-font-size-11px">Numbers and chart · done of all</span></div>
         <div><b>My time this week</b><span class="muted u-font-size-11px">Time totals · one number per day</span></div>
@@ -1050,7 +1050,7 @@ sort by priority, highest first</div>
     <ul>
       <li><b>Opening it:</b> <i>Show relation map</i> on any issue (§4.4), or <b>Show as → Map</b> for any search, which draws all results and the relations between them.</li>
       <li><b>Steps away:</b> 1, 2, 3 or <i>Everything</i>, which means 5 steps, the most the search language walks (<code>within 5 steps</code>), and at most 200 issues (M10-Q11). The starting issue has an accent border and a small <i>Start</i> tab.</li>
-      <li><b>The layout</b> (M10-Q10): one column for each step away, the start on the left, and in each column the issues in one fixed order (by kind of relation, then by Issue ID). The same answer always gives the same picture: nothing settles, drifts or moves under the cursor (§6.4), and a changed answer moves only what changed. Pointing, choosing <i>Kinds shown</i> or fading moves no card.</li>
+      <li><b>The layout</b> (M10-Q10): as ADR-0009, amendment 2026-11-24, item 2 decides it: the start on the left, one column for each step away to its right, and in each column one fixed order (by kind of relation, then by Issue ID). The same answer always gives the same picture: nothing settles, drifts or moves under the cursor (§6.4), and a changed answer moves only what changed. Pointing, choosing <i>Kinds shown</i> or fading moves no card.</li>
       <li><b>Cards carry the row state</b> (R4, R9): each issue is a card tinted by its status group and edged by its priority, with its status icon, ID, type and title.</li>
       <li><b>Picture or List</b> above the map, next to <i>Steps away</i> and <i>Kinds shown</i>; zoom with a percentage and <i>Fit</i>; drag the background to move around. The note <i>"Only issues you may see are shown."</i> sits in the toolbar.</li>
       <li><b>What the lines mean</b> is explained beside the map: <i>blocks</i> (must finish first, the arrow points to the waiting one), <i>causes</i> (the arrow points to the result), <i>part of</i> (the arrow points to the parent), <i>duplicate</i> (the arrow points to the one we keep), <i>related</i> (no direction), and the card tints and edges. Each kind's word sits in a label that never touches a line (R3).</li>
@@ -1100,7 +1100,7 @@ sort by priority, highest first</div>
       <div class="tb"><span class="crumb">ACME › Website › <b>Releases</b></span><span class="btn sm primary u-margin-left-auto">Create a release</span></div>
       <div class="tbl-wrap"><table class="dtable"><thead><tr><th>Release</th><th>State</th><th>Release date</th><th>Released on</th><th>Issues</th></tr></thead><tbody>
         <tr><td><b>2.5</b></td><td>Planned</td><td>Tue, Nov 24</td><td></td><td>14</td></tr>
-        <tr><td><b>2.4</b></td><td>Released</td><td>Tue, Oct 20</td><td>Wed, Oct 21</td><td>24</td></tr>
+        <tr><td><b>2.4</b></td><td>Planned</td><td>Tue, Oct 20</td><td></td><td>24</td></tr>
         <tr><td><b>Mobile 3.0</b> <span class="muted">from ACME</span></td><td>Planned</td><td>Mon, Dec 14</td><td></td><td>6</td></tr>
         <tr><td><b>2.3</b></td><td>Retired</td><td>Tue, Sep 1</td><td>Tue, Sep 1</td><td>31</td></tr>
       </tbody></table></div>
@@ -1114,8 +1114,8 @@ sort by priority, highest first</div>
     <ul>
       <li><b>Where a release lives</b> (M10-Q6): in one project, and offered in that project and its sub-projects. <i>Project › Releases</i> lists the releases made there and the ones that reach it from above, with where they come from. The name is unique within its project.</li>
       <li><b>A release</b> (M10-Q7) has a name, a <i>Release date</i> (the planned day) and a state: <i>Planned</i>, <i>Released</i> (the day it is marked so is kept as <i>Released on</i>) or <i>Retired</i> (no longer offered, still shown on the issues that name it). There is no start date: the issues are its span.</li>
-      <li><b>Who manages them:</b> the permission <i>Manage releases</i> (at the start <i>Administrator</i> and <i>Project lead</i>) creates, changes, marks as released and retires releases. Without it the page is read only and has no <i>Create a release</i>. <i>Delete</i> shows only for a release that no issue names; one that issues name can only be archived.</li>
-      <li>The <b>Issues</b> number opens the search <code>planned for release is 2.5</code>. A release with a <i>Release date</i> is a diamond on the timeline (§4.7) and a mark on the calendar, and <i>Due soon</i> on Home shows it in the 7 days before (§4.1).</li>
+      <li><b>Who manages them:</b> the permission <i>Manage releases</i> (at the start <i>Administrator</i> and <i>Project lead</i>) creates, changes, marks as released and retires releases. Without it the page is read only and has no <i>Create a release</i>. <i>Delete</i> on a release that issues name is refused with <i>"Issues name this release. Retire it instead."</i>, which names no issue and no count (ADR-0049, decision 6). The counts of the page and the window count only the issues you may see.</li>
+      <li>The <b>Issues</b> number opens the search <code>planned for release is 2.5</code>. A release with a <i>Release date</i> is a diamond on the timeline (§4.7) and a mark on the calendar, and <i>Due soon</i> on Home shows a <i>Planned</i> release in the 7 days before (§4.1).</li>
       <li><b>On a phone</b> the page is a list, one release per line with its state and date; the window is a full screen.</li>
     </ul>
 
@@ -1831,7 +1831,7 @@ listBtn.addEventListener("click", () => {
   const items = [
     [3, "WEB-146 Search accents", "st-done"], [9, "WEB-148 Timesheet download", "st-ip"], [10, "WEB-140 Sign-in design", "st-ip"],
     [11, "WEB-142 Login after reset", "st-ip"], [12, "WEB-139 Crash on save", "st-ns drag"], [18, "WEB-141 Passkey sign-in", "st-ip"],
-    [18, "WEB-144 Chart labels", "st-ns"], [24, "WEB-147 Release notes", "st-ns"], [25, "Release 2.4", "msn"], [32, "WEB-145 Goal: new login", "st-ip"]
+    [18, "WEB-144 Chart labels", "st-ns"], [24, "WEB-147 Release notes", "st-ns"], [22, "Release 2.4", "msn"], [32, "WEB-145 Goal: new login", "st-ip"]
   ];
   const day = d => new Date(start + d * 864e5);
   let html = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(d => '<div class="h">' + d + "</div>").join("");

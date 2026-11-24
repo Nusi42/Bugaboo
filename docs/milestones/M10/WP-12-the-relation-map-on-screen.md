@@ -5,7 +5,7 @@
 
 ## Goal
 
-*Show relation map* on an issue, and *Show as › Map* for a search, draw the map of UX design §4.15: the starting issue in the middle, the others in columns by steps away, each kind of relation with its own line and word, the chain of a pointed issue highlighted, *Put in the middle* to walk along a chain, loops flagged, and the list form that phones and screen readers get. The picture shows exactly what the route answers and nothing more.
+*Show relation map* on an issue, and *Show as › Map* for a search, draw the map of UX design §4.15: the starting issue on the left, the others in columns by steps away ([ADR-0009](../../adr/0009-frontend-stack.md), amendment 2026-11-24), each kind of relation with its own line and word, the chain of a pointed issue highlighted, *Put in the middle* to walk along a chain, loops flagged, and the list form that phones and screen readers get. The picture shows exactly what the route answers and nothing more.
 
 ## Where
 
@@ -15,8 +15,8 @@
 
 ## What is decided
 
-- **Our own layout** (M10-Q10): columns by steps away from the start (the start in the middle; the issues it waits for and its parents to the left, the ones that wait for it and its children to the right, the undirected kinds by their first step), sorted in each column to keep lines short; the same answer gives the same picture. Positions only through `variableOf` on tokens marked `run-time="true"` (coding-standards §4, THEME-ONLY), as the timeline's bars.
-- **Nothing moves under the cursor** (UX design §6.4): the picture is laid out once per answer; pointing only highlights; *Put in the middle* reads a new answer and draws it with the new start where the old one was clicked.
+- **Our own layout** (M10-Q10): as [ADR-0009](../../adr/0009-frontend-stack.md), amendment 2026-11-24, item 2 decides it (the one home of the layout); the same answer gives the same picture. Positions only through `variableOf` on tokens marked `run-time="true"` (coding-standards §4, THEME-ONLY), as the timeline's bars.
+- **Nothing moves under the cursor** (UX design §6.4): the picture is laid out once per answer; pointing only highlights; *Put in the middle* reads a new answer and draws it with the new start on the left.
 - **Lines** (UX design §4.15): one style per kind from the theme file (*blocks* orange with an arrow, *causes* red with an arrow, *duplicate* dashed grey, *related* grey without an arrow, *part of* violet towards the parent); each line's word in a label that never touches a line (R3); color is never the only signal.
 - **Toolbar:** *Steps away* 1 · 2 · 3 · *Everything* (5, M10-Q11), *Kinds shown* (chips; never *Follow*), *Picture · List*, zoom with a percentage and *Fit*, and the note "Only issues you may see are shown." Over 200 issues the map says so and suggests fewer steps or fewer kinds.
 - **Walking:** pointing at (or tapping) an issue highlights its chain back to the start for a moment; clicking fades everything not on its chain, and the side panel shows the chain as numbered sentences ("WEB-142 blocks WEB-147, which is blocked by WEB-148") with *Put in the middle* and *Open issue*.
@@ -26,7 +26,7 @@
 ## Tasks
 
 1. Write the acceptance tests below.
-2. The layout and its unit tests (same answer, same picture; lines short).
+2. The layout and its unit tests (same answer, same picture; the fixed order in a column).
 3. Cards, lines, labels, the legend; zoom, *Fit*, moving the background.
 4. The toolbar, pointing, the chain in the side panel, *Put in the middle*; loops.
 5. The list form, the phone, the screen-reader texts; *Show as › Map*.
@@ -34,7 +34,7 @@
 
 ## Acceptance tests (write first)
 
-- `iss_16_show_relation_map_draws_the_start_in_the_middle_and_columns_by_steps_away` (browser).
+- `iss_16_show_relation_map_draws_the_start_on_the_left_and_columns_by_steps_away` (browser).
 - `iss_16_the_same_answer_gives_the_same_picture` (unit).
 - `iss_16_pointing_highlights_the_chain_and_moves_nothing` (browser, `expectStill`).
 - `iss_16_clicking_shows_the_chain_as_sentences_and_put_in_the_middle_walks_on` (browser).

@@ -1,7 +1,7 @@
 # WP-09 — Pinned navigation
 
 **Wave 2 · Folder / branch:** `bugaboo.win5` / `WIN5` · **Model:** Sonnet (one small table, three routes and a sidebar section, all fixed by this brief and WP-01's frames)
-**Features:** CFG-05 (owner, server and screens). Answer M10-Q17; UX design §3.1, §3.3 and WP-01's frames of *Pinned*.
+**Features:** CFG-05 (owner, server and screens). Answer M10-Q17, written in ADR-0050, decision 12 (the home of the rules of pins); UX design §3.1, §3.3 and WP-01's frames of *Pinned*.
 
 ## Goal
 

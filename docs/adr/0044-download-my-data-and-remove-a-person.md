@@ -86,7 +86,7 @@ Measured on a million issues (architecture §11, M9-F144, M9-F51): the walk took
 
 ## Amendment (2026-11-24, dashboards, pins and e-mailed searches)
 
-The next plan adds three kinds of a person's own data, and releases, whose events name who changed them ([the M10 plan](../milestones/M10/README.md); [ADR-0049](0049-releases.md), [ADR-0050](0050-dashboards-and-totals.md), [ADR-0033](0033-notifications-and-e-mail.md), amendment 2026-11-24). What *Switch off*, *Remove a person* and *Download my data* do with them:
+M10 adds three kinds of a person's own data, and releases, whose events name who changed them ([the M10 plan](../milestones/M10/README.md); [ADR-0049](0049-releases.md), [ADR-0050](0050-dashboards-and-totals.md), [ADR-0033](0033-notifications-and-e-mail.md), amendment 2026-11-24). What *Switch off*, *Remove a person* and *Download my data* do with them:
 
 - **Each names its person with a link** (decision 1): the maker of a dashboard is its `author`; the person of a pin and of an e-mailed search is its `holder`. The walk finds them like every other row.
 - ***Switch off*** (decision 5): the person's e-mailed searches pause and send nothing; their dashboards, a shared one included, and their pins stay as they are. *Switch on* lets the person start the e-mailed searches again; none starts by itself.
