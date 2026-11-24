@@ -597,10 +597,15 @@ fn connection_url(password: &str, port: u16) -> String {
 
 /// The server settings: loopback only, this port, no Unix socket, and no waiting for the disk
 /// (the data is thrown away anyway). Many test programs run side by side, hence 300 connections.
+/// A restore locks every table and index of its database in one transaction, and the tests of
+/// the backups restore some thirty databases at once, which filled the shared table of locks at
+/// the default of 64 for each connection ("out of shared memory"); a server restores one backup
+/// at a time and needs no more than the default.
 fn server_options(port: u16) -> String {
     format!(
         "-p {port} -c listen_addresses={HOST} -c unix_socket_directories= -c fsync=off \
-         -c synchronous_commit=off -c full_page_writes=off -c max_connections=300"
+         -c synchronous_commit=off -c full_page_writes=off -c max_connections=300 \
+         -c max_locks_per_transaction=256"
     )
 }
 
