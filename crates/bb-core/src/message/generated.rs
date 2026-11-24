@@ -1181,6 +1181,9 @@ pub const AI_TOOL_LOG_TIME: MessageKey = MessageKey::new("ai-tool.log-time");
 /// The message `ai-tool.propose`.
 pub const AI_TOOL_PROPOSE: MessageKey = MessageKey::new("ai-tool.propose");
 
+/// The message `ai-tool.relation-map`.
+pub const AI_TOOL_RELATION_MAP: MessageKey = MessageKey::new("ai-tool.relation-map");
+
 /// The message `ai-tool.report`.
 pub const AI_TOOL_REPORT: MessageKey = MessageKey::new("ai-tool.report");
 
@@ -8345,6 +8348,12 @@ pub const RELATION_KINDS_RETIRED: MessageKey = MessageKey::new("relation-kinds.r
 
 /// The message `relation-kinds.search`.
 pub const RELATION_KINDS_SEARCH: MessageKey = MessageKey::new("relation-kinds.search");
+
+/// The message `relation-map.has-sub-issue`.
+pub const RELATION_MAP_HAS_SUB_ISSUE: MessageKey = MessageKey::new("relation-map.has-sub-issue");
+
+/// The message `relation-map.part-of`.
+pub const RELATION_MAP_PART_OF: MessageKey = MessageKey::new("relation-map.part-of");
 
 /// The message `removal.deleted-now`.
 pub const REMOVAL_DELETED_NOW: MessageKey = MessageKey::new("removal.deleted-now");

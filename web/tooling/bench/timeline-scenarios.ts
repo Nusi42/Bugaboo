@@ -8,7 +8,8 @@ import { type Context, type Scenario } from "./scenarios.ts";
 // The scenarios of the timeline on the large dataset (M8 WP-12, PLAN-01, PLAN-12, PERF-01),
 // registered in the list of `scenarios.ts`, which spreads this one. Their data is made by the large
 // dataset itself: a share of the issues of the biggest project has a start date, a due date and an
-// estimate (`large.datedPercent` of `tools/dev/sample.json`).
+// estimate (`large.datedPercent` of `tools/dev/sample.json`). Beside them, the relation map of an
+// issue (ISS-16), walked through the relations and the parents the large dataset makes.
 
 const RUNS = 200;
 
@@ -50,6 +51,21 @@ async function timelinePage(context: Context, byEffort: boolean): Promise<number
   return asked.ms;
 }
 
+/** How many steps away the map of the relation map's scenario walks. */
+const MAP_STEPS = 3;
+
+/** The map of an issue of the context, three steps away, with every kind and *part of*. */
+async function mapOfIssue(context: Context, round: number): Promise<number> {
+  const issue = context.issues[round % context.issues.length] ?? "";
+  const asked = await timed(() =>
+    context.session.client.GET("/api/v1/issues/{issue}/map", {
+      params: { path: { issue }, query: { steps: MAP_STEPS } },
+    }),
+  );
+  dataOf(asked.value);
+  return asked.ms;
+}
+
 export const timelineScenarios: readonly Scenario[] = [
   {
     // The timeline route for the biggest project, a page of rows (PLAN-01).
@@ -64,5 +80,12 @@ export const timelineScenarios: readonly Scenario[] = [
     budget: "timeline",
     runs: RUNS,
     once: (context) => timelinePage(context, true),
+  },
+  {
+    // The map of an issue, three steps away: each step stops inside its statement at 200 issues.
+    name: "relation-map-three-steps",
+    budget: "search",
+    runs: RUNS,
+    once: mapOfIssue,
   },
 ];

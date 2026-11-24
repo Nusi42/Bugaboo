@@ -233,10 +233,10 @@ async fn ai_04_tools_list_offers_only_the_tools_a_person_may_use_somewhere() -> 
         let mcp = Mcp::new(&app);
         for (role, name, offered) in [
             (StartingRole::Hr, "hana", 0),
-            (StartingRole::Viewer, "vic", 4),
-            (StartingRole::Guest, "gus", 8),
+            (StartingRole::Viewer, "vic", 5),
+            (StartingRole::Guest, "gus", 9),
             // A team member may create agents, so the tools of programs are offered too.
-            (StartingRole::TeamMember, "tom", 13),
+            (StartingRole::TeamMember, "tom", 14),
         ] {
             let (mut person, _) = site.person(role, name).await?;
             let signed = sign_in_app(
@@ -583,9 +583,15 @@ async fn ai_03_a_search_never_tells_a_name_known_only_from_a_project_kept_from_a
     .await
 }
 
-/// The tools of the people, in the order of the registry: the four that read, then those that
+/// The tools of the people, in the order of the registry: the five that read, then those that
 /// change.
-const READING: [&str; 4] = ["search_issues", "get_issue", "list_projects", "get_my_work"];
+const READING: [&str; 5] = [
+    "search_issues",
+    "get_issue",
+    "list_projects",
+    "get_my_work",
+    "relation_map",
+];
 const CHANGING: [&str; 7] = [
     "create_issue",
     "update_issue",

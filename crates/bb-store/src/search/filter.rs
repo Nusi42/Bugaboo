@@ -1,10 +1,11 @@
 //! The tree of a search as a condition: `and`, `or`, `not`, the tests of a field and the helpers
 //! that follow sub-issues and relations (QRY-04).
 
+use bb_core::id::RelationKindId;
 use bb_core::names::name_key;
 use bb_searchlang::{Expr as Node, MAX_STEPS, Test};
 use sea_query::{
-    Alias, CommonTableExpression, Cond, Expr, ExprTrait as _, IntoIden as _, Query,
+    Alias, CommonTableExpression, Cond, DynIden, Expr, ExprTrait as _, IntoIden as _, Query,
     SelectStatement, UnionType,
 };
 
@@ -275,33 +276,13 @@ impl Compiler<'_> {
             .and_where(
                 Expr::col((IssueRow::Table, IssueRow::Id)).in_subquery(self.issues_of(reference)),
             );
-        let far_end = Expr::case(
-            Expr::col((RelationRow::Table, RelationRow::FromIssue))
-                .equals((name.clone(), Alias::new("id"))),
-            Expr::col((RelationRow::Table, RelationRow::ToIssue)),
-        )
-        .finally(Expr::col((RelationRow::Table, RelationRow::FromIssue)));
         let mut next = Query::select();
-        next.expr(far_end.clone())
+        next.from(name.clone());
+        let near = |end: Expr| end.eq(at("id"));
+        let far = step(&mut next, &Line::Relations(None), &near, read);
+        next.expr(far)
             .expr(at("depth").add(1))
-            .from(name.clone())
-            .inner_join(
-                RelationRow::Table,
-                Expr::col((RelationRow::Table, RelationRow::FromIssue))
-                    .equals((name.clone(), Alias::new("id")))
-                    .or(Expr::col((RelationRow::Table, RelationRow::ToIssue))
-                        .equals((name.clone(), Alias::new("id")))),
-            )
-            .and_where(at("depth").lt(i64::from(limit)))
-            .and_where(
-                Expr::expr(far_end).in_subquery(
-                    Query::select()
-                        .column((IssueRow::Table, IssueRow::Id))
-                        .from(IssueRow::Table)
-                        .cond_where(read)
-                        .to_owned(),
-                ),
-            );
+            .and_where(at("depth").lt(i64::from(limit)));
         first.union(UnionType::Distinct, next);
         self.keep_walk(&name, first, &["id", "depth"]);
         Cond::all()
@@ -341,6 +322,63 @@ fn walk_ids(name: &Alias) -> SelectStatement {
         .column(Alias::new("id"))
         .from(name.clone().into_iden())
         .to_owned()
+}
+
+/// What joins two issues in a walk: a relation, of the kinds chosen or of every kind, or a
+/// sub-issue and the issue it sits under (*part of*).
+pub(crate) enum Line<'a> {
+    /// A relation; `None` for every kind.
+    Relations(Option<&'a [RelationKindId]>),
+    /// A sub-issue and its parent.
+    Parents,
+}
+
+/// One step of a walk (QRY-04, ISS-16): adds the lines of `line` that have an issue `near` says is
+/// near at either end to `select`, keeps those whose far end the person reads (`read`, the sight
+/// of the search), and gives the far end. The one step of every walk along relations: `connected
+/// to` takes it inside its recursive table, the relation map once for each step away, so the two
+/// can never pass through different issues.
+pub(crate) fn step(
+    select: &mut SelectStatement,
+    line: &Line<'_>,
+    near: &dyn Fn(Expr) -> Expr,
+    read: Cond,
+) -> Expr {
+    let (table, one, other) = match line {
+        Line::Relations(_) => (
+            RelationRow::Table.into_iden(),
+            RelationRow::FromIssue.into_iden(),
+            RelationRow::ToIssue.into_iden(),
+        ),
+        Line::Parents => (
+            IssueParentRow::Table.into_iden(),
+            IssueParentRow::Child.into_iden(),
+            IssueParentRow::Parent.into_iden(),
+        ),
+    };
+    let end = |column: &DynIden| Expr::col((table.clone(), column.clone()));
+    let far: Expr = Expr::case(near(end(&one)), end(&other))
+        .finally(end(&one))
+        .into();
+    let mut cond = Cond::all()
+        .add(Cond::any().add(near(end(&one))).add(near(end(&other))))
+        .add(
+            far.clone().in_subquery(
+                Query::select()
+                    .column((IssueRow::Table, IssueRow::Id))
+                    .from(IssueRow::Table)
+                    .cond_where(read)
+                    .to_owned(),
+            ),
+        );
+    if let Line::Relations(Some(kinds)) = line {
+        cond = cond.add(
+            Expr::col((table.clone(), RelationRow::Kind))
+                .is_in(kinds.iter().map(|kind| kind.stored())),
+        );
+    }
+    select.from(table).cond_where(cond);
+    far
 }
 
 /// Which end of a relation the named issue is.

@@ -43,6 +43,9 @@ pub trait RelationStore: IssueStore + 'static {
         /// The dependencies of these kinds that have one of `issues` at either end: what the plan
         /// of a page of the timeline reads, instead of every dependency there is (M8-F26).
         fn dependencies_touching(kinds: Vec<RelationKindId>, issues: Vec<IssueId>) -> Vec<Dependency>;
+        /// The relations of these kinds with both ends among `issues`: the lines of a relation
+        /// map, read once for the whole map (ISS-16, PERF-N1).
+        fn relations_among(kinds: Vec<RelationKindId>, issues: Vec<IssueId>) -> Vec<Relation>;
         /// Which issue sits under which, for every pair with one of `issues` at either end.
         fn parents_touching(issues: Vec<IssueId>) -> Vec<IssueParent>;
     }

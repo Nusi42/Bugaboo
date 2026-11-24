@@ -69,9 +69,16 @@ impl Iden for Counted {
 /// finds.
 pub(super) fn found(compiler: &Compiler<'_>) -> Result<Cond, CompileError> {
     Ok(Cond::all()
-        .add(sight_condition(&compiler.request.sight))
-        .add(only_condition(compiler.request))
+        .add(seen_by(compiler.request))
         .add(found_by(compiler)?))
+}
+
+/// The issues the person of a search reads, cut to the work of an agent: what a search may find,
+/// and what the relation map may pass through.
+pub(crate) fn seen_by(request: &SearchRequest) -> Cond {
+    Cond::all()
+        .add(sight_condition(&request.sight))
+        .add(only_condition(request))
 }
 
 /// The issues a search is cut to, for an agent: those of its work, read by the store.

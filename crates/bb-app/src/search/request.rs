@@ -250,8 +250,33 @@ pub enum SearchFailure {
     Failed(String),
 }
 
+/// One step away on the relation map (ISS-16), for the store: the issues one line away from the
+/// `near` ones, through the kinds of relation chosen and, with `part_of`, sub-issues and parents,
+/// that the person of the request reads and that are not `known` yet; by ID, at most `most`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MapStep {
+    /// The issues of the step before.
+    pub near: Vec<IssueId>,
+    /// Every issue on the map so far.
+    pub known: Vec<IssueId>,
+    /// The kinds of relation chosen.
+    pub kinds: Vec<RelationKindId>,
+    /// Whether *part of* is chosen.
+    pub part_of: bool,
+    /// The most issues the step answers.
+    pub most: u64,
+}
+
 /// What the search use cases need from storage.
 pub trait SearchStore: IssueStore + 'static {
+    /// One step away on the relation map, walked only through issues the person of `request`
+    /// reads (its sight and, for an agent, its work), in one statement that stops at `step.most`.
+    fn map_step(
+        &self,
+        request: &SearchRequest,
+        step: &MapStep,
+    ) -> impl Future<Output = Result<Vec<IssueId>, SearchFailure>> + Send;
+
     /// A page of the issues the search finds, in its order.
     fn search_page(
         &self,

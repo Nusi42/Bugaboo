@@ -128,6 +128,22 @@ pub mod sec_matrix {
     /// starting role and every kind of record in that person's file, saying what of the masked
     /// fields and of other people was in it.
     pub const EXPORT_LINE: &str = "export ";
+    /// The relation map (ISS-16, PRIV-13) is an entry point of its own: a line of the record that
+    /// starts like this is a `map` row, one for every starting role and each kind of map
+    /// ([`MAP_KINDS`]), saying whether the map showed an issue the reader may not see
+    /// (`hidden=`) and, for the map of an issue, one joined to the start only through it
+    /// (`behind=`), each [`ABSENT`] or [`PRESENT`].
+    pub const MAP_LINE: &str = "map ";
+    /// The map of one issue, walked from it.
+    pub const MAP_OF_ISSUE: &str = "issue";
+    /// The map of the results of a search.
+    pub const MAP_OF_SEARCH: &str = "search";
+    /// Every kind of map the matrix reads.
+    pub const MAP_KINDS: [&str; 2] = [MAP_OF_ISSUE, MAP_OF_SEARCH];
+    /// A `map` line says that nothing of an issue was on the map.
+    pub const ABSENT: &str = "absent";
+    /// See [`ABSENT`].
+    pub const PRESENT: &str = "present";
     /// An `export` line says `estimate=` or `status=` [`NOT_IN_KIND`] for a kind of record that has
     /// no such field, and `others=` [`NOT_IN_KIND`] for one that names nobody else.
     pub const NOT_IN_KIND: &str = "none";

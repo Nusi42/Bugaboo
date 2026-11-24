@@ -9,7 +9,7 @@ mod request;
 mod run;
 mod target;
 
-pub use bb_searchlang::{Mistake, ROUND_TRIP_GUARD};
+pub use bb_searchlang::{MAX_STEPS, Mistake, ROUND_TRIP_GUARD};
 pub use name_choices::{
     NAME_CHOICES_MAX, NameChoiceKind, NameChoices, NameChoicesQuery, name_choices,
 };
@@ -19,10 +19,10 @@ pub(crate) use names::NameCache;
 pub use readable::{FieldName, ReadableFieldsQuery, SearchFields, SearchScope, readable_fields};
 pub(crate) use readable::{Looked, lengths_readable_in, readable_of, word_is_taken};
 pub use request::{
-    GroupCount, GroupKey, KeyedChoice, LengthTotals, Names, OwnReach, ProjectLink, SearchFailure,
-    SearchHit, SearchRequest, SearchStore, UnknownName, WithheldText, WorkOf,
+    GroupCount, GroupKey, KeyedChoice, LengthTotals, MapStep, Names, OwnReach, ProjectLink,
+    SearchFailure, SearchHit, SearchRequest, SearchStore, UnknownName, WithheldText, WorkOf,
 };
-pub(crate) use run::{Prepared, search_page, search_page_within, stopped};
+pub(crate) use run::{Prepared, blocking_kinds, search_page, search_page_within, stopped};
 pub use run::{
     SearchCount, SearchCountQuery, SearchGroups, SearchGroupsQuery, SearchPage, SearchQuery,
     SearcherQuery, ShownKey, search, search_count, search_groups, searcher,

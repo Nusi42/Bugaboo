@@ -314,6 +314,26 @@ impl DependencyGraph {
                 .collect()
         })
     }
+
+    /// The loops among these dependencies (ISS-16): each named once, as the issues on it in order
+    /// from the one that must finish first, which is the first dependency of `dependencies`, in
+    /// their order, that lies on a loop not named yet. The relation map flags them; loops of
+    /// *blocks* stored before the effect refused them stay (ADR-0043).
+    #[must_use]
+    pub fn loops(&self, dependencies: &[Dependency]) -> Vec<Vec<IssueId>> {
+        let mut named: HashSet<IssueId> = HashSet::new();
+        let mut found = Vec::new();
+        for (first, then) in dependencies {
+            if named.contains(first) {
+                continue;
+            }
+            if let Some(on_it) = self.loop_closed_by((*first, *then)) {
+                named.extend(on_it.iter().copied());
+                found.push(on_it);
+            }
+        }
+        found
+    }
 }
 
 /// The shortest way from `start` to `goal` along `dependencies` (see [`DependencyGraph::path`]).
@@ -469,6 +489,36 @@ mod tests {
         // A loop that is stored already does not hang the walk.
         let stored = [(a, b), (b, a)];
         assert_eq!(dependency_path(&stored, a, other), None);
+    }
+
+    #[test]
+    fn iss_16_each_loop_of_dependencies_is_named_once_in_order() {
+        let all = issues(5);
+        let at = |index: usize| all[index];
+        // 0 blocks 1 blocks 2 blocks 0, and 3 blocks 4 with no way back; 1 also blocks 3.
+        let there = [
+            (at(0), at(1)),
+            (at(1), at(2)),
+            (at(2), at(0)),
+            (at(3), at(4)),
+            (at(1), at(3)),
+        ];
+        let graph = DependencyGraph::new(&there);
+        assert_eq!(graph.loops(&there), vec![vec![at(0), at(1), at(2)]]);
+        // Two loops apart are two names; nothing is named twice.
+        let two = [
+            (at(0), at(1)),
+            (at(1), at(0)),
+            (at(2), at(3)),
+            (at(3), at(2)),
+            (at(1), at(2)),
+        ];
+        assert_eq!(
+            DependencyGraph::new(&two).loops(&two),
+            vec![vec![at(0), at(1)], vec![at(2), at(3)]]
+        );
+        let one = [(at(0), at(1))];
+        assert!(DependencyGraph::new(&one).loops(&one).is_empty());
     }
 
     #[test]

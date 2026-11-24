@@ -10,6 +10,7 @@
 mod dependencies;
 mod kinds;
 mod lines;
+mod map;
 mod parents;
 mod read;
 mod relate;
@@ -18,6 +19,10 @@ mod types;
 
 pub use kinds::{
     change_relation_kind, create_relation_kind, create_starting_relation_kinds, relation_kinds,
+};
+pub use map::{
+    IssueMapQuery, KindsShown, MAP_ISSUES_MOST, MapIssue, MapLine, RelationMap, SearchMapQuery,
+    issue_map, search_map,
 };
 pub(crate) use parents::ensure_fits_under;
 pub use parents::set_parent;

@@ -8588,6 +8588,93 @@
         "x-permission": "change-issues"
       }
     },
+    "/api/v1/issues/{issue}/map": {
+      "get": {
+        "tags": ["relations"],
+        "summary": "The map of an issue: every issue connected to it through the kinds shown, up to the steps\nchosen and at most 200 issues, walked only through issues the person sees. Loops of\ndependencies among them are named.",
+        "operationId": "getIssueMap",
+        "parameters": [
+          {
+            "name": "issue",
+            "in": "path",
+            "description": "The readable ID (WEB-142) or the internal ID of the issue.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "steps",
+            "in": "query",
+            "description": "How many steps away the map walks, from 1 to the most the search language walks; left out\nfor *Everything*, which is that most.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "kinds",
+            "in": "query",
+            "description": "The IDs of the kinds of relation shown, separated by commas; left out for every kind, and\nempty for none.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "part_of",
+            "in": "query",
+            "description": "Whether sub-issues and their parents are shown (*part of*); shown when left out.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The relation map of the issue.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelationMapBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "see-issues"
+      }
+    },
     "/api/v1/issues/{issue}/mention-choices": {
       "get": {
         "tags": ["comments"],
@@ -11042,6 +11129,54 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/map": {
+      "post": {
+        "tags": ["relations"],
+        "summary": "The map of a search: its results (at most 200, in its order) and the relations between them,\nwith no walk beyond them. It reads and changes nothing.",
+        "operationId": "getSearchMap",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchMapBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The relation map of the search.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelationMapBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -28575,6 +28710,50 @@
           }
         }
       },
+      "MapIssueBody": {
+        "type": "object",
+        "description": "An issue on the map.",
+        "required": ["issue"],
+        "properties": {
+          "issue": {
+            "$ref": "#/components/schemas/IssueRef",
+            "description": "The issue, with the fields the person may see in its project."
+          },
+          "steps": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "How many steps away from the start it is; left out on the map of a search.",
+            "minimum": 0
+          }
+        }
+      },
+      "MapLineBody": {
+        "type": "object",
+        "description": "A line between two issues on the map.",
+        "required": ["from", "to", "forward", "backward"],
+        "properties": {
+          "backward": {
+            "type": "string",
+            "description": "What `to` reads."
+          },
+          "forward": {
+            "type": "string",
+            "description": "What `from` reads."
+          },
+          "from": {
+            "type": "string",
+            "description": "The internal ID of the issue that reads `forward`: the one that blocks, or the sub-issue."
+          },
+          "relation_kind": {
+            "type": ["string", "null"],
+            "description": "The ID of the kind of relation; left out for *part of*."
+          },
+          "to": {
+            "type": "string",
+            "description": "The internal ID of the issue that reads `backward`: the one that waits, or the parent."
+          }
+        }
+      },
       "MeBody": {
         "type": "object",
         "description": "Who is signed in, and what they may do for the whole organization (the menus of the browser app\nfollow it; the server decides again at every request).",
@@ -32923,6 +33102,45 @@
           }
         }
       },
+      "RelationMapBody": {
+        "type": "object",
+        "description": "The relation map as the person may see it.",
+        "required": ["issues", "lines", "loops", "more"],
+        "properties": {
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MapIssueBody"
+            },
+            "description": "The issues: by steps away, then by the kind of the relation that reached each, then by\nIssue ID; on the map of a search, in the order of the search."
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MapLineBody"
+            },
+            "description": "The lines between them, of the kinds shown."
+          },
+          "loops": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "description": "The loops of dependencies among them, each as the internal IDs of the issues on it in order."
+          },
+          "more": {
+            "type": "boolean",
+            "description": "Whether more issues are connected, or found, than the map holds."
+          },
+          "start": {
+            "type": ["string", "null"],
+            "description": "The internal ID of the issue the map starts from; left out for the map of a search."
+          }
+        }
+      },
       "RemovalPlanBody": {
         "type": "object",
         "description": "The plan of the removal of a person.",
@@ -34052,6 +34270,27 @@
             "format": "int32",
             "description": "Where the next range starts (not included); null for the last range, which has no end.",
             "minimum": 0
+          }
+        }
+      },
+      "SearchMapBody": {
+        "type": "object",
+        "description": "The search a map is drawn of.",
+        "properties": {
+          "kinds": {
+            "type": ["array", "null"],
+            "items": {
+              "type": "string"
+            },
+            "description": "The IDs of the kinds of relation shown; left out for every kind."
+          },
+          "part_of": {
+            "type": ["boolean", "null"],
+            "description": "Whether sub-issues and their parents are shown (*part of*); shown when left out."
+          },
+          "search_text": {
+            "type": "string",
+            "description": "The search text; left out or empty for every issue the person sees."
           }
         }
       },
@@ -36564,8 +36803,8 @@
       },
       "ViewKind": {
         "type": "string",
-        "description": "The kind of view a saved search is shown as: a list or the timeline. Other kinds come with their views.",
-        "enum": ["list", "timeline"]
+        "description": "The kind of view a saved search is shown as: a list, the timeline or the relation map. Other kinds come with their views.",
+        "enum": ["list", "timeline", "map"]
       },
       "WaitsFor": {
         "type": "string",

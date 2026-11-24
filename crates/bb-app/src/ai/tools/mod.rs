@@ -11,6 +11,7 @@ mod call;
 mod handing;
 mod inputs;
 mod log;
+mod map;
 mod preview;
 mod programs;
 mod read;

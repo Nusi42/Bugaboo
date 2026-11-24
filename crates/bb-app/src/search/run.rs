@@ -573,18 +573,28 @@ impl<S: AuthStore> Ctx<'_, S> {
         self.preload_people(&people).await
     }
 
-    /// The kinds of relation that mean *blocks*: those whose forward name is the starting one.
+    /// The kinds of relation that mean *blocks* (see [`blocking_kinds`]).
     async fn blocking_kinds(&self) -> Result<Vec<bb_core::id::RelationKindId>, AppError> {
-        let blocks =
-            bb_core::message::Message::from(bb_core::message::RELATION_KIND_BLOCKS).render();
-        Ok(self
-            .store()
-            .relation_kinds()
-            .await
-            .map_err(|error| internal::<S>(&error))?
-            .into_iter()
-            .filter(|kind| bb_core::names::same_name(&kind.forward, &blocks))
-            .map(|kind| kind.id)
-            .collect())
+        Ok(blocking_kinds(
+            &self
+                .store()
+                .relation_kinds()
+                .await
+                .map_err(|error| internal::<S>(&error))?,
+        ))
     }
+}
+
+/// The kinds of relation that mean *blocks*: those whose forward name is the starting one. What
+/// `blocks` and `blocked by` of the search follow, and the loops the relation map names besides
+/// the kinds with a date effect.
+pub(crate) fn blocking_kinds(
+    kinds: &[bb_core::relation::RelationKind],
+) -> Vec<bb_core::id::RelationKindId> {
+    let blocks = bb_core::message::Message::from(bb_core::message::RELATION_KIND_BLOCKS).render();
+    kinds
+        .iter()
+        .filter(|kind| bb_core::names::same_name(&kind.forward, &blocks))
+        .map(|kind| kind.id)
+        .collect()
 }

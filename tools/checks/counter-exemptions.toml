@@ -497,3 +497,13 @@ reason = "Counts only comments the reader may see: the comments an agent wrote o
 route = "GET /api/v1/admin/status"
 property = "removals_stopped"
 reason = "The number of removals of people whose job stopped, shown only to people with See how the server is doing; it names nobody and counts work of the server, not records the viewer could not see (ADR-0044, decision 6)."
+
+[[exempt]]
+route = "GET /api/v1/issues/{issue}/map"
+property = "steps"
+reason = "Steps away of an issue on the relation map: the length of a chain of relations walked only through issues the viewer sees (ISS-16, architecture section 7, The walk of the relation map), so it never counts a hidden issue."
+
+[[exempt]]
+route = "POST /api/v1/map"
+property = "steps"
+reason = "Steps away of an issue on the relation map: the length of a chain of relations walked only through issues the viewer sees (ISS-16, architecture section 7, The walk of the relation map), so it never counts a hidden issue."

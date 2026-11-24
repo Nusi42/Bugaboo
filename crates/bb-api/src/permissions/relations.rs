@@ -4,7 +4,7 @@
 
 use bb_policy::Permission;
 
-use super::{Answer, Declared, Route, route};
+use super::{Answer, Declared, Route, route, route_reading};
 
 /// The routes of relations, tags and labels, by operation ID.
 pub(super) const ROUTES: &[Route] = &[
@@ -34,6 +34,14 @@ pub(super) const ROUTES: &[Route] = &[
         Declared::Permission(Permission::SeeIssues),
         Answer::NeverStored,
     ),
+    // The relation map reads like a search: of an issue the person sees, and of a search, which
+    // lets in whoever is signed in and shows what they read.
+    route(
+        "getIssueMap",
+        Declared::Permission(Permission::SeeIssues),
+        Answer::NeverStored,
+    ),
+    route_reading("getSearchMap", Declared::SignedIn, Answer::Ordinary),
     route(
         "setIssueParent",
         Declared::Permission(Permission::ChangeIssues),

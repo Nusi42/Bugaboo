@@ -144,6 +144,8 @@ use super::{
     workflows,
 };
 
+use crate::relations::{IssueMapQuery, RelationMap, SearchMapQuery, issue_map, search_map};
+
 use crate::plan::{
     AcceptWarning, AcceptedWarningView, MoveAfterQuery, MovePreviewPage, SetTimeFactor,
     TimeFactorQuery, TimeFactorView, TimelinePage, TimelineQuery, accept_warning,

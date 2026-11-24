@@ -50,6 +50,7 @@ mod person_data;
 mod plan;
 mod policy;
 mod projects;
+mod relation_map;
 mod relations;
 mod rows;
 mod runs;

@@ -137,11 +137,13 @@ impl Record {
 }
 
 /// The lines of the record that other tests than the route matrix write and compare: the lines of
-/// the tools, of the assistant, of the exports and of the members with a rule of their own.
-const OTHER_TESTS: [&str; 4] = [
+/// the tools, of the assistant, of the exports, of the relation map and of the members with a rule
+/// of their own.
+const OTHER_TESTS: [&str; 5] = [
     words::TOOL_LINE,
     words::ASK_LINE,
     words::EXPORT_LINE,
+    words::MAP_LINE,
     words::MEMBER_LINE,
 ];
 

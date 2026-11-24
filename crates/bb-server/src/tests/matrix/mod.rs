@@ -38,6 +38,7 @@ mod examples_work_times;
 mod examples_workflows;
 mod examples_working_hours;
 mod export;
+mod map;
 mod record;
 mod routes;
 mod tools;

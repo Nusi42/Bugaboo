@@ -68,7 +68,13 @@ async fn ai_21_a_limit_outside_one_to_a_hundred_is_refused_with_the_range() -> O
 }
 
 /// The tools that read, which every role that sees a project is offered.
-const READS: [&str; 4] = ["search_issues", "get_issue", "list_projects", "get_my_work"];
+const READS: [&str; 5] = [
+    "search_issues",
+    "get_issue",
+    "list_projects",
+    "get_my_work",
+    "relation_map",
+];
 
 #[tokio::test]
 async fn ai_04_a_tool_is_offered_only_to_a_person_who_may_use_it_somewhere() -> Outcome {

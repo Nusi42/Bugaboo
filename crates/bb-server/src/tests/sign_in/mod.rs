@@ -117,6 +117,7 @@ mod projects;
 mod projects_agree;
 mod projects_http;
 mod projects_review;
+mod relation_map_http;
 mod relations_http;
 mod relations_priority;
 pub(crate) mod rig;

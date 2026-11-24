@@ -254,6 +254,29 @@ impl RelationStore for AuthStorage {
             .collect()
     }
 
+    async fn relations_among(
+        &self,
+        kinds: Vec<RelationKindId>,
+        issues: Vec<IssueId>,
+    ) -> Result<Vec<Relation>, StoreError> {
+        if kinds.is_empty() || issues.is_empty() {
+            return Ok(Vec::new());
+        }
+        let stored: Vec<Vec<u8>> = issues.iter().map(|issue| issue.stored()).collect();
+        let mut select = relation_select();
+        select
+            .and_where(Expr::col(RelationRow::Kind).is_in(kinds.iter().map(|kind| kind.stored())))
+            .and_where(Expr::col(RelationRow::FromIssue).is_in(stored.clone()))
+            .and_where(Expr::col(RelationRow::ToIssue).is_in(stored))
+            .order_by(RelationRow::Id, Order::Asc);
+        self.database()
+            .fetch_all(&select)
+            .await?
+            .iter()
+            .map(read_relation)
+            .collect()
+    }
+
     async fn parents_touching(&self, issues: Vec<IssueId>) -> Result<Vec<IssueParent>, StoreError> {
         if issues.is_empty() {
             return Ok(Vec::new());

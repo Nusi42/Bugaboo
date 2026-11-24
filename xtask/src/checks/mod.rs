@@ -82,6 +82,7 @@ mod sec_cookies;
 mod sec_headers;
 mod sec_matrix;
 mod sec_matrix_assistant;
+mod sec_matrix_map;
 mod sec_matrix_tools;
 mod sec_patterns;
 pub(crate) mod sec_private;

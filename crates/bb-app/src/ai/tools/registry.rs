@@ -22,11 +22,11 @@ use utoipa::PartialSchema;
 use super::inputs::{
     AddCommentInput, AskForAgentsInput, AskInput, AttachInput, ChangeStatusInput,
     ChangesSinceInput, CollectAgentKeysInput, CreateIssueInput, GetIssueInput, GetMyWorkInput,
-    GiveUpInput, HandOverInput, ListProjectsInput, LogTimeInput, ProposeInput, ReportInput,
-    SearchIssuesInput, StartTimerInput, StopTimerInput, SubmitInput, TakeInput, UndoMyRunInput,
-    UpdateIssueInput, WaitForWorkInput,
+    GiveUpInput, HandOverInput, ListProjectsInput, LogTimeInput, ProposeInput, RelationMapInput,
+    ReportInput, SearchIssuesInput, StartTimerInput, StopTimerInput, SubmitInput, TakeInput,
+    UndoMyRunInput, UpdateIssueInput, WaitForWorkInput,
 };
-use super::{agents, apply, handing, preview, programs, read};
+use super::{agents, apply, handing, map, preview, programs, read};
 use crate::access::Actor;
 use crate::ai::Withheld;
 use crate::ai::context::Part;
@@ -237,7 +237,7 @@ fn tools_of_programs<S: AuthStore>() -> [ToolSpec<S>; 2] {
 }
 
 /// The tools every caller may be offered.
-fn tools_of_people<S: AuthStore>() -> [ToolSpec<S>; 11] {
+fn tools_of_people<S: AuthStore>() -> [ToolSpec<S>; 12] {
     [
         reads(
             Tool::SearchIssues,
@@ -265,6 +265,13 @@ fn tools_of_people<S: AuthStore>() -> [ToolSpec<S>; 11] {
             "search_page_within",
             schema_of::<GetMyWorkInput>,
             read::get_my_work::<S>,
+            Need::SeesAProject,
+        ),
+        reads(
+            Tool::RelationMap,
+            "issue_map_for",
+            schema_of::<RelationMapInput>,
+            map::relation_map::<S>,
             Need::SeesAProject,
         ),
         changes(

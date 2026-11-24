@@ -438,6 +438,8 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("getIssueRelations", &[Quirk::AnIssueOfTheTarget]),
     Example::with("listSubIssues", &[Quirk::AnIssueOfTheTarget]),
     Example::with("listRelatedIssues", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("getIssueMap", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("getSearchMap", &[Quirk::KeysActAsThePerson]),
     Example::with("setIssueParent", &[Quirk::AnIssueOfTheTarget]),
     Example::with("addRelation", &[Quirk::AnIssueOfTheTarget]),
     Example::with("removeRelation", &[Quirk::AnIssueOfTheTarget]),

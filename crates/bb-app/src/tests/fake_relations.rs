@@ -100,6 +100,27 @@ impl RelationStore for FakeStore {
         Ok(found)
     }
 
+    async fn relations_among(
+        &self,
+        kinds: Vec<RelationKindId>,
+        issues: Vec<IssueId>,
+    ) -> Result<Vec<Relation>, FakeError> {
+        Ok(self.read(|state| {
+            let mut found: Vec<Relation> = state
+                .relations
+                .iter()
+                .filter(|relation| {
+                    kinds.contains(&relation.kind)
+                        && issues.contains(&relation.from)
+                        && issues.contains(&relation.to)
+                })
+                .cloned()
+                .collect();
+            found.sort_by_key(|relation| relation.id);
+            found
+        }))
+    }
+
     async fn dependencies_touching(
         &self,
         kinds: Vec<RelationKindId>,

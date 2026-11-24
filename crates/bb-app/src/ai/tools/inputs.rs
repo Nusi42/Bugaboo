@@ -64,6 +64,22 @@ pub struct GetIssueInput {
     pub issue: String,
 }
 
+/// Show the relation map of one issue, or of a search's results (ISS-16).
+#[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct RelationMapInput {
+    /// The issue the map starts from, by its readable ID (`WEB-142`) or its internal ID; or leave
+    /// it out and give `query`.
+    pub issue: Option<String>,
+    /// A search in the search language whose results are mapped, instead of an issue.
+    pub query: Option<String>,
+    /// How many steps away the map of an issue walks; left out for the most the search language
+    /// walks.
+    pub steps: Option<u32>,
+    /// Whether sub-issues and their parents are on the map; they are when left out.
+    pub part_of: Option<bool>,
+}
+
 /// List the projects the person may see.
 #[derive(Debug, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]

@@ -1056,6 +1056,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Propose a change to an issue that your standing rule found. Nothing changes until a person applies it.",
     ),
     (
+        "ai-tool.relation-map",
+        "Show the relation map of one issue (every issue connected to it, up to the steps away you choose) or of a search (its results and the relations between them), as you may see it: each issue with its steps away, the relations between them, and the loops of blocks among them. A map holds a limited number of issues; more says that more are connected.",
+    ),
+    (
         "ai-tool.report",
         "Report a step of your attempt: the plan, the minutes and the cost so far.",
     ),
@@ -6528,6 +6532,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("relation-kinds.retired", "Retired"),
     ("relation-kinds.search", "Search kinds of relation"),
+    ("relation-map.has-sub-issue", "has sub-issue"),
+    ("relation-map.part-of", "is part of"),
     ("removal.comments", "Comments written by {name}"),
     ("removal.confirm", "Remove {name}"),
     ("removal.deleted-now", "Deleted now"),

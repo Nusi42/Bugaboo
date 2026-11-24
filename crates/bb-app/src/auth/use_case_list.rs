@@ -272,6 +272,10 @@ macro_rules! each_use_case {
             sub_issues(SubIssuesQuery) -> Authorized<SubIssuePage>;
             /// Lists the issues related to an issue whose other end the person may see.
             related_issues(RelatedIssuesQuery) -> Authorized<RelatedIssuePage>;
+            /// The relation map of an issue, walked through the issues the person sees.
+            issue_map(IssueMapQuery) -> Authorized<RelationMap>;
+            /// The relation map of the results of a search.
+            search_map(SearchMapQuery) -> Authorized<RelationMap>;
             /// Puts an issue under another one, or takes it out.
             set_parent(SetParent) -> Authorized<IssueRelations>;
             /// Adds a relation between two issues.

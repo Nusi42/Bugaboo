@@ -651,9 +651,9 @@ status = "active"
 
 [[check]]
 id = "SEC-MATRIX"
-title = "Generated permission matrix passes for every entry point (UI API, search, MCP, assistant, e-mail, webhooks, exports)"
+title = "Generated permission matrix passes for every entry point (UI API, search, MCP, assistant, e-mail, webhooks, exports, relation map)"
 rule = "ADR-0004"
-tool = "generated tests (crates/bb-server/src/tests/matrix runs every route of the API description for every actor and writes tools/checks/sec-matrix-record.txt) + xtask (holds the record and the table of examples against the API description)"
+tool = "generated tests (crates/bb-server/src/tests/matrix runs every route of the API description for every actor and writes tools/checks/sec-matrix-record.txt; the entry point map reads the map of an issue and of a search for every starting role) + xtask (holds the record and the table of examples against the API description, wants a map line for every starting role that shows nothing hidden, and the property tests iss_16_no_chain_passes_through_a_hidden_issue and iss_16_the_map_is_the_map_of_the_issues_the_reader_sees declared and not switched off)"
 when = ["push", "ci"]
 files = ["crates/**", "tools/checks/sec-matrix-record.txt", "web/packages/api-client/openapi.json"]
 status = "active"

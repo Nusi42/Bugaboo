@@ -2431,6 +2431,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/issues/{issue}/map": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The map of an issue: every issue connected to it through the kinds shown, up to the steps
+     *     chosen and at most 200 issues, walked only through issues the person sees. Loops of
+     *     dependencies among them are named.
+     */
+    get: operations["getIssueMap"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/issues/{issue}/mention-choices": {
     parameters: {
       query?: never;
@@ -3111,6 +3132,26 @@ export interface paths {
      *     *Manage people*. The answer holds the status only.
      */
     post: operations["stopManyChangeRun"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/map": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * The map of a search: its results (at most 200, in its order) and the relations between them,
+     *     with no walk beyond them. It reads and changes nothing.
+     */
+    post: operations["getSearchMap"];
     delete?: never;
     options?: never;
     head?: never;
@@ -9589,6 +9630,29 @@ export interface components {
        */
       version: number;
     };
+    /** @description An issue on the map. */
+    MapIssueBody: {
+      /** @description The issue, with the fields the person may see in its project. */
+      issue: components["schemas"]["IssueRef"];
+      /**
+       * Format: int32
+       * @description How many steps away from the start it is; left out on the map of a search.
+       */
+      steps?: number | null;
+    };
+    /** @description A line between two issues on the map. */
+    MapLineBody: {
+      /** @description What `to` reads. */
+      backward: string;
+      /** @description What `from` reads. */
+      forward: string;
+      /** @description The internal ID of the issue that reads `forward`: the one that blocks, or the sub-issue. */
+      from: string;
+      /** @description The ID of the kind of relation; left out for *part of*. */
+      relation_kind?: string | null;
+      /** @description The internal ID of the issue that reads `backward`: the one that waits, or the parent. */
+      to: string;
+    };
     /**
      * @description Who is signed in, and what they may do for the whole organization (the menus of the browser app
      *     follow it; the server decides again at every request).
@@ -11760,6 +11824,22 @@ export interface components {
        */
       version?: number | null;
     };
+    /** @description The relation map as the person may see it. */
+    RelationMapBody: {
+      /**
+       * @description The issues: by steps away, then by the kind of the relation that reached each, then by
+       *     Issue ID; on the map of a search, in the order of the search.
+       */
+      issues: components["schemas"]["MapIssueBody"][];
+      /** @description The lines between them, of the kinds shown. */
+      lines: components["schemas"]["MapLineBody"][];
+      /** @description The loops of dependencies among them, each as the internal IDs of the issues on it in order. */
+      loops: string[][];
+      /** @description Whether more issues are connected, or found, than the map holds. */
+      more: boolean;
+      /** @description The internal ID of the issue the map starts from; left out for the map of a search. */
+      start?: string | null;
+    };
     /** @description The plan of the removal of a person. */
     RemovalPlanBody: {
       /** @description What the window offers first for the person's comments. */
@@ -12357,6 +12437,15 @@ export interface components {
        * @description Where the next range starts (not included); null for the last range, which has no end.
        */
       to: number | null;
+    };
+    /** @description The search a map is drawn of. */
+    SearchMapBody: {
+      /** @description The IDs of the kinds of relation shown; left out for every kind. */
+      kinds?: string[] | null;
+      /** @description Whether sub-issues and their parents are shown (*part of*); shown when left out. */
+      part_of?: boolean | null;
+      /** @description The search text; left out or empty for every issue the person sees. */
+      search_text?: string;
     };
     /** @description A thing with a name the person may know. */
     SearchNamedBody: {
@@ -13713,10 +13802,10 @@ export interface components {
       items: components["schemas"]["RecordVersionBody"][];
     };
     /**
-     * @description The kind of view a saved search is shown as: a list or the timeline. Other kinds come with their views.
+     * @description The kind of view a saved search is shown as: a list, the timeline or the relation map. Other kinds come with their views.
      * @enum {string}
      */
-    ViewKind: "list" | "timeline";
+    ViewKind: "list" | "timeline" | "map";
     /**
      * @description What work that waits for a person waits for.
      * @enum {string}
@@ -19145,6 +19234,50 @@ export interface operations {
       503: components["responses"]["Unavailable"];
     };
   };
+  getIssueMap: {
+    parameters: {
+      query?: {
+        /**
+         * @description How many steps away the map walks, from 1 to the most the search language walks; left out
+         *     for *Everything*, which is that most.
+         */
+        steps?: number;
+        /**
+         * @description The IDs of the kinds of relation shown, separated by commas; left out for every kind, and
+         *     empty for none.
+         */
+        kinds?: string;
+        /** @description Whether sub-issues and their parents are shown (*part of*); shown when left out. */
+        part_of?: boolean;
+      };
+      header?: never;
+      path: {
+        /** @description The readable ID (WEB-142) or the internal ID of the issue. */
+        issue: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The relation map of the issue. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RelationMapBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
   listMentionChoices: {
     parameters: {
       query?: {
@@ -20474,6 +20607,36 @@ export interface operations {
       };
       401: components["responses"]["NotSignedIn"];
       404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  getSearchMap: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SearchMapBody"];
+      };
+    };
+    responses: {
+      /** @description The relation map of the search. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RelationMapBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      413: components["responses"]["TooLarge"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];

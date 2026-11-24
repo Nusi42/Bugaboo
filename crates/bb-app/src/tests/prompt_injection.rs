@@ -253,6 +253,7 @@ async fn prompt_injection_a_field_kept_from_ai_never_reaches_the_model() -> Outc
             ("search_issues", json!({"query": "login"})),
             ("get_my_work", json!({})),
             ("list_projects", json!({})),
+            ("relation_map", json!({"issue": key})),
         ],
     )
     .await?;

@@ -21,6 +21,9 @@
 //! - for what the server sends on its own (the app list of notifications and the e-mail), every
 //!   starting role as the recipient has a `delivery` line, and what it says they were told is what
 //!   the tables of the starting roles say they may see (the field *Status*, the kind *Authors*);
+//! - the relation map (`sec_matrix_map`): every starting role has a `map` line for the map of an
+//!   issue and of a search that says nothing hidden was on it, and the property tests of the map
+//!   are there and run;
 //! - no line names a route that does not exist, and the answers are well formed: nobody signed in is
 //!   `not-signed-in` for every route that is not public.
 
@@ -36,6 +39,7 @@ use serde_json::Value;
 
 use super::api_spec;
 use super::sec_matrix_assistant::assistant_findings;
+use super::sec_matrix_map::{PROPERTY_PATH, TESTS_PATH, map_findings};
 use super::sec_matrix_tools::tool_findings;
 use super::{Check, Context, Finding};
 use crate::generate::api::SPEC_PATH;
@@ -76,6 +80,10 @@ impl Check for SecMatrix {
         if let Some(record) = record.as_deref() {
             findings.extend(tool_findings(record));
             findings.extend(assistant_findings(record));
+            let property = read(PROPERTY_PATH).ok();
+            let modules = read(TESTS_PATH).ok();
+            let tests = property.as_deref().zip(modules.as_deref());
+            findings.extend(map_findings(record, tests));
         }
         Ok(findings)
     }

@@ -39,12 +39,15 @@ words! {
         List => "list",
         /// The timeline: bars over days (PLAN-01, ADR-0043, decision 2).
         Timeline => "timeline",
+        /// The relation map of the results: at most 200 of them and the relations between them,
+        /// with no walk beyond them (ISS-16, ADR-0034, amendment 2026-11-24).
+        Map => "map",
     }
 }
 
 words_in_api!(
     ViewKind,
-    "The kind of view a saved search is shown as: a list or the timeline. Other kinds come with their views."
+    "The kind of view a saved search is shown as: a list, the timeline or the relation map. Other kinds come with their views."
 );
 
 words! {

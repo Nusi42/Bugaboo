@@ -151,6 +151,17 @@ pub(super) async fn relation_request(
             format!("/api/v1/issues/{}/sub-issues", an_issue(fixture).await?),
             None,
         ),
+        "getIssueMap" => (
+            "GET",
+            format!("/api/v1/issues/{}/map", an_issue(fixture).await?),
+            None,
+        ),
+        // The map of a search lets in whoever is signed in and shows what they read.
+        "getSearchMap" => (
+            "POST",
+            "/api/v1/map".into(),
+            Some(json!({"search_text": ""})),
+        ),
         "listRelatedIssues" => (
             "GET",
             format!("/api/v1/issues/{}/related-issues", an_issue(fixture).await?),

@@ -18,9 +18,10 @@
 use std::cell::{Cell, RefCell};
 
 use bb_app::search::{
-    FieldTarget, GroupCount, GroupKey, LengthTotals, SearchFailure, SearchHit, SearchRequest,
-    SearchStore, target_of,
+    FieldTarget, GroupCount, GroupKey, LengthTotals, MapStep, SearchFailure, SearchHit,
+    SearchRequest, SearchStore, target_of,
 };
+use bb_core::id::IssueId;
 use bb_core::issue::{Priority, StatusGroup};
 use sea_query::{CommonTableExpression, Cond, Expr, ExprTrait as _};
 
@@ -32,11 +33,13 @@ use crate::auth::AuthStorage;
 use crate::db::{Dialect, Statement};
 use crate::error::StoreError;
 
-mod filter;
+pub(crate) mod filter;
 mod order;
 mod source;
 pub(crate) mod spent;
 mod statements;
+
+pub(crate) use self::statements::seen_by;
 mod text;
 mod time;
 mod values;
@@ -149,7 +152,7 @@ pub(crate) fn nothing() -> Cond {
 }
 
 /// How long a search may run on the database (SEC-17, architecture §7 *Search limits*).
-const SEARCH_TIME: std::time::Duration = std::time::Duration::from_secs(2);
+pub(crate) const SEARCH_TIME: std::time::Duration = std::time::Duration::from_secs(2);
 
 /// The place of a word among all the words of its kind.
 fn place_in<T: PartialEq>(all: &[T], one: &T) -> i64 {
@@ -185,11 +188,11 @@ fn group_order(group: &GroupCount) -> (bool, String, i64) {
     }
 }
 
-fn failed(error: impl std::fmt::Display) -> SearchFailure {
+pub(crate) fn failed(error: impl std::fmt::Display) -> SearchFailure {
     SearchFailure::Failed(error.to_string())
 }
 
-fn stopped(error: StoreError) -> SearchFailure {
+pub(crate) fn stopped(error: StoreError) -> SearchFailure {
     match error {
         StoreError::TimedOut => SearchFailure::TooSlow,
         other => failed(other),
@@ -253,6 +256,14 @@ impl AuthStorage {
 }
 
 impl SearchStore for AuthStorage {
+    async fn map_step(
+        &self,
+        request: &SearchRequest,
+        step: &MapStep,
+    ) -> Result<Vec<IssueId>, SearchFailure> {
+        self.map_step_in(request, step).await
+    }
+
     async fn search_page(&self, request: &SearchRequest) -> Result<Vec<SearchHit>, SearchFailure> {
         let forms = self.forms_of(request, SET_ROWS_AT_MOST).await?;
         self.search_page_in(request, forms).await
@@ -326,6 +337,8 @@ mod tests_agent_work_current;
 mod tests_agent_work_more;
 #[cfg(test)]
 mod tests_ai;
+#[cfg(test)]
+mod tests_map;
 #[cfg(test)]
 mod tests_more;
 #[cfg(test)]
