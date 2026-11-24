@@ -30,7 +30,6 @@ The lead updates this file after every step (builder started, report in, review 
 | WP-15 | Sample part 8, the long run, speed, the release candidate, the exit demo | code merged (2026-11-23): the sample part 8, the long run with a backup in the middle, the exit demo, the release notes; its measurements on 1 M issues found that backups through the page, the removal of a person and the walk of a person's data do not scale (M9-F144, F145, F51); their fixes are merged (2026-11-23) and measured (2026-11-24, architecture §11); the release candidate 0.6.0-rc.1 is built, signed and tried out (2026-11-24); next: the exit | `win2` / `WIN2` | Wave 4; Opus; measures alone on a quiet computer |
 | WP-16 | Agents that wait for work, hand over and undo | merged (2026-11-20; two fix rounds, a second builder for the history of an agent and a third for the fixes) | `win4` / `WIN4` | Added 2026-11-19 from a tester's report; Opus; migration 62 |
 | WP-17 | Several agents at once, and requests for agents by a program | merged (2026-11-20; one fix round) | `win5` / `WIN5` | Added 2026-11-19 from a tester's report; Opus; migration 61 |
-| WP-17 | Several agents at once, and agents asked for by a program | building (Opus) | `win5` / `WIN5` | Wave 3; Opus; migration 61; added on 2026-11-19 by the maintainer's decision |
 
 ## Work packages (M8)
 
