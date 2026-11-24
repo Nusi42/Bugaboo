@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { expect, type Page } from "@playwright/test";
 
 import { signInThroughApi } from "./accounts.ts";
-import { ana, good } from "./demo-m6-common.ts";
+import { ana, chooseMondayFirst, good } from "./demo-m6-common.ts";
 import { signIn } from "./flows.ts";
 import { layoutOf } from "./layout.ts";
 import { daysOf } from "./person-day.ts";
@@ -31,6 +31,7 @@ const LONG_DAY_BACK = 120;
 export async function aLongDayShowsItsWarning(page: Page, server: Instance): Promise<void> {
   const session = await signInThroughApi(server, ana());
   await chooseUtc(session);
+  await chooseMondayFirst(session);
   const long = weekOf((await daysOf(session, LONG_DAY_BACK)).before);
   await workedOn(session, long, "06:00", "19:00");
   await session.dispose();
@@ -47,6 +48,7 @@ export async function aLongDayShowsItsWarning(page: Page, server: Instance): Pro
 export async function anaChangesYesterdayWithAReason(page: Page, server: Instance): Promise<void> {
   const session = await signInThroughApi(server, ana());
   await chooseUtc(session);
+  await chooseMondayFirst(session);
   const { yesterday } = await daysOf(session);
   await workedOn(session, yesterday, "08:00", "17:00");
   await session.dispose();

@@ -1,5 +1,7 @@
+import { settingKeys } from "@bugaboo/api-client";
 import { type Page } from "@playwright/test";
 
+import { type ApiSession } from "./api.ts";
 import { goodWindowInFourThemes } from "./demo.ts";
 import { sampleNamed, type SamplePerson } from "./sample.ts";
 
@@ -18,4 +20,15 @@ export function good(page: Page, step: string): Promise<void> {
 /** Ana Moreno, a Contributor in Website through the group External. */
 export function ana(): SamplePerson {
   return sampleNamed("Ana Moreno");
+}
+
+/**
+ * Lets Ana's weeks start on Monday, as `weekOf` and `columnOf` count them; without it the Region of
+ * the device decides, and a browser in the United States starts a week on Sunday.
+ */
+export async function chooseMondayFirst(session: ApiSession): Promise<void> {
+  await session.client.PUT("/api/v1/me/settings/{key}", {
+    params: { path: { key: settingKeys.regionFirstDay } },
+    body: { value: "monday" },
+  });
 }
