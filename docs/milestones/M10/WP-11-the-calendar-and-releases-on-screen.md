@@ -9,7 +9,7 @@
 
 ## Where
 
-- **Owns:** `web/app/src/features/calendar/**` (new, a lazy chunk: month, week, the day cell with *+5 more*, the drag, *Change due date …*, the marks, the phone list, *Dates from* in the view's options), the entry *Calendar* of *Show as* in `web/app/src/features/search/`, `web/app/src/features/releases/**` (new: the project page *Releases*, the release window, mark *Released*, *Archive*, *Delete*), the project's sub-page in the project routes, the two fields' editors on the issue page and the new-issue form (`web/app/src/features/issues/`, the release pickers only), the parts `calendar-day`, `calendar-item`, `release-mark` in `design/theme.kdl`, `userDocs/planning/calendar.md` and `userDocs/issues/releases.md` (new).
+- **Owns:** `web/app/src/features/calendar/**` (new, a lazy chunk: month, week, the day cell with *+5 more*, the drag, *Change due date …*, the marks, the phone list, *Dates from* in the view's options), the entry *Calendar* of *Show as* in `web/app/src/features/search/`, `web/app/src/features/releases/**` (new: the project page *Releases*, the release window, mark *Released*, *Retire the release*, *Delete*), the project's sub-page in the project routes, the two fields' editors on the issue page and the new-issue form (`web/app/src/features/issues/`, the release pickers only), the parts `calendar-day`, `calendar-item`, `release-mark` in `design/theme.kdl`, `userDocs/planning/calendar.md` and `userDocs/issues/releases.md` (new).
 - **Reuses, does not copy:** the drag helper and the shared list of drag kinds (see WP-10), the date writers of TXT-DATES, the first day of the week from *Region*, the *Undo* host, the issue finder, the choice picker of the issue page.
 - **Shared files, one entry each:** the *Show as* switch, `paths.ts`, `messages/en.json`, `design/theme.kdl` (its own parts).
 
@@ -20,7 +20,7 @@
 - **Drag:** to another day changes the field shown; the drop ends with *Undo* ("WEB-140 due date moved to Fri 16 Oct · Undo"); a stale move asks *Keep Ben's change / Use mine*. An issue the person may not change cannot be dragged, and pointing at it says why. ***Change due date …*** (named by the field shown) on every issue's menu: a date box. Keys: arrow keys move a picked issue by a day, with *Shift* by a week (TEST-A11Y).
 - **Marks** (M10-Q8): releases on their *Release date* and goals on their *Due date*, as marks with a diamond; they are not dragged here.
 - **The phone:** a day-by-day list from today, days without issues left out, *Change due date …* on each; nothing is dragged.
-- **Releases page** (M10-Q6, Q7): the releases of the project and those offered from above, grouped by state (*Planned*, *Released*, *Archived* folded), each with its *Release date*, its count of issues planned for it that the reader sees, and a link to them as a search. *New release*, *Change*, *Mark as released*, *Archive*, *Delete* for people with *Manage releases*; a refused delete says "Issues name this release. Archive it instead." The issue page's *Found in release* and *Planned for release* use the choice picker with the releases offered there.
+- **Releases page** (M10-Q6, Q7): the releases of the project and those offered from above, grouped by state (*Planned*, *Released*, *Retired* folded), each with its *Release date*, its count of issues planned for it that the reader sees, and a link to them as a search. *Create a release*, *Change*, *Mark as released*, *Retire the release*, *Delete* for people with *Manage releases*; a refused delete says "Issues name this release. Retire it instead." The issue page's *Found in release* and *Planned for release* use the choice picker with the releases offered there.
 
 ## Tasks
 
@@ -41,8 +41,8 @@
 - `plan_09_releases_and_goals_stand_on_their_dates_as_marks` (browser).
 - `plan_09_the_week_starts_on_the_first_day_of_the_persons_region` (browser).
 - `plan_09_the_phone_shows_a_day_by_day_list` (browser, phone).
-- `iss_08_manage_releases_makes_marks_archives_and_deletes_on_the_releases_page` (browser).
-- `iss_08_a_refused_delete_offers_archive` (browser).
+- `iss_08_manage_releases_makes_marks_retires_and_deletes_on_the_releases_page` (browser).
+- `iss_08_a_refused_delete_offers_retire` (browser).
 - `iss_08_found_in_and_planned_for_are_set_on_the_issue_page_and_the_new_issue_form` (browser).
 - `iss_08_a_person_without_manage_releases_sees_the_page_without_changes` (browser).
 - TEST-A11Y: the calendar and *Releases* in the four themes; every drag of the calendar in the list of drag kinds with its key.

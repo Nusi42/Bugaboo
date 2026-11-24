@@ -16,7 +16,7 @@ M10 starts from M9 (`m9-done`, version 0.6.0, the first release; API v1 frozen a
 - **E-mail per issue only.** Notification e-mails are plain text, batched per issue, with no summaries (ADR-0033, decision 3; M4-Q6). The organization setting *Short e-mails* leaves out all issue text.
 - **Migrations 1 to 64** (`m0064_walk_index`); decision records up to ADR-0048.
 
-Decided already: ADR-0034 (saved searches: owned by one person, shared without giving anyone more), ADR-0043 (dates and dependencies), ADR-0030 (planning with people), ADR-0009 (our own timeline, calendar and charts; d3-force named for the map's layout, see M10-Q10), ADR-0027 (layouts per issue type), ADR-0022 (*Who sees people*), ADR-0025 (roles and permissions), ADR-0033 (notifications and e-mail), ADR-0005 (the search language), ADR-0029 and ADR-0042 (agents and AI apps), ADR-0044 and ADR-0045 (removal, keep and delete rules), ADR-0040 (version numbers: M10 done makes 167 of 225 features, `floor(9 × 167 / 225) = 6`, so the minor number stays and the release is **0.6.1**).
+Decided already: ADR-0034 (saved searches: owned by one person, shared without giving anyone more), ADR-0043 (dates and dependencies), ADR-0030 (planning with people), ADR-0009 (our own timeline, calendar and charts; the map's own layout, amendment 2026-11-24, M10-Q10), ADR-0027 (layouts per issue type), ADR-0022 (*Who sees people*), ADR-0025 (roles and permissions), ADR-0033 (notifications and e-mail), ADR-0005 (the search language), ADR-0029 and ADR-0042 (agents and AI apps), ADR-0044 and ADR-0045 (removal, keep and delete rules), ADR-0040 (version numbers: M10 done makes 167 of 225 features, `floor(9 × 167 / 225) = 6`, so the minor number stays and the release is **0.6.1**).
 
 **Decided by the rules, not asked** (the lead):
 
@@ -25,7 +25,7 @@ Decided already: ADR-0034 (saved searches: owned by one person, shared without g
 - Nothing moves under the cursor (UX design §6.4, M8 WP-13): every new screen is measured with `expectStill`.
 - The new reads use the budgets that exist: `search` (300 ms) for a board, a calendar month, a map and grouped totals; `page` (100 ms) for a list of releases, a dashboard's frame and the pins. No new budget name (SSOT, `tools/checks/perf-bench.toml`).
 - "Hidden" in M10 means an issue in a project the person may not see, or a field they may not read. Restricted issues (SEC-05) come in M12, and the same tests then cover them.
-- The map's chips are not called *Follow*: in the glossary *Follow* means hearing of changes to an issue. WP-01 gives them a word of their own (proposed: *Kinds shown*).
+- The map's chips are not called *Follow*: in the glossary *Follow* means hearing of changes to an issue. They are called *Kinds shown* (the glossary).
 - The release 0.6.1 at the exit gets the long run of ten people (two hours on each database, by hand on a quiet computer), as every release does since M9 (TEST-CONCURRENT, `when` includes `release`).
 
 ## Waves
@@ -79,8 +79,8 @@ PLAN-04 (rows by release, an M feature done in M8 without releases) is completed
 
 ## The packages in short
 
-- **WP-01 (lead, docs only):** the answers to M10-Q1…Q22, each written where it belongs. New decision records: **ADR-0049** *Releases* (where a release lives, its states and dates, *Found in release* and *Planned for release*, who manages them, on the timeline and the calendar) and **ADR-0050** *Dashboards and totals* (boxes, sharing, what a total adds up, no box that ranks people). Amendments: ADR-0034 (the views *Board*, *Calendar* and *Map* and their options; a dashboard box as a reader of a search), ADR-0027 (the layout *Card*), ADR-0043 (deadline drivers, the new plan warnings, releases as milestones), ADR-0009 (the map's layout, M10-Q10), ADR-0033 (e-mailed searches), ADR-0025 (*Manage releases*, *Share dashboards*), ADR-0005 (the release words of the search language). The glossary words of M10; the UX frames that are missing; the feature list wording of CFG-03, CFG-05, QRY-08 and PRJ-06 as the answers say.
-- **WP-02 (ISS-08 on the server; migration 65):** the release as a record of a project, chosen in that project and its sub-projects; its states and dates; the permission *Manage releases*; *Found in release* and *Planned for release* as built-in fields of the field catalogue, readable in search, forms, layouts and history, with field permissions; the reserved words of the search language get their meaning; MCP reads releases and sets the two fields through `change_issue`.
+- **WP-01 (lead, docs only):** the answers to M10-Q1…Q22, each written where it belongs. New decision records: **ADR-0049** *Releases* (where a release lives, its states and dates, *Found in release* and *Planned for release*, who manages them, on the timeline and the calendar) and **ADR-0050** *Dashboards and totals* (boxes, sharing, what a total adds up, no box that ranks people). Amendments: ADR-0034 (the views *Board*, *Calendar* and *Map* and their options; a dashboard box as a reader of a search), ADR-0027 (the layout *Card*), ADR-0043 (deadline drivers, the new plan warnings, releases as milestones), ADR-0009 (the map's layout, M10-Q10), ADR-0033 (e-mailed searches), ADR-0025 (*Manage releases*, *Share dashboards*), ADR-0005 (the release words of the search language), ADR-0044 and ADR-0045 (dashboards, pins and e-mailed searches at *Switch off*, *Remove a person* and in the keep rules). The glossary words of M10; the UX frames that are missing; the feature list wording of CFG-03, CFG-05, QRY-08 and PRJ-06 as the answers say.
+- **WP-02 (ISS-08 on the server; migration 65):** the release as a record of a project, chosen in that project and its sub-projects; its states (*Planned*, *Released*, *Retired*) and dates; the permission *Manage releases*; *Found in release* and *Planned for release* as built-in fields of the field catalogue, readable in search, forms, layouts and history, with field permissions; the reserved words of the search language get their meaning; MCP reads releases and sets the two fields through `change_issue`.
 - **WP-03 (QRY-08 on the server):** one route for the totals of a search, grouped by one field: the count, *Estimated time*, *Time left*, *Time spent* and own number fields, each over the issues and values the reader may see; the groups of a board as pages when a field has more than 200 values (M5-F44); the MCP read tool `search_totals`.
 - **WP-04 (PRJ-06; PLAN-06 and PLAN-09 on the server; migration 66):** `ViewKind::Board` and `ViewKind::Calendar` with their options (columns, rows, card limits; the date field); the layout *Card* with at most four fields (M6-F160); the board read (each column's count and its first page of cards, by the search's sort); the calendar read (a window of days); a card's move as the status change of the workflow or the change of a choice, through the use cases that exist; columns across several workflows; the choice *Only this project* written into the search text.
 - **WP-05 (ISS-16 on the server):** the map of an issue (steps away, kinds shown, at most 200 issues) and the map of a search's results, walked only through issues the reader sees; loops of *blocks* found and named; the property tests that no chain passes through a hidden issue; `ViewKind::Map`; the MCP read tool `relation_map`.
@@ -149,106 +149,130 @@ As written in 04-milestones (M10), broken into steps, with the other features pr
 
 Each question has its options and the lead's recommendation with the reason. The answers are written by WP-01 where they belong.
 
+**Decided (2026-11-24): the maintainer took every recommendation below.** Nothing is cut up front; M10-Q21 is the order of cuts if the screens run late.
+
 **M10-Q1: What are the columns of a board?** PLAN-06 says "columns from status or any choice field". A board across projects can meet several workflows whose statuses differ (PRJ-06).
 
 - Options: (a) statuses only, and a board only for a search within one workflow; (b) status groups only (*Not started*, *In progress*, *Done*); (c) statuses by default, merged by name across the workflows of the search (the one rule `same_name`), with *Status group* and any choice field of one value as other choices.
 - **Recommendation: (c).** It is what UX design §4.6 draws and what people expect. A card whose workflow has no status of a column cannot be dropped there: the column fades while dragging, and pointing at it says "WEB-139's workflow has no status Testing". *Status group* is the answer for a board across very different workflows. Columns come from the workflows of the issues found, in the order of the workflow of the first project; an empty column of a status stays.
+- **Answer (2026-11-24):** as recommended. Board columns are statuses by default, merged by name across the workflows of the search, with *Status group* and any choice field of one value as the other choices; a column a card cannot go to fades with its reason. Written in ADR-0034, amendment 2026-11-24; the glossary (*Board*); UX design §4.6.
 
 **M10-Q2: What does a card limit do?** UX design §4.6 says going over turns the title orange "but is allowed".
 
 - Options: (a) a soft limit: the title shows "4 of 3" in orange, nothing is refused; (b) a hard limit: a card cannot be dropped into a full column.
 - **Recommendation: (a), as drawn.** A hard limit blocks real work and makes people change statuses elsewhere. The count is of the cards the reader sees (PRIV-13), the limit is an option of the board stored with its saved search, and only the person who made the search changes it (ADR-0034, decision 5).
+- **Answer (2026-11-24):** as recommended. A card limit is soft: "4 of 3" in orange, nothing refused, counting only the cards the reader sees, stored with the saved search and changed by its maker. Written in ADR-0034, amendment 2026-11-24; the glossary (*Card limit*); UX design §4.6.
 
 **M10-Q3: May cards be put in an order by hand inside a column?**
 
 - Options: (a) no: cards follow the sort of the search (at the start: priority, then last changed), and the column's header says so; (b) yes: a hand order per board, stored for each issue.
 - **Recommendation: (a).** A hand order needs a stored rank per board and issue, which two shared boards would fight over, which grows with 1 M issues, and which a person who sees fewer issues cannot keep. Sorting by a field (priority, due date) gives the same help without it.
+- **Answer (2026-11-24):** as recommended. No order by hand: cards follow the sort of the search (priority, then last changed), and the column says so. Written in ADR-0034, amendment 2026-11-24; UX design §4.6.
 
 **M10-Q4: What does a card show, and who decides?** UX design §4.6 says "up to 4 fields (Customize → Card)"; M6-F160 asks for "a kind of layout for the card".
 
 - Options: (a) a layout *Card* per issue type, edited in *Layouts* like the issue page (ADR-0027); (b) fields chosen per board and kept with its saved search, like a list's columns.
 - **Recommendation: (a).** A card then shows the same fields wherever it appears, follows field permissions and the roles of the layout as the issue page does, and places the lengths of time through the same field list (M6-F160). *Customize › Card* on a board opens the layout for people who may change layouts; others do not see it.
+- **Answer (2026-11-24):** as recommended. A card shows the fields of a layout *Card* per issue type (at most four), edited in *Layouts*; *Customize › Card* opens it for people who may change layouts. Written in ADR-0027, amendment 2026-11-24; the glossary (*Card*, *Layout*); UX design §4.6 and §5.5.
 
 **M10-Q5: Which date does the calendar use?** PLAN-09 says "by due date"; UX design §4.16 says "Releases and milestones appear too".
 
 - Options: (a) *Due date* only; (b) *Due date* at the start, with the view option *Dates from*: *Due date*, *Start date* or an own date field, one field and one day per issue; (c) a span from start to due date.
 - **Recommendation: (b).** It mirrors *Dates from* of the timeline (ADR-0043), and the drag changes the field shown. Spans are the timeline's work. Releases stand on their release date and goals on their due date, as marks that are not dragged on the calendar.
+- **Answer (2026-11-24):** as recommended. The calendar uses *Due date* at the start, and *Dates from* may choose *Start date* or an own date field; one day per issue; releases and goals stand as marks that are not dragged. Written in ADR-0034, amendment 2026-11-24; the glossary (*Calendar*, *Dates from*); UX design §4.16.
 
 **M10-Q6: Where does a release live?** ISS-08 does not say.
 
 - Options: (a) in one project, and offered in that project and its sub-projects; (b) one list for the whole organization; (c) in one project only.
 - **Recommendation: (a).** A product with several parts plans one release for all of them by making it in their common project. The name is unique within its project. It follows the tree as permissions do (PRJ-02), and an issue moved out of the tree keeps its release, shown with a note that it is not offered there.
+- **Answer (2026-11-24):** as recommended. A release lives in one project and is offered in it and its sub-projects; its name is unique in its project; an issue moved out keeps it, marked as not offered there. Written in ADR-0049, decision 1; UX design §4.4 and §4.16.
 
 **M10-Q7: What is a release, and who manages it?**
 
 - Options for the fields: (a) *Found in release* several, *Planned for release* one; (b) one each; (c) several each.
 - Options for states: (a) *Planned*, *Released* (the day is kept) and *Archived* (no longer offered, still shown on issues); (b) any states the organization defines.
 - **Recommendation: fields (a), states (a), one date *Release date*** (the planned day; *Released on* is kept when it is marked *Released*), no start date (the span is its issues). A bug can be seen in several releases but is fixed in one. A new project permission ***Manage releases***, held at the start by *Administrator* and *Project lead*. A release that an issue names cannot be deleted, only archived; one that no issue names is deleted by someone with *Manage releases* (explicit deletion).
+- **Answer (2026-11-24):** as recommended. *Found in release* holds several, *Planned for release* one; the states are *Planned*, *Released* (keeps *Released on*) and *Retired* (the recommendation's *Archived*: the same meaning, but the glossary keeps *archive* out of the UI and has *Retire* for it); one *Release date*, no start date; the new permission *Manage releases* (Administrator and Project lead); a release that issues name is retired, never deleted. Written in ADR-0049, decisions 2, 3, 5 and 6; ADR-0025, amendment 2026-11-24; the glossary.
 
 **M10-Q8: Releases on the timeline and the calendar.** ADR-0043, decision 7 and M8-Q3 promised releases "in M10".
 
 - **Recommendation:** a release with a *Release date* is a diamond on the timeline and a mark on the calendar, like a goal's due date. *Group by release* (by *Planned for release*) joins the timeline and the board's rows. An issue planned for a release that ends after its release date shows *Delay* with the same ways out as for a goal. *Due soon* on *Home* shows releases due in the next 7 days, as UX design §4.1 says.
+- **Answer (2026-11-24):** as recommended. A release with a *Release date* is a diamond on the timeline and a mark on the calendar; *Group by release*; *Delay* for a release; *Due soon* on *Home* shows releases of the next 7 days. Written in ADR-0049, decision 7; ADR-0043, amendment 2026-11-24; UX design §4.1, §4.7 and §4.16.
 
 **M10-Q9: What do deadline drivers show, and what is an "impossible dependency"?** PLAN-05: "highlight the chain of issues that sets the end date, and warn about impossible dependencies".
 
 - Options for the end: (a) one end, the last day of the view; (b) the end of each goal and release with a date in the view, and the last day of the view.
 - **Recommendation: (b),** worked out by the plan on the server over **only the issues the reader sees** (PLAN-08): a chain through a hidden issue is not outlined, and nothing tells that one exists. Two new plan warnings for impossible dependencies: ***Loop*** for a loop of dependencies stored before M8 (nothing in it can start; its way out is *Open the relation*) and ***Cannot fit*** when an issue's fixed due date lies before the earliest day the issues it waits for can end (*Make it longer*, *Keep and accept*). The words are proposals for the glossary.
+- **Answer (2026-11-24):** as recommended. Deadline drivers for each goal and release with a date in the view and the last day of the view, worked out on the server over only the issues the reader sees; the new plan warnings *Loop* and *Cannot fit*. Written in ADR-0043, amendment 2026-11-24; the glossary (*Deadline drivers*, *Loop*, *Cannot fit*, *Plan warnings*); UX design §4.7.
 
 **M10-Q10: How is the relation map laid out?** ADR-0009 names d3-force. A force layout keeps moving while it settles, which breaks *Nothing moves under the cursor* (UX design §6.4), and gives a different picture each time, which a visual test cannot compare. UX design §4.15 draws columns by steps away.
 
 - Options: (a) d3-force, run to rest before it is drawn; (b) our own layout in columns by steps away, the same picture for the same answer, no new dependency.
 - **Recommendation: (b).** It is what the UX design draws, it never moves under the cursor, it is the same in every test, and it saves a dependency. ADR-0009 is amended.
+- **Answer (2026-11-24):** as recommended. Our own layout in columns by steps away, the same picture for the same answer; d3-force is not added. Written in ADR-0009, amendment 2026-11-24; the glossary (*Relation map*); UX design §4.15.
 
 **M10-Q11: How far does the map walk?** UX design §4.15 offers 1, 2, 3 or *Everything*, at most 200 issues. The search language allows `within 5 steps` at most.
 
 - **Recommendation:** *Everything* means 5 steps, the one limit of the search language (SSOT, `limits.rs`), and at most 200 issues; above that the map says so and suggests fewer steps or fewer kinds. *Part of* (sub-issues) is one of the kinds shown. *Show as › Map* draws the results of a search (at most 200) and the relations between them.
+- **Answer (2026-11-24):** as recommended. *Everything* is 5 steps, the one limit of the search language, and a map holds at most 200 issues; *part of* is one of the *Kinds shown*; *Show as › Map* draws a search's results and their relations. Written in ADR-0005, amendment 2026-11-24; architecture §7 (*The walk of the relation map*); the glossary (*Steps away*, *Kinds shown*); UX design §4.15.
 
 **M10-Q12: Who may share a dashboard, and what does a viewer see?**
 
 - Options: (a) as saved searches: private at the start, shared with groups and projects with a permission; (b) everyone may share; (c) only administrators share.
 - **Recommendation: (a), with a new permission *Share dashboards*** that starts with the same roles as *Share searches*, because a dashboard can show time and work of others and an organization may want to allow one and not the other. Each box runs as the viewer; a box whose search does not check for the viewer is left out and the grid closes up, so no gap tells of it (ADR-0034, decision 4). Only the maker changes it; others *Save a copy*.
+- **Answer (2026-11-24):** as recommended. Dashboards are shared like saved searches, with the new permission *Share dashboards* (the roles of *Share searches* at the start); each box runs as the viewer, and a box that does not check is left out without a gap; only the maker changes it, others *Save a copy*. Written in ADR-0050, decisions 1 to 3; ADR-0025, amendment 2026-11-24; the glossary.
 
 **M10-Q13: Which ready-made boxes?** CFG-03 names "search results, charts, time summaries, Gantt snippet, my timer, and recent activity".
 
 - **Recommendation:** six kinds of box (*Search results*, *Numbers and chart*, *Time totals*, *Small timeline*, *My timer*, *Recent changes*) and these ready-made ones: "My open issues", "Due soon", "Open bugs by priority", "Issues by status group", "Progress of a release", "My time this week", "Time on this search", "Small timeline of a search", "My timer", "Recent changes in this project". *Recent changes* lists changes to issues the viewer sees, never the work of one person. **No box ranks people:** a chart grouped by a person is in the order of names, never of size, and there is no "top" of people (PRIV-09, COMP-10). Charts are bars and single numbers, each with a table for screen readers; no pie charts.
+- **Answer (2026-11-24):** as recommended. Six kinds of box and the ten ready-made boxes as data; no box ranks people; bars and single numbers, each with a table; no pie charts. Written in ADR-0050, decisions 4 and 5; the glossary (*Box*, *Ready-made box*, *Small timeline*, *Recent changes*); UX design §4.10.
 
 **M10-Q14: Is *Home* a dashboard?** UX design §4.1 says *Home*'s blocks are saved searches and *Customize* reorders, removes and adds blocks; it is not built.
 
 - Options: (a) *Home* becomes the person's own dashboard, made of the same boxes, starting with today's blocks; (b) *Home* stays fixed, dashboards are separate pages.
 - **Recommendation: (a).** One kind of box instead of two, and *Customize* on *Home* is the dashboard's *Change*. It is the first cut if the milestone runs late (M10-Q21).
+- **Answer (2026-11-24):** as recommended. *Home* becomes the person's own dashboard, starting with today's blocks; *Customize* on *Home* is the dashboard's *Change*. Written in ADR-0050, decision 6; UX design §4.1.
 
 **M10-Q15: What do totals add up?** QRY-08 says "count, sum of estimated time, grouped by a field, for dashboards and reports".
 
 - **Recommendation:** the count, *Estimated time*, *Time left*, *Time spent* and own number fields, grouped by one field. A value counts only where the reader may read the field on that issue; a total never includes a hidden issue (PRIV-13). "Reports" in M10 means the totals row of a grouped list, the totals of a board column and the *Numbers and chart* box; time reports with export stay TIME-05 (M13) and CSV export NTF-05 (M12). The feature list is reworded so.
+- **Answer (2026-11-24):** as recommended. The count, *Estimated time*, *Time left*, *Time spent* and own number fields, grouped by one field, only over what the reader may see; reports are the totals row of a grouped list, the totals of a board column and the box *Numbers and chart*. Written in ADR-0050, decisions 7 and 8; the glossary (*Totals*); the feature list (QRY-08); UX design §4.2 and §4.6.
 
 **M10-Q16: How does *E-mail me this search* work?** QRY-07: "scheduled e-mail summaries of a saved search". The e-mail leaves the organization's systems with data.
 
 - **Recommendation:** to the person themselves only, never to others; on chosen weekdays at a chosen hour of the person's time zone; plain text with at most 50 issues (ID, title, status, link) and "and 120 more", run as the person at sending time; *Only when something is new or changed* on at the start; it follows *Short e-mails* (no titles); at most 20 schedules per person; it needs the organization's e-mail switched on; a link to the schedule in Bugaboo (sign-in needed) to stop it. It stops at *Switch off* and when the person can no longer open the search, and is deleted at *Remove a person*. An organization setting may switch the feature off (on at the start, since e-mail itself is off until set up).
+- **Answer (2026-11-24):** as recommended. To the person only, on chosen weekdays at a chosen hour, plain text with at most 50 issues, *Only when something is new or changed* on at the start, following *Short e-mails*, at most 20 per person, stopped at *Switch off* and deleted at *Remove a person*, with an organization setting to switch it off. Written in ADR-0033, amendment 2026-11-24; ADR-0044 and ADR-0045, amendments 2026-11-24; the glossary (*E-mail me this search*, *E-mailed search*); UX design §4.2 and §4.13.
 
 **M10-Q17: What can be pinned, and by whom?** CFG-05: "pin projects, saved searches and documents to the sidebar". Documents come in M11.
 
 - **Recommendation:** each person pins for themselves only: projects, saved searches and dashboards now, documents when M11 adds them. At most 30 pins, in the person's order (drag, or *Move up* and *Move down*). No pins set by the organization for everybody in M10. A pin to something the person no longer sees is left out without a word.
+- **Answer (2026-11-24):** as recommended. Each person pins projects, saved searches and dashboards for themselves, at most 30, in their own order; no pins set by the organization; a pin to something no longer seen is left out without a word. Written in ADR-0044 and ADR-0045, amendments 2026-11-24; the glossary (*Pinned*, *Pin to sidebar*); the feature list (CFG-05); UX design §3.1 and §3.3.
 
 **M10-Q18: What does "across projects" add?** PRJ-06: "any search, board or timeline can cover a project and everything below it". Search does that already (`project within WEB`, M5-Q8).
 
 - **Recommendation:** every view of *Show as* and every dashboard box takes any search, `project within` included, and works with several workflows, fields and ID kinds at once (M10-Q1). A project's views cover the project and its sub-projects at the start; the choice *Only this project* writes `project is WEB` instead of `project within WEB` into the search text, so the search stays the one source of what is shown.
+- **Answer (2026-11-24):** as recommended. Every view and every box takes any search and works across workflows; a project's views cover its sub-projects, and *Only this project* writes `project is WEB` into the search text. Written in ADR-0034 and ADR-0005, amendments 2026-11-24; the glossary (*Only this project*); the feature list (PRJ-06).
 
 **M10-Q19: Where are the reference pictures of the visual tests kept?** The roadmap asks for "visual tests of all views in four themes". The repository is public.
 
 - Options: (a) in Git, compared on the Windows run only (fonts differ in WSL), with a size limit; (b) no stored pictures: pictures are only looked at in reviews, as today.
 - **Recommendation: (a).** Six screens × four themes × computer and phone are 48 pictures, about 5 MB, kept under `web/app/e2e/visual/` with a limit of 10 MB checked by TEST-VISUAL. They are made from fixed data and a fixed clock; `cargo xtask visual update` makes new ones, and a changed picture is reviewed like code.
+- **Answer (2026-11-24):** as recommended. The reference pictures are kept in Git under `web/app/e2e/visual/`, compared on the Windows run only, with a limit of 10 MB checked by TEST-VISUAL. Written in WP-14 and in *Checks added or grown* above.
 
 **M10-Q20: What may AI apps and agents do with the new things?**
 
 - **Recommendation:** new read tools `relation_map`, `search_totals` and `list_releases`; *Found in release* and *Planned for release* through `change_issue`, with its preview; a move on a board is a status change through `change_issue` as today. No tools for dashboards, pins or e-mailed searches: like saved searches they are the person's own and reached only from a session (ADR-0034, amendment M5 WP-06, item 3). Agents never manage releases in M10.
+- **Answer (2026-11-24):** as recommended. The read tools `relation_map`, `search_totals` and `list_releases`; the two release fields through `change_issue`; no tools for dashboards, pins or e-mailed searches; agents never manage releases. Written in ADR-0049, decision 8; ADR-0050, decision 10; ADR-0033, amendment 2026-11-24; ADR-0025, amendment 2026-11-24.
 
 **M10-Q21: What is cut if M10 is too big?** Ten features, three new views and dashboards.
 
 - **Recommendation:** no cut up front. If wave 3 runs late, cut in this order: (1) *Home* as a dashboard (M10-Q14), back to a later milestone; (2) *Show as › Map* for a whole search, keeping the map of one issue; (3) *Only when something is new or changed* of e-mailed searches. The features stay whole without them.
+- **Answer (2026-11-24):** as recommended. Nothing is cut up front; if the screens run late, the order of cuts is *Home* as a dashboard, then *Show as › Map* for a whole search, then *Only when something is new or changed*. Written in ADR-0050, decision 6.
 
 **M10-Q22: What stays out of M10?**
 
 - **Recommendation:** the list below.
+- **Answer (2026-11-24):** as recommended. The list below stays out. Written in the section that follows.
 
 ## What stays out of M10 (M10-Q22)
 
@@ -266,7 +290,7 @@ Each item keeps its place in the feature list and the plan:
 
 ## What the maintainer still does
 
-- **Before wave 1:** answer M10-Q1…Q22 on the question page (link outside the repository); look at the mocks of M10-Q1, Q4, Q9, Q10, Q13 and Q14 on it.
+- **Before wave 1:** answer M10-Q1…Q22 on the question page (link outside the repository); look at the mocks of M10-Q1, Q4, Q9, Q10, Q13 and Q14 on it. Done 2026-11-24: every recommendation taken.
 - **During wave 3:** look at the first pictures of each new view when the lead posts them (UX quality gate).
 - **At the exit:** try the demo, approve on the review page; the lead then signs and publishes the release 0.6.1.
 

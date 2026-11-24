@@ -99,7 +99,7 @@ What each means in practice:
 - **PRJ-03 (M)** — Move or re-parent projects. Permission changes caused by a move are shown before you confirm it.
 - **PRJ-04 (V1)** — Archive projects (read-only, hidden by default) and restore them.
 - **PRJ-05 (V1)** — Project templates: create a project from an existing configuration.
-- **PRJ-06 (V1)** — Across projects: any search, board or timeline can cover a project and everything below it.
+- **PRJ-06 (V1)** — Across projects: any search, every view of *Show as* (list, board, timeline, calendar, map) and every dashboard box can cover a project and everything below it, with several workflows and fields at once. A project's views start with its sub-projects; *Only this project* narrows them in the search text.
 
 ## 4. Issues / bug tracking (ISS)
 
@@ -115,7 +115,7 @@ What each means in practice:
 - **ISS-05 (M)** — Comments with Markdown, @mentions and editing (edit history kept). Internal comments visible only to chosen roles are V1.
 - **ISS-06 (M)** — A full activity/change history per issue, filtered by field permissions.
 - **ISS-07 (M)** — **Follow** issues (and documents) to get notified; see who follows.
-- **ISS-08 (V1)** — **Releases**: *found in release* and *planned for release* on issues, plus release status and dates. These are essential for bug tracking.
+- **ISS-08 (V1)** — **Releases**: *found in release* (several) and *planned for release* (one) on issues, plus release states (*Planned*, *Released*, *Retired*) and a *Release date*. A release lives in one project and is offered in its sub-projects. These are essential for bug tracking.
 - **ISS-09 (M)** — Change many issues at once (fields, status, project), each with a preview and a permission check per issue.
 - **ISS-10 (V1)** — Issue templates (for example, a bug report with steps-to-reproduce, expected and actual result).
 - **ISS-11 (M)** — Draft autosave while creating or editing.
@@ -183,7 +183,7 @@ What each means in practice:
 - **QRY-05 (M)** — **Security:** searches run as the calling user. Issue visibility, restricted issues and field permissions are added by the compiler, and a search that references an unreadable field is rejected with the same generic error as an unknown field.
 - **QRY-06 (M)** — **Saved searches**: a search plus how it is shown (list, board, timeline, calendar). Private, or shared with groups or projects. Each one has a stable URL.
 - **QRY-07 (V1)** — "E-mail me this search": scheduled e-mail summaries of a saved search.
-- **QRY-08 (V1)** — Totals (count, sum of estimated time, grouped by a field) for dashboards and reports.
+- **QRY-08 (V1)** — Totals (the count and the sums of *Estimated time*, *Time left*, *Time spent* and own number fields, grouped by one field), only over what the reader may see, for dashboards and reports: the totals row of a grouped list, the totals of a board column and the box *Numbers and chart*. Time reports with export are TIME-05; the export of a list is NTF-05.
 - **QRY-09 (V1)** — **Ask in your own words** (AI): the assistant turns a plain sentence into a search. The search is always shown, and can be edited, before it runs.
 
 ## 9. Time tracking (TIME)
@@ -253,9 +253,9 @@ What each means in practice:
   - **Role-based:** for each field in a layout, choose which roles see it (for example a short new-issue form for Guests). Field permissions always win: a role that may not see or change a field never gets it, whatever the layout says.
   - *Add a field* on an issue lists only fields the person's role may fill in.
 - **CFG-02 (M)** — Configurable lists: columns, order, widths, grouping and sorting. All of it is stored in the **saved search**. How close together the rows are (*Spacing*) is the person's own preference (CFG-04), which every list follows (ADR-0034, amendment).
-- **CFG-03 (V1)** — **Dashboards** built from boxes (widgets): search results, charts, time summaries, Gantt snippet, my timer, and recent activity.
+- **CFG-03 (V1)** — **Dashboards** built from boxes: search results, numbers and charts, time totals, a small timeline, my timer and recent changes, with ready-made boxes to start from. Shared like saved searches; each box shows what the viewer may see, and no box ranks people. *Home* is the person's own dashboard.
 - **CFG-04 (M)** — Personal preferences: theme, density, start page, date/time/number formats, week start, time zone, keyboard shortcuts.
-- **CFG-05 (V1)** — Customizable navigation: pin projects, saved searches and documents to the sidebar.
+- **CFG-05 (V1)** — Customizable navigation: each person pins projects, saved searches and dashboards to the sidebar, in their own order; documents join when they come (M11).
 - **CFG-06 (M)** — Settings apply in layers: **instance default → project → user**, each with "reset to default". Admins can lock settings.
 - **CFG-07 (V1)** — Export and import of configuration (workflows, fields, layouts, themes, roles) as versioned JSON, for backup and to move it between instances.
 - **CFG-08 (M)** — **Quick search** (Ctrl/Cmd + K): find anything, go anywhere, run any action.

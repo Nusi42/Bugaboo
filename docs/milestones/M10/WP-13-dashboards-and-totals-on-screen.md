@@ -20,7 +20,7 @@
 - **Charts** (M10-Q13): horizontal bars with the value written at each bar, or one large number; each has a *Show as table* that is also what screen readers read. A chart by a person field is in the order of names; there is no sort by size for it. Colors come from the theme's chart tokens and choice colors; a bar is never told apart by color alone.
 - **What a viewer sees** is what the route answers: a box left out is not drawn and the grid closes up. The header says who made a shared dashboard (as *Who sees people* says) and has *Save a copy*.
 - **Totals on screen** (M10-Q15): a list grouped by a field shows under each group a quiet totals row (count, and the lengths and number fields that are columns of the list), from WP-03's route; a board column's header shows its count and, when chosen in *Customize*, a sum. A total with fewer values than issues says "over 9 of 14 issues".
-- ***Home*** (M10-Q14, if taken): *Customize* on *Home* is the dashboard's *Change*; its first boxes are today's blocks.
+- ***Home*** (M10-Q14, taken; ADR-0050, decision 6): *Customize* on *Home* is the dashboard's *Change*; its first boxes are today's blocks. The first cut if the screens run late (M10-Q21).
 - **The phone:** boxes in one column in their order on the computer (row, then column); *Change* mode offers *Move up* / *Move down* instead of drag.
 
 ## Tasks
@@ -42,7 +42,7 @@
 - `cfg_03_a_shared_dashboard_shows_the_viewer_their_own_answer_and_closes_gaps` (browser).
 - `cfg_03_every_chart_has_a_table_and_a_person_chart_is_in_the_order_of_names` (browser).
 - `cfg_03_the_phone_shows_boxes_in_one_column` (browser, phone).
-- `cfg_03_customize_on_home_changes_the_persons_dashboard` (browser; if M10-Q14 takes it).
+- `cfg_03_customize_on_home_changes_the_persons_dashboard` (browser).
 - `qry_08_a_grouped_list_shows_a_totals_row_per_group` (browser).
 - `qry_08_a_board_column_shows_its_totals` (browser).
 - `qry_08_open_bugs_by_priority_matches_the_grouped_list` (browser).

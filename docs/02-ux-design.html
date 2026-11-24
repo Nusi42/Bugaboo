@@ -62,17 +62,18 @@
     <ul class="tree">
       <li><span class="lbl">Bugaboo</span>
         <ul>
-          <li><span class="lbl"><svg class="ico"><use href="#i-home"/></svg>Home</span> <span class="d">my issues, my timer, mentions, recent</span></li>
+          <li><span class="lbl"><svg class="ico"><use href="#i-home"/></svg>Home</span> <span class="d">my own dashboard: my issues, my timer, mentions, recent, due soon</span></li>
           <li><span class="lbl"><svg class="ico"><use href="#i-bell"/></svg>Notifications</span></li>
           <li><span class="lbl"><svg class="ico"><use href="#i-bookmark"/></svg>Saved searches</span> <span class="d">mine and shared with me</span></li>
-          <li><span class="lbl"><svg class="ico"><use href="#i-board"/></svg>Dashboards</span></li>
+          <li><span class="lbl"><svg class="ico"><use href="#i-board"/></svg>Dashboards</span> <span class="d">mine and shared with me</span></li>
+          <li><span class="lbl"><svg class="ico"><use href="#i-bookmark"/></svg>Pinned</span> <span class="d">the projects, saved searches and dashboards I pinned, in my order</span></li>
           <li><span class="lbl"><svg class="ico"><use href="#i-clock"/></svg>Time</span> <span class="d">timesheet, reports</span></li>
           <li><span class="lbl"><svg class="ico"><use href="#i-folder"/></svg>Projects</span> <span class="d">a tree; each project has:</span>
             <ul>
               <li><span class="lbl">Overview</span></li>
               <li><span class="lbl">Issues</span> <span class="d">show as List · Board · Timeline · Calendar · Map</span></li>
               <li><span class="lbl">Documents</span> <span class="d">folders, pages, files</span></li>
-              <li><span class="lbl">Releases</span></li>
+              <li><span class="lbl">Releases</span> <span class="d">the releases made in this project and above it</span></li>
               <li><span class="lbl">Time</span></li>
               <li><span class="lbl">Project settings</span> <span class="d">for people allowed to change the project, normally its project leads</span></li>
             </ul></li>
@@ -93,6 +94,8 @@
       <tr><td><code>/p/WEB/docs/specs/login-flow</code></td><td>Document page</td></tr>
       <tr><td><code>/search?s=…</code></td><td>Search across every project the person sees (M5)</td></tr>
       <tr><td><code>/s/&lt;id&gt;</code></td><td>Saved search; a change that is not saved is kept in <code>?s=…</code> (M5)</td></tr>
+      <tr><td><code>/p/WEB/releases</code></td><td>The releases of a project (§4.16, <i>Releases</i>)</td></tr>
+      <tr><td><code>/dashboards</code> · <code>/d/&lt;id&gt;</code></td><td>The list of dashboards, and one dashboard (§4.10)</td></tr>
       <tr><td><code>/time</code></td><td>Timesheet</td></tr>
       <tr><td><code>/settings/…</code> · <code>/p/WEB/settings/…</code> · <code>/me/…</code></td><td>Organization, project and my settings</td></tr>
     </tbody></table></div>
@@ -111,6 +114,10 @@
         <div class="ni"><svg class="ico"><use href="#i-bell"/></svg>Notifications<span class="cnt">3</span></div>
         <div class="ni"><svg class="ico"><use href="#i-bookmark"/></svg>Saved searches</div>
         <div class="ni"><svg class="ico"><use href="#i-clock"/></svg>Time</div>
+        <div class="nl">Pinned</div>
+        <div class="ni"><svg class="ico"><use href="#i-board"/></svg>Website board</div>
+        <div class="ni"><svg class="ico"><use href="#i-board"/></svg>Release 2.4 dashboard</div>
+        <div class="ni"><svg class="ico"><use href="#i-folder"/></svg>Mobile app</div>
         <div class="nl">Projects</div>
         <div class="ni"><svg class="ico"><use href="#i-folder"/></svg>ACME</div>
         <div class="ni on u-padding-left-20px">Website issues</div>
@@ -134,6 +141,7 @@
     </div></div></div></div>
     <ul>
       <li><b>Sidebar:</b> search, the main sections, pinned items, the project tree, the running timer and settings. It can be narrowed to icons.</li>
+      <li><b>Pinned</b> (CFG-05): the projects, saved searches and dashboards a person pinned, in their own order; nobody else sees them. A project, a saved search and a dashboard each have <i>Pin to sidebar</i> in their <i>More</i> menu, and <i>Unpin</i> once pinned. The order changes by dragging a line, or with <i>Move up</i> and <i>Move down</i> in its menu. At most 30 pins; the 31st says <i>"You can pin 30 things. Unpin one first."</i> With more than 8 pins the section shows 8 and <i>Show all pinned</i>, so the sidebar still fits a window 600 px high (§4.9). Something the person can no longer open is left out of the section without a word, and comes back if they may open it again. Documents can be pinned once they exist; an organization does not pin for everybody.</li>
       <li><b>Top bar:</b> where you are (<i>ACME › Website › Issues</i>), the <b>Show as</b> switch (<i>List · Board · Timeline · Calendar · Map</i>), and buttons for <i>Customize</i>, <i>Share</i>, <i>Export</i> and <i>Save search</i>.</li>
       <li><b>Opening an issue:</b> in the <b>focus view</b> by default (§3.4), which gives the issue most of the screen. People who prefer to keep the list in view can choose the <b>side panel view</b> instead (My settings › Appearance, or the button in the issue header). Beside the list the side panel is a box of its own, at most as high as the window: it keeps its place under the top bar while the page scrolls, and what does not fit scrolls inside it under its title, with the shadow where more follows.</li>
       <li><b>Assistant:</b> an <i>Assistant</i> button in the top bar opens a panel on the right. If the side panel is also open, the two share the space as tabs.</li>
@@ -160,7 +168,7 @@
     <div class="u-flex-1-1-280px--min-width-0">
       <ul class="u-margin-top-0">
         <li><b>One screen at a time</b>, with a <i>Back</i> button and the phone's back gesture.</li>
-        <li><b>Bottom bar with labels:</b> <i>Home · Search · New · Notifications · More</i>. <i>More</i> holds Saved searches, Time, Projects, Documents and Settings. The tab of the page you are on is marked: <i>Search</i> on the Search page and on a saved search.</li>
+        <li><b>Bottom bar with labels:</b> <i>Home · Search · New · Notifications · More</i>. <i>More</i> holds <i>Pinned</i> first (the same pins in the same order as on a computer), then Saved searches, Dashboards, Time, Projects, Documents and Settings. The tab of the page you are on is marked: <i>Search</i> on the Search page and on a saved search.</li>
         <li><b>Sheets from the bottom</b> replace small pop-ups (choosing a person, a status, filters).</li>
         <li><b>Issue page:</b> one column. Fields are grouped under <i>Details</i>. A bottom bar offers <i>Status · Comment · Timer · More</i>.</li>
         <li><b>Swipe</b> on a list item for quick actions. The same actions are also in the item's <i>More</i> menu.</li>
@@ -171,6 +179,26 @@
         <li><b>Forms on a phone</b> follow three rules everywhere. (1) The note that says where a value comes from (<i>Default value</i>, <i>Your own choice</i>) stands with its field, under the hint of the field and above <i>Save</i>, never under <i>Save</i>; it uses the word of the glossary, <i>Default value</i>, as <i>Reset to default</i> does. (2) The choices of a group stand side by side only while they all fit on one line; when they do not, they stand under each other, as wide as the room (one rule for Theme, Spacing, Open issues, Region and every other group). (3) The main button of a form is as wide as the screen, on a row of its own.</li>
         <li><b>The bar of a window that is a screen</b> (New issue) is the bar of every page: the same height, <i>Back</i> in the bar beside the title, never on a second line. What scrolls above a fixed footer shows a soft shadow at each edge that has more behind it.</li>
       </ul></div></div>
+
+    <div class="demo"><div class="frame phone"><div class="frame-cap">Phone · More, with Pinned</div><div class="frame-body"><div class="scr">
+      <div class="ph-top">More</div>
+      <div class="ph-body">
+        <div class="sh">Pinned</div>
+        <div class="lrow"><div class="t"><svg class="ico"><use href="#i-board"/></svg> Website board</div></div>
+        <div class="lrow"><div class="t"><svg class="ico"><use href="#i-board"/></svg> Release 2.4 dashboard</div></div>
+        <div class="lrow"><div class="t"><svg class="ico"><use href="#i-folder"/></svg> Mobile app</div></div>
+        <div class="sh">Everything else</div>
+        <div class="lrow"><div class="t"><svg class="ico"><use href="#i-bookmark"/></svg> Saved searches</div></div>
+        <div class="lrow"><div class="t"><svg class="ico"><use href="#i-board"/></svg> Dashboards</div></div>
+        <div class="lrow"><div class="t"><svg class="ico"><use href="#i-clock"/></svg> Time</div></div>
+        <div class="lrow"><div class="t"><svg class="ico"><use href="#i-folder"/></svg> Projects</div></div>
+      </div>
+      <div class="bb"><span><svg class="ico"><use href="#i-home"/></svg>Home</span><span><svg class="ico"><use href="#i-search"/></svg>Search</span><span class="new"><svg class="ico"><use href="#i-plus"/></svg>New</span><span><svg class="ico"><use href="#i-bell"/></svg>Notifications</span><span class="on"><svg class="ico"><use href="#i-more"/></svg>More</span></div>
+    </div></div></div>
+    <div class="u-flex-1-1-280px--min-width-0"><ul class="u-margin-top-0">
+      <li><i>Pinned</i> stands first in <i>More</i>, with the pins in the person's order. A pin is moved with <i>Move up</i> and <i>Move down</i> in its menu; nothing is dragged on a phone.</li>
+      <li>An empty <i>Pinned</i> has no heading; the page of a project, a saved search or a dashboard says <i>Pin to sidebar</i> in its <i>More</i> menu.</li>
+    </ul></div></div>
 
     <h3 id="s3-4"><button type="button" class="sec" data-sec>§3.4</button>Two ways to show an open issue</h3>
     <p>Descriptions and comments need room to read and write. The <b>focus view</b> is the default; the <b>side panel view</b> stays available for people who mostly skim lists.</p>
@@ -226,7 +254,18 @@
       <li><b>Recently opened</b> issues and documents.</li>
       <li><b>Due soon</b>: issues and releases due in the next 7 days.</li>
     </ul>
-    <p>Each block is a saved search underneath. <i>Customize</i> lets people reorder, remove or add blocks. On the <b>first visit</b>, a short checklist with big buttons (<i>Create your first issue</i>, <i>Invite people</i>, <i>Pick your theme</i>) helps people start. It disappears once done or hidden.</p>
+    <p><b>Home is the person's own dashboard</b> (§4.10, CFG-03): each block is a box of a dashboard, made of the same ready-made boxes, and it starts with the blocks above. <i>Customize</i> on Home is the dashboard's <i>Change</i>: move, resize, remove and <i>Add box</i>, with the same keys. Home is never shared and has no <i>Save a copy</i>. <i>Due soon</i> lists the issues due in the next 7 days and the releases whose <i>Release date</i> falls in them, both only where the person may see them.</p>
+    <div class="demo"><div class="frame"><div class="frame-cap">Computer · Customize on Home</div><div class="frame-body"><div class="scr">
+      <div class="tb"><b>Home</b><span class="muted">Changing your Home</span><div class="u-margin-left-auto--display-flex--gap-6px"><span class="btn sm">Add box</span><span class="btn sm primary">Done</span></div></div>
+      <div class="grid2">
+        <div class="box"><div class="box-h">My issues<span class="muted">Move · Resize · Remove</span></div>
+          <div class="r"><span class="key">WEB-142</span><span class="t">Login fails after password reset</span></div></div>
+        <div class="box"><div class="box-h">Due soon<span class="muted">Move · Resize · Remove</span></div>
+          <div class="r"><span class="key">WEB-147</span><span class="t">Release notes · due Fri</span></div>
+          <div class="r"><svg class="ico"><use href="#i-calendar"/></svg><span class="t">Release 2.4 · Tue</span></div></div>
+      </div>
+    </div></div></div></div>
+    <p>On the <b>first visit</b>, a short checklist with big buttons (<i>Create your first issue</i>, <i>Invite people</i>, <i>Pick your theme</i>) helps people start. It disappears once done or hidden.</p>
 
     <h3 id="s4-2"><button type="button" class="sec" data-sec>§4.2</button>Issue list</h3>
     <div class="demo"><div class="frame"><div class="frame-cap">Computer · two issues ticked</div><div class="frame-body"><div class="scr wide">
@@ -262,7 +301,26 @@
       <li><b>The Search page</b> (M5): <i>Search</i> in the sidebar opens the same list over every project you can see, with a <i>Project</i> column. A project's list is this page with <i>Project: Website</i> filled in; removing that filter widens it to all projects.</li>
       <li><b>Empty and error states</b> (M5): no issue matches → <i>"No issues match this search."</i> with <i>Remove all filters</i>; the search took too long → <i>"This search takes too long. Add a filter, for example a project or a status."</i>; a mistake in Advanced search → the list keeps the last results at full contrast, under a blue note (§6.1) that says they are the last ones, until the search is fixed (no dashed edge: it would look like a place to drop something); when there is no earlier list (the address itself has the mistake) there is no head and no such note, only the mistake.</li>
       <li><b>A changed saved search</b> says <i>Changed, not saved</i> and offers <i>Undo changes</i> next to <i>Save</i>.</li>
+      <li><b>Totals</b> (QRY-08): <i>Show totals</i> under <i>Customize</i> adds a totals line at the end of each group and one for the whole list: the number of issues, and the sums of <i>Estimated time</i>, <i>Time left</i>, <i>Time spent</i> and the own number fields that are columns. A total counts only the issues and the values the person may see: a field they may not read on an issue adds nothing for that issue, and no line says that something was left out. The totals are read again with the list, in place (§6.4). See the frame below.</li>
       <li><b>On a phone</b> (M5): the list shows one card per issue (status icon, ID, title, priority, assigned person); columns are not offered. The page shows its title, <i>New issue</i> and <i>Filters</i>; <i>Group by</i> is in the <i>Filters</i> sheet (<i>Spacing</i> is the person's, in <i>My settings › Appearance</i>) and the colour legend opens from a small <i>Legend</i> button (owner decision, 2026-10-29). Opening an issue opens its full page (§3.4).</li>
+    </ul>
+    <div class="demo"><div class="frame narrow u-flex-basis-360px"><div class="frame-cap">Computer · totals of a grouped list</div><div class="frame-body"><div class="scr u-padding-12px--display-flex--flex-direction-column--gap-8px">
+      <div class="blk"><div class="r hd">In progress · 2 issues</div><div class="r"><span class="muted u-flex-1">Estimated time</span><span class="mono">12h</span></div><div class="r"><span class="muted u-flex-1">Time left</span><span class="mono">6h 30m</span></div><div class="r"><span class="muted u-flex-1">Time spent</span><span class="mono">7h 20m</span></div></div>
+      <div class="blk"><div class="r hd">Not started · 2 issues</div><div class="r"><span class="muted u-flex-1">Estimated time</span><span class="mono">9h</span></div><div class="r"><span class="muted u-flex-1">Time left</span><span class="mono">9h</span></div><div class="r"><span class="muted u-flex-1">Time spent</span><span class="mono">0h</span></div></div>
+      <div class="blk"><div class="r hd">All 13 shown</div><div class="r"><span class="muted u-flex-1">Estimated time</span><span class="mono">31h</span></div><div class="r"><span class="muted u-flex-1">Time left</span><span class="mono">17h 30m</span></div><div class="r"><span class="muted u-flex-1">Time spent</span><span class="mono">20h 45m</span></div></div>
+      <div class="muted u-font-size-11px">In the list itself each total stands under its own column, in the totals line at the end of the group.</div>
+    </div></div></div>
+    <div class="frame narrow u-flex-basis-360px"><div class="frame-cap">Computer · E-mail me this search</div><div class="frame-body"><div class="scr"><div class="dialog-demo u-margin-10px-auto"><div class="dh">E-mail me "Open bugs in Website"</div><div class="db">
+      <div class="u-font-size-12-5px"><b>On these days</b></div>
+      <div class="u-display-flex--gap-6px--flex-wrap-wrap"><label class="u-font-size-12-5px"><input type="checkbox" class="cb" checked> Mon</label><label class="u-font-size-12-5px"><input type="checkbox" class="cb"> Tue</label><label class="u-font-size-12-5px"><input type="checkbox" class="cb"> Wed</label><label class="u-font-size-12-5px"><input type="checkbox" class="cb"> Thu</label><label class="u-font-size-12-5px"><input type="checkbox" class="cb"> Fri</label><label class="u-font-size-12-5px"><input type="checkbox" class="cb"> Sat</label><label class="u-font-size-12-5px"><input type="checkbox" class="cb"> Sun</label></div>
+      <div class="field"><label>At</label><select><option>8:00 (your time zone, Berlin)</option></select></div>
+      <label class="u-font-size-12-5px"><input type="checkbox" class="cb" checked> Only when something is new or changed</label>
+      <div class="muted u-font-size-11px">A plain-text e-mail to you only, with up to 50 issues (ID, title, status and a link) and <i>"and 120 more"</i>. It shows what you may see when it is sent. Your organization uses <i>Short e-mails</i>, so it has no titles.</div></div>
+      <div class="df"><span class="btn sm">Cancel</span><span class="btn sm primary">E-mail me this search</span></div></div></div></div></div></div>
+    <ul>
+      <li><b><i>E-mail me this search</i></b> (QRY-07) is in the <i>More</i> menu of a saved search. It goes to the person only, never to others. Choose the weekdays and the hour, in the person's own time zone. <i>Only when something is new or changed</i> is on at the start.</li>
+      <li>The e-mail is plain text, run as the person when it is sent: at most 50 issues, then <i>"and 120 more"</i> with the link to the search. It follows <i>Short e-mails</i> (no titles), and it needs e-mail to be switched on for the organization; an organization may switch the feature off. Each e-mail ends with a link to the schedule in Bugaboo, where it is stopped (signing in is needed).</li>
+      <li>A person has at most 20 e-mailed searches; they are listed under <i>My settings › Notification settings</i> (§4.13). One stops when the person is switched off or can no longer open the search, and is deleted when the person is removed.</li>
     </ul>
 
     <h3 id="s4-3"><button type="button" class="sec" data-sec>§4.3</button>Search bar: Simple and Advanced <span class="ids">QRY</span></h3>
@@ -400,6 +458,20 @@ sort by priority, highest first</div>
       <li>The time factor is never a column, a filter, a sort or a group of a list, and no total shows it (ADR-0030, amendment M8). The assistant never proposes one.</li>
     </ul>
 
+    <h4>Releases on an issue <span class="ids">ISS-08, ADR-0049</span></h4>
+    <div class="demo"><div class="frame narrow u-flex-basis-360px"><div class="frame-cap">Computer · Details with the two release fields</div><div class="frame-body"><div class="scr u-padding-12px">
+      <dl data-part="name-values"><div data-part="name-value"><dt data-part="name-value.name">Found in release</dt><dd data-part="name-value.value">2.3 · 2.4</dd></div><div data-part="name-value"><dt data-part="name-value.name">Planned for release</dt><dd data-part="name-value.value">2.5</dd></div><div data-part="name-value"><dt data-part="name-value.name">Due date</dt><dd data-part="name-value.value">Fri, Nov 27</dd></div></dl>
+    </div></div></div>
+    <div class="frame narrow u-flex-basis-360px"><div class="frame-cap">Computer · a release not offered here</div><div class="frame-body"><div class="scr u-padding-12px--display-flex--flex-direction-column--gap-8px">
+      <dl data-part="name-values"><div data-part="name-value"><dt data-part="name-value.name">Planned for release</dt><dd data-part="name-value.value">Mobile 3.0</dd></div></dl>
+      <div class="muted u-font-size-11px">Mobile 3.0 is not offered in Website. The issue keeps it; choose another to change it.</div>
+    </div></div></div></div>
+    <ul>
+      <li><b><i>Found in release</i></b> holds one or more releases (a bug can be seen in several); <b><i>Planned for release</i></b> holds one (it is fixed in one). Both are details like any other: they save in place with <i>Undo</i>, follow their field permissions and are in search, forms and layouts (<code>found in release</code>, <code>planned for release</code>).</li>
+      <li>The choices are the releases made in the issue's project and in the projects above it, newest <i>Release date</i> first; <i>Retired</i> releases are not offered.</li>
+      <li>An issue moved out of a release's tree keeps its release, with the note that it is not offered there. A retired release stays on the issues that name it.</li>
+    </ul>
+
     <h3 id="s4-5"><button type="button" class="sec" data-sec>§4.5</button>New issue</h3>
     <div class="demo"><div class="frame"><div class="frame-cap">Window · 760 wide: one column below 880, and minimized as a bar at the bottom of the page (below)</div><div class="frame-body"><div class="scr win-stage">
       <div data-part="overlay.modal" data-variant="window" class="win"><section data-part="window"><div data-part="window.content"><div data-part="window.title-bar"><p data-part="window.title">New issue</p><button type="button" data-part="window.control" aria-label="Minimize"><svg data-part="icon" data-variant="small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-minus"/></svg></button><button type="button" data-part="window.control" aria-label="Maximize"><svg data-part="icon" data-variant="small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-square"/></svg></button><button type="button" data-part="window.control" data-variant="close" aria-label="Close"><svg data-part="icon" data-variant="small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-x"/></svg></button></div><div data-part="window.body"><div data-part="window-layout"><div data-part="window-layout.text"><div class="field"><label>Title <span class="req">(required)</span></label><input type="text" placeholder="Short summary, e.g. “Save button does nothing”"></div><div class="field"><label>Description</label><textarea placeholder="What happened? What did you expect?"></textarea></div><span><button type="button" data-part="button">Write it up for me</button></span></div><div data-part="window-layout.fields"><div class="field"><label>Project</label><select><option>Website</option></select></div><div class="field"><label>Type</label><select><option>Bug</option></select></div></div></div></div><div data-part="window.footer"><span data-part="window.footer-note">Draft kept · if you close this, it waits for you</span><button type="button" data-part="button">Cancel</button><button type="button" data-part="button">Create the issue and start another</button><button type="button" data-part="button" data-variant="primary">Create the issue</button></div></div></section></div>
@@ -432,11 +504,43 @@ sort by priority, highest first</div>
         <div class="card"><div class="m"><span class="key">WEB-146</span></div><div class="t">Search ignores accents in names</div></div></div>
     </div></div></div></div></div>
     <ul>
-      <li>Columns are statuses by default, or any choice field. Optional <b>rows</b> split the board by a field (for example, by person).</li>
-      <li>Drag a card to another column to change its status. Columns it can't go to fade while dragging, and pointing at one explains why. Every card also has a <i>Move to …</i> button.</li>
-      <li><b>Card limit</b> shows as <i>3 of 5</i> in the column title. Going over turns the title orange but is allowed.</li>
-      <li>Cards show the issue ID, title and up to 4 fields (<i>Customize → Card</i>).</li>
+      <li><b>Columns</b> (M10-Q1) are statuses at the start. A board over several workflows (a project and its sub-projects, PRJ-06) merges statuses of the same name into one column; the columns come in the order of the workflow of the first project, and a status column with no card stays. <i>Status group</i> (<i>Not started</i>, <i>In progress</i>, <i>Done</i>) suits a board over very different workflows; any choice field of one value works too. Optional <b>rows</b> split the board by a field (for example, by person, or by release with <i>Group by release</i>).</li>
+      <li><b>Dragging</b> a card to another column is its status change, through the workflow, exactly as on the issue page: <i>Ask for</i> and <i>Must be filled in</i> open the same window, and a refusal says why. Columns it can't go to fade while dragging, and pointing at one says why (<i>"WEB-139's workflow has no status Testing"</i>, or <i>"WEB-139 can't go from Open straight to Testing"</i>). Every card also has a <i>Move to …</i> button, which lists the columns with the same reasons; every drag offers <i>Undo</i>.</li>
+      <li><b>Card limit</b> (M10-Q2) shows as <i>3 of 5</i> in the column title. Going over turns the title orange (<i>4 of 3</i>) but is allowed: a card is never refused for the limit. The count is of the cards the person sees. The limits are kept with the saved search, and only the person who made it changes them.</li>
+      <li><b>Order in a column</b> (M10-Q3): the cards follow the sort of the search (at the start: priority, then last changed), and the column says so under its title. Cards are not put in an order by hand; sorting by a field (priority, due date) does that work.</li>
+      <li><b>Cards</b> (M10-Q4) show the issue ID, the title and up to 4 fields of the layout <i>Card</i> of their issue type (§5.5), so a card looks the same wherever it appears and follows the field permissions and the roles of the layout. <i>Customize › Card</i> on a board opens that layout for people who may change layouts; others do not see it.</li>
+      <li><b>Totals</b> of a column (QRY-08) stand under its title when the board shows them: the sum of <i>Estimated time</i> or <i>Time left</i> of the cards the person sees.</li>
+      <li><b>Only this project:</b> a project's board covers the project and its sub-projects at the start. <i>Only this project</i> narrows it, and writes <code>project is WEB</code> instead of <code>project within WEB</code> into the search text, so the search stays the one source of what is shown.</li>
+      <li>A board shows what it read; it reads again after a change of its own, when the window gets the focus again, and with <i>Refresh</i>. A card that changes is replaced in place (§6.4).</li>
     </ul>
+    <div class="demo"><div class="frame narrow u-flex-basis-360px"><div class="frame-cap">Computer · Customize the board</div><div class="frame-body"><div class="scr"><div class="dialog-demo u-margin-10px-auto"><div class="dh">Customize "Website board"</div><div class="db">
+      <div class="field"><label>Columns from</label><select><option>Status</option><option>Status group</option><option>Severity (a choice field)</option></select></div>
+      <div class="field"><label>Rows</label><select><option>Assigned to</option><option>No rows</option><option>Planned for release</option></select></div>
+      <div class="u-font-size-12-5px"><b>Card limits</b> <span class="muted">empty means no limit</span></div>
+      <div class="u-display-grid--grid-template-columns-1fr-1fr--gap-8px"><div class="field"><label>In progress</label><input type="text" value="3" readonly></div><div class="field"><label>Testing</label><input type="text" value="" readonly></div></div>
+      <label class="u-font-size-12-5px"><input type="checkbox" class="cb"> Only this project</label>
+      <div class="muted u-font-size-11px">Cards show the fields of the layout <i>Card</i>. <a href="#s5-5">Customize › Card</a></div></div>
+      <div class="df"><span class="btn sm">Cancel</span><span class="btn sm primary">Save the board</span></div></div></div></div></div>
+    <div class="frame narrow u-flex-basis-360px"><div class="frame-cap">Computer · a column's head, and a faded column</div><div class="frame-body"><div class="scr"><div class="board">
+      <div class="col ok"><div class="col-h"><span class="pill st-ip">In progress</span><span class="lim over">4 of 3</span></div>
+        <div class="muted u-font-size-11px">By priority, then last changed · Time left 6h 30m</div>
+        <div class="card"><div class="m"><span class="key">WEB-142</span></div><div class="t">Login fails after password reset</div></div></div>
+      <div class="col fade"><div class="col-h"><span class="pill st-ip">Testing</span><span class="lim">2</span></div>
+        <div class="explain">WEB-139's workflow has no status Testing</div></div>
+    </div></div></div></div></div>
+    <div class="demo"><div class="frame phone"><div class="frame-cap">Phone · one column, with tabs</div><div class="frame-body"><div class="scr">
+      <div class="ph-top"><svg class="ico"><use href="#i-back"/></svg>Back<span class="u-flex-1--text-align-center">Website board</span></div>
+      <div class="seg" role="group" aria-label="Columns"><button type="button" aria-pressed="false">Open</button><button type="button" aria-pressed="true">In progress</button><button type="button" aria-pressed="false">Testing</button><button type="button" aria-pressed="false">Done</button></div>
+      <div class="ph-body u-padding-12px--display-flex--flex-direction-column--gap-8px">
+        <div class="muted u-font-size-11px">4 of 3 · by priority, then last changed</div>
+        <div class="card"><div class="m"><span class="key">WEB-142</span><span class="btn sm ghost u-margin-left-auto">Move to …</span></div><div class="t">Login fails after password reset</div></div>
+        <div class="card"><div class="m"><span class="key">WEB-141</span><span class="btn sm ghost u-margin-left-auto">Move to …</span></div><div class="t">Sign in with a passkey</div></div>
+      </div>
+    </div></div></div>
+    <div class="u-flex-1-1-280px--min-width-0"><ul class="u-margin-top-0">
+      <li><b>On a phone</b> the board shows one column at a time, the column names as tabs at the top (each with its count). Nothing is dragged: <i>Move to …</i> on a card opens a sheet with the columns, the ones it cannot go to faded with their reason.</li>
+      <li>With the keyboard on a computer: a card takes the focus with <i>Tab</i>, the arrow keys move between cards and columns, and <i>Move to …</i> is on every card.</li>
+    </ul></div></div>
 
     <h3 id="s4-7"><button type="button" class="sec" data-sec>§4.7</button>Timeline (Gantt chart) <span class="ids">PLAN-01…05, PLAN-08</span></h3>
     <div class="demo"><div class="frame"><div class="frame-cap">Computer · weeks</div><div class="frame-body"><div class="scr"><div class="tb"><span class="muted">Legend</span><ul data-part="legend" aria-label="What the colors mean"><li data-part="legend.item"><span data-part="legend.swatch" data-variant="not-started" aria-hidden="true"></span>Not started</li><li data-part="legend.item"><span data-part="legend.swatch" data-variant="in-progress" aria-hidden="true"></span>In progress</li><li data-part="legend.item"><span data-part="legend.swatch" data-variant="done" aria-hidden="true"></span>Done</li><li data-part="legend.item"><span data-part="legend.swatch" data-variant="critical" aria-hidden="true"></span>Critical</li><li data-part="legend.item"><span data-part="legend.swatch" data-variant="high" aria-hidden="true"></span>High</li></ul></div><div class="tl">
@@ -450,13 +554,13 @@ sort by priority, highest first</div>
     </div></div></div></div></div>
     <ul>
       <li><b>Rows:</b> on the left, rows grouped by goal (foldable; also by project, person, release or a field), each with its status icon, ID and title. On the right, the dates on a week scale with weekends shaded (16 per day at the week zoom); zoom with <i>Days · Weeks · Months · Quarters</i>; <i>Today</i> jumps to today.</li>
-      <li><b>Bars</b> use the same status colors and priority edges as the list (R4); their darker part shows how much is done. A goal shows its span as a bracket above its issues, and a goal with a <i>Due date</i> also a diamond on that date: the milestone of the timeline (ADR-0043). Releases join the timeline in M10.</li>
+      <li><b>Bars</b> use the same status colors and priority edges as the list (R4); their darker part shows how much is done. A goal shows its span as a bracket above its issues, and a goal with a <i>Due date</i> also a diamond on that date: the milestone of the timeline (ADR-0043). A release with a <i>Release date</i> is a diamond on that date too, with its name (<i>2.5</i>), and <i>Group by release</i> gives one row group per release, by <i>Planned for release</i> (ADR-0049).</li>
       <li><b>Today</b> is an accent line with a label (<i>Today</i>). It is no longer red, because red means <i>Critical</i>.</li>
       <li><b>Dependencies</b> are arrows from the issue that must finish first to the one that waits. They are relations that also affect dates, so the timeline, the issue page and the relation map all show the same relations.</li>
-      <li><b>Deadline drivers</b> (switch; V1, PLAN-05, not in M8): the chain that sets the end date is outlined in the accent color; any delay on it moves the end.</li>
+      <li><b>Deadline drivers</b> (switch in the toolbar, PLAN-05, M10-Q9): the chain that sets an end is outlined in the accent color; any delay on it moves the end. An end is the due date of each goal and the <i>Release date</i> of each release in view, and the last day of the view. The server works the chains out over only the issues the person sees: a chain through a hidden issue is not outlined, and nothing says that one exists. The outline is drawn around bars that stay where they are; switching it on or off moves nothing (§6.4). See the frame below.</li>
       <li><b>A selected bar</b> gets handles at both ends to make it longer or shorter, a dot at its end to drag a dependency to another bar, and a small card with the issue's dates, person and effort, <i>Set dates…</i>, <i>Add dependency…</i> and <i>Open</i>. Drag a bar to move it. Every drag has this typed alternative, and every drag offers <i>Undo</i> (<i>"WEB-280 moved 1 week later · Undo"</i>). When somebody changed the issue since the page read it, the drag (or <i>Set dates…</i>) is not saved and the screen asks as the issue page does, where the offers to undo stand: <i>Keep Ben's change</i> shows their dates, <i>Use mine</i> saves the person's dates on the newer version.</li>
       <li><b>Not scheduled yet:</b> issues without dates wait in a tray at the side. Drag one onto the chart to give it dates.</li>
-      <li><b>Legend</b> below the toolbar: the status colors, the priority edge, goal, the diamond of a due date, <i>Away</i>, <i>Holiday</i> and <i>Plan warning</i>.</li>
+      <li><b>Legend</b> below the toolbar: the status colors, the priority edge, goal, the diamond of a due date or a release, <i>Away</i>, <i>Holiday</i>, <i>Plan warning</i>, and with <i>Deadline drivers</i> on its outline.</li>
       <li>Restricted issues are left out completely: no empty bars and no arrows to something you can't see (PLAN-08).</li>
       <li><b>On the phone</b> (M8-Q12): a list grouped like the rows on a computer (by goal at the start, folded the same way). Each issue shows its status icon, ID and title, its start and due date, its person on the bar, and a short bar over seven weeks with today marked, in the same status color and with the same priority edge. Nothing is dragged: tapping an issue opens its card as a sheet, with <i>Set dates…</i>, <i>Add dependency…</i> and <i>Open</i>. <i>Warnings (3)</i> at the top opens the list of plan warnings as a sheet, and <i>Not scheduled yet</i> is the last group of the list.</li>
     </ul>
@@ -466,7 +570,7 @@ sort by priority, highest first</div>
       <li><b>Away times</b> show as hatched days in the person's bars and rows, labelled <i>Away</i>. No reason is ever shown or stored.</li>
       <li><b>Plan by effort</b> (switch): bars get as many of the person's work days as the estimate times the time factor needs, counting work hours and the share in the project, and grow around away days and public holidays, which show as hatched gaps. Fixed due dates never move by themselves.</li>
       <li><b>The card of a bar</b> shows the effort: <i>"Estimate 8 days · ×1.25 = 10 work days · Lea's own estimate"</i> with <i>Change</i>, and the person's time: <i>"Mon–Fri, 8 hours a day · 100 % in Mobile app"</i>.</li>
-      <li><b>Plan warnings</b> (a list at the side with a count, and a warning sign at the bar's end): <i>Away</i>, <i>Not enough days</i>, <i>Delay</i>, <i>Too much at once</i>, and for a person the reader does not see <i>Days without work</i> instead of <i>Away</i> and <i>Too much at once</i>, each in one sentence with its ways out as buttons: <i>Move it after</i>, <i>Make it longer</i>, <i>Give it to someone else…</i> (the usual person picker, with no suggestion of whom) and <i>Keep and accept</i>. Accepted warnings stay in the list, faded. The list ends with <i>"Away times show only as Away. Bugaboo never suggests whom to give an issue."</i> For a reader who does not see the person on a bar it ends with <i>"Days without work look alike for people you do not see. Bugaboo never suggests whom to give an issue."</i></li>
+      <li><b>Plan warnings</b> (a list at the side with a count, and a warning sign at the bar's end): <i>Away</i>, <i>Not enough days</i>, <i>Delay</i>, <i>Too much at once</i>, <i>Loop</i> and <i>Cannot fit</i> (below), and for a person the reader does not see <i>Days without work</i> instead of <i>Away</i> and <i>Too much at once</i>, each in one sentence with its ways out as buttons: <i>Move it after</i>, <i>Make it longer</i>, <i>Give it to someone else…</i> (the usual person picker, with no suggestion of whom) and <i>Keep and accept</i>. Accepted warnings stay in the list, faded. The list ends with <i>"Away times show only as Away. Bugaboo never suggests whom to give an issue."</i> For a reader who does not see the person on a bar it ends with <i>"Days without work look alike for people you do not see. Bugaboo never suggests whom to give an issue."</i></li>
       <li><b>The dates of a bar</b> come from <i>Start date</i> and <i>Due date</i>, or from two own date fields the saved search chooses (<i>Show as › Timeline › Dates from</i>). An issue with one date is one day long, unless <i>Plan by effort</i> works out the other (ADR-0043).</li>
     </ul>
     <h4>People on the bars <span class="ids">PLAN-10, ADR-0030 (amendment M8)</span></h4>
@@ -483,7 +587,28 @@ sort by priority, highest first</div>
       <li><b><i>Not enough days</i></b> — <i>"WEB-280 needs 6 work days; there are 3 before its due date."</i> <i>Make it longer</i> (shows the due date it needs; the due date moves only when the person confirms), <i>Give it to someone else…</i>, <i>Keep and accept</i>.</li>
       <li><b><i>Delay</i></b> — <i>"WEB-280 now ends 2 days after WEB-284 starts, and WEB-284 waits for it."</i>, or for a goal <i>"Lea's away week moves Login screen past the due date of Mobile app 2.0."</i> <i>Move it after</i> (a preview names every issue that moves and its new dates), <i>Keep and accept</i>. Nothing moves until the person chooses.</li>
       <li><b><i>Too much at once</i></b> — <i>"Lea has 9 hours planned on 27 Oct in Mobile app; her share there is 3.6 hours."</i> <i>Move it after</i> (after her other work there), <i>Give it to someone else…</i>, <i>Keep and accept</i>.</li>
+      <li><b><i>Delay</i> for a release</b> (M10-Q8) — <i>"WEB-152 ends 3 days after the release date of 2.5, and it is planned for 2.5."</i> The release shows the warning at its diamond, with the same ways out as for a goal: <i>Move it after</i> (with its preview) and <i>Keep and accept</i>. Nothing moves until the person chooses.</li>
+      <li><b><i>Loop</i></b> (M10-Q9) — <i>"WEB-160 and WEB-161 wait for each other, so neither can start."</i> A loop of dependencies stored before loops were refused. Its way out is <i>Open the relation</i>, which opens one relation of the loop on its issue so a person can remove or change it.</li>
+      <li><b><i>Cannot fit</i></b> (M10-Q9) — <i>"WEB-170 is due on 4 Dec, but the issues it waits for end on 9 Dec at the earliest."</i> An issue's due date lies before the earliest day the issues it waits for can end. <i>Make it longer</i> (shows the due date it needs; the due date moves only when the person confirms), <i>Keep and accept</i>.</li>
       <li><i>Give it to someone else…</i> opens the usual person picker with nobody suggested. An accepted warning stays at the end of the list, faded, with who accepted it; it comes back when the dates of its issue change.</li>
+    </ul>
+    <div class="demo"><div class="frame"><div class="frame-cap">Computer · Deadline drivers on, the list of plan warnings</div><div class="frame-body"><div class="scr">
+      <div class="tb"><b>Mobile app 2.0</b><div class="u-margin-left-auto--display-flex--gap-6px"><label class="u-font-size-12-5px"><input type="checkbox" class="cb" checked> Deadline drivers</label><span class="btn sm">Group by release</span><span class="btn sm">Warnings (3)</span></div></div>
+      <div class="tl">
+        <div class="hdr">Issue</div><div class="hdr wk"><span>Nov 2</span><span>Nov 9</span><span>Nov 16</span><span>Nov 23</span><span>Nov 30</span></div>
+        <div class="nm u-font-weight-700--background-bg-surface"><svg class="ico"><use href="#i-calendar"/></svg>Release 2.5</div><div class="ln"><div class="ms u-left-72pc"></div></div>
+        <div class="nm child"><svg data-part="status-icon" data-variant="in-progress small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="In progress"><use href="#i-st-ip"/></svg><span class="key">WEB-150</span>Reset link</div><div class="ln"><div class="bar u-left-11pc--width-23pc" data-part="timeline-bar" data-state="group-in-progress">WEB-150</div></div>
+        <div class="nm child"><svg data-part="status-icon" data-variant="not-started small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Not started"><use href="#i-st-ns"/></svg><span class="key">WEB-152</span>New reset e-mail</div><div class="ln"><div class="bar u-left-34pc--width-34pc" data-part="timeline-bar" data-state="group-not-started priority-high">WEB-152</div></div>
+      </div>
+      <div class="u-padding-12px--display-flex--flex-direction-column--gap-8px">
+        <div class="banner"><svg class="ico"><use href="#i-alert"/></svg><span><b>Delay:</b> WEB-152 ends 3 days after the release date of 2.5, and it is planned for 2.5.</span><span class="btn sm">Move it after</span><span class="btn sm">Keep and accept</span></div>
+        <div class="banner"><svg class="ico"><use href="#i-alert"/></svg><span><b>Loop:</b> WEB-160 and WEB-161 wait for each other, so neither can start.</span><span class="btn sm">Open the relation</span></div>
+        <div class="banner"><svg class="ico"><use href="#i-alert"/></svg><span><b>Cannot fit:</b> WEB-170 is due on 4 Dec, but the issues it waits for end on 9 Dec at the earliest.</span><span class="btn sm">Make it longer</span><span class="btn sm">Keep and accept</span></div>
+      </div>
+    </div></div></div></div>
+    <ul>
+      <li>In this frame WEB-150 and WEB-152 are the chain that sets the end of release 2.5. With <i>Deadline drivers</i> on, their bars get an outline in the accent color and the label for screen readers adds <i>"sets the end of 2.5"</i>. The outline is a state of the bar of its own, drawn by the timeline's screen; the frame shows the bars without it.</li>
+      <li>On a phone the switch is in the toolbar's <i>More</i>, and an issue on such a chain says <i>"Sets the end of 2.5"</i> under its dates.</li>
     </ul>
 
     <h3 id="s4-8"><button type="button" class="sec" data-sec>§4.8</button>Documents <span class="ids">DOC</span></h3>
@@ -656,10 +781,51 @@ sort by priority, highest first</div>
         <div><span>Low</span><i class="u-width-40pc--background-fg-subtle"></i><span class="num">4</span></div>
       </div></div></div></div></div>
     <ul>
-      <li>Boxes on a grid: search results, numbers and charts, time totals, a small timeline, my timer, and recent activity. Drag to place, drag the corner to resize.</li>
-      <li><i>Add box</i> offers ready-made boxes with previews (<i>"Open bugs by priority"</i>, <i>"My time this week"</i>), so nobody has to build one from scratch.</li>
-      <li>Phones show the boxes stacked in one column.</li>
+      <li><b>A dashboard</b> is a page of boxes on a grid, with a name, made by one person. <i>Dashboards</i> in the sidebar lists <i>Mine</i> and <i>Shared with me</i>, like saved searches. Its address is <code>/d/&lt;id&gt;</code>.</li>
+      <li><b>Six kinds of box</b> (M10-Q13), each a reader of one search: <i>Search results</i>, <i>Numbers and chart</i>, <i>Time totals</i>, <i>Small timeline</i>, <i>My timer</i> and <i>Recent changes</i>. Charts are bars and single numbers, each with a table behind <i>Show as table</i>, which is what screen readers get; there are no pie charts.</li>
+      <li><b><i>Add box</i></b> offers ready-made boxes with previews, so nobody has to build one from scratch: <i>"My open issues"</i>, <i>"Due soon"</i>, <i>"Open bugs by priority"</i>, <i>"Issues by status group"</i>, <i>"Progress of a release"</i>, <i>"My time this week"</i>, <i>"Time on this search"</i>, <i>"Small timeline of a search"</i>, <i>"My timer"</i> and <i>"Recent changes in this project"</i>. Each asks only what it needs (a project, a search, a release) and can be changed later.</li>
+      <li><b>No box ranks people</b> (PRIV-09, COMP-10): a chart grouped by a person lists people in the order of their names, never by size, and there is no "top" of people. <i>Recent changes</i> lists changes to issues the viewer sees, never the work of one person.</li>
+      <li><b>Changing it:</b> <i>Change</i> shows the grid; a box is placed by dragging its title and resized by dragging its corner. Each box has a menu with <i>Move</i>, <i>Resize</i> and <i>Remove</i>; <i>Move</i> and <i>Resize</i> then take the arrow keys, <i>Enter</i> keeps the place and <i>Escape</i> goes back. Every change offers <i>Undo</i>; <i>Done</i> ends changing. Only the box that is moved or resized moves, and the others make room once, when it is put down (§6.4).</li>
+      <li><b>Sharing</b> (M10-Q12): private when it is made; <i>Share</i> shares it with groups and projects like a saved search, which needs the permission <i>Share dashboards</i>. Each box runs as the person who looks at it. A box whose search does not check for that person is left out, and the grid closes up, so no gap tells of it. Only the maker changes it; others <i>Save a copy</i>.</li>
+      <li>Home is the person's own dashboard (§4.1). A dashboard shows what it read, and reads again on a change of its own, when the window gets the focus and with <i>Refresh</i>.</li>
+      <li>Phones show the boxes stacked in one column, in the order of the grid (left to right, top to bottom); a dashboard is changed on a computer.</li>
     </ul>
+    <div class="demo"><div class="frame narrow u-flex-basis-360px"><div class="frame-cap">Computer · Dashboards</div><div class="frame-body"><div class="scr">
+      <div class="tb"><b>Dashboards</b><span class="btn sm primary u-margin-left-auto">Create a dashboard</span></div>
+      <div class="u-padding-12px--display-flex--flex-direction-column--gap-8px">
+        <div class="blk"><div class="r hd">Mine</div><div class="r"><span class="t u-flex-1">Release 2.4</span><span class="muted">shared with Website</span></div><div class="r"><span class="t u-flex-1">My week</span><span class="muted">private</span></div></div>
+        <div class="blk"><div class="r hd">Shared with me</div><div class="r"><span class="t u-flex-1">Support this month</span><span class="muted">by Ben</span></div></div>
+      </div>
+    </div></div></div>
+    <div class="frame"><div class="frame-cap">Computer · changing "Release 2.4", the menu of a box</div><div class="frame-body"><div class="scr">
+      <div class="tb"><b>Release 2.4</b><span class="muted">Changing</span><div class="u-margin-left-auto--display-flex--gap-6px"><span class="btn sm">Add box</span><span class="btn sm primary">Done</span></div></div>
+      <div class="grid2">
+        <div class="box"><div class="box-h">Open bugs by priority<span class="muted">Website</span></div>
+          <div class="bars">
+            <div><span>Critical</span><i class="u-width-30pc--background-danger"></i><span class="num">3</span></div>
+            <div><span>High</span><i class="u-width-60pc--background-warning"></i><span class="num">6</span></div>
+          </div>
+          <div class="pop-demo"><div class="it on">Move</div><div class="it">Resize</div><div class="it">Remove</div></div></div>
+        <div class="box"><div class="box-h">Progress of a release<span class="muted">2.4</span></div>
+          <div class="r"><span class="t u-flex-1">Done</span><span class="num">18 of 24</span></div>
+          <div class="r"><span class="t u-flex-1">Release date</span><span>Tue, Oct 27</span></div></div>
+      </div>
+    </div></div></div></div>
+    <div class="demo"><div class="frame"><div class="frame-cap">Computer · Add box, with previews</div><div class="frame-body"><div class="scr"><div class="dialog-demo u-margin-10px-auto"><div class="dh">Add box</div><div class="db">
+      <div class="cards-pick">
+        <div class="on"><b>Open bugs by priority</b><span class="muted u-font-size-11px">Numbers and chart · bars by priority</span></div>
+        <div><b>My open issues</b><span class="muted u-font-size-11px">Search results · 5 rows</span></div>
+        <div><b>Due soon</b><span class="muted u-font-size-11px">Search results · issues and releases, next 7 days</span></div>
+        <div><b>Issues by status group</b><span class="muted u-font-size-11px">Numbers and chart · three bars</span></div>
+        <div><b>Progress of a release</b><span class="muted u-font-size-11px">Numbers and chart · done of all</span></div>
+        <div><b>My time this week</b><span class="muted u-font-size-11px">Time totals · one number per day</span></div>
+        <div><b>Time on this search</b><span class="muted u-font-size-11px">Time totals · estimated, left, spent</span></div>
+        <div><b>Small timeline of a search</b><span class="muted u-font-size-11px">Small timeline · six weeks</span></div>
+        <div><b>My timer</b><span class="muted u-font-size-11px">My timer</span></div>
+        <div><b>Recent changes in this project</b><span class="muted u-font-size-11px">Recent changes · 10 lines</span></div>
+      </div>
+      <div class="field"><label>Project</label><select><option>Website</option></select></div></div>
+      <div class="df"><span class="btn sm">Cancel</span><span class="btn sm primary">Add the box</span></div></div></div></div></div></div>
 
     <h3 id="s4-11"><button type="button" class="sec" data-sec>§4.11</button>Notifications <span class="ids">NTF-01</span></h3>
     <ul>
@@ -734,7 +900,13 @@ sort by priority, highest first</div>
       <li><b>Work times</b> (PLAN-11, PLAN-15): see below.</li>
       <li><b>Keyboard shortcuts:</b> see and change them.</li>
       <li><b>My data:</b> <i>Download my data</i> (everything Bugaboo stores about you, as readable pages and as a file other programs can read), what is kept and for how long, and who can see your working hours.</li>
+      <li><b>E-mailed searches</b> (QRY-07), at the end of <i>Notification settings</i>: each saved search the person gets by e-mail, with its days and hour, <i>Change</i> (the window of §4.2) and <i>Stop</i>, which takes it off the list, with <i>Undo</i>. At most 20. One whose saved search the person can no longer open pauses: it sends nothing and says so in its line, and only the person starts it again (<i>"Sends nothing: you can no longer open this search"</i>).</li>
     </ul>
+    <div class="demo"><div class="frame narrow u-flex-basis-360px"><div class="frame-cap">Computer · Notification settings › E-mailed searches</div><div class="frame-body"><div class="scr u-padding-12px--display-flex--flex-direction-column--gap-8px">
+      <div class="blk"><div class="r hd">E-mailed searches · 2 of 20</div>
+        <div class="r"><span class="t u-flex-1">Open bugs in Website<br><span class="muted u-font-size-11px">Mon at 8:00 · only when something is new or changed</span></span><span class="btn sm">Change</span><span class="btn sm">Stop</span></div>
+        <div class="r"><span class="t u-flex-1">Due this week<br><span class="muted u-font-size-11px">Mon, Thu at 7:00</span></span><span class="btn sm">Change</span><span class="btn sm">Stop</span></div></div>
+    </div></div></div></div>
 
     <h4>Work times <span class="ids">PLAN-11, PLAN-15, ADR-0030</span></h4>
     <p>The page <i>My settings › Work times</i> says when and how much you work, so the timeline can plan with you. Its introduction: <i>"When and how much you usually work, and the days you are away. The timeline plans your issues with them."</i></p>
@@ -815,7 +987,7 @@ sort by priority, highest first</div>
     <div class="demo"><div class="frame u-flex-basis-640px"><div class="frame-cap">Relation map of WEB-142 · point at an issue</div><div class="frame-body"><div class="scr u-min-width-600px">
       <div class="map-ctl">
         <span class="muted u-font-size-12px">Steps away</span><div class="seg" role="group" aria-label="Steps away"><button type="button" aria-pressed="false">1</button><button type="button" aria-pressed="true">2</button><button type="button" aria-pressed="false">3</button><button type="button" aria-pressed="false">Everything</button></div>
-        <span class="muted u-font-size-12px--margin-left-6px">Follow</span>
+        <span class="muted u-font-size-12px--margin-left-6px">Kinds shown</span>
         <button type="button" class="kchip" aria-pressed="true" data-kind="blocks"><span class="kline u-border-color-warning"></span>blocks</button>
         <button type="button" class="kchip" aria-pressed="true" data-kind="causes"><span class="kline u-border-color-danger"></span>causes</button>
         <button type="button" class="kchip" aria-pressed="true" data-kind="dup"><span class="kline u-border-top-style-dashed--border-color-fg-subtle"></span>duplicate</button>
@@ -831,31 +1003,34 @@ sort by priority, highest first</div>
           <marker id="ar-part" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path class="u-fill-accent" d="M0 0 10 5 0 10z"/></marker>
           <marker id="ar-dup" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path class="u-fill-fg-subtle" d="M0 0 10 5 0 10z"/></marker>
         </defs>
-        <!-- edges: arrows sit at the middle of each line (marker-mid) -->
-        <polyline class="edge k-part" id="e-142-145" points="370,198 370,124 370,50" marker-mid="url(#ar-part)"/>
-        <polyline class="edge k-part" id="e-140-145" points="135,110 252,80 370,50" marker-mid="url(#ar-part)"/>
-        <polyline class="edge k-blocks" id="e-140-141" points="135,110 135,180 135,250" marker-mid="url(#ar-blocks)"/>
-        <polyline class="edge k-rel" id="e-141-142" points="135,250 252,224 370,198"/>
-        <polyline class="edge k-blocks" id="e-142-147" points="370,198 487,198 605,198" marker-mid="url(#ar-blocks)"/>
-        <polyline class="edge k-blocks" id="e-148-147" points="605,340 605,269 605,198" marker-mid="url(#ar-blocks)"/>
-        <polyline class="edge k-causes" id="e-150-142" points="370,345 370,271 370,198" marker-mid="url(#ar-causes)"/>
-        <polyline class="edge k-dup" id="e-151-142" points="605,55 487,126 370,198" marker-mid="url(#ar-dup)"/>
-        <text class="elabel l-part" data-e="e-142-145" x="378" y="128">part of</text>
-        <text class="elabel l-part" data-e="e-140-145" x="230" y="70">part of</text>
-        <text class="elabel l-blocks" data-e="e-140-141" x="143" y="176">blocks</text>
-        <text class="elabel l-rel" data-e="e-141-142" x="232" y="246">related to</text>
-        <text class="elabel l-blocks" data-e="e-142-147" x="470" y="190">blocks</text>
-        <text class="elabel l-blocks" data-e="e-148-147" x="613" y="275">blocks</text>
-        <text class="elabel l-causes" data-e="e-150-142" x="378" y="276">causes</text>
-        <text class="elabel l-dup" data-e="e-151-142" x="495" y="116">duplicate of</text>
-        <g class="node" tabindex="0" role="button" data-chain="e-142-145" transform="translate(295,27)"><rect width="150" height="46" rx="8"/><circle cx="12" cy="15" r="4" class="nd-ip"/><text class="nkey" x="22" y="19">WEB-145 · Goal</text><text class="ntitle" x="12" y="37">New login experience</text></g>
-        <g class="node" tabindex="0" role="button" data-chain="e-140-141 e-141-142" transform="translate(60,87)"><rect width="150" height="46" rx="8"/><circle cx="12" cy="15" r="4" class="nd-ip"/><text class="nkey" x="22" y="19">WEB-140</text><text class="ntitle" x="12" y="37">Design sign-in page</text></g>
-        <g class="node" tabindex="0" role="button" data-chain="e-141-142" transform="translate(60,227)"><rect width="150" height="46" rx="8"/><circle cx="12" cy="15" r="4" class="nd-ip"/><text class="nkey" x="22" y="19">WEB-141</text><text class="ntitle" x="12" y="37">Sign in with a passkey</text></g>
-        <g class="node center" tabindex="0" role="button" data-chain="" transform="translate(295,175)"><rect width="150" height="46" rx="8"/><circle cx="12" cy="15" r="4" class="nd-ip"/><text class="nkey" x="22" y="19">WEB-142 · start</text><text class="ntitle" x="12" y="37">Login fails after reset</text></g>
-        <g class="node" tabindex="0" role="button" data-chain="e-142-147" transform="translate(530,175)"><rect width="150" height="46" rx="8"/><circle cx="12" cy="15" r="4" class="nd-ns"/><text class="nkey" x="22" y="19">WEB-147</text><text class="ntitle" x="12" y="37">Release notes for 2.4</text></g>
-        <g class="node" tabindex="0" role="button" data-chain="e-148-147 e-142-147" transform="translate(530,317)"><rect width="150" height="46" rx="8"/><circle cx="12" cy="15" r="4" class="nd-ip"/><text class="nkey" x="22" y="19">WEB-148</text><text class="ntitle" x="12" y="37">Timesheet download</text></g>
-        <g class="node" tabindex="0" role="button" data-chain="e-150-142" transform="translate(295,322)"><rect width="150" height="46" rx="8"/><circle cx="12" cy="15" r="4" class="nd-ip"/><text class="nkey" x="22" y="19">WEB-150</text><text class="ntitle" x="12" y="37">Reset link expires early</text></g>
-        <g class="node" tabindex="0" role="button" data-chain="e-151-142" transform="translate(530,32)"><rect width="150" height="46" rx="8"/><circle cx="12" cy="15" r="4" class="nd-dn"/><text class="nkey" x="22" y="19">WEB-151</text><text class="ntitle" x="12" y="37">Can't sign in after change</text></g>
+        <!-- the layout: one column for each step away, the same picture for the same answer; arrows sit at the middle of each line (marker-mid) -->
+        <text class="elabel" x="20" y="16">Start</text>
+        <text class="elabel" x="295" y="16">1 step away</text>
+        <text class="elabel" x="570" y="16">2 steps away</text>
+        <polyline class="edge k-part" id="e-142-145" points="170,208 232,133 295,58" marker-mid="url(#ar-part)"/>
+        <polyline class="edge k-blocks" id="e-142-147" points="170,208 232,170 295,133" marker-mid="url(#ar-blocks)"/>
+        <polyline class="edge k-causes" id="e-150-142" points="295,208 232,208 170,208" marker-mid="url(#ar-causes)"/>
+        <polyline class="edge k-dup" id="e-151-142" points="295,283 232,245 170,208" marker-mid="url(#ar-dup)"/>
+        <polyline class="edge k-rel" id="e-141-142" points="170,208 232,283 295,358"/>
+        <polyline class="edge k-blocks" id="e-148-147" points="570,133 507,133 445,133" marker-mid="url(#ar-blocks)"/>
+        <polyline class="edge k-blocks" id="e-140-141" points="570,358 507,358 445,358" marker-mid="url(#ar-blocks)"/>
+        <polyline class="edge k-part" id="e-140-145" points="720,350 732,350 732,58 445,58" marker-mid="url(#ar-part)"/>
+        <text class="elabel l-part" data-e="e-142-145" x="212" y="140">part of</text>
+        <text class="elabel l-blocks" data-e="e-142-147" x="250" y="178">blocks</text>
+        <text class="elabel l-causes" data-e="e-150-142" x="236" y="199">causes</text>
+        <text class="elabel l-dup" data-e="e-151-142" x="245" y="235">duplicate of</text>
+        <text class="elabel l-rel" data-e="e-141-142" x="150" y="300">related to</text>
+        <text class="elabel l-blocks" data-e="e-148-147" x="480" y="125">blocks</text>
+        <text class="elabel l-blocks" data-e="e-140-141" x="480" y="350">blocks</text>
+        <text class="elabel l-part" data-e="e-140-145" x="560" y="50">part of</text>
+        <g class="node center" tabindex="0" role="button" data-chain="" transform="translate(20,185)"><rect width="150" height="46" rx="8"/><circle cx="12" cy="15" r="4" class="nd-ip"/><text class="nkey" x="22" y="19">WEB-142 · start</text><text class="ntitle" x="12" y="37">Login fails after reset</text></g>
+        <g class="node" tabindex="0" role="button" data-chain="e-142-145" transform="translate(295,35)"><rect width="150" height="46" rx="8"/><circle cx="12" cy="15" r="4" class="nd-ip"/><text class="nkey" x="22" y="19">WEB-145 · Goal</text><text class="ntitle" x="12" y="37">New login experience</text></g>
+        <g class="node" tabindex="0" role="button" data-chain="e-142-147" transform="translate(295,110)"><rect width="150" height="46" rx="8"/><circle cx="12" cy="15" r="4" class="nd-ns"/><text class="nkey" x="22" y="19">WEB-147</text><text class="ntitle" x="12" y="37">Release notes for 2.4</text></g>
+        <g class="node" tabindex="0" role="button" data-chain="e-150-142" transform="translate(295,185)"><rect width="150" height="46" rx="8"/><circle cx="12" cy="15" r="4" class="nd-ip"/><text class="nkey" x="22" y="19">WEB-150</text><text class="ntitle" x="12" y="37">Reset link expires early</text></g>
+        <g class="node" tabindex="0" role="button" data-chain="e-151-142" transform="translate(295,260)"><rect width="150" height="46" rx="8"/><circle cx="12" cy="15" r="4" class="nd-dn"/><text class="nkey" x="22" y="19">WEB-151</text><text class="ntitle" x="12" y="37">Can't sign in after change</text></g>
+        <g class="node" tabindex="0" role="button" data-chain="e-141-142" transform="translate(295,335)"><rect width="150" height="46" rx="8"/><circle cx="12" cy="15" r="4" class="nd-ip"/><text class="nkey" x="22" y="19">WEB-141</text><text class="ntitle" x="12" y="37">Sign in with a passkey</text></g>
+        <g class="node" tabindex="0" role="button" data-chain="e-148-147 e-142-147" transform="translate(570,110)"><rect width="150" height="46" rx="8"/><circle cx="12" cy="15" r="4" class="nd-ip"/><text class="nkey" x="22" y="19">WEB-148</text><text class="ntitle" x="12" y="37">Timesheet download</text></g>
+        <g class="node" tabindex="0" role="button" data-chain="e-140-141 e-141-142" transform="translate(570,335)"><rect width="150" height="46" rx="8"/><circle cx="12" cy="15" r="4" class="nd-ip"/><text class="nkey" x="22" y="19">WEB-140</text><text class="ntitle" x="12" y="37">Design sign-in page</text></g>
       </svg>
       </div>
       <div class="chains" id="map-list" hidden>
@@ -869,22 +1044,23 @@ sort by priority, highest first</div>
         <div><span class="key">WEB-142</span> blocks <span class="key">WEB-147</span>, which is blocked by <span class="key">WEB-148</span> <span class="muted">Download the timesheet as a spreadsheet</span></div>
         <div><span class="key">WEB-142</span> is related to <span class="key">WEB-141</span>, which is blocked by <span class="key">WEB-140</span> <span class="muted">Design the new sign-in page</span></div>
       </div>
-      <div class="circle-warn"><svg class="ico u-color-warning"><use href="#i-alert"/></svg><span><b>Circle found</b> (example from another project): WEB-160 blocks WEB-161, which blocks WEB-160. Neither can start until one of these relations is removed.</span></div>
+      <div class="circle-warn"><svg class="ico u-color-warning"><use href="#i-alert"/></svg><span><b>Loop found</b> (example from another project): WEB-160 blocks WEB-161, which blocks WEB-160. Neither can start until one of these relations is removed.</span></div>
     </div></div></div></div>
-    <p class="cap-note">Try it: point at (or tap) WEB-148 to see how it connects back to WEB-142. The <i>Follow</i> chips switch kinds of relation on and off, and <i>Show as list</i> switches to sentences.</p>
+    <p class="cap-note">Try it: point at (or tap) WEB-148 to see how it connects back to WEB-142. The <i>Kinds shown</i> chips switch kinds of relation on and off, and <i>Show as list</i> switches to sentences.</p>
     <ul>
       <li><b>Opening it:</b> <i>Show relation map</i> on any issue (§4.4), or <b>Show as → Map</b> for any search, which draws all results and the relations between them.</li>
-      <li><b>Steps away:</b> 1, 2, 3 or <i>Everything</i>. The starting issue sits in the middle with an accent border and a small <i>Start</i> tab.</li>
+      <li><b>Steps away:</b> 1, 2, 3 or <i>Everything</i>, which means 5 steps, the most the search language walks (<code>within 5 steps</code>), and at most 200 issues (M10-Q11). The starting issue has an accent border and a small <i>Start</i> tab.</li>
+      <li><b>The layout</b> (M10-Q10): one column for each step away, the start on the left, and in each column the issues in one fixed order (by kind of relation, then by Issue ID). The same answer always gives the same picture: nothing settles, drifts or moves under the cursor (§6.4), and a changed answer moves only what changed. Pointing, choosing <i>Kinds shown</i> or fading moves no card.</li>
       <li><b>Cards carry the row state</b> (R4, R9): each issue is a card tinted by its status group and edged by its priority, with its status icon, ID, type and title.</li>
-      <li><b>Picture or List</b> above the map, next to <i>Steps away</i> and <i>Follow</i>; zoom with a percentage and <i>Fit</i>; drag the background to move around. The note <i>"Only issues you may see are shown."</i> sits in the toolbar.</li>
+      <li><b>Picture or List</b> above the map, next to <i>Steps away</i> and <i>Kinds shown</i>; zoom with a percentage and <i>Fit</i>; drag the background to move around. The note <i>"Only issues you may see are shown."</i> sits in the toolbar.</li>
       <li><b>What the lines mean</b> is explained beside the map: <i>blocks</i> (must finish first, the arrow points to the waiting one), <i>causes</i> (the arrow points to the result), <i>part of</i> (the arrow points to the parent), <i>duplicate</i> (the arrow points to the one we keep), <i>related</i> (no direction), and the card tints and edges. Each kind's word sits in a label that never touches a line (R3).</li>
       <li><b>Click an issue</b> to fade everything not on its chain back to the start. The side panel shows that chain as numbered sentences (<i>"WEB-142 blocks WEB-147, which is blocked by WEB-148"</i>) with <i>Put in the middle</i> and <i>Open issue</i>.</li>
-      <li><b>Follow:</b> switch each kind of relation on or off. Each kind has its own line: <i>blocks</i> (orange, arrow), <i>causes</i> (red, arrow), <i>duplicate</i> (dashed grey), <i>related</i> (grey, no arrow, because it has no direction), <i>part of</i> (violet, towards the parent). Colors are never the only signal: every line also has its words.</li>
+      <li><b>Kinds shown:</b> switch each kind of relation on or off (the word <i>Follow</i> is kept for hearing of changes to an issue). <i>Part of</i> (sub-issues) is one of the kinds. Each kind has its own line: <i>blocks</i> (orange, arrow), <i>causes</i> (red, arrow), <i>duplicate</i> (dashed grey), <i>related</i> (grey, no arrow, because it has no direction), <i>part of</i> (violet, towards the parent). Colors are never the only signal: every line also has its words.</li>
       <li><b>Pointing at an issue</b> highlights its chain for a moment; <i>Put in the middle</i> makes it the new start, so you can walk along a chain.</li>
-      <li><b>Circles</b> in <i>blocks</i> chains (A blocks B blocks A) are flagged with a warning, because nothing in a circle can start.</li>
+      <li><b>Loops</b> in <i>blocks</i> chains (A blocks B blocks A), left from before loops were refused, are found and named with a warning, because nothing in a loop can start; the timeline shows the same loop as the plan warning <i>Loop</i> (§4.7).</li>
       <li><b>List form:</b> the same chains as sentences, grouped by steps away, each issue with its status icon and priority edge. This is what phones show and what screen readers get.</li>
       <li><b>Security:</b> only issues you may see appear. Chains never pass through hidden issues, so a map can't reveal that a hidden issue exists, not even as a gap.</li>
-      <li><b>Speed and size:</b> the server walks the relations, with a step limit and at most 200 issues per map. It sends only number, title, status and the relations. If there are more, the map says so and suggests fewer steps or fewer kinds.</li>
+      <li><b>Speed and size:</b> the server walks the relations, with a step limit and at most 200 issues per map. It sends only number, title, status and the relations. If there are more, the map says so and suggests fewer steps or fewer kinds: <i>"More than 200 issues are connected. Choose fewer steps away or fewer kinds."</i> <i>Show as › Map</i> of a search draws its results (at most 200) and the relations between them, in the same fixed kind of layout (no frame yet; the map's screen draws it).</li>
     </ul>
 
     <h3 id="s4-16"><button type="button" class="sec" data-sec>§4.16</button>Calendar <span class="ids">PLAN-09</span></h3>
@@ -896,12 +1072,51 @@ sort by priority, highest first</div>
       <div class="ph-top">Calendar<span class="muted u-margin-left-auto--font-weight-400">October</span></div>
       <div class="agenda" id="agenda"></div>
     </div></div></div></div>
+    <div class="demo"><div class="frame"><div class="frame-cap">Computer · week of October 19 · Dates from</div><div class="frame-body"><div class="scr">
+      <div class="tb"><span class="btn sm">‹</span><b>Oct 19 – 25, 2026</b><span class="btn sm">›</span><span class="btn sm">Today</span><div class="u-margin-left-auto--display-flex--gap-6px"><label class="u-font-size-12-5px">Dates from <select><option>Due date</option><option>Start date</option><option>Customer deadline (own field)</option></select></label><div class="seg"><button type="button" aria-pressed="false">Month</button><button type="button" aria-pressed="true">Week</button></div></div></div>
+      <div class="cal">
+        <div class="h">Mon 19</div><div class="h">Tue 20</div><div class="h">Wed 21</div><div class="h">Thu 22</div><div class="h">Fri 23</div><div class="h">Sat 24</div><div class="h">Sun 25</div>
+        <div class="d"><span class="it u-border-radius-4px pill st-ip">WEB-141 Passkey sign-in</span><span class="it u-border-radius-4px pill st-ns">WEB-144 Chart labels</span></div>
+        <div class="d"><span class="it u-border-radius-4px msn">Release 2.4</span></div>
+        <div class="d"></div>
+        <div class="d"><span class="it u-border-radius-4px pill st-ns drag">WEB-139 Crash on save</span></div>
+        <div class="d"><span class="it u-border-radius-4px pill st-ns">WEB-147 Release notes</span></div>
+        <div class="d out"></div><div class="d out"></div>
+      </div>
+      <div class="u-padding-12px"><div class="toast-demo">WEB-139 is now due on Thu, Oct 22. <u>Undo</u></div></div>
+    </div></div></div></div>
     <ul>
-      <li>Shows issues on a <b>month</b> or <b>week</b> calendar by due date. Releases and milestones appear too.</li>
-      <li><b>Drag</b> an issue to another day to change its due date, with <i>Undo</i>. Every issue also has a <i>Change due date …</i> button for people who don't drag.</li>
+      <li>Shows issues on a <b>month</b> or <b>week</b> calendar, one day per issue. <b>Dates from</b> (M10-Q5) chooses the field: <i>Due date</i> at the start, or <i>Start date</i>, or an own date field; it is kept with the saved search, like <i>Dates from</i> of the timeline. A field the person may not read counts as empty for them, and the issue is not shown.</li>
+      <li><b>Releases and goals</b> stand on the calendar as marks: a release on its <i>Release date</i>, a goal on its due date. They are not dragged on the calendar; a release's date changes in its window (below).</li>
+      <li><b>Drag</b> an issue to another day to change the field shown, under its field permissions, with <i>Undo</i>. Every issue also has a <i>Change due date …</i> button (with the name of the field shown, <i>Change start date …</i>, when it is another) for people who don't drag; it opens a small window with a day box. When somebody changed the issue since the calendar read it, the screen asks as the issue page does (<i>Keep Ben's change</i>, <i>Use mine</i>).</li>
+      <li>A project's calendar covers the project and its sub-projects; <i>Only this project</i> narrows it (§4.6).</li>
       <li><b>Today</b> is highlighted; the <i>Today</i> button jumps back to it.</li>
       <li>Uses the same search bar, so the calendar can show any search.</li>
       <li><b>Phones</b> show a day-by-day list instead of a grid.</li>
+    </ul>
+
+    <h4>Releases <span class="ids">ISS-08, ADR-0049</span></h4>
+    <div class="demo"><div class="frame"><div class="frame-cap">Computer · Website › Releases</div><div class="frame-body"><div class="scr">
+      <div class="tb"><span class="crumb">ACME › Website › <b>Releases</b></span><span class="btn sm primary u-margin-left-auto">Create a release</span></div>
+      <div class="tbl-wrap"><table class="dtable"><thead><tr><th>Release</th><th>State</th><th>Release date</th><th>Released on</th><th>Issues</th></tr></thead><tbody>
+        <tr><td><b>2.5</b></td><td>Planned</td><td>Tue, Nov 24</td><td></td><td>14</td></tr>
+        <tr><td><b>2.4</b></td><td>Released</td><td>Tue, Oct 20</td><td>Wed, Oct 21</td><td>24</td></tr>
+        <tr><td><b>Mobile 3.0</b> <span class="muted">from ACME</span></td><td>Planned</td><td>Mon, Dec 14</td><td></td><td>6</td></tr>
+        <tr><td><b>2.3</b></td><td>Retired</td><td>Tue, Sep 1</td><td>Tue, Sep 1</td><td>31</td></tr>
+      </tbody></table></div>
+    </div></div></div>
+    <div class="frame narrow u-flex-basis-360px"><div class="frame-cap">Computer · the release window</div><div class="frame-body"><div class="scr"><div class="dialog-demo u-margin-10px-auto"><div class="dh">Release 2.5 · Website</div><div class="db">
+      <div class="field"><label>Name</label><input type="text" value="2.5" readonly></div>
+      <div class="field"><label>Release date</label><input type="text" value="Tue, Nov 24" readonly></div>
+      <div class="u-font-size-12-5px">State: <b>Planned</b> · 14 issues are planned for it, 3 found in it</div>
+      <div class="muted u-font-size-11px">A release that issues name cannot be deleted, only retired. A retired release is no longer offered, and the issues keep it.</div></div>
+      <div class="df"><span class="btn sm">Retire the release</span><span class="btn sm">Mark as released</span><span class="btn sm primary">Save the release</span></div></div></div></div></div></div>
+    <ul>
+      <li><b>Where a release lives</b> (M10-Q6): in one project, and offered in that project and its sub-projects. <i>Project › Releases</i> lists the releases made there and the ones that reach it from above, with where they come from. The name is unique within its project.</li>
+      <li><b>A release</b> (M10-Q7) has a name, a <i>Release date</i> (the planned day) and a state: <i>Planned</i>, <i>Released</i> (the day it is marked so is kept as <i>Released on</i>) or <i>Retired</i> (no longer offered, still shown on the issues that name it). There is no start date: the issues are its span.</li>
+      <li><b>Who manages them:</b> the permission <i>Manage releases</i> (at the start <i>Administrator</i> and <i>Project lead</i>) creates, changes, marks as released and retires releases. Without it the page is read only and has no <i>Create a release</i>. <i>Delete</i> shows only for a release that no issue names; one that issues name can only be archived.</li>
+      <li>The <b>Issues</b> number opens the search <code>planned for release is 2.5</code>. A release with a <i>Release date</i> is a diamond on the timeline (§4.7) and a mark on the calendar, and <i>Due soon</i> on Home shows it in the 7 days before (§4.1).</li>
+      <li><b>On a phone</b> the page is a list, one release per line with its state and date; the window is a full screen.</li>
     </ul>
 
     <h3 id="s4-17"><button type="button" class="sec" data-sec>§4.17</button>Agents <span class="ids">AI-30…38, ADR-0029</span></h3>
@@ -1183,6 +1398,7 @@ sort by priority, highest first</div>
     <h3 id="s5-5"><button type="button" class="sec" data-sec>§5.5</button>Layouts <span class="ids">CFG-01</span></h3>
     <ul>
       <li>Drag fields from a list onto the issue page, the new-issue form or the board card.</li>
+      <li><b>The layout <i>Card</i></b> (M10-Q4) is the third kind of layout, per issue type, found like the others (the nearest project, then the organization): up to 4 fields under the ID and the title. A card shows them wherever it appears, with the field permissions and the roles of the layout, as the issue page does; the three lengths of time are placed through the same field list.</li>
       <li><b>Per role:</b> each field in a layout has a role checklist (for example Team member ✓, Contributor ✓, Guest ✗). Field permissions always win: a layout can never show a field to a role that may not see it.</li>
       <li><i>Add a field</i> on an issue lists only the fields the person's role may fill in.</li>
       <li><i>See as</i> a role, to check what people with that role will see.</li>
@@ -1476,6 +1692,7 @@ sort by priority, highest first</div>
     <div class="decision"><span class="okmark">✓</span><div><b>People on the timeline</b> (2026-10-16, ADR-0030): the person on the bar, away times without a reason, work hours and a share per project, plan by effort, plan warnings, and a time factor that is the assigned person's own estimate (§4.7).</div></div>
     <div class="decision"><span class="okmark">✓</span><div><b>Agents</b> (2026-10-16, ADR-0029): agents work on issues a person hands over, with their own record on the issue and a review; one person can drive several (§4.17).</div></div>
     <div class="decision"><span class="okmark">✓</span><div><b>Assistant, AI apps and agents in M7</b> (2026-11-07, M7-Q1…Q10): the assistant answers typed questions and proposes; AI apps connect after a consent step and are taken back under <i>Connected apps</i>; people go to an outside AI provider by role unless <i>Send names of people</i> is on; conversations are not stored; agents are created with a project permission, report time only on their attempts and are accepted by themselves only on passed checks (§4.12, §4.13, §4.17, §5.1).</div></div>
+    <div class="decision"><span class="okmark">✓</span><div><b>Board, calendar, relation map and dashboards</b> (2026-11-24, M10-Q1…Q22): board columns by status, merged by name across workflows, with soft card limits and the layout <i>Card</i> (§4.6); the calendar by <i>Dates from</i> (§4.16); releases in a project, on the timeline and the calendar (§4.4, §4.7, §4.16); the map in columns by steps away, with <i>Kinds shown</i> (§4.15); dashboards of ready-made boxes, shared like saved searches, with no box that ranks people, and Home as the person's own dashboard (§4.1, §4.10); <i>Pinned</i> in the sidebar (§3.1); <i>E-mail me this search</i> and totals (§4.2).</div></div>
     <h3 id="s10-1"><button type="button" class="sec" data-sec>§10.1</button>Open questions</h3>
     <p>None yet. Comment on this page.</p>
   </main>

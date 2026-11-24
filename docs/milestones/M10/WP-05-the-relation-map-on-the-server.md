@@ -54,7 +54,7 @@ SEC-MATRIX (grown), ARCH-DB-PARITY, ARCH-API-FREEZE, ARCH-AI-TOOLS, TEST-PROMPT-
 
 ## Docs to update
 
-Architecture §8, §10 (SEC-MATRIX grown), §11, §12; ADR-0005 (the 5 steps as the one limit) if WP-01 left a line for the code. The user docs come with the screen (WP-12).
+Architecture §8, §10 (SEC-MATRIX grown), §11, §12; ADR-0005, amendment 2026-11-24 (the 5 steps as the one limit): its *Enforced by* line with the test names. The user docs come with the screen (WP-12).
 
 ## Review
 
