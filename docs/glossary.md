@@ -52,7 +52,7 @@ Rules:
 | **Dependency**           | A relation whose kind has a date effect. The timeline draws it as an arrow from the issue that must finish first to the one that waits; the issue page and the relation map show the same relation | predecessor, successor (in UI) |
 | **Relation map**         | A picture of everything connected to an issue, step by step, in columns by steps away: the same answer always gives the same picture, and nothing moves by itself (ADR-0009, amendment 2026-11-24) | graph, network, link cloud, dependency graph |
 | **Kinds shown**          | The chips above the relation map that choose which kinds of relation it walks and draws; *part of* (the sub-issues) is one of them. Not *Follow*, which is hearing of changes to an issue | follow (on the map), link types, relation filter (in UI) |
-| **Put in the middle**    | On the relation map: make the issue you point at the start of the map, so the steps away count from it | re-center, re-root (in UI) |
+| **Start from here**    | On the relation map: make the issue you point at the start of the map, so the steps away count from it | center (on the map), focus (on the map), Put in the middle, re-center, re-root (in UI) |
 | **Steps away**           | How many relations lie between two issues on the map: 1, 2, 3 or *Everything*, which is 5, the limit of the search language; a map holds at most 200 issues | depth, hops, degrees               |
 | **Assigned to**          | Who is working on it                                               | assignee (in UI and code)          |
 | **Reported by**          | Who created it                                                     | reporter                           |
