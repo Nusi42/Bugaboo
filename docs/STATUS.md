@@ -4,10 +4,21 @@ The lead updates this file after every step (builder started, report in, review 
 
 ## Now
 
-- **Milestone:** M9 is done and tagged `m9-done` (2026-11-24, approved by the maintainer on its review page; the last full run's only failures were tests that pass alone, M9-F202 and M9-F210). Version 0.6.0 is the first release, signed with the release key and published as the GitHub release of `v0.6.0`. Next: M10, board, calendar, relation map and dashboards, [roadmap](04-milestones.md#m10--board-calendar-relation-map-and-dashboards); its plan is not written yet — the lead writes `docs/milestones/M10/` first.
+- **Milestone:** M10, board, calendar, relation map and dashboards ([roadmap](04-milestones.md#m10--board-calendar-relation-map-and-dashboards), plan in `docs/milestones/M10/`). The maintainer answered M10-Q1 to Q22 on 2026-11-24, all as recommended; the release state is called *Retired* (the glossary has no *Archived*). M9 is done and tagged `m9-done`; 0.6.0 is the first release (GitHub release `v0.6.0`, since 2026-11-24 with six files and one signature, ADR-0047 amendment).
 - **Done:** M0 to M9 (`m0-done` to `m9-done`; M9 tagged on 2026-11-24). Version 0.6.0 (ADR-0040: 157 of 225 features, the minor number rises to 6). The M9 review page is published (link outside the repository).
-- **Wave:** M9 waves 0 and 1 are merged (2026-11-19); wave 2 (WP-06 to WP-09) is merged (2026-11-20). The tools for several agents and for agents that wait, hand over and undo are merged. Wave 3 is merged (WP-10, WP-11, WP-13). Wave 4: WP-14 is merged; the security pass before 0.6.0 (five reviewers, one per boundary) found no critical issue, and its fixes (sign-in, the API and AI; the host and files) are merged; WP-15's code is merged; the fixes for backups on a large organization are merged (a backup asked for on the page runs in the background, the PostgreSQL copy streams), and so are those for privacy (the walk of a person's data uses indexes, a removal finishes in short steps of a job); the measurements after them are in architecture §11 (2026-11-24: every scenario inside its budget or the limit of its known gap, the long run of two hours held every rule on both databases); the release candidate 0.6.0-rc.1 is built, signed with the release key and checked, and its install try-outs passed in Windows Sandbox and in WSL (2026-11-24); the fixes of what the pictures of the exit showed (M9-F205 to F208) are merged (2026-11-24); next: the exit; the open points of the privacy screens (M9-F91, F92) are merged. The speed test of ten writers is within its budget again (M9-F87). M8 is complete (all of its packages merged).
+- **Wave:** M10 wave 0 (WP-01, docs) is done (2026-11-24); wave 1 (WP-02 to WP-05) is building. M9 is complete (all of its packages merged).
 - **`main`:** fast-forwarded to the last green `WIN1`.
+
+## Work packages (M10)
+
+| WP | Name | State | Folder / branch | Notes |
+|----|------|-------|-----------------|-------|
+| WP-01 | Decision records, words and the answers | done (2026-11-24; one review round) | `win1` / `WIN1` | Wave 0; docs only; ADR-0049, ADR-0050 |
+| WP-02 | Releases on the server | building (2026-11-24) | `win2` / `WIN2` | Wave 1; Opus |
+| WP-03 | Totals on the server | building (2026-11-24) | `win3` / `WIN3` | Wave 1; Opus |
+| WP-04 | Board and calendar on the server | building (2026-11-24) | `win4` / `WIN4` | Wave 1; Opus |
+| WP-05 | The relation map on the server | building (2026-11-24) | `win5` / `WIN5` | Wave 1; Opus |
+| WP-06 to WP-15 | Waves 2 to 4 | waiting | | See the plan |
 
 ## Work packages (M9)
 
@@ -88,7 +99,7 @@ Recorded with their target package in the follow-up tables of the milestone fold
 
 ## Next action
 
-M9 is done: 0.6.0 is tagged, signed with the release key and published as the GitHub release of `v0.6.0` with every file of its folder (2026-11-24); the last full run's only failures passed alone (M9-F202, a speed test of ten writers on a busy computer, and browser tests that pass alone). Next: the plan of M10 (board, calendar, relation map and dashboards) is written (`docs/milestones/M10/`: 15 packages in 5 waves, questions M10-Q1 to Q22 with the lead's recommendations) and published as a page (link outside the repository); it waits for the maintainer's answers, then WP-01 writes them. Open points of M9 that wait for later packages: M9-F135, F136, F142, F143, F160, F161, F200 to F204, F209, F210.
+M10 wave 1 is building: WP-02 to WP-05 in `win2` to `win5`, each based on the decided plan. The lead lands each package after a green `cargo xtask ci`, then starts wave 2 (WP-06 to WP-09; WP-09 lands after WP-06). Open points of M9 that wait for later packages: M9-F135, F136, F142, F143, F160, F161, F200 to F204, F209, F210.
 
 The repository is public on GitHub, with GitHub Actions switched off and private reporting of security problems switched on (`SECURITY.md`). Before the push, every folder moved onto the one rewrite of the history; the old history is kept outside the repository. The push of a whole history reads every version of every file, so one old made-up example that a later rule reads as a profile path is listed as an old version in `tools/checks/private-exemptions.toml`.
 
