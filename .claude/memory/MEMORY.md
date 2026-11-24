@@ -21,3 +21,4 @@
 - [Bench only when quiet](bench-only-when-quiet.md) — no speed measurement while other folders compile/test; builders wait for the lead's go
 - [Nothing moves under the cursor](nothing-moves-under-the-cursor.md) — a change moves only what changed; checked per screen with frame samples (M8 WP-13)
 - [Public repo: only what cloners need](public-repo-only-what-cloners-need.md) — no personal setup in ADRs, docs, STATUS or memory; it goes into CLAUDE.local.md
+- [Publish releases myself](publish-releases-myself.md) — after milestone approval the lead signs and publishes the GitHub release itself
