@@ -13,7 +13,9 @@
 //! 3. On each database the old program makes the small sample organization, the way
 //!    `cargo xtask dataset sample` does.
 //! 4. The driver `web/tooling/upgrade/main.ts` starts the program of `HEAD` on that data folder
-//!    (the server makes the backup `before-upgrade` and runs every migration, or refuses to start),
+//!    (the server makes the backup `before-upgrade` and runs every migration, or refuses to start;
+//!    when `HEAD` adds no migration to the tag, nothing is due and the driver holds that no backup
+//!    was made),
 //!    signs in as an administrator of the sample, and holds what the API reads against the dump
 //!    the old program wrote: the counts of issues, comments, time entries, work days, away times,
 //!    own themes and agents, a list of known records found by their keys, the backup and its
@@ -27,6 +29,7 @@ use anyhow::{Context as _, bail};
 use bb_dev_words::database::DatabaseKind;
 
 use crate::dataset::{self, Arguments, in_folder, load_layout, program_command};
+use crate::dataset_large::{MIGRATIONS, newest_migration, newest_of};
 use crate::db;
 use crate::output;
 use crate::release::folder::{LINUX, Platform};
@@ -70,6 +73,28 @@ pub(crate) fn previous_tag(root: &Path) -> anyhow::Result<String> {
         );
     }
     Ok(tag)
+}
+
+/// Whether `HEAD` has a migration that `tag` has not, so the upgrade has one due and makes its
+/// backup first.
+fn migration_due(root: &Path, tag: &str) -> anyhow::Result<bool> {
+    let listed = Command::new("git")
+        .args(["ls-tree", "--name-only", tag, &format!("{MIGRATIONS}/")])
+        .current_dir(root)
+        .output()
+        .context("could not run git")?;
+    if !listed.status.success() {
+        bail!(
+            "Git could not list the migrations of {tag}: {}",
+            String::from_utf8_lossy(&listed.stderr).trim()
+        );
+    }
+    let at_tag = newest_of(
+        String::from_utf8_lossy(&listed.stdout)
+            .lines()
+            .filter_map(|path| path.rsplit('/').next().map(str::to_owned)),
+    );
+    Ok(newest_migration(root) != at_tag)
 }
 
 /// The folder that keeps the old program of `tag`.
@@ -296,6 +321,7 @@ pub(crate) fn run(repo: &Repo) -> anyhow::Result<bool> {
     let root = repo.root();
     let tag = previous_tag(root)?;
     let old = old_program(root, &tag)?;
+    let due = migration_due(root, &tag)?;
     let built = steps::run(root, &[steps::server_build(Profile::Debug)])?;
     let Some(server) = built.executable.filter(|_| built.passed) else {
         return Ok(false);
@@ -309,7 +335,7 @@ pub(crate) fn run(repo: &Repo) -> anyhow::Result<bool> {
         let folder = in_folder(root, WORK).join(database.code());
         remove(&folder)?;
         let result = match database {
-            DatabaseKind::Sqlite => run_on(root, &old, &server, &folder, None),
+            DatabaseKind::Sqlite => run_on(root, &old, &server, &folder, None, due),
             DatabaseKind::Postgres => db::with_postgres(repo, |postgres| {
                 run_on(
                     root,
@@ -317,6 +343,7 @@ pub(crate) fn run(repo: &Repo) -> anyhow::Result<bool> {
                     &server,
                     &folder,
                     Some(&postgres.empty_database(DATABASE)?),
+                    due,
                 )
             }),
         };
@@ -326,13 +353,15 @@ pub(crate) fn run(repo: &Repo) -> anyhow::Result<bool> {
     Ok(passed)
 }
 
-/// One run: the old program makes the sample in `folder`, the driver upgrades and reads it.
+/// One run: the old program makes the sample in `folder`, the driver upgrades and reads it and
+/// holds that a backup was made exactly when a migration was `due`.
 fn run_on(
     root: &Path,
     old: &Path,
     server: &Path,
     folder: &Path,
     url: Option<&str>,
+    due: bool,
 ) -> anyhow::Result<bool> {
     let layout = load_layout(root)?;
     let database = if url.is_some() {
@@ -366,6 +395,8 @@ fn run_on(
         .arg(folder)
         .arg("--database")
         .arg(database.code())
+        .arg("--backup")
+        .arg(if due { "made" } else { "none" })
         .current_dir(root)
         .env("BB_SERVER_BIN", server);
     if let Some(url) = url {
@@ -380,6 +411,14 @@ fn run_on(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn ops_06_a_migration_is_due_exactly_when_head_has_a_newer_one_than_the_tag() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+        // The first milestone had fewer migrations than HEAD, and HEAD has every one of HEAD.
+        assert!(migration_due(&root, "m0-done").unwrap());
+        assert!(!migration_due(&root, "HEAD").unwrap());
+    }
 
     #[test]
     fn ops_06_the_previous_milestone_is_found_by_git() {

@@ -7,7 +7,7 @@ import { peopleIn, type SamplePerson } from "../../app/e2e/support/sample.ts";
 import { startServer } from "../../app/e2e/support/server.ts";
 import { runDriver } from "../driver.ts";
 import { readPorts } from "../ports.ts";
-import { differences, expectedFrom, goalPerson, sampleEnd } from "./judge.ts";
+import { type Backup, differences, expectedFrom, goalPerson, sampleEnd } from "./judge.ts";
 import { readAfterUpgrade } from "./read.ts";
 
 // `cargo xtask upgrade-test` (architecture §11, "The upgrade test", TEST-UPGRADE): xtask made the
@@ -15,7 +15,9 @@ import { readAfterUpgrade } from "./read.ts";
 // driver starts the program of HEAD on its data folder (`BB_SERVER_BIN`), which makes the backup
 // before the upgrade and runs every migration or refuses to start, signs in as an administrator
 // of the sample, holds what the API reads against what the old program wrote down, and checks
-// that the security log verifies. On PostgreSQL xtask passes the address of the database in the
+// that the security log verifies. `--backup` says whether HEAD has a migration the old program
+// lacks (`made`: the backup must be there) or none (`none`: nothing is due, no backup is made).
+// On PostgreSQL xtask passes the address of the database in the
 // variable of the sample's layout.
 
 /** The acceptance test this run is. */
@@ -45,6 +47,15 @@ function databaseSettings(database: string): Readonly<Record<string, string>> {
   return { BUGABOO_DATABASE_URL: url };
 }
 
+/** What `--backup` says the upgrade must have done. */
+function backupFlag(): Backup {
+  const given = flag("--backup");
+  if (given !== "made" && given !== "none") {
+    throw new TypeError(`--backup is made or none, not ${given}.`);
+  }
+  return given;
+}
+
 /** Somebody of the sample with `role` who signs in without a code app. */
 function personWithRole(people: readonly SamplePerson[], role: string): SamplePerson {
   const found = people.find((person) => person.role === role && person.codeAppSecret === undefined);
@@ -57,6 +68,7 @@ function personWithRole(people: readonly SamplePerson[], role: string): SamplePe
 async function main(): Promise<void> {
   const sample = flag("--sample");
   const database = flag("--database");
+  const backup = backupFlag();
   const dump: unknown = JSON.parse(readFileSync(join(sample, layout.dumpFile), "utf8"));
   const withRole = (role: string): SamplePerson => personWithRole(peopleIn(sample), role);
   const settings = databaseSettings(database);
@@ -79,15 +91,17 @@ async function main(): Promise<void> {
     );
     await administrator.dispose();
     await hr.dispose();
-    const found = differences(expected, reading);
+    const found = differences(expected, reading, backup);
     if (found.length > 0) {
       throw new Error(`${TEST_NAME} on ${database}:\n${found.join("\n")}`);
     }
     process.stdout.write(
       `${TEST_NAME} on ${database}: ${String(reading.issues)} issues, ${String(reading.comments)} comments, ` +
         `${String(reading.timeEntries)} time entries, ${String(reading.workDays)} work days, ` +
-        `${String(reading.agents.length)} agents and the known records read the same after the upgrade; it made the backup ` +
-        `${reading.backupBeforeUpgrade ?? ""} first.\n`,
+        `${String(reading.agents.length)} agents and the known records read the same after the upgrade; ` +
+        (backup === "made"
+          ? `it made the backup ${reading.backupBeforeUpgrade ?? ""} first.\n`
+          : "no migration was due and it made no backup.\n"),
     );
   } finally {
     await server.stop();

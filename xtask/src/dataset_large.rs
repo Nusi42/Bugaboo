@@ -24,7 +24,7 @@ use crate::repo::Repo;
 use crate::tools::side_by_side;
 
 /// Where the migrations are; the name of the newest file says which schema a dataset was made for.
-const MIGRATIONS: &str = "crates/bb-store/src/migrations";
+pub(crate) const MIGRATIONS: &str = "crates/bb-store/src/migrations";
 
 /// The file in the folder of a dataset that holds the name of the newest migration at the time the
 /// dataset was made (the nightly run compares names, not file times, which a checkout changes).
@@ -108,10 +108,17 @@ fn said(made: &Output) -> String {
 
 /// The name of the newest migration (`m0022_name.rs`: the files are numbered, `mod.rs` is none).
 pub(crate) fn newest_migration(root: &Path) -> Option<String> {
-    fs::read_dir(root.join(MIGRATIONS))
-        .ok()?
-        .flatten()
-        .filter_map(|entry| entry.file_name().into_string().ok())
+    newest_of(
+        fs::read_dir(root.join(MIGRATIONS))
+            .ok()?
+            .flatten()
+            .filter_map(|entry| entry.file_name().into_string().ok()),
+    )
+}
+
+/// The newest migration among the file names `names` of the folder of migrations.
+pub(crate) fn newest_of(names: impl Iterator<Item = String>) -> Option<String> {
+    names
         .filter(|name| {
             name.strip_prefix('m')
                 .is_some_and(|rest| rest.starts_with(|first: char| first.is_ascii_digit()))

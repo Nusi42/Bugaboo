@@ -80,20 +80,42 @@ const reading: Reading = {
 
 describe("ops_06 the upgrade test holds the reading against the old dump", () => {
   it("good example: what the new program reads is what the old one wrote", () => {
-    expect(differences(expectedFrom(dump), reading)).toEqual([]);
+    expect(differences(expectedFrom(dump), reading, "made")).toEqual([]);
     expect(goalPerson(dump)).toBe("Lea Fischer");
   });
 
+  it("good example: with no migration due, no backup is made and none is asked for", () => {
+    const none = { ...reading, backupBeforeUpgrade: undefined, backupFileThere: false };
+    expect(differences(expectedFrom(dump), none, "none")).toEqual([]);
+  });
+
+  it("bad example: a backup made though no migration was due is named", () => {
+    expect(differences(expectedFrom(dump), reading, "none")).toEqual([
+      "the upgrade made the backup bugaboo-before-upgrade-20261119T055821Z-0.5.1.backup though no migration was due",
+    ]);
+  });
+
   it("bad example: a lost comment and a missing backup are named", () => {
-    const found = differences(expectedFrom(dump), {
-      ...reading,
-      comments: 6,
-      backupBeforeUpgrade: undefined,
-    });
+    const found = differences(
+      expectedFrom(dump),
+      { ...reading, comments: 6, backupBeforeUpgrade: undefined },
+      "made",
+    );
     expect(found).toEqual([
       "comments: 7 before the upgrade, 6 after it",
       "the list of backups has no backup made by the upgrade",
     ]);
+  });
+
+  it("good example: the kept work days of a removed person are not among those read", () => {
+    const removing = {
+      ...dump,
+      issues: {
+        ...dump.issues,
+        work: { ...dump.issues.work, privacy: { removed: { count: 1, work_days: 1 } } },
+      },
+    };
+    expect(differences(expectedFrom(removing), { ...reading, workDays: 5 }, "made")).toEqual([]);
   });
 
   it("bad example: a dump without a count says which one it lacks", () => {
@@ -114,7 +136,7 @@ describe("ops_06 the known records of the old sample are found by their keys", (
       issues: [{ title: "Price filter", status: "open" }, ...known.issues.slice(1)],
       workDay: { ...known.workDay, periods: [] },
     };
-    expect(differences(expectedFrom(dump), { ...reading, known: changed })).toEqual([
+    expect(differences(expectedFrom(dump), { ...reading, known: changed }, "made")).toEqual([
       `the known issues: ${JSON.stringify(known.issues)} before the upgrade, ${JSON.stringify(changed.issues)} after it`,
       `the known workDay: ${JSON.stringify(known.workDay)} before the upgrade, ${JSON.stringify(changed.workDay)} after it`,
     ]);
