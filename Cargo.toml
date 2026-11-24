@@ -4,7 +4,7 @@ members = ["crates/*", "xtask"]
 default-members = ["crates/bb-server"]
 
 [workspace.package]
-version = "0.5.1"
+version = "0.6.0"
 edition = "2024"
 rust-version = "1.97"
 publish = false
@@ -17,10 +17,10 @@ repository = "https://github.com/Nusi42/Bugaboo"
 # `cargo xtask release` for the release notes and `SECURITY.md`. The date changes with the version.
 [workspace.metadata.release]
 # The day this version was released (YYYY-MM-DD).
-date = "2026-11-17"
+date = "2026-11-24"
 # The day the first release of this minor version (X.Y.0) came out: the support period counts
 # from it. It changes only with a new minor version.
-minor-date = "2026-11-11"
+minor-date = "2026-11-24"
 # How many years each minor release from 1.0 on gets security fixes; a preview (0.x) gets them
 # only until the next release.
 support-years = 5

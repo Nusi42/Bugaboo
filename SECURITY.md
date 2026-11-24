@@ -27,7 +27,7 @@ installation to its organization, and a problem in Bugaboo itself here.
 
 <!-- BEGIN GENERATED support-period by `cargo xtask gen release` from bb-core and Cargo.toml; edit those, not this text -->
 
-Version 0.5.1, released on 2026-11-17, is a free public preview. Until 1.0, only the newest release gets security fixes; a fix comes as the next patch release. From 1.0 on, each minor release gets security fixes for 5 years from the day its first release (X.Y.0) comes out, as patch releases without new features.
+Version 0.6.0, released on 2026-11-24, is a free public preview. Until 1.0, only the newest release gets security fixes; a fix comes as the next patch release. From 1.0 on, each minor release gets security fixes for 5 years from the day its first release (X.Y.0) comes out, as patch releases without new features.
 
 <!-- END GENERATED support-period -->
 
