@@ -88,7 +88,7 @@ Recorded with their target package in the follow-up tables of the milestone fold
 
 ## Next action
 
-M9 wave 1: reset `win2` to `win5` to `main` and run `cargo xtask setup` in each; start WP-03 first (Opus, `win3`) and land its person links as their own small landing; start WP-02 (Opus, `win2`), WP-04 (Opus, `win4`) and WP-05 (Sonnet, `win5`) beside it, WP-02 and WP-04 rebasing onto the links before they add person columns. Each builder prompt names its package file, its folder and branch, the SSOT/DRY/ODR gate, the glossary and the rule that no private information goes into Git.
+M9 is done: 0.6.0 is tagged, signed with the release key and published as the GitHub release of `v0.6.0` with every file of its folder (2026-11-24); the last full run's only failures passed alone (M9-F202, a speed test of ten writers on a busy computer, and browser tests that pass alone). Next: the plan of M10 (board, calendar, relation map and dashboards) in `docs/milestones/M10/`. Open points of M9 that wait for later packages: M9-F135, F136, F142, F143, F160, F161, F200 to F204, F209, F210.
 
 The repository is public on GitHub, with GitHub Actions switched off and private reporting of security problems switched on (`SECURITY.md`). Before the push, every folder moved onto the one rewrite of the history; the old history is kept outside the repository. The push of a whole history reads every version of every file, so one old made-up example that a later rule reads as a profile path is listed as an old version in `tools/checks/private-exemptions.toml`.
 
