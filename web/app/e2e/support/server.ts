@@ -62,6 +62,9 @@ function appFolder(): string {
   return resolve(repoRoot, "web/app/dist");
 }
 
+/** How much of what a started program said is kept, from its end: enough to tell why it stopped. */
+const KEPT_OUTPUT_CHARS = 1_000_000;
+
 /** A started program: whether it has ended, what it said, and a way to end it. */
 interface Launched {
   readonly exited: () => boolean;
@@ -77,7 +80,8 @@ function launch(executable: string, args: readonly string[], env: Settings): Lau
   });
   let said = "";
   const collect = (chunk: unknown): void => {
-    said += String(chunk);
+    // Only the end is kept: a server of a long run says more than a string can hold.
+    said = (said + String(chunk)).slice(-KEPT_OUTPUT_CHARS);
   };
   child.stdout.on("data", collect);
   child.stderr.on("data", collect);

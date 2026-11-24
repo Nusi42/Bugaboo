@@ -64,10 +64,25 @@ async function prepareLeavers(
   return { off, gone };
 }
 
-/** Waits until the share of the working time of the run has passed. */
-async function until(steps: Steps, share: number): Promise<void> {
-  const at = steps.started + (steps.deadline - steps.started) * share;
-  await sleep(Math.max(0, at - Date.now()));
+/**
+ * How often a person who waits to leave reads something. The server ends a session that is not
+ * used for the idle time of *Security* (30 minutes unless changed); an open page reads now and
+ * then, so a long run keeps the sessions of the people who leave in use the same way.
+ */
+const READ_EVERY_MS = 5 * 60 * 1000;
+
+/**
+ * Waits until the share of the working time of the run has passed, while the people who are
+ * still signed in keep their sessions in use.
+ */
+async function until(steps: Steps, share: number, open: readonly ApiSession[]): Promise<void> {
+  const left = steps.started + (steps.deadline - steps.started) * share - Date.now();
+  if (left <= 0) {
+    return;
+  }
+  await sleep(Math.min(left, READ_EVERY_MS));
+  await Promise.all(open.map((session) => ownId(session)));
+  await until(steps, share, open);
 }
 
 /** Whether a request was refused because the session is over: the person may not sign in. */
@@ -137,11 +152,11 @@ async function backUpWhileTheyWork(steps: Steps): Promise<void> {
  * page open, at the middle the backup is made, and at three quarters a person is removed.
  */
 async function leaveWhileTheyWork(steps: Steps, leavers: Leavers, work: Work): Promise<void> {
-  await until(steps, 1 / 4);
+  await until(steps, 1 / 4, [leavers.off, leavers.gone]);
   await switchOffWhileThePageIsOpen(steps, leavers.off, work);
-  await until(steps, 1 / 2);
+  await until(steps, 1 / 2, [leavers.gone]);
   await backUpWhileTheyWork(steps);
-  await until(steps, 3 / 4);
+  await until(steps, 3 / 4, [leavers.gone]);
   await removeWhileTheyWork(steps, leavers.gone, work);
   await Promise.all([leavers.off.dispose(), leavers.gone.dispose()]);
 }
