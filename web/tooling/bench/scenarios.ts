@@ -6,7 +6,7 @@ import { listPage, pageReads } from "../../app/e2e/support/perf-reads.ts";
 import { NOTIFICATIONS_PAGE } from "../../app/e2e/support/perf-work.ts";
 import { timed } from "../../app/e2e/support/perf.ts";
 import { agentScenarios } from "./agent-scenarios.ts";
-import { privacyScenarios } from "./privacy-scenarios.ts";
+import { backupScenarios, privacyScenarios } from "./privacy-scenarios.ts";
 import { type BudgetName } from "./budgets.generated.ts";
 import { timelineScenarios } from "./timeline-scenarios.ts";
 
@@ -285,4 +285,6 @@ export const scenarios: readonly Scenario[] = [
     runs: RUNS,
     once: (context) => searchPage(context, `contains "wrong" and ${COMPLEX}`),
   },
+  // Last: a backup of the whole dataset would leave the next scenario reading from the disk.
+  ...backupScenarios,
 ];

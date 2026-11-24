@@ -48,8 +48,16 @@ export const privacyScenarios: readonly Scenario[] = [
     runs: RUNS,
     once: personDataWalk,
   },
+];
+
+/**
+ * The backup of the 1 M dataset (OPS-07), measured after every other scenario: the copy of the
+ * whole database pushes it out of the memory of the computer, and the next scenario then read it
+ * from the disk again (*issue-page* took 130 ms at the 95th percentile after it, 32 ms without).
+ */
+export const backupScenarios: readonly Scenario[] = [
   {
-    // The backup of the 1 M dataset (OPS-07): its length is written down, no budget yet.
+    // Its length is written down, no budget yet.
     name: "backup-large",
     budget: "backup",
     runs: BACKUP_RUNS,
