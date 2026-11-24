@@ -1,4 +1,5 @@
 import type { Schema } from "@bugaboo/api-client";
+import { t } from "@bugaboo/messages";
 import { describe, expect, it } from "vitest";
 
 import { backupRows, chosenName, createState, makerOf } from "./backups.ts";
@@ -111,5 +112,15 @@ describe("the words beside Create a backup now", () => {
     expect(createState(null, { ...idle, isError: true })).toBe("not-saved");
     expect(createState(failed, idle)).toBe("not-saved");
     expect(createState(failed, { ...idle, isSuccess: true })).toBe("not-saved");
+  });
+
+  it("name the backup, as they stand alone beside the button", () => {
+    for (const words of [
+      t("backup-page.creating"),
+      t("backup-page.created"),
+      t("backup-page.not-created"),
+    ]) {
+      expect(words.toLowerCase()).toContain("backup");
+    }
   });
 });
