@@ -75,10 +75,10 @@
   --size-sheet-text-top: calc(var(--space-1) + var(--pad-line-in-control));
   --size-choice-number-box: calc(14ch + 2 * var(--space-3));
   --size-hours-box: calc(8ch + 2 * var(--space-3));
-  --size-sheet-day: 72px;
+  --size-sheet-day: 76px;
   --size-sheet-day-phone: 96px;
-  --size-sheet-col-issue: 128px;
-  --size-sheet-col-field: 100px;
+  --size-sheet-col-issue: 112px;
+  --size-sheet-col-field: 96px;
   --size-sheet-col-cost-center: 96px;
   --size-sheet-col-total: 64px;
   --size-window: 760px;

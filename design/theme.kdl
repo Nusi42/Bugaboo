@@ -179,15 +179,15 @@ tokens {
     size "size-choice-number-box" "calc(14ch + 2 * $space-3)"
     // The box of the work hours of a day (`7h 30m`), narrow enough to stay beside the longest weekday on a phone.
     size "size-hours-box" "calc(8ch + 2 * $space-3)"
-    // One day of the timesheet: room for `10:35` or `12:30 PM` in the code font, and the box around it.
-    size "size-sheet-day" "72px"
+    // One day of the timesheet: room for `10:35` or `12:30 PM` in the code font (66 px of text and 4 px of room each side), and the box around it.
+    size "size-sheet-day" "76px"
     // One day of the timesheet on a phone, where the names stand beside the box and there is room for it.
     size "size-sheet-day-phone" "96px"
     // The columns of the grid of the timesheet, the same for every week: an issue (ID over title), its Activity and Cost center, and the total.
     // With the seven days they fit the card of a computer (1280 wide). Activity and Cost center wrap to a second line
     // instead of being cut short (a cost center is a number and a name: `4100 Product development`).
-    size "size-sheet-col-issue" "128px"
-    size "size-sheet-col-field" "100px"
+    size "size-sheet-col-issue" "112px"
+    size "size-sheet-col-field" "96px"
     size "size-sheet-col-cost-center" "96px"
     size "size-sheet-col-total" "64px"
     // A window (UX §6.3): it starts 760 wide and as tall as its content, the smallest is 560 wide and, when a person makes it smaller, 360 high (the code holds that height, so a short window is not made taller), and the form follows its own width.
@@ -17637,7 +17637,7 @@ part "sheet.input" {
     use "control-box"
     use "length"
     width "100%"
-    padding "$space-1 $space-2"
+    padding "$space-1"
     color "$fg"
     font-size "$fs-ui"
     text-align end

@@ -10534,7 +10534,7 @@ textarea,
   font-weight: var(--weight-code);
   white-space: nowrap;
   width: 100%;
-  padding: var(--space-1) var(--space-2);
+  padding: var(--space-1);
   color: var(--fg);
   font-size: var(--fs-ui);
   text-align: end;
