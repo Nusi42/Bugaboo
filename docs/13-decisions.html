@@ -169,7 +169,7 @@
 <li><strong>One limit of steps.</strong> <code>within N steps</code> stays at most 5 (decision 6), and the relation map's <em>Everything</em> is the same 5: the map reads the limit from <code>limits.rs</code> and has no number of its own. A map stops at 200 issues and says so.</li>
 <li><strong><em>Only this project</em> is text.</strong> A view of a project starts from <code>project within KEY</code>; the choice <em>Only this project</em> writes <code>project is KEY</code> into the search text instead (<a href="#adr-0034">ADR-0034</a>, amendment 2026-11-24), so no option outside the text narrows a search.</li>
 </ol>
-<p>Enforced by (additional): TEST-SEARCH-ROUNDTRIP (the release words and <em>Only this project</em> print and read back), SEC-MATRIX (the <code>search</code> entry point with the release fields and the map), review (a second number for the steps of the map is an ODR finding of coding-standards §1).</p>
+<p>Enforced by (additional): TEST-SEARCH-ROUNDTRIP (the release words and <em>Only this project</em> print and read back), SEC-MATRIX (the <code>search</code> entry point with the release fields and the map; the <code>map</code> entry point), the tests <code>iss_16_everything_means_five_steps_the_limit_of_the_search_language</code> and <code>iss_16_the_walk_stops_at_200_and_says_there_are_more</code> (the map reads <code>MAX_STEPS</code> of <code>limits.rs</code> and <code>MAP_ISSUES_MOST</code>), review (a second number for the steps of the map is an ODR finding of coding-standards §1).</p>
 <h3>Enforced by</h3>
 <p>ARCH-PURE, ARCH-WASM, TEST-SEARCH-ROUNDTRIP (see <code>tools/checks/catalog.toml</code>).</p>
 

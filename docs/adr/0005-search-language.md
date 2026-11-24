@@ -64,7 +64,7 @@ The maintainer took the recommendations of M10-Q7, M10-Q11 and M10-Q18 of [the M
 2. **One limit of steps.** `within N steps` stays at most 5 (decision 6), and the relation map's *Everything* is the same 5: the map reads the limit from `limits.rs` and has no number of its own. A map stops at 200 issues and says so.
 3. ***Only this project* is text.** A view of a project starts from `project within KEY`; the choice *Only this project* writes `project is KEY` into the search text instead ([ADR-0034](0034-saved-searches.md), amendment 2026-11-24), so no option outside the text narrows a search.
 
-Enforced by (additional): TEST-SEARCH-ROUNDTRIP (the release words and *Only this project* print and read back), SEC-MATRIX (the `search` entry point with the release fields and the map), review (a second number for the steps of the map is an ODR finding of coding-standards §1).
+Enforced by (additional): TEST-SEARCH-ROUNDTRIP (the release words and *Only this project* print and read back), SEC-MATRIX (the `search` entry point with the release fields and the map; the `map` entry point), the tests `iss_16_everything_means_five_steps_the_limit_of_the_search_language` and `iss_16_the_walk_stops_at_200_and_says_there_are_more` (the map reads `MAX_STEPS` of `limits.rs` and `MAP_ISSUES_MOST`), review (a second number for the steps of the map is an ODR finding of coding-standards §1).
 
 ## Enforced by
 
