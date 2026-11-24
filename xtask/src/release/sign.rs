@@ -1,6 +1,7 @@
-//! `cargo xtask release sign` and `cargo xtask release keygen` (SEC-18, ADR-0047 decision 2): the
-//! files of a release are signed with the release key in the minisign format, and the two keys are
-//! made, with the `minisign` crate and no signature code of our own.
+//! `cargo xtask release sign` and `cargo xtask release keygen` (SEC-18, ADR-0047 decision 2, as
+//! amended): the list `SHA256SUMS` of a release, which names every other file of it with its
+//! checksum, is signed with the release key in the minisign format, and the two keys are made,
+//! with the `minisign` crate and no signature code of our own.
 //!
 //! A secret key never enters the repository or a work folder: both commands refuse a path inside
 //! this repository or inside any Git working tree (every work folder and the main checkout are
@@ -17,7 +18,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context as _, bail};
 use minisign::{KeyPair, PublicKey, SecretKey, SecretKeyBox};
 
-use bb_core::release::RELEASE_PUBLIC_KEYS;
+use bb_core::release::{CHECKSUMS_FILE, RELEASE_PUBLIC_KEYS};
 
 use super::folder::{self, Build};
 use super::parts_list::base64_decode;
@@ -150,31 +151,29 @@ pub(crate) fn key_refusal(build: Build, public: &str) -> Option<String> {
     })
 }
 
-/// Signs every file of the release named `release` in `folder` with `key`, after writing
-/// `SHA256SUMS`: one `<file>.minisig` each, whose trusted comment names the file and the release.
+/// Signs the release named `release` in `folder` with `key`: writes `SHA256SUMS` for its payload
+/// and signs that list, the one signature of a release (`SHA256SUMS.minisig`), whose trusted
+/// comment names the list and the release.
 pub(crate) fn sign_folder(folder: &Path, release: &str, key: &SecretKey) -> anyhow::Result<()> {
     folder::write_checksums(folder, release)?;
     let public = PublicKey::from_secret_key(key)
         .map_err(|error| anyhow::anyhow!("could not read the public key: {error}"))?;
-    for name in folder::signed_files(release) {
-        let path = folder.join(&name);
-        let bytes =
-            fs::read(&path).with_context(|| format!("could not read {}", path.display()))?;
-        let signature = minisign::sign(
-            Some(&public),
-            key,
-            bytes.as_slice(),
-            Some(&folder::trusted_comment(&name, release)),
-            None,
-        )
-        .map_err(|error| anyhow::anyhow!("could not sign {name}: {error}"))?;
-        super::write_file(
-            folder,
-            &bb_core::release::signature_name(&name),
-            &signature.into_string(),
-        )?;
-    }
-    Ok(())
+    let name = CHECKSUMS_FILE;
+    let path = folder.join(name);
+    let bytes = fs::read(&path).with_context(|| format!("could not read {}", path.display()))?;
+    let signature = minisign::sign(
+        Some(&public),
+        key,
+        bytes.as_slice(),
+        Some(&folder::trusted_comment(name, release)),
+        None,
+    )
+    .map_err(|error| anyhow::anyhow!("could not sign {name}: {error}"))?;
+    super::write_file(
+        folder,
+        &bb_core::release::signature_name(name),
+        &signature.into_string(),
+    )
 }
 
 /// The public key of `key`, in the form `RELEASE_PUBLIC_KEYS` holds.

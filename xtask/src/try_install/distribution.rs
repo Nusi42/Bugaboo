@@ -12,6 +12,7 @@ use std::path::Path;
 use std::process::Command;
 
 use anyhow::{Context as _, bail};
+use bb_core::release::checksum_of;
 
 use super::{Run, write_script};
 use crate::output;
@@ -31,14 +32,6 @@ const DISTRIBUTION_FOLDER: &str = "distribution";
 /// What `systemctl is-system-running --wait` answers when systemd runs the distribution.
 const SYSTEMD_UP: [&str; 2] = ["running", "degraded"];
 
-/// The checksum of `file` in a list of checksums (`<sha256>  <name>` lines).
-fn checksum_of<'a>(list: &'a str, file: &str) -> Option<&'a str> {
-    list.lines().find_map(|line| {
-        let (sum, name) = line.split_once(char::is_whitespace)?;
-        (name.trim().trim_start_matches('*') == file).then_some(sum)
-    })
-}
-
 /// The image, downloaded with its checksums when it is not kept yet, and checked against them.
 fn image(images: &Path) -> anyhow::Result<std::path::PathBuf> {
     fs::create_dir_all(images).with_context(|| format!("could not make {}", images.display()))?;
@@ -54,7 +47,7 @@ fn image(images: &Path) -> anyhow::Result<std::path::PathBuf> {
     let expected = checksum_of(&list, IMAGE_FILE)
         .with_context(|| format!("{} names no {IMAGE_FILE}", sums.display()))?;
     let bytes = fs::read(&image).with_context(|| format!("could not read {}", image.display()))?;
-    verify_sha256(&bytes, expected, IMAGE_FILE)?;
+    verify_sha256(&bytes, &expected, IMAGE_FILE)?;
     Ok(image)
 }
 
@@ -159,14 +152,25 @@ mod tests {
 
     #[test]
     fn ops_04_the_image_is_checked_against_the_published_list() {
-        let list = "2a79  ubuntu-noble-wsl-amd64-24.04lts.rootfs.tar.gz\nd393  other.manifest\n";
-        assert_eq!(checksum_of(list, IMAGE_FILE), Some("2a79"));
+        // Ubuntu's list is read as a release's own `SHA256SUMS` is, by one reader.
+        let sum = "2a".repeat(32);
+        let list = format!(
+            "{sum}  {IMAGE_FILE}
+{}  other.manifest
+",
+            "d3".repeat(32)
+        );
+        let list = list.as_str();
+        assert_eq!(checksum_of(list, IMAGE_FILE), Some(sum.clone()));
         assert_eq!(
             checksum_of(
-                "2a79 *ubuntu-noble-wsl-amd64-24.04lts.rootfs.tar.gz\n",
+                &format!(
+                    "{sum} *{IMAGE_FILE}
+"
+                ),
                 IMAGE_FILE
             ),
-            Some("2a79")
+            Some(sum)
         );
         assert_eq!(checksum_of(list, "missing.tar.gz"), None);
     }

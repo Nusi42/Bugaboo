@@ -1660,7 +1660,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "cli.help.update-file",
-        "The downloaded file. Its signature (the same name with .minisig) and the list SHA256SUMS with its signature must be in the same folder",
+        "The downloaded file. The list SHA256SUMS and its signature SHA256SUMS.minisig must be in the same folder",
     ),
     (
         "cli.help.web",
@@ -1700,7 +1700,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "cli.update.other-list",
-        "The list {checksums} beside {file} is signed for another file or another release than version {version}. Do not install it.",
+        "The signature of the list {checksums} beside {file} is the signature of another file of version {version}, not of that list. Do not install it.",
     ),
     (
         "cli.update.signed",

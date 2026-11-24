@@ -4,7 +4,7 @@ To upgrade, stop Bugaboo, replace the program with the new version, and start it
 
 ## Step by step
 
-1. Download the new program, its signature, `SHA256SUMS` and `SHA256SUMS.minisig` from the release page into one folder.
+1. Download the new program, `SHA256SUMS` and `SHA256SUMS.minisig` from the release page into one folder.
 2. Check it with the Bugaboo you have installed:
 
    ```text

@@ -61,8 +61,9 @@ and the notes say *test*.
 
    It builds the Windows program with `cargo xtask build`, the static Linux
    program in WSL (`cargo xtask release --linux` there, in a build folder of
-   its own, `target/wsl`), and writes the parts list, the notices, the VEX
-   statements and the notes into `target/release-folder/<version>/`. Without
+   its own, `target/wsl`), and writes the notices and the CycloneDX parts
+   list with the VEX statements into `target/release-folder/<version>/`, and
+   the notes beside it (`target/release-folder/bugaboo-<version>-notes.md`). Without
    the tag on the commit, or while the program trusts only test keys, it is a
    test build: the folder, every file and the version in every signature are
    named `<version>-test`. When the tag exists, it refuses a day of the
@@ -85,7 +86,8 @@ and the notes say *test*.
    cargo xtask release sign --key <your key folder>/bugaboo-release.key
    ```
 
-   It writes `SHA256SUMS` and a `.minisig` for every file and checks each.
+   It writes `SHA256SUMS` for the programs, the notices and the parts list,
+   and `SHA256SUMS.minisig`, the only signature, and checks the folder.
    The key may also be named in `BUGABOO_RELEASE_KEY`. Once the program
    carries the real keys, it refuses a folder built without the tag and a
    key that is not one of `RELEASE_PUBLIC_KEYS`.
@@ -95,8 +97,18 @@ and the notes say *test*.
    cargo xtask release check
    ```
 
-8. *Maintainer:* publish the folder as a GitHub release of the tag: every
-   file of the folder, with the notes as the text of the release.
+   The folder must hold exactly six files: the two programs,
+   `bugaboo-<version>-notices.txt`, `bugaboo-<version>.cdx.json` (with the
+   VEX statements), `SHA256SUMS` naming these four, and
+   `SHA256SUMS.minisig`.
+8. *Maintainer:* publish the folder as a GitHub release of the tag: the six
+   files of the folder, with the notes beside it as the text of the release.
+
+A release published with the earlier layout (a signature for each file, an
+SPDX file, a separate VEX file and the notes as a file, as 0.6.0 was) is
+made into a folder of six files from a checkout of its tag, with the code of
+today, by `cargo xtask release repack --from <folder of its published files>`,
+then signed and checked as in steps 6 and 7.
 
 ## A security fix (patch release)
 

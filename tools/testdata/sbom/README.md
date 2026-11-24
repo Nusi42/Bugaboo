@@ -1,7 +1,8 @@
 # Schemas of the parts list (test data)
 
-These are the published JSON Schemas that `cargo xtask parts-list` and the check DEP-SBOM validate
-the parts list against (COMP-01). They are copied unchanged. They are test data: nothing here
+These are the published JSON Schemas that `cargo xtask parts-list`, the check DEP-SBOM and
+`cargo xtask release check` validate the parts list against, with its VEX statements (COMP-01,
+COMP-03). They are copied unchanged. They are test data: nothing here
 ships in the program.
 
 | File | Format | Copied from | License |

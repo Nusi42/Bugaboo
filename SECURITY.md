@@ -39,14 +39,14 @@ new releases by itself yet: watch the releases of this repository.
 
 <!-- BEGIN GENERATED release-keys by `cargo xtask gen release` from bb-core and Cargo.toml; edit those, not this text -->
 
-The files of a release are signed with one of these public keys (minisign, Ed25519). A file signed with either one is genuine.
+A release signs its list `SHA256SUMS`, which names every other file of the release with its checksum, with one of these public keys (minisign, Ed25519). A list signed with either one is genuine, and so is every file it names with the right checksum.
 
 | Key | Public key |
 |-----|------------|
 | release | `RWRj80xzx+o/0lgZdGYG/LB1xPfDN/Nxw+GFJiI0k7ofdUATvirpUB8Y` |
 | backup | `RWTSVLiNDLni7T+d8XyvzayQo73d6ldQUfdAt/hZ9jKDACJfdy5JPEEP` |
 
-Check a downloaded file with the Bugaboo you have installed (`bugaboo update verify <file>`), or with the minisign tool (`minisign -Vm <file> -P <public key>`).
+Check a downloaded file with the Bugaboo you have installed (`bugaboo update verify <file>`), or with the minisign tool and the list (`minisign -Vm SHA256SUMS -P <public key>`, then `sha256sum -c SHA256SUMS --ignore-missing`).
 
 <!-- END GENERATED release-keys -->
 

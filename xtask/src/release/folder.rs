@@ -1,9 +1,11 @@
-//! The release folder (SEC-18, ADR-0047 decisions 1 and 7): `target/release-folder/<version>/` with
-//! the programs for Windows x64 and Linux x64, the parts list, the notices, the VEX statements, the
-//! release notes, `SHA256SUMS`, and a signature for each of these.
+//! The release folder (SEC-18, ADR-0047 decisions 1 and 7, as amended): `target/release-folder/
+//! <version>/` with exactly six files: the programs for Windows x64 and Linux x64, the notices, the
+//! `CycloneDX` parts list with the VEX statements in it, `SHA256SUMS` naming these four, and
+//! `SHA256SUMS.minisig`, the one signature. The release notes are written beside the folder: they
+//! are the text of the release, not a file of it.
 //!
-//! What a folder must hold is written once here ([`payload`]); the writer, the signer and the
-//! check of a finished folder (the `release` part of DEP-SBOM) read it. A test build carries
+//! What a folder must hold is written once here ([`payload`], [`files`]); the writer, the signer
+//! and the check of a finished folder (the `release` part of DEP-SBOM) read it. A test build carries
 //! `-test` in its one release name ([`Build::release_name`]): in the name of the folder, of every
 //! file and in the version of every trusted comment, so its signed files never pass for a release.
 
@@ -18,7 +20,7 @@ use bb_core::release::{
 };
 use sha2::{Digest as _, Sha256};
 
-use super::formats;
+use super::{formats, vex};
 
 /// What a release folder is built from.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -88,32 +90,35 @@ pub(crate) fn program_name(release: &str, platform: Platform) -> String {
     format!("bugaboo-{release}-{}{}", platform.word, platform.end)
 }
 
-/// The name of the release notes in the folder.
+/// The name of the release notes, written beside the folder ([`notes_path`]).
 pub(crate) fn notes_name(release: &str) -> String {
     format!("bugaboo-{release}-notes.md")
 }
 
-/// Every file of the release named `release` that is listed in `SHA256SUMS` and signed: the
-/// programs, the parts list in both formats, the notices, the VEX statements and the notes.
+/// Where the release notes of the folder `folder` go: beside it, as the text of the release.
+pub(crate) fn notes_path(folder: &Path, release: &str) -> PathBuf {
+    folder.with_file_name(notes_name(release))
+}
+
+/// Every file of the release named `release` that `SHA256SUMS` lists: the programs, the notices
+/// and the `CycloneDX` parts list with the VEX statements.
 pub(crate) fn payload(release: &str) -> Vec<String> {
     let mut names: Vec<String> = PLATFORMS
         .iter()
         .map(|platform| program_name(release, *platform))
         .collect();
     names.extend([
-        about::release_name(release, about::CYCLONEDX_END),
-        about::release_name(release, about::SPDX_END),
         about::release_name(release, about::NOTICES_END),
-        formats::vex_name(release),
-        notes_name(release),
+        formats::cyclonedx_name(release),
     ]);
     names
 }
 
-/// Every file that is signed: the payload and `SHA256SUMS`.
-pub(crate) fn signed_files(release: &str) -> Vec<String> {
+/// Every file of a finished folder of the release named `release`, and nothing else: the payload,
+/// `SHA256SUMS` and its signature, the only one.
+pub(crate) fn files(release: &str) -> Vec<String> {
     let mut names = payload(release);
-    names.push(CHECKSUMS_FILE.to_owned());
+    names.extend([CHECKSUMS_FILE.to_owned(), signature_name(CHECKSUMS_FILE)]);
     names
 }
 
@@ -148,59 +153,108 @@ pub(crate) fn trusted_comment(name: &str, release: &str) -> String {
 }
 
 /// What is wrong with the folder of the release named `release` against `keys`, one sentence each:
-/// a file or a signature that is missing, a checksum that differs from `SHA256SUMS`, a signature
-/// that does not hold or names another file or version, and anything in the folder that does not
-/// belong in it. Empty when the folder is complete, signed, and holds nothing else.
+/// a file that is missing, a checksum that differs from `SHA256SUMS` or an entry of it that names
+/// no file of the payload, a signature of `SHA256SUMS` that does not hold or names another file or
+/// version, a parts list that does not fit its schema or carries no VEX statements, and anything
+/// in the folder that does not belong in it. Empty when the folder holds the six files, signed,
+/// and nothing else.
 pub(crate) fn problems(folder: &Path, release: &str, keys: &[ReleaseKey]) -> Vec<String> {
     let mut found = Vec::new();
-    let sums = fs::read_to_string(folder.join(CHECKSUMS_FILE)).unwrap_or_default();
-    for name in signed_files(release) {
-        let path = folder.join(&name);
-        let Ok(bytes) = fs::read(&path) else {
+    let sums = fs::read_to_string(folder.join(CHECKSUMS_FILE)).ok();
+    let listed = sums
+        .as_deref()
+        .map(release::checksum_entries)
+        .unwrap_or_default();
+    let payload = payload(release);
+    for name in &payload {
+        let Ok(bytes) = fs::read(folder.join(name)) else {
             found.push(format!("{name} is missing."));
             continue;
         };
-        if name != CHECKSUMS_FILE {
-            let sum = bb_core::hex::encode(&Sha256::digest(&bytes));
-            if release::checksum_of(&sums, &name).as_deref() != Some(sum.as_str()) {
-                found.push(format!(
-                    "{name} has no entry in {CHECKSUMS_FILE} with its checksum."
-                ));
-            }
-        }
-        let signature_path = folder.join(signature_name(&name));
-        let Ok(signature) = fs::read_to_string(&signature_path) else {
-            found.push(format!("{} is missing.", signature_name(&name)));
-            continue;
-        };
-        match release::verify(&bytes, &signature, keys) {
-            Ok(comment) if comment == trusted_comment(&name, release) => {}
-            Ok(comment) => found.push(format!(
-                "{} names `{comment}`, not this file of the release {release}.",
-                signature_name(&name)
-            )),
-            Err(problem) => found.push(format!(
-                "{} does not hold: {problem:?}.",
-                signature_name(&name)
-            )),
+        let entry = (bb_core::hex::encode(&Sha256::digest(&bytes)), name.clone());
+        if sums.is_some() && !listed.contains(&entry) {
+            found.push(format!(
+                "{name} has no entry in {CHECKSUMS_FILE} with its checksum."
+            ));
         }
     }
+    if sums
+        .as_deref()
+        .is_some_and(|text| text.lines().count() != listed.len())
+    {
+        found.push(format!(
+            "{CHECKSUMS_FILE} holds a line that is not a checksum and a name."
+        ));
+    }
+    for (_, name) in &listed {
+        if !payload.contains(name) {
+            found.push(format!(
+                "{CHECKSUMS_FILE} lists {name}, which is not a file of the release."
+            ));
+        }
+    }
+    found.extend(signature_problems(folder, release, keys, sums.as_deref()));
+    found.extend(parts_list_problems(folder, release));
     found.extend(strangers(folder, release));
     found
 }
 
-/// What stands in `folder` that is neither a signed file of the release named `release` nor its
-/// signature, one sentence each, by name.
+/// What is wrong with `SHA256SUMS` (`sums`, `None` when it cannot be read) and its signature.
+fn signature_problems(
+    folder: &Path,
+    release: &str,
+    keys: &[ReleaseKey],
+    sums: Option<&str>,
+) -> Vec<String> {
+    let signature_name = signature_name(CHECKSUMS_FILE);
+    let Some(sums) = sums else {
+        return vec![format!("{CHECKSUMS_FILE} is missing.")];
+    };
+    let Ok(signature) = fs::read_to_string(folder.join(&signature_name)) else {
+        return vec![format!("{signature_name} is missing.")];
+    };
+    match release::verify(sums.as_bytes(), &signature, keys) {
+        Ok(comment) if comment == trusted_comment(CHECKSUMS_FILE, release) => Vec::new(),
+        Ok(comment) => vec![format!(
+            "{signature_name} names `{comment}`, not the {CHECKSUMS_FILE} of the release {release}."
+        )],
+        Err(problem) => vec![format!("{signature_name} does not hold: {problem:?}.")],
+    }
+}
+
+/// What is wrong with the `CycloneDX` parts list of the folder: its schema, and its VEX statements.
+fn parts_list_problems(folder: &Path, release: &str) -> Vec<String> {
+    let name = formats::cyclonedx_name(release);
+    let Ok(text) = fs::read_to_string(folder.join(&name)) else {
+        // Named as missing with the payload.
+        return Vec::new();
+    };
+    let document = match serde_json::from_str::<serde_json::Value>(&text) {
+        Ok(document) => document,
+        Err(error) => return vec![format!("{name} is not JSON: {error}.")],
+    };
+    let mut found: Vec<String> = match formats::cyclonedx_errors(&document) {
+        Ok(errors) => errors
+            .into_iter()
+            .map(|error| format!("{name} does not fit its schema: {error}."))
+            .collect(),
+        Err(error) => vec![format!("{name} could not be checked: {error}.")],
+    };
+    found.extend(vex::release_problems(&document, &name));
+    found
+}
+
+/// What stands in `folder` that is not one of the [`files`] of the release named `release`, one
+/// sentence each, by name.
 fn strangers(folder: &Path, release: &str) -> Vec<String> {
-    let signed = signed_files(release);
-    let signatures: Vec<String> = signed.iter().map(|name| signature_name(name)).collect();
+    let wanted = files(release);
     let Ok(entries) = fs::read_dir(folder) else {
         return Vec::new();
     };
     let mut found: Vec<String> = entries
         .filter_map(Result::ok)
         .map(|entry| entry.file_name().to_string_lossy().into_owned())
-        .filter(|name| !signed.contains(name) && !signatures.contains(name))
+        .filter(|name| !wanted.contains(name))
         .map(|name| format!("{name} does not belong in the release folder."))
         .collect();
     found.sort();

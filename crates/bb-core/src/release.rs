@@ -18,7 +18,7 @@ pub use security_txt::{
 };
 pub use signature::{
     CHECKSUMS_FILE, KEYS_ARE_FOR_TESTS, RELEASE_PUBLIC_KEYS, ReleaseKey, SignatureProblem,
-    TrustedComment, checksum_line, checksum_of, signature_name, verify,
+    TrustedComment, checksum_entries, checksum_line, checksum_of, signature_name, verify,
 };
 
 use jiff::civil::Date;

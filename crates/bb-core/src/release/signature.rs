@@ -43,10 +43,11 @@ pub const KEYS_ARE_FOR_TESTS: bool = false;
 /// The name of the list of checksums of a release, beside its files.
 pub const CHECKSUMS_FILE: &str = "SHA256SUMS";
 
-/// The ending of the signature of a file: `bugaboo-0.6.0-linux-x64.minisig`.
+/// The ending of the signature of a file: `SHA256SUMS.minisig`.
 const SIGNATURE_END: &str = ".minisig";
 
-/// The name of the signature of the file `name`: `bugaboo-0.6.0-linux-x64.minisig`.
+/// The name of the signature of the file `name`: `SHA256SUMS.minisig`. A release signs only its
+/// list of checksums, which names every other file of it (ADR-0047, decision 2, as amended).
 #[must_use]
 pub fn signature_name(name: &str) -> String {
     format!("{name}{SIGNATURE_END}")
@@ -135,17 +136,28 @@ pub fn verify(
     Err(problem)
 }
 
-/// The checksum that the list `sums` (the text of `SHA256SUMS`, one `<hex>  <name>` a line, as
-/// `sha256sum` writes it) gives the file `name`, in lower case.
+/// Every entry of the list `sums` (the text of `SHA256SUMS`, one `<hex>  <name>` a line, as
+/// `sha256sum` writes it): the checksum in lower case and the name, in the order of the list. A
+/// line that is not such an entry is left out.
+#[must_use]
+pub fn checksum_entries(sums: &str) -> Vec<(String, String)> {
+    sums.lines()
+        .filter_map(|line| {
+            let (sum, rest) = line.split_once(' ')?;
+            // `sha256sum` marks a file read as binary with `*` before its name.
+            let listed = rest.trim_start_matches(' ').trim_start_matches('*');
+            (sum.len() == 64 && sum.bytes().all(|byte| byte.is_ascii_hexdigit()))
+                .then(|| (sum.to_ascii_lowercase(), listed.to_owned()))
+        })
+        .collect()
+}
+
+/// The checksum that the list `sums` ([`checksum_entries`]) gives the file `name`, in lower case.
 #[must_use]
 pub fn checksum_of(sums: &str, name: &str) -> Option<String> {
-    sums.lines().find_map(|line| {
-        let (sum, rest) = line.split_once(' ')?;
-        // `sha256sum` marks a file read as binary with `*` before its name.
-        let listed = rest.trim_start_matches(' ').trim_start_matches('*');
-        (listed == name && sum.len() == 64 && sum.bytes().all(|byte| byte.is_ascii_hexdigit()))
-            .then(|| sum.to_ascii_lowercase())
-    })
+    checksum_entries(sums)
+        .into_iter()
+        .find_map(|(sum, listed)| (listed == name).then_some(sum))
 }
 
 /// One line of `SHA256SUMS` for the file `name` with the checksum `sum`.

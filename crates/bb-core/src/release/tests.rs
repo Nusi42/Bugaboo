@@ -140,6 +140,23 @@ fn sec_18_a_checksum_is_found_by_the_name_of_its_file() {
 }
 
 #[test]
+fn sec_18_the_list_of_checksums_reads_as_its_entries_in_order() {
+    let sum = "AB".repeat(32);
+    let other = "cd".repeat(32);
+    let sums = format!(
+        "{}not a line\n{other} *bugaboo-0.6.0-windows-x64.exe\n",
+        checksum_line(&sum, "bugaboo-0.6.0-linux-x64"),
+    );
+    assert_eq!(
+        checksum_entries(&sums),
+        [
+            ("ab".repeat(32), "bugaboo-0.6.0-linux-x64".to_owned()),
+            (other, "bugaboo-0.6.0-windows-x64.exe".to_owned()),
+        ]
+    );
+}
+
+#[test]
 fn dist_07_versions_are_compared_by_their_three_numbers() {
     assert_eq!(is_older("0.5.1", "0.6.0"), Some(true));
     assert_eq!(is_older("0.6.0", "0.6.0"), Some(false));

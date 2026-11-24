@@ -1,5 +1,7 @@
-//! The VEX statements of a release (COMP-03, M6-F126, ADR-0047 decision 4): one `CycloneDX` VEX file
-//! with one statement, *not affected*, for each advisory that Bugaboo accepts.
+//! The VEX statements of a release (COMP-03, ADR-0047 decision 4, as amended): one statement,
+//! *not affected*, for each advisory that Bugaboo accepts, in the `vulnerabilities` of the
+//! `CycloneDX` parts list itself, so the release carries one document for both
+//! ([`with_statements`]).
 //!
 //! The advisories are the entries of `deny.toml` (`[advisories] ignore`) and of
 //! `tools/checks/npm-advisories.toml` (`accepted`). The reason is the one written in the
@@ -113,16 +115,10 @@ fn source(id: &str) -> Value {
     json!({"name": name, "url": url})
 }
 
-/// The VEX document of `list`: a statement for each advisory in `accepted`.
-pub(crate) fn vex(list: &PartsList, accepted: &[Accepted], register: &Rows) -> Value {
-    let program = &list.program;
-    let mut hasher = Sha256::new();
-    hasher.update(program.reference());
-    for entry in accepted {
-        hasher.update(&entry.id);
-    }
-    let digest = bb_core::hex::encode(&hasher.finalize());
-    let statements: Vec<Value> = accepted
+/// The statements about the advisories in `accepted` for the program of `list`.
+pub(crate) fn statements(list: &PartsList, accepted: &[Accepted], register: &Rows) -> Vec<Value> {
+    let program = list.program.reference();
+    accepted
         .iter()
         .map(|entry| {
             let row = register.risks.get(&entry.id);
@@ -131,7 +127,7 @@ pub(crate) fn vex(list: &PartsList, accepted: &[Accepted], register: &Rows) -> V
                 "id": entry.id,
                 "source": source(&entry.id),
                 "analysis": {"state": "not_affected", "detail": detail},
-                "affects": [{"ref": program.reference()}],
+                "affects": [{"ref": program}],
             });
             if let (Some(row), Some(map)) = (row, statement.as_object_mut()) {
                 if let Some(package) = row.cells.get(1) {
@@ -145,24 +141,49 @@ pub(crate) fn vex(list: &PartsList, accepted: &[Accepted], register: &Rows) -> V
             }
             statement
         })
-        .collect();
-    json!({
-        "$schema": "http://cyclonedx.org/schema/bom-1.6.schema.json",
-        "bomFormat": "CycloneDX",
-        "specVersion": "1.6",
-        "serialNumber": super::formats::serial_number(&digest),
-        "version": 1,
-        "metadata": {
-            "timestamp": list.created,
-            "component": {
-                "type": "application",
-                "bom-ref": program.reference(),
-                "name": program.name,
-                "version": program.version,
-            },
-        },
-        "vulnerabilities": statements,
-    })
+        .collect()
+}
+
+/// The `CycloneDX` parts list `document` with `statements` as its `vulnerabilities`. Its
+/// `serialNumber` is made anew from the one it had and the IDs of the statements, so the list
+/// with statements and the one without never share one. `cargo xtask release` and
+/// `cargo xtask release repack` both put the statements in here.
+pub(crate) fn with_statements(mut document: Value, statements: Vec<Value>) -> Value {
+    let mut hasher = Sha256::new();
+    hasher.update(document["serialNumber"].as_str().unwrap_or_default());
+    for statement in &statements {
+        hasher.update(statement["id"].as_str().unwrap_or_default());
+    }
+    let digest = bb_core::hex::encode(&hasher.finalize());
+    if let Some(map) = document.as_object_mut() {
+        map.insert(
+            "serialNumber".into(),
+            json!(super::formats::serial_number(&digest)),
+        );
+        map.insert("vulnerabilities".into(), Value::Array(statements));
+    }
+    document
+}
+
+/// What is wrong with the statements of the `CycloneDX` file of a release, one sentence each
+/// (the check of a release folder): the file must carry its `vulnerabilities`, and each statement
+/// an `analysis` with a `state`.
+pub(crate) fn release_problems(document: &Value, file: &str) -> Vec<String> {
+    let Some(statements) = document.get("vulnerabilities").and_then(Value::as_array) else {
+        return vec![format!(
+            "{file} carries no VEX statements (no `vulnerabilities`)."
+        )];
+    };
+    statements
+        .iter()
+        .filter(|statement| statement.pointer("/analysis/state").is_none())
+        .map(|statement| {
+            format!(
+                "{file}: the statement on {} has no analysis.",
+                statement["id"].as_str().unwrap_or("an advisory")
+            )
+        })
+        .collect()
 }
 
 #[cfg(test)]

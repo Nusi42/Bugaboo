@@ -2,11 +2,11 @@
 //! is installed checks a downloaded file of a release before anybody installs it.
 //!
 //! It trusts only the keys it carries itself (`bb_core::release::RELEASE_PUBLIC_KEYS`), so a
-//! download cannot bring its own key. It checks the file's signature, the signature of the list
-//! `SHA256SUMS` beside it (signed as that list of the same release) and the file's checksum in
-//! that list, says which release the file is, and fails when that release is older than the
-//! installed one, unless `--allow-older` says that is meant. It only reads: nothing is run, moved
-//! or replaced.
+//! download cannot bring its own key. It checks the signature of the list `SHA256SUMS` beside the
+//! file (signed as that list of a release; the one signature of a release) and the file's checksum
+//! in that list, says which release and which file of it the file is, and fails when that release
+//! is older than the installed one, unless `--allow-older` says that is meant. It only reads:
+//! nothing is run, moved or replaced.
 
 use std::path::{Path, PathBuf};
 
@@ -53,7 +53,8 @@ enum Refused {
     Signature(String, SignatureProblem),
     /// The signature names no release of ours.
     NoRelease(String),
-    /// The list of checksums beside the file is signed as another file or for another release.
+    /// The list of checksums beside the file is signed as another file (the file and the version
+    /// the signature names).
     OtherList(String, String),
     /// The list of checksums does not name the file.
     NotListed(String),
@@ -160,31 +161,43 @@ fn read_signed(path: &Path, keys: &[ReleaseKey]) -> Result<(Vec<u8>, String), Re
     Ok((bytes, comment))
 }
 
-/// Checks the file at `path` and the list of checksums beside it against `keys`, for a program of
-/// the version `installed`.
+/// Checks the file at `path` against the list of checksums beside it, whose signature is checked
+/// against `keys`, for a program of the version `installed`. Only the list is signed: it names
+/// every file of the release with its checksum.
 fn check(path: &Path, keys: &[ReleaseKey], installed: &str) -> Result<Checked, Refused> {
-    let (bytes, comment) = read_signed(path, keys)?;
-    let signed = TrustedComment::read(&comment).ok_or_else(|| Refused::NoRelease(name_of(path)))?;
+    let bytes = read(path)?;
     let folder = path.parent().unwrap_or_else(|| Path::new(""));
-    let (sums, sums_comment) = read_signed(&folder.join(CHECKSUMS_FILE), keys)?;
-    // The list must be signed as the list of the same release, so the list of another release
-    // cannot vouch for this file.
-    let list = TrustedComment {
-        file: CHECKSUMS_FILE.to_owned(),
-        version: signed.version.clone(),
-    };
-    if TrustedComment::read(&sums_comment).as_ref() != Some(&list) {
-        return Err(Refused::OtherList(signed.file, signed.version));
+    let (sums, comment) = read_signed(&folder.join(CHECKSUMS_FILE), keys)?;
+    let list = TrustedComment::read(&comment)
+        .ok_or_else(|| Refused::NoRelease(CHECKSUMS_FILE.to_owned()))?;
+    // The signature must be the one of the list, so a signed file of another kind cannot stand in
+    // for it.
+    if list.file != CHECKSUMS_FILE {
+        return Err(Refused::OtherList(name_of(path), list.version));
     }
     // The list names the file as the release does, so a download saved under another name is
-    // still found.
-    let listed = release::checksum_of(&String::from_utf8_lossy(&sums), &signed.file)
-        .ok_or_else(|| Refused::NotListed(signed.file.clone()))?;
-    if bb_core::hex::encode(&Sha256::digest(&bytes)) != listed {
-        return Err(Refused::OtherChecksum(signed.file));
-    }
-    let older = release::is_older(&signed.version, installed) == Some(true);
-    Ok(Checked { signed, older })
+    // still found by its checksum.
+    let sums = String::from_utf8_lossy(&sums);
+    let sum = bb_core::hex::encode(&Sha256::digest(&bytes));
+    let file = release::checksum_entries(&sums)
+        .into_iter()
+        .find_map(|(listed, file)| (listed == sum).then_some(file))
+        .ok_or_else(|| {
+            let name = name_of(path);
+            if release::checksum_of(&sums, &name).is_some() {
+                Refused::OtherChecksum(name)
+            } else {
+                Refused::NotListed(name)
+            }
+        })?;
+    let older = release::is_older(&list.version, installed) == Some(true);
+    Ok(Checked {
+        signed: TrustedComment {
+            file,
+            version: list.version,
+        },
+        older,
+    })
 }
 
 #[cfg(test)]

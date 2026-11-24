@@ -8,8 +8,8 @@ use super::*;
 
 const PROGRAM: &str = "bugaboo-0.6.0-linux-x64";
 
-/// A folder like a downloaded release: the program, `SHA256SUMS` and both signatures, signed by a
-/// key made for the test, for the release `version`.
+/// A folder like a downloaded release: the program, `SHA256SUMS` and its signature, the only one,
+/// signed by a key made for the test, for the release `version`.
 struct Download {
     folder: tempfile::TempDir,
     key: TestKey,
@@ -23,27 +23,34 @@ impl Download {
             key: TestKey::new().unwrap(),
             version,
         };
-        download.put(PROGRAM, b"the program");
+        fs::write(download.program(), b"the program").unwrap();
         let sum = bb_core::hex::encode(&Sha256::digest(b"the program"));
-        download.put(CHECKSUMS_FILE, checksum_line(&sum, PROGRAM).as_bytes());
+        download.list(checksum_line(&sum, PROGRAM).as_bytes());
         download
     }
 
-    /// Writes the file `name` and its signature.
-    fn put(&self, name: &str, bytes: &[u8]) {
-        self.put_as(name, bytes, name, self.version);
+    /// Writes `SHA256SUMS` with `bytes` and its signature.
+    fn list(&self, bytes: &[u8]) {
+        self.list_as(bytes, CHECKSUMS_FILE, self.version);
     }
 
-    /// Writes the file `name` and a signature whose trusted comment names `file` and `version`.
-    fn put_as(&self, name: &str, bytes: &[u8], file: &str, version: &str) {
+    /// Writes `SHA256SUMS` with a signature whose trusted comment names `file` and `version`.
+    fn list_as(&self, bytes: &[u8], file: &str, version: &str) {
         let comment = TrustedComment {
             file: file.to_owned(),
             version: version.to_owned(),
         };
-        fs::write(self.folder.path().join(name), bytes).unwrap();
+        self.list_signed(bytes, &comment.text());
+    }
+
+    /// Writes `SHA256SUMS` with a signature whose trusted comment is `comment`.
+    fn list_signed(&self, bytes: &[u8], comment: &str) {
+        fs::write(self.folder.path().join(CHECKSUMS_FILE), bytes).unwrap();
         fs::write(
-            self.folder.path().join(release::signature_name(name)),
-            self.key.sign(bytes, &comment.text()).unwrap(),
+            self.folder
+                .path()
+                .join(release::signature_name(CHECKSUMS_FILE)),
+            self.key.sign(bytes, comment).unwrap(),
         )
         .unwrap();
     }
@@ -65,28 +72,33 @@ impl Download {
 }
 
 #[test]
-fn sec_18_a_list_signed_for_another_file_or_release_is_refused() {
+fn sec_18_a_list_signed_as_another_file_is_refused() {
     let download = Download::new("0.6.0");
     let sums = fs::read(download.folder.path().join(CHECKSUMS_FILE)).unwrap();
-    for (file, version) in [(CHECKSUMS_FILE, "0.5.1"), (PROGRAM, "0.6.0")] {
-        download.put_as(CHECKSUMS_FILE, &sums, file, version);
-        assert_eq!(
-            download.check("0.6.0"),
-            Err(Refused::OtherList(PROGRAM.to_owned(), "0.6.0".to_owned())),
-            "{file} {version}"
-        );
-    }
-    download.put_as(CHECKSUMS_FILE, &sums, CHECKSUMS_FILE, "0.6.0");
-    assert!(download.check("0.6.0").is_ok());
+    download.list_as(&sums, PROGRAM, "0.6.0");
+    assert_eq!(
+        download.check("0.6.0"),
+        Err(Refused::OtherList(PROGRAM.to_owned(), "0.6.0".to_owned()))
+    );
+    // The version the list is signed for is the version of the file.
+    download.list_as(&sums, CHECKSUMS_FILE, "0.6.1");
+    assert_eq!(download.check("0.6.0").unwrap().signed.version, "0.6.1");
 }
 
 #[test]
-fn sec_18_a_signed_file_verifies_and_a_changed_byte_fails() {
+fn sec_18_the_list_alone_is_signed_and_a_changed_byte_fails() {
     let download = Download::new("0.6.0");
     let checked = download.check("0.6.0").unwrap();
     assert_eq!(checked.signed.version, "0.6.0");
     assert_eq!(checked.signed.file, PROGRAM);
     assert!(!checked.older);
+    // No file but the list has a signature.
+    let mut names: Vec<_> = fs::read_dir(download.folder.path())
+        .unwrap()
+        .map(|entry| name_of(&entry.unwrap().path()))
+        .collect();
+    names.sort();
+    assert_eq!(names, [CHECKSUMS_FILE, "SHA256SUMS.minisig", PROGRAM]);
     let words = message::cli_update_signed(message::CliUpdateSigned {
         file: &PROGRAM,
         version: &"0.6.0",
@@ -100,20 +112,42 @@ fn sec_18_a_signed_file_verifies_and_a_changed_byte_fails() {
     fs::write(download.program(), b"the progran").unwrap();
     assert_eq!(
         download.check("0.6.0"),
+        Err(Refused::OtherChecksum(PROGRAM.to_owned()))
+    );
+    // A list whose signature is gone is refused, with the name of what is missing.
+    fs::write(download.program(), b"the program").unwrap();
+    let signature = download
+        .folder
+        .path()
+        .join(release::signature_name(CHECKSUMS_FILE));
+    fs::remove_file(&signature).unwrap();
+    assert_eq!(
+        download.check("0.6.0"),
+        Err(Refused::Missing(signature.display().to_string()))
+    );
+}
+
+#[test]
+fn sec_18_a_download_saved_under_another_name_is_found_by_its_checksum() {
+    let download = Download::new("0.6.0");
+    let saved = download.folder.path().join("bugaboo (1)");
+    fs::rename(download.program(), &saved).unwrap();
+    let checked = check(&saved, &download.keys(), "0.6.0").unwrap();
+    assert_eq!(checked.signed.file, PROGRAM);
+    // A changed list does not hold.
+    let sums = download.folder.path().join(CHECKSUMS_FILE);
+    fs::write(
+        &sums, "changed
+",
+    )
+    .unwrap();
+    assert_eq!(
+        check(&saved, &download.keys(), "0.6.0"),
         Err(Refused::Signature(
-            PROGRAM.to_owned(),
+            CHECKSUMS_FILE.to_owned(),
             SignatureProblem::Changed
         ))
     );
-    // A file whose signature is gone is refused too, with the name of what is missing.
-    fs::remove_file(
-        download
-            .folder
-            .path()
-            .join(release::signature_name(PROGRAM)),
-    )
-    .unwrap();
-    assert!(matches!(download.check("0.6.0"), Err(Refused::Missing(_))));
 }
 
 #[test]
@@ -121,16 +155,13 @@ fn sec_18_a_file_missing_from_sha256sums_is_refused() {
     let download = Download::new("0.6.0");
     // A list signed by our key that names another file only.
     let sum = "ab".repeat(32);
-    download.put(
-        CHECKSUMS_FILE,
-        checksum_line(&sum, "bugaboo-0.6.0-windows-x64.exe").as_bytes(),
-    );
+    download.list(checksum_line(&sum, "bugaboo-0.6.0-windows-x64.exe").as_bytes());
     assert_eq!(
         download.check("0.6.0"),
         Err(Refused::NotListed(PROGRAM.to_owned()))
     );
     // A list that names it with another checksum.
-    download.put(CHECKSUMS_FILE, checksum_line(&sum, PROGRAM).as_bytes());
+    download.list(checksum_line(&sum, PROGRAM).as_bytes());
     assert_eq!(
         download.check("0.6.0"),
         Err(Refused::OtherChecksum(PROGRAM.to_owned()))
@@ -224,19 +255,12 @@ fn dist_07_update_verify_never_changes_a_file() {
 }
 
 #[test]
-fn a_file_signed_without_a_release_is_refused() {
+fn a_list_signed_without_a_release_is_refused() {
     let download = Download::new("0.6.0");
-    let comment = "timestamp:1556193335\tfile:test";
-    fs::write(
-        download
-            .folder
-            .path()
-            .join(release::signature_name(PROGRAM)),
-        download.key.sign(b"the program", comment).unwrap(),
-    )
-    .unwrap();
+    let sums = fs::read(download.folder.path().join(CHECKSUMS_FILE)).unwrap();
+    download.list_signed(&sums, "timestamp:1556193335	file:test");
     assert_eq!(
         download.check("0.6.0"),
-        Err(Refused::NoRelease(PROGRAM.to_owned()))
+        Err(Refused::NoRelease(CHECKSUMS_FILE.to_owned()))
     );
 }

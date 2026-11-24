@@ -24,17 +24,13 @@ const CYCLONEDX_SIGNATURES: &str =
     include_str!("../../../tools/testdata/sbom/jsf-0.82.schema.json");
 const SPDX_SCHEMA: &str = include_str!("../../../tools/testdata/sbom/spdx-2.3.schema.json");
 
-/// The names of the files of a release for a version (WP-08 signs these).
+/// The names of the parts list of a release for a version.
 pub(crate) fn cyclonedx_name(version: &str) -> String {
     about::release_name(version, about::CYCLONEDX_END)
 }
 
 pub(crate) fn spdx_name(version: &str) -> String {
     about::release_name(version, about::SPDX_END)
-}
-
-pub(crate) fn vex_name(version: &str) -> String {
-    about::release_name(version, about::VEX_END)
 }
 
 /// The `serialNumber` of a document made from `digest` (a hash in hexadecimal): a version 4 UUID

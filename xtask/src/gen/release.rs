@@ -31,8 +31,10 @@ pub(crate) const SUPPORT_PART: &str = "support-period";
 /// The public keys, as a table, and how to check a file with them.
 pub(crate) fn keys_part() -> String {
     let mut text = String::from(
-        "The files of a release are signed with one of these public keys (minisign, Ed25519). \
-         A file signed with either one is genuine.\n\n| Key | Public key |\n|-----|------------|\n",
+        "A release signs its list `SHA256SUMS`, which names every other file of the release with \
+         its checksum, with one of these public keys (minisign, Ed25519). A list signed with \
+         either one is genuine, and so is every file it names with the right checksum.\n\n\
+         | Key | Public key |\n|-----|------------|\n",
     );
     for key in RELEASE_PUBLIC_KEYS {
         let _ = writeln!(text, "| {} | `{}` |", key.name, key.public);
@@ -45,8 +47,9 @@ pub(crate) fn keys_part() -> String {
     }
     text.push_str(
         "\nCheck a downloaded file with the Bugaboo you have installed \
-         (`bugaboo update verify <file>`), or with the minisign tool \
-         (`minisign -Vm <file> -P <public key>`).",
+         (`bugaboo update verify <file>`), or with the minisign tool and the list \
+         (`minisign -Vm SHA256SUMS -P <public key>`, then \
+         `sha256sum -c SHA256SUMS --ignore-missing`).",
     );
     text
 }

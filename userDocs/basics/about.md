@@ -21,9 +21,9 @@ Bugaboo is free software under the AGPL-3.0-or-later license. The page names it 
 
 Above the list you can download:
 
-- **The parts list (CycloneDX)** and **the parts list (SPDX)**: the same list as a file that other tools read. They are the two usual formats for a list of parts.
+- **The parts list (CycloneDX)** and **the parts list (SPDX)**: the same list as a file that other tools read. They are the two usual formats for a list of parts. The CycloneDX file also says, for each known weakness of a part, why it does not affect Bugaboo.
 - **Third-party notices**: the license texts and notices of the parts, as one text file.
 
-The files belong to the release that runs. They are also next to every release on the release page, where you can check their signatures: [Verify a download](../install/verify-a-download.md).
+The files belong to the release that runs. The CycloneDX file and the notices are also next to every release on the release page, where you can check them like the program: [Check a download](../install/verify-a-download.md).
 
 If a build carries no list of its parts (a build that was not created for a release), the page says so and offers no downloads.

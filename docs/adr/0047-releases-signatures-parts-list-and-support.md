@@ -62,6 +62,25 @@ Today the repository has lockfiles, the register of direct dependencies, the lic
 - **The secret key on Windows** may be read by its owner, the system and the administrators of the computer only, as the mode `0600` on Linux: `sign` refuses an access list that gives anything to another account, not only to the groups that stand for many.
 - Enforced by: review (`sec_18_update_verify_fails_for_an_older_release_unless_it_is_allowed`, `sec_18_a_pre_release_is_older_than_its_release_by_semantic_versioning`, `sec_18_the_secret_key_is_its_owner_s_alone`).
 
+## Amendment (2026-11-24, six files in a release)
+
+The release 0.6.0 was published with sixteen files: a signature for each file, the parts list in two formats, a separate VEX file and the notes as a file. That is more than a person needs to pick the right download and check it. From now on (and for 0.6.0 itself when its folder is made again), a release folder holds exactly six files:
+
+1. `bugaboo-<version>-linux-x64`, the program for Linux x64;
+2. `bugaboo-<version>-windows-x64.exe`, the program for Windows x64;
+3. `bugaboo-<version>-notices.txt`, the notices;
+4. `bugaboo-<version>.cdx.json`, the parts list in CycloneDX 1.6 **with the VEX statements in it** (its `vulnerabilities`, each with its `analysis`, as CycloneDX allows in one document);
+5. `SHA256SUMS`, the checksums of the four files above and of nothing else;
+6. `SHA256SUMS.minisig`, **the only signature**.
+
+- **One signature proves every file** (this replaces "a signature for each file" of decisions 1 and 2). The signed list names each file with its checksum, so a signature per file adds nothing a person can check, only more files to download. The trusted comment of the one signature is `file:SHA256SUMS` and `version:<version>`. `bugaboo update verify <file>` checks the signature of `SHA256SUMS` beside the file and finds the file in it by its checksum, so a download saved under another name is still found; it names the file and the version from the list. A person without Bugaboo checks the list with `minisign -Vm SHA256SUMS -P <public key>` and the file with `sha256sum -c SHA256SUMS --ignore-missing` (or `Get-FileHash` on Windows).
+- **The VEX statements are part of the parts list** (this replaces "a VEX statement in the release folder" of decision 4). One document says what is inside and which known vulnerabilities of it do not affect Bugaboo. The program carries the same CycloneDX document, so *About* offers the statements too: one writer, one document per build.
+- **The SPDX file stays in the program, not in the release.** *About* still offers the parts list as SPDX; the release carries one format of it.
+- **The release notes are the text of the GitHub release**, not a file of the folder. `cargo xtask release` writes them beside the folder (`target/release-folder/bugaboo-<version>-notes.md`) from `docs/releases/<version>.md`, with the keys, the support period and the kind of build.
+- **`cargo xtask release check`** fails for a missing file, a file that does not belong, an entry of `SHA256SUMS` that names anything but the four files or gives another checksum, a signature of `SHA256SUMS` that does not hold or names another file or version, a parts list that does not fit its schema or carries no `vulnerabilities`, and a statement without its `analysis`.
+- **A release of the earlier layout** is made into a folder of six files with `cargo xtask release repack --from <folder>`: it takes the programs and the notices as they are and puts the statements of the old VEX file into the CycloneDX parts list with the same code as `cargo xtask release`; `release sign` and `release check` follow as for any release.
+- Enforced by: DEP-SBOM, review (`sec_18_the_release_folder_holds_six_files_and_one_signature`, `sec_18_sha256sums_names_the_payload_and_nothing_else`, `sec_18_the_parts_list_of_a_release_carries_its_vex_statements`, `sec_18_a_release_of_the_earlier_layout_repacks_into_the_six_files`, `sec_18_the_list_alone_is_signed_and_a_changed_byte_fails`, `sec_18_a_download_saved_under_another_name_is_found_by_its_checksum`).
+
 ## Alternatives considered
 
 - **Sigstore (cosign keyless):** needs a hosted build identity and the network at signing time; ADR-0037 has no hosted build. Not now.

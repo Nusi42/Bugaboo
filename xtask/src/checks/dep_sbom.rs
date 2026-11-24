@@ -49,7 +49,6 @@ impl Check for DepSbom {
             list: files.list.clone(),
             cyclonedx: read(formats::cyclonedx_name(version))?,
             spdx: read(formats::spdx_name(version))?,
-            vex: read(formats::vex_name(version))?,
             notices: release::notices::Notices {
                 text: String::new(),
                 without_text: Vec::new(),

@@ -43,7 +43,10 @@ fn a_statement_says_not_affected_with_the_reason_written_in_the_register() {
     let list = &this_repository().list;
     let mut all = entries(DENY, &["advisories", "ignore"]).unwrap();
     all.extend(entries(NPM, &["accepted"]).unwrap());
-    let document = vex(list, &all, &parse_register(REGISTER));
+    let document = with_statements(
+        formats::cyclonedx(list),
+        statements(list, &all, &parse_register(REGISTER)),
+    );
     let found = document["vulnerabilities"].as_array().unwrap();
     assert_eq!(found.len(), 3);
     assert_eq!(found[0]["analysis"]["state"], "not_affected");
@@ -72,7 +75,8 @@ fn comp_03_every_accepted_advisory_has_a_vex_statement_with_its_reason() {
     );
     let register = crate::checks::dep_register::read_register(&root).unwrap();
     let files = this_repository();
-    let statements = files.vex["vulnerabilities"].as_array().unwrap();
+    // The statements are in the `CycloneDX` parts list itself.
+    let statements = files.cyclonedx["vulnerabilities"].as_array().unwrap();
     assert_eq!(statements.len(), accepted.len());
     for entry in &accepted {
         let statement = statements
@@ -93,5 +97,9 @@ fn comp_03_every_accepted_advisory_has_a_vex_statement_with_its_reason() {
             entry.id
         );
     }
-    assert!(formats::cyclonedx_errors(&files.vex).unwrap().is_empty());
+    assert!(
+        formats::cyclonedx_errors(&files.cyclonedx)
+            .unwrap()
+            .is_empty()
+    );
 }

@@ -106,7 +106,6 @@ fn comp_01_two_runs_of_one_commit_write_the_same_bytes() {
 fn the_files_are_named_for_the_version() {
     assert_eq!(cyclonedx_name("0.6.0"), "bugaboo-0.6.0.cdx.json");
     assert_eq!(spdx_name("0.6.0"), "bugaboo-0.6.0.spdx.json");
-    assert_eq!(vex_name("0.6.0"), "bugaboo-0.6.0.vex.json");
 }
 
 #[test]

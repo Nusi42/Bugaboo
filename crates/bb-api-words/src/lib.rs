@@ -338,8 +338,8 @@ mod tests {
     }
 }
 
-/// The files of a build that *About* offers (COMP-01): the parts list in two formats and the
-/// third-party notices. `xtask` writes them (into the folder `bb-api` embeds, and into the release
+/// The files of a build that *About* offers (COMP-01): the parts list in two formats (the
+/// `CycloneDX` one with the VEX statements) and the third-party notices. `xtask` writes them (into the folder `bb-api` embeds, and into the release
 /// folder), `bb-api` reads them; the endings and the names are written here once.
 pub mod about {
     /// The ending of the parts list as `CycloneDX`.
@@ -348,7 +348,9 @@ pub mod about {
     pub const SPDX_END: &str = ".spdx.json";
     /// The ending of the third-party notices.
     pub const NOTICES_END: &str = "-notices.txt";
-    /// The ending of the VEX statements (a release file; the program does not carry it).
+    /// The ending of the separate file of VEX statements that releases up to 0.6.0 published; the
+    /// statements are in the `CycloneDX` parts list now, and `cargo xtask release repack` reads
+    /// the old file. The program does not carry it.
     pub const VEX_END: &str = ".vex.json";
 
     /// The name of a file inside the folder that `bb-api` embeds: the same for every version.

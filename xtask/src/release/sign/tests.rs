@@ -1,7 +1,8 @@
 use bb_core::release::{CHECKSUMS_FILE, RELEASE_PUBLIC_KEYS, ReleaseKey, signature_name};
 
 use super::*;
-use crate::release::folder::{payload, problems, signed_files};
+use crate::release::folder::{payload, problems};
+use crate::release::formats::cyclonedx_name;
 
 /// A Git working tree in a temporary folder, standing for a work folder.
 fn work_folder() -> tempfile::TempDir {
@@ -195,17 +196,30 @@ fn sec_18_an_older_key_with_a_passphrase_still_opens_with_it() {
     assert!(key_of(&text, Some("wrong".to_owned())).is_err());
 }
 
-/// A release folder of `version` with a small stand-in for every file.
+/// A release folder of `version` with a small stand-in for every program and the notices, and
+/// the parts list of this repository with its VEX statements.
 fn release_folder(version: &str) -> tempfile::TempDir {
     let folder = tempfile::tempdir().unwrap();
     for name in payload(version) {
         fs::write(folder.path().join(&name), format!("the file {name}")).unwrap();
     }
+    let parts = crate::release::to_text(&crate::release::this_repository().cyclonedx);
+    fs::write(folder.path().join(cyclonedx_name(version)), parts).unwrap();
     folder
 }
 
+/// A key pair made for the test, and the list of keys that holds its public key.
+fn test_key() -> (SecretKey, [ReleaseKey; 1]) {
+    let pair = KeyPair::generate_unencrypted_keypair().unwrap();
+    let keys = [ReleaseKey {
+        name: "release",
+        public: pair.pk.to_base64().leak(),
+    }];
+    (pair.sk, keys)
+}
+
 #[test]
-fn sec_18_the_release_folder_holds_every_file_and_a_signature_for_each() {
+fn sec_18_keygen_writes_a_key_that_signs() {
     let root = super::super::repository_root();
     let offline = tempfile::tempdir().unwrap();
     let out = offline.path().join("release.key");
@@ -217,67 +231,68 @@ fn sec_18_the_release_folder_holds_every_file_and_a_signature_for_each() {
     assert_eq!(public_of(&key).unwrap(), public);
     let keys = [ReleaseKey {
         name: "release",
-        public: public.clone().leak(),
+        public: public.leak(),
     }];
-
     let folder = release_folder("0.6.0");
-    // Before signing, every signature and the list of checksums are missing.
+    sign_folder(folder.path(), "0.6.0", &key).unwrap();
+    assert_eq!(
+        problems(folder.path(), "0.6.0", &keys),
+        Vec::<String>::new()
+    );
+}
+
+#[test]
+fn sec_18_the_release_folder_holds_six_files_and_one_signature() {
+    let (key, keys) = test_key();
+    let folder = release_folder("0.6.0");
+    // Before signing, the list of checksums and its signature are missing.
     let unsigned = problems(folder.path(), "0.6.0", &keys);
-    assert!(
-        unsigned
-            .iter()
-            .any(|problem| problem.contains(CHECKSUMS_FILE)),
-        "{unsigned:?}"
-    );
-    assert!(
-        unsigned.len() >= signed_files("0.6.0").len(),
-        "{unsigned:?}"
-    );
+    assert_eq!(unsigned, ["SHA256SUMS is missing."], "{unsigned:?}");
 
     sign_folder(folder.path(), "0.6.0", &key).unwrap();
     assert_eq!(
         problems(folder.path(), "0.6.0", &keys),
         Vec::<String>::new()
     );
-    for name in signed_files("0.6.0") {
-        assert!(
-            folder.path().join(signature_name(&name)).is_file(),
-            "{name}"
-        );
-    }
-    // The parts lists, the notices, the VEX statements and the notes are among the signed files.
-    for end in [
-        ".cdx.json",
-        ".spdx.json",
-        "-notices.txt",
-        ".vex.json",
-        "-notes.md",
-    ] {
-        assert!(
-            payload("0.6.0").iter().any(|name| name.ends_with(end)),
-            "{end}"
-        );
-    }
+    let mut names: Vec<String> = fs::read_dir(folder.path())
+        .unwrap()
+        .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+        .collect();
+    names.sort();
+    assert_eq!(
+        names,
+        [
+            "SHA256SUMS",
+            "SHA256SUMS.minisig",
+            "bugaboo-0.6.0-linux-x64",
+            "bugaboo-0.6.0-notices.txt",
+            "bugaboo-0.6.0-windows-x64.exe",
+            "bugaboo-0.6.0.cdx.json",
+        ]
+    );
+    // `SHA256SUMS` lists the four other files, in the order of the payload.
+    let sums = fs::read_to_string(folder.path().join(CHECKSUMS_FILE)).unwrap();
+    let listed: Vec<String> = bb_core::release::checksum_entries(&sums)
+        .into_iter()
+        .map(|(_, name)| name)
+        .collect();
+    assert_eq!(listed, payload("0.6.0"));
     // Another key does not count.
-    let other = [ReleaseKey {
-        name: "other",
-        public: "RWRK0RL2nc9pmFKXiIWQtp+OIHiivdKULp6A7zjkGeiA/c8MMkyBZ5XD",
-    }];
-    assert!(!problems(folder.path(), "0.6.0", &other).is_empty());
-    // A file changed after signing, and a signature that is gone, are found.
+    let (_, other) = test_key();
+    assert_eq!(
+        problems(folder.path(), "0.6.0", &other),
+        ["SHA256SUMS.minisig does not hold: UnknownKey."]
+    );
+    // A file changed after signing is found; so is a signature that is gone.
     let program = &payload("0.6.0")[0];
     fs::write(folder.path().join(program), "another program").unwrap();
-    fs::remove_file(folder.path().join(signature_name(&payload("0.6.0")[2]))).unwrap();
-    let found = problems(folder.path(), "0.6.0", &keys);
-    assert!(
-        found
-            .iter()
-            .any(|problem| problem.starts_with(program.as_str())),
-        "{found:?}"
-    );
-    assert!(
-        found.iter().any(|problem| problem.contains("is missing")),
-        "{found:?}"
+    fs::remove_file(folder.path().join(signature_name(CHECKSUMS_FILE))).unwrap();
+    assert_eq!(
+        problems(folder.path(), "0.6.0", &keys),
+        [
+            format!("{program} has no entry in SHA256SUMS with its checksum."),
+            "SHA256SUMS.minisig is missing.".to_owned(),
+        ]
     );
     // A folder signed as another version is refused.
     let renamed = release_folder("0.6.0");
@@ -286,16 +301,96 @@ fn sec_18_the_release_folder_holds_every_file_and_a_signature_for_each() {
 }
 
 #[test]
+fn sec_18_sha256sums_names_the_payload_and_nothing_else() {
+    let (key, keys) = test_key();
+    let folder = release_folder("0.6.0");
+    sign_folder(folder.path(), "0.6.0", &key).unwrap();
+    let signed = fs::read_to_string(folder.path().join(CHECKSUMS_FILE)).unwrap();
+    // The list `sums`, signed anew.
+    let resign = |sums: &str| {
+        fs::write(folder.path().join(CHECKSUMS_FILE), sums).unwrap();
+        let signature = minisign::sign(
+            None,
+            &key,
+            sums.as_bytes(),
+            Some(&folder::trusted_comment(CHECKSUMS_FILE, "0.6.0")),
+            None,
+        )
+        .unwrap();
+        fs::write(
+            folder.path().join(signature_name(CHECKSUMS_FILE)),
+            signature.into_string(),
+        )
+        .unwrap();
+    };
+    // A list that names one more file is refused, and so is the file.
+    let extra = bb_core::release::checksum_line(&"ab".repeat(32), "bugaboo-0.6.0.spdx.json");
+    resign(&format!("{signed}{extra}"));
+    fs::write(folder.path().join("bugaboo-0.6.0.spdx.json"), "{}").unwrap();
+    assert_eq!(
+        problems(folder.path(), "0.6.0", &keys),
+        [
+            "SHA256SUMS lists bugaboo-0.6.0.spdx.json, which is not a file of the release.",
+            "bugaboo-0.6.0.spdx.json does not belong in the release folder.",
+        ]
+    );
+    // A line that is not an entry is refused too.
+    fs::remove_file(folder.path().join("bugaboo-0.6.0.spdx.json")).unwrap();
+    resign(&format!("{signed}something else\n"));
+    assert_eq!(
+        problems(folder.path(), "0.6.0", &keys),
+        ["SHA256SUMS holds a line that is not a checksum and a name."]
+    );
+}
+
+#[test]
+fn sec_18_the_parts_list_of_a_release_carries_its_vex_statements() {
+    let (key, keys) = test_key();
+    let folder = release_folder("0.6.0");
+    let name = cyclonedx_name("0.6.0");
+    let mut document = crate::release::this_repository().cyclonedx.clone();
+    document.as_object_mut().unwrap().remove("vulnerabilities");
+    fs::write(
+        folder.path().join(&name),
+        crate::release::to_text(&document),
+    )
+    .unwrap();
+    sign_folder(folder.path(), "0.6.0", &key).unwrap();
+    assert_eq!(
+        problems(folder.path(), "0.6.0", &keys),
+        [format!(
+            "{name} carries no VEX statements (no `vulnerabilities`)."
+        )]
+    );
+    // A statement without its analysis, and one the schema does not take.
+    document["vulnerabilities"] = serde_json::json!([
+        {"id": "RUSTSEC-2023-0001"},
+        {"id": "RUSTSEC-2023-0002", "analysis": {"state": "fine"}},
+    ]);
+    fs::write(
+        folder.path().join(&name),
+        crate::release::to_text(&document),
+    )
+    .unwrap();
+    sign_folder(folder.path(), "0.6.0", &key).unwrap();
+    let found = problems(folder.path(), "0.6.0", &keys);
+    assert!(
+        found.contains(&format!(
+            "{name}: the statement on RUSTSEC-2023-0001 has no analysis."
+        )),
+        "{found:?}"
+    );
+    assert!(
+        found
+            .iter()
+            .any(|problem| problem.starts_with(&format!("{name} does not fit its schema"))),
+        "{found:?}"
+    );
+}
+
+#[test]
 fn sec_18_a_file_that_does_not_belong_in_the_release_folder_is_named() {
-    let offline = tempfile::tempdir().unwrap();
-    let out = offline.path().join("release.key");
-    let root = super::super::repository_root();
-    let public = keygen(&out, &root).unwrap();
-    let key = open_key(&out, &root).unwrap();
-    let keys = [ReleaseKey {
-        name: "release",
-        public: public.leak(),
-    }];
+    let (key, keys) = test_key();
     let folder = release_folder("0.6.0-test");
     sign_folder(folder.path(), "0.6.0-test", &key).unwrap();
     assert_eq!(

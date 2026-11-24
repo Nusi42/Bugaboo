@@ -12,7 +12,7 @@ release; the points the legal review must confirm are at the end.
 | Requirement | What meets it |
 |-------------|---------------|
 | (1) A level of cybersecurity that fits the risks | The security architecture ([architecture §12](../architecture/12-security.md)); every rule a machine can check is a check of the catalogue, run at every commit and in every full run (ADR-0020, ADR-0037). |
-| (2)(a) No known exploitable vulnerabilities when placed on the market | SEC-ADVISORIES on every locked part; an advisory is accepted only with a reason and a VEX statement in the release (DEP-SBOM, COMP-03). |
+| (2)(a) No known exploitable vulnerabilities when placed on the market | SEC-ADVISORIES on every locked part; an advisory is accepted only with a reason and a VEX statement in the CycloneDX parts list of the release (DEP-SBOM, COMP-03). |
 | (2)(b) Secure by default, with a way back to the original state | The test `comp_04_every_setting_that_matters_for_security_starts_safe` lists every setting that matters with its safe start and fails on an unsafe one; *Reset to default* on every setting (CFG-06). Not settings: HTTPS from the first start with a certificate of its own (SEC-10); the data folder for the server's account only (`sec_16_folders_are_for_the_owner_only_and_repaired_on_linux`); no account but the first administrator's (AUTH-09); no support access by default (ADR-0048, decision 1). |
 | (2)(c) Vulnerabilities fixed by security updates, where possible automatic, with a notice and a way to postpone | Signed releases and `bugaboo update verify` (SEC-18, DIST-07); the backup and migration at the first start of a new program (OPS-06); the support period on *About* and in `SECURITY.md` (COMP-04). The notice inside Bugaboo is OPS-11 (M14): see the legal review. |
 | (2)(d) Protection from unauthorized access: authentication, identity and access management | Passwords with Argon2id, passkeys and two-step sign-in (AUTH-01 to AUTH-03); sessions with `__Host-` cookies (SEC-12, SEC-COOKIES); the one policy engine (SEC-01, ARCH-AUTHZ-ONLY); the permission matrix for every route and role on both databases (SEC-MATRIX). Attempts are logged (SEC-15). |
@@ -30,13 +30,13 @@ release; the points the legal review must confirm are at the end.
 
 | Requirement | What meets it |
 |-------------|---------------|
-| (1) Identify and document vulnerabilities and components, with a parts list | The parts list in CycloneDX and SPDX for every release, made from the lockfiles (COMP-01, DEP-SBOM, DEP-REGISTER, DEP-LICENSES). |
+| (1) Identify and document vulnerabilities and components, with a parts list | The parts list for every release, made from the lockfiles: in CycloneDX with the VEX statements in the release, and in CycloneDX and SPDX in the program's *About* (COMP-01, DEP-SBOM, DEP-REGISTER, DEP-LICENSES). |
 | (2) Fix vulnerabilities without delay, with security updates apart from new features | The support period and the patch releases from `release-X.Y` ([release guide](../releases/README.md)); the [vulnerability runbook](vulnerability-runbook.md). |
 | (3) Test and review security regularly | `cargo xtask ci` before `main` moves (ADR-0037); a security review of every package that touches security; a security pass before each release. |
 | (4) Disclose fixed vulnerabilities, with an advisory | GitHub security advisories, written as the runbook says. |
 | (5) A policy of coordinated disclosure | [`SECURITY.md`](../../SECURITY.md): private reporting, an answer within a week, disclosure within 90 days. |
 | (6) A contact address for reports | `SECURITY.md` and `/.well-known/security.txt` on every server (COMP-03, `comp_03_security_txt_names_the_organizations_contact_first_and_expires_a_year_after_the_release`). |
-| (7) Secure distribution of updates | Every file signed with our Ed25519 key in the minisign format and listed in `SHA256SUMS`; checked by the installed program (SEC-18, DIST-07, `sec_18_a_signed_file_verifies_and_a_changed_byte_fails`). |
+| (7) Secure distribution of updates | Every file listed with its checksum in `SHA256SUMS`, which is signed with our Ed25519 key in the minisign format; checked by the installed program (SEC-18, DIST-07, `sec_18_the_list_alone_is_signed_and_a_changed_byte_fails`). |
 | (8) Security updates without delay and free of charge, with an advisory | The support period (COMP-04); every release is free (ADR-0036). |
 
 Reporting actively exploited vulnerabilities and severe incidents

@@ -2,8 +2,9 @@
 //!
 //! On Windows it builds the program with `cargo xtask build` (the parts list and the notices are
 //! made fresh and taken into the program first), runs the same command with `--linux` inside WSL
-//! for the static Linux program, writes the parts list, the notices, the VEX statements and the
-//! release notes, and leaves the folder for `cargo xtask release sign`. A folder for a version
+//! for the static Linux program, writes the parts list with the VEX statements and the notices,
+//! writes the release notes beside the folder, and leaves the folder for `cargo xtask release
+//! sign`. A folder for a version
 //! whose tag `v<version>` is not on the commit, or of a program that trusts only test keys, is a
 //! test build: its name, the names of its files and its notes say so. When the tag exists, the
 //! day of the release in `Cargo.toml` must be the day of the tag's commit.
@@ -239,12 +240,10 @@ pub(crate) fn assemble(repo: &Repo) -> anyhow::Result<PathBuf> {
     }
     build_into(root, PLATFORMS[0], &folder, &name)?;
     let files = super::compose(root)?;
-    super::write(&files, &folder, &name)?;
-    super::write_file(
-        &folder,
-        &folder::notes_name(&name),
-        &notes(root, version, build)?,
-    )?;
+    super::write_release(&files, &folder, &name)?;
+    let notes_path = folder::notes_path(&folder, &name);
+    fs::write(&notes_path, notes(root, version, build)?)
+        .with_context(|| format!("could not write {}", notes_path.display()))?;
     Ok(folder)
 }
 
@@ -388,9 +387,9 @@ mod tests {
             let build = Build { tagged, test_keys };
             assert_eq!(build.release_name("0.6.0"), name, "{build:?}");
             // The folder and every file carry the name, and so does every trusted comment.
-            for file in folder::signed_files(name) {
+            for file in folder::files(name) {
                 assert!(
-                    file.contains(name) || file == release::CHECKSUMS_FILE,
+                    file.contains(name) || file.starts_with(release::CHECKSUMS_FILE),
                     "{file}"
                 );
                 assert!(
