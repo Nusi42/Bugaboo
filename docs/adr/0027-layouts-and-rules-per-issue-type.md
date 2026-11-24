@@ -59,6 +59,17 @@ The lookup of decision 2 is `bb_core::lookup::nearest_row`: the one function tha
 - **Issues keep what they have.** A new issue, and a change of the type of an issue, refuse a type that is retired (`issue.type-retired`) or that the project does not offer (`issue.type-not-offered`); a label of a group the project does not offer is not put on an issue (`label.not-offered`). An issue that has a type or a label keeps it. Moving an issue never counts a retired or an unused type as missing (M3-F124): the preview names it (*"{type} is not used in {project}"*), no run is skipped for `type-missing` any more (the word stays readable in runs that were stored), and `label-not-here` is the reason for a label put on an issue by a change to many issues.
 - **Check access per issue type (M3-F44).** `Evaluation::explain_level_for` and `report_for` give the level of a field for one issue type with the reason of each role, found the way `field_level_for` finds it. The answer says `differs_by_type` (some type has a level for some field that the all-types answer does not, among the fields the reader may know), and the screen asks *Which issue type?* only then.
 
+## Amendment (2026-11-24, the layout *Card*)
+
+The maintainer took the recommendation of M10-Q4 of [the M10 plan](../milestones/M10/README.md); it also settles M6-F160. What changes here:
+
+- **A third form, *Card*.** Besides `new-issue` and `issue-page`, a layout may be for the card of a board (`card`). It is found by the same walk (`bb_core::layout::find`, `nearest_row`), per issue type and place, edited in *Layouts* like the issue page, under *Manage issue types, kinds of relation and layouts* and with the edit lock of the layout editor (decision 6).
+- **At most four fields**, placed from the one field list, the three lengths of time among them, so a card places *Estimated time*, *Time left* and *Time spent* as the issue page does. The issue ID and the title are always on a card and do not count. The starting layout shows *Priority*, *Assigned to* and *Due date*.
+- **The same rules as every layout** (decision 4): a field shows on a card only when the layout lists it for one of the person's roles and the field level lets them see it, so a card shows the same fields wherever it appears and never more than the issue page.
+- ***Customize › Card*** on a board opens this layout for a person who may change layouts; a person who may not does not see it. A board keeps no fields of its own.
+
+Enforced by (additional): SEC-MATRIX (the card under field levels), the property test `cfg_01_a_layout_never_shows_a_field_the_role_cannot_see` with the form `card`, review (a board that keeps a list of fields of its own is a second definition of the card).
+
 ## Alternatives considered
 
 - **Layouts as settings values (JSON in the registry):** no issue-type dimension, no typed validation, and every reader would parse JSON. Rejected.

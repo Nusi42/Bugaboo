@@ -56,6 +56,16 @@ The own themes, the dates and the work times took `bb_wasm` to 166.3 KB with Bro
 1. **`cargo xtask wasm` builds the modules with `-Zfmt-debug=none`**: `{:?}` writes nothing in a module. A refusal of the module is still an error, and the text of a serde error loses only the value it quoted. Measured with Brotli at the server's quality: `bb_wasm` from 166.3 KB to 163.7 KB; `bb-wasm-search` stays at 72.1 KB, because it holds no such formatting. The budgets stay as they are.
 2. **The flag is unstable, like the three of amendment M7**, and is taken in under the same terms: only this build sets it, the pinned toolchain must build the modules with it and keep the budgets before an update is taken in, and M7-F206 takes it out with the others when stable Rust can do the same.
 
+## Amendment (2026-11-24, the release words and the steps of the map)
+
+The maintainer took the recommendations of M10-Q7, M10-Q11 and M10-Q18 of [the M10 plan](../milestones/M10/README.md). Decided:
+
+1. **The release words mean releases.** `found in release` and `planned for release`, reserved since M5 (decision 11), are the fields of [ADR-0049](0049-releases.md), decision 3. A value is the name of a release as the person sees it, resolved by the one function that resolves every name (decision 9): the releases of that name in the projects the person sees, compared by `same_name`; a name the person cannot see is an unknown value. They take `is`, `is not`, `in (…)` and `is empty`; as a key of `sort by` a release sorts by its *Release date*, and *Group by* takes both fields. No new word joins the language.
+2. **One limit of steps.** `within N steps` stays at most 5 (decision 6), and the relation map's *Everything* is the same 5: the map reads the limit from `limits.rs` and has no number of its own. A map stops at 200 issues and says so.
+3. ***Only this project* is text.** A view of a project starts from `project within KEY`; the choice *Only this project* writes `project is KEY` into the search text instead ([ADR-0034](0034-saved-searches.md), amendment 2026-11-24), so no option outside the text narrows a search.
+
+Enforced by (additional): TEST-SEARCH-ROUNDTRIP (the release words and *Only this project* print and read back), SEC-MATRIX (the `search` entry point with the release fields and the map), review (a second number for the steps of the map is an ODR finding of coding-standards §1).
+
 ## Enforced by
 
 ARCH-PURE, ARCH-WASM, TEST-SEARCH-ROUNDTRIP (see `tools/checks/catalog.toml`).

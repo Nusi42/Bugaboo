@@ -1,0 +1,48 @@
+# ADR-0050: Dashboards and totals: boxes read as the viewer, no box ranks people
+
+Status: **Accepted** · 2026-11-24 · refines CFG-03, QRY-08, PRIV-09, PRIV-13, COMP-10 and [ADR-0034](0034-saved-searches.md); the answers to M10-Q12, M10-Q13, M10-Q14 and M10-Q15 of [the M10 plan](../milestones/M10/README.md)
+
+## Context
+
+CFG-03 asks for dashboards "built from boxes: search results, charts, time summaries, a small timeline, my timer and recent changes". QRY-08 asks for totals (a count and sums, grouped by a field) "for dashboards and reports". UX design §4.1 draws *Home* as blocks that are saved searches, with a *Customize* that is not built.
+
+A search already answers its groups with a count each (at most 200, M5-F44) and the totals of *Estimated time*, *Time left* and *Time spent*, never over what the reader cannot see (PRIV-13). Saved searches are owned by one person, shared with groups and projects, and run with the rights of whoever opens them (ADR-0034).
+
+A dashboard is a page that several people read. It can show the work and the time of others, so it must never show more than the viewer may see, never tell that something hidden exists, and never turn into a ranking of people (PRIV-09, COMP-10).
+
+## Decision
+
+1. **What a dashboard is:** a name, its boxes, the person who made it and the groups and projects it is shared with. It has a stable address, `/d/<id>`, and is private when it is made. Enforced by: SEC-MATRIX (the routes of dashboards for every starting role).
+2. **Shared like a saved search** (M10-Q12). Sharing follows [ADR-0034](0034-saved-searches.md), decisions 2 to 5, with the new permission ***Share dashboards*** instead of *Share searches*: with a project, *Share dashboards* in that project; with a group, *Share dashboards* for the whole organization and being in that group, or *Manage groups*. It starts with the roles that hold *Share searches*, because a dashboard can show time and work of others and an organization may allow one and not the other ([ADR-0025](0025-roles-groups-and-assignments.md), amendment 2026-11-24). Only the maker changes, shares or deletes a dashboard; a person with *Change organization settings* may delete any; everyone who sees it may *Save a copy*, which is private and their own. A dashboard that does not reach a person, or that they may not open, answers exactly like an address that does not exist. Enforced by: ARCH-PERMS, SEC-MATRIX.
+3. **A box is a reader of a search, run as the viewer.** A box has a kind, a place on a grid of 12 columns (column, row, width and height, at least 3 × 2), a title, and its source: a search text (the canonical text, ADR-0005) or a saved search, with the options of its kind. It runs with the rights of the person who looks at it (ADR-0034, decision 3). A box whose text does not check for the viewer, or whose saved search the viewer may not open, is left out of the answer, and the places of the other boxes close up for that viewer, so no gap, no title and no count tells of it (ADR-0034, decision 4). A dashboard holds at most 20 boxes, and a person makes at most 50 dashboards. Enforced by: SEC-MATRIX, ARCH-NO-COUNTERS.
+4. **Six kinds of box and the ready-made boxes** (M10-Q13). The kinds: *Search results* (the first issues by the search's sort), *Numbers and chart* (the totals of decision 7, by one field, as bars or one number), *Time totals* (estimated, left and spent of the search, or the viewer's own time of a week), *Small timeline* (the timeline of the search, one page, nothing dragged), *My timer* (the viewer's own timer) and *Recent changes* (the newest changes of the issues the search finds, as the history writes them). The ready-made boxes are rows of one list of data in `bb-core` (kind, title, search text, options), never code of their own: "My open issues", "Due soon", "Open bugs by priority", "Issues by status group", "Progress of a release", "My time this week", "Time on this search", "Small timeline of a search", "My timer", "Recent changes in this project". *Add box* offers them with a preview made by the same reads. Enforced by: review (a ready-made box written as code of its own is a second definition of a box, an ODR finding of coding-standards §1).
+5. **No box ranks people** (M10-Q13, PRIV-09, COMP-10). A chart grouped by a person field is in the order of the names, never of size; there is no option to sort it by size and no kind that shows a "top" of people. *Recent changes* lists changes to issues the viewer sees and takes no person of its own; it never shows the work of one person as such (the search may name a person, as any search may). *My time this week* shows only the viewer's own entries. Charts are bars and single numbers, each with a table that screen readers read; there are no pie charts. People appear as *Who sees people* lets the viewer see them (`PersonRef`). Enforced by: ARCH-PERSON-REF, review (the privacy review of every kind of box: no order, option or kind that ranks people).
+6. ***Home* is the person's own dashboard** (M10-Q14). Each person has one dashboard of their own for *Home*, made at first use from the blocks *Home* shows today. It is never shared. *Customize* on *Home* is the dashboard's *Change*; there is one kind of box, not two. If the next plan runs late this is the first part cut (M10-Q21), and *Home* then stays as it is. Enforced by: SEC-MATRIX (the routes of *Home* answer only its person).
+7. **What a total adds up** (M10-Q15): the count, *Estimated time*, *Time left*, *Time spent* and own number fields, grouped by one field, by one route and one shape (the totals of today, `LengthTotals` and the counts of groups, become rows of it, so there is one way to add up a search). A total counts only the issues the search finds for the reader, and a value only where the reader may read that field on that issue; each row says how many issues gave a value. A total never includes a hidden issue. Groups by a person field follow *Who sees people* and stand in the order of the group, never of size. No total uses the *Time factor* (ADR-0030, amendment M8). More than 200 groups come as pages (M5-F44). Enforced by: ARCH-NO-COUNTERS, SEC-MATRIX (the `search` entry point with totals), ARCH-DB-PARITY.
+8. **"Reports" in this decision** are the totals row of a grouped list, the totals in the header of a board's column, and the box *Numbers and chart*. Time reports with export stay TIME-05 and the export of a list stays NTF-05. Enforced by: review (a report beyond these three is a feature of its own, not part of QRY-08).
+9. **Changes are events.** Made, changed, shared, no longer shared and deleted (to the trash, with *Undo*) are events (ADR-0007); a change carries the version it read, and a stale save is refused with the newer version. Enforced by: ARCH-EVENTS, ARCH-VERSIONED.
+10. **AI apps and agents** (M10-Q20): no tool reads or changes a dashboard. The routes of dashboards take a session only, never an access key, like those of saved searches (ADR-0034, amendment M5 WP-06, item 3). The read tool `search_totals` answers the totals of decision 7 as the person, and refuses a group by *Time factor*. Enforced by: ARCH-AI-TOOLS, SEC-MATRIX.
+11. **Personal data.** The name of a dashboard and the titles of its boxes are content written by a person; the maker is a person link (ADR-0044, decision 1). At *Remove a person*, the person's private dashboards and their *Home* go; a shared dashboard stays, made by *Former user …*, and a person with *Change organization settings* may delete it ([ADR-0044](0044-download-my-data-and-remove-a-person.md), amendment 2026-11-24). Enforced by: DATA-MARKS, ARCH-PERSON-REF.
+
+## Consequences
+
+- Totals and the counts of groups become one shape; the list, the board, the boxes and the tool `search_totals` read it.
+- A shared dashboard costs a check per box for every viewer, as a shared saved search costs a check per receiver; the checker is pure and fast.
+- *Home* and dashboards share one kind of box, so a new kind of box reaches both.
+- Dashboards are reached only from a session: no access key and no AI app reads one.
+
+## Alternatives considered
+
+- **Everyone may share a dashboard, or only administrators:** the first lets anyone spread the time of others to a group, the second blocks a team that wants a common page. Rejected; sharing follows saved searches with a permission of its own.
+- **A box that runs with the rights of the maker:** a viewer would see what only the maker may see (SEC-06). Rejected.
+- **A box shown as "You cannot see this box":** it tells that something hidden exists. Rejected; the grid closes up.
+- **Charts sorted by size, a "top" of people:** a ranking of people (COMP-10). Rejected.
+- **Pie charts:** hard to read, and slices of people read as shares of a whole. Not taken; bars and single numbers.
+- ***Home* kept as fixed blocks beside dashboards:** two kinds of box for one job. Not taken (M10-Q14).
+- **Boxes written as code each:** every box would grow its own reads. Rejected; the ready-made boxes are data.
+
+## Enforced by
+
+SEC-MATRIX, ARCH-PERMS, ARCH-NO-COUNTERS, ARCH-PERSON-REF, ARCH-EVENTS, ARCH-VERSIONED, ARCH-DB-PARITY, ARCH-AI-TOOLS, DATA-MARKS; review (no box ranks people; the ready-made boxes are data).
+
+<!-- COMP-10 checked: no box ranks, evaluates or picks a person; charts by a person field are in the order of names. -->

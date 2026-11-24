@@ -162,6 +162,14 @@
 <li><strong><code>cargo xtask wasm</code> builds the modules with <code>-Zfmt-debug=none</code></strong>: <code>{:?}</code> writes nothing in a module. A refusal of the module is still an error, and the text of a serde error loses only the value it quoted. Measured with Brotli at the server's quality: <code>bb_wasm</code> from 166.3 KB to 163.7 KB; <code>bb-wasm-search</code> stays at 72.1 KB, because it holds no such formatting. The budgets stay as they are.</li>
 <li><strong>The flag is unstable, like the three of amendment M7</strong>, and is taken in under the same terms: only this build sets it, the pinned toolchain must build the modules with it and keep the budgets before an update is taken in, and M7-F206 takes it out with the others when stable Rust can do the same.</li>
 </ol>
+<h3>Amendment (2026-11-24, the release words and the steps of the map)</h3>
+<p>The maintainer took the recommendations of M10-Q7, M10-Q11 and M10-Q18 of <span title="../milestones/M10/README.md in the repository">the M10 plan</span>. Decided:</p>
+<ol>
+<li><strong>The release words mean releases.</strong> <code>found in release</code> and <code>planned for release</code>, reserved since M5 (decision 11), are the fields of <a href="#adr-0049">ADR-0049</a>, decision 3. A value is the name of a release as the person sees it, resolved by the one function that resolves every name (decision 9): the releases of that name in the projects the person sees, compared by <code>same_name</code>; a name the person cannot see is an unknown value. They take <code>is</code>, <code>is not</code>, <code>in (…)</code> and <code>is empty</code>; as a key of <code>sort by</code> a release sorts by its <em>Release date</em>, and <em>Group by</em> takes both fields. No new word joins the language.</li>
+<li><strong>One limit of steps.</strong> <code>within N steps</code> stays at most 5 (decision 6), and the relation map's <em>Everything</em> is the same 5: the map reads the limit from <code>limits.rs</code> and has no number of its own. A map stops at 200 issues and says so.</li>
+<li><strong><em>Only this project</em> is text.</strong> A view of a project starts from <code>project within KEY</code>; the choice <em>Only this project</em> writes <code>project is KEY</code> into the search text instead (<a href="#adr-0034">ADR-0034</a>, amendment 2026-11-24), so no option outside the text narrows a search.</li>
+</ol>
+<p>Enforced by (additional): TEST-SEARCH-ROUNDTRIP (the release words and <em>Only this project</em> print and read back), SEC-MATRIX (the <code>search</code> entry point with the release fields and the map), review (a second number for the steps of the map is an ODR finding of coding-standards §1).</p>
 <h3>Enforced by</h3>
 <p>ARCH-PURE, ARCH-WASM, TEST-SEARCH-ROUNDTRIP (see <code>tools/checks/catalog.toml</code>).</p>
 
@@ -286,7 +294,7 @@
 <li><strong>TanStack Router</strong> for type-safe routes and typed URL search parameters (searches and presentations live in the URL).</li>
 <li><strong>TanStack Query</strong> as the only store for server data; long lists are drawn with the <code>Virtualizer</code> of React Aria Components (amendment M5).</li>
 <li><strong>React Aria Components</strong> as the base of every interactive component (focus, keyboard, screen readers, touch).</li>
-<li><strong>Tiptap</strong> (ProseMirror) for the document editor; <strong>d3-force</strong> for the relation map layout; timeline, calendar and charts are our own components on shared primitives.</li>
+<li><strong>Tiptap</strong> (ProseMirror) for the document editor; <strong>d3-force</strong> for the relation map layout <em>(amended: the map has a layout of our own; see the amendment of 2026-11-24)</em>; timeline, calendar and charts are our own components on shared primitives.</li>
 </ul>
 <h3>Consequences</h3>
 <ul>
@@ -300,6 +308,14 @@
 </ul>
 <h3>Amendment M5: one way to draw long lists</h3>
 <p>Decision M5-Q11: long lists draw only the rows that can be seen with the <code>Virtualizer</code> of React Aria Components, which the people list already uses (M2-F84), not with TanStack Virtual: one library for every long list, and the keyboard and screen-reader behaviour of React Aria come with it. <code>@tanstack/react-virtual</code> is not added.</p>
+<h3>Amendment (2026-11-24, the relation map's own layout)</h3>
+<p>The maintainer took the recommendation of M10-Q10 of <span title="../milestones/M10/README.md in the repository">the M10 plan</span>. A force layout keeps moving while it settles, which breaks <em>Nothing moves under the cursor</em> (UX design §6.4), and gives a different picture each time, which a visual test cannot compare. Decided:</p>
+<ol>
+<li><strong>d3-force is not added.</strong> The relation map is laid out by a component of our own, on the shared primitives, like the timeline, the calendar and the charts.</li>
+<li><strong>Columns by steps away.</strong> The starting issue stands in the middle; the issues it waits for and its parents stand in columns to the left, the ones that wait for it and its children to the right, one column per step away, and the kinds without a direction by their first step. Inside a column the issues have a fixed order, so the same answer always gives the same picture.</li>
+<li><strong>Nothing moves by itself.</strong> The picture is drawn once from the answer; it changes only when the person changes the steps, the <em>Kinds shown</em> or the issue in the middle (<em>Put in the middle</em>).</li>
+</ol>
+<p>Enforced by (additional): DEP-UNUSED and DEP-REGISTER (no layout library is added), review (UX design §6.4: the map is measured for movement like every new screen).</p>
 <h3>Enforced by</h3>
 <p>ARCH-WEB-FEATURES, PERF-BUNDLE, TEST-A11Y, LINT-TS (see <code>tools/checks/catalog.toml</code>).</p>
 
@@ -1206,6 +1222,25 @@ Enforced by: ARCH-SETTINGS, and the tests <code>ai_02_ai_is_off_at_the_start_and
 <p><strong>The security log</strong> (decision 9) also records every switch-off, switch-on and removal of a person, naming the person by ID, which reads as their <em>Former user</em> label after a removal.</p>
 </li>
 </ul>
+<h3>Amendment (2026-11-24, <em>Manage releases</em> and <em>Share dashboards</em>)</h3>
+<p>The maintainer took the recommendations of M10-Q7 and M10-Q12 of <span title="../milestones/M10/README.md in the repository">the M10 plan</span>; <a href="#adr-0049">ADR-0049</a> (decisions 5 and 6) and <a href="#adr-0050">ADR-0050</a> (decision 2) say why. What changes here:</p>
+<ul>
+<li>
+<p><strong>The topic <em>Issues</em></strong> gains two permissions, each with its sentence, kind and starting values in the same change as its routes:</p>
+<div class="tbl-wrap"><table class="dtable"><thead><tr><th>Permission</th><th>Counts</th><th>Kind</th><th>Starting roles that have it</th></tr></thead><tbody>
+<tr><td><em>Manage releases</em>: make, rename, date, mark and retire the releases of the project, and delete one that no issue names</td><td>project</td><td><em>Change</em></td><td><em>Administrator, Project lead</em></td></tr>
+<tr><td><em>Share dashboards</em>: share dashboards with the project, or with a group the person is in</td><td>project</td><td><em>Change</em></td><td>the roles that hold <em>Share searches</em>: <em>Administrator, Project lead, Team member, Contributor, Viewer</em></td></tr>
+</tbody></table>
+</div>
+<p>The starting roles get them on the upgrade of an existing server like any new permission of a starting role (decision 4). Seeing a release needs only <em>See the project and what is in it</em>; a person with <em>Manage groups</em> shares a dashboard with any group, as for saved searches (ADR-0034, decision 2). Enforced by: ARCH-PERMS, SEC-MATRIX.</p>
+</li>
+<li>
+<p><strong>AI apps and agents.</strong> No tool of the registry manages a release or touches a dashboard (ADR-0049, decision 8; ADR-0050, decision 10), so neither permission lets an AI app or an agent do anything; the routes of dashboards take a session only. Enforced by: ARCH-AI-TOOLS.</p>
+</li>
+<li>
+<p><strong>The security log</strong> (decision 9) records the gift and the removal of both permissions like any change of permissions. Releases and dashboards themselves are not in the security log: their changes are events (ADR-0007).</p>
+</li>
+</ul>
 <h3>Consequences</h3>
 <ul>
 <li>WP-05 builds the engine from this record and architecture §7; WP-08, WP-09, WP-11 and WP-12 put screens and routes on it; SEC-MATRIX (WP-10) runs every route for every starting role, a role on a parent and on a sibling project, <em>No access</em> and two access keys.</li>
@@ -1417,6 +1452,15 @@ Bold is the same kind of rule: the file has one <code>bold</code> list that name
 <li><strong>Issues keep what they have.</strong> A new issue, and a change of the type of an issue, refuse a type that is retired (<code>issue.type-retired</code>) or that the project does not offer (<code>issue.type-not-offered</code>); a label of a group the project does not offer is not put on an issue (<code>label.not-offered</code>). An issue that has a type or a label keeps it. Moving an issue never counts a retired or an unused type as missing (M3-F124): the preview names it (<em>"{type} is not used in {project}"</em>), no run is skipped for <code>type-missing</code> any more (the word stays readable in runs that were stored), and <code>label-not-here</code> is the reason for a label put on an issue by a change to many issues.</li>
 <li><strong>Check access per issue type (M3-F44).</strong> <code>Evaluation::explain_level_for</code> and <code>report_for</code> give the level of a field for one issue type with the reason of each role, found the way <code>field_level_for</code> finds it. The answer says <code>differs_by_type</code> (some type has a level for some field that the all-types answer does not, among the fields the reader may know), and the screen asks <em>Which issue type?</em> only then.</li>
 </ul>
+<h3>Amendment (2026-11-24, the layout <em>Card</em>)</h3>
+<p>The maintainer took the recommendation of M10-Q4 of <span title="../milestones/M10/README.md in the repository">the M10 plan</span>; it also settles M6-F160. What changes here:</p>
+<ul>
+<li><strong>A third form, <em>Card</em>.</strong> Besides <code>new-issue</code> and <code>issue-page</code>, a layout may be for the card of a board (<code>card</code>). It is found by the same walk (<code>bb_core::layout::find</code>, <code>nearest_row</code>), per issue type and place, edited in <em>Layouts</em> like the issue page, under <em>Manage issue types, kinds of relation and layouts</em> and with the edit lock of the layout editor (decision 6).</li>
+<li><strong>At most four fields</strong>, placed from the one field list, the three lengths of time among them, so a card places <em>Estimated time</em>, <em>Time left</em> and <em>Time spent</em> as the issue page does. The issue ID and the title are always on a card and do not count. The starting layout shows <em>Priority</em>, <em>Assigned to</em> and <em>Due date</em>.</li>
+<li><strong>The same rules as every layout</strong> (decision 4): a field shows on a card only when the layout lists it for one of the person's roles and the field level lets them see it, so a card shows the same fields wherever it appears and never more than the issue page.</li>
+<li><em><strong>Customize › Card</strong></em> on a board opens this layout for a person who may change layouts; a person who may not does not see it. A board keeps no fields of its own.</li>
+</ul>
+<p>Enforced by (additional): SEC-MATRIX (the card under field levels), the property test <code>cfg_01_a_layout_never_shows_a_field_the_role_cannot_see</code> with the form <code>card</code>, review (a board that keeps a list of fields of its own is a second definition of the card).</p>
 <h3>Alternatives considered</h3>
 <ul>
 <li><strong>Layouts as settings values (JSON in the registry):</strong> no issue-type dimension, no typed validation, and every reader would parse JSON. Rejected.</li>
@@ -2058,6 +2102,17 @@ Bold is the same kind of rule: the file has one <code>bold</code> list that name
 <ul>
 <li>It has no setting, like <em>An administrator downloaded your data</em>: somebody is trying to get into the person's account, and only the person can tell whether it was them. It is told once a day at most, with the first refusal.</li>
 </ul>
+<h3>Amendment (2026-11-24, e-mailed searches)</h3>
+<p>The maintainer took the recommendation of M10-Q16 of <span title="../milestones/M10/README.md in the repository">the M10 plan</span>. <em>E-mail me this search</em> (QRY-07) sends a saved search by e-mail on a schedule the person chooses. It is not a notification: no event starts it, and the outbox reader does not build it. But it leaves the server with issue data, so it follows the rules of decision 3. Decided:</p>
+<ol>
+<li><strong>To the person themselves only.</strong> An e-mailed search goes to the address on record of the person who set it, never to anybody else; there is no field for another address. Enforced by: SEC-MATRIX (the routes of e-mailed searches answer only their person).</li>
+<li><strong>When:</strong> on the weekdays the person chooses (at least one), at a whole hour of the person's time zone (<em>Region</em>). Each sending is a job of its own, spread over the hour, so many people at 8:00 do not run at once (ADR-0017).</li>
+<li><strong>What:</strong> the search runs as the person at sending time, with their rights then (QRY-05). The e-mail holds the name of the saved search and at most 50 issues in its order, each with its ID, title, status and link, then "and 120 more" when the search finds more (a count of what the person sees), a link to the search and a link to the e-mailed search in Bugaboo, where it is stopped. The links open Bugaboo and need a sign-in; nothing in the e-mail changes anything. Plain text by the one writer of decision 3: no picture, no attachment, the links first, control and direction characters removed. With <em>Short e-mails</em> on it leaves out the titles and the name of the search: IDs, statuses and links only. Enforced by: SEC-MATRIX (the e-mail as the person sees the issues), DATA-LOGS (the job logs IDs only).</li>
+<li><em><strong>Only when something is new or changed</strong></em> is on at the start: nothing is sent when no issue the search finds is new or changed since the last e-mail. The e-mailed search keeps only the time of its last e-mail, never the issues.</li>
+<li><strong>It pauses and it ends.</strong> Nothing is sent, and the e-mailed search pauses, while its person is switched off, when the person can no longer open the saved search (<a href="#adr-0034">ADR-0034</a>, amendment 2026-11-24), or while e-mail or the organization setting <code>search-mail.allowed</code> is off; the person sees why in their list, and only the person starts it again. It is deleted with its saved search and at <em>Remove a person</em> (<a href="#adr-0044">ADR-0044</a>, amendment 2026-11-24). Enforced by: SEC-MATRIX, ARCH-SETTINGS.</li>
+<li><strong>Limits and switches.</strong> At most 20 e-mailed searches per person, counted in the change that writes. E-mail itself must be switched on (decision 3). The organization setting <code>search-mail.allowed</code> switches the feature off for everyone; it is on at the start, because e-mail is off until an administrator sets it up. The list of a person's e-mailed searches is under <em>My settings › Notification settings</em>. Enforced by: ARCH-SETTINGS.</li>
+<li><strong>No tool sets one.</strong> AI apps and agents never set, change or stop an e-mailed search; the routes take a session only, like those of saved searches (M10-Q20). Enforced by: ARCH-AI-TOOLS, SEC-MATRIX.</li>
+</ol>
 <h3>Enforced by</h3>
 <p>SEC-MATRIX (the e-mail and notifications column), DOC-GENERATED and the browser test of the vectors (the wording amendment), ARCH-PERSON-REF, ARCH-EVENTS, DATA-MARKS, DATA-LOGS, DEP-REGISTER (<code>lettre</code>), the permission tests of M4 WP-06, and review (no other path sends mail).</p>
 
@@ -2068,7 +2123,7 @@ Bold is the same kind of rule: the file has one <code>bold</code> list that name
 <p>M5 lets people save a search with how its results are shown, and share it with groups or projects (QRY-06, CFG-02). A shared search is a piece of text written by one person and read by others. It must never let a receiver see an issue, a field, a value or a person that their own rights hide, and its text must not tell them that something hidden exists.</p>
 <h3>Decision</h3>
 <ol>
-<li><strong>What a saved search is:</strong> a name, the canonical search text (ADR-0005, amendment M5), how it is shown (the kind of view, columns with their order and widths, <em>Spacing</em>, grouping) <em>(amended: no Spacing; see the amendment "Spacing is the person's own")</em>, the person who made it, and the groups and projects it is shared with. It has a stable address, <code>/s/&lt;id&gt;</code>. M5 shows the kind <em>list</em>; board, timeline and calendar read the same record when their milestones come (M5-Q12).</li>
+<li><strong>What a saved search is:</strong> a name, the canonical search text (ADR-0005, amendment M5), how it is shown (the kind of view, columns with their order and widths, <em>Spacing</em>, grouping) <em>(amended: no Spacing; see the amendment "Spacing is the person's own")</em>, the person who made it, and the groups and projects it is shared with. It has a stable address, <code>/s/&lt;id&gt;</code>. M5 shows the kind <em>list</em>; board, timeline and calendar read the same record when their milestones come (M5-Q12) <em>(amended: the kinds board, calendar and map and their options; see the amendment of 2026-11-24)</em>.</li>
 <li><strong>Private when it is made.</strong> Sharing it needs the new permission <em>Share searches</em> (counts per project; Administrator, Project lead, Team member, Contributor and Viewer start with it, Guest does not):
 <ul>
 <li>with a project: <em>Share searches</em> in that project;</li>
@@ -2118,6 +2173,20 @@ The <em>Share</em> window lists only the groups and projects the person may shar
 <li><strong>The stored field goes:</strong> migration 30 takes <code>saved_search.spacing</code> away (<code>ALTER TABLE … DROP COLUMN</code>, the same statement on SQLite and PostgreSQL, the way migration 20 took <code>mention.read_at</code> away). The API's <code>PresentationRef</code> has no <code>spacing</code> any more. Saved searches came after the API freeze (<code>m4-done</code>), so the frozen copy does not hold them and ARCH-API-FREEZE allows the change; a client that still sends <code>spacing</code> in a body is not refused, the member is not read. A search saved before opens with everything else it kept. The history of a search keeps the <code>spacing</code> its old events named; it is not rewritten.</li>
 </ol>
 <p>Enforced by (additional): the tests <code>qry_06_migration_30_*</code> of <code>bb-store</code> (both databases), the API test of saving a search with an old body (<code>bb-server</code>), the unit tests of the list view and the address, and the browser test that the list follows <em>Spacing</em> (<code>issue-list-keep.spec.ts</code>).</p>
+<h3>Amendment (2026-11-24, board, calendar and map, and what reads a saved search)</h3>
+<p>The maintainer took the recommendations of M10-Q1 to M10-Q5, Q11, Q16 and Q18 of <span title="../milestones/M10/README.md in the repository">the M10 plan</span>. What changes here:</p>
+<ol>
+<li><strong>Three more kinds of view.</strong> Besides <em>list</em> and <em>timeline</em>, a saved search may be shown as a <em>board</em>, a <em>calendar</em> or a <em>map</em>. Each kind keeps its options with the search, as the columns of a list are kept: they are part of how it is shown (decision 1), only its maker changes them (decision 5), a receiver opens it with their own rights (decision 3), and an option that names something the receiver cannot know (a status of a workflow they do not see, a person they see by role only) makes the search not check for them, as any other name does (amendment M5 WP-06, item 8).
+<ul>
+<li><em><strong>Board</strong></em>: the columns come from <em>Status</em> at the start, with the statuses of the same name merged across the workflows of the issues found (<code>same_name</code>), in the order of the workflow of the first project; a column of a status stays when it is empty (M10-Q1). The other choices are <em>Status group</em> (its three columns) and any choice field that holds one value (one column for each choice, and <em>None</em>). Optional <em>Rows</em> split the board by a field. A <em>card limit</em> per column is soft: the column's title says "4 of 3" and turns orange, and nothing is refused (M10-Q2); the count is of the cards the reader sees (PRIV-13). Cards follow the sort of the search (at the start: priority, then last changed); there is no order by hand (M10-Q3). A card shows the fields of the layout <em>Card</em> (<a href="#adr-0027">ADR-0027</a>, amendment 2026-11-24).</li>
+<li><em><strong>Calendar</strong></em>: <em>Dates from</em> chooses the one date field the issues stand on: <em>Due date</em> at the start, <em>Start date</em> or an own date field (M10-Q5). Each issue stands on one day; a drag changes the field shown. Releases and goals' due dates stand on their days as marks that are not dragged (<a href="#adr-0049">ADR-0049</a>, decision 7).</li>
+<li><em><strong>Map</strong></em>: the results of the search (at most 200) and the relations between them, with the <em>Kinds shown</em> (M10-Q11). The map of one issue, which walks from it, is no saved search.</li>
+</ul>
+</li>
+<li><strong>Across projects</strong> (M10-Q18): every kind of view takes any search, <code>project within</code> included, and works with several workflows, fields and kinds of Issue ID at once. A project's views start from <code>project within KEY</code>, the project and everything below it (M5-Q8); the choice <em>Only this project</em> writes <code>project is KEY</code> into the search text instead, so the text stays the one source of what is shown and there is no option beside it that narrows the search.</li>
+<li><strong>Other things that read a saved search.</strong> A box of a dashboard (<a href="#adr-0050">ADR-0050</a>, decision 3) and an e-mailed search (<a href="#adr-0033">ADR-0033</a>, amendment 2026-11-24) read a saved search as their person, through the one rule of who may open it (<code>Ctx::may_open</code>, amendment M5 WP-06, item 4): a box whose saved search the viewer may not open is left out, and an e-mailed search whose saved search its person may no longer open pauses. Deleting a saved search deletes the e-mailed searches of it, in the same change.</li>
+</ol>
+<p>Enforced by (additional): SEC-MATRIX (the <code>search</code> entry point with the board, the calendar and the map), TEST-SEARCH-ROUNDTRIP (<em>Only this project</em> as text), ARCH-API-FREEZE (the new kinds and options are additions), ARCH-NO-COUNTERS (the count of a card limit).</p>
 <h3>Enforced by</h3>
 <p>SEC-MATRIX (the <code>search</code> entry point, with saved searches), ARCH-PERMS (<em>Share searches</em>), ARCH-EVENTS, DATA-MARKS, PERF-N1 (the list of saved searches), and the tests of M5 WP-06 named in the security chapter.</p>
 
@@ -2608,7 +2677,7 @@ Worked-out days are shown, never stored: a date is stored only when a person or 
 </li>
 <li><strong>A move that breaks a dependency is a warning, never a push.</strong> When an issue that waits starts on or before the last day of an issue it waits for, on the days the plan shows, both bars and the list of warnings show the plan warning <em>Delay</em> (ADR-0030, decision 5): <em>"WEB-280 now ends 2 days after WEB-284 starts, and WEB-284 waits for it"</em>. Nothing else moves. Its ways out are those of ADR-0030: <em>Move it after</em> moves the issue that waits, and the issues that wait for it in turn, so that each starts on the first day after the one before it ends; a preview names every issue and its new dates before anything is saved. <em>Keep and accept</em> leaves the plan as it is. <em>Plan by effort</em> never moves a start along a dependency by itself. Enforced by: the tests of WP-06 (<code>plan_13_…</code>), review against ADR-0030 (<em>Moving bars by themselves</em> was rejected).</li>
 <li><strong>Every change of a date is a change of the issue.</strong> A change of <em>Start date</em> or <em>Due date</em> (on a form, by a drag, by <em>Set dates…</em>, by <em>Move it after</em>, by an AI app or an agent) is one event with the old and the new value (ADR-0007). The history shows it (<em>"Lea moved WEB-280 from 3–7 Nov to 10–14 Nov"</em>) and <em>Undo</em> takes it back. <em>Move it after</em> with the issues after it is one run, so <em>Undo</em> takes every date of it back in one step. A save carries the version it read: a change made by somebody else in between gets <em>Keep Ben's / Use mine</em>. Enforced by: ARCH-EVENTS, ARCH-VERSIONED, TEST-CONCURRENT (two people move the same bar at once).</li>
-<li><strong>Goals on the timeline; no releases yet</strong> (M8-Q3). A goal with a <em>Due date</em> is drawn as a diamond on that date: it is the milestone of the timeline that PLAN-04 names. A goal's span is a bracket over its sub-issues (UX §4.7). When a sub-issue ends after the due date of its goal, the goal shows <em>Delay</em> with the same ways out: <em>"Lea's away week moves Login screen past the due date of Mobile app 2.0"</em>. Releases (ISS-08) join the timeline in M10, and with them rows by release. Enforced by: the tests of WP-06 and WP-09.</li>
+<li><strong>Goals on the timeline; no releases yet</strong> (M8-Q3). A goal with a <em>Due date</em> is drawn as a diamond on that date: it is the milestone of the timeline that PLAN-04 names. A goal's span is a bracket over its sub-issues (UX §4.7). When a sub-issue ends after the due date of its goal, the goal shows <em>Delay</em> with the same ways out: <em>"Lea's away week moves Login screen past the due date of Mobile app 2.0"</em>. Releases (ISS-08) join the timeline in M10, and with them rows by release <em>(amended: releases are milestones too; see the amendment of 2026-11-24)</em>. Enforced by: the tests of WP-06 and WP-09.</li>
 </ol>
 <h3>Consequences</h3>
 <ul>
@@ -2625,6 +2694,24 @@ Worked-out days are shown, never stored: a date is stored only when a person or 
 <li><strong>All four date effects now:</strong> the other three are V1 in PLAN-02 and need their own warnings. Not taken.</li>
 <li><strong>Releases on the timeline in M8:</strong> releases are their own record with their own rules (ISS-08, M10). Not taken; a goal's due date stands in for them.</li>
 </ul>
+<h3>Amendment (2026-11-24, deadline drivers, two new plan warnings and releases)</h3>
+<p>The maintainer took the recommendations of M10-Q8 and M10-Q9 of <span title="../milestones/M10/README.md in the repository">the M10 plan</span>. What changes here:</p>
+<ol>
+<li>
+<p><strong>Deadline drivers</strong> (PLAN-05). For each end in the view (each goal with a <em>Due date</em>, each release with a <em>Release date</em>, and the last day of the view) the plan works out the chain of dependencies, with no slack, that ends on it: the issues whose delay by a day moves that end by a day. The plan works it out on the server, as it works out every bar (ADR-0030, amendment M8), with <em>Plan by effort</em> when it is on, and <strong>only over the issues the reader sees</strong> (PLAN-08): a chain through a hidden issue is not outlined, and nothing tells that one exists, so two readers may see different drivers as they may see different bars. The switch <em>Deadline drivers</em> is an option of the timeline view; on, the bars of a chain are outlined and their card says which end they set ("Sets the end of Mobile app 2.0"). Enforced by: SEC-MATRIX (the timeline under visibility), and the tests <code>plan_05_…</code> of the package that builds the drivers.</p>
+</li>
+<li>
+<p><strong>Two new plan warnings for impossible dependencies</strong>, with the rules of the others (ADR-0030, decision 5: each way out is a person's choice, an accepted warning stays faded and comes back when a date changes):</p>
+<ul>
+<li><em><strong>Loop</strong></em>: a loop of dependencies stored before migration 49 (decision 4 keeps them), in which nothing can start. "WEB-160 and WEB-161 wait for each other; neither can start." Its ways out are <em>Open the relation</em> (the relation on the issue page, to take it away) and <em>Keep and accept</em>.</li>
+<li><em><strong>Cannot fit</strong></em>: an issue's <em>Due date</em> lies before the earliest day on which the issues it waits for can end. "WEB-284 is due on 14 Nov, but what it waits for ends on 18 Nov." Its ways out are <em>Make it longer</em> (it shows the due date the issue needs and moves it only when the person confirms) and <em>Keep and accept</em>.</li>
+</ul>
+<p>Enforced by: the tests <code>plan_05_…</code> and <code>plan_13_…</code> of that package, review (against ADR-0030: a warning never moves a date by itself).</p>
+</li>
+<li>
+<p><strong>Releases are milestones too</strong> (M10-Q8; <a href="#adr-0049">ADR-0049</a>, decision 7). A release with a <em>Release date</em> is a diamond on that date with its name, like a goal's due date (decision 7). <em>Group by release</em> groups the rows by <em>Planned for release</em>, with <em>None</em> last. An issue planned for a release that ends after the release date shows <em>Delay</em> with the ways out of a goal: "WEB-280 now ends 2 days after release 2.5." Enforced by: SEC-MATRIX (a release shows only to a reader who sees its project), the tests <code>plan_04_…</code> of that package.</p>
+</li>
+</ol>
 <h3>Enforced by</h3>
 <p>SEC-MATRIX, ARCH-EVENTS, ARCH-VERSIONED, ARCH-DB-PARITY, ARCH-API-FREEZE, TEST-SEARCH-ROUNDTRIP, TEST-CONCURRENT, TEST-A11Y (every drag has a typed alternative: <em>Set dates…</em>, <em>Add dependency…</em>), the tests that WP-03, WP-06 and WP-09 of M8 name, and review against ADR-0030 (no bar moves by itself).</p>
 <!-- COMP-10 checked: dates and dependencies rank, evaluate or pick nobody; Move it after moves issues, never people. -->
@@ -2728,6 +2815,15 @@ Worked-out days are shown, never stored: a date is stored only when a person or 
 <li><strong>The words of a removal are a sealed secret, and a removal that stops goes on by itself.</strong> No payload of a job holds a word of the person: a dead job would keep it on the dead-letter list, its purge would delete the only copy, and the page would say <em>removed</em> while the name stays in the changes. The words are a stored secret (<code>privacy.removal.&lt;ID&gt;</code>), encrypted with a fresh key of its own that the newest master key wraps, through the one sealing of secrets (<code>secrets::sealed_secret</code>), so the rotation of the master key and the check of the keys before a restore cover it like the password of the mail server; the last step deletes it with its key, so a copy in a backup made meanwhile opens only with the key files. The words are read and sealed before the change (the key files are no part of a change) and read again in it: the change stores the secret only while the record still says the same, and is refused otherwise. A person is being removed exactly while the row exists (<code>RemovalStore::pending_removal</code>; the page says <em>Bugaboo is removing this person</em> and the API adds <code>removing</code> to the person, an addition only). A job that gave up stays on the dead-letter list while the row names it (the purge of dead jobs leaves it), the status page of the server counts the removal (<code>removals_stopped</code>, an addition only) and the daily job <code>privacy.resume-removals</code>, which also runs at every start, gives it a new job from the step of the row. Rejected: a route or a console command for an administrator to start it again, because the removal is a duty under the law (GDPR Art. 17) that should not wait for somebody to notice, and agents work without a person; the status page tells an administrator about a fault that stays. A job of a version before the steps (<code>{comments, issues, exports}</code>) is still done the way it was then. A backup made while a removal goes on holds its row, its secret and its job, and a restore with the same key files goes on with it; a backup made before it gets the removal from the replay list, whose change writes them anew. Enforced by: <code>priv_04_a_job_that_gives_up_stays_and_goes_on_with_the_daily_round</code>, <code>priv_04_a_job_queued_before_the_steps_still_finishes</code> (the in-memory store), <code>priv_04_the_dead_job_of_a_removal_is_kept_and_counted_until_the_removal_goes_on</code>, <code>priv_04_a_backup_made_while_a_removal_goes_on_holds_what_finishes_it</code>, <code>priv_04_a_removal_replayed_into_an_older_backup_starts_its_job_again</code> (both databases) and <code>priv_04_a_removal_whose_job_gave_up_shows_on_the_status_page_and_still_finishes</code> (over HTTP).</li>
 <li><strong>The comments that go are hidden at once; the name stays a short while.</strong> The change of the removal puts every comment that goes into the trash, one statement through the index of the author, so no read, search or export shows it from then on: a search leaves out every comment in the trash (an index of migration 64 answers it) also while the full-text index still holds it, and nobody takes one out of the trash while its removal goes on. The job deletes them in steps. What stays until the scrub has passed is the name, the handles and the address where only those words name the person in the changes of the events, the history and the notifications. The job starts right after the change and works through them without a pause, and a job that stops is tried again every day: that is processing without undue delay (GDPR Art. 17(1)), seconds on 50,000 issues and minutes on a million. Enforced by: <code>priv_04_the_comments_that_go_are_hidden_from_the_change_of_the_removal_on</code> (the in-memory store and both databases).</li>
 </ul>
+<h3>Amendment (2026-11-24, dashboards, pins and e-mailed searches)</h3>
+<p>The next plan adds three kinds of a person's own data, and releases, whose events name who changed them (<span title="../milestones/M10/README.md in the repository">the M10 plan</span>; <a href="#adr-0049">ADR-0049</a>, <a href="#adr-0050">ADR-0050</a>, <a href="#adr-0033">ADR-0033</a>, amendment 2026-11-24). What <em>Switch off</em>, <em>Remove a person</em> and <em>Download my data</em> do with them:</p>
+<ul>
+<li><strong>Each names its person with a link</strong> (decision 1): the maker of a dashboard is its <code>author</code>; the person of a pin and of an e-mailed search is its <code>holder</code>. The walk finds them like every other row.</li>
+<li><em><strong>Switch off</strong></em> (decision 5): the person's e-mailed searches pause and send nothing; their dashboards, a shared one included, and their pins stay as they are. <em>Switch on</em> lets the person start the e-mailed searches again; none starts by itself.</li>
+<li><em><strong>Remove a person</strong></em> (decision 6): the person's pins, e-mailed searches, private dashboards and their <em>Home</em> go in the change of the removal, as rows the person holds or wrote as their only author. A dashboard shared with others stays, made by <em>Former user …</em>, like a shared saved search (M5-F62), and a person with <em>Change organization settings</em> may delete it. The events of releases they changed stay, naming <em>Former user …</em>.</li>
+<li><em><strong>Download my data</strong></em> (decision 3) holds the person's dashboards with their boxes, their pins and their e-mailed searches (the weekdays, the hour and the search they read).</li>
+</ul>
+<p>Enforced by: DATA-MARKS (the marks and person links of the new entities), SEC-MATRIX (an e-mailed search of a switched-off person sends nothing), ARCH-PERSON-REF, and the removal tests <code>priv_04_…</code> that the packages of dashboards, pins and e-mailed searches name.</p>
 
 <!-- 0045-keep-and-delete-rules.md -->
 <h2 id="adr-0045"><button class="sec" data-sec>§45</button>ADR-0045: Keep and delete rules</h2>
@@ -2781,6 +2877,15 @@ Worked-out days are shown, never stored: a date is stored only when a person or 
 <li><strong>Every person reads the rules.</strong> <code>GET /api/v1/admin/keep-rules</code> answers every person who signs in with a session, not an access key or an agent: how long their data is kept is part of what GDPR Art. 15(1)(d) gives them, and <em>My settings › My data</em> shows it. The answer is the same for everybody, the setting and the floor of each row included, because a keep period is not secret. Changing a period and the counts stay with <em>Change organization settings</em>. Enforced by: SEC-MATRIX.</li>
 <li><strong>What a changed period would delete is counted with the cutoff of the deleting.</strong> <code>GET /api/v1/admin/keep-rules/{kind}/would-delete?count=…</code> counts, before a period is saved, the records the job of a kind of the first group would delete with the changed period, or the records of a kind of the second group that would be past it. The settings as they would be come from <code>KeepRule::with_period</code>, the cutoff from the same function as the job's (<code>keep_cutoff_with</code>, <code>kept_from_today_with</code>), and each count from the condition the purge of its kind deletes by (<code>bb-store</code>, <code>keeping/past.rs</code>), so the count and the deleting cannot drift apart. Only a kind whose period is one setting has a count: a fixed period is never changed, and the rotation of backups is the work of two settings on the page of backups. Enforced by: SEC-MATRIX, ARCH-DB-PARITY (the counts on both databases), review (no second cutoff).</li>
 </ul>
+<h3>Amendment (2026-11-24, releases, dashboards, pins and e-mailed searches)</h3>
+<p>The next plan adds four kinds of data (<span title="../milestones/M10/README.md in the repository">the M10 plan</span>). None of them is deleted after a time, so none has a period and none is a row of <code>KEEP_KINDS</code>, which holds the kinds deleted after a time (decision 1); this amendment is where each of them says why (the consequence "every kind of data needs a row" is met by a row or by a sentence here):</p>
+<ul>
+<li><strong>Releases</strong> (<a href="#adr-0049">ADR-0049</a>) are business records: kept until a person with <em>Manage releases</em> deletes one that no issue names. Bugaboo never deletes one by itself (the maintainer's rule of explicit deletion, decision 1).</li>
+<li><strong>Dashboards</strong> (<a href="#adr-0050">ADR-0050</a>) are kept until their maker deletes them, or a person with <em>Change organization settings</em> deletes a shared one; the private ones go at <em>Remove a person</em>.</li>
+<li><strong>Pins</strong> are kept until their person takes them off; a pin goes with the project, saved search or dashboard it points to, and at <em>Remove a person</em>.</li>
+<li><strong>E-mailed searches</strong> (<a href="#adr-0033">ADR-0033</a>, amendment 2026-11-24) are kept until their person deletes them; they go with their saved search and at <em>Remove a person</em>. The e-mail itself is a job like every e-mail, whose payload the row <em>Dead jobs</em> already covers.</li>
+</ul>
+<p>A deleted release or dashboard goes to the trash first, which the row of the trash empties after its period, as for issues and saved searches. Enforced by: DATA-MARKS (each new entity carries its marks and person links), review (a job that deletes one of these four by time is a finding, and so is a new kind of data with neither a row nor a sentence here).</p>
 
 <!-- 0046-backups-restore-and-upgrades.md -->
 <h2 id="adr-0046"><button class="sec" data-sec>§46</button>ADR-0046: Backups, restore and upgrades</h2>
@@ -3004,6 +3109,111 @@ Worked-out days are shown, never stored: a date is stored only when a person or 
 </ul>
 <h3>Enforced by</h3>
 <p>SEC-MATRIX, ARCH-PERMS, ARCH-SETTINGS, ARCH-AI-TOOLS, ARCH-EVENTS, ARCH-PERSON-REF; review (no second way in).</p>
+
+<!-- 0049-releases.md -->
+<h2 id="adr-0049"><button class="sec" data-sec>§49</button>ADR-0049: Releases of a project: where they live, three states, two fields on issues</h2>
+<p>Status: <strong>Accepted</strong> · 2026-11-24 · refines ISS-08, PLAN-04, <a href="#adr-0043">ADR-0043</a> decision 7 and <a href="#adr-0005">ADR-0005</a> amendment M5, decision 11; the answers to M10-Q6, M10-Q7, M10-Q8 and M10-Q20 of <span title="../milestones/M10/README.md in the repository">the M10 plan</span></p>
+<h3>Context</h3>
+<p>ISS-08 asks for <em>Found in release</em> and <em>Planned for release</em> on issues, "plus release status and dates". Until now a release is only a word: the glossary has <em>Release</em>, <em>Found in release</em> and <em>Planned for release</em>, the field catalogue reserves the two fields, and the search language reserves their words (<code>found in release</code>, <code>planned for release</code>) so that no own field can take them (M8-F57). The timeline draws a goal's due date as its milestone and promised releases "in M10" (ADR-0043, decision 7; M8-Q3); rows by release wait for them (PLAN-04).</p>
+<p>A release here is a version of the product that an organization plans in Bugaboo (<em>2.4</em>). It is not a release of Bugaboo itself, which <a href="#adr-0047">ADR-0047</a> is about.</p>
+<p>Three things had to be decided: where a release lives, so that a product of several parts can plan one release for all of them; what a release holds and how it ends; and who manages releases.</p>
+<h3>Decision</h3>
+<ol>
+<li>
+<p><strong>A release lives in one project and is offered in that project and its sub-projects</strong> (M10-Q6). A product with several parts plans one release for all of them by making it in their common project. Its name is unique within its project, by the one rule of names (<code>bb_core::names::same_name</code>). The offer follows the project tree as permissions do (PRJ-02). An issue moved out of the tree keeps its releases, and the issue shows them with a note that they are not offered there; a new choice of a release that is not offered where the issue is is refused. Enforced by: SEC-MATRIX (the routes of releases for every starting role), ARCH-DB-PARITY, and the tests <code>iss_08_…</code> of the package that builds releases.</p>
+</li>
+<li>
+<p><strong>What a release is</strong> (M10-Q7): a name, a <em>Release date</em> (the planned day: a calendar date with no time of day, optional), and a state, one of three, defined once in <code>bb-core</code>:</p>
+<ul>
+<li><em><strong>Planned</strong></em>: the state when it is made;</li>
+<li><em><strong>Released</strong></em>: the day it is marked is kept as <em>Released on</em>; it may go back to <em>Planned</em> with a reason, which the history shows;</li>
+<li><em><strong>Retired</strong></em>: no longer offered for a new choice, still shown on the issues that name it. The glossary's word for "not offered any more, kept where it is used" is <em>Retire</em>, as for choices, labels, issue types and kinds of relation; the recommendation called this state <em>Archived</em>, a word the glossary does not allow in the UI.</li>
+</ul>
+<p>A release has no start date: its span is the span of its issues. Enforced by: ARCH-EVENTS, ARCH-VERSIONED (every change of a release carries the version it read).</p>
+</li>
+<li>
+<p><strong>Two built-in fields on issues</strong> (M10-Q7). <em>Found in release</em> holds several releases (at most 20, like labels), because a bug can be seen in several releases; <em>Planned for release</em> holds one, because it is fixed in one. Both are fields of the field catalogue in <code>bb-core</code>, like <em>Due date</em>: field permissions with the starting levels of <em>Due date</em>, a place on forms and in layouts, a column in lists, a line in the history with the old and the new value, and their search words (decision 4). Enforced by: SEC-MATRIX (the field levels of both fields), ARCH-API-FREEZE (two optional members of an issue, nothing renamed), ARCH-EVENTS.</p>
+</li>
+<li>
+<p><strong>The search words get their meaning.</strong> <code>found in release</code> and <code>planned for release</code> take a release by its name as the person sees it, resolved like a status: the releases of that name in the projects the person sees, compared by <code>same_name</code>; a name the person cannot see is an unknown value with the same message as one that does not exist (ADR-0005, decision 9 of amendment M5). They take <code>is</code>, <code>is not</code>, <code>in (…)</code> and <code>is empty</code>; <code>sort by</code> orders by the <em>Release date</em>, and <em>Group by</em> groups by release. Enforced by: TEST-SEARCH-ROUNDTRIP, SEC-MATRIX (the <code>search</code> entry point).</p>
+</li>
+<li>
+<p><strong>The permission <em>Manage releases</em></strong> (a project permission of kind <em>Change</em>; <em>Administrator</em> and <em>Project lead</em> hold it at the start) makes, renames, dates, marks and retires the releases of a project, and deletes them (decision 6). Seeing a release needs only seeing its project. Its sentence, kind and starting roles are in <a href="#adr-0025">ADR-0025</a>, amendment 2026-11-24. Enforced by: ARCH-PERMS, SEC-MATRIX.</p>
+</li>
+<li>
+<p><strong>A release that an issue names is retired, never deleted.</strong> Deleting it is refused with a sentence that says that issues name it and counts none of them (<code>release.in-use</code>), so the refusal tells nothing of issues the person cannot see. A release that no issue names may be deleted by a person with <em>Manage releases</em>: it goes to the trash with <em>Undo</em>, like issues. Bugaboo never deletes a release by itself (explicit deletion, <a href="#adr-0045">ADR-0045</a>, amendment 2026-11-24). Enforced by: SEC-MATRIX, ARCH-NO-COUNTERS (the refusal holds no count).</p>
+</li>
+<li>
+<p><strong>Releases on the timeline, the calendar and <em>Home</em></strong> (M10-Q8). A release with a <em>Release date</em> is a diamond on the timeline and a mark on the calendar, like a goal's due date (<a href="#adr-0043">ADR-0043</a>, amendment 2026-11-24); it is not dragged there. <em>Group by release</em> (by <em>Planned for release</em>, with <em>None</em> last) groups the rows of the timeline and of a board. An issue planned for a release that ends after the release date shows <em>Delay</em> with the same ways out as for a goal. <em>Due soon</em> on <em>Home</em> lists the releases due in the next 7 days. A release shows only to a reader who sees its project. Enforced by: SEC-MATRIX (the timeline and the calendar under visibility), and the tests <code>plan_05_…</code> and <code>iss_08_…</code> of the packages that draw them.</p>
+</li>
+<li>
+<p><strong>AI apps and agents</strong> (M10-Q20): a read tool <code>list_releases</code> (the releases offered in a project the person sees), and the two fields through <code>change_issue</code> with its preview, like any field. No tool makes, changes, marks, retires or deletes a release, so neither an AI app nor an agent manages releases. Enforced by: ARCH-AI-TOOLS.</p>
+</li>
+<li>
+<p><strong>A release is business data, not personal data.</strong> Its events name who changed it, shown as <em>Who sees people</em> allows (<code>PersonRef</code>); after <em>Remove a person</em> those events show <em>Former user</em>. Enforced by: DATA-MARKS, ARCH-PERSON-REF.</p>
+</li>
+</ol>
+<h3>Consequences</h3>
+<ul>
+<li>A migration adds the releases of a project and the two fields of an issue; the API grows by the routes of releases under a project and two optional members of an issue (ARCH-API-FREEZE).</li>
+<li>The reserved words of the search language stand for something, and a saved search that used them before reads the same text with the new meaning (TEST-SEARCH-ROUNDTRIP).</li>
+<li>PLAN-04 is complete: rows by release join the timeline, and a release is a milestone of it beside a goal's due date.</li>
+<li>Standing rules of agents that change <em>Found in release</em> (AI-32) work on the new field through <code>change_issue</code> like any other field.</li>
+</ul>
+<h3>Alternatives considered</h3>
+<ul>
+<li><strong>One list of releases for the whole organization:</strong> every project would see the releases of every other, and a name could not be reused. Rejected.</li>
+<li><strong>A release only in its own project, not below it:</strong> a product of several parts would need the same release in every part. Rejected.</li>
+<li><strong>States the organization defines:</strong> a workflow for releases that nobody asked for, and the timeline and the calendar would have to learn what each state means. Rejected; three states cover making, shipping and putting away.</li>
+<li><strong>One release per field, or several in both:</strong> a bug can be seen in several releases but is fixed in one. Rejected.</li>
+<li><strong>A start date on a release:</strong> its issues already have dates; a second span would disagree with them. Rejected.</li>
+<li><strong>The state <em>Archived</em>:</strong> the recommendation's word, but the glossary keeps <em>archive</em> out of the UI and has <em>Retire</em> for exactly this meaning. Not taken; same meaning, the glossary's word.</li>
+</ul>
+<h3>Enforced by</h3>
+<p>SEC-MATRIX, ARCH-PERMS, ARCH-EVENTS, ARCH-VERSIONED, ARCH-API-FREEZE, ARCH-DB-PARITY, ARCH-NO-COUNTERS, ARCH-AI-TOOLS, ARCH-PERSON-REF, DATA-MARKS, TEST-SEARCH-ROUNDTRIP, and the tests <code>iss_08_…</code> and <code>plan_05_…</code> that the packages of releases and of the timeline name.</p>
+<!-- COMP-10 checked: releases rank, evaluate or pick nobody; no tool lets AI manage them. -->
+
+<!-- 0050-dashboards-and-totals.md -->
+<h2 id="adr-0050"><button class="sec" data-sec>§50</button>ADR-0050: Dashboards and totals: boxes read as the viewer, no box ranks people</h2>
+<p>Status: <strong>Accepted</strong> · 2026-11-24 · refines CFG-03, QRY-08, PRIV-09, PRIV-13, COMP-10 and <a href="#adr-0034">ADR-0034</a>; the answers to M10-Q12, M10-Q13, M10-Q14 and M10-Q15 of <span title="../milestones/M10/README.md in the repository">the M10 plan</span></p>
+<h3>Context</h3>
+<p>CFG-03 asks for dashboards "built from boxes: search results, charts, time summaries, a small timeline, my timer and recent changes". QRY-08 asks for totals (a count and sums, grouped by a field) "for dashboards and reports". UX design §4.1 draws <em>Home</em> as blocks that are saved searches, with a <em>Customize</em> that is not built.</p>
+<p>A search already answers its groups with a count each (at most 200, M5-F44) and the totals of <em>Estimated time</em>, <em>Time left</em> and <em>Time spent</em>, never over what the reader cannot see (PRIV-13). Saved searches are owned by one person, shared with groups and projects, and run with the rights of whoever opens them (ADR-0034).</p>
+<p>A dashboard is a page that several people read. It can show the work and the time of others, so it must never show more than the viewer may see, never tell that something hidden exists, and never turn into a ranking of people (PRIV-09, COMP-10).</p>
+<h3>Decision</h3>
+<ol>
+<li><strong>What a dashboard is:</strong> a name, its boxes, the person who made it and the groups and projects it is shared with. It has a stable address, <code>/d/&lt;id&gt;</code>, and is private when it is made. Enforced by: SEC-MATRIX (the routes of dashboards for every starting role).</li>
+<li><strong>Shared like a saved search</strong> (M10-Q12). Sharing follows <a href="#adr-0034">ADR-0034</a>, decisions 2 to 5, with the new permission <em><strong>Share dashboards</strong></em> instead of <em>Share searches</em>: with a project, <em>Share dashboards</em> in that project; with a group, <em>Share dashboards</em> for the whole organization and being in that group, or <em>Manage groups</em>. It starts with the roles that hold <em>Share searches</em>, because a dashboard can show time and work of others and an organization may allow one and not the other (<a href="#adr-0025">ADR-0025</a>, amendment 2026-11-24). Only the maker changes, shares or deletes a dashboard; a person with <em>Change organization settings</em> may delete any; everyone who sees it may <em>Save a copy</em>, which is private and their own. A dashboard that does not reach a person, or that they may not open, answers exactly like an address that does not exist. Enforced by: ARCH-PERMS, SEC-MATRIX.</li>
+<li><strong>A box is a reader of a search, run as the viewer.</strong> A box has a kind, a place on a grid of 12 columns (column, row, width and height, at least 3 × 2), a title, and its source: a search text (the canonical text, ADR-0005) or a saved search, with the options of its kind. It runs with the rights of the person who looks at it (ADR-0034, decision 3). A box whose text does not check for the viewer, or whose saved search the viewer may not open, is left out of the answer, and the places of the other boxes close up for that viewer, so no gap, no title and no count tells of it (ADR-0034, decision 4). A dashboard holds at most 20 boxes, and a person makes at most 50 dashboards. Enforced by: SEC-MATRIX, ARCH-NO-COUNTERS.</li>
+<li><strong>Six kinds of box and the ready-made boxes</strong> (M10-Q13). The kinds: <em>Search results</em> (the first issues by the search's sort), <em>Numbers and chart</em> (the totals of decision 7, by one field, as bars or one number), <em>Time totals</em> (estimated, left and spent of the search, or the viewer's own time of a week), <em>Small timeline</em> (the timeline of the search, one page, nothing dragged), <em>My timer</em> (the viewer's own timer) and <em>Recent changes</em> (the newest changes of the issues the search finds, as the history writes them). The ready-made boxes are rows of one list of data in <code>bb-core</code> (kind, title, search text, options), never code of their own: "My open issues", "Due soon", "Open bugs by priority", "Issues by status group", "Progress of a release", "My time this week", "Time on this search", "Small timeline of a search", "My timer", "Recent changes in this project". <em>Add box</em> offers them with a preview made by the same reads. Enforced by: review (a ready-made box written as code of its own is a second definition of a box, an ODR finding of coding-standards §1).</li>
+<li><strong>No box ranks people</strong> (M10-Q13, PRIV-09, COMP-10). A chart grouped by a person field is in the order of the names, never of size; there is no option to sort it by size and no kind that shows a "top" of people. <em>Recent changes</em> lists changes to issues the viewer sees and takes no person of its own; it never shows the work of one person as such (the search may name a person, as any search may). <em>My time this week</em> shows only the viewer's own entries. Charts are bars and single numbers, each with a table that screen readers read; there are no pie charts. People appear as <em>Who sees people</em> lets the viewer see them (<code>PersonRef</code>). Enforced by: ARCH-PERSON-REF, review (the privacy review of every kind of box: no order, option or kind that ranks people).</li>
+<li><strong><em>Home</em> is the person's own dashboard</strong> (M10-Q14). Each person has one dashboard of their own for <em>Home</em>, made at first use from the blocks <em>Home</em> shows today. It is never shared. <em>Customize</em> on <em>Home</em> is the dashboard's <em>Change</em>; there is one kind of box, not two. If the next plan runs late this is the first part cut (M10-Q21), and <em>Home</em> then stays as it is. Enforced by: SEC-MATRIX (the routes of <em>Home</em> answer only its person).</li>
+<li><strong>What a total adds up</strong> (M10-Q15): the count, <em>Estimated time</em>, <em>Time left</em>, <em>Time spent</em> and own number fields, grouped by one field, by one route and one shape (the totals of today, <code>LengthTotals</code> and the counts of groups, become rows of it, so there is one way to add up a search). A total counts only the issues the search finds for the reader, and a value only where the reader may read that field on that issue; each row says how many issues gave a value. A total never includes a hidden issue. Groups by a person field follow <em>Who sees people</em> and stand in the order of the group, never of size. No total uses the <em>Time factor</em> (ADR-0030, amendment M8). More than 200 groups come as pages (M5-F44). Enforced by: ARCH-NO-COUNTERS, SEC-MATRIX (the <code>search</code> entry point with totals), ARCH-DB-PARITY.</li>
+<li><strong>"Reports" in this decision</strong> are the totals row of a grouped list, the totals in the header of a board's column, and the box <em>Numbers and chart</em>. Time reports with export stay TIME-05 and the export of a list stays NTF-05. Enforced by: review (a report beyond these three is a feature of its own, not part of QRY-08).</li>
+<li><strong>Changes are events.</strong> Made, changed, shared, no longer shared and deleted (to the trash, with <em>Undo</em>) are events (ADR-0007); a change carries the version it read, and a stale save is refused with the newer version. Enforced by: ARCH-EVENTS, ARCH-VERSIONED.</li>
+<li><strong>AI apps and agents</strong> (M10-Q20): no tool reads or changes a dashboard. The routes of dashboards take a session only, never an access key, like those of saved searches (ADR-0034, amendment M5 WP-06, item 3). The read tool <code>search_totals</code> answers the totals of decision 7 as the person, and refuses a group by <em>Time factor</em>. Enforced by: ARCH-AI-TOOLS, SEC-MATRIX.</li>
+<li><strong>Personal data.</strong> The name of a dashboard and the titles of its boxes are content written by a person; the maker is a person link (ADR-0044, decision 1). At <em>Remove a person</em>, the person's private dashboards and their <em>Home</em> go; a shared dashboard stays, made by <em>Former user …</em>, and a person with <em>Change organization settings</em> may delete it (<a href="#adr-0044">ADR-0044</a>, amendment 2026-11-24). Enforced by: DATA-MARKS, ARCH-PERSON-REF.</li>
+</ol>
+<h3>Consequences</h3>
+<ul>
+<li>Totals and the counts of groups become one shape; the list, the board, the boxes and the tool <code>search_totals</code> read it.</li>
+<li>A shared dashboard costs a check per box for every viewer, as a shared saved search costs a check per receiver; the checker is pure and fast.</li>
+<li><em>Home</em> and dashboards share one kind of box, so a new kind of box reaches both.</li>
+<li>Dashboards are reached only from a session: no access key and no AI app reads one.</li>
+</ul>
+<h3>Alternatives considered</h3>
+<ul>
+<li><strong>Everyone may share a dashboard, or only administrators:</strong> the first lets anyone spread the time of others to a group, the second blocks a team that wants a common page. Rejected; sharing follows saved searches with a permission of its own.</li>
+<li><strong>A box that runs with the rights of the maker:</strong> a viewer would see what only the maker may see (SEC-06). Rejected.</li>
+<li><strong>A box shown as "You cannot see this box":</strong> it tells that something hidden exists. Rejected; the grid closes up.</li>
+<li><strong>Charts sorted by size, a "top" of people:</strong> a ranking of people (COMP-10). Rejected.</li>
+<li><strong>Pie charts:</strong> hard to read, and slices of people read as shares of a whole. Not taken; bars and single numbers.</li>
+<li><strong><em>Home</em> kept as fixed blocks beside dashboards:</strong> two kinds of box for one job. Not taken (M10-Q14).</li>
+<li><strong>Boxes written as code each:</strong> every box would grow its own reads. Rejected; the ready-made boxes are data.</li>
+</ul>
+<h3>Enforced by</h3>
+<p>SEC-MATRIX, ARCH-PERMS, ARCH-NO-COUNTERS, ARCH-PERSON-REF, ARCH-EVENTS, ARCH-VERSIONED, ARCH-DB-PARITY, ARCH-AI-TOOLS, DATA-MARKS; review (no box ranks people; the ready-made boxes are data).</p>
+<!-- COMP-10 checked: no box ranks, evaluates or picks a person; charts by a person field are in the order of names. -->
 
 
   </main>

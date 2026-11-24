@@ -50,14 +50,20 @@ Rules:
 | **Kind of relation**     | What the connection means. Each kind has a name for both directions: *blocks* / *is blocked by*, *duplicate of* / *has duplicate*, *causes* / *is caused by*, *related to* | link type |
 | **Date effect**          | What a kind of relation does to dates on the timeline: none, or *Must finish first*. The starting kind *blocks* has *Must finish first*, and an organization may give it to one other kind (ADR-0043) | dependency type, link behaviour (in UI) |
 | **Dependency**           | A relation whose kind has a date effect. The timeline draws it as an arrow from the issue that must finish first to the one that waits; the issue page and the relation map show the same relation | predecessor, successor (in UI) |
-| **Relation map**         | A picture of everything connected to an issue, step by step        | graph, network, link cloud, dependency graph |
-| **Steps away**           | How many relations lie between two issues on the map               | depth, hops, degrees               |
+| **Relation map**         | A picture of everything connected to an issue, step by step, in columns by steps away: the same answer always gives the same picture, and nothing moves by itself (ADR-0009, amendment 2026-11-24) | graph, network, link cloud, dependency graph |
+| **Kinds shown**          | The chips above the relation map that choose which kinds of relation it walks and draws; *part of* (the sub-issues) is one of them. Not *Follow*, which is hearing of changes to an issue | follow (on the map), link types, relation filter (in UI) |
+| **Put in the middle**    | On the relation map: make the issue you point at the start of the map, so the steps away count from it | re-center, re-root (in UI) |
+| **Steps away**           | How many relations lie between two issues on the map: 1, 2, 3 or *Everything*, which is 5, the limit of the search language; a map holds at most 200 issues | depth, hops, degrees               |
 | **Assigned to**          | Who is working on it                                               | assignee (in UI and code)          |
 | **Reported by**          | Who created it                                                     | reporter                           |
 | **Follow / followers**   | Get notified about changes to an issue or document                 | watch, watchers                    |
-| **Release**              | A planned version of the product, e.g. *2.4*                       | fix version, version (as object)   |
-| **Found in release**     | The release where a bug was seen                                   | affects version                    |
-| **Planned for release**  | The release that should contain the fix or feature                 | fix version, target version        |
+| **Release**              | A planned version of the product, e.g. *2.4*: made in one project and offered in it and its sub-projects (ADR-0049). Not a release of Bugaboo itself | fix version, version (as object)   |
+| **Found in release**     | The releases where a bug was seen; an issue can name several        | affects version                    |
+| **Planned for release**  | The one release that should contain the fix or feature             | fix version, target version        |
+| **Release date**         | The planned day of a release: a calendar date with no time of day. A release with one stands on the timeline as a diamond and on the calendar as a mark | due date (for a release), ship date, launch date (in UI) |
+| **Released on**          | The day a release was marked *Released*, kept beside its *Release date* | shipped on, go-live date (in UI) |
+| **Planned** / **Released** / **Retired** (a release) | The three states of a release: *Planned* when it is made; *Released* once it is out (the day is kept as *Released on*); *Retired* when it is no longer offered for new choices, while the issues that name it keep it (ADR-0049) | archived, unreleased, shipped (in UI) |
+| **Manage releases**      | The permission to make, rename, date, mark and retire the releases of a project, and to delete one that no issue names | manage versions, release admin (in UI) |
 | **Start date**           | The built-in field with the first day of work on an issue: a calendar date, with no time of day (ADR-0043) | begin date, kick-off (in UI) |
 | **Due date**             | The built-in field with the day an issue should be done: a calendar date, with no time of day. Nothing moves it but a person or a tool that sets it; on the timeline a goal's due date is a diamond (ADR-0043) | target date, deadline date (in UI) |
 | **Visibility**           | Who may see a single issue. *Restricted* issues are visible only to chosen groups | issue security level |
@@ -111,24 +117,42 @@ Rules:
 | **Group by**             | Show the results of a search in groups, one per value of a field; an issue with several values (labels, tags, people) stands in the group of each, one without a value in *None* | aggregate, bucket |
 | **Search language**      | The text you type in Advanced search                               | any "xQL" name                     |
 | **Show as**              | How results are shown: *List*, *Board*, *Timeline*, *Calendar*, *Map* | view type                       |
-| **Board**                | Issues as cards in columns                                         | kanban (in UI), agile board        |
+| **Board**                | Issues as cards in columns: by status at the start (statuses of the same name merged across workflows), by status group, or by a choice field | kanban (in UI), agile board        |
+| **Card** (on a board)    | One issue on a board: its Issue ID, its title and at most four fields, which the layout *Card* chooses (ADR-0027) | tile, ticket card (in UI) |
+| **Move to …**            | On a card: the typed way to put it in another column, the same status change or change of a field as a drag | transition to, move card (in UI) |
 | **Rows** (on a board)    | Splitting a board horizontally by a field                          | swimlanes                          |
-| **Card limit**           | Maximum cards a column should hold                                 | WIP limit                          |
+| **Card limit**           | Maximum cards a column should hold. Going over turns the column's title orange (*4 of 3*); nothing is refused | WIP limit                          |
 | **Timeline**             | The Gantt chart (UI tab name; help text says "Gantt chart")        | roadmap                            |
-| **Calendar**             | Issues shown on a month or week calendar by due date               | agenda (as tab name)               |
+| **Calendar**             | Issues shown on a month or week calendar by one date field: *Due date* at the start, or the one *Dates from* chooses | agenda (as tab name)               |
+| **Dates from**           | The option of a timeline or a calendar that chooses the date fields its issues stand on: *Start date* and *Due date* at the start, or own date fields | date source, date mapping (in UI) |
+| **Change due date …**    | On the calendar: the typed way to move an issue to another day, the same change as a drag | move date, drag date (in UI) |
+| **Only this project**    | The choice on a project's views that leaves out its sub-projects: it writes `project is WEB` into the search instead of `project within WEB`. In *Who has which role* the same words say where a role counts | exclude sub-projects, hide sub-projects (in UI) |
+| **Totals**               | The count and the sums of a search (*Estimated time*, *Time left*, *Time spent*, own number fields), for each group and for all; only of the issues and values you may see (ADR-0050) | rollup, summary row (in UI) |
 | **Map**                  | *Show as* option that draws search results and their relations     | graph view                         |
 | **Must finish first**    | The date effect of a dependency: the issue that waits can't start until the other one ends. A move that breaks it shows the plan warning *Delay* and moves nothing else (ADR-0043). The other effects, *start together*, *finish together* and *finish when it starts*, come in V1 | finish-to-start, FS, SS, FF, SF (in UI) |
 | **Plan by effort**       | Let the timeline work out a bar's length from its estimate, its time factor and the person's work days, away times and public holidays | auto-schedule, resource levelling (in UI) |
 | **Time factor**          | A value on an issue, for its person on the bar: how much longer or shorter than the estimate it will take them (*×1.5*). That person may always set it, also as *Takes me …*; the issue shows who set it. It goes back to ×1 when the first assigned person changes. It can be read like any field, but no search filters, sorts or groups by it, no total uses it, and AI never sets it (ADR-0030, amendment M8) | velocity, performance factor, speed factor (in UI) |
 | **Takes me …**           | The way to give the time factor as a length (*Takes me 10 days*): Bugaboo works out the factor from the estimate. The issue then says whose estimate it is (*Lea's own estimate*, *set by Ada Brandt*) | my velocity, my estimate factor (in UI) |
-| **Plan warnings**        | What the timeline points out: *Away*, *Not enough days*, *Delay*, *Too much at once*, and for a person the reader does not see *Days without work* instead of *Away* and *Too much at once*, each with what can be done | clashes, overallocation (in UI) |
+| **Plan warnings**        | What the timeline points out: *Away*, *Not enough days*, *Delay*, *Too much at once*, *Loop*, *Cannot fit*, and for a person the reader does not see *Days without work* instead of *Away* and *Too much at once*, each with what can be done | clashes, overallocation (in UI) |
 | **Move it after / Make it longer / Give it to someone else…** | The ways out of a plan warning, each a person's choice: move the issue (and the ones that wait for it, after a preview) to start after the one before it; give the bar the days it needs, which moves its due date only when the person confirms the new one; or open the usual person picker, which suggests nobody | auto-fix, reassign (in UI) |
 | **Keep and accept**      | The answer to a plan warning that leaves the plan as it is; the warning stays, faded | ignore, dismiss (in UI) |
-| **Deadline drivers**     | The chain of issues that sets the end date; any delay moves the end | critical path (in UI)             |
-| **Milestone**            | An important date on the timeline: the due date of a goal, drawn as a diamond (ADR-0043). Releases join it in M10 | —                                  |
+| **Deadline drivers**     | The chain of issues that sets an end date (of a goal, a release or the view); any delay on it moves the end. Worked out only over the issues you see | critical path (in UI)             |
+| **Loop** (a plan warning) | Issues that wait for each other, stored before loops were refused, so none of them can start; its way out is *Open the relation* | cycle, circular dependency (in UI) |
+| **Cannot fit** (a plan warning) | An issue is due before the issues it waits for can end; its ways out are *Make it longer* and *Keep and accept* | infeasible, impossible dependency (in UI) |
+| **Milestone**            | An important date on the timeline: the due date of a goal or the *Release date* of a release, drawn as a diamond (ADR-0043, ADR-0049) | —                                  |
 | **Set dates… / Add dependency…** | The typed ways to do what a drag on the timeline does: give a bar its start and due date, or connect it to another issue. On a bar's card and in its menu, and on a phone, where nothing is dragged | reschedule, link issues (in UI) |
 | **Person on the bar**    | The first person in *Assigned to*: their work times shape the bar, and the time factor is theirs. *Group by person* shows the bar in the row of every assigned person, with a mark in the others' rows (ADR-0030, amendment M8) | bar owner (in UI) |
-| **Dashboard**            | A page of boxes showing searches, numbers and charts               | —                                  |
+| **Dashboard**            | A page of boxes showing searches, numbers and charts. Made by one person, private at first, shared like a saved search; *Home* is your own (ADR-0050) | cockpit, portal (in UI) |
+| **Box** (on a dashboard) | One part of a dashboard that reads a search as the person who looks at it. Its kinds: *Search results*, *Numbers and chart*, *Time totals*, *Small timeline*, *My timer*, *Recent changes* | widget, gadget, portlet (in UI) |
+| **Add box**              | The button of a dashboard that offers the ready-made boxes and the kinds of box, each with a preview | add widget (in UI) |
+| **Ready-made box**       | A box that Bugaboo offers ready to use (*Open bugs by priority*, *My time this week*), from one list | default widget, stock widget (in UI) |
+| **Change** (a dashboard) | Placing, resizing and removing the boxes of a dashboard you made (*Move*, *Resize*, *Remove*, also by keys); on *Home* it is *Customize* | edit mode, design mode (in UI) |
+| **Small timeline**       | The box that shows the timeline of a search, one page, with nothing dragged | Gantt snippet, mini Gantt (in UI) |
+| **Recent changes**       | The box with the newest changes to the issues a search finds, as the history writes them; never the work of one person | activity feed, activity stream (in UI) |
+| **Share dashboards**     | The permission to share dashboards with a group or a project       | publish dashboard (in UI)          |
+| **Pinned** / **Pin to sidebar** / **Unpin** | Your own short list in the sidebar, in your order: the projects, saved searches and dashboards you pinned with *Pin to sidebar*, at most 30 | favorites, starred (in UI) |
+| **E-mail me this search** | Getting a saved search by e-mail, on the weekdays and at the hour you choose, sent only to you | subscribe (in UI) |
+| **E-mailed search**      | One saved search that you get by e-mail; your list of them is in *Notification settings* | subscription, mail schedule (in UI) |
 | **Quick search**         | The search box for everything, `Ctrl+K`                            | command palette, omnibox           |
 | **Focus view**           | An open item takes the main area; the menu shrinks to icons and a slim list stays on the left | full-screen mode, detail view |
 | **Side panel**           | A panel next to a list in which a simple item opens, so the list stays in view | drawer, flyout, split view |
@@ -274,7 +298,7 @@ Rules:
 | **Reset to default**     | Take away the value set at this level, so the value from above counts again; also for a workflow or a layout that a place has of its own (it goes back to the one that counts there without its own) | clear override, use the inherited … again (in UI) |
 | **Default value**        | The value a setting has until somebody sets one at a level: the line under a setting says *Default value* when none is set; *Reset to default* brings it back | standard value, Bugaboo's standard value (in UI) |
 | **Set by your organization** | Shown on a setting an administrator locked: it can't be changed here, and the line says why | enforced (in UI) |
-| **Layout**               | Which fields appear where: on the *issue page*, in the *new-issue form*, on a *card* | screen, screen scheme      |
+| **Layout**               | Which fields appear where: on the *issue page*, in the *new-issue form*, on a *card* of a board (at most four fields) | screen, screen scheme      |
 | **Section**              | A titled group of fields in a layout; sections with the same *tab* are shown together under it | panel, block (in a layout) |
 | **Spacing**              | How close together things are on screen: *Comfortable* or *Compact*. A setting of the person (*My settings › Appearance*) that every screen follows; a list or a saved search has none of its own | density (in UI) |
 | **Less motion**          | Fewer moving effects on screen                                     | reduced motion (in UI)             |
@@ -307,13 +331,13 @@ Rules:
 | **Hosted by Bugaboo**    | Bugaboo running for the customer on our servers in the EU          | SaaS, cloud edition                |
 | **Notifications**        | Messages about things you follow or that involve you               | inbox, alerts                      |
 | **Mark as read**         | Take a notification off the unread ones                            | dismiss, acknowledge (in UI)       |
-| **Customize**            | On *Notifications*: opens *Notification settings*. On a workflow or a layout: create a copy for this place that you can change. On a list: choose its columns | subscription settings (in UI) |
+| **Customize**            | On *Notifications*: opens *Notification settings*. On a workflow or a layout: create a copy for this place that you can change. On a list: choose its columns. On a board: choose its columns, rows and card limits; *Customize › Card* opens the layout *Card*. On *Home*: change its boxes | subscription settings (in UI) |
 | **Notification settings** | The page under *My settings* where you choose, for each kind of event, whether you hear of it in the app, by e-mail, in both or not at all | subscriptions, alert settings (in UI) |
 | **Mail server**          | The organization's server Bugaboo sends e-mails through; e-mail is off until an administrator enters it | SMTP relay (in UI) |
 | **E-mail and notifications** | The organization settings page where an administrator enters the mail server, sends a test e-mail and switches e-mail on | mail settings, SMTP (in UI) |
 | **Test e-mail**          | One e-mail that an administrator sends to themselves (*Send me a test e-mail*) to see that the mail server works | try it (for e-mail) |
 | **Link**                 | A web address that you open, in an e-mail or on a screen (to an issue, or to finish creating an account); never the connection between two issues, which is a *Relation* (so *link* stays in the Don't-say column of *Relation*, and TXT-TERMS allows the web sense by entries in `tools/checks/terms-exemptions.toml`) | address (for a link) |
-| **Short e-mails**        | An organization choice: e-mails leave out all issue text (title and comments) | — |
+| **Short e-mails**        | An organization choice: e-mails leave out all issue text (title and comments); an e-mailed search then also leaves out its name | — |
 | **Handle**               | A person's short unique name for mentions (`@ana.brandt`), changeable in *My settings* | username, nick (in UI) |
 
 ## AI
@@ -401,7 +425,7 @@ On screens the AI is always *the assistant*, *an AI app* or *an agent*: never *b
 | AST                 | The parsed form of a search, shared by Simple and Advanced search     |
 | Design tokens       | Named theme values (`bg.surface`), the only way code uses colors and sizes |
 | Message catalog     | The single file of all user-facing text                               |
-| Presentation        | How a saved search is shown (list, board, timeline, calendar)         |
+| Presentation        | How a saved search is shown (list, board, timeline, calendar, map)    |
 | Plan (of a timeline) | What the server works out for the rows on screen: each bar's days, the worked-out days of *Plan by effort*, the dependencies and the plan warnings, for the reader (ADR-0030, amendment M8). The browser draws it and holds no rule of it |
 | Sold model          | Customers run Bugaboo themselves (UI: *Self-hosted*)                  |
 | Served model        | We run Bugaboo for customers (UI: *Hosted by Bugaboo*)                |

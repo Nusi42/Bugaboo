@@ -169,6 +169,18 @@ The limit on failed tries (SEC-14, ADR-0025) refuses sign-in to an account from 
 
 - It has no setting, like *An administrator downloaded your data*: somebody is trying to get into the person's account, and only the person can tell whether it was them. It is told once a day at most, with the first refusal.
 
+## Amendment (2026-11-24, e-mailed searches)
+
+The maintainer took the recommendation of M10-Q16 of [the M10 plan](../milestones/M10/README.md). *E-mail me this search* (QRY-07) sends a saved search by e-mail on a schedule the person chooses. It is not a notification: no event starts it, and the outbox reader does not build it. But it leaves the server with issue data, so it follows the rules of decision 3. Decided:
+
+1. **To the person themselves only.** An e-mailed search goes to the address on record of the person who set it, never to anybody else; there is no field for another address. Enforced by: SEC-MATRIX (the routes of e-mailed searches answer only their person).
+2. **When:** on the weekdays the person chooses (at least one), at a whole hour of the person's time zone (*Region*). Each sending is a job of its own, spread over the hour, so many people at 8:00 do not run at once (ADR-0017).
+3. **What:** the search runs as the person at sending time, with their rights then (QRY-05). The e-mail holds the name of the saved search and at most 50 issues in its order, each with its ID, title, status and link, then "and 120 more" when the search finds more (a count of what the person sees), a link to the search and a link to the e-mailed search in Bugaboo, where it is stopped. The links open Bugaboo and need a sign-in; nothing in the e-mail changes anything. Plain text by the one writer of decision 3: no picture, no attachment, the links first, control and direction characters removed. With *Short e-mails* on it leaves out the titles and the name of the search: IDs, statuses and links only. Enforced by: SEC-MATRIX (the e-mail as the person sees the issues), DATA-LOGS (the job logs IDs only).
+4. ***Only when something is new or changed*** is on at the start: nothing is sent when no issue the search finds is new or changed since the last e-mail. The e-mailed search keeps only the time of its last e-mail, never the issues.
+5. **It pauses and it ends.** Nothing is sent, and the e-mailed search pauses, while its person is switched off, when the person can no longer open the saved search ([ADR-0034](0034-saved-searches.md), amendment 2026-11-24), or while e-mail or the organization setting `search-mail.allowed` is off; the person sees why in their list, and only the person starts it again. It is deleted with its saved search and at *Remove a person* ([ADR-0044](0044-download-my-data-and-remove-a-person.md), amendment 2026-11-24). Enforced by: SEC-MATRIX, ARCH-SETTINGS.
+6. **Limits and switches.** At most 20 e-mailed searches per person, counted in the change that writes. E-mail itself must be switched on (decision 3). The organization setting `search-mail.allowed` switches the feature off for everyone; it is on at the start, because e-mail is off until an administrator sets it up. The list of a person's e-mailed searches is under *My settings › Notification settings*. Enforced by: ARCH-SETTINGS.
+7. **No tool sets one.** AI apps and agents never set, change or stop an e-mailed search; the routes take a session only, like those of saved searches (M10-Q20). Enforced by: ARCH-AI-TOOLS, SEC-MATRIX.
+
 ## Enforced by
 
 SEC-MATRIX (the e-mail and notifications column), DOC-GENERATED and the browser test of the vectors (the wording amendment), ARCH-PERSON-REF, ARCH-EVENTS, DATA-MARKS, DATA-LOGS, DEP-REGISTER (`lettre`), the permission tests of M4 WP-06, and review (no other path sends mail).

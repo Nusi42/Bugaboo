@@ -52,6 +52,8 @@ Each file records one decision: context, decision, consequences, alternatives. N
 | [0046](0046-backups-restore-and-upgrades.md) | Backups, restore and upgrades: one file without keys, copies while people work, a new anchor after a restore, a backup before migrating (accepted) |
 | [0047](0047-releases-signatures-parts-list-and-support.md) | Releases: signatures with our own key, the parts list from the lockfiles, the support period, vulnerability handling (accepted) |
 | [0048](0048-support-access-with-the-customers-approval.md) | Support access with the customer's approval: nothing by default, a time-limited account, every request in the security log (accepted in part: decision 1 now, the rest in M14) |
+| [0049](0049-releases.md) | Releases of a project: offered in its sub-projects, *Planned*, *Released* and *Retired*, *Found in release* and *Planned for release*, *Manage releases* (accepted) |
+| [0050](0050-dashboards-and-totals.md) | Dashboards and totals: boxes that read a search as the viewer, shared like saved searches, *Home* as the person's own dashboard, no box ranks people (accepted) |
 
 ## Template
 

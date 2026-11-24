@@ -168,6 +168,21 @@ The maintainer took every recommendation of the M8 plan (2026-11-11); [ADR-0030]
   It is of kind *Manage*, so no agent holds it (ADR-0029, decision 3), and it joins the list of what no key holds (decision 8, `NOT_FOR_KEYS`), which grows from sixteen entries to seventeen: a person is removed only in the app. *Switch off* and *Switch on* need *Manage people*, which no key holds either. Enforced by: ARCH-PERMS, SEC-MATRIX.
 - **The security log** (decision 9) also records every switch-off, switch-on and removal of a person, naming the person by ID, which reads as their *Former user* label after a removal.
 
+## Amendment (2026-11-24, *Manage releases* and *Share dashboards*)
+
+The maintainer took the recommendations of M10-Q7 and M10-Q12 of [the M10 plan](../milestones/M10/README.md); [ADR-0049](0049-releases.md) (decisions 5 and 6) and [ADR-0050](0050-dashboards-and-totals.md) (decision 2) say why. What changes here:
+
+- **The topic *Issues*** gains two permissions, each with its sentence, kind and starting values in the same change as its routes:
+
+  | Permission | Counts | Kind | Starting roles that have it |
+  |------------|--------|------|-----------------------------|
+  | *Manage releases*: make, rename, date, mark and retire the releases of the project, and delete one that no issue names | project | *Change* | *Administrator, Project lead* |
+  | *Share dashboards*: share dashboards with the project, or with a group the person is in | project | *Change* | the roles that hold *Share searches*: *Administrator, Project lead, Team member, Contributor, Viewer* |
+
+  The starting roles get them on the upgrade of an existing server like any new permission of a starting role (decision 4). Seeing a release needs only *See the project and what is in it*; a person with *Manage groups* shares a dashboard with any group, as for saved searches (ADR-0034, decision 2). Enforced by: ARCH-PERMS, SEC-MATRIX.
+- **AI apps and agents.** No tool of the registry manages a release or touches a dashboard (ADR-0049, decision 8; ADR-0050, decision 10), so neither permission lets an AI app or an agent do anything; the routes of dashboards take a session only. Enforced by: ARCH-AI-TOOLS.
+- **The security log** (decision 9) records the gift and the removal of both permissions like any change of permissions. Releases and dashboards themselves are not in the security log: their changes are events (ADR-0007).
+
 ## Consequences
 
 - WP-05 builds the engine from this record and architecture §7; WP-08, WP-09, WP-11 and WP-12 put screens and routes on it; SEC-MATRIX (WP-10) runs every route for every starting role, a role on a parent and on a sibling project, *No access* and two access keys.
