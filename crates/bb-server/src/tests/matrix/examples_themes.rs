@@ -11,9 +11,19 @@ use bb_core::theme::ThemeKind;
 use bb_testing::Failure;
 use serde_json::json;
 
-use super::examples::Request;
+use bb_app::access::Permission;
+
+use super::examples::{Quirk, Request};
 use super::routes::Fixture;
 use crate::sign_in_tests::rig::Rig;
+
+/// What the routes that change a theme for everyone declare as `by-record`: the use case judges the
+/// theme, and one for everyone needs *Change organization settings*; a theme is the look of a
+/// person in a browser, so a key never reaches it.
+pub(super) const CHANGES_A_THEME_FOR_EVERYONE: &[Quirk] = &[
+    Quirk::SessionOnly,
+    Quirk::AtTheOrganization(Permission::ChangeOrganizationSettings),
+];
 
 /// A token that holds no lock.
 const NOBODYS_LOCK: &str = "5b0f6a3e-2d1c-4e8a-9f77-0a1b2c3d4e5f";

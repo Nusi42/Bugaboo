@@ -15,6 +15,7 @@ use bb_testing::Failure;
 use serde_json::{Value, json};
 
 use super::actors::{Actor, Project};
+use super::examples_themes::CHANGES_A_THEME_FOR_EVERYONE;
 use super::routes::Fixture;
 use crate::sign_in_tests::http::Browser;
 use crate::sign_in_tests::rig::{OTHER_PASSWORD, PASSWORD, Rig};
@@ -111,14 +112,6 @@ const UPLOAD: [Quirk; 4] = [
 /// reported or a comment they wrote; the example is an issue of somebody else, which needs
 /// *Change issues*.
 const CHANGES_THE_FILES: Quirk = Quirk::OnTheTargetProject(Permission::ChangeIssues);
-
-/// What the routes that change a theme for everyone declare as `by-record`: the use case judges the
-/// theme, and one for everyone needs *Change organization settings*; a theme is the look of a
-/// person in a browser, so a key never reaches it.
-const CHANGES_A_THEME_FOR_EVERYONE: &[Quirk] = &[
-    Quirk::SessionOnly,
-    Quirk::AtTheOrganization(Permission::ChangeOrganizationSettings),
-];
 
 /// A route that names a thing nobody has and asks for the password again: it is not found for
 /// whoever is let in, or the password is wrong.
