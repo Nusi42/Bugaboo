@@ -340,6 +340,8 @@ mod tests_ai;
 #[cfg(test)]
 mod tests_map;
 #[cfg(test)]
+mod tests_map_property;
+#[cfg(test)]
 mod tests_more;
 #[cfg(test)]
 mod tests_rest;

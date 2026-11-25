@@ -314,26 +314,6 @@ impl DependencyGraph {
                 .collect()
         })
     }
-
-    /// The loops among these dependencies (ISS-16): each named once, as the issues on it in order
-    /// from the one that must finish first, which is the first dependency of `dependencies`, in
-    /// their order, that lies on a loop not named yet. The relation map flags them; loops of
-    /// *blocks* stored before the effect refused them stay (ADR-0043).
-    #[must_use]
-    pub fn loops(&self, dependencies: &[Dependency]) -> Vec<Vec<IssueId>> {
-        let mut named: HashSet<IssueId> = HashSet::new();
-        let mut found = Vec::new();
-        for (first, then) in dependencies {
-            if named.contains(first) {
-                continue;
-            }
-            if let Some(on_it) = self.loop_closed_by((*first, *then)) {
-                named.extend(on_it.iter().copied());
-                found.push(on_it);
-            }
-        }
-        found
-    }
 }
 
 /// The shortest way from `start` to `goal` along `dependencies` (see [`DependencyGraph::path`]).
@@ -351,6 +331,29 @@ pub fn dependency_path(
 #[must_use]
 pub fn loop_closed_by(dependencies: &[Dependency], new: Dependency) -> Option<Vec<IssueId>> {
     DependencyGraph::new(dependencies).loop_closed_by(new)
+}
+
+/// The loops among these dependencies (ISS-16), each named once as the issues on it in order from
+/// the issue that must finish first: the first dependency, in the order given, that lies on a loop
+/// whose dependencies are not all named yet starts the next name. Two loops that share an issue
+/// (a figure eight) are two names. The relation map flags them; loops of *blocks* stored before
+/// the effect refused them stay (ADR-0043).
+#[must_use]
+pub fn dependency_loops(dependencies: &[Dependency]) -> Vec<Vec<IssueId>> {
+    let graph = DependencyGraph::new(dependencies);
+    let mut named: HashSet<Dependency> = HashSet::new();
+    let mut found = Vec::new();
+    for dependency in dependencies {
+        if named.contains(dependency) {
+            continue;
+        }
+        if let Some(on_it) = graph.loop_closed_by(*dependency) {
+            let next = on_it.iter().skip(1).chain(on_it.first());
+            named.extend(on_it.iter().copied().zip(next.copied()));
+            found.push(on_it);
+        }
+    }
+    found
 }
 
 /// An issue that sits under another one (ISS-03).
@@ -503,8 +506,7 @@ mod tests {
             (at(3), at(4)),
             (at(1), at(3)),
         ];
-        let graph = DependencyGraph::new(&there);
-        assert_eq!(graph.loops(&there), vec![vec![at(0), at(1), at(2)]]);
+        assert_eq!(dependency_loops(&there), vec![vec![at(0), at(1), at(2)]]);
         // Two loops apart are two names; nothing is named twice.
         let two = [
             (at(0), at(1)),
@@ -514,11 +516,21 @@ mod tests {
             (at(1), at(2)),
         ];
         assert_eq!(
-            DependencyGraph::new(&two).loops(&two),
+            dependency_loops(&two),
             vec![vec![at(0), at(1)], vec![at(2), at(3)]]
         );
-        let one = [(at(0), at(1))];
-        assert!(DependencyGraph::new(&one).loops(&one).is_empty());
+        // A figure eight: two loops through one issue are two names.
+        let eight = [
+            (at(0), at(1)),
+            (at(1), at(0)),
+            (at(0), at(2)),
+            (at(2), at(0)),
+        ];
+        assert_eq!(
+            dependency_loops(&eight),
+            vec![vec![at(0), at(1)], vec![at(0), at(2)]]
+        );
+        assert!(dependency_loops(&[(at(0), at(1))]).is_empty());
     }
 
     #[test]

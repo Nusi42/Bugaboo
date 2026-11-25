@@ -2440,7 +2440,8 @@ export interface paths {
     };
     /**
      * The map of an issue: every issue connected to it through the kinds shown, up to the steps
-     *     chosen and at most 200 issues, walked only through issues the person sees. Loops of
+     *     chosen and at most the issues a map holds (`MAP_ISSUES_MOST`), walked only through issues the
+     *     person sees. Loops of
      *     dependencies among them are named.
      */
     get: operations["getIssueMap"];
@@ -3148,7 +3149,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * The map of a search: its results (at most 200, in its order) and the relations between them,
+     * The map of a search: its results (at most the issues a map holds, `MAP_ISSUES_MOST`, in its
+     *     order) and the relations between them,
      *     with no walk beyond them. It reads and changes nothing.
      */
     post: operations["getSearchMap"];

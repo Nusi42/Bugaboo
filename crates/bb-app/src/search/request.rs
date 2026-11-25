@@ -265,6 +265,9 @@ pub struct MapStep {
     pub part_of: bool,
     /// The most issues the step answers.
     pub most: u64,
+    /// When the walk began: the whole walk has the time of one search, and a step gets what is
+    /// left of it (a step past it is `TooSlow`).
+    pub began: std::time::Instant,
 }
 
 /// What the search use cases need from storage.

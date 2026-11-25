@@ -17,6 +17,7 @@ fn step(data: &Data, near: &[usize], known: &[usize], part_of: bool, most: u64) 
         kinds: vec![data.blocks],
         part_of,
         most,
+        began: std::time::Instant::now(),
     }
 }
 
@@ -69,6 +70,13 @@ async fn iss_16_a_step_of_the_map_never_passes_through_a_hidden_issue() -> TestR
         // The statement stops at the number asked for, by ID.
         let first = walk(step(&data, &[1], &[0, 1], true, 1)).await?;
         assert_eq!(first, sorted(&data, &[2, 5])[..1]);
+        // The whole walk has the time of one search: a step past it is too slow.
+        let mut late = step(&data, &[1], &[0, 1], true, 10);
+        late.began = std::time::Instant::now()
+            .checked_sub(super::SEARCH_TIME)
+            .ok_or("the clock started too short a time ago")?;
+        let failure = storage.map_step(&ask, &late).await.err();
+        assert_eq!(failure, Some(bb_app::search::SearchFailure::TooSlow));
         // No kind and no *part of* is no step.
         let mut nothing = step(&data, &[0], &[0], false, 10);
         nothing.kinds.clear();

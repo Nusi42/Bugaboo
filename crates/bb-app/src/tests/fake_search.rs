@@ -4,15 +4,43 @@
 
 use bb_core::id::IssueId;
 
-use super::fake::FakeStore;
+use bb_core::agent_records::GivingState;
+
+use super::fake::{FakeStore, State};
 use super::fake_offers::reads;
 use crate::search::{
-    GroupCount, LengthTotals, MapStep, SearchFailure, SearchHit, SearchRequest, SearchStore,
+    GroupCount, LengthTotals, MapStep, SearchFailure, SearchHit, SearchRequest, SearchStore, WorkOf,
 };
+
+/// Whether the work of an agent reaches the issue at its moment: open work whose hand-over has not
+/// run out, or a match of an open rule of the agent that works then (`issues_of_agent` of the store).
+fn reached_by(state: &State, work: WorkOf, issue: IssueId) -> bool {
+    let all = &state.work;
+    let by_work = all.works.iter().any(|each| {
+        each.agent == work.agent
+            && each.issue == issue
+            && all.is_open(each)
+            && all
+                .hand_overs
+                .iter()
+                .any(|giving| giving.id == each.hand_over && giving.ends_at > work.at)
+    });
+    let by_rule = all.matches.iter().any(|found| {
+        found.issue == issue
+            && all.rules.iter().any(|rule| {
+                rule.id == found.rule
+                    && rule.agent == work.agent
+                    && rule.state == GivingState::Open
+                    && rule.ends_at.is_some_and(|ends| ends > work.at)
+            })
+    });
+    by_work || by_rule
+}
 
 impl SearchStore for FakeStore {
     /// The step walks the relations and parents in memory, through the issues the sight of the
-    /// request reads, as the statement of the store does on both databases.
+    /// request reads and, for an agent, its work reaches, as the statement of the store does on
+    /// both databases.
     async fn map_step(
         &self,
         request: &SearchRequest,
@@ -47,6 +75,9 @@ impl SearchStore for FakeStore {
                     .issues
                     .iter()
                     .any(|each| each.id == *issue && reads(&request.sight, each))
+                    && request
+                        .only
+                        .is_none_or(|work| reached_by(state, work, *issue))
             })
             .collect();
         found.sort();

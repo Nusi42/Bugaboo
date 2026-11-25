@@ -404,20 +404,8 @@ async fn iss_16_more_is_counted_on_the_walk_the_reader_sees() -> Result<(), Stri
         let project = if at % 2 == 0 { open } else { secret };
         neighbours.push(an_issue(&world, project).await?);
     }
-    let mut ids = SequentialIds::default();
-    {
-        let mut shared = world.store.lock();
-        for other in &neighbours {
-            shared.state.relations.push(Relation {
-                id: RelationId::generate(&mut ids).map_err(|error| error.to_string())?,
-                kind: blocks,
-                from: start,
-                to: *other,
-                added_by: world.admin.person.id,
-                added_at: Timestamp::UNIX_EPOCH,
-            });
-        }
-    }
+    let pairs: Vec<(IssueId, IssueId)> = neighbours.iter().map(|other| (start, *other)).collect();
+    store_blocks(&world, blocks, &pairs)?;
     let ask = |steps| IssueMapQuery {
         session_token: reader.session_token.clone(),
         issue: start.to_string(),
@@ -432,14 +420,7 @@ async fn iss_16_more_is_counted_on_the_walk_the_reader_sees() -> Result<(), Stri
     assert!(!map.more);
     // One more visible issue, and the map says there are more.
     let extra = an_issue(&world, open).await?;
-    world.store.lock().state.relations.push(Relation {
-        id: RelationId::generate(&mut ids).map_err(|error| error.to_string())?,
-        kind: blocks,
-        from: extra,
-        to: start,
-        added_by: world.admin.person.id,
-        added_at: Timestamp::UNIX_EPOCH,
-    });
+    store_blocks(&world, blocks, &[(extra, start)])?;
     let map = issue_map(&world.ctx(), ask(None))
         .await
         .map_err(text)?
@@ -452,4 +433,160 @@ async fn iss_16_more_is_counted_on_the_walk_the_reader_sees() -> Result<(), Stri
         .err();
     assert_eq!(refused, Some(AppError::Refused(ErrorCode::InvalidRequest)));
     Ok(())
+}
+
+/// Relations of the first kind (*blocks*) from each issue to the next of the pair, stored as they are.
+fn store_blocks(
+    world: &World,
+    blocks: RelationKindId,
+    pairs: &[(IssueId, IssueId)],
+) -> Result<(), String> {
+    let mut ids = SequentialIds::default();
+    let mut shared = world.store.lock();
+    for (from, to) in pairs {
+        shared.state.relations.push(Relation {
+            id: RelationId::generate(&mut ids).map_err(|error| error.to_string())?,
+            kind: blocks,
+            from: *from,
+            to: *to,
+            added_by: world.admin.person.id,
+            added_at: Timestamp::UNIX_EPOCH,
+        });
+    }
+    Ok(())
+}
+
+/// The keys of a map, in its order.
+fn keys_of(map: &RelationMap) -> Vec<String> {
+    map.issues
+        .iter()
+        .map(|each| each.issue.key.clone())
+        .collect()
+}
+
+#[tokio::test]
+async fn iss_16_the_map_of_an_agent_passes_only_through_its_work() -> Result<(), String> {
+    let world = World::with_ai_apps_and_agents().await?;
+    let ground = super::agent_work::ground(&world).await.map_err(text)?;
+    let (blocks, _) = first_and_last_kind(&world).await?;
+    let start = ground.issue;
+    let [outside, behind, beside] = [
+        an_issue(&world, ground.project).await?,
+        an_issue(&world, ground.project).await?,
+        an_issue(&world, ground.project).await?,
+    ];
+    // The start blocks an issue outside the agent's work, which blocks one of its work, and one
+    // more of its work beside.
+    store_blocks(
+        &world,
+        blocks,
+        &[(start, outside), (outside, behind), (start, beside)],
+    )?;
+    crate::agent_work::hand_over(
+        &world.ctx(),
+        super::agent_work::plain_hand_over(
+            &ground.team.session_token,
+            ground.agent,
+            &[start, behind, beside],
+        ),
+    )
+    .await
+    .map_err(text)?;
+    let ask = |session: &str| IssueMapQuery {
+        session_token: session.to_owned(),
+        issue: start.to_string(),
+        steps: None,
+        shown: KindsShown::default(),
+    };
+    let of_agent = issue_map(&world.ctx(), ask(&ground.key))
+        .await
+        .map_err(text)?
+        .into_value();
+    let ids: Vec<IssueId> = of_agent.issues.iter().map(|each| each.issue.id).collect();
+    assert_eq!(ids.len(), 2, "{:?}", keys_of(&of_agent));
+    assert!(ids.contains(&start) && ids.contains(&beside));
+    // The person sees all four.
+    let of_person = issue_map(&world.ctx(), ask(&ground.team.session_token))
+        .await
+        .map_err(text)?
+        .into_value();
+    assert_eq!(of_person.issues.len(), 4);
+    Ok(())
+}
+
+#[tokio::test]
+async fn iss_16_the_map_an_ai_reads_never_passes_through_a_project_kept_from_ai()
+-> Result<(), String> {
+    let world = World::new().await?;
+    let open = a_project(&world, "WEB").await?;
+    let kept = a_project(&world, "KEPT").await?;
+    let (blocks, _) = first_and_last_kind(&world).await?;
+    let start = an_issue(&world, open).await?;
+    let hidden = an_issue(&world, kept).await?;
+    let behind = an_issue(&world, open).await?;
+    store_blocks(&world, blocks, &[(start, hidden), (hidden, behind)])?;
+    super::ai_tools::mark(
+        &world,
+        crate::ai::NeverSentTarget::Project("KEPT".to_owned()),
+    )
+    .await
+    .map_err(text)?;
+    let admin = world.admin.session_token.clone();
+    // The person sees the chain ...
+    let person = issue_map(
+        &world.ctx(),
+        IssueMapQuery {
+            session_token: admin.clone(),
+            issue: start.to_string(),
+            steps: None,
+            shown: KindsShown::default(),
+        },
+    )
+    .await
+    .map_err(text)?
+    .into_value();
+    assert_eq!(person.issues.len(), 3);
+    // ... the AI reads the start alone: neither the kept issue nor the one behind it.
+    let answer = super::ai_tools::read(
+        &world,
+        &admin,
+        "relation_map",
+        serde_json::json!({"issue": start.to_string()}),
+    )
+    .await
+    .map_err(text)?;
+    for absent in [hidden, behind] {
+        assert!(!answer.contains(&absent.to_string()), "{answer}");
+    }
+    assert!(answer.contains(&start.to_string()), "{answer}");
+    Ok(())
+}
+
+#[tokio::test]
+async fn iss_16_the_map_of_a_crowd_is_the_map_of_the_issues_the_reader_sees_more_included()
+-> Result<(), String> {
+    // More visible issues one and two steps away than a map holds, among hidden ones: the cap is
+    // reached, and `more` is worked out on what the reader sees.
+    let count = MAP_ISSUES_MOST * 2;
+    let case = Case {
+        issues: (0..count).map(|at| at % PROJECTS.len()).collect(),
+        lines: (1..count)
+            .map(|at| Seed {
+                one: if at % 4 == 0 { at / 2 } else { 0 },
+                other: at,
+                what: at % 3,
+            })
+            .collect(),
+        sees: [true, false, true],
+        start: 0,
+        steps: None,
+        blocks: true,
+        related: true,
+        part_of: true,
+    };
+    let (stored, _) = map_of_case(&case).await?;
+    assert!(model(&stored, &case).2, "the case must reach the cap");
+    let fail = |error: TestCaseError| error.to_string();
+    the_map_of_what_is_seen(case.clone()).await.map_err(fail)?;
+    no_chain_through_hidden(case).await.map_err(fail)
 }

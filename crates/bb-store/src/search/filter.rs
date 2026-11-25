@@ -203,7 +203,7 @@ impl Compiler<'_> {
 
     /// Issues below the named one, at any depth, through issues the person reads.
     fn under(&self, reference: &str) -> Cond {
-        let read = crate::sight::sight_condition(&self.request.sight);
+        let read = super::seen_by(self.request);
         let mut first = Query::select();
         first
             .column((IssueParentRow::Table, IssueParentRow::Child))
@@ -265,7 +265,7 @@ impl Compiler<'_> {
     /// Issues that a chain of relations of at most `limit` steps joins to the named one, through
     /// issues the person reads.
     fn connected(&self, reference: &str, limit: u32) -> Cond {
-        let read = crate::sight::sight_condition(&self.request.sight);
+        let read = super::seen_by(self.request);
         let name = Alias::new(format!("walk{}", self.next_table()));
         let at = |column: &str| Expr::col((name.clone(), Alias::new(column.to_owned())));
         let mut first = Query::select();

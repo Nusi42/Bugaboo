@@ -105,11 +105,32 @@ async fn lock_for(browser: &mut Browser, comment: &str) -> Result<String, Failur
 }
 
 /// The request of a route of relations, comments, history or following, if the operation is one.
+/// The request of a route of the relation map, if the operation is one.
+async fn map_request(fixture: &Fixture<'_>, operation: &str) -> Result<Option<Request>, Failure> {
+    Ok(Some(match operation {
+        "getIssueMap" => (
+            "GET",
+            format!("/api/v1/issues/{}/map", an_issue(fixture).await?),
+            None,
+        ),
+        // The map of a search lets in whoever is signed in and shows what they read.
+        "getSearchMap" => (
+            "POST",
+            "/api/v1/map".into(),
+            Some(json!({"search_text": ""})),
+        ),
+        _ => return Ok(None),
+    }))
+}
+
 pub(super) async fn relation_request(
     fixture: &Fixture<'_>,
     operation: &str,
     browser: &mut Browser,
 ) -> Result<Option<Request>, Failure> {
+    if let Some(found) = map_request(fixture, operation).await? {
+        return Ok(Some(found));
+    }
     Ok(Some(match operation {
         "listRelationKinds" => ("GET", "/api/v1/relation-kinds".into(), None),
         "createRelationKind" => (
@@ -150,17 +171,6 @@ pub(super) async fn relation_request(
             "GET",
             format!("/api/v1/issues/{}/sub-issues", an_issue(fixture).await?),
             None,
-        ),
-        "getIssueMap" => (
-            "GET",
-            format!("/api/v1/issues/{}/map", an_issue(fixture).await?),
-            None,
-        ),
-        // The map of a search lets in whoever is signed in and shows what they read.
-        "getSearchMap" => (
-            "POST",
-            "/api/v1/map".into(),
-            Some(json!({"search_text": ""})),
         ),
         "listRelatedIssues" => (
             "GET",

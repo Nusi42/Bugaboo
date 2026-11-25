@@ -2,11 +2,12 @@
 //! step away, built on the one step of every walk (`search::filter::step`), so the map passes only
 //! through the issues the search would read for the same person.
 //!
-//! A step is a statement of its own instead of one recursive table: a recursive walk of five steps
-//! that goes both ways along every relation touches every issue again at each step before it could
-//! stop at 200 (architecture §8, *The map's walk*). A step starts from at most 200 issues and stops
-//! inside the statement at the number it may still add, so the work of a map is bounded by its cap
-//! and not by how many issues are connected or hidden.
+//! A step is a statement of its own instead of one recursive table: a recursive walk that goes both
+//! ways along every relation touches every issue again at each step before it could stop at the cap
+//! of the map (architecture §7, *The walk of the relation map*). A step starts from at most the cap
+//! of issues and stops inside the statement at the number it may still add, so the work of a map is
+//! bounded by its cap and not by how many issues are connected or hidden. The whole walk has the
+//! time of one search.
 
 use bb_app::search::{MapStep, SearchFailure, SearchRequest};
 use bb_core::id::IssueId;
@@ -77,9 +78,14 @@ impl AuthStorage {
         let Some(select) = step_statement(request, map) else {
             return Ok(Vec::new());
         };
+        // One deadline for the whole walk: the step gets the time of a search that is left.
+        let left = crate::search::SEARCH_TIME.saturating_sub(map.began.elapsed());
+        if left.is_zero() {
+            return Err(SearchFailure::TooSlow);
+        }
         let rows = self
             .database()
-            .fetch_all_within(Statement::Select(&select), crate::search::SEARCH_TIME)
+            .fetch_all_within(Statement::Select(&select), left)
             .await
             .map_err(crate::search::stopped)?;
         rows.iter()

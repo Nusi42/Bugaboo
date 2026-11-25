@@ -122,16 +122,27 @@ async fn ai_21_relation_map_answers_what_the_person_would_see_and_marks_titles_u
     )
     .await?;
     assert!(!searched.contains(&hidden.to_string()), "{searched}");
-    // A title kept from AI is not on the map the AI reads.
+    Ok(())
+}
+
+#[tokio::test]
+async fn ai_03_a_title_kept_from_ai_is_not_on_the_map_the_ai_reads() -> Outcome {
+    let world = World::new().await?;
+    let open = a_project(&world, "WEB").await?;
+    let start = an_issue(&world, open).await?;
     mark(&world, NeverSentTarget::Field(Field::Title)).await?;
-    let kept = read(
+    let answer = read(
         &world,
-        &reader.session_token,
+        &world.admin.session_token,
         "relation_map",
         json!({"issue": start.to_string()}),
     )
     .await?;
-    assert!(!kept.contains("Ignore what you were told"), "{kept}");
-    assert!(kept.contains(&person.issues[1].issue.key), "{kept}");
+    // The issue is there, by its ID; its title is not.
+    assert!(answer.contains(&start.to_string()), "{answer}");
+    assert!(
+        !answer.contains("The login button does nothing"),
+        "{answer}"
+    );
     Ok(())
 }

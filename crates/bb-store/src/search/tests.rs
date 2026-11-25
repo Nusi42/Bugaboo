@@ -93,7 +93,7 @@ struct Rows {
     parents: Vec<IssueParent>,
 }
 
-fn project_row(id: ProjectId, short_name: &str) -> Project {
+pub(super) fn project_row(id: ProjectId, short_name: &str) -> Project {
     Project {
         id,
         parent: None,

@@ -54,9 +54,28 @@ impl std::error::Error for InvalidIssueCode {}
 /// The part of an issue ID after the dash: a counting number (`142`, no leading zero) or a random
 /// code of 4 to 8 symbols of Crockford's base 32 (`K7Q2X`). It holds nothing but those symbols,
 /// so it can never carry personal data.
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
 pub struct IssueCode(String);
+
+/// The one order of codes: counting numbers by their value (`99` before `142`), then random codes,
+/// shorter first and then by their symbols. A readable ID orders by its short name, then by this
+/// (ISS-16: the order of a column of the relation map).
+impl Ord for IssueCode {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        // A counting number has no leading zero, so the shorter one is the smaller.
+        let key = |code: &Self| (code.mode() == IdMode::Random, code.0.len());
+        key(self)
+            .cmp(&key(other))
+            .then_with(|| self.0.cmp(&other.0))
+    }
+}
+
+impl PartialOrd for IssueCode {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
 
 fn is_counting(text: &str) -> bool {
     (1..=COUNT_DIGITS_MAX).contains(&text.len())
@@ -221,6 +240,32 @@ mod tests {
     use super::*;
     use crate::id::{IdSource, SequentialIds};
     use crate::text::CodeDraws;
+
+    #[test]
+    fn iss_16_readable_ids_order_by_short_name_then_by_the_value_of_their_number() {
+        let id = |text: &str| text.parse::<ReadableId>().unwrap();
+        let mut ids = [
+            id("WEB-142"),
+            id("API-7"),
+            id("WEB-K7Q2X"),
+            id("WEB-99"),
+            id("WEB-1000"),
+            id("WEB-ABCD"),
+        ];
+        ids.sort();
+        let texts: Vec<String> = ids.iter().map(ToString::to_string).collect();
+        assert_eq!(
+            texts,
+            [
+                "API-7",
+                "WEB-99",
+                "WEB-142",
+                "WEB-1000",
+                "WEB-ABCD",
+                "WEB-K7Q2X"
+            ]
+        );
+    }
 
     /// A source of random bytes that hands out the blocks it was given, over and over: with few
     /// different blocks, the draws clash a lot.

@@ -18,7 +18,8 @@ use std::collections::HashMap;
 use bb_core::ErrorCode;
 use bb_core::id::{IssueId, RelationKindId};
 use bb_core::message::{self, Message};
-use bb_core::relation::{Dependency, DependencyGraph, RelationKind};
+use bb_core::readable_id::ReadableId;
+use bb_core::relation::{Dependency, RelationKind, dependency_loops};
 use bb_policy::{Authorized, Masked, Place as Where};
 use bb_searchlang::MAX_STEPS;
 use serde::Serialize;
@@ -150,6 +151,7 @@ fn steps_of(asked: Option<u32>) -> Result<u32, AppError> {
 impl<S: AuthStore + SearchStore> Ctx<'_, S> {
     /// The walk from `start`, one statement for each step away, each starting from the issues of
     /// the step before and stopping at the room left on the map and one more, which says `more`.
+    /// The whole walk has the time of one search: each step gets what is left of it.
     async fn walk(
         &self,
         prepared: &Prepared,
@@ -160,6 +162,7 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
         let mut reached = vec![(start, Some(0))];
         let mut near = vec![start];
         let mut more = false;
+        let began = std::time::Instant::now();
         for away in 1..=steps {
             let room = MAP_ISSUES_MOST.saturating_sub(reached.len());
             let mut found = self
@@ -172,6 +175,7 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
                         kinds: kinds.iter().map(|kind| kind.id).collect(),
                         part_of,
                         most: u64::try_from(room + 1).unwrap_or(u64::MAX),
+                        began,
                     },
                 )
                 .await
@@ -260,7 +264,7 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
             .filter(|line| line.kind.is_some_and(|kind| effects.contains(&kind)))
             .map(|line| (line.from, line.to))
             .collect();
-        let loops = DependencyGraph::new(&dependencies).loops(&dependencies);
+        let loops = dependency_loops(&dependencies);
         if start.is_some() {
             order_by_reach(&mut issues, &lines, kinds);
         }
@@ -296,7 +300,11 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
         if withheld.is_some_and(|kept| kept.hides_project(issue.project)) {
             return Err(AppError::Refused(ErrorCode::NotFound));
         }
-        let prepared = self.map_sight(actor, withheld).await?;
+        // The sight of a search that finds everything the reader reads, as the AI reads it when
+        // `withheld` is given.
+        let prepared = self
+            .prepare_search_as(actor, "", SearchScope::Everywhere, withheld)
+            .await?;
         let kinds = self.map_kinds(&query.shown).await?;
         let shown = (kinds.as_slice(), query.shown.part_of);
         let walked = self.walk(&prepared, issue.id, steps, shown).await?;
@@ -312,16 +320,9 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
         query: &SearchMapQuery,
         withheld: Option<&Withheld>,
     ) -> Result<Authorized<RelationMap>, AppError> {
-        let mut prepared = match withheld {
-            Some(kept) => {
-                self.prepare_search_within(actor, &query.text, SearchScope::Everywhere, kept)
-                    .await?
-            }
-            None => {
-                self.prepare_search(actor, &query.text, SearchScope::Everywhere)
-                    .await?
-            }
-        };
+        let mut prepared = self
+            .prepare_search_as(actor, &query.text, SearchScope::Everywhere, withheld)
+            .await?;
         prepared.request.limit = u64::try_from(MAP_ISSUES_MOST + 1).unwrap_or(u64::MAX);
         let mut hits = self
             .store()
@@ -340,25 +341,6 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
             .await?;
         let organization = self.evaluation_of(actor, Where::Organization).await?;
         Ok(organization.authorize(map))
-    }
-
-    /// The sight of the reader for the walk: the one of a search that finds everything they read,
-    /// as an AI app or an agent reads it when `withheld` is given.
-    async fn map_sight(
-        &self,
-        actor: &Actor,
-        withheld: Option<&Withheld>,
-    ) -> Result<Prepared, AppError> {
-        match withheld {
-            Some(kept) => {
-                self.prepare_search_within(actor, "", SearchScope::Everywhere, kept)
-                    .await
-            }
-            None => {
-                self.prepare_search(actor, "", SearchScope::Everywhere)
-                    .await
-            }
-        }
     }
 }
 
@@ -399,9 +381,7 @@ fn order_by_reach(issues: &mut [MapIssue], lines: &[MapLine], kinds: &[RelationK
         (
             issue.steps,
             reach(issue),
-            issue.issue.project.short_name.to_string(),
-            issue.issue.key.len(),
-            issue.issue.key.clone(),
+            issue.issue.key.parse::<ReadableId>().ok(),
         )
     });
 }

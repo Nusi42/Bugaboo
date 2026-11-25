@@ -168,7 +168,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         text: &str,
         scope: SearchScope,
     ) -> Result<Prepared, AppError> {
-        self.prepare(actor, text, scope, None, |_| None).await
+        self.prepare_search_as(actor, text, scope, None).await
     }
 
     /// The same for the AI (AI-03): what is kept from AI is not among the fields, the projects or
@@ -180,8 +180,20 @@ impl<S: AuthStore> Ctx<'_, S> {
         scope: SearchScope,
         withheld: &Withheld,
     ) -> Result<Prepared, AppError> {
-        self.prepare(actor, text, scope, Some(withheld), |_| None)
+        self.prepare_search_as(actor, text, scope, Some(withheld))
             .await
+    }
+
+    /// The search for the person (`withheld` none) or for the AI, which reads it without what is
+    /// kept from AI: for a use case that serves both.
+    pub(crate) async fn prepare_search_as(
+        &self,
+        actor: &Actor,
+        text: &str,
+        scope: SearchScope,
+        withheld: Option<&Withheld>,
+    ) -> Result<Prepared, AppError> {
+        self.prepare(actor, text, scope, withheld, |_| None).await
     }
 
     /// The same with a filter added to the text: what `narrow` makes from the fields the person may
