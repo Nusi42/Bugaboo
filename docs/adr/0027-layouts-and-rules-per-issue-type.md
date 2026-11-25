@@ -68,7 +68,7 @@ The maintainer took the recommendation of M10-Q4 of [the M10 plan](../milestones
 - **The same rules as every layout** (decision 4): a field shows on a card only when the layout lists it for one of the person's roles and the field level lets them see it, so a card shows the same fields wherever it appears and never more than the issue page.
 - ***Customize › Card*** on a board opens this layout for a person who may change layouts; a person who may not does not see it. A board keeps no fields of its own.
 
-Enforced by (additional): SEC-MATRIX (the card under field levels), the property test `cfg_01_a_layout_never_shows_a_field_the_role_cannot_see` with the form `card`, review (a board that keeps a list of fields of its own is a second definition of the card).
+Enforced by (additional): SEC-MATRIX (the card under field levels), the property test `cfg_01_a_layout_never_shows_a_field_the_role_cannot_see` with the form `card`, the unit test `plan_06_a_card_places_at_most_four_fields_and_starts_with_three` of `bb-core` (at most four fields, the three lengths of time among them, the starting card), the test `plan_06_a_card_shows_only_the_layout_fields_the_reader_may_read` of `bb-server` (both databases), review (a board that keeps a list of fields of its own is a second definition of the card).
 
 ## Alternatives considered
 
