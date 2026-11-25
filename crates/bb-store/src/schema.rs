@@ -63,92 +63,51 @@ macro_rules! stored_tables {
     };
 }
 
-mod access;
-mod agent_requests;
-mod agent_work;
-mod agents;
-mod ai;
-mod backups;
-mod comments;
-mod dashboards;
-mod data_exports;
-mod e_mail_changes;
-mod files;
-mod notify;
-mod oauth;
-mod plan;
-mod releases;
-mod search_mail;
-mod searches;
-mod sign_in;
-mod system;
-mod text_index;
-mod themes;
-mod time;
-mod walk_index;
-mod work;
-mod work_times;
-mod working_hours;
+/// The areas of the schema, each a file that names its tables: declared, re-exported and listed
+/// for the personal-data map from this one list, so an area cannot be left out of the map.
+macro_rules! areas {
+    ($($area:ident),+ $(,)?) => {
+        $(mod $area;)+
+        $(pub(crate) use $area::*;)+
 
-pub(crate) use access::*;
-pub(crate) use agent_requests::*;
-pub(crate) use agent_work::*;
-pub(crate) use agents::*;
-pub(crate) use ai::*;
-pub(crate) use backups::*;
-pub(crate) use comments::*;
-pub(crate) use dashboards::*;
-pub(crate) use data_exports::*;
-pub(crate) use e_mail_changes::*;
-pub(crate) use files::*;
-pub(crate) use notify::*;
-pub(crate) use oauth::*;
-pub(crate) use plan::*;
-pub(crate) use releases::*;
-pub(crate) use search_mail::*;
-pub(crate) use searches::*;
-pub(crate) use sign_in::*;
-pub(crate) use system::*;
-pub(crate) use text_index::*;
-pub(crate) use themes::*;
-pub(crate) use time::*;
-pub(crate) use walk_index::*;
-pub(crate) use work::*;
-pub(crate) use work_times::*;
-pub(crate) use working_hours::*;
+        /// The name of every table with the marks of the entity stored in it and the field behind
+        /// each column, for the personal-data map. Each area names its own tables in its own file.
+        #[must_use]
+        pub fn tables() -> Vec<StoredTable> {
+            let mut tables = Vec::new();
+            $(tables.extend($area::tables());)+
+            tables
+        }
+    };
+}
 
-/// The name of every table with the marks of the entity stored in it and the field behind each
-/// column, for the personal-data map. Each area names its own tables in its own file.
-#[must_use]
-pub fn tables() -> Vec<StoredTable> {
-    let mut tables = Vec::new();
-    tables.extend(access::tables());
-    tables.extend(agent_work::tables());
-    tables.extend(agents::tables());
-    tables.extend(ai::tables());
-    tables.extend(agent_requests::tables());
-    tables.extend(backups::tables());
-    tables.extend(comments::tables());
-    tables.extend(dashboards::tables());
-    tables.extend(data_exports::tables());
-    tables.extend(e_mail_changes::tables());
-    tables.extend(files::tables());
-    tables.extend(notify::tables());
-    tables.extend(oauth::tables());
-    tables.extend(plan::tables());
-    tables.extend(releases::tables());
-    tables.extend(search_mail::tables());
-    tables.extend(searches::tables());
-    tables.extend(sign_in::tables());
-    tables.extend(system::tables());
-    tables.extend(text_index::tables());
-    tables.extend(themes::tables());
-    tables.extend(time::tables());
-    tables.extend(walk_index::tables());
-    tables.extend(work::tables());
-    tables.extend(work_times::tables());
-    tables.extend(working_hours::tables());
-    tables
+areas! {
+    access,
+    agent_work,
+    agents,
+    ai,
+    agent_requests,
+    backups,
+    comments,
+    dashboards,
+    data_exports,
+    e_mail_changes,
+    files,
+    notify,
+    oauth,
+    plan,
+    releases,
+    search_mail,
+    searches,
+    sign_in,
+    system,
+    text_index,
+    themes,
+    time,
+    walk_index,
+    work,
+    work_times,
+    working_hours,
 }
 
 #[cfg(test)]

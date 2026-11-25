@@ -317,8 +317,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 self.person_event(round, event).await
             }
             RecordKind::AgentRequest => self.agent_request_event(round, event).await,
-            // The rest changes the setup of the organization or a person's own data; no follower
-            // of an issue hears of it.
+            // The rest is setup or a person's own data: no follower of an issue hears of it.
             RecordKind::AccessKey
             | RecordKind::OAuthClient
             | RecordKind::ConnectedApp
