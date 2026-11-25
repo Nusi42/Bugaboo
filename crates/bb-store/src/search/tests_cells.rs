@@ -11,12 +11,7 @@ use crate::test_support::fixture;
 
 /// The rows by priority, each split again by the status group.
 fn by_priority_then_group() -> GroupBy {
-    GroupBy {
-        word: "priority".to_owned(),
-        people: Vec::new(),
-        page: None,
-        then: Some("statusGroup".to_owned()),
-    }
+    GroupBy::of("priority").split_by("statusGroup")
 }
 
 /// The cells of the status groups as columns, in their order, and rows by priority.
@@ -55,6 +50,18 @@ async fn plan_06_the_cells_of_a_board_are_counted_and_read_in_one_statement_each
         let added: u64 = totals.groups.iter().map(|group| group.total.issues).sum();
         assert_eq!(added, 6);
         assert_eq!(totals.all.issues, 6);
+        // A page of groups split by a second field would end inside a group: it is refused.
+        let paged = TotalsAsked {
+            by: Some(
+                by_priority_then_group().paged(Some(bb_app::search::GroupPage {
+                    after: None,
+                    limit: 1,
+                })),
+            ),
+            sums: Vec::new(),
+            all: true,
+        };
+        assert!(storage.search_totals(&all, &paged).await.is_err());
         // One card of each cell, then the rest of the cells after it.
         let rows: Vec<GroupKey> = totals
             .groups

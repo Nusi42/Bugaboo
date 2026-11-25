@@ -8,7 +8,9 @@
 //! order and the answer says so.
 
 use bb_core::issue::Issue;
-use bb_core::saved_search::CardLimit;
+use std::hash::{Hash as _, Hasher as _};
+
+use bb_core::saved_search::{BoardOptions, CardLimit};
 
 use super::columns::{Column, same_column};
 use super::types::{BoardColumn, BoardRow, CellAsk, ROWS_MAX};
@@ -60,15 +62,20 @@ pub(super) struct CellCount {
 /// the row and of the column as the store gave them.
 pub(super) type RowGroup = ((ShownKey, Total), (GroupKey, Option<GroupKey>));
 
+/// The mark of the options of a board: a cursor carries it, so a cursor made with other options
+/// (a saved board changed since) points at no cell. Cursors live as long as the run of the server
+/// that sealed them, as this hash does.
+#[must_use]
+pub fn options_mark(options: &BoardOptions) -> u64 {
+    let mut hasher = std::hash::DefaultHasher::new();
+    options.hash(&mut hasher);
+    hasher.finish()
+}
+
 /// The totals asked of a search grouped by one field, without sums.
 pub(super) fn grouped_by(word: &str) -> TotalsAsked {
     TotalsAsked {
-        by: Some(GroupBy {
-            word: word.to_owned(),
-            people: Vec::new(),
-            page: None,
-            then: None,
-        }),
+        by: Some(GroupBy::of(word)),
         sums: Vec::new(),
         all: false,
     }
@@ -199,7 +206,7 @@ pub(super) fn cells_found(
     counts: Vec<CellCount>,
     mut hits: Vec<CellHit>,
     rows: &RowsRead,
-    more: Option<CellAsk>,
+    (more, mark): (Option<CellAsk>, u64),
 ) -> Vec<CellFound> {
     let skip = more.map_or(0, |ask| ask.skip);
     let mut found = Vec::new();
@@ -224,6 +231,7 @@ pub(super) fn cells_found(
                 column: count.column,
                 row: count.row,
                 skip: shown,
+                mark,
             }),
             issues,
         });

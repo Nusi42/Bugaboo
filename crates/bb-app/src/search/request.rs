@@ -451,6 +451,41 @@ pub struct GroupBy {
     pub page: Option<GroupPage>,
 }
 
+impl GroupBy {
+    /// The issues grouped by the field `word`: every person a group of their own, every group
+    /// read, no second field.
+    #[must_use]
+    pub fn of(word: impl Into<String>) -> Self {
+        Self {
+            word: word.into(),
+            people: Vec::new(),
+            page: None,
+            then: None,
+        }
+    }
+
+    /// The same, with the people of each set as one group.
+    #[must_use]
+    pub fn with_people(mut self, people: Vec<Vec<UserId>>) -> Self {
+        self.people = people;
+        self
+    }
+
+    /// The same, with the groups read as `page` says.
+    #[must_use]
+    pub fn paged(mut self, page: Option<GroupPage>) -> Self {
+        self.page = page;
+        self
+    }
+
+    /// The same, each group split again by the field of one value `word`.
+    #[must_use]
+    pub fn split_by(mut self, word: impl Into<String>) -> Self {
+        self.then = Some(word.into());
+        self
+    }
+}
+
 /// A page of the groups of a total.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct GroupPage {

@@ -418,6 +418,13 @@ pub(crate) fn totals_statements(
         });
     };
     let compiler = Compiler::new(request, dialect);
+    // A page is cut by LIMIT over the rows of the statement: with a second field a row is part
+    // of a group, so the cut would end inside one and its total would be part of it.
+    if by.then.is_some() && by.page.is_some() {
+        return Err(CompileError::Unsupported(
+            "a page of groups split by a second field",
+        ));
+    }
     let split = compiler.split(by)?;
     let paged = by
         .page

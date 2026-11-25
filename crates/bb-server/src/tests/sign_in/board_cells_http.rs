@@ -195,3 +195,106 @@ async fn plan_06_an_issue_of_two_people_shown_alike_is_one_card_in_their_row() -
     })
     .await
 }
+
+#[tokio::test]
+async fn plan_06_rows_a_board_cannot_have_are_refused() -> TestResult {
+    each_database("plan_06_rows_refused", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        issue_in(&mut ada, (&site.acme, &site.kind), "One", json!({})).await?;
+        // A field the timeline does not group by, and the field of the columns again.
+        for options in [json!({"rows": "title"}), json!({"rows": "status"})] {
+            let refused = ada
+                .send("POST", BOARD, Some(acme_board(&site, &options)))
+                .await?;
+            assert_eq!(
+                refused.code(),
+                "request.invalid",
+                "{options}: {}",
+                refused.body
+            );
+        }
+        // A field the reader may not read is no field to split by, as one that does not exist.
+        let contributor = site.role_id(StartingRole::Contributor);
+        let hidden = ada
+            .send(
+                "PUT",
+                &format!("/api/v1/field-permissions/{contributor}/priority"),
+                Some(json!({"level": "hidden"})),
+            )
+            .await?;
+        assert!(hidden.status.is_success(), "{}", hidden.body);
+        let (mut them, _) = site
+            .person(StartingRole::Contributor, "contributor")
+            .await?;
+        let refused = them
+            .send(
+                "POST",
+                BOARD,
+                Some(acme_board(&site, &json!({"rows": "priority"}))),
+            )
+            .await?;
+        assert_eq!(refused.code(), "request.invalid", "{}", refused.body);
+        // The same reader may split by a field they read.
+        board(
+            &mut them,
+            acme_board(&site, &json!({"rows": "assigned to"})),
+        )
+        .await?;
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn plan_06_a_cursor_of_a_saved_board_whose_options_changed_points_at_no_cell() -> TestResult {
+    each_database("plan_06_changed_options", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        for title in ["A", "B"] {
+            issue_in(&mut ada, (&site.acme, &site.kind), title, json!({})).await?;
+        }
+        let presentation = |limit: u32| {
+            json!({
+                "view": "board",
+                "columns": [],
+                "group_by": null,
+                "board": {"columns": null, "rows": null, "card_limits": [{"column": "Open", "limit": limit}]},
+            })
+        };
+        let made = ok(&ada
+            .send(
+                "POST",
+                "/api/v1/saved-searches",
+                Some(json!({"name": "Work", "search_text": "", "presentation": presentation(5)})),
+            )
+            .await?)?
+        .clone();
+        let id = text_in(&made, "id")?;
+        let first = board(&mut ada, json!({"saved_search": id, "limit": 1})).await?;
+        let cursor = first["cells"][0]["next_cursor"]
+            .as_str()
+            .ok_or("no cursor")?
+            .to_owned();
+        // The cursor opens while the options are the same.
+        board(&mut ada, json!({"saved_search": id, "limit": 1, "more": cursor})).await?;
+        let version = made["version"].clone();
+        ok(&ada
+            .send(
+                "PATCH",
+                &format!("/api/v1/saved-searches/{id}"),
+                Some(json!({"version": version, "presentation": presentation(9)})),
+            )
+            .await?)?;
+        let refused = ada
+            .send(
+                "POST",
+                BOARD,
+                Some(json!({"saved_search": id, "limit": 1, "more": cursor})),
+            )
+            .await?;
+        assert_eq!(refused.code(), "request.bad-cursor", "{}", refused.body);
+        Ok(())
+    })
+    .await
+}

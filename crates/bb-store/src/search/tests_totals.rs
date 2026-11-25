@@ -45,12 +45,7 @@ impl AuthStorage {
         by: &str,
     ) -> Result<Vec<GroupCount>, bb_app::search::SearchFailure> {
         let asked = TotalsAsked {
-            by: Some(GroupBy {
-                word: by.to_owned(),
-                people: Vec::new(),
-                then: None,
-                page: None,
-            }),
+            by: Some(GroupBy::of(by)),
             sums: Vec::new(),
             all: false,
         };
@@ -184,14 +179,7 @@ async fn qry_08_the_compiler_adds_up_groups_and_sets_of_people() -> TestResult {
         let fixture = fixture(db).await?;
         let storage = &fixture.storage;
         let (data, request) = estimated_issues(storage).await?;
-        let by = |word: &str, people| {
-            Some(GroupBy {
-                word: word.to_owned(),
-                people,
-                then: None,
-                page: None,
-            })
-        };
+        let by = |word: &str, people| Some(GroupBy::of(word).with_people(people));
         let everywhere = TotalsAsked {
             by: by("tags", Vec::new()),
             sums: vec![estimated(ReadableWhere::Everywhere)],
@@ -304,12 +292,7 @@ async fn qry_08_two_people_of_one_set_on_one_issue_count_once_in_its_group() -> 
         })
         .await?;
         let asked = TotalsAsked {
-            by: Some(GroupBy {
-                word: "assignedTo".to_owned(),
-                people: vec![vec![one, other]],
-                then: None,
-                page: None,
-            }),
+            by: Some(GroupBy::of("assignedTo").with_people(vec![vec![one, other]])),
             sums: Vec::new(),
             all: true,
         };
@@ -341,15 +324,10 @@ async fn walked(
     let mut after = None;
     loop {
         let asked = TotalsAsked {
-            by: Some(GroupBy {
-                word: by.to_owned(),
-                people: Vec::new(),
-                then: None,
-                page: Some(GroupPage {
-                    after: after.clone(),
-                    limit,
-                }),
-            }),
+            by: Some(GroupBy::of(by).paged(Some(GroupPage {
+                after: after.clone(),
+                limit,
+            }))),
             sums: Vec::new(),
             all: true,
         };

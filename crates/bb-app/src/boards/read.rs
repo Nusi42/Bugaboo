@@ -14,14 +14,14 @@ use std::collections::HashMap;
 use bb_core::ErrorCode;
 use bb_core::fields::FieldKey;
 use bb_core::id::{IssueId, IssueTypeId, ProjectId};
-use bb_core::issue::{Issue, Priority, StatusGroup};
+use bb_core::issue::Issue;
 use bb_core::readable_id::ReadableId;
 use bb_core::saved_search::BoardOptions;
 use bb_policy::{Authorized, Place as Where};
 
 use super::cells::{
     CellCount, CellFound, RowPlace, RowsRead, cells_found, column_counts, column_heads, grouped_by,
-    rows_and_counts,
+    options_mark, rows_and_counts,
 };
 use super::columns::{Column, ColumnsBy, board_columns, column_of, columns_by, columns_word};
 use super::moves::card_moves;
@@ -214,12 +214,8 @@ fn row_place(
 ) -> RowPlace {
     let place = |at: Option<usize>| u64::try_from(at.unwrap_or(usize::MAX)).unwrap_or(u64::MAX);
     match key {
-        GroupKey::Priority(each) => (
-            place(Priority::LIST_ORDER.iter().position(|one| one == each)),
-            String::new(),
-        ),
-        GroupKey::StatusGroup(each) => (
-            place(StatusGroup::ALL.iter().position(|one| one == each)),
+        GroupKey::Priority(_) | GroupKey::StatusGroup(_) => (
+            u64::try_from(key.place().number).unwrap_or(u64::MAX),
             String::new(),
         ),
         GroupKey::Text(status) => (
@@ -296,6 +292,10 @@ pub async fn board<S: AuthStore + SearchStore>(
     if !options.is_valid() {
         return Err(invalid());
     }
+    let mark = options_mark(&options);
+    if query.more.is_some_and(|ask| ask.mark != mark) {
+        return Err(AppError::Refused(ErrorCode::BadCursor));
+    }
     let mut base = view.prepared;
     let by = columns_by(&base.looked, &options).ok_or_else(invalid)?;
     let word = columns_word(&options);
@@ -341,7 +341,7 @@ pub async fn board<S: AuthStore + SearchStore>(
         )
         .await
         .map_err(stopped)?;
-    let found = cells_found(counts, hits, &rows, query.more);
+    let found = cells_found(counts, hits, &rows, (query.more, mark));
     let cells = ctx.cards_of(&actor, &base, (by, &columns), found).await?;
     let organization = ctx.evaluation_of(&actor, Where::Organization).await?;
     Ok(organization.authorize(BoardPage {

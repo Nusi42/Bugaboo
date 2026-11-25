@@ -17,6 +17,7 @@ mod moves;
 mod read;
 mod types;
 
+pub use cells::options_mark;
 pub(crate) use columns::{columns_by, named_by_limits};
 pub use read::board;
 pub use types::*;

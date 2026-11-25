@@ -220,12 +220,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .prepare_search(actor, &format!("under {key}"), SearchScope::Everywhere)
             .await?;
         let by_project = TotalsAsked {
-            by: Some(GroupBy {
-                word: IssueField::Project.word().to_owned(),
-                people: Vec::new(),
-                page: None,
-                then: None,
-            }),
+            by: Some(GroupBy::of(IssueField::Project.word())),
             sums: Vec::new(),
             all: false,
         };

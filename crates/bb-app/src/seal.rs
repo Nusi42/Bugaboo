@@ -80,14 +80,16 @@ const PURPOSE_PREFIX: &str = "cursor:";
 
 /// The name of a list that cursors are sealed for: what kind of list it is (`search`, `totals`,
 /// `timeline`, `board`), the person, and a hash of the parts of the request that make it this list,
-/// so a cursor opens for nobody else and for no other list. A part that is left out counts as
+/// so a cursor opens for nobody else and for no other list. Each part goes in after its length,
+/// so two different splits of the same text are two lists; a part that is left out counts as
 /// empty. The one name of every list.
 #[must_use]
 pub fn list_name(kind: &str, person: UserId, parts: &[Option<&str>]) -> String {
     let mut hash = Sha256::new();
     for part in parts {
-        hash.update(part.unwrap_or_default().as_bytes());
-        hash.update([0]);
+        let bytes = part.unwrap_or_default().as_bytes();
+        hash.update(u64::try_from(bytes.len()).unwrap_or(u64::MAX).to_be_bytes());
+        hash.update(bytes);
     }
     format!(
         "{kind}:{person}:{}",
@@ -133,6 +135,19 @@ pub fn process() -> Option<&'static Seal> {
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn sec_list_names_of_two_splits_of_the_same_text_differ() {
+        let person = UserId::from_random([7; 16]);
+        let one = list_name("board", person, &[Some("ab"), Some("c")]);
+        let other = list_name("board", person, &[Some("a"), Some("bc")]);
+        assert_ne!(one, other);
+        let nul = list_name("board", person, &[Some("a\u{0}"), Some("b")]);
+        let split = list_name("board", person, &[Some("a"), Some("\u{0}b")]);
+        assert_ne!(nul, split);
+        assert_eq!(one, list_name("board", person, &[Some("ab"), Some("c")]));
+    }
+
     use super::*;
 
     #[test]

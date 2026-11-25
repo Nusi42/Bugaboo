@@ -79,7 +79,7 @@ words_in_api!(
 
 /// The soft limit of one column of a board (M10-Q2): the column's title says "4 of 3" when more
 /// cards than this are in it, and nothing is refused.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize)]
 pub struct CardLimit {
     /// The column, by the value it stands for as the search language writes it: the name of a
     /// status, the word of a status group or the name of a choice; `None` for the column of the
@@ -90,7 +90,7 @@ pub struct CardLimit {
 }
 
 /// The options of a board view, kept with its saved search (ADR-0034, amendment of 2026-11-24).
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash, Serialize)]
 pub struct BoardOptions {
     /// The field the columns come from, by its search word: *Status group* or an own field that
     /// holds one choice; `None` for *Status*, whose statuses of the same name are one column.

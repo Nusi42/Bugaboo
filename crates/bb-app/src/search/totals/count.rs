@@ -126,12 +126,7 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
         page: Option<GroupPage>,
     ) -> Result<Totals, AppError> {
         let asked = TotalsAsked {
-            by: Some(GroupBy {
-                word: grouping.word.clone(),
-                people: Vec::new(),
-                page,
-                then: None,
-            }),
+            by: Some(GroupBy::of(grouping.word.clone()).paged(page)),
             sums: sums.to_vec(),
             all,
         };
@@ -148,12 +143,7 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
         grouping: &Grouping,
         (sums, all): (&[SumAsked], bool),
     ) -> Result<Counted, AppError> {
-        let by = GroupBy {
-            word: grouping.word.clone(),
-            people: Vec::new(),
-            page: None,
-            then: None,
-        };
+        let by = GroupBy::of(grouping.word.clone());
         Ok(self
             .shown_groups(prepared, grouping, by, (sums, all))
             .await?
@@ -172,12 +162,7 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
         grouping: &Grouping,
         then: &str,
     ) -> Result<ShownGroups, AppError> {
-        let by = GroupBy {
-            word: grouping.word.clone(),
-            people: Vec::new(),
-            page: None,
-            then: Some(then.to_owned()),
-        };
+        let by = GroupBy::of(grouping.word.clone()).split_by(then);
         self.shown_groups(prepared, grouping, by, (&[], false))
             .await
     }
@@ -370,7 +355,6 @@ fn people_sets(keys: &[GroupKey], shown: &[ShownKey]) -> Option<Vec<(ShownKey, V
             continue;
         };
         match sets.iter_mut().find(|(each, _)| each == shown) {
-            Some((_, people)) if people.contains(person) => {}
             Some((_, people)) => people.push(*person),
             None => sets.push((shown.clone(), vec![*person])),
         }

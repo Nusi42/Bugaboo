@@ -39,8 +39,9 @@ pub struct BoardQuery {
     pub limit: u32,
 }
 
-/// Where the next cards of one cell start: its column and row by their places, and how many of
-/// its cards were shown. The position of a cursor: it holds no value of any issue.
+/// Where the next cards of one cell start: its column and row by their places, how many of its
+/// cards were shown, and the mark of the options of the board they were shown with. The position
+/// of a cursor: it holds no value of any issue.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 pub struct CellAsk {
     /// The column, by its place.
@@ -49,16 +50,19 @@ pub struct CellAsk {
     pub row: Option<usize>,
     /// How many cards of the cell come before.
     pub skip: u64,
+    /// The mark of the options of the board in force ([`super::options_mark`]): a cursor of a
+    /// saved board whose options changed since points at no cell.
+    pub mark: u64,
 }
 
 impl CellAsk {
-    /// The position as text (`2.-.50`, `2.0.50`).
+    /// The position as text (`2.-.50.<mark>`, `2.0.50.<mark>`).
     #[must_use]
     pub fn position(self) -> String {
         let row = self
             .row
             .map_or_else(|| "-".to_owned(), |row| row.to_string());
-        format!("{}.{row}.{}", self.column, self.skip)
+        format!("{}.{row}.{}.{}", self.column, self.skip, self.mark)
     }
 
     /// The position a text of [`CellAsk::position`] holds; none for any other text.
@@ -71,7 +75,13 @@ impl CellAsk {
             row => Some(row.parse().ok()?),
         };
         let skip = parts.next()?.parse().ok()?;
-        parts.next().is_none().then_some(Self { column, row, skip })
+        let mark = parts.next()?.parse().ok()?;
+        parts.next().is_none().then_some(Self {
+            column,
+            row,
+            skip,
+            mark,
+        })
     }
 }
 
@@ -187,16 +197,18 @@ mod tests {
                 column: 2,
                 row: None,
                 skip: 50,
+                mark: 7,
             },
             CellAsk {
                 column: 0,
                 row: Some(19),
                 skip: 100,
+                mark: u64::MAX,
             },
         ] {
             assert_eq!(CellAsk::of_position(&ask.position()), Some(ask));
         }
-        for bad in ["", "1", "1.-", "1.x.5", "1.-.5.6", "-1.-.5"] {
+        for bad in ["", "1", "1.-", "1.-.5", "1.x.5.0", "1.-.5.6.7", "-1.-.5.0"] {
             assert_eq!(CellAsk::of_position(bad), None, "{bad}");
         }
     }
