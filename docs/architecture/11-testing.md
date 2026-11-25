@@ -339,6 +339,8 @@ The speed tests of the browser (`perf_01_*` in `perf-*.spec.ts`) run after the r
 
 A spec that belongs to one device carries it in its name: `*-phone.spec.ts` runs only in the phone projects and `*-computer.spec.ts` only in the computer projects (`testIgnore` in `web/tooling/playwright.config.ts`), so a test for one device is never a skipped test on the other (coding-standards §7).
 
+M10 adds two scenarios of the totals of a search (QRY-08, budget *search*, `web/tooling/bench/totals-scenarios.ts`): *totals-by-priority-biggest-project* (the count, *Estimated time* and *Time left* of `project within` the first project, by priority) and *totals-time-spent-biggest-project* (the total of *Time spent* of the same search, which reads the minutes spent through the statement of M6-F186 and inherits its known gap). Their first numbers are measured by hand on a quiet computer and written here; the exit's measurement is that of the speed package of M10.
+
 ## Ten people at the same time
 
 Concurrency is tested with **10 simulated people** (an administrator and Team members of one project, made for the run), each in their own browser context (Playwright) or API client (`cargo xtask load --people 10`):
