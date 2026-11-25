@@ -6,7 +6,7 @@
 //!   checks the recipient's mask and *Who sees people* when it builds a row.
 //! - `read.rs`: the list and *Mark as read*; checks again when a row is shown.
 //! - `mail.rs`: the job `mail.send` and the e-mail a notification makes; checks again when it is
-//!   sent.
+//!   sent; and the text of an e-mailed search (QRY-07).
 
 mod build;
 mod compose;
@@ -24,7 +24,7 @@ pub use handles::{
     ChangeHandle, CreateMissingHandles, HandleStore, MyHandle, MyHandleQuery,
     TAKEN_ANSWERS_PER_DAY, change_handle, create_missing_handles, my_handle,
 };
-pub(crate) use mail::{MailJob, send_failure_for_job};
+pub(crate) use mail::{MailJob, MailedIssue, SearchFound, search_mail_text, send_failure_for_job};
 pub use mail_settings::{
     MailServerQuery, MailServerStatus, SendTestEmail, SetMailPassword, mail_server_status,
     send_test_email, set_mail_password,

@@ -189,6 +189,10 @@ use crate::search::{
     SearchTotalsQuery, SearcherQuery, name_choices, readable_fields, search, search_count,
     search_groups, search_totals, searcher,
 };
+use crate::search_mail::{
+    SearchMailList, SearchMailView, SearchMailsQuery, SetSearchMail, StopSearchMail, search_mails,
+    set_search_mail, stop_search_mail,
+};
 use crate::settings::{
     ChangeSetting, DocumentImagesQuery, ImageHosts, ImageHostsQuery, LockSetting, ResetSetting,
     SettingList, SettingView, SettingsQuery, change_setting, document_image_hosts, image_hosts,

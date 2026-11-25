@@ -263,6 +263,20 @@ pub(crate) mod dashboard {
     pub(crate) const DELETED_AT: &str = super::saved_search::DELETED_AT;
 }
 
+/// The members of an e-mailed search (QRY-07).
+pub(crate) mod search_mail {
+    /// The saved search it sends.
+    pub(crate) const SEARCH: &str = "search";
+    /// The weekdays, Monday first.
+    pub(crate) const DAYS: &str = "days";
+    /// The hour in the person's time zone.
+    pub(crate) const HOUR: &str = "hour";
+    /// *Only when something is new or changed*.
+    pub(crate) const ONLY_WHEN_CHANGED: &str = "only_when_changed";
+    /// Every member an event of an e-mailed search names.
+    pub(crate) const ALL: [&str; 4] = [SEARCH, DAYS, HOUR, ONLY_WHEN_CHANGED];
+}
+
 /// The members of a time entry (TIME-01, TIME-02). The history of the issue reads the issue from
 /// `ISSUE`.
 pub(crate) mod time_entry {

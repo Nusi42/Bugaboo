@@ -6,6 +6,9 @@
 /// The name of the changing part of [`ISSUE`].
 pub const ISSUE_PARAM: &str = "issue";
 
+/// The name of the changing part of [`SAVED_SEARCH`].
+pub const SEARCH_PARAM: &str = "search";
+
 /// The name of the changing part of [`PROJECT_SETTINGS`].
 pub const PROJECT_PARAM: &str = "project";
 
@@ -27,6 +30,12 @@ pub const SESSIONS: &str = "/me/sessions";
 /// The page of the notifications of the person who is signed in.
 pub const NOTIFICATIONS: &str = "/notifications";
 
+/// *My settings › Notification settings*, where a person's e-mailed searches are listed (QRY-07).
+pub const NOTIFICATION_SETTINGS: &str = "/me/notifications";
+
+/// The page of a saved search; its ID takes the place of `$search`.
+pub const SAVED_SEARCH: &str = "/s/$search";
+
 /// The page to sign in.
 pub const SIGN_IN: &str = "/sign-in";
 
@@ -38,6 +47,12 @@ pub const CONNECT: &str = "/connect";
 #[must_use]
 pub fn issue(key: &str) -> String {
     ISSUE.replace(&format!("${ISSUE_PARAM}"), key)
+}
+
+/// The address of a saved search from its ID.
+#[must_use]
+pub fn saved_search(id: &str) -> String {
+    SAVED_SEARCH.replace(&format!("${SEARCH_PARAM}"), id)
 }
 
 /// The address of the settings page of a project from its short name.

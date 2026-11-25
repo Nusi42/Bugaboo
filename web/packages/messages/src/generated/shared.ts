@@ -170,6 +170,8 @@ export const messages = {
   "search.clear": "Clear the search",
   "search.page.title": "Search",
   "search.bar.filters": "Filters",
+  "search.mail-not-sending":
+    "E-mail me this search is switched off for your organization, or e-mail is, so nothing is sent until it is switched on again.",
   "search.saved-heading": "Saved searches",
   "search.saved-shared": "Shared with me",
   "shortcut.quick-search": "Open quick search",

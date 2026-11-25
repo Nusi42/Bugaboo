@@ -340,4 +340,9 @@ pub(super) const ALL: &[Definition] = &[
         name: "dashboards",
         steps: super::m0067_dashboards::steps,
     },
+    Definition {
+        version: 68,
+        name: "search_mail",
+        steps: || Ok(super::m0068_search_mail::steps()),
+    },
 ];

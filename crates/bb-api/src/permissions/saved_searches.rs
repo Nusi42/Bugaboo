@@ -26,6 +26,10 @@ pub(super) const ROUTES: &[Route] = &[
         Answer::Ordinary,
     ),
     route("listShareChoices", Declared::SignedIn, Answer::NeverStored),
+    // E-mailed searches (QRY-07): the person's own, by a session only.
+    route("listSearchMails", Declared::SignedIn, Answer::NeverStored),
+    route("setSearchMail", Declared::SignedIn, Answer::Ordinary),
+    route("stopSearchMail", Declared::SignedIn, Answer::Ordinary),
     route("getProjectList", Declared::ByRecord, Answer::NeverStored),
     route(
         "setProjectList",

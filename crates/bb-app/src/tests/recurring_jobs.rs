@@ -179,12 +179,13 @@ async fn m3_f71_the_history_job_reads_the_events_that_wait() -> Outcome {
 }
 
 #[test]
-fn m3_f30_every_job_kind_is_a_technical_name_and_fourteen_come_back_every_day() {
+fn m3_f30_every_job_kind_is_a_technical_name_and_fifteen_come_back_every_day() {
     for kind in JobKind::ALL {
         assert!(kind.name().is_ok(), "{}", kind.code());
     }
     let daily: Vec<&str> = JobKind::daily().map(JobKind::code).collect();
-    assert_eq!(daily.len(), 14, "{daily:?}");
+    assert_eq!(daily.len(), 15, "{daily:?}");
+    assert!(daily.contains(&"search-mail.find-due"));
     assert!(daily.contains(&"privacy.resume-removals"));
     assert!(daily.contains(&"backups.daily"));
     assert!(daily.contains(&"privacy.delete-old-exports"));
@@ -194,5 +195,5 @@ fn m3_f30_every_job_kind_is_a_technical_name_and_fourteen_come_back_every_day() 
     assert!(daily.contains(&"oauth.clean-old-grants"));
     assert!(daily.contains(&"statistics.refresh"));
     assert!(!JobKind::MailSend.is_daily() && !JobKind::PreviewFile.is_daily());
-    assert!(!JobKind::DataExport.is_daily());
+    assert!(!JobKind::DataExport.is_daily() && !JobKind::SearchMailSend.is_daily());
 }

@@ -70,6 +70,7 @@ pub mod release;
 pub mod removal;
 pub mod run;
 pub mod saved_search;
+pub mod search_mail;
 pub mod secret;
 pub mod security_log;
 pub mod service;

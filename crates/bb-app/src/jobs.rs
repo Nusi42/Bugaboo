@@ -6,8 +6,10 @@
 //! nothing of them.
 
 mod daily;
+use daily::next_whole_hour;
 mod lane;
 pub(crate) mod lease;
+mod one_off;
 
 pub use lane::{Lane, LaneKinds};
 
@@ -117,6 +119,12 @@ bb_core::words! {
         /// Giving each removal whose job gave up or is gone a new job from the step its row keeps
         /// (ADR-0044, decision 6): `Ctx::resume_removals`.
         ResumeRemovals => "privacy.resume-removals",
+        /// Queuing the e-mails of the e-mailed searches whose hour has come (QRY-07, ADR-0033,
+        /// amendment 2026-11-24): every hour, `search_mail::job`.
+        SearchMailFindDue => "search-mail.find-due",
+        /// One e-mail of an e-mailed search (QRY-07): queued by `search-mail.find-due` at the
+        /// e-mailed search's place in its hour; the payload names the e-mailed search.
+        SearchMailSend => "search-mail.send",
     }
 }
 
@@ -139,6 +147,7 @@ impl JobKind {
             | Self::BackupsDaily
             | Self::DeleteOldExports
             | Self::ResumeRemovals
+            | Self::SearchMailFindDue
             | Self::RotateServerLog => true,
             Self::ManyChangesStep
             | Self::RenewIds
@@ -152,6 +161,7 @@ impl JobKind {
             | Self::RulesGetAnEnd
             | Self::DataExport
             | Self::BackupNow
+            | Self::SearchMailSend
             | Self::FinishRemoval => false,
         }
     }
@@ -168,6 +178,8 @@ impl JobKind {
             | Self::BackupsDaily
             | Self::PruneSecurityLog
             | Self::PurgeDeadJobs => Rhythm::QuietHour,
+            // The e-mailed searches go at the hour their people chose (QRY-07).
+            Self::SearchMailFindDue => Rhythm::EveryHour,
             Self::CatchUpHistory
             | Self::CleanUpFiles
             | Self::CleanOldGrants
@@ -190,6 +202,7 @@ impl JobKind {
             | Self::BackupNow
             | Self::FinishRemoval
             | Self::ResumeRemovals
+            | Self::SearchMailSend
             | Self::DeleteOldExports => Rhythm::FromTheStart,
         }
     }
@@ -200,7 +213,7 @@ impl JobKind {
         matches!(self.rhythm(), Rhythm::QuietHour)
     }
 
-    /// The kinds that come back every day.
+    /// The kinds that come back every day (the round of e-mailed searches every hour of it).
     pub fn daily() -> impl Iterator<Item = Self> {
         Self::ALL.iter().copied().filter(|kind| kind.is_daily())
     }
@@ -233,13 +246,16 @@ enum Rhythm {
     /// A round [`QUIET_KIND_AFTER_START`] after every start, then one every day at
     /// [`QUIET_HOUR`].
     QuietHour,
+    /// A round at every start of the server, then one at the start of every hour (in UTC, so a
+    /// time zone half an hour off is served by the round before its hour).
+    EveryHour,
 }
 
 impl Rhythm {
     /// When the round that a start of the server queues is due.
     fn first_round(self, now: Timestamp) -> Result<Timestamp, AppError> {
         match self {
-            Self::FromTheStart => Ok(now),
+            Self::FromTheStart | Self::EveryHour => Ok(now),
             Self::QuietHour => now
                 .checked_add(QUIET_KIND_AFTER_START)
                 .map_err(|error| AppError::Internal(error.to_string())),
@@ -251,6 +267,7 @@ impl Rhythm {
         let failed = |error: jiff::Error| AppError::Internal(error.to_string());
         match self {
             Self::FromTheStart => now.checked_add(DAILY).map_err(failed),
+            Self::EveryHour => next_whole_hour(now),
             Self::QuietHour => {
                 let today = now.to_zoned(zone.clone()).date();
                 let at_quiet_hour = |day: jiff::civil::Date| {
@@ -492,6 +509,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                     JobFailure::of(&error, FAILED, job)
                 }),
             JobKind::BackupNow => self.do_backup_now(job).await,
+            JobKind::SearchMailSend => self.do_search_mail(job).await,
             JobKind::FinishRemoval => Box::pin(self.run_finish_removal(job))
                 .await
                 .map_err(|error| {
@@ -512,26 +530,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             | JobKind::CleanOldGrants
             | JobKind::RefreshStatistics
             | JobKind::ResumeRemovals
+            | JobKind::SearchMailFindDue
             | JobKind::BackupsDaily => Err(misrouted(job, kind)),
         }
-    }
-
-    /// The job `backups.now`: the backup a person asked for (ADR-0046, amendment of 2026-11-23).
-    async fn do_backup_now(&self, job: &Job) -> Result<(), JobFailure> {
-        Box::pin(self.run_backup_now(job)).await.map_err(|error| {
-            tracing::warn!(cause = %error, "a backup that was asked for could not be created");
-            // A person waits for it: they are told it failed and may ask again, instead of
-            // waiting for the tries of a whole copy of the database. Only a backup of the
-            // schedule that runs on this server meanwhile is waited for.
-            let failure = JobFailure::of(&error, FAILED, job);
-            match error {
-                AppError::Refused(bb_core::ErrorCode::BackupRunning) => failure,
-                _ => JobFailure {
-                    kind: FailureKind::Permanent,
-                    ..failure
-                },
-            }
-        })
     }
 
     /// The daily jobs (the kinds for which [`JobKind::is_daily`] is true): the jobs that delete what
@@ -574,6 +575,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             JobKind::RotateServerLog => self.rotate_server_log_daily(job).await,
             JobKind::RefreshStatistics => self.refresh_statistics_daily(job).await,
             JobKind::BackupsDaily => self.backups_daily(job).await,
+            JobKind::SearchMailFindDue => self.search_mails_hourly(job).await,
             // The other kinds go to `do_one_off_job`; listed so that a new kind has to be placed.
             JobKind::ManyChangesStep
             | JobKind::RenewIds
@@ -587,6 +589,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             | JobKind::RulesGetAnEnd
             | JobKind::DataExport
             | JobKind::BackupNow
+            | JobKind::SearchMailSend
             | JobKind::FinishRemoval => Err(misrouted(job, kind)),
         }
     }
@@ -636,15 +639,17 @@ impl<S: AuthStore> Ctx<'_, S> {
                 | JobKind::RefreshStatistics
                 | JobKind::BackupsDaily
                 | JobKind::ResumeRemovals
+                | JobKind::SearchMailFindDue
                 | JobKind::DeleteOldExports),
             ) => {
                 debug_assert!(kind.is_daily(), "the job kind {kind:?} is not a daily one");
                 Ok(())
             }
             // Nobody waits for the note of a long timer: a timer that is not told runs on as
-            // before.
+            // before. An e-mailed search that did not go goes at its next day.
             Some(
                 JobKind::TimersLongRunning
+                | JobKind::SearchMailSend
                 | JobKind::HandOverRunsOut
                 | JobKind::RuleRunsOut
                 | JobKind::RuleAboutToRunOut

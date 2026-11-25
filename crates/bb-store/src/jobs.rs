@@ -465,7 +465,7 @@ fn read_job(row: &Row) -> Result<Job, StoreError> {
     })
 }
 
-fn new_job(kind: &TechnicalName, payload: &Value, run_at: Timestamp) -> NewJob {
+pub(crate) fn new_job(kind: &TechnicalName, payload: &Value, run_at: Timestamp) -> NewJob {
     NewJob {
         kind: kind.clone(),
         payload: payload.clone(),

@@ -1,6 +1,16 @@
 //! The daily rounds that have a function of their own, so `do_daily_job` stays short.
 
-use super::{AuthStore, Ctx, FAILED, Job, JobFailure, JobKind};
+use jiff::{SignedDuration, Timestamp};
+
+use super::{AppError, AuthStore, Ctx, FAILED, Job, JobFailure, JobKind};
+
+/// The start of the next whole hour after `now`, in UTC: when the next round of a kind that comes
+/// every hour is due.
+pub(crate) fn next_whole_hour(now: Timestamp) -> Result<Timestamp, AppError> {
+    let hour = SignedDuration::from_hours(1).as_secs();
+    let start = now.as_second().div_euclid(hour) * hour;
+    Timestamp::from_second(start + hour).map_err(|error| AppError::Internal(error.to_string()))
+}
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// The daily round, or a further step, of a job that deletes what outlived its keep period:
@@ -66,6 +76,22 @@ impl<S: AuthStore> Ctx<'_, S> {
         .await
         .map_err(|error| {
             tracing::warn!(cause = %error, "the statistics could not be refreshed");
+            JobFailure::of(&error, FAILED, job)
+        })
+    }
+
+    /// The hourly round of `search-mail.find-due` (QRY-07): the e-mails whose hour starts before
+    /// the next round are queued.
+    pub(super) async fn search_mails_hourly(&self, job: &Job) -> Result<(), JobFailure> {
+        Box::pin(self.run_daily(JobKind::SearchMailFindDue, async {
+            let next_round = next_whole_hour(self.now())?;
+            self.queue_due_search_mails(next_round).await.map(|queued| {
+                tracing::info!(queued, "the e-mailed searches of the hour were queued");
+            })
+        }))
+        .await
+        .map_err(|error| {
+            tracing::warn!(cause = %error, "the e-mailed searches of the hour could not be queued");
             JobFailure::of(&error, FAILED, job)
         })
     }

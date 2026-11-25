@@ -361,6 +361,9 @@ export const messages = {
   "setting.mail.short.name": "Short e-mails",
   "setting.mail.short.help":
     "E-mails leave out all issue text (titles and comments) and the names of projects, and only say that something happened, with a way to open it in Bugaboo. Use this where e-mail leaves the company.",
+  "setting.search-mail.allowed.name": "E-mail me this search",
+  "setting.search-mail.allowed.help":
+    "People may get a saved search by e-mail on the weekdays and at the hour they choose, sent only to themselves and showing only what they may see. Switched off, no e-mailed search sends anything until it is switched on again. E-mail must be switched on too.",
   "setting.security.log-keep-days.name": "Days to keep the security log",
   "setting.security.log-keep-days.help":
     "How many days the security log keeps its entries. Older entries are deleted once a day. A signed note of what was deleted stays, so you can still check that nobody changed the log.",

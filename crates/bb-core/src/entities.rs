@@ -83,6 +83,7 @@ crate::entities! {
     crate::saved_search::SearchColumn,
     crate::saved_search::SearchCardLimit,
     crate::saved_search::SearchShare,
+    crate::search_mail::SearchMail,
     crate::theme::OwnTheme,
     crate::work_times::record::AwayTime,
     crate::work_times::record::ProjectShare,

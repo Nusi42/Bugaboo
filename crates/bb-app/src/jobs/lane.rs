@@ -71,6 +71,8 @@ impl JobKind {
             | Self::RuleMatches
             | Self::RulesGetAnEnd
             | Self::ResumeRemovals
+            | Self::SearchMailFindDue
+            | Self::SearchMailSend
             | Self::DeleteOldExports => Lane::Short,
         }
     }

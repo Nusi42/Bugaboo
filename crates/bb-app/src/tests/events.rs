@@ -26,6 +26,7 @@ use super::scenarios_never_sent as snv;
 use super::scenarios_notifications as sn;
 use super::scenarios_plan as spl;
 use super::scenarios_relations as sr;
+use super::scenarios_search_mail as ssm;
 use super::scenarios_searches as ss;
 use super::scenarios_tags as st;
 use super::scenarios_themes as sth;
@@ -237,6 +238,8 @@ table! {
     "share_search" => ss::share_search_scenario,
     "stop_sharing_search" => ss::stop_sharing_search_scenario,
     "delete_search" => ss::delete_search_scenario,
+    "set_search_mail" => ssm::set_search_mail_scenario,
+    "stop_search_mail" => ssm::stop_search_mail_scenario,
     "restore_search" => ss::restore_search_scenario,
     "create_release" => srl::create_release_scenario,
     "change_release" => srl::change_release_scenario,

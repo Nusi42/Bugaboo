@@ -339,6 +339,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             | RecordKind::Role
             | RecordKind::SavedSearch
             | RecordKind::Dashboard
+            | RecordKind::SearchMail
             | RecordKind::Session
             | RecordKind::Setting
             | RecordKind::Share

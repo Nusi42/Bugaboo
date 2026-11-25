@@ -54,8 +54,9 @@ pub(crate) enum LockClass {
     /// processes, or the reader and a rebuild) read the stored texts and write the rows one after
     /// the other, so the older reading never overwrites the newer.
     TextIndex = 11,
-    /// Making saved searches and sharing them (key: four bytes of the maker's ID): two changes of
-    /// one person at the same moment cannot both pass the limits of searches and of shares.
+    /// Making saved searches and sharing them, and making e-mailed searches (key: four bytes of the
+    /// person's ID): two changes of one person at the same moment cannot both pass the limits of
+    /// searches, of shares and of e-mailed searches.
     SavedSearches = 12,
     /// Making dashboards and sharing them (key: four bytes of the maker's ID): two changes of one
     /// person at the same moment cannot both pass the limits of dashboards and of shares, or both

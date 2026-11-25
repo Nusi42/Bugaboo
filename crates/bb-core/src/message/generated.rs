@@ -4773,6 +4773,15 @@ pub const MAIL_E_MAIL_CHANGED_SUBJECT: MessageKey = MessageKey::new("mail.e-mail
 /// The message `mail.line-more`.
 pub const MAIL_LINE_MORE: MessageKey = MessageKey::new("mail.line-more");
 
+/// The message `mail.search-name`.
+pub const MAIL_SEARCH_NAME: MessageKey = MessageKey::new("mail.search-name");
+
+/// The message `mail.search-none`.
+pub const MAIL_SEARCH_NONE: MessageKey = MessageKey::new("mail.search-none");
+
+/// The message `mail.search-subject-short`.
+pub const MAIL_SEARCH_SUBJECT_SHORT: MessageKey = MessageKey::new("mail.search-subject-short");
+
 /// The message `mail.sign-up-exists-subject`.
 pub const MAIL_SIGN_UP_EXISTS_SUBJECT: MessageKey = MessageKey::new("mail.sign-up-exists-subject");
 
@@ -7343,6 +7352,50 @@ pub const PERSONAL_FIELD_SAVED_SEARCH_VERSION: MessageKey =
 pub const PERSONAL_FIELD_SAVED_SEARCH_VIEW: MessageKey =
     MessageKey::new("personal-field.saved-search.view");
 
+/// The message `personal-field.search-mail.created-at`.
+pub const PERSONAL_FIELD_SEARCH_MAIL_CREATED_AT: MessageKey =
+    MessageKey::new("personal-field.search-mail.created-at");
+
+/// The message `personal-field.search-mail.days`.
+pub const PERSONAL_FIELD_SEARCH_MAIL_DAYS: MessageKey =
+    MessageKey::new("personal-field.search-mail.days");
+
+/// The message `personal-field.search-mail.holder`.
+pub const PERSONAL_FIELD_SEARCH_MAIL_HOLDER: MessageKey =
+    MessageKey::new("personal-field.search-mail.holder");
+
+/// The message `personal-field.search-mail.hour`.
+pub const PERSONAL_FIELD_SEARCH_MAIL_HOUR: MessageKey =
+    MessageKey::new("personal-field.search-mail.hour");
+
+/// The message `personal-field.search-mail.id`.
+pub const PERSONAL_FIELD_SEARCH_MAIL_ID: MessageKey =
+    MessageKey::new("personal-field.search-mail.id");
+
+/// The message `personal-field.search-mail.last-sent-at`.
+pub const PERSONAL_FIELD_SEARCH_MAIL_LAST_SENT_AT: MessageKey =
+    MessageKey::new("personal-field.search-mail.last-sent-at");
+
+/// The message `personal-field.search-mail.next-at`.
+pub const PERSONAL_FIELD_SEARCH_MAIL_NEXT_AT: MessageKey =
+    MessageKey::new("personal-field.search-mail.next-at");
+
+/// The message `personal-field.search-mail.only-when-changed`.
+pub const PERSONAL_FIELD_SEARCH_MAIL_ONLY_WHEN_CHANGED: MessageKey =
+    MessageKey::new("personal-field.search-mail.only-when-changed");
+
+/// The message `personal-field.search-mail.paused`.
+pub const PERSONAL_FIELD_SEARCH_MAIL_PAUSED: MessageKey =
+    MessageKey::new("personal-field.search-mail.paused");
+
+/// The message `personal-field.search-mail.search`.
+pub const PERSONAL_FIELD_SEARCH_MAIL_SEARCH: MessageKey =
+    MessageKey::new("personal-field.search-mail.search");
+
+/// The message `personal-field.search-mail.updated-at`.
+pub const PERSONAL_FIELD_SEARCH_MAIL_UPDATED_AT: MessageKey =
+    MessageKey::new("personal-field.search-mail.updated-at");
+
 /// The message `personal-field.security-log-entry.action`.
 pub const PERSONAL_FIELD_SECURITY_LOG_ENTRY_ACTION: MessageKey =
     MessageKey::new("personal-field.security-log-entry.action");
@@ -7953,6 +8006,9 @@ pub const PERSONAL_KIND_ROW_NAMING_PERSON: MessageKey =
 
 /// The message `personal-kind.saved-search`.
 pub const PERSONAL_KIND_SAVED_SEARCH: MessageKey = MessageKey::new("personal-kind.saved-search");
+
+/// The message `personal-kind.search-mail`.
+pub const PERSONAL_KIND_SEARCH_MAIL: MessageKey = MessageKey::new("personal-kind.search-mail");
 
 /// The message `personal-kind.security-log-entry`.
 pub const PERSONAL_KIND_SECURITY_LOG_ENTRY: MessageKey =
@@ -9333,6 +9389,50 @@ pub const SEARCH_ISSUES: MessageKey = MessageKey::new("search.issues");
 /// The message `search.label`.
 pub const SEARCH_LABEL: MessageKey = MessageKey::new("search.label");
 
+/// The message `search.mail-days`.
+pub const SEARCH_MAIL_DAYS: MessageKey = MessageKey::new("search.mail-days");
+
+/// The message `search.mail-days-needed`.
+pub const SEARCH_MAIL_DAYS_NEEDED: MessageKey = MessageKey::new("search.mail-days-needed");
+
+/// The message `search.mail-hour`.
+pub const SEARCH_MAIL_HOUR: MessageKey = MessageKey::new("search.mail-hour");
+
+/// The message `search.mail-me`.
+pub const SEARCH_MAIL_ME: MessageKey = MessageKey::new("search.mail-me");
+
+/// The message `search.mail-not-sending`.
+pub const SEARCH_MAIL_NOT_SENDING: MessageKey = MessageKey::new("search.mail-not-sending");
+
+/// The message `search.mail-note-short`.
+pub const SEARCH_MAIL_NOTE_SHORT: MessageKey = MessageKey::new("search.mail-note-short");
+
+/// The message `search.mail-only-when-changed`.
+pub const SEARCH_MAIL_ONLY_WHEN_CHANGED: MessageKey =
+    MessageKey::new("search.mail-only-when-changed");
+
+/// The message `search.mails-change`.
+pub const SEARCH_MAILS_CHANGE: MessageKey = MessageKey::new("search.mails-change");
+
+/// The message `search.mails-lost-search`.
+pub const SEARCH_MAILS_LOST_SEARCH: MessageKey = MessageKey::new("search.mails-lost-search");
+
+/// The message `search.mails-no-longer-opens`.
+pub const SEARCH_MAILS_NO_LONGER_OPENS: MessageKey =
+    MessageKey::new("search.mails-no-longer-opens");
+
+/// The message `search.mails-none`.
+pub const SEARCH_MAILS_NONE: MessageKey = MessageKey::new("search.mails-none");
+
+/// The message `search.mails-stop`.
+pub const SEARCH_MAILS_STOP: MessageKey = MessageKey::new("search.mails-stop");
+
+/// The message `search.mails-switched-off`.
+pub const SEARCH_MAILS_SWITCHED_OFF: MessageKey = MessageKey::new("search.mails-switched-off");
+
+/// The message `search.mails-title`.
+pub const SEARCH_MAILS_TITLE: MessageKey = MessageKey::new("search.mails-title");
+
 /// The message `search.mistake.expected-count`.
 pub const SEARCH_MISTAKE_EXPECTED_COUNT: MessageKey =
     MessageKey::new("search.mistake.expected-count");
@@ -10574,6 +10674,14 @@ pub const SETTING_REGION_TIME_ZONE_HELP: MessageKey =
 /// The message `setting.region.time-zone.name`.
 pub const SETTING_REGION_TIME_ZONE_NAME: MessageKey =
     MessageKey::new("setting.region.time-zone.name");
+
+/// The message `setting.search-mail.allowed.help`.
+pub const SETTING_SEARCH_MAIL_ALLOWED_HELP: MessageKey =
+    MessageKey::new("setting.search-mail.allowed.help");
+
+/// The message `setting.search-mail.allowed.name`.
+pub const SETTING_SEARCH_MAIL_ALLOWED_NAME: MessageKey =
+    MessageKey::new("setting.search-mail.allowed.name");
 
 /// The message `setting.security.contact.help`.
 pub const SETTING_SECURITY_CONTACT_HELP: MessageKey =
@@ -18716,6 +18824,117 @@ pub fn mail_open_project_settings(address: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The values of the message `mail.search-footer`, by name.
+#[derive(Clone, Copy)]
+pub struct MailSearchFooter<'a> {
+    /// The value of `{page}`.
+    pub page: &'a dyn std::fmt::Display,
+    /// The value of `{settings}`.
+    pub settings: &'a dyn std::fmt::Display,
+}
+
+/// The message `mail.search-footer`.
+#[must_use]
+pub fn mail_search_footer(values: MailSearchFooter<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.search-footer"),
+        vec![
+            ("page", Value::Text(values.page.to_string())),
+            ("settings", Value::Text(values.settings.to_string())),
+        ],
+    )
+}
+
+/// The message `mail.search-found`.
+#[must_use]
+pub fn mail_search_found(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.search-found"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The values of the message `mail.search-issue`, by name.
+#[derive(Clone, Copy)]
+pub struct MailSearchIssue<'a> {
+    /// The value of `{address}`.
+    pub address: &'a dyn std::fmt::Display,
+    /// The value of `{issue}`.
+    pub issue: &'a dyn std::fmt::Display,
+    /// The value of `{status}`.
+    pub status: &'a dyn std::fmt::Display,
+}
+
+/// The message `mail.search-issue`.
+#[must_use]
+pub fn mail_search_issue(values: MailSearchIssue<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.search-issue"),
+        vec![
+            ("address", Value::Text(values.address.to_string())),
+            ("issue", Value::Text(values.issue.to_string())),
+            ("status", Value::Text(values.status.to_string())),
+        ],
+    )
+}
+
+/// The values of the message `mail.search-issue-plain`, by name.
+#[derive(Clone, Copy)]
+pub struct MailSearchIssuePlain<'a> {
+    /// The value of `{address}`.
+    pub address: &'a dyn std::fmt::Display,
+    /// The value of `{issue}`.
+    pub issue: &'a dyn std::fmt::Display,
+}
+
+/// The message `mail.search-issue-plain`.
+#[must_use]
+pub fn mail_search_issue_plain(values: MailSearchIssuePlain<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.search-issue-plain"),
+        vec![
+            ("address", Value::Text(values.address.to_string())),
+            ("issue", Value::Text(values.issue.to_string())),
+        ],
+    )
+}
+
+/// The message `mail.search-more`.
+#[must_use]
+pub fn mail_search_more(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.search-more"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `mail.search-open`.
+#[must_use]
+pub fn mail_search_open(address: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.search-open"),
+        vec![("address", Value::Text(address.to_string()))],
+    )
+}
+
+/// The message `mail.search-open-mails`.
+#[must_use]
+pub fn mail_search_open_mails(address: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.search-open-mails"),
+        vec![("address", Value::Text(address.to_string()))],
+    )
+}
+
+/// The message `mail.search-subject`.
+#[must_use]
+pub fn mail_search_subject(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.search-subject"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
 /// The message `mail.sign-up-exists-text`.
 #[must_use]
 pub fn mail_sign_up_exists_text(address: impl std::fmt::Display) -> Message {
@@ -21854,6 +22073,135 @@ pub fn search_made_by(person: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("search.made-by"),
         vec![("person", Value::Text(person.to_string()))],
+    )
+}
+
+/// The values of the message `search.mail-hour-choice`, by name.
+#[derive(Clone, Copy)]
+pub struct SearchMailHourChoice<'a> {
+    /// The value of `{time}`.
+    pub time: &'a dyn std::fmt::Display,
+    /// The value of `{zone}`.
+    pub zone: &'a dyn std::fmt::Display,
+}
+
+/// The message `search.mail-hour-choice`.
+#[must_use]
+pub fn search_mail_hour_choice(values: SearchMailHourChoice<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mail-hour-choice"),
+        vec![
+            ("time", Value::Text(values.time.to_string())),
+            ("zone", Value::Text(values.zone.to_string())),
+        ],
+    )
+}
+
+/// The message `search.mail-note`.
+#[must_use]
+pub fn search_mail_note(most: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mail-note"),
+        vec![("most", Value::Text(most.to_string()))],
+    )
+}
+
+/// The message `search.mail-title`.
+#[must_use]
+pub fn search_mail_title(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mail-title"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `search.mails-change-name`.
+#[must_use]
+pub fn search_mails_change_name(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mails-change-name"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The values of the message `search.mails-count`, by name.
+#[derive(Clone, Copy)]
+pub struct SearchMailsCount<'a> {
+    /// The value of `{count}`.
+    pub count: &'a dyn std::fmt::Display,
+    /// The value of `{most}`.
+    pub most: &'a dyn std::fmt::Display,
+}
+
+/// The message `search.mails-count`.
+#[must_use]
+pub fn search_mails_count(values: SearchMailsCount<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mails-count"),
+        vec![
+            ("count", Value::Text(values.count.to_string())),
+            ("most", Value::Text(values.most.to_string())),
+        ],
+    )
+}
+
+/// The message `search.mails-stop-name`.
+#[must_use]
+pub fn search_mails_stop_name(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mails-stop-name"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `search.mails-stopped`.
+#[must_use]
+pub fn search_mails_stopped(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mails-stopped"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The values of the message `search.mails-when`, by name.
+#[derive(Clone, Copy)]
+pub struct SearchMailsWhen<'a> {
+    /// The value of `{days}`.
+    pub days: &'a dyn std::fmt::Display,
+    /// The value of `{time}`.
+    pub time: &'a dyn std::fmt::Display,
+}
+
+/// The message `search.mails-when`.
+#[must_use]
+pub fn search_mails_when(values: SearchMailsWhen<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mails-when"),
+        vec![
+            ("days", Value::Text(values.days.to_string())),
+            ("time", Value::Text(values.time.to_string())),
+        ],
+    )
+}
+
+/// The values of the message `search.mails-when-changed`, by name.
+#[derive(Clone, Copy)]
+pub struct SearchMailsWhenChanged<'a> {
+    /// The value of `{days}`.
+    pub days: &'a dyn std::fmt::Display,
+    /// The value of `{time}`.
+    pub time: &'a dyn std::fmt::Display,
+}
+
+/// The message `search.mails-when-changed`.
+#[must_use]
+pub fn search_mails_when_changed(values: SearchMailsWhenChanged<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("search.mails-when-changed"),
+        vec![
+            ("days", Value::Text(values.days.to_string())),
+            ("time", Value::Text(values.time.to_string())),
+        ],
     )
 }
 

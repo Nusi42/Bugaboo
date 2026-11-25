@@ -253,7 +253,7 @@ pub(crate) async fn a_group_of(
 }
 
 /// A saved search of Ada's.
-async fn adas_search(world: &World) -> Result<SavedSearchView, String> {
+pub(crate) async fn adas_search(world: &World) -> Result<SavedSearchView, String> {
     save_plain(world, &token(world), "Open bugs")
         .await
         .map_err(text)

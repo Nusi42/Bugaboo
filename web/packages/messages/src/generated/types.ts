@@ -799,6 +799,15 @@ export interface MessageArguments {
   "search.found-project": { name: string | number; short: string | number };
   "search.help-use": { example: string | number };
   "search.made-by": { person: string | number };
+  "search.mail-hour-choice": { time: string | number; zone: string | number };
+  "search.mail-note": { most: string | number };
+  "search.mail-title": { name: string | number };
+  "search.mails-change-name": { name: string | number };
+  "search.mails-count": { count: string | number; most: string | number };
+  "search.mails-stop-name": { name: string | number };
+  "search.mails-stopped": { name: string | number };
+  "search.mails-when": { days: string | number; time: string | number };
+  "search.mails-when-changed": { days: string | number; time: string | number };
   "search.mistake.expected-blocked-by": { blocked: string | number; by: string | number };
   "search.mistake.expected-connected-to": { connected: string | number; to: string | number };
   "search.mistake.expected-continue": {

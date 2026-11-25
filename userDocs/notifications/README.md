@@ -4,5 +4,6 @@ Bugaboo tells you when something happens that you should know about. You read it
 
 - [Notifications](notifications.md): the page, *Open*, *Mark as read*, and the start page
 - [Notification settings](customize.md): what you hear of, in the app and by e-mail
+- [E-mailed searches](e-mailed-searches.md): a saved search by e-mail, on the days and at the hour you choose
 - [Your handle](handle.md): the short name people type to mention you
 - [The mail server](mail-server.md): how an administrator switches e-mail on

@@ -402,6 +402,7 @@ pub trait AuthStore:
     + SettingsStore
     + SavedSearchStore
     + crate::dashboards::DashboardStore
+    + crate::search_mail::SearchMailStore
     + crate::themes::ThemeStore
     + crate::backups::BackupStore
     + SearchStore

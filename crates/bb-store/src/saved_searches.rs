@@ -659,6 +659,7 @@ impl SavedSearchStore for AuthStorage {
             .and_where(Expr::col(SearchColumnRow::Search).is_in(stored_ids(&private)));
         transaction.execute(&columns).await?;
         limits::delete_limits(transaction, &private).await?;
+        crate::search_mail::delete_of_searches(transaction, &private).await?;
         let mut searches = Query::delete();
         searches
             .from_table(SavedSearchRow::Table)

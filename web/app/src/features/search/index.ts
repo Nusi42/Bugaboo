@@ -10,6 +10,14 @@ export { ViewChoices, type ListViewControl } from "./ViewChoices.tsx";
 export { timelineGroupable, useSearchFields, type SearchFieldsAnswer } from "./search-fields.ts";
 export { useSearchLanguage, useSearchLanguageRead } from "./search-language.ts";
 export { useProjectListChoice } from "./saved-searches.ts";
+export { SearchMailWindow } from "./SearchMailWindow.tsx";
+export {
+  useSearchMails,
+  useSetSearchMail,
+  useStopSearchMail,
+  whenText,
+  type SearchMail,
+} from "./search-mails.ts";
 export { SaveSearchButton, type SaveSearchButtonProps } from "./SaveSearchButton.tsx";
 export { withSortBy } from "../../shared/sort-by.ts";
 export {

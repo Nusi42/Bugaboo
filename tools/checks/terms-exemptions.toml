@@ -20,6 +20,9 @@ at = [
   "messages/en.json#mail.open",
   "messages/en.json#mail.open-notifications",
   "messages/en.json#mail.open-project-settings",
+  "messages/en.json#mail.search-open",
+  "messages/en.json#mail.search-open-mails",
+  "messages/en.json#search.mail-note",
   "messages/en.json#mail.sign-up-text",
   "messages/en.json#mail.e-mail-change-text",
   "messages/en.json#profile.send-link",
@@ -68,6 +71,18 @@ phrases = [
   "the link of the first e-mail",
 ]
 reason = "The web link of an invitation (the glossary term Link)."
+
+[[allow]]
+term = "link"
+at = ["userDocs/notifications/e-mailed-searches.md"]
+phrases = [
+  "a link to the search",
+  "a link to your e-mailed searches",
+  "a link and its title",
+  "The links open Bugaboo",
+  "statuses and links",
+]
+reason = "The web links in the e-mail of an e-mailed search, which open Bugaboo (the glossary term Link)."
 
 [[allow]]
 term = "link"

@@ -15,6 +15,11 @@ property = "roles"
 reason = "The rows of Who has which role of one group, in the places the person who asks decides about: a group has a row in a few places, the list has a hard cap (GROUP_ROLES_MAX) and says when it was cut; Who has which role pages them all (M6-F70)."
 
 [[exempt]]
+route = "GET /api/v1/search-mails"
+property = "search_mails"
+reason = "A person has at most 20 e-mailed searches (SEARCH_MAILS_MAX, counted in the change that writes one); the list has that hard cap and says when it was cut, which it never is (M1-F44)."
+
+[[exempt]]
 route = "GET /api/v1/auth/two-step"
 property = "passkeys"
 reason = "A person has at most 20 passkeys; the list has a hard cap and says when it was cut (M1-F44)."

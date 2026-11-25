@@ -422,6 +422,12 @@ macro_rules! each_use_case {
             share_search(ShareSearch) -> Authorized<SavedSearchView>;
             /// Stops sharing a saved search with a group or a project.
             stop_sharing_search(StopSharingSearch) -> Authorized<SavedSearchView>;
+            /// Lists the e-mailed searches of the person (QRY-07).
+            search_mails(SearchMailsQuery) -> Authorized<SearchMailList>;
+            /// Gets a saved search by e-mail, or changes when it comes (QRY-07).
+            set_search_mail(SetSearchMail) -> Authorized<SearchMailView>;
+            /// Stops getting a saved search by e-mail (QRY-07).
+            stop_search_mail(StopSearchMail) -> Done;
             /// Puts a saved search into the trash.
             delete_search(DeleteSearch) -> Done;
             /// Takes a saved search out of the trash.

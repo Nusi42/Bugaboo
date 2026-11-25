@@ -5373,6 +5373,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/saved-searches/{search}/mail": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Gets a saved search by e-mail, or changes when it comes. An e-mailed search that sent nothing
+     *     because the person could no longer open the search sends again. Only to the person.
+     */
+    put: operations["setSearchMail"];
+    post?: never;
+    /** Stops getting a saved search by e-mail. */
+    delete: operations["stopSearchMail"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/saved-searches/{search}/restore": {
     parameters: {
       query?: never;
@@ -5423,6 +5444,23 @@ export interface paths {
     post?: never;
     /** Stops sharing a saved search with a group or a project. Only its maker does. */
     delete: operations["stopSharingSavedSearch"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/search-mails": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The e-mailed searches of the person, oldest first. */
+    get: operations["listSearchMails"];
+    put?: never;
+    post?: never;
+    delete?: never;
     options?: never;
     head?: never;
     patch?: never;
@@ -10205,6 +10243,11 @@ export interface components {
       password?: string | null;
     };
     /**
+     * @description Why an e-mailed search sends nothing until its person starts it again: they were switched off, or they can no longer open the saved search.
+     * @enum {string}
+     */
+    MailPause: "switched-off" | "no-longer-opens";
+    /**
      * @description What the server judges of the mail server as entered: ready, incomplete (the host or the sender is missing), or insecure (a secret would go without encryption to another machine).
      * @enum {string}
      */
@@ -12630,6 +12673,7 @@ export interface components {
       | "role"
       | "saved-search"
       | "dashboard"
+      | "search-mail"
       | "session"
       | "setting"
       | "setup-code"
@@ -13377,6 +13421,67 @@ export interface components {
        * @description Where the next range starts (not included); null for the last range, which has no end.
        */
       to: number | null;
+    };
+    /** @description When a person gets a saved search by e-mail. */
+    SearchMailBody: {
+      /** @description The weekdays, Monday first: seven, at least one of them true. */
+      days: boolean[];
+      /**
+       * Format: int64
+       * @description The whole hour of the day, 0 to 23, in the person's time zone (*Region*).
+       */
+      hour: number;
+      /**
+       * @description *Only when something is new or changed*: nothing goes when no issue the search finds
+       *     changed since the last e-mail.
+       */
+      only_when_changed: boolean;
+    };
+    /** @description One e-mailed search as its person sees it. */
+    SearchMailItem: {
+      /** @description The weekdays it goes on, Monday first. */
+      days: boolean[];
+      /**
+       * Format: int32
+       * @description The hour it goes at, in the person's time zone.
+       */
+      hour: number;
+      /**
+       * Format: date-time
+       * @description When its last e-mail went; `null` before the first.
+       */
+      last_sent_at: string | null;
+      /** @description The name of the saved search; `null` once the person can no longer open it. */
+      name: string | null;
+      /** @description *Only when something is new or changed*. */
+      only_when_changed: boolean;
+      paused: components["schemas"]["MailPause"] | null;
+      /** @description The ID of the saved search it sends. */
+      search: string;
+    };
+    /** @description The e-mailed searches of the person, with what the window and the list say about all of them. */
+    SearchMailListBody: {
+      /**
+       * Format: int32
+       * @description The most e-mailed searches a person may have.
+       */
+      most: number;
+      /**
+       * Format: int32
+       * @description The most issues one e-mail lists; the rest are counted.
+       */
+      most_listed: number;
+      /** @description The e-mailed searches, oldest first. A person has at most `most`, so the list is whole. */
+      search_mails: components["schemas"]["SearchMailItem"][];
+      /**
+       * @description Whether e-mail and *E-mail me this search* are on for the organization: off, nothing goes
+       *     until they are on again.
+       */
+      sending: boolean;
+      /** @description Whether the organization uses *Short e-mails*: the e-mails have no titles and no name. */
+      short_e_mails: boolean;
+      /** @description Whether the list was cut off: never, a person has at most `most`. */
+      truncated: boolean;
     };
     /** @description The search a map is drawn of. */
     SearchMapBody: {
@@ -26281,6 +26386,67 @@ export interface operations {
       503: components["responses"]["Unavailable"];
     };
   };
+  setSearchMail: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the saved search. */
+        search: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SearchMailBody"];
+      };
+    };
+    responses: {
+      /** @description The e-mailed search. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SearchMailItem"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  stopSearchMail: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the saved search. */
+        search: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The person no longer gets it by e-mail. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
   restoreSavedSearch: {
     parameters: {
       query?: never;
@@ -26372,6 +26538,32 @@ export interface operations {
       401: components["responses"]["NotSignedIn"];
       403: components["responses"]["Forbidden"];
       404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  listSearchMails: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The e-mailed searches. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SearchMailListBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];

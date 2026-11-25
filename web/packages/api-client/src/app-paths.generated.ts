@@ -10,4 +10,6 @@ export const appPaths = {
   connect: "/connect",
   eMailChange: "/e-mail-change",
   sessions: "/me/sessions",
+  notificationSettings: "/me/notifications",
+  savedSearch: "/s/$search",
 } as const;

@@ -78,6 +78,7 @@ pub const fn whose(kind: RecordKind) -> Whose {
         K::Passkey => owner::<crate::sign_in::StoredPasskey>("person"),
         K::SavedSearch => owner::<crate::saved_search::SavedSearch>("maker"),
         K::Dashboard => owner::<crate::dashboard::Dashboard>("maker"),
+        K::SearchMail => owner::<crate::search_mail::SearchMail>("holder"),
         K::Session => owner::<crate::sign_in::SignInSession>("person"),
         K::Theme => owner::<crate::theme::OwnTheme>("maker"),
         K::TimeEntry => owner::<crate::time::entry::TimeEntry>("person"),

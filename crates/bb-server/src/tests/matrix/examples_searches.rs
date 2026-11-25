@@ -42,6 +42,11 @@ async fn their_search(fixture: &Fixture<'_>, browser: &mut Browser) -> Result<St
     }
 }
 
+/// Every Monday at 8:00: the body of an e-mailed search.
+fn mondays() -> serde_json::Value {
+    json!({"days": [true, false, false, false, false, false, false], "hour": 8, "only_when_changed": true})
+}
+
 /// The request of a route of saved searches, if the operation is one.
 pub(super) async fn search_request(
     fixture: &Fixture<'_>,
@@ -99,6 +104,19 @@ pub(super) async fn search_request(
                 format!("{SEARCHES}/{search}/shares/project/{target}"),
                 None,
             )
+        }
+        // E-mailed searches (QRY-07): the actor's own, of a saved search of theirs.
+        "listSearchMails" => ("GET", "/api/v1/search-mails".into(), None),
+        "setSearchMail" => {
+            let search = their_search(fixture, browser).await?;
+            ("PUT", format!("{SEARCHES}/{search}/mail"), Some(mondays()))
+        }
+        "stopSearchMail" => {
+            let search = their_search(fixture, browser).await?;
+            browser
+                .send("PUT", &format!("{SEARCHES}/{search}/mail"), Some(mondays()))
+                .await?;
+            ("DELETE", format!("{SEARCHES}/{search}/mail"), None)
         }
         "getProjectList" => ("GET", format!("/api/v1/projects/{target}/list"), None),
         "setProjectList" => (

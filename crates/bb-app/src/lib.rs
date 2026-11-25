@@ -46,6 +46,7 @@ pub mod runs;
 pub mod saved_searches;
 pub mod seal;
 pub mod search;
+pub mod search_mail;
 pub mod server_log;
 pub mod settings;
 mod statistics;

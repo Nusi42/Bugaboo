@@ -685,6 +685,19 @@ settings! {
         help: message::SETTING_MAIL_SHORT_HELP,
         lockable: false,
     }
+
+    /// *E-mail me this search* (QRY-07, ADR-0033, amendment 2026-11-24): people may get a saved
+    /// search by e-mail on a schedule. On at the start, because e-mail itself is off until an
+    /// administrator sets it up; switched off, no e-mailed search sends anything.
+    SEARCH_MAIL_ALLOWED: Bool = {
+        key: "search-mail.allowed",
+        name: message::SETTING_SEARCH_MAIL_ALLOWED_NAME,
+        default: true,
+        levels: [Organization],
+        changed_by: Administrators,
+        help: message::SETTING_SEARCH_MAIL_ALLOWED_HELP,
+        lockable: false,
+    }
 }
 
 /// What the keys of the settings that only exist for tests start with: a list of settings leaves

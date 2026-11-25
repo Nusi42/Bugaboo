@@ -25,12 +25,15 @@ export function weekOf(firstDay: FirstDay): readonly Weekday[] {
   return days.map((date, at) => ({ at: (at - monday + days.length) % days.length, date }));
 }
 
-/** The ticked days as runs of days that follow each other: `Mon–Fri`, `Mon, Wed–Thu`. */
-function runsOf(week: readonly Weekday[], usual: readonly UsualDay[]): string {
+/**
+ * The ticked days as runs of days that follow each other: `Mon–Fri`, `Mon, Wed–Thu`. `ticked` is
+ * Monday first, as the server sends days (the usual work days, the days of an e-mailed search).
+ */
+export function dayRunsText(week: readonly Weekday[], ticked: readonly boolean[]): string {
   const runs: (readonly Weekday[])[] = [];
   let run: Weekday[] = [];
   for (const day of week) {
-    if (usual[day.at]?.works === true) {
+    if (ticked[day.at] === true) {
       run.push(day);
     } else if (run.length > 0) {
       runs.push(run);
@@ -65,7 +68,10 @@ export function usualSummary(week: readonly Weekday[], usual: readonly UsualDay[
   if (first === undefined) {
     return t("work-times.usual-none");
   }
-  const days = runsOf(week, usual);
+  const days = dayRunsText(
+    week,
+    usual.map((day) => day.works),
+  );
   return worked.every((day) => day.minutes === first.minutes)
     ? t("work-times.usual-a-day", { days, length: hoursText(first.minutes) })
     : t("work-times.usual-a-week", {

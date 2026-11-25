@@ -151,6 +151,12 @@ reads = 1
 reason = "An e-mail goes to the own address of the person it is for."
 
 [[read]]
+file = "crates/bb-app/src/search_mail/job.rs"
+function = "run_search_mail"
+reads = 1
+reason = "An e-mailed search goes only to the own address of the person who set it (ADR-0033, amendment 2026-11-24, decision 1)."
+
+[[read]]
 file = "crates/bb-app/src/notifications/mail_settings.rs"
 function = "send_test_email"
 reads = 1

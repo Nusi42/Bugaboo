@@ -18,6 +18,10 @@ routes = [
 reason = "A saved search is made, or put into the trash and taken out, by its maker alone, and a share or a choice is set to a value and can be set again: a version would only protect a change of the text, which has one (M5 WP-06)."
 
 [[exempt]]
+routes = ["PUT /api/v1/saved-searches/{search}/mail", "DELETE /api/v1/saved-searches/{search}/mail"]
+reason = "An e-mailed search belongs to one person and holds no text: setting it writes the whole choice (weekdays, hour, Only when something is new or changed) and can be set again, and stopping it a second time answers resource.not-found; nobody else changes it, so there is no change of another person to overwrite (QRY-07)."
+
+[[exempt]]
 routes = [
   "POST /api/v1/dashboards",
   "DELETE /api/v1/dashboards/{dashboard}",

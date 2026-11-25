@@ -351,6 +351,10 @@ impl SavedSearchStore for FakeStore {
         state
             .search_columns
             .retain(|column| !private.contains(&column.search));
+        // Their e-mailed searches go with them.
+        state
+            .search_mails
+            .retain(|mail| !private.contains(&mail.search));
         Ok(private)
     }
 }

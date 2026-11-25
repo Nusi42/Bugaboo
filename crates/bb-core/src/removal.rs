@@ -45,7 +45,7 @@ const RECIPIENT: &[Link] = &[Link::Recipient];
 
 /// The kinds that only serve the person's account (ADR-0044, decision 6), each with what the
 /// person is to a row that goes: sign-in, keys and grants, handle, settings, private saved
-/// searches, drafts, locks and the notes for and from them, the notifications they get and their
+/// searches and their e-mailed searches, drafts, locks and the notes for and from them, the notifications they get and their
 /// follows, work times and the away times that are theirs, the agents they hold and their standing
 /// rules, the requests of programs for agents asked of them, the hand-overs they made, the rows
 /// that give them roles (their memberships end), the
@@ -68,6 +68,7 @@ const DELETED: &[(EntityMarks, &[Link])] = &[
     deleted::<crate::settings::PersonSettingCounter>(SUBJECT),
     deleted::<crate::saved_search::SavedSearch>(AUTHOR),
     deleted::<crate::dashboard::Dashboard>(AUTHOR),
+    deleted::<crate::search_mail::SearchMail>(HOLDER),
     deleted::<crate::edit::Draft>(AUTHOR),
     deleted::<crate::edit::EditLock>(HOLDER),
     deleted::<crate::edit::EditNotice>(RECIPIENT),

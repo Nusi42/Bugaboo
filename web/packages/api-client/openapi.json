@@ -19538,6 +19538,108 @@
         "x-permission": "signed-in"
       }
     },
+    "/api/v1/saved-searches/{search}/mail": {
+      "put": {
+        "tags": ["saved-searches"],
+        "summary": "Gets a saved search by e-mail, or changes when it comes. An e-mailed search that sent nothing\nbecause the person could no longer open the search sends again. Only to the person.",
+        "operationId": "setSearchMail",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "path",
+            "description": "The ID of the saved search.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchMailBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The e-mailed search.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchMailItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "signed-in"
+      },
+      "delete": {
+        "tags": ["saved-searches"],
+        "summary": "Stops getting a saved search by e-mail.",
+        "operationId": "stopSearchMail",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "path",
+            "description": "The ID of the saved search.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The person no longer gets it by e-mail."
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "signed-in"
+      }
+    },
     "/api/v1/saved-searches/{search}/restore": {
       "post": {
         "tags": ["saved-searches"],
@@ -19713,6 +19815,47 @@
             "$ref": "#/components/responses/Unavailable"
           }
         },
+        "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/search-mails": {
+      "get": {
+        "tags": ["saved-searches"],
+        "summary": "The e-mailed searches of the person, oldest first.",
+        "operationId": "listSearchMails",
+        "responses": {
+          "200": {
+            "description": "The e-mailed searches.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchMailListBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
         "x-permission": "signed-in"
       }
     },
@@ -30382,6 +30525,11 @@
           }
         }
       },
+      "MailPause": {
+        "type": "string",
+        "description": "Why an e-mailed search sends nothing until its person starts it again: they were switched off, or they can no longer open the saved search.",
+        "enum": ["switched-off", "no-longer-opens"]
+      },
       "MailServerReadiness": {
         "type": "string",
         "description": "What the server judges of the mail server as entered: ready, incomplete (the host or the sender is missing), or insecure (a secret would go without encryption to another machine).",
@@ -35335,6 +35483,7 @@
           "role",
           "saved-search",
           "dashboard",
+          "search-mail",
           "session",
           "setting",
           "setup-code",
@@ -36739,6 +36888,130 @@
             "format": "int32",
             "description": "Where the next range starts (not included); null for the last range, which has no end.",
             "minimum": 0
+          }
+        }
+      },
+      "SearchMailBody": {
+        "type": "object",
+        "description": "When a person gets a saved search by e-mail.",
+        "required": ["days", "hour", "only_when_changed"],
+        "properties": {
+          "days": {
+            "type": "array",
+            "items": {
+              "type": "boolean"
+            },
+            "description": "The weekdays, Monday first: seven, at least one of them true."
+          },
+          "hour": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The whole hour of the day, 0 to 23, in the person's time zone (*Region*)."
+          },
+          "only_when_changed": {
+            "type": "boolean",
+            "description": "*Only when something is new or changed*: nothing goes when no issue the search finds\nchanged since the last e-mail."
+          }
+        },
+        "additionalProperties": false
+      },
+      "SearchMailItem": {
+        "type": "object",
+        "description": "One e-mailed search as its person sees it.",
+        "required": [
+          "search",
+          "name",
+          "days",
+          "hour",
+          "only_when_changed",
+          "paused",
+          "last_sent_at"
+        ],
+        "properties": {
+          "days": {
+            "type": "array",
+            "items": {
+              "type": "boolean"
+            },
+            "description": "The weekdays it goes on, Monday first."
+          },
+          "hour": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The hour it goes at, in the person's time zone."
+          },
+          "last_sent_at": {
+            "type": ["string", "null"],
+            "description": "When its last e-mail went; `null` before the first.",
+            "format": "date-time"
+          },
+          "name": {
+            "type": ["string", "null"],
+            "description": "The name of the saved search; `null` once the person can no longer open it."
+          },
+          "only_when_changed": {
+            "type": "boolean",
+            "description": "*Only when something is new or changed*."
+          },
+          "paused": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MailPause",
+                "description": "Why it sends nothing until the person sets it again; `null` while it sends."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "search": {
+            "type": "string",
+            "description": "The ID of the saved search it sends."
+          }
+        }
+      },
+      "SearchMailListBody": {
+        "type": "object",
+        "description": "The e-mailed searches of the person, with what the window and the list say about all of them.",
+        "required": [
+          "search_mails",
+          "truncated",
+          "most",
+          "most_listed",
+          "sending",
+          "short_e_mails"
+        ],
+        "properties": {
+          "most": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The most e-mailed searches a person may have.",
+            "minimum": 0
+          },
+          "most_listed": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The most issues one e-mail lists; the rest are counted.",
+            "minimum": 0
+          },
+          "search_mails": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchMailItem"
+            },
+            "description": "The e-mailed searches, oldest first. A person has at most `most`, so the list is whole."
+          },
+          "sending": {
+            "type": "boolean",
+            "description": "Whether e-mail and *E-mail me this search* are on for the organization: off, nothing goes\nuntil they are on again."
+          },
+          "short_e_mails": {
+            "type": "boolean",
+            "description": "Whether the organization uses *Short e-mails*: the e-mails have no titles and no name."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "Whether the list was cut off: never, a person has at most `most`."
           }
         }
       },

@@ -196,6 +196,7 @@ pub(crate) struct State {
     /// The dashboards, their boxes and their shares (CFG-03).
     pub(crate) dashboards: super::fake_dashboards::Dashboards,
     pub(crate) own_themes: Vec<bb_core::theme::OwnTheme>,
+    pub(crate) search_mails: Vec<bb_core::search_mail::SearchMail>,
     /// The records of backups (OPS-07).
     pub(crate) backup_runs: Vec<bb_core::backup::run::BackupRun>,
     pub(crate) data_exports: Vec<bb_core::data_export::DataExport>,

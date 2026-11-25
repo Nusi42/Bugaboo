@@ -326,6 +326,11 @@ define_random_id! {
 }
 
 define_ordered_id! {
+    /// The ID of an e-mailed search (QRY-07).
+    SearchMailId
+}
+
+define_ordered_id! {
     /// The ID of an own theme; the address of its style sheet `/themes/<id>.css` carries it (THM-04).
     ThemeId
 }
@@ -553,6 +558,7 @@ into_entity_id!(
     SavedSearchId,
     DashboardId,
     DashboardBoxId,
+    SearchMailId,
     ThemeId,
     AgentRequestId,
     DataExportId,

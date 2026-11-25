@@ -59,6 +59,7 @@ mod runs;
 mod saved_searches;
 mod schema;
 mod search;
+mod search_mail;
 mod secrets;
 mod security_log;
 mod settings;

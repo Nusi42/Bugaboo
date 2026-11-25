@@ -727,8 +727,21 @@ export const nameableMembers = [{list}] as const;
     )
 }
 
-/// The addresses of the app pages that the server links to as constants for the browser app, so
-/// `paths.ts` does not write them a second time.
+/// The addresses of `app_paths.rs` the browser app takes: the name in `appPaths` and the constant.
+const APP_PATHS: [(&str, &str); 10] = [
+    ("issue", "ISSUE"),
+    ("projectSettings", "PROJECT_SETTINGS"),
+    ("invitation", "INVITATION"),
+    ("signIn", "SIGN_IN"),
+    ("notifications", "NOTIFICATIONS"),
+    ("connect", "CONNECT"),
+    ("eMailChange", "E_MAIL_CHANGE"),
+    ("sessions", "SESSIONS"),
+    ("notificationSettings", "NOTIFICATION_SETTINGS"),
+    ("savedSearch", "SAVED_SEARCH"),
+];
+
+/// The app pages the server links to, as constants of the browser app that `paths.ts` reads.
 pub(super) fn app_paths(sources: &[Source]) -> anyhow::Result<String> {
     let Some((_, text)) = sources.iter().find(|(path, _)| path == APP_PATHS_SOURCE) else {
         bail!("{APP_PATHS_SOURCE} is missing");
@@ -737,27 +750,14 @@ pub(super) fn app_paths(sources: &[Source]) -> anyhow::Result<String> {
         text_const(text, name)
             .with_context(|| format!("{APP_PATHS_SOURCE} has no `const {name}` that is text"))
     };
-    let (issue, project_settings, invitation, sign_in, notifications, connect) = (
-        path("ISSUE")?,
-        path("PROJECT_SETTINGS")?,
-        path("INVITATION")?,
-        path("SIGN_IN")?,
-        path("NOTIFICATIONS")?,
-        path("CONNECT")?,
-    );
-    let (e_mail_change, sessions) = (path("E_MAIL_CHANGE")?, path("SESSIONS")?);
+    let mut entries = String::new();
+    for (name, constant) in APP_PATHS {
+        let _ = writeln!(entries, "  {name}: {:?},", path(constant)?);
+    }
     Ok(format!(
         "{TS_HEADER}/** The addresses of the app pages that the server links to (invitations, e-mails). */
 export const appPaths = {{
-  issue: {issue:?},
-  projectSettings: {project_settings:?},
-  invitation: {invitation:?},
-  signIn: {sign_in:?},
-  notifications: {notifications:?},
-  connect: {connect:?},
-  eMailChange: {e_mail_change:?},
-  sessions: {sessions:?},
-}} as const;
+{entries}}} as const;
 "
     ))
 }

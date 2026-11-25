@@ -21,7 +21,7 @@ export const paths = {
   region: "/me/region",
   workTimes: "/me/work-times",
   assistantSettings: "/me/assistant",
-  notificationSettings: "/me/notifications",
+  notificationSettings: appPaths.notificationSettings,
   handle: "/me/handle",
   startPage: "/me/start-page",
   shortcuts: "/me/shortcuts",
@@ -81,7 +81,7 @@ export const paths = {
   issue: appPaths.issue,
   run: "/runs/$run",
   search: "/search",
-  savedSearch: "/s/$search",
+  savedSearch: appPaths.savedSearch,
 } as const;
 
 /** An address of the app, as the routes know it. */

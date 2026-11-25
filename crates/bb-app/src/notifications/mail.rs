@@ -6,10 +6,15 @@
 //! fields and names they may see now. Changes to one issue that came within five minutes of the
 //! first are in the same e-mail (the job runs five minutes after the first of them). Addresses
 //! never go into a log (DATA-LOGS): a failure is logged as a class.
+//!
+//! The text of an e-mailed search (QRY-07, ADR-0033, amendment 2026-11-24) is written here too, by
+//! the same writer: the links first, the text of people quoted, *Short e-mails* without titles.
 
 use bb_core::ErrorCode;
+use bb_core::app_paths;
 use bb_core::id::{InvitationId, IssueId, UserId};
 use bb_core::mail::{MailSecurity, would_send_secrets_in_the_clear};
+use bb_core::message::{self, Message};
 use bb_core::notification::Notification;
 use bb_core::notification::{MAIL_ENTRIES_MAX, MailState, Via};
 use bb_core::person::Person;
@@ -21,7 +26,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use zeroize::Zeroizing;
 
-use super::compose::compose;
+use super::compose::{
+    Composed, compose, lead_in_of, link_line_of, quoted, sentence_of, subject_of,
+};
 use super::plan::wants;
 use super::read::Reading;
 use super::types::NotificationItem;
@@ -333,4 +340,99 @@ impl<S: AuthStore> Ctx<'_, S> {
             Err(failure) => Err(send_failure_for_job(failure)),
         }
     }
+}
+
+/// One issue an e-mailed search found, as its person may see it now: the title and the status only
+/// where they may read them.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct MailedIssue {
+    /// The readable ID (`WEB-142`).
+    pub(crate) key: String,
+    /// The name of its status.
+    pub(crate) status: Option<String>,
+    /// Its title.
+    pub(crate) title: Option<String>,
+}
+
+/// What an e-mailed search found when it ran, for its e-mail.
+pub(crate) struct SearchFound<'a> {
+    /// The name of the saved search.
+    pub(crate) name: &'a str,
+    /// The address of the saved search, a page of the app.
+    pub(crate) search_path: &'a str,
+    /// The first issues, in the order of the search.
+    pub(crate) issues: &'a [MailedIssue],
+    /// How many issues the search finds for the person, the listed ones included.
+    pub(crate) total: u64,
+}
+
+/// The e-mail of an e-mailed search. Plain text by the rules of ADR-0033, decision 3: the links of
+/// Bugaboo first, the name of the search and the titles quoted as the text of people, and with
+/// `short` (*Short e-mails*) neither the name nor the titles.
+pub(crate) fn search_mail_text(found: &SearchFound<'_>, short: bool, public_url: &str) -> Composed {
+    let subject = subject_of(&if short {
+        Message::from(message::MAIL_SEARCH_SUBJECT_SHORT)
+    } else {
+        message::mail_search_subject(found.name.to_owned())
+    });
+    let mut text = String::new();
+    let mut line = |line: &str| {
+        text.push_str(line);
+        text.push('\n');
+    };
+    line(&link_line_of(&message::mail_search_open(format!(
+        "{public_url}{}",
+        found.search_path
+    ))));
+    line(&link_line_of(&message::mail_search_open_mails(format!(
+        "{public_url}{}",
+        app_paths::NOTIFICATION_SETTINGS
+    ))));
+    line("");
+    if !short {
+        line(&lead_in_of(&Message::from(message::MAIL_SEARCH_NAME)));
+        line(&quoted(found.name));
+        line("");
+    }
+    line(&if found.issues.is_empty() {
+        sentence_of(&Message::from(message::MAIL_SEARCH_NONE))
+    } else {
+        lead_in_of(&message::mail_search_found(
+            i64::try_from(found.total).unwrap_or(i64::MAX),
+        ))
+    });
+    for issue in found.issues {
+        let address = format!("{public_url}{}", app_paths::issue(&issue.key));
+        let head = match &issue.status {
+            Some(status) => message::mail_search_issue(message::MailSearchIssue {
+                issue: &issue.key,
+                status,
+                address: &address,
+            }),
+            None => message::mail_search_issue_plain(message::MailSearchIssuePlain {
+                issue: &issue.key,
+                address: &address,
+            }),
+        };
+        line(&link_line_of(&head));
+        if let (false, Some(title)) = (short, &issue.title) {
+            line(&quoted(title));
+        }
+    }
+    let listed = u64::try_from(found.issues.len()).unwrap_or(u64::MAX);
+    if found.total > listed {
+        line("");
+        line(&sentence_of(&message::mail_search_more(
+            i64::try_from(found.total - listed).unwrap_or(i64::MAX),
+        )));
+    }
+    line("");
+    line(
+        &message::mail_search_footer(message::MailSearchFooter {
+            page: &Message::from(message::NAV_NOTIFICATION_SETTINGS).render(),
+            settings: &Message::from(message::NAV_MY_SETTINGS).render(),
+        })
+        .render(),
+    );
+    Composed { subject, text }
 }

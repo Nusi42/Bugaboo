@@ -208,6 +208,8 @@ words! {
         SavedSearch => "saved_search",
         /// A dashboard (CFG-03).
         Dashboard => "dashboard",
+        /// An e-mailed search (QRY-07).
+        SearchMail => "search_mail",
         /// A sign-in session.
         Session => "session",
         /// A setting.

@@ -3,6 +3,18 @@
 import { register } from "../registry.ts";
 
 export const messages = {
+  "search.mails-title": "E-mailed searches",
+  "search.mails-count": "E-mailed searches · {count} of {most}",
+  "search.mails-no-longer-opens": "Sends nothing: you can no longer open this search",
+  "search.mails-switched-off": "Sends nothing: you were switched off. Change it to start it again",
+  "search.mails-lost-search": "A saved search you can no longer open",
+  "search.mails-change": "Change",
+  "search.mails-change-name": "Change: {name}",
+  "search.mails-stop": "Stop",
+  "search.mails-stop-name": "Stop: {name}",
+  "search.mails-stopped": "You no longer get “{name}” by e-mail.",
+  "search.mails-none":
+    "You get no saved search by e-mail. Choose E-mail me this search beside a saved search.",
   "notifications.title": "Notifications",
   "notifications.filters": "Show",
   "notifications.filter.all": "All",

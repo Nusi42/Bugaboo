@@ -512,6 +512,9 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("getDashboardBox", &[Quirk::SessionOnly]),
     Example::with("previewDashboardBox", &[Quirk::SessionOnly]),
     Example::with("listReadyMadeBoxes", &[Quirk::SessionOnly]),
+    Example::with("listSearchMails", &[Quirk::SessionOnly]),
+    Example::with("setSearchMail", &[Quirk::SessionOnly]),
+    Example::with("stopSearchMail", &[Quirk::SessionOnly]),
     Example::with(
         "getProjectList",
         &[

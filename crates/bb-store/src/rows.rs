@@ -7,8 +7,8 @@ use bb_core::id::{
     DataExportId, EditorId, EntityId, EventId, FieldId, GrantId, GroupId, HandOverId, IdError,
     InvitationId, IssueId, IssueTypeId, JobId, LabelGroupId, LabelId, LayoutId, LockToken,
     NotificationId, OAuthClientId, PasskeyId, ProjectId, RelationId, RelationKindId, ReleaseId,
-    RoleId, RunId, SavedSearchId, SessionId, StandingRuleId, TagId, ThemeId, TimeEntryId,
-    ToolCallId, UploadId, UserId, WorkDayId, WorkflowId,
+    RoleId, RunId, SavedSearchId, SearchMailId, SessionId, StandingRuleId, TagId, ThemeId,
+    TimeEntryId, ToolCallId, UploadId, UserId, WorkDayId, WorkflowId,
 };
 use jiff::Timestamp;
 use sea_query::Iden;
@@ -158,6 +158,7 @@ stored_ids!(
     SavedSearchId => "a saved search ID",
     DashboardId => "a dashboard ID",
     DashboardBoxId => "a box ID",
+    SearchMailId => "an e-mailed search ID",
     ThemeId => "an own theme ID",
     BackupId => "a backup ID",
     DataExportId => "a data export ID",

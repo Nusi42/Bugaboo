@@ -101,6 +101,7 @@ mod roles;
 mod runs;
 mod saved_searches;
 mod search;
+mod search_mail;
 mod search_totals;
 mod second_step_gap;
 mod settings;
@@ -231,6 +232,7 @@ where
         .merge(follow::routes())
         .merge(saved_searches::routes())
         .merge(dashboards::routes(limits))
+        .merge(search_mail::routes())
         .merge(themes::routes())
         .merge(data_exports::routes())
         .merge(working_hours::routes())

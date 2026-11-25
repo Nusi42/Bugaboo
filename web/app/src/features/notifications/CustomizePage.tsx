@@ -19,6 +19,7 @@ import { isSettingKey, type Setting } from "../../shared/my-settings.ts";
 import { saveLabels } from "../../shared/save-labels.ts";
 import { useMySettings, useSaveProgress } from "../../shared/use-my-settings.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
+import { SearchMailsSection } from "./SearchMailsSection.tsx";
 
 type Kind = (typeof notificationKindWords)[number];
 
@@ -120,7 +121,7 @@ function KindRow({
 /**
  * *Customize* (UX §4.11, NTF-01): one row for each kind of event, with *In the app* and *By
  * e-mail*. A choice shows at once and is saved in the background; an organization may lock one,
- * and a kind nobody can switch off says so.
+ * and a kind nobody can switch off says so. Under it, the person's *E-mailed searches* (QRY-07).
  */
 export function CustomizePage() {
   usePageTitle(t("nav.notification-settings"));
@@ -133,32 +134,37 @@ export function CustomizePage() {
     })
     .filter((key) => settings.some((each) => each.key === key && each.own && !each.locked));
   return (
-    <Card
-      heading={t("nav.notification-settings")}
-      level={1}
-      intro={t("notifications.customize-intro")}
-    >
-      {progress.problem === null ? null : <Alert tone={alertTone.danger}>{progress.problem}</Alert>}
-      <ul {...partOf(part.list)} aria-label={t("notifications.kind")}>
-        {notificationKindWords.map((kind) => (
-          <KindRow key={kind} kind={kind} settings={settings} />
-        ))}
-      </ul>
-      {/* *Saved* stands beside *Reset to default*, at the end of the card, in a row that is always
-          there: it pushes nothing, and a screen reader hears the first change too (UX §6.4). */}
-      <div {...partOf(part.customizeActions)}>
-        {ownChoices.length === 0 ? null : (
-          <Button
-            look={buttonLook.quiet}
-            onPress={() => {
-              void changeMySettings(ownChoices.map((key) => ({ key, value: null })));
-            }}
-          >
-            {t("setting.ui.reset")}
-          </Button>
+    <>
+      <Card
+        heading={t("nav.notification-settings")}
+        level={1}
+        intro={t("notifications.customize-intro")}
+      >
+        {progress.problem === null ? null : (
+          <Alert tone={alertTone.danger}>{progress.problem}</Alert>
         )}
-        <SaveStatus state={progress.state} labels={saveLabels()} variant={keepsRoom} />
-      </div>
-    </Card>
+        <ul {...partOf(part.list)} aria-label={t("notifications.kind")}>
+          {notificationKindWords.map((kind) => (
+            <KindRow key={kind} kind={kind} settings={settings} />
+          ))}
+        </ul>
+        {/* *Saved* stands beside *Reset to default*, at the end of the card, in a row that is always
+          there: it pushes nothing, and a screen reader hears the first change too (UX §6.4). */}
+        <div {...partOf(part.customizeActions)}>
+          {ownChoices.length === 0 ? null : (
+            <Button
+              look={buttonLook.quiet}
+              onPress={() => {
+                void changeMySettings(ownChoices.map((key) => ({ key, value: null })));
+              }}
+            >
+              {t("setting.ui.reset")}
+            </Button>
+          )}
+          <SaveStatus state={progress.state} labels={saveLabels()} variant={keepsRoom} />
+        </div>
+      </Card>
+      <SearchMailsSection />
+    </>
   );
 }

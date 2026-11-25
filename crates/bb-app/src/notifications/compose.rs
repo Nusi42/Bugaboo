@@ -57,17 +57,27 @@ fn line_of(sentence: &str, end: End) -> String {
 }
 
 /// A sentence of the screen as a line of an e-mail.
-fn sentence_of(message: &Message) -> String {
+pub(super) fn sentence_of(message: &Message) -> String {
     line_of(&message.render(), End::Sentence)
 }
 
+/// A sentence of the screen as a line of an e-mail that leads to the text quoted below it.
+pub(super) fn lead_in_of(message: &Message) -> String {
+    line_of(&message.render(), End::LeadIn)
+}
+
+/// A line of an e-mail that ends in a link: one clean line, no mark after the link.
+pub(super) fn link_line_of(message: &Message) -> String {
+    plain_line(&message.render(), MAIL_TEXT_MAX)
+}
+
 /// The subject of an e-mail: one clean line.
-fn subject_of(message: &Message) -> String {
+pub(super) fn subject_of(message: &Message) -> String {
     plain_line(&message.render(), MAIL_SUBJECT_MAX)
 }
 
 /// A text of a person that stands on lines of its own, every line quoted.
-fn quoted(text: &str) -> String {
+pub(super) fn quoted(text: &str) -> String {
     plain_text(text, MAIL_TEXT_MAX)
         .lines()
         .map(|line| format!("{QUOTE}{line}"))

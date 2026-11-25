@@ -33,6 +33,8 @@ pub const SIGN_IN: &str = \"/in\";
 pub const CONNECT: &str = \"/c\";
 pub const E_MAIL_CHANGE: &str = \"/e\";
 pub const SESSIONS: &str = \"/s\";
+pub const NOTIFICATION_SETTINGS: &str = \"/me/n\";
+pub const SAVED_SEARCH: &str = \"/s/$search\";
 "
         .to_owned(),
     );
@@ -42,6 +44,14 @@ pub const SESSIONS: &str = \"/s\";
     assert!(written.contains("connect: \"/c\","), "{written}");
     assert!(written.contains("eMailChange: \"/e\","), "{written}");
     assert!(written.contains("sessions: \"/s\","), "{written}");
+    assert!(
+        written.contains("notificationSettings: \"/me/n\","),
+        "{written}"
+    );
+    assert!(
+        written.contains("savedSearch: \"/s/$search\","),
+        "{written}"
+    );
     assert!(app_paths(&[]).is_err());
 }
 

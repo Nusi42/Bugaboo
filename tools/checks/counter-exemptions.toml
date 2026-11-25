@@ -617,3 +617,8 @@ reason = "Days, not a count of things: how late an issue the viewer sees ends af
 route = "POST /api/v1/dashboards/box-preview"
 property = "count"
 reason = "How many changes a row of the history of an issue the viewer sees holds, as the history route answers it for the viewer: changes of fields the viewer may not read are left out (ISS-06, ADR-0050 decision 4)."
+
+[[exempt]]
+route = "GET /api/v1/search-mails"
+property = "most_listed"
+reason = "Not a count of anything a viewer may see or not: the fixed most issues one e-mail of an e-mailed search lists (SEARCH_MAIL_ISSUES_MAX), the same for everyone (QRY-07)."

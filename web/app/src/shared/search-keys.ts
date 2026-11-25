@@ -45,6 +45,8 @@ export const searchKeys = {
   names: (kind: string, startingWith: string) => ["search", "names", kind, startingWith],
   /** Every saved search and every list of them. */
   savedAll: () => ["search", "saved"],
+  /** The e-mailed searches of the person; under every saved search, so a change of one reads them again. */
+  mails: () => ["search", "saved", "mails"],
   /** The saved searches of a list (*Mine*, *Shared with me*). */
   saved: (which: string, size: number) => ["search", "saved", "list", which, size],
   /** The saved search a project shows as its list. */

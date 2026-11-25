@@ -4385,6 +4385,29 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Link to the project settings: {address}",
     ),
     (
+        "mail.search-footer",
+        "You get this e-mail because you chose E-mail me this search. You can change or stop it in Bugaboo under {settings} › {page}.",
+    ),
+    (
+        "mail.search-found",
+        "The search finds {count, plural, one {# issue} other {# issues}} now",
+    ),
+    ("mail.search-issue", "{issue}, {status}: {address}"),
+    ("mail.search-issue-plain", "{issue}: {address}"),
+    (
+        "mail.search-more",
+        "And {count, plural, one {# more issue} other {# more issues}}. Open the search to see them all",
+    ),
+    ("mail.search-name", "Your search"),
+    ("mail.search-none", "The search finds no issue now"),
+    ("mail.search-open", "Link to the search: {address}"),
+    (
+        "mail.search-open-mails",
+        "Link to your e-mailed searches, where you change or stop them: {address}",
+    ),
+    ("mail.search-subject", "Bugaboo: {name}"),
+    ("mail.search-subject-short", "Bugaboo: your e-mailed search"),
+    (
         "mail.sign-up-exists-subject",
         "Bugaboo: you already have an account",
     ),
@@ -5903,6 +5926,23 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("personal-field.saved-search.updated-at", "Last changed on"),
     ("personal-field.saved-search.version", "Number of changes"),
     ("personal-field.saved-search.view", "Kind of view"),
+    ("personal-field.search-mail.created-at", "Created on"),
+    ("personal-field.search-mail.days", "Weekdays"),
+    ("personal-field.search-mail.holder", "Sent to"),
+    ("personal-field.search-mail.hour", "Hour"),
+    ("personal-field.search-mail.id", "Reference"),
+    (
+        "personal-field.search-mail.last-sent-at",
+        "Last e-mail sent",
+    ),
+    ("personal-field.search-mail.next-at", "Next e-mail due"),
+    (
+        "personal-field.search-mail.only-when-changed",
+        "Only when something is new or changed",
+    ),
+    ("personal-field.search-mail.paused", "Sends nothing because"),
+    ("personal-field.search-mail.search", "Saved search"),
+    ("personal-field.search-mail.updated-at", "Last changed on"),
     ("personal-field.security-log-entry.action", "What happened"),
     (
         "personal-field.security-log-entry.hash",
@@ -6194,6 +6234,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("personal-kind.review", "Reviews of agent work"),
     ("personal-kind.row-naming-person", "Changes naming a person"),
     ("personal-kind.saved-search", "Saved searches"),
+    ("personal-kind.search-mail", "E-mailed searches"),
     (
         "personal-kind.security-log-entry",
         "Entries of the security log",
@@ -7399,6 +7440,62 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("search.issues", "Issues"),
     ("search.label", "Search"),
     ("search.made-by", "Created by {person}"),
+    ("search.mail-days", "On these days"),
+    ("search.mail-days-needed", "Choose at least one day."),
+    ("search.mail-hour", "At"),
+    ("search.mail-hour-choice", "{time} (your time zone, {zone})"),
+    ("search.mail-me", "E-mail me this search"),
+    (
+        "search.mail-not-sending",
+        "E-mail me this search is switched off for your organization, or e-mail is, so nothing is sent until it is switched on again.",
+    ),
+    (
+        "search.mail-note",
+        "A plain-text e-mail to you only, with up to {most} issues (ID, title, status and a link) and how many more there are. It shows what you may see when it is sent.",
+    ),
+    (
+        "search.mail-note-short",
+        "Your organization uses Short e-mails, so it has no titles and no name of the search.",
+    ),
+    (
+        "search.mail-only-when-changed",
+        "Only when something is new or changed",
+    ),
+    ("search.mail-title", "E-mail me “{name}”"),
+    ("search.mails-change", "Change"),
+    ("search.mails-change-name", "Change: {name}"),
+    (
+        "search.mails-count",
+        "E-mailed searches · {count} of {most}",
+    ),
+    (
+        "search.mails-lost-search",
+        "A saved search you can no longer open",
+    ),
+    (
+        "search.mails-no-longer-opens",
+        "Sends nothing: you can no longer open this search",
+    ),
+    (
+        "search.mails-none",
+        "You get no saved search by e-mail. Choose E-mail me this search beside a saved search.",
+    ),
+    ("search.mails-stop", "Stop"),
+    ("search.mails-stop-name", "Stop: {name}"),
+    (
+        "search.mails-stopped",
+        "You no longer get “{name}” by e-mail.",
+    ),
+    (
+        "search.mails-switched-off",
+        "Sends nothing: you were switched off. Change it to start it again",
+    ),
+    ("search.mails-title", "E-mailed searches"),
+    ("search.mails-when", "{days} at {time}"),
+    (
+        "search.mails-when-changed",
+        "{days} at {time} · only when something is new or changed",
+    ),
     (
         "search.mistake.expected-blocked-by",
         "Write “{by}” after “{blocked}”.",
@@ -8797,6 +8894,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The time zone for the times you see. Match my device uses the time zone of your device.",
     ),
     ("setting.region.time-zone.name", "Time zone"),
+    (
+        "setting.search-mail.allowed.help",
+        "People may get a saved search by e-mail on the weekdays and at the hour they choose, sent only to themselves and showing only what they may see. Switched off, no e-mailed search sends anything until it is switched on again. E-mail must be switched on too.",
+    ),
+    ("setting.search-mail.allowed.name", "E-mail me this search"),
     (
         "setting.security.contact.help",
         "Where people report a security problem with this server: an e-mail address or an https:// page. It is named first in security.txt, before the address where problems in Bugaboo itself are reported. Leave it empty to name only that one.",
