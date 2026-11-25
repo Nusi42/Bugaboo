@@ -2,6 +2,9 @@ import { createContext, useContext } from "react";
 
 import type { ZoomWord } from "../../shared/list-view.ts";
 import type { DateFields } from "./date-fields.ts";
+import type { TimelineEnd, TimelineRelease } from "./drivers.ts";
+
+export type { TimelineRelease } from "./drivers.ts";
 import type { Move } from "./moves.ts";
 import type { BarDays, IssueLine } from "./lines.ts";
 import type { HatchedDay } from "./people/hatched-words.ts";
@@ -22,6 +25,10 @@ export interface TimelineContextValue {
   readonly daysOf: (line: IssueLine) => BarDays | undefined;
   /** The goal an issue of the page is, with its due date and the days of its sub-issues. */
   readonly goalOf: (issue: string) => TimelineGoal | undefined;
+  /** A release of the page, by its ID. */
+  readonly releaseOf: (release: string) => TimelineRelease | undefined;
+  /** The ends an issue sets as a deadline driver: its bar is outlined (PLAN-05). */
+  readonly endsOf: (issue: string) => readonly TimelineEnd[];
   /** The issue whose bar is selected. */
   readonly selected: string | undefined;
   /** Under *Group by person*: the away days and holidays of the person of a group, by their ID. */

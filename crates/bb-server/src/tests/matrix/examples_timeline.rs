@@ -1,8 +1,8 @@
 //! The example requests of the routes of the timeline, the board and the calendar (PLAN-01,
-//! PLAN-06, PLAN-09, PLAN-13, PLAN-14, SEC-MATRIX): a page of the timeline, the board and the
-//! calendar of everything the actor sees, and the preview of *Move it after*, the accepted warning
-//! and the time factor of an issue of the target project with a start date and the administrator as
-//! its person on the bar.
+//! PLAN-05, PLAN-06, PLAN-09, PLAN-13, PLAN-14, SEC-MATRIX): a page of the timeline with its
+//! deadline drivers, the board and the calendar of everything the actor sees, and the preview of
+//! *Move it after*, the accepted warning and the time factor of an issue of the target project with
+//! a start date and the administrator as its person on the bar.
 
 use bb_testing::Failure;
 use jiff::civil::Date;
@@ -34,7 +34,7 @@ pub(super) async fn timeline_request(
             "/api/v1/timeline".into(),
             Some(json!({
                 "search_text": "",
-                "timeline": {"zoom": "week", "plan_by_effort": true},
+                "timeline": {"zoom": "week", "plan_by_effort": true, "deadline_drivers": true},
                 "first": MONDAY,
                 "last": "2026-03-31",
             })),

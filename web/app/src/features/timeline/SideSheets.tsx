@@ -23,6 +23,8 @@ export interface SelectedBar {
   readonly copied: boolean;
   readonly days: BarDays | undefined;
   readonly mayMove: boolean;
+  /** What it sets as a deadline driver; none for other bars. */
+  readonly sets: string | undefined;
 }
 
 /** A sheet from the bottom of a phone, open while it has something to show. */

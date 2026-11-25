@@ -181,10 +181,10 @@ describe("the view as a saved search keeps it", () => {
 });
 
 describe("a timeline in the address and in a saved search (PLAN-01, PLAN-04)", () => {
-  it("plan_01_shows_as_a_timeline_with_its_zoom_dates_and_effort_and_back", () => {
+  it("plan_01_shows_as_a_timeline_with_its_zoom_dates_effort_and_drivers_and_back", () => {
     const state = readSearch({
       pathname: "/search",
-      search: { show: "timeline", zoom: "month", effort: "1", dates: "begins,ends" },
+      search: { show: "timeline", zoom: "month", effort: "1", drivers: "1", dates: "begins,ends" },
     });
     const view = viewOf(state, everywhere);
     expect(view.kind).toBe("timeline");
@@ -193,11 +193,13 @@ describe("a timeline in the address and in a saved search (PLAN-01, PLAN-04)", (
       end_field: "ends",
       plan_by_effort: true,
       zoom: "month",
+      deadline_drivers: true,
     });
     expect(searchLocation(withView(readSearch({ search: {} }), view, everywhere)).search).toEqual({
       show: "timeline",
       zoom: "month",
       effort: "1",
+      drivers: "1",
       dates: "begins,ends",
     });
   });

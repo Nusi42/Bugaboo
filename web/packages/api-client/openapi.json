@@ -34276,6 +34276,8 @@
           "planned_minutes",
           "can_minutes",
           "ways_out",
+          "release",
+          "waits_until",
           "move_after",
           "due_needed",
           "accepted"
@@ -34354,7 +34356,7 @@
             "oneOf": [
               {
                 "$ref": "#/components/schemas/PlanWarningIssueBody",
-                "description": "The other issue it names: the one it waits for, or the sub-issue of a goal."
+                "description": "The other issue it names: the one it waits for (for *Loop*, the one on the loop it waits for\ndirectly; for *Cannot fit*, the one that ends last), or the sub-issue of a goal."
               },
               {
                 "type": "null"
@@ -34378,16 +34380,25 @@
             "description": "*Too much at once*: the minutes planned for the person on that day in the project.",
             "minimum": 0
           },
+          "release": {
+            "type": ["string", "null"],
+            "description": "*Delay* of a release: the release, by its ID (one of the page's `releases`), whose *Release\ndate* the issue ends after; `null` for any other warning."
+          },
           "sentence": {
             "type": "string",
             "description": "The key of its sentence in the messages; the screen fills it in with the members below."
+          },
+          "waits_until": {
+            "type": ["string", "null"],
+            "format": "date",
+            "description": "*Cannot fit*: the earliest day the issues it waits for can end; `null` for any other\nwarning."
           },
           "ways_out": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/WayOut"
             },
-            "description": "The ways out that fit it, in the order they are offered; only `keep-and-accept` for *Days\nwithout work*."
+            "description": "The ways out that fit it, in the order they are offered; only `keep-and-accept` for *Days\nwithout work*. *Make it longer* of a release's *Delay* changes its *Release date*, and is\noffered only to a person who may manage releases in its project."
           },
           "worst_day": {
             "type": ["string", "null"],
@@ -38949,7 +38960,7 @@
           },
           "group_by": {
             "type": ["string", "null"],
-            "description": "The field the rows are grouped by, by its search word: one the readable fields mark\n`timeline_group` (the project, the goal, the person, the status, the priority or an own\nfield of choices, a row for each choice an issue has). Rows without a value are in the group\n`empty`."
+            "description": "The field the rows are grouped by, by its search word: one the readable fields mark\n`timeline_group` (the project, the goal, the person, the status, the priority or an own\nfield of choices, a row for each choice an issue has, or *Planned for release*). Rows without\na value are in the group `empty`, which comes last."
           },
           "last": {
             "type": "string",
@@ -39000,6 +39011,44 @@
           }
         }
       },
+      "TimelineDriverBody": {
+        "type": "object",
+        "description": "A deadline driver of the page: its delay by a day moves each of its ends by a day.",
+        "required": ["issue", "ends"],
+        "properties": {
+          "ends": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimelineEndBody"
+            },
+            "description": "The ends it sets."
+          },
+          "issue": {
+            "type": "string",
+            "description": "The issue, by its internal ID."
+          }
+        }
+      },
+      "TimelineEndBody": {
+        "type": "object",
+        "description": "An end that a deadline driver sets.",
+        "required": ["kind", "id"],
+        "properties": {
+          "id": {
+            "type": ["string", "null"],
+            "description": "The goal or the release, by its internal ID; `null` for the view."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/TimelineEndKind",
+            "description": "Which end: the end of a goal, of a release, or the last day of the view."
+          }
+        }
+      },
+      "TimelineEndKind": {
+        "type": "string",
+        "description": "Which end a deadline driver sets.",
+        "enum": ["goal", "release", "view"]
+      },
       "TimelineGoalBody": {
         "type": "object",
         "description": "A goal of the page: its due date is the diamond of the timeline, and the span of its\nsub-issues' bars its bracket.",
@@ -39036,6 +39085,10 @@
         "description": "The options of a timeline view (ADR-0034; ADR-0043, decision 2). Left out, a saved search keeps\n*Start date* and *Due date*, *Plan by effort* off and a column for each week.",
         "required": ["start_field", "end_field", "zoom"],
         "properties": {
+          "deadline_drivers": {
+            "type": "boolean",
+            "description": "Whether *Deadline drivers* is on: the page then names the issues that set each end."
+          },
           "end_field": {
             "type": ["string", "null"],
             "description": "The date field the bars end at, by its search word; `null` for *Due date*."
@@ -39066,7 +39119,9 @@
           "goals",
           "not_scheduled",
           "planned_by_effort",
-          "people_days"
+          "people_days",
+          "releases",
+          "drivers"
         ],
         "properties": {
           "dependencies": {
@@ -39075,6 +39130,13 @@
               "$ref": "#/components/schemas/TimelineDependencyBody"
             },
             "description": "The dependencies between issues of the page."
+          },
+          "drivers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimelineDriverBody"
+            },
+            "description": "With *Deadline drivers* on: the issues of the page that set an end, each with the ends it\nsets; empty when it is off."
           },
           "goals": {
             "type": "array",
@@ -39103,6 +39165,13 @@
           "planned_by_effort": {
             "type": "boolean",
             "description": "Whether the bars were planned by effort: the view asked for it and the reader is no access\nkey. A key reads nobody's work times, so its bars keep the dates people set."
+          },
+          "releases": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimelineReleaseBody"
+            },
+            "description": "The releases the issues of the page are planned for, as far as the person may know them: a\nrelease with a *Release date* is a diamond on that date, and its name heads its group under\n*Group by release*."
           },
           "rows": {
             "type": "array",
@@ -39140,6 +39209,35 @@
           "person": {
             "$ref": "#/components/schemas/PersonRef",
             "description": "The person, by name: the same as the person of the group of the row."
+          }
+        }
+      },
+      "TimelineReleaseBody": {
+        "type": "object",
+        "description": "A release of the page.",
+        "required": ["id", "project", "name", "release_date", "version"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The release, by its internal ID."
+          },
+          "name": {
+            "type": "string",
+            "description": "What it is called."
+          },
+          "project": {
+            "type": "string",
+            "description": "The project it was made in, by its internal ID."
+          },
+          "release_date": {
+            "type": ["string", "null"],
+            "format": "date",
+            "description": "Its *Release date*; `null` when it has none."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Counts up with every change: *Make it longer* of its *Delay* changes it from this version."
           }
         }
       },
@@ -39711,13 +39809,27 @@
       },
       "WarningKind": {
         "type": "string",
-        "description": "The kind of a plan warning: the person on the bar is away, not enough days before the due date, a delay along a dependency or after a sub-issue, too much at once for the person, or days without work on the weekdays of the bar.",
-        "enum": ["away", "not-enough-days", "delay", "too-much-at-once", "days-without-work"]
+        "description": "The kind of a plan warning: the person on the bar is away, not enough days before the due date, a delay along a dependency or after a sub-issue, too much at once for the person, days without work on the weekdays of the bar, a loop of dependencies, or a due date before what the issue waits for can end.",
+        "enum": [
+          "away",
+          "not-enough-days",
+          "delay",
+          "too-much-at-once",
+          "days-without-work",
+          "loop",
+          "cannot-fit"
+        ]
       },
       "WayOut": {
         "type": "string",
-        "description": "A way out of a plan warning: move the issue after what is in the way, make it longer, give it to someone else, or keep the plan and accept the warning.",
-        "enum": ["move-it-after", "make-it-longer", "give-to-someone-else", "keep-and-accept"]
+        "description": "A way out of a plan warning: move the issue after what is in the way, make it longer, give it to someone else, keep the plan and accept the warning, or open the relation of a loop.",
+        "enum": [
+          "move-it-after",
+          "make-it-longer",
+          "give-to-someone-else",
+          "keep-and-accept",
+          "open-the-relation"
+        ]
       },
       "WebAddressItem": {
         "type": "object",

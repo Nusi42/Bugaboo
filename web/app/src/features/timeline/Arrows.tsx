@@ -21,8 +21,14 @@ export function Arrows({ arrows }: { readonly arrows: readonly Arrow[] }) {
         const path = arrowPath(arrow, dayPixels, rowPixels, arrowSizes());
         return (
           <g key={arrow.key} data-arrow={arrow.key}>
-            <path {...partOf(part.timelineArrowsLine)} d={path.line} />
-            <path {...partOf(part.timelineArrowsHead)} d={path.head} />
+            <path
+              {...partOf(part.timelineArrowsLine, { states: [arrow.driver && "driver"] })}
+              d={path.line}
+            />
+            <path
+              {...partOf(part.timelineArrowsHead, { states: [arrow.driver && "driver"] })}
+              d={path.head}
+            />
           </g>
         );
       })}

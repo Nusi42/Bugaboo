@@ -6,6 +6,7 @@ import { dragKinds } from "./drag-kinds.ts";
 import type { BarDays, IssueLine } from "./lines.ts";
 import { shownWhileMoving, type Move } from "./moves.ts";
 import { useBarPlace, useLabelPlace } from "./bar-place.ts";
+import { setsText } from "./drivers.ts";
 import { useTimeline } from "./timeline-context.ts";
 import { useBarDrag } from "./use-bar-drag.ts";
 
@@ -96,6 +97,8 @@ export function useBar(line: IssueLine, days: BarDays) {
     ...useLabelPlace(timeline, shown, selected),
     marked: timeline.marked === line.issue,
     warnings: timeline.warnedOf(line.issue),
+    // A deadline driver is outlined and says what it sets: the outline is never the only signal.
+    sets: setsText(timeline.endsOf(line.issue), timeline),
     ...barKeys(timeline, line, mayMove, select),
   };
 }

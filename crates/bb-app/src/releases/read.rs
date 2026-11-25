@@ -14,7 +14,7 @@ use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::projects::Shown;
 
 /// The order of a list of releases: by *Release date*, the ones without one last, then by name.
-fn in_order(releases: &mut [Release]) {
+pub(crate) fn in_order(releases: &mut [Release]) {
     releases.sort_by(|one, other| {
         (one.release_date.is_none(), one.release_date)
             .cmp(&(other.release_date.is_none(), other.release_date))

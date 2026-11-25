@@ -8105,6 +8105,10 @@ pub const PLAN_WAY_OUT_MAKE_IT_LONGER: MessageKey = MessageKey::new("plan-way-ou
 /// The message `plan-way-out.move-it-after`.
 pub const PLAN_WAY_OUT_MOVE_IT_AFTER: MessageKey = MessageKey::new("plan-way-out.move-it-after");
 
+/// The message `plan-way-out.open-the-relation`.
+pub const PLAN_WAY_OUT_OPEN_THE_RELATION: MessageKey =
+    MessageKey::new("plan-way-out.open-the-relation");
+
 /// The message `preview.label`.
 pub const PREVIEW_LABEL: MessageKey = MessageKey::new("preview.label");
 
@@ -12017,6 +12021,10 @@ pub const TIMELINE_AWAY_MORNING: MessageKey = MessageKey::new("timeline.away-mor
 /// The message `timeline.change-due`.
 pub const TIMELINE_CHANGE_DUE: MessageKey = MessageKey::new("timeline.change-due");
 
+/// The message `timeline.change-release-date`.
+pub const TIMELINE_CHANGE_RELEASE_DATE: MessageKey =
+    MessageKey::new("timeline.change-release-date");
+
 /// The message `timeline.chart`.
 pub const TIMELINE_CHART: MessageKey = MessageKey::new("timeline.chart");
 
@@ -12029,6 +12037,9 @@ pub const TIMELINE_DATES_TO: MessageKey = MessageKey::new("timeline.dates-to");
 /// The message `timeline.day-off`.
 pub const TIMELINE_DAY_OFF: MessageKey = MessageKey::new("timeline.day-off");
 
+/// The message `timeline.deadline-drivers`.
+pub const TIMELINE_DEADLINE_DRIVERS: MessageKey = MessageKey::new("timeline.deadline-drivers");
+
 /// The message `timeline.earlier`.
 pub const TIMELINE_EARLIER: MessageKey = MessageKey::new("timeline.earlier");
 
@@ -12038,6 +12049,12 @@ pub const TIMELINE_EMPTY: MessageKey = MessageKey::new("timeline.empty");
 /// The message `timeline.end-field`.
 pub const TIMELINE_END_FIELD: MessageKey = MessageKey::new("timeline.end-field");
 
+/// The message `timeline.end-goal`.
+pub const TIMELINE_END_GOAL: MessageKey = MessageKey::new("timeline.end-goal");
+
+/// The message `timeline.end-view`.
+pub const TIMELINE_END_VIEW: MessageKey = MessageKey::new("timeline.end-view");
+
 /// The message `timeline.give-to`.
 pub const TIMELINE_GIVE_TO: MessageKey = MessageKey::new("timeline.give-to");
 
@@ -12046,6 +12063,9 @@ pub const TIMELINE_KEYS: MessageKey = MessageKey::new("timeline.keys");
 
 /// The message `timeline.later`.
 pub const TIMELINE_LATER: MessageKey = MessageKey::new("timeline.later");
+
+/// The message `timeline.legend-driver`.
+pub const TIMELINE_LEGEND_DRIVER: MessageKey = MessageKey::new("timeline.legend-driver");
 
 /// The message `timeline.legend-due`.
 pub const TIMELINE_LEGEND_DUE: MessageKey = MessageKey::new("timeline.legend-due");
@@ -12080,6 +12100,9 @@ pub const TIMELINE_NO_GOAL: MessageKey = MessageKey::new("timeline.no-goal");
 /// The message `timeline.no-person`.
 pub const TIMELINE_NO_PERSON: MessageKey = MessageKey::new("timeline.no-person");
 
+/// The message `timeline.no-release`.
+pub const TIMELINE_NO_RELEASE: MessageKey = MessageKey::new("timeline.no-release");
+
 /// The message `timeline.not-scheduled`.
 pub const TIMELINE_NOT_SCHEDULED: MessageKey = MessageKey::new("timeline.not-scheduled");
 
@@ -12109,6 +12132,9 @@ pub const TIMELINE_SAVE_DATES: MessageKey = MessageKey::new("timeline.save-dates
 
 /// The message `timeline.set-dates`.
 pub const TIMELINE_SET_DATES: MessageKey = MessageKey::new("timeline.set-dates");
+
+/// The message `timeline.sets-end-short`.
+pub const TIMELINE_SETS_END_SHORT: MessageKey = MessageKey::new("timeline.sets-end-short");
 
 /// The message `timeline.show-as`.
 pub const TIMELINE_SHOW_AS: MessageKey = MessageKey::new("timeline.show-as");
@@ -20025,6 +20051,30 @@ pub fn plan_warning_away(values: PlanWarningAway<'_>) -> Message {
     )
 }
 
+/// The values of the message `plan-warning.cannot-fit`, by name.
+#[derive(Clone, Copy)]
+pub struct PlanWarningCannotFit<'a> {
+    /// The value of `{due}`.
+    pub due: &'a dyn std::fmt::Display,
+    /// The value of `{ends}`.
+    pub ends: &'a dyn std::fmt::Display,
+    /// The value of `{issue}`.
+    pub issue: &'a dyn std::fmt::Display,
+}
+
+/// The message `plan-warning.cannot-fit`.
+#[must_use]
+pub fn plan_warning_cannot_fit(values: PlanWarningCannotFit<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("plan-warning.cannot-fit"),
+        vec![
+            ("due", Value::Text(values.due.to_string())),
+            ("ends", Value::Text(values.ends.to_string())),
+            ("issue", Value::Text(values.issue.to_string())),
+        ],
+    )
+}
+
 /// The message `plan-warning.days-without-work`.
 #[must_use]
 pub fn plan_warning_days_without_work(issue: impl std::fmt::Display) -> Message {
@@ -20132,6 +20182,51 @@ pub fn plan_warning_delay_goal_away_weeks(values: PlanWarningDelayGoalAwayWeeks<
             ("goal", Value::Text(values.goal.to_string())),
             ("person", Value::Text(values.person.to_string())),
             ("sub_issue", Value::Text(values.sub_issue.to_string())),
+        ],
+    )
+}
+
+/// The values of the message `plan-warning.delay-release`, by name.
+#[derive(Clone, Copy)]
+pub struct PlanWarningDelayRelease<'a> {
+    /// The value of `{days}`.
+    pub days: i64,
+    /// The value of `{issue}`.
+    pub issue: &'a dyn std::fmt::Display,
+    /// The value of `{release}`.
+    pub release: &'a dyn std::fmt::Display,
+}
+
+/// The message `plan-warning.delay-release`.
+#[must_use]
+pub fn plan_warning_delay_release(values: PlanWarningDelayRelease<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("plan-warning.delay-release"),
+        vec![
+            ("days", Value::Number(values.days)),
+            ("issue", Value::Text(values.issue.to_string())),
+            ("release", Value::Text(values.release.to_string())),
+        ],
+    )
+}
+
+/// The values of the message `plan-warning.loop`, by name.
+#[derive(Clone, Copy)]
+pub struct PlanWarningLoop<'a> {
+    /// The value of `{issue}`.
+    pub issue: &'a dyn std::fmt::Display,
+    /// The value of `{other}`.
+    pub other: &'a dyn std::fmt::Display,
+}
+
+/// The message `plan-warning.loop`.
+#[must_use]
+pub fn plan_warning_loop(values: PlanWarningLoop<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("plan-warning.loop"),
+        vec![
+            ("issue", Value::Text(values.issue.to_string())),
+            ("other", Value::Text(values.other.to_string())),
         ],
     )
 }
@@ -25646,6 +25741,15 @@ pub fn timeline_effort_days(values: TimelineEffortDays<'_>) -> Message {
     )
 }
 
+/// The message `timeline.end-release`.
+#[must_use]
+pub fn timeline_end_release(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.end-release"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
 /// The message `timeline.give-to-name`.
 #[must_use]
 pub fn timeline_give_to_name(name: impl std::fmt::Display) -> Message {
@@ -25937,6 +26041,45 @@ pub fn timeline_preview_longer(values: TimelinePreviewLonger<'_>) -> Message {
     )
 }
 
+/// The values of the message `timeline.preview-release-longer`, by name.
+#[derive(Clone, Copy)]
+pub struct TimelinePreviewReleaseLonger<'a> {
+    /// The value of `{day}`.
+    pub day: &'a dyn std::fmt::Display,
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+}
+
+/// The message `timeline.preview-release-longer`.
+#[must_use]
+pub fn timeline_preview_release_longer(values: TimelinePreviewReleaseLonger<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.preview-release-longer"),
+        vec![
+            ("day", Value::Text(values.day.to_string())),
+            ("name", Value::Text(values.name.to_string())),
+        ],
+    )
+}
+
+/// The message `timeline.release-date`.
+#[must_use]
+pub fn timeline_release_date(day: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.release-date"),
+        vec![("day", Value::Text(day.to_string()))],
+    )
+}
+
+/// The message `timeline.release-moved`.
+#[must_use]
+pub fn timeline_release_moved(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.release-moved"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
 /// The values of the message `timeline.saved-both`, by name.
 #[derive(Clone, Copy)]
 pub struct TimelineSavedBoth<'a> {
@@ -26054,6 +26197,15 @@ pub fn timeline_set_dates_title(key: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("timeline.set-dates-title"),
         vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
+/// The message `timeline.sets-end`.
+#[must_use]
+pub fn timeline_sets_end(end: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("timeline.sets-end"),
+        vec![("end", Value::Text(end.to_string()))],
     )
 }
 

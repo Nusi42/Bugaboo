@@ -13,8 +13,8 @@ import { useRef, type ReactNode } from "react";
 
 import { known } from "../../shared/present.ts";
 import type { GroupLine, IssueLine, Line } from "./lines.ts";
-import { goalWords } from "./goal-words.ts";
-import { GoalMarks } from "./marks.tsx";
+import { goalWords, releaseWords } from "./goal-words.ts";
+import { GoalMarks, ReleaseDiamond } from "./marks.tsx";
 import { Hatches } from "./people/Hatches.tsx";
 import { usePersonDays } from "./people/use-person-days.ts";
 import { useTimeline } from "./timeline-context.ts";
@@ -47,9 +47,14 @@ export interface GroupHeadProps {
   readonly onToggle: () => void;
 }
 
-/** The head of a group (a goal, a project, a person …): folds its rows, and shows the goal's bracket and diamond. */
+/**
+ * The head of a group (a goal, a release, a project, a person …): folds its rows, and shows the
+ * goal's bracket and diamond, or the diamond of the release on its *Release date*.
+ */
 export function GroupHead({ line, at, name, onToggle }: GroupHeadProps) {
   const person = usePersonDays(line.key);
+  const { releaseOf } = useTimeline();
+  const release = line.key.type === "release" ? releaseOf(line.key.value) : undefined;
   return (
     <Row
       at={at}
@@ -77,12 +82,16 @@ export function GroupHead({ line, at, name, onToggle }: GroupHeadProps) {
           {person.words === "" ? null : (
             <span {...partOf(part.visuallyHidden)}>{person.words}</span>
           )}
+          {release === undefined ? null : (
+            <span {...partOf(part.visuallyHidden)}>{releaseWords(release)}</span>
+          )}
         </button>
       }
       lane={
         <>
           <Hatches stretches={person.stretches} />
           {line.goal === undefined ? null : <GoalMarks goal={line.goal} />}
+          {release === undefined ? null : <ReleaseDiamond release={release} />}
         </>
       }
     />

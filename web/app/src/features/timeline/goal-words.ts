@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 
 import { formatCalendarDay } from "../../shared/format.ts";
 import { daysText } from "./dates.ts";
+import type { TimelineRelease } from "./drivers.ts";
 import type { TimelineGoal } from "./timeline-data.ts";
 
 /**
@@ -17,4 +18,11 @@ export function goalWords(goal: TimelineGoal, key: string): string {
   ]
     .filter((words) => words !== undefined)
     .join(" ");
+}
+
+/** The *Release date* of a release in words, *"Release date: 10 Mar 2027"*; empty without one. */
+export function releaseWords(release: TimelineRelease): string {
+  return release.release_date === null
+    ? ""
+    : t("timeline.release-date", { day: formatCalendarDay(release.release_date) });
 }

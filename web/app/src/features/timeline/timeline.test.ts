@@ -75,7 +75,7 @@ describe("the arrows of the dependencies (PLAN-02)", () => {
   const sizes = { head: 4, step: 8, inset: 4 };
 
   it("plan_02_an_arrow_runs_between_the_rows_and_turns_beside_the_bar_that_waits", () => {
-    const arrow = { key: "a", from: { line: 0, day: 3 }, to: { line: 1, day: 6 } };
+    const arrow = { key: "a", from: { line: 0, day: 3 }, to: { line: 1, day: 6 }, driver: false };
     expect(arrowPath(arrow, 16, 28, sizes)).toEqual({
       line: "M 40 24 V 28 H 88 V 42 H 88",
       head: "M 96 42 l -8 -4 v 8 z",
@@ -84,7 +84,7 @@ describe("the arrows of the dependencies (PLAN-02)", () => {
 
   it("plan_02_an_arrow_shorter_than_its_turn_goes_straight_to_its_head", () => {
     // The bar that waits starts where the first ends: a turn would draw a small box.
-    const arrow = { key: "a", from: { line: 1, day: 40 }, to: { line: 0, day: 40 } };
+    const arrow = { key: "a", from: { line: 1, day: 40 }, to: { line: 0, day: 40 }, driver: false };
     expect(arrowPath(arrow, 1, 28, sizes)).toEqual({
       line: "M 32 32 V 14",
       head: "M 40 14 l -8 -4 v 8 z",

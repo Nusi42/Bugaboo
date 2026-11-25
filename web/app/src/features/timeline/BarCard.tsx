@@ -18,6 +18,8 @@ export interface BarCardProps {
   readonly days: BarDays | undefined;
   /** Whether the person may change its dates (*Set dates…* and *Add dependency…* then). */
   readonly mayMove: boolean;
+  /** What it sets as a deadline driver (*"Sets the end of Mobile app 2.0"*); none for other bars. */
+  readonly sets: string | undefined;
   readonly onSetDates: () => void;
   readonly onAddDependency: () => void;
 }
@@ -54,7 +56,8 @@ function EffortLine({ row }: { readonly row: TimelineRow }) {
 }
 
 /**
- * The card of the selected bar (UX §4.7): its issue and its dates, who it is assigned to, the mark
+ * The card of the selected bar (UX §4.7): its issue and its dates, the ends it sets as a deadline
+ * driver (*"Sets the end of Mobile app 2.0"*), who it is assigned to, the mark
  * of a copy of *Group by person*, the effort with *Change* of the time factor, the person's time as
  * far as *Work times* lets the reader see it, and the typed ways to do what a drag does, *Set dates…*
  * and *Add dependency…*, with *Open*.
@@ -64,6 +67,7 @@ export function BarCard(props: BarCardProps) {
   const key = known(row.issue.readable_id) ?? "";
   const { firstDay } = useRegion();
   const facts = [
+    props.sets,
     assignedText(row),
     plannedWithText(row, props.copied),
     workedOutText(row),

@@ -7,6 +7,7 @@ import { pageSize } from "../../shared/paged.ts";
 import { known } from "../../shared/present.ts";
 import { queryClient } from "../../shared/query-client.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
+import type { TimelineEnd, TimelineRelease } from "./drivers.ts";
 import type { Span } from "./scale.ts";
 
 /** A row of the timeline as the server sends it: a group, an issue, its bar. */
@@ -26,9 +27,12 @@ export type TimelineGoal = Schema<"TimelineGoalBody">;
 /** A plan warning of an issue of the page, as the server words it for the reader. */
 export type PlanWarning = Schema<"PlanWarningBody">;
 
-/** What tells a warning from the others: an issue has at most one of each kind. */
+/**
+ * What tells a warning from the others: an issue has at most one of each sentence (a *Delay* after
+ * an issue it waits for and one after the date of its release are two).
+ */
 export function warningKey(warning: PlanWarning): string {
-  return `${warning.issue}/${warning.kind}`;
+  return `${warning.issue}/${warning.kind}/${warning.sentence}`;
 }
 
 /** What a timeline is of: a search, where it looks, how its view is set, and the days on screen. */
@@ -55,6 +59,7 @@ function keyOf(ask: TimelineAsk, part: Part) {
     options.start_field,
     options.end_field,
     options.plan_by_effort ?? false,
+    options.deadline_drivers ?? false,
     ask.groupBy ?? "",
     ask.span.first,
     ask.span.last,
@@ -98,12 +103,35 @@ export interface TimelineRead {
   readonly notScheduled: number;
   /** Whether the server planned the bars by effort (never for an access key). */
   readonly byEffort: boolean;
-  /** What the parts of the chart look up in it: a goal, and the days of a person's row. */
+  /** The releases of the issues read so far, each once, in the order the server sends them. */
+  readonly releases: readonly TimelineRelease[];
+  /**
+   * What the parts of the chart look up in it: a goal, a release, the ends a deadline driver sets,
+   * and the days of a person's row.
+   */
   readonly lookups: {
     readonly goalOf: (issue: string) => TimelineGoal | undefined;
+    readonly releaseOf: (release: string) => TimelineRelease | undefined;
+    /** The ends an issue sets as a deadline driver; empty for any other issue, or with the switch off. */
+    readonly endsOf: (issue: string) => readonly TimelineEnd[];
     /** Under *Group by person*: the away days and holidays of a person's row, by their ID. */
     readonly personDaysOf: (person: string) => readonly Schema<"HatchedDayBody">[];
   };
+}
+
+/** The releases of the pages and the ends each deadline driver sets, each once. */
+function milestonesOf(pages: readonly TimelinePage[]) {
+  const releases = new Map<string, TimelineRelease>();
+  const drivers = new Map<string, readonly TimelineEnd[]>();
+  for (const page of pages) {
+    for (const release of page.releases) {
+      releases.set(release.id, release);
+    }
+    for (const driver of page.drivers) {
+      drivers.set(driver.issue, driver.ends);
+    }
+  }
+  return { releases, drivers };
 }
 
 /** The pages put together: the rows in order, every arrow and goal once. */
@@ -114,6 +142,7 @@ export function readOf(pages: readonly TimelinePage[] | undefined): TimelineRead
   const dependencies: Schema<"TimelineDependencyBody">[] = [];
   const warnings = new Map<string, PlanWarning>();
   const peopleDays = new Map<string, readonly Schema<"HatchedDayBody">[]>();
+  const { releases, drivers } = milestonesOf(all);
   for (const page of all) {
     for (const row of page.people_days) {
       if (row.person.shown === "name") {
@@ -141,8 +170,11 @@ export function readOf(pages: readonly TimelinePage[] | undefined): TimelineRead
     warnings: [...warnings.values()],
     notScheduled: all[0]?.not_scheduled ?? 0,
     byEffort: all[0]?.planned_by_effort ?? false,
+    releases: [...releases.values()],
     lookups: {
       goalOf: (issue) => goals.get(issue),
+      releaseOf: (release) => releases.get(release),
+      endsOf: (issue) => drivers.get(issue) ?? [],
       personDaysOf: (person) => peopleDays.get(person) ?? [],
     },
   };

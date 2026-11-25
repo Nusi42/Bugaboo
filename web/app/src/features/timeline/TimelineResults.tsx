@@ -18,6 +18,7 @@ export interface TimelineResultsProps extends Omit<TimelineInput, "phone"> {
 interface BodyModel {
   readonly lines: TimelineMainProps["lines"];
   readonly arrows: TimelineMainProps["arrows"];
+  readonly read: { readonly releases: TimelineMainProps["releases"] };
   readonly chart: Omit<TimelineMainProps["chart"], "zoom">;
   readonly groupBy: string | null;
   readonly own: TimelineMainProps["own"];
@@ -66,6 +67,7 @@ function TimelineBody({ props, model, phone, onCloseWarnings }: BodyProps) {
         <TimelineMain
           {...shared}
           arrows={model.arrows}
+          releases={model.read.releases}
           chart={{ ...model.chart, zoom: props.view.timeline.zoom }}
         />
       )}
@@ -115,7 +117,12 @@ export function TimelineResults(props: TimelineResultsProps) {
                 },
               }}
             />
-            {phone ? null : <TimelineLegend rows={model.read.rows} />}
+            {phone ? null : (
+              <TimelineLegend
+                rows={model.read.rows}
+                drivers={props.view.timeline.deadline_drivers ?? false}
+              />
+            )}
           </InPaneHead>
           <TimelineBody
             props={props}

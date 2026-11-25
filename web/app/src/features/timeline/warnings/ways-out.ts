@@ -94,6 +94,29 @@ export async function moveAsPreviewed(issues: readonly MovePreviewIssue[]): Prom
   await refreshTimeline();
 }
 
+/**
+ * *Make it longer* of a release's *Delay*, confirmed: the release gets the *Release date* the warning
+ * names, by the usual change of the release from the version the page read. The server offers the
+ * way only to a person who may manage releases, and judges the change again.
+ */
+export async function releaseLonger(
+  release: Schema<"TimelineReleaseBody">,
+  day: string,
+): Promise<void> {
+  try {
+    dataOf(
+      await api.client.PATCH("/api/v1/projects/{project}/releases/{release}", {
+        params: { path: { project: release.project, release: release.id } },
+        body: { version: release.version, release_date: day },
+      }),
+    );
+    undoStore.offer({ message: t("timeline.release-moved", { name: release.name }) });
+  } catch (error) {
+    undoStore.offer({ message: messageOf(error) });
+  }
+  await refreshTimeline();
+}
+
 /** *Keep and accept*: the warning stays, faded, until the dates of its issue change. */
 export async function keepAndAccept(
   warning: PlanWarning,

@@ -29,6 +29,7 @@ fn timeline_json(search: &SavedSearch) -> Value {
         "end": end,
         "plan_by_effort": search.timeline.plan_by_effort,
         "zoom": search.timeline.zoom.code(),
+        "deadline_drivers": search.timeline.deadline_drivers,
     })
 }
 

@@ -3,7 +3,8 @@ import { DayScale, part, partOf, type ScaleUnit } from "@bugaboo/ui";
 
 import { Arrows } from "./Arrows.tsx";
 import type { Arrow } from "./lines.ts";
-import { Shade, TodayLine } from "./marks.tsx";
+import type { TimelineRelease } from "./drivers.ts";
+import { ReleaseLines, Shade, TodayLine } from "./marks.tsx";
 import type { Stretch } from "./scale.ts";
 
 export interface ChartBackdropProps {
@@ -12,10 +13,15 @@ export interface ChartBackdropProps {
   readonly weekends: readonly Stretch[];
   /** Where today stands on the chart; none when it is not on it. */
   readonly today: number | undefined;
+  /** The releases of the page: each with a *Release date* is a line with its diamond and name. */
+  readonly releases: readonly TimelineRelease[];
 }
 
-/** What stands behind and over the rows: the scale, the weekends, the Today line and the arrows. */
-export function ChartBackdrop({ arrows, units, weekends, today }: ChartBackdropProps) {
+/**
+ * What stands behind and over the rows: the scale, the weekends, the Today line, the lines of the
+ * releases and the arrows.
+ */
+export function ChartBackdrop({ arrows, units, weekends, today, releases }: ChartBackdropProps) {
   return (
     <>
       <div {...partOf(part.timelineHead)}>
@@ -26,6 +32,7 @@ export function ChartBackdrop({ arrows, units, weekends, today }: ChartBackdropP
         <Shade key={weekend.start} start={weekend.start} length={weekend.length} />
       ))}
       {today === undefined ? null : <TodayLine day={today} />}
+      <ReleaseLines releases={releases} />
       <Arrows arrows={arrows} />
     </>
   );

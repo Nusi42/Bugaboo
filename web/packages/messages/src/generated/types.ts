@@ -649,6 +649,11 @@ export interface MessageArguments {
   "person.via-app": { app: string | number; who: string | number };
   "person.work-times-intro": { name: string | number };
   "plan-warning.away": { days: string | number; issue: string | number; person: string | number };
+  "plan-warning.cannot-fit": {
+    due: string | number;
+    ends: string | number;
+    issue: string | number;
+  };
   "plan-warning.days-without-work": { issue: string | number };
   "plan-warning.delay": { days: number; first: string | number; issue: string | number };
   "plan-warning.delay-goal": { days: number; goal: string | number; sub_issue: string | number };
@@ -664,6 +669,8 @@ export interface MessageArguments {
     person: string | number;
     sub_issue: string | number;
   };
+  "plan-warning.delay-release": { days: number; issue: string | number; release: string | number };
+  "plan-warning.loop": { issue: string | number; other: string | number };
   "plan-warning.not-enough-days": { has: number; issue: string | number; needs: number };
   "plan-warning.too-much-at-once": {
     can: string | number;
@@ -1046,6 +1053,7 @@ export interface MessageArguments {
   "timeline.dependency-made": { first: string | number; waiting: string | number };
   "timeline.drag-issue": { key: string | number };
   "timeline.effort-days": { days: number; estimate: string | number; factor: string | number };
+  "timeline.end-release": { name: string | number };
   "timeline.give-to-name": { name: string | number };
   "timeline.given": { key: string | number; name: string | number };
   "timeline.goal": { days: string | number; key: string | number };
@@ -1071,6 +1079,9 @@ export interface MessageArguments {
   "timeline.preview-after": { days: string | number };
   "timeline.preview-before": { days: string | number };
   "timeline.preview-longer": { day: string | number; key: string | number };
+  "timeline.preview-release-longer": { day: string | number; name: string | number };
+  "timeline.release-date": { day: string | number };
+  "timeline.release-moved": { name: string | number };
   "timeline.saved-both": { end: string | number; start: string | number };
   "timeline.saved-end": { end: string | number };
   "timeline.saved-start": { start: string | number };
@@ -1079,6 +1090,7 @@ export interface MessageArguments {
   "timeline.scale-quarter": { quarter: string | number; year: string | number };
   "timeline.set-dates-of": { key: string | number };
   "timeline.set-dates-title": { key: string | number };
+  "timeline.sets-end": { end: string | number };
   "timeline.waits": { key: string | number };
   "timeline.warning-accepted": { name: string | number };
   "timeline.warnings": { count: string | number };

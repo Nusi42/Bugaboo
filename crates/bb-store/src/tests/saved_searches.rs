@@ -39,6 +39,7 @@ fn presentation() -> Presentation {
             dates: Some(("Kick-off".to_owned(), "Launch".to_owned())),
             plan_by_effort: true,
             zoom: Zoom::Month,
+            deadline_drivers: true,
         }),
         board: Some(BoardOptions {
             columns: Some("Size".to_owned()),

@@ -31,6 +31,8 @@ function warning(more: Partial<PlanWarning>): PlanWarning {
     move_after: null,
     due_needed: null,
     accepted: null,
+    release: null,
+    waits_until: null,
     ...more,
   };
 }
@@ -91,5 +93,35 @@ describe("the sentences of plan warnings (UX §4.7, PLAN-13)", () => {
     const said = warningSentence(much, goal);
     expect(said).toContain("Lea has 9 hours planned on");
     expect(said).toContain(`in Mobile app; the share there is ${formatNumber(3.6)} hours.`);
+  });
+});
+
+describe("the sentences of impossible dependencies and of a release (PLAN-05, ISS-08)", () => {
+  it("plan_05_a_loop_and_cannot_fit_name_the_issue_they_wait_for_and_its_days", () => {
+    const loop = warning({ kind: "loop", sentence: "plan-warning.loop", other: login });
+    expect(warningSentence(loop, goal)).toBe(
+      `${keepingHyphens("WEB-280")} and ${keepingHyphens("WEB-281")} wait for each other; neither can start.`,
+    );
+    const short = warning({
+      kind: "cannot-fit",
+      sentence: "plan-warning.cannot-fit",
+      days: { first: "2027-03-01", last: "2027-03-03" },
+      waits_until: "2027-03-04",
+      other: login,
+    });
+    const said = warningSentence(short, goal);
+    expect(said).toContain(`${keepingHyphens("WEB-280")} is due on`);
+    expect(said).toContain("but what it waits for ends on");
+  });
+
+  it("iss_08_a_delay_of_a_release_names_the_release", () => {
+    const late = warning({
+      sentence: "plan-warning.delay-release",
+      late_days: 2,
+      release: "r",
+    });
+    expect(warningSentence(late, { ...goal, release: "2.5" })).toBe(
+      `${keepingHyphens("WEB-280")} now ends 2 days after release 2.5.`,
+    );
   });
 });

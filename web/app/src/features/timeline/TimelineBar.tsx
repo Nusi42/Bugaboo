@@ -18,7 +18,7 @@ export interface TimelineBarProps {
 
 /**
  * A bar of the timeline (UX §4.7, PLAN-03): its status tint and priority edge, its done part, its
- * Issue ID after its end. A bar the person may change is dragged to move it, by its handles to move
+ * Issue ID after its end, and the outline of a deadline driver (PLAN-05). A bar the person may change is dragged to move it, by its handles to move
  * one date, and by its dot onto another bar to make a dependency; each has its key. A bar they may
  * not change says why when it is pointed at, dragged or moved by a key. The button that fills it
  * takes the pointer and the keys; the handles and the dot stand beside it, never inside it.
@@ -28,7 +28,8 @@ export function TimelineBar({ line, days, described }: TimelineBarProps) {
   const { ref, shown, selected, mayMove, dragging, handlers, drop } = bar;
   const { row } = line;
   const key = known(row.issue.readable_id) ?? "";
-  const said = barSaid(row, shown, bar.warnings);
+  const { sets } = bar;
+  const said = barSaid(row, shown, { warnings: bar.warnings, sets });
   const states = rowStates({
     group: row.issue.status?.status_group ?? "not-started",
     priority: row.issue.priority ?? "normal",
@@ -47,6 +48,7 @@ export function TimelineBar({ line, days, described }: TimelineBarProps) {
           bar.labelBefore && "label-before",
           row.copy && "copy",
           bar.marked && "marked",
+          sets !== undefined && "driver",
         ],
       })}
       {...drop.dropProps}

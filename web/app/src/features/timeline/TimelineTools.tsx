@@ -71,7 +71,7 @@ function TimeSteps({ onStep, onToday }: Pick<TimelineToolsProps, "onStep" | "onT
 
 /**
  * The tools over the timeline (UX §4.7): *Show as* and *Group by*, which date fields the bars use
- * (*Dates from*), *Plan by effort*, the zoom, and the steps through time with *Today*. Every choice
+ * (*Dates from*), *Plan by effort*, *Deadline drivers*, the zoom, and the steps through time with *Today*. Every choice
  * is part of the view, kept in the address and saved with the search. A phone has no zoom and no
  * steps, and its *Show as* and *Group by* are in the sheet of the filters, so the list has the room.
  */
@@ -90,6 +90,13 @@ export function TimelineTools(props: TimelineToolsProps) {
         isSelected={timeline.plan_by_effort ?? false}
         onChange={(on) => {
           onView({ ...view, timeline: { ...timeline, plan_by_effort: on } });
+        }}
+      />
+      <Switch
+        label={t("timeline.deadline-drivers")}
+        isSelected={timeline.deadline_drivers ?? false}
+        onChange={(on) => {
+          onView({ ...view, timeline: { ...timeline, deadline_drivers: on } });
         }}
       />
       {phone ? null : (

@@ -1033,12 +1033,17 @@ export const messages = {
     "{person}'s {away_days, plural, one {away day moves} other {# away days move}} {sub_issue} past the due date of {goal}.",
   "plan-warning.delay-goal-away-weeks":
     "{person}'s {away_weeks, plural, one {away week moves} other {# away weeks move}} {sub_issue} past the due date of {goal}.",
+  "plan-warning.delay-release":
+    "{issue} now ends {days, plural, one {# day} other {# days}} after release {release}.",
+  "plan-warning.loop": "{issue} and {other} wait for each other; neither can start.",
+  "plan-warning.cannot-fit": "{issue} is due on {due}, but what it waits for ends on {ends}.",
   "plan-warning.too-much-at-once":
     "{person} has {planned} planned on {day} in {project}; the share there is {can}.",
   "plan-way-out.move-it-after": "Move it after",
   "plan-way-out.make-it-longer": "Make it longer",
   "plan-way-out.give-to-someone-else": "Give it to someone else…",
   "plan-way-out.keep-and-accept": "Keep and accept",
+  "plan-way-out.open-the-relation": "Open the relation",
   "issue-field.time-factor": "Time factor",
   "issues.time-factor-value": "×{factor}",
   "issues.time-factor-own": "{factor} · {name}'s own estimate",

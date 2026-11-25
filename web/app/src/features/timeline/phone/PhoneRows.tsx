@@ -13,31 +13,32 @@ import {
 
 import { known } from "../../../shared/present.ts";
 import { daysText } from "../dates.ts";
-import type { BarDays } from "../lines.ts";
+import { setsText } from "../drivers.ts";
 import { personOnBarText } from "../people/people-words.ts";
-import type { Span } from "../scale.ts";
 import { useTimeline } from "../timeline-context.ts";
 import type { TimelineRow } from "../timeline-data.ts";
-import { PhoneBar } from "./PhoneBar.tsx";
+import { PhoneBar, type PhoneBarProps } from "./PhoneBar.tsx";
 
 export interface PhoneIssueProps {
   readonly row: TimelineRow;
   /** The days of its bar; none for an issue of *Not scheduled yet*. */
-  readonly days: BarDays | undefined;
-  readonly span: Span;
+  readonly days: PhoneBarProps["days"] | undefined;
+  readonly span: PhoneBarProps["span"];
   readonly today: number | undefined;
   readonly onOpen: () => void;
 }
 
 /**
  * An issue of the list: its status icon, ID and title with the sign of a plan warning, its dates, its
- * person, and its short bar.
+ * person, the word of a deadline driver (*Sets the end*), and its short bar.
  */
 export function PhoneIssue({ row, days, span, today, onOpen }: PhoneIssueProps) {
   const { issue } = row;
   const key = known(issue.readable_id) ?? "";
   const person = personOnBarText(row);
-  const warned = useTimeline().warnedOf(known(issue.id) ?? "") > 0;
+  const timeline = useTimeline();
+  const warned = timeline.warnedOf(known(issue.id) ?? "") > 0;
+  const sets = setsText(timeline.endsOf(known(issue.id) ?? ""), timeline);
   return (
     <li>
       <button
@@ -66,6 +67,12 @@ export function PhoneIssue({ row, days, span, today, onOpen }: PhoneIssueProps) 
         <span {...partOf(part.timelinePhoneFacts)}>
           <span>{days === undefined ? t("timeline.no-dates") : daysText(days)}</span>
           {person === undefined ? null : <span>{person}</span>}
+          {sets === undefined ? null : (
+            <span {...partOf(part.timelinePhoneDriver)}>
+              <span aria-hidden>{t("timeline.sets-end-short")}</span>
+              <span {...partOf(part.visuallyHidden)}>{sets}</span>
+            </span>
+          )}
         </span>
         {days === undefined ? null : <PhoneBar row={row} days={days} span={span} today={today} />}
       </button>

@@ -25,6 +25,7 @@ export const listWord = {
   priority: "priority",
   startDate: "start date",
   dueDate: "due date",
+  plannedForRelease: "planned for release",
   estimatedTime: "estimated time",
   timeLeft: "time left",
   timeSpent: "time spent",

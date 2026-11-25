@@ -3652,6 +3652,16 @@ part "timeline-arrows.head" {
     fill "$fg-muted"
 }
 
+// The arrows between two deadline drivers are drawn stronger, in the accent color.
+part "timeline-arrows.line[state=driver]" {
+    stroke "$accent"
+    stroke-width "calc($border-width * 3)"
+}
+
+part "timeline-arrows.head[state=driver]" {
+    fill "$accent"
+}
+
 // The rows are a list as big as the chart; each row stands on its place in it.
 part "timeline-rows" {
     position absolute
@@ -3877,6 +3887,21 @@ part "timeline-bar[state=marked]" {
     use "ring-row"
 }
 
+// A deadline driver (PLAN-05, UX §4.7): an outline in the accent color around the bar. Forced colors drop the color,
+// so there the outline is dashed: a pattern, told from the solid ring of a marked or selected bar. The card and the
+// name of the bar say it in words too.
+mixin "driver-outline" {
+    outline "calc($border-width * 2) solid $accent"
+    outline-offset "$border-width"
+    forced {
+        outline-style dashed
+    }
+}
+
+part "timeline-bar[state=driver]" {
+    use "driver-outline"
+}
+
 // Days without work inside a bar (ADR-0030, decision 3): away days hatched one way, public holidays the other way, and
 // days that are not usual work days shaded like the weekend. They fill the height of the bar inside its edge.
 part "timeline-bar.hatch" {
@@ -3992,17 +4017,60 @@ part "timeline-bracket" {
     pointer-events none
 }
 
+// The diamond of a milestone (the due date of a goal, the *Release date* of a release): the one shape, on the chart
+// and in the Legend.
+mixin "diamond" {
+    rotate "45deg"
+    background "$fg"
+}
+
 part "timeline-diamond" {
     position absolute
     top "50%"
     inset-inline-start "calc(($timeline-start + 0.5) * $timeline-day * $size-px)"
     width "$space-3"
     height "$space-3"
+    use "diamond"
     translate "-50% -50%"
-    rotate "45deg"
     border "$border-width solid $bg-raised"
-    background "$fg"
     pointer-events none
+}
+
+// A release with a *Release date* (ADR-0043, amendment of 2026-11-24): a thin line through the middle of its day, with
+// its diamond and its name at the top, as the Today line has its word.
+part "timeline-release" {
+    position absolute
+    top "$size-timeline-head"
+    bottom 0
+    inset-inline-start "calc($size-timeline-names + ($timeline-start + 0.5) * $timeline-day * $size-px)"
+    z-index "$z-raised"
+    width "$border-width"
+    background "$fg-muted"
+    pointer-events none
+}
+
+// The label stands after the line, clear of a diamond on the same day (the head of the group of the release).
+part "timeline-release.label" {
+    position absolute
+    top 0
+    inset-inline-start "$space-3"
+    display flex
+    align-items center
+    gap "$space-2"
+    padding "0 $space-2"
+    border "$border-width solid $border"
+    border-radius "$r-ctl"
+    background "$bg-raised"
+    color "$fg"
+    font-size "$fs-xs"
+    white-space nowrap
+}
+
+part "timeline-release.diamond" {
+    width "$space-2"
+    height "$space-2"
+    use "diamond"
+    flex none
 }
 
 // The side column: the card of the selected bar over the tray.
@@ -4281,6 +4349,21 @@ part "timeline-phone.facts" {
     display flex
     flex-wrap wrap
     gap "$space-1" "$space-3"
+    color "$fg-muted"
+    font-size "$fs-sm"
+}
+
+// The word of a deadline driver in the phone list (*Sets the end*), in the color of the outline on a computer.
+part "timeline-phone.driver" {
+    color "$accent-fg"
+}
+
+// The diamond and the *Release date* of a release in the head of its group in the phone list.
+part "timeline-phone.release" {
+    display inline-flex
+    align-items center
+    gap "$space-2"
+    margin-inline-start "$space-2"
     color "$fg-muted"
     font-size "$fs-sm"
 }
@@ -4595,9 +4678,14 @@ part "legend.swatch[variant=goal]" {
 part "legend.swatch[variant=due]" {
     width "$space-3"
     height "$space-3"
-    rotate "45deg"
+    use "diamond"
     border-radius 0
-    background "$fg"
+}
+
+// The outline of a deadline driver, drawn as on the chart.
+part "legend.swatch[variant=driver]" {
+    background none
+    use "driver-outline"
 }
 
 // The days without work and the sign of a plan warning, drawn as on the chart (UX §4.7).

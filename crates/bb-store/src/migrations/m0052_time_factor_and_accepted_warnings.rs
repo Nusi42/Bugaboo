@@ -184,6 +184,7 @@ mod tests {
                     dates: None,
                     plan_by_effort: false,
                     zoom: Zoom::Week,
+                    deadline_drivers: false,
                 }
             );
             Ok(())

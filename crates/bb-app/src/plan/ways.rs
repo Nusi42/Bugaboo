@@ -126,6 +126,7 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
             by_effort: options.plan_by_effort,
             window: window_of(Days::one(around))?,
             actor,
+            sight: (*looked.seen).clone(),
         })
     }
 }

@@ -63,6 +63,7 @@ export function viewIsChanged(state: SearchState): boolean {
     state.view,
     state.zoom,
     state.effort,
+    state.drivers,
     state.dates,
   ].some((part) => part !== undefined);
 }
@@ -78,6 +79,7 @@ export function withoutChanges(state: SearchState): SearchState {
     view: _v,
     zoom: _z,
     effort: _f,
+    drivers: _r,
     dates: _d,
     ...rest
   } = state;

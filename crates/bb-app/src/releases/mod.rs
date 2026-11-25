@@ -15,6 +15,7 @@ mod write;
 pub(crate) use choose::{Naming, ReleaseChoice, ensure_still_choosable_in};
 pub(crate) use manage::member;
 pub use manage::{change_release, create_release, delete_release, restore_release};
+pub(crate) use read::in_order;
 pub use read::releases;
 pub use store::ReleaseStore;
 pub use types::*;

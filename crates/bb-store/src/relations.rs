@@ -96,6 +96,20 @@ fn read_parent(row: &Row) -> Result<IssueParent, StoreError> {
     })
 }
 
+impl crate::db::Database {
+    /// Stores a relation as it is, without the rules of the use case: a loop of dependencies as one
+    /// stored before loops were refused (ADR-0043, decision 4), which the plan warns about.
+    ///
+    /// # Errors
+    /// Fails when the database fails.
+    #[cfg(any(test, feature = "testing"))]
+    pub async fn store_relation_as_it_is(&self, relation: &Relation) -> Result<(), StoreError> {
+        let mut transaction = self.begin().await?;
+        <AuthStorage as RelationStore>::insert_relation(&mut transaction, relation).await?;
+        transaction.commit().await
+    }
+}
+
 impl RelationStore for AuthStorage {
     async fn relation_kinds_in(
         transaction: &mut Transaction,

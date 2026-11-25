@@ -10,16 +10,19 @@ use std::sync::Arc;
 
 use bb_core::ErrorCode;
 use bb_core::fields::{Field, FieldKey};
-use bb_core::id::{IssueId, ProjectId, UserId};
+use bb_core::id::{IssueId, ProjectId, ReleaseId, UserId};
 use bb_core::issue::Issue;
 use bb_core::own_fields::FieldType;
 use bb_core::own_fields_value::{FieldValue, date_of};
 use bb_core::plan::bar::{Bar, BarInput, bar, load, shortfall};
+use bb_core::plan::drivers::{Chain, loops};
 use bb_core::plan::record::IssueTimeFactor;
 use bb_core::plan::warning::{
-    Warning, WarningKind, away, days_without_work, delays, sub_issue_delays, too_much_at_once,
+    Warning, WarningKind, away, days_without_work, delays, release_delays, sub_issue_delays,
+    too_much_at_once,
 };
 use bb_core::plan::{Days, TimeFactor};
+use bb_core::project_release::Release;
 use bb_core::relation::Dependency;
 use bb_core::work_times::{DayMinutes, Share, UsualDays};
 use bb_policy::{Evaluation, Place};
@@ -30,6 +33,7 @@ use super::factor::person_on_bar;
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::issues::Where;
+use crate::projects::Shown;
 use crate::relations::effect_kinds;
 use crate::search::{FieldTarget, Searchable, target_of};
 use crate::work_times::{PLAN_PEOPLE_MAX, RANGE_DAYS_MAX, WorkMinutesQuery};
@@ -101,6 +105,9 @@ pub(crate) struct PlanAsk<'a> {
     pub(crate) window: Days,
     /// Who asks.
     pub(crate) actor: &'a Actor,
+    /// The projects the reader sees: a release is known only to a reader who sees its project
+    /// (ADR-0049, decision 5).
+    pub(crate) sight: Shown,
 }
 
 /// The days of work times one plan reads: from 120 days before the span, so a bar that started
@@ -150,6 +157,13 @@ pub(crate) struct Plan {
     pub(crate) dependencies: Vec<Dependency>,
     /// Which issue of the set sits under which.
     pub(crate) parents: Vec<(IssueId, IssueId)>,
+    /// The releases the issues of the set are planned for, where the reader may read *Planned for
+    /// release* and sees the project of the release.
+    pub(crate) releases: HashMap<ReleaseId, Release>,
+    /// The projects the reader sees.
+    pub(crate) sight: Shown,
+    /// The schedule along the dependencies of the set (deadline drivers, *Cannot fit*).
+    pub(crate) chain: Chain,
     /// The warnings, each on its issue.
     pub(crate) warnings: Vec<(IssueId, Warning)>,
     /// Whether the bars were planned by effort: never for an access key, which reads nobody's work
@@ -208,6 +222,14 @@ impl Plan {
             .map_or(&[], Vec::as_slice)
     }
 
+    /// The release an issue is planned for, when the reader may know it.
+    pub(crate) fn planned_for(&self, issue: &Issue) -> Option<&Release> {
+        issue
+            .planned_for_release
+            .filter(|_| self.reads(issue, Field::PlannedForRelease))
+            .and_then(|release| self.releases.get(&release))
+    }
+
     /// The time factor of an issue as the reader may read it: ×1 when it is hidden from them.
     pub(crate) fn factor_of(&self, issue: &Issue) -> Option<&IssueTimeFactor> {
         // The person on the bar always sees their own estimate (ADR-0030, decision 4).
@@ -249,7 +271,10 @@ pub(crate) fn tells_kind(
     match kind {
         WarningKind::Away | WarningKind::TooMuchAtOnce => named,
         WarningKind::DaysWithoutWork => !named && work_times_known,
-        WarningKind::NotEnoughDays | WarningKind::Delay => true,
+        WarningKind::NotEnoughDays
+        | WarningKind::Delay
+        | WarningKind::Loop
+        | WarningKind::CannotFit => true,
     }
 }
 
@@ -417,6 +442,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             )
             .await?
         };
+        let releases = self
+            .planned_releases(&ask.issues, &held, &ask.sight)
+            .await?;
         let mut plan = Plan {
             issues: ask
                 .issues
@@ -440,6 +468,9 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .copied()
                 .filter(|(child, parent)| in_set.contains(child) && in_set.contains(parent))
                 .collect(),
+            releases,
+            sight: ask.sight,
+            chain: Chain::new(&[], &HashMap::new()),
             warnings: Vec::new(),
             by_effort: ask.by_effort && ask.actor.key.is_none(),
             reader: ask.actor.person.id,
@@ -467,9 +498,44 @@ impl<S: AuthStore> Ctx<'_, S> {
                 bars.insert(issue.id, found);
             }
         }
+        plan.chain = Chain::new(&plan.dependencies, &bars);
         plan.bars = bars;
         plan.warnings = warnings_of(&plan, plan.by_effort);
         Ok(plan)
+    }
+
+    /// The releases these issues are planned for that the reader may know: where they may read
+    /// *Planned for release*, of a project they see; one statement for all of them (PERF-N1).
+    async fn planned_releases(
+        &self,
+        issues: &[Issue],
+        held: &HashMap<ProjectId, Arc<Evaluation>>,
+        sight: &Shown,
+    ) -> Result<HashMap<ReleaseId, Release>, AppError> {
+        let mut wanted: Vec<ReleaseId> = issues
+            .iter()
+            .filter(|issue| {
+                held.get(&issue.project).is_some_and(|held| {
+                    held.field_mask_for(Some(issue.issue_type))
+                        .can_see(Field::PlannedForRelease)
+                })
+            })
+            .filter_map(|issue| issue.planned_for_release)
+            .collect();
+        if wanted.is_empty() {
+            return Ok(HashMap::new());
+        }
+        wanted.sort_unstable();
+        wanted.dedup();
+        Ok(self
+            .store()
+            .releases_by_ids(wanted)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .into_iter()
+            .filter(|release| release.deleted_at.is_none() && sight.sees(release.project))
+            .map(|release| (release.id, release))
+            .collect())
     }
 
     /// The days of every person on a bar of the plan, in each project, through the one port of
@@ -564,6 +630,23 @@ fn warnings_of(plan: &Plan, by_effort: bool) -> Vec<(IssueId, Warning)> {
         .filter_map(|issue| issue.due_date.map(|due| (issue.id, due)))
         .collect();
     found.extend(sub_issue_delays(&plan.parents, &plan.bars, &dues));
+    // *Delay* of a release, *Loop* and *Cannot fit* (ADR-0043, amendment of 2026-11-24).
+    let planned: Vec<(IssueId, ReleaseId)> = plan
+        .issues
+        .values()
+        .filter_map(|issue| {
+            plan.planned_for(issue)
+                .map(|release| (issue.id, release.id))
+        })
+        .collect();
+    let release_dates: HashMap<ReleaseId, Date> = plan
+        .releases
+        .values()
+        .filter_map(|release| release.release_date.map(|date| (release.id, date)))
+        .collect();
+    found.extend(release_delays(&planned, &plan.bars, &release_dates));
+    found.extend(loops(&plan.dependencies));
+    found.extend(plan.chain.cannot_fit(&plan.bars));
     // *Too much at once* says how much a person can work in the project: only to a reader who may
     // know their work times.
     for ((project, person), mut issue_loads) in loads

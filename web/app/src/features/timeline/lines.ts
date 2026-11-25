@@ -98,6 +98,8 @@ export interface Arrow {
   readonly from: { readonly line: number; readonly day: number };
   /** The line and the first day of the bar that waits. */
   readonly to: { readonly line: number; readonly day: number };
+  /** Both ends are deadline drivers: the arrow is drawn stronger (PLAN-05). */
+  readonly driver: boolean;
 }
 
 /**
@@ -109,6 +111,7 @@ export function arrowsOf(
   dependencies: readonly Schema<"TimelineDependencyBody">[],
   daysOf: (line: IssueLine) => BarDays | undefined,
   span: Span,
+  endsOf: (issue: string) => readonly unknown[],
 ): readonly Arrow[] {
   const at = new Map<string, number>();
   lines.forEach((line, index) => {
@@ -134,6 +137,7 @@ export function arrowsOf(
       key: `${first}>${then}`,
       from: { line: fromLine, day: placeOf(span, fromDays.last) + 1 },
       to: { line: toLine, day: placeOf(span, toDays.first) },
+      driver: endsOf(first).length > 0 && endsOf(then).length > 0,
     });
   }
   return arrows;

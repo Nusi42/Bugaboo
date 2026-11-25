@@ -67,13 +67,18 @@ async fn plan_08_a_restricted_issue_has_no_bar_no_arrow_no_warning_and_no_count(
             "first": MONDAY,
             "last": "2027-03-31",
         });
-        // Ada sees both projects: two rows, the arrow, the delay, two waiting.
+        // Ada sees both projects: two rows, the arrow, the warnings, two waiting.
         let all = page(&mut ada, everywhere.clone()).await?;
         assert_eq!(all["rows"].as_array().map(Vec::len), Some(2), "{all}");
         assert_eq!(all["dependencies"].as_array().map(Vec::len), Some(1));
         assert_eq!(all["not_scheduled"], 2);
         let shown_id = id_of_key(&mut ada, &shown).await?;
-        assert_eq!(warnings_on(&all, &shown_id).len(), 1, "{all}");
+        // The delay, and the due date that cannot fit after the hidden issue.
+        let kinds: Vec<&Value> = warnings_on(&all, &shown_id)
+            .iter()
+            .map(|warning| &warning["kind"])
+            .collect();
+        assert_eq!(kinds, [&json!("delay"), &json!("cannot-fit")], "{all}");
         // A Team member of ACME only: the hidden issue has no bar, no arrow, no warning, no count.
         let (mut team, _) = site
             .person_in_acme(StartingRole::TeamMember, "team")

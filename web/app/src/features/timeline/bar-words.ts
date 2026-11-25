@@ -17,6 +17,8 @@ export interface BarFacts {
   readonly stretches: readonly HatchedStretch[];
   /** How many open plan warnings its issue has. */
   readonly warnings: number;
+  /** What it sets as a deadline driver (*"Sets the end of Mobile app 2.0"*); none for other bars. */
+  readonly sets: string | undefined;
 }
 
 /** Each named stretch of hatched days in words, "Away: 3 Mar 2027 to 4 Mar 2027", from `first`. */
@@ -44,7 +46,8 @@ export function stretchesWords(stretches: readonly HatchedStretch[], first: stri
 /**
  * The name of a bar for screen readers: its issue and days, then what the eye sees on it, the person
  * on it, the mark of a copy (*"Planned with Lea's work times"*), the named hatched days and the sign
- * of its warnings. Colour and hatching are never alone (R5).
+ * of its warnings, and what it sets as a deadline driver. Colour, outline and hatching are never
+ * alone (R5).
  */
 export function barWords(base: string, facts: BarFacts): string {
   const { row, shown } = facts;
@@ -54,6 +57,7 @@ export function barWords(base: string, facts: BarFacts): string {
     plannedWithText(row),
     ...stretchSaid(facts.stretches, shown.first),
     facts.warnings === 0 ? undefined : t("timeline.warnings-of", { count: facts.warnings }),
+    facts.sets,
   ].filter((said) => said !== undefined);
   return more.length === 0 ? base : t("timeline.bar-with", { bar: base, more: detailsText(more) });
 }
@@ -62,9 +66,13 @@ export function barWords(base: string, facts: BarFacts): string {
  * What a bar says beyond its colours: its hatched days, from the first day it shows, and its name for
  * screen readers. A bar whose person the reader may not see has hatched days without a word.
  */
-export function barSaid(row: TimelineRow, shown: BarDays, warnings: number) {
+export function barSaid(
+  row: TimelineRow,
+  shown: BarDays,
+  marks: Pick<BarFacts, "warnings" | "sets">,
+) {
   const stretches = hatchedStretches(row.bar?.hatched ?? [], shown.first);
   const key = known(row.issue.readable_id) ?? "";
   const base = t("timeline.bar", { key, title: row.issue.title ?? "", days: daysText(shown) });
-  return { stretches, name: barWords(base, { row, shown, stretches, warnings }) };
+  return { stretches, name: barWords(base, { row, shown, stretches, ...marks }) };
 }

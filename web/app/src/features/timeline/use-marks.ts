@@ -1,6 +1,7 @@
 import { pixelsOf } from "@bugaboo/ui";
 import { useState } from "react";
 
+import { setsText, type EndNames } from "./drivers.ts";
 import type { IssueLine, Line } from "./lines.ts";
 import type { TimelineContextValue } from "./timeline-context.ts";
 import type { ZoomWord } from "../../shared/list-view.ts";
@@ -26,7 +27,11 @@ export function useFolding() {
  * The open plan warnings, the bar whose warning is pointed at in the list, and what the list is made
  * of while it is open.
  */
-export function useWarningMarks(warnings: readonly PlanWarning[], list: WarningsInput | undefined) {
+export function useWarningMarks(
+  warnings: readonly PlanWarning[],
+  listOpen: boolean,
+  list: WarningsInput,
+) {
   const [marked, mark] = useState<string>();
   const open = warnings.filter((warning) => warning.accepted === null);
   return {
@@ -37,7 +42,7 @@ export function useWarningMarks(warnings: readonly PlanWarning[], list: Warnings
       marked,
       warnedOf: (issue: string) => open.filter((warning) => warning.issue === issue).length,
     },
-    list: list === undefined ? undefined : { ...list, warnings, onMark: mark },
+    list: listOpen ? { ...list, warnings, onMark: mark } : undefined,
   };
 }
 
@@ -63,17 +68,26 @@ export function rowFinder(rows: readonly TimelineRow[]) {
 }
 
 /**
- * The first line of the selected issue, and whether the issue has a copy among the lines (*Group by
- * person*): its card then says whose work times plan it.
+ * The first line of the selected issue, whether the issue has a copy among the lines (*Group by
+ * person*), so its card says whose work times plan it, and what it sets as a deadline driver.
  */
 export function selectedLine(
   lines: readonly Line[],
   selected: string | undefined,
-): { readonly line: IssueLine | undefined; readonly copied: boolean } {
+  names: EndNames & Pick<TimelineContextValue, "endsOf">,
+): {
+  readonly line: IssueLine | undefined;
+  readonly copied: boolean;
+  readonly sets: string | undefined;
+} {
   const mine = lines.filter(
     (each): each is IssueLine => each.kind === "issue" && each.issue === selected,
   );
-  return { line: mine[0], copied: mine.some((each) => each.row.copy) };
+  return {
+    line: mine[0],
+    copied: mine.some((each) => each.row.copy),
+    sets: selected === undefined ? undefined : setsText(names.endsOf(selected), names),
+  };
 }
 
 /** The zoom of the chart, and the width of a day and the height of a row there, in pixels. */

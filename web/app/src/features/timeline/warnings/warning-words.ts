@@ -14,6 +14,8 @@ export interface WarningPlace {
   readonly title: string | null | undefined;
   /** The name of its project, for *Too much at once*. */
   readonly project: string;
+  /** The name of the release whose date it ends after, for a release's *Delay*. */
+  readonly release?: string | undefined;
 }
 
 /** An issue by its title, or by its readable ID when the reader may not read the title. */
@@ -53,5 +55,10 @@ export function warningSentence(warning: PlanWarning, place: WarningPlace): stri
     can: hoursText(warning.can_minutes ?? 0),
     day: warning.worst_day === null ? "" : formatCalendarDay(warning.worst_day),
     project: place.project,
+    // *Loop* names the issue it waits for; *Cannot fit* its due date and when what it waits for ends.
+    other,
+    release: place.release ?? "",
+    due: formatCalendarDay(warning.days.last),
+    ends: warning.waits_until === null ? "" : formatCalendarDay(warning.waits_until),
   });
 }

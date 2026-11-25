@@ -46,6 +46,8 @@ export interface SearchState {
   readonly zoom?: string;
   /** *Plan by effort* of a timeline. */
   readonly effort?: boolean;
+  /** *Deadline drivers* of a timeline. */
+  readonly drivers?: boolean;
   /** The two date fields of a timeline, by their search words. */
   readonly dates?: readonly [string, string];
   /** The issue open in the side panel of a project's list, by its issue ID. */
@@ -62,6 +64,7 @@ export interface SearchParts {
   readonly open?: string;
   readonly zoom?: string;
   readonly effort?: string;
+  readonly drivers?: string;
   readonly dates?: string;
 }
 
@@ -123,6 +126,7 @@ export function readSearch(location: {
   const open = textOf(raw, "open");
   const zoom = textOf(raw, "zoom");
   const effort = textOf(raw, "effort");
+  const drivers = textOf(raw, "drivers");
   const dates = datesOf(textOf(raw, "dates"));
   return {
     text: written === undefined || written.trim() === "" ? "" : written,
@@ -136,6 +140,7 @@ export function readSearch(location: {
     ...(open === undefined || open === "" ? {} : { open }),
     ...(zoom === undefined || zoom === "" ? {} : { zoom }),
     ...(effort === undefined ? {} : { effort: effort === "1" }),
+    ...(drivers === undefined ? {} : { drivers: drivers === "1" }),
     ...(dates === undefined ? {} : { dates }),
   };
 }
@@ -172,6 +177,9 @@ export function searchLocation(state: SearchState): SearchLocation {
   }
   if (state.effort !== undefined) {
     search.effort = state.effort ? "1" : "0";
+  }
+  if (state.drivers !== undefined) {
+    search.drivers = state.drivers ? "1" : "0";
   }
   if (state.dates !== undefined) {
     search.dates = state.dates.join(",");

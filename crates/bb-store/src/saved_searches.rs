@@ -18,30 +18,33 @@ use crate::schema::{ProjectDefaultListRow, SavedSearchRow, SearchColumnRow, Sear
 
 mod limits;
 
+/// The columns of a saved search in the order a row of it is read and written: the one list of
+/// them, for the read and for the insert.
+const SEARCH_COLUMNS: [SavedSearchRow; 19] = [
+    SavedSearchRow::Id,
+    SavedSearchRow::Name,
+    SavedSearchRow::Text,
+    SavedSearchRow::Maker,
+    SavedSearchRow::View,
+    SavedSearchRow::GroupBy,
+    SavedSearchRow::TimelineStart,
+    SavedSearchRow::TimelineEnd,
+    SavedSearchRow::PlanByEffort,
+    SavedSearchRow::Zoom,
+    SavedSearchRow::DeadlineDrivers,
+    SavedSearchRow::BoardColumns,
+    SavedSearchRow::BoardRows,
+    SavedSearchRow::CalendarDates,
+    SavedSearchRow::CalendarSpan,
+    SavedSearchRow::CreatedAt,
+    SavedSearchRow::UpdatedAt,
+    SavedSearchRow::DeletedAt,
+    SavedSearchRow::Version,
+];
+
 fn search_select() -> SelectStatement {
     let mut select = Query::select();
-    select
-        .columns([
-            SavedSearchRow::Id,
-            SavedSearchRow::Name,
-            SavedSearchRow::Text,
-            SavedSearchRow::Maker,
-            SavedSearchRow::View,
-            SavedSearchRow::GroupBy,
-            SavedSearchRow::TimelineStart,
-            SavedSearchRow::TimelineEnd,
-            SavedSearchRow::PlanByEffort,
-            SavedSearchRow::Zoom,
-            SavedSearchRow::BoardColumns,
-            SavedSearchRow::BoardRows,
-            SavedSearchRow::CalendarDates,
-            SavedSearchRow::CalendarSpan,
-            SavedSearchRow::CreatedAt,
-            SavedSearchRow::UpdatedAt,
-            SavedSearchRow::DeletedAt,
-            SavedSearchRow::Version,
-        ])
-        .from(SavedSearchRow::Table);
+    select.columns(SEARCH_COLUMNS).from(SavedSearchRow::Table);
     select
 }
 
@@ -61,6 +64,7 @@ fn read_search(row: &Row) -> Result<SavedSearch, StoreError> {
             plan_by_effort: row.get(SavedSearchRow::PlanByEffort)?,
             zoom: Zoom::from_code(&row.get::<String>(SavedSearchRow::Zoom)?)
                 .ok_or(StoreError::Corrupt("a zoom"))?,
+            deadline_drivers: row.get(SavedSearchRow::DeadlineDrivers)?,
         },
         // The card limits are rows of their own, read with the searches (`limits`).
         board: BoardOptions {
@@ -429,26 +433,7 @@ impl SavedSearchStore for AuthStorage {
         let mut insert = Query::insert();
         insert
             .into_table(SavedSearchRow::Table)
-            .columns([
-                SavedSearchRow::Id,
-                SavedSearchRow::Name,
-                SavedSearchRow::Text,
-                SavedSearchRow::Maker,
-                SavedSearchRow::View,
-                SavedSearchRow::GroupBy,
-                SavedSearchRow::TimelineStart,
-                SavedSearchRow::TimelineEnd,
-                SavedSearchRow::PlanByEffort,
-                SavedSearchRow::Zoom,
-                SavedSearchRow::BoardColumns,
-                SavedSearchRow::BoardRows,
-                SavedSearchRow::CalendarDates,
-                SavedSearchRow::CalendarSpan,
-                SavedSearchRow::CreatedAt,
-                SavedSearchRow::UpdatedAt,
-                SavedSearchRow::DeletedAt,
-                SavedSearchRow::Version,
-            ])
+            .columns(SEARCH_COLUMNS)
             .values([
                 Expr::val(search.id.stored()),
                 Expr::val(search.name.as_str()),
@@ -460,6 +445,7 @@ impl SavedSearchStore for AuthStorage {
                 Expr::val(timeline_end(search)),
                 Expr::val(search.timeline.plan_by_effort),
                 Expr::val(search.timeline.zoom.code()),
+                Expr::val(search.timeline.deadline_drivers),
                 Expr::val(search.board.columns.clone()),
                 Expr::val(search.board.rows.clone()),
                 Expr::val(search.calendar.dates.clone()),
@@ -492,6 +478,10 @@ impl SavedSearchStore for AuthStorage {
             .value(SavedSearchRow::TimelineEnd, timeline_end(search))
             .value(SavedSearchRow::PlanByEffort, search.timeline.plan_by_effort)
             .value(SavedSearchRow::Zoom, search.timeline.zoom.code())
+            .value(
+                SavedSearchRow::DeadlineDrivers,
+                search.timeline.deadline_drivers,
+            )
             .value(SavedSearchRow::BoardColumns, search.board.columns.clone())
             .value(SavedSearchRow::BoardRows, search.board.rows.clone())
             .value(SavedSearchRow::CalendarDates, search.calendar.dates.clone())

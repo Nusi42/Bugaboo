@@ -5,10 +5,13 @@ import { timelineStartGroup } from "../../shared/list-view.ts";
 import { groupName, groupOfKey, useFoundGroups, type OwnColumns } from "../issues/index.ts";
 import type { GroupLine } from "./lines.ts";
 
-/** What the group without a value of a grouping is called: *No goal*, *No person*, *No Severity*. */
+/** What the group without a value of a grouping is called: *No goal*, *No release*, *No person*, *No Severity*. */
 function noValueName(groupBy: string, names: Readonly<Record<string, string>>): string {
   if (groupBy === timelineStartGroup) {
     return t("timeline.no-goal");
+  }
+  if (groupBy === listWord.plannedForRelease) {
+    return t("timeline.no-release");
   }
   return groupBy === listWord.assignedTo
     ? t("timeline.no-person")

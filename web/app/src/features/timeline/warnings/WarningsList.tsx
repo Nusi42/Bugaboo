@@ -3,6 +3,7 @@ import { buttonType, Icon, iconName, iconSize, part, partOf } from "@bugaboo/ui"
 import { useId } from "react";
 
 import { personName } from "../../../shared/person.ts";
+import { useTimeline } from "../timeline-context.ts";
 import { warningKey, type PlanWarning } from "../timeline-data.ts";
 import { WarningWays, type WaysOfWarning } from "./WarningWays.tsx";
 import { warningSentence } from "./warning-words.ts";
@@ -43,10 +44,12 @@ interface WarningItemProps extends Omit<WarningsListProps, "warnings"> {
 function WarningItem({ warning, onMark, onShow, ...ways }: WarningItemProps) {
   const described = useId();
   const row = ways.rowOf(warning.issue);
+  const { releaseOf } = useTimeline();
   const sentence = warningSentence(warning, {
     key: row?.issue.readable_id ?? "",
     title: row?.issue.title,
     project: row?.issue.project?.name ?? "",
+    release: warning.release === null ? undefined : releaseOf(warning.release)?.name,
   });
   const accepted = warning.accepted;
   const look = partOf(part.timelineWarning, { states: [accepted !== null && "accepted"] });

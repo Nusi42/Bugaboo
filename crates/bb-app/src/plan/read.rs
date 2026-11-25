@@ -25,6 +25,7 @@ use bb_policy::{Authorized, Evaluation, PeopleContext, PersonRef, Place as Where
 use bb_searchlang::{Expr, FieldRef, Span, Test};
 
 use super::build::{DateTargets, Plan, PlanAsk, window_of};
+use super::drivers::PageMarks;
 use super::person_days::hatched_of;
 use super::types::{
     AcceptedView, BarView, EffortShown, FactorShown, GoalView, HatchedDay, TimelinePage,
@@ -151,9 +152,19 @@ fn warning_days(plan: &Plan, issue: &Issue, warning: &Warning) -> Option<Days> {
         Warning::Delay(Delay::SubIssue { due_needed, .. }) => {
             issue.due_date.and_then(|due| Days::new(due, *due_needed))
         }
-        Warning::NotEnoughDays(_) | Warning::Delay(Delay::Dependency { .. }) => {
-            plan.bars.get(&issue.id).map(|bar| bar.days)
-        }
+        Warning::Delay(Delay::Release {
+            release,
+            due_needed,
+            ..
+        }) => plan
+            .releases
+            .get(release)
+            .and_then(|release| release.release_date)
+            .and_then(|date| Days::new(date, *due_needed)),
+        Warning::NotEnoughDays(_)
+        | Warning::Delay(Delay::Dependency { .. })
+        | Warning::Loop { .. }
+        | Warning::CannotFit { .. } => plan.bars.get(&issue.id).map(|bar| bar.days),
     }
 }
 
@@ -174,7 +185,7 @@ fn group_target(looked: &Looked, word: &str) -> Result<Option<FieldTarget>, AppE
 }
 
 /// Whether a timeline groups its rows by a field (UX §4.7): the project, the goal, the person, the
-/// status, the priority or an own field of choices. The one rule of the timeline's grouping: the
+/// status, the priority, *Planned for release* (*Group by release*) or an own field of choices. The one rule of the timeline's grouping: the
 /// readable fields say it to the browser, and a page refuses any other field.
 #[must_use]
 pub fn timeline_groups_by(target: FieldTarget) -> bool {
@@ -185,6 +196,7 @@ pub fn timeline_groups_by(target: FieldTarget) -> bool {
             | FieldTarget::AssignedTo
             | FieldTarget::Status
             | FieldTarget::Priority
+            | FieldTarget::PlannedForRelease
             | FieldTarget::Own {
                 kind: FieldType::PickOne | FieldType::PickSeveral,
                 ..
@@ -219,7 +231,7 @@ fn choice_groups(
 /// its due date as the reader may read it (only *Due date* is a goal's due date, whatever date
 /// fields the view uses) and the span of the bars of its sub-issues that the plan knows. The plan
 /// holds only issues the reader sees, so a hidden goal or sub-issue counts for nothing.
-fn goals_of(plan: &Plan, page: &HashSet<IssueId>) -> Vec<GoalView> {
+pub(super) fn goals_of(plan: &Plan, page: &HashSet<IssueId>) -> Vec<GoalView> {
     let mut goals: Vec<IssueId> = plan
         .parents
         .iter()
@@ -310,6 +322,11 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
                     .map_or(GroupKey::Empty, |(_, parent)| GroupKey::Issue(*parent)),
             )),
             Some(FieldTarget::Priority) => one(Some(GroupKey::Priority(issue.priority))),
+            // A release the reader may not know is no release: the row is in *None*.
+            Some(FieldTarget::PlannedForRelease) => one(Some(
+                plan.planned_for(issue)
+                    .map_or(GroupKey::Empty, |release| GroupKey::Release(release.id)),
+            )),
             Some(FieldTarget::Status) => {
                 one(Some(GroupKey::Text(issue.status.as_str().to_owned())))
             }
@@ -459,7 +476,7 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
 
     /// The warnings of the issues of the page, each with what it names as the reader may know it,
     /// and faded when it was accepted for the dates its issue has.
-    async fn warning_views(
+    pub(super) async fn warning_views(
         &self,
         plan: &Plan,
         page: &HashSet<IssueId>,
@@ -551,7 +568,7 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
                 person,
                 away_days: away.map(|away| away.days),
                 away_weeks: away.map(|away| away.weeks).filter(|weeks| *weeks > 0),
-                ways_out: warning.ways_out(),
+                ways_out: ways_out_for(plan, warning),
                 move_after: warning.move_after(),
                 due_needed: warning.due_needed(),
                 accepted: accepted_by,
@@ -598,6 +615,22 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
         }
         Ok(person.map(|person| (person, away)))
     }
+}
+
+/// The ways out of a warning for the reader: *Make it longer* of a release's *Delay* changes the
+/// *Release date*, so it is offered only to a reader who may manage releases in its project.
+fn ways_out_for(plan: &Plan, warning: &Warning) -> Vec<bb_core::plan::warning::WayOut> {
+    let mut ways = warning.ways_out();
+    if let Warning::Delay(Delay::Release { release, .. }) = warning {
+        let manages = plan.releases.get(release).is_some_and(|release| {
+            plan.sight
+                .allows(release.project, bb_policy::Permission::ManageReleases)
+        });
+        if !manages {
+            ways.retain(|way| *way != bb_core::plan::warning::WayOut::MakeItLonger);
+        }
+    }
+    ways
 }
 
 /// The dependencies between issues of the page.
@@ -677,12 +710,15 @@ pub async fn timeline<S: AuthStore + SearchStore>(
         by_effort: query.options.plan_by_effort,
         window,
         actor: &actor,
+        sight: (*prepared.looked.seen).clone(),
     };
+    let drivers_on = query.options.deadline_drivers && query.part == TimelinePart::Rows;
     let plan = match query.part {
+        TimelinePart::Rows if drivers_on => ctx.plan_with_chains(ask).await?,
         TimelinePart::Rows => ctx.plan_with_surroundings(ask).await?,
         TimelinePart::NotScheduled => ctx.work_out_plan(ask, &[], &[]).await?,
     };
-    let rows = ctx
+    let mut rows = ctx
         .timeline_rows(
             &plan,
             &found.issues,
@@ -691,15 +727,14 @@ pub async fn timeline<S: AuthStore + SearchStore>(
             (query.part, span),
         )
         .await?;
+    // The group without a value comes last, as in every grouping of a search (`GroupKey::place`).
+    rows.sort_by_key(|row| matches!(row.group, Some(ShownKey::Other(GroupKey::Empty))));
     let dependencies = page_dependencies(&plan, &page);
-    let (warnings, goals) = if query.part == TimelinePart::Rows {
-        (
-            ctx.warning_views(&plan, &page, &prepared.looked.seen)
-                .await?,
-            goals_of(&plan, &page),
-        )
+    let marks = if query.part == TimelinePart::Rows {
+        ctx.page_marks(&plan, &page, &prepared.looked.seen, drivers_on)
+            .await?
     } else {
-        (Vec::new(), Vec::new())
+        PageMarks::default()
     };
     // Away days and public holidays are a person's in every project: only the minutes of a day
     // depend on the share in a project, and a row hatches no minutes. One project of the page is
@@ -713,9 +748,11 @@ pub async fn timeline<S: AuthStore + SearchStore>(
         people_days,
         next_cursor: found.next_cursor,
         dependencies,
-        warnings,
-        goals,
+        warnings: marks.warnings,
+        goals: marks.goals,
         not_scheduled,
         planned_by_effort: plan.by_effort,
+        releases: marks.releases,
+        drivers: marks.drivers,
     }))
 }

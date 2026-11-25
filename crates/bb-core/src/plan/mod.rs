@@ -5,7 +5,10 @@
 //! - [`Days`]: a stretch of whole days, both ends included: the days of a bar.
 //! - [`TimeFactor`]: the person's own estimate for an issue (*×1.5*, or *Takes me 10 days*).
 //! - [`bar`]: the days of a bar (ADR-0043, decision 3) and *Plan by effort* (ADR-0030, decision 3).
-//! - [`warning`]: the four plan warnings (ADR-0030, decision 5), one enum.
+//! - [`warning`]: the plan warnings (ADR-0030, decision 5; ADR-0043, amendment of 2026-11-24),
+//!   one enum.
+//! - [`drivers`]: deadline drivers, *Loop* and *Cannot fit* (PLAN-05), on one worked-out schedule
+//!   along dependencies.
 //! - [`order`]: the order along dependencies that *Move it after* moves issues in (ADR-0043,
 //!   decision 5), on the one graph of dependencies ([`crate::relation::DependencyGraph`]).
 //!
@@ -15,6 +18,7 @@
 
 pub mod bar;
 mod days;
+pub mod drivers;
 mod factor;
 pub mod order;
 pub mod record;

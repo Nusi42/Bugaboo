@@ -12075,11 +12075,23 @@ export interface components {
        * @description *Too much at once*: the minutes planned for the person on that day in the project.
        */
       planned_minutes: number | null;
+      /**
+       * @description *Delay* of a release: the release, by its ID (one of the page's `releases`), whose *Release
+       *     date* the issue ends after; `null` for any other warning.
+       */
+      release: string | null;
       /** @description The key of its sentence in the messages; the screen fills it in with the members below. */
       sentence: string;
       /**
+       * Format: date
+       * @description *Cannot fit*: the earliest day the issues it waits for can end; `null` for any other
+       *     warning.
+       */
+      waits_until: string | null;
+      /**
        * @description The ways out that fit it, in the order they are offered; only `keep-and-accept` for *Days
-       *     without work*.
+       *     without work*. *Make it longer* of a release's *Delay* changes its *Release date*, and is
+       *     offered only to a person who may manage releases in its project.
        */
       ways_out: components["schemas"]["WayOut"][];
       /**
@@ -14562,8 +14574,8 @@ export interface components {
       /**
        * @description The field the rows are grouped by, by its search word: one the readable fields mark
        *     `timeline_group` (the project, the goal, the person, the status, the priority or an own
-       *     field of choices, a row for each choice an issue has). Rows without a value are in the group
-       *     `empty`.
+       *     field of choices, a row for each choice an issue has, or *Planned for release*). Rows without
+       *     a value are in the group `empty`, which comes last.
        */
       group_by?: string | null;
       /**
@@ -14594,6 +14606,25 @@ export interface components {
       /** @description The issue that waits for it. */
       then: string;
     };
+    /** @description A deadline driver of the page: its delay by a day moves each of its ends by a day. */
+    TimelineDriverBody: {
+      /** @description The ends it sets. */
+      ends: components["schemas"]["TimelineEndBody"][];
+      /** @description The issue, by its internal ID. */
+      issue: string;
+    };
+    /** @description An end that a deadline driver sets. */
+    TimelineEndBody: {
+      /** @description The goal or the release, by its internal ID; `null` for the view. */
+      id: string | null;
+      /** @description Which end: the end of a goal, of a release, or the last day of the view. */
+      kind: components["schemas"]["TimelineEndKind"];
+    };
+    /**
+     * @description Which end a deadline driver sets.
+     * @enum {string}
+     */
+    TimelineEndKind: "goal" | "release" | "view";
     /**
      * @description A goal of the page: its due date is the diamond of the timeline, and the span of its
      *     sub-issues' bars its bracket.
@@ -14615,6 +14646,8 @@ export interface components {
      *     *Start date* and *Due date*, *Plan by effort* off and a column for each week.
      */
     TimelineOptionsBody: {
+      /** @description Whether *Deadline drivers* is on: the page then names the issues that set each end. */
+      deadline_drivers?: boolean;
       /** @description The date field the bars end at, by its search word; `null` for *Due date*. */
       end_field: string | null;
       /** @description Whether *Plan by effort* is on. */
@@ -14631,6 +14664,11 @@ export interface components {
     TimelinePageBody: {
       /** @description The dependencies between issues of the page. */
       dependencies: components["schemas"]["TimelineDependencyBody"][];
+      /**
+       * @description With *Deadline drivers* on: the issues of the page that set an end, each with the ends it
+       *     sets; empty when it is off.
+       */
+      drivers: components["schemas"]["TimelineDriverBody"][];
       /** @description The goals of the issues of the page, and the issues of the page that are goals. */
       goals: components["schemas"]["TimelineGoalBody"][];
       /** @description The cursor of the next page; `null` on the last. */
@@ -14650,6 +14688,12 @@ export interface components {
        *     key. A key reads nobody's work times, so its bars keep the dates people set.
        */
       planned_by_effort: boolean;
+      /**
+       * @description The releases the issues of the page are planned for, as far as the person may know them: a
+       *     release with a *Release date* is a diamond on that date, and its name heads its group under
+       *     *Group by release*.
+       */
+      releases: components["schemas"]["TimelineReleaseBody"][];
       /** @description The rows, in the order of the search; an issue has a row for each of its groups. */
       rows: components["schemas"]["TimelineRowBody"][];
       /** @description The warnings of the issues of the page. */
@@ -14669,6 +14713,25 @@ export interface components {
       hatched: components["schemas"]["HatchedDayBody"][];
       /** @description The person, by name: the same as the person of the group of the row. */
       person: components["schemas"]["PersonRef"];
+    };
+    /** @description A release of the page. */
+    TimelineReleaseBody: {
+      /** @description The release, by its internal ID. */
+      id: string;
+      /** @description What it is called. */
+      name: string;
+      /** @description The project it was made in, by its internal ID. */
+      project: string;
+      /**
+       * Format: date
+       * @description Its *Release date*; `null` when it has none.
+       */
+      release_date: string | null;
+      /**
+       * Format: int64
+       * @description Counts up with every change: *Make it longer* of its *Delay* changes it from this version.
+       */
+      version: number;
     };
     /** @description One row of the timeline. */
     TimelineRowBody: {
@@ -14954,15 +15017,27 @@ export interface components {
       words: Record<string, unknown>;
     };
     /**
-     * @description The kind of a plan warning: the person on the bar is away, not enough days before the due date, a delay along a dependency or after a sub-issue, too much at once for the person, or days without work on the weekdays of the bar.
+     * @description The kind of a plan warning: the person on the bar is away, not enough days before the due date, a delay along a dependency or after a sub-issue, too much at once for the person, days without work on the weekdays of the bar, a loop of dependencies, or a due date before what the issue waits for can end.
      * @enum {string}
      */
-    WarningKind: "away" | "not-enough-days" | "delay" | "too-much-at-once" | "days-without-work";
+    WarningKind:
+      | "away"
+      | "not-enough-days"
+      | "delay"
+      | "too-much-at-once"
+      | "days-without-work"
+      | "loop"
+      | "cannot-fit";
     /**
-     * @description A way out of a plan warning: move the issue after what is in the way, make it longer, give it to someone else, or keep the plan and accept the warning.
+     * @description A way out of a plan warning: move the issue after what is in the way, make it longer, give it to someone else, keep the plan and accept the warning, or open the relation of a loop.
      * @enum {string}
      */
-    WayOut: "move-it-after" | "make-it-longer" | "give-to-someone-else" | "keep-and-accept";
+    WayOut:
+      | "move-it-after"
+      | "make-it-longer"
+      | "give-to-someone-else"
+      | "keep-and-accept"
+      | "open-the-relation";
     /** @description A web address apps may come back to, in a list: the fields that can be asked for. */
     WebAddressItem: {
       /**

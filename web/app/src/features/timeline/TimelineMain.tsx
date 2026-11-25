@@ -14,7 +14,7 @@ import type { FirstDay } from "../../shared/region.ts";
 import type { OwnColumns } from "../issues/index.ts";
 import type { Arrow, Line } from "./lines.ts";
 import { scaleUnits, weekends, type Span } from "./scale.ts";
-import { TimelineChart } from "./TimelineChart.tsx";
+import { TimelineChart, type TimelineChartProps } from "./TimelineChart.tsx";
 import { useGroupNames } from "./use-group-names.ts";
 
 export interface TimelineMainProps {
@@ -25,6 +25,8 @@ export interface TimelineMainProps {
   readonly names: Readonly<Record<string, string>>;
   readonly lines: readonly Line[];
   readonly arrows: readonly Arrow[];
+  /** The releases of the page, drawn on their *Release date*. */
+  readonly releases: TimelineChartProps["releases"];
   readonly chart: {
     readonly span: Span;
     readonly zoom: ZoomWord;
@@ -58,6 +60,7 @@ export function TimelineMain(props: TimelineMainProps) {
       <TimelineChart
         lines={lines}
         arrows={props.arrows}
+        releases={props.releases}
         units={units}
         weekends={weekends(chart.span, chart.zoom)}
         today={chart.today}

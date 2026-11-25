@@ -93,6 +93,8 @@ mod tests {
             let maker = UserId::from_random([9; 16]);
             old_saved_list(&database, search, maker).await?;
             assert_eq!(database.migrate_until(66, at(1)).await?, [66]);
+            // The search is read as the program reads it now, with the columns of later migrations.
+            database.migrate(at(2)).await?;
             let mut read = database.begin_read().await?;
             let kept = AuthStorage::saved_search_in(&mut read, search)
                 .await?

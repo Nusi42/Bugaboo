@@ -1,9 +1,10 @@
 //! What the timeline is asked and what it answers (PLAN-01, PLAN-08, PLAN-10, PLAN-13).
 
 use bb_core::holidays::Holiday;
-use bb_core::id::IssueId;
+use bb_core::id::{IssueId, ProjectId, ReleaseId};
 use bb_core::plan::Days;
 use bb_core::plan::bar::WorkedOut;
+use bb_core::plan::drivers::EndOf;
 use bb_core::plan::warning::{Warning, WarningKind, WayOut};
 use bb_core::saved_search::TimelineOptions;
 use bb_core::time::Minutes;
@@ -192,6 +193,32 @@ pub struct GoalView {
     pub span: Option<Days>,
 }
 
+/// A release of the page: one that an issue of the page is planned for and the reader may know.
+/// With a *Release date* it is a diamond on that date (ADR-0043, amendment of 2026-11-24); its
+/// name heads its group under *Group by release*.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct ReleaseMark {
+    /// The release.
+    pub id: ReleaseId,
+    /// The project it was made in.
+    pub project: ProjectId,
+    /// What it is called.
+    pub name: String,
+    /// Its *Release date*.
+    pub release_date: Option<Date>,
+    /// Counts up with every change: *Make it longer* of its *Delay* changes the release from it.
+    pub version: i64,
+}
+
+/// An issue of the page that is a deadline driver, with the ends it sets (PLAN-05).
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct DriverView {
+    /// The issue.
+    pub issue: IssueId,
+    /// The ends whose date it sets: a goal, a release, or the last day of the view.
+    pub ends: Vec<EndOf>,
+}
+
 /// A plan warning someone accepted, as the reader may see who.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct AcceptedView {
@@ -271,6 +298,10 @@ pub struct TimelinePage {
     /// Under *Group by person*: the away days and holidays of each person of a row, as far as the
     /// reader may know them; empty for any other grouping.
     pub people_days: Vec<PersonDaysView>,
+    /// The releases the issues of the page are planned for, as far as the reader may know them.
+    pub releases: Vec<ReleaseMark>,
+    /// The deadline drivers among the issues of the page, when *Deadline drivers* is on.
+    pub drivers: Vec<DriverView>,
 }
 
 impl Masked for TimelinePage {}
@@ -289,6 +320,8 @@ impl TimelinePage {
             not_scheduled,
             planned_by_effort,
             people_days: Vec::new(),
+            releases: Vec::new(),
+            drivers: Vec::new(),
         }
     }
 }

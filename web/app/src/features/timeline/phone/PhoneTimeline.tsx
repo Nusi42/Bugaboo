@@ -2,11 +2,12 @@ import { t } from "@bugaboo/messages";
 import { IssueId, part, partOf, ShowMoreOf, Skeleton, type PagedList } from "@bugaboo/ui";
 
 import type { BarDays, GroupLine, IssueLine, Line } from "../lines.ts";
-import type { Span } from "../scale.ts";
+import { releaseWords } from "../goal-words.ts";
+import { useTimeline } from "../timeline-context.ts";
 import type { TimelineRow } from "../timeline-data.ts";
 import { useGroupNames, type GroupNamesInput } from "../use-group-names.ts";
 import { PhoneGroup } from "./PhoneGroup.tsx";
-import { PhoneIssue } from "./PhoneRows.tsx";
+import { PhoneIssue, type PhoneIssueProps } from "./PhoneRows.tsx";
 import { PhoneTray, type PhoneTrayProps } from "./PhoneTray.tsx";
 
 export interface PhoneTimelineProps extends GroupNamesInput {
@@ -14,7 +15,7 @@ export interface PhoneTimelineProps extends GroupNamesInput {
   readonly onToggle: (group: string) => void;
   readonly daysOf: (line: IssueLine) => BarDays | undefined;
   /** The seven weeks of the short bars, and where today stands in them. */
-  readonly span: Span;
+  readonly span: PhoneIssueProps["span"];
   readonly today: number | undefined;
   /** An issue was tapped: its card opens as a sheet. */
   readonly onOpen: (row: TimelineRow) => void;
@@ -24,10 +25,20 @@ export interface PhoneTimelineProps extends GroupNamesInput {
   readonly tray: Omit<PhoneTrayProps, "span" | "onOpen">;
 }
 
-/** The name of a group: words, or a goal's Issue ID and title. */
+/** The name of a group: words with the diamond of a release and its date, or a goal's Issue ID and title. */
 function GroupName({ line, name }: { readonly line: GroupLine; readonly name: string }) {
+  const { releaseOf } = useTimeline();
+  const release = line.key.type === "release" ? releaseOf(line.key.value) : undefined;
   return line.goal === undefined ? (
-    <span {...partOf(part.timelineRowTitle)}>{name}</span>
+    <>
+      <span {...partOf(part.timelineRowTitle)}>{name}</span>
+      {release?.release_date === null || release === undefined ? null : (
+        <span {...partOf(part.timelinePhoneRelease)}>
+          <span {...partOf(part.timelineReleaseDiamond)} aria-hidden />
+          {releaseWords(release)}
+        </span>
+      )}
+    </>
   ) : (
     <>
       <IssueId id={name} />

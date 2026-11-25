@@ -14,6 +14,8 @@ export interface SideInput {
   readonly line: Line | undefined;
   /** Whether the selected issue has a copy among the lines (*Group by person*). */
   readonly copied: boolean;
+  /** What the selected issue sets as a deadline driver. */
+  readonly sets: string | undefined;
   readonly fields: DateFields | undefined;
   readonly daysOf: (line: IssueLine) => BarDays | undefined;
   readonly options: TimelineOptions;
@@ -44,6 +46,7 @@ export function sideOf(input: SideInput): Omit<TimelineSideProps, "asked" | "onA
             copied: input.copied,
             days: line?.kind === "issue" ? input.daysOf(line) : undefined,
             mayMove: row.may_move && fields !== undefined,
+            sets: input.sets,
           },
     tray: input.tray,
     warnings:

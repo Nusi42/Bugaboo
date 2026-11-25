@@ -13,7 +13,7 @@ use serde::Serialize;
 
 use super::Days;
 use super::bar::{Bar, Shortfall, WorkedOut};
-use crate::id::IssueId;
+use crate::id::{IssueId, ReleaseId};
 use crate::message::MessageKey;
 use crate::relation::Dependency;
 use crate::work_times::DayMinutes;
@@ -35,6 +35,12 @@ words! {
         /// alike. The one warning about days without work for a reader who does not see the person
         /// on the bar, so it never tells which they are (ADR-0030, amendment M8).
         DaysWithoutWork => "days-without-work",
+        /// The issue waits, over its dependencies, for itself: a loop stored before loops were
+        /// refused, so none of the issues on it can start (ADR-0043, amendment of 2026-11-24).
+        Loop => "loop",
+        /// The issue is due before the issues it waits for can end (ADR-0043, amendment of
+        /// 2026-11-24).
+        CannotFit => "cannot-fit",
     }
     messages sentence = "plan-warning.";
 }
@@ -53,18 +59,20 @@ words! {
         GiveToSomeoneElse => "give-to-someone-else",
         /// Leave the plan as it is: the warning stays, faded, until the dates of its issue change.
         KeepAndAccept => "keep-and-accept",
+        /// Open the relation on the issue page, to take it away: the way out of a loop.
+        OpenTheRelation => "open-the-relation",
     }
     messages label = "plan-way-out.";
 }
 
 words_in_api!(
     WayOut,
-    "A way out of a plan warning: move the issue after what is in the way, make it longer, give it to someone else, or keep the plan and accept the warning."
+    "A way out of a plan warning: move the issue after what is in the way, make it longer, give it to someone else, keep the plan and accept the warning, or open the relation of a loop."
 );
 
 words_in_api!(
     WarningKind,
-    "The kind of a plan warning: the person on the bar is away, not enough days before the due date, a delay along a dependency or after a sub-issue, too much at once for the person, or days without work on the weekdays of the bar."
+    "The kind of a plan warning: the person on the bar is away, not enough days before the due date, a delay along a dependency or after a sub-issue, too much at once for the person, days without work on the weekdays of the bar, a loop of dependencies, or a due date before what the issue waits for can end."
 );
 
 /// The sentence of *Delay* of a goal after one of its sub-issues (ADR-0043, decision 7).
@@ -78,6 +86,10 @@ pub const DELAY_OF_GOAL_AWAY: MessageKey = crate::derived_key!("plan-warning.", 
 /// The same sentence for away days that are whole weeks (*"Lea's away week moves …"*).
 pub const DELAY_OF_GOAL_AWAY_WEEKS: MessageKey =
     crate::derived_key!("plan-warning.", "delay-goal-away-weeks");
+
+/// The sentence of *Delay* of an issue that ends after the *Release date* of its release (ADR-0043,
+/// amendment of 2026-11-24).
+pub const DELAY_OF_RELEASE: MessageKey = crate::derived_key!("plan-warning.", "delay-release");
 
 /// Why an issue has the warning *Delay*.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
@@ -100,6 +112,16 @@ pub enum Delay {
         /// How many days after the due date it ends.
         days: u32,
         /// The last day of the sub-issue: the due date *Make it longer* answers.
+        due_needed: Date,
+    },
+    /// It is planned for `release` and ends `days` days after its *Release date* (ADR-0043,
+    /// amendment of 2026-11-24).
+    Release {
+        /// The release.
+        release: ReleaseId,
+        /// How many days after the release date it ends.
+        days: u32,
+        /// The last day of the issue: the release date *Make it longer* answers.
         due_needed: Date,
     },
 }
@@ -140,6 +162,21 @@ pub enum Warning {
         /// The days of the bar.
         days: Days,
     },
+    /// The issue waits for itself over a loop of dependencies.
+    Loop {
+        /// The issue on the loop it waits for directly.
+        waits_for: IssueId,
+    },
+    /// The issue is due before the issues it waits for can end.
+    CannotFit {
+        /// The issue it waits for that ends last.
+        first: IssueId,
+        /// The earliest day the issues it waits for can end.
+        ends: Date,
+        /// The due date it needs to keep its number of days after them: what *Make it longer*
+        /// answers.
+        due_needed: Date,
+    },
 }
 
 impl WarningKind {
@@ -171,6 +208,8 @@ impl Warning {
             Self::Delay(_) => WarningKind::Delay,
             Self::TooMuchAtOnce { .. } => WarningKind::TooMuchAtOnce,
             Self::DaysWithoutWork { .. } => WarningKind::DaysWithoutWork,
+            Self::Loop { .. } => WarningKind::Loop,
+            Self::CannotFit { .. } => WarningKind::CannotFit,
         }
     }
 
@@ -180,6 +219,7 @@ impl Warning {
     pub const fn sentence(&self) -> MessageKey {
         match self {
             Self::Delay(Delay::SubIssue { .. }) => DELAY_OF_GOAL,
+            Self::Delay(Delay::Release { .. }) => DELAY_OF_RELEASE,
             _ => self.kind().sentence(),
         }
     }
@@ -187,7 +227,9 @@ impl Warning {
     /// The ways out that fit the warning, in the order they are offered (UX §4.7).
     #[must_use]
     pub fn ways_out(&self) -> Vec<WayOut> {
-        use WayOut::{GiveToSomeoneElse, KeepAndAccept, MakeItLonger, MoveItAfter};
+        use WayOut::{
+            GiveToSomeoneElse, KeepAndAccept, MakeItLonger, MoveItAfter, OpenTheRelation,
+        };
         let longer = self.due_needed().map(|_| MakeItLonger);
         match self {
             Self::Away { .. } => [Some(MoveItAfter), longer, Some(GiveToSomeoneElse)]
@@ -200,10 +242,12 @@ impl Warning {
                 .chain([GiveToSomeoneElse, KeepAndAccept])
                 .collect(),
             Self::Delay(Delay::Dependency { .. }) => vec![MoveItAfter, KeepAndAccept],
-            Self::Delay(Delay::SubIssue { .. }) => vec![MakeItLonger, KeepAndAccept],
+            Self::Delay(Delay::SubIssue { .. } | Delay::Release { .. })
+            | Self::CannotFit { .. } => vec![MakeItLonger, KeepAndAccept],
             Self::TooMuchAtOnce { .. } => vec![MoveItAfter, GiveToSomeoneElse, KeepAndAccept],
             // Moving or lengthening the issue would tell which days are away.
             Self::DaysWithoutWork { .. } => vec![KeepAndAccept],
+            Self::Loop { .. } => vec![OpenTheRelation, KeepAndAccept],
         }
     }
 
@@ -213,10 +257,12 @@ impl Warning {
         match self {
             Self::Away { due_needed, .. } => *due_needed,
             Self::NotEnoughDays(shortfall) => shortfall.due_needed,
-            Self::Delay(Delay::SubIssue { due_needed, .. }) => Some(*due_needed),
+            Self::Delay(Delay::SubIssue { due_needed, .. } | Delay::Release { due_needed, .. })
+            | Self::CannotFit { due_needed, .. } => Some(*due_needed),
             Self::Delay(Delay::Dependency { .. })
             | Self::TooMuchAtOnce { .. }
-            | Self::DaysWithoutWork { .. } => None,
+            | Self::DaysWithoutWork { .. }
+            | Self::Loop { .. } => None,
         }
     }
 
@@ -229,8 +275,10 @@ impl Warning {
                 Some(*after)
             }
             Self::NotEnoughDays(_)
-            | Self::Delay(Delay::SubIssue { .. })
-            | Self::DaysWithoutWork { .. } => None,
+            | Self::Delay(Delay::SubIssue { .. } | Delay::Release { .. })
+            | Self::DaysWithoutWork { .. }
+            | Self::Loop { .. }
+            | Self::CannotFit { .. } => None,
         }
     }
 
@@ -238,8 +286,11 @@ impl Warning {
     #[must_use]
     pub const fn other_issue(&self) -> Option<IssueId> {
         match self {
-            Self::Delay(Delay::Dependency { first, .. }) => Some(*first),
+            Self::Delay(Delay::Dependency { first, .. }) | Self::CannotFit { first, .. } => {
+                Some(*first)
+            }
             Self::Delay(Delay::SubIssue { sub_issue, .. }) => Some(*sub_issue),
+            Self::Loop { waits_for } => Some(*waits_for),
             _ => None,
         }
     }
@@ -418,6 +469,34 @@ pub fn sub_issue_delays<H: BuildHasher, G: BuildHasher>(
                     due_needed: last,
                 }),
             ))
+        })
+        .collect()
+}
+
+/// *Delay* of a release: each issue planned for a release whose bar ends after its *Release date*
+/// (ADR-0043, amendment of 2026-11-24). `planned` are pairs of an issue and the release it is
+/// planned for; `dates` the release dates of the releases the reader may know.
+#[must_use]
+pub fn release_delays<H: BuildHasher, G: BuildHasher>(
+    planned: &[(IssueId, ReleaseId)],
+    bars: &HashMap<IssueId, Bar, H>,
+    dates: &HashMap<ReleaseId, Date, G>,
+) -> Vec<(IssueId, Warning)> {
+    planned
+        .iter()
+        .filter_map(|(issue, release)| {
+            let (bar, date) = (bars.get(issue)?, dates.get(release)?);
+            (bar.days.last > *date).then(|| {
+                let days = Days::between(*date, bar.days.last);
+                (
+                    *issue,
+                    Warning::Delay(Delay::Release {
+                        release: *release,
+                        days: u32::try_from(days).unwrap_or(u32::MAX),
+                        due_needed: bar.days.last,
+                    }),
+                )
+            })
         })
         .collect()
 }

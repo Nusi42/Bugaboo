@@ -83,6 +83,9 @@ pub(crate) struct TimelineOptionsBody {
     plan_by_effort: bool,
     /// The zoom.
     zoom: Zoom,
+    /// Whether *Deadline drivers* is on: the page then names the issues that set each end.
+    #[serde(default)]
+    deadline_drivers: bool,
 }
 
 impl From<&TimelineOptions> for TimelineOptionsBody {
@@ -93,6 +96,7 @@ impl From<&TimelineOptions> for TimelineOptionsBody {
             end_field,
             plan_by_effort: options.plan_by_effort,
             zoom: options.zoom,
+            deadline_drivers: options.deadline_drivers,
         }
     }
 }
@@ -123,6 +127,7 @@ impl TryFrom<TimelineOptionsBody> for TimelineOptions {
             dates,
             plan_by_effort: body.plan_by_effort,
             zoom: body.zoom,
+            deadline_drivers: body.deadline_drivers,
         })
     }
 }

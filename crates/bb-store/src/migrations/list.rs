@@ -345,4 +345,9 @@ pub(super) const ALL: &[Definition] = &[
         name: "search_mail",
         steps: || Ok(super::m0068_search_mail::steps()),
     },
+    Definition {
+        version: 70,
+        name: "deadline_drivers",
+        steps: || Ok(super::m0070_deadline_drivers::steps()),
+    },
 ];

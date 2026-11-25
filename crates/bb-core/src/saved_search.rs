@@ -205,15 +205,20 @@ pub struct TimelineOptions {
     pub plan_by_effort: bool,
     /// The zoom.
     pub zoom: Zoom,
+    /// Whether *Deadline drivers* is on: the chains that set the ends of the view are outlined
+    /// (PLAN-05, ADR-0043, amendment of 2026-11-24).
+    pub deadline_drivers: bool,
 }
 
 impl Default for TimelineOptions {
-    /// *Start date* and *Due date*, *Plan by effort* off, a column for each week.
+    /// *Start date* and *Due date*, *Plan by effort* and *Deadline drivers* off, a column for each
+    /// week.
     fn default() -> Self {
         Self {
             dates: None,
             plan_by_effort: false,
             zoom: Zoom::Week,
+            deadline_drivers: false,
         }
     }
 }
@@ -706,6 +711,7 @@ lines",
                 dates: dates.map(|(start, end)| (start.to_owned(), end.to_owned())),
                 plan_by_effort: true,
                 zoom: Zoom::Month,
+                deadline_drivers: false,
             }),
             ..Presentation::default()
         };

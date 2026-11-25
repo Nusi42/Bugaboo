@@ -1,8 +1,10 @@
 import { t } from "@bugaboo/messages";
-import { Button, buttonLook, IssueId, part, partOf } from "@bugaboo/ui";
+import { Button, buttonLook, IssueId, Link, part, partOf } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { formatCalendarDay, keepingHyphens } from "../../../shared/format.ts";
+import { issueAddress } from "../../../shared/paths.ts";
+import { useTimeline, type TimelineRelease } from "../timeline-context.ts";
 import type { TimelineOptions } from "../../../shared/list-view.ts";
 import { daysText } from "../dates.ts";
 import type { PlanWarning, TimelineRow } from "../timeline-data.ts";
@@ -11,6 +13,7 @@ import {
   mayGive,
   moveAsPreviewed,
   previewMoveAfter,
+  releaseLonger,
   type MovePreviewIssue,
 } from "./ways-out.ts";
 
@@ -34,7 +37,25 @@ export interface WaysOfWarning {
 /** What a way out shows before it saves anything. */
 type Preview =
   | { readonly way: "move-it-after"; readonly issues: readonly MovePreviewIssue[] | undefined }
-  | { readonly way: "make-it-longer" };
+  | { readonly way: "make-it-longer"; readonly release: TimelineRelease | undefined };
+
+/** The sentence of the preview of *Make it longer*: the issue's new due date, or the release's new date. */
+function longerText(warning: PlanWarning, row: TimelineRow, release: TimelineRelease | undefined) {
+  const day = formatCalendarDay(warning.due_needed ?? "");
+  return release === undefined
+    ? t("timeline.preview-longer", { key: keepingHyphens(row.issue.readable_id ?? ""), day })
+    : t("timeline.preview-release-longer", { name: release.name, day });
+}
+
+/** What the button that saves a preview says: the new due date, the new release date, or the move. */
+function confirmText(preview: Preview, moving: readonly MovePreviewIssue[] | undefined): string {
+  if (moving !== undefined) {
+    return t("timeline.move-them", { count: moving.length });
+  }
+  return preview.way === "make-it-longer" && preview.release !== undefined
+    ? t("timeline.change-release-date")
+    : t("timeline.change-due");
+}
 
 interface PreviewProps {
   readonly preview: Preview;
@@ -54,10 +75,7 @@ function WayPreview({ preview, warning, row, onConfirm, onCancel }: PreviewProps
     <div {...partOf(part.timelineWarningPreview)}>
       {moving === undefined ? (
         <p {...partOf(part.timelineWarningLine)}>
-          {t("timeline.preview-longer", {
-            key: keepingHyphens(row.issue.readable_id ?? ""),
-            day: formatCalendarDay(warning.due_needed ?? ""),
-          })}
+          {preview.way === "make-it-longer" ? longerText(warning, row, preview.release) : null}
         </p>
       ) : (
         <>
@@ -78,9 +96,7 @@ function WayPreview({ preview, warning, row, onConfirm, onCancel }: PreviewProps
       <div {...partOf(part.timelineCardActions)}>
         {moving?.length === 0 ? null : (
           <Button look={buttonLook.primary} onPress={onConfirm}>
-            {moving === undefined
-              ? t("timeline.change-due")
-              : t("timeline.move-them", { count: moving.length })}
+            {confirmText(preview, moving)}
           </Button>
         )}
         <Button look={buttonLook.quiet} onPress={onCancel}>
@@ -103,6 +119,7 @@ export interface WarningWaysProps extends WaysOfWarning {
  */
 function useWays(warning: PlanWarning, row: TimelineRow | undefined, ways: WaysOfWarning) {
   const [preview, setPreview] = useState<Preview | null>(null);
+  const { releaseOf } = useTimeline();
   const take = (way: Way): void => {
     if (row === undefined) {
       return;
@@ -115,7 +132,10 @@ function useWays(warning: PlanWarning, row: TimelineRow | undefined, ways: WaysO
         setPreview(issues === undefined ? null : { way, issues });
       });
     } else if (way === "make-it-longer") {
-      setPreview({ way });
+      setPreview({
+        way,
+        release: warning.release === null ? undefined : releaseOf(warning.release),
+      });
     } else if (way === "give-to-someone-else") {
       ways.onGive(row);
     } else {
@@ -125,12 +145,12 @@ function useWays(warning: PlanWarning, row: TimelineRow | undefined, ways: WaysO
   const confirm = (): void => {
     if (preview?.way === "move-it-after" && preview.issues !== undefined) {
       void moveAsPreviewed(preview.issues);
-    } else if (
-      preview?.way === "make-it-longer" &&
-      row !== undefined &&
-      warning.due_needed !== null
-    ) {
-      ways.onLonger(row, warning.due_needed);
+    } else if (preview?.way === "make-it-longer" && warning.due_needed !== null) {
+      if (preview.release !== undefined) {
+        void releaseLonger(preview.release, warning.due_needed);
+      } else if (row !== undefined) {
+        ways.onLonger(row, warning.due_needed);
+      }
     }
     setPreview(null);
   };
@@ -146,8 +166,9 @@ function useWays(warning: PlanWarning, row: TimelineRow | undefined, ways: WaysO
 
 /**
  * The ways out of one warning (UX §4.7), in the order the server offers them. *Move it after* and
- * *Make it longer* show what will change before anything is saved; *Give it to someone else…* opens
- * the usual person picker; *Keep and accept* keeps the plan as it is.
+ * *Make it longer* show what will change before anything is saved (for a release's *Delay*, the
+ * release's new date); *Give it to someone else…* opens the usual person picker; *Open the
+ * relation* opens the issue page; *Keep and accept* keeps the plan as it is.
  */
 export function WarningWays({ warning, described, ...ways }: WarningWaysProps) {
   const row = ways.rowOf(warning.issue);
@@ -160,17 +181,29 @@ export function WarningWays({ warning, described, ...ways }: WarningWaysProps) {
       <div {...partOf(part.timelineWarningWays)}>
         {warning.ways_out
           .filter((way) => way !== "give-to-someone-else" || mayGive(row))
-          .map((way) => (
-            <Button
-              key={way}
-              aria-describedby={described}
-              onPress={() => {
-                take(way);
-              }}
-            >
-              {t(`plan-way-out.${way}`)}
-            </Button>
-          ))}
+          .map((way) =>
+            // *Open the relation* opens the issue page, where the relation of a loop is taken away.
+            way === "open-the-relation" ? (
+              <Link
+                key={way}
+                href={issueAddress(row.issue.readable_id ?? "")}
+                button
+                aria-describedby={described}
+              >
+                {t(`plan-way-out.${way}`)}
+              </Link>
+            ) : (
+              <Button
+                key={way}
+                aria-describedby={described}
+                onPress={() => {
+                  take(way);
+                }}
+              >
+                {t(`plan-way-out.${way}`)}
+              </Button>
+            ),
+          )}
       </div>
       {preview === null ? null : (
         <WayPreview

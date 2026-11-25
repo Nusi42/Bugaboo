@@ -15,6 +15,7 @@ use bb_app::plan::{
 };
 use bb_core::issue::CalendarDay;
 use bb_core::plan::Days;
+use bb_core::plan::drivers::EndOf;
 use bb_core::plan::warning::{Delay, Warning, WarningKind, WayOut};
 use bb_core::saved_search::TimelineOptions;
 use bb_policy::{Masked, PersonRef};
@@ -66,8 +67,8 @@ pub(crate) struct TimelineBody {
     timeline: TimelineOptionsBody,
     /// The field the rows are grouped by, by its search word: one the readable fields mark
     /// `timeline_group` (the project, the goal, the person, the status, the priority or an own
-    /// field of choices, a row for each choice an issue has). Rows without a value are in the group
-    /// `empty`.
+    /// field of choices, a row for each choice an issue has, or *Planned for release*). Rows without
+    /// a value are in the group `empty`, which comes last.
     #[serde(default)]
     group_by: Option<String>,
     /// The first day the screen shows (`2026-11-02`).
@@ -203,7 +204,8 @@ pub(crate) struct PlanWarningBody {
     /// otherwise.
     #[schema(required = true)]
     away_weeks: Option<u32>,
-    /// The other issue it names: the one it waits for, or the sub-issue of a goal.
+    /// The other issue it names: the one it waits for (for *Loop*, the one on the loop it waits for
+    /// directly; for *Cannot fit*, the one that ends last), or the sub-issue of a goal.
     #[schema(required = true)]
     other: Option<PlanWarningIssueBody>,
     /// *Delay*: how many days after the issue starts the one it waits for ends, or how many days
@@ -226,8 +228,17 @@ pub(crate) struct PlanWarningBody {
     #[schema(required = true)]
     can_minutes: Option<u32>,
     /// The ways out that fit it, in the order they are offered; only `keep-and-accept` for *Days
-    /// without work*.
+    /// without work*. *Make it longer* of a release's *Delay* changes its *Release date*, and is
+    /// offered only to a person who may manage releases in its project.
     ways_out: Vec<WayOut>,
+    /// *Delay* of a release: the release, by its ID (one of the page's `releases`), whose *Release
+    /// date* the issue ends after; `null` for any other warning.
+    #[schema(required = true)]
+    release: Option<String>,
+    /// *Cannot fit*: the earliest day the issues it waits for can end; `null` for any other
+    /// warning.
+    #[schema(required = true, value_type = Option<String>, format = Date)]
+    waits_until: Option<CalendarDay>,
     /// The day *Move it after* starts the issue after (the preview takes it).
     #[schema(required = true, value_type = Option<String>, format = Date)]
     move_after: Option<CalendarDay>,
@@ -243,13 +254,25 @@ pub(crate) struct PlanWarningBody {
 impl From<&WarningView> for PlanWarningBody {
     fn from(view: &WarningView) -> Self {
         let (late_days, needs_days, has_days) = match view.what {
-            Warning::Delay(Delay::Dependency { days, .. } | Delay::SubIssue { days, .. }) => {
-                (Some(days), None, None)
-            }
+            Warning::Delay(
+                Delay::Dependency { days, .. }
+                | Delay::SubIssue { days, .. }
+                | Delay::Release { days, .. },
+            ) => (Some(days), None, None),
             Warning::NotEnoughDays(short) => (None, short.needs, Some(short.has)),
             Warning::Away { .. }
             | Warning::TooMuchAtOnce { .. }
-            | Warning::DaysWithoutWork { .. } => (None, None, None),
+            | Warning::DaysWithoutWork { .. }
+            | Warning::Loop { .. }
+            | Warning::CannotFit { .. } => (None, None, None),
+        };
+        let release = match view.what {
+            Warning::Delay(Delay::Release { release, .. }) => Some(release.to_string()),
+            _ => None,
+        };
+        let waits_until = match view.what {
+            Warning::CannotFit { ends, .. } => Some(ends),
+            _ => None,
         };
         let (worst_day, planned_minutes, can_minutes) = match view.what {
             Warning::TooMuchAtOnce {
@@ -280,6 +303,8 @@ impl From<&WarningView> for PlanWarningBody {
             planned_minutes,
             can_minutes,
             ways_out: view.ways_out.clone(),
+            release,
+            waits_until,
             move_after: view.move_after,
             due_needed: view.due_needed,
             accepted: view.accepted.as_ref().map(|accepted| PlanAcceptedBody {
@@ -312,6 +337,79 @@ pub(crate) struct TimelinePageBody {
     /// Under *Group by person*: the away days and holidays of each person of a row whose work times
     /// the reader may know; empty for any other grouping.
     people_days: Vec<TimelinePersonDaysBody>,
+    /// The releases the issues of the page are planned for, as far as the person may know them: a
+    /// release with a *Release date* is a diamond on that date, and its name heads its group under
+    /// *Group by release*.
+    releases: Vec<TimelineReleaseBody>,
+    /// With *Deadline drivers* on: the issues of the page that set an end, each with the ends it
+    /// sets; empty when it is off.
+    drivers: Vec<TimelineDriverBody>,
+}
+
+/// A release of the page.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct TimelineReleaseBody {
+    /// The release, by its internal ID.
+    id: String,
+    /// The project it was made in, by its internal ID.
+    project: String,
+    /// What it is called.
+    name: String,
+    /// Its *Release date*; `null` when it has none.
+    #[schema(required = true, value_type = Option<String>, format = Date)]
+    release_date: Option<CalendarDay>,
+    /// Counts up with every change: *Make it longer* of its *Delay* changes it from this version.
+    version: i64,
+}
+
+/// An end that a deadline driver sets.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct TimelineEndBody {
+    /// Which end: the end of a goal, of a release, or the last day of the view.
+    kind: TimelineEndKind,
+    /// The goal or the release, by its internal ID; `null` for the view.
+    #[schema(required = true)]
+    id: Option<String>,
+}
+
+/// Which end a deadline driver sets.
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "kebab-case")]
+pub(crate) enum TimelineEndKind {
+    /// The end of a goal with a *Due date*.
+    Goal,
+    /// The end of a release with a *Release date*.
+    Release,
+    /// The last day of the view.
+    View,
+}
+
+impl From<EndOf> for TimelineEndBody {
+    fn from(end: EndOf) -> Self {
+        match end {
+            EndOf::Goal(goal) => Self {
+                kind: TimelineEndKind::Goal,
+                id: Some(goal.to_string()),
+            },
+            EndOf::Release(release) => Self {
+                kind: TimelineEndKind::Release,
+                id: Some(release.to_string()),
+            },
+            EndOf::View => Self {
+                kind: TimelineEndKind::View,
+                id: None,
+            },
+        }
+    }
+}
+
+/// A deadline driver of the page: its delay by a day moves each of its ends by a day.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct TimelineDriverBody {
+    /// The issue, by its internal ID.
+    issue: String,
+    /// The ends it sets.
+    ends: Vec<TimelineEndBody>,
 }
 
 impl Masked for TimelinePageBody {}
@@ -385,6 +483,30 @@ pub(crate) fn page_body(page: TimelinePage, list: &str) -> Result<TimelinePageBo
             .people_days
             .iter()
             .map(TimelinePersonDaysBody::from)
+            .collect(),
+        releases: page
+            .releases
+            .iter()
+            .map(|release| TimelineReleaseBody {
+                id: release.id.to_string(),
+                project: release.project.to_string(),
+                name: release.name.clone(),
+                release_date: release.release_date,
+                version: release.version,
+            })
+            .collect(),
+        drivers: page
+            .drivers
+            .iter()
+            .map(|driver| TimelineDriverBody {
+                issue: driver.issue.to_string(),
+                ends: driver
+                    .ends
+                    .iter()
+                    .copied()
+                    .map(TimelineEndBody::from)
+                    .collect(),
+            })
             .collect(),
     })
 }

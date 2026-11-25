@@ -33,12 +33,12 @@ export function useTimelineModel(
   const rowOf = rowFinder([...read.rows, ...waiting.rows]);
   const fields = dateFieldsOf(input.view.timeline, reads.own);
   const changes = useBarChanges(fields, rowOf);
-  const marks = useWarningMarks(
-    read.warnings,
-    warningsOpen
-      ? { rowOf, options: input.view.timeline, onShow: select, settle: changes.onRunEnd }
-      : undefined,
-  );
+  const marks = useWarningMarks(read.warnings, warningsOpen, {
+    rowOf,
+    options: input.view.timeline,
+    onShow: select,
+    settle: changes.onRunEnd,
+  });
   const lines = linesOf(read.rows, folded, (id) => read.goals.get(id));
   const daysOf = (line: IssueLine) => changes.daysOf(line.issue, line.row.bar?.days);
   return {
@@ -46,7 +46,7 @@ export function useTimelineModel(
     lines,
     side: sideOf({
       row: selected === undefined ? undefined : rowOf(selected),
-      ...selectedLine(lines, selected),
+      ...selectedLine(lines, selected, read.lookups),
       fields,
       daysOf,
       options: input.view.timeline,
@@ -56,7 +56,7 @@ export function useTimelineModel(
       changes,
     }),
     openWarnings: marks.openCount,
-    arrows: arrowsOf(lines, read.dependencies, daysOf, chart.span),
+    arrows: arrowsOf(lines, read.dependencies, daysOf, chart.span, read.lookups.endsOf),
     onToggle,
     context: {
       span: chart.span,
