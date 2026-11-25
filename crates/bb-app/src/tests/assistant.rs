@@ -363,7 +363,7 @@ async fn comp_08_text_applied_from_the_assistant_is_marked_written_with_the_assi
             fields: BTreeMap::new(),
             found_in_release: None,
             planned_for_release: None,
-            asker: crate::issues::Asker::Person,
+            asked_by: crate::issues::AskedBy::Person,
         },
     )
     .await;
@@ -396,7 +396,7 @@ async fn ai_05_apply_against_a_newer_version_is_refused_with_the_newer_value() -
             fields: BTreeMap::new(),
             found_in_release: None,
             planned_for_release: None,
-            asker: crate::issues::Asker::Person,
+            asked_by: crate::issues::AskedBy::Person,
         },
     )
     .await?;

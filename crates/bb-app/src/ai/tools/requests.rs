@@ -20,7 +20,7 @@ use super::refused::{refused_at, word_at};
 use super::registry::Run;
 use crate::auth::AppError;
 use crate::comments::AddComment;
-use crate::issues::{Asker, ChangeIssue, CreateIssue};
+use crate::issues::{AskedBy, ChangeIssue, CreateIssue};
 use crate::time::{AddTime, EntryDetails, StartTimer, StopTimer};
 
 /// The value of a member read as what it names; one that does not read is refused at the member.
@@ -130,7 +130,7 @@ pub(super) fn update_issue(run: &Run<'_>) -> Result<ChangeIssue, AppError> {
         found_in_release: releases(input.found_in_release.as_deref())?,
         planned_for_release: release_to_set(input.planned_for_release.as_deref())?,
         fields: BTreeMap::new(),
-        asker: Asker::Ai(Box::new(run.withheld.clone())),
+        asked_by: AskedBy::Ai(Box::new(run.withheld.clone())),
     })
 }
 
@@ -153,7 +153,7 @@ pub(super) fn change_status(run: &Run<'_>) -> Result<ChangeIssue, AppError> {
         found_in_release: None,
         planned_for_release: None,
         fields: BTreeMap::new(),
-        asker: Asker::Ai(Box::new(run.withheld.clone())),
+        asked_by: AskedBy::Ai(Box::new(run.withheld.clone())),
     })
 }
 

@@ -216,18 +216,24 @@ async fn iss_08_a_release_the_person_may_not_know_sorts_with_the_issues_without_
         let storage = &fixture.storage;
         let mut data = seed(storage).await;
         let made = with_releases(storage, &mut data).await?;
-        // No filter: *Secret* (October) would come first if the person knew it; Slow page sorts
-        // after the releases they know, with the issues that name none.
-        let sorted = found(
-            storage,
-            &data,
-            &made,
-            "sort by planned for release oldest first",
-        )
-        .await?;
-        assert_eq!(sorted[..2], ["Login broken", "Printer jams"], "{sorted:?}");
-        let slow = sorted.iter().position(|title| title == "Slow page");
-        assert!(slow.is_some_and(|at| at >= 2), "{sorted:?}");
+        // No filter: *Secret* (October) would come first or second if the person knew it; Slow
+        // page sorts after the releases they know, with the issues that name none.
+        for (text, first) in [
+            (
+                "sort by planned for release oldest first",
+                ["Login broken", "Printer jams"],
+            ),
+            (
+                "sort by planned for release newest first",
+                ["Printer jams", "Login broken"],
+            ),
+        ] {
+            let sorted = found(storage, &data, &made, text).await?;
+            assert_eq!(sorted[..2], first, "{text}: {sorted:?}");
+            // After the releases with a date in either direction, with the issues with none.
+            let slow = sorted.iter().position(|title| title == "Slow page");
+            assert!(slow.is_some_and(|at| at >= 2), "{text}: {sorted:?}");
+        }
         // A request that did not read the releases the person may know cannot read a release field.
         let mut unread = asked(&data, &made, "sort by planned for release");
         unread.releases_known = None;

@@ -155,8 +155,8 @@ fn told(answer: &Value) -> String {
     answer.to_string()
 }
 
-#[tokio::test]
-async fn iss_08_the_ai_is_told_nothing_of_a_release_of_a_project_kept_from_it() -> Outcome {
+/// An issue of APP that names, in both fields, a release of SEC, a project kept from AI.
+async fn kept_world() -> Result<(World, IssueId, ReleaseId), String> {
     let world = World::new().await?;
     let sec = a_project(&world, "SEC").await?;
     a_project(&world, "APP").await?;
@@ -182,7 +182,45 @@ async fn iss_08_the_ai_is_told_nothing_of_a_release_of_a_project_kept_from_it() 
     )
     .await
     .map_err(text)?;
-    mark(&world, NeverSentTarget::Project("SEC".to_owned())).await?;
+    mark(&world, NeverSentTarget::Project("SEC".to_owned()))
+        .await
+        .map_err(|error| error.to_string())?;
+    Ok((world, issue, secret))
+}
+
+/// The AI sets *Found in release* (and *Planned for release* when given) of the issue, for real.
+async fn ai_sets(
+    world: &World,
+    issue: IssueId,
+    found: &[ReleaseId],
+    planned: Option<&str>,
+) -> Result<crate::ai::tools::ToolAnswer, crate::auth::AppError> {
+    let version = seen(world, issue)
+        .await
+        .map_err(crate::auth::AppError::Internal)?
+        .version;
+    let mut input = json!({
+        "issue": issue.to_string(),
+        "version": version,
+        "found_in_release": found.iter().map(ToString::to_string).collect::<Vec<_>>(),
+    });
+    if let Some(planned) = planned {
+        input["planned_for_release"] = json!(planned);
+    }
+    Ok(call_tool(
+        &world.ctx(),
+        crate::ai::tools::ToolCallQuery {
+            mode: crate::ai::tools::ToolMode::Apply,
+            ..call(&token(world), "update_issue", input)
+        },
+    )
+    .await?
+    .into_value())
+}
+
+#[tokio::test]
+async fn iss_08_the_ai_is_told_nothing_of_a_release_of_a_project_kept_from_it() -> Outcome {
+    let (world, issue, secret) = kept_world().await?;
     // The issue as the AI reads it names neither field's release.
     let read = call_tool(
         &world.ctx(),
@@ -232,24 +270,9 @@ async fn iss_08_the_ai_is_told_nothing_of_a_release_of_a_project_kept_from_it() 
     // Made for real, the change keeps the release kept from AI in both fields at its place, and
     // the one the AI named comes after it.
     let open = a_release(&world, "APP", "1.0").await?.id;
-    call_tool(
-        &world.ctx(),
-        crate::ai::tools::ToolCallQuery {
-            mode: crate::ai::tools::ToolMode::Apply,
-            ..call(
-                &token(&world),
-                "update_issue",
-                json!({
-                    "issue": issue.to_string(),
-                    "version": version,
-                    "found_in_release": [open.to_string()],
-                    "planned_for_release": "",
-                }),
-            )
-        },
-    )
-    .await
-    .map_err(text)?;
+    ai_sets(&world, issue, &[open], Some(""))
+        .await
+        .map_err(text)?;
     let still = seen(&world, issue).await?;
     let found: Vec<ReleaseId> = still
         .found_in_release
@@ -305,6 +328,15 @@ async fn iss_08_an_agent_proposing_a_release_is_shown_it_only_when_it_may_know_i
     assert!(kept.changes.is_empty(), "{:?}", kept.changes);
     let said = serde_json::to_string(&kept).map_err(text)?;
     assert!(!said.contains("Classified"), "{said}");
+    // One in the trash is no change either, like an unknown ID.
+    let trashed = a_release(&world, "WEB", "2.9").await?.id;
+    crate::releases::delete_release(
+        &world.ctx(),
+        super::releases::deleting(&token(&world), "WEB", trashed),
+    )
+    .await?;
+    let gone = previewed(&world, &given.key, "propose", proposing(trashed)).await?;
+    assert!(gone.changes.is_empty(), "{:?}", gone.changes);
     Ok(())
 }
 
@@ -391,5 +423,46 @@ async fn iss_08_a_search_of_the_ai_knows_no_release_of_a_project_kept_from_it() 
     .await
     .map_err(text)?;
     assert_eq!(known_by_last_search(&world)?, Some(vec![open]));
+    Ok(())
+}
+
+#[tokio::test]
+async fn iss_08_the_ai_keeps_20_releases_beside_one_kept_from_it() -> Outcome {
+    let (world, issue, secret) = kept_world().await?;
+    let mut open = Vec::new();
+    for at in 0..bb_core::project_release::FOUND_IN_RELEASES_MAX {
+        open.push(a_release(&world, "APP", &format!("1.{at}")).await?.id);
+    }
+    // The one kept from AI counts toward no limit: 20 the AI may know are not too many.
+    ai_sets(&world, issue, &open, None).await.map_err(text)?;
+    let found: Vec<ReleaseId> = seen(&world, issue)
+        .await?
+        .found_in_release
+        .unwrap_or_default()
+        .iter()
+        .map(|each| each.id)
+        .collect();
+    assert_eq!(found.len(), open.len() + 1);
+    assert_eq!(found[0], secret);
+    Ok(())
+}
+
+#[tokio::test]
+async fn iss_08_the_ai_naming_a_release_kept_from_it_is_refused_like_an_unknown_one() -> Outcome {
+    let (world, issue, _) = kept_world().await?;
+    let other = a_release(&world, "SEC", "Hidden").await?.id;
+    let unknown = ReleaseId::generate(&mut world.ctx().ids()).map_err(text)?;
+    for release in [other, unknown] {
+        let refused = ai_sets(&world, issue, &[release], None).await;
+        assert!(
+            matches!(
+                refused,
+                Err(crate::auth::AppError::Refused(
+                    bb_core::ErrorCode::ReleaseNotOffered
+                ))
+            ),
+            "{refused:?}"
+        );
+    }
     Ok(())
 }

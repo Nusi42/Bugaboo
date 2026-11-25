@@ -592,9 +592,17 @@ async fn iss_08_manage_releases_is_given_once_at_the_next_start_where_the_roles_
     Ok(())
 }
 
-#[tokio::test]
-async fn iss_08_undo_of_a_run_puts_back_a_release_retired_since() -> Outcome {
-    use super::runs::{open, preview_of, undo};
+/// An issue of ACME that named *2.4* in both fields until a run of Ada named *2.5* in both.
+struct Undone {
+    world: World,
+    admin: String,
+    issue: IssueId,
+    old: ReleaseView,
+    run: bb_core::id::RunId,
+}
+
+async fn a_run_that_renamed_the_releases() -> Result<Undone, String> {
+    use super::runs::open;
     let world = World::new().await?;
     let admin = token(&world);
     let project = a_project(&world, "ACME").await?;
@@ -607,9 +615,15 @@ async fn iss_08_undo_of_a_run_puts_back_a_release_retired_since() -> Outcome {
         Some(vec![old.id]),
         Some(SetTo::Value(old.id)),
     )
-    .await?;
-    // A run names the other release in both fields.
-    let person = world.ctx().session_actor(&admin).await?.person.id;
+    .await
+    .map_err(text)?;
+    let person = world
+        .ctx()
+        .session_actor(&admin)
+        .await
+        .map_err(text)?
+        .person
+        .id;
     let run = open(&world, &admin, person).await?;
     let version = seen(&world, issue).await?.version;
     let in_run = world.ctx();
@@ -622,7 +636,38 @@ async fn iss_08_undo_of_a_run_puts_back_a_release_retired_since() -> Outcome {
             ..ChangeIssue::of(&admin, issue.to_string(), version)
         },
     )
-    .await?;
+    .await
+    .map_err(text)?;
+    Ok(Undone {
+        world,
+        admin,
+        issue,
+        old,
+        run,
+    })
+}
+
+/// The IDs of the releases the issue was found in, as Ada sees them.
+async fn found_ids(world: &World, issue: IssueId) -> Result<Vec<ReleaseId>, String> {
+    Ok(seen(world, issue)
+        .await?
+        .found_in_release
+        .unwrap_or_default()
+        .iter()
+        .map(|each| each.id)
+        .collect())
+}
+
+#[tokio::test]
+async fn iss_08_undo_of_a_run_puts_back_a_release_retired_since() -> Outcome {
+    use super::runs::{preview_of, undo};
+    let Undone {
+        world,
+        admin,
+        issue,
+        old,
+        run,
+    } = a_run_that_renamed_the_releases().await?;
     // The release the issue named before is retired since: no new choice may name it.
     change_release(
         &world.ctx(),
@@ -636,14 +681,43 @@ async fn iss_08_undo_of_a_run_puts_back_a_release_retired_since() -> Outcome {
     assert_eq!((preview.goes_back, preview.skipped), (2, 0));
     undo(&world, &admin, run, preview).await?;
     // Putting back what the issue named is no new choice: the retired release comes back.
+    assert_eq!(found_ids(&world, issue).await?, [old.id]);
     let back = seen(&world, issue).await?;
-    let found: Vec<ReleaseId> = back
-        .found_in_release
-        .unwrap_or_default()
-        .iter()
-        .map(|each| each.id)
-        .collect();
-    assert_eq!(found, [old.id]);
     assert_eq!(back.planned_for_release.map(|each| each.id), Some(old.id));
+    Ok(())
+}
+
+#[tokio::test]
+async fn iss_08_undo_of_a_run_never_puts_back_a_release_deleted_since() -> Outcome {
+    use super::runs::{preview_of, undo};
+    let Undone {
+        world,
+        admin,
+        issue,
+        old,
+        run,
+    } = a_run_that_renamed_the_releases().await?;
+    // No issue names it any more, so it may be deleted; it is in the trash then.
+    delete_release(&world.ctx(), deleting(&admin, "ACME", old.id)).await?;
+    let before = found_ids(&world, issue).await?;
+    let preview = preview_of(&world, &admin, run).await?;
+    let done = undo(&world, &admin, run, preview).await?;
+    // Both fields are left as the run made them, each as a change that cannot be undone.
+    assert_eq!((done.goes_back, done.skipped), (0, 2));
+    assert!(
+        done.skips
+            .iter()
+            .all(|skip| skip.kind == bb_core::run::UndoSkipKind::NotUndoable),
+        "{:?}",
+        done.skips
+    );
+    assert_eq!(found_ids(&world, issue).await?, before);
+    assert_ne!(
+        seen(&world, issue)
+            .await?
+            .planned_for_release
+            .map(|each| each.id),
+        Some(old.id)
+    );
     Ok(())
 }

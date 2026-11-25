@@ -46,7 +46,7 @@ pub(crate) fn change_of(who: &str, issue: IssueId, version: i64) -> ChangeIssue 
         fields: std::collections::BTreeMap::new(),
         found_in_release: None,
         planned_for_release: None,
-        asker: crate::issues::Asker::Person,
+        asked_by: crate::issues::AskedBy::Person,
     }
 }
 
@@ -146,7 +146,7 @@ fn titled_and_done(world: &World, issue: &impl ToString) -> ChangeIssue {
         fields: std::collections::BTreeMap::new(),
         found_in_release: None,
         planned_for_release: None,
-        asker: crate::issues::Asker::Person,
+        asked_by: crate::issues::AskedBy::Person,
     }
 }
 

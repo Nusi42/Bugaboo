@@ -10,7 +10,7 @@ use jiff::civil::Date;
 use serde_json::Value;
 
 use super::weigh::Net;
-use crate::issues::{Asker, ChangeIssue, member};
+use crate::issues::{AskedBy, ChangeIssue, member};
 
 /// Whether the field is one that a change of an issue puts back.
 pub(super) fn restorable(net: &Net) -> bool {
@@ -47,7 +47,7 @@ pub(super) fn issue_change(
     nets: &[Net],
 ) -> Option<ChangeIssue> {
     let mut input = ChangeIssue {
-        asker: Asker::Undo,
+        asked_by: AskedBy::Undo,
         ..ChangeIssue::of(token, issue.to_string(), version)
     };
     for net in nets {

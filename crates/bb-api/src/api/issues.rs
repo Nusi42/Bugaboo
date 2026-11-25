@@ -502,7 +502,7 @@ async fn change_issue(
                 fields: body.fields,
                 found_in_release: releases_in(body.found_in_release.as_deref())?,
                 planned_for_release: set_release(body.planned_for_release)?,
-                asker: bb_app::issues::Asker::Person,
+                asked_by: bb_app::issues::AskedBy::Person,
             },
         )
         .await?;

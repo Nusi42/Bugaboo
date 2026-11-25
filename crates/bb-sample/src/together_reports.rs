@@ -221,7 +221,7 @@ impl Maker<'_, '_> {
                     fields: std::collections::BTreeMap::new(),
                     found_in_release: None,
                     planned_for_release: None,
-                    asker: bb_app::issues::Asker::Person,
+                    asked_by: bb_app::issues::AskedBy::Person,
                 },
             )
             .await,

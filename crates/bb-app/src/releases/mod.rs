@@ -12,7 +12,7 @@ mod store;
 mod types;
 mod write;
 
-pub(crate) use choose::{ReleaseChoice, ensure_still_choosable_in};
+pub(crate) use choose::{Naming, ReleaseChoice, ensure_still_choosable_in};
 pub(crate) use manage::member;
 pub use manage::{change_release, create_release, delete_release, restore_release};
 pub use read::releases;

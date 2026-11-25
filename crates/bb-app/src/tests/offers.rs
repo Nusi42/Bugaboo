@@ -178,7 +178,7 @@ async fn iss_02_an_issue_of_a_type_the_project_does_not_offer_is_refused() -> Ou
             fields: BTreeMap::new(),
             found_in_release: None,
             planned_for_release: None,
-            asker: crate::issues::Asker::Person,
+            asked_by: crate::issues::AskedBy::Person,
         },
     )
     .await;

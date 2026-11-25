@@ -417,7 +417,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// The release a proposal names by its ID, as an event of an issue keeps it; nothing for a
-    /// release that is not there.
+    /// release that is not there or is in the trash, like an unknown ID.
     async fn release_as_recorded(
         &self,
         id: &serde_json::Value,
@@ -433,7 +433,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             .releases_by_ids(vec![id])
             .await
             .map_err(|error| internal::<S>(&error))?
-            .first()
+            .iter()
+            .find(|release| release.deleted_at.is_none())
             .map_or(serde_json::Value::Null, crate::issues::release_json))
     }
 }

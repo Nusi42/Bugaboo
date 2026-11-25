@@ -471,7 +471,7 @@ async fn ai_04_a_reader_who_sees_the_person_only_as_a_role_is_not_told_the_agent
             fields: BTreeMap::default(),
             found_in_release: None,
             planned_for_release: None,
-            asker: crate::issues::Asker::Person,
+            asked_by: crate::issues::AskedBy::Person,
         },
     )
     .await?;

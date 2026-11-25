@@ -127,12 +127,12 @@ pub struct ChangeIssue {
     /// long text is saved on its own route, under its edit lock.
     pub fields: BTreeMap<String, Value>,
     /// Who asks for the change: a person, the AI for them, or *Undo my run*.
-    pub asker: Asker,
+    pub asked_by: AskedBy,
 }
 
 /// Who asks for a change of an issue, where that decides more than the person's rights do.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub enum Asker {
+pub enum AskedBy {
     /// The person, by what they see.
     #[default]
     Person,
@@ -143,6 +143,16 @@ pub enum Asker {
     /// *Undo my run*, which puts back what the issue held before: a release the issue named then
     /// is no new choice, so one retired since may come back (ADR-0049, decision 3).
     Undo,
+}
+
+impl AskedBy {
+    /// How the change names the releases it names newly: the one place that derives it.
+    pub(crate) const fn naming(&self) -> crate::releases::Naming {
+        match self {
+            Self::Undo => crate::releases::Naming::PuttingBack,
+            Self::Person | Self::Ai(_) => crate::releases::Naming::Anew,
+        }
+    }
 }
 
 impl ChangeIssue {
@@ -165,7 +175,7 @@ impl ChangeIssue {
             found_in_release: None,
             planned_for_release: None,
             fields: BTreeMap::default(),
-            asker: Asker::Person,
+            asked_by: AskedBy::Person,
         }
     }
 

@@ -466,7 +466,7 @@ async fn ai_30_an_agent_has_no_role_and_cannot_be_assigned() -> Outcome {
             fields: BTreeMap::default(),
             found_in_release: None,
             planned_for_release: None,
-            asker: crate::issues::Asker::Person,
+            asked_by: crate::issues::AskedBy::Person,
         },
     )
     .await;
@@ -510,7 +510,7 @@ async fn ai_04_an_event_of_an_agent_names_the_agent_and_its_person() -> Outcome 
             fields: BTreeMap::default(),
             found_in_release: None,
             planned_for_release: None,
-            asker: crate::issues::Asker::Person,
+            asked_by: crate::issues::AskedBy::Person,
         },
     )
     .await?;

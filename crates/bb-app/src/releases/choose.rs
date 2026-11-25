@@ -7,8 +7,8 @@
 //! not exist (`release.not-offered`), and one the issue names that the person may not know is kept
 //! at its place when they set the others, and *Planned for release* keeps one they may not know when
 //! they set none, so a change never takes away or reorders what they cannot see. For the AI, a
-//! release of a project kept from AI is one the person may not know (`Asker::Ai`). *Undo my run*
-//! puts back a release the issue named before, also one retired since (`Asker::Undo`).
+//! release of a project kept from AI is one the person may not know (`AskedBy::Ai`). *Undo my run*
+//! puts back a release the issue named before, also one retired since (`AskedBy::Undo`).
 
 use bb_core::ErrorCode;
 use bb_core::id::{ProjectId, ReleaseId};
@@ -25,18 +25,29 @@ pub(crate) struct ReleaseChoice<'a> {
     pub(crate) found_now: &'a [ReleaseId],
     /// The release the issue is planned for now.
     pub(crate) planned_now: Option<ReleaseId>,
-    /// Whether *Undo my run* puts back what the issue named before ([`may_name`]).
-    pub(crate) putting_back: bool,
+    /// How the releases are named ([`Naming`]).
+    pub(crate) naming: Naming,
 }
 
-/// Whether a release may be named where an issue is: chosen anew, it is offered there and not
-/// retired; put back by *Undo my run*, it is offered there, also when retired since, as putting
-/// back what the issue named is no new choice.
-fn may_name(release: &Release, chain: &[ProjectId], putting_back: bool) -> bool {
-    if putting_back {
-        release.offered_in(chain)
-    } else {
-        release.choosable_in(chain)
+/// How a change names the releases it names newly.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub(crate) enum Naming {
+    /// A new choice: offered where the issue is and not retired.
+    #[default]
+    Anew,
+    /// *Undo my run* puts back what the issue named before: offered where the issue is, also when
+    /// retired since, as putting back is no new choice.
+    PuttingBack,
+}
+
+impl Naming {
+    /// Whether a release may be named where an issue is, given the projects from the top down to
+    /// the issue's project. The one place of this rule, for the use case and inside the change.
+    fn allows(self, release: &Release, chain: &[ProjectId]) -> bool {
+        match self {
+            Self::Anew => release.choosable_in(chain),
+            Self::PuttingBack => release.offered_in(chain),
+        }
     }
 }
 
@@ -79,7 +90,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             found.iter().any(|each: &Release| {
                 each.id == *release
                     && shown.sees(each.project)
-                    && may_name(each, choice.chain, choice.putting_back)
+                    && choice.naming.allows(each, choice.chain)
             })
         };
         if new.iter().all(choosable) {
@@ -172,11 +183,11 @@ fn kept_in_place(
 }
 
 /// Inside the change that writes an issue's releases, after the lock of the releases: every
-/// release it names that it did not name before may still be named ([`may_name`]: it may have been
-/// retired or deleted since it was judged).
+/// release it names that it did not name before may still be named ([`Naming::allows`]: it may have
+/// been retired or deleted since it was judged).
 pub(crate) async fn ensure_still_choosable_in<S: AuthStore>(
     transaction: &mut S::Transaction,
-    (chain, putting_back): (&[ProjectId], bool),
+    (chain, naming): (&[ProjectId], Naming),
     new: &[ReleaseId],
     stopped: &crate::projects::Why,
 ) -> Result<(), S::Error> {
@@ -188,7 +199,7 @@ pub(crate) async fn ensure_still_choosable_in<S: AuthStore>(
     let all = new.iter().all(|release| {
         found
             .iter()
-            .any(|each| each.id == *release && may_name(each, chain, putting_back))
+            .any(|each| each.id == *release && naming.allows(each, chain))
     });
     if all {
         Ok(())
