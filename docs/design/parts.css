@@ -422,7 +422,6 @@ textarea,
 
 [data-part="field.input"][data-variant~="inline"] {
   width: auto;
-  field-sizing: content;
   padding-inline: var(--space-1);
   border-color: transparent;
   background: transparent;
@@ -2211,9 +2210,22 @@ textarea,
 
 [data-part="list-options"] {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2) var(--space-5);
+}
+
+[data-part="list-options"] [data-part="field"][data-variant~="inline"] {
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+[data-part="list-options"] [data-part="field.input"][data-variant~="inline"] {
+  min-width: 0;
+  text-overflow: ellipsis;
+}
+
+[data-part="list-options"] [data-part="button"] {
+  flex-shrink: 0;
 }
 
 [data-part="timeline"] {

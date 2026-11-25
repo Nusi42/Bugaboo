@@ -1770,9 +1770,6 @@ part "field[variant=inline]" {
 
 part "field.input[variant=inline]" {
     width auto
-    // As wide as the choice it shows, not as the longest of its list: a long name further down the list does not push
-    // the words beside it onto a second line.
-    field-sizing content
     padding-inline "$space-1"
     border-color transparent
     background transparent
@@ -3419,12 +3416,28 @@ part "list-nothing" {
     text-align center
 }
 
-// The controls above the list: Group by and Customize, quiet words on one line, level with each other (UX §4.2).
+// The controls above the list: Group by and Customize, quiet words on one line, level with each other (UX §4.2). The
+// row never wraps: where it is short of room (beside the panel) the choices give up width, and *Customize* keeps its
+// own. A choice is as wide as the longest of its list, never as the one it shows, so choosing another moves nothing
+// beside it (UX §6.4).
 part "list-options" {
     display flex
-    flex-wrap wrap
     align-items center
     gap "$space-2" "$space-5"
+}
+
+part "list-options field[variant=inline]" {
+    flex-wrap nowrap
+    min-width 0
+}
+
+part "list-options field.input[variant=inline]" {
+    min-width 0
+    text-overflow ellipsis
+}
+
+part "list-options button" {
+    flex-shrink 0
 }
 
 // ───────────── The timeline (UX §4.7) ─────────────
