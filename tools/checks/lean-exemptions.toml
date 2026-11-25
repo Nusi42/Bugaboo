@@ -513,3 +513,18 @@ reason = "One row for each row of the keep rules that keeps the person's records
 route = "GET /api/v1/agents/requests"
 property = "requests"
 reason = "The requests for agents asked of one person in the last week are few, because a key or grant has at most three waiting and a request is deleted a week after it was asked; the answer shows at most 100 and says `truncated` (M9-F120)."
+
+[[exempt]]
+route = "GET /api/v1/issues/{issue}/map"
+property = "issues"
+reason = "The issues of one relation map: at most MAP_ISSUES_MOST, cut inside the walk; `truncated` says when the cap cut it off (ISS-16, M1-F44)."
+
+[[exempt]]
+route = "GET /api/v1/issues/{issue}/map"
+property = "lines"
+reason = "The relations between the issues of one relation map, which holds at most MAP_ISSUES_MOST issues, each with a bounded number of relations (RELATIONS_MAX); the map's `truncated` says when its issues were cut (ISS-16, M1-F44)."
+
+[[exempt]]
+route = "GET /api/v1/issues/{issue}/map"
+property = "loops"
+reason = "The loops of dependencies among the issues of one relation map, each issue on one loop at most per pair of its relations; bounded by the map's issues, whose cut `truncated` says (ISS-16, M1-F44)."

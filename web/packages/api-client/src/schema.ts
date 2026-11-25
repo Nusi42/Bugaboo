@@ -11837,10 +11837,13 @@ export interface components {
       lines: components["schemas"]["MapLineBody"][];
       /** @description The loops of dependencies among them, each as the internal IDs of the issues on it in order. */
       loops: string[][];
-      /** @description Whether more issues are connected, or found, than the map holds. */
-      more: boolean;
       /** @description The internal ID of the issue the map starts from; left out for the map of a search. */
       start?: string | null;
+      /**
+       * @description Whether more issues are connected, or found, than the map holds: the map was cut at its
+       *     cap.
+       */
+      truncated: boolean;
     };
     /** @description The plan of the removal of a person. */
     RemovalPlanBody: {

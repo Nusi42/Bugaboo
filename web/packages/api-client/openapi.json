@@ -33105,7 +33105,7 @@
       "RelationMapBody": {
         "type": "object",
         "description": "The relation map as the person may see it.",
-        "required": ["issues", "lines", "loops", "more"],
+        "required": ["issues", "lines", "loops", "truncated"],
         "properties": {
           "issues": {
             "type": "array",
@@ -33131,13 +33131,13 @@
             },
             "description": "The loops of dependencies among them, each as the internal IDs of the issues on it in order."
           },
-          "more": {
-            "type": "boolean",
-            "description": "Whether more issues are connected, or found, than the map holds."
-          },
           "start": {
             "type": ["string", "null"],
             "description": "The internal ID of the issue the map starts from; left out for the map of a search."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "Whether more issues are connected, or found, than the map holds: the map was cut at its\ncap."
           }
         }
       },

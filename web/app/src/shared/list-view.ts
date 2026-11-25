@@ -22,7 +22,7 @@ export const noGrouping = "-";
 /** The word of the field that the built-in lists group by: the status group (UX section 4.2). */
 const builtInGroup = listWord.statusGroup;
 
-/** How the results are shown (*Show as*): a list or a timeline. */
+/** How the results are shown (*Show as*): a list, a timeline or a map. */
 export type ShownAs = Schema<"ViewKind">;
 
 /** The options of a timeline: the date fields, *Plan by effort* and the zoom. */
@@ -32,7 +32,7 @@ export type TimelineOptions = Schema<"TimelineOptionsBody">;
 export type ZoomWord = Schema<"Zoom">;
 
 /** Every kind of view: the compiler stops here when the server gets a new one. */
-const viewKinds: Readonly<Record<ShownAs, true>> = { list: true, timeline: true };
+const viewKinds: Readonly<Record<ShownAs, true>> = { list: true, timeline: true, map: true };
 
 /** Every zoom, the same way, in the order they are offered. */
 const zooms: Readonly<Record<ZoomWord, true>> = {

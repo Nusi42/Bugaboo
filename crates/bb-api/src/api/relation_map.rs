@@ -117,8 +117,9 @@ pub(crate) struct RelationMapBody {
     lines: Vec<MapLineBody>,
     /// The loops of dependencies among them, each as the internal IDs of the issues on it in order.
     loops: Vec<Vec<String>>,
-    /// Whether more issues are connected, or found, than the map holds.
-    more: bool,
+    /// Whether more issues are connected, or found, than the map holds: the map was cut at its
+    /// cap.
+    truncated: bool,
 }
 
 // Each issue was masked by its own project in the use case; the rest are IDs and words of kinds.
@@ -135,7 +136,7 @@ impl From<RelationMap> for RelationMapBody {
                 .iter()
                 .map(|on_it| on_it.iter().map(ToString::to_string).collect())
                 .collect(),
-            more: map.more,
+            truncated: map.more,
         }
     }
 }

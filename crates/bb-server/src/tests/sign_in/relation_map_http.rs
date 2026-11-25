@@ -102,7 +102,7 @@ async fn iss_16_the_map_of_an_issue_holds_every_issue_within_the_steps_chosen() 
         );
         assert_eq!(one["lines"].as_array().map(Vec::len), Some(1));
         assert_eq!(one["lines"][0]["forward"], "blocks");
-        assert_eq!(one["more"], false);
+        assert_eq!(one["truncated"], false);
         let all = map(&mut ada, &chain[1], "").await?;
         assert_eq!(
             all["start"],
@@ -221,10 +221,10 @@ async fn iss_16_the_walk_stops_at_200_and_says_there_are_more() -> TestResult {
         let start = a_crowd(&site, &mut ada, &blocks).await?;
         let near = map(&mut ada, &start, "?steps=1").await?;
         assert_eq!(keys(&near).len(), 11);
-        assert_eq!(near["more"], false);
+        assert_eq!(near["truncated"], false);
         let far = map(&mut ada, &start, "?steps=2").await?;
         assert_eq!(keys(&far).len(), MAP_ISSUES_MOST);
-        assert_eq!(far["more"], true);
+        assert_eq!(far["truncated"], true);
         // The ten one step away are all there: the cap cuts the last step, never a nearer one.
         assert_eq!(
             on_map(&far)
@@ -401,7 +401,7 @@ async fn iss_16_the_map_of_a_search_holds_its_results_and_the_relations_between_
         assert!(answer.get("start").is_none());
         assert!(on_map(&answer).iter().all(|(_, away)| away.is_none()));
         assert_eq!(answer["lines"].as_array().map(Vec::len), Some(1));
-        assert_eq!(answer["more"], false);
+        assert_eq!(answer["truncated"], false);
         // A reader of ACME only sees no issue of another project on the map of everything, and
         // no line to one.
         let secret = ok(&ada
