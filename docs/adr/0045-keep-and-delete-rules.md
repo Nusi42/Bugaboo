@@ -49,7 +49,7 @@ ARCH-SETTINGS, ARCH-EVENTS, ARCH-PERMS, SEC-MATRIX, ARCH-DB-PARITY, PERF-N1, DOC
 M10 adds four kinds of data ([the M10 plan](../milestones/M10/README.md)). None of them is deleted after a time, so none has a period and none is a row of `KEEP_KINDS`, which holds the kinds deleted after a time (decision 1); this amendment is where each of them says why (the consequence "every kind of data needs a row" is met by a row or by a sentence here):
 
 - **Releases** ([ADR-0049](0049-releases.md)) are business records: kept until a person with *Manage releases* deletes one that no issue names. Bugaboo never deletes one by itself (the maintainer's rule of explicit deletion, decision 1).
-- **Dashboards** ([ADR-0050](0050-dashboards-and-totals.md)) are kept until their maker deletes them, or a person with *Change organization settings* deletes a shared one; the private ones go at *Remove a person*.
+- **Dashboards** ([ADR-0050](0050-dashboards-and-totals.md)) are kept until their maker deletes them, or a person with *Change organization settings* deletes a shared one; the private ones and *Home* go at *Remove a person* (`priv_04_removal_deletes_private_dashboards_and_keeps_shared_ones_as_former_user`). The job of the trash does not empty them yet (M10-F50).
 - **Pins** are kept until their person takes them off; a pin goes with the project, saved search or dashboard it points to, and at *Remove a person*.
 - **E-mailed searches** ([ADR-0033](0033-notifications-and-e-mail.md), amendment 2026-11-24) are kept until their person deletes them; they go with their saved search and at *Remove a person*. The e-mail itself is a job like every e-mail, whose payload the row *Dead jobs* already covers.
 
